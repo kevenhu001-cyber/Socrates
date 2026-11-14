@@ -1,3 +1,4 @@
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input-group';
 import { Button } from '../ui/shadcn/button';
 import { DialogHeader, DialogTitle, DialogClose } from '../ui/shadcn/dialog';
@@ -84,6 +85,25 @@ export function SettingsNavigation({
   onQueryChange: (query: string) => void;
   onSectionChange: (section: SettingsSection) => void;
 }) {
+  /* Arrow keys walk the rail like a tab list: the categories are one
+     control group, so moving between them should not require Tab through
+     every row. Focus follows the selection, matching the visual state. */
+  const onCategoryKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-section]'));
+    if (!items.length) return;
+    event.preventDefault();
+    const current = items.findIndex((item) => item === document.activeElement);
+    const index = current < 0 ? 0 : current;
+    const next = event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? items.length - 1
+        : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items[next]?.focus();
+    items[next]?.click();
+  };
   return (
     <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
       <InputGroup className="settings-search shrink-0">
@@ -97,7 +117,12 @@ export function SettingsNavigation({
         />
         <InputGroupAddon><SearchIcon aria-hidden /></InputGroupAddon>
       </InputGroup>
-      <div className="settings-nav-categories" role="group" aria-label={label('设置类别', 'Settings categories')}>
+      <div
+        className="settings-nav-categories"
+        role="group"
+        aria-label={label('设置类别', 'Settings categories')}
+        onKeyDown={onCategoryKeyDown}
+      >
         {categories.map(({ key, name, description }) => {
           const CategoryIcon = categoryIcons[key];
           return (

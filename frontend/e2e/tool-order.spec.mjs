@@ -83,10 +83,13 @@ test('a live row waits for its paragraph, then mounts once in activity before th
   await expect(body.locator('.tool-run-prose')).toContainText('我先来查');
 
   await page.evaluate(() => window.__pushToolUse());
-  /* The live thinking line picks up the running tool's icon: proof the
-     tool_use was processed and rendered — only then is "no row" a meaningful
-     assertion (otherwise we might just be faster than the render pass). */
-  await expect(body.locator('[data-testid="turn-activity-toggle"] .tool-inline-tool-icon')).toBeVisible();
+  /* The activity surface is live (its working indicator is on screen):
+     proof the tool_use was processed and rendered — only then is "no row"
+     a meaningful assertion (otherwise we might just be faster than the
+     render pass). The icon moved from the header into the row, so the
+     surface's live state is the signal the header can still prove. */
+  await expect(body.locator('[data-turn-surface-part="activity"][data-live="true"]')).toHaveCount(1);
+  await expect(body.locator('[data-testid="turn-activity-indicator"]')).toBeVisible();
   /* The paragraph is unfinished: no row may mount (and therefore nothing
      can jump when punctuation arrives). A finished sentence alone must
      NOT mount it either — only a completed paragraph does. */

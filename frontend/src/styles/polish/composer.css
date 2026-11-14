@@ -89,10 +89,335 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
    rows after the component layer and kept them off the shadcn 32px rung;
    removed 2026-10-29 with the matching `restore/chatgpt-parity.css` pins. */
 
-/* Attachment chips inside the capsule — the card radius (12px) matches
-   the legacy/07-composer-settings.css chip block so both files agree. */
-#appShell .attachment-chips .attachment-chip {
-  border-radius: 12px;
+/* ── Attachment row (reference: chat-demo FileCard / DraftAttachments) ──
+   Two shapes, one row: an image is a 64px cover tile, a document is a
+   240×64 card whose icon column states the type and whose caption names
+   the file. The old pill carried a 34px thumbnail, a filename and a
+   progress bar on one line, which read as a spreadsheet row rather than
+   an attachment. The row scrolls horizontally when a draft has several
+   files; the composer keeps its shape because the row has a fixed height.
+
+   Message bubbles keep the legacy inline chip (MessageAttachments.tsx);
+   these rules are scoped to the composer's own row. */
+#appShell #composerAttachmentChips {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 12px 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  cursor: default;
+}
+#appShell #composerAttachmentChips.hidden { display: none; }
+
+#appShell #composerAttachmentChips .attachment-chip {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  box-sizing: border-box;
+  gap: 10px;
+  max-width: none;
+  padding: 0;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  color: var(--ui-text-primary);
+  line-height: 1.25;
+  animation: attachment-card-in 180ms var(--ui-ease-out) both;
+  transition:
+    border-color var(--ui-duration-hover) ease,
+    background-color var(--ui-duration-hover) ease;
+}
+#appShell #composerAttachmentChips .attachment-chip:hover {
+  border-color: var(--ui-border-strong);
+  background: var(--ui-bg-hover);
+}
+#appShell #composerAttachmentChips .attachment-chip:focus-within {
+  border-color: var(--ui-border-strong);
+}
+
+/* Document card: icon column · name / type + size · remove. */
+#appShell #composerAttachmentChips .attachment-chip.is-file {
+  width: 240px;
+  min-height: 64px;
+  padding: 0 30px 0 14px;
+}
+#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-visual {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-icon {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* Image tile: the picture is the card. */
+#appShell #composerAttachmentChips .attachment-chip.is-image {
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--ui-bg-hover);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-visual {
+  width: 64px;
+  height: 64px;
+  border-radius: 0;
+  background: transparent;
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#appShell #composerAttachmentChips .attachment-chip-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  user-select: none;
+}
+#appShell #composerAttachmentChips .attachment-chip-name {
+  overflow: hidden;
+  color: var(--ui-text-primary);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-regular);
+  line-height: 22px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+#appShell #composerAttachmentChips .attachment-chip-meta {
+  overflow: hidden;
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 18px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Failure: the card's edge and caption say what happened. A retryable
+   upload puts the refresh glyph where the type icon was; an unsupported
+   file keeps the type icon and shows the reason. */
+#appShell #composerAttachmentChips .attachment-chip.error {
+  border-color: color-mix(in srgb, var(--destructive) 65%, var(--ui-border-subtle));
+}
+#appShell #composerAttachmentChips .attachment-chip.error .attachment-chip-meta {
+  color: var(--destructive);
+}
+#appShell #composerAttachmentChips .attachment-chip.error .attachment-chip-visual {
+  color: var(--destructive);
+}
+
+/* Remove — quiet until the card is hovered, focused, or on a touch layout. */
+#appShell #composerAttachmentChips .attachment-chip-remove {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  right: 6px;
+  display: flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--ui-duration-fast) ease,
+    background-color var(--ui-duration-fast) ease,
+    color var(--ui-duration-fast) ease;
+}
+#appShell #composerAttachmentChips .attachment-chip-remove svg { width: 12px; height: 12px; }
+#appShell #composerAttachmentChips .attachment-chip:is(:hover, :focus-within, .error) .attachment-chip-remove {
+  opacity: 1;
+}
+#appShell #composerAttachmentChips .attachment-chip-remove:hover {
+  background: var(--ui-bg-hover);
+  color: var(--ui-text-primary);
+}
+/* On an image the remove control sits on the picture, so it needs its own
+   contrast instead of the card fill. */
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-remove {
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  background: rgba(0, 0, 0, 0.56);
+  color: white;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-remove:hover {
+  background: rgba(0, 0, 0, 0.76);
+  color: white;
+}
+
+/* Retry — replaces the type icon on a document, covers the picture on an
+   image. Same class, one behaviour: click resumes the retained File. */
+#appShell #composerAttachmentChips .attachment-chip-retry {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--destructive);
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast) ease;
+}
+#appShell #composerAttachmentChips .attachment-chip.is-file .attachment-chip-retry {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+}
+#appShell #composerAttachmentChips .attachment-chip-retry svg { width: 18px; height: 18px; }
+#appShell #composerAttachmentChips .attachment-chip-retry:hover { background: var(--ui-bg-hover); }
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-retry {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.48);
+  color: white;
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-retry:hover {
+  background: rgba(0, 0, 0, 0.62);
+}
+#appShell #composerAttachmentChips .attachment-chip-error-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  color: var(--destructive);
+}
+#appShell #composerAttachmentChips .attachment-chip-error-badge svg { width: 16px; height: 16px; }
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-error-badge {
+  top: auto;
+  right: 5px;
+  bottom: 5px;
+  left: auto;
+  transform: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.56);
+  color: white;
+}
+
+/* Upload state: an image dims under a spinner; a document keeps its type
+   icon and shows a hairline bar along the card's bottom edge. The bar's
+   width is a transition, not a re-render per percentage point. */
+#appShell #composerAttachmentChips .attachment-chip-veil {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.32);
+  color: white;
+}
+#appShell #composerAttachmentChips .attachment-chip-pct {
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  z-index: 2;
+  padding: 1px 5px;
+  border-radius: var(--ui-radius-pill);
+  background: rgba(0, 0, 0, 0.56);
+  color: white;
+  font-size: var(--ui-font-size-xxs);
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+#appShell #composerAttachmentChips .attachment-chip-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 0 0 var(--ui-radius-lg) var(--ui-radius-lg);
+  background: color-mix(in srgb, var(--ui-text-primary) 10%, transparent);
+}
+#appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-progress {
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  border-radius: var(--ui-radius-pill);
+}
+#appShell #composerAttachmentChips .attachment-chip-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--ui-text-secondary);
+  transition: width 180ms var(--ui-ease-out);
+}
+#appShell #composerAttachmentChips .attachment-chip[data-stage="processing"] .attachment-chip-progress-fill {
+  background: linear-gradient(90deg, transparent, var(--ui-text-secondary), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: attachment-processing-sweep 1.1s linear infinite;
+}
+
+@keyframes attachment-card-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes attachment-processing-sweep {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+
+/* Touch layouts cannot hover, so the remove control must be visible. */
+@media (hover: none) {
+  #appShell #composerAttachmentChips .attachment-chip-remove { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #appShell #composerAttachmentChips .attachment-chip { animation: none; }
+  #appShell #composerAttachmentChips .attachment-chip-progress-fill { transition: none; }
+  #appShell #composerAttachmentChips .attachment-chip[data-stage="processing"] .attachment-chip-progress-fill {
+    animation: none;
+    background: var(--ui-text-secondary);
+  }
 }
 
 /* Under-composer disclaimer: quiet centered microcopy. */

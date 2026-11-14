@@ -409,54 +409,56 @@ body.composer-tools-open.composer-tools-open::after {
 /* Desktop keeps a steady navigation rail. On phones the same categories
    become a directory first, then a focused detail page. */
 .settings-modal.settings-modal--full {
-  display:flex; flex-direction:column; width:min(96vw,1040px); max-width:1040px;
-  height:min(86vh,780px); max-height:calc(100dvh - 32px); overflow:hidden;
+  display:flex; flex-direction:column; width:min(94vw,960px); max-width:960px;
+  height:min(84vh,700px); max-height:calc(100dvh - 40px); overflow:hidden;
   border:1px solid var(--ui-border-subtle); background:var(--ui-bg-dialog);
 }
 .settings-modal--full .settings-header {
   display:flex; align-items:center; justify-content:space-between; flex:none;
-  min-height:60px; padding:0 24px; border-bottom:1px solid var(--ui-border-subtle);
+  min-height:56px; padding:0 16px 0 24px; border-bottom:1px solid var(--ui-border-subtle);
   background:var(--ui-bg-dialog);
 }
 .settings-modal--full .settings-title { font-weight:var(--ui-font-weight-semibold); font-size:var(--ui-font-size-lg); }
-.settings-modal--full .settings-shell { display:grid; grid-template-columns:244px minmax(0,1fr); min-height:0; flex:1; }
+.settings-modal--full .settings-shell { display:grid; grid-template-columns:248px minmax(0,1fr); min-height:0; flex:1; }
 .settings-modal--full .settings-nav {
   display:flex; flex-direction:column; align-items:stretch; gap:12px; min-height:0;
-  padding:20px 14px; border-right:1px solid var(--ui-border-subtle); overflow:auto;
+  padding:16px 12px 18px; border-right:1px solid var(--ui-border-subtle); overflow:hidden;
   background:var(--ui-bg-surface);
+  scrollbar-width:thin;
 }
-.settings-modal--full .settings-nav-categories { display:flex; flex-direction:column; gap:4px; min-height:0; overflow-y:auto; }
+.settings-modal--full .settings-nav-categories { display:flex; flex-direction:column; gap:2px; min-height:0; overflow-y:auto; scrollbar-width:thin; }
 .settings-modal--full .settings-nav-item {
-  display:flex; align-items:center; gap:10px; width:100%; min-height:var(--ui-control-md);
-  padding:5px 10px; border-radius:var(--ui-radius-control); text-align:left;
+  display:flex; align-items:center; gap:10px; width:100%; min-height:46px;
+  padding:6px 10px; border-radius:var(--ui-radius-control); text-align:left;
 }
-.settings-modal--full .settings-category-icon { display:grid; place-items:center; width:30px; height:30px; flex:none; color:var(--ui-text-secondary); }
+.settings-modal--full .settings-category-icon { display:grid; place-items:center; width:28px; height:28px; flex:none; color:var(--ui-text-secondary); }
 .settings-modal--full .settings-category-icon svg { width:17px; height:17px; }
-.settings-modal--full .settings-category-copy { display:flex; flex:1; min-width:0; align-items:center; }
-.settings-modal--full .settings-category-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--ui-font-size-sm); }
-.settings-modal--full .settings-category-description { display:none; }
-.settings-modal--full .settings-category-chevron { width:14px; height:14px; flex:none; color:var(--ui-text-tertiary); opacity:0; }
+.settings-modal--full .settings-category-copy { display:flex; flex:1; min-width:0; flex-direction:column; align-items:flex-start; gap:1px; }
+.settings-modal--full .settings-category-name { overflow:hidden; max-width:100%; text-overflow:ellipsis; white-space:nowrap; font-size:var(--ui-font-size-sm); line-height:20px; }
+.settings-modal--full .settings-category-description { display:block; overflow:hidden; max-width:100%; color:var(--ui-text-tertiary); font-size:var(--ui-font-size-xxs, 11px); line-height:15px; text-overflow:ellipsis; white-space:nowrap; }
+.settings-modal--full .settings-nav-item[aria-current="page"] .settings-category-description { color:var(--ui-text-secondary); }
+.settings-modal--full .settings-category-chevron { display:none; }
 .settings-modal--full .settings-nav-item:hover .settings-category-chevron,
 .settings-modal--full .settings-nav-item[aria-current="page"] .settings-category-chevron { opacity:1; }
 .settings-modal--full .settings-nav-item.active .settings-category-icon { color:var(--foreground); }
 .settings-modal--full .settings-nav-empty { margin:0; padding:14px 8px; color:var(--ui-text-secondary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-search { margin:0; }
-.settings-modal--full .settings-body { display:block; min-width:0; min-height:0; overflow:auto; padding:30px 34px; }
+.settings-modal--full .settings-body { display:block; min-width:0; min-height:0; overflow:auto; padding:26px 32px 40px; scrollbar-gutter:stable; }
 .settings-modal--full .settings-mobile-back { display:none; }
 .settings-modal--full .settings-pane[hidden] { display:none; }
-.settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:18px; width:100%; max-width:760px; margin-inline:auto; }
-.settings-modal--full .settings-pane > h2 { margin:0; color:var(--foreground); font-size:var(--ui-font-size-xl); font-weight:var(--ui-font-weight-semibold); letter-spacing:-.02em; }
+.settings-modal--full .settings-pane { display:flex; flex-direction:column; gap:20px; width:100%; max-width:640px; margin-inline:auto; }
+.settings-modal--full .settings-pane > h2 { margin:0; color:var(--foreground); font-size:var(--ui-font-size-xl); line-height:28px; font-weight:var(--ui-font-weight-semibold); letter-spacing:-.02em; }
 .settings-modal--full .settings-pane > p { margin:-10px 0 0; color:var(--ui-text-secondary); font-size:var(--ui-font-size-sm); line-height:var(--ui-text-ui-line); }
 .settings-preference-fields { gap: 18px; }
 .provider-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .provider-multimodal { grid-column: 1 / -1; }
 .settings-account-name { min-width: 0; }
 .settings-modal--full .settings-section {
-  display:flex; flex-direction:column; gap:16px; margin:0; padding:20px;
+  display:flex; flex-direction:column; gap:14px; margin:0; padding:18px;
   border:1px solid var(--ui-border-subtle); border-radius:var(--ui-radius-lg);
   background:var(--ui-bg-raised);
 }
-.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:52px; border-bottom:1px solid var(--ui-border-subtle); color:var(--foreground); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:48px; padding-block:6px; border-bottom:1px solid var(--ui-border-subtle); color:var(--foreground); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice:last-child { border-bottom:0; }
 .settings-modal--full .settings-choice--segmented > [data-slot="toggle-group"] { flex:none; }
 .settings-modal--full .settings-choice--color { padding-block:12px; }
@@ -489,11 +491,19 @@ body.composer-tools-open.composer-tools-open::after {
 .settings-modal--full .settings-info-badge { flex:none; padding:4px 8px; border-radius:var(--ui-radius-pill); background:var(--secondary); color:var(--ui-text-secondary); font-size:var(--ui-font-size-xxs); }
 .settings-modal--full .tone-preset-options { margin-top:0; }
 .settings-modal--full .settings-save-error { margin:14px 0 0; color:var(--ui-text-secondary); font-size:var(--ui-font-size-xs); }
-.settings-modal--full .settings-search-empty { margin:0 auto; width:100%; max-width:760px; padding:var(--ui-space-xl) 0; color:var(--ui-text-secondary); font-size:var(--ui-font-size-sm); }
+.settings-modal--full .settings-search-empty { margin:0 auto; width:100%; max-width:640px; padding:var(--ui-space-xl) 0; color:var(--ui-text-secondary); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-account-card { padding:18px; }
 .settings-modal--full .settings-account-card + .settings-section { margin-top:0; }
 .settings-modal--full .settings-danger-zone { border-color:color-mix(in srgb, var(--destructive) 36%, var(--ui-border-subtle)); background:color-mix(in srgb, var(--destructive) 5%, var(--ui-bg-raised)); }
 .settings-modal--full .settings-mobile-back:focus-visible { box-shadow:var(--ui-focus-shadow); }
+/* Laptop / tablet: keep the rail but give the pane room to breathe. */
+@media(min-width:721px) and (max-width:900px) {
+  .settings-modal.settings-modal--full { width:min(96vw,780px); max-width:780px; height:min(86vh,680px); }
+  .settings-modal--full .settings-shell { grid-template-columns:212px minmax(0,1fr); }
+  .settings-modal--full .settings-nav { padding:14px 10px 16px; }
+  .settings-modal--full .settings-body { padding:22px 22px 34px; }
+  .settings-modal--full .settings-pane { max-width:none; }
+}
 @media(max-width:720px) {
   .provider-fields { grid-template-columns: minmax(0, 1fr); }
   .settings-modal.settings-modal--full { width:100vw; height:100dvh; max-height:100dvh; border:0; border-radius:0; }

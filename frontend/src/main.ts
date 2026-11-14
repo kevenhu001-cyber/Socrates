@@ -25,6 +25,7 @@ import './tutorSocratic.ts';
 import './app/legacyBridge.ts';
 import './app/errorGuard.ts';
 import './render/katexRefresh.js';
+import { preloadRenderRuntime } from './render/preloadRuntime.ts';
 import { initCookieConsent } from './cookieConsent.ts';
 import { initChatComposerReserve } from './ui/scroll.ts';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
@@ -131,3 +132,6 @@ bootstrapApp({
   loadTonePreset: loadTonePreset,
   loadMemories: loadMemories,
 });
+
+/* Charts and formulas load on first use; warm them while the page is idle. */
+preloadRenderRuntime();

@@ -61,7 +61,7 @@ test('Attachment chips remove through the React action', async ({ page }) => {
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
   await expect(chips.first()).toHaveAttribute('title', 'one.txt');
-  await chips.first().getByRole('button', { name: '移除附件' }).click({ force: true });
+  await chips.first().locator('.attachment-chip-remove').click({ force: true });
   await expect(chips).toHaveCount(1);
   await expect(chips.first()).toHaveAttribute('title', 'two.txt');
 });
@@ -183,9 +183,13 @@ test('Attachment-only landing draft activates Send and enters chat', async ({ pa
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
 
   const startBtn = page.locator('#composerPrimaryBtn');
-  await expect(startBtn).toHaveClass(/active/);
+  /* The React send control marks readiness with data-ready; `.active` was
+     the legacy class and is no longer painted. */
+  await expect(startBtn).toHaveAttribute('data-ready', 'true');
   await expect(startBtn).toHaveAttribute('aria-label', 'Send');
-  await expect(page.locator('#composerInputWrap')).toHaveClass(/has-text/);
+  /* The attachment row is visible in the shell (the composer's own shape
+     flags are React state now, not a legacy `.has-text` class). */
+  await expect(page.locator('#composerAttachmentChips')).not.toHaveClass(/hidden/);
 
   await startBtn.click();
   await expect(page.locator('#topicSetup')).toHaveClass(/hidden/);

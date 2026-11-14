@@ -47,11 +47,17 @@ function detectLanguage(text: string): string {
  * Returns "" when input looks like pure code/URL. */
 function languageDirectiveFor(text: string): string {
   const t = text ? String(text).trim() : '';
-  if (t.length >= 2) {
-    if (/^(https?:\/\/|www\.|[/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)) return '';
-    if (/^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(t)) return '';
-  }
-  const hasLangSignal = /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
+  /* A URL or a pasted code fragment carries no reliable language signal.
+     The old code returned no directive at all, so those turns inherited
+     whatever the surrounding prompt felt like and could answer in the
+     other language. Fall back to the UI language instead, which is the
+     only signal the reader actually chose. */
+  const noLanguageSignal = t.length >= 2 && (
+    /^(https?:\/\/|www\.|[/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)
+    || /^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(t)
+  );
+  const hasLangSignal = !noLanguageSignal
+    && /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
   const uiLang = getCurrentLanguage();
   const lang = hasLangSignal ? detectLanguage(t) : (uiLang || detectLanguage(t));
   if (lang === 'zh') {
@@ -92,6 +98,21 @@ function languageDirectiveFor(text: string): string {
       '\u0623\u062c\u0628 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u0642\u0637. \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0627\u0644\u0639\u0646\u0627\u0648\u064a\u0646 \u0648\u0627\u0644\u0641\u0642\u0631\u0627\u062a \u0648\u0627\u0644\u0642\u0648\u0627\u0626\u0645 \u0648\u0627\u0644\u062a\u0633\u0645\u064a\u0627\u062a \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629.\n\n' +
       '\u0627\u0644\u0627\u0633\u062a\u062b\u0646\u0627\u0621\u0627\u062a (\u064a\u0628\u0642\u0649 \u0643\u0645\u0627 \u0647\u0648): \u0627\u0644\u0634\u0641\u0631\u0629 \u0627\u0644\u0628\u0631\u0645\u062c\u064a\u0629\u060c \u0627\u0644\u0631\u0645\u0648\u0632 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0629\u060c \u0627\u0644\u0645\u0635\u0637\u0644\u062d\u0627\u062a \u0627\u0644\u062a\u0642\u0646\u064a\u0629 \u0627\u0644\u0631\u0627\u0633\u062e\u0629 (API, HTTP, JSON)\u060c \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u0645\u0642\u062a\u0628\u0633\u0629 \u0645\u0646 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645.\n\n' +
       '\u0623\u064a \u062e\u0644\u0637 \u063a\u064a\u0631 \u0645\u0628\u0631\u0631 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629 \u0623\u0648 \u0627\u0644\u0635\u064a\u0646\u064a\u0629 \u064a\u064f\u0639\u062f \u0627\u0646\u062a\u0647\u0627\u0643\u064b\u0627.';
+  }
+  if (lang === 'en') {
+    /* English used to be the unmarked default: no directive was injected,
+       so a bilingual system prompt or a Chinese tool summary could pull the
+       answer back into the other language mid-stream. The directive is
+       deliberately symmetric with the zh one and names the same exceptions
+       (code, formulas, technical names, the user's own quotes). */
+    return '\n\n## Language directive (highest priority): English only, no language mixing\n\n' +
+      'Answer in English. Every sentence, heading, list item and label must be written in English.\n\n' +
+      'The following may stay verbatim (not a violation):\n' +
+      '- code: variable, function and class names, commands, file paths\n' +
+      '- Latin letters and symbols inside math (\u03c0, \u2211, \u222b, sin, cos, lim)\n' +
+      '- established technical names (API, HTTP, JSON, SQL, CPU, GPU, URL, HTML)\n' +
+      '- text the user supplied (quotes, file names, URLs, error messages)\n\n' +
+      'Never switch language halfway through a sentence, never write a whole paragraph in Chinese and then add an English ending, and do not add unnecessary Chinese words to an English sentence.';
   }
   return '';
 }

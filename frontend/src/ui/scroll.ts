@@ -200,14 +200,23 @@ function startScroll(list: HTMLElement, targetTop: number, options: ScrollOption
   /* `opts.plan` — a caller-planned motion ({duration, ease, snap}), e.g.
      ui/motion.ts planSendGlide. Without it the velocity planner decides. */
   const injectedPlan=options.plan&&typeof options.plan==='object'?options.plan:null;
-  const snap=shouldSnapScroll(options,reduced,absDistance,injectedPlan);
+  /* A live target grows between planning and execution: the send path plans
+     a glide for the prompt's slot, then the answer reserve/layout lands and
+     the reachable target moves several hundred px further. Judging "snap"
+     by the stale distance teleported to the live target in one frame — the
+     send looked like a jump even though a glide was planned. Measure the
+     target that will actually be used, and drop a zero-duration plan when
+     the distance no longer justifies it (the velocity planner animates). */
+  const liveDistance=liveTarget?Math.abs(resolveTarget()-startTop):absDistance;
+  const usablePlan=injectedPlan&&injectedPlan.duration>0?injectedPlan:null;
+  const snap=shouldSnapScroll(options,reduced,liveDistance,usablePlan);
   if (snap) {
     snapScrollToTarget(list, liveTarget ? resolveTarget() : targetTop, owner, ownerToken);
     return Promise.resolve();
   }
   return animateScroll(list, {
     owner, ownerToken, startTop, targetTop, distance, liveTarget, resolveTarget,
-    options, plan: injectedPlan,
+    options, plan: usablePlan,
   });
 }
 

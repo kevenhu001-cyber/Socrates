@@ -309,6 +309,21 @@ async function extractCached(file: FileRow, question?: string): Promise<Extracte
 }
 
 /**
+ * Parse a just-uploaded document in the background so the model's first
+ * read_attachment call does not pay the extraction cost. The router only
+ * awaits the insert, so the upload response stays as fast as before; a
+ * parse failure is intentionally silent (read_attachment reports it with
+ * the same error the user would have seen later).
+ */
+export function prewarmAttachmentExtract(file: FileRow): void {
+  const mime = String(file.mimeType || '').toLowerCase();
+  if (!PARSER_MIMES.has(mime)) return;
+  setTimeout(() => {
+    void extractCached(file).catch(() => { /* reported by the tool call */ });
+  }, 120);
+}
+
+/**
  * Read one page of a user-owned uploaded file. Ownership is enforced here
  * (fileId + userId) — a model- or client-supplied id can never reach
  * another user's file.

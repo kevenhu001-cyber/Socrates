@@ -65,13 +65,13 @@ export function useSettingsNavigation(label: SettingsLabel) {
 
   const categories: SettingsCategory[] = [
     { key: 'general', name: label('通用', 'General'), description: label('主题与语言', 'Theme and language') },
-    { key: 'display', name: label('显示', 'Display'), description: label('字号、内容宽度和背景', 'Text size, content width, and background') },
-    { key: 'notifications', name: label('通知', 'Notifications'), description: label('Android 通知权限', 'Android notification permissions') },
-    { key: 'personalization', name: label('个性化', 'Personalization'), description: label('助手语气、指令和记忆', 'Assistant tone, instructions, and memory') },
-    { key: 'models', name: label('模型与语音', 'Models & voice'), description: label('模型服务商、图片和语音', 'Providers, image models, and voice') },
-    { key: 'apps', name: label('应用与连接', 'Apps & connections'), description: label('管理插件和服务连接', 'Manage plugins and service connections') },
-    { key: 'data', name: label('数据管理', 'Data controls'), description: label('管理文件和资料库', 'Manage files and your library') },
-    { key: 'account', name: label('账户', 'Account'), description: label('个人资料和账户安全', 'Profile and account security') },
+    { key: 'display', name: label('显示', 'Display'), description: label('字号、宽度和背景', 'Text size and width') },
+    { key: 'notifications', name: label('通知', 'Notifications'), description: label('Android 通知权限', 'Android notifications') },
+    { key: 'personalization', name: label('个性化', 'Personalization'), description: label('语气、指令和记忆', 'Tone, instructions, memory') },
+    { key: 'models', name: label('模型与语音', 'Models & voice'), description: label('服务商与语音', 'Providers and voice') },
+    { key: 'apps', name: label('应用与连接', 'Apps & connections'), description: label('插件与服务连接', 'Plugins and connections') },
+    { key: 'data', name: label('数据管理', 'Data controls'), description: label('文件和资料库', 'Files and library') },
+    { key: 'account', name: label('账户', 'Account'), description: label('资料与安全', 'Profile and security') },
   ];
   const normalizedQuery = normalizeQuery(query);
   const matchingCategories = searchCategories(categories, query);

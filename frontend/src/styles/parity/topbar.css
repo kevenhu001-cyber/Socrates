@@ -62,8 +62,11 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     margin: 0;
     padding: 0 var(--ui-space-md);
     border: 0;
-    /* Site header edge: one hairline (--ui-hairline, 8% ink). */
-    border-bottom: 1px solid var(--ui-hairline);
+    /* RN-7 — the chat canvas and the header are one surface. The old
+       hairline divided the model lockup from the transcript and read as an
+       underline under "Socrates <model>"; the card's own edge and the
+       scroll fade already separate the two. */
+    border-bottom: 0;
     background: var(--ui-bg-header-glass);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);

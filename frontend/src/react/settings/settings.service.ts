@@ -25,6 +25,22 @@ export function initializeSettingsService(): void {
   if (getSettingsSnapshot().revision === 0) {
     installSettingsBridge().publish({ open: false, externalApiOn: readExternalApiPreference() });
   }
+  /* Settings used to load its chunk only on hover/press, so the first open
+     paid the module download while the dialog was already fading in. Warm
+     both the modal and the first pane once the page is idle: the import is
+     still split out of the entry graph, but a reader who opens Settings a
+     minute later gets the modal in the same frame as the click. */
+  scheduleSettingsWarmup();
+}
+
+let settingsWarmupScheduled = false;
+function scheduleSettingsWarmup(): void {
+  if (settingsWarmupScheduled || typeof window === 'undefined') return;
+  settingsWarmupScheduled = true;
+  const warm = () => { void loadSettingsModal().catch(() => { /* retried on open */ }); };
+  const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
+  if (typeof idle === 'function') idle.call(window, warm, { timeout: 2500 });
+  else window.setTimeout(warm, 1800);
 }
 
 export async function openSettings(): Promise<void> {

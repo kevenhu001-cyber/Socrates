@@ -358,6 +358,22 @@ function holdTurnViewport(): void {
     updateMessageSnapshot(entry, { _turnAnchorMinHeight: nextReserve }, true);
     publishReactChatRuntime({ type: 'tool-run-updated', messageId: hold.clientId });
   }
+  /* A reader who scrolled DOWN off the prompt's slot is following the
+     answer, not holding the page. The hold used to keep re-aligning the
+     prompt to the top on every content frame, so the reader's own scroll
+     to the bottom was undone and the transcript stayed a viewport behind
+     the newest text. Hand the transcript back: content-follow owns the
+     bottom from here. This runs even while the send glide is landing
+     (`align === false`), because the reader's gesture must win over the
+     glide; the glide itself never moves below the prompt's own slot. */
+  const promptTarget = Math.max(0, Math.min(
+    Math.max(0, list.scrollHeight - list.clientHeight),
+    Math.round(promptRow.offsetTop - hold.targetOffset),
+  ));
+  if (list.scrollTop > promptTarget + 24) {
+    releaseTurnViewportHold();
+    return;
+  }
   if (hold.align) alignPromptToOffset(list, promptRow, hold.targetOffset);
 }
 
@@ -447,12 +463,12 @@ function startTurnViewportHold(
   /* Publish the ownership the mount window, the above-viewport compensation
      and the scroll animations already read. `align` is true only once the
      send glide has landed: during the glide `turnAnchorSettling` covers the
-     same window, and claiming `turnViewportOwner` earlier would stop the
-     glide's own animation on its first frame. A mid-glide hold
-     (`align === false`) still owns the composer-resize decision, so it
-     claims the flag too: the scroll animation that must not be stopped is
-     already covered by `turnAnchorSettling`, not by this flag. */
-  markTurnViewportOwner(list);
+     same window, and claiming `turnViewportOwner` earlier stops the glide's
+     own animation on its first frame (ui/scroll.ts aborts a scroll when the
+     list is turn-owned) — exactly the teleport the send motion is meant to
+     avoid. The mid-glide hold still owns the composer-resize decision
+     through `turnAnchorHold`; ownership is claimed when the glide lands. */
+  if (align) markTurnViewportOwner(list);
   holdTurnViewport();
 }
 

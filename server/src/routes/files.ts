@@ -20,6 +20,7 @@ import {
   TEXTUAL_APPLICATION_MIMES,
   formatBytes,
   isTextReadable,
+  prewarmAttachmentExtract,
 } from '../services/embeddings/attachmentReader.js';
 import { decodeTextBuffer, cleanExtractedText, truncateHeadTail } from '../services/fileParsers/text.js';
 import { displayFileName, normalizeFileName, safeStorageExtension } from '../lib/fileName.js';
@@ -376,6 +377,11 @@ router.post('/', uploadLimiter, async (req, res, next) => {
       await fs.unlink(uploadPath).catch(() => {});
       throw new PayloadTooLarge('Storage quota exceeded.');
     }
+
+    /* Warm the extractor while the client is still finishing the upload
+       animation. The first read_attachment then hits the cache instead of
+       pdf.js / the Office parsers. */
+    prewarmAttachmentExtract(record);
 
     return res.status(201).json({
       id: record.id, name: record.name, mimeType: record.mimeType,

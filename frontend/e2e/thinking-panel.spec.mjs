@@ -157,14 +157,17 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await page.evaluate(() => window.__finishPlain());
 });
 
-test('a task preview does not leave a thought header on a plain answer', async ({ page }) => {
+test('a task preview keeps one quiet settled header on a plain answer', async ({ page }) => {
   const bubble = await startTurn(page, false);
   await page.evaluate(() => window.__pushThinkingFrame('turn_summary', { summary: 'Preparing an answer.', phase: 'initial' }));
   await openActivity(bubble);
   await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Preparing an answer.');
   await page.evaluate(() => window.__finishPlain());
   await expect(bubble).toContainText('A direct answer.');
-  await expect(bubble.locator(TURN.surface)).toHaveCount(0);
+  /* The header is the turn's own line, so it stays when the run settles.
+     Removing it here shrank the answer row and moved every line under it. */
+  await expect(bubble.locator(TURN.surface)).toHaveCount(1);
+  await expect(bubble.locator(TURN.label)).toHaveText('Thought process');
 });
 
 test('a long public summary has a short disclosure title, without repeating the body', async ({ page }) => {

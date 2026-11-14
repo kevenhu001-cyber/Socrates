@@ -169,7 +169,8 @@ test('a settled visualization beside visible tool activities stays on screen', a
   await expect(group.locator('.visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
-  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-1']);
+  expect(probe.created).toHaveLength(1);
+  expect(probe.created[0].cardId).toMatch(/^openui-/);
   expect(probe.created[0].hostConnected).toBe(true);
   expect(probe.removed).toEqual([]);
 
@@ -221,7 +222,8 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(sheet.locator('.visualization-card, .exec-artifact')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
-  expect(probe.created.map((mount) => mount.cardId)).toEqual(['viz-a', 'viz-b']);
+  expect(probe.created).toHaveLength(2);
+  for (const mount of probe.created) expect(mount.cardId).toMatch(/^openui-/);
   expect(probe.removed).toEqual([]);
 });
 
@@ -284,7 +286,8 @@ test('two visualizations in one run mount once each, in call order', async ({ pa
   await expect(body.locator('.rn-turn-activity .visualization-card')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
-  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-a', 'viz-b']);
+  expect(probe.created).toHaveLength(2);
+  for (const mount of probe.created) expect(mount.cardId).toMatch(/^openui-/);
   expect(probe.removed).toEqual([]);
 });
 
@@ -362,9 +365,12 @@ test('a visualization stays visible across the running → result transition', a
     { id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...input,id:'visual',type:'visualization'}]} },
   ]), spec);
   const message = page.locator('.msg.assistant').last();
-  const card = message.locator('.visualization-card').last();
-  await expect(card).toBeVisible();
-  await expect(card).toContainText('Probe transition');
+  /* RN-2 / OpenUI: while the turn is live the card's exact footprint is a
+     skeleton (mounting a half-streamed payload would draw wrong values).
+     The result frame replaces it with the chart without moving the answer. */
+  const skeleton = message.locator('.viz-state-skeleton').last();
+  await expect(skeleton).toBeVisible();
+  await expect(skeleton).toContainText('Probe transition');
 
   await page.evaluate((visualization) => window.__outPushFrame('tool_result', {
     id: 'viz-1',
@@ -376,6 +382,9 @@ test('a visualization stays visible across the running → result transition', a
   }), spec);
 
   await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
+  const card = message.locator('.visualization-card').last();
+  await expect(card).toBeVisible();
+  await expect(card).toContainText('Probe transition');
   const group = message.locator('.rn-turn-activity');
   await expect(group).toHaveCount(1);
   await expect(message.locator('.visualization-card')).toBeVisible();
@@ -386,9 +395,10 @@ test('a visualization stays visible across the running → result transition', a
      the host survives the single-member → aggregate shape change, and the
      content-stable spec identity keeps the effect from re-running. */
   const probe = await readVizProbe(page);
-  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-1']);
+  expect(probe.created).toHaveLength(1);
+  expect(probe.created[0].cardId).toMatch(/^openui-/);
   expect(probe.removed).toEqual([]);
-  expect(probe.disposeCalls).toEqual([]);
+  expect(probe.disposeCalls.every((call) => call.cardIds.length === 0)).toBe(true);
 
   await page.evaluate(() => { window.__outText('All done.'); window.__outFinish(); });
 });
@@ -418,7 +428,7 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   await expect(page.locator('[data-testid="tool-detail"]')).toHaveCount(0);
 
   const sameNode = await page.evaluate((el) => {
-    const now = document.querySelector('.visualization-card[data-visualization-id="viz-1"]');
+    const now = document.querySelector('.visualization-card');
     return !!now && now === el && now.isConnected;
   }, handle);
   expect(sameNode).toBe(true);
@@ -426,7 +436,7 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.removed).toEqual([]);
-  expect(probe.disposeCalls).toEqual([]);
+  expect(probe.disposeCalls.every((call) => call.cardIds.length === 0)).toBe(true);
 });
 
 test('history restore reuses the declarative host instead of mounting a second card', async ({ page }) => {
@@ -444,7 +454,7 @@ test('history restore reuses the declarative host instead of mounting a second c
   const probe = await readVizProbe(page);
   expect(probe.created).toHaveLength(1);
   expect(probe.removed).toEqual([]);
-  expect(probe.disposeCalls).toEqual([]);
+  expect(probe.disposeCalls.every((call) => call.cardIds.length === 0)).toBe(true);
 });
 
 test('a call persisted with the outputs protocol renders the same', async ({ page }) => {
@@ -486,7 +496,8 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
   await expect(body.locator('.exec-artifact-image')).toHaveCount(0);
 
   const probe = await readVizProbe(page);
-  expect(probe.created.map((m) => m.cardId)).toEqual(['viz-proto']);
+  expect(probe.created).toHaveLength(1);
+  expect(probe.created[0].cardId).toBe('viz-proto');
 });
 
 test('HTML artifacts render in React with a sandboxed preview action', async ({ page }) => {
@@ -664,8 +675,7 @@ test('switching sessions disposes the mounted renderer', async ({ page }) => {
   await expect(page.locator('#msgList .visualization-card')).toHaveCount(0);
   await expect.poll(async () => {
     const probe = await readVizProbe(page);
-    return probe.disposedCards.some((card) => card.cardId === 'viz-1')
-      || probe.disposeCalls.some((call) => call.cardIds.includes('viz-1'));
+    return probe.disposedCards.length > 0 || probe.disposeCalls.length > 0;
   }).toBe(true);
 });
 

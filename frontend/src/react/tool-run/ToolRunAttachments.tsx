@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
-import { attachmentOutputsOf, toolRunStateOf, type ToolCallRecord } from './toolRunModel';
+import { attachmentOutputsOf, toolOutputsOf, toolRunStateOf, type ToolCallRecord } from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
@@ -52,6 +52,14 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
   if (!validation.ok && !['learning', 'control', 'visualization', 'demonstration'].includes(validation.kind || '')) {
     return null;
   }
+  /* A persisted call can carry an argument skeleton whose visualization node
+     has only an id/type (no template): the real spec lives in `outputs[]`.
+     Treat that skeleton as "no program" so the output host mounts the spec
+     instead of the OpenUI path drawing an empty chart over it. */
+  const nodes = normalized.nodes as Array<Record<string, unknown>>;
+  const hasVisualization = nodes.some((node) => node && node.type === 'visualization');
+  const hasRenderableVisualization = nodes.some((node) => node && node.type === 'visualization' && typeof node.template === 'string' && node.template);
+  if (hasVisualization && !hasRenderableVisualization) return null;
   return { version: 1, nodes: normalized.nodes };
 }
 
@@ -91,6 +99,12 @@ function renderIntelligenceUiAttachment(
   if (state === 'error') return renderIntelligenceUiFailure(call, tools, readOnly);
   if (state === 'stopped') return null;
   if (!document) {
+    /* The outputs protocol carries a finished visualization spec without the
+       OpenUI program that produced it (persisted history, older writers).
+       Fall through to the generic output host, which mounts that spec
+       directly, instead of painting a failure card over a chart we have. */
+    const hasVisualizationOutput = toolOutputsOf(call).some((output) => output.kind === 'visualization');
+    if (hasVisualizationOutput) return null;
     if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
     return null;
   }

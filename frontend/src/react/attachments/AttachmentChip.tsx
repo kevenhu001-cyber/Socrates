@@ -18,7 +18,8 @@ function i18n(key: string, fallback: string): string {
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
+const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
+const ERROR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><path d="M12 16.8v.2"/></svg>';
 
 function truncateName(name: string): string {
   if (!name) return 'file';
@@ -97,7 +98,7 @@ function attachmentMeta(entry: AttachmentEntry): string {
     return `${i18n('chat.attach.uploading', '上传中')}… ${Math.round(progress)}%`;
   }
   if (entry.error) {
-    return i18n('chat.attach.failed', '上传失败');
+    return entry.error;
   }
   if (entry.truncated) {
     return i18n('chat.attach.truncated', '（已截断）');
@@ -109,14 +110,34 @@ function attachmentMeta(entry: AttachmentEntry): string {
   return category;
 }
 
+function formatBytes(bytes: number | undefined): string {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(value < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** "PDF · 2.4 MB" — the reference card's sub-caption. */
+function fileSubCaption(entry: AttachmentEntry): string {
+  const size = formatBytes(entry.size);
+  const category = kindCategory(entry);
+  if (isLegacyUnreadable(entry)) {
+    return `${category} · ${i18n('chat.attach.metadataOnly', '仅元数据')}`;
+  }
+  return size ? `${category} · ${size}` : category;
+}
+
 interface AttachmentChipVisualProps {
   entry: AttachmentEntry;
   imageSrc?: string;
   isImage: boolean;
+  canRetry: boolean;
   onImageError: () => void;
 }
 
-function AttachmentChipVisual({ entry, imageSrc, isImage, onImageError }: AttachmentChipVisualProps) {
+function AttachmentChipVisual({ entry, imageSrc, isImage, canRetry, onImageError }: AttachmentChipVisualProps) {
+  const failed = Boolean(entry.error) && !entry.pending;
   return (
     <span className="attachment-chip-visual" data-kind={entry.docKind || entry.kind || 'file'}>
       {isImage && imageSrc ? (
@@ -127,13 +148,16 @@ function AttachmentChipVisual({ entry, imageSrc, isImage, onImageError }: Attach
           alt={entry.name ?? ''}
           onError={onImageError}
         />
-      ) : (
+      ) : failed && canRetry ? null : (
         <span className="attachment-chip-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }} />
       )}
       {entry.pending && isImage ? (
         <span className="attachment-chip-veil" aria-hidden="true">
           <span dangerouslySetInnerHTML={{ __html: SPINNER_HTML }} />
         </span>
+      ) : null}
+      {failed && !canRetry && isImage ? (
+        <span className="attachment-chip-error-badge" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ERROR_ICON }} />
       ) : null}
     </span>
   );
@@ -160,8 +184,8 @@ function pendingProgressbarProps(entry: AttachmentEntry, progress: number, label
 }
 
 /* Determinate upload progress for a pending chip: a hairline bar for
-   every kind, plus a % badge on image chips (their name+meta column
-   stays hidden, so the veil spinner alone used to be the only signal). */
+   files and a % badge on image chips (their name+meta column stays
+   hidden, so the veil spinner alone was the only signal). */
 function AttachmentChipProgress({ entry, progress, isImage }: {
   entry: AttachmentEntry;
   progress: number;
@@ -179,28 +203,17 @@ function AttachmentChipProgress({ entry, progress, isImage }: {
     </>
   );
 }
-function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps) {
+
+function AttachmentChipActions({ onRemove }: { onRemove: () => void }) {
   return (
-    <>
-      {entry.error && !entry.pending ? (
-        <UiButton
-          type="button"
-          className="attachment-chip-retry"
-          aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
-          title={entry.error}
-          onClick={() => onRetry(entry.id)}
-          dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
-        />
-      ) : null}
-      <UiButton
-        type="button"
-        className="attachment-chip-remove"
-        aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
-        title={i18n('chat.attach.remove.aria', 'Remove attachment')}
-        onClick={() => onRemove(entry.id)}
-        dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
-      />
-    </>
+    <UiButton
+      type="button"
+      className="attachment-chip-remove"
+      aria-label={i18n('chat.attach.remove.aria', 'Remove attachment')}
+      title={i18n('chat.attach.remove.aria', 'Remove attachment')}
+      onClick={onRemove}
+      dangerouslySetInnerHTML={{ __html: REMOVE_ICON }}
+    />
   );
 }
 
@@ -215,26 +228,48 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
     .find((source) => !!source && !badSources.includes(source));
   const isImage = entry.kind === 'image';
   const progress = entry.pending ? Math.min(Math.max(entry.progress ?? 0, 0), 100) : 0;
+  const canRetry = Boolean(entry.error) && !entry.pending;
 
   return (
     <div
-      className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
+      className={`attachment-chip ${isImage ? 'is-image' : 'is-file'}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
+      data-stage={entry.pending ? (entry.stage || 'uploading') : entry.error ? 'error' : 'ready'}
       title={entry.error || entry.name || undefined}
       aria-label={isImage ? `${entry.name ?? 'Image'} — ${attachmentMeta(entry)}` : undefined}
+      aria-busy={entry.pending ? true : undefined}
     >
-      <AttachmentChipVisual entry={entry} imageSrc={imageSrc} isImage={isImage} onImageError={() => setBadSources((sources) => [...sources, imageSrc ?? ''])} />
+      <AttachmentChipVisual
+        entry={entry}
+        imageSrc={imageSrc}
+        isImage={isImage}
+        canRetry={canRetry}
+        onImageError={() => setBadSources((sources) => [...sources, imageSrc ?? ''])}
+      />
+
+      {canRetry ? (
+        <UiButton
+          type="button"
+          className="attachment-chip-retry"
+          aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
+          title={entry.error || i18n('chat.attach.retry.aria', 'Retry upload')}
+          onClick={() => onRetry(entry.id)}
+          dangerouslySetInnerHTML={{ __html: RETRY_ICON }}
+        />
+      ) : null}
 
       {isImage ? null : (
         <span className="attachment-chip-info">
           <span className="attachment-chip-name">{truncateName(entry.name ?? 'file')}</span>
-          <span className="attachment-chip-meta">{attachmentMeta(entry)}</span>
+          <span className="attachment-chip-meta">
+            {entry.pending ? attachmentMeta(entry) : entry.error ? entry.error : fileSubCaption(entry)}
+          </span>
         </span>
       )}
 
       <AttachmentChipProgress entry={entry} progress={progress} isImage={isImage} />
 
-      <AttachmentChipActions entry={entry} onRemove={onRemove} onRetry={onRetry} />
+      <AttachmentChipActions onRemove={() => onRemove(entry.id)} />
     </div>
   );
 }

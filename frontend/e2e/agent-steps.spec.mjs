@@ -53,8 +53,10 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
 
   const bubble = page.locator('.msg.assistant').last();
   const surface = bubble.locator('.rn-turn-activity');
-  /* Agent steps render under their tool row in the RN activity timeline. */
+  /* Agent steps render in their tool row's inline detail: open the activity
+     timeline, then the agent row. */
   await surface.locator('[data-testid="turn-activity-toggle"]').click();
+  await surface.locator('[data-testid="tool-row-agent-1"]').click();
   const steps = surface.locator('.agent-step');
   await expect(steps).toHaveCount(3);
   await expect(steps.nth(0).locator('.agent-step-label')).toHaveText('读取了文件');

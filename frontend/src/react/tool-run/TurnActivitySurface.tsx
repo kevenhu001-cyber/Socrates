@@ -216,6 +216,13 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const statusLabel = props.statusLabel?.trim();
   const answerStarted = Boolean(props.answerStarted);
   const [isOpen, setIsOpen] = useState(false);
+  /* A turn that was live keeps one settled line once it ends, even when the
+     run reported no public summary or tool call. Removing that row at
+     settle shrank the answer's own row by ~32px and moved every line the
+     reader was looking at; the surface is the turn's header, so it stays
+     (the same way the reference keeps "Thought for 5s"). */
+  const wasLive = useRef(isLive);
+  if (isLive) wasLive.current = true;
   const bodyId = useId();
   useLocaleRefresh();
 
@@ -230,7 +237,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
 
   const rows = rowsFor({ steps, calls, intent, isLive, statusLabel, status, readOnly });
   const hasDetails = rows.length > 0 && Boolean(steps.length || intent || calls.length);
-  if (!hasDetails && !isLive) return null;
+  if (!hasDetails && !isLive && !wasLive.current) return null;
   const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
 
   return (
