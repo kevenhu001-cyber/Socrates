@@ -3,7 +3,7 @@ import { publishProfileSnapshot } from '../../ui/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
-import { loadSettingsModal } from './settings.preload';
+import { loadSettingsModal, preloadSettingsModal } from './settings.preload';
 
 let settingsReturnFocus: HTMLElement | null = null;
 
@@ -24,6 +24,15 @@ export function initializeSettingsService(): void {
   installSettingsBridge();
   if (getSettingsSnapshot().revision === 0) {
     installSettingsBridge().publish({ open: false, externalApiOn: readExternalApiPreference() });
+  }
+  /* Warm the modal chunk while the app is idle: the dynamic import was the
+     visible delay on the first Settings click. */
+  const warm = () => preloadSettingsModal();
+  try {
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 4000 });
+    else setTimeout(warm, 1500);
+  } catch {
+    setTimeout(warm, 1500);
   }
 }
 

@@ -80,7 +80,12 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
   useEffect(() => {
     const list = document.getElementById(MSG_LIST_ID);
     if (!list) return undefined;
-    const onScroll = () => updateScrollFadeMask(list);
+    const onScroll = () => {
+      updateScrollFadeMask(list);
+      /* The header hairline is drawn only while content passes under it (see
+         parity/topbar.css), so an empty canvas is not split by a rule. */
+      document.body.dataset.transcriptScrolled = list.scrollTop > 2 ? 'true' : 'false';
+    };
     onScroll();
     list.addEventListener('scroll', onScroll, { passive: true });
     let ro: ResizeObserver | null = null;

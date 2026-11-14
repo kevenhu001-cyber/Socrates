@@ -92,9 +92,13 @@ export interface TopBarModelSwitcherProps {
 
 export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded, compact, narrow = false, visible, onPress }: TopBarModelSwitcherProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
-  /* The desktop lockup keeps the header's 18/28 step; the phone chip the 14/22 one. */
-  const size = Math.round((compact ? 14 : 18) * typeScale * 10) / 10;
-  const line = Math.round((compact ? 22 : 28) * typeScale * 10) / 10;
+  /* Desktop: a 15px wordmark beside a 14px model name on one 22px line. The
+     old 18px lockup read as a page title and crowded the centred mode switch;
+     the phone chip keeps its 14/22 step. */
+  const brandSize = Math.round((compact ? 14 : 15) * typeScale * 10) / 10;
+  const brandLine = Math.round((compact ? 22 : 22) * typeScale * 10) / 10;
+  const modelSize = Math.round(14 * typeScale * 10) / 10;
+  const modelLine = brandLine;
   const showSettings = compact && !model;
   return (
     <Pressable
@@ -128,7 +132,7 @@ export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded
         <View {...dataSet({ part: 'model-settings' })}><UiIcon name="sliders" size={18} color={colors.inkSecondary} /></View>
       ) : null}
       {compact ? null : (
-        <Text {...dataSet({ part: 'model-brand' })} numberOfLines={1} style={{ fontFamily, fontSize: size, lineHeight: line, fontWeight: '500', color: colors.ink }}>{brand}</Text>
+        <Text {...dataSet({ part: 'model-brand' })} numberOfLines={1} style={{ fontFamily, fontSize: brandSize, lineHeight: brandLine, fontWeight: '600', color: colors.ink }}>{brand}</Text>
       )}
       <Text
         nativeID="topModelSwitcherModel"
@@ -139,15 +143,15 @@ export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded
           flexShrink: 1,
           minWidth: 0,
           fontFamily,
-          fontSize: size,
-          lineHeight: line,
+          fontSize: modelSize,
+          lineHeight: modelLine,
           fontWeight: compact ? '500' : '400',
           color: compact ? colors.ink : colors.inkSecondary,
         }}
       >
         {model}
       </Text>
-      {showSettings || narrow ? null : <UiIcon name="chevron-down" size={compact ? 12 : 16} color={colors.inkTertiary} />}
+      {showSettings || narrow ? null : <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />}
     </Pressable>
   );
 }

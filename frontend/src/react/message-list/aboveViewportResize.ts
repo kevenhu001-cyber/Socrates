@@ -20,7 +20,8 @@
 import { useEffect, useLayoutEffect } from 'react';
 
 import { isSticky, scrollHost } from './messageScroll';
-import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { stateStore } from '../../state/store.ts';
+import { scrollOwnerOf, writeScrollTop } from '../../ui/scrollCoordinator.ts';
 
 interface Keeper {
   host: HTMLElement;
@@ -32,9 +33,14 @@ interface Keeper {
 let keeper: Keeper | null = null;
 
 function viewportOwnedElsewhere(host: HTMLElement): boolean {
-  return isSticky(host)
-    || host.dataset.turnAnchorSettling === 'true'
-    || host.dataset.turnViewportOwner === 'turn';
+  /* The send anchor owns the prompt's TOP OFFSET, not the height of the rows
+     inside the answer. While a turn is live a tool row, an expanded step or a
+     visualization lands above the reader's paragraph and grows that row; the
+     anchor never watches it, so without this compensation the paragraph under
+     the reader slides down on every such mount. Only the send glide
+     (`turnAnchorSettling`) owns the transcript outright — it is animating
+     scrollTop itself and a parallel write would fight it. */
+  return isSticky(host) || host.dataset.turnAnchorSettling === 'true';
 }
 
 function borderBoxHeight(entry: ResizeObserverEntry): number {
@@ -57,7 +63,10 @@ function onResize(entries: ResizeObserverEntry[]): void {
     if (entry.target.getBoundingClientRect().bottom <= hostTop + 1) delta += height - previous;
   }
   if (Math.abs(delta) < 0.5 || viewportOwnedElsewhere(host)) return;
-  writeScrollTop(host, host.scrollTop + delta, 'history');
+  /* `anchor`, not `history`: while a turn anchor holds the transcript a
+     history-priority write is rejected outright, which is how this
+     compensation silently stopped running during a live turn. */
+  writeScrollTop(host, host.scrollTop + delta, 'anchor');
 }
 
 function keeperFor(host: HTMLElement): Keeper | null {
@@ -92,12 +101,139 @@ function trackMountedRowHeights(): void {
 function stopTrackingRowHeights(): void {
   keeper?.observer.disconnect();
   keeper = null;
+  if (rememberFrame) cancelAnimationFrame(rememberFrame);
+  rememberFrame = 0;
+  readingAnchor = null;
+}
+
+/* ── Reading anchor ────────────────────────────────────────────────────────
+ * The resize observer above can only see elements that CHANGE HEIGHT. A tool
+ * row or a chart that MOUNTS between two paragraphs does not resize anything
+ * — it pushes every following block down — so during a live turn the
+ * paragraph under the reader slid away with no observed resize at all.
+ *
+ * This anchor remembers the block at the top of the viewport after each
+ * painted commit and restores its offset in the next commit's layout phase
+ * (before paint). The offset is measured against the scroller, so an ordinary
+ * scroll never looks like drift. Identity is the block's text prefix (prose
+ * only grows at its end), with its position as the fallback.
+ */
+interface ReadingAnchor {
+  host: HTMLElement;
+  clientId: string;
+  text: string;
+  index: number;
+  /** Block top minus the scroller's top, in px. Scroll-invariant. */
+  offset: number;
+}
+
+let readingAnchor: ReadingAnchor | null = null;
+let rememberFrame = 0;
+
+function escapeClientId(id: string): string {
+  return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+}
+
+function blockTextOf(element: Element): string {
+  return (element.textContent || '').trim().slice(0, 80);
+}
+
+function readerPinned(host: HTMLElement): boolean {
+  return isSticky(host)
+    || host.scrollHeight - host.scrollTop - host.clientHeight <= 2;
+}
+
+/**
+ * Only a reader who has expressed upward intent owns a fixed position. While
+ * the transcript is following the bottom, the send glide is animating, or the
+ * keyboard anchor is working, those motions own the scroll and a second
+ * correction would read as drift — the exact class of bug this module is
+ * meant to remove.
+ */
+function readerHoldsPosition(): boolean {
+  return stateStore.read('_userScrolledAway') === true;
+}
+
+function restoreReadingAnchor(): void {
+  const anchor = readingAnchor;
+  if (!anchor) return;
+  const host = scrollHost();
+  if (!host || host !== anchor.host) { readingAnchor = null; return; }
+  /* The send glide and the bottom follow own the transcript while they run.
+     A live claim (turn / retry / finish / keyboard / user) means an explicit
+     motion is animating scrollTop; this background correction must not fight
+     it or the glide collapses into a teleport. */
+  if (!readerHoldsPosition() || readerPinned(host)) return;
+  if (host.dataset.turnAnchorSettling === 'true') return;
+  const owner = scrollOwnerOf(host);
+  if (owner !== null && owner !== 'history' && owner !== 'anchor') return;
+  const row = host.querySelector<HTMLElement>(
+    '.msg[data-client-id="' + escapeClientId(anchor.clientId) + '"]',
+  );
+  if (!row) { readingAnchor = null; return; }
+  const blocks = row.querySelectorAll<HTMLElement>('.msg-body > *');
+  let block: HTMLElement | null = null;
+  if (anchor.text) {
+    for (let index = 0; index < blocks.length; index++) {
+      if (blockTextOf(blocks[index]) === anchor.text) { block = blocks[index]; break; }
+    }
+  }
+  if (!block) block = blocks[anchor.index] || null;
+  if (!block) return;
+  const offset = block.getBoundingClientRect().top - host.getBoundingClientRect().top;
+  const delta = offset - anchor.offset;
+  /* A huge delta means the identity guess matched the wrong block; leaving
+     the reader alone is better than teleporting the transcript. */
+  if (Math.abs(delta) <= 0.5 || Math.abs(delta) > 1600) return;
+  writeScrollTop(host, host.scrollTop + delta, 'anchor');
+}
+
+function rememberReadingAnchor(): void {
+  rememberFrame = 0;
+  const host = scrollHost();
+  if (!host || !readerHoldsPosition() || readerPinned(host)) { readingAnchor = null; return; }
+  const hostTop = host.getBoundingClientRect().top;
+  for (const row of Array.from(host.children)) {
+    if (!(row instanceof HTMLElement) || !row.classList.contains('msg')) continue;
+    const clientId = row.dataset.clientId;
+    if (!clientId) continue;
+    const blocks = row.querySelectorAll<HTMLElement>('.msg-body > *');
+    for (let index = 0; index < blocks.length; index++) {
+      const rect = blocks[index].getBoundingClientRect();
+      if (rect.height <= 0 || rect.bottom <= hostTop + 1) continue;
+      readingAnchor = { host, clientId, text: blockTextOf(blocks[index]), index, offset: rect.top - hostTop };
+      return;
+    }
+  }
+  readingAnchor = null;
+}
+
+function scheduleRememberAnchor(): void {
+  if (rememberFrame) return;
+  rememberFrame = requestAnimationFrame(rememberReadingAnchor);
+}
+
+function onReaderScroll(): void {
+  scheduleRememberAnchor();
 }
 
 /** Call in the transcript's mount hook, after the layout effect that
     corrects the scroll anchor: it runs on every commit and picks up the rows
     that commit mounted. */
 export function useAboveViewportResizeCompensation(): void {
-  useLayoutEffect(() => { trackMountedRowHeights(); });
-  useEffect(() => stopTrackingRowHeights, []);
+  useLayoutEffect(() => {
+    /* Before paint: keep the anchored block where the reader left it. After
+       paint: remember the block that is now at the top of the viewport. */
+    restoreReadingAnchor();
+    trackMountedRowHeights();
+    scheduleRememberAnchor();
+  });
+  useEffect(() => {
+    const host = scrollHost();
+    host?.addEventListener('scroll', onReaderScroll, { passive: true });
+    return () => {
+      host?.removeEventListener('scroll', onReaderScroll);
+      stopTrackingRowHeights();
+    };
+  }, []);
 }

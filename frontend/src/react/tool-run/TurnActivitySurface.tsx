@@ -154,10 +154,12 @@ function rowsFor(input: {
   intent: string;
   isLive: boolean;
   statusLabel?: string;
-  status?: LiveTurnStatus;
+  /** The active tool's name only — a live status object is rebuilt on every
+   *  parent render and would defeat the row memo. */
+  statusToolName?: string;
   readOnly?: boolean;
 }): ReactElement[] {
-  const { steps, calls, intent, isLive, statusLabel, status, readOnly } = input;
+  const { steps, calls, intent, isLive, statusLabel, statusToolName, readOnly } = input;
   const timeline = activityTimeline(steps, calls.map((call) => ({ id: call.id, startedAt: runStartedAt(call) || undefined, item: call })));
   const lastStep = steps[steps.length - 1];
   const rows: ReactElement[] = [];
@@ -184,7 +186,7 @@ function rowsFor(input: {
         testID="thinking-step"
         label={statusLabel || i18n('think.rn.runningNoTime', '正在处理…')}
         live
-        icon={status?.toolName ? <ToolActivityIcon name={status.toolName} /> : undefined}
+        icon={statusToolName ? <ToolActivityIcon name={statusToolName} /> : undefined}
       />,
     );
   }
@@ -219,18 +221,35 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const bodyId = useId();
   useLocaleRefresh();
 
-  const timelineSteps = publicSummariesOf(activities);
-  const steps = stepsWithFallback(timelineSteps, (props.publicSummary || '').trim());
-  const intent = props.intentSummary?.trim() || '';
+  /* The elapsed clock re-renders this component four times a second. The step
+     list, the intent and the rendered rows are derived only from props, so
+     they are cached: the ticking header stops rebuilding every tool row (and
+     with it reopening the detail bodies and re-measuring charts). */
+  const timelineSteps = useMemo(() => publicSummariesOf(activities), [activities]);
+  const steps = useMemo(
+    () => stepsWithFallback(timelineSteps, (props.publicSummary || '').trim()),
+    [timelineSteps, props.publicSummary],
+  );
+  const intent = useMemo(() => props.intentSummary?.trim() || '', [props.intentSummary]);
 
   const durationSec = useRunDuration(activities, calls, isLive, elapsedSec);
   const header = thinkingHeaderOf({ live: isLive, durationSec, toolCount: calls.length, statusLabel });
   const label = thinkingLabelOf(header, thinkingLabels());
   const durationLabel = header.durationSec === null ? undefined : tf('think.rn.elapsed', '{sec}秒', { sec: header.durationSec });
 
-  const rows = rowsFor({ steps, calls, intent, isLive, statusLabel, status, readOnly });
+  const statusToolName = status?.toolName;
+  const rows = useMemo(
+    () => rowsFor({ steps, calls, intent, isLive, statusLabel, statusToolName, readOnly }),
+    [steps, calls, intent, isLive, statusLabel, statusToolName, readOnly],
+  );
   const hasDetails = rows.length > 0 && Boolean(steps.length || intent || calls.length);
-  if (!hasDetails && !isLive) return null;
+  /* A settled turn keeps its one-line activity summary instead of vanishing.
+     Unmounting the row at finish removed its height from under the reader in
+     one frame — that is the page jumping when thinking ends. Only a turn with
+     nothing to report (no reasoning, no tools) omits the row entirely. */
+  const hasRecord = isLive || hasDetails
+    || Boolean(elapsedSec) || Boolean(props.publicSummary) || activities.length > 0;
+  if (!hasRecord) return null;
   const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
 
   return (

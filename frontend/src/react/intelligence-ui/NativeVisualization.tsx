@@ -28,6 +28,26 @@ export interface NativeVisualizationProps {
 
 const NO_SERVER_SPECS: Parameters<typeof matchServerVisualization>[0] = [];
 
+const FOCUSABLE = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/* A remount tears the card's DOM down; if the reader was tabbed into one of
+   its chrome controls, focus fell to <body> and the next Tab restarted at the
+   top of the page. Remember the control by position and put focus back once
+   the new card is ready — unless the reader already moved somewhere else. */
+function captureFocusIndex(root: HTMLElement): number {
+  const active = typeof document === 'undefined' ? null : document.activeElement;
+  if (!(active instanceof HTMLElement) || !root.contains(active)) return -1;
+  return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).indexOf(active);
+}
+
+function restoreFocusIndex(root: HTMLElement, index: number): void {
+  if (index < 0) return;
+  const active = typeof document === 'undefined' ? null : document.activeElement;
+  if (active && active !== document.body && !root.contains(active)) return;
+  const next = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE))[index];
+  if (next?.isConnected) next.focus({ preventScroll: true });
+}
+
 /** One lifecycle for native chart nodes and OpenUI visualizations. */
 export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER_SPECS, ...props }: NativeVisualizationProps & {
   streaming?: boolean;
@@ -40,7 +60,13 @@ export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER
     const id = useId();
     const [attempt, setAttempt] = useState(0);
     const [phase, setPhase] = useState<MountPhase>({ kind: 'loading' });
-    const propsKey = JSON.stringify({ version: 1, ...props });
+    /* The card re-renders on every transcript commit; serializing the whole
+       payload each time was pure main-thread work on a hot path. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the five props below are the whole payload
+    const propsKey = useMemo(
+      () => JSON.stringify({ version: 1, ...props }),
+      [props.template, props.title, props.payload, props.caption, props.accessibilitySummary],
+    );
     /* The server's normalized spec describes the program's INITIAL state.
        Once local controls change the props it no longer applies. */
     const initialKey = useRef<string | null>(null);
@@ -68,6 +94,7 @@ export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER
         return;
       }
       if (mounted.current?._visualizationUpdate?.(spec)) return;
+      const focusIndex = captureFocusIndex(container);
       const revision = ++generation.current;
       active.current?.abort();
       if (mounted.current) bridge.disposeVisualization?.(mounted.current);
@@ -88,6 +115,7 @@ export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER
         if (!card) throw new Error('renderer returned no card');
         mounted.current = card as MountedCard;
         setPhase({ kind: 'ready' });
+        restoreFocusIndex(container, focusIndex);
       }).catch((error: unknown) => {
         if (controller.signal.aborted || generation.current !== revision) return;
         reportSwallow(error, `visualization/${spec.template}/openui_mount_failure`, 'recoverable');
@@ -101,7 +129,7 @@ export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER
       mounted.current = null;
     }, []);
 
-    const spec = JSON.parse(specKey) as Record<string, unknown>;
+    const spec = useMemo(() => JSON.parse(specKey) as Record<string, unknown>, [specKey]);
     return (
       <div className="openui-visualization" data-openui-visualization={props.template} data-viz-phase={streaming ? 'receiving' : phase.kind}>
         {/* The skeleton holds the card's exact footprint from the first token

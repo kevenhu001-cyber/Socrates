@@ -47,7 +47,10 @@ test('Attachment chips React mode render files selected through the composer', a
 });
 
 test('Attachment chips remove through the React action', async ({ page }) => {
-  await mockAuthedApp(page);
+  /* This spec asserts the Chinese accessible name of the remove control, and
+     mockAuthedApp() pins the UI to English by default — declare the locale the
+     assertion is written for instead of relying on the app's shipped default. */
+  await mockAuthedApp(page, { lang: 'zh' });
   await mockProviderAndUpload(page, []);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');

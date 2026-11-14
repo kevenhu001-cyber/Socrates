@@ -2,6 +2,7 @@ import {renderGreeting} from './ui/greeting.js';
 import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
+import { publishLocale } from './i18n/localeRevision.ts';
 import { dispatchExam, examStore } from './store/index.ts';
 import { stateStore } from './state/store.ts';
 import { appMode, syncAppModeUI } from './config/providers.ts';
@@ -84,6 +85,9 @@ export function setLang(lang: string){
       document.dispatchEvent(new CustomEvent("socrates:langchange",{detail:{lang:lang}}));
     }
   }catch(e){reportSwallow(e, 'i18n.setLang.langChangeEvent'); }
+  /* React surfaces read this store, so already-rendered answers re-localize
+     their tool labels, captions and chart chrome without a reload. */
+  publishLocale(lang === "zh" ? "zh" : "en");
 }
 function translateTextNodes(){
   const els=document.querySelectorAll("[data-i18n-key]");

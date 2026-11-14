@@ -285,6 +285,18 @@ async function getUserStorageBytes(userId: string, tx?: unknown) {
  *     multer saves the file (multer can't pre-check quota), but we
  *     delete the on-disk file and roll back if the user is over.
  */
+/* MIME types with a text extractor in services/fileParsers. Kept local so an
+   upload never imports the parser graph; the background warm does. */
+const EXTRACTABLE_MIME = new RegExp('^(?:' + [
+  'application/pdf',
+  'application/vnd\\.openxmlformats-officedocument\\.[a-z.]+',
+  'application/vnd\\.ms-(?:excel|word)',
+  'application/msword',
+  'application/epub\\+zip',
+  'application/(?:rtf|vnd\\.oasis\\.opendocument\\.[a-z]+)',
+  'text/rtf',
+].join('|') + ')(?:;|$)', 'i');
+
 router.post('/', uploadLimiter, async (req, res, next) => {
   try {
     await ensureUploadDirectory();
@@ -375,6 +387,21 @@ router.post('/', uploadLimiter, async (req, res, next) => {
     if (!record) {
       await fs.unlink(uploadPath).catch(() => {});
       throw new PayloadTooLarge('Storage quota exceeded.');
+    }
+
+    /* Parse extractable documents in the background now, so the first
+       read_attachment in a chat turn finds the extraction cached instead of
+       paying for pdf.js/docx inside the turn. Images are skipped: their
+       description is a billed vision call and is only worth making when the
+       model actually asks about the image. */
+    if (EXTRACTABLE_MIME.test(String(record.mimeType || ''))) {
+      void import('../services/embeddings/attachmentReader.js')
+        .then(({ readAttachmentForUser }) => readAttachmentForUser({
+          fileId: record.id,
+          userId: req.userId!,
+          limit: 1,
+        }))
+        .catch(() => undefined);
     }
 
     return res.status(201).json({

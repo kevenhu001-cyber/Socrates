@@ -432,16 +432,37 @@
   border-radius: var(--ui-radius-pill);
   background: hsl(0 0% 100% / 0.3);
 }
+/* Progress is a transform, not a width: a width tween re-lays out the chip on
+   every uploaded chunk, and the chip sits above the composer input. */
 .composer-shell .attachment-chip-progress-fill {
   display: block;
   height: 100%;
-  width: 0;
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
   border-radius: inherit;
   background: var(--foreground);
-  transition: width 120ms linear;
+  transition: transform 140ms linear;
+}
+/* Exit beat: a chip leaving the strip fades and shrinks before it is removed,
+   instead of disappearing between two frames. */
+.composer-shell .attachment-chip.is-leaving {
+  opacity: 0;
+  transform: translateY(2px) scale(0.96);
+  pointer-events: none;
+}
+.composer-shell .attachment-chip.error {
+  box-shadow: inset 0 0 0 1px var(--destructive);
+}
+@keyframes attachment-thumb-in {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }
 .composer-shell .attachment-chip.is-image .attachment-chip-progress-fill {
   background: hsl(var(--always-white));
+}
+.composer-shell .attachment-chip-thumb {
+  animation: attachment-thumb-in var(--ui-duration-fast) var(--ui-ease-out) both;
 }
 .composer-shell .attachment-chip-pct {
   position: absolute;

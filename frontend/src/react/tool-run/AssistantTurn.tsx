@@ -19,6 +19,7 @@ import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
+import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
 import type { LegacyChatMessage } from '../types/domain';
 
@@ -54,17 +55,23 @@ function lastTextIndex(segments: TurnSegment[]): number {
   return -1;
 }
 
-function segmentKey(segment: TurnSegment, index: number): string {
+function segmentKey(segment: TurnSegment): string {
   // Text ranges never overlap, so the source offset alone names a prose run.
   // Folding in the array index re-keyed (and remounted, dropping the streamed
   // block DOM) every later prose run whenever a row or group was inserted
   // ahead of it, e.g. a deferred tool row mounting when the turn settles.
   if (segment.kind === 'text') return 'text-' + segment.start;
-  // Membership can expand before tool_use. Child outputs retain their own
-  // call IDs; the run host stays mounted when its first call changes.
-  if (segment.kind === 'group') return 'group-' + index;
+  /* A group is named by the first call it owns, not by its position: prose
+     inserted ahead of it (every streaming token can add a text range) shifts
+     the array index, and an index key would unmount the whole run — dropping
+     its open detail, its focus, and any visualization iframe inside it. */
+  if (segment.kind === 'group') {
+    const first = segment.calls?.[0] || segment.members[0];
+    return 'group-' + (first?.id || segment.category);
+  }
   if (segment.kind === 'tool') return 'tool-' + segment.call.id;
-  return 'think-' + index;
+  /* Think ranges never overlap, so their source offset is stable too. */
+  return 'think-' + segment.start;
 }
 
 function callsForMessage(message: LegacyChatMessage): ToolCallRecord[] {
@@ -144,7 +151,7 @@ function TurnSegmentsView({
     <>
       {segments.map((segment, index) => (
         <TurnSegmentContent
-          key={segmentKey(segment, index)}
+          key={segmentKey(segment)}
           segment={segment}
           turnRuntime={message.turnRuntime}
           index={index}
@@ -193,6 +200,9 @@ function settledProseFor(status: ReturnType<typeof deriveTurnPresentationState>[
 }
 
 export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
+  /* Tool rows, group labels and the activity caption are localized at render
+     time; a language switch must repaint the already-rendered answer too. */
+  useLocaleRefresh();
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   /* callsForMessage derives purely from the message snapshot: reconcile keeps
      unchanged rows at a stable identity and snapshots changed rows into fresh
@@ -223,6 +233,10 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const textIdx = lastTextIndex(segments);
   const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;
   const hasRunningRow = hasRunningToolRow(segments);
+  /* One stable array per layout: the activity strip memoizes its rows on this
+     identity, and a fresh array on every parent render would rebuild them all
+     (including every tool detail) on each streaming commit. */
+  const activityCalls = useMemo(() => activityCallsOf(segments), [segments]);
   /* The activity strip is mounted before the transcript so tool rows can
      remain in their sentence-safe position. Tell it when real answer prose
      has started, though, so the strip can become the small interleaved
@@ -247,7 +261,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
           answerStarted={hasAnswerProse}
-          calls={activityCallsOf(segments)}
+          calls={activityCalls}
           messageId={messageId}
           readOnly={readOnly}
         />

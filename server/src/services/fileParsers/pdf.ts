@@ -40,6 +40,13 @@ type PdfParseFn = (data: Buffer, opts?: Record<string, unknown>) => Promise<{
    text layer (page numbers and stray headers survive scanning tools). */
 const MIN_CHARS_PER_TEXT_PAGE = 20;
 
+/* A very long PDF used to parse every page before the first read_attachment
+   could answer. Pages past this cap keep their marker but are not extracted;
+   the meta records the omission so the model knows the document is partial. */
+const PDF_MAX_PAGES = 300;
+/* A malformed or enormous document must not hold a chat turn open. */
+const PDF_PARSE_TIMEOUT_MS = 60_000;
+
 const CJK = /[\u2e80-\u9fff\uac00-\ud7af\uf900-\ufaff\uff00-\uffef]/;
 
 function renderItems(items: PdfTextItem[]): string {
@@ -95,6 +102,10 @@ export async function extract(filepath: string) {
   const pagerender = async (page: PdfPage) => {
     const index = typeof page.pageIndex === 'number' ? page.pageIndex : rendered;
     rendered++;
+    if (index >= PDF_MAX_PAGES) {
+      pageTexts[index] = '';
+      return '';
+    }
     const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false });
     const text = renderItems(content.items || []);
     pageTexts[index] = text;
@@ -102,8 +113,18 @@ export async function extract(filepath: string) {
   };
 
   let result;
+  let timer: ReturnType<typeof setTimeout> | null = null;
   try {
-    result = await pdfParse(data, { pagerender });
+    result = await Promise.race([
+      pdfParse(data, { pagerender }),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(parseError('PARSE_FAILED',
+            `pdf_timeout: the document took longer than ${PDF_PARSE_TIMEOUT_MS / 1000}s to parse.`)),
+          PDF_PARSE_TIMEOUT_MS,
+        );
+      }),
+    ]);
   } catch (e) {
     const err = e as { name?: string; message?: string };
     if (err?.name === 'PasswordException' || /password/i.test(String(err?.message || ''))) {
@@ -111,6 +132,8 @@ export async function extract(filepath: string) {
         'pdf_encrypted: this PDF is password-protected. Remove the password (or print it to a new PDF) and upload it again.');
     }
     throw parseError('PARSE_FAILED', 'pdf_parse_failed: ' + (err?.message || String(e)));
+  } finally {
+    if (timer !== null) clearTimeout(timer);
   }
 
   const pageCount = Number(result?.numpages) || pageTexts.length;
@@ -132,6 +155,10 @@ export async function extract(filepath: string) {
   const title = typeof info.Title === 'string' ? info.Title.trim() : '';
 
   const meta: Record<string, unknown> = { pageCount };
+  if (pageCount > PDF_MAX_PAGES) {
+    meta.pagesParsed = PDF_MAX_PAGES;
+    meta.omittedPages = pageCount - PDF_MAX_PAGES;
+  }
   if (title) meta.title = title;
   if (scanned) {
     meta.scanned = true;

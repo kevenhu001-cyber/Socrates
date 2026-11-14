@@ -17,6 +17,9 @@ function i18n(key: string, fallback: string): string {
 }
 
 const SPINNER_HTML = '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
+/* Long enough for the exit transition in parity/composer-unified.css, short
+   enough that removing a chip still feels immediate. */
+const CHIP_EXIT_MS = 140;
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
 const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
 
@@ -174,12 +177,12 @@ function AttachmentChipProgress({ entry, progress, isImage }: {
         <span className="attachment-chip-pct" aria-hidden="true">{`${Math.round(progress)}%`}</span>
       ) : null}
       <span className="attachment-chip-progress" {...pendingProgressbarProps(entry, progress, pendingProgressLabel(entry, progress))}>
-        <span className="attachment-chip-progress-fill" style={{ width: `${progress}%` }} />
+        <span className="attachment-chip-progress-fill" style={{ transform: `scaleX(${progress / 100})` }} />
       </span>
     </>
   );
 }
-function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps) {
+function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps & { onRemove: (id: string) => void }) {
   return (
     <>
       {entry.error && !entry.pending ? (
@@ -205,6 +208,14 @@ function AttachmentChipActions({ entry, onRemove, onRetry }: AttachmentChipProps
 }
 
 export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
+  const [leaving, setLeaving] = useState(false);
+  /* Wait for the exit transition before the store drops the entry; removal
+     used to cut straight from the strip, which read as a glitch. */
+  const removeWithExit = (id: string) => {
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => onRemove(id), CHIP_EXIT_MS);
+  };
   /* P_perf-blob-url — the browser lazily decodes only what the tile needs.
      After upload, the durable raw URL and then inline dataUrl take over. */
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
@@ -218,7 +229,7 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
 
   return (
     <div
-      className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
+      className={`attachment-chip${isImage ? ' is-image' : ''}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}${leaving ? ' is-leaving' : ''}`}
       data-id={entry.id}
       title={entry.error || entry.name || undefined}
       aria-label={isImage ? `${entry.name ?? 'Image'} — ${attachmentMeta(entry)}` : undefined}
@@ -234,7 +245,7 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
 
       <AttachmentChipProgress entry={entry} progress={progress} isImage={isImage} />
 
-      <AttachmentChipActions entry={entry} onRemove={onRemove} onRetry={onRetry} />
+      <AttachmentChipActions entry={entry} onRemove={removeWithExit} onRetry={onRetry} />
     </div>
   );
 }

@@ -32,7 +32,6 @@
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createElement, ReactNode } from 'react';
-import { flushSync } from 'react-dom';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
 import { VizCardControls, VizErrorActions } from '../react/visualization/VizCardControls.tsx';
 import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.ts';
@@ -118,7 +117,10 @@ function mountVizReactSurface(host: HTMLElement | null, label: string, content: 
     root = mountOwnedRoot(host, 'viz-' + label, content);
     _vizReactRoots.set(host, root);
   }
-  flushSync(function () { root.render(content); });
+  /* Not flushSync: this runs after every post-render pass, and forcing a
+     synchronous React commit per card stalled the frame that also mounts the
+     message row. The chrome paints on the next render either way. */
+  root.render(content);
   return root;
 }
 

@@ -16,6 +16,11 @@ export type ScrollOwner =
   | 'finish'
   | 'retry'
   | 'turn'
+  /** Keeping the reader's own paragraph still while layout changes above it.
+   *  It must outrank the turn/finish owners: those correct the prompt or the
+   *  answer row, and a lower priority made every reading-position write a
+   *  silent no-op while a send anchor was held. */
+  | 'anchor'
   | 'user';
 
 interface ScrollClaim {
@@ -31,6 +36,7 @@ const PRIORITY: Record<ScrollOwner, number> = {
   finish: 40,
   retry: 50,
   turn: 60,
+  anchor: 70,
   user: 100,
 };
 
@@ -53,6 +59,12 @@ export function beginScrollOwner(
   const token = ++nextToken;
   claims.set(list, { owner, priority, token });
   return token;
+}
+
+/** Which motion currently owns the list, if any. */
+export function scrollOwnerOf(list: HTMLElement | null): ScrollOwner | null {
+  if (!list) return null;
+  return claims.get(list)?.owner ?? null;
 }
 
 /** Release only the claim created by this particular motion. */
