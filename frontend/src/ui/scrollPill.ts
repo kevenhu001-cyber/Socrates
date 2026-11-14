@@ -130,14 +130,26 @@ export function wireScrollPill(){
      A real upward move that still sits below the new maximum is intent,
      and falls through to the ordinary sampler. */
   function sampleThroughLayoutClamp(sc: HTMLElement): boolean {
+    const previousHeight = lastScrollHeight;
+    const previousTop = lastScrollTop;
     const layoutChanged = sc.scrollHeight !== lastScrollHeight || sc.clientHeight !== lastClientHeight;
     lastScrollHeight = sc.scrollHeight;
     lastClientHeight = sc.clientHeight;
     if(!layoutChanged) return false;
     const maxTop = Math.max(0, sc.scrollHeight - sc.clientHeight);
     const clamped = sc.scrollTop >= maxTop - 1;
-    const movedDown = lastScroller === sc && lastScrollTop != null && sc.scrollTop > lastScrollTop + 1;
-    if(!clamped && !movedDown) return false;
+    const movedDown = lastScroller === sc && previousTop != null && sc.scrollTop > previousTop + 1;
+    /* A transcript that SHRANK above the reader (the send anchor retiring
+       its reserve, a tool card collapsing, a remount dropping its guess)
+       pulls scrollTop up by up to the removed height with no gesture. That
+       is the same clamp as a grow-to-max move, just in the other direction:
+       treat a drop no larger than the shrink as layout, not as reading
+       intent. Without this, the first settle after send marked a pinned
+       reader as "scrolled away" and every later delta stopped following. */
+    const shrank = previousHeight - sc.scrollHeight;
+    const topDrop = previousTop != null ? previousTop - sc.scrollTop : 0;
+    const shrinkClamp = shrank > 1 && topDrop > 0 && topDrop <= shrank + 12;
+    if(!clamped && !movedDown && !shrinkClamp) return false;
     lastScroller = sc;
     lastScrollTop = sc.scrollTop;
     return true;

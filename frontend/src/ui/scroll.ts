@@ -207,7 +207,8 @@ function startScroll(list: HTMLElement, targetTop: number, options: ScrollOption
      send looked like a jump even though a glide was planned. Measure the
      target that will actually be used, and drop a zero-duration plan when
      the distance no longer justifies it (the velocity planner animates). */
-  const liveDistance=liveTarget?Math.abs(resolveTarget()-startTop):absDistance;
+  const liveResolved=liveTarget?resolveTarget():null;
+  const liveDistance=liveTarget?Math.abs((liveResolved as number)-startTop):absDistance;
   const usablePlan=injectedPlan&&injectedPlan.duration>0?injectedPlan:null;
   const snap=shouldSnapScroll(options,reduced,liveDistance,usablePlan);
   if (snap) {

@@ -647,6 +647,7 @@ function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
     const live = promptNode.getBoundingClientRect().top - list.getBoundingClientRect().top;
     return Math.max(0, list.scrollTop + live - targetOffset);
   };
+  suppressScrollPositionIntent(200);
   writeScrollTop(list, promptTarget(), 'retry');
   const settleRetryAnchor = (attempt: number): void => {
     const current = context.row();
@@ -657,7 +658,10 @@ function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
     if (Math.abs(delta) > 1) {
       const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
       const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-      if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'retry');
+      if (Math.abs(nextTop - list.scrollTop) > 0.5) {
+        suppressScrollPositionIntent(200);
+        writeScrollTop(list, nextTop, 'retry');
+      }
     }
     if (attempt < 2) {
       requestAnimationFrame(() => settleRetryAnchor(attempt + 1));
@@ -708,7 +712,14 @@ function settleNormalTurnAnchor(
   if (Math.abs(delta) > 1) {
     const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
     const nextTop = Math.max(0, Math.min(maxScroll, list.scrollTop + delta));
-    if (Math.abs(nextTop - list.scrollTop) > 0.5) writeScrollTop(list, nextTop, 'turn');
+    if (Math.abs(nextTop - list.scrollTop) > 0.5) {
+      /* This is layout alignment, not a reader gesture: without the guard
+         the resulting scroll event looked like an upward drag and flipped
+         `_userScrolledAway`, which stopped the pinned follow for the rest
+         of the answer. */
+      suppressScrollPositionIntent(200);
+      writeScrollTop(list, nextTop, 'turn');
+    }
   }
   if (Date.now() < deadline) {
     requestAnimationFrame(() => settleNormalTurnAnchor(list, assistant, row, targetOffset, deadline, onDone));
@@ -890,7 +901,10 @@ export function scheduleActiveTurnToTop(
     );
     stampTurnAnchor(anchorContext, 'turn', reserve, targetOffset);
     if (!hasTurnAnchorReserve(row)) return;
-    markTurnViewportOwner(list);
+    /* Ownership stays `turnAnchorSettling` until the glide lands. Writing
+       `turnViewportOwner` here made ui/scroll.ts abort the glide on its
+       first frame, so the send teleported to the slot; the hold claims the
+       owner when it starts aligning. */
     /* Read layout once. Both rects land in the same flush and reusing
        `anchorInList` below skips a separate `offsetTop` read, which
        would otherwise force a second layout flush in this rAF body. */

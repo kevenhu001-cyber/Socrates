@@ -57,6 +57,13 @@ function onResize(entries: ResizeObserverEntry[]): void {
     if (entry.target.getBoundingClientRect().bottom <= hostTop + 1) delta += height - previous;
   }
   if (Math.abs(delta) < 0.5 || viewportOwnedElsewhere(host)) return;
+  /* A reader already at the bottom is followed by the content-follow path.
+     The browser also clamps their scrollTop to the new maximum in the same
+     layout pass; adding this delta again moved them up by the shrink a
+     second time (the send reserve retiring two 184px rows left a pinned
+     reader 368px behind). Let the clamp stand and let follow own the tail. */
+  const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+  if (host.scrollTop >= maxTop - 1) return;
   writeScrollTop(host, host.scrollTop + delta, 'history');
 }
 
