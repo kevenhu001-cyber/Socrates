@@ -1,6 +1,7 @@
 import { Button as UiButton } from '../ui/Button';
 import { useState } from 'react';
 
+import { FileCard } from './FileCard';
 import { getAttachmentIcon } from './fileIcons';
 import { t as translate } from '../legacy/gateway.ts';
 import type { AttachmentEntry } from '../../ui/attachmentsState.ts';
@@ -200,20 +201,40 @@ function AttachmentChipActions({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
-  /* P_perf-blob-url — the browser lazily decodes only what the tile needs.
-     After upload, the durable raw URL and then inline dataUrl take over. */
+function DocumentAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
+  const [leaving, setLeaving] = useState(false);
+  const canRetry = Boolean(entry.error) && !entry.pending;
+  const status: 'uploading' | 'done' | 'error' = entry.pending ? 'uploading' : entry.error ? 'error' : 'done';
+  const subCaption = entry.pending ? attachmentMeta(entry) : entry.error ? displayError(entry) : fileSubCaption(entry);
+
+  const removeWithExit = () => {
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => onRemove(entry.id), CHIP_EXIT_MS);
+  };
+
+  return (
+    <FileCard
+      name={truncateName(entry.name ?? 'file')}
+      size={entry.size}
+      status={status}
+      error={entry.error ? displayError(entry) : undefined}
+      subCaption={subCaption}
+      onRetry={canRetry ? () => onRetry(entry.id) : undefined}
+      onRemove={removeWithExit}
+      className={leaving ? 'is-leaving' : ''}
+    />
+  );
+}
+
+function ImageAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
-  /* Try blob thumbnail → durable raw file → inline dataUrl; blacklist a
-     failed source so the next candidate can take over. */
   const [badSources, setBadSources] = useState<string[]>([]);
   const imageSrc = [entry.thumbnailUrl, fileUrl, entry.dataUrl]
     .find((source) => !!source && !badSources.includes(source));
-  const isImage = entry.kind === 'image';
   const canRetry = Boolean(entry.error) && !entry.pending;
   const [leaving, setLeaving] = useState(false);
-  /* Wait for the exit transition before the store drops the entry; removal
-     used to cut straight from the strip, which read as a glitch. */
+
   const removeWithExit = () => {
     if (leaving) return;
     setLeaving(true);
@@ -222,17 +243,17 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
 
   return (
     <div
-      className={`attachment-chip ${isImage ? 'is-image' : 'is-file'}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}${leaving ? ' is-leaving' : ''}`}
+      className={`attachment-chip is-image${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}${leaving ? ' is-leaving' : ''}`}
       data-id={entry.id}
       data-stage={entry.pending ? (entry.stage || 'uploading') : entry.error ? 'error' : 'ready'}
       title={entry.error ? displayError(entry) : entry.name || undefined}
-      aria-label={isImage ? `${entry.name ?? 'Image'} — ${attachmentMeta(entry)}` : undefined}
+      aria-label={`${entry.name ?? 'Image'} — ${attachmentMeta(entry)}`}
       aria-busy={entry.pending ? true : undefined}
     >
       <AttachmentChipVisual
         entry={entry}
         imageSrc={imageSrc}
-        isImage={isImage}
+        isImage
         canRetry={canRetry}
         onImageError={() => setBadSources((sources) => [...sources, imageSrc ?? ''])}
       />
@@ -246,20 +267,18 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
           onClick={() => onRetry(entry.id)}
         >
           <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: RETRY_ICON }} />
-          {isImage ? <span className="attachment-chip-failed-reason">{displayError(entry)}</span> : null}
+          <span className="attachment-chip-failed-reason">{displayError(entry)}</span>
         </UiButton>
       ) : null}
-
-      {isImage ? null : (
-        <span className="attachment-chip-info">
-          <span className="attachment-chip-name">{truncateName(entry.name ?? 'file')}</span>
-          <span className="attachment-chip-meta">
-            {entry.pending ? attachmentMeta(entry) : entry.error ? displayError(entry) : fileSubCaption(entry)}
-          </span>
-        </span>
-      )}
 
       <AttachmentChipActions onRemove={removeWithExit} />
     </div>
   );
+}
+
+export function AttachmentChip(props: AttachmentChipProps) {
+  if (props.entry.kind === 'image') {
+    return <ImageAttachmentChip {...props} />;
+  }
+  return <DocumentAttachmentChip {...props} />;
 }

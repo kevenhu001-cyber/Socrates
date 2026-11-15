@@ -1,49 +1,60 @@
 import { useState } from 'react';
-
-import { getAttachmentIcon, type IconSource } from '../attachments/fileIcons';
+import { FileCard, getFileExtension, formatFileSize } from '../attachments/FileCard';
 import { t } from '../legacy/gateway.ts';
 import type { LegacyChatMessage } from '../types/domain';
 
 type MessageAttachment = NonNullable<LegacyChatMessage['attachments']>[number];
 
-function MessageAttachmentThumb({
+function MessageImageAttachment({
   attachment,
   fileUrl,
-  isImage,
 }: {
   attachment: MessageAttachment;
   fileUrl?: string;
-  isImage: boolean;
 }) {
-  /* dataUrl first (works when the file row is gone), then the durable raw URL.
-     A failed source falls back to the kind icon tile rather than leaving a
-     broken-image glyph inside history bubbles. */
-  const [badSrc, setBadSrc] = useState<string | null>(null);
-  const imgSrc = [attachment.dataUrl, isImage ? fileUrl : undefined]
-    .filter((source): source is string => !!source && source !== badSrc)[0];
-  if (!imgSrc) {
-    const iconSource: IconSource = {
-      kind: attachment.kind || '',
-      docKind: attachment.docKind,
-      mime: attachment.mime,
-      name: attachment.name || '',
-    };
+  const [loadError, setLoadError] = useState(false);
+  const imgSrc = attachment.dataUrl || fileUrl;
+  const name = attachment.name || 'image';
+
+  if (!imgSrc || loadError) {
+    const ext = getFileExtension(name) || 'PNG';
     return (
-      <span
-        className="attachment-chip-icon"
-        aria-hidden="true"
-        dangerouslySetInnerHTML={{ __html: getAttachmentIcon(iconSource) }}
+      <FileCard
+        name={name}
+        size={attachment.size}
+        subCaption={ext}
+        href={fileUrl}
+        className="msg-attachment-card"
       />
     );
   }
-  return (
-    <img
-      className="attachment-chip-thumb"
-      src={imgSrc}
-      alt=""
-      onError={() => setBadSrc(imgSrc)}
-    />
+
+  const imageElem = (
+    <div className="msg-attachment-image-card" title={name}>
+      <img
+        className="msg-attachment-img"
+        src={imgSrc}
+        alt={name}
+        onError={() => setLoadError(true)}
+      />
+    </div>
   );
+
+  if (fileUrl) {
+    return (
+      <a
+        className="msg-attachment-image-link"
+        href={fileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={name}
+      >
+        {imageElem}
+      </a>
+    );
+  }
+
+  return imageElem;
 }
 
 export function MessageAttachments({ attachments }: { attachments: readonly MessageAttachment[] }) {
@@ -55,38 +66,41 @@ export function MessageAttachments({ attachments }: { attachments: readonly Mess
         const key = `${attachment.id ?? attachment.name ?? 'attachment'}-${index}`;
         const isImage = attachment.kind === 'image'
           || Boolean(attachment.dataUrl?.startsWith('data:image/'));
-        /* Legacy Office rows carry metadata only (no extractor) — hover
-           explains why the model can't quote them. */
+
+        const fileUrl = attachment.fileId
+          ? `/api/v2/files/${attachment.fileId}/raw`
+          : undefined;
+
+        if (isImage) {
+          return (
+            <MessageImageAttachment
+              key={key}
+              attachment={attachment}
+              fileUrl={fileUrl}
+            />
+          );
+        }
+
         const legacyKind = String(attachment.docKind || '').toLowerCase();
         const legacyNotice = ['ppt'].includes(legacyKind)
           ? (t('chat.attach.metadataOnly') !== 'chat.attach.metadataOnly'
             ? String(t('chat.attach.metadataOnly'))
-            : 'metadata only — convert to DOCX/XLSX/PPTX or PDF to make it readable')
+            : 'metadata only — convert to DOCX/XLSX/PPTX or PDF')
           : undefined;
-        const fileUrl = attachment.fileId
-          ? `/api/v2/files/${attachment.fileId}/raw`
-          : undefined;
-        const inner = (
-          <>
-            <MessageAttachmentThumb attachment={attachment} fileUrl={fileUrl} isImage={isImage} />
-            <span className="attachment-chip-name">{attachment.name ?? 'file'}</span>
-          </>
-        );
-        return fileUrl ? (
-          <a
-            className="attachment-chip attachment-chip-link"
+
+        const ext = getFileExtension(attachment.name || attachment.docKind || '');
+        const size = formatFileSize(attachment.size);
+        const subCaption = legacyNotice || [ext, size].filter(Boolean).join(' · ') || ext;
+
+        return (
+          <FileCard
             key={key}
+            name={attachment.name ?? 'file'}
+            size={attachment.size}
+            subCaption={subCaption}
             href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={legacyNotice || (attachment.name ?? undefined)}
-          >
-            {inner}
-          </a>
-        ) : (
-          <span className="attachment-chip" key={key} title={legacyNotice}>
-            {inner}
-          </span>
+            className="msg-attachment-card"
+          />
         );
       })}
     </div>
