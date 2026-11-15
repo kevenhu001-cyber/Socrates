@@ -196,29 +196,21 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
       bottomRadius: style.borderBottomLeftRadius,
     };
   });
-  // Phones present the menu as a bottom sheet: full width, pinned to the
-  // viewport edge, rounded on the top corners. (The bottom corners sit below
-  // the viewport edge, so only the top radius is visible.)
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('20px');
-  // Wait for the entrance animation to settle before measuring geometry.
+  expect(mobileMenuStyle.radius).toBe('12px');
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
-  expect(sheetBox).not.toBeNull();
-  // Sheet geometry at the 390px reference width: flush with both edges and
-  // the bottom of the viewport, tall enough to show most of the list.
-  expect(sheetBox.x).toBeGreaterThanOrEqual(-1);
-  expect(sheetBox.x).toBeLessThanOrEqual(1);
-  expect(sheetBox.width).toBeGreaterThanOrEqual(389);
-  expect(sheetBox.width).toBeLessThanOrEqual(390);
-  expect(Math.abs(sheetBox.y + sheetBox.height - 844)).toBeLessThanOrEqual(1);
-  expect(sheetBox.height).toBeLessThanOrEqual(844 * 0.78 + 1);
-  // The open-state class still owns dismissal state, and the sheet dims the
-  // page behind itself so the tap-outside target is visible.
+  const frameBox = await page.locator('[data-composer-frame]').boundingBox();
+  const triggerBox = await plus.boundingBox();
+  // The phone popover shares the input frame's width and leaves its rail
+  // visible so the same plus button can dismiss it.
+  expect(Math.abs(sheetBox.x - frameBox.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(sheetBox.width - frameBox.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(sheetBox.y + sheetBox.height - (triggerBox.y - 8))).toBeLessThanOrEqual(1);
+  expect(sheetBox.y).toBeGreaterThanOrEqual(15);
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
-  expect(await page.locator('body').evaluate((element) => getComputedStyle(element, '::after').display)).toBe('block');
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',
     fullPage: true,
@@ -404,4 +396,22 @@ test('a pending plugin retry survives closing and reopening the tools menu', asy
   } finally {
     releaseRetry();
   }
+});
+
+test('compact menu supports keyboard navigation and returns focus on Escape', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  const trigger = page.locator('#composerToolsBtn');
+  await trigger.click();
+  const rows = page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]');
+  await page.keyboard.press('ArrowDown');
+  await expect(rows.first()).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(rows.nth(1)).toBeFocused();
+  await page.keyboard.press('Home');
+  await expect(rows.first()).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#composerToolsMenu')).toBeHidden();
+  await expect(trigger).toBeFocused();
 });

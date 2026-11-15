@@ -5,6 +5,7 @@ import { cpSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'no
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 import { join, resolve } from 'node:path';
 import { createEntryGraphPlugin } from './scripts/entry-graph.mjs';
+import { createRetryDynamicImportsPlugin } from './scripts/retry-dynamic-imports.mjs';
 
 function getBuildId() {
   const configured = process.env.SOCRATES_BUILD_ID || process.env.GITHUB_SHA;
@@ -586,6 +587,14 @@ export default defineConfig({
           } }],
         },
         entryFileNames: 'assets/[name]-[hash].js',
+        // nginx's default MIME table serves .mjs as octet-stream. Module
+        // workers enforce JavaScript MIME even for pdf.js's fake fallback.
+        // Keep the content hash, but publish imported module assets as .js.
+        assetFileNames(asset) {
+          return asset.names.some((name) => name.endsWith('.mjs'))
+            ? 'assets/[name]-[hash].js'
+            : 'assets/[name]-[hash][extname]';
+        },
         chunkFileNames(chunkInfo) {
           if (chunkInfo.name && chunkInfo.name.startsWith('vendor-')) {
             return 'assets/[name]-[hash].js';
@@ -623,6 +632,7 @@ export default defineConfig({
     createPdfjsRuntimeAssetsPlugin(),
     createPrecompressedAssetsPlugin(),
     createEntryGraphPlugin(),
+    createRetryDynamicImportsPlugin(),
   ],
   server: {
     fs: {

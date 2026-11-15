@@ -279,22 +279,6 @@ body,
 /* Plus menu: built-in actions remain intact, real connectors occupy a calm
    directory section underneath them. */
 
-#composerToolsMenu {
-  /* Width and max-height stay non-important on purpose: the positioning
-     script sizes the card per trigger (composer-aligned width, room-to-
-     viewport-bottom height) via inline styles, which must win. The #id
-     selector still beats the base class rules in styles.css. The 50vh cap
-     keeps the expanded card inside the viewport's lower half. */
-  width: min(620px, calc(100vw - 32px));
-  max-height: min(50vh, 620px);
-  overflow-y: auto;
-  border: 1px solid var(--cg-border-strong) !important;
-  border-radius: var(--ui-radius-xl) !important;
-  background: var(--cg-surface) !important;
-  box-shadow: var(--ui-shadow-dialog) !important;
-  color: var(--cg-text);
-}
-
 #composerToolsMenu .composer-tools-item{
   color: var(--cg-text-secondary);
 }

@@ -98,14 +98,9 @@
      marketing site; dialogs keep the larger 24px sheet corner. */
   --ui-radius-popover: var(--ui-radius-lg);
   --ui-radius-dialog: var(--ui-radius-2xl);
-  /* The composer tools popup is the one floating surface whose pixels are
-     committed to the repository: e2e/composer-tools-visual-baseline.spec.mjs
-     snapshots it on Linux (8 PNGs under its -snapshots folder) and compares
-     them at maxDiffPixelRatio 0.003. Its card therefore stays on the 16px
-     step and its rows on 10px while the shared popover / control rungs
-     widened. Re-render those baselines on Linux to move these two steps. */
-  --ui-radius-tools-card: 16px;
-  --ui-radius-tools-row: 10px;
+  /* Chat Demo menu geometry; covered by composer-tools visual snapshots. */
+  --ui-radius-tools-card: 12px;
+  --ui-radius-tools-row: 8px;
 
   /* Controls and responsive shell. Lobe's 28/36/40 ladder is available as
      foundation metrics. Socrates retains its product density and the 44px

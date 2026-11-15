@@ -2,19 +2,19 @@
   "totals": {
     "live": {
       "important": 14,
-      "hexColor": 32,
-      "literalRadius": 1,
+      "hexColor": 31,
+      "literalRadius": 0,
       "stackedId": 32,
       "literalFontSize": 50,
       "legacyChannel": 1,
-      "shadcnVarReads": 664
+      "shadcnVarReads": 655
     },
     "frozen": {
-      "important": 409,
+      "important": 389,
       "hexColor": 39,
-      "literalRadius": 169,
+      "literalRadius": 166,
       "stackedId": 41,
-      "literalFontSize": 339,
+      "literalFontSize": 337,
       "legacyChannel": 769,
       "shadcnVarReads": 123
     }

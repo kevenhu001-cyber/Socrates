@@ -49,7 +49,7 @@ export function ComposerToolMenuItems({
 
   return (
     <>
-      <div className="composer-tools-desktop-items composer-tools-expanded">
+      <div className="composer-tools-desktop-items">
         {groups.map((group) => group.tools.length ? (
           <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
             <div className="composer-tools-group-label">{group.label}</div>

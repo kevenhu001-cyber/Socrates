@@ -92,6 +92,6 @@ export function useComposerController(
       isVisible() {
         return editor.view.dom.closest('.hidden') === null && editor.view.dom.getClientRects().length > 0;
       },
-    });
+    }, editor);
   }, [editor, getExtensionToken, getMarkdown, setExtensionToken, surface]);
 }

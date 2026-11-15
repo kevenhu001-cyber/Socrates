@@ -33,11 +33,14 @@ export function showMountRecovery(
     retry();
   };
   button.addEventListener('click', onRetry);
+  const view = doc.defaultView;
+  view?.addEventListener('online', onRetry);
   notice.append(status, button);
   // Preserve any legacy content and draft nodes; remove only our own notice.
   host.appendChild(notice);
   return () => {
     button.removeEventListener('click', onRetry);
+    view?.removeEventListener('online', onRetry);
     notice.remove();
   };
 }

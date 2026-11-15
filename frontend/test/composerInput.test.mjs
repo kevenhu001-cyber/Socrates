@@ -129,3 +129,37 @@ test('composer controller serves one live handle with per-surface drafts and tok
   assert.equal(getComposerHandle('topic'), null);
   resetComposerControllerState();
 });
+
+test('replacement editors restore drafts while surface re-registration preserves live editor state', () => {
+  resetComposerControllerState();
+  setComposerMarkdown('topic', 'Saved before editor loaded');
+  let value = '';
+  let token = null;
+  let restores = 0;
+  const handle = () => ({
+    getMarkdown: () => value,
+    setMarkdown: (next) => { value = next; restores++; },
+    insertText: (next) => { value += next; },
+    clear: () => { value = ''; },
+    setExtensionToken: (next) => { token = next; },
+    getExtensionToken: () => token,
+    focus: () => {},
+    getSelection: () => ({ from: 0, to: 0 }),
+    isVisible: () => true,
+  });
+  const identity = {};
+  const release = registerComposer('topic', handle(), identity);
+  assert.equal(value, 'Saved before editor loaded');
+  setComposerMarkdown('topic', 'Typed during recovery');
+  const writes = restores;
+  release();
+  const releaseSameEditor = registerComposer('topic', handle(), identity);
+  assert.equal(restores, writes, 'the same editor is not reinitialized by surface effects');
+  releaseSameEditor();
+  value = '';
+  const releaseReplacement = registerComposer('topic', handle(), {});
+  assert.equal(value, 'Typed during recovery');
+  assert.equal(restores, writes + 1);
+  releaseReplacement();
+  resetComposerControllerState();
+});

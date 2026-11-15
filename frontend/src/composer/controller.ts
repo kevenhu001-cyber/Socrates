@@ -33,7 +33,7 @@ type Listener = (surface: ComposerSurface, value: string) => void;
    and a typed store holds each surface's independent markdown/token state. */
 let currentHandle: ComposerHandle | null = null;
 const listeners = new Set<Listener>();
-let appliedInitialDraft = false;
+let initializedEditor: object | null = null;
 let surfaceTransitionInProgress = false;
 
 function activeSurface(): ComposerSurface {
@@ -48,10 +48,13 @@ function activeToken(surface: ComposerSurface): ComposerExtensionToken | null {
   return composerLifecycleStore.getState().extensionTokens[surface];
 }
 
-export function registerComposer(surface: ComposerSurface, handle: ComposerHandle): () => void {
+export function registerComposer(surface: ComposerSurface, handle: ComposerHandle, identity: object = handle): () => void {
   currentHandle = handle;
-  if (!appliedInitialDraft) {
-    appliedInitialDraft = true;
+  // Restore when the editor instance changes, including recovery textarea →
+  // rich editor. Surface effects re-register the same editor without replaying
+  // Markdown updates that would strip its live extension token.
+  if (initializedEditor !== identity) {
+    initializedEditor = identity;
     const state = composerLifecycleStore.getState();
     try { handle.setMarkdown(state.drafts[state.surface]); }
     catch (error) { reportSwallow(error, 'controller.registerComposer.setMarkdown'); }
@@ -201,7 +204,7 @@ export function activateComposerSurface(surface: ComposerSurface, doc?: Document
 
 export function resetComposerControllerState(): void {
   currentHandle = null;
-  appliedInitialDraft = false;
+  initializedEditor = null;
   listeners.clear();
   resetComposerLifecycleState();
 }

@@ -44,7 +44,7 @@ body #composerToolsMenu.composer-tools-menu {
   position: fixed;
   z-index: var(--ui-z-popover);
   width: 256px;
-  min-width: 256px;
+  min-width: 0;
   max-width: calc(100vw - 24px);
   max-height: min(75dvh, 520px);
   padding: 4px;
@@ -86,12 +86,12 @@ body #composerToolsMenu.composer-tools-menu {
 #composerToolsMenu .composer-tools-mobile-item,
 #composerToolsMenu .composer-tools-plugin-item {
   width: 100%;
-  min-height: 36px;
+  min-height: var(--ui-control-md);
   margin: 0;
-  padding: 6px 10px;
+  padding: 8px 10px;
   gap: 8px;
   border: 0;
-  border-radius: var(--ui-radius-sm);
+  border-radius: var(--ui-radius-tools-row);
   background: transparent;
   color: var(--ui-text-primary);
   font-size: var(--ui-font-size-sm);
@@ -148,7 +148,7 @@ body #composerToolsMenu.composer-tools-menu {
   color: inherit;
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-regular);
-  line-height: 20px;
+  line-height: 24px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,14 +173,15 @@ body #composerToolsMenu.composer-tools-menu {
   height: 16px;
 }
 
+/* Keep accessible group names without adding headings to the flat menu.
+   Reference: chat-demo/src/components/base/Menu.module.css (MIT). */
 #composerToolsMenu .composer-tools-group-label {
-  padding: 4px 8px 2px;
-  color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xxs);
-  font-weight: var(--ui-font-weight-medium);
-  line-height: 16px;
-  letter-spacing: 0.04em;
-  user-select: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .chat-config-pop {
@@ -200,7 +201,7 @@ body #composerToolsMenu.composer-tools-menu {
 @media (min-width: 769px) {
   .composer-tools-desktop-items { display: block; }
   .composer-tools-mobile-items { display: none; }
-  body #composerToolsMenu.composer-tools-menu { width: 252px; min-width: 252px; }
+  body #composerToolsMenu.composer-tools-menu { width: 240px; min-width: 0; }
 }
 
 @media (max-width: 768px) {
@@ -208,14 +209,13 @@ body #composerToolsMenu.composer-tools-menu {
   .composer-tools-mobile-items { display: block; }
   /* Phone popover (reference 1000038090). The React menu controller anchors
      it over the composer — same left edge and width as the question box, its
-     bottom 8px above the control row — and this owns its shape: a flat list
-     of 40px rows, plain 20px line glyphs, and each tool's own description as
-     a quiet second phrase on the same line. No grabber, no scrim. */
+     bottom 8px above the control row. Chat Demo supplies the compact row
+     rhythm: icon and a single label, with no grabber or scrim. */
   body #composerToolsMenu.composer-tools-menu {
     min-width: 0;
     height: auto;
-    padding: 6px;
-    border-radius: var(--ui-radius-popover);
+    padding: 4px;
+    border-radius: var(--ui-radius-tools-card);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -226,7 +226,7 @@ body #composerToolsMenu.composer-tools-menu {
     min-height: var(--ui-control-md);
     padding: 4px 10px;
     gap: 12px;
-    border-radius: var(--ui-radius-row);
+    border-radius: var(--ui-radius-tools-row);
   }
   #composerToolsMenu .composer-tools-icon,
   #composerToolsMenu .composer-plugin-mark {
@@ -242,9 +242,11 @@ body #composerToolsMenu.composer-tools-menu {
   #composerToolsMenu .composer-tools-icon svg { width: 20px; height: 20px; }
   #composerToolsMenu .composer-tools-copy {
     display: flex;
+    text-align: left;
     flex-direction: row;
     flex: 1 1 auto;
     align-items: baseline;
+    justify-content: flex-start;
     gap: 12px;
     min-width: 0;
     white-space: nowrap;
@@ -253,7 +255,7 @@ body #composerToolsMenu.composer-tools-menu {
   /* Slash shortcuts are a keyboard affordance; the phone list drops them. */
   #composerToolsMenu .composer-tools-item kbd { display: none; }
   #composerToolsMenu .composer-tools-copy small {
-    display: block;
+    display: none;
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;

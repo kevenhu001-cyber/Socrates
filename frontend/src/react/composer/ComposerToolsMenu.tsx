@@ -48,6 +48,7 @@ function ComposerToolsMenu() {
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePosition) : null;
     observer?.observe(menu);
     window.addEventListener('resize', schedulePosition);
+    document.addEventListener('scroll', schedulePosition, true);
     const viewport = window.visualViewport;
     viewport?.addEventListener('resize', schedulePosition);
     viewport?.addEventListener('scroll', schedulePosition);
@@ -55,6 +56,7 @@ function ComposerToolsMenu() {
       if (frame) window.cancelAnimationFrame(frame);
       observer?.disconnect();
       window.removeEventListener('resize', schedulePosition);
+      document.removeEventListener('scroll', schedulePosition, true);
       viewport?.removeEventListener('resize', schedulePosition);
       viewport?.removeEventListener('scroll', schedulePosition);
     };
@@ -76,7 +78,24 @@ function ComposerToolsMenu() {
       closeComposerTools();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeComposerTools();
+      const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeComposerTools();
+        trigger?.focus({ preventScroll: true });
+        return;
+      }
+      const menu = menuRef.current;
+      if (!menu || !(event.target instanceof Node) || (!menu.contains(event.target) && !trigger?.contains(event.target))) return;
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'))
+        .filter((item) => item.getClientRects().length > 0);
+      if (!items.length) return;
+      event.preventDefault();
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+        : event.key === 'ArrowDown' ? (index + 1) % items.length : (index <= 0 ? items.length : index) - 1;
+      items[next].focus();
     };
     document.addEventListener('click', handleDocumentClick);
     document.addEventListener('keydown', handleKeyDown);

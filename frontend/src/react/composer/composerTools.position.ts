@@ -1,27 +1,5 @@
 import { restingRect } from '../../ui/pressFeedback.ts';
 
-function positionTopicMenu(
-  menu: HTMLElement,
-  trigger: HTMLElement,
-  mode: 'topic' | 'chat' | null,
-  rect: Pick<DOMRect, 'bottom' | 'left' | 'top'>,
-  viewportWidth: number,
-  viewportBottom: number,
-  menuHeightCap: number,
-): boolean {
-  if (mode !== 'topic' || viewportWidth <= 768) return false;
-  const topicWrap = trigger.closest('#composerInputWrap');
-  const wrapRect = topicWrap ? topicWrap.getBoundingClientRect() : rect;
-  const menuTop = rect.bottom + 8;
-  const room = Math.max(120, viewportBottom - menuTop - 16);
-  menu.style.width = '220px';
-  menu.style.maxHeight = `${Math.min(room, menuHeightCap)}px`;
-  menu.style.left = `${Math.max(8, Math.min(wrapRect.left, viewportWidth - 228))}px`;
-  menu.style.top = `${menuTop}px`;
-  menu.dataset.menuSide = 'below';
-  return true;
-}
-
 /* Phone popover, as in the reference: it covers the question box's text row
    and leaves the control row (+, effort, mic, send) visible, sharing the box's
    left edge and width. The inline !important values outrank the retired
@@ -96,7 +74,7 @@ function clampDesktopMenuTop(
 export function positionComposerToolsMenu(
   menu: HTMLElement,
   trigger: HTMLElement,
-  mode: 'topic' | 'chat' | null,
+  _mode: 'topic' | 'chat' | null,
 ): void {
   for (const prop of ['top', 'bottom', 'left', 'right', 'width', 'max-width', 'max-height']) menu.style.removeProperty(prop);
   const rect = restingRect(trigger);
@@ -108,23 +86,20 @@ export function positionComposerToolsMenu(
     ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
     : Math.max(120, (viewportBottom - viewportTop) / 2);
 
-  if (positionTopicMenu(menu, trigger, mode, rect, viewportWidth, viewportBottom, menuHeightCap)) return;
   if (viewportWidth <= 768) {
     positionMobileMenu(menu, trigger, viewportTop);
     return;
   }
 
-  menu.style.width = '220px';
+  menu.style.width = '240px';
   menu.style.maxHeight = `${menuHeightCap}px`;
   menu.style.left = '0px';
   menu.style.top = '0px';
   const width = menu.offsetWidth || 260;
   const height = menu.offsetHeight || 300;
-  const wrap = trigger.closest('#composerInputWrap');
-  const wrapRect = wrap ? wrap.getBoundingClientRect() : rect;
-  const left = Math.max(8, Math.min(rect.left, viewportWidth - width - 8));
+  const left = Math.max(8, Math.min(rect.left - 5, viewportWidth - width - 8));
   const placement = chooseDesktopMenuPosition(
-    menu, wrapRect.top, wrapRect.bottom, viewportTop, viewportBottom, height, menuHeightCap,
+    menu, rect.top, rect.bottom, viewportTop, viewportBottom, height, menuHeightCap,
   );
   const top = clampDesktopMenuTop(
     placement.top, viewportTop, viewportBottom, menu.offsetHeight, height,

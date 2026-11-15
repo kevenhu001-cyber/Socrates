@@ -64,38 +64,6 @@
   #appShell #apiSettingsBtn { display: none !important; }
 }
 
-/* Task-oriented composer menu: category labels and short descriptions explain
-   what each action does. Keep this in the post-restore layer because the
-   restored parity sheets intentionally hide the older description rows. */
-#composerToolsMenu .composer-tools-group-label {
-  display: block !important;
-  color: var(--cg-text-muted) !important;
-  font-size: 11px !important;
-  font-weight: var(--ui-font-weight-semibold) !important;
-  line-height: 16px;
-}
-
-#composerToolsMenu .composer-tools-desktop-items .composer-tools-item {
-  height: auto;
-  align-items: center;
-}
-
-#composerToolsMenu .composer-tools-desktop-items .composer-tools-copy {
-  display: flex !important;
-  flex: 1 1 auto !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 1px !important;
-  min-width: 0 !important;
-}
-
-#composerToolsMenu .composer-tools-desktop-items .composer-tools-copy > span {
-  max-width: 100% !important;
-  font-size: 14px !important;
-  line-height: 18px !important;
-  white-space: normal !important;
-}
-
 #composerToolsMenu .composer-tools-state-action {
   width: fit-content;
   min-height: 32px;

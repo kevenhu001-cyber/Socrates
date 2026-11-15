@@ -11,6 +11,7 @@ import { hydrateOwnedRoot, mountOwnedRoot } from './ownedRoot';
 
 import { ErrorBoundary } from '../../ErrorBoundary';
 import type { MountSpec } from './registry';
+import { retryImport } from './retryImport';
 
 /* P_perf-modal-lazy — on-demand overlays (tools menu, cmdk, find,
    more-popover, profile/share/usage modals) are dynamically imported in
@@ -240,7 +241,7 @@ export function mountRegistryList(): MountSpec[] {
        lifecycle commands branch on the live surface, so the editor does not
        remount when the view flips. */
     { hostId: 'composerInputWrap', label: 'composer-shell', mount: (host) => {
-      return import('../../composer-input').then(({ ComposerShell }) => {
+      return retryImport(() => import('../../composer-input')).then(({ ComposerShell }) => {
         mountOwnedRoot(host, 'composer-shell', <ErrorBoundary><ComposerShell
           placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
           onSubmit={() => submitComposer(legacyComposer)}
