@@ -77,3 +77,15 @@ test('scatter axis names sit centred along their axes so a narrow card does not 
   assert.ok(option.xAxis.nameGap < option.grid.bottom);
   assert.ok(option.yAxis.nameGap < option.grid.left);
 });
+
+test('heatmap gaps do not become zero measurements or distort the color scale', () => {
+  const option = optionForChart({ template: 'heatmap', payload: {
+    xCategories: ['A', 'B'], yCategories: ['Row'], values: [[null, 50]],
+  } }, colors);
+  assert.equal(option.visualMap.min, 50);
+  assert.equal(option.visualMap.max, 51);
+  assert.deepEqual(option.series[0].data.map(cell => cell.value), [[1, 0, 50]]);
+  assert.throws(() => optionForChart({ template: 'heatmap', payload: {
+    xCategories: ['A'], yCategories: ['Row'], values: [[null]],
+  } }, colors), /at least one finite/);
+});

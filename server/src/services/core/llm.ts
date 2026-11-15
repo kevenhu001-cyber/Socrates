@@ -511,6 +511,10 @@ export function appendToolArgumentDelta(
     return { text: next, mode: stream.mode };
   }
 
+  // Repeated opening braces are gateway keepalive snapshots, not evidence
+  // that every following token is a cumulative snapshot. Keep detecting.
+  if (stream.mode === 'unknown' && next === stream.text && /^\s*\{\s*$/.test(next)) return stream;
+
   let mode = stream.mode;
   if (mode === 'unknown') {
     if (next.startsWith(stream.text)) mode = 'snapshot';

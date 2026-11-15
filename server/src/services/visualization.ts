@@ -244,7 +244,7 @@ export const VISUALIZATION_TEMPLATE_CONTRACTS = {
   paper_chart: { guidance: `Use categories? and an array of numeric series; each series may set kind to line, bar, or scatter. ${NUMBER_RULE} If categories is present, each data array has one value per category. ${POINT_RULE}`, payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Result', kind: 'line', data: [3, 5, 4] }] } },
   math_construction: { guidance: 'payload.commands is an array of GeoGebra commands, one command per string. Use standard GeoGebra syntax such as A=(0,0) or Circle(A,4); this template requires the GeoGebra runtime.', payload: { appName: 'geometry', commands: ['A=(0,0)', 'Circle(A,4)'] } },
   geometry_3d: { guidance: 'payload.objects contains {type,position?,size?,label?}. size is [radius,unused,unused] for spheres, [radius,height,unused] for cylinders/cones, and [width,height,depth] for boxes; all supplied sizes must be positive.', payload: { objects: [{ type: 'sphere', position: [0, 1, 0], size: [1, 1, 1], label: 'Ball' }] } },
-  whiteboard: { guidance: 'payload.items or payload.nodes contains labeled notes. Each item becomes a movable note on the board; use at most 30 concise items.', payload: { items: [{ label: 'Question' }, { label: 'Evidence' }, { label: 'Conclusion' }] } },
+  whiteboard: { guidance: 'payload.items or payload.nodes contains labeled notes. Each item becomes a movable note on an independent board. Prefer at most 30 concise notes; the validated limit is 200 notes, and every accepted note is rendered.', payload: { items: [{ label: 'Question' }, { label: 'Evidence' }, { label: 'Conclusion' }] } },
 } satisfies Record<(typeof VISUALIZATION_TEMPLATES)[number], { guidance: string; payload: Record<string, unknown> }>;
 
 export function visualizationTemplateGuide(template?: string): string {
@@ -358,6 +358,7 @@ export function validateVisualizationSpec(input: unknown) {
   }
   if (parsed.data.template === 'heatmap') {
     const heatmap = data as z.infer<typeof heatmapPayload>;
+    if (!heatmap.values.some((row) => row.some((value) => typeof value === 'number'))) addIssue('payload.values', 'must contain at least one numeric measurement.');
     if (heatmap.values.length !== heatmap.yCategories.length) addIssue('payload.values', 'must contain one row for each yCategory.');
     heatmap.values.forEach((row, index) => {
       if (row.length !== heatmap.xCategories.length) addIssue(`payload.values.${index}`, 'must contain one value for each xCategory.');
@@ -365,6 +366,7 @@ export function validateVisualizationSpec(input: unknown) {
   }
   if (parsed.data.template === 'radar') {
     const radar = data as z.infer<typeof radarPayload>;
+    checkHasValues(radar.series, 'payload.series');
     radar.series.forEach((series, seriesIndex) => {
       if (series.data.length !== radar.indicators.length) addIssue(`payload.series.${seriesIndex}.data`, `must contain one value for each of the ${radar.indicators.length} indicators.`);
       series.data.forEach((value, index) => {

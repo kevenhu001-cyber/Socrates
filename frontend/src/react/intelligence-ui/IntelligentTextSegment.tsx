@@ -1,5 +1,6 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 
+import { wireProseWidgets } from '../tool-run/wireProseWidgets';
 import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
@@ -22,6 +23,12 @@ function lastTextSegmentIndex(segments: ReturnType<typeof splitIntelligenceUiTex
   return -1;
 }
 
+function SettledTextProse({ html }: { html: { __html: string } }) {
+  const host = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { if (host.current) wireProseWidgets(host.current); }, [html]);
+  return <div ref={host} className="tool-run-prose" dangerouslySetInnerHTML={html} />;
+}
+
 /** Once streamed, keep the same block tree even when the turn settles. */
 function TextProse({ text, live, prose }: { text: string; live: boolean; prose: ProseRenderer }) {
   const streamedRef = useRef(live);
@@ -29,7 +36,7 @@ function TextProse({ text, live, prose }: { text: string; live: boolean; prose: 
   if (streamedRef.current) {
     return <LiveTextSegment text={text} live={live} settled={prose.settled} tail={prose.tail} />;
   }
-  return <div className="tool-run-prose" dangerouslySetInnerHTML={prose.settled(text)} />;
+  return <SettledTextProse html={prose.settled(text)} />;
 }
 
 /**

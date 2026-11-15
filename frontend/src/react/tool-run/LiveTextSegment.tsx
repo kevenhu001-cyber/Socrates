@@ -3,7 +3,7 @@ import { createSettledProseCache } from '../../render/proseCache.ts';
 import { createSettledSplitter } from '../../render/streaming.ts';
 import { updateProseDom } from '../../render/proseDom.ts';
 import { createStreamReveal } from '../../render/streamReveal.ts';
-import { getLegacyActions } from '../legacy/gateway.ts';
+import { wireProseWidgets } from './wireProseWidgets';
 import type { ProseRenderer } from './proseRenderer';
 
 interface SettledBlockProps {
@@ -26,11 +26,7 @@ const SettledBlock = memo(function SettledBlock({ html, live = false, tail = fal
       updateProseDom(element, html.__html);
       paintedMarkupRef.current = html.__html;
     }
-    try {
-      getLegacyActions().postRender?.wireCodeBlockHeaders?.(element);
-    } catch {
-      /* empty-catch: intentional — code header wiring must not break prose */
-    }
+    wireProseWidgets(element);
     if (live && tail && revealedMarkupRef.current !== html.__html) {
       if (!revealRef.current) revealRef.current = createStreamReveal();
       revealRef.current(element, source);

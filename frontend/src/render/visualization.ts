@@ -99,7 +99,7 @@ async function loadEcharts() {
     /* P_perf-self-host — echarts UMD is copied as a static asset and
        injected only when a viz card mounts. The full bundle registers
        every chart / component / renderer, so no core.use([...]) step. */
-    echartsPromise = ensureEcharts();
+    echartsPromise = ensureEcharts().catch((error: unknown) => { echartsPromise = null; throw error; });
   }
   return echartsPromise;
 }
@@ -487,9 +487,16 @@ function createChartRuntime(card: VisualizationCard, chart: ChartInstance, initi
   function update(rawNext: VizSpec) {
     const next = asVisualizationSpec(normalizeVisualizationSpec(rawNext).spec);
     if (!next || card._visualizationDisposed || chart.isDisposed() || next.template !== currentSpec.template) return false;
-    const nextOptions = optionForChart(next, palette());
-    if (!nextOptions) return false;
-    chart.setOption(nextOptions, { replaceMerge: ['series'] });
+    try {
+      const nextOptions = optionForChart(next, palette());
+      if (!nextOptions || chartOptionIsEmpty(next, nextOptions)) return false;
+      chart.setOption(nextOptions, { replaceMerge: ['series'] });
+    } catch (error) {
+      // A control can temporarily produce missing/invalid data. Let the
+      // caller remount the standard failure card instead of crashing React.
+      reportSwallow(error, 'visualization/' + next.template + '/update_failure', 'recoverable');
+      return false;
+    }
     currentSpec = next;
     if (liveEntry) liveEntry.spec = next;
     updateChartCardMetadata(card, next);

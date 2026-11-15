@@ -151,3 +151,12 @@ test('semantic diagrams lay out at a phone stage width instead of shrinking a 76
   const xs = [...line.matchAll(/<circle cx="([-\d.]+)"/g)].map((match) => Number(match[1]));
   assert.ok(xs.every((x) => x > 0 && x < 354));
 });
+
+test('number-line labels preserve significant integer zeros', () => {
+  const svg = renderNumberLineVisualization({ template: 'number_line', payload: {
+    items: [{ label: 'Negative', value: -10000 }, { label: 'Positive', value: 10000 }, { label: 'Fraction', value: .001 }],
+  } }, escapeHtml, 'sans-serif', truncateLabel);
+  assert.match(svg, />-10000<\/text>/);
+  assert.match(svg, />10000<\/text>/);
+  assert.match(svg, />0\.001<\/text>/);
+});

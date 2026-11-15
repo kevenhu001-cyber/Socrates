@@ -3,6 +3,7 @@ import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
 import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
 import { publishReactChatRuntime } from '../ui/reactBridge';
+import { mountBasicComposer } from './ui/composerRecovery';
 import { showMountRecovery } from './ui/mountRecovery';
 import { i18n } from './legacy/gateway';
 import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
@@ -19,7 +20,11 @@ const RECOVERY_MESSAGES: Record<string, [string, string]> = {
 const mountOptions: MountRegistryOptions = {
   onFailure: (failure) => {
     const message = RECOVERY_MESSAGES[failure.spec.label];
-    if (message) return showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0]);
+    if (message) {
+      const releaseInput = failure.spec.label === 'composer-shell' ? mountBasicComposer(failure.host) : undefined;
+      const releaseNotice = showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0]);
+      return () => { releaseInput?.(); releaseNotice(); };
+    }
   },
 };
 

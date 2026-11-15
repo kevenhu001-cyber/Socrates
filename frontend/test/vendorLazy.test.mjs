@@ -16,6 +16,7 @@ function makeDom() {
     createElement(tag) {
       return {
         tag,
+        remove() { this.removed = true; },
         dataset: {},
         set src(v) { this._src = v; },
         get src() { return this._src; },
@@ -162,4 +163,21 @@ test('the katex stylesheet is injected exactly once', async () => {
   assert.equal(links.length, 1);
   assert.equal(links[0].rel, 'stylesheet');
   assert.match(links[0].href, /katex\.min\.css$/);
+});
+
+test('a stalled vendor load times out, removes its tag, and ignores late callbacks', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const { ensureEcharts, win, dom } = await freshLoader();
+  const pending = ensureEcharts();
+  const stale = dom.appended[0];
+  const lateLoad = stale.onload;
+  t.mock.timers.tick(15000);
+  assert.equal(stale.removed, true);
+  t.mock.timers.tick(700);
+  assert.equal(dom.appended.length, 2);
+  win.echarts = 'recovered';
+  lateLoad();
+  assert.equal(stale.onload, null);
+  dom.appended[1].onload();
+  assert.equal(await pending, 'recovered');
 });

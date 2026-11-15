@@ -42,27 +42,34 @@ function loadScriptOnce<K extends keyof VendorGlobals>(key: string, url: string,
       const script = document.createElement('script');
       script.src = url;
       script.async = true;
+      let settled = false;
+      const finishAttempt = () => {
+        if (settled) return false;
+        settled = true;
+        clearTimeout(timer);
+        script.onload = null;
+        script.onerror = null;
+        return true;
+      };
+      const failAttempt = () => {
+        if (!finishAttempt()) return;
+        script.remove();
+        if (attempts < MAX_ATTEMPTS) setTimeout(tryLoad, 700 * attempts);
+        else reject(new Error('failed to load ' + key));
+      };
+      // A stalled connection may deliver neither load nor error. Bound the
+      // wait so the card can offer Retry instead of loading forever.
+      const timer = setTimeout(failAttempt, 15000);
       script.onload = () => {
+        if (!finishAttempt()) return;
         const value = w[globalName];
-        if (value) {
-          resolve(value);
-        } else {
+        if (value) resolve(value);
+        else {
+          script.remove();
           reject(new Error(key + ' loaded but global ' + globalName + ' is missing'));
         }
       };
-      script.onerror = () => {
-        /* P_lazy-retry — a transient network failure used to reject the
-           cached in-flight promise permanently, so every formula / chart
-           stayed in its unrendered fallback until a full page refresh.
-           Retry a few times with backoff; if the final attempt still
-           fails, the cache entry is cleared below so the next ensure*()
-           call starts over. */
-        if (attempts < MAX_ATTEMPTS) {
-          setTimeout(tryLoad, 700 * attempts);
-        } else {
-          reject(new Error('failed to load ' + key));
-        }
-      };
+      script.onerror = failAttempt;
       document.head.appendChild(script);
     };
     tryLoad();

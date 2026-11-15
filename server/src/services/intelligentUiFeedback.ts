@@ -111,9 +111,9 @@ export function intelligentUiFeedback(error: string, failure: IntelligentUiFailu
     const line = exampleLine(template, failure.componentType === 'visualization');
     if (line) lines.push(`A valid call: ${line}`);
   }
-  if (failure.failures.some((item) => item.stage === 'payload_shape' || item.stage === 'semantic')) lines.push(NUMBER_HINT);
+  if (failure.failures.some((item) => ['line', 'area', 'bar', 'histogram', 'pie', 'radar', 'paper_chart'].includes(item.template || '') && (item.stage === 'payload_shape' || item.stage === 'semantic'))) lines.push(NUMBER_HINT);
   if (failure.stage === 'visualization') {
-    lines.push('Keep a native visualization node inside render_intelligent_ui: {id:"chart", type:"visualization", template:"<template>", title:"<Title>", payload:{...}, accessibilitySummary:"<Summary>"}. Write values as JSON numbers with null for missing values, keep series as an array of {name,data}, and match category lengths. Do not wrap static visualizations in OpenUI source strings.');
+    lines.push('Keep a native visualization node inside render_intelligent_ui: {id:"chart", type:"visualization", template:"<template>", title:"<Title>", payload:{...}, accessibilitySummary:"<Summary>"}. Follow the selected template contract above: function uses functions:[{expression,domain?}], category charts use series:[{name,data}], graph templates use nodes/edges, geometry uses shapes, and teaching diagrams use items. Write numeric measurements as JSON numbers and use null only for missing measurements. Do not wrap static visualizations in OpenUI source strings.');
   }
   if (failure.stage === 'demonstration') {
     lines.push('A demonstration node is {id, type:"demonstration", title, program:{version:1, parameters:[], definitions:{}, views:[...]}}. Put version inside program and write it as the number 1. Write arrays as JSON arrays (never {"item": ...}), numbers as JSON numbers (1, not "1"), give every parameter finite min < max with value inside that range, and use 1–8 views with increasing x/y ranges. The error names the failing part (for example definitions.f or views[1].curves[0]); fix that part. Expressions are plain ASCII math using the exact parameter and definition names: x^2, 2*x, pi, sqrt(x), log(x), no Math. prefixes.');

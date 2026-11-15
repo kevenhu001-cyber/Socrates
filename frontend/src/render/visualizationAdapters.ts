@@ -1,4 +1,5 @@
 import { whenFontsReady } from './helpers.ts';
+import { truncateLabel } from './visualizationLabels.ts';
 import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -44,11 +45,13 @@ function cssColor(name: string, fallback: string) {
    the same hook for the specialised renderers. Returns a disconnect fn. */
 function watchTheme(onChange: (mode: string | null) => void) {
   if (typeof MutationObserver === 'undefined') return;
-  let last = document.documentElement.getAttribute('data-mode');
+  const themeKey = () => ['data-mode', 'data-theme'].map((name) => document.documentElement.getAttribute(name)).join('|');
+  let last = themeKey();
   const observer = new MutationObserver(() => {
     const mode = document.documentElement.getAttribute('data-mode');
-    if (mode === last) return;
-    last = mode;
+    const next = themeKey();
+    if (next === last) return;
+    last = next;
     try { onChange(mode); }
     catch (error) { reportSwallow(error, 'visualizationAdapters.themeChange'); }
   });
@@ -94,7 +97,7 @@ function geometryForThreeObject(THREE: ThreeRuntime, object: ThreeGeometryObject
   return new THREE.BoxGeometry(size[0] || 1, size[1] || 1, size[2] || 1);
 }
 
-function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['Scene']>, material: InstanceType<ThreeRuntime['MeshStandardMaterial']>, objects: ThreeGeometryObject[]) {
+function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['Object3D']>, material: InstanceType<ThreeRuntime['MeshStandardMaterial']>, objects: ThreeGeometryObject[]) {
   objects.forEach((object) => {
     const mesh = new THREE.Mesh(geometryForThreeObject(THREE, object), material.clone());
     const position = object.position || [0, 0.5, 0];
@@ -142,7 +145,7 @@ function downloadSvgAdapter(stage: HTMLElement) {
 async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction }) {
   /* P_perf-self-host — plotly UMD is copied as a static asset and
      injected only when a Plotly card mounts. */
-  plotlyPromise ||= ensurePlotly();
+  plotlyPromise ||= ensurePlotly().catch((error: unknown) => { plotlyPromise = null; throw error; });
   const Plotly = await plotlyPromise;
   const colors = plotlyColors();
   const traces = plotlyTracesForVisualization(spec, colors, helpers.sampleFunction);
@@ -181,8 +184,7 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
 }
 
 function compactMermaidLabel(value: unknown, max = 48) {
-  const chars = Array.from(String(value || '').replace(/\s+/g, ' ').trim());
-  return chars.length > max ? `${chars.slice(0, max - 1).join('')}…` : chars.join('');
+  return truncateLabel(String(value ?? '').replace(/\s+/g, ' ').trim(), max);
 }
 
 export function mermaidText(spec: VizSpec) {
@@ -190,7 +192,8 @@ export function mermaidText(spec: VizSpec) {
   const nodes = payload.nodes || [];
   const edges = payload.edges || [];
   const safeId = (value: unknown) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
-  const safeLabel = (value: unknown) => compactMermaidLabel(value).replace(/[\r\n"|]/g, ' ');
+  const safeLabel = (value: unknown) => compactMermaidLabel(value).replace(/[\r\n]/g, ' ')
+    .replace(/[&<>;#"|]/g, (char) => `#${char.charCodeAt(0)};`);
   if (spec.template === 'sequence') {
     const participants = nodes.map((node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`);
     const messages = edges.map((edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`);
@@ -224,7 +227,7 @@ export function applyGeoGebraCommands(api: Pick<GeoGebraApi, 'evalCommand'>, com
 async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<SpecializedVisualizationResult> {
   /* P_perf-self-host — mermaid UMD is copied as a static asset and
      injected only when a mermaid card mounts. */
-  mermaidPromise ||= ensureMermaid();
+  mermaidPromise ||= ensureMermaid().catch((error: unknown) => { mermaidPromise = null; throw error; });
   const mermaid = await mermaidPromise;
   const text = mermaidText(spec);
   /* Mermaid bakes the theme into the SVG, so a theme switch re-renders.
@@ -237,6 +240,7 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
+      htmlLabels: false,
       fontFamily: VIZ_FONT_FAMILY,
       theme: document.documentElement.getAttribute('data-mode') === 'dark' ? 'dark' : 'neutral',
       flowchart: { htmlLabels: false, curve: 'basis', useMaxWidth: true },
@@ -245,6 +249,18 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
     const { svg, bindFunctions } = await mermaid.render(id, text);
     if (disposed || mine !== generation) return;
     stage.innerHTML = svg;
+    // Mermaid escapes its #NN; label syntax once more in SVG text mode.
+    // Restore text nodes only: assigning HTML would reinterpret user labels.
+    for (const label of stage.querySelectorAll('text')) {
+      const walker = stage.ownerDocument.createTreeWalker(label, 4);
+      let leaf: Text | null;
+      while ((leaf = walker.nextNode() as Text | null)) {
+        leaf.data = leaf.data.replace(/&#(\d{1,7});/g, (entity, digits: string) => {
+          const point = Number(digits);
+          return point <= 0x10ffff ? String.fromCodePoint(point) : entity;
+        });
+      }
+    }
     bindFunctions?.(stage);
   };
   await whenFontsReady('Geist Sans');
@@ -263,7 +279,7 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   threePromise ||= Promise.all([
     import('three'),
     import('three/addons/controls/OrbitControls.js'),
-  ]);
+  ]).catch((error: unknown) => { threePromise = null; throw error; });
   const [THREE, controlsModule] = await threePromise;
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(42, Math.max(stage.clientWidth, 1) / Math.max(stage.clientHeight, 1), 0.1, 1000);
@@ -277,9 +293,25 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
   scene.add(new THREE.GridHelper(12, 12, 0x8893a5, 0xdbe2ea));
   const material = new THREE.MeshStandardMaterial({ color: 0x4f78dd, roughness: 0.42, metalness: 0.05, transparent: true, opacity: 0.9 });
-  addThreeObjects(THREE, scene, material, (spec.payload.objects as ThreeGeometryObject[] | undefined) || []);
+  const objects = new THREE.Group();
+  scene.add(objects);
+  addThreeObjects(THREE, objects, material, (spec.payload.objects as ThreeGeometryObject[] | undefined) || []);
+  material.dispose(); // each mesh owns its clone
+  const bounds = new THREE.Box3().setFromObject(objects);
+  const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+  const center = sphere.center;
+  const fitCamera = () => {
+    const angle = Math.min(camera.fov * Math.PI / 360, Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
+    const distance = Math.max(sphere.radius, .1) / Math.sin(angle) * 1.15;
+    camera.position.copy(center).add(new THREE.Vector3(6, 5, 8).normalize().multiplyScalar(distance));
+    camera.near = Math.max(.01, distance / 1000);
+    camera.far = Math.max(1000, distance * 10);
+    camera.updateProjectionMatrix();
+  };
+  fitCamera();
   const controls = new controlsModule.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
+  controls.target.copy(center);
   let frame = 0;
   let visible = true;
   const draw = () => {
@@ -310,10 +342,19 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   return {
     handled: true,
     chart: {
-      dispatchAction() { camera.position.set(6, 5, 8); controls.target.set(0, 0, 0); controls.update(); },
+      dispatchAction() { fitCamera(); controls.target.copy(center); controls.update(); },
       getDataURL() { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
     },
-    cleanup() { visible = false; cancelAnimationFrame(frame); resize.disconnect(); visibility?.disconnect(); controls.dispose(); renderer.dispose(); scene.clear(); },
+    cleanup() {
+      visible = false; cancelAnimationFrame(frame); resize.disconnect(); visibility?.disconnect(); controls.dispose();
+      scene.traverse((object) => {
+        if (!(object instanceof THREE.Mesh || object instanceof THREE.LineSegments)) return;
+        object.geometry.dispose();
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((item) => item.dispose());
+      });
+      renderer.dispose(); renderer.forceContextLoss(); scene.clear();
+    },
   };
 }
 
@@ -383,6 +424,7 @@ async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<Special
       showAlgebraInput: true,
       showMenuBar: false,
       appletOnLoad(ggbApi) {
+        if (settled) { ggbApi.remove?.(); return; }
         api = ggbApi;
         try {
           applyGeoGebraCommands(ggbApi, spec.payload.commands);
@@ -394,13 +436,14 @@ async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<Special
     }, true);
     try { applet.inject(stage); } catch (error) { finish(error instanceof Error ? error : new Error('GeoGebra applet could not be started.')); }
   }).catch((error) => {
+    api?.remove?.();
     stage.replaceChildren();
     throw error;
   });
   return {
     handled: true,
     chart: { dispatchAction() { api?.setCoordSystem?.(-10, 10, -8, 8); }, getDataURL() { return api?.getPNGBase64 ? `data:image/png;base64,${api.getPNGBase64(1, false, 96)}` : ''; } },
-    cleanup() { stage.replaceChildren(); },
+    cleanup() { api?.remove?.(); stage.replaceChildren(); },
   };
 }
 

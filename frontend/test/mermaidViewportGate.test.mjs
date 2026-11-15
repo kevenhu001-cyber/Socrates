@@ -115,3 +115,22 @@ test('an element whose rect throws renders rather than throwing out of the drain
   card.getBoundingClientRect = () => { throw new Error('detached'); };
   assert.equal(mermaidCardIsNearViewportForTest(card), true);
 });
+
+test('a drain before lazy prose commits retains the diagram until its card mounts', async () => {
+  const { _pendingMermaid } = await import('../src/render/vizStubs.ts');
+  const { processPendingMermaid } = await import('../src/render/vizMermaidQueue.ts');
+  let rendered = 0;
+  globalThis.mermaid = { render: async () => { rendered++; return { svg: '<svg><text>A</text></svg>' }; } };
+  _pendingMermaid.push({ id: 'late-prose', code: 'graph TD\nA[A]', validated: true });
+  try {
+    processPendingMermaid();
+    assert.equal(rendered, 0);
+    assert.equal(_pendingMermaid.length, 1, 'the source survives a pre-commit drain');
+    const card = makeCard('late-prose', { top: 100, bottom: 200, width: 600, height: 100 });
+    processPendingMermaid();
+    await Promise.resolve();
+    assert.equal(rendered, 1);
+    assert.equal(card.getAttribute('data-viz-state'), 'ready');
+    assert.equal(_pendingMermaid.length, 0);
+  } finally { delete globalThis.mermaid; }
+});

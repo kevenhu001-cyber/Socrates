@@ -1066,3 +1066,9 @@ test('Instant wins conflicting thinking options on every MiniMax fallback', asyn
   assert.equal(bodies.length, 1, 'a deterministic thinking rejection must not cause compatibility replays');
   for (const body of bodies) assert.deepEqual(body.thinking, { type: 'disabled' });
 });
+
+test('repeated opening snapshot does not discard subsequent JSON fragments', () => {
+  const stream = ['{', '{', '"nodes":', '[{"payload":{"functions":[{"expression":"x^2"}]}}]', '}']
+    .reduce((state, delta) => appendToolArgumentDelta(state, delta), createToolArgumentStream());
+  assert.deepEqual(JSON.parse(stream.text), { nodes: [{ payload: { functions: [{ expression: 'x^2' }] } }] });
+});

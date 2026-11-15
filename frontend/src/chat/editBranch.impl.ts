@@ -4,7 +4,7 @@
  * resolve via window.* at call time to avoid circular imports.
  */
 import { stateStore } from '../state/store.ts';
-import { turnState } from './turnState.ts';
+import { turnState, type StreamingTurnController } from './turnState.ts';
 import { interruptPendingTurn, quietTurn } from './turnUi.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { findMessageIndex, messageApiPath, MessageEntry, rollbackMessagesAfter } from '../ui/messageActions.ts';
@@ -65,12 +65,30 @@ function stopCurrentTurnForEdit(): void {
   }
 }
 
-function replayEditedTurnAfterPatch(patchPromise: Promise<unknown>, editedText: string): void {
+let editReplaySequence = 0;
+
+function replayEditedTurnAfterPatch(patchPromise: Promise<unknown>, editedText: string, userId: string, content: unknown): void {
   const runner = (typeof window !== 'undefined' && (window as unknown as { askChatTurn?: typeof askChatTurn }).askChatTurn) || askChatTurn;
-  if (typeof runner !== "function") return;
-  stopCurrentTurnForEdit();
-  patchPromise.then(function () {
-    try { quietTurn(runner(editedText)); }
+  const sessionId = stateStore.read('currentSessionId');
+  const sequence = ++editReplaySequence;
+  const bridge = (window as unknown as { addStreamingMessage?: (options: { onRetry: () => void }) => StreamingTurnController | Promise<StreamingTurnController> }).addStreamingMessage;
+  // Mount the replacement answer now: its reserve and send anchor must not
+  // wait for a slow PATCH while the browser clamps the truncated transcript.
+  let pending: Promise<StreamingTurnController | null> = Promise.resolve(null);
+  if (bridge) {
+    try {
+      pending = Promise.resolve(bridge({ onRetry: () => quietTurn(runner(editedText, content)) }))
+        .catch((error) => { reportSwallow(error, 'editBranch.precreate'); return null; });
+    } catch (error) { reportSwallow(error, 'editBranch.precreate'); }
+  }
+  void Promise.all([patchPromise, pending]).then(([, controller]) => {
+    const messages = stateStore.read('messages');
+    const users = messages.filter((message) => message.role === 'user');
+    const latestUser = users[users.length - 1];
+    if (sequence !== editReplaySequence || stateStore.read('currentSessionId') !== sessionId
+        || latestUser?.clientId !== userId || latestUser.rawText !== editedText
+        || controller?.isFinished?.()) return;
+    try { quietTurn(runner(editedText, content, controller)); }
     catch (error) { reportSwallow(error, 'editBranch.commit.replay'); }
   });
 }
@@ -84,6 +102,7 @@ export function commitUserMessageEdit(messageId: string, text: string){
   if (!next) return;
   /* Editing rewinds this user turn and replays it. Later messages no longer
      follow the same conversation, so state remains the only transcript writer. */
+  stopCurrentTurnForEdit();
   const editedText = next;
   const branchRes = prepareUserEditBranch(messageId, editedText);
   const branchInfo = branchRes ? branchRes.branchInfo : null;
@@ -106,9 +125,8 @@ export function commitUserMessageEdit(messageId: string, text: string){
   });
 
   /* Carry original attachments into the replayed request. */
-  try { turnState.pendingChatContent = buildUserContentParts(editedText, entry.attachments); }
-  catch { turnState.pendingChatContent = null; }
-  replayEditedTurnAfterPatch(patchPromise, editedText);
+  const content = buildUserContentParts(editedText, entry.attachments);
+  replayEditedTurnAfterPatch(patchPromise, editedText, String(entry.clientId), content);
   void patchPromise;
 }
 

@@ -261,11 +261,20 @@ export function processPendingMermaid(): void {
   const frameStart = Date.now();
   let rendered = 0;
   let held = 0;
+  let missing = 0;
   while (_pendingMermaid.length && rendered < MERMAID_RENDERS_PER_FRAME) {
     /* Always start at least one diagram, even when this frame is already
        over budget — otherwise a coarse clock could stall the queue. */
     if (rendered > 0 && Date.now() - frameStart >= MERMAID_FRAME_BUDGET_MS) break;
     const item = _pendingMermaid[0] as MermaidItem;
+    // A lazy prose tree may not have committed its placeholder yet. Keep
+    // its source until the real owner mounts and schedules the next drain.
+    if (!document.getElementById(item.id)) {
+      _pendingMermaid.shift();
+      _pendingMermaid.push(item);
+      if (++missing >= MERMAID_GATE_SCAN_MAX) break;
+      continue;
+    }
     /* P_mermaid-viewport-gate — look at the head item without consuming
        it. An off-screen card stays at the head for a later pass; the
        observer wakes us when it nears the viewport. A bounded scan keeps
@@ -294,7 +303,7 @@ export function processPendingMermaid(): void {
      would spin rAF forever, rendering nothing. The idle drain below is
      the safety net for a card the observer will never wake (e.g. its
      element was replaced by a message re-render under the same id). */
-  if (_pendingMermaid.length && (rendered > 0 || !held)) schedulePendingMermaid();
+  if (_pendingMermaid.length && (rendered > 0 || (!held && !missing))) schedulePendingMermaid();
   if (held) armMermaidIdleDrain();
   try { _processPendingVizActions?.(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
 }

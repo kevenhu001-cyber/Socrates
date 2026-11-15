@@ -106,3 +106,35 @@ test('committing an unchanged message also replaces state and replays after serv
     dom2.window.close();
   }
 });
+
+test('edit creates the answer before PATCH resolves and cancels stale replay after navigation', async () => {
+  const testDom = new JSDOM('<!doctype html><body></body>', { url: 'http://localhost/' });
+  globalThis.window = testDom.window;
+  globalThis.document = testDom.window.document;
+  globalThis.localStorage = testDom.window.localStorage;
+  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'edit-session' });
+  stateStore.dispatch({ type: 'session/replace-messages', payload: [
+    { clientId: 'user', role: 'user', rawText: 'old', attachments: [] },
+    { clientId: 'answer', role: 'assistant', rawText: 'old answer' },
+  ] });
+  const originalFetch = globalThis.fetch;
+  let resolvePatch;
+  globalThis.fetch = () => new Promise(resolve => { resolvePatch = resolve; });
+  let mounted = 0;
+  let replayed = 0;
+  window.addStreamingMessage = () => { mounted++; return { isFinished: () => false }; };
+  window.askChatTurn = () => { replayed++; };
+  turnState.activeChatCtl = null;
+  try {
+    commitUserMessageEdit('user', 'new');
+    assert.equal(mounted, 1, 'answer reserve begins without waiting for the network');
+    assert.equal(replayed, 0);
+    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'other-session' });
+    resolvePatch(new Response('{}', { status: 200 }));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(replayed, 0, 'late PATCH cannot replay into another conversation');
+  } finally {
+    globalThis.fetch = originalFetch;
+    testDom.window.close();
+  }
+});

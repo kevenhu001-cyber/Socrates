@@ -48,3 +48,13 @@ test('static SVG illustrations typeset LaTeX inside their sandbox', async ({ pag
   await expect(card.frameLocator('iframe').locator('foreignObject math')).toBeVisible();
   await card.screenshot({ path: 'test-results/visualization-math-illustration.png' });
 });
+
+test('Mermaid formula labels retain long expressions and absolute-value bars', async ({ page }) => {
+  const formula = '$\\frac{|x|+x^2+x^3+x^4+x^5+x^6+x^7+x^8}{\\sqrt{1+x^2}}$';
+  const card = await show(page, 'flowchart', { nodes: [{ id: 'formula', label: formula }], edges: [] });
+  await expect(card.locator('.visualization-fallback')).toHaveCount(0);
+  const math = card.locator('svg foreignObject .katex').first();
+  await expect(math).toBeVisible();
+  await expect(math.locator('annotation')).toHaveText(formula.slice(1, -1));
+  await card.screenshot({ path: 'test-results/visualization-mermaid-formula.png' });
+});

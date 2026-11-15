@@ -58,7 +58,7 @@ interface RepairContext {
 }
 
 const openUiRepair = ({ subject, target }: RepairContext): string =>
-  `The previous render_intelligent_ui call was rejected (${subject}). Call render_intelligent_ui again with a corrected program${target}: pass Visualization arguments in order (template, title, payload, accessibilitySummary), write values as JSON numbers with null for missing values, keep series as an array of {name,data}, and send fewer points if it was cut off.`;
+  `The previous render_intelligent_ui call was rejected (${subject}). Call render_intelligent_ui again with a corrected program${target}: pass Visualization arguments in order (template, title, payload, accessibilitySummary), write values as JSON numbers with null for missing values, follow the template payload contract (function: functions with expression/domain; category charts: series with name/data; graphs: nodes/edges; geometry: shapes; teaching diagrams: items), and send fewer points if it was cut off.`;
 
 /** A demonstration rejection must not teach the model the OpenUI payload
  * grammar: that turns one failed generation into a wrong retry. */
@@ -68,7 +68,7 @@ const STAGE_REPAIRS: Record<string, (context: RepairContext) => string> = {
   demonstration: ({ subject, node }) => `The previous render_intelligent_ui call was rejected (${subject}). Keep the same mathematical demonstration and fix the program structure${node} in one corrected call. A demonstration node is {id,type:"demonstration",title,program:{version:1,views:[...]}}. Required per view: plot needs x, y and 1-6 curves; field needs x, y and expression; trajectory needs x, y, horizontal, vertical and program.dynamics; scene needs x, y and 1-32 objects (body: center/radius; block: center/width/height; rod, spring, vector: from/to); metrics needs 1-6 values. At most one controls, two field views and twelve curves total. Use JSON numbers and arrays. Do not switch to an openui node or drop the demonstration.`,
   physics: ({ subject, node }) => `The previous render_intelligent_ui call was rejected (${subject}). Keep the physics node but use one of the documented scenes with numeric parameters inside their bounds${node}. Do not invent a scene; if the model is not reviewed, use a demonstration node instead.`,
   openui_truncated: ({ subject }) => `The previous render_intelligent_ui call was rejected (${subject}). The program was cut off while being written: send fewer points, shorter labels, or split the visual into smaller calls. Do not resend the same program.`,
-  visualization: ({ subject }) => `The visualization was rejected (${subject}). Keep the native {id,type:"visualization",template,payload,...} shape in render_intelligent_ui and fix the data payload. Pass values as JSON numbers (null for missing), keep series as an array of {name,data}, and match category lengths. Do not wrap static visuals in OpenUI source strings.`,
+  visualization: ({ subject }) => `The visualization was rejected (${subject}). Keep the native {id,type:"visualization",template,payload,...} shape in render_intelligent_ui and fix the data payload. Pass values as JSON numbers (null for missing), follow the template payload contract (function: functions with expression/domain; category charts: series with name/data; graphs: nodes/edges; geometry: shapes; teaching diagrams: items), and match category lengths. Do not wrap static visuals in OpenUI source strings.`,
   openui_syntax: openUiRepair,
   openui_program: openUiRepair,
   envelope_misuse: openUiRepair,

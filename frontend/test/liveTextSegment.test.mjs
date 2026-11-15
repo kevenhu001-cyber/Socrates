@@ -53,3 +53,42 @@ test('tail promotion retains paragraph, selection and code DOM through completio
     globalThis.IS_REACT_ACT_ENVIRONMENT = originalAct;
   }
 });
+
+test('raw-only assistant prose wires visualization placeholders after the lazy child mounts', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  const originalAct = globalThis.IS_REACT_ACT_ENVIRONMENT;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  const { setLegacyActions, resetBridgeCache } = await import('../src/react/legacy/gateway.ts');
+  const calls = [];
+  setLegacyActions({ postRender: {
+    reclaimVizCards: () => calls.push('reclaim'),
+    schedulePendingMermaid: () => calls.push('mermaid'),
+    processPendingViz: () => calls.push('viz'),
+    processPendingVizActions: () => calls.push('actions'),
+    wireCodeBlockHeaders: () => calls.push('headers'),
+  } });
+  const host = document.getElementById('root');
+  const root = createRoot(host);
+  const paint = text => ({ __html: text ? '<div class="viz" data-viz-state="loading"><div class="viz-body">Rendering</div></div>' : '' });
+  try {
+    await act(() => root.render(createElement(LiveTextSegment, { text: 'A diagram', live: false, settled: paint, tail: paint })));
+    assert.deepEqual(calls.slice(0, 5), ['reclaim', 'mermaid', 'viz', 'actions', 'headers']);
+    calls.length = 0;
+    const { IntelligentTextSegment } = await import('../src/react/intelligence-ui/IntelligentTextSegment.tsx');
+    await act(() => root.render(createElement(IntelligentTextSegment, {
+      text: 'A restored diagram', live: false, tools: [], prose: { settled: paint, tail: paint },
+    })));
+    assert.deepEqual(calls.slice(0, 5), ['reclaim', 'mermaid', 'viz', 'actions', 'headers'], 'settled raw-only prose owns the same widget initialization');
+  } finally {
+    await act(() => root.unmount());
+    resetBridgeCache();
+    dom.window.close();
+    globalThis.window = originalWindow;
+    globalThis.document = originalDocument;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = originalAct;
+  }
+});

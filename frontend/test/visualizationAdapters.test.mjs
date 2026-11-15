@@ -29,8 +29,8 @@ test('state diagrams use Mermaid state syntax and safe labels', () => {
     },
   });
   assert.match(text, /^stateDiagram-v2/);
-  assert.match(text, /state "Idle  state " as n_idle/);
-  assert.match(text, /n_idle --> n_ready : start   go/);
+  assert.match(text, /state "Idle #34;state#34;" as n_idle/);
+  assert.match(text, /n_idle --> n_ready : start #124; go/);
   assert.doesNotMatch(text, /\|/);
 });
 
@@ -40,4 +40,24 @@ test('GeoGebra rejected commands become render failures instead of silent succes
     evalCommand(command) { commands.push(command); return command !== 'Circle(A,4)'; },
   }, ['A=(0,0)', 'Circle(A,4)']), /Construction app rejected a command: Circle\(A,4\)/);
   assert.deepEqual(commands, ['A=(0,0)', 'Circle(A,4)']);
+});
+
+test('Mermaid text escapes label characters that can change diagram grammar', () => {
+  for (const template of ['flowchart', 'state', 'sequence']) {
+    const text = mermaidText({ template, payload: {
+      nodes: [{ id: 'a', label: 'x < 2; #1 & >0' }, { id: 'b', label: 'B' }],
+      edges: [{ from: 'a', to: 'b', label: 'x; y < 0' }],
+    } });
+    assert.match(text, /#60; 2#59; #35;1 #38; #62;0/);
+    assert.match(text, /x#59; y #60; 0/);
+  }
+});
+
+test('Mermaid formula labels preserve delimiters and absolute-value bars', () => {
+  const formula = '$\\frac{|x|+x^2+x^3+x^4+x^5+x^6+x^7+x^8}{\\sqrt{1+x^2}}$';
+  const text = mermaidText({ template: 'flowchart', payload: {
+    nodes: [{ id: 'a', label: formula }], edges: [],
+  } });
+  assert.ok(text.includes(formula.replaceAll('|', '#124;')));
+  assert.doesNotMatch(text, /…/);
 });

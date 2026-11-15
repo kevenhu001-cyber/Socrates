@@ -120,6 +120,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     /* Children's layout effects ran first: rows mounted by a window shift
        have already read the off-screen flag. */
     setOffscreenMount(false);
+    const previousItems = trackRef.current.items;
     trackRef.current = { items, floor, ceiling, full };
     const anchor = anchorRef.current;
     anchorRef.current = null;
@@ -127,7 +128,10 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
     if (anchor && host) correctScrollAnchor(anchor, host);
 
     const last = items.length ? items[items.length - 1] : null;
-    if (replaced && last?.restoredFromHistory) {
+    // A rewind removes the former tail but keeps the same conversation.
+    // Its restored rows must not trigger the initial history bottom pin.
+    const sharesRows = previousItems.some((entry) => indexOfId(items, entryId(entry, '')) >= 0);
+    if (replaced && !sharesRows && last?.restoredFromHistory) {
       const list = scrollHost();
       if (list) pinToBottom(list);
     } else if (replaced) {

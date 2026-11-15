@@ -290,3 +290,68 @@ test('replacing the transcript host remounts its current messages and keeps late
   expect(errors).toEqual([]);
   await page.screenshot({ path: 'test-results/transcript-host-replacement.png' });
 });
+
+test('edited turn anchors while its PATCH is pending and stays put when PATCH finishes', async ({ page }) => {
+  await mockAuthedApp(page);
+  let releasePatch;
+  const gate = new Promise(resolve => { releasePatch = resolve; });
+  let patchStarted = false;
+  await page.route('**/api/**/messages/**', async route => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    patchStarted = true;
+    await gate;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+  });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' });
+    window.stateStore.dispatch({ type: 'session/replace-messages', payload: [] });
+    for (let index = 0; index < 8; index++) {
+      window.addMessage('user', `Earlier prompt ${index}`);
+      window.addMessage('assistant', ('Earlier answer paragraph.\n\n').repeat(8));
+    }
+    window.addMessage('user', 'Edit this prompt');
+    window.addMessage('assistant', ('Answer to replace.\n\n').repeat(8));
+    window.askChatTurn = (_text, _content, controller) => { window.__editReplayHasController = Boolean(controller); };
+  });
+  const user = page.locator('#msgList .msg.user').last();
+  await user.getByRole('button', { name: 'Edit message', exact: true }).click();
+  await user.locator('textarea').fill('Updated prompt');
+  await user.locator('.msg-edit-submit').click();
+  await expect.poll(() => patchStarted).toBe(true);
+  await expect(page.locator('#msgList .msg.assistant').last()).toBeVisible();
+  const offset = () => user.evaluate(row => row.getBoundingClientRect().top - document.getElementById('msgList').getBoundingClientRect().top);
+  await expect.poll(offset).toBeLessThan(30);
+  await expect.poll(offset).toBeGreaterThanOrEqual(0);
+  const before = await offset();
+  releasePatch();
+  await expect.poll(() => page.evaluate(() => window.__editReplayHasController)).toBe(true);
+  await page.waitForTimeout(300);
+  expect(Math.abs(await offset() - before)).toBeLessThan(4);
+  await page.screenshot({ path: 'test-results/edited-turn-stable.png' });
+});
+
+test('basic composer stays usable when the rich editor chunk fails to load', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.route('**/assets/vendor-editor-*.js', route => route.abort('failed'));
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  const basic = page.locator('[data-basic-composer="true"]');
+  await expect(basic).toBeVisible();
+  await basic.fill('A draft during editor recovery');
+  await expect(basic).toHaveValue('A draft during editor recovery');
+  await expect(page.locator('[data-mount-recovery="composer-shell"]')).toBeVisible();
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    const sent = () => { window.__basicSent = true; };
+    window.__socratesLegacy.composer.submitChatMessage = sent;
+    window.__socratesLegacy.composer.startSession = sent;
+  });
+  await basic.fill('Send with the basic editor');
+  await basic.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__basicSent)).toBe(true);
+});

@@ -117,3 +117,16 @@ test('server failure details map to one readable reason', () => {
   assert.equal(states.reasonFromToolFailure(null, 'arguments_parse_failed'), 'truncated');
   assert.equal(states.reasonFromToolFailure(null, null), 'unknown');
 });
+
+test('an invalid live heatmap update returns to the failure-card path without throwing', async () => {
+  const card = await mount({ version: 1, template: 'heatmap', title: 'Measurements', accessibilitySummary: 's', payload: {
+    xCategories: ['A'], yCategories: ['Row'], values: [[2]],
+  } });
+  assert.equal(typeof card._visualizationUpdate, 'function');
+  let accepted;
+  assert.doesNotThrow(() => { accepted = card._visualizationUpdate({ version: 1, template: 'heatmap', title: 'Missing', payload: {
+    xCategories: ['A'], yCategories: ['Row'], values: [[null]],
+  } }); });
+  assert.equal(accepted, false);
+  assert.equal(card.querySelector('h3').textContent, 'Measurements');
+});

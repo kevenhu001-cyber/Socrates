@@ -191,7 +191,8 @@ function heatmapChartOption(
   const xCategories = payload.xCategories || [];
   const yCategories = payload.yCategories || [];
   const matrix = payload.values || [];
-  const heatValues = matrix.flat();
+  const heatValues = matrix.flat().filter((value) => typeof value === 'number' && Number.isFinite(value));
+  if (!heatValues.length) throw new Error('Heatmap needs at least one finite measurement.');
   const heatMin = Math.min.apply(null, heatValues);
   let heatMax = Math.max.apply(null, heatValues);
   if (heatMin === heatMax) heatMax = heatMin + 1;
@@ -225,10 +226,10 @@ function heatmapChartOption(
       /* The ramp runs from a pale tint to the accent in both themes, so a
          cell's label follows its own fill, not the page: ink on pale cells,
          white on deep ones. Theme text made pale cells unreadable in dark. */
-      data: matrix.flatMap((row, y) => row.map((value, x) => ({
+      data: matrix.flatMap((row, y) => row.flatMap((value, x) => typeof value === 'number' && Number.isFinite(value) ? [{
         value: [x, y, value],
         label: { color: (Number(value) - heatMin) / (heatMax - heatMin) > 0.6 ? '#ffffff' : '#1c2637' },
-      }))),
+      }] : [])),
       label: { show: xCategories.length * yCategories.length <= 80, fontFamily },
       emphasis: { itemStyle: { borderColor: colors.text, borderWidth: 1 } },
     }],

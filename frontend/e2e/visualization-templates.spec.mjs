@@ -6,9 +6,14 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
    Each must render content without a fallback, without raising the global
    error banner, and only expose card actions that actually work. */
 const S = (template, payload) => ({ version: 1, template, title: 'T ' + template, accessibilitySummary: 'summary ' + template, payload });
-const nodes = [{ id: 'a', label: 'Start' }, { id: 'b', label: 'Middle' }, { id: 'c', label: 'End' }];
+const nodes = [{ id: 'a', label: 'Start' }, { id: 'b', label: 'Middle; x < 2 & y > 0' }, { id: 'c', label: 'End' }];
 const edges = [{ from: 'a', to: 'b', label: 'go' }, { from: 'b', to: 'c' }];
 const CASES = [
+  ...['line', 'area', 'bar', 'histogram'].map(template => ({ spec: S(template, { categories: ['A', 'B'], series: [{ data: [3, 5] }] }), content: 'svg *', tableRows: 2 })),
+  { spec: S('pie', { categories: ['A', 'B'], series: [{ data: [3, 5] }] }), content: 'svg *', tableRows: 2 },
+  ...['network', 'concept_map'].map(template => ({ spec: S(template, { nodes, edges }), content: 'svg *' })),
+  { spec: S('whiteboard', { items: [{ label: 'Idea A' }, { label: 'Idea B' }] }), content: '.tl-container' },
+  { spec: S('math_construction', { commands: ['A=(0,0)', 'Circle(A,4)'] }), content: '[data-test-ggb]' },
   { spec: { ...S('radar', { indicators: [{ name: 'Speed', max: 10 }, { name: 'Power', max: 10 }, { name: 'Focus', max: 10 }], series: [{ name: 'x', data: [8, 6, 9] }, { name: 'y', data: [5, 9, 4] }] }), caption: 'Optional explanatory note.' }, content: 'svg *' },
   { spec: S('heatmap', { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] }), content: 'svg', tableRows: 2 },
   { spec: S('scatter', { xLabel: 'Hours', yLabel: 'Score', series: [{ name: 'Samples', data: [[1, 4], { x: 2, y: 7 }, [3, 6]] }] }), content: 'svg *', tableRows: 3 },
@@ -16,14 +21,14 @@ const CASES = [
   { spec: S('function', { functions: [{ expression: 'sin(x)', label: 'Sine', domain: [-3, 3] }] }), content: 'svg *' },
   { spec: S('paper_chart', { categories: ['A', 'B'], series: [{ name: 'Trend', kind: 'line', data: [1, 2] }, { name: 'Counts', kind: 'bar', data: [3, 4] }, { name: 'Samples', kind: 'scatter', data: [4, 2] }] }), content: 'svg *', tableRows: 2 },
   { spec: S('flowchart', { nodes, edges }), content: 'svg *' },
-  { spec: S('sequence', { nodes: [{ id: 'student', label: 'Student' }, { id: 'tutor', label: 'Tutor' }], edges: [{ from: 'student', to: 'tutor', label: 'asks' }] }), content: 'svg *' },
-  { spec: S('state', { nodes: [{ id: 'idle', label: 'Idle' }, { id: 'ready', label: 'Ready' }], edges: [{ from: 'idle', to: 'ready', label: 'start' }] }), content: 'svg *' },
+  { spec: S('sequence', { nodes: [{ id: 'student', label: 'Student; x < 2' }, { id: 'tutor', label: 'Tutor' }], edges: [{ from: 'student', to: 'tutor', label: 'asks' }] }), content: 'svg *' },
+  { spec: S('state', { nodes: [{ id: 'idle', label: 'Idle; x < 2' }, { id: 'ready', label: 'Ready' }], edges: [{ from: 'idle', to: 'ready', label: 'start' }] }), content: 'svg *' },
   { spec: S('tree', { nodes: [{ id: 'root', label: 'Root' }, { id: 'left', label: 'Left' }, { id: 'right', label: 'Right' }], edges: [{ from: 'root', to: 'left' }, { from: 'root', to: 'right' }] }), content: 'svg *' },
   { spec: S('mindmap', { nodes: [{ id: 'root', label: 'Topic' }, { id: 'branch', label: 'Branch' }], edges: [{ from: 'root', to: 'branch' }] }), content: 'svg *' },
   { spec: S('timeline', { items: [{ label: 'Start', value: '1900', detail: 'x' }, { label: 'Finish', value: '1950', detail: 'y' }] }), content: 'svg *', tableRows: 2 },
   { spec: S('process', { items: [{ label: 'Collect' }, { label: 'Compare' }, { label: 'Decide' }] }), content: 'svg *', tableRows: 3 },
   { spec: S('comparison', { items: [{ label: 'Option A', value: 'Fast' }, { label: 'Option B', value: 'Simple' }] }), content: 'svg *', tableRows: 2 },
-  { spec: S('number_line', { items: [{ label: 'Low', value: -2 }, { label: 'Zero', value: 0 }, { label: 'High', value: 3 }] }), content: 'svg *', tableRows: 3 },
+  { spec: S('number_line', { items: [{ label: 'Low', value: -10000 }, { label: 'Zero', value: 0 }, { label: 'High', value: 10000 }] }), content: 'svg *', tableRows: 3 },
   { spec: S('geometry', { shapes: [{ type: 'point', at: [0, 0], label: 'O' }, { type: 'segment', from: [0, 0], to: [3, 2], label: 'AB' }, { type: 'circle', center: [0, 0], radius: 2 }, { type: 'polygon', points: [[0, 0], [3, 0], [2, 2]], label: 'Triangle' }] }), content: 'svg *', tableRows: 4 },
   { spec: S('interactive_simulation', { source: '<div id="x">hi</div><script>document.getElementById("x").textContent="ok"</script>' }), content: 'iframe[data-ready="true"]' },
   { spec: S('svg_illustration', { source: '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#336699"/><circle cx="600" cy="400" r="160" fill="#fff"/></svg>' }), content: 'iframe[data-ready="true"]' },
@@ -36,6 +41,21 @@ for (const { spec, content, tableRows } of CASES) {
     page.on('pageerror', (e) => errors.push(String(e)));
     page.on('console', (m) => { if (m.type() === 'error' && /global-error/.test(m.text())) errors.push(m.text()); });
     await mockAuthedApp(page);
+    if (spec.template === 'math_construction') {
+      // Verify the adapter without depending on the external GeoGebra CDN.
+      await page.addInitScript(() => {
+        window.GGBApplet = class {
+          constructor(options) { this.options = options; }
+          inject(stage) {
+            const content = document.createElement('div');
+            content.dataset.testGgb = 'true';
+            content.textContent = 'Construction';
+            stage.appendChild(content);
+            this.options.appletOnLoad({ evalCommand: () => true, remove: () => content.remove() });
+          }
+        };
+      });
+    }
     await page.route('**/api/**/chat/stream', (route) => route.fulfill({
       status: 200,
       contentType: 'text/event-stream',
@@ -61,6 +81,9 @@ for (const { spec, content, tableRows } of CASES) {
     await expect(card.locator('.visualization-fallback')).toHaveCount(0);
     if (spec.template === 'heatmap') await card.screenshot({ path: 'test-results/visualization-heatmap.png' });
     if (spec.template === 'process') await card.screenshot({ path: 'test-results/visualization-process.png' });
+    if (spec.template === 'number_line') {
+      await expect(card.locator('svg text').filter({ hasText: /^10000$/ })).toHaveCount(1);
+    }
     if (spec.template === 'number_line') await card.screenshot({ path: 'test-results/visualization-number-line.png' });
     if (spec.template === 'geometry') await card.screenshot({ path: 'test-results/visualization-geometry.png' });
     if (spec.caption) {

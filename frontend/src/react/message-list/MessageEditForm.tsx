@@ -102,7 +102,7 @@ export function MessageEditForm({ initialText, cancelLabel, submitLabel, onCance
   useLayoutEffect(() => {
     const textarea = input.current;
     if (!textarea) return;
-    textarea.focus();
+    textarea.focus({ preventScroll: true });
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(Math.max(textarea.scrollHeight, 60), 320)}px`;

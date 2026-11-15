@@ -473,6 +473,18 @@ export function normalizeFunctionExpression(source) {
 }
 
 function normalizeFunctionPayload(payload, warnings) {
+  if (typeof payload.functions === 'string') payload.functions = [payload.functions];
+  if (isRecord(payload.functions) && Object.keys(payload.functions).length === 1 && payload.functions.item !== undefined) {
+    payload.functions = Array.isArray(payload.functions.item) ? payload.functions.item : [payload.functions.item];
+  }
+  // A series of formula objects is the function-template equivalent of
+  // functions. Never reinterpret sampled numeric chart data as expressions.
+  if (payload.functions === undefined && Array.isArray(payload.series)
+      && payload.series.length && payload.series.every((item) => isRecord(item)
+        && typeof firstDefined(item, ['expression', 'expr', 'formula', 'equation', 'eq', 'fn', 'f']) === 'string')) {
+    payload.functions = payload.series;
+    delete payload.series;
+  }
   if (!Array.isArray(payload.functions)) {
     const expression = firstDefined(payload, ['expression', 'expr', 'formula', 'equation', 'eq', 'expressions']);
     if (typeof expression === 'string') payload.functions = [{ expression }];
@@ -498,7 +510,16 @@ function normalizeFunctionPayload(payload, warnings) {
     if (fn.domain === undefined || fn.domain === null) delete fn.domain;
     else if (isRecord(fn.domain)) fn.domain = [fn.domain.min ?? fn.domain.from, fn.domain.max ?? fn.domain.to];
     if (Array.isArray(fn.domain)) {
-      const domain = fn.domain.slice(0, 2).map((value) => coerceNumber(typeof value === 'string' ? value.replace(/pi/i, String(Math.PI)) : value));
+      const domain = fn.domain.map((value) => {
+        const numeric = coerceNumber(value);
+        if (typeof numeric === 'number' || typeof value !== 'string') return numeric;
+        const expression = value.replace(/π/g, 'pi');
+        if (/\bx\b/i.test(expression) || expression.length > 80) return value;
+        try {
+          const evaluated = parseFunctionExpression(expression)(0);
+          return Number.isFinite(evaluated) ? evaluated : value;
+        } catch { return value; }
+      });
       if (domain.length === 2 && domain.every((value) => typeof value === 'number')) {
         if (domain[0] > domain[1]) { domain.reverse(); warnings.push('Swapped a reversed function domain.'); }
         fn.domain = domain;

@@ -26,9 +26,9 @@ let tldrawPromise: ReturnType<typeof loadTldraw> | null = null;
 export async function mountWhiteboard(spec: WhiteboardSpec, stage: HTMLElement) {
   tldrawPromise ||= loadTldraw().catch((error: unknown) => { tldrawPromise = null; throw error; });
   const [React, rootRuntime, tldraw, assets] = await tldrawPromise;
-  const seeds = spec.payload.nodes || spec.payload.items || [];
+  const seeds = spec.payload.nodes?.length ? spec.payload.nodes : spec.payload.items || [];
   const onMount = (editor: Editor) => {
-    const shapes: TLShapePartial<TLNoteShape>[] = seeds.slice(0, 30).map((item, index) => ({
+    const shapes: TLShapePartial<TLNoteShape>[] = seeds.map((item, index) => ({
       id: tldraw.createShapeId(`seed-${index}`),
       type: 'note',
       x: 40 + (index % 3) * 230,
@@ -41,7 +41,8 @@ export async function mountWhiteboard(spec: WhiteboardSpec, stage: HTMLElement) 
     }
   };
   const root = rootRuntime.mountOwnedRoot(stage, 'whiteboard', React.createElement(tldraw.Tldraw, {
-    persistenceKey: `socrates-${String(spec.title || 'whiteboard').replace(/\W+/g, '-').toLowerCase()}`,
+    // Each card owns an independent board. Titles are presentation text and
+    // cannot identify a persistent store (all Chinese titles collapsed to '-').
     assetUrls: assets.getAssetUrlsByImport(),
     onMount,
   }));

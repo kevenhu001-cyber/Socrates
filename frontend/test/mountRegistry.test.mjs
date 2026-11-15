@@ -286,3 +286,30 @@ test('a retired spec cannot be retried after registry reconfiguration', () => {
   runMountRegistry(document);
   assert.equal(hostIsMountedBy(document, 'page', 'new'), true);
 });
+
+test('basic composer preserves and edits drafts across surfaces without a rich editor', async () => {
+  const basicDom = new JSDOM('<!doctype html><div id="basic"></div>', { url: 'http://localhost/' });
+  globalThis.window = basicDom.window;
+  globalThis.document = basicDom.window.document;
+  globalThis.localStorage = basicDom.window.localStorage;
+  const { mountBasicComposer } = await import('../src/react/ui/composerRecovery.ts');
+  const { activateComposerSurface, setComposerMarkdown, getComposerMarkdown, clearComposer } = await import('../src/composer/controller.ts');
+  const { document } = basicDom.window;
+  activateComposerSurface('chat');
+  setComposerMarkdown('chat', 'Saved draft');
+  const release = mountBasicComposer(document.getElementById('basic'));
+  const field = document.querySelector('textarea');
+  assert.equal(field.value, 'Saved draft');
+  field.value = 'Recovered draft';
+  field.dispatchEvent(new document.defaultView.Event('input'));
+  assert.equal(getComposerMarkdown('chat'), 'Recovered draft');
+  setComposerMarkdown('topic', 'Another draft');
+  activateComposerSurface('topic');
+  assert.equal(field.value, 'Another draft');
+  clearComposer('topic');
+  assert.equal(field.value, '');
+  release();
+  assert.equal(document.querySelector('textarea'), null);
+  activateComposerSurface('chat');
+  assert.equal(getComposerMarkdown('chat'), 'Recovered draft');
+});

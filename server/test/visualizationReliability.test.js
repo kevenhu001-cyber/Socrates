@@ -30,6 +30,9 @@ const NOW_ACCEPTED = [
   ['flowchart hyphen ids', 'flowchart', { nodes: [{ id: 'step-1', label: 'A' }, { id: 'step-2', label: 'B' }], edges: [{ from: 'step-1', to: 'step-2' }] }],
   ['timeline 13 items', 'timeline', { items: Array.from({ length: 13 }, (_, i) => ({ label: `事件${i}`, value: String(2000 + i) })) }],
   ['implicit multiplication', 'function', { functions: [{ expression: '2x^2+3x' }] }],
+  ['single function string', 'function', { functions: 'x^2' }],
+  ['XML-style function items', 'function', { functions: { item: ['sin(x)', 'cos(x)'] } }],
+  ['formula series with constant domain', 'function', { series: [{ formula: 'sin(x)', name: 'Sine' }], domain: ['-2*pi', '2*pi'] }],
   ['y = prefix', 'function', { functions: [{ expression: 'y = x^2' }] }],
   ['5000 points with categories', 'line', { categories: cats(5000), series: [{ name: 'v', data: wave(5000) }] }],
   ['6000 points (downsampled)', 'line', { categories: cats(6000), series: [{ name: 'v', data: wave(6000) }] }],
@@ -127,4 +130,26 @@ test('transport-level truncation detection', () => {
   assert.equal(looksTruncatedToolArguments('not json'), false);
   assert.match(truncatedArgumentsHint('render_intelligent_ui'), /downsample/);
   assert.doesNotMatch(truncatedArgumentsHint('web_search'), /downsample/);
+});
+
+test('all-missing heatmap and radar measurements are rejected instead of drawing empty charts', () => {
+  for (const [template, payload] of [
+    ['heatmap', { xCategories: ['A'], yCategories: ['Row'], values: [[null]] }],
+    ['radar', { indicators: [{ name: 'A' }, { name: 'B' }, { name: 'C' }], series: [{ data: [null, null, null] }] }],
+  ]) {
+    const result = validateVisualizationSpec({ version: 1, template, title: 'Missing', accessibilitySummary: 'Missing', payload });
+    assert.equal(result.ok, false);
+    assert.equal(result.stage, 'semantic');
+    assert.match(JSON.stringify(result.issues), /numeric/);
+  }
+});
+
+test('function corrections preserve functions rather than instructing a switch to numeric series', async () => {
+  const { intelligentUiFeedback } = await import('../src/services/intelligentUiFeedback.js');
+  const feedback = intelligentUiFeedback('Bad formula', {
+    stage: 'visualization', componentType: 'visualization', componentKind: 'function', sourceChars: 0,
+    failures: [{ template: 'function', stage: 'payload_shape', title: 'Formula', issues: [{ path: 'payload.functions', message: 'Required' }] }],
+  });
+  assert.match(feedback.correction, /functions.*expression/);
+  assert.doesNotMatch(feedback.correction, /keep series as an array|keep series as an array/i);
 });

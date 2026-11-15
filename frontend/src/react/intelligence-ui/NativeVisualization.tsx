@@ -15,7 +15,7 @@ interface MountedCard { _visualizationUpdate?: (spec: Record<string, unknown>) =
 type MountPhase = { kind: 'loading' } | { kind: 'ready' } | { kind: 'failed'; reason: VizFailureReason; details: string };
 
 function repairPrompt(spec: Record<string, unknown>, reason: string): string {
-  return `Repair this visualization with render_intelligent_ui. It could not be drawn: ${reason}. Keep the same template unless it cannot show this data, write values as JSON numbers (null for a missing value), keep series as an array of {name,data}, and keep each series under 5000 points.\n\n${JSON.stringify(spec).slice(0, 8000)}`;
+  return `Repair this visualization with render_intelligent_ui. It could not be drawn: ${reason}. Keep the same template unless it cannot show this data, write values as JSON numbers (null for a missing value), follow the template payload contract (function: functions with expression/domain; category charts: series with name/data; graphs: nodes/edges; geometry: shapes; teaching diagrams: items), and keep each series under 5000 points.\n\n${JSON.stringify(spec).slice(0, 8000)}`;
 }
 
 export interface NativeVisualizationProps {
