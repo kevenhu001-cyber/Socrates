@@ -92,6 +92,22 @@ export function SessionTimeline({
     }
     return result;
   }, [sessions, projects, organization, day, languageRevision]);
+  /* Sticky group labels need one containing block per run. The virtual
+     timeline below owns absolute rows and stays flat; this section view is
+     for the normal-sized list, where each heading can stick inside its own
+     group and be pushed out by the next one instead of overlapping it. */
+  const sections = useMemo(() => {
+    const result: Array<{ key: string; heading?: string; project?: boolean; sessions: SessionItem[] }> = [];
+    for (const entry of entries) {
+      if (entry.session) {
+        if (!result.length) result.push({ key: 'group-' + entry.key, sessions: [] });
+        result[result.length - 1].sessions.push(entry.session);
+      } else {
+        result.push({ key: entry.key, heading: entry.heading, project: entry.project, sessions: [] });
+      }
+    }
+    return result;
+  }, [entries]);
   const renderSession = (session: SessionItem, onRetentionChange?: (id: string, active: boolean) => void) => <SessionRow
     session={session}
     isActive={session.id === currentSessionId}
@@ -107,8 +123,11 @@ export function SessionTimeline({
   /* RN-10: rows and headings are shared RN shell parts; they read the web theme. */
   if (entries.length > 80) return <WebUiTheme><VirtualSessionTimeline entries={entries} renderSession={renderSession} /></WebUiTheme>;
   return <WebUiTheme><div className="recents-list-content">
-    {entries.map((entry) => <React.Fragment key={entry.key}>
-      {entry.session ? renderSession(entry.session) : <SessionGroupHeading label={entry.heading ?? ''} project={entry.project} />}
-    </React.Fragment>)}
+    {sections.map((section) => <section className="recents-group" key={section.key}>
+      {section.heading ? <SessionGroupHeading label={section.heading} project={section.project} /> : null}
+      {section.sessions.map((session) => <React.Fragment key={session.id}>
+        {renderSession(session)}
+      </React.Fragment>)}
+    </section>)}
   </div></WebUiTheme>;
 }
