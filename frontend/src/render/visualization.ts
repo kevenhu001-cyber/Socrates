@@ -10,7 +10,7 @@ import { whenFontsReady } from './helpers.ts';
 import { ensureEcharts } from '../vendor/lazy.ts';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
-import { optionForChart, VIZ_FONT_FAMILY } from './visualizationOptions.ts';
+import { optionForChart, VIZ_FONT_FAMILY, type VizColors } from './visualizationOptions.ts';
 import { dispatchExtensionRepair, renderExtension } from './visualizationExtensions.ts';
 import { asVisualizationSpec, VizSpec } from './visualizationSpec.ts';
 import { CHART_TEMPLATES, EXTENSION_TEMPLATES, chartPrefersCanvas, visualizationRendererKind } from './visualizationRendererKind.ts';
@@ -111,16 +111,26 @@ function esc(value: unknown) {
 }
 
 function token(name: string, fallback: string) {
+  if (typeof document === 'undefined') return fallback;
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  return value ? 'hsl(' + value + ')' : fallback;
+  if (!value) return fallback;
+  if (value.startsWith('#') || value.startsWith('rgb') || value.startsWith('hsl')) return value;
+  return 'hsl(' + value + ')';
 }
 
-function palette() {
+function palette(): VizColors {
+  const isDark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-mode') === 'dark';
   return {
-    text: token('--text-100', '#1c2637'), muted: token('--text-300', '#68748a'),
-    line: token('--border-200', '#dbe2ea'), grid: token('--border-100', '#edf1f5'),
-    surface: token('--bg-100', '#ffffff'), primary: token('--accent-500', '#3a6df0'),
-    secondary: '#16a394', comparison: '#8a62d6', highlight: '#dc8a2f', baseline: '#8893a5',
+    text: token('--text-100', isDark ? '#ededed' : '#1c2637'),
+    muted: token('--text-300', isDark ? '#a1a1a1' : '#68748a'),
+    line: token('--border-200', isDark ? '#2e2e2e' : '#dbe2ea'),
+    grid: isDark ? 'rgba(255, 255, 255, 0.08)' : '#edf1f5',
+    surface: token('--card', isDark ? '#141414' : '#ffffff'),
+    primary: token('--accent-500', isDark ? '#3b82f6' : '#2563eb'),
+    secondary: isDark ? '#2dd4bf' : '#0d9488',
+    comparison: isDark ? '#a78bfa' : '#7c3aed',
+    highlight: isDark ? '#fbbf24' : '#f59e0b',
+    baseline: isDark ? '#94a3b8' : '#64748b',
   };
 }
 
@@ -422,12 +432,33 @@ function mountSemanticRenderer(spec: VizSpec, stage: HTMLElement) {
   return svgStageChart(stage);
 }
 
+function mountNativeSvgIllustration(spec: VizSpec, card: VisualizationCard, stage: HTMLElement) {
+  const source = String(spec.payload?.source || '');
+  const match = source.match(/<svg[\s\S]*<\/svg>/i);
+  if (!match) {
+    throw new Error('svg_document_root_invalid');
+  }
+  const cleanSvg = match[0].replace(/^<svg\b/i, '<svg role="img" aria-label="' + esc(spec.accessibilitySummary || spec.title) + '" style="max-width:100%;max-height:100%;display:block;margin:auto;"');
+  stage.innerHTML = cleanSvg;
+  card.dataset.visualizationRenderer = 'svg';
+  const mathCleanup = installVisualizationMath(stage);
+  card._visualizationCleanup = function () {
+    mathCleanup();
+    stage.replaceChildren();
+  };
+  return svgStageChart(stage);
+}
+
 async function mountTemplateRenderer(spec: VizSpec, host: HTMLElement, options: VisualizationMountOptions, card: VisualizationCard, stage: HTMLElement, cardId: string, renderState: VisualizationRenderState, isCancelled: () => boolean) {
   if (usesSpecializedRenderer(spec.template)) {
     return mountSpecializedRenderer(spec, card, stage, renderState, isCancelled);
   }
   if (CHART_TEMPLATES.includes(spec.template)) {
     return mountChartRenderer(spec, host, options, card, stage, renderState, isCancelled);
+  }
+  if (spec.template === 'svg_illustration') {
+    renderState.chart = mountNativeSvgIllustration(spec, card, stage);
+    return false;
   }
   if (EXTENSION_TEMPLATES.includes(spec.template)) {
     mountExtensionRenderer(spec, card, stage, cardId);

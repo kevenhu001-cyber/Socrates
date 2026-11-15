@@ -433,7 +433,27 @@ function _handleVizMessage(ev: MessageEvent<Record<string, unknown>>) {
   else _handleVizResize(sender, sender.id, data as { h?: unknown });
 }
 
+let _themeWatcherInstalled = false;
+function _ensureThemeWatcher() {
+  if (_themeWatcherInstalled || typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+  _themeWatcherInstalled = true;
+  const broadcastTheme = () => {
+    const mode = document.documentElement.getAttribute('data-mode') || 'light';
+    const iframes = document.querySelectorAll<HTMLIFrameElement>('.viz iframe, iframe.visualization-extension');
+    iframes.forEach((frame) => {
+      try {
+        frame.contentWindow?.postMessage({ type: 'socrates-theme-change', mode }, '*');
+      } catch (_) {
+        /* empty-catch: intentional — best-effort theme broadcast across frames */
+      }
+    });
+  };
+  const obs = new MutationObserver(broadcastTheme);
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+}
+
 function _ensureMessageListener() {
+  _ensureThemeWatcher();
   if (_msgListenerInstalled || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
   _msgListenerInstalled = true;
   window.addEventListener('message', _handleVizMessage);

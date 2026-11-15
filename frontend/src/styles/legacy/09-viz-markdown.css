@@ -31,7 +31,14 @@
 /* Viz — minimal diagram/canvas renderer.
    No card wrapper, no header toolbar, no elaborate loading effects.
    Just the content with subtle hover actions. */
-.viz{position:relative;margin:8px 0}
+.viz{
+  position:relative;margin:10px 0;
+  border:1px solid var(--ui-border-subtle);
+  border-radius:var(--ui-radius-lg);
+  background:var(--ui-bg-surface);
+  overflow:hidden;
+  transition:background-color 0.2s ease,border-color 0.2s ease;
+}
 .viz-actions{
   position:absolute;top:4px;right:4px;z-index:2;
   display:flex;align-items:center;gap:2px;
@@ -39,19 +46,18 @@
 .viz-status{
   display:inline-flex;align-items:center;gap:5px;
   height:26px;padding:0 7px;
-  border-radius:6px;
-  /* P_perf-no-tiny-blur — these badges sit inside the scrolling transcript;
-     a backdrop-filter here re-runs against the card behind on every scroll
-     frame. The .9-alpha fill already reads opaque on the card; the 4px blur
-     underneath was invisible but not free. */
+  border-radius:var(--ui-radius-sm);
   background:hsl(var(--bg-200)/.9);
   color:hsl(var(--text-400));
   font-size:calc(10px * var(--app-font-scale, 1));
   line-height:1;
+  transition:opacity 0.2s ease;
 }
 .viz-status-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex:0 0 auto}
 .viz[data-viz-state="loading"] .viz-status-dot{animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
 .viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
+.viz[data-viz-state="ready"] .viz-status{opacity:0;pointer-events:none}
+.viz[data-viz-state="ready"]:hover .viz-status,.viz[data-viz-state="ready"]:focus-within .viz-status{opacity:1;pointer-events:auto}
 .viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
 .viz[data-viz-state="ready"] .viz-status-dot{background:var(--ui-ink)}
 .viz[data-viz-state="error"] .viz-status-label::before{content:"Needs attention"}

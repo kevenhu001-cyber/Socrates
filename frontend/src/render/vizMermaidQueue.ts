@@ -3,6 +3,7 @@ import { ensureMermaid } from '../vendor/lazy.ts';
 import { esc } from './helpers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { _pendingMermaid, validMermaid, vizErrorHtml, takePendingMermaid } from './vizStubs.ts';
+import { installVisualizationMath } from './visualizationMath.ts';
 
 /** The vendored Mermaid global, injected by the lazy loader. */
 declare const mermaid: {
@@ -176,10 +177,10 @@ function _holdMermaidUntilVisible(item: MermaidItem, el: Element): boolean {
   return true;
 }
 
-function findMermaidCard(id: string): { el: HTMLElement; body: Element } | null {
+function findMermaidCard(id: string): { el: HTMLElement; body: HTMLElement } | null {
   const el = document.getElementById(id);
   if (!el) return null;
-  const body = el.querySelector('.viz-body');
+  const body = el.querySelector<HTMLElement>('.viz-body');
   return body ? { el, body } : null;
 }
 
@@ -204,6 +205,7 @@ function renderMermaidResult(
   if (result.bindFunctions) result.bindFunctions(card.body);
   const svg = card.body.querySelector('svg') as SVGElement | null;
   if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
+  installVisualizationMath(card.body);
 }
 
 function mermaidErrorMessage(error: unknown): string {
@@ -248,6 +250,25 @@ function holdOffscreenMermaidItem(item: MermaidItem): boolean {
   return Boolean(el && !_mermaidCardIsNearViewport(el) && _holdMermaidUntilVisible(item, el));
 }
 
+function drainNextMermaidItem(counts: { rendered: number; held: number; missing: number }): boolean {
+  const item = _pendingMermaid[0] as MermaidItem;
+  if (!document.getElementById(item.id)) {
+    _pendingMermaid.shift();
+    _pendingMermaid.push(item);
+    return ++counts.missing < MERMAID_GATE_SCAN_MAX;
+  }
+  if (holdOffscreenMermaidItem(item)) {
+    counts.held++;
+    _pendingMermaid.shift();
+    _pendingMermaid.push(item);
+    return counts.held < MERMAID_GATE_SCAN_MAX;
+  }
+  _pendingMermaid.shift();
+  renderPendingMermaidItem(item);
+  counts.rendered++;
+  return true;
+}
+
 export function processPendingMermaid(): void {
   if (typeof mermaid === "undefined") {
     ensureMermaid().then(function () {
@@ -259,39 +280,10 @@ export function processPendingMermaid(): void {
     return;
   }
   const frameStart = Date.now();
-  let rendered = 0;
-  let held = 0;
-  let missing = 0;
-  while (_pendingMermaid.length && rendered < MERMAID_RENDERS_PER_FRAME) {
-    /* Always start at least one diagram, even when this frame is already
-       over budget — otherwise a coarse clock could stall the queue. */
-    if (rendered > 0 && Date.now() - frameStart >= MERMAID_FRAME_BUDGET_MS) break;
-    const item = _pendingMermaid[0] as MermaidItem;
-    // A lazy prose tree may not have committed its placeholder yet. Keep
-    // its source until the real owner mounts and schedules the next drain.
-    if (!document.getElementById(item.id)) {
-      _pendingMermaid.shift();
-      _pendingMermaid.push(item);
-      if (++missing >= MERMAID_GATE_SCAN_MAX) break;
-      continue;
-    }
-    /* P_mermaid-viewport-gate — look at the head item without consuming
-       it. An off-screen card stays at the head for a later pass; the
-       observer wakes us when it nears the viewport. A bounded scan keeps
-       one long off-screen run from spinning here. */
-    if (holdOffscreenMermaidItem(item)) {
-      held++;
-      /* Skip this item for this frame but keep the rest of the queue
-         moving — a visible diagram further down must not wait behind
-         an off-screen one. */
-      _pendingMermaid.shift();
-      _pendingMermaid.push(item);
-      if (held >= MERMAID_GATE_SCAN_MAX) break;
-      continue;
-    }
-    _pendingMermaid.shift();
-    renderPendingMermaidItem(item);
-    rendered++;
+  const counts = { rendered: 0, held: 0, missing: 0 };
+  while (_pendingMermaid.length && counts.rendered < MERMAID_RENDERS_PER_FRAME) {
+    if (counts.rendered > 0 && Date.now() - frameStart >= MERMAID_FRAME_BUDGET_MS) break;
+    if (!drainNextMermaidItem(counts)) break;
   }
   /* Work left over continues on the next frame; the queue stays
      module-level so a card whose element lands in the DOM later is
@@ -303,8 +295,8 @@ export function processPendingMermaid(): void {
      would spin rAF forever, rendering nothing. The idle drain below is
      the safety net for a card the observer will never wake (e.g. its
      element was replaced by a message re-render under the same id). */
-  if (_pendingMermaid.length && (rendered > 0 || (!held && !missing))) schedulePendingMermaid();
-  if (held) armMermaidIdleDrain();
+  if (_pendingMermaid.length && (counts.rendered > 0 || (!counts.held && !counts.missing))) schedulePendingMermaid();
+  if (counts.held) armMermaidIdleDrain();
   try { _processPendingVizActions?.(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
 }
 

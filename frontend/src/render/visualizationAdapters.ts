@@ -6,6 +6,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import type { VizSpec } from './visualizationSpec.ts';
 import { STRUCTURE_TEMPLATES } from './visualizationRendererKind.ts';
 import type { GeoGebraApi } from '../types/vendorRuntime.ts';
+import { installVisualizationMath } from './visualizationMath.ts';
 
 export interface SpecializedVisualizationResult {
   handled: boolean;
@@ -60,11 +61,15 @@ function watchTheme(onChange: (mode: string | null) => void) {
 }
 
 function plotlyColors() {
+  const isDark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-mode') === 'dark';
   return {
-    text: cssColor('--text-100', '#1c2637'),
-    muted: cssColor('--text-300', '#68748a'),
-    grid: cssColor('--border-100', '#edf1f5'),
-    primary: cssColor('--accent-500', '#3a6df0'),
+    text: cssColor('--text-100', isDark ? '#ededed' : '#1c2637'),
+    muted: cssColor('--text-300', isDark ? '#a1a1a1' : '#68748a'),
+    grid: isDark ? 'rgba(255, 255, 255, 0.08)' : '#edf1f5',
+    primary: cssColor('--accent-500', isDark ? '#3b82f6' : '#2563eb'),
+    secondary: isDark ? '#2dd4bf' : '#0d9488',
+    comparison: isDark ? '#a78bfa' : '#7c3aed',
+    highlight: isDark ? '#fbbf24' : '#f59e0b',
   };
 }
 
@@ -106,8 +111,9 @@ function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['
   });
 }
 
-export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: string; muted?: string; grid?: string; primary: string; }, sampleFunctionImpl: typeof import('@socrates/core/visualizationMath').sampleFunction) {
+export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: string; muted?: string; grid?: string; primary: string; secondary?: string; comparison?: string; highlight?: string }, sampleFunctionImpl: typeof import('@socrates/core/visualizationMath').sampleFunction) {
   if (spec.template === 'function') {
+    const paletteList = [colors.primary, colors.secondary || '#0d9488', colors.comparison || '#7c3aed', colors.highlight || '#f59e0b'];
     return (spec.payload.functions || []).map((fn, index) => {
       const sampled = sampleFunctionImpl(fn.expression, fn.domain, 900);
       return {
@@ -116,7 +122,7 @@ export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: str
         type: 'scatter',
         mode: 'lines',
         name: fn.label || fn.expression,
-        line: { width: 2.4, color: [colors.primary, '#16a394', '#8a62d6', '#dc8a2f'][index % 4] },
+        line: { width: 2.4, color: paletteList[index % paletteList.length] },
         connectgaps: false,
       };
     });
@@ -170,6 +176,7 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
     scrollZoom: true,
     modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
   });
+  const mathCleanup = installVisualizationMath(stage);
   const stopWatchingTheme = watchTheme(() => {
     Plotly.relayout(stage, plotlyThemeUpdate(plotlyColors()));
   });
@@ -179,7 +186,7 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
       dispatchAction() { Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true }); },
       getDataURL() { return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 }); },
     },
-    cleanup() { stopWatchingTheme?.(); Plotly.purge(stage); },
+    cleanup() { mathCleanup?.(); stopWatchingTheme?.(); Plotly.purge(stage); },
   };
 }
 
@@ -235,6 +242,7 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
      after the card was cleaned up. */
   let generation = 0;
   let disposed = false;
+  let mathCleanup: (() => void) | undefined;
   const draw = async () => {
     const mine = ++generation;
     mermaid.initialize({
@@ -262,6 +270,8 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
       }
     }
     bindFunctions?.(stage);
+    mathCleanup?.();
+    mathCleanup = installVisualizationMath(stage);
   };
   await whenFontsReady('Geist Sans');
   await draw();
@@ -271,7 +281,7 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
   return {
     handled: true,
     chart: downloadSvgAdapter(stage),
-    cleanup() { disposed = true; stopWatchingTheme?.(); stage.replaceChildren(); },
+    cleanup() { disposed = true; mathCleanup?.(); stopWatchingTheme?.(); stage.replaceChildren(); },
   };
 }
 
@@ -291,7 +301,19 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   stage.appendChild(renderer.domElement);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x273149, 2.1));
   const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
-  scene.add(new THREE.GridHelper(12, 12, 0x8893a5, 0xdbe2ea));
+  const isDarkInitial = typeof document !== 'undefined' && document.documentElement.getAttribute('data-mode') === 'dark';
+  const gridHelper = new THREE.GridHelper(12, 12, isDarkInitial ? 0x94a3b8 : 0x8893a5, isDarkInitial ? 0x334155 : 0xdbe2ea);
+  scene.add(gridHelper);
+  const stopWatchingTheme = watchTheme((mode) => {
+    const isDark = mode === 'dark';
+    if (Array.isArray(gridHelper.material)) {
+      gridHelper.material.forEach((mat) => {
+        if ('color' in mat) (mat as { color: { setHex: (hex: number) => void } }).color.setHex(isDark ? 0x475569 : 0xdbe2ea);
+      });
+    } else if ('color' in gridHelper.material) {
+      (gridHelper.material as { color: { setHex: (hex: number) => void } }).color.setHex(isDark ? 0x475569 : 0xdbe2ea);
+    }
+  });
   const material = new THREE.MeshStandardMaterial({ color: 0x4f78dd, roughness: 0.42, metalness: 0.05, transparent: true, opacity: 0.9 });
   const objects = new THREE.Group();
   scene.add(objects);
@@ -347,6 +369,7 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
     },
     cleanup() {
       visible = false; cancelAnimationFrame(frame); resize.disconnect(); visibility?.disconnect(); controls.dispose();
+      stopWatchingTheme?.();
       scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh || object instanceof THREE.LineSegments)) return;
         object.geometry.dispose();

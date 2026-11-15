@@ -5,6 +5,64 @@ import { onKatexReady } from '../vendor/lazy.ts';
 const SVG = 'http://www.w3.org/2000/svg';
 const HTML = 'http://www.w3.org/1999/xhtml';
 
+const MATH_TRIGGER = /\$|\\[([]|\\(?:frac|sqrt|sin|cos|tan|log|ln|pi|theta|alpha|beta|gamma|lambda|sigma|omega|mu|Delta|sum|int|cdot|times|pm|approx|leq|geq|neq|partial|nabla)\b/;
+
+function ensureMathDelimiters(text: string): string {
+  if (/\$|\\[([]/.test(text)) return text;
+  return `$${text.trim()}$`;
+}
+
+function typesetSvgText(text: SVGTextElement, labels: Map<SVGTextElement, SVGForeignObjectElement>): void {
+  const source = (text.textContent || '').trim();
+  if (!MATH_TRIGGER.test(source)) return;
+  const html = renderInlineMathHtml(ensureMathDelimiters(source));
+  if (!html || !html.includes('katex')) return;
+  let box: DOMRect | SVGRect | null = null;
+  try {
+    box = text.getBBox();
+  } catch {
+    /* empty-catch: intentional — getBBox can throw in headless or detached SVG contexts */
+  }
+  if (!box || !box.width || !box.height) return;
+  const style = getComputedStyle(text);
+  const overlay = document.createElementNS(SVG, 'foreignObject');
+  const width = Math.max(box.width, 80);
+  overlay.setAttribute('x', String(box.x + (box.width - width) / 2));
+  overlay.setAttribute('y', String(box.y + box.height / 2 - 40));
+  overlay.setAttribute('width', String(width));
+  overlay.setAttribute('height', '80');
+  if (text.hasAttribute('transform')) overlay.setAttribute('transform', text.getAttribute('transform')!);
+  overlay.style.pointerEvents = 'none';
+  overlay.style.overflow = 'visible';
+  overlay.setAttribute('aria-hidden', 'true');
+  const content = document.createElementNS(HTML, 'div');
+  content.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;white-space:nowrap;';
+  content.style.color = style.fill;
+  content.style.fontSize = style.fontSize;
+  content.innerHTML = html;
+  overlay.append(content);
+  text.after(overlay);
+  text.style.opacity = '0';
+  labels.set(text, overlay);
+}
+
+function typesetTextLeaves(host: HTMLElement): void {
+  const walker = host.ownerDocument.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+  const leaves: Text[] = [];
+  let leaf: Text | null;
+  while ((leaf = walker.nextNode() as Text | null)) {
+    if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
+    if (MATH_TRIGGER.test(leaf.data)) leaves.push(leaf);
+  }
+  for (const item of leaves) {
+    const html = renderInlineMathHtml(ensureMathDelimiters(item.data));
+    if (!html) continue;
+    const span = host.ownerDocument.createElement('span');
+    span.innerHTML = html;
+    item.replaceWith(span);
+  }
+}
+
 /** Typeset renderer-owned SVG labels without rebuilding the plot or its state.
  * Keep the original text as the engine's layout and pointer-event target.
  * The overlay uses SVG coordinates, so zoom and responsive transforms apply.
@@ -25,49 +83,9 @@ export function installVisualizationMath(host: HTMLElement): () => void {
     }
     try {
       for (const text of host.querySelectorAll<SVGTextElement>('svg text')) {
-        const source = text.textContent || '';
-        if (!/\$|\\[([]/.test(source)) continue;
-        const html = renderInlineMathHtml(source);
-        if (!html || !html.includes('katex')) continue;
-        const box = text.getBBox();
-        if (!box.width || !box.height) continue;
-        const style = getComputedStyle(text);
-        const overlay = document.createElementNS(SVG, 'foreignObject');
-        const width = Math.max(box.width, 80);
-        overlay.setAttribute('x', String(box.x + (box.width - width) / 2));
-        overlay.setAttribute('y', String(box.y + box.height / 2 - 40));
-        overlay.setAttribute('width', String(width));
-        overlay.setAttribute('height', '80');
-        if (text.hasAttribute('transform')) overlay.setAttribute('transform', text.getAttribute('transform')!);
-        overlay.style.pointerEvents = 'none';
-        overlay.style.overflow = 'visible';
-        overlay.setAttribute('aria-hidden', 'true');
-        const content = document.createElementNS(HTML, 'div');
-        content.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;white-space:nowrap;';
-        content.style.color = style.fill;
-        content.style.fontSize = style.fontSize;
-        content.innerHTML = html;
-        overlay.append(content);
-        text.after(overlay);
-        text.style.opacity = '0';
-        labels.set(text, overlay);
+        typesetSvgText(text, labels);
       }
-      // Replace text leaves only: replacing a table cell or control's
-      // innerHTML destroys nested controls and their event listeners.
-      const walker = host.ownerDocument.createTreeWalker(host, NodeFilter.SHOW_TEXT);
-      const leaves: Text[] = [];
-      let leaf: Text | null;
-      while ((leaf = walker.nextNode() as Text | null)) {
-        if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
-        if (/\$|\\[([]/.test(leaf.data)) leaves.push(leaf);
-      }
-      for (const leaf of leaves) {
-        const html = renderInlineMathHtml(leaf.data);
-        if (!html) continue;
-        const span = host.ownerDocument.createElement('span');
-        span.innerHTML = html;
-        leaf.replaceWith(span);
-      }
+      typesetTextLeaves(host);
     } catch (error) { reportSwallow(error, 'visualization.renderMath'); }
     observer.observe(host, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['transform', 'x', 'y', 'style', 'fill'] });
   };

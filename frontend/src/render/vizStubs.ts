@@ -34,10 +34,9 @@ export const VIZ_THEME_RESET =
   '<style>' +
     '*,*::before,*::after{box-sizing:border-box}' +
     'html,body{margin:0;padding:0}' +
-    'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55}' +
-    'body{color:var(--text-100,#3a3a3a);background:transparent}' +
-    '[data-mode=dark] body{color:var(--text-100,#e8e8ec)}' +
-    'a{color:var(--accent-000,#5b6fdb)}' +
+    'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55;color:var(--text-100,#171717);background:transparent}' +
+    'html[data-mode=dark] body,[data-mode=dark] body{color:var(--text-100,#ededed);background:transparent}' +
+    'a{color:var(--accent-000,#3b82f6)}' +
     'svg{max-width:100%;height:auto;display:block}' +
     'pre{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}' +
     'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
@@ -302,9 +301,12 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
   // <head>, and the vizRuntime(id) snippet (which posts viz-ready)
   // is appended at the end of <body> so it runs AFTER all of the
   // user's inline <script>s.
-  const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  const currentMode = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-mode') || 'light') : 'light';
+  const doc = '<!DOCTYPE html><html data-mode="' + escAttr(currentMode) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
-    '<script>window.__vizId=' + JSON.stringify(id) + ';</script>' +
+    '<script>window.__vizId=' + JSON.stringify(id) + ';' +
+    'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change")document.documentElement.setAttribute("data-mode",e.data.mode);});' +
+    '</script>' +
     '</head><body>' + guardUserScripts(cleaned, id) + vizRuntime(id) + '</body></html>';
   const srcdoc = encodeSrcdoc(doc);
   const bodyHtml =
@@ -441,7 +443,14 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
         'var W=right-left,H=bottom-top;' +
         'function X(xv){return left+(xv-p.xMin)/(p.xMax-p.xMin)*W;}' +
         'function Y(yv){return bottom-(yv-yMin)/(yMax-yMin)*H;}' +
-        'var axisColor=getComputedStyle(document.body).getPropertyValue("--text-300").trim()||"#888";' +
+        'var isDark=(document.documentElement.getAttribute("data-mode")==="dark");' +
+        'var axisColor=isDark?"#a1a1a1":"#68748a";' +
+        'var gridColor=isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)";' +
+        'var lineColor=p.color&&p.color!=="#3a6df0"?p.color:(isDark?"#3b82f6":"#2563eb");' +
+        'ctx.strokeStyle=gridColor;ctx.lineWidth=1;ctx.beginPath();' +
+        'if(yMin<0&&yMax>0){ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));}' +
+        'if(p.xMin<0&&p.xMax>0){ctx.moveTo(X(0),top);ctx.lineTo(X(0),bottom);}' +
+        'ctx.stroke();' +
         'ctx.strokeStyle=axisColor;ctx.lineWidth=1;ctx.beginPath();' +
         'ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();' +
         'if(yMin<0&&yMax>0){ctx.strokeStyle=axisColor;ctx.beginPath();ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));ctx.stroke();}' +
@@ -451,12 +460,13 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
         'var yTicks=5;for(var t=0;t<=yTicks;t++){var yv=yMin+(yMax-yMin)*t/yTicks;ctx.fillText(yv.toFixed(2),left-6*dpr,Y(yv));}' +
         'ctx.textAlign="center";ctx.textBaseline="top";' +
         'var xTicks=6;for(var t2=0;t2<=xTicks;t2++){var xv=p.xMin+(p.xMax-p.xMin)*t2/xTicks;ctx.fillText(xv.toFixed(2),X(xv),bottom+4*dpr);}' +
-        'ctx.strokeStyle=p.color;ctx.lineWidth=p.width*dpr;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();' +
+        'ctx.strokeStyle=lineColor;ctx.lineWidth=p.width*dpr;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();' +
         'var started=false;' +
         'for(var k3=0;k3<N;k3++){if(!isFinite(ys[k3])){started=false;continue;}var px=X(xs[k3]),py=Y(ys[k3]);if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}}' +
         'ctx.stroke();' +
         'ctx.fillStyle=axisColor;ctx.font="italic "+Math.floor(11*dpr)+"px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText("f(x) = "+p.expr,left,Math.floor(6*dpr));' +
       '}' +
+      'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change"){document.documentElement.setAttribute("data-mode",e.data.mode);draw();}});' +
       'draw();' +
     '})();</script>';
   // CRITICAL: set window.__plot BEFORE the canvas init script runs.
@@ -465,7 +475,8 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
   // to draw. We use a <script> at the TOP of <body> that runs
   // synchronously before any subsequent <script>.
   const setupScript = '<script>window.__plot=' + payloadJson + ';</script>';
-  const doc = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  const currentMode = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-mode') || 'light') : 'light';
+  const doc = '<!DOCTYPE html><html data-mode="' + escAttr(currentMode) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
     '<script>window.__vizId=' + JSON.stringify(id) + ';</script>' +
     '</head><body>' + setupScript + innerHtml + vizRuntime(id) + '</body></html>';
