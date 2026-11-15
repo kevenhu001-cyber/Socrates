@@ -214,7 +214,7 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
       className={`attachment-chip ${isImage ? 'is-image' : 'is-file'}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
       data-id={entry.id}
       data-stage={entry.pending ? (entry.stage || 'uploading') : entry.error ? 'error' : 'ready'}
-      title={entry.error || entry.name || undefined}
+      title={entry.error ? displayError(entry) : entry.name || undefined}
       aria-label={isImage ? `${entry.name ?? 'Image'} — ${attachmentMeta(entry)}` : undefined}
       aria-busy={entry.pending ? true : undefined}
     >
@@ -231,7 +231,7 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
           type="button"
           className="attachment-chip-retry"
           aria-label={i18n('chat.attach.retry.aria', 'Retry upload')}
-          title={entry.error || i18n('chat.attach.retry.aria', 'Retry upload')}
+          title={displayError(entry)}
           onClick={() => onRetry(entry.id)}
         >
           <span aria-hidden="true" dangerouslySetInnerHTML={{ __html: RETRY_ICON }} />
