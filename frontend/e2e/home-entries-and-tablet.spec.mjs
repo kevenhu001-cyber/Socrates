@@ -1,44 +1,44 @@
 // e2e/home-entries-and-tablet.spec.mjs — landing entry points + tablet shell.
 //
-// 1. The phone landing surface used to end at the greeting and the capsule:
-//    the quick-action row was hidden below 769px and the tutor starters only
-//    rendered above it. Both now come back above the composer.
+// 1. The phone landing surface used to end at the greeting and the capsule.
+//    It now carries one entry point above the composer: a single suggestion
+//    line in Chat mode and the tutor starter cards in Tutor mode. The
+//    desktop shortcut rail stays off the phone — the reference shows one
+//    quiet line, and the same actions remain in the composer's + menu.
 // 2. 769–1024px used to open with a 278px sidebar, leaving a 509px column.
 //    Tablets now start on the 52px rail and keep the content width.
 
 import { expect, test } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('phone landing shows the quick actions above the capsule', async ({ page }) => {
+test('phone landing shows one suggestion line above the capsule', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAuthedApp(page);
   await page.goto('/');
   await waitForAppShell(page);
 
-  const rail = page.locator('#homeQuickActions');
-  await expect(rail).toBeVisible();
-  /* RN-1: shortcuts are React Native buttons; a dismissed one leaves the DOM. */
-  await expect(rail.locator('[data-testid^="home-shortcut-action-"]')).toHaveCount(3);
+  /* The desktop rail is a wide-screen affordance; the phone keeps one
+     muted suggestion line instead. */
+  await expect(page.locator('#homeQuickActions')).toBeHidden();
+  const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
+  await expect(suggestion).toHaveCount(1);
+  await expect(suggestion).toBeVisible();
 
-  /* The row sits above the composer, not under it, and does not run into the
-     greeting either. */
+  /* The line sits above the composer, not under it, and does not run into
+     the greeting either. */
   const boxes = await page.evaluate(() => {
     const rect = (selector) => {
       const box = document.querySelector(selector)?.getBoundingClientRect();
       return box ? { top: box.top, bottom: box.bottom, left: box.left, right: box.right } : null;
     };
-    return { rail: rect('#homeQuickActions'), composer: rect('#composerInputWrap'), greeting: rect('#topicTitle') };
+    return { suggestion: rect('#homeSuggestion'), composer: rect('#composerInputWrap'), greeting: rect('#topicTitle') };
   });
-  expect(boxes.rail.bottom).toBeLessThanOrEqual(boxes.composer.top);
-  expect(boxes.rail.top).toBeGreaterThanOrEqual(boxes.greeting.bottom);
-  expect(boxes.rail.left).toBeGreaterThanOrEqual(16);
+  expect(boxes.suggestion.bottom).toBeLessThanOrEqual(boxes.composer.top);
+  expect(boxes.suggestion.left).toBeGreaterThanOrEqual(16);
 
-  /* Tapping a chip still reaches the composer extension behind it. Phones
-     express the active tool as the chip's pressed state (the composer's own
-     tool chip is a desktop affordance), so assert the state, not a chip. */
-  const research = rail.locator('[data-testid="home-shortcut-action-research"]');
-  await research.click();
-  await expect(research).toHaveAttribute('aria-pressed', 'true');
+  /* Tapping it fills the composer with the tutor prompt it reuses. */
+  await suggestion.click();
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('Help me understand a concept');
 });
 
 test('phone tutor landing shows the starter cards', async ({ page }) => {

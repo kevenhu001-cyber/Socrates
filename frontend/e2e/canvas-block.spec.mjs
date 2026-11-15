@@ -18,11 +18,9 @@ test('canvas edits persist through session state and Iterate fills the rich comp
   const body = canvas.locator('.canvas-block-body');
   await expect(body).toContainText('Original answer');
 
-  /* Select by the action the button performs, not by its position. The
-   * toolbar gained a workbench button in the artifacts workbench work, and
-   * an index-based selector silently started pointing at the wrong control
-   * — clicking "original" instead of "edit" swapped the body for a <pre>,
-   * so the body element the spec was holding on to disappeared. */
+  /* Select by the action the button performs, not by its position: an
+   * index-based selector silently points at the wrong control when the
+   * toolbar gains or loses an action. */
   const editButton = canvas.locator('[data-action="canvas-edit"]');
   await editButton.click();
   await expect(body).toHaveAttribute('contenteditable', 'true');

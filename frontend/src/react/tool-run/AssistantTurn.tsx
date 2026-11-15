@@ -251,7 +251,7 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
 
   return (
     <ToolRunDisclosureProvider>
-      <TurnEvidence runtime={message.turnRuntime} text={rawText}>
+      <TurnEvidence runtime={message.turnRuntime} text={rawText} entryId={messageId}>
         <TurnActivitySurface
           activities={presentation.reasoningSummaries}
           publicSummary={presentation.publicSummary}

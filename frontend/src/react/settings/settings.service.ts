@@ -3,7 +3,7 @@ import { publishProfileSnapshot } from '../../ui/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
-import { loadSettingsModal, preloadSettingsModal } from './settings.preload';
+import { loadSettingsModal } from './settings.preload';
 
 let settingsReturnFocus: HTMLElement | null = null;
 
@@ -25,21 +25,10 @@ export function initializeSettingsService(): void {
   if (getSettingsSnapshot().revision === 0) {
     installSettingsBridge().publish({ open: false, externalApiOn: readExternalApiPreference() });
   }
-  /* Warm the modal chunk while the app is idle: the dynamic import was the
-     visible delay on the first Settings click. The import stays split out
-     of the entry graph; a reader who opens Settings a minute later gets
-     the modal in the same frame as the click. */
-  scheduleSettingsWarmup();
-}
-
-let settingsWarmupScheduled = false;
-function scheduleSettingsWarmup(): void {
-  if (settingsWarmupScheduled || typeof window === 'undefined') return;
-  settingsWarmupScheduled = true;
-  const warm = () => { preloadSettingsModal(); };
-  const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
-  if (typeof idle === 'function') idle.call(window, warm, { timeout: 2500 });
-  else window.setTimeout(warm, 1800);
+  /* No boot-time warm-up: an unconditional idle import downloaded the modal
+     and its first pane on every home page visit, even for readers who never
+     open Settings. The sidebar footer, More menu and Library toolbar already
+     preload it on pointer/focus intent, which is the moment that matters. */
 }
 
 export async function openSettings(): Promise<void> {

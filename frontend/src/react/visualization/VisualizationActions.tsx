@@ -3,7 +3,6 @@ import { Button } from '../ui/shadcn/button';
 
 export interface VisualizationActionsProps {
   labels: {
-    workbench: string;
     table: string;
     reset: string;
     download: string;
@@ -13,7 +12,6 @@ export interface VisualizationActionsProps {
   resetAvailable: boolean;
   downloadAvailable: boolean;
   fullscreenAvailable: boolean;
-  onWorkbench: () => void;
   onReset: () => void;
   onDownload: () => void;
   onFullscreen: () => void;
@@ -25,7 +23,6 @@ export function VisualizationActions({
   resetAvailable,
   downloadAvailable,
   fullscreenAvailable,
-  onWorkbench,
   onReset,
   onDownload,
   onFullscreen,
@@ -42,9 +39,6 @@ export function VisualizationActions({
 
   return (
     <div className="visualization-actions" data-viz-actions-root>
-      <Button variant="ghost" size="xs" data-viz-action="workbench" aria-label={labels.workbench} title={labels.workbench} onClick={onWorkbench}>
-        {labels.workbench}
-      </Button>
       <Button variant="ghost" size="xs" data-viz-action="table" hidden={!tableAvailable} aria-expanded={tableOpen} aria-label={labels.table} title={labels.table} onClick={toggleTable}>
         {labels.table}
       </Button>

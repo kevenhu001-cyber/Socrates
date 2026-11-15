@@ -10,6 +10,11 @@ for (const theme of ['light', 'dark']) for (const mobile of [false, true]) {
   test(`structured citations preview, keyboard dismissal and sources: ${theme}, ${mobile ? 'mobile' : 'desktop'}`, async ({ page }) => {
     await page.addInitScript((theme) => localStorage.setItem('socrates-theme', theme), theme);
     await prepareChatWorkbench(page);
+    await page.route(/\/api\/favicons\?/, (route) => route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'),
+    }));
     if (mobile) await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(async ({ source, quote, citation, claim }) => {
       const ctl = window.__evidenceCtl = await window.addStreamingMessage({ userPrompt: 'Check the result.' });
@@ -46,12 +51,41 @@ for (const theme of ['light', 'dark']) for (const mobile of [false, true]) {
     else if (mobile) await page.screenshot({ path: 'test-results/citation-preview-dark-mobile.png' });
     else await page.screenshot({ path: 'test-results/citation-preview-dark-desktop.png' });
     await page.keyboard.press('Escape');
-    await bubble.locator('.turn-sources summary').click();
-    await expect(bubble.locator('.turn-sources a')).toHaveAttribute('href', source.url);
+    const sourcesButton = bubble.locator('.turn-sources');
+    await sourcesButton.click();
+    const panel = page.locator('#sourcesPanel');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('.source-card')).toHaveCount(1);
+    await expect(panel.locator('.source-card-title')).toHaveText(source.title);
+    await expect(panel.locator('.source-card-snippet')).toHaveText(source.snippet);
+    await expect(panel.locator('.source-card')).toHaveAttribute('href', source.url);
+    await expect(panel.locator('.source-card-favicon')).toHaveAttribute('src', `/api/favicons?url=${encodeURIComponent('https://example.test')}`);
+    await expect(panel.locator('.source-card-favicon')).toBeVisible();
+    await expect(sourcesButton).toHaveAttribute('aria-expanded', 'true');
+    await panel.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
+    if (mobile) {
+      const box = await panel.boundingBox();
+      expect(box.x).toBe(0);
+      expect(box.width).toBe((await page.viewportSize()).width);
+    } else {
+      const [chatBox, panelBox] = await Promise.all([
+        page.locator('#mainContent').boundingBox(),
+        panel.boundingBox(),
+      ]);
+      expect(panelBox.x).toBeGreaterThanOrEqual(chatBox.x + chatBox.width - 1);
+      expect(panelBox.x + panelBox.width).toBeLessThanOrEqual((await page.viewportSize()).width);
+    }
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeHidden();
+    await expect(sourcesButton).toBeFocused();
+    await sourcesButton.click();
+    await panel.locator('.sources-panel-close').click();
+    await expect(panel).toBeHidden();
+    await expect(sourcesButton).toBeFocused();
     await page.evaluate(() => { window.__evidenceEvent({ type: 'turn.done', phase: 'done' }); window.__evidenceCtl.finish(); });
     await expect(bubble).toHaveAttribute('data-stream-settled', 'true');
     await expect(inline).toHaveCount(1);
-    await expect(bubble.locator('.turn-sources li')).toHaveCount(1);
+    await expect(sourcesButton).toHaveAttribute('data-source-count', '1');
   });
 }
 

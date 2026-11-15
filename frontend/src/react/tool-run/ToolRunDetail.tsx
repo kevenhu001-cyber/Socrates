@@ -12,6 +12,7 @@ import { UiButton } from '@socrates/ui/primitives';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
+import { openSourcesPanel } from '../sources/mount';
 import type { DetailSection as Section, ToolCallRecord, ToolRunView } from './toolRunModel';
 
 export interface ToolRunDetailProps {
@@ -59,11 +60,29 @@ function TextSection({ section }: { section: Extract<Section, { kind: 'output' |
   );
 }
 
-function ResultSection({ section }: { section: Section }) {
+function ResultSection({ section, entryKey }: { section: Section; entryKey: string }) {
   if (section.kind === 'sources') {
+    const items = section.items.map((item, index) => ({
+      id: `${entryKey}-${index}`,
+      title: item.title || item.url,
+      url: item.url,
+      host: item.host,
+      date: item.date,
+      source: item.source,
+    }));
     return (
       <DetailSection title={section.title} kind="sources">
         <SourceList sources={sourceCardsOf(section.items)} onOpen={openExternal} />
+        <UiButton
+          testID="tool-sources-open"
+          variant="ghost"
+          size="sm"
+          label={translate('sources.viewAll', 'View all sources')}
+          onPress={() => openSourcesPanel(
+            { key: `tool-${entryKey}`, title: section.title, items },
+            document.activeElement instanceof HTMLElement ? document.activeElement : null,
+          )}
+        />
       </DetailSection>
     );
   }
@@ -91,6 +110,7 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
   const errors = view.sections.filter((section) => section.kind === 'error');
   const images = imageOutputsOf(call);
   const empty = !args.length && !hasLiveOutput && !view.sections.length && !images.length && !facts.length;
+  const entryKey = call?.id || view.id;
   return (
     <>
       {args.map((section, index) => (
@@ -104,13 +124,13 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
           {view.liveOutput ? <CodeBlock testID="tool-live-output" maxHeight={200} text={view.liveOutput} {...copyLabels()} /> : null}
         </DetailSection>
       ) : null}
-      {!hasLiveOutput ? results.map((section, index) => <ResultSection key={`${section.kind}-${index}`} section={section} />) : null}
+      {!hasLiveOutput ? results.map((section, index) => <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />) : null}
       {images.length ? (
         <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
           {images.map((image) => <ImageOutput key={image.id} uri={image.uri} alt={image.name || translate('tool.detail.images', 'Images')} />)}
         </DetailSection>
       ) : null}
-      {errors.map((section, index) => <ResultSection key={`error-${index}`} section={section} />)}
+      {errors.map((section, index) => <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />)}
       {facts.length ? (
         <DetailSection title={translate('tool.techDetails', 'Technical details')} kind="technical">
           {facts.map((section, index) => (

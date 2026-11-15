@@ -10,7 +10,6 @@ import { useMessageToolbarCallbacks } from './useMessageActions';
 import { i18n } from '../legacy/gateway';
 import { Button } from '../ui/shadcn/button';
 import { TOOL_BUTTON, ToolButton } from './ToolButton';
-import { openWorkbench } from '../workbench/workbenchStore';
 
 const ShareIcon = getIconDescriptor('share').children;
 const ThumbsUpIcon = getIconDescriptor('thumbsUp').children;
@@ -90,7 +89,6 @@ interface MessageToolbarProps {
 }
 
 interface MessageToolbarActionsProps {
-  message: LegacyChatMessage;
   role: 'user' | 'assistant';
   callbacks: MessageToolbarCallbacks;
   copied: boolean;
@@ -104,7 +102,6 @@ interface MessageToolbarActionsProps {
 }
 
 function MessageToolbarActions({
-  message,
   role,
   callbacks,
   copied,
@@ -115,15 +112,6 @@ function MessageToolbarActions({
   compact,
   contextMenu,
 }: MessageToolbarActionsProps): React.ReactElement {
-  const openMessageWorkbench = () => openWorkbench({
-    id: String(message.clientId || message.id || Date.now()),
-    title: i18n('workbench.conversationTitle', 'Conversation'),
-    titleKey: 'workbench.conversationTitle',
-    type: 'document',
-    code: message.rawText || '',
-    previewHtml: message.html || undefined,
-  }, 'preview');
-
   const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
 
   /* Reuse the same actions for the latest toolbar and history menu. */
@@ -142,11 +130,6 @@ function MessageToolbarActions({
       ];
 
   const secondaryActions: OverflowAction[] = [
-    {
-      label: i18n('workbench.open', '在工作台打开'),
-      icon: <><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></>,
-      onClick: openMessageWorkbench,
-    },
     { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => callbacks.onShare?.() },
     { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => callbacks.onBranch?.() },
     { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event) },
@@ -281,7 +264,6 @@ function MessageToolbar({ message, role, onEdit, pending = false, contextMenu }:
         />
       )}
       <MessageToolbarActions
-        message={message}
         role={role}
         callbacks={callbacks}
         copied={copied}

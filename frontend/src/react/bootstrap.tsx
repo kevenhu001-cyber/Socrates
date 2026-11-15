@@ -48,11 +48,32 @@ export function bootstrapReactCompatibilityRuntime(): void {
   };
   runtime.__socratesMountReactCompatibility = () => {
     runMountRegistry(document, mountOptions);
-    /* RN-13 — the assistant turn renderer left the entry closure; fetch it
-       once the authenticated shell is up so the first answer (or a restored
-       session) does not wait on it. */
-    const warm = () => { preloadAssistantTurn().catch((error: unknown) => reportSwallow(error, 'react:preload-assistant-turn')); };
-    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(warm, { timeout: 1500 });
-    else window.setTimeout(warm, 1);
+    warmAssistantTurnOnComposerIntent();
   };
 }
+
+/**
+ * RN-13 — the assistant turn renderer left the entry closure. It used to be
+ * preloaded on every authenticated idle boot, which added its chunk (tool
+ * rows, evidence, visualization states) to readers who only opened the home
+ * page. Start that fetch on the first sign of composer intent instead: by
+ * the time the first message is sent the chunk is normally already parsed.
+ */
+function warmAssistantTurnOnComposerIntent(): void {
+  const composerOwns = (target: EventTarget | null): boolean =>
+    target instanceof Element
+    && target.closest('#composerInputWrap, #composerRoot, #topicComposerSlot, #chatComposerSlot') !== null;
+  const warm = (): void => {
+    for (const type of COMPOSER_INTENT_EVENTS) document.removeEventListener(type, onIntent, true);
+    preloadAssistantTurn().catch((error: unknown) => reportSwallow(error, 'react:preload-assistant-turn'));
+  };
+  const onIntent = (event: Event): void => {
+    /* Modifier keys alone (Tab, Ctrl, …) are not intent to write. */
+    if (event instanceof KeyboardEvent && MODIFIER_KEYS.has(event.key)) return;
+    if (composerOwns(event.target)) warm();
+  };
+  for (const type of COMPOSER_INTENT_EVENTS) document.addEventListener(type, onIntent, true);
+}
+
+const COMPOSER_INTENT_EVENTS = ['pointerdown', 'focusin', 'keydown'] as const;
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'CapsLock', 'Escape']);

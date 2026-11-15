@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
-import { gotoAndSettle } from './_lib.mjs';
+import { gotoAndSettle, login } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 
 const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
@@ -38,7 +38,21 @@ for (const signedIn of [true, false]) {
     for (const id of ['src/exam.ts', 'src/chat/streamingTurn.ts', 'node_modules/fuse.js/dist/fuse.mjs']) {
       expect(paths).not.toContain('/' + chunkOf(id));
     }
-    expect(paths.some((path) => /\/(?:katex|highlight)[^/]*\.(?:js|css)$/.test(path))).toBe(false);
+    /* Nothing optional is fetched just because the page sat idle. KaTeX
+       (~80 KB gzip) belongs to the formula path, highlight.js to a labelled
+       code block, and Fuse to the search panel; a plain chat page uses none
+       of them. Each test below exercises its own on-demand path. */
+    expect(paths.some((path) => /\/highlight[^/]*\.(?:js|css)$/.test(path))).toBe(false);
+    expect(paths.some((path) => /\/katex[^/]*\.(?:js|css)$/.test(path))).toBe(false);
+    /* Opening a conversation legitimately renders the assistant turn
+       (prose answers share its card shell), but Settings is only downloaded
+       after an explicit settings intent. */
+    for (const id of [
+      'src/react/settings/SettingsModal.tsx',
+      'src/react/settings/GeneralSettingsPane.tsx',
+    ]) {
+      expect(paths).not.toContain('/' + chunkOf(id));
+    }
     expect(await page.evaluate(() => ({ katex: !!window.katex, highlight: !!window.hljs, Fuse: !!window.Fuse })))
       .toEqual({ katex: false, highlight: false, Fuse: false });
     if (signedIn) {
@@ -48,6 +62,46 @@ for (const signedIn of [true, false]) {
     }
   });
 }
+
+/* A signed-in home visit is the first-load surface: it must not warm chunks
+   that belong to an answer, a settings dialog or a visualization. This is
+   the regression gate for "the home page got heavier": the byte ceiling
+   below is the whole JS/CSS graph after every idle slot has run, measured
+   from the built files, so a new eager import fails here instead of only
+   showing up as a slower first paint. */
+test('signed-in home visit keeps answer, settings and render vendors deferred', async ({ page }) => {
+  await flushIdle(page);
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await login(page);
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  const paths = await page.evaluate(() => [...new Set(performance.getEntriesByType('resource')
+    .map((entry) => new URL(entry.name).pathname).filter((path) => /^\/assets\/.+\.(?:js|css)$/.test(path)))]);
+  for (const id of [
+    'src/react/settings/SettingsModal.tsx',
+    'src/react/settings/GeneralSettingsPane.tsx',
+    'src/react/tool-run/AssistantTurn.tsx',
+    'src/exam.ts',
+    'src/chat/streamingTurn.ts',
+    'src/render/visualization.ts',
+  ]) {
+    expect(paths, `${id} joined the home-page load`).not.toContain('/' + chunkOf(id));
+  }
+  expect(paths.some((path) => /\/(?:katex|highlight)[^/]*\.(?:js|css)$/.test(path))).toBe(false);
+  expect(await page.evaluate(() => ({ katex: !!window.katex, highlight: !!window.hljs, Fuse: !!window.Fuse })))
+    .toEqual({ katex: false, highlight: false, Fuse: false });
+  const metrics = {
+    jsCssGzipBytes: paths.reduce((sum, path) => sum + gzipSync(readFileSync(resolve(import.meta.dirname, '../dist' + path))).length, 0),
+    paths,
+  };
+  writeFileSync('test-results/home-runtime-assets.json', JSON.stringify(metrics, null, 2));
+  await test.info().attach('home-runtime-assets', { body: JSON.stringify(metrics), contentType: 'application/json' });
+  /* Measured 984,840 B gzip on 2026-11-15 after removing the KaTeX and
+     Settings idle warm-ups; the ceiling leaves room for routine edits but
+     not for another optional feature chunk joining the boot path. */
+  expect(metrics.jsCssGzipBytes).toBeLessThan(1_020_000);
+});
 
 test('math alone loads KaTeX and a transient failure recovers with a single repaint', async ({ page }) => {
   let attempts = 0;
@@ -93,6 +147,9 @@ test('labelled code loads highlighting without KaTeX and preserves the copy sour
     release();
     await expect(code.locator('.hljs-keyword').first()).toBeVisible();
     await expect(code).toHaveText(source);
+    /* The `$5` inside the code block is not math, so rendering it must not
+       warm KaTeX either: the block stays verbatim. */
+    await expect(code.locator('.katex')).toHaveCount(0);
     expect(await page.evaluate(() => !!window.katex)).toBe(false);
     await page.screenshot({ path: 'test-results/round2-code-ready.png' });
   } finally { release(); }

@@ -1,0 +1,277 @@
+/* Reader for the citations and search results behind one answer.
+   Desktop: second transcript column, non-modal. Phone: full-screen sheet. */
+.sources-panel.hidden,
+.sources-backdrop.hidden {
+  display: none;
+}
+
+.sources-panel-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.sources-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  flex: 0 0 auto;
+  min-height: 52px;
+  padding: 0 var(--ui-space-md);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.sources-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+
+.sources-panel-icon {
+  flex: 0 0 auto;
+  color: var(--ui-text-tertiary);
+}
+
+.sources-panel-title {
+  margin: 0;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sources-panel-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: 6px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-panel);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.sources-panel-close {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-tertiary);
+  cursor: pointer;
+}
+
+.sources-panel-close:hover,
+.sources-panel-close:focus-visible {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.sources-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--ui-space-sm) var(--ui-space-sm) var(--ui-space-lg);
+}
+
+.sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sources-list-item {
+  margin: 0;
+}
+
+.source-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-lg);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.source-card:hover,
+.source-card:focus-visible {
+  border-color: var(--ui-border-subtle);
+  background: var(--accent);
+}
+
+.source-card-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-bg-panel);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.source-card-favicon {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--ui-radius-xs);
+  object-fit: contain;
+}
+
+.source-card-index {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 3px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--background);
+  border: 1px solid var(--ui-border-subtle);
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1;
+}
+
+.source-card-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.source-card-site {
+  color: var(--ui-text-tertiary);
+  font-size: var(--ui-font-size-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-card-date {
+  font-variant-numeric: tabular-nums;
+}
+
+.source-card-title {
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: var(--ui-line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.source-card-snippet {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.source-card-arrow {
+  flex: 0 0 auto;
+  margin-top: 6px;
+  color: var(--ui-text-tertiary);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.source-card:hover .source-card-arrow,
+.source-card:focus-visible .source-card-arrow {
+  opacity: 1;
+}
+
+@media (min-width: 769px) {
+  #appShell.has-sources-open .main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  #appShell.has-sources-open .main .main-content {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+  }
+  #appShell.has-sources-open .sources-panel {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+    width: min(420px, 40vw);
+    min-width: 300px;
+    height: 100%;
+    min-height: 0;
+    border-inline-start: 1px solid var(--border);
+    animation: sources-panel-enter var(--ui-duration-drawer, 280ms) var(--ui-ease-out) both;
+  }
+  .sources-backdrop {
+    display: none;
+  }
+}
+
+@keyframes sources-panel-enter {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+  .sources-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ui-z-modal);
+    background: var(--ui-backdrop);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .sources-panel {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ui-z-sheet);
+    display: flex;
+    flex-direction: column;
+    background: var(--ui-bg-elevated);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .sources-panel-body {
+    padding-inline: var(--ui-space-sm);
+  }
+  .source-card-arrow {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #appShell.has-sources-open .sources-panel {
+    animation: none;
+  }
+}

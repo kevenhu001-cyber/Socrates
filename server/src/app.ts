@@ -23,6 +23,7 @@ import sessionRouter from './routes/sessions.js';
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
 import intelligentUiMediaRouter from './routes/intelligentUiMedia.js';
+import faviconRouter from './routes/favicons.js';
 import chatRouter from './routes/chat.js';
 import chatTurnsRouter from './routes/chatTurns.js';
 import ttsRouter from './routes/tts.js';
@@ -587,6 +588,7 @@ app.use('/api/sessions', sessionRouter);
 // /api/chat so its /api/suggestions/* paths are not claimed by that router.
 app.use('/api/suggestions', suggestionsRouter);
 app.use('/api/intelligent-ui', intelligentUiMediaRouter);
+app.use('/api/favicons', faviconRouter);
 app.use('/api/tts', ttsRouter);
 // P_session-chunks — session-scoped BM25 retrieval over a session's
 // own history. Used by the chat surface to surface related past

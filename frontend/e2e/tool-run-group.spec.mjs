@@ -164,6 +164,13 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   await expect(sources.getByTestId('tool-source-title').first()).toHaveText('Alpha one');
   await expect(sources.getByTestId('tool-source-host').first()).toHaveText('example.test');
   await expect(sources.getByTestId('tool-source').first()).toHaveAttribute('role', 'link');
+  await sources.getByTestId('tool-sources-open').click();
+  const panel = page.locator('#sourcesPanel');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator('.source-card')).toHaveCount(2);
+  await expect(panel.locator('.source-card-title').first()).toHaveText('Alpha one');
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
   // The panel sits inside the prose column, under its own row.
   expect(await detail.evaluate((el) => Boolean(el.closest('.rn-tool-row[data-tcid="s1"]')))).toBe(true);
   await row.click();

@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Check, ClipboardX, Copy, Expand, PanelsTopLeft } from 'lucide-react';
+import { Check, ClipboardX, Copy, Expand } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
-import { openWorkbench } from '../workbench/workbenchStore';
 import { openVizModalRaw } from '../../render/vizStubs.ts';
 import { esc } from '../../render/helpers.ts';
 import { i18n } from '../legacy/gateway.ts';
@@ -53,21 +52,6 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
     feedbackTimer.current = window.setTimeout(() => setCopyState('idle'), 1800);
   }
 
-  function openInWorkbench() {
-    const code = codeElement.querySelector('code')?.textContent || '';
-    const title = language
-      ? translate('workbench.codeTitleLanguage', '{language} code').replace('{language}', language.toUpperCase())
-      : translate('workbench.codeTitle', 'Code');
-    openWorkbench({
-      id: `code-${Date.now()}`,
-      title,
-      titleKey: language ? 'workbench.codeTitleLanguage' : 'workbench.codeTitle',
-      type: 'code',
-      language,
-      code,
-    }, 'code');
-  }
-
   function expandCode() {
     const code = codeElement.querySelector('code')?.textContent || '';
     const html = `<pre style="margin:0;border:0;background:transparent;padding:18px 20px;font-family:var(--font-mono);font-size:13px;line-height:1.6;color:hsl(var(--text-200));white-space:pre-wrap;word-break:break-word;max-height:calc(100vh - 120px);overflow:auto"><code>${esc(code)}</code></pre>`;
@@ -84,10 +68,6 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
     <>
       <Button variant="ghost" size="icon-xs" className="code-block-expand" aria-label="Expand code" title="Expand" onClick={expandCode}>
         <Expand aria-hidden="true" />
-      </Button>
-      <Button variant="ghost" size="xs" className="code-block-workbench-btn" aria-label={translate('workbench.open', '在工作台打开')} title={translate('workbench.open', '在工作台打开')} onClick={openInWorkbench}>
-        <PanelsTopLeft aria-hidden="true" />
-        <span className="code-block-workbench-label">{translate('workbench.open', '在工作台打开')}</span>
       </Button>
       <Button variant={copyState === 'failed' ? 'destructive' : copyState === 'copied' ? 'secondary' : 'ghost'} size="xs" className={`code-block-copy${copyState === 'copied' ? ' copied' : ''}${copyState === 'failed' ? ' copy-failed' : ''}`} aria-label={copyLabel} title={copyLabel} onClick={copyCode}>
         {copyState === 'copied' ? <Check aria-hidden="true" /> : copyState === 'failed' ? <ClipboardX aria-hidden="true" /> : <Copy aria-hidden="true" />}

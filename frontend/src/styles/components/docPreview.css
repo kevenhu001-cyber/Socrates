@@ -28,14 +28,14 @@
 
 .doc-preview-open-original {
   font-size: var(--ui-font-size-xs);
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   text-decoration: none;
   border-bottom: 1px solid var(--ui-border-subtle);
   transition: color var(--ui-duration-fast, 150ms) var(--ui-ease-out);
 }
 
 .doc-preview-open-original:hover {
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 
 /* ── PDF toolbar ─────────────────────────────────────────────────────── */
@@ -61,7 +61,7 @@
   min-width: 4em;
   text-align: center;
   font-size: var(--ui-font-size-sm);
-  color: var(--muted-foreground);
+  color: var(--ui-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type SyntheticEvent } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../legacy/gateway';
+import { TurnSources } from './TurnSources';
 
 const PREFIX = '#socrates-citation-';
 
@@ -15,7 +16,7 @@ function safeHostname(url: string): string {
 }
 
 /** Links are inserted from validated annotations, never guessed from [n] text. */
-export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntime | null; text: string; children: ReactNode }) {
+export function TurnEvidence({ runtime, text, entryId, children }: { runtime?: TurnRuntime | null; text: string; entryId: string; children: ReactNode }) {
   const [preview, setPreview] = useState<{ claimId: string; left: number; top: number; pinned: boolean } | null>(null);
   const dialogRef = useRef<HTMLElement | null>(null);
   const anchorRef = useRef<HTMLAnchorElement | null>(null);
@@ -113,28 +114,15 @@ export function TurnEvidence({ runtime, text, children }: { runtime?: TurnRuntim
         {source.snippet ? <p>{source.snippet}</p> : null}
       </div>)}
     </aside>, document.body) : null}
-    {citedSources.length ? <details className="turn-sources" data-source-count={citedSources.length}>
-      <summary aria-label={i18n('citation.sourcesCount', 'Sources, {n}').replace('{n}', String(citedSources.length))}>
-        <svg className="turn-sources-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M4 2.5h5.5L12 5v8.5H4z" />
-          <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
-        </svg>
-        <span className="turn-sources-label">{i18n('citation.sources', 'Sources')}</span>
-        <span className="turn-sources-count" aria-hidden="true">{citedSources.length}</span>
-        <svg className="turn-sources-chevron" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="m4 6 4 4 4-4" />
-        </svg>
-      </summary>
-      <ol aria-label={i18n('citation.sources', 'Sources')}>{citedSources.map((source) => <li key={source.id} value={sources.indexOf(source) + 1}>
-        <a href={source.url} target="_blank" rel="noopener noreferrer">
-          {source.title || safeHostname(source.url)}
-          <svg className="turn-sources-external" viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}>
-            <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
-          </svg>
-        </a>
-        <small>{safeHostname(source.url)}</small>
-        {source.snippet ? <p>{source.snippet}</p> : null}
-      </li>)}</ol>
-    </details> : null}
+    {citedSources.length ? <TurnSources
+      entryId={entryId}
+      items={citedSources.map((source) => ({
+        id: source.id,
+        title: source.title || safeHostname(source.url),
+        url: source.url,
+        host: safeHostname(source.url),
+        snippet: source.snippet,
+      }))}
+    /> : null}
   </div>;
 }
