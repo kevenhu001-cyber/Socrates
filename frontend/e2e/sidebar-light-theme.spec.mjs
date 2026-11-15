@@ -83,7 +83,10 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
   console.log('MOBILE LIGHT STYLES:', JSON.stringify(mobileStyles, null, 2));
 
   // Assert mobile light styles
-  expect(mobileStyles.navTextColor).toBe('rgb(13, 13, 13)');
+  // The phone drawer paints its labels with --ui-text-nav, which in light
+  // mode resolves to --ui-text-primary (the theme's ink, #171717) rather
+  // than the desktop rail's darker step.
+  expect(mobileStyles.navTextColor).toBe('rgb(23, 23, 23)');
   expect(mobileStyles.recentTextColor).toBe('rgb(23, 23, 23)');
 
   await page.screenshot({ path: 'test-results/sidebar-mobile-light.png' });

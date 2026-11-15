@@ -452,7 +452,11 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.equal(tools[0].function.arguments, '{"query":"deep work"}');
   });
 
-  test('does NOT dispatch onToolUse when finish_reason is "stop" even if tool_calls were streamed', async () => {
+  test('dispatches onToolUse when finish_reason is "stop" but the call is complete (gateway compatibility)', async () => {
+    /* Third-party OpenAI-compatible gateways stream a tool call and then
+       close the turn with finish_reason "stop" instead of "tool_calls".
+       The call is complete — it carries a name and its arguments — so it
+       is dispatched rather than dropped. */
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
         { choices: [{ delta: { tool_calls: [{
@@ -469,7 +473,31 @@ describe('streamChatCompletion: tool_calls', () => {
       () => {}, () => {}, () => {}, () => {},
       (tc) => tools.push(tc),
     );
-    assert.equal(tools.length, 0, 'no onToolUse when finish_reason !== "tool_calls"');
+    assert.equal(tools.length, 1, 'a complete tool call survives a "stop" finish');
+    assert.equal(tools[0].id, 'call_x');
+    assert.equal(tools[0].function.name, 'noop');
+  });
+
+  test('does NOT dispatch onToolUse when finish_reason is "stop" and the call has no name', async () => {
+    /* A "stop" finish with an incomplete (nameless) call is a model that
+       closed in prose — the speculative call is dropped. */
+    globalThis.fetch = mock.fn(async () =>
+      makeSseResponse([
+        { choices: [{ delta: { tool_calls: [{
+          index: 0, id: 'call_y',
+          function: { arguments: '{"query":"half' },
+        }] } }] },
+        { choices: [{ delta: {}, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
+    );
+    const tools = [];
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'noop' } }] },
+      () => {}, () => {}, () => {}, () => {},
+      (tc) => tools.push(tc),
+    );
+    assert.equal(tools.length, 0, 'no onToolUse for an incomplete call on a "stop" finish');
   });
 
   test('dispatches onToolUse when finish_reason is "length" — truncated calls still reach the correction path', async () => {

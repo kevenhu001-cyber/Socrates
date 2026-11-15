@@ -67,11 +67,13 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);
   await expect(page.locator('.home-ideas, .chat-suggestions, #topicQuickActions')).toHaveCount(0);
   expect(luminance(geometry.pageBackground)).toBeGreaterThan(0.88);
-  /* Paper-canvas policy: the main card IS the paper (#ffffff), and the
-     shell paints the rail surface one step down (#f3f3f3) around it. The
-     composer is the same paper as the card, so it reads as raised because
-     of its shadow, not its fill. */
-  expect(geometry.pageBackground).toBe('rgb(255, 255, 255)');
+  /* Paper-canvas policy (2026-11-06): the canvas is the one-percent tint
+     under the paper (#fcfcfc), the shell paints the rail surface one step
+     down (#f3f3f3) around it, and the composer stays the white paper
+     (#ffffff), so it reads as raised because of its shadow, not its fill.
+     The surface-ladder guard encodes the same order: sidebar < canvas <
+     paper. */
+  expect(geometry.pageBackground).toBe('rgb(252, 252, 252)');
   expect(geometry.sidebarBackground).toBe('rgb(243, 243, 243)');
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
   expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
