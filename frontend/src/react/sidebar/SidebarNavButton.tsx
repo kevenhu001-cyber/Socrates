@@ -32,15 +32,6 @@ const LABEL_STYLE = {
   fontSize: 'var(--nav-label-size, var(--ui-font-size-sm))',
 } as unknown as TextStyle;
 
-/* New chat is the rail's one call-to-action; its pill carries the 500 label
-   weight the reference uses. The RN row writes fontWeight on the text node
-   itself, so a CSS override would need !important (forbidden by the debt
-   ratchet); the host passes the weight through `labelStyle` instead. */
-const NEW_LABEL_STYLE = {
-  ...LABEL_STYLE,
-  fontWeight: '500',
-} as unknown as TextStyle;
-
 /*
  * RN-7 — one primary destination, drawn by the shared RN shell row
  * (packages/ui/src/shell/Sidebar.tsx). `sidebar-nav-btn` / `active` stay as
@@ -74,7 +65,7 @@ export function SidebarNavButton({
       activeShadow="var(--ui-elevation-raised)"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}
-      labelStyle={item.key === 'new' ? NEW_LABEL_STYLE : LABEL_STYLE}
+      labelStyle={LABEL_STYLE}
       onPress={onClick}
     />
   );

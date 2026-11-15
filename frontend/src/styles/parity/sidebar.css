@@ -218,9 +218,17 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
-  /* New chat used to be lit only while the composer was empty. The rail's
-     CTA now owns its surface in every state; the rule moved to the nav
-     block below so the home and a conversation cannot disagree. */
+  /* The reference lights the primary destination while the composer is
+     empty — 新聊天 sits on a flat wash, so the rail always says where a
+     new turn starts. The wash is the selected role rather than the hover
+     role: it has to survive the pointer leaving the row, and it must not
+     be the same value a hover paints, or the two states are
+     indistinguishable. */
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+    background: var(--ui-bg-selected);
+    color: var(--foreground);
+  }
   /* Same visible set and order as before the parity pass. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
@@ -317,7 +325,6 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     margin: 0;
     padding: 0 6px 8px;
     overflow-y: auto;
-    scroll-padding-top: var(--ui-control-sm);
     scrollbar-width: thin;
   }
   #appShell #recentsPanel.hidden { display: none; }
@@ -338,14 +345,6 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     line-height: var(--ui-text-ui-line);
   }
   #appShell #sidebar .recents-list-content { display: flex; flex-direction: column; }
-  /* One containing block per date run: the heading sticks inside its own
-     group and is pushed out by the next group instead of stacking on it.
-     The flex column also keeps the RN heading (a Text) blockified. */
-  #appShell #sidebar .recents-group {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
   #appShell #sidebar .recents-time-label {
     padding: 12px 10px 4px;
     color: var(--ui-text-muted);
@@ -353,17 +352,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     font-weight: var(--ui-font-weight-medium);
     line-height: 16px;
   }
-  /* The rail is transparent over #appShell, whose surface is --ui-surface;
-     the sticky band paints that same surface and bleeds 8px into the
-     panel's inline padding so no row shows through the gutters. */
-  #appShell #sidebar .recents-group > .recents-time-label {
-    position: sticky;
-    top: 0;
-    z-index: var(--ui-z-header);
-    background: var(--ui-surface);
-    box-shadow: -8px 0 0 var(--ui-surface), 8px 0 0 var(--ui-surface);
-  }
-  #appShell #sidebar .recents-list-content > .recents-group:first-child > .recents-time-label { padding-top: 0; }
+  #appShell #sidebar .recents-list-content > .recents-time-label:first-child { padding-top: 0; }
 
   /* One line per chat, like chatgpt.com: title only; the relative time
      stays available as the row's tooltip (title attribute set by React). */
@@ -514,19 +503,6 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     min-width: var(--sidebar-row);
     min-height: var(--sidebar-row);
     padding: 0;
-  }
-  /* New chat is a normal 36px rail icon when collapsed; the CTA shape is
-     only for the open rail. Keep the focus ring ahead of the reset. */
-  #appShell #sidebar.collapsed #sidebarNav #navNew.sidebar-nav-btn {
-    height: var(--sidebar-row);
-    min-height: var(--sidebar-row);
-    margin-bottom: 0;
-    border-radius: var(--ui-radius-row);
-    background: transparent;
-    box-shadow: none;
-  }
-  #appShell #sidebar.collapsed #sidebarNav #navNew.sidebar-nav-btn:focus-visible {
-    box-shadow: var(--ui-focus-shadow);
   }
   #appShell #sidebar.collapsed .sidebar-search-row,
   #appShell #sidebar.collapsed .recents-panel,
@@ -774,28 +750,12 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
   #appShell #sidebarNav .sidebar-nav-btn:hover { background: var(--ui-fill); }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current="true"],
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"] {
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
+  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
+    #appShell #sidebarNav #navNew.sidebar-nav-btn {
     background: var(--ui-card);
     box-shadow: var(--ui-elevation-raised);
     color: var(--ui-ink);
-  }
-  /* New chat is the rail's one CTA (reference: chat-demo's elevated pill),
-     not only an "implied home" state. Centered icon + label, one ladder
-     step above the 36px nav rows, separated from them by a short gap. */
-  #appShell #sidebarNav #navNew.sidebar-nav-btn {
-    height: var(--ui-control-md);
-    min-height: var(--ui-control-md);
-    justify-content: center;
-    margin-bottom: var(--ui-space-sm);
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-card);
-    box-shadow: var(--ui-elevation-raised);
-    color: var(--ui-ink);
-  }
-  /* The pill's raised shadow replaces the global focus ring by specificity;
-     put the ring back at the same level. */
-  #appShell #sidebarNav #navNew.sidebar-nav-btn:focus-visible {
-    box-shadow: var(--ui-focus-shadow);
   }
 
   /* Search: a white pill with a hairline ring, deepening on focus. */
