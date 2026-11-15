@@ -249,6 +249,9 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
         pending = null;
         if (sample) onProgress(sample.percent, sample.loaded, sample.total);
       };
+      const scheduleFrame = typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame
+        : (cb: FrameRequestCallback) => setTimeout(cb, 16);
       xhr.upload.onprogress = (e) => {
         touch();
         if (!e.lengthComputable) return;
@@ -257,7 +260,7 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
           loaded: e.loaded,
           total: e.total,
         };
-        if (!frame) frame = requestAnimationFrame(flush);
+        if (!frame) frame = scheduleFrame(flush) as unknown as number;
       };
     }
     if (xhr.upload) xhr.upload.onload = () => {
