@@ -62,10 +62,9 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     margin: 0;
     padding: 0 var(--ui-space-md);
     border: 0;
-    /* RN-7 — the chat canvas and the header are one surface. The old
-       hairline divided the model lockup from the transcript and read as an
-       underline under "Socrates <model>"; the card's own edge and the
-       scroll fade already separate the two. */
+    /* No standing rule under the header. The bar is the top of the canvas
+       card, and a full-width hairline cut that card in two; the separator is
+       drawn by ::after below, and only while there is content to separate. */
     border-bottom: 0;
     background: var(--ui-bg-header-glass);
     -webkit-backdrop-filter: blur(16px);
@@ -76,6 +75,29 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
     line-height: var(--ui-text-ui-line);
     box-shadow: none;
   }
+
+  /* The separator exists only when it separates something: while the
+     transcript is scrolled under the header (body[data-transcript-scrolled],
+     set by the message list). Transparent ends keep it off the card's
+     rounded corners, so the header reads as part of the card. */
+  #appShell .top-bar::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--ui-hairline) 14%,
+      var(--ui-hairline) 86%,
+      transparent
+    );
+    opacity: 0;
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+    pointer-events: none;
+  }
+  body[data-transcript-scrolled="true"] #appShell .top-bar::after { opacity: 1; }
 
   #appShell .top-bar-left,
   #appShell .top-bar-right {

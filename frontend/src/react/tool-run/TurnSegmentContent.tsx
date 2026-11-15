@@ -44,7 +44,6 @@ export function TurnSegmentContent({
   if (segment.kind === 'group') {
     return (
       <ToolRunGroup
-        key={'group-' + index}
         segment={segment}
         tools={tools}
         messageId={messageId}
@@ -55,7 +54,7 @@ export function TurnSegmentContent({
 
   if (segment.kind === 'tool') {
     return (
-      <Fragment key={'tool-' + segment.call.id}>
+      <Fragment>
         <ToolRunRow view={toolRunView(segment.call)} call={segment.call} messageId={messageId} readOnly={readOnly} actionsOnly />
         <ToolRunAttachments call={segment.call} tools={tools} readOnly={readOnly} />
       </Fragment>

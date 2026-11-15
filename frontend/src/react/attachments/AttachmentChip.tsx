@@ -19,6 +19,9 @@ function i18n(key: string, fallback: string): string {
 const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
 const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
 const ERROR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><path d="M12 16.8v.2"/></svg>';
+/* Long enough for the exit transition in parity/composer-unified.css, short
+   enough that removing a chip still feels immediate. */
+const CHIP_EXIT_MS = 140;
 
 function truncateName(name: string): string {
   if (!name) return 'file';
@@ -208,10 +211,18 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
     .find((source) => !!source && !badSources.includes(source));
   const isImage = entry.kind === 'image';
   const canRetry = Boolean(entry.error) && !entry.pending;
+  const [leaving, setLeaving] = useState(false);
+  /* Wait for the exit transition before the store drops the entry; removal
+     used to cut straight from the strip, which read as a glitch. */
+  const removeWithExit = () => {
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(() => onRemove(entry.id), CHIP_EXIT_MS);
+  };
 
   return (
     <div
-      className={`attachment-chip ${isImage ? 'is-image' : 'is-file'}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}`}
+      className={`attachment-chip ${isImage ? 'is-image' : 'is-file'}${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}${leaving ? ' is-leaving' : ''}`}
       data-id={entry.id}
       data-stage={entry.pending ? (entry.stage || 'uploading') : entry.error ? 'error' : 'ready'}
       title={entry.error ? displayError(entry) : entry.name || undefined}
@@ -248,7 +259,7 @@ export function AttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps
         </span>
       )}
 
-      <AttachmentChipActions onRemove={() => onRemove(entry.id)} />
+      <AttachmentChipActions onRemove={removeWithExit} />
     </div>
   );
 }

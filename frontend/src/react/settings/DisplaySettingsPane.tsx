@@ -3,30 +3,22 @@ import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import { Switch } from '../ui/shadcn/switch';
-import { useState } from 'react';
 import {
-  displayPrefs,
-  setDisplayFont,
-  setDisplayWidth,
-  toggleGrid,
-  setBackgroundDark,
-  setBackgroundLight,
-  resetBackgroundDark,
-  resetBackgroundLight,
   DISPLAY_FONT_STEPS,
   DISPLAY_WIDTH_STEPS,
   FONT_LABELS,
   WIDTH_LABELS,
 } from '../../displayPrefs.ts';
+import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SettingsPaneProps } from './settings.types';
 
+/**
+ * Display: text size, content width, grid and background. Every control writes
+ * through `settingsPreferenceActions`, so the value comes back from one store
+ * instead of a local copy that could lag behind the document.
+ */
 export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
-  /* Mirror the live preference module so segmented controls update at once. */
-  const [display, setDisplay] = useState(() => ({ ...displayPrefs }));
-  const apply = (mutation: () => void) => {
-    mutation();
-    setDisplay({ ...displayPrefs });
-  };
+  const display = useSettingsPreferencesStore((state) => state);
 
   return (
     <section className="settings-pane" hidden={hidden}>
@@ -39,7 +31,7 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
         <div className="settings-choice settings-choice--segmented">
           <span className="settings-choice-label" id="settings-font-size-label">{label('文字大小', 'Text size')}</span>
           <ToggleGroup variant="outline" value={[String(display.font)]}
-            onValueChange={(values) => { if (values[0]) apply(() => setDisplayFont(Number(values[0]))); }}
+            onValueChange={(values) => { if (values[0]) settingsPreferenceActions.setFont(Number(values[0])); }}
             aria-labelledby="settings-font-size-label">
             {DISPLAY_FONT_STEPS.map((step, index) => (
               <ToggleGroupItem key={step} type="button" value={String(step)}>{FONT_LABELS[index]}</ToggleGroupItem>
@@ -49,7 +41,7 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
         <div className="settings-choice settings-choice--segmented">
           <span className="settings-choice-label" id="settings-content-width-label">{label('内容宽度', 'Content width')}</span>
           <ToggleGroup variant="outline" value={[String(display.width)]}
-            onValueChange={(values) => { if (values[0]) apply(() => setDisplayWidth(Number(values[0]))); }}
+            onValueChange={(values) => { if (values[0]) settingsPreferenceActions.setWidth(Number(values[0])); }}
             aria-labelledby="settings-content-width-label">
             {DISPLAY_WIDTH_STEPS.map((step, index) => (
               <ToggleGroupItem key={step} type="button" value={String(step)}>{WIDTH_LABELS[index]}</ToggleGroupItem>
@@ -57,21 +49,21 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           </ToggleGroup>
         </div>
         <ShadcnLabel className="settings-choice">{label('对话背景网格', 'Conversation grid')}
-          <Switch checked={display.showGrid !== false} onCheckedChange={() => apply(() => toggleGrid())} />
+          <Switch checked={display.showGrid !== false} onCheckedChange={() => settingsPreferenceActions.toggleGrid()} />
         </ShadcnLabel>
         <div className="settings-choice settings-choice--color">
           <span className="settings-choice-label">{label('自定义背景色', 'Custom background')}</span>
           <div className="settings-bg-pickers">
             <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl type="color" value={display.darkBg || '#09090b'} onChange={(event) => apply(() => setBackgroundDark(event.target.value))} />
+              <ShadcnNativeControl type="color" value={display.darkBg || '#09090b'} onChange={(event) => settingsPreferenceActions.setDarkBackground(event.target.value)} />
               <span>{label('深色', 'Dark')}</span>
             </ShadcnLabel>
-            <Button variant="outline" type="button" onClick={() => apply(() => resetBackgroundDark())}>{label('重置', 'Reset')}</Button>
+            <Button variant="outline" type="button" onClick={() => settingsPreferenceActions.resetDarkBackground()}>{label('重置', 'Reset')}</Button>
             <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl type="color" value={display.lightBg || '#ffffff'} onChange={(event) => apply(() => setBackgroundLight(event.target.value))} />
+              <ShadcnNativeControl type="color" value={display.lightBg || '#ffffff'} onChange={(event) => settingsPreferenceActions.setLightBackground(event.target.value)} />
               <span>{label('浅色', 'Light')}</span>
             </ShadcnLabel>
-            <Button variant="outline" type="button" onClick={() => apply(() => resetBackgroundLight())}>{label('重置', 'Reset')}</Button>
+            <Button variant="outline" type="button" onClick={() => settingsPreferenceActions.resetLightBackground()}>{label('重置', 'Reset')}</Button>
           </div>
         </div>
       </section>

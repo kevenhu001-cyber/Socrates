@@ -159,6 +159,19 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
 
   useControlTitles(toolsLabel, effortAccessibleLabel, voiceLabel, primaryLabel);
 
+  /* The React composer exposes readiness as `data-ready` on the disc, but two
+     older contracts still read the DOM classes: chat/composerTurn.ts uses
+     `#composerPrimaryBtn.active` when it decides `disabled` after a turn, and
+     the composer shell keys `#composerInputWrap.has-text` off having something
+     to send (draft *or* attachment). RN Web renders its own className, so the
+     web shell mirrors both from the committed tree, exactly like the titles
+     above. Without this the button stayed `disabled` after every turn and the
+     "has content" state never reached CSS. */
+  useLayoutEffect(() => {
+    anchor('composerPrimaryBtn')?.classList.toggle('active', canSend);
+    anchor('composerInputWrap')?.classList.toggle('has-text', canSend);
+  }, [canSend]);
+
   useEffect(() => {
     /* Attachment wiring runs at DOMContentLoaded. The file input is created
        here, after the authenticated shell becomes visible, so ask that module

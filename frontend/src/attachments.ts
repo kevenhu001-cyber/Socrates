@@ -238,11 +238,26 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
     };
     if (typeof onXhr === 'function') onXhr(xhr);
     if (typeof onProgress === 'function' && xhr.upload) {
+      /* Upload progress fires many times per second. Publishing each event
+         re-rendered the whole chip strip (and the composer around it), so the
+         newest sample is published once per frame instead. */
+      let pending: { percent: number; loaded: number; total: number } | null = null;
+      let frame = 0;
+      const flush = () => {
+        frame = 0;
+        const sample = pending;
+        pending = null;
+        if (sample) onProgress(sample.percent, sample.loaded, sample.total);
+      };
       xhr.upload.onprogress = (e) => {
         touch();
-        if (e.lengthComputable) {
-          onProgress(Math.round((e.loaded / e.total) * 100), e.loaded, e.total);
-        }
+        if (!e.lengthComputable) return;
+        pending = {
+          percent: Math.round((e.loaded / e.total) * 100),
+          loaded: e.loaded,
+          total: e.total,
+        };
+        if (!frame) frame = requestAnimationFrame(flush);
       };
     }
     if (xhr.upload) xhr.upload.onload = () => {

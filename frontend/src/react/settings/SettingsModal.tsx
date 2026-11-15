@@ -119,5 +119,9 @@ export function mountSettingsModal(): void {
     container.id = 'settingsModalReactRoot';
     document.body.appendChild(container);
   }
+  /* Synchronous mount: callers dispatch `socrates:settings-section` right
+     after `openSettings()` resolves, and the navigation listener only exists
+     once the tree has committed. The chunk itself is preloaded while idle, so
+     this is a render of already-loaded code, not a network wait. */
   flushSync(() => rootSlot.mount(container, <SettingsModal />, installSettingsBridge));
 }
