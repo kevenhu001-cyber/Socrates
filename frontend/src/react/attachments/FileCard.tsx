@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../ui/Button';
 import { FileIcon } from './FileIcon';
 
 export interface FileCardProps {
@@ -48,8 +49,8 @@ function renderIconNode(ext: string, status?: string, onRetry?: () => void): Rea
   }
   if (status === 'error' && onRetry) {
     return (
-      <button
-        type="button"
+      <Button
+        variant="plain"
         className="file-card-retry-btn"
         aria-label="Retry upload"
         onClick={(e) => {
@@ -58,7 +59,7 @@ function renderIconNode(ext: string, status?: string, onRetry?: () => void): Rea
         }}
       >
         {RETRY_ICON}
-      </button>
+      </Button>
     );
   }
   return <FileIcon ext={ext} />;
@@ -96,8 +97,8 @@ function FileCardBody({
         <div className="file-card-subcaption" title={description}>{description}</div>
       </div>
       {onRemove ? (
-        <button
-          type="button"
+        <Button
+          variant="plain"
           className="file-card-remove"
           aria-label="Delete attachment"
           onClick={(e) => {
@@ -107,7 +108,7 @@ function FileCardBody({
           }}
         >
           {REMOVE_ICON}
-        </button>
+        </Button>
       ) : null}
     </>
   );
