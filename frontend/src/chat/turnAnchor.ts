@@ -472,96 +472,7 @@ function startTurnViewportHold(
   holdTurnViewport();
 }
 
-/* ── Pre-paint send alignment ────────────────────────────────────────
- * The rows of a submitted turn mount one frame after the send: the React
- * snapshot commit is coalesced onto the next animation frame, so the
- * prompt's first paint lands at the pre-send scroll position — for a
- * bottom-anchored short transcript just above the composer, for a pinned
- * long transcript just below the fold — and only afterwards does the send
- * glide carry it up to the slot. That intermediate state is exactly the
- * "message appears above the composer, then travels to the top" that a
- * send must not show: the prompt belongs at the top offset in the very
- * frame it first becomes visible.
- *
- * This pass runs inside the frame the rows commit, before that frame
- * paints (the rAF registered here fires after the snapshot-commit rAF in
- * the same frame, and React's sync-lane commit drains in the microtask
- * between callbacks). It measures the real prompt, corrects the answer
- * reserve straight onto the mounted row, mirrors the reserve onto the
- * message entry so the next React commit repaints the same value instead
- * of reverting the write, snaps the transcript so the prompt sits at the
- * top offset, and claims viewport ownership. The send glide that follows
- * then finds itself already at its target and collapses to a no-motion
- * snap. Rows that never mount in time (a lazy MessageItem chunk on the
- * very first send) give the pass up and keep the glide fallback. */
 
-/* How many pre-paint frames the pass may wait for the rows to mount. */
-const PREPAINT_ALIGN_MAX_ATTEMPTS = 4;
-
-function prePaintTurnAlign(
-  list: TurnAnchorList,
-  clientId: string,
-  targetOffset: number,
-): boolean {
-  const promptRow = latestUserRow(list);
-  const anchorRow = turnRowFor(list, null, clientId);
-  if (!promptRow || !anchorRow) return false;
-  const styles = getComputedStyle(list);
-  const bottomPadding = parseFloat(styles.paddingBottom) || 0;
-  const reserve = turnAnchorReserve(
-    list.clientHeight,
-    promptRow.getBoundingClientRect().height,
-    bottomPadding,
-  );
-  /* The reserve goes straight onto the mounted row — this frame's paint
-     already has the answer room — and onto the entry, so the React commit
-     the publish below triggers repaints the same value instead of clearing
-     the style write. */
-  if ((parseFloat(anchorRow.style.minHeight) || 0) !== reserve) {
-    anchorRow.style.minHeight = reserve + 'px';
-  }
-  anchorRow.classList.add('turn-viewport-anchor');
-  const entry = findAnchorEntry(clientId);
-  if (entry
-    && (entry._turnAnchorMinHeight !== reserve
-      || entry._turnAnchorMode !== 'turn'
-      || entry._turnViewportTarget !== targetOffset)) {
-    updateMessageSnapshot(entry, {
-      _turnAnchorMinHeight: reserve,
-      _turnAnchorMode: 'turn',
-      _turnViewportTarget: targetOffset,
-      _toolRunRev: (entry._toolRunRev || 0) + 1,
-    }, true);
-    publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(clientId || '') });
-  }
-  /* The prompt is aligned in the frame it first paints, so the reader never
-     sees it at the composer edge. The write is layout convergence, not a
-     reader gesture: without the intent guard the resulting scroll event
-     reads as an upward drag and flips `_userScrolledAway`. */
-  alignPromptToOffset(list, promptRow, targetOffset);
-  markTurnViewportOwner(list);
-  return true;
-}
-
-function schedulePrePaintTurnAlign(
-  list: TurnAnchorList | null,
-  clientId: string,
-  targetOffset: number,
-  ownerSeq: number,
-): void {
-  if (!list || !clientId) return;
-  let attempts = 0;
-  const attempt = function (): void {
-    if (!list.isConnected) return;
-    /* A newer send owns the settling window; this pass belongs to its own
-       send only and must never align a superseded prompt. */
-    if (ownerSeq !== settlingOwner) return;
-    if (prePaintTurnAlign(list, clientId, targetOffset)) return;
-    attempts += 1;
-    if (attempts < PREPAINT_ALIGN_MAX_ATTEMPTS) requestAnimationFrame(attempt);
-  };
-  attempt();
-}
 
 function latestAssistantId(messages: MessageEntry[]): string {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -1035,12 +946,7 @@ export function scheduleActiveTurnToTop(
       promptTarget,
     });
   }
-  /* A normal send positions the prompt pre-paint (schedulePrePaintTurnAlign):
-     the first frame the new rows paint already shows the prompt at the top
-     slot, so the glide loop below has no visible travel left to perform. */
-  if (!retryViewport) {
-    schedulePrePaintTurnAlign(list, clientId, TURN_ANCHOR_TOP_OFFSET, settlingSeq);
-  }
+
   /* A retry bubble is already mounted in the legacy list and its target
      offset is known; scheduleAnchorPosition positions it synchronously so
      the first visible frame cannot flash while waiting for a deferred
