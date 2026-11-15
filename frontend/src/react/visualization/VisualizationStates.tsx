@@ -1,3 +1,4 @@
+import { MathText } from '../rn/useInlineMath';
 /**
  * Loading and failure states shared by every native visualization host:
  * the OpenUI `Visualization` component, a rejected `render_intelligent_ui`
@@ -78,12 +79,12 @@ export function VisualizationTable({ rows }: { rows: Array<Array<string | number
   const [header, ...body] = rows;
   const shown = body.slice(0, 200);
   return (
-    <div className="visualization-table-wrap viz-state-table" tabIndex={0}>
-      <table className="visualization-table">
-        <thead><tr>{header.map((cell, index) => <th key={index} scope="col">{cell === null ? '' : String(cell)}</th>)}</tr></thead>
+    <div className="ds-table-wrap visualization-table-wrap viz-state-table" tabIndex={0}>
+      <table className="ds-table visualization-table">
+        <thead><tr>{header.map((cell, index) => <th key={index} scope="col"><MathText text={cell === null ? '' : String(cell)} /></th>)}</tr></thead>
         <tbody>
           {shown.map((row, rowIndex) => (
-            <tr key={rowIndex}>{row.map((cell, index) => <td key={index} data-numeric={typeof cell === 'number' ? 'true' : undefined}>{cell === null || cell === '' ? '—' : String(cell)}</td>)}</tr>
+            <tr key={rowIndex}>{row.map((cell, index) => <td key={index} data-numeric={typeof cell === 'number' ? 'true' : undefined}><MathText text={cell === null || cell === '' ? '—' : String(cell)} /></td>)}</tr>
           ))}
         </tbody>
       </table>

@@ -1,6 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useRef } from 'react';
 import { createSettledProseCache } from '../../render/proseCache.ts';
 import { createSettledSplitter } from '../../render/streaming.ts';
+import { updateProseDom } from '../../render/proseDom.ts';
 import { createStreamReveal } from '../../render/streamReveal.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProseRenderer } from './proseRenderer';
@@ -15,11 +16,16 @@ interface SettledBlockProps {
 
 const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false, last = false, source = '' }: SettledBlockProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const paintedMarkupRef = useRef<string | null>(null);
   const revealRef = useRef<ReturnType<typeof createStreamReveal> | null>(null);
   const revealedMarkupRef = useRef<string | null>(null);
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
+    if (paintedMarkupRef.current !== html.__html) {
+      updateProseDom(element, html.__html);
+      paintedMarkupRef.current = html.__html;
+    }
     try {
       getLegacyActions().postRender?.wireCodeBlockHeaders?.(element);
     } catch {
@@ -39,7 +45,6 @@ const SettledBlock = memo(function SettledBlock({ html, live = false, tail = fal
       ref={ref}
       className={'tool-run-prose ' + (live ? 'is-live' : 'is-settled') + (tail ? ' is-tail' : '')}
       data-prose-last={last ? 'true' : undefined}
-      dangerouslySetInnerHTML={html}
     />
   );
 });

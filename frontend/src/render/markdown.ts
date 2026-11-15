@@ -493,11 +493,8 @@ function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): st
 
   s = inlineCodeGuard.restore(s);
 
-  if (!opts?.complete) {
-    s = s.replace(/(?:^|\n)((?:\|[^\n]+\|\s*\n?)+)$/, function () {
-      return bank.save('<div class="ds-table-wrap is-streaming" role="region" tabindex="0" aria-label="Table loading"><div class="table-stream-placeholder shimmer-text"><span class="table-stream-icon">⊞</span> 正在生成表格…</div></div>');
-    });
-  }
+  // GFM tables use the same renderer during streaming and at completion.
+  // A loading replacement here discarded every visible row on each update.
   return renderProgressiveMarkdown(s, bank);
 }
 

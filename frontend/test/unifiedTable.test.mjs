@@ -63,6 +63,6 @@ test('unified table contract: visualization table uses ds-table-wrap and ds-tabl
   assert.match(html, /tabindex="0"/);
   assert.match(html, /aria-label="Sales Overview"/);
   assert.match(html, /<table class="ds-table visualization-table">/);
-  assert.match(html, /<th>Category<\/th>/);
+  assert.match(html, /<th scope="col">Category<\/th>/);
   assert.match(html, /<td>Q1<\/td>/);
 });

@@ -10,7 +10,7 @@
   width: 100%;
   margin: var(--ui-space-md) 0;
   color: var(--foreground);
-  font: var(--ui-font-weight-regular) var(--ui-font-size-sm) / var(--ui-line-height-normal) var(--font-sans);
+  font: var(--ui-font-weight-regular) var(--prose-size, var(--ui-text-body)) / var(--ui-line-height-normal) var(--font-sans);
   container-type: inline-size;
 }
 .msg.assistant .msg-body.is-declarative .intui-panel {
@@ -33,7 +33,7 @@
   line-height: var(--ui-line-height-normal);
 }
 .msg.assistant .msg-body.is-declarative .intui-panel-title {
-  font-size: var(--ui-font-size-lg);
+  font-size: inherit;
   letter-spacing: -.015em;
   overflow-wrap: anywhere;
 }
@@ -73,7 +73,7 @@
 .msg.assistant .msg-body.is-declarative .intui-metric-value {
   overflow-wrap: anywhere;
   color: var(--foreground);
-  font-size: var(--ui-font-size-xl);
+  font-size: inherit;
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -.015em;
@@ -317,7 +317,9 @@
   position: relative;
   width: 100%;
   max-width: 100%;
-  margin: 14px 0 16px;
+  margin: var(--ui-space-sm) 0;
+  min-width: 0;
+  overflow-anchor: none;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
@@ -342,9 +344,11 @@
 .msg.assistant .msg-body.is-declarative .intui-table {
   width: 100%;
   min-width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
   color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
+  font-size: inherit;
   line-height: var(--ui-line-height-normal, 1.5);
 }
 .ds-table-wrap > table.ds-table caption,
@@ -362,15 +366,15 @@
   padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
   border: 0;
   border-bottom: 1px solid var(--ui-border-subtle);
-  text-align: start;
   vertical-align: top;
+  overflow-wrap: anywhere;
 }
 .ds-table-wrap > table.ds-table th,
 .msg.assistant .msg-body.is-declarative .intui-table th {
   background: var(--ui-bg-surface);
   color: var(--foreground);
   font-weight: var(--ui-font-weight-medium, 500);
-  white-space: nowrap;
+  white-space: normal;
 }
 .ds-table-wrap > table.ds-table tbody tr:hover td,
 .msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
@@ -812,3 +816,9 @@
 /* The shell's card header pads 14px in by id; inside an answer the chart
    title and caption share the prose column's left edge instead. */
 #appShell :is(.intui, .intui-openui) [data-openui-visualization] :is(.visualization-header, .visualization-caption) { padding-inline: 0; }
+
+/* Preserve Markdown alignment; generated tables default to reading direction. */
+.ds-table :is(th, td):not([align]) { text-align: start; }
+/* Long formulas scroll within their cell instead of painting across adjacent data. */
+.ds-table :is(th, td) .katex { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.intui .katex :is(.mord, .mbin, .mrel) { color: inherit; }

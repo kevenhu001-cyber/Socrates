@@ -1,4 +1,5 @@
 /* Built-in table and SVG structure renderers for native visualization cards. */
+import { renderInlineMathHtml } from './inlineMath.ts';
 import type { VizItem, VizNode, VizShape, VizSpec } from './visualizationSpec.ts';
 
 type EscapeHtml = (value: unknown) => string;
@@ -112,7 +113,8 @@ export function renderVisualizationTable(spec: VizSpec, escapeHtml: EscapeHtml, 
   const rows = dataRows(spec, translate);
   if (!rows.length) return '';
   const header = rows[0], body = rows.slice(1, 121);
-  return '<div class="ds-table-wrap visualization-table-wrap" tabindex="0" role="region" aria-label="' + escapeHtml(spec.title || translate('viz.action.viewTable', 'Data table')) + '"><table class="ds-table visualization-table"><thead><tr>' + header.map(function (cell) { return '<th>' + escapeHtml(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + escapeHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  const cellHtml = (cell: unknown) => renderInlineMathHtml(String(cell ?? '')) ?? escapeHtml(cell);
+  return '<div class="ds-table-wrap visualization-table-wrap" tabindex="0" role="region" aria-label="' + escapeHtml(spec.title || translate('viz.action.viewTable', 'Data table')) + '"><table class="ds-table visualization-table"><thead><tr>' + header.map(function (cell) { return '<th scope="col">' + cellHtml(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + cellHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
 }
 
 export function renderStructureVisualization(

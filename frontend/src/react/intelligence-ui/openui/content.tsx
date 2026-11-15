@@ -8,7 +8,7 @@ import { children, color, cx, fg, webUrl } from './style';
 export const Title = defineComponent({
   name: 'Title',
   props: z.object({ text: z.string(), size: z.enum(['sm', 'md', 'lg', 'xl', '2xl', '3xl']).optional(), color: color.optional() }),
-  description: 'Heading; use 2xl for a computed result.',
+  description: 'Compact heading at body size; use weight to distinguish results.',
   component: ({ props }) => <div role="heading" aria-level={3} className={cx('iui-title', `iui-title-${props.size ?? 'md'}`)} style={{ color: fg(props.color) }}><MathText text={props.text} /></div>,
 });
 export const Text = defineComponent({

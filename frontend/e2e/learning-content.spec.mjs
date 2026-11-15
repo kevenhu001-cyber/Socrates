@@ -117,106 +117,66 @@ async function startLesson(page) {
   await expect(page.locator('.msg.assistant').last()).toContainText('瞬时变化率');
 }
 
-async function chooseSessionMode(page, id) {
-  await page.locator('[data-testid="learning-mode-trigger"]').click();
-  await page.locator(`#learningModeBar [data-testid="learning-mode-${id}"]`).click();
+function lastUserText(body) {
+  const last = body.messages.filter(message => message.role === 'user').at(-1);
+  return typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '');
 }
 
-const nextQuestions = (page) => page.locator('[data-testid^="question-chain-next-"]');
-const lastUserText = (body) => {
-  const users = body.messages.filter((message) => message.role === 'user');
-  const last = users[users.length - 1];
-  return typeof last?.content === 'string' ? last.content : JSON.stringify(last?.content ?? '');
-};
+async function sendRequest(page, text) {
+  await page.locator('#composerRoot .rich-composer-editor').fill(text);
+  await page.locator('#composerPrimaryBtn').click();
+}
 
-test('next questions are the ones the reply wrote; none without a block', async ({ page }) => {
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+test('retired next-question blocks stay hidden and learners continue through the composer', async ({ page }) => {
   const seen = await setupTutor(page);
   await startLesson(page);
-  expect(seen.streams.at(-1).learningMode).toBe('think');
-  await expect(nextQuestions(page)).toHaveCount(2);
-  await expect(nextQuestions(page).nth(0)).toContainText(NEXT[0]);
-  await expect(nextQuestions(page).nth(1)).toContainText(NEXT[1]);
+  await expect(page.locator('[data-testid^="question-chain-next-"]')).toHaveCount(0);
+  await expect(page.locator('[data-testid="learning-mode-trigger"]')).toHaveCount(0);
   await expect(page.locator('.msg.assistant').last()).not.toContainText('next-questions');
-  /* The block feeds the question chain, which is a surface of its own next to
-     the answer. The answer body itself must not repeat the candidates. */
-  await expect(page.locator('.msg.assistant').last().locator('.msg-body')).not.toContainText(NEXT[0]);
-  await shot(page.locator('#chatInputBar'), 'next-questions');
-
-  /* A reply without the block offers no questions: no fixed fallback. */
-  seen.reply = '好问题。先看定义里的分子。';
-  await nextQuestions(page).first().click();
-  await expect.poll(() => seen.streams.length).toBe(2);
-  await expect(page.locator('[data-testid="question-chain"]')).toHaveAttribute('data-steps', '2');
-  await expect(nextQuestions(page)).toHaveCount(0);
-  /* A block cut off mid-stream is hidden and offers nothing either. */
+  await expect(page.locator('.msg.assistant').last()).not.toContainText(NEXT[0]);
   seen.reply = '继续推下去。\n\n<next-questions>["半截的问题';
-  await page.locator('#composerRoot .rich-composer-editor').fill('我明白了');
-  await page.locator('#composerPrimaryBtn').click();
-  await expect.poll(() => seen.streams.length).toBe(3);
+  await sendRequest(page, NEXT[0]);
+  await expect.poll(() => seen.streams.length).toBe(2);
+  expect(lastUserText(seen.streams[1])).toBe(NEXT[0]);
   await expect(page.locator('.msg.assistant').last()).toContainText('继续推下去');
   await expect(page.locator('.msg.assistant').last()).not.toContainText('半截');
-  await expect(nextQuestions(page)).toHaveCount(0);
-  expect(errors).toEqual([]);
 });
 
-test('recall mode asks the tutor for cards and sends the self-ratings back', async ({ page }) => {
+test('explicitly requested flashcards render and send self-ratings with the next request', async ({ page }) => {
   const seen = await setupTutor(page);
   await startLesson(page);
-  await chooseSessionMode(page, 'recall');
+  seen.reply = RECALL;
+  await sendRequest(page, '请给我三张导数复习卡片');
   await expect.poll(() => seen.streams.length).toBe(2);
-  expect(seen.streams[1].learningMode).toBe('recall');
-  expect(lastUserText(seen.streams[1])).toBe('[Learning mode: recall]');
-  await expect(page.locator('#composerRoot .rich-composer-editor')).toHaveText('');
   const reply = page.locator('.msg.assistant').last();
   const cards = reply.locator('.sc-host[data-scaffold="flashcard"]');
   await expect(cards).toHaveCount(3);
-  await expect(nextQuestions(page)).toHaveCount(2);
   await shot(reply, 'recall-cards', { tall: true });
   await cards.first().getByTestId('flashcard-flip').click();
   await cards.first().getByTestId('flashcard-rate-forgot').click();
-  await nextQuestions(page).first().click();
+  seen.reply = '再看一次定义。';
+  await sendRequest(page, '请解释我没记住的概念');
   await expect.poll(() => seen.streams.length).toBe(3);
-  expect(seen.streams[2].learningMode).toBe('recall');
-  /* The ratings ride as a turn-scoped system context, handed over once. */
-  const recallContext = (body) => body.messages.filter((m) => m.role === 'system' && String(m.content).includes('Recall self-assessment'));
-  expect(recallContext(seen.streams[2]).map((m) => m.content).join('\n')).toContain('- forgot: 导数的定义是什么？');
+  const recallContext = body => body.messages.filter(m => m.role === 'system' && String(m.content).includes('Recall self-assessment'));
+  expect(recallContext(seen.streams[2]).map(m => m.content).join('\n')).toContain('- forgot: 导数的定义是什么？');
   expect(recallContext(seen.streams[1])).toHaveLength(0);
 });
 
-test('knowledge map: AI definitions and relations, refreshed on See connections; Practice asks the tutor', async ({ page }) => {
+test('knowledge sidebar shows AI definitions and relations; explicit practice requests reach the tutor', async ({ page }) => {
   const seen = await setupTutor(page);
   await startLesson(page);
-  await chooseSessionMode(page, 'connect');
+  await page.getByRole('button', {name:'知识',exact:true}).click();
   await expect(page.locator('#knowledgePanel')).toBeVisible();
-  await expect.poll(() => seen.calls.filter((call) => call.system.includes("maintain a learner's knowledge map")).length).toBe(1);
-  const refresh = seen.calls.find((call) => call.system.includes("maintain a learner's knowledge map"));
-  expect(refresh.body.messages.at(-1).content).toContain('瞬时变化率');
-  const caption = page.locator('#kbContent [data-kb-edge-kind]');
-  await expect(caption).toHaveAttribute('data-kb-edge-kind', 'concept');
-  await expect(page.locator('#kbContent [data-kb-graph-edge]')).toHaveCount(3);
-  await shot(page.locator('#knowledgePanel'), 'kb-concept-graph');
-
+  await expect(page.locator('#kbContent [data-kb-graph-edge]')).toHaveCount(2);
   await page.locator('#kbContent [data-kb-graph-node="1"]').click();
   const drawer = page.locator('[data-kb-node-detail="1"]');
-  await expect(drawer).toBeVisible();
   await expect(drawer.locator('[data-kb-definition]')).toHaveText(CONCEPTS.nodes[1].definition);
-  await expect(drawer.locator('[data-kb-relation="concept"]')).toHaveCount(3);
-  await expect(drawer.locator('[data-kb-relation-why]').first()).toContainText('导数本身就是一个极限');
-  await shot(drawer, 'kb-node-definition');
-
-  /* The refresh wrote a definition the first pass lacked. */
-  await drawer.locator('[data-kb-detail-close]').click();
-  await page.locator('#kbContent [data-kb-graph-node="3"]').click();
-  await expect(page.locator('[data-kb-node-detail="3"] [data-kb-definition]')).toContainText('|x| 在 0 处就是反例');
-  await page.locator('[data-kb-node-detail="3"] [data-kb-detail-close]').click();
-
-  await page.locator('#kbContent [data-kb-graph-node="0"]').click();
-  await page.locator('[data-kb-node-detail="0"] [data-kb-practice]').click();
+  await expect(drawer.locator('[data-kb-relation="concept"]')).toHaveCount(2);
+  await page.locator('[data-kb-detail-close]').click();
+  seen.reply = PRACTICE;
+  await sendRequest(page, '请给我一道极限的开放练习题');
   await expect.poll(() => seen.streams.length).toBe(2);
-  expect(seen.streams[1].learningMode).toBe('practice');
-  expect(seen.streams[1].learningFocus).toBe(`极限的定义 (${CONCEPTS.nodes[0].definition})`);
+  await expect(page.getByTestId('practice-input')).toBeVisible();
 });
 
 test('older sessions without AI fields keep the learning-path map', async ({ page }) => {
@@ -236,48 +196,15 @@ test('older sessions without AI fields keep the learning-path map', async ({ pag
   await expect(drawer.locator('[data-kb-relation="after"]')).toBeVisible();
 });
 
-test('find gaps reruns a formal diagnostic with AI-written reasons and next step', async ({ page }) => {
+test('quiz explanations appear inline and never start a synthetic tutor turn', async ({ page }) => {
   const seen = await setupTutor(page);
-  await startLesson(page);
-  await chooseSessionMode(page, 'diagnose');
-  const view = page.locator('#diagnosticView');
-  await expect(view.locator('[data-diag-command="select"]').first()).toBeVisible();
-  for (let i = 0; i < 5; i += 1) {
-    await view.locator('[data-diag-command="select"]').first().click();
-    await view.locator('[data-diag-command="next"], [data-diag-command="finish"]').click();
-  }
-  await expect(view.locator('[data-diag-ai-next]')).toHaveText(INSIGHT.nextStep);
-  await expect(view.locator('[data-diag-ai-summary]')).toHaveText(INSIGHT.summary);
-  await expect(view.locator('[data-diag-reason="3"]')).toHaveText(INSIGHT.gaps[0].reason);
-  const insightCall = seen.calls.find((call) => call.system.includes("reading a learner's answers"));
-  expect(insightCall.body.messages.at(-1).content).toContain('answered A 「连续就一定可导」');
-  await shot(view, 'diag-insight');
-  await view.locator('[data-diag-command="proceed"]').click();
-  await expect(page.locator('#chatView')).toBeVisible();
-});
-
-test('a wrong answer gets an AI analysis, and the mistake becomes the next question', async ({ page }) => {
-  const seen = await setupTutor(page);
+  seen.reply = LESSON.replace('<o letter="A">', '<o letter="A" explanation="幂次带下来的系数是 2。">').replace('<o letter="B">', '<o letter="B" explanation="漏掉了系数 2。">');
   await startLesson(page);
   const quiz = page.locator('.msg.assistant').last().locator('.sc-host[data-scaffold="quiz"]');
   await quiz.locator('[data-letter="B"]').click();
   await quiz.getByTestId('quiz-submit').click();
-  await expect.poll(() => seen.calls.filter((call) => call.system.includes('mistake-book entry')).length).toBe(1);
-  const analysisCall = seen.calls.find((call) => call.system.includes('mistake-book entry'));
-  expect(analysisCall.body.messages.at(-1).content).toContain("Learner's answer: B");
-
-  await chooseSessionMode(page, 'mistakes');
-  await expect(page.locator('#mistakesPanel')).toBeVisible();
-  const card = page.locator('#mistakesList [data-mistake-id]').first();
-  await card.locator('[data-mistake-toggle]').click();
-  await expect(card.locator('[data-mistake-cause][data-mistake-ai]')).toContainText('漏掉了幂次带下来的系数 2');
-  await expect(card.locator('[data-mistake-right][data-mistake-ai]')).toContainText('再代入');
-  await shot(card, 'mistake-analysis');
-
-  const before = seen.streams.length;
-  await card.locator('[data-mistake-next]').click();
-  await expect.poll(() => seen.streams.length).toBeGreaterThan(before);
-  expect(lastUserText(seen.streams.at(-1))).toContain(MISTAKE_NEXT);
-  await expect(page.locator('[data-testid="question-chain-current"]')).toContainText('为什么幂次会被');
-  await shot(page.locator('#mainContent'), 'mistake-next-question');
+  await expect(quiz.getByTestId('quiz-feedback')).toHaveAttribute('data-verdict', 'incorrect');
+  await expect(quiz.getByTestId('quiz-option-explanation-B')).toContainText('漏掉了系数 2');
+  await expect(quiz.getByTestId('quiz-option-explanation-A')).toContainText('系数是 2');
+  expect(seen.streams).toHaveLength(1);
 });

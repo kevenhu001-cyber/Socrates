@@ -1,3 +1,4 @@
+import { MathText } from '../rn/useInlineMath';
 import { LazyLearningNode } from './LazyLearningNode';
 import { NativeVisualization } from './NativeVisualization';
 import { Demonstration } from './demonstration/Demonstration';
@@ -57,8 +58,8 @@ function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderC
     <section className="intui-panel" data-intui-id={node.id}>
       {(title || description) && node.id !== context.surfaceRootId ? (
         <header className="intui-panel-head">
-          {title ? <div className="intui-panel-title">{title}</div> : null}
-          {description ? <div className="intui-panel-description">{description}</div> : null}
+          {title ? <div className="intui-panel-title"><MathText text={title} /></div> : null}
+          {description ? <div className="intui-panel-description"><MathText text={description} /></div> : null}
         </header>
       ) : null}
       <div className="intui-panel-body">{content.map((child) => <UiNode key={child.id} node={child} context={context} />)}</div>
@@ -69,7 +70,7 @@ function UiPanel({ node, context }: { node: IntelligenceUiNode; context: RenderC
           trigger={<BaseButton type="button" className="intui-panel-more" aria-label={i18n('session.moreActions', 'More actions')}><Icon name="more" size={18} /></BaseButton>}>
           {({ FoundationMenuItem }) => overflowActions.map((child) => <FoundationMenuItem key={child.id}
             disabled={context.readOnly && (child.action as UiAction).type === 'prompt'}
-            onClick={(event) => executeAction(child.action as UiAction, context, event)}>{asProse(resolve(child.label, context))}</FoundationMenuItem>)}
+            onClick={(event) => executeAction(child.action as UiAction, context, event)}><MathText text={asProse(resolve(child.label, context))} /></FoundationMenuItem>)}
         </DeferredMenu> : null}
       </footer> : null}
     </section>
@@ -93,7 +94,7 @@ function UiGrid({ node, context }: { node: IntelligenceUiNode; context: RenderCo
 function UiText({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
   const text = asProse(resolve(node.text ?? node.value, context));
   if (!text) return null;
-  return <p className="intui-text" data-intui-id={node.id}>{text}</p>;
+  return <p className="intui-text" data-intui-id={node.id}><MathText text={text} /></p>;
 }
 
 function inferredMetricTrend(deltaText: string): IntelligenceUiTrend | null {
@@ -112,12 +113,12 @@ function UiMetric({ node, context }: { node: IntelligenceUiNode; context: Render
   const trend = normalizeIntelligenceUiTrend(resolve(node.trend, context)) ?? inferredMetricTrend(deltaText);
   return (
     <div className="intui-metric" data-intui-id={node.id}>
-      {label ? <div className="intui-metric-label">{label}</div> : null}
-      <div className="intui-metric-value">{prefix}{value}{suffix}</div>
+      {label ? <div className="intui-metric-label"><MathText text={label} /></div> : null}
+      <div className="intui-metric-value"><MathText text={prefix + value + suffix} /></div>
       {deltaText ? (
         <div className="intui-metric-delta" data-trend={trend || 'flat'}>
           <span aria-hidden="true">{trend === 'down' ? '↓' : trend === 'up' ? '↑' : '→'}</span>
-          <span>{deltaText}</span>
+          <span><MathText text={deltaText} /></span>
         </div>
       ) : null}
       {renderChildren(node, context)}
@@ -136,8 +137,8 @@ function UiProgress({ node, context }: { node: IntelligenceUiNode; context: Rend
   return (
     <div className="intui-progress" data-intui-id={node.id} data-tone={tone}>
       <div className="intui-progress-head">
-        {label ? <span>{label}</span> : <span />}
-        <span>{valueText}</span>
+        {label ? <span><MathText text={label} /></span> : <span />}
+        <span><MathText text={valueText} /></span>
       </div>
       <div
         className="intui-progress-track"
@@ -160,8 +161,8 @@ function UiCallout({ node, context }: { node: IntelligenceUiNode; context: Rende
   const tone = normalizeIntelligenceUiTone(resolve(node.tone, context));
   return (
     <aside className="intui-callout" data-intui-id={node.id} data-tone={tone} role="note">
-      {title ? <div className="intui-callout-title">{title}</div> : null}
-      {text ? <div className="intui-callout-text">{text}</div> : null}
+      {title ? <div className="intui-callout-title"><MathText text={title} /></div> : null}
+      {text ? <div className="intui-callout-text"><MathText text={text} /></div> : null}
       {renderChildren(node, context)}
     </aside>
   );
@@ -179,8 +180,8 @@ function UiSlider({ node, context }: { node: IntelligenceUiNode; context: Render
   return (
     <ShadcnLabel className="intui-slider" data-intui-id={node.id}>
       <span className="intui-control-head">
-        <span>{label}</span>
-        <output>{valueText}</output>
+        <span><MathText text={label} /></span>
+        <output><MathText text={valueText} /></output>
       </span>
       <ShadcnNativeControl
         type="range"
@@ -203,7 +204,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
   const options = node.options.slice(0, 8).filter(isRecord);
   return (
     <fieldset className="intui-choice" data-intui-id={node.id}>
-      {label ? <legend>{label}</legend> : null}
+      {label ? <legend><MathText text={label} /></legend> : null}
       <div className="intui-choice-options">
         {options.map((option, index) => {
           const optionValue = resolve(option.value, context);
@@ -219,7 +220,7 @@ function UiChoice({ node, context }: { node: IntelligenceUiNode; context: Render
               aria-pressed={selected}
               onClick={() => setBoundValue(context, bind, optionValue)}
             >
-              {optionLabel}
+              <MathText text={optionLabel} />
             </BaseButton>
           );
         })}
@@ -238,8 +239,8 @@ function UiToggle({ node, context }: { node: IntelligenceUiNode; context: Render
   return (
     <div className="intui-toggle" data-intui-id={node.id}>
       <span className="intui-toggle-copy">
-        {label ? <span className="intui-toggle-label">{label}</span> : null}
-        {description ? <span className="intui-toggle-description">{description}</span> : null}
+        {label ? <span className="intui-toggle-label"><MathText text={label} /></span> : null}
+        {description ? <span className="intui-toggle-description"><MathText text={description} /></span> : null}
       </span>
       <ShadcnSwitch
         checked={checked}
@@ -265,7 +266,7 @@ function UiButton({ node, context }: { node: IntelligenceUiNode; context: Render
       disabled={promptDisabled}
       onClick={(event) => executeAction(action, context, event)}
     >
-      {label}
+      <MathText text={label} />
     </BaseButton>
   );
 }
@@ -287,9 +288,9 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
   return (
     <div className="ds-table-wrap intui-table-wrap" data-intui-id={node.id} role="region" tabIndex={0} aria-label={caption || 'Data table'}>
       <table className="ds-table intui-table">
-        <caption className={caption ? 'intui-table-caption' : 'sr-only'}>{caption || 'Table'}</caption>
+        <caption className={caption ? 'intui-table-caption' : 'sr-only'}><MathText text={caption || 'Table'} /></caption>
         <thead>
-          <tr>{normalizedColumns.map((column) => <th key={column.key} scope="col">{column.label}</th>)}</tr>
+          <tr>{normalizedColumns.map((column) => <th key={column.key} scope="col"><MathText text={column.label} /></th>)}</tr>
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => {
@@ -297,7 +298,7 @@ function UiTable({ node, context }: { node: IntelligenceUiNode; context: RenderC
             return (
               <tr key={`${node.id}-row-${rowIndex}`}>
                 {normalizedColumns.map((column) => (
-                  <td key={column.key}>{asText(resolve(record[column.key], context))}</td>
+                  <td key={column.key}><MathText text={asText(resolve(record[column.key], context))} /></td>
                 ))}
               </tr>
             );
@@ -433,7 +434,7 @@ function UiTabs({ node, context }: { node: IntelligenceUiNode; context: RenderCo
             onClick={() => selectTab(tab.id)}
             onKeyDown={(event) => handleTabKey(event, index)}
           >
-            {tab.label}
+            <MathText text={tab.label} />
           </BaseButton>
         ))}
       </div>
@@ -457,10 +458,10 @@ interface EntityPresentationProps {
 function EntityCopy({ title, subtitle, description }: EntityPresentationProps) {
   return <>
     <div className="intui-entity-head">
-      {title ? <div className="intui-entity-title">{title}</div> : null}
-      {subtitle ? <div className="intui-entity-subtitle">{subtitle}</div> : null}
+      {title ? <div className="intui-entity-title"><MathText text={title} /></div> : null}
+      {subtitle ? <div className="intui-entity-subtitle"><MathText text={subtitle} /></div> : null}
     </div>
-    {description ? <p className="intui-entity-description">{description}</p> : null}
+    {description ? <p className="intui-entity-description"><MathText text={description} /></p> : null}
   </>;
 }
 
@@ -476,14 +477,14 @@ function EntityFields({ fields, nodeId, context }: { fields: Record<string, unkn
       const label = asProse(resolve(field.label, context));
       const value = asText(resolve(field.value, context));
       if (!label && !value) return null;
-      return <div key={`${nodeId}-field-${index}`}><dt>{label}</dt><dd>{value}</dd></div>;
+      return <div key={`${nodeId}-field-${index}`}><dt><MathText text={label} /></dt><dd><MathText text={value} /></dd></div>;
     })}
   </dl>;
 }
 
 function EntityAction({ action, label, disabled, context }: { action: UiAction | null; label: string; disabled: boolean; context: RenderContext }) {
   if (!action || !label) return null;
-  return <BaseButton type="button" variant="outline" size="desktop" className="intui-button intui-entity-action" disabled={disabled} onClick={(event) => executeAction(action, context, event)}>{label}</BaseButton>;
+  return <BaseButton type="button" variant="outline" size="desktop" className="intui-button intui-entity-action" disabled={disabled} onClick={(event) => executeAction(action, context, event)}><MathText text={label} /></BaseButton>;
 }
 
 function UiEntity({ node, context }: { node: IntelligenceUiNode; context: RenderContext }) {
@@ -539,7 +540,7 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
   const label = asProse(resolve(node.label, context));
   return (
     <section className="intui-image-gallery-wrap" data-intui-id={node.id} aria-label={label || 'Image gallery'}>
-      {label ? <div className="intui-gallery-label">{label}</div> : null}
+      {label ? <div className="intui-gallery-label"><MathText text={label} /></div> : null}
       <div className="intui-image-gallery" style={style}>
         {images.map((image, index) => (
           <figure key={`${node.id}-image-${index}`}>
@@ -551,7 +552,7 @@ function UiImageGallery({ node, context }: { node: IntelligenceUiNode; context: 
               referrerPolicy="no-referrer"
               draggable={false}
             />
-            {image.caption ? <figcaption>{image.caption}</figcaption> : null}
+            {image.caption ? <figcaption><MathText text={image.caption} /></figcaption> : null}
           </figure>
         ))}
       </div>

@@ -788,7 +788,7 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
     justify-content: center;
     margin-bottom: var(--ui-space-sm);
     border-radius: var(--ui-radius-pill);
-    background: var(--ui-canvas);
+    background: var(--ui-card);
     box-shadow: var(--ui-elevation-raised);
     color: var(--ui-ink);
   }

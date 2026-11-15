@@ -98,3 +98,52 @@ test('native tool commits and patches enable grading after streaming completes',
  await expect(page.locator('[data-learning-kind="quiz"] [data-letter]')).toHaveCount(2);
  await expectNoGlobalError(page);
 });
+
+test('learning content follows prose size and native tables typeset every field', async ({page}) => {
+ const nodes=[
+  {id:'definition-size',type:'learning',kind:'definition',term:'Derivative $f\u2032(x)$',body:'The rate is $x^2$.'},
+  {id:'formula-table',type:'table',caption:'Values $x^2$',columns:[{key:'x',label:'$x$'},{key:'y',label:'$y$'}],rows:[{x:'$1$',y:'$\\frac{1}{2}$'},{x:'$x$',y:'$a_1+a_2+a_3+a_4+a_5+a_6+a_7+a_8+a_9+a_{10}+a_{11}+a_{12}$'}]},
+ ];
+ await prepareChatWorkbench(page,{lang:'en',messages:[message(nodes)]});
+ const table=page.locator('[data-intui-id="formula-table"]');
+ await expect(table.locator('caption .katex')).toBeVisible();
+ await expect(table.locator('th .katex')).toHaveCount(2);
+ await expect(table.locator('td .katex')).toHaveCount(4);
+ expect(await table.locator('td').last().evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+ const sizes=await page.locator('[data-part="definition-term"]').evaluate(el=>({
+  term:getComputedStyle(el).fontSize,
+  body:getComputedStyle(el.closest('.msg-body')).fontSize,
+  content:getComputedStyle(el.closest('[data-scaffold]').querySelector('[data-part="definition-body"]')).fontSize,
+ }));
+ expect(sizes.term).toBe(sizes.body);expect(sizes.content).toBe(sizes.body);
+ await table.screenshot({path:'test-results/compact-formula-table.png'});
+ await expectNoGlobalError(page);
+});
+
+test('streaming table keeps rows and DOM through completion', async ({page}) => {
+ await prepareChatWorkbench(page,{lang:'en'});
+ await page.evaluate(async()=>{
+  window.__compactTableCtl=await window.addStreamingMessage({userPrompt:'Show a table'});
+  window.__compactTableCtl.append('Values:\n\n| Symbol | Value |\n| :--- | ---: |\n| $x$ | $1$ |\n');
+ });
+ const table=page.locator('.msg.assistant .ds-table');
+ await expect(table).toHaveCount(1);await expect(table.locator('td')).toHaveCount(2);
+ await table.evaluate(el=>{window.__retainedTable=el;window.__retainedCell=el.querySelector('td');});
+ await page.evaluate(()=>window.__compactTableCtl.append('| $y$ | $2$ |\n'));
+ await expect(table.locator('td')).toHaveCount(4);
+ await page.evaluate(()=>{window.__compactTableCtl.append('\nDone.');window.__compactTableCtl.finish();});
+ await expect(table.locator('td .katex')).toHaveCount(4);
+ expect(await table.evaluate(el=>el===window.__retainedTable&&el.querySelector('td')===window.__retainedCell)).toBe(true);
+ await expect(page.locator('.table-stream-placeholder')).toHaveCount(0);
+ await table.screenshot({path:'test-results/streaming-formula-table.png'});
+ await expectNoGlobalError(page);
+});
+
+test('native formula choices stay readable when selected', async ({page}) => {
+ await prepareChatWorkbench(page,{lang:'en',messages:[message([{id:'formula-choice',type:'choice',bind:'answer',label:'Choose $x$',options:[{value:'a',label:'$x^2$'},{value:'b',label:'$x^3$'}]}])]});
+ const choice=page.locator('[data-intui-id="formula-choice"]');
+ await expect(choice.locator('.katex')).toHaveCount(3);
+ await choice.getByRole('button').first().click();
+ const selected=choice.locator('[aria-pressed="true"]');
+ expect(await selected.evaluate(el=>getComputedStyle(el.querySelector('.katex .mord')).color===getComputedStyle(el).color)).toBe(true);
+});

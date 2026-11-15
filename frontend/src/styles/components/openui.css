@@ -38,14 +38,14 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--iui-ink);
-  font: var(--ui-font-size-sm) / var(--ui-line-height-normal) var(--font-sans);
+  font: var(--prose-size, var(--ui-text-body)) / var(--ui-line-height-normal) var(--font-sans);
 }
 .intui-openui *, .intui-openui *::before, .intui-openui *::after { box-sizing: border-box; }
 .intui-openui :is(.iui-col, .iui-box, .iui-form, .iui-card) { display: flex; flex-direction: column; min-width: 0; }
 .intui-openui .iui-row { display: flex; flex-direction: row; align-items: center; gap: var(--ui-space-sm); min-width: 0; }
 .intui-openui .iui-row > * { min-width: 0; }
 .intui-openui .iui-row > .iui-title { flex-shrink: 0; max-width: 100%; }
-.intui-openui .iui-flow { gap: var(--ui-space-md); }
+.intui-openui .iui-flow { gap: var(--ui-space-sm); }
 .intui-openui .iui-grid { display: grid; min-width: 0; }
 .intui-openui .iui-spacer { flex: 1; }
 /* Cards group content semantically; only an explicit soft variant paints a surface. */
@@ -54,16 +54,16 @@
 .intui-openui .iui-form { gap: var(--ui-space-md); }
 .intui-openui .iui-divider { width: 100%; border: 0; border-top: 1px solid var(--iui-border); }
 .intui-openui .iui-title { margin: 0; font-weight: var(--ui-font-weight-semibold); line-height: 1.3; letter-spacing: -.015em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.intui-openui .iui-title-sm { font-size: var(--ui-font-size-sm); }
-.intui-openui .iui-title-md { font-size: var(--ui-font-size-md); }
-.intui-openui .iui-title-lg { font-size: var(--ui-font-size-lg); }
-.intui-openui .iui-title-xl { font-size: var(--ui-font-size-xl); }
-.intui-openui .iui-title-2xl { font-size: 2rem; }
-.intui-openui .iui-title-3xl { font-size: 2.5rem; }
+.intui-openui .iui-title-sm { font-size: inherit; }
+.intui-openui .iui-title-md { font-size: inherit; }
+.intui-openui .iui-title-lg { font-size: inherit; }
+.intui-openui .iui-title-xl { font-size: inherit; }
+.intui-openui .iui-title-2xl { font-size: inherit; }
+.intui-openui .iui-title-3xl { font-size: inherit; }
 .intui-openui :is(.iui-text, .iui-caption) { margin: 0; white-space: pre-line; }
 .intui-openui :is(.iui-caption, .iui-text-xs) { font-size: var(--ui-font-size-xs); color: var(--iui-muted); }
 .intui-openui .iui-text-sm { font-size: var(--ui-font-size-sm); }
-.intui-openui .iui-text-lg { font-size: var(--ui-font-size-lg); }
+.intui-openui .iui-text-lg { font-size: inherit; }
 .intui-openui :is(.iui-weight-medium, .iui-label) { font-weight: var(--ui-font-weight-medium); }
 .intui-openui .iui-weight-semibold { font-weight: var(--ui-font-weight-semibold); }
 .intui-openui .iui-badge { align-self: start; padding: var(--ui-space-xxs) var(--ui-space-sm); border-radius: var(--ui-radius-pill); background: var(--iui-surface); font-size: var(--ui-font-size-xs); }
@@ -105,15 +105,13 @@
 .intui-openui .iui-slider-marks span { position: absolute; transform: translateX(-50%); }
 .intui-openui .iui-timer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--ui-space-md); }
 .intui-openui .iui-timer-time { font-size: 2rem; font-variant-numeric: tabular-nums; }
-.intui-openui .iui-flashcard { display: flex; flex-direction: column; gap: var(--ui-space-sm); align-items: center; justify-content: center; width: 100%; min-height: 10rem; padding: var(--ui-space-lg); border: 0; border-radius: var(--ui-radius-lg); background: var(--iui-surface); color: var(--iui-ink); font: inherit; cursor: pointer; }
-.intui-openui .iui-carousel { display: flex; gap: var(--ui-space-md); overflow-x: auto; scroll-snap-type: x mandatory; }
-.intui-openui .iui-carousel > * { flex: 0 0 min(85%, 20rem); scroll-snap-align: start; }
+.intui-openui .iui-flashcard { display: flex; flex-direction: column; gap: var(--ui-space-sm); align-items: center; justify-content: center; width: 100%; min-height: 5rem; height: auto; white-space: normal; padding: var(--ui-space-sm); border: 0; border-radius: var(--ui-radius-lg); background: var(--iui-surface); color: var(--iui-ink); font: inherit; cursor: pointer; }
+.intui-openui .iui-carousel { display: flex; gap: var(--ui-space-sm); overflow-x: auto; scroll-snap-type: x mandatory; }
+.intui-openui .iui-carousel > * { flex: 0 0 min(85%, 16rem); scroll-snap-align: start; }
 .intui-openui .iui-image { margin: 0; }
 .intui-openui .iui-image img { display: block; width: 100%; height: auto; border-radius: var(--ui-radius-md); }
 .intui-openui :is(.iui-image figcaption, .iui-table caption) { color: var(--iui-muted); font-size: var(--ui-font-size-xs); text-align: start; }
 .intui-openui .iui-table-wrap { overflow-x: auto; }
-.intui-openui .iui-table { width: 100%; border-collapse: collapse; }
-.intui-openui .iui-table :is(th, td) { padding: var(--ui-space-sm); border-bottom: 1px solid var(--iui-border); text-align: start; }
 .intui-openui .iui-svg { display: block; max-width: 100%; }
 .intui-openui .iui-chart { margin: 0; min-width: 0; }
 .intui-openui .iui-chart-plot { position: relative; }

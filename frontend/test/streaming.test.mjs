@@ -760,14 +760,15 @@ test('unclosed code block renders calm placeholder while closed renders full blo
   assert.match(complete, /def hello/);
 });
 
-test('unclosed table renders calm placeholder while closed renders complete table', () => {
+test('streaming and completed tables share the same markup and preserve alignment', () => {
   const prevMarked = globalThis.marked;
   globalThis.marked = marked;
   try {
     const streaming = renderProgressive('Data:\n| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |');
-    assert.match(streaming, /class="table-stream-placeholder/);
-    assert.match(streaming, /class="ds-table-wrap is-streaming"/);
-    assert.doesNotMatch(streaming, /<table/);
+    assert.match(streaming, /class="ds-table-wrap"/);
+    assert.match(streaming, /<table class="ds-table">/);
+    assert.match(streaming, /val 1/);
+    assert.doesNotMatch(streaming, /table-stream-placeholder/);
 
     const closed = renderProgressive('Data:\n\n| Col 1 | Col 2 |\n| :--- | ---: |\n| val 1 | val 2 |\n\n', { complete: true });
     assert.match(closed, /class="ds-table-wrap"/);

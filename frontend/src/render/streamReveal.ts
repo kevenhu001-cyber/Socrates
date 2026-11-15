@@ -10,7 +10,7 @@ export const STREAM_REVEAL_MS = 180;
 export const REVEAL_STAGGER_MS = 30;
 /** Two arrivals closer together than this happened in the same tick. */
 const SAME_TICK_MS = 8;
-const OPAQUE = 'pre,code,button,script,style,svg,math,.katex,.viz,.mermaid,.code-block-header';
+const OPAQUE = 'table,.ds-table-wrap,pre,code,button,script,style,svg,math,.katex,.viz,.mermaid,.code-block-header';
 interface Run { length: number; at: number; tier: number }
 interface Leaf { node: Text; start: number; end: number }
 

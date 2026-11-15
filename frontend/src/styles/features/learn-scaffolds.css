@@ -7,7 +7,7 @@
  *   .sc-host  — the owned-root host that replaces a scaffold slot;
  *   .sc-rich  — host-rendered markdown + KaTeX fields inside a card;
  *   .sc-live  — the static streaming preview, built to the card's metrics
- *               (16px radius, 44px label header, 24px body, 36px control
+ *               (16px radius, 36px label header, 12px body, 36px control
  *               rows) so the mount at stream end does not move.
  * Preview and mounted cards carry a matching hairline frame, separating
  * structured teaching material from the surrounding prose.
@@ -36,7 +36,7 @@
   min-width: 0;
   color: var(--ui-ink);
   font-family: var(--ui-font-ui);
-  font-size: calc(var(--ui-type-label-size) * var(--app-font-scale, 1));
+  font-size: var(--prose-size, var(--ui-text-body));
   line-height: 1.6;
   text-align: start;
   overflow-wrap: anywhere;
@@ -62,7 +62,7 @@
 }
 
 .sc-rich[data-part="definition-term"] {
-  font-size: calc(var(--ui-type-title-sm-size) * var(--app-font-scale, 1));
+  font-size: var(--prose-size, var(--ui-text-body));
   line-height: 1.45;
   font-weight: var(--ui-font-weight-medium);
 }
@@ -71,18 +71,18 @@
 .sc-rich[data-part="hint"],
 .sc-rich[data-part="quiz-explanation"],
 .sc-rich[data-part="practice-answer"] {
-  font-size: calc(var(--ui-type-body-sm-size) * var(--app-font-scale, 1));
+  font-size: var(--prose-size, var(--ui-text-body));
 }
 
 .sc-rich[data-part$="-step"] .katex-display { margin: 0; }
 
 /* ---- streaming preview ------------------------------------------------ */
-/* RN-8: the preview is the card's own geometry (16px radius, 44px head,
-   24px inset) so the mount at stream end does not move. Like the mounted
+/* RN-8: the preview is the card's own geometry (16px radius, 36px head,
+   12px inset) so the mount at stream end does not move. Like the mounted
    card it carries a quiet frame, separating it from prose. */
 
 .sc-live {
-  --sc-pad: var(--ui-gap-5);
+  --sc-pad: var(--ui-gap-3);
   border-radius: var(--ui-round-lg);
   background: var(--ui-card);
   border: 1px solid var(--ui-hairline);
@@ -90,7 +90,7 @@
 }
 
 @media (max-width: 768px) {
-  .sc-live { --sc-pad: var(--ui-gap-4); }
+  .sc-live { --sc-pad: var(--ui-gap-3); }
 }
 
 .sc-live-head {
@@ -99,8 +99,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--ui-gap-3);
-  min-height: 44px;
-  padding: var(--ui-gap-2) var(--sc-pad);
+  min-height: var(--ui-ctl-pill);
+  padding: var(--ui-gap-1) var(--sc-pad);
 }
 
 .sc-live-label,
@@ -117,7 +117,7 @@
 .sc-live-body {
   display: flex;
   flex-direction: column;
-  gap: var(--ui-gap-4);
+  gap: var(--ui-gap-2);
   padding: var(--sc-pad);
 }
 
@@ -212,8 +212,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--ui-gap-2);
-  min-height: 112px;
-  padding: var(--ui-gap-5);
+  min-height: 80px;
+  padding: var(--ui-gap-3);
   border-radius: var(--ui-round-md);
   background: var(--ui-subtle);
 }
@@ -311,3 +311,6 @@
 
 /* Placeholders sweep with the shared .skeleton-shimmer utility
    (foundations/base.css) without changing the reserved card geometry. */
+
+/* Rich headings follow the transcript body size. */
+.sc-rich :is(h1, h2, h3, h4, h5, h6) { font-size: inherit; line-height: inherit; }

@@ -87,8 +87,8 @@ export function FlashcardCard({ front, back, onRate, initialState, onStateChange
       >
         <Animated.View
           style={{
-            minHeight: 112,
-            padding: S[300],
+            minHeight: 80,
+            padding: S[100],
             gap: S[75],
             borderRadius: R.row,
             backgroundColor: subtle,

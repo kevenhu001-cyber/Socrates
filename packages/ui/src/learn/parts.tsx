@@ -20,9 +20,9 @@ export function dataSet(values: Record<string, string | number | undefined>): ob
   return { dataSet: clean };
 }
 
-export const CARD_PAD = S[300];
-/** Phones: the card keeps 16px of air so the reply column stays readable. */
-export const CARD_PAD_COMPACT = S[200];
+export const CARD_PAD = S[100];
+/** Phones: the card keeps 12px of air so the reply column stays readable. */
+export const CARD_PAD_COMPACT = S[100];
 export const CARD_COMPACT_WIDTH = 769;
 
 export function useCardPad(): number {
@@ -65,15 +65,15 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: S[100],
-          minHeight: H.head,
+          minHeight: H.action,
           paddingHorizontal: pad,
-          paddingVertical: S[75],
+          paddingVertical: S[50],
         }}
       >
         <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</UiText>
         {trailing ?? null}
       </View>
-      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[200] }}>{children}</View>
+      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[100] }}>{children}</View>
     </View>
   );
 }
