@@ -60,7 +60,8 @@
     "lint:docs": "node ../scripts/check-doc-paths.mjs",
     "lint:shims": "node ../scripts/check-forwarding-shims.mjs",
     "generate:openui": "tsx scripts/generate-openui-prompt.mts",
-    "lint:shadcn": "node scripts/check-shadcn-adoption.mjs"
+    "lint:shadcn": "node scripts/check-shadcn-adoption.mjs",
+    "test:one": "tsx --tsconfig tsconfig.test.json --test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

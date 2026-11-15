@@ -97,8 +97,12 @@ Do not run the full `test:unit` / Playwright suites for every change. Tests are 
    - `frontend/src/chat/*` / `render/*` → `e2e/chat-send`, `e2e/chat-stop-resend`,
      `e2e/streaming-render`, `e2e/message-list-compat`, plus `test/<module>.test.mjs`.
    - New modules with no matching spec: run only the smallest relevant unit file
-     (`node --experimental-strip-types --test test/<file>.test.mjs`) and add a focused
-     spec instead of relying on the full suite.
+     (`npm run test:one -- test/<file>.test.mjs`) and add a focused
+     spec instead of relying on the full suite. Bare `node --experimental-strip-types
+     --test` cannot resolve the `@socrates/*` / `@/*` imports — those workspace
+     packages are published by path (tsconfig `paths`, no npm entry for all of
+     them), so per-file runs must go through the same `tsx` loader `test:unit`
+     uses; `test:one` is exactly that loader scoped to the files you pass.
 3. Run a subset, e.g.:
    `npx playwright test --config=playwright.config.mjs e2e/<spec>.spec.mjs --workers=1`
 4. If a spec or test fails, treat it as a defect to fix — do not rebuild

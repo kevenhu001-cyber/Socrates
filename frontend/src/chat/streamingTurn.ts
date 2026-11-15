@@ -130,7 +130,12 @@ function prepareStreamingShell(opts: StreamingOptions){
         if (stateStore.read('currentSessionId') !== sessionAtSend) return;
         const styles=(typeof window !== 'undefined' && window.getComputedStyle) ? window.getComputedStyle(list) : null;
         const bottomPadding=styles ? (parseFloat(styles.paddingBottom) || 0) : 0;
-        const latestUser=list.querySelector ? list.querySelector('.msg.user:last-of-type') : null;
+        /* `.msg.user:last-of-type` never matched: after a send the last
+           same-type sibling is the assistant placeholder, so the reserve
+           was always computed from a zero-height prompt. Take the last user
+           row explicitly; it is mounted by the time this frame runs. */
+        const userRows=list.querySelectorAll('.msg.user');
+        const latestUser=userRows.length ? userRows[userRows.length-1] : null;
         const promptHeight=latestUser ? latestUser.getBoundingClientRect().height : 0;
         const reserve=turnAnchorReserve(list.clientHeight,promptHeight,bottomPadding);
         if (reserve > 0) {

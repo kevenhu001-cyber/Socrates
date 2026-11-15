@@ -1,10 +1,13 @@
-// e2e/chat-send-glide.spec.mjs — the send glide in every reader situation.
+// e2e/chat-send-glide.spec.mjs — the send lands the prompt directly in its slot.
 //
 // Whatever the reader was looking at when they pressed send — a transcript
 // that does not fill the screen, the bottom of a full one, or the very first
 // message of a long session — and whether or not an answer was still
-// streaming, the transcript must glide (never jump) to the submitted prompt
-// and settle it at the top offset (chat/turnAnchor.ts TURN_ANCHOR_TOP_OFFSET).
+// streaming, the submitted prompt must sit at the top offset
+// (chat/turnAnchor.ts TURN_ANCHOR_TOP_OFFSET) in the very paint that first
+// shows it: the send positions pre-paint (chat/turnAnchor.ts
+// schedulePrePaintTurnAlign), so the reader never sees the message above the
+// composer and never watches it travel up the page.
 //
 // Each case samples, on every animation frame from the submit until the send
 // anchor releases (`data-turn-anchor-settling` cleared) plus a short tail,
@@ -12,20 +15,13 @@
 // That is what the reader sees; raw scrollTop is not, because spent reserves
 // above the viewport are retired with a 1:1 scrollTop compensation that
 // leaves the picture untouched. The spec asserts:
-//   - monotonic: the prompt only ever travels up toward its slot — no frame
+//   - monotonic: the prompt only ever moves up toward its slot — no frame
 //     moves it back down by more than 2px (no competing scroll writer, no
-//     end-of-glide correction snap, no answer growing above it);
-//   - animated: a glide covering real distance passes through several
-//     intermediate positions over a real span of time, instead of jumping
-//     to the slot in one step;
+//     correction snap, no answer growing above it);
+//   - direct: the prompt is at its slot from the FIRST sampled frame — no
+//     multi-frame travel, no glide distance (a late-arriving row may snap at
+//     most a couple of frames, but never an animated travel);
 //   - settled: the prompt ends 12±2px below the transcript top.
-//
-// The animation is time-based (ui/motion.ts planSendGlide), so how many
-// frames a glide produces depends on the host's refresh rate: a 205ms glide
-// yields about a dozen samples on a 60Hz display and about half of that on a
-// software-rendered CI host. The contract is therefore the MOTION — several
-// intermediate positions spread over real time — not a frame count, which
-// would silently turn the gate into a "the host must sustain 60Hz" check.
 
 import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
@@ -244,21 +240,20 @@ function inFlightMotion(offsets, times) {
   };
 }
 
-function assertGlide({ offsets, times, sawSettling }, { expectMotion }) {
+function assertSendLanding({ offsets, times, sawSettling }) {
   const trace = JSON.stringify(offsets.map((v) => Math.round(v)));
   expect(sawSettling, 'the send took scroll ownership').toBe(true);
   expect(offsets.length, 'the new prompt was sampled').toBeGreaterThan(0);
   for (let i = 1; i < offsets.length; i += 1) {
     expect(offsets[i], `frame ${i} pushed the prompt back down: ${trace}`).toBeLessThanOrEqual(offsets[i - 1] + 2);
   }
-  if (expectMotion) {
-    const start = offsets[0];
-    const end = offsets[offsets.length - 1];
-    expect(start - end, `glide distance: ${trace}`).toBeGreaterThan(100);
-    const motion = inFlightMotion(offsets, times);
-    expect(motion.count, `animated positions: ${trace}`).toBeGreaterThanOrEqual(3);
-    expect(motion.span, `glide duration: ${trace}`).toBeGreaterThanOrEqual(60);
-  }
+  /* The prompt sits at its slot from the first sampled frame and never
+     visibly travels: pre-paint positioning means every painted frame that
+     shows the prompt already shows it at the slot. */
+  expect(Math.abs(offsets[0] - offsets[offsets.length - 1]), `first sample already settled: ${trace}`).toBeLessThanOrEqual(2);
+  const motion = inFlightMotion(offsets, times);
+  expect(motion.count, `travelled positions: ${trace}`).toBeLessThanOrEqual(2);
+  expect(motion.span, `travel duration: ${trace}`).toBeLessThanOrEqual(60);
 }
 
 const VIEWPORTS = [
@@ -267,9 +262,9 @@ const VIEWPORTS = [
 ];
 
 const SCENARIOS = [
-  { name: 'short transcript', messages: 2, where: 'bottom', motion: false },
-  { name: 'full transcript at the bottom', messages: 30, where: 'bottom', motion: true },
-  { name: 'reader deep in history', messages: 80, where: 'history', motion: true },
+  { name: 'short transcript', messages: 2, where: 'bottom' },
+  { name: 'full transcript at the bottom', messages: 30, where: 'bottom' },
+  { name: 'reader deep in history', messages: 80, where: 'history' },
 ];
 
 test.beforeEach(async ({ page }) => {
@@ -280,7 +275,7 @@ test.beforeEach(async ({ page }) => {
 for (const vp of VIEWPORTS) {
   for (const scenario of SCENARIOS) {
     for (const streaming of [false, true]) {
-      const label = `${vp.name}: ${scenario.name}, AI ${streaming ? 'streaming' : 'idle'} — send glides to the new prompt`;
+      const label = `${vp.name}: ${scenario.name}, AI ${streaming ? 'streaming' : 'idle'} — send lands the new prompt directly at its slot`;
       test(label, async ({ page }) => {
         await page.setViewportSize(vp.size);
         await gotoAndSettle(page, '/');
@@ -320,7 +315,7 @@ for (const vp of VIEWPORTS) {
         } else {
           result = await sendAndSample(page, 'Take me to the newest prompt');
         }
-        assertGlide(result, { expectMotion: scenario.motion });
+        assertSendLanding(result);
 
         const offset = await promptOffset(page);
         expect(offset).toBeGreaterThanOrEqual(10);
