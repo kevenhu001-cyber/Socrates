@@ -1,0 +1,368 @@
+/* Document preview drawer — chat attachment file preview.
+   The drawer shell (.detail-surface, data-detail-owner="doc-preview") stays
+   owned by detail.css; everything here is scoped to the preview content.
+   Rendered documents keep a constant paper so authored ink (slide text,
+   PDF canvases) stays readable in every theme, the way the PDF canvas
+   itself is already constant white. */
+
+.detail-surface[data-detail-owner="doc-preview"] {
+  width: min(860px, 100vw);
+}
+
+.doc-preview-body {
+  /* Paper/ink constants for rendered documents — see header note. */
+  --doc-preview-paper: hsl(0 0% 100%);
+  --doc-preview-ink: hsl(0 0% 13%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.doc-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--ui-space-xs) var(--ui-space-lg) 0;
+}
+
+.doc-preview-open-original {
+  font-size: var(--ui-font-size-xs);
+  color: var(--muted-foreground);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  transition: color var(--ui-duration-fast, 150ms) var(--ui-ease-out);
+}
+
+.doc-preview-open-original:hover {
+  color: var(--foreground);
+}
+
+/* ── PDF toolbar ─────────────────────────────────────────────────────── */
+
+.doc-preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-sm) var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.doc-preview-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doc-preview-toolbar-page,
+.doc-preview-toolbar-zoom {
+  min-width: 4em;
+  text-align: center;
+  font-size: var(--ui-font-size-sm);
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.doc-preview-toolbar-divider {
+  width: 1px;
+  height: var(--ui-control-sm);
+  background: var(--ui-border-subtle);
+}
+
+/* ── Content areas ───────────────────────────────────────────────────── */
+
+.doc-preview-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* PDF — continuous page scroll, lazily painted canvases. */
+.doc-preview-content--pdf {
+  padding: var(--ui-space-lg) var(--ui-space-md);
+}
+
+.doc-preview-pdf {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.doc-preview-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-space-md);
+}
+
+.doc-preview-page {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--doc-preview-paper);
+}
+
+.doc-preview-page-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.doc-preview-page .file-card-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -8px 0 0 -8px;
+}
+
+/* DOCX — semantic HTML from mammoth on a theme-aware sheet. */
+.doc-preview-content--docx {
+  padding: var(--ui-space-xl) var(--ui-space-lg);
+}
+
+.doc-preview-docx {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.docx-body {
+  box-sizing: border-box;
+  padding: var(--ui-space-xl) var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+.docx-body h1,
+.docx-body h2,
+.docx-body h3,
+.docx-body h4 {
+  margin: var(--ui-space-lg) 0 var(--ui-space-sm);
+  line-height: 1.4;
+}
+
+.docx-body h1:first-child,
+.docx-body h2:first-child,
+.docx-body h3:first-child,
+.docx-body p:first-child {
+  margin-top: 0;
+}
+
+.docx-body h1 { font-size: var(--ui-font-size-lg); font-weight: var(--ui-font-weight-semibold); }
+.docx-body h2 { font-size: var(--ui-font-size-md); font-weight: var(--ui-font-weight-semibold); }
+.docx-body h3 { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-semibold); }
+.docx-body h4 { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-medium); }
+
+.docx-body p {
+  margin: 0 0 var(--ui-space-sm);
+}
+
+.docx-body ul,
+.docx-body ol {
+  margin: 0 0 var(--ui-space-sm);
+  padding-inline-start: var(--ui-space-lg);
+}
+
+.docx-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.docx-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--ui-space-sm);
+}
+
+.docx-body th,
+.docx-body td {
+  border: 1px solid var(--ui-border-subtle);
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  text-align: left;
+}
+
+.docx-body a {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+/* PPTX — slides at authored coordinates on constant paper. */
+.doc-preview-content--pptx {
+  padding: var(--ui-space-lg) var(--ui-space-md);
+}
+
+.doc-preview-pptx {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-md);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.pptx-slide {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
+  background: var(--doc-preview-paper);
+  color: var(--doc-preview-ink);
+}
+
+.pptx-shape {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.pptx-paragraph {
+  margin: 0;
+  font-size: calc(var(--pptx-scale) * 24px);
+  line-height: 1.35;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.pptx-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pptx-shape--table {
+  display: block;
+}
+
+.pptx-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--pptx-scale) * 18px);
+}
+
+.pptx-table td {
+  border: 1px solid var(--ui-border-subtle);
+  padding: calc(var(--pptx-scale) * 6px) calc(var(--pptx-scale) * 10px);
+  vertical-align: top;
+}
+
+/* XLSX — tab strip plus one plain grid per sheet. */
+.doc-preview-content--xlsx {
+  display: flex;
+  flex-direction: column;
+}
+
+.xlsx-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+  padding: var(--ui-space-sm) var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.xlsx-tab {
+  height: var(--ui-control-sm);
+  padding: 0 var(--ui-space-sm);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  cursor: pointer;
+  transition: background-color var(--ui-duration-fast, 150ms) var(--ui-ease-out);
+}
+
+.xlsx-tab[aria-selected="true"] {
+  background: var(--muted);
+  border-color: var(--border);
+  color: var(--foreground);
+}
+
+.xlsx-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--ui-space-lg);
+}
+
+.xlsx-table {
+  border-collapse: collapse;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: var(--ui-font-size-xs);
+}
+
+.xlsx-table th,
+.xlsx-table td {
+  border: 1px solid var(--ui-border-subtle);
+  padding: var(--ui-space-xs) var(--ui-space-sm);
+  text-align: left;
+  white-space: nowrap;
+  max-width: 24em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xlsx-table th {
+  position: sticky;
+  top: 0;
+  background: var(--muted);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+/* Server-extracted text fallback (.doc/.ppt/.rtf/…). */
+.doc-preview-content--text {
+  padding: var(--ui-space-xl) var(--ui-space-lg);
+}
+
+.doc-preview-text {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--card);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.doc-preview-note {
+  max-width: 860px;
+  margin: var(--ui-space-md) auto 0;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+}
+
+/* Loading / failure overlays cover the content area only. */
+.doc-preview-status {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--ui-space-md);
+  padding: var(--ui-space-xl);
+  text-align: center;
+  color: var(--muted-foreground);
+  background: var(--background);
+}
+
+.doc-preview-status .file-card-spinner {
+  justify-self: center;
+}

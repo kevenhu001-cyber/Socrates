@@ -1,12 +1,12 @@
 {
   "entryJsBytes": 860000,
   "entryJsGzipBytes": 275000,
-  "totalJsBytes": 18600000,
+  "totalJsBytes": 20600000,
   "largestChunkBytes": 5300000,
-  "largestChunkName": "plotly.min-BPBU9tls.js",
+  "largestChunkName": "plotly.min-BexSB_Zh.js",
   "totalCssBytes": 1160000,
-  "jsChunkCount": 166,
+  "jsChunkCount": 268,
   "cssFileCount": 11,
-  "note": "Ceiling for the built SPA bundle, measured on 2026-10-31 at entry 778108 B raw / 248922 B gzip, total JS 16907201 B, largest chunk 4851164 B, CSS 1051247 B. The headroom (~10%) absorbs a patch-level dependency bump; a real regression does not fit. Raise with --update in the same commit as an intentional growth.",
-  "generatedBy": "check-bundle-size.mjs --update"
+  "note": "Ceiling for the built SPA bundle, measured on 2026-11-15 at entry 44 B raw (Rolldown emits the entry as a bootstrap shim; the app graph lives in lazy chunks), total JS 18703036 B, largest chunk 4855045 B, CSS 988716 B. The ~10% headroom absorbs a patch-level dependency bump; a real regression does not fit. Raise with --update in the same commit as an intentional growth (2026-11-15: +1.8 MB for the doc-preview lazy vendors pdfjs-dist/mammoth/fflate).",
+  "generatedBy": "hand-tuned from check-bundle-size.mjs --update measurement"
 }

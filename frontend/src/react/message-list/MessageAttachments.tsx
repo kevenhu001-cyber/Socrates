@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileCard, getFileExtension, formatFileSize } from '../attachments/FileCard';
 import { t } from '../legacy/gateway.ts';
+import { canPreviewDocument, openDocumentPreview } from '../../ui/docPreview.ts';
 import type { LegacyChatMessage } from '../types/domain';
 
 type MessageAttachment = NonNullable<LegacyChatMessage['attachments']>[number];
@@ -75,6 +76,42 @@ function MessageImageAttachment({
   return imageElem;
 }
 
+/** The reference pins the .ppt notice to its metadata-only limitation. */
+function legacyPptNotice(attachment: MessageAttachment): string | undefined {
+  const legacyKind = String(attachment.docKind || '').toLowerCase();
+  if (!['ppt'].includes(legacyKind)) return undefined;
+  return t('chat.attach.metadataOnly') !== 'chat.attach.metadataOnly'
+    ? String(t('chat.attach.metadataOnly'))
+    : 'metadata only — convert to DOCX/XLSX/PPTX or PDF';
+}
+
+/* Documents open the in-app preview drawer instead of forcing a download;
+   only formats with no engine and no server text keep the raw link. The
+   composer chips stay untouched (reference behavior: drafts only remove). */
+function previewTrigger(attachment: MessageAttachment): { href?: string; onOpen?: () => void } {
+  const fileId = attachment.fileId;
+  if (!fileId) return {};
+  const previewable = canPreviewDocument({
+    fileId,
+    name: attachment.name ?? 'file',
+    mime: attachment.mime,
+    size: attachment.size,
+    docKind: attachment.docKind,
+  });
+  if (!previewable) return { href: `/api/v2/files/${fileId}/raw` };
+  return {
+    onOpen: () => {
+      void openDocumentPreview({
+        fileId,
+        name: attachment.name ?? 'file',
+        mime: attachment.mime,
+        size: attachment.size,
+        docKind: attachment.docKind,
+      });
+    },
+  };
+}
+
 export function MessageAttachments({ attachments }: { attachments: readonly MessageAttachment[] }) {
   if (!attachments.length) return null;
 
@@ -107,16 +144,12 @@ export function MessageAttachments({ attachments }: { attachments: readonly Mess
           );
         }
 
-        const legacyKind = String(attachment.docKind || '').toLowerCase();
-        const legacyNotice = ['ppt'].includes(legacyKind)
-          ? (t('chat.attach.metadataOnly') !== 'chat.attach.metadataOnly'
-            ? String(t('chat.attach.metadataOnly'))
-            : 'metadata only — convert to DOCX/XLSX/PPTX or PDF')
-          : undefined;
-
         const ext = getFileExtension(attachment.name || attachment.docKind || '');
         const size = formatFileSize(attachment.size);
-        const subCaption = legacyNotice || [ext, size].filter(Boolean).join(' · ') || ext;
+        const subCaption = legacyPptNotice(attachment)
+          || [ext, size].filter(Boolean).join(' · ')
+          || ext;
+        const { href, onOpen } = previewTrigger(attachment);
 
         return (
           <FileCard
@@ -124,7 +157,8 @@ export function MessageAttachments({ attachments }: { attachments: readonly Mess
             name={attachment.name ?? 'file'}
             size={attachment.size}
             subCaption={subCaption}
-            href={fileUrl}
+            href={href}
+            onOpen={onOpen}
             className="msg-attachment-card"
           />
         );

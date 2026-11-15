@@ -1,7 +1,7 @@
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
-import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { gzipSync, brotliCompressSync, constants as zlibConstants } from 'node:zlib';
 import { join, resolve } from 'node:path';
 import { createEntryGraphPlugin } from './scripts/entry-graph.mjs';
@@ -304,6 +304,54 @@ function createPrecompressedAssetsPlugin() {
   };
 }
 
+/* P_doc-preview-pdfjs-assets — pdf.js fetches two runtime asset sets over the
+   network when a document uses non-embedded fonts: the packed CMaps (mostly
+   CJK encodings) and the standard-font metrics. Both ship inside the pinned
+   pdfjs-dist package and must stay same-origin, so the preview engine points
+   at /assets/pdfjs/. deploy.sh copies dist/assets including nested
+   directories, so the build lands the copies there; the dev server serves the
+   same URLs straight from node_modules. Nothing is committed — these are
+   build artifacts derived from the package. */
+function createPdfjsRuntimeAssetsPlugin() {
+  const packageDir = join(process.cwd(), 'node_modules', 'pdfjs-dist');
+  const serve = (res, file) => {
+    try {
+      const body = readFileSync(file);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Cache-Control', 'no-store');
+      res.end(body);
+    } catch (_) {
+      res.statusCode = 404;
+      res.end();
+    }
+  };
+  return {
+    name: 'pdfjs-runtime-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const [pathOnly] = (req.url || '').split('?');
+        /* The capture deliberately excludes path separators beyond the flat
+           file name: both asset sets are flat directories, and `..` must
+           never reach the filesystem read. */
+        const cmap = /^\/assets\/pdfjs\/cmaps\/([\w.-]+\.bcmap)$/.exec(pathOnly);
+        if (cmap) return void serve(res, join(packageDir, 'cmaps', cmap[1]));
+        const font = /^\/assets\/pdfjs\/standard_fonts\/([\w.-]+)$/.exec(pathOnly);
+        if (font) return void serve(res, join(packageDir, 'standard_fonts', font[1]));
+        next();
+      });
+    },
+    closeBundle() {
+      try {
+        cpSync(join(packageDir, 'cmaps'), join(process.cwd(), 'dist', 'assets', 'pdfjs', 'cmaps'), { recursive: true });
+        cpSync(join(packageDir, 'standard_fonts'), join(process.cwd(), 'dist', 'assets', 'pdfjs', 'standard_fonts'), { recursive: true });
+      } catch (error) {
+        if (error && error.code !== 'ENOENT') throw error;
+      }
+    },
+  };
+}
+
 /* P_perf-strip-html-comments — index.html carries ~16 KB of developer
    documentation in HTML comments. The source keeps every one of them (they
    explain why the boot shell is shaped the way it is), but the shipped
@@ -572,6 +620,7 @@ export default defineConfig({
     tailwindcss(),
     createLocalApiStubPlugin(),
     createStripHtmlCommentsPlugin(),
+    createPdfjsRuntimeAssetsPlugin(),
     createPrecompressedAssetsPlugin(),
     createEntryGraphPlugin(),
   ],
