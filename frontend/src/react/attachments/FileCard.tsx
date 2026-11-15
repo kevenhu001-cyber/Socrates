@@ -145,6 +145,9 @@ export function FileCard({
 
   const cardClasses = resolveCardClasses(Boolean(onRemove), status, isClickable, className);
   const body = <FileCardBody iconNode={iconNode} name={name} description={description} onRemove={onRemove} />;
+  /* The reference card is titled by its file name; only a failure swaps the
+     title for the reason so the retry affordance explains itself. */
+  const cardTitle = status === 'error' && description ? description : name;
 
   if (href) {
     return (
@@ -153,7 +156,7 @@ export function FileCard({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        title={description ? `${name} (${description})` : name}
+        title={cardTitle}
         onClick={handleClick}
       >
         {body}
@@ -164,7 +167,7 @@ export function FileCard({
   return (
     <div
       className={cardClasses}
-      title={description ? `${name} (${description})` : name}
+      title={cardTitle}
       onClick={isClickable ? handleClick : undefined}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}

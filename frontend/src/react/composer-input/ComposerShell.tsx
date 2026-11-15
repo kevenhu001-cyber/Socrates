@@ -19,8 +19,9 @@ import { useSendGlyphStore } from '../../ui/sendGlyph.store.ts';
 import { toggleComposerTools, useComposerToolsSnapshot } from '../composer/composerTools.store';
 import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
-import { VoiceRecordingBar } from './VoiceRecordingBar';
+import { VoiceSpectrum } from './VoiceSpectrum';
 import { useVoiceInputStore } from '../../ui/voiceInput.store.ts';
+import { voiceInputUnavailableReason } from '../../ui/voiceInputAvailability.ts';
 
 interface ComposerShellProps {
   placeholder: string;
@@ -78,12 +79,11 @@ function anchor(id: string): HTMLElement | null {
   return document.getElementById(id);
 }
 
-/** 控件栏三个图标按钮的已翻译名称（同时用作 aria-label 与 title）。 */
-function controlLabels(streaming: boolean): { primaryLabel: string; toolsLabel: string; voiceLabel: string } {
+/** 控件栏图标按钮的已翻译名称（同时用作 aria-label 与 title）。 */
+function controlLabels(streaming: boolean): { primaryLabel: string; toolsLabel: string } {
   return {
     primaryLabel: streaming ? i18n('chat.stop', 'Stop generating') : i18n('chat.send', 'Send'),
     toolsLabel: i18n('chrome.addToolsFiles', 'Add tools and files'),
-    voiceLabel: i18n('chrome.voiceInput', 'Voice input'),
   };
 }
 
@@ -117,7 +117,27 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const attachments = useAttachments();
   const streaming = useIsChatStreaming();
   const sending = useSendGlyphStore((state) => state.isSending);
-  const voiceActive = useVoiceInputStore((state) => state.phase) !== 'idle';
+  const voicePhaseRaw = useVoiceInputStore((state) => state.phase);
+  const voiceSeconds = useVoiceInputStore((state) => state.elapsedSeconds);
+  const voiceAnalyser = useVoiceInputStore((state) => state.analyser);
+  const voicePhase: 'idle' | 'recording' | 'transcribing' = voicePhaseRaw === 'idle'
+    ? 'idle'
+    : voicePhaseRaw === 'processing' ? 'transcribing' : 'recording';
+  const voiceActive = voicePhase !== 'idle';
+  const voiceRecording = voicePhase === 'recording';
+  const voiceUnavailable = voiceInputUnavailableReason();
+  const voiceLabel = voiceUnavailable === 'https'
+    ? i18n('voice.requiresHttps', 'Voice input requires HTTPS')
+    : voiceUnavailable === 'unsupported'
+      ? i18n('voice.unsupported', 'Voice input is not supported in this browser.')
+      : voicePhase === 'recording'
+        ? i18n('voice.stop', 'Stop voice input')
+        : voicePhase === 'transcribing'
+          ? i18n('voice.cancel', 'Cancel voice input')
+          : i18n('chrome.voiceInput', 'Voice input');
+  const voiceTimerLabel = voicePhase === 'recording'
+    ? i18n('voice.timer', 'Recording {seconds}s').replace('{seconds}', String(voiceSeconds))
+    : '';
   const phone = useComposerPhone();
   const focused = useEditorFocus();
   const configuration = useChatConfigurationSnapshot();
@@ -125,8 +145,10 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   const effort = useStoredReasoningEffort();
   const effortValue = effortLabel(effort);
   const effortAccessibleLabel = `${modelLabel ? `${modelLabel} · ` : ''}${i18n('chatconfig.effort', 'Reasoning effort')} · ${effortValue}`;
-  const canSend = hasDraft || attachments.length > 0;
-  const { primaryLabel, toolsLabel, voiceLabel } = controlLabels(streaming);
+  /* Dictation owns the microphone while it runs; the primary stays a send
+     control and cannot submit a half-transcribed turn. */
+  const canSend = !voiceActive && (hasDraft || attachments.length > 0);
+  const { primaryLabel, toolsLabel } = controlLabels(streaming);
   const composerLabel = surface === 'chat'
     ? i18n('chat.placeholder', 'Ask Socrates')
     : i18n('topic.inputPlaceholder', placeholder);
@@ -152,10 +174,10 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   useLayoutEffect(() => {
     const host = document.getElementById('composerInputWrap');
     if (!host) return;
-    host.classList.toggle('voice-recording-active', voiceActive);
-    if (voiceActive) host.setAttribute('data-voice-recording', 'true');
+    host.classList.toggle('voice-recording-active', voiceRecording);
+    if (voiceRecording) host.setAttribute('data-voice-recording', 'true');
     else host.removeAttribute('data-voice-recording');
-  }, [voiceActive]);
+  }, [voiceRecording]);
 
   useControlTitles(toolsLabel, effortAccessibleLabel, voiceLabel, primaryLabel);
 
@@ -183,7 +205,6 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
 
   return (
     <>
-      <VoiceRecordingBar />
       {/* RN-7: the question box is the shared RN frame (packages/ui/src/composer).
           The web supplies two slots — the attachment row and the rich editor
           (paste, shortcuts, IME, tokens unchanged); the frame draws the rest. */}
@@ -200,6 +221,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
           )}
           body={(
             <div id="composerRoot" className="composer-editor-root" aria-label={composerLabel}>
+              {phone && voiceRecording ? <VoiceSpectrum analyser={voiceAnalyser} /> : null}
               <RichComposer placeholder={placeholder} onSubmit={onSubmit} onEscape={onEscape} />
             </div>
           )}
@@ -232,7 +254,11 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
             mic: {
               label: voiceLabel,
               i18nKey: 'chrome.voiceInput',
-              listening: voiceActive,
+              listening: voicePhase === 'recording',
+              phase: voicePhase,
+              timerLabel: voiceTimerLabel,
+              showTimer: !phone,
+              disabled: voiceUnavailable !== null,
               onPress: () => {
                 const target = readComposerSurface();
                 void import('../../ui/voiceInput.ts')

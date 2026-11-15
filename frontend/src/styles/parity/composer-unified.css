@@ -21,7 +21,7 @@
 #appShell .composer-slot { display: contents; }
 
 /* ── Host ──────────────────────────────────────────────────────────────── */
-#appShell .composer-shell:not(.voice-recording-active) {
+#appShell .composer-shell {
   position: relative;
   box-sizing: border-box;
   display: block;
@@ -35,7 +35,7 @@
   box-shadow: none;
   color: var(--foreground);
 }
-#appShell .composer-shell .composer-editor-root { display: block; min-width: 0; }
+#appShell .composer-shell .composer-editor-root { display: block; min-width: 0; position: relative; }
 #appShell .composer-shell .rich-composer {
   display: flex;
   flex-direction: column;
@@ -191,7 +191,7 @@
     --ui-ink-tertiary: var(--geist-gray-700);
     --ui-elevation-field: 0 0 0 1px rgb(0 0 0 / 7%), 0 4px 24px rgb(0 0 0 / 5%);
   }
-  #appShell .composer-shell:not(.voice-recording-active) { width: 100%; max-width: none; }
+  #appShell .composer-shell { width: 100%; max-width: none; }
   /* Reference phone question box: draft and placeholder at 16px. */
   #appShell .composer-shell .rich-composer-editor { max-height: 220px; font-size: var(--ui-font-size-md); }
   #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -206,36 +206,84 @@
   }
 }
 
-/* ── Voice recording ───────────────────────────────────────────────────────
-   While dictating, the React composer store shows only its recording bar. */
-#appShell .composer-shell.voice-recording-active {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0;
-  width: min(100%, var(--ui-content-chat));
-  max-width: var(--ui-content-chat);
-  min-height: 104px;
-  margin: 0 auto;
-  padding: var(--ui-step-75);
-  overflow: hidden;
-  border: 0;
-  border-radius: var(--ui-radius-card);
-  background: var(--ui-card);
-  color: var(--foreground);
-  box-shadow: var(--ui-elevation-field-focus);
+/* ── Voice input ──────────────────────────────────────────────────────────
+   Dictation is a state of the mic control, not a second composer. The button
+   fills with the action colour while recording, a breathing halo marks the
+   live capture (polish/motion.css owns the animation), and the timer sits
+   immediately to its left on desktop. Phones swap the editor for a live
+   spectrum, as the reference does. */
+#appShell .composer-shell [data-composer-voice-timer] {
+  flex: 0 0 auto;
+  color: var(--ui-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  user-select: none;
 }
-#appShell .composer-shell.voice-recording-active > :not(.voice-recording-bar) { display: none; }
+#appShell .composer-shell [data-composer-control="mic"] {
+  position: relative;
+}
+#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="recording"] {
+  background: var(--ui-action);
+  color: var(--ui-on-action);
+}
+#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="recording"]::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 2px solid color-mix(in srgb, var(--ui-action) 38%, transparent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"] {
+  background: transparent;
+}
+#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"] svg {
+  opacity: 0;
+}
+#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"]::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ui-border-strong);
+  border-top-color: var(--ui-text-secondary);
+  border-radius: 50%;
+  animation: composer-mic-spin 0.8s linear infinite;
+}
+@keyframes composer-mic-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Phone spectrum: the editor keeps its height, the bars take its place. */
+#appShell .composer-shell .composer-voice-spectrum {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  overflow: hidden;
+  opacity: 0.75;
+  pointer-events: none;
+}
+#appShell .composer-shell .composer-voice-spectrum > span {
+  flex: 0 0 2px;
+  width: 2px;
+  height: 4px;
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-action);
+  transform-origin: center;
+  will-change: transform;
+}
 @media (max-width: 768px) {
-  #appShell .composer-shell.voice-recording-active { width: 100%; max-width: none; }
+  #appShell .composer-shell.voice-recording-active .rich-composer-editor { visibility: hidden; }
 }
 
 /* Composer attachments: a strip of image tiles and document cards in the
    frame's top slot. The slot owns the outer rhythm (inset, gap to the
-   editor); the strip only scrolls. The 6px top padding keeps each card's
-   floating remove disc inside the sheet. */
+   editor); the strip only scrolls. The 2px bottom padding keeps the focus
+   ring and the floating remove disc inside the scroll box. */
 .composer-shell .attachment-chips {
   display: flex;
   flex-wrap: nowrap;

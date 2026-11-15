@@ -652,9 +652,10 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 /* Chat bubble attachment strip */
 .msg-attachment-chips {
+  --message-file-image-size: 120px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 8px;
   width: 100%;
 }
@@ -663,14 +664,20 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   justify-content: flex-end;
 }
 
+/* A message that mixes images with documents uses the reference's compact
+   64px previews so the row stays a row of files. */
+.msg-attachment-chips--with-documents {
+  --message-file-image-size: 64px;
+}
+
 .msg-attachment-image-card {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   box-sizing: border-box;
-  width: 120px;
-  height: 120px;
+  width: var(--message-file-image-size, 120px);
+  height: var(--message-file-image-size, 120px);
   padding: 0;
   overflow: hidden;
   border-radius: var(--ui-radius-lg);
@@ -679,6 +686,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   transition:
     border-color var(--ui-duration-hover) ease,
     transform var(--ui-duration-hover) ease;
+}
+
+.msg-attachment-image-error {
+  color: var(--ui-text-tertiary);
+}
+
+.msg-attachment-image-error svg {
+  width: 36px;
+  height: 36px;
 }
 
 .msg-attachment-image-link {

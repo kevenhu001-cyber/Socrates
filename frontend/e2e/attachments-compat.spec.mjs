@@ -42,7 +42,9 @@ test('Attachment chips React mode render files selected through the composer', a
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
   await expect(chips.nth(0)).toHaveAttribute('title', 'cat.png');
-  await expect(chips.nth(1)).toHaveAttribute('title', 'notes.txt');
+  /* Document cards carry the reference's "name (type · size)" title. */
+  await expect(chips.nth(1)).toHaveAttribute('title', /notes\.txt/);
+  await expect(chips.nth(1).locator('.file-card-caption')).toHaveText('notes.txt');
   await expect(chatChipsAttrVisible(page, '#composerAttachmentChips')).resolves.toBe(true);
 });
 
@@ -63,10 +65,10 @@ test('Attachment chips remove through the React action', async ({ page }) => {
 
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chips).toHaveCount(2);
-  await expect(chips.first()).toHaveAttribute('title', 'one.txt');
-  await chips.first().locator('.attachment-chip-remove').click({ force: true });
+  await expect(chips.first()).toHaveAttribute('title', /one\.txt/);
+  await chips.first().locator('.file-card-remove').click({ force: true });
   await expect(chips).toHaveCount(1);
-  await expect(chips.first()).toHaveAttribute('title', 'two.txt');
+  await expect(chips.first()).toHaveAttribute('title', /two\.txt/);
 });
 
 test('Attachment chips React mode always loads (no ?react=1 flag needed)', async ({ page }) => {
@@ -239,7 +241,7 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
   const chip = page.locator('#composerAttachmentChips .attachment-chip');
   await expect(chip).toHaveCount(1);
   await expect(chip).toHaveClass(/error/);
-  const retryBtn = page.locator('#composerAttachmentChips .attachment-chip-retry');
+  const retryBtn = page.locator('#composerAttachmentChips .file-card-retry-btn');
   await expect(retryBtn).toHaveCount(1);
 
   /* Retry re-uploads the retained File — no re-pick needed — and the
@@ -285,5 +287,47 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
   await expect(chip).toHaveCount(1);
   await expect(chip).not.toHaveClass(/pending|error/);
   /* PDFs classify as documents in the rendered attachment affordance. */
-  await expect(chip.locator('.attachment-chip-visual')).toHaveAttribute('data-kind', 'pdf');
+  await expect(chip.locator('.file-card-caption')).toHaveText('report.pdf');
+  await expect(chip.locator('.file-card-subcaption')).toContainText('PDF');
+});
+
+/* P_composer-attachment-layout — the reference row lines up with the editor
+   and keeps two fixed preview shapes: a 64×64 image tile and a 240×64
+   document card. The row used to add a second 12px inset on top of the
+   frame slot, and the image tile inherited a 56px flex basis from the parity
+   layer, so it rendered 56×64. */
+test('Composer attachment previews align with the editor and keep their shapes', async ({ page }) => {
+  await mockAuthedApp(page);
+  await mockProviderAndUpload(page, []);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+  await page.locator('#composerAttachInput').setInputFiles([
+    { name: 'cat.png', mimeType: 'image/png', buffer: png },
+    { name: 'lecture-notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') },
+  ]);
+
+  const chips = page.locator('#composerAttachmentChips .attachment-chip');
+  await expect(chips).toHaveCount(2);
+  /* Let the 180ms entrance animation settle; a mid-animation transform
+     would make the measured card a fraction narrower. */
+  await page.waitForTimeout(300);
+  const imageBox = await chips.nth(0).boundingBox();
+  const fileBox = await chips.nth(1).boundingBox();
+  expect(imageBox).not.toBeNull();
+  expect(fileBox).not.toBeNull();
+  expect(Math.round(imageBox.width)).toBe(64);
+  expect(Math.round(imageBox.height)).toBe(64);
+  expect(Math.round(fileBox.width)).toBe(240);
+  expect(Math.round(fileBox.height)).toBe(64);
+
+  const editorLeft = await page.locator('#composerRoot .rich-composer-editor').evaluate(
+    (node) => node.getBoundingClientRect().left,
+  );
+  expect(Math.abs(imageBox.x - editorLeft)).toBeLessThanOrEqual(1);
 });

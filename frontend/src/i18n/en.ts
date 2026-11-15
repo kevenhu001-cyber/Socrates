@@ -575,6 +575,8 @@ export const en = {
     "voice.processing":"Processing voice input…",
     "voice.stop":"Stop voice input",
     "voice.cancel":"Cancel voice input",
+    "voice.timer":"Recording {seconds}s",
+    "voice.requiresHttps":"Voice input requires HTTPS",
     "voice.unsupported":"Voice input is not supported in this browser.",
     "voice.permission":"Please allow microphone access to use voice input.",
     "voice.error":"Voice input could not start. Please check microphone access.",

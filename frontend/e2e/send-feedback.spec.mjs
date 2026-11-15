@@ -65,7 +65,7 @@ for (const surface of ['chat', 'topic']) {
       window.__releaseStreamGate();
       return window.__sendPromise;
     });
-    await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveAttribute('title', 'next.txt');
+    await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveAttribute('title', /next\.txt/);
   });
 }
 
@@ -78,6 +78,7 @@ test('first-turn placeholder retry sends the original text and attachment', asyn
       body: 'data: {"choices":[{"delta":{"content":"Ready"}}]}\n\ndata: [DONE]\n\n' });
   });
   await delayStreamingBridge(page);
+  await attachTextFile(page, 'submitted.txt', 'submitted attachment');
   await page.locator('#composerRoot .rich-composer-editor').first().fill('Read my original notes');
   await page.evaluate(() => { window.__sendPromise = window.startSession(); });
   await expect.poll(() => page.evaluate(() => !!window.__waitingForStream)).toBe(true);
@@ -92,30 +93,29 @@ test('first-turn placeholder retry sends the original text and attachment', asyn
   expect(JSON.stringify(user.content)).toContain('submitted.txt');
 });
 
-test('home upload opens a file chooser, writing activates its template, and dismissal keeps the mobile rail usable', async ({ page }) => {
+test('home upload and the writing template keep the mobile rail usable', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   await openApp(page);
-  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
-    status: 201,
-    contentType: 'application/json',
-    body: JSON.stringify({ id: 'uploaded-notes', name: 'notes.txt', kind: 'text', mimeType: 'text/plain', size: 10 }),
-  }));
-  const chooser = page.waitForEvent('filechooser');
-  await page.locator('[data-testid="home-shortcut-action-upload"]').click();
-  await (await chooser).setFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Test notes') });
+
+  /* The landing composer's attach input is the home upload path. */
+  await page.locator('#composerAttachInput').setInputFiles({
+    name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Test notes'),
+  });
   await expect(page.locator('#composerAttachmentChips')).toContainText('notes.txt');
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(/pending|error/);
-  await page.locator('[data-testid="home-shortcut-action-write"]').click();
+
+  /* Writing is a composer tool, not a separate home shortcut. */
+  await page.locator('#composerToolsBtn').click();
+  await page.locator('#composerToolsMenu [data-composer-action="write"]:visible').first().click();
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
-  const row = page.locator('[data-testid="home-shortcut-write"]');
-  await row.hover();
-  await row.locator('[data-testid="home-shortcut-dismiss-write"]').click();
-  await expect(row).toBeHidden();
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-desktop.png' });
+
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.home-quick-actions')).toBeVisible();
-  await expect(page.locator('[data-testid="home-shortcut-action-upload"]')).toBeVisible();
-  await expect(page.locator('[data-testid="home-shortcut-action-research"]')).toBeVisible();
+  const composer = page.locator('#composerInputWrap');
+  await expect(composer).toBeVisible();
+  await expect(composer.locator('#composerToolsBtn')).toBeVisible();
+  await expect(composer.locator('#composerMicBtn')).toBeVisible();
+  await expect(composer.locator('#composerPrimaryBtn')).toBeVisible();
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.screenshot({ path: 'test-results/performance-home-shortcuts-mobile.png' });
 });

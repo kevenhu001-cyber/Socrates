@@ -131,13 +131,6 @@ body,
 /* The static markup uses two different footer wrappers. Flattening only the
  * wrappers makes their real controls identical grid children. */
 
-/* Recording is a content state of the same composer surface. Keep the card
- * anchored and sized consistently while replacing its inner controls. */
-
-#appShell#appShell .voice-recording-bar {
-  color: var(--conversation-text) !important;
-}
-
 /* Shared composer -------------------------------------------------------- */
 
 

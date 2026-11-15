@@ -20,25 +20,41 @@ async function installVoiceMocks(page) {
       stop() {
         if (!this.active) return;
         this.active = false;
+        /* A short flush window lets the spec observe the transcribing state
+           before the final result lands. */
         setTimeout(() => {
           this.onresult?.({
             resultIndex: 0,
             results: [{ isFinal: true, 0: { transcript: 'voice test' } }],
           });
           this.onend?.();
-        }, 0);
+        }, 200);
+      }
+
+      abort() {
+        if (!this.active) return;
+        this.active = false;
+        setTimeout(() => this.onend?.(), 200);
       }
     }
 
     class FakeAnalyser {
       constructor() {
-        this.fftSize = 32;
+        this.fftSize = 512;
+        this.frequencyBinCount = 256;
         this.smoothingTimeConstant = 0;
+        this.context = { sampleRate: 48000 };
       }
 
       getByteTimeDomainData(data) {
         for (let index = 0; index < data.length; index += 1) {
           data[index] = index % 2 === 0 ? 184 : 72;
+        }
+      }
+
+      getFloatFrequencyData(data) {
+        for (let index = 0; index < data.length; index += 1) {
+          data[index] = -80 + (index % 7) * 9;
         }
       }
     }
@@ -137,7 +153,7 @@ test('incognito lives in the 更多 popover; new-chat stays out of the home head
   await expect(incognito).toBeHidden();
 });
 
-test('the mic starts voice input and the primary becomes send after transcription', async ({ page }) => {
+test('the mic records inline and the phone shows the live spectrum', async ({ page }) => {
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -155,9 +171,6 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   const mic = wrap.locator('#composerMicBtn');
   await expect(mic).toHaveCount(1);
   await expect(mic).toBeVisible();
-  // P_composer-primary-split — the microphone is the one and only dictation
-  // control; the primary is submit-only, so it reads as Send and stays
-  // disabled (at 30%) until there is something to send.
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
@@ -189,50 +202,30 @@ test('the mic starts voice input and the primary becomes send after transcriptio
 
   await editor.pressSequentially('typed');
   await expect(primary).toHaveAttribute('data-ready', 'true');
-  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
-  await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeEnabled();
   await page.screenshot({ path: 'test-results/socrates-composer-with-text.png', fullPage: true });
   await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
   await editor.press('Backspace');
   expect(await primary.evaluate((button) => button.dataset.ready === 'true')).toBe(false);
-  // Clearing the draft disables the primary again; dictation stays on the mic.
-  await expect(primary.locator('[data-ui-icon=arrow-up]')).toHaveCount(1);
-  await expect(primary.locator('.icon-voice')).toHaveCount(0);
   await expect(primary).toBeDisabled();
 
   await mic.click();
-  const bar = wrap.locator('.voice-recording-bar');
+  await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
+  await expect(mic).toHaveAttribute('aria-pressed', 'true');
+  await expect(mic).toHaveAttribute('aria-label', 'Stop voice input');
   await expect(wrap).toHaveClass(/voice-recording-active/);
-  await expect(bar).toBeVisible();
-  await expect(bar.locator('.voice-recording-wave > span')).toHaveCount(26);
-  await expect(bar.locator('.voice-recording-stop')).toHaveAttribute('aria-label', 'Stop voice input');
-  await expect.poll(async () => bar.getAttribute('data-voice-level')).not.toBe('0.000');
-
-  const recordingMode = await page.evaluate(() => ({
-    mode: document.documentElement.dataset.mode,
-    background: getComputedStyle(document.getElementById('composerInputWrap')).backgroundColor,
-  }));
-  if (recordingMode.mode === 'dark') {
-    /* The recording shell is the composer's own elevated rung, and it has to
-       stay a dark surface while dictating. ADR 0023 moved that rung onto
-       the Geist scale (#181818 → the elevated step #292929), so the check
-       pins the exact tone instead of a threshold: the surface may not
-       brighten behind the recording bar. */
-    expect(rgbChannels(recordingMode.background)).toEqual([41, 41, 41]);
-  }
-
-  const waveform = await bar.locator('.voice-recording-wave > span').evaluateAll((nodes) => ({
-    heights: nodes.map((node) => getComputedStyle(node).height),
-    level: nodes[0]?.closest('.voice-recording-bar')?.dataset.voiceLevel || '',
-  }));
-  expect(waveform.level).not.toBe('0.000');
-  expect(new Set(waveform.heights).size).toBeGreaterThan(2);
+  const spectrum = wrap.locator('.composer-voice-spectrum');
+  await expect(spectrum).toBeVisible();
+  await expect(spectrum.locator('span')).not.toHaveCount(0);
   await expect(editor).toBeHidden();
-
+  await expect(primary).toBeDisabled();
+  /* Phones hide the timer, as the reference does. */
+  await expect(wrap.locator('[data-composer-voice-timer]')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/voice-input-mobile.png', fullPage: true });
-  await bar.locator('.voice-recording-stop').click();
 
+  await mic.click();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'transcribing');
+  await expect(mic).toHaveAttribute('aria-label', 'Cancel voice input');
   await expect(wrap).not.toHaveClass(/voice-recording-active/);
   await expect(editor).toContainText('voice test');
   await expect.poll(async () => page.evaluate(() => window.__voiceTrackStopped)).toBe(true);
@@ -241,7 +234,31 @@ test('the mic starts voice input and the primary becomes send after transcriptio
   expect(consoleErrors).toEqual([]);
 });
 
-test('the chat mic uses the same recording bar', async ({ page }) => {
+test('desktop dictation keeps the editor and shows the recording timer', async ({ page }) => {
+  await bootVoiceFixture(page, { width: 1280, height: 900 });
+  const wrap = page.locator('#composerInputWrap');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  const mic = wrap.locator('#composerMicBtn');
+
+  await mic.click();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
+  await expect(mic).toHaveAttribute('aria-label', 'Stop voice input');
+  const timer = wrap.locator('[data-composer-voice-timer]');
+  await expect(timer).toBeVisible();
+  await expect(timer).toContainText(/Recording \d+s/);
+  /* The spectrum is the phone replacement for the editor; desktop keeps
+     the draft visible while it records. */
+  await expect(wrap.locator('.composer-voice-spectrum')).toHaveCount(0);
+  await expect(editor).toBeVisible();
+  await page.screenshot({ path: 'test-results/voice-input-desktop.png', fullPage: true });
+
+  await mic.click();
+  await expect(wrap).not.toHaveClass(/voice-recording-active/);
+  await expect(editor).toContainText('voice test');
+  await expect(mic).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('the chat mic uses the same inline recording state', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   await enterChat(page);
 
@@ -251,9 +268,6 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
   await expect(wrap).toBeVisible();
   const mic = wrap.locator('#composerMicBtn');
   await expect(mic).toHaveCount(1);
-  /* P_composer-primary-split — this case used to be titled "the empty chat
-     primary action uses the same recording bar" and clicked the primary.
-     Dictation is the mic's job now; the primary only sends and stops. */
   await expect(mic).toHaveAttribute('aria-label', 'Voice input');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
   await expect(editor).toHaveCSS('text-align', 'left');
@@ -262,30 +276,33 @@ test('the chat mic uses the same recording bar', async ({ page }) => {
   await expect(primary).toBeDisabled();
 
   await mic.click();
-  const bar = wrap.locator('.voice-recording-bar');
-  await expect(bar).toBeVisible();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
   await expect(wrap).toHaveClass(/voice-recording-active/);
-  await expect(wrap.locator('.composer-footer')).toBeHidden();
-  await expect(wrap.locator('.composer-editor-root')).toBeHidden();
-  await expect(bar.locator('.voice-recording-wave > span')).toHaveCount(26);
+  await expect(wrap.locator('.composer-voice-spectrum')).toBeVisible();
+  await expect(wrap.locator('.composer-editor-root')).toBeVisible();
 
-  await bar.locator('.voice-recording-stop').click();
+  await mic.click();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'transcribing');
   await expect(wrap).not.toHaveClass(/voice-recording-active/);
   await expect(editor).toContainText('voice test');
   await expect(primary).toHaveAttribute('aria-label', 'Send');
 });
 
-test('canceling the React recording bar discards the transcript and releases the mic', async ({ page }) => {
+test('canceling while transcribing discards the transcript and releases the mic', async ({ page }) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   const wrap = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');
   const mic = wrap.locator('#composerMicBtn');
 
   await mic.click();
-  const bar = wrap.locator('.voice-recording-bar');
-  await expect(bar).toBeVisible();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'recording');
   await expect(mic).toHaveAttribute('aria-pressed', 'true');
-  await bar.locator('.voice-recording-cancel').click();
+
+  /* First click stops the recognizer; the second click is the cancel
+     affordance while its final result is still in flight. */
+  await mic.click();
+  await expect(mic).toHaveAttribute('data-voice-phase', 'transcribing');
+  await mic.click();
 
   await expect(wrap).not.toHaveClass(/voice-recording-active/);
   await expect(editor).toHaveText('');

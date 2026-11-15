@@ -124,15 +124,6 @@
      .composer-shell styles (scripts/check-composer-css.mjs). See the
      mobile media block at the bottom of that file. */
 
-  /* ── Voice recording controls — 44 ── */
-  #appShell .voice-recording-stop,
-  #appShell .voice-recording-cancel {
-    width: var(--ui-hit-area);
-    min-width: var(--ui-hit-area);
-    height: var(--ui-hit-area);
-    min-height: var(--ui-hit-area);
-  }
-
   /* ── Hardcoded colour overrides ──
      Force the legacy dark surfaces onto the --ui-bg-* palette. The
      restore/ + components/ layers still hold the literals (fallback

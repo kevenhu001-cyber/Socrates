@@ -554,6 +554,8 @@ export const zh = {
     "voice.processing":"正在处理语音…",
     "voice.stop":"停止语音输入",
     "voice.cancel":"取消语音输入",
+    "voice.timer":"录音中 {seconds} 秒",
+    "voice.requiresHttps":"语音输入需要 HTTPS 环境",
     "voice.unsupported":"当前浏览器不支持语音输入。",
     "voice.permission":"请允许麦克风权限后使用语音输入。",
     "voice.error":"语音输入启动失败，请检查麦克风权限。",

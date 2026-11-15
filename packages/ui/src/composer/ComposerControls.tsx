@@ -56,6 +56,14 @@ export interface ComposerMicControl {
   /** 同 ComposerToolsControl.i18nKey。 */
   i18nKey?: string;
   listening: boolean;
+  /** Recording/transcribing glyph state. Omitted by hosts without dictation. */
+  phase?: 'idle' | 'recording' | 'transcribing';
+  /** Formatted "Recording 0:12" label shown to the left of the control. */
+  timerLabel?: string;
+  /** Phones hide the timer; the reference does the same. */
+  showTimer?: boolean;
+  /** Non-secure contexts cannot open the microphone. */
+  disabled?: boolean;
   onPress: () => void;
 }
 
@@ -79,7 +87,7 @@ export interface ComposerControlsProps {
   compact?: boolean;
 }
 
-function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, children, onPress }: {
+function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, voicePhase, filled, disabled, children, onPress }: {
   id: string;
   control: string;
   label: string;
@@ -87,6 +95,9 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
   expanded?: boolean;
   pressed?: boolean;
   haspopup?: 'menu' | 'dialog';
+  voicePhase?: 'idle' | 'recording' | 'transcribing';
+  filled?: boolean;
+  disabled?: boolean;
   children: ReactNode;
   onPress: () => void;
 }) {
@@ -100,17 +111,22 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
       aria-expanded={expanded}
       aria-pressed={ariaPressed}
       aria-haspopup={haspopup}
+      aria-disabled={disabled}
+      disabled={disabled}
       onPress={onPress}
-      {...dataSet({ composerControl: control, i18nTitle: i18nKey, i18nAria: i18nKey })}
+      {...dataSet({ composerControl: control, i18nTitle: i18nKey, i18nAria: i18nKey, voicePhase })}
       style={({ pressed, hovered }: PressState) => ({
         width: COMPOSER_CONTROL_SIZE,
         height: COMPOSER_CONTROL_SIZE,
         borderRadius: uiRadius.pill,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: pressed ? colors.fillPressed
-          : active ? colors.fillHover
-            : hovered ? colors.fill : 'transparent',
+        opacity: disabled ? 0.45 : 1,
+        backgroundColor: disabled ? 'transparent'
+          : filled ? colors.action
+            : pressed ? colors.fillPressed
+              : active ? colors.fillHover
+                : hovered ? colors.fill : 'transparent',
       })}
     >
       {children}
@@ -179,15 +195,40 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         </Pressable>
       </View>
 
+      {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
+        <UiText
+          variant="eyebrow"
+          tone="tertiary"
+          numberOfLines={1}
+          aria-hidden
+          {...dataSet({ composerVoiceTimer: '' })}
+        >
+          {mic.timerLabel}
+        </UiText>
+      ) : null}
+
       <RoundControl
         id="composerMicBtn"
         control="mic"
         label={mic.label}
         i18nKey={mic.i18nKey}
         pressed={mic.listening}
+        voicePhase={mic.phase}
+        filled={mic.phase === 'recording'}
+        disabled={mic.disabled}
         onPress={mic.onPress}
       >
-        <UiIcon name="mic" size={20} color={mic.listening ? colors.ink : colors.inkSecondary} />
+        <UiIcon
+          name="mic"
+          size={20}
+          color={mic.phase === 'recording'
+            ? colors.onAction
+            : mic.disabled
+              ? colors.inkTertiary
+              : mic.listening
+                ? colors.ink
+                : colors.inkSecondary}
+        />
       </RoundControl>
 
       <Pressable

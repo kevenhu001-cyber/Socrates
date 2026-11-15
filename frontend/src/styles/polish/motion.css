@@ -35,19 +35,17 @@
    components (packages/ui/src/turn): their breathing caption and progress
    hairline are JS-driven opacity/transform and stop under reduced motion. */
 
-/* Recording: components/composer.css owns the dot geometry and
-   polish/composer.css owns the halo shape. This policy owns the only
-   persistent animation. */
-#appShell .voice-recording-indicator {
-  animation: none;
-}
-#appShell .voice-recording-indicator::after {
-  animation: ui-recording-ring var(--ui-duration-pulse-slow) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+/* Recording: the mic button's halo is the single persistent cue. The ring
+   geometry lives in parity/composer-unified.css; this policy owns only the
+   breathing animation, so a theme or layout change cannot start a second
+   pulse beside it. */
+#appShell [data-composer-control="mic"][data-voice-phase="recording"]::before {
+  animation: ui-mic-halo var(--ui-duration-pulse-slow) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
 }
 
-@keyframes ui-recording-ring {
-  0% { transform: scale(0.6); opacity: 0.5; }
-  70%, 100% { transform: scale(1.9); opacity: 0; }
+@keyframes ui-mic-halo {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.12); opacity: 0.22; }
 }
 
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
@@ -55,7 +53,7 @@
     .shimmer-text,
     .agent-step-label
   ).shimmer-text,
-  #appShell .voice-recording-indicator::after {
+  #appShell [data-composer-control="mic"][data-voice-phase="recording"]::before {
     animation: none;
   }
 }

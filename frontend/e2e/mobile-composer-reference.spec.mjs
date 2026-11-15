@@ -125,12 +125,11 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(composer.locator('#composerPrimaryBtn')).toHaveAttribute('aria-label', '发送');
   await expect(composer.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toHaveCount(1);
   /* The reference pill reads the current level (高/中/低), not the
-     section label. The phone rail deliberately does not chip the default:
-     parity/composer-unified.css hides
-     [data-composer-control=effort][data-effort="medium"] because the default stays
-     reachable from the header configuration menu, so a non-default level
-     is what brings the chip back. Assert both halves of that contract. */
-  await expect(effort).toBeHidden();
+     section label. Phones keep the pill visible at the default level: the
+     conversation header no longer carries a model chip there, so this is
+     the phone's way into model and reasoning settings. */
+  await expect(effort).toBeVisible();
+  await expect(effort.locator('[data-effort-value]')).toHaveText('中');
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
     window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
@@ -172,9 +171,11 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await effort.locator('#effortTrigger').click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
-  await expect(pop).toContainText('5.6 Luna');
-  await expect(pop).toContainText('思考强度');
-  await expect(pop).toContainText('速度');
+  /* The model selector lives in the header; the anchored popover carries the
+     reasoning level and the speed shortcut. */
+  await expect(page.locator('#topModelSwitcher')).toContainText('5.6 Luna');
+  await expect(pop).toContainText('立即');
+  await expect(pop.locator('input[aria-label="思考强度"]')).toHaveAttribute('aria-valuetext', '高');
   /* The popover is anchored above the pill, not a sheet/dialog. */
   const popBox = await pop.boundingBox();
   const triggerBox = await effort.locator('#effortTrigger').boundingBox();

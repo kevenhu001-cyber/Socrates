@@ -112,13 +112,16 @@ function setupAudioMeter(session: VoiceSession) {
   try {
     const audioContext = new AudioContextConstructor();
     const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.78;
+    /* 512 gives the phone spectrum enough bins for the 100–4000 Hz vocal
+       band without making the level meter noisy. */
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.2;
     const source = audioContext.createMediaStreamSource(session.stream);
     source.connect(analyser);
     session.audioContext = audioContext;
     session.analyser = analyser;
     session.audioData = new Uint8Array(analyser.fftSize);
+    useVoiceInputStore.getState().setAnalyser(analyser);
     if (audioContext.state === 'suspended' && typeof audioContext.resume === 'function') {
       const resume = audioContext.resume();
       if (resume && typeof resume.catch === 'function') {
@@ -318,15 +321,17 @@ export function stopSpeechInput() {
 
 /* Discard path — abort() drops pending recognition results instead of
    committing them, so nothing reaches the composer. finishSession still
-   runs cleanup through the same onend/fallback path as a normal stop. */
+   runs cleanup through the same onend/fallback path as a normal stop.
+   A cancel may arrive while a normal stop is already waiting for onend;
+   in that case it overrides the pending stop instead of being ignored. */
 export function cancelSpeechInput() {
   const session = activeSession;
   if (!session) return false;
-  if (session.stopping) return true;
 
   session.discard = true;
   session.stopRequested = true;
   session.stopping = true;
+  if (session.stopFallbackId) clearTimeout(session.stopFallbackId);
   if (!session.recognition) {
     finishSession(session);
     return true;
@@ -345,7 +350,13 @@ export function cancelSpeechInput() {
 
 export function toggleSpeechInput(surface: string) {
   if (activeSession) {
-    stopSpeechInput();
+    /* While the recognizer is flushing its final result the same button is
+       the cancel affordance, matching the reference's transcribing state. */
+    if (useVoiceInputStore.getState().phase === 'processing') {
+      cancelSpeechInput();
+    } else {
+      stopSpeechInput();
+    }
     return;
   }
   const nextSurface = surface === 'chat' ? 'chat' : 'topic';

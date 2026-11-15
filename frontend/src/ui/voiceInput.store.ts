@@ -10,6 +10,8 @@ interface VoiceInputSnapshot {
   transcript: string;
   level: number;
   wavePhase: number;
+  /** Live analyser for the phone spectrum; null until the microphone opens. */
+  analyser: AnalyserNode | null;
 }
 
 interface VoiceInputActions {
@@ -18,6 +20,7 @@ interface VoiceInputActions {
   setElapsedSeconds: (elapsedSeconds: number) => void;
   setTranscript: (transcript: string) => void;
   setWaveform: (level: number, wavePhase: number) => void;
+  setAnalyser: (analyser: AnalyserNode | null) => void;
   reset: () => void;
 }
 
@@ -31,6 +34,7 @@ const initialSnapshot: VoiceInputSnapshot = {
   transcript: '',
   level: 0,
   wavePhase: 0,
+  analyser: null,
 };
 
 export const useVoiceInputStore = create<VoiceInputStore>((set) => ({
@@ -40,5 +44,6 @@ export const useVoiceInputStore = create<VoiceInputStore>((set) => ({
   setElapsedSeconds: (elapsedSeconds) => set({ elapsedSeconds }),
   setTranscript: (transcript) => set({ transcript }),
   setWaveform: (level, wavePhase) => set({ level, wavePhase }),
+  setAnalyser: (analyser) => set({ analyser }),
   reset: () => set(initialSnapshot),
 }));

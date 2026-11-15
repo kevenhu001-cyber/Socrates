@@ -140,18 +140,21 @@ test('focus outlines use a color and the account input retains its separate halo
   expect(focus.shadow).not.toBe('none');
 });
 
-test('composer menu opens crisply on the shared clock and respects reduced motion', async ({ page }) => {
+test('composer menu opens crisply without a competing entrance animation', async ({ page }) => {
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
   const motion = await menu.evaluate((node) => {
     const style = getComputedStyle(node);
     const frames = node.getAnimations().flatMap((animation) => animation.effect.getKeyframes());
-    return { duration: style.animationDuration, easing: style.animationTimingFunction,
+    return { name: style.animationName, duration: style.animationDuration, easing: style.animationTimingFunction,
       radius: style.borderTopLeftRadius, hasFilter: frames.some((frame) => 'filter' in frame) };
   });
-  expect(motion.duration).toBe('0.2s');
-  expect(motion.easing).toBe('cubic-bezier(0.22, 1, 0.36, 1)');
+  /* The reference tools card appears on the anchor without an entrance
+     animation; the shadow carries the elevation instead. */
+  expect(motion.name).toBe('none');
+  expect(motion.duration).toBe('0s');
+  expect(motion.easing).toBe('ease');
   expect(motion.radius).toBe('16px');
   expect(motion.hasFilter).toBe(false);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -168,12 +171,13 @@ test('agent steps and recording share one primary persistent cue', async ({ page
     if (!shell) return null;
     const fixture = document.createElement('div');
     fixture.id = 'motion-convergence-fixture';
+    fixture.className = 'composer-shell';
     fixture.innerHTML = `
       <div class="agent-step" data-state="running">
         <span class="agent-step-icon"></span>
         <span class="agent-step-label">Running command</span>
       </div>
-      <span class="voice-recording-indicator"></span>
+      <button type="button" data-composer-control="mic" data-voice-phase="recording"></button>
     `;
     shell.appendChild(fixture);
 
@@ -185,8 +189,8 @@ test('agent steps and recording share one primary persistent cue', async ({ page
     return {
       agentLabel: animation('.agent-step-label'),
       agentIcon: animation('.agent-step-icon'),
-      voiceCore: animation('.voice-recording-indicator'),
-      voiceHalo: animation('.voice-recording-indicator', '::after'),
+      voiceCore: animation('[data-composer-control="mic"]'),
+      voiceHalo: animation('[data-composer-control="mic"]', '::before'),
     };
   });
 
@@ -194,7 +198,7 @@ test('agent steps and recording share one primary persistent cue', async ({ page
   expect(normal.agentLabel).toBe('none');
   expect(normal.agentIcon).toBe('none');
   expect(normal.voiceCore).toBe('none');
-  expect(normal.voiceHalo).toBe('ui-recording-ring');
+  expect(normal.voiceHalo).toBe('ui-mic-halo');
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const reduced = await page.evaluate(() => {
@@ -206,7 +210,7 @@ test('agent steps and recording share one primary persistent cue', async ({ page
     };
     return {
       agent: animation('.agent-step-label'),
-      voiceHalo: animation('.voice-recording-indicator', '::after'),
+      voiceHalo: animation('[data-composer-control="mic"]', '::before'),
     };
   });
 

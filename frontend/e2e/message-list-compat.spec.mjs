@@ -355,3 +355,69 @@ test('basic composer stays usable when the rich editor chunk fails to load', asy
   await basic.press('Enter');
   await expect.poll(() => page.evaluate(() => window.__basicSent)).toBe(true);
 });
+
+/* P_message-file-preview — the reference draws images as 120px thumbnails,
+   shrinks them to 64px when the same message also carries a document, and
+   keeps a broken image in its frame instead of turning it into a file card. */
+test('user message attachments use the reference preview shapes', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  const pixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  await page.evaluate((dataUrl) => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.addMessage('user', 'Image only.', null, null, [
+      { id: 'img-only', kind: 'image', name: 'plot.png', mime: 'image/png', size: 2048, dataUrl },
+    ]);
+  }, pixel);
+
+  const imageOnly = page.locator('.msg.user .msg-attachment-image-card').first();
+  await expect(imageOnly).toBeVisible();
+  const imageOnlyBox = await imageOnly.boundingBox();
+  expect(Math.round(imageOnlyBox.width)).toBe(120);
+  expect(Math.round(imageOnlyBox.height)).toBe(120);
+
+  await page.evaluate((dataUrl) => {
+    window.addMessage('user', 'Image and document.', null, null, [
+      { id: 'img-mixed', kind: 'image', name: 'plot-2.png', mime: 'image/png', size: 2048, dataUrl },
+      { id: 'doc-mixed', kind: 'document', docKind: 'pdf', name: 'notes.pdf', mime: 'application/pdf', size: 1234, fileId: 'file-mixed' },
+    ]);
+  }, pixel);
+
+  const mixedRow = page.locator('.msg.user .msg-attachment-chips--with-documents').last();
+  await expect(mixedRow).toBeVisible();
+  const mixedImage = mixedRow.locator('.msg-attachment-image-card');
+  await expect(mixedImage).toHaveCount(1);
+  const mixedBox = await mixedImage.boundingBox();
+  expect(Math.round(mixedBox.width)).toBe(64);
+  expect(Math.round(mixedBox.height)).toBe(64);
+  await expect(mixedRow.locator('.file-card')).toHaveCount(1);
+});
+
+test('a broken message image keeps its preview frame', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await page.waitForLoadState('domcontentloaded');
+  await waitForAppShell(page);
+
+  await page.evaluate(() => {
+    window.__testActivateMainView('chatView');
+    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'ffffffff-ffff-4fff-8fff-ffffffffffff' });
+    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.addMessage('user', 'Broken image.', null, null, [
+      { id: 'img-broken', kind: 'image', name: 'missing.png', mime: 'image/png', size: 10, dataUrl: 'data:image/png;base64,AAAA' },
+    ]);
+  });
+
+  const errorTile = page.locator('.msg.user .msg-attachment-image-error');
+  await expect(errorTile).toBeVisible();
+  const box = await errorTile.boundingBox();
+  expect(Math.round(box.width)).toBe(120);
+  expect(Math.round(box.height)).toBe(120);
+});

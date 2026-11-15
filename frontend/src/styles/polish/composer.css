@@ -107,7 +107,10 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   gap: 10px;
   width: 100%;
   max-width: 100%;
-  padding: 12px 12px 0;
+  /* The frame's top slot already owns the inset that lines the row up with
+     the editor. A second horizontal padding here pushed the first card 12px
+     to the right of the text it belongs to. */
+  padding: 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -167,9 +170,14 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   height: 26px;
 }
 
-/* Image tile: the picture is the card. */
+/* Image tile: the picture is the card. 64×64 square, as in the reference.
+   The parity base still carries its old 56px flex basis, so the size has to
+   be pinned on every axis here or the tile renders 56 wide × 64 tall. */
 #appShell #composerAttachmentChips .attachment-chip.is-image {
+  flex: 0 0 64px;
   width: 64px;
+  min-width: 64px;
+  max-width: 64px;
   height: 64px;
   min-height: 64px;
   padding: 0;
@@ -414,74 +422,6 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   font-size: var(--ui-font-size-xxs);
   letter-spacing: 0;
 }
-
-/* ── Voice recording bar ─────────────────────────────────────────
-   [✕ discard] [● Listening · 0:12] ~~~ wave ~~~ [■ done]
-   Keeps the 26-bar + .voice-recording-stop contract (voice-input e2e)
-   and the inverted confirm circle; adds the discard affordance and
-   tightens rhythm toward the shell's control language. */
-#appShell .voice-recording-bar {
-  gap: 10px;
-  height: var(--ui-hit-area);
-  padding: 0 2px 0 4px;
-}
-
-/* Discard — quiet ghost circle at the leading edge. --ui-control-sm (32px),
-   the same rung as the toolbar icon buttons; it was a literal 30px, 6px
-   smaller than the confirm circle it sits beside. */
-#appShell .voice-recording-cancel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--ui-control-sm);
-  height: var(--ui-control-sm);
-  min-width: var(--ui-control-sm);
-  flex: 0 0 var(--ui-control-sm);
-}
-#appShell .voice-recording-cancel svg { display: block; width: 15px; height: 15px; }
-
-/* Live dot — solid core + expanding halo ring. Geometry and paint stay here;
-   polish/motion.css owns the halo's only persistent animation. */
-#appShell .voice-recording-indicator {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  flex-basis: 8px;
-  box-shadow: none;
-}
-#appShell .voice-recording-indicator::after {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-  opacity: 0;
-}
-
-/* Label + timer inline — "Listening… 0:12" reads as one status line. */
-#appShell .voice-recording-copy {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 7px;
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: none;
-}
-#appShell .voice-recording-label { font-size: var(--ui-font-size-xs); }
-#appShell .voice-recording-live { flex-basis: 100%; }
-
-/* Waveform — slimmer bars on a tighter grid; the JS envelope already
-   supplies the amplitude shape. */
-#appShell .voice-recording-wave { gap: 2.5px; height: 34px; }
-#appShell .voice-recording-wave > span {
-  width: 2.5px;
-  min-width: 2px;
-  min-height: 2px;
-}
-
-/* Confirm — keep the inverted 36px circle; paint-only hover (no geometry
-   change, per the press contract in polish/press.css). */
-#appShell .voice-recording-stop:hover { opacity: 0.88; }
 
 /* Reference phone sheet is a flat action list — group labels stay in the
    DOM for the group aria-labels and the compat specs, but clip out of the

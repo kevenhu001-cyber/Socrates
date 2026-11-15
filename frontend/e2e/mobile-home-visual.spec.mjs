@@ -173,8 +173,8 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* The reference header shows no always-on status dot next to the
      sidebar toggle, so it stays display:none on mobile. */
   expect(headerVisual.sidebarStatus?.width).toBe(0);
-  expect(headerVisual.findIcon?.width).toBe(24);
-  expect(headerVisual.shareIcon?.width).toBe(24);
+  expect(headerVisual.findIcon?.width).toBe(20);
+  expect(headerVisual.shareIcon?.width).toBe(20);
   expect(headerVisual.shareLabelVisible).toBe(false);
 
   /* The supplied visual's app-owned region normalizes to roughly 390×756
