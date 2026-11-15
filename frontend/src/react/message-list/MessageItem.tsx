@@ -131,8 +131,10 @@ function MessageContent({ editing, message, role, html, isLive, readOnly, declar
   onCommitEdit: (text: string) => void;
 }) {
   if (editing && role === 'user') {
+    /* The editor replaces the bubble rather than sitting inside it, so the
+       user-bubble paint/padding rules cannot leak around the edit surface. */
     return (
-      <div className="msg-body">
+      <div className="msg-edit-host">
         <MessageEditForm
           initialText={stripMarkdown(typeof message.rawText === 'string' ? message.rawText : '')}
           cancelLabel={i18n('common.cancel', 'Cancel')}

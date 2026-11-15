@@ -265,10 +265,6 @@ body.admin-active #topicDisclaimer{display:none!important}
 /* P_attachments — attachment chip strip inside a user bubble. Sits
    below the text body, same horizontal padding so it lines up. */
 .msg.assistant[data-stream-settled] .stream-cursor{opacity:0;transition:opacity .15s ease}
-/* Edit-in-place textarea — the user bubble itself is the rounded gray
-   container (open-webui edit surface), so the textarea stays chromeless
-   and the bubble stretches to full column width while editing. */
-.msg.user .msg-body:has(.msg-edit-area){max-width:100%;width:100%;border-radius:20px}
 /* Alert notifications — Ant Design-inspired toast system.
    Types: success / info / warning / error. Each uses the app's
    design tokens for colors so dark/light mode is automatic.
