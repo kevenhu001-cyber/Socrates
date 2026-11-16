@@ -111,6 +111,9 @@ function stopTrackingRowHeights(): void {
   if (rememberFrame) cancelAnimationFrame(rememberFrame);
   rememberFrame = 0;
   readingAnchor = null;
+  readingMutations?.disconnect();
+  readingMutations = null;
+  readingAnchorDirty = true;
 }
 
 /* ── Reading anchor ────────────────────────────────────────────────────────
@@ -127,6 +130,7 @@ function stopTrackingRowHeights(): void {
  */
 interface ReadingAnchor {
   host: HTMLElement;
+  block: HTMLElement;
   clientId: string;
   text: string;
   index: number;
@@ -136,9 +140,33 @@ interface ReadingAnchor {
 
 let readingAnchor: ReadingAnchor | null = null;
 let rememberFrame = 0;
+let readingMutations: MutationObserver | null = null;
+let readingAnchorDirty = true;
+
+/** DOM after the anchored block cannot move its top. Avoid synchronous
+ * scrollHeight/layout reads on every streamed token below the reader. */
+export function mutationsCanMoveReadingBlock(block: Element, records: MutationRecord[]): boolean {
+  if (!block.isConnected) return true;
+  return records.some(record => {
+    const position = block.compareDocumentPosition(record.target);
+    // A descendant is FOLLOWING too, so exclude CONTAINED_BY from the fast path.
+    return !(position & 4) || !!(position & 16) || !!(position & 1);
+  });
+}
+
+function markReadingMutations(records: MutationRecord[]): void {
+  if (!readingAnchor || mutationsCanMoveReadingBlock(readingAnchor.block, records)) readingAnchorDirty = true;
+}
 
 function escapeClientId(id: string): string {
   return typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
+}
+
+/** Streaming prose already has stable paragraph blocks. Anchoring the whole
+ * answer treats every token as a change to the reader's block. */
+export function readingBlocksOf(row: Element): NodeListOf<HTMLElement> {
+  const prose = row.querySelectorAll<HTMLElement>('.tool-run-prose');
+  return prose.length ? prose : row.querySelectorAll<HTMLElement>('.msg-body > *');
 }
 
 function blockTextOf(element: Element): string {
@@ -178,7 +206,7 @@ function restoreReadingAnchor(): void {
     '.msg[data-client-id="' + escapeClientId(anchor.clientId) + '"]',
   );
   if (!row) { readingAnchor = null; return; }
-  const blocks = row.querySelectorAll<HTMLElement>('.msg-body > *');
+  const blocks = readingBlocksOf(row);
   let block: HTMLElement | null = null;
   if (anchor.text) {
     for (let index = 0; index < blocks.length; index++) {
@@ -204,11 +232,11 @@ function rememberReadingAnchor(): void {
     if (!(row instanceof HTMLElement) || !row.classList.contains('msg')) continue;
     const clientId = row.dataset.clientId;
     if (!clientId) continue;
-    const blocks = row.querySelectorAll<HTMLElement>('.msg-body > *');
+    const blocks = readingBlocksOf(row);
     for (let index = 0; index < blocks.length; index++) {
       const rect = blocks[index].getBoundingClientRect();
       if (rect.height <= 0 || rect.bottom <= hostTop + 1) continue;
-      readingAnchor = { host, clientId, text: blockTextOf(blocks[index]), index, offset: rect.top - hostTop };
+      readingAnchor = { host, block: blocks[index], clientId, text: blockTextOf(blocks[index]), index, offset: rect.top - hostTop };
       return;
     }
   }
@@ -231,12 +259,20 @@ export function useAboveViewportResizeCompensation(): void {
   useLayoutEffect(() => {
     /* Before paint: keep the anchored block where the reader left it. After
        paint: remember the block that is now at the top of the viewport. */
-    restoreReadingAnchor();
+    if (readingMutations) markReadingMutations(readingMutations.takeRecords());
+    if (!readingMutations || readingAnchorDirty || !readingAnchor) {
+      readingAnchorDirty = false;
+      restoreReadingAnchor();
+      scheduleRememberAnchor();
+    }
     trackMountedRowHeights();
-    scheduleRememberAnchor();
   });
   useEffect(() => {
     const host = scrollHost();
+    if (host && typeof MutationObserver === 'function') {
+      readingMutations = new MutationObserver(markReadingMutations);
+      readingMutations.observe(host, { subtree: true, childList: true, characterData: true, attributes: true });
+    }
     host?.addEventListener('scroll', onReaderScroll, { passive: true });
     return () => {
       host?.removeEventListener('scroll', onReaderScroll);

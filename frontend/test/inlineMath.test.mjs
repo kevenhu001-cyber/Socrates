@@ -99,3 +99,12 @@ test('dollars render math shapes, never prose or padded currency', () => {
   assert.match(renderInlineMathHtml('$x^2$'), /katex/);
   assert.equal(renderInlineMathHtml('$hello world$'), null);
 });
+
+test('explicit products and identifiers render regardless of letter case or length', () => {
+  installKatex();
+  for (const source of ['ct', 'xy', 'dt', 'abc', 'xMax', 'only']) {
+    assert.equal(renderInlineMathHtml(`$${source}$`), `<span class="katex">${source}</span>`);
+  }
+  assert.equal(renderInlineMathHtml('ct and xy'), null);
+  assert.equal(renderInlineMathHtml('`$ct$`'), '<code>$ct$</code>');
+});

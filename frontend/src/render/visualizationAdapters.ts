@@ -6,7 +6,6 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import type { VizSpec } from './visualizationSpec.ts';
 import { STRUCTURE_TEMPLATES } from './visualizationRendererKind.ts';
 import type { GeoGebraApi } from '../types/vendorRuntime.ts';
-import { installVisualizationMath } from './visualizationMath.ts';
 
 export interface SpecializedVisualizationResult {
   handled: boolean;
@@ -176,7 +175,6 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
     scrollZoom: true,
     modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
   });
-  const mathCleanup = installVisualizationMath(stage);
   const stopWatchingTheme = watchTheme(() => {
     Plotly.relayout(stage, plotlyThemeUpdate(plotlyColors()));
   });
@@ -186,7 +184,7 @@ async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleF
       dispatchAction() { Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true }); },
       getDataURL() { return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 }); },
     },
-    cleanup() { mathCleanup?.(); stopWatchingTheme?.(); Plotly.purge(stage); },
+    cleanup() { stopWatchingTheme?.(); Plotly.purge(stage); },
   };
 }
 
@@ -242,7 +240,6 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
      after the card was cleaned up. */
   let generation = 0;
   let disposed = false;
-  let mathCleanup: (() => void) | undefined;
   const draw = async () => {
     const mine = ++generation;
     mermaid.initialize({
@@ -270,8 +267,6 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
       }
     }
     bindFunctions?.(stage);
-    mathCleanup?.();
-    mathCleanup = installVisualizationMath(stage);
   };
   await whenFontsReady('Geist Sans');
   await draw();
@@ -281,7 +276,7 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
   return {
     handled: true,
     chart: downloadSvgAdapter(stage),
-    cleanup() { disposed = true; mathCleanup?.(); stopWatchingTheme?.(); stage.replaceChildren(); },
+    cleanup() { disposed = true; stopWatchingTheme?.(); stage.replaceChildren(); },
   };
 }
 

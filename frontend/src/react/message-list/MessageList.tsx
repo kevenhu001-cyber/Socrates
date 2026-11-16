@@ -80,13 +80,18 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
   useEffect(() => {
     const list = document.getElementById(MSG_LIST_ID);
     if (!list) return undefined;
-    const onScroll = () => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
       updateScrollFadeMask(list);
       /* The header hairline is drawn only while content passes under it (see
          parity/topbar.css), so an empty canvas is not split by a rule. */
-      document.body.dataset.transcriptScrolled = list.scrollTop > 2 ? 'true' : 'false';
+      const scrolled = list.scrollTop > 2 ? 'true' : 'false';
+      if (document.body.dataset.transcriptScrolled !== scrolled) document.body.dataset.transcriptScrolled = scrolled;
     };
-    onScroll();
+    // Scroll and resize may arrive together; read geometry once per frame.
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    update();
     list.addEventListener('scroll', onScroll, { passive: true });
     let ro: ResizeObserver | null = null;
     if (typeof ResizeObserver === 'function') {
@@ -95,6 +100,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     }
     return () => {
       list.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
       ro?.disconnect();
     };
   }, []);

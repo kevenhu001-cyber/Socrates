@@ -312,7 +312,7 @@ test('currency amounts stay literal after the bare-symbol widening', () => {
    point labels, ubiquitous in Chinese math output. They render in both
    renderers and on the live tail; ALL CAPS (`$USD`) still waits for its
    closing `$` so currency prose never flashes as math, and
-   all-lowercase words stay literal. Accepted trade-off, locked in:
+   closed identifiers render regardless of letter case:
    a capitalized English word deliberately wrapped in dollars (`$Only$`)
    renders as math — LLMs never emit that shape except as an identifier. */
 test('capital-led identifier math renders, currency tails still wait', () => {
@@ -340,7 +340,7 @@ test('capital-led identifier math renders, currency tails still wait', () => {
       assert.doesNotMatch(renderProgressive('paid in $USD'), /class="katex/);
       assert.match(renderProgressive('paid in $USD'), /\$USD/);
       const prose = formatMsg('I like apples and $only$ words');
-      assert.doesNotMatch(prose, /class="katex/);
+      assert.match(prose, /class="katex/);
     } finally {
       if (previousMarked === undefined) delete globalThis.marked;
       else globalThis.marked = previousMarked;
@@ -375,13 +375,11 @@ test('math-looking text inside inline code stays literal', () => {
   });
 });
 
-/* Lowercase multi-letter words after a stray `$` are prose, not math;
-   point/segment labels (all caps) and punctuated expressions still
-   render. */
-test('compact inline math rejects lowercase prose words', () => {
+/* Explicit compact formulas must not depend on the case of an identifier. */
+test('explicit compact inline math accepts lowercase identifiers', () => {
   withKatex(() => {
-    assert.doesNotMatch(renderProgressive('only $only$ word'), /class="katex/);
-    assert.doesNotMatch(renderProgressive('home $home$ dir'), /class="katex/);
+    assert.match(renderProgressive('only $only$ word'), /class="katex/);
+    assert.match(renderProgressive('home $home$ dir'), /class="katex/);
     /* P_numeric-math — a number closed by `$` on BOTH sides is a formula
        (pandoc's rule); currency never carries a closing `$`. */
     assert.match(renderProgressive('amount $5$ only'), /class="katex/);

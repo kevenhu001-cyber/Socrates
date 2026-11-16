@@ -440,10 +440,12 @@ function mountNativeSvgIllustration(spec: VizSpec, card: VisualizationCard, stag
   }
   const cleanSvg = match[0].replace(/^<svg\b/i, '<svg role="img" aria-label="' + esc(spec.accessibilitySummary || spec.title) + '" style="max-width:100%;max-height:100%;display:block;margin:auto;"');
   stage.innerHTML = cleanSvg;
+  // SVG's implicit black fill disappears on the dark canvas. Inherit the
+  // card's text colour unless the author supplied a fill on the root.
+  const svg = stage.querySelector('svg');
+  if (svg && !svg.hasAttribute('fill') && !svg.style.fill) svg.setAttribute('fill', 'currentColor');
   card.dataset.visualizationRenderer = 'svg';
-  const mathCleanup = installVisualizationMath(stage);
   card._visualizationCleanup = function () {
-    mathCleanup();
     stage.replaceChildren();
   };
   return svgStageChart(stage);

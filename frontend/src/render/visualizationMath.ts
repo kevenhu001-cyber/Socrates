@@ -12,10 +12,22 @@ function ensureMathDelimiters(text: string): string {
   return `$${text.trim()}$`;
 }
 
-function typesetSvgText(text: SVGTextElement, labels: Map<SVGTextElement, SVGForeignObjectElement>): void {
+type Typeset = (source: string) => string | null;
+
+function elementFor(node: Node): Element | null {
+  return node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
+}
+
+function attributeChangesText(record: MutationRecord, element: Element | null): boolean {
+  if (record.attributeName === 'transform' && !element?.closest('text')) return false;
+  return !!(element?.closest('text') || element?.querySelector('text'));
+}
+
+
+function typesetSvgText(text: SVGTextElement, labels: Map<SVGTextElement, SVGForeignObjectElement>, render: Typeset): void {
   const source = (text.textContent || '').trim();
   if (!MATH_TRIGGER.test(source)) return;
-  const html = renderInlineMathHtml(ensureMathDelimiters(source));
+  const html = render(source);
   if (!html || !html.includes('katex')) return;
   let box: DOMRect | SVGRect | null = null;
   try {
@@ -46,18 +58,20 @@ function typesetSvgText(text: SVGTextElement, labels: Map<SVGTextElement, SVGFor
   labels.set(text, overlay);
 }
 
-function typesetTextLeaves(host: HTMLElement): void {
-  const walker = host.ownerDocument.createTreeWalker(host, NodeFilter.SHOW_TEXT);
+function typesetTextLeaves(host: Node, render: Typeset): void {
+  const walker = host.ownerDocument!.createTreeWalker(host, NodeFilter.SHOW_TEXT);
   const leaves: Text[] = [];
   let leaf: Text | null;
+  if (host.nodeType === Node.TEXT_NODE) leaves.push(host as Text);
   while ((leaf = walker.nextNode() as Text | null)) {
     if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
     if (MATH_TRIGGER.test(leaf.data)) leaves.push(leaf);
   }
   for (const item of leaves) {
-    const html = renderInlineMathHtml(ensureMathDelimiters(item.data));
+    if (item.parentElement?.closest('svg, .katex, script, style, textarea, pre, code') || !MATH_TRIGGER.test(item.data)) continue;
+    const html = render(item.data);
     if (!html) continue;
-    const span = host.ownerDocument.createElement('span');
+    const span = host.ownerDocument!.createElement('span');
     span.innerHTML = html;
     item.replaceWith(span);
   }
@@ -71,34 +85,93 @@ export function installVisualizationMath(host: HTMLElement): () => void {
   if (typeof requestAnimationFrame !== 'function') return () => undefined;
   const Observer = host.ownerDocument.defaultView!.MutationObserver;
   const labels = new Map<SVGTextElement, SVGForeignObjectElement>();
+  const cache = new Map<string, string>();
+  const render: Typeset = source => {
+    const cached = cache.get(source);
+    if (cached) return cached;
+    const html = renderInlineMathHtml(ensureMathDelimiters(source));
+    if (html) {
+      if (cache.size >= 256) cache.delete(cache.keys().next().value!);
+      cache.set(source, html);
+    }
+    return html;
+  };
   let frame = 0;
   let disposed = false;
+  let visible = true;
+  // A moving path/cursor must not invalidate every formula in the chart.
+  // Retain unchanged overlays and examine only changed text/subtrees.
+  const dirty = new Set<Node>([host]);
+  const observe = () => observer.observe(host, {
+    childList: true, subtree: true, characterData: true, attributes: true,
+    attributeFilter: ['transform', 'x', 'y', 'dx', 'dy', 'style', 'fill', 'font-size', 'text-anchor', 'class'],
+  });
   const paint = () => {
     frame = 0;
+    if (!visible || disposed) return;
     observer.disconnect();
+    const roots = [...dirty].filter(node => host.contains(node));
+    dirty.clear();
+    const texts = new Set<SVGTextElement>();
+    for (const root of roots) {
+      const element = elementFor(root);
+      const label = element?.closest<SVGTextElement>('text');
+      if (label?.namespaceURI === SVG) texts.add(label);
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        for (const text of (root as Element).querySelectorAll<SVGTextElement>('svg text, text')) texts.add(text);
+      }
+    }
     for (const [text, overlay] of labels) {
-      overlay.remove();
-      text.style.removeProperty('opacity');
-      labels.delete(text);
+      if (!host.contains(text) || texts.has(text)) {
+        overlay.remove();
+        text.style.removeProperty('opacity');
+        labels.delete(text);
+      }
     }
     try {
-      for (const text of host.querySelectorAll<SVGTextElement>('svg text')) {
-        typesetSvgText(text, labels);
-      }
-      typesetTextLeaves(host);
+      for (const text of texts) typesetSvgText(text, labels, render);
+      for (const root of roots) typesetTextLeaves(root, render);
     } catch (error) { reportSwallow(error, 'visualization.renderMath'); }
-    observer.observe(host, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['transform', 'x', 'y', 'style', 'fill'] });
+    observe();
   };
-  const schedule = () => { if (!disposed && !frame) frame = requestAnimationFrame(paint); };
-  const observer = new Observer(schedule);
-  const unsubscribe = onKatexReady(schedule);
+  const schedule = () => {
+    if (!disposed && visible && !frame && dirty.size) frame = requestAnimationFrame(paint);
+  };
+  const observer = new Observer(records => {
+    for (const record of records) {
+      const element = elementFor(record.target);
+      if (element?.closest('.katex, foreignObject')) continue;
+      if (record.type === 'attributes') {
+        // Ancestor transforms move labels and overlays together.
+        // Geometry/colour on a text or its ancestor can affect formulas;
+        // attributes on paths, circles and animated shapes cannot.
+        if (attributeChangesText(record, element)) dirty.add(record.target);
+      } else if (record.type === 'characterData' || element?.closest('text')) {
+        dirty.add(record.target);
+      } else {
+        for (const node of record.addedNodes) dirty.add(node);
+        if (labels.size) for (const node of record.removedNodes) dirty.add(node);
+      }
+    }
+    schedule();
+  });
+  const visibility = typeof IntersectionObserver === 'function' ? new IntersectionObserver(([entry]) => {
+    visible = !!entry?.isIntersecting;
+    if (visible) schedule();
+  }, { rootMargin: '320px' }) : null;
+  visibility?.observe(host);
+  const unsubscribe = onKatexReady(() => { dirty.add(host); schedule(); });
+  observe();
   schedule();
   return () => {
     disposed = true;
     cancelAnimationFrame(frame);
     observer.disconnect();
+    visibility?.disconnect();
     unsubscribe();
     for (const [text, overlay] of labels) { text.style.removeProperty('opacity'); overlay.remove(); }
     labels.clear();
+    dirty.clear();
+    cache.clear();
   };
 }

@@ -132,27 +132,9 @@ function neutralizeKatexErrors(html: string): string {
     });
 }
 
-/* Inline math is often written with no explicit operator: `x^2`,
-   `a_i`, `\alpha`, or a bare symbol like `D`. The shared _looksLikeLatex
-   heuristic only fires on commands or operator+letter pairs, which left
-   simple formulas such as `$D$`, `$x$` or `$P(x,y)$` as raw text.
-   Broaden the check for the inline cases:
-     • explicit LaTeX syntax (`^`, `_`, braces, brackets) still counts;
-     • a compact, whitespace-free token counts once it carries an ASCII
-       letter. Bare alphabetic runs must be a single symbol (`D`, `x`),
-       ALL CAPS (`AB`, `ABC` — point/segment labels), or a capital-led
-       identifier (`Oxyz`, `Ox` — coordinate-system labels; `Abc` —
-       point labels). All-lowercase words (`only`, `home`) stay literal,
-       so currency amounts (`$5`, `$1,000`) and prose fragments (`$5 and`)
-       keep their text.
-       Known cosmetic trade-off: a capitalized English word deliberately
-       wrapped in dollars (`$Only$`, `$Note$`) now renders as math —
-       LLMs essentially never emit that shape except as a math
-       identifier, while coordinate labels like `$Oxyz$` are ubiquitous
-       in Chinese math output. Uppercase acronyms (`$US$`, `$OK$`)
-       and punctuated tokens (`$N/A$`, `$P(x,y)$`) render as math.
-       The fullwidth `，；：、` sit in the class so Chinese-model output
-       like `$x，y$` parses the same way `$x,y$` does. */
+/* A closed formula may contain any compact identifier, including ct, dt,
+   xy or xMax. Letter case and word length cannot distinguish mathematical
+   products from English. Currency/prose boundaries are handled separately. */
 const COMPACT_MATH_RE = /^[\w\\{}^_()[\],.'"+\-*/|=<>!:;，；：、]+$/;
 
 /* Function calls are the common inline formula that carries internal
@@ -193,17 +175,7 @@ function _isSpacedMathList(trimmed: string): boolean {
 }
 
 function _isCompactMathToken(trimmed: string): boolean {
-  if (!COMPACT_MATH_RE.test(trimmed)) return false;
-  /* Non-letter characters (digits, parens, operators) mark real math. */
-  if (/[^A-Za-z]/.test(trimmed)) return true;
-  if (trimmed.length === 1 || /^[A-Z]+$/.test(trimmed)) return true;
-  /* Capital-led identifiers (`Oxyz`, `Ox`, `Abc`): coordinate-system and
-     point labels. Both guards above already ran, so reaching here means
-     an all-letter token of length 2+ that is neither single nor ALL
-     CAPS — it renders only when it starts with a capital AND carries a
-     lowercase letter, keeping all-lowercase prose (`only`, `tax`) and
-     lowercase-led camelCase (`xMax`) literal. */
-  return /^[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed);
+  return COMPACT_MATH_RE.test(trimmed);
 }
 
 export function _looksLikeInlineMath(s: string): boolean {
@@ -373,12 +345,9 @@ function looksLikeNumericMathTail(trimmed: string): boolean {
 function looksLikeCompactMathTail(trimmed: string): boolean {
   if (!COMPACT_MATH_RE.test(trimmed)) return false;
   if (/[^A-Za-z]/.test(trimmed) || trimmed.length === 1) return true;
-  /* Mirror the closed pass for capital-led identifiers (`$Oxyz` renders
-     while it streams, so the closing `$` never pops a formula in).
-     ALL CAPS still waits for its closing `$`: an unclosed `$USD` is far
-     more likely the start of `$USD (about …` prose than a point label,
-     and a tail that rendered live but reverted at the close would flash. */
-  return /^[A-Z]/.test(trimmed) && /[a-z]/.test(trimmed);
+  /* Lowercase products and mixed-case identifiers render live. An open
+     all-caps currency prefix like $USD still waits for its closing $. */
+  return /[a-z]/.test(trimmed);
 }
 
 export function _looksLikeInlineMathTail(s: string): boolean {

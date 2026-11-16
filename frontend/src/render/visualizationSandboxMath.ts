@@ -5,29 +5,48 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
   const requested = new WeakMap<Text, string>();
   let sequence = 0;
   let queued = false;
+  const dirty = new Set<Node>();
+  const elementFor = (node: Node) => node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
   function scan() {
     queued = false;
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node: Text | null;
-    while ((node = walker.nextNode() as Text | null)) {
-      const source = node.data;
-      if (!/\$|\\[([]/.test(source) || node.parentElement?.closest('script,style,textarea,pre,code,math,[data-viz-math]')) continue;
-      if (requested.get(node) === source || pending.size >= 200) continue;
-      const id = ++sequence;
-      requested.set(node, source);
-      pending.set(id, { node, source });
-      window.parent.postMessage({ type: 'socrates-viz-math', cardId, nonce, id, source: source.slice(0, 8000) }, '*');
+    const roots = [...dirty];
+    dirty.clear();
+    for (const root of roots) {
+      if (!root.isConnected || elementFor(root)?.closest('script,style,textarea,pre,code,math,[data-viz-math]')) continue;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node: Text | null = root.nodeType === Node.TEXT_NODE ? root as Text : walker.nextNode() as Text | null;
+      for (; node; node = walker.nextNode() as Text | null) {
+        const source = node.data;
+        if (!/\$|\\[([]/.test(source) || node.parentElement?.closest('script,style,textarea,pre,code,math,[data-viz-math]')) continue;
+        if (requested.get(node) === source) continue;
+        // Retain unprocessed roots when the bridge is saturated. A response
+        // frees a slot and resumes work; no formula is silently abandoned.
+        if (pending.size >= 200) { dirty.add(root); break; }
+        const id = ++sequence;
+        requested.set(node, source);
+        pending.set(id, { node, source });
+        window.parent.postMessage({ type: 'socrates-viz-math', cardId, nonce, id, source: source.slice(0, 8000) }, '*');
+      }
     }
   }
-  const observer = new MutationObserver(() => {
-    if (!queued) { queued = true; requestAnimationFrame(scan); }
+  function schedule() {
+    if (!queued && dirty.size && pending.size < 200) { queued = true; requestAnimationFrame(scan); }
+  }
+  const observer = new MutationObserver(records => {
+    for (const record of records) {
+      if (record.type === 'characterData') dirty.add(record.target);
+      else for (const node of record.addedNodes) dirty.add(node);
+    }
+    schedule();
   });
   window.addEventListener('message', event => {
     const data = event.data;
     if (event.source !== window.parent || data?.type !== 'socrates-viz-math-result' || data.cardId !== cardId || data.nonce !== nonce) return;
     const entry = pending.get(data.id);
     pending.delete(data.id);
-    if (!entry || !entry.node.isConnected || entry.node.data !== entry.source || typeof data.html !== 'string' || !data.html) return;
+    schedule();
+    if (!entry || !entry.node.isConnected || entry.node.data !== entry.source) return;
+    if (typeof data.html !== 'string' || !data.html) return;
     const text = entry.node.parentElement;
     const svgText = text?.closest('text');
     if (svgText && svgText.namespaceURI === 'http://www.w3.org/2000/svg') {
@@ -57,7 +76,7 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
       entry.node.replaceWith(span);
     }
   });
-  function start() { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); scan(); }
+  function start() { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); dirty.add(document.body); scan(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
 }

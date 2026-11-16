@@ -284,6 +284,11 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
     assert.equal(resize(spent), true, 'the hold watches the retired row');
     assert.equal(scrollTop, 2460);
     assert.equal(prompt.getBoundingClientRect().top, 12);
+    assert.equal(list.dataset.turnViewportOwner, 'turn');
+    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: true });
+    assert.equal(list.dataset.turnViewportOwner, undefined, 'reader intent releases ownership without a resize');
+    assert.equal(resize(spent), false, 'reader intent disconnects the hold observer');
+    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
   } finally {
     releaseTurnViewportHold();
     mock.timers.reset();

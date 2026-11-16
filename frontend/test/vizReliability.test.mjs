@@ -9,6 +9,8 @@ import { JSDOM } from 'jsdom';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { pretendToBeVisual: true });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+globalThis.Node = dom.window.Node;
+globalThis.NodeFilter = dom.window.NodeFilter;
 globalThis.XMLSerializer = dom.window.XMLSerializer;
 globalThis.getComputedStyle = dom.window.getComputedStyle;
 globalThis.ResizeObserver = class { observe() {} disconnect() {} };

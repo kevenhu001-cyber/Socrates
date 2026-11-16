@@ -42,6 +42,10 @@ for (const rate of [1, 4]) {
       window.__streamPerf.longTasks = [];
       window.__firstStreamParagraph = document.querySelector('[data-client-id="long-live"] .is-settled');
     });
+    if (process.env.PERF_PROFILE === '1') {
+      await cdp.send('Profiler.enable');
+      await cdp.send('Profiler.start');
+    }
     const before = await readMetrics();
     const streaming = page.evaluate(async () => {
       for (let i = 0; i < 60; i++) {
@@ -58,6 +62,10 @@ for (const rate of [1, 4]) {
     await streaming;
     await expect(bubble.locator('.is-tail')).toContainText('word-59');
     const after = await readMetrics();
+    if (process.env.PERF_PROFILE === '1') {
+      const { profile } = await cdp.send('Profiler.stop');
+      await info.attach('stream-cpu-profile', { body: JSON.stringify(profile), contentType: 'application/json' });
+    }
     const result = await page.evaluate(() => ({ ...window.__streamPerf,
       prefixPreserved: window.__firstStreamParagraph === document.querySelector('[data-client-id="long-live"] .is-settled'),
       mountedMessages: document.querySelectorAll('#msgList .msg').length,

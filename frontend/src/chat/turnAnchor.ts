@@ -231,6 +231,7 @@ interface TurnViewportHold {
   onViewportResize: (() => void) | null;
   /** Unsubscribe from the keyboard lift's per-frame inset writes. */
   unsubInset: (() => void) | null;
+  unsubScrollIntent: (() => void) | null;
 }
 
 let viewportHold: TurnViewportHold | null = null;
@@ -249,6 +250,7 @@ export function releaseTurnViewportHold(): void {
   const hold = viewportHold;
   if (!hold) return;
   viewportHold = null;
+  hold.unsubScrollIntent?.();
   if (hold.observer) {
     try { hold.observer.disconnect(); } catch (_) {
       reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:226');
@@ -437,10 +439,16 @@ function startTurnViewportHold(
     observer: null,
     onViewportResize: null,
     unsubInset: null,
+    unsubScrollIntent: null,
   };
   const observer = new ResizeObserver(function () { holdTurnViewport(); });
   hold.observer = observer;
   viewportHold = hold;
+  // A reader gesture must release ownership even when no resize follows.
+  // Otherwise the history window remains blocked at its mounted top.
+  hold.unsubScrollIntent = stateStore.subscribe(() => {
+    if (stateStore.read('_userScrolledAway')) releaseTurnViewportHold();
+  });
   observeHoldTargets(observer, list, anchorRow);
   /* Resize-observer deliveries for a viewport change land one frame after the
      layout that revealed it, so the frame in between can paint the stale
