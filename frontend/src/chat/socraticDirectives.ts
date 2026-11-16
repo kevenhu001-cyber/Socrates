@@ -61,7 +61,7 @@ export function tutorTurnDirective(stage: string, isFirst: boolean): string {
   let scope;
   switch(stage){
     case "motivate":
-      scope="Give a short, engaging motivation with one concrete intuition and at most one closing question, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.";
+      scope="Give a short, engaging motivation with one concrete intuition, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.";
       break;
     case "define":
       scope="Teach the precise definition with the essential first steps of a derivation, building on the motivation already shown. Keep the turn focused on this and do not reopen what is already established.";

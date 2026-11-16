@@ -24,5 +24,5 @@ test('Tutor turn scope keeps each teaching stage focused', () => {
   assert.match(tutorTurnDirective('illustrate', false), /two is enough/i);
   assert.match(tutorTurnDirective('exercise', false), /wait for the student's attempt/i);
   assert.match(tutorTurnDirective('check', false), /one short quiz/i);
-  assert.match(tutorTurnDirective('motivate', true), /at most one closing question/i);
+  assert.doesNotMatch(tutorTurnDirective('motivate', true), /closing question/i);
 });

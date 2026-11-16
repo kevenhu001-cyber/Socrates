@@ -6,7 +6,7 @@ after(async () => {
   await shutdownPubsub();
 });
 import assert from 'node:assert/strict';
-import { validateIntelligentUi } from '../src/services/intelligentUi.js';
+import { validateIntelligentUi, INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
 import { normalizeIntelligentUiArgs } from '../src/services/intelligentUiNormalize.js';
 import { executeIntelligentUi } from '../src/routes/chat/pipeline/executors/intelligentUi.js';
 import { SERVER_SYSTEM_POLICY } from '../src/lib/chatPolicy.js';
@@ -292,7 +292,11 @@ test('learning cards normalize aliases and return located grading errors with th
  assert.match(feedback.correction,/never invent an answer/i);
  assert.equal(feedback.detail.stage,'learning');
  assert.ok(SERVER_SYSTEM_POLICY.includes('native learning nodes'));
- assert.ok(SERVER_SYSTEM_POLICY.includes('never OpenUI learning-card functions'));
+ /* The per-kind field contract is delivered inside the tool schema itself,
+    so it only reaches the model when render_intelligent_ui is actually
+    offered — not as dead weight in every system prompt. */
+ const kindDescription = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.kind.description;
+ assert.ok(kindDescription.includes('never OpenUI learning-card functions'));
 });
 
 test('hallucinated OpenUI quiz functions get learning-specific repair instead of chart instructions',()=>{

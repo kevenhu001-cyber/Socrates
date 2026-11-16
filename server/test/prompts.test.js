@@ -40,15 +40,15 @@ describe('production prompt contracts', () => {
     }
   });
 
-  test('code-interpreter prompt contains valid async Python guidance', async () => {
+  test('code-interpreter prompt defers execution mechanics to the tool schema', async () => {
     _clearPromptCacheForTests();
     const prompt = await getCodeInterpreterPrompt();
     assert.ok(prompt);
-    assert.match(prompt, /async def main\(\)/);
-    assert.match(prompt, /asyncio\.run\(main\(\)\)/);
-    assert.match(prompt, /await asyncio\.sleep\(0\)/);
-    assert.doesNotMatch(prompt, /def main\(\): await/);
-    assert.equal(prompt.includes('def main(): await'), false);
+    /* Python syntax rules, package availability, limits and error recovery
+       live once in the code_interpreter tool description
+       (services/codeInterpreter.ts); this appendix only carries routing. */
+    assert.match(prompt, /render_intelligent_ui/);
+    assert.match(prompt, /tool description and JSON schema are the authoritative/i);
     assert.equal(prompt.includes('[code_interpreter:'), false);
   });
 

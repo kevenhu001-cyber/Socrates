@@ -1,28 +1,9 @@
 # Code interpreter routing
 
-This appendix is active only when the server includes `code_interpreter` in the native tools for the current turn. The native tool description and JSON schema are the authoritative execution contract. Do not call or imitate this tool when it is absent.
+This appendix is active only when the server includes `code_interpreter` in the native tools for the current turn. The tool description and JSON schema are the authoritative execution contract, including Python syntax rules, package availability, limits, and error recovery. Do not call or imitate this tool when it is absent.
 
-## When to use it
+## Routing
 
 - Use it for non-trivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV or PNG export.
-- Use `render_intelligent_ui` for every reader-facing chart, function graph, diagram, timeline, simulation, or illustration. For novel interactive demonstrations, use a native demonstration node: define the mathematical algorithm and compose linked fields, curves, trajectories and controls as documented in its program contract. It supports new models beyond the presets. For supported physical models use a native physics node with the appropriate scene and numeric parameters from the tool schema. The local model library covers diffraction, interference, electric fields, oscillators, pendulums and projectiles; select the actual physical model, never substitute decorative SVG shapes or searched images for its computation. Put a static visual in a native JSON visualization node; compose it with controls when interaction helps. Follow the current tool schema rather than inventing component calls. Use code first only when data must be calculated, read from files, transformed, or exported. When code feeds a visual, pass its results as JSON numbers rounded to a sensible precision (null for a missing value) and downsample long series to about 200 points (never more than 5000) before calling `render_intelligent_ui`.
+- For every reader-facing chart, function graph, diagram, timeline, simulation, or illustration, call `render_intelligent_ui` instead. When code feeds a visual, pass its results as JSON numbers rounded to a sensible precision (null for a missing value) and downsample long series to about 200 points (never more than 5000) before calling `render_intelligent_ui`.
 - Answer conceptual questions, simple arithmetic, code review, and prose requests directly when execution would not improve correctness.
-
-## Small execution reminders
-
-- The runner accepts module-level Python, not a notebook cell. For asynchronous work, use valid Python such as
-
-  ```python
-  import asyncio
-
-  async def main():
-      await asyncio.sleep(0)
-      print("done")
-
-  asyncio.run(main())
-  ```
-
-- There is no stdin or shell. Do not use `input()`, `subprocess`, or `plt.show()`. Save figures with `plt.savefig(...)`.
-- Packages in the Pyodide distribution (numpy, pandas, matplotlib, scipy, sympy, scikit-learn, networkx, pillow, etc.) auto-install on `import`; just import them. For a PyPI-only pure-Python wheel, run `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` in the same call.
-- Files written in `/artifacts` persist for this conversation. Read the `[scratch]` listing emitted by the runner before guessing a path. Imports, variables, and function definitions reset between calls, so recompute them in each call.
-- If execution fails, follow the structured error and retry only with a materially corrected call when it is marked retryable. Do not repeat an identical call.

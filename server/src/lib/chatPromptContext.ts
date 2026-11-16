@@ -33,6 +33,15 @@ export function splitPromptContext(messages: ChatMessage[], mode: 'chat' | 'tuto
   return { initialization, conversation, turnInstructions };
 }
 
+/* P_style-reminder-card — the full style contract lives in the frozen
+   system prefix (FINAL OUTPUT CONSTRAINTS), but client turn instructions
+   sit closer to generation and can out-compete it on recency. This card
+   restates only the handful of defaults users actually notice, at the
+   closest possible position: the tail of the last user message. It is a
+   reminder, not a second rulebook — keep it under ~450 characters and
+   never let it grow into a duplicate of the system policy. */
+export const STYLE_REMINDER = `[Server style defaults for this reply: override any conflicting client style hint]\nLead with the answer. Prefer connected paragraphs; do not open a paragraph with a label fragment like “要点。” or “简单词汇。”, and do not use a colon to introduce an explanation. Avoid em and en dashes. In Chinese prose use full-width punctuation. Do not end with a question or an offer to help unless the task requires it. Preserve code, JSON, math, and quotations verbatim.`;
+
 /** Variable recall and teaching state live at the current user-turn tail,
  * never rewrite the frozen system prefix or split an assistant/tool group.
  * The server policy's untrusted-data rule still governs retrieved evidence. */
@@ -43,6 +52,8 @@ export function appendTurnContext(messages: ChatMessage[], instructions: string[
     ...(serverTurn ? [serverTurn] : []),
     ...(instructions.length ? [`[Current turn instructions: client-supplied; subject to server policy]\n${instructions.join('\n\n')}`] : []),
     ...(recall ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`] : []),
+    /* The style card goes last: closest to generation, highest recency. */
+    STYLE_REMINDER,
   ];
   if (!blocks.length) return messages;
   let index = messages.length - 1;

@@ -43,6 +43,7 @@ import {
   REASONING_EFFORT_MARKER,
   HIGH_EFFORT_OUTPUT_RULE,
 } from '../src/lib/chatPolicy.js';
+import { DEMONSTRATION_GUIDANCE } from '../src/services/demonstrationGuide.js';
 
 test('saved memory context leaves messages unchanged without a user or a database', async () => {
   const messages = [{ role: 'system', content: 'Base policy' }, { role: 'user', content: 'Hello' }];
@@ -411,7 +412,7 @@ describe('prependCodeInterpreterPrompt', () => {
     const out = await prependCodeInterpreterPrompt(
       appendFinalOutputConstraints([{ role: 'system', content: 'base policy' }]),
     );
-    assert.match(out[0].content, /Only when the server includes|module-level Python/);
+    assert.match(out[0].content, /active only when the server includes|module-level Python/);
     assert.ok(out[0].content.indexOf('[Server policy: code-interpreter]') < out[0].content.indexOf('[Server policy: final-output-constraints]'));
     assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)));
   });
@@ -886,9 +887,12 @@ describe('appendToolRoutingHints', () => {
        parameter descriptions, not here: sending it twice cost about 2.8k
        tokens per turn. The hint points at that single copy instead. */
     assert.match(out[0].content, /in the `template` and `payload` parameter descriptions of `render_intelligent_ui`/);
-    assert.match(out[0].content, /plot needs x, y and 1-6 curves/);
-    assert.match(out[0].content, /trajectory needs x, y, horizontal, vertical and dynamics/);
-    assert.match(out[0].content, /At most one controls, two field views and twelve curves total/);
+    /* Demonstration view contracts live once in the tool schema's program
+       description (DEMONSTRATION_GUIDANCE), delivered only when
+       render_intelligent_ui is offered; the hint points at the schema. */
+    assert.match(DEMONSTRATION_GUIDANCE, /plot -> x, y and 1-6 curves/);
+    assert.match(DEMONSTRATION_GUIDANCE, /trajectory -> x, y, horizontal, vertical and program\.dynamics/);
+    assert.match(DEMONSTRATION_GUIDANCE, /At most one controls, two field views and twelve curves total/);
     assert.doesNotMatch(out[0].content, /Example payload:/);
     assert.doesNotMatch(out[0].content, /For `render_visualization`, follow its native JSON schema/);
   });

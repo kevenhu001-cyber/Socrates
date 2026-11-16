@@ -88,7 +88,7 @@ test('socraticDirectives: fromBasicsDirective depth cue and continuation are sta
 test('socraticDirectives: tutorTurnDirective scope wording is stable by stage and first-turn flag', () => {
   const firstMotivate = tutorTurnDirective('motivate', true);
   assert.match(firstMotivate, /This is the opening turn for the current sub-topic\./);
-  assert.match(firstMotivate, /at most one closing question/);
+  assert.doesNotMatch(firstMotivate, /closing question/);
 
   const contExercise = tutorTurnDirective('exercise', false);
   assert.match(contExercise, /This is a continuation turn\./);

@@ -16,7 +16,10 @@ describe('RN-6 learning-mode prompts', () => {
     for (const mode of LEARNING_MODE_IDS) {
       const prompt = await getLearningModePrompt(mode);
       assert.ok(prompt, `missing section for ${mode}`);
-      assert.match(prompt, /Do not emit next-questions suggestion blocks/, `${mode} lacks autonomous learning instructions`);
+      /* Shared defaults (next-questions blocks, mode buttons, tool-free
+         fallback) are owned once by SERVER_SYSTEM_POLICY; the mode block
+         defers to it instead of restating them per mode. */
+      assert.match(prompt, /Follow the server policy for response style and native learning-node schemas/, `${mode} lacks autonomous learning instructions`);
       assert.match(prompt, /native quiz fields/);
       assert.doesNotMatch(prompt, /<(?:quiz|practice|flashcard|correct|o)[ >]/);
       assert.match(prompt, /Unless the user explicitly requests fill-in-the-blank/);
