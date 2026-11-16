@@ -99,11 +99,11 @@
 /* Phone chat landing — one suggestion above the composer, as in the
    reference: a leading mark on the left, one muted line that truncates. Desktop
    keeps its shortcut rail; tutor mode shows its starters instead. */
-#appShell .home-suggestion { display: none !important; }
+#appShell .home-suggestion { display: none; }
 
 @media (max-width: 768px) {
   body:not([data-app-mode="tutor"]) #appShell .home-suggestion {
-    display: none !important;
+    display: none;
   }
   #appShell .home-suggestion-item {
     display: flex;

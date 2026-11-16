@@ -10,8 +10,6 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero, HomeShortcuts, HomeStarters, type HomeShortcut } from '@socrates/ui/home';
 import { i18n } from '../legacy/gateway.ts';
-import { Button } from '../ui';
-import { Icon } from '../../ui/Icon';
 import { focusComposer, getComposerMarkdown, setComposerMarkdown } from '../../composer/controller.ts';
 import { composeAction } from '../../extensions/index.ts';
 import { toggleWebSearch } from '../../chat/webSearchToggle.ts';
@@ -115,7 +113,7 @@ export function HomeQuickActions({ host }: { host: HTMLElement }) {
    tutor starter's prompt, so no new copy; tapping it fills the composer. The
    mark is the shared assistant glyph rather than an emoji, so it renders the
    same on devices without a colour emoji font. */
-const SUGGESTION = { prompt: 'understand', icon: 'assistant' } as const;
+const _SUGGESTION = { prompt: 'understand', icon: 'assistant' } as const;
 
 export function HomeSuggestion() {
   return null;

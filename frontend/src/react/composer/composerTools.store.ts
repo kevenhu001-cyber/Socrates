@@ -59,6 +59,7 @@ const COMPOSER_ACTION_HANDLERS: Partial<Record<ComposerToolsAction, ComposerActi
   deepResearch: ({ composer }) => composer.deepResearchAction(),
   extensiveThinking: ({ composer }) => composer.toggleExtensionByKey('extensiveThinking'),
   analyze: ({ composer }) => composer.analyzeAction(),
+  createSite: ({ composer }) => composer.toggleExtensionByKey('createSite'),
   exam: ({ composer }) => composer.toggleExtensionByKey('exam'),
   skills: ({ navigation }) => navigation.openPromptTemplatesModal(),
   managePlugins: ({ navigation }) => navigation.openNav('plugins'),

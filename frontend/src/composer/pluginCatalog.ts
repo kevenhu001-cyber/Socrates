@@ -134,6 +134,10 @@ export async function loadPluginCatalog(force = false): Promise<ReadonlyArray<Pl
       );
     })
     .catch((error) => {
+      const status = (error as { status?: number } | null)?.status;
+      if (status === 401 || status === 403) {
+        return Object.freeze([]);
+      }
       if (catalogRequest === request) catalogRequest = null;
       throw error;
     });

@@ -24,6 +24,7 @@ export type ComposerToolsAction =
   | 'deepResearch'
   | 'extensiveThinking'
   | 'analyze'
+  | 'createSite'
   | 'exam'
   | 'skills'
   | 'managePlugins';

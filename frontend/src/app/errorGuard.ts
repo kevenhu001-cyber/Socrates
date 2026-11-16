@@ -30,23 +30,25 @@ function payloadField(payload: unknown, key: string): unknown {
     : undefined;
 }
 
-function isExpectedTurnAbort(payload: unknown) {
+const EXPECTED_ABORT_PATTERN = /session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout|abort|aborted|请求被取消|the user aborted|signal is aborted|bodystreambuffer was aborted|operation was aborted/;
+
+function isAbortCodeOrName(code: unknown, name: unknown): boolean {
+  if (code === 'ABORTED' || code === 'ABORT_ERR' || code === 20) return true;
+  return String(name || '') === 'AbortError';
+}
+
+function isExpectedTurnAbort(payload: unknown): boolean {
+  const code = payloadField(payload, 'code');
+  const name = payloadField(payload, 'name');
+  if (isAbortCodeOrName(code, name)) return true;
+
   const reason = payloadField(payload, 'reason');
   const message = payloadField(payload, 'message');
-  const name = payloadField(payload, 'name');
-  let sig = '';
-  try { sig = String((reason != null ? reason : '') + ' ' + (message || payload)).toLowerCase(); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-  if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(sig)) {
-    try { console.log('[global-error] ignored expected turn abort:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-    return true;
-  }
-  let nm = '';
-  try { nm = String(name || ''); } catch (_) { /* empty-catch: intentional — safe stringify */ }
-  if (nm === 'AbortError' && /abort/i.test(sig)) {
-    try { console.log('[global-error] ignored AbortError:', sig.slice(0, 120)); } catch (_) { /* empty-catch: intentional — console log best effort */ }
-    return true;
-  }
-  return false;
+  const sig = `${String(reason ?? '')} ${String(message ?? payload ?? '')}`.toLowerCase();
+  if (EXPECTED_ABORT_PATTERN.test(sig)) return true;
+
+  const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  return isHidden && (String(name || '') === 'TypeError' || /fetch/i.test(sig));
 }
 
 export function installGlobalErrorGuard() {
@@ -189,6 +191,10 @@ export function installGlobalErrorGuard() {
     window.addEventListener('unhandledrejection', (ev) => {
       handle('unhandledrejection', ev && (ev.reason || ev) || 'unknown');
       // Don't preventDefault — let the dev tools still flag it.
+    });
+
+    window.addEventListener('beforeunload', () => {
+      inHandler = true;
     });
   }
 }

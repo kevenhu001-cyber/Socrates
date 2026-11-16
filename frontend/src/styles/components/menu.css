@@ -4,7 +4,7 @@
 .display-prefs-popover,
 .tag-editor-popover {
   border: 1px solid var(--ui-border-subtle);
-  background: var(--popover);
+  background: var(--ui-bg-surface);
   color: var(--foreground);
 }
 
@@ -43,41 +43,40 @@
 body #composerToolsMenu.composer-tools-menu {
   position: fixed;
   z-index: var(--ui-z-popover);
-  width: 256px;
+  width: 260px;
   min-width: 0;
   max-width: calc(100vw - 24px);
   max-height: min(75dvh, 520px);
-  padding: 4px;
+  padding: 6px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--ui-radius-tools-card);
   border: 1px solid var(--ui-border-subtle);
   background: var(--ui-bg-surface);
-  box-shadow:
-    0 0 1px rgba(0, 0, 0, 0.2),
-    0 0 4px rgba(0, 0, 0, 0.02),
-    0 12px 32px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--ui-shadow-menu, 0 12px 32px rgba(0, 0, 0, 0.18));
   animation: none;
 }
 [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
   box-shadow:
     0 0 1px rgba(0, 0, 0, 0.6),
     0 0 4px rgba(0, 0, 0, 0.3),
-    0 12px 32px rgba(0, 0, 0, 0.35);
+    0 16px 36px rgba(0, 0, 0, 0.45);
 }
 [data-mode="light"] body #composerToolsMenu.composer-tools-menu {
   box-shadow:
     0 0 1px rgba(0, 0, 0, 0.15),
     0 0 4px rgba(0, 0, 0, 0.03),
-    0 12px 32px rgba(0, 0, 0, 0.08);
+    0 12px 32px rgba(0, 0, 0, 0.1);
 }
 
 #composerToolsMenu .composer-tools-desktop-items,
 #composerToolsMenu .composer-tools-mobile-items { gap: 2px; }
 
 #composerToolsMenu .composer-tools-group + .composer-tools-group {
-  margin-top: 4px;
-  padding-top: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
   border-top: 1px solid var(--ui-border-subtle);
 }
 
@@ -89,7 +88,7 @@ body #composerToolsMenu.composer-tools-menu {
   min-height: var(--ui-control-md);
   margin: 0;
   padding: 8px 10px;
-  gap: 8px;
+  gap: 10px;
   border: 0;
   border-radius: var(--ui-radius-tools-row);
   background: transparent;
@@ -117,9 +116,9 @@ body #composerToolsMenu.composer-tools-menu {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  min-width: 18px;
-  height: 18px;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
   border-radius: var(--ui-radius-xs);
   background: none;
   color: var(--ui-text-secondary);
@@ -148,7 +147,7 @@ body #composerToolsMenu.composer-tools-menu {
   color: inherit;
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-regular);
-  line-height: 24px;
+  line-height: 20px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -171,17 +170,16 @@ body #composerToolsMenu.composer-tools-menu {
   color: var(--ui-accent-action);
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
 }
 
-/* Keep accessible group names without adding headings to the flat menu.
-   Reference: chat-demo/src/components/base/Menu.module.css (MIT). */
 #composerToolsMenu .composer-tools-group-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  padding: 6px 10px 4px;
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ui-text-tertiary);
 }
 
 .chat-config-pop {
@@ -225,13 +223,14 @@ body #composerToolsMenu.composer-tools-menu {
   }
   .composer-tools-desktop-items { display: none; }
   .composer-tools-mobile-items { display: block; }
+  .composer-tools-plugins { display: none; }
 
   .composer-tools-sheet-handle {
     display: block;
     width: 36px;
     height: 4px;
     margin: 8px auto 14px;
-    border-radius: 2px;
+    border-radius: var(--ui-radius-xs);
     background: rgba(255, 255, 255, 0.22);
   }
   [data-mode="light"] .composer-tools-sheet-handle {
@@ -240,29 +239,29 @@ body #composerToolsMenu.composer-tools-menu {
 
   /* Phone bottom sheet matching mobile reference 1000038600.jpg */
   body #composerToolsMenu.composer-tools-menu {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: 80vh !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 80vh;
     padding: 0 0 calc(20px + env(safe-area-inset-bottom, 0px)) 0;
-    border-radius: 20px 20px 0 0 !important;
+    border-radius: var(--ui-radius-xl) var(--ui-radius-xl) 0 0;
     border: 1px solid var(--ui-border-subtle);
     border-bottom: 0;
     background: var(--ui-bg-surface);
     overflow-y: auto;
     overscroll-behavior: contain;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
   }
   [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
-    background: #1c1c1e;
+    background: var(--ui-bg-surface);
     border-color: rgba(255, 255, 255, 0.08);
   }
   [data-mode="light"] body #composerToolsMenu.composer-tools-menu {
-    background: #ffffff;
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12) !important;
+    background: var(--ui-bg-surface);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
   }
   body #composerToolsMenu.composer-tools-menu::before { content: none; }
 
@@ -278,13 +277,13 @@ body #composerToolsMenu.composer-tools-menu {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 80px;
-    padding: 12px 4px 10px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.08);
+    min-height: 76px;
+    padding: 10px 4px 8px;
+    border-radius: var(--ui-radius-md);
+    background: rgba(255, 255, 255, 0.07);
     border: 0;
     cursor: pointer;
-    transition: background-color var(--ui-duration-fast) ease, transform 0.1s ease;
+    transition: background-color var(--ui-duration-fast) ease, transform 0.12s var(--ui-ease-out);
   }
   [data-mode="light"] .composer-tools-tile {
     background: rgba(0, 0, 0, 0.05);
@@ -315,8 +314,8 @@ body #composerToolsMenu.composer-tools-menu {
     stroke-width: 1.75;
   }
   .composer-tools-tile-label {
-    font-size: 13px;
-    font-weight: 400;
+    font-size: var(--ui-font-size-xs);
+    font-weight: var(--ui-font-weight-regular);
     color: var(--ui-text-primary);
     white-space: nowrap;
     text-align: center;
@@ -333,9 +332,9 @@ body #composerToolsMenu.composer-tools-menu {
     display: flex;
     align-items: center;
     width: 100%;
-    min-height: 52px;
-    padding: 10px 14px;
-    border-radius: 12px;
+    min-height: 48px;
+    padding: 8px 12px;
+    border-radius: var(--ui-radius-sm);
     border: 0;
     background: transparent;
     cursor: pointer;
@@ -374,18 +373,18 @@ body #composerToolsMenu.composer-tools-menu {
   }
   #composerToolsMenu .composer-tools-row-title {
     color: var(--ui-text-primary);
-    font-size: 15px;
-    font-weight: 500;
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-medium);
     line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   #composerToolsMenu .composer-tools-row-subtitle {
-    display: block !important;
+    display: block;
     color: var(--ui-text-muted);
-    font-size: 12px;
-    font-weight: 400;
+    font-size: var(--ui-font-size-xxs);
+    font-weight: var(--ui-font-weight-regular);
     line-height: 1.3;
     white-space: nowrap;
     overflow: hidden;
@@ -397,11 +396,11 @@ body #composerToolsMenu.composer-tools-menu {
     gap: 6px;
     margin-left: auto;
     color: var(--ui-text-tertiary);
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
   }
   #composerToolsMenu .composer-tools-row-status {
     color: var(--ui-text-muted);
-    font-size: 13px;
+    font-size: var(--ui-font-size-xs);
   }
   #composerToolsMenu .composer-tools-row-arrow {
     width: 16px;

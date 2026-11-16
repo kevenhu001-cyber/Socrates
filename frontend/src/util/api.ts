@@ -139,13 +139,15 @@ export async function apiFetch<T = unknown>(path: string, opts: ApiRequestOption
   } catch (caught) {
     const failure = caught as { name?: string } | null;
     const aborted = !!failure && (failure.name === 'AbortError' || linkedSignal.controller.signal.aborted);
-    throw makeApiError(
+    const err = makeApiError(
       0,
       aborted ? '请求被取消' : '网络异常，请检查连接后重试',
       null,
       aborted ? 'ABORTED' : 'NETWORK',
       0,
     );
+    if (aborted) err.name = 'AbortError';
+    throw err;
   } finally {
     linkedSignal.detach();
   }
