@@ -1,17 +1,13 @@
-export declare const VISUALIZATION_TEMPLATES: readonly [
-  'function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap',
-  'radar', 'boxplot', 'flowchart', 'sequence', 'state', 'tree', 'mindmap',
-  'network', 'timeline', 'comparison', 'process', 'number_line', 'geometry',
-  'concept_map', 'svg_illustration', 'interactive_simulation',
-  'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard',
-];
-export type VisualizationTemplate = (typeof VISUALIZATION_TEMPLATES)[number];
+export {
+  VISUALIZATION_TEMPLATES,
+  CATEGORY_TEMPLATES,
+  GRAPH_TEMPLATES,
+} from './visualizationTemplates.js';
+export type { VisualizationTemplate } from './visualizationTemplates.js';
 
 /** One point limit for the direct tool, OpenUI programs and prompt text. */
 export declare const MAX_VISUALIZATION_POINTS: 5000;
 export declare const VISUALIZATION_ITEM_LIMITS: Readonly<Record<'timeline' | 'process' | 'number_line' | 'comparison', readonly [number, number]>>;
-export declare const CATEGORY_TEMPLATES: readonly string[];
-export declare const GRAPH_TEMPLATES: readonly string[];
 
 /** A finite number, `null` for an explicit gap, or `undefined` when not numeric. */
 export declare function coerceNumber(value: unknown): number | null | undefined;

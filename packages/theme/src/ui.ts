@@ -136,7 +136,7 @@ export const uiColorsCssVars: UiColors = Object.freeze(
 
 /** Font stacks. Geist for Latin, Noto Sans SC for Chinese. */
 export const uiFont = {
-  sans: '"Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif',
+  sans: '"Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif',
   mono: '"Geist Mono", ui-monospace, "Noto Sans SC", "SFMono-Regular", monospace',
 } as const;
 

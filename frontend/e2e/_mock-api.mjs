@@ -108,7 +108,7 @@ export async function mockAuthedApp(page, options = {}) {
     }
     if (apiUrl.includes('/api/sessions')) {
       if (req.method() === 'GET') {
-        await route.fulfill(jsonResponse(MOCK_SESSIONS));
+        await route.fulfill(jsonResponse(options.sessions || MOCK_SESSIONS));
       } else {
         await route.fulfill(jsonResponse({ session: { id: 'smoke-saved-1' } }));
       }

@@ -461,6 +461,12 @@ export default defineConfig({
       '@socrates/core/visualizationNormalize': fileURLToPath(new URL('../packages/core/src/visualizationNormalize.js', import.meta.url)),
       '@socrates/core/learningBlocks': fileURLToPath(new URL('../packages/core/src/learningBlocks.ts', import.meta.url)),
       '@socrates/core/turnRuntime': fileURLToPath(new URL('../packages/core/src/turnRuntime.js', import.meta.url)),
+      /* P_perf-core-barrel — the eager graph only needs frame splitting and
+         the tool-run contract. A bare `@socrates/core` import pulls the whole
+         barrel (demonstration/physics/visualization runtimes) into the boot
+         chunk, so narrow subpaths keep that code in lazy chunks. */
+      '@socrates/core/sse': fileURLToPath(new URL('../packages/core/src/sse.ts', import.meta.url)),
+      '@socrates/core/toolRun': fileURLToPath(new URL('../packages/core/src/toolRun.ts', import.meta.url)),
       '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.

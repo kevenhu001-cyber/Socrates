@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
 import { ACTIVE_CLASS, gotoAndSettle, login, publishChatRuntime } from './_lib.mjs';
-import { mockAuthedApp } from './_mock-api.mjs';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
 test('download-first UI fonts preload one variable face without duplicate transfers', async ({ page }) => {
@@ -15,25 +15,38 @@ test('download-first UI fonts preload one variable face without duplicate transf
   // The browser fixture starts in English. Exercise actual CJK glyphs before
   // checking their font; an English-only landing must not fetch CJK subsets.
   await page.locator('#composerInputWrap .tiptap').fill('中文字体优先下载');
-  await expect.poll(() => page.evaluate(() => [...document.fonts].some(
-    (font) => font.family.replace(/["']/g, '') === 'Noto Sans SC' && font.status === 'loaded',
-  ))).toBe(true);
   await page.evaluate(() => document.fonts.ready);
   const result = await page.evaluate(() => {
     const fonts = performance.getEntriesByType('resource').filter((entry) => /geist-sans.*\.woff2/.test(entry.name));
+    /* Full-width CJK punctuation is the user-visible property that a wrong
+       family order breaks: Geist carries narrow Latin-proportioned glyphs for
+       U+FF0C, so a half-width comma is the symptom of a stack that never
+       reaches a CJK face. Measure the advance instead of trusting the string. */
+    const probe = document.createElement('span');
+    probe.textContent = '，';
+    probe.style.cssText = 'position:absolute;visibility:hidden;font:16px/1 var(--font-sans)';
+    document.body.appendChild(probe);
+    const commaWidth = probe.getBoundingClientRect().width;
+    probe.remove();
     return {
       count: fonts.length,
       initiator: fonts[0]?.initiatorType,
       preload: document.querySelectorAll('link[rel="preload"][as="font"]').length,
-      family: getComputedStyle(document.documentElement).getPropertyValue('--font-sans'),
-      cjkTransfers: performance.getEntriesByType('resource').filter((entry) => /noto-sans-sc-.*\.woff2/.test(entry.name)).length,
+      family: getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim(),
+      commaWidth,
     };
   });
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  expect(result.family.indexOf('Noto Sans SC')).toBeLessThan(result.family.indexOf('PingFang SC'));
-  expect(result.cjkTransfers).toBeGreaterThan(0);
+  /* P_perf-platform-cjk — Geist stays first for Latin, but the platform's own
+     CJK face must be tried before the bundled Noto Sans SC slices. A Chinese
+     screen used to download ~560 kB of slices for glyphs the OS already has. */
+  expect(result.family.indexOf('Geist Sans')).toBeGreaterThan(-1);
+  expect(result.family.indexOf('Geist Sans')).toBeLessThan(result.family.indexOf('PingFang SC'));
+  expect(result.family.indexOf('PingFang SC')).toBeLessThan(result.family.indexOf('Noto Sans SC'));
+  expect(result.family.indexOf('Microsoft YaHei')).toBeLessThan(result.family.indexOf('Noto Sans SC'));
+  expect(result.commaWidth).toBeGreaterThan(14);
   expect(errors).toEqual([]);
   await page.screenshot({ path: 'test-results/download-first-fonts.png' });
 });
@@ -188,6 +201,29 @@ test('settings modal and first pane preload on trigger intent before the click',
   await trigger.click();
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
+});
+
+test('signed-in boot reuses the head session prefetch instead of fetching twice', async ({ page }) => {
+  const rows = [
+    { id: 'sess-alpha', title: 'Alpha', topic: 'alpha', updated_at: 1_700_000_000_000, created_at: 1_699_000_000_000, total_q: 2 },
+    { id: 'sess-beta', title: 'Beta', topic: 'beta', updated_at: 1_699_500_000_000, created_at: 1_699_000_000_000, total_q: 1 },
+  ];
+  await mockAuthedApp(page, { sessions: { sessions: rows } });
+  const sessionGets = [];
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) => {
+    if (route.request().method() === 'GET') sessionGets.push(route.request().url());
+    return route.fallback();
+  });
+  await gotoAndSettle(page, '/');
+  await login(page);
+  await waitForAppShell(page);
+  /* The sidebar must show the prefetched rows... */
+  await expect(page.locator('#recentsList, .recents-list, #recents').first()).toContainText('Alpha', { timeout: 15_000 });
+  /* ...and the prefetch must REPLACE the later fetch, not add to it. Two GETs
+     here means session/bootSessions.ts failed to take the handoff and the
+     sidebar paid a second round trip. */
+  expect(sessionGets.length).toBe(1);
+  expect(sessionGets[0]).toContain('archived=true');
 });
 
 test('anonymous boot checks the session once', async ({ page }) => {

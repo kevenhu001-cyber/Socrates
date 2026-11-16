@@ -3,7 +3,7 @@ import { normalizeLearningUiNode, learningUiIssues } from './learningUi.js';
 import { validateDemonstration } from './demonstration.js';
 import { physicsParametersError } from './physicsModelRegistry.js';
 import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
-import { VISUALIZATION_TEMPLATES } from './visualizationNormalize.js';
+import { VISUALIZATION_TEMPLATES } from './visualizationTemplates.js';
 
 const TYPES = ['panel', 'stack', 'grid', 'text', 'metric', 'progress', 'divider', 'callout', 'slider', 'choice', 'toggle', 'button', 'table', 'chart', 'tabs', 'entity', 'image-gallery', 'physics', 'demonstration', 'learning', 'visualization', 'openui'];
 

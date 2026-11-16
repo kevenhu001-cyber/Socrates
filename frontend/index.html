@@ -30,16 +30,18 @@
      packets that lookup is not free either. -->
 <link rel="preload" as="image" href="/logo.png" fetchpriority="high">
 <meta http-equiv="X-DNS-Prefetch-Control" content="on">
-<!-- P_perf-boot-prefetch — fire the three boot GETs the moment the parser
+<!-- P_perf-boot-prefetch — fire the boot GETs the moment the parser
      reaches <head>, so /api/auth/me + /api/v2/config (+ the CSRF prime)
      overlap the entry-JS download instead of waiting for 200+ modules to
-     evaluate. auth/boot.js prefers these promises and falls back to fresh
-     apiFetch calls when the preflight is missing or failed, so behaviour
-     is identical with or without it. Same-origin credentials:include, no
-     custom headers — wire-identical to what apiFetch sends for GETs; the
-     /api/v2/ prefix dodges the CDN-cached /api/ path and the cb= nonce
-     keeps the CDN from ever caching the preflight URL itself, exactly
-     like apiFetch. -->
+     evaluate. Once /me confirms a signed-in user, the Recents list GET
+     starts too — that is the sidebar's first useful payload. auth/boot.js
+     prefers the me/config promises and falls back to fresh apiFetch calls
+     when the preflight is missing or failed; session/bootSessions.ts does
+     the same for sessions, so behaviour is identical with or without it.
+     Same-origin credentials:include, no custom headers — wire-identical to
+     what apiFetch sends for GETs; the /api/v2/ prefix dodges the
+     CDN-cached /api/ path and the cb= nonce keeps the CDN from ever
+     caching the preflight URL itself, exactly like apiFetch. -->
 <script>
 (function () {
   try {
@@ -52,9 +54,15 @@
        anonymous and cannot use the session state they would cost. */
     var urlOnlyRoute = /(?:^|[?&])(share|token|reset_token|oauth_error)=/.test(location.search);
     var opts = { credentials: 'include' };
-    var cb = '?cb=' + Date.now();
-    function get(url) {
-      return fetch(url + cb, opts).then(function (r) {
+    function get(url, priority) {
+      /* A URL that already carries a query (?share=…&…) must not become
+         ?share=…&…?cb=… — the second '?' makes the nonce its own parameter
+         name, and the CDN then caches the preflight URL. */
+      var sep = url.indexOf('?') === -1 ? '?' : '&';
+      var init = priority
+        ? { credentials: 'include', priority: priority }
+        : opts;
+      return fetch(url + sep + 'cb=' + Date.now(), init).then(function (r) {
         return r.json().then(function (j) {
           return { status: r.status, json: j };
         }, function () {
@@ -65,8 +73,22 @@
       });
     }
     if (!urlOnlyRoute) {
-      w.__bootApi.me = get('/api/v2/auth/me');
-      w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token' + cb, opts).then(function () {
+      var me = get('/api/v2/auth/me', 'high');
+      w.__bootApi.me = me;
+      /* P_perf-recents-prefetch — /api/v2/sessions is the sidebar's first
+         useful payload and it needs no CSRF (GET). Start it the moment /me
+         confirms a signed-in user, so it overlaps the entry-JS download and
+         the auth → React-mount sequence instead of starting after both.
+         session/bootSessions.ts takes this handoff exactly once; any later
+         refresh (user switch, manual retry) goes back to apiFetch. */
+      me.then(function (r) {
+        if (!r || r.failed || r.status !== 200) return;
+        w.__bootApi.sessions = {
+          startedAt: Date.now(),
+          promise: get('/api/v2/sessions?limit=200&archived=true', 'low'),
+        };
+      }, function () { /* /me failed — the normal fetch path handles it */ });
+      w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token?cb=' + Date.now(), opts).then(function () {
         return null;
       }, function () {
         return null;

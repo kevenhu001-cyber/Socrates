@@ -26,6 +26,14 @@
       "types": "./src/turnRuntime.d.ts",
       "import": "./src/turnRuntime.js"
     },
+    "./sse": {
+      "types": "./src/sse.ts",
+      "import": "./src/sse.ts"
+    },
+    "./toolRun": {
+      "types": "./src/toolRun.ts",
+      "import": "./src/toolRun.ts"
+    },
     "./motion/spring": {
       "types": "./src/motion/spring.ts",
       "import": "./src/motion/spring.ts"

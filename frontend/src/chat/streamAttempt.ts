@@ -26,7 +26,7 @@ interface StreamRead { gotAnyData: boolean; bytesReceived: number; error: unknow
  * the global retry budget and final cleanup. */
 import { apiFetchRaw } from '../util/api.ts';
 import { buildChatRequestBody, ChatRequestMessage } from './api/requestBody.ts';
-import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
+import { consumeSseBuffer } from '@socrates/core/sse';
 import { createChatTurn, newClientTurnId } from './turnClient.ts';
 import { recoverDetachedTurn } from './detachedTurnRecovery.ts';
 import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.ts';

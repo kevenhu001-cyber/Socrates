@@ -12,10 +12,10 @@
  */
 
 import { getSocratesWasm } from '../lib/socratesWasm.ts';
-import { createToolRunApi } from '@socrates/core';
+import { createToolRunApi } from '@socrates/core/toolRun';
 
-export type { ToolRun, ToolRunSummary } from '@socrates/core';
-export { TOOL_RUN_PHASES } from '@socrates/core';
+export type { ToolRun, ToolRunSummary } from '@socrates/core/toolRun';
+export { TOOL_RUN_PHASES } from '@socrates/core/toolRun';
 
 const api = createToolRunApi(() => {
   const w = getSocratesWasm();

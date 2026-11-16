@@ -1,4 +1,4 @@
-import { consumeSseBuffer } from '@socrates/core';
+import { consumeSseBuffer } from '@socrates/core/sse';
 import type { ResearchJobEvent } from '@socrates/contracts';
 
 export async function consumeResearchStream(response: Response, onEvent: (event: ResearchJobEvent) => Promise<void>, signal: AbortSignal) {

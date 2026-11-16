@@ -14,7 +14,7 @@
 
 import { apiFetch, apiFetchRaw } from '../util/api.ts';
 import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.ts';
-import { consumeSseBuffer } from '../../../packages/core/src/index.ts';
+import { consumeSseBuffer } from '@socrates/core/sse';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 export interface ChatTurn {

@@ -12,14 +12,17 @@
  * describe every lossy repair (truncation, dropped values, downsampling).
  */
 import { parseFunctionExpression } from './visualizationMath.js';
-
-export const VISUALIZATION_TEMPLATES = [
-  'function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap',
-  'radar', 'boxplot', 'flowchart', 'sequence', 'state', 'tree', 'mindmap',
-  'network', 'timeline', 'comparison', 'process', 'number_line', 'geometry',
-  'concept_map', 'svg_illustration', 'interactive_simulation',
-  'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard',
-];
+/* The template vocabulary lives in its own leaf module so the validator can
+ * read the names without pulling this normalizer (and visualizationMath) into
+ * the boot chunk. Import them for local use AND re-export, so callers keep one
+ * import site — `export { X } from './mod.js'` alone would not create the
+ * local bindings the payload normalizers below rely on. */
+import {
+  VISUALIZATION_TEMPLATES,
+  CATEGORY_TEMPLATES,
+  GRAPH_TEMPLATES,
+} from './visualizationTemplates.js';
+export { VISUALIZATION_TEMPLATES, CATEGORY_TEMPLATES, GRAPH_TEMPLATES };
 
 /** One limit for every path (direct tool, OpenUI program, prompt text). */
 export const MAX_VISUALIZATION_POINTS = 5000;
@@ -31,9 +34,6 @@ export const VISUALIZATION_ITEM_LIMITS = {
   number_line: [2, 12],
   comparison: [2, 8],
 };
-
-export const CATEGORY_TEMPLATES = ['line', 'area', 'bar', 'pie', 'histogram', 'radar', 'boxplot', 'paper_chart'];
-export const GRAPH_TEMPLATES = ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'];
 
 const NODE_ID_RE = /^[A-Za-z0-9_]{1,80}$/;
 const ENVELOPE_KEYS = new Set(['version', 'template', 'title', 'caption', 'accessibilitySummary', 'payload']);

@@ -9,19 +9,33 @@ export interface BootPreflightResponse {
   json?: unknown;
 }
 
+/**
+ * The sessions prefetch starts as soon as /me confirms a signed-in user, so
+ * the sidebar list can render from a request that overlapped the entry-JS
+ * download instead of waiting for auth → React mount → post-auth.
+ */
+export interface BootSessionPrefetch {
+  startedAt: number;
+  promise: Promise<BootPreflightResponse>;
+}
+
 export interface BootPreflight {
   csrf?: Promise<unknown>;
   me?: Promise<BootPreflightResponse>;
   config?: Promise<BootPreflightResponse>;
+  sessions?: BootSessionPrefetch;
 }
 
-interface BootLegacyWindow extends Window {
-  __bootApi?: BootPreflight | null;
+declare global {
+  interface Window {
+    /* Installed by the inline <head> preflight script in index.html. */
+    __bootApi?: BootPreflight | null;
+  }
 }
 
 /** Read the optional <head> prefetch installed by index.html. */
 export function readBootPreflight(): BootPreflight | null {
-  try { return (window as BootLegacyWindow).__bootApi || null; }
+  try { return window.__bootApi || null; }
   catch { return null; }
 }
 

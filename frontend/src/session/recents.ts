@@ -8,6 +8,7 @@ import { serverCache } from './serverCache.ts';
 import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.ts';
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL, type SessionRow } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
+import { readBootSessions } from './bootSessions.ts';
 import { getKnownTagsFromSessions } from '../ui/recentsHelpers.ts';
 import { apiFetch } from '../util/api.ts';
 import { detailCache } from './detailCache.ts';
@@ -112,31 +113,42 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
   let ok = false;
   /* Include archived rows so the Storage modal can list them without a
      second fetch. getRecents()/getVisibleSessions still hide archivedAt. */
-  try {
-    const r = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
-    serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
+  /* P_perf-recents-prefetch — the <head> script started this exact request
+     when /me confirmed the user, so it may already be in flight (or done)
+     by the time the sidebar asks. Take the one-shot handoff; a missing,
+     stale, or failed prefetch falls through to the normal apiFetch path
+     below, retry included. */
+  const prefetched = await readBootSessions(window);
+  if (prefetched) {
+    serverCache.sessions = prefetched;
     ok = true;
-  } catch (e) {
-    /* P_recents-fetch-fail — retry ONCE on transient failures (network
-       blip, 5xx, 429). This covers the "some devices" report where a
-       flaky connection or a momentary 502/503 left the user with an
-       empty Recents list. Non-retryable errors (401/403/404) skip the
-       retry so we don't waste a roundtrip on a definitely-broken
-       request. The original bug silently swallowed ALL errors here,
-       leaving serverCache.sessions=[] and showing "No recent sessions yet."
-       even when the user had sessions on the server. */
-    const status = errorStatus(e);
-    const retryable = status === 0 || status === 408 || status === 429 ||
-                    (typeof status === 'number' && status >= 500 && status < 600);
-    if (retryable) {
-      try {
-        await new Promise(function (res) { setTimeout(res, 400); });
-        const r2 = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
-        serverCache.sessions = r2 && Array.isArray(r2.sessions) ? r2.sessions : [];
-        ok = true;
-      } catch (retryError) {
-        /* still failing — surface below */
-        reportSwallow(retryError, 'session/recents.fetch.retry');
+  } else {
+    try {
+      const r = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
+      serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
+      ok = true;
+    } catch (e) {
+      /* P_recents-fetch-fail — retry ONCE on transient failures (network
+         blip, 5xx, 429). This covers the "some devices" report where a
+         flaky connection or a momentary 502/503 left the user with an
+         empty Recents list. Non-retryable errors (401/403/404) skip the
+         retry so we don't waste a roundtrip on a definitely-broken
+         request. The original bug silently swallowed ALL errors here,
+         leaving serverCache.sessions=[] and showing "No recent sessions yet."
+         even when the user had sessions on the server. */
+      const status = errorStatus(e);
+      const retryable = status === 0 || status === 408 || status === 429 ||
+                      (typeof status === 'number' && status >= 500 && status < 600);
+      if (retryable) {
+        try {
+          await new Promise(function (res) { setTimeout(res, 400); });
+          const r2 = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
+          serverCache.sessions = r2 && Array.isArray(r2.sessions) ? r2.sessions : [];
+          ok = true;
+        } catch (retryError) {
+          /* still failing — surface below */
+          reportSwallow(retryError, 'session/recents.fetch.retry');
+        }
       }
     }
   }

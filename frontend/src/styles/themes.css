@@ -17,7 +17,14 @@ html[data-mode] { --ui-action: var(--ui-accent-action); --ui-connector-tile: var
 
 html[data-theme="socrates"][data-mode],
 html[data-theme="socrates"][data-mode]:lang(zh) {
-  --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  /* P_perf-platform-cjk — the platform's own CJK face comes first. The
+     self-hosted Noto Sans SC is a ~101-slice webfont: a Chinese page with
+     ~100 distinct characters pulled 10 slices / 560 kB, more than all of the
+     gzipped JS and CSS combined. PingFang SC (macOS/iOS), Microsoft YaHei
+     (Windows) and the system CJK face (Android) are already installed, so
+     they cost nothing. Noto stays in the stack ahead of the generic
+     `sans-serif` so a Linux box without a CJK font still renders. */
+  --font-sans: "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
   --cg-font: var(--font-sans);
   --font-display: var(--font-sans);
   --font-serif: var(--font-sans);
@@ -668,7 +675,14 @@ html[data-theme="socrates"][data-mode="light"] {
  * ----------------------------------------------------------------------- */
 html[data-theme="philosophy"][data-mode],
 html[data-theme="philosophy"][data-mode]:lang(zh) {
-  --font-sans: "Geist Sans", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  /* P_perf-platform-cjk — the platform's own CJK face comes first. The
+     self-hosted Noto Sans SC is a ~101-slice webfont: a Chinese page with
+     ~100 distinct characters pulled 10 slices / 560 kB, more than all of the
+     gzipped JS and CSS combined. PingFang SC (macOS/iOS), Microsoft YaHei
+     (Windows) and the system CJK face (Android) are already installed, so
+     they cost nothing. Noto stays in the stack ahead of the generic
+     `sans-serif` so a Linux box without a CJK font still renders. */
+  --font-sans: "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", Arial, sans-serif;
   --cg-font: var(--font-sans);
   --font-display: "Newsreader", "Charis SIL", "Noto Serif SC", "Songti SC", "Georgia", serif;
   --font-serif: "Newsreader", "Charis SIL", "Noto Serif SC", "Songti SC", "Georgia", serif;
