@@ -34,12 +34,15 @@
 }
 
 /* Lift the landing hero off geometric center: the reference composition
-   keeps greeting + capsule in the upper-middle band (~40% of the viewport),
-   not dead center. Extra bottom padding shrinks the flex content box, which
-   moves the centered block up by half the added amount. */
+   keeps greeting + capsule in the upper-middle band, not dead center. Extra
+   bottom padding shrinks the flex content box, which moves the centered
+   block up by half the added amount — 200px here puts the pair ~60px higher
+   than the 80px recipe that stood while the landing still carried entries
+   under the composer (raised 2026-11-16, when those entries were removed
+   and the pair alone was left sitting low). */
 @media (min-width: 769px) {
   :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup {
-    padding-bottom: calc(80px + var(--conversation-safe-bottom) + 4vh);
+    padding-bottom: calc(200px + var(--conversation-safe-bottom) + 4vh);
   }
 }
 
@@ -414,13 +417,6 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
 }
 @media (prefers-reduced-motion: reduce) {
   #appShell #composerAttachmentChips .attachment-chip { animation: none; }
-}
-
-/* Under-composer disclaimer: quiet centered microcopy. */
-#appShell .disclaimer {
-  color: var(--ui-text-muted);
-  font-size: var(--ui-font-size-xxs);
-  letter-spacing: 0;
 }
 
 /* Reference phone sheet is a flat action list — group labels stay in the

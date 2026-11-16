@@ -91,7 +91,6 @@ test('light muted labels clear AA and the placeholder keeps its reference tone',
     };
     const root = getComputedStyle(document.documentElement);
     return {
-      disclaimer: pick('#topicDisclaimer'),
       sectionLabel: pick('#recentsList .recents-time-label'),
       page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       sidebar: getComputedStyle(document.getElementById('sidebar')).backgroundColor,
@@ -99,9 +98,7 @@ test('light muted labels clear AA and the placeholder keeps its reference tone',
       thumb: root.getPropertyValue('--ui-scrollbar-thumb').trim(),
     };
   });
-  expect(probe.disclaimer).not.toBeNull();
   expect(probe.sectionLabel).not.toBeNull();
-  expect(contrast(rgb(probe.disclaimer), rgb(probe.page))).toBeGreaterThanOrEqual(4.5);
   expect(contrast(rgb(probe.sectionLabel), rgb(probe.sidebar))).toBeGreaterThanOrEqual(4.5);
   expect(probe.placeholder).toBe('#8f8f8f');
   // A dark thumb on light surfaces (it used to be a 12% white alpha).
@@ -205,7 +202,6 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
     const out = {
       page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
       sidebar: getComputedStyle(document.getElementById('sidebar')).backgroundColor,
-      disclaimer: pick('#topicDisclaimer'),
       sectionLabel: pick('#recentsList .recents-time-label'),
       surfaces: {
         page: surface('--ui-bg-page'),
@@ -271,9 +267,7 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
   }
 
   /* Muted labels clear AA on the dark canvas and the dark rail. */
-  expect(probe.disclaimer).not.toBeNull();
   expect(probe.sectionLabel).not.toBeNull();
-  expect(contrast(rgb(probe.disclaimer), rgb(probe.page))).toBeGreaterThanOrEqual(4.5);
   expect(contrast(rgb(probe.sectionLabel), rgb(probe.sidebar))).toBeGreaterThanOrEqual(4.5);
 
   /* "muted" is an alias of "tertiary" in both themes. */

@@ -95,15 +95,12 @@
 
 #appShell #topicSetup .topic-sub,
 #appShell #topicSetup .mobile-starter-prompts,
-#appShell #topicSetup .cg-history,
-#appShell #topicDisclaimer { display: none; }
+#appShell #topicSetup .cg-history { display: none; }
 
-/* .home-quick-actions is deliberately NOT in the group above. It carries
-   three real composer entry points (upload / write / research) with live
-   markup, i18n keys and click handlers in ui/homeSurface.js; hiding it left
-   a ~410px dead band under the composer on 2026-10-04. Geometry owners:
-   restore/ref-baseline.css (row + rows), restore/fixes.css (desktop
-   52px/r8/16px sizing), restore/mobile-parity.css (<=768px column). */
+/* The landing disclaimer (#topicDisclaimer) and the three landing entries
+   under the composer (chat shortcuts, learning-mode capsule, tutor
+   starters) were removed on 2026-11-16; their geometry owners went with
+   them. */
 
 @media (min-width: 769px) {
   #appShell #topicSetup .topic-title.greeting {
@@ -140,20 +137,4 @@
     white-space: normal;
   }
   body #appShell #pluginWorkspaceTabs { display: none; }
-}
-
-/* Desktop footer stays inside the main pane as navigation/details resize it. */
-@media (min-width: 769px) {
-  #appShell #topicDisclaimer {
-    display: block;
-    position: absolute;
-    inset-inline: var(--ui-space-lg);
-    bottom: var(--ui-space-md);
-    width: auto;
-    max-width: none;
-    margin: 0;
-    transform: none;
-    font-size: var(--ui-font-size-sm);
-    line-height: var(--ui-line-height-normal);
-  }
 }

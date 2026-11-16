@@ -175,8 +175,7 @@
 /* Exam is a focused workspace. The mobile incognito control is hidden
    independently of inline styles so it cannot leak into the exam UI. */
 body.exam-active #mobileIncognitoBtn{display:none!important}
-body.workspace-active #mobileIncognitoBtn,
-body.workspace-active #topicDisclaimer{display:none!important}
+body.workspace-active #mobileIncognitoBtn{display:none!important}
 /* Admin console is a standalone operator page — none of the chat
    top-bar chrome applies (mode switch, model switcher, find, share,
    stats). !important because the chat runtime toggles .hidden off
@@ -186,9 +185,7 @@ body.admin-active #mobileIncognitoBtn,
 body.admin-active #topModelSwitcher,
 body.admin-active #findBtn,
 body.admin-active #shareBtn,
-body.admin-active #chatStats,
-body.admin-active #topicDisclaimer{display:none!important}
-:where(:root[data-chat-view-open]) .main-content:not(#_n):not(._n) #topicDisclaimer{display:none}
+body.admin-active #chatStats{display:none!important}
 /* P_hide-mode-switch-in-conversation — see the canonical rule in
    00-foundations.css. The attribute reflects the live conversation state, so
    the mode dropdown is hidden only while a conversation is active and

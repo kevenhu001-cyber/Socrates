@@ -38,12 +38,8 @@ const SOCRATES_ROLES = {
   sidebarItem: '#sidebar .sidebar-nav-btn',
   topbar: '.top-bar',
   heroTitle: '#topicSetup h1, .cg-hero-title, .topic-title',
-  /* The three landing shortcuts. Their container height doubles as the
-     home-surface dead-zone probe: when it collapses to 0 the landing page
-     loses ~410px of empty band under the composer, which is exactly the
-     regression that shipped unnoticed before 2026-10-04. */
-  homeQuickActions: '#homeQuickActions',
-  disclaimer: '#topicDisclaimer',
+  /* The landing shortcuts and the footer disclaimer were removed on
+     2026-11-16, so the dead-zone probe they carried went with them. */
   composer: '#composerInputWrap',
   /* P_composer-single collapsed #topicInputWrap / #chatInputWrap into a
      single #composerInputWrap shell (2026-09). The three selectors below
@@ -166,23 +162,6 @@ async function detectDefects(page) {
       }
     }
 
-    // 5. Home dead zone — the landing composer with no shortcut row under it.
-    // The three landing shortcuts (upload / write / research) are real
-    // entry points with live markup, i18n and ui/homeSurface.ts handlers.
-    // When their container is display:none the landing page keeps a ~410px
-    // empty band under the composer with nothing to do, which is how the
-    // row got hidden in the first place and stayed hidden.
-    if (document.body.dataset.conversationActive !== 'true') {
-      const wrap = document.querySelector('#composerInputWrap');
-      if (wrap && visible(wrap)) {
-        const quick = document.querySelector('#homeQuickActions');
-        const quickH = quick ? Math.round(quick.getBoundingClientRect().height) : 0;
-        const gap = Math.round(window.innerHeight - wrap.getBoundingClientRect().bottom);
-        if (quickH < 8 && gap > 240) {
-          defects.push({ kind: 'home-dead-zone', quickActionsHeight: quickH, gapBelowComposer: gap });
-        }
-      }
-    }
     return defects;
   });
 }
@@ -298,8 +277,6 @@ async function runSocrates(browser) {
 const GEOM_TOLERANCE_PX = 1;
 const GATE_FIELDS = {
   heroTitle: ['h', 'style.fontSize', 'style.lineHeight'],
-  homeQuickActions: ['h'],
-  disclaimer: ['h'],
   composer: ['w', 'h', 'style.borderRadius'],
   /* The composer's individual controls. composerPlus and composerSend were
    * both among the roles left pointing at retired ids, so they are gated

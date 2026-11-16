@@ -76,51 +76,10 @@ async function clearEditor(editor) {
 const chain = (page) => page.locator('[data-testid="question-chain"]');
 const nextQuestions = (page) => page.locator('[data-testid^="question-chain-next-"]');
 
-test('home learning modes: nothing selected in chat, choosing one switches to tutor without pre-filling copy', async ({ page }) => {
-  const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
-  await setupTutor(page, 1440);
-  const modes = page.locator('[data-testid="home-learning-modes"]');
-  await expect(modes).toBeVisible();
-  await expect(page.locator('[data-testid^="learning-mode-"][role="radio"]')).toHaveCount(5);
-  await expect(page.locator('[data-testid^="learning-mode-"][aria-checked="true"]')).toHaveCount(0);
-  /* Header Chat / Tutor switch is unchanged. */
-  await expect(page.locator('#topModeChat')).toBeVisible();
-
-  const editor = page.locator('#composerRoot .rich-composer-editor');
-  await page.locator('[data-testid="learning-mode-recall"]').click();
-  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');
-  await expect(page.locator('[data-testid="learning-mode-recall"]')).toHaveAttribute('aria-checked', 'true');
-  /* RN-6: no fixed request is pre-filled; the mode rides on the session's requests. */
-  await expect(editor).toHaveText('');
-  await expect(page.locator('[data-testid="learning-mode-hint"]')).toContainText('知识卡片');
-  const setup = page.locator('#topicSetup');
-  await shot(setup, 'home-mode-recall');
-
-  /* Arrow keys move focus only; selection (and its action) waits for Enter. */
-  await page.locator('[data-testid="learning-mode-recall"]').focus();
-  await page.keyboard.press('ArrowRight');
-  await expect(page.locator('[data-testid="learning-mode-connect"]')).toBeFocused();
-  await expect(page.locator('[data-testid="learning-mode-recall"]')).toHaveAttribute('aria-checked', 'true');
-
-  await page.locator('[data-testid="learning-mode-connect"]').click();
-  await expect(editor).toHaveText('');
-  await shot(setup, 'home-mode-connect');
-
-  await page.locator('[data-testid="learning-mode-diagnose"]').click();
-  await expect(editor).toHaveText('');
-  await shot(setup, 'home-mode-diagnose');
-
-  await clearEditor(editor);
-  await page.locator('[data-testid="learning-mode-think"]').click();
-  await expect(editor).toHaveText('');
-  await shot(setup, 'home-mode-think');
-
-  await page.locator('[data-testid="learning-mode-mistakes"]').click();
-  await expect(page.locator('#mistakesPanel')).toBeVisible();
-  await shot(page.locator('#appShell'), 'home-mode-mistakes');
-  expect(errors).toEqual([]);
-});
+/* The home learning-mode capsule spec lived here until 2026-11-16, when the
+   landing entries under the composer (including that capsule) were removed.
+   The capsule is still mounted next to the conversation composer
+   (#learningModeBar), and the conversation specs below cover it. */
 
 for (const width of [1440, 390]) {
   test(`question chain grows as the learner follows questions at ${width}px`, async ({ page }) => {
@@ -229,14 +188,4 @@ test('reduced motion: a new step joins the chain in place', async ({ page }) => 
   await expect(chain(page)).toHaveAttribute('data-steps', '2');
   const opacity = await page.locator('[data-testid="question-chain-current"]').evaluate((node) => getComputedStyle(node).opacity);
   expect(opacity).toBe('1');
-});
-
-test('home learning modes at 390px scroll sideways above the composer', async ({ page }) => {
-  await setupTutor(page, 390);
-  await page.locator('#topModeTutor').click();
-  const modes = page.locator('[data-testid="home-learning-modes"]');
-  await expect(modes).toBeVisible();
-  await page.locator('[data-testid="learning-mode-think"]').click();
-  await expect(page.locator('[data-testid="learning-mode-think"]')).toHaveAttribute('aria-checked', 'true');
-  await shot(page.locator('#topicSetup'), 'mobile-390-home-modes');
 });

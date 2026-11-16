@@ -45,12 +45,8 @@ for (const mode of ['dark', 'light']) {
     expect(composerBox.width).toBe(358);
     expect(composerBox.height).toBe(86);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
-    /* The desktop shortcut rail stays off the phone; the reference shows a
-       single suggestion line above the composer instead (emoji + one
-       muted, truncated line). */
-    await expect(page.locator('.home-quick-actions')).toBeHidden();
-    const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
-    await expect(suggestion).toHaveCount(0);
+    /* The landing shortcut rail and the phone suggestion line were removed
+       on 2026-11-16; the composer is the last thing on the landing now. */
     await expect(page.locator('#topicTitle')).toBeVisible();
     await assertNoOverflow(page);
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png` });
@@ -130,8 +126,9 @@ for (const mode of ['dark', 'light']) {
     // The phone cleanup must not remove desktop entry points.
     await page.setViewportSize({ width: 1440, height: 900 });
     await openNav(page, 'navNew');
-    await expect(page.locator('.home-quick-actions')).toBeVisible();
-    await expect(page.locator('#homeSuggestion')).toBeHidden();
+    /* The landing entries under the composer were removed on 2026-11-16;
+       going back to a new chat now lands on the greeting plus the composer. */
+    await expect(page.locator('#topicTitle')).toBeVisible();
     await page.evaluate(() => {
       if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar();
     });

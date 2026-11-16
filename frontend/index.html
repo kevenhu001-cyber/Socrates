@@ -315,26 +315,6 @@
         <div class="composer-input-wrap composer-shell" id="composerInputWrap"></div>
         </div>
 
-        <!-- Landing entries. Each one is a real entry point into an existing
-             composer capability, not a decorative copy of the reference page.
-             The previous AI-backed heuristic suggestions block
-             (id="homeSuggestionsWrap") was removed — those chips read as
-             noise on mobile and were the most-skipped UI on the landing
-             surface. -->
-        <!-- RN-4: five learning modes (packages/ui/src/think) as a capsule
-             segmented control; mounted by spec `home-learning-modes`. -->
-        <div class="home-learning-modes" id="homeLearningModes"></div>
-
-        <div class="home-quick-actions" id="homeQuickActions" aria-label="Quick actions" data-i18n-aria="chrome.quickActions"></div>
-
-        <!-- Phone chat landing: one suggestion line above the composer, like
-             the reference (emoji, one muted line, truncated). Reuses the
-             tutor starter copy; mounted by spec `home-suggestion`. -->
-        <div class="home-suggestion" id="homeSuggestion"></div>
-
-
-        <section class="home-tutor-starters" id="homeTutorStarters" aria-labelledby="homeTutorHeading"></section>
-
       </div>
 
       <!-- React-owned creation destinations. Their lazy roots mount when a
@@ -364,8 +344,6 @@
          #adminPanel when the route is active; the login form and the
          two config sections are rendered by React. -->
     <div class="admin-panel main-page hidden" id="adminPanel"></div>
-
-    <p class="disclaimer" id="topicDisclaimer"></p>
 
     </div>
 

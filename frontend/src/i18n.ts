@@ -60,10 +60,10 @@ export function setLang(lang: string){
   try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(e){reportSwallow(e, 'i18n.setLang.documentLang'); }
   try{localStorage.setItem("socrates-lang-app",lang)}catch(e){reportSwallow(e, 'i18n.setLang.persist'); }
   applyI18n();
-  /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub /
-     #topicDisclaimer using the current appMode. Without this call
-     the topic-setup copy could drift if anything else touched those
-     elements between mode-sync ticks. Cheap and idempotent. */
+  /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub using the
+     current appMode. Without this call the topic-setup copy could drift if
+     anything else touched those elements between mode-sync ticks. Cheap and
+     idempotent. */
   try{syncAppModeUI()}catch(e){reportSwallow(e, 'i18n.setLang.syncAppModeUI'); }
   /* Update language toggle active state. Only en + zh are supported;
      removing ja/ko from this iteration avoids keeping dead UI states
@@ -126,13 +126,9 @@ function updateTopicSetupCopy(){
   }
   const ts=document.getElementById("topicSub");
   if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
-  /* The "Socrates can make mistakes" line is gone from the product. Chat
-     mode shows no landing disclaimer at all; tutor mode keeps the Socratic
-     ethos line. The element is hidden rather than emptied so the desktop
-     footer slot does not keep an empty block. */
-  const disclaimer=appMode==="chat"?"":t("profile.disclaimerTutor");
-  const tdisc=document.getElementById("topicDisclaimer");
-  if(tdisc){tdisc.textContent=disclaimer;tdisc.style.display=disclaimer?"":"none";}
+  /* The landing disclaimer (#topicDisclaimer) was removed together with the
+     other under-composer entries on 2026-11-16; there is no footer line to
+     keep in sync any more. */
 }
 
 function refreshDynamicSurfaces(){

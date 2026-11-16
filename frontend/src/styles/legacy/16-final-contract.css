@@ -60,24 +60,9 @@
     padding-inline:8px;
     margin-bottom:18px;
   }
-  /* P_mobile-overlap — hide the disclaimer on mobile when ANY of these
-     is true:
-       ① the soft keyboard is open (data-keyboard-open on <html>),
-       ② the viewport is shorter than 700px (the disclaimer would
-         crowd the topic input even with the new top padding),
-       ③ the topic input is focused (so the disclaimer doesn't sit
-         between the input and the keyboard as it animates).
-     visibility (not display) keeps the layout box: display:none would
-     reflow the flex-end landing mid-lift and teleport the composer by
-     the disclaimer height in one frame. */
-  :root[data-keyboard-open="true"] #topicDisclaimer,
-  :root[data-keyboard-phase="opening"] #topicDisclaimer,
-  :root[data-keyboard-phase="open"] #topicDisclaimer,
-  :root[data-keyboard-phase="closing"] #topicDisclaimer{visibility:hidden}
-  :root[data-topic-input-focus]:not(#_n) #topicDisclaimer{visibility:hidden}
-  @media(max-height:700px){
-    #topicDisclaimer{visibility:hidden}
-  }
+  /* The mobile disclaimer overlap rules were removed together with
+     #topicDisclaimer on 2026-11-16; the landing has no footer line to
+     cover the composer any more. */
 
   /* One flex item owns the entire mobile composer body. The editor and
      footer use explicit grid tracks rather than changing flex-basis/order;

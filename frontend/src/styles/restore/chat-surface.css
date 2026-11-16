@@ -123,8 +123,7 @@ body,
 
 #appShell#appShell #topicSetup .topic-sub,
 #appShell#appShell #topicSetup .mobile-starter-prompts,
-#appShell#appShell #topicSetup .cg-history,
-#appShell#appShell #topicSetup #topicDisclaimer {
+#appShell#appShell #topicSetup .cg-history {
   display: none !important;
 }
 

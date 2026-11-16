@@ -299,17 +299,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 }
 
-/* Footer disclaimer — the reference paints the legal line at #afafaf on the
-   black page (it sits two steps quieter than body text, not three). The
-   body:not() prefix mirrors the home-state rule in chatgpt-parity.css so
-   this wins that specificity tie. */
-[data-mode="dark"] #appShell#appShell#appShell #topicDisclaimer,
-[data-mode="dark"] body:not([data-conversation-active="true"]):not(.workspace-active)
-  #appShell#appShell#appShell
-  #topicDisclaimer {
-  color: #afafaf !important;
-}
-
 /* Light needs no override: --ui-text-muted is #737373 (≈9:1 on the white
    page), so the 14px legal line clears AA from the shared token. Do not
    re-pin this to a literal here — it would drift from the rest of the

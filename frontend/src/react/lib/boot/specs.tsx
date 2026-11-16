@@ -137,30 +137,10 @@ export function mountRegistryList(): MountSpec[] {
         mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
       });
     } },
-    /* The landing entries below load in stages. The hero is on the
-       first-paint path and mounts with it; the quick-action rail, the phone
-       suggestion and the tutor starters follow in the same React chunk, so
-       they arrive together once the hero is on screen. */
-    { hostId: 'homeQuickActions', label: 'home-quick-actions', mount: (host) => {
-      return import('../../home/HomeStartComponents').then(({ HomeQuickActions }) => {
-        mountOwnedRoot(host, 'home-quick-actions', <HomeQuickActions host={host} />);
-      });
-    } },
-    { hostId: 'homeSuggestion', label: 'home-suggestion', mount: (host) => import('../../home/HomeStartComponents').then(({ HomeSuggestion }) => mountOwnedRoot(host, 'home-suggestion', <HomeSuggestion />)) },
-    { hostId: 'homeTutorStarters', label: 'home-tutor-starters', mount: (host) => {
-      return import('../../home/HomeStartComponents').then(({ HomeTutorStarters }) => {
-        mountOwnedRoot(host, 'home-tutor-starters', <HomeTutorStarters />);
-      });
-    } },
-    /* RN-4 — learning modes (packages/ui/src/think): the segmented control
-       under the landing composer and the capsule menu by the conversation
-       composer. */
-    { hostId: 'homeLearningModes', label: 'home-learning-modes', mount: (host) => {
-      /* Not first-paint: let the composer's chunk load and mount first. */
-      return whenIdle().then(() => import('../../home/HomeLearningModes')).then(({ HomeLearningModes }) => {
-        mountOwnedRoot(host, 'home-learning-modes', <HomeLearningModes />);
-      });
-    } },
+    /* The landing entries below the composer (chat shortcuts, learning-mode
+       capsule, tutor starters) were removed on 2026-11-16: the landing is
+       the greeting plus the composer, nothing else. Their specs are gone
+       with the host nodes in index.html. */
     { hostId: 'learningModeBar', label: 'learning-mode-bar', mount: (host) => {
       return whenIdle().then(() => import('../../tutor/QuestionChainRoot')).then(({ SessionLearningModes }) => {
         mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
