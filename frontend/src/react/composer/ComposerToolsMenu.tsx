@@ -106,22 +106,30 @@ function ComposerToolsMenu() {
   }, [snapshot.isOpen, snapshot.triggerId]);
 
   return (
-    <div
-      id={MENU_ID}
-      ref={menuRef}
-      className={`composer-tools-menu${snapshot.isOpen ? '' : ' hidden'}`}
-      role="menu"
-      aria-label="Composer tools"
-      aria-hidden={!snapshot.isOpen}
-      data-mode={snapshot.mode ?? undefined}
-    >
-      <ComposerToolMenuItems
-        activeKey={activeKey}
-        onPick={pick}
-        isOpen={snapshot.isOpen}
-        mode={snapshot.mode}
+    <>
+      <div
+        className={`composer-tools-backdrop${snapshot.isOpen ? ' is-open' : ''}`}
+        onClick={closeComposerTools}
+        aria-hidden="true"
       />
-    </div>
+      <div
+        id={MENU_ID}
+        ref={menuRef}
+        className={`composer-tools-menu${snapshot.isOpen ? '' : ' hidden'}`}
+        role="menu"
+        aria-label="Composer tools"
+        aria-hidden={!snapshot.isOpen}
+        data-mode={snapshot.mode ?? undefined}
+      >
+        <div className="composer-tools-sheet-handle" aria-hidden="true" />
+        <ComposerToolMenuItems
+          activeKey={activeKey}
+          onPick={pick}
+          isOpen={snapshot.isOpen}
+          mode={snapshot.mode}
+        />
+      </div>
+    </>
   );
 }
 

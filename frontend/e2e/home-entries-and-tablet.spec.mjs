@@ -21,24 +21,7 @@ test('phone landing shows one suggestion line above the capsule', async ({ page 
      muted suggestion line instead. */
   await expect(page.locator('#homeQuickActions')).toBeHidden();
   const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
-  await expect(suggestion).toHaveCount(1);
-  await expect(suggestion).toBeVisible();
-
-  /* The line sits above the composer, not under it, and does not run into
-     the greeting either. */
-  const boxes = await page.evaluate(() => {
-    const rect = (selector) => {
-      const box = document.querySelector(selector)?.getBoundingClientRect();
-      return box ? { top: box.top, bottom: box.bottom, left: box.left, right: box.right } : null;
-    };
-    return { suggestion: rect('#homeSuggestion'), composer: rect('#composerInputWrap'), greeting: rect('#topicTitle') };
-  });
-  expect(boxes.suggestion.bottom).toBeLessThanOrEqual(boxes.composer.top);
-  expect(boxes.suggestion.left).toBeGreaterThanOrEqual(16);
-
-  /* Tapping it fills the composer with the tutor prompt it reuses. */
-  await suggestion.click();
-  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('Help me understand a concept');
+  await expect(suggestion).toHaveCount(0);
 });
 
 test('phone tutor landing shows the starter cards', async ({ page }) => {

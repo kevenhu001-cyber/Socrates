@@ -118,16 +118,7 @@ export function HomeQuickActions({ host }: { host: HTMLElement }) {
 const SUGGESTION = { prompt: 'understand', icon: 'assistant' } as const;
 
 export function HomeSuggestion() {
-  useLocaleRefresh();
-  const text = i18n(`home.tutor.${SUGGESTION.prompt}.prompt`, '');
-  if (!text) return null;
-  return (
-    <Button type="button" className="home-suggestion-item" data-testid="home-suggestion"
-      onClick={() => applyTutorPrompt(SUGGESTION.prompt)}>
-      <Icon name={SUGGESTION.icon} size={22} className="home-suggestion-icon" aria-hidden="true" />
-      <span className="home-suggestion-text">{text}</span>
-    </Button>
-  );
+  return null;
 }
 
 export function HomeTutorStarters() {

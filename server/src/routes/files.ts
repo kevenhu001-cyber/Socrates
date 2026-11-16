@@ -17,6 +17,7 @@ import {
   DOCUMENT_FILE_EXTENSIONS,
   LEGACY_OFFICE_EXTENSIONS,
   MEDIA_FILE_EXTENSIONS,
+  IMAGE_FILE_EXTENSIONS,
   TEXTUAL_APPLICATION_MIMES,
   formatBytes,
   isTextReadable,
@@ -113,7 +114,8 @@ const upload = multer({
       const known = TEXT_FILE_EXTENSIONS.has(ext)
         || DOCUMENT_FILE_EXTENSIONS.has(ext)
         || LEGACY_OFFICE_EXTENSIONS.has(ext)
-        || MEDIA_FILE_EXTENSIONS.has(ext);
+        || MEDIA_FILE_EXTENSIONS.has(ext)
+        || IMAGE_FILE_EXTENSIONS.has(ext);
       if (known) {
         cb(null, true);
         return;
@@ -315,7 +317,10 @@ router.post('/', uploadLimiter, async (req, res, next) => {
     const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
     try {
       await fs.chmod(uploadPath, 0o600);
-      await assertSafeContent(uploadPath, String(file.mimetype || ''), String(file.originalname || ''));
+      const verifiedMime = await assertSafeContent(uploadPath, String(file.mimetype || ''), String(file.originalname || ''));
+      if (verifiedMime && verifiedMime !== file.mimetype) {
+        file.mimetype = verifiedMime;
+      }
     } catch (sigErr) {
       await fs.unlink(uploadPath).catch(() => {});
       throw sigErr;
@@ -329,14 +334,14 @@ router.post('/', uploadLimiter, async (req, res, next) => {
        an upload to somebody else's session (or poison the link). */
     let sessionId: string | null = null;
     const rawSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
-    if (rawSessionId) {
-      if (!isUuid(rawSessionId)) throw new BadRequest('sessionId must be a uuid');
+    if (rawSessionId && isUuid(rawSessionId)) {
       const db = getDb();
       const [owned] = await db.select({ id: sessions.id }).from(sessions)
         .where(and(eq(sessions.id, rawSessionId), eq(sessions.userId, req.userId!)))
         .limit(1);
-      if (!owned) throw new BadRequest('sessionId does not reference one of your sessions');
-      sessionId = rawSessionId;
+      if (owned) {
+        sessionId = rawSessionId;
+      }
     }
 
     const db = getDb();
@@ -403,22 +408,38 @@ router.get('/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+function sniffImageMime(head: string): string | null {
+  if (head.startsWith('\u0089PNG')) return 'image/png';
+  if (head.startsWith('\u00ff\u00d8\u00ff')) return 'image/jpeg';
+  if (head.startsWith('GIF87a') || head.startsWith('GIF89a')) return 'image/gif';
+  if (head.startsWith('RIFF') && head.slice(8, 12) === 'WEBP') return 'image/webp';
+  if (head.startsWith('BM')) return 'image/bmp';
+  if (head.slice(4, 8) === 'ftyp') {
+    const brand = head.slice(8, 12);
+    if (brand.includes('avif') || brand.includes('avis')) return 'image/avif';
+    return 'image/heic';
+  }
+  return null;
+}
+
 /* Reject active content masquerading as an allowed binary type, without
  * breaking text/code uploads (which have no magic bytes). Reads only the
  * head of the file. Throws BadRequest on mismatch. */
-async function assertSafeContent(storagePath: string, mime: string, originalName: string): Promise<void> {
+async function assertSafeContent(storagePath: string, mime: string, originalName: string): Promise<string> {
   const m = String(mime || '').toLowerCase();
-  const needsCheck = m.startsWith('image/') || m === 'application/pdf'
+  const ext = path.extname(String(originalName || '')).toLowerCase();
+  const isImageMimeOrExt = m.startsWith('image/') || IMAGE_FILE_EXTENSIONS.has(ext);
+  const needsCheck = isImageMimeOrExt || m === 'application/pdf'
     || m === 'application/octet-stream' || m === 'binary/octet-stream' || !m
     || m.startsWith('video/') || m.startsWith('audio/')
     || m === 'application/msword' || m === 'application/vnd.ms-excel'
     || m.startsWith('application/vnd.oasis.opendocument');
-  if (!needsCheck) return;
+  if (!needsCheck) return m;
   let head = '';
   try {
     head = (await readHead(storagePath, 4096)).toString('latin1');
   } catch {
-    return;
+    return m;
   }
   const trimmed = head.replace(/^[\u0000-\u0020]*/, '').slice(0, 512).toLowerCase();
   // Active content signatures are never valid file bytes for our allow-list.
@@ -437,14 +458,14 @@ async function assertSafeContent(storagePath: string, mime: string, originalName
   if (m === 'application/pdf' && !head.startsWith('%PDF')) {
     throw new BadRequest('Unsupported file type: content does not match application/pdf');
   }
-  if (m === 'image/png' && !head.startsWith('\u0089PNG')) {
-    throw new BadRequest('Unsupported file type: content does not match image/png');
-  }
-  if ((m === 'image/jpeg') && !(head.startsWith('\u00ff\u00d8\u00ff'))) {
-    throw new BadRequest('Unsupported file type: content does not match image/jpeg');
-  }
-  if (m === 'image/gif' && !(head.startsWith('GIF87a') || head.startsWith('GIF89a'))) {
-    throw new BadRequest('Unsupported file type: content does not match image/gif');
+  if (isImageMimeOrExt) {
+    const detected = sniffImageMime(head);
+    if (detected) {
+      return detected;
+    }
+    if (m === 'image/png') throw new BadRequest('Unsupported file type: content does not match image/png');
+    if (m === 'image/jpeg' || m === 'image/jpg') throw new BadRequest('Unsupported file type: content does not match image/jpeg');
+    if (m === 'image/gif') throw new BadRequest('Unsupported file type: content does not match image/gif');
   }
   /* Office binaries: OLE compound magic (D0 CF 11 E0) for legacy
      .doc/.xls; ZIP magic (PK) for OpenDocument containers. */
@@ -455,6 +476,7 @@ async function assertSafeContent(storagePath: string, mime: string, originalName
   if (m.startsWith('application/vnd.oasis.opendocument') && !head.startsWith('PK')) {
     throw new BadRequest(`Unsupported file type: content does not match ${m}`);
   }
+  return m;
 }
 
 /* PATCH /api/files/:id — rename file */

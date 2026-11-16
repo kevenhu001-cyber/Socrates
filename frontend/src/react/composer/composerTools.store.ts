@@ -38,10 +38,10 @@ export function useIsComposerToolsOpen(): boolean {
 
 function openMobileAttachmentPicker(
   mode: ComposerMode | null,
-  kind: 'camera' | 'photos' | 'upload',
+  kind: 'camera' | 'photos' | 'upload' | 'wechatFiles',
 ): void {
   const composer = getLegacyActions().composer;
-  if (kind !== 'upload' && composer.openMediaPicker) {
+  if (kind !== 'upload' && kind !== 'wechatFiles' && composer.openMediaPicker) {
     composer.openMediaPicker(kind);
     return;
   }
@@ -66,8 +66,8 @@ const COMPOSER_ACTION_HANDLERS: Partial<Record<ComposerToolsAction, ComposerActi
 
 function isMobileAttachmentAction(
   action: ComposerToolsAction,
-): action is 'camera' | 'photos' | 'upload' {
-  return action === 'camera' || action === 'photos' || action === 'upload';
+): action is 'camera' | 'photos' | 'upload' | 'wechatFiles' {
+  return action === 'camera' || action === 'photos' || action === 'upload' || action === 'wechatFiles';
 }
 
 function startImageCreation(actions: LegacyActionContext): void {

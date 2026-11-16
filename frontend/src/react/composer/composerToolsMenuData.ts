@@ -28,6 +28,38 @@ export const MOBILE_MENU_ITEMS: ReadonlyArray<{
   },
 ];
 
+export const MOBILE_TILES: ReadonlyArray<{
+  action: 'camera' | 'photos' | 'upload' | 'wechatFiles';
+  labelKey: string;
+  label: string;
+  iconName: 'camera' | 'image' | 'upload' | 'wechat';
+}> = [
+  {
+    action: 'camera',
+    labelKey: 'composer.tools.camera',
+    label: '拍照',
+    iconName: 'camera',
+  },
+  {
+    action: 'photos',
+    labelKey: 'composer.tools.photos',
+    label: '照片',
+    iconName: 'image',
+  },
+  {
+    action: 'upload',
+    labelKey: 'composer.tools.localFiles',
+    label: '本地文件',
+    iconName: 'upload',
+  },
+  {
+    action: 'wechatFiles',
+    labelKey: 'composer.tools.wechatFiles',
+    label: '微信文件',
+    iconName: 'wechat',
+  },
+];
+
 export const TOOL_GROUPS: ReadonlyArray<{
   key: string;
   labelKey: string;

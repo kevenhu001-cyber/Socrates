@@ -35,8 +35,8 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
      first (camera, photos, upload, createImage), then search, then the
      remaining workflows. */
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'createImage', 'webSearch', 'explore', 'deepResearch',
-    'write', 'analyze', 'createSite', 'exam', 'skills', 'extensiveThinking',
+    'camera', 'photos', 'upload', 'wechatFiles', 'managePlugins', 'skills', 'webSearch',
+    'createImage', 'explore', 'deepResearch', 'write', 'analyze', 'createSite', 'exam', 'extensiveThinking',
   ]);
 });
 
@@ -199,17 +199,14 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   expect(mobileMenuStyle.background).not.toBe('rgba(0, 0, 0, 0)');
   expect(mobileMenuStyle.border).toBe('1px');
   expect(mobileMenuStyle.shadow).not.toBe('none');
-  expect(mobileMenuStyle.radius).toBe('12px');
+  expect(mobileMenuStyle.radius).toBe('20px');
   await menu.evaluate((element) => Promise.all(element.getAnimations().map((a) => a.finished)));
   const sheetBox = await menu.boundingBox();
-  const frameBox = await page.locator('[data-composer-frame]').boundingBox();
-  const triggerBox = await plus.boundingBox();
-  // The phone popover shares the input frame's width and leaves its rail
-  // visible so the same plus button can dismiss it.
-  expect(Math.abs(sheetBox.x - frameBox.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(sheetBox.width - frameBox.width)).toBeLessThanOrEqual(1);
-  expect(Math.abs(sheetBox.y + sheetBox.height - (triggerBox.y - 8))).toBeLessThanOrEqual(1);
-  expect(sheetBox.y).toBeGreaterThanOrEqual(15);
+  // The phone menu is a bottom sheet matching mobile reference 1000038600.jpg:
+  // spans the full width and pins to the bottom of the viewport.
+  expect(Math.round(sheetBox.x)).toBe(0);
+  expect(Math.round(sheetBox.width)).toBe(390);
+  expect(Math.round(sheetBox.y + sheetBox.height)).toBe(844);
   await expect(page.locator('body')).toHaveClass(/composer-tools-open/);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu-mobile.png',

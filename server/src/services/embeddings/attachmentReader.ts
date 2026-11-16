@@ -109,6 +109,7 @@ export const TEXT_FILE_EXTENSIONS = new Set([
 export const DOCUMENT_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']);
 export const LEGACY_OFFICE_EXTENSIONS = new Set(['.doc', '.xls', '.ppt']);
 export const MEDIA_FILE_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac']);
+export const IMAGE_FILE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif', '.heic', '.ico']);
 
 /* application/* types that are really plain text inside. Office XML
    containers are NOT here — they are zip files handled by the parsers. */

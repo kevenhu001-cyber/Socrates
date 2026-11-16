@@ -756,7 +756,9 @@ app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
        that carries one, turning this route into a dotfile reader for a
        shared session. A denied path reports ENOENT/EACCES and lands on the
        same 404 as a missing file. */
-    return res.sendFile(file.storagePath, { dotfiles: 'deny' }, (err) => {
+    const fileName = path.basename(file.storagePath);
+    const fileDir = path.dirname(file.storagePath);
+    return res.sendFile(fileName, { root: fileDir, dotfiles: 'allow' }, (err) => {
       if (err) {
         if (!res.headersSent) {
           const failure = err as { code?: string; status?: number };

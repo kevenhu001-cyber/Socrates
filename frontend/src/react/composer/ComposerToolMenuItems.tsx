@@ -1,16 +1,18 @@
 import { useEffect, useReducer } from 'react';
 
 import { ComposerPluginItems } from './ComposerPluginItems';
-import { MenuItem, MobileMenuItem } from './ComposerToolItems';
+import { MenuItem, MobileTileItem, MobileToolRow } from './ComposerToolItems';
 import {
   i18n,
+  menuCopy,
   MOBILE_GROUP_ORDER,
-  MOBILE_MENU_ITEMS,
   MOBILE_THINKING_SPEC,
+  MOBILE_TILES,
   TOOL_GROUPS,
   toolDefinitions,
   type MenuItemSpec,
 } from './composerToolsMenuData';
+import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 import type { ComposerToolsAction } from './types';
 
 export function ComposerToolMenuItems({
@@ -38,14 +40,13 @@ export function ComposerToolMenuItems({
     label: i18n(group.labelKey, group.label),
     tools: findTools(group.actions),
   }));
-  const mobileGroupTools = MOBILE_GROUP_ORDER.map((group) => ({
-    ...group,
-    label: i18n(group.labelKey, group.label),
-    tools: [
-      ...findTools(group.actions),
-      ...(group.key === 'workflows' ? [MOBILE_THINKING_SPEC] : []),
-    ],
-  }));
+
+  const excludedMobileKeys = new Set(['upload', 'webSearch', 'skills']);
+  const allMobileTools = [
+    ...findTools(MOBILE_GROUP_ORDER.flatMap((g) => g.actions)),
+    MOBILE_THINKING_SPEC,
+  ];
+  const remainingMobileTools = allMobileTools.filter((spec) => !excludedMobileKeys.has(spec.key));
 
   return (
     <>
@@ -60,23 +61,61 @@ export function ComposerToolMenuItems({
         ) : null)}
       </div>
       <div className="composer-tools-mobile-items">
-        {mobileGroupTools.map((group) => {
-          const staticItems = group.key === 'context'
-            ? MOBILE_MENU_ITEMS.filter((item) => item.action === 'camera' || item.action === 'photos')
-            : [];
-          if (!staticItems.length && !group.tools.length) return null;
-          return (
-            <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
-              <div className="composer-tools-group-label">{group.label}</div>
-              {staticItems.map((item) => (
-                <MobileMenuItem key={item.action} {...item} active={item.action === activeKey} onPick={onPick} />
-              ))}
-              {group.tools.map((spec) => (
-                <MenuItem key={spec.key} spec={spec} active={spec.key === activeKey} onPick={onPick} />
-              ))}
-            </div>
-          );
-        })}
+        <div className="composer-tools-group-label">{i18n('composer.tools.group.context', 'Add context')}</div>
+        {/* 4-Tile Grid: 拍照, 照片, 本地文件, 微信文件 */}
+        <div className="composer-tools-tiles">
+          {MOBILE_TILES.map((tile) => (
+            <MobileTileItem
+              key={tile.action}
+              action={tile.action}
+              labelKey={tile.labelKey}
+              label={tile.label}
+              iconName={tile.iconName}
+              onPick={onPick}
+            />
+          ))}
+        </div>
+        {/* Mobile Rows List: 插件, 技能, 联网搜索, and workflows */}
+        <div className="composer-tools-mobile-list">
+          <MobileToolRow
+            action="managePlugins"
+            iconHtml={interfaceIcon('plug', 22)}
+            title={i18n('composer.tools.plugins', '插件')}
+            subtitle={i18n('composer.tools.plugins.desc', '接入 App 和数据库，帮你自动操作')}
+            onPick={onPick}
+          />
+          <MobileToolRow
+            action="skills"
+            iconHtml={interfaceIcon('skillsBadge', 22)}
+            title={i18n('extensions.skills.name', '技能')}
+            subtitle={i18n('composer.tools.skills.desc', '复用专业能力，稳定处理特定任务')}
+            onPick={onPick}
+          />
+          <MobileToolRow
+            action="webSearch"
+            iconHtml={interfaceIcon('globe', 22)}
+            title={i18n('composer.tools.webSearch', '联网搜索')}
+            rightText={i18n('composer.tools.webSearch.auto', '自动')}
+            active={activeKey === 'webSearch'}
+            isToggle={true}
+            onPick={onPick}
+          />
+          {remainingMobileTools.map((spec) => {
+            const { label, description } = menuCopy(spec);
+            return (
+              <MobileToolRow
+                key={spec.key}
+                action={spec.key as ComposerToolsAction}
+                iconHtml={spec.icon}
+                title={label}
+                subtitle={description}
+                active={spec.key === activeKey}
+                isToggle={spec.kind === 'toggle'}
+                onPick={onPick}
+              />
+            );
+          })}
+        </div>
       </div>
       <ComposerPluginItems isOpen={isOpen} mode={mode} onPick={onPick} />
     </>

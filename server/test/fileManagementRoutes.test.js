@@ -93,4 +93,16 @@ test('uploads reject absent or active-content files and accept safe text; extrac
   assert.equal(brokenDoc.body.ok, false);
   assert.equal(brokenDoc.body.kind, 'docx');
   assert.ok(brokenDoc.body.errorCode);
+
+  // JPEG magic bytes (FF D8 FF E0) uploaded under image/png or octet-stream
+  const jpegBytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+  const jpegWithPngMime = await multipart(endpoint, f.owner, jpegBytes, 'photo.png', 'image/png');
+  assert.equal(jpegWithPngMime.status, 201);
+  assert.equal(jpegWithPngMime.body.kind, 'image');
+
+  // Octet-stream with image extension
+  const octetImg = await multipart(endpoint, f.owner, jpegBytes, 'photo.jpg', 'application/octet-stream');
+  assert.equal(octetImg.status, 201);
+  assert.equal(octetImg.body.kind, 'image');
 });
+

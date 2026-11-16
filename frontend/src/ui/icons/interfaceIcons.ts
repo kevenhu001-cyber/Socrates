@@ -79,6 +79,17 @@ const GLYPHS = {
   read: [...DOCUMENT, path('M8.5 13.5h7M8.5 17h4')],
   code: [path('m8 8-4 4 4 4m8-8 4 4-4 4M14 5l-4 14')],
   agent: [rect(4, 7, 16, 13, 5), path('M12 7V3.5M2 13.5h2M20 13.5h2'), path('M8.5 11.5v2M15.5 11.5v2'), path('M9 16h6')],
+  upload: [rect(4, 4, 16, 16, 3), path('M12 16V8m-3.5 3.5 3.5-3.5 3.5 3.5')],
+  wechat: [
+    path('M10 5.5C6.4 5.5 3.5 7.9 3.5 10.8c0 1.6.8 3 2.1 4l-.6 2.2 2.5-1.2c.8.3 1.6.4 2.5.4 3.6 0 6.5-2.4 6.5-5.4S13.6 5.5 10 5.5Z'),
+    circle(8, 10, 0.9),
+    circle(12, 10, 0.9),
+    path('M16 11.5c-2.8 0-5 1.8-5 4 0 1.2.6 2.3 1.6 3l-.5 1.7 1.9-.9c.6.2 1.3.3 2 .3 2.8 0 5-1.8 5-4s-2.2-4.1-5-4.1Z'),
+    circle(14.5, 15, 0.8),
+    circle(17.5, 15, 0.8),
+  ],
+  plug: [path('m19 5-3-3m-6 6L7.5 5.5M12 12l2.5 2.5M6 18l3-3m-1-4 5.5-5.5a2.5 2.5 0 0 1 3.5 3.5L8.5 14a2.5 2.5 0 0 1-3.5-3.5Z')],
+  skillsBadge: [rect(5, 3.5, 14, 17, 3), path('M8.5 14c1.2-2 2.3-2 3.5 0s2.3 2 3.5 0'), circle(12, 8.5, 1.5)],
 } satisfies Record<string, readonly IconShape[]>;
 
 export type InterfaceIconName = keyof typeof GLYPHS;

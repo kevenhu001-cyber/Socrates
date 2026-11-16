@@ -50,14 +50,7 @@ for (const mode of ['dark', 'light']) {
        muted, truncated line). */
     await expect(page.locator('.home-quick-actions')).toBeHidden();
     const suggestion = page.locator('#homeSuggestion [data-testid="home-suggestion"]');
-    await expect(suggestion).toHaveCount(1);
-    await expect(suggestion).toBeVisible();
-    const suggestionBox = await suggestion.boundingBox();
-    expect(suggestionBox.y + suggestionBox.height).toBeLessThanOrEqual(composerBox.y);
-    expect(await suggestion.locator('.home-suggestion-text').evaluate(el => {
-      const css = getComputedStyle(el);
-      return { whiteSpace: css.whiteSpace, overflow: css.textOverflow, clipped: el.scrollWidth > el.clientWidth };
-    })).toEqual({ whiteSpace: 'nowrap', overflow: 'ellipsis', clipped: true });
+    await expect(suggestion).toHaveCount(0);
     await expect(page.locator('#topicTitle')).toBeVisible();
     await assertNoOverflow(page);
     await page.screenshot({ path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png` });

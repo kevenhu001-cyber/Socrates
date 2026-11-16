@@ -15,6 +15,7 @@ export type ComposerToolsAction =
   | 'camera'
   | 'photos'
   | 'upload'
+  | 'wechatFiles'
   | 'createImage'
   | 'webSearch'
   | 'write'
