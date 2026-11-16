@@ -45,6 +45,7 @@ const PROMPT_FILES = [
   'prompts/teacher-mode.md',
   'prompts/beagle.md',
   'prompts/code-interpreter.md',
+  'prompts/learning-modes.md',
   /* client-loaded prompts and the modules that compose them */
   'frontend/src/prompts/socratic.ts',
   'frontend/src/chat/socraticDirectives.ts',
@@ -53,6 +54,11 @@ const PROMPT_FILES = [
   'frontend/src/chat/promptSuffixes.ts',
   'frontend/src/chat/lang.ts',
   'frontend/src/chat/turnController.ts',
+  'frontend/src/chat/turnPrompt.ts',
+  'frontend/src/chat/templateSystemPrompt.ts',
+  'frontend/src/chat/diagnosticGenerator.ts',
+  'frontend/src/chat/sessionTitle.ts',
+  'frontend/src/exam/generation.ts',
   'frontend/src/tutor/flow.ts',
   'frontend/src/tutor/policy.ts',
   'frontend/src/config/tonePresets.ts',
@@ -69,6 +75,7 @@ const USER_FACING_FALLBACK_LINE_HINTS = [
   /* turnController error fallbacks (not injected into the LLM) */
   /no model is configured/,
   /you appear to be offline/i,
+  /_examUiL\(/,
 ];
 
 function stripBlockComments(src) {

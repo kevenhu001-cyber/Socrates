@@ -126,19 +126,20 @@ function buildQuestionPrompt({ topic, difficulty, questionType, lang, index, tot
   const previous = previousTexts.length
     ? "Already generated:\n" + previousTexts.map((text: string, previousIndex: number) => (previousIndex + 1) + ". " + text).join("\n")
     : "This is the first question.";
+  const targetLang = lang === "zh" ? "Chinese" : lang === "en" ? "English" : lang;
   return "Generate ONE exam question as a JSON object.\n" +
     "Topic: " + topic + ".\n" +
     "Difficulty: " + difficulty + ".\n" +
     "Question type: " + questionType + ".\n" +
-    "Language: " + lang + ".\n" +
+    "Language: " + targetLang + ".\n" +
     "This is question " + (index + 1) + " of " + total + ".\n" +
-    "CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in " + lang + ".\n" +
-    "Return ONLY the JSON — no markdown, no preamble, no commentary.\n" +
+    "CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in " + targetLang + ".\n" +
+    "Return ONLY valid JSON without Markdown code fences, preamble, or commentary.\n" +
     "The question object must have: q (string), type (\"" + questionType + "\").\n" +
     "For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n" +
     "For fill-blank add answers:[string] (acceptable fills).\n" +
     "For short-answer add answer (key facts).\n" +
-    "Always add explanation (string). Use Markdown + $LaTeX$ proactively in q text, every mathematical option text, and explanation. Keep option letters and JSON keys unchanged; escape LaTeX backslashes for JSON.\n\n" +
+    "Always add explanation (string). Use Markdown + $LaTeX$ proactively in q text, every mathematical option text, and explanation. Keep option letters and JSON keys unchanged. Escape LaTeX backslashes with double backslashes in JSON (for example, \\\\frac{1}{2} or \\\\alpha, never bare \\frac).\n\n" +
     (instructions ? "Specifics: " + instructions + "\n" : "") +
     "Previously generated questions (DO NOT repeat the same topic angle):\n" + previous;
 }
@@ -188,13 +189,13 @@ async function generateExamQuestion(context: QuestionContext, index: number, pre
 
   if (!response.text || !response.text.trim()) {
     const reason = (response.error && (response.error as Error).message) || stateStore.read("lastCallError") || _examUiL("no response", "模型无响应");
-    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Failed", "生成失败"), _examUiL("Generation failed — no response", "生成失败：模型无响应"), String(reason));
+    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Failed", "生成失败"), _examUiL("Generation failed: no response", "生成失败：模型无响应"), String(reason));
     return { status: stopped ? "stopped" : "skipped" };
   }
 
   const question = parseSingleExamQuestion(response.text);
   if (!question) {
-    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Parse failed", "解析失败"), _examUiL("Parse failed — unexpected format", "解析失败：模型返回格式异常"), _examUiL("Try again or switch model", "请重试或更换模型"));
+    const stopped = await skipFailedQuestion(index, context.total, _examUiL("Parse failed", "解析失败"), _examUiL("Parse failed: unexpected format", "解析失败：模型返回格式异常"), _examUiL("Try again or switch model", "请重试或更换模型"));
     return { status: stopped ? "stopped" : "skipped" };
   }
   return { status: "ready", question };
@@ -217,7 +218,7 @@ async function generateAllQuestions(topic: string, count: number, difficulty: st
   restoreExamActiveProvider();
   if (stateStore.read("examCancel")) return;
   if (questions.length === 0) {
-    failExamGeneration(_examUiL("Generation failed — no questions", "生成失败：没有成功生成任何题目"));
+    failExamGeneration(_examUiL("Generation failed: no questions", "生成失败：没有成功生成任何题目"));
     return;
   }
   dispatchExam({ type: 'exam/patch', patch: {

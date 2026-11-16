@@ -49,7 +49,7 @@ function cleanTitle(value: unknown): string {
   return stripHtmlTags(text)
     .replace(/^\s*(?:Title|标题)\s*[:：-]\s*/i, '')
     .trim()
-    .replace(/^[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·—:"'\u201c\u201d\u2018\u2019「」『』]+$/g, '');
+    .replace(/^[\s\-•·\u2014:"'\u201c\u201d\u2018\u2019「」『』]+|[\s\-•·\u2014:"'\u201c\u201d\u2018\u2019「」『』]+$/g, '');
 }
 
 function compactTitle(value: unknown): string {
@@ -113,7 +113,7 @@ function createTitlePrompt(topic: string): { prompt: string; sysContent: string 
     return {
       prompt: "基于用户的第一条消息，生成一个简短的中文陈述式标题（3-8个字），"+
         "概括会话内容。示例：「探索量子计算」、「理解机器学习基础」、「学会更优写作」。\n"+
-        "不要使用问句或标签 — 必须是一个陈述。只输出标题本身，不要引号，不要多余文字。\n\n"+
+        "不要使用问句或标签，必须是一个简短陈述句。只输出标题本身，不要引号，不要多余文字。\n\n"+
         topic.slice(0, 300),
       sysContent: "不要输出<think>思考块、内部推理或思维链。直接输出最终的标题，纯文字，无前缀。",
     };
@@ -123,7 +123,7 @@ function createTitlePrompt(topic: string): { prompt: string; sysContent: string 
       "declarative title (3-6 words, at most 48 characters) in a statement tone that names what the "+
       "session is about. Examples: \"Exploring quantum computing\", "+
       "\"Understanding machine learning basics\", \"Writing better essays\". "+
-      "Do NOT use a question or a label — it must read as a statement. "+
+      "Do NOT use a question or a label; it must read as a statement. "+
       "Output ONLY the title, no quotes, no extra text.\n\n"+topic.slice(0,300),
     sysContent: "Do NOT output <think>...</think> blocks, internal reasoning, or chain-of-thought. Reply directly with the final title in clean prose. No preamble.",
   };
