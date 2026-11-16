@@ -6,6 +6,9 @@
   the *neutral values* they were paired with are now projected from the Geist
   scale instead of the Lobe defaults, and the application shell was rebuilt
   in Geist form.
+- **2026-11-16 note:** the "Web and Universal App in lockstep" items below are
+  historical. The Expo Universal App was removed; `@socrates/theme` is now
+  consumed by the SPA (via `react-native-web`) and the native Android client.
 
 ## Context
 

@@ -1,8 +1,7 @@
 /**
  * Landing empty state — web adapter for the shared React Native hero module
  * (packages/ui/src/home). The module draws; this file supplies copy (i18n)
- * and the web theme, so the same component can mount in apps/socrates later
- * without these bindings.
+ * and the web theme, keeping those host bindings out of the shared module.
  *
  * The landing entries that used to sit under the composer (chat shortcuts,
  * the phone suggestion line and the tutor starter cards) were removed on

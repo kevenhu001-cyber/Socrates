@@ -3,12 +3,10 @@
  * `--font-sans` stack (`frontend/src/styles/foundations/fonts.css`:
  * `@fontsource/inter` + `@fontsource/noto-sans-sc`).
  *
- * The woff2 binaries in `apps/socrates/assets/fonts/` are byte-identical
- * copies of the fontsource files the SPA bundles, and expo-font registers
- * each one under the family name below. Components must never hardcode a
- * platform font (Roboto / San Francisco / System): every text style picks
- * its family from here so the Universal App measures identically to the
- * baseline SPA.
+ * Components must never hardcode a platform font (Roboto / San Francisco /
+ * System): every text style picks its family from here. The RN-side family
+ * names below mirror the fontsource faces the SPA bundles, so shared RN
+ * components measure identically whether rendered on Web or a native client.
  *
  * `front(family)` mirrors the SPA's CSS stack behaviour (`Inter` first,
  * `Noto Sans SC` for CJK) by language, because React Native cannot fall

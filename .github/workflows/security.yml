@@ -64,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [frontend, server, apps/socrates]
+        project: [frontend, server]
     defaults:
       run:
         working-directory: ${{ matrix.project }}
@@ -100,7 +100,6 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             server/package-lock.json
-            apps/socrates/package-lock.json
 
       - name: Restore generated SBOMs
         id: sbom-cache
@@ -110,7 +109,7 @@ jobs:
           path: sbom
           key: >-
             ${{ runner.os }}-sbom-cdx-6.0.1-v4-lockonly-${{
-              hashFiles('frontend/package-lock.json', 'server/package-lock.json', 'apps/socrates/package-lock.json')
+              hashFiles('frontend/package-lock.json', 'server/package-lock.json')
             }}
 
       - name: Install CycloneDX CLI once
@@ -121,7 +120,7 @@ jobs:
         if: github.event_name != 'pull_request' && steps.sbom-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p sbom
-          for project in frontend server apps/socrates; do
+          for project in frontend server; do
             echo "::group::$project"
             cyclonedx-npm \
               --package-lock-only \

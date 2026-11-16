@@ -1,7 +1,8 @@
 // scripts/check-packages-dom.mjs
-// Guard for the Universal App plan: shared packages must stay DOM-free.
+// Guard for shared packages: they must stay DOM-free so the SPA can render
+// them through react-native-web.
 // Bans: document, window, localStorage, react-dom, and direct DOM APIs in
-// packages/{core,contracts,api,chat,auth,settings,platform,theme,ui} src.
+// packages/{core,contracts,theme,ui} src.
 // UI package is allowed to use react-native only (no react-dom / DOM).
 // Usage: node scripts/check-packages-dom.mjs [--update]
 // Exit 1 on violation with file:line.
@@ -9,7 +10,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const PACKAGES = ['core', 'contracts', 'api', 'chat', 'auth', 'settings', 'platform', 'theme', 'ui'];
+const PACKAGES = ['core', 'contracts', 'theme', 'ui'];
 const BANNED = [
   // Property access only (`.<ident>`) — prose like "a professional
   // document. You use …" in content strings must not trip the gate.
@@ -48,12 +49,11 @@ for (const pkg of PACKAGES) {
   }
 }
 
-// Allowlist: none currently. apps/socrates/src/*.web.ts may use localStorage,
-// but packages/ may not.
+// Allowlist: none currently. Host adapters may use localStorage, packages/ may not.
 if (violations.length) {
   console.error('[check-packages-dom] DOM/ReactDOM usage in shared packages:');
   for (const v of violations) console.error(`  ${v}`);
-  console.error('\nPlatform differences belong in apps/socrates/src/*.web|android|windows.ts, never in packages/.');
+  console.error('\nPlatform differences belong in host adapters (e.g. frontend/src/react/rn/), never in packages/.');
   process.exit(1);
 }
 console.log('[check-packages-dom] OK — packages/ DOM-free.');

@@ -2,9 +2,13 @@
 
 Status: accepted for the explicitly requested native Android implementation.
 
+> 2026-11-16 update: the Expo Universal App (`apps/socrates/`) referenced below was
+> removed; the SPA is now the single production Web client. This Android client is
+> unaffected — it still shares `/api/v2` and `@socrates/core` with the SPA.
+
 ## Decision
 
-Add `apps/socrates-android/` as a standalone Kotlin + Jetpack Compose application. This is an explicit exception to the previous Expo-only Android ownership rule, requested after the Universal App migration. Do not resurrect `mobile/`, Capacitor, or their retired build lanes. The existing `apps/socrates/` Universal App, shared TypeScript packages, SPA, and backend continue unchanged.
+Add `apps/socrates-android/` as a standalone Kotlin + Jetpack Compose application. This is an explicit exception to the previous Expo-only Android ownership rule, requested after the Universal App work began. Do not resurrect `mobile/`, Capacitor, or their retired build lanes. (At the time, the `apps/socrates/` Universal App, shared TypeScript packages, SPA, and backend continued unchanged; the Universal App was later removed in 2026-11-16 — see note above.)
 
 The native Android app uses the current `/api/v2` mobile bearer-token, session, multipart extraction, resource-directory, and SSE chat contracts. It has no WebView chat shell, JavaScript bridge, or embedded frontend runtime. Server-side LLM/provider credentials remain on the server.
 

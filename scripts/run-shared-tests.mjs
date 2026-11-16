@@ -1,10 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-const root = fileURLToPath(new URL('../../../', import.meta.url));
+const root = fileURLToPath(new URL('../', import.meta.url));
 const register = pathToFileURL(fileURLToPath(new URL('./test-register.mjs', import.meta.url))).href;
 // Discover every shared-package test; run in separate processes so singleton
-// stores cannot leak between files. Resolve runtime peers from the App install.
+// stores cannot leak between files. Resolve runtime peers from the SPA install.
 for (const pkg of readdirSync(`${root}/packages`)) {
   let files;
   try { files = readdirSync(`${root}/packages/${pkg}/src`); } catch { continue; }

@@ -27,7 +27,6 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       server: ${{ steps.filter.outputs.server }}
       shared: ${{ steps.filter.outputs.shared }}
-      universal: ${{ steps.filter.outputs.universal }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -190,6 +189,9 @@ jobs:
         run: node scripts/check-bundle-size.mjs
       - name: Unit tests
         run: npm run test:unit
+      - name: Shared package tests
+        working-directory: .
+        run: npm run test:shared
       - name: Coverage floor
         working-directory: .
         run: node scripts/coverage-ratchet.mjs frontend
@@ -304,52 +306,10 @@ jobs:
       - name: Playback clock tests
         run: node --experimental-strip-types --test packages/core/src/streamPlayer.test.ts
 
-  universal-app:
-    name: Universal App web smoke
-    needs: changes
-    if: needs.changes.outputs.universal == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: |
-            apps/socrates/package-lock.json
-            frontend/package-lock.json
-      - name: Install Universal App dependencies
-        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-        working-directory: apps/socrates
-      - name: Universal App typecheck and shared tests
-        run: |
-          npm run typecheck
-          npm run test:shared
-          node ../../scripts/check-packages-dom.mjs
-        working-directory: apps/socrates
-      - name: Install Playwright dependencies
-        run: npm ci --include=dev --prefer-offline --no-audit --no-fund
-        working-directory: frontend
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-        working-directory: frontend
-      - name: Universal App smoke tests
-        run: npm run test:universal
-        working-directory: frontend
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        with:
-          name: universal-app-report
-          path: frontend/test-results
-          if-no-files-found: ignore
-          retention-days: 14
-
   gate:
     name: Merge gate
     if: always()
-    needs: [changes, sanity, site, frontend, server, shared, universal-app]
+    needs: [changes, sanity, site, frontend, server, shared]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -361,7 +321,6 @@ jobs:
           FRONTEND: ${{ needs.frontend.result }}
           SERVER: ${{ needs.server.result }}
           SHARED: ${{ needs.shared.result }}
-          UNIVERSAL: ${{ needs.universal-app.result }}
         run: |
           set -euo pipefail
 
@@ -379,8 +338,7 @@ jobs:
             "Site:$SITE" \
             "Frontend:$FRONTEND" \
             "Server:$SERVER" \
-            "Shared:$SHARED" \
-            "Universal:$UNIVERSAL"; do
+            "Shared:$SHARED"; do
             name="${pair%%:*}"
             result="${pair#*:}"
             case "$result" in

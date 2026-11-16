@@ -10,7 +10,7 @@ const requireFrontend = createRequire(path.join(root, 'frontend', 'package.json'
 const ts = requireFrontend('typescript');
 const baselinePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'explicit-any.baseline.json');
 const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
-const packageRoots = ['frontend/src', 'server/src', 'apps/socrates/src'];
+const packageRoots = ['frontend/src', 'server/src'];
 for (const entry of await readdir(path.join(root, 'packages'), { withFileTypes: true })) {
   if (entry.isDirectory()) packageRoots.push(path.join('packages', entry.name, 'src'));
 }

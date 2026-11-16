@@ -1,5 +1,10 @@
 # Universal App 迁移路线（2026-10-06 生效）
 
+> **已废止（2026-11-16）**：`apps/socrates/` Expo Universal App 已删除，不再作为迁移目标。
+> 当前唯一生产客户端是 `frontend/`，RN UI 通过 `react-native-web` 就地接入；现行方向见
+> [SPA 优先的 RN 收敛方案](2026-11-05-spa-rn-convergence.md) 与
+> [UI 结构与迁移边界](../architecture/ui-structure.md)。本文保留为历史记录。
+>
 > 当前结构与剩余债务见 [UI 结构与迁移边界](../architecture/ui-structure.md)（2026-11-05）。
 > 第 9 节起为历史进展，保留当时的验证结果；已删除目录和工作流以当前结构为准。
 > 2026-11-02 边界澄清：SPA 已通过 RN Web 接入部分 `packages/ui` 模块，见上述当前结构文档的 RN-1。

@@ -11,14 +11,12 @@ const port = 4173;
 
 export default defineConfig({
   testDir: './e2e',
-  // The RN Web and Universal App suites have their own exported bundles and
-  // Playwright configs. Keeping both out of the legacy SPA smoke suite
-  // prevents the two app shells from being tested against the wrong server.
+  // The RN Web smoke suite has its own exported bundle and Playwright config;
+  // keeping it out of the SPA smoke suite prevents testing the wrong server.
   // One-off debug probes (tmp-*/probe-*) are gitignored scratch files: they
   // must never be counted by — or fail — the regression gate.
   testIgnore: [
     '**/rn-web-smoke.spec.mjs',
-    '**/universal-*.spec.mjs',
     '**/tmp-*.spec.mjs',
     '**/probe-*.spec.mjs',
     '**/__probe*',

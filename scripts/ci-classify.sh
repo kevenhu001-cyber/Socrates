@@ -11,7 +11,6 @@ site=false
 frontend=false
 server=false
 shared=false
-universal=false
 unknown=false
 
 set_all() {
@@ -19,7 +18,6 @@ set_all() {
   frontend=true
   server=true
   shared=true
-  universal=true
 }
 
 if [[ "${1:-}" == "--all" ]]; then
@@ -56,18 +54,9 @@ else
         site=true
         ;;
 
-      # Universal-App Playwright harness lives under frontend but does not
-      # exercise the legacy SPA.
-      frontend/e2e/universal-*.spec.mjs|frontend/e2e/_universal-helpers.mjs|\
-      frontend/playwright.universal.config.mjs|frontend/scripts/run-universal-smoke.mjs)
-        universal=true
-        ;;
-
-      # Frontend dependency changes affect both the SPA and the Universal App
-      # smoke harness, which installs Playwright from this lockfile.
+      # Frontend dependency changes wake the SPA build and smoke tests.
       frontend/package.json|frontend/package-lock.json)
         frontend=true
-        universal=true
         ;;
 
       frontend/*)
@@ -78,17 +67,12 @@ else
         server=true
         ;;
 
-      apps/socrates/*)
-        universal=true
-        ;;
-
       # packages/ is shared source. Be conservative because the dependency
       # graph is intentionally source-linked rather than published packages.
       packages/*)
         frontend=true
         server=true
         shared=true
-        universal=true
         ;;
 
       # Rust protocol is tested directly and the SPA consumes the WASM build.
@@ -106,7 +90,6 @@ else
 
       scripts/check-packages-dom.mjs)
         frontend=true
-        universal=true
         ;;
 
       scripts/check-drizzle-drift.mjs)
@@ -139,4 +122,3 @@ printf 'site=%s\n' "$site"
 printf 'frontend=%s\n' "$frontend"
 printf 'server=%s\n' "$server"
 printf 'shared=%s\n' "$shared"
-printf 'universal=%s\n' "$universal"

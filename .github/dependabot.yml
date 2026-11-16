@@ -59,27 +59,6 @@ updates:
       - dependency-name: "playwright"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
 
-  # Canonical cross-platform client. Expo/RN upgrades move as a coordinated
-  # SDK matrix, so Dependabot may update ordinary tooling/runtime packages but
-  # does not independently bump Expo or React Native.
-  - package-ecosystem: "npm"
-    directory: "/apps/socrates"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "UTC"
-    open-pull-requests-limit: 3
-    groups:
-      universal-app-tooling:
-        dependency-type: "development"
-        update-types: ["minor", "patch"]
-    ignore:
-      - dependency-name: "expo"
-      - dependency-name: "expo-*"
-      - dependency-name: "react-native"
-      - dependency-name: "react-native-*"
-
   - package-ecosystem: "npm"
     directory: "/packages/core"
     schedule:

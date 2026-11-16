@@ -7,20 +7,20 @@
 [![仓库可见性](https://img.shields.io/badge/可见性-公开-7a6c4d?style=flat-square)](#仓库可见性)
 [![应用状态](https://img.shields.io/badge/应用-在线-d8a85b?style=flat-square)](https://app.topodrive.top/)
 [![后端](https://img.shields.io/badge/后端-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
-[![前端](https://img.shields.io/badge/前端-Vite%20SPA-f3c769?style=flat-square&logo=vite&logoColor=black)](frontend/)
-[![通用客户端](https://img.shields.io/badge/通用客户端-React%20Native%20%2B%20Expo-3DDC84?style=flat-square&logo=android&logoColor=white)](apps/socrates/)
+[![前端](https://img.shields.io/badge/前端-Vite%20SPA%20%2B%20RN%20Web-3DDC84?style=flat-square&logo=react&logoColor=white)](frontend/)
+[![Android](https://img.shields.io/badge/Android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](apps/socrates-android/)
 [![数据库](https://img.shields.io/badge/数据库-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
 [![源码使用](https://img.shields.io/badge/源码可见-非商业使用-555555?style=flat-square)](#源码可见与使用范围)
 
 **Socrates — AI 苏格拉底式学习助手**  
 流式对话 + 推理模型、交互式 viz 画布、KaTeX 数学公式、
 文档解析（PDF/DOCX/XLSX/PPTX/EPUB/RTF）、项目与标签、Agent 模式、
-跨会话记忆、面向 Android 与 Web 的通用 React Native 客户端。
+跨会话记忆。SPA 通过 `react-native-web` 就地渲染共享的 React Native 组件，
+另有独立的原生 Android 客户端。
 
 [English version →](README.md) ·
 [在线应用](https://app.topodrive.top/) ·
-[OpenAPI 规范](docs/api/openapi.yaml) ·
-[通用客户端构建](.github/workflows/universal-app-build.yml)
+[OpenAPI 规范](docs/api/openapi.yaml)
 
 </div>
 
@@ -37,7 +37,6 @@
 - [快速开始](#快速开始)
   - [1. 前端（Vite SPA）](#1-前端vite-spa)
   - [2. 后端 API 服务](#2-后端-api-服务)
-  - [3. 通用客户端（可选）](#3-通用客户端可选)
 - [配置](#配置)
 - [自定义渲染管线](#自定义渲染管线)
 - [API 参考](#api-参考)
@@ -127,14 +126,14 @@
 - **团队工作区** — 多用户同一计费实体
 - **语音转录** — 音频消息处理
 
-### 通用客户端（Android / Web）
+### SPA 中就地渲染的共享 RN 组件
 
-- **[`apps/socrates/`](apps/socrates/)** 使用 React Native + Expo + RN Web，与 Web SPA
-  共享 [`packages/`](packages/) 下的 `@socrates/ui`（Sidebar / ChatMessageList /
-  Composer）和平台无关包
-- 主流程使用原生导航与组件；复杂编辑器（TipTap/tldraw/HTML-viz/Mermaid/Three.js）
-  隔离在 `ArtifactIsland` WebView 中，不进入共享核心
-- `mobile/` 已于 2026-10-12 整体删除，不再是构建目标；当前归属关系以 `AGENTS.md` 为准
+- SPA 通过 `react-native-web` 就地渲染 `@socrates/ui/*` 的共享 React Native 组件。
+  UI 只在 [`packages/ui/`](packages/ui/) 实现一次，再以窄子路径挂载进 SPA；
+  复杂编辑器（TipTap/tldraw/HTML-viz/Mermaid/Three.js）保留为 Web 专用原生岛
+- 独立的原生 Android 客户端位于 [`apps/socrates-android/`](apps/socrates-android/)。
+  `mobile/`（2026-10-12）与 Expo 通用客户端（`apps/socrates/`，2026-11-16）均已删除；
+  当前归属关系以 `AGENTS.md` 为准
 
 ### 市场与文档
 
@@ -237,10 +236,10 @@ sequenceDiagram
 | 上传 | `multer`；缩略图按客户端提供的衍生文件持久化 | |
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
 | 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
-| 通用客户端 UI | React Native + Expo + RN Web + Zustand + Reanimated | [`apps/socrates/`](apps/socrates/) |
-| 通用客户端 I/O | 平台适配层（`*.web` / `*.android` / `*.windows` / `*.macos`） | [`apps/socrates/src/`](apps/socrates/src/) |
-| 共享包 | `@socrates/{core,contracts,api,chat,auth,settings,platform,theme,ui}` | [`packages/`](packages/) —— 强制 DOM-free，由 `scripts/check-packages-dom.mjs` 校验 |
-| CI | GitHub Actions：SPA 门禁、服务端、安全/SAST、OCI 镜像、通用客户端预览、Rust 工具链 | [`ci.yml`](.github/workflows/ci.yml)、[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) |
+| 共享 RN UI | 通过 `react-native-web` 在 SPA 中渲染的 React Native 组件 | [`packages/ui/`](packages/ui/)、[`frontend/src/react/rn/`](frontend/src/react/rn/) |
+| 原生 Android | 基于 `/api/v2` 的 Kotlin + Jetpack Compose 客户端 | [`apps/socrates-android/`](apps/socrates-android/) |
+| 共享包 | `@socrates/{core,contracts,theme,ui}` | [`packages/`](packages/) —— 强制 DOM-free，由 `scripts/check-packages-dom.mjs` 校验 |
+| CI | GitHub Actions：SPA 门禁、服务端、安全/SAST、OCI 镜像、原生 Android 构建、Rust 工具链 | [`ci.yml`](.github/workflows/ci.yml)、[`native-android-build.yml`](.github/workflows/native-android-build.yml) |
 | 边缘 | nginx 反向代理 + 静态文件服务 | [deploy.sh](deploy.sh) |
 | vendored 前端库 | KaTeX + highlight.js + Plotly + Mermaid + ECharts（UMD，位于 [`frontend/src/vendor-files/`](frontend/src/vendor-files/)）；marked + DOMPurify + fuse.js 走 npm —— 无 CDN 回退 | 见 `frontend/src/vendor-files/README.md` |
 
@@ -307,17 +306,13 @@ Socrates/
 │       ├── routes/         # 认证、对话、会话、分享、文件……
 │       └── services/       # LLM、Web 搜索、文件解析、代码执行……
 ├── apps/
-│   └── socrates/           # 通用客户端（Expo + React Native + RN Web）
-│       ├── App.tsx         # 原生/Web 入口
-│       ├── src/            # 页面 + *.web / *.android / *.windows / *.macos 适配层
-│       └── app.json        # Expo 配置
+│   └── socrates-android/   # 独立 Kotlin + Compose 原生客户端
 ├── packages/
 │   ├── core/               # SSE 分帧、turn runtime、会话纯函数
 │   ├── contracts/          # API 与跨客户端契约
-│   ├── ui/                 # 共享 RN 组件（Sidebar、ChatMessageList、Composer）
-│   ├── chat/               # 编辑 / outbox / 重试状态机
-│   ├── api/  auth/  settings/  platform/  theme/
-│   └── ...                 # 强制 DOM-free，由 apps/socrates/ 按路径消费
+│   ├── theme/              # 共享 token 与 RN 色值
+│   └── ui/                 # 共享 RN 组件，SPA 以窄子路径消费
+│                           #   强制 DOM-free，经 react-native-web 挂载
 ├── prompts/
 │   └── teacher-mode.md     # 苏格拉底教师提示词（原样）
 ├── docs/
@@ -376,28 +371,6 @@ npm start
 ```
 
 服务默认监听 `http://0.0.0.0:8080`。
-
-### 3. 通用客户端（可选）
-
-```bash
-cd apps/socrates
-npm install
-npm run typecheck
-npm run test:shared
-npm run export:web      # 静态 Web 导出
-```
-
-通用客户端是多平台目标（Android + Web）；在
-[`docs/plans/universal-app-migration.md`](docs/plans/universal-app-migration.md)
-逐模块验收完成前，Vite SPA 仍是视觉与功能基线。Android 预览统一在
-GitHub Actions 构建，不要求开发机安装 Android SDK/NDK：
-
-```bash
-gh workflow run universal-app-build.yml --ref <branch> -f api_base_url=https://app.topodrive.top/api/v2
-```
-
-该工作流会做类型检查、导出 Web 产物、执行 `expo prebuild`，并上传预览 APK
-与带校验和的 Web 压缩包。目前没有签名商店发布流水线。
 
 ## 配置
 
@@ -484,12 +457,11 @@ data: [DONE]
 
 后端以 systemd unit 运行（`Restart=always`）。后端除 PostgreSQL 外无状态，水平扩展只需在 nginx 后增加进程。
 
-通用客户端预览由
-[`universal-app-build.yml`](.github/workflows/universal-app-build.yml) 构建
-（手动触发或复用调用）：类型检查 `apps/socrates/`、导出 Web 产物、执行
-`expo prebuild`、构建 release 变体预览 APK，并上传带校验和的两份产物。
-[`image.yml`](.github/workflows/image.yml) 在每次推送时构建并验证 API 服务的
-签名 OCI 镜像，但**不部署** —— 部署仍由 `deploy.sh` 在主机上构建。
+原生 Android 客户端由
+[`native-android-build.yml`](.github/workflows/native-android-build.yml) 构建
+（手动触发）：执行 `assembleDebug`、单测与 lint 检查，并上传 debug APK
+与测试报告。[`image.yml`](.github/workflows/image.yml) 在每次推送时构建并验证
+API 服务的签名 OCI 镜像，但**不部署** —— 部署仍由 `deploy.sh` 在主机上构建。
 
 ## 安全模型
 
@@ -547,9 +519,8 @@ data: [DONE]
 
 - **应用问题** — 发邮件至 [help@addtech.site](mailto:help@addtech.site) 或使用应用内帮助
 - **API 规范问题** — 先阅读 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
-- **通用客户端构建失败** — `universal-app-build.yml` 日志包含 Expo prebuild/Gradle
-  堆栈；请确认 JDK 17、工作流中固定的 Android SDK 组件，以及 Expo/RN 升级后的
-  Gradle 依赖可用
+- **原生 Android 构建失败** — `native-android-build.yml` 日志包含 Gradle 堆栈；
+  请确认 JDK 17、工作流中固定的 Android SDK 组件与 Gradle 依赖可用
 
 <div align="center">
 
