@@ -323,9 +323,6 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-md);
-  background: var(--ui-bg-surface-raised, var(--card, transparent));
 }
 .ds-table-wrap:focus-visible {
   /* The shared double ring (ink + paper gap), not a bare outline: the table
@@ -342,20 +339,20 @@
 }
 .ds-table-wrap > table.ds-table,
 .msg.assistant .msg-body.is-declarative .intui-table {
-  width: 100%;
-  min-width: 100%;
-  border-collapse: separate;
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  border-collapse: collapse;
   border-spacing: 0;
-  table-layout: fixed;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: inherit;
   line-height: var(--ui-line-height-normal, 1.5);
 }
 .ds-table-wrap > table.ds-table caption,
 .msg.assistant .msg-body.is-declarative .intui-table-caption {
   padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-surface);
+  border-bottom: 1px solid var(--ui-border-strong);
+  background: transparent;
   color: var(--foreground);
   font-size: var(--ui-font-size-xs, 12px);
   font-weight: var(--ui-font-weight-medium, 500);
@@ -368,13 +365,24 @@
   border-bottom: 1px solid var(--ui-border-subtle);
   vertical-align: top;
   overflow-wrap: anywhere;
+  min-width: 100px;
+  max-width: min(30vw, 320px);
 }
+.ds-table-wrap > table.ds-table :is(th, td):first-child,
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):first-child { padding-left: 0; }
+.ds-table-wrap > table.ds-table :is(th, td):last-child,
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):last-child { padding-right: 0; }
 .ds-table-wrap > table.ds-table th,
 .msg.assistant .msg-body.is-declarative .intui-table th {
-  background: var(--ui-bg-surface);
+  background: transparent;
   color: var(--foreground);
   font-weight: var(--ui-font-weight-medium, 500);
   white-space: normal;
+  border-bottom-color: var(--ui-border-strong);
+}
+.ds-table-wrap > table.ds-table code,
+.msg.assistant .msg-body.is-declarative .intui-table code {
+  font-size: 0.875em;
 }
 .ds-table-wrap > table.ds-table tbody tr:hover td,
 .msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
