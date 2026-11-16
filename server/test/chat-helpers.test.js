@@ -292,16 +292,15 @@ describe('prependCodeInterpreterPrompt', () => {
 /* ── final output constraints (no-dash rule) ────────────────── */
 
 describe('appendFinalOutputConstraints', () => {
-  test('appends the dash-punctuation ban as the closing text of the system prompt', () => {
+  test('appends the prose defaults as the closing text of the system prompt', () => {
     const out = appendFinalOutputConstraints([
       { role: 'system', content: 'base policy' },
       { role: 'user', content: 'hi' },
     ]);
     assert.equal(out.filter((m) => m.role === 'system').length, 1);
-    assert.match(out[0].content, /Minimize dash punctuation/);
+    assert.match(out[0].content, /Avoid em dashes, en dashes, double hyphens, and colons as prose transitions/);
     assert.match(out[0].content, /Chinese/);
-    assert.ok(out[0].content.trimEnd().endsWith(FINAL_OUTPUT_CONSTRAINTS.trimEnd().slice(-40)),
-      'the no-dash rule must be the last text in the system message');
+    assert.ok(out[0].content.endsWith(FINAL_OUTPUT_CONSTRAINTS));
   });
 
   test('is idempotent (marker prevents double-append)', () => {
@@ -310,17 +309,16 @@ describe('appendFinalOutputConstraints', () => {
     assert.deepEqual(twice, once);
   });
 
-  test('keeps tool failures out of the answer body', () => {
+  test('keeps raw tool errors out of the answer body while disclosing material limitations', () => {
     const out = appendFinalOutputConstraints([{ role: 'system', content: 'base' }]);
-    assert.match(out[0].content, /Tool failures stay out of the answer body/);
-    assert.match(out[0].content, /tool card/);
-    assert.match(out[0].content, /Do NOT put tool error codes/);
+    assert.match(out[0].content, /Keep raw tool errors, codes, and stack traces in the tool card/);
+    assert.match(out[0].content, /Mention the limitation briefly only if it affects the outcome/);
   });
 
   test('creates a system message when none exists', () => {
     const out = appendFinalOutputConstraints([{ role: 'user', content: 'hi' }]);
     assert.equal(out[0].role, 'system');
-    assert.match(out[0].content, /Minimize dash punctuation/);
+    assert.ok(out[0].content.endsWith(FINAL_OUTPUT_CONSTRAINTS));
   });
 });
 
@@ -792,9 +790,8 @@ describe('appendToolRoutingHints', () => {
   });
 });
 
-test('native tool contract explicitly permits Markdown horizontal-rule syntax', () => {
-  assert.match(FINAL_OUTPUT_CONSTRAINTS, /standalone `---` horizontal rule/);
-  assert.match(FINAL_OUTPUT_CONSTRAINTS, /not punctuation/);
+test('prose punctuation defaults preserve Markdown horizontal-rule syntax', () => {
+  assert.match(FINAL_OUTPUT_CONSTRAINTS, /Preserve exact quotations and required syntax.*standalone `---` horizontal rule/);
 });
 
 describe('containsImageUrlParts', () => {

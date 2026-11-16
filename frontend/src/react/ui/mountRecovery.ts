@@ -1,5 +1,11 @@
 import type { MountFailure } from '../lib/boot/registry';
 
+interface ReloadAction {
+  run: () => boolean;
+  label: string;
+  failureMessage: string;
+}
+
 /** A boot-safe native adapter: recovery must work even when UI chunks cannot
  * load. It borrows the shared button grammar without creating another root. */
 export function showMountRecovery(
@@ -7,6 +13,7 @@ export function showMountRecovery(
   message: string,
   retryLabel: string,
   messageKey: string,
+  reload?: ReloadAction,
 ): () => void {
   const doc = host.ownerDocument;
   const notice = doc.createElement('div');
@@ -36,6 +43,19 @@ export function showMountRecovery(
   const view = doc.defaultView;
   view?.addEventListener('online', onRetry);
   notice.append(status, button);
+  if (reload) {
+    const reloadButton = button.cloneNode(false) as HTMLButtonElement;
+    reloadButton.dataset.i18nKey = 'boot.composerReload';
+    reloadButton.textContent = reload.label;
+    reloadButton.addEventListener('click', () => {
+      reloadButton.disabled = true;
+      if (reload.run()) return;
+      reloadButton.disabled = false;
+      status.dataset.i18nKey = 'boot.composerReloadFailed';
+      status.textContent = reload.failureMessage;
+    });
+    notice.appendChild(reloadButton);
+  }
   // Preserve any legacy content and draft nodes; remove only our own notice.
   host.appendChild(notice);
   return () => {

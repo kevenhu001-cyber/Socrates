@@ -7,8 +7,8 @@
  */
 
 :root {
-  --ui-font-ui: "Geist Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
-  --ui-font-ui-mono: "Geist Mono", ui-monospace, "Noto Sans SC", "SFMono-Regular", monospace;
+  --ui-font-ui: "Geist Sans", "Noto Sans SC", system-ui, sans-serif;
+  --ui-font-ui-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", monospace;
   --ui-type-display-size: 52px;
   --ui-type-display-line: 56px;
   --ui-type-display-weight: 500;

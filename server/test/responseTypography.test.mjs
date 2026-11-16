@@ -9,19 +9,14 @@ import {
   RESPONSE_TYPOGRAPHY_MARKER,
 } from '../src/lib/chatPolicy.js';
 
-function assertDevelopedProseDefaults(prompt) {
-  assert.match(prompt, /Minimize colons in natural-language prose/);
-  assert.match(prompt, /Minimize dash punctuation/);
-  assert.match(prompt, /detailed, rich, self-contained explanation/);
-  assert.match(prompt, /make causal connections explicit/);
-  assert.match(prompt, /connect an unfamiliar idea to something the user already understands/);
-  assert.match(prompt, /meaningful boundary or counterexample/);
-  assert.match(prompt, /Default to connected natural-language paragraphs as the main body/);
-  // These are defaults, with deliberate exceptions for task-specific formats.
-  assert.match(prompt, /follow explicit user preferences for length, depth, and format/);
-  assert.match(prompt, /Use lists for actual step-by-step procedures/);
-  assert.match(prompt, /Reducing punctuation must not damage meaning or structured output/);
-  assert.match(prompt, /do not withhold the answer or turn every reply into a quiz/);
+function assertProseDefaults(prompt) {
+  assert.match(prompt, /em dashes, en dashes, double hyphens, and colons as prose transitions/);
+  assert.match(prompt, /one to three short, connected paragraphs/);
+  assert.match(prompt, /decisive mechanism or evidence/);
+  assert.match(prompt, /one concrete example, a small thought experiment, or a precise analogy/);
+  assert.match(prompt, /Use a short list when the user requests one/);
+  assert.match(prompt, /Follow explicit requests for length, depth, format, or punctuation/);
+  assert.match(prompt, /Preserve required tool, learning-card, code, math, citation, and other structured syntax/);
 }
 
 test('new conversations receive Chinese prose punctuation without changing code and exact data', () => {
@@ -40,7 +35,7 @@ test('new conversations receive Chinese prose punctuation without changing code 
   assert.match(prompt, /Markdown structural syntax must remain ASCII/);
   assert.match(prompt, /Follow an explicit user request for different punctuation/);
   assert.ok(prompt.endsWith(FINAL_OUTPUT_CONSTRAINTS));
-  assertDevelopedProseDefaults(prompt);
+  assertProseDefaults(prompt);
   assert.equal(result[1], user);
   assert.equal(messages[0].content, 'Tutor role');
   assert.deepEqual(appendFinalOutputConstraints(result), result);
@@ -63,14 +58,14 @@ test('built-in and BYOK paths share typography and keep the final constraints la
   const snapshot = `${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`;
   for (const identity of [null, 'Built-in identity']) {
     const prompt = insertProviderIdentity(insertResponseTypography(snapshot), identity);
-    assertDevelopedProseDefaults(prompt);
+    assertProseDefaults(prompt);
     assert.match(prompt, /full-width Chinese punctuation/);
     assert.ok(prompt.endsWith(FINAL_OUTPUT_CONSTRAINTS));
     assert.equal(prompt.includes('Built-in identity'), Boolean(identity));
   }
   for (const legacy of ['Legacy prompt without a final marker', RESPONSE_TYPOGRAPHY_MARKER + '\nOld typography']) {
     const upgraded = insertResponseTypography(legacy);
-    assertDevelopedProseDefaults(upgraded);
+    assertProseDefaults(upgraded);
     assert.ok(upgraded.endsWith(FINAL_OUTPUT_CONSTRAINTS));
     assert.equal(insertResponseTypography(upgraded), upgraded);
   }
@@ -80,9 +75,9 @@ test('saved formatting blocks receive current prose defaults without changing fr
   const prefix = 'Frozen persona\nSaved memories\nInitialized yesterday\n\n';
   const identity = '<!-- @beagle-system-prompt -->\nKeep this provider identity';
   const snapshot = prefix + RESPONSE_TYPOGRAPHY_MARKER + '\nOld formatting policy\n\n' + identity + '\n\n' +
-    FINAL_OUTPUT_CONSTRAINTS_MARKER + '\nOld final constraints';
+    FINAL_OUTPUT_CONSTRAINTS_MARKER + '\nGive a detailed, rich, self-contained explanation.';
   const outbound = insertResponseTypography(snapshot);
-  assertDevelopedProseDefaults(outbound);
+  assertProseDefaults(outbound);
   assert.ok(outbound.startsWith(prefix));
   assert.ok(outbound.includes(identity));
   assert.ok(outbound.endsWith(FINAL_OUTPUT_CONSTRAINTS));
@@ -90,6 +85,6 @@ test('saved formatting blocks receive current prose defaults without changing fr
   assert.match(outbound, /revision 2/);
   assert.match(outbound, /他说：“先理解‘概念’，再练习。”/);
   assert.match(outbound, /点击“Settings”（设置）继续。/);
-  assert.doesNotMatch(outbound, /Old formatting|Old final constraints|你好!|见到你,/);
+  assert.doesNotMatch(outbound, /Old formatting|detailed, rich, self-contained explanation|你好!|见到你,/);
   assert.equal(insertResponseTypography(outbound), outbound);
 });

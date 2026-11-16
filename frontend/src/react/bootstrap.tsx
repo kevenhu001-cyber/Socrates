@@ -8,11 +8,13 @@ import { showMountRecovery } from './ui/mountRecovery';
 import { i18n } from './legacy/gateway';
 import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
 import { reportSwallow } from '../util/reportSwallow.ts';
+import { canReloadComposer, reloadWithComposerDrafts } from '../composer/reloadDrafts.ts';
+import { isImportLoadError } from './lib/boot/retryImport';
 
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
   'sidebar-chrome': ['boot.navigationUnavailable', 'The navigation could not load.'],
-  'composer-shell': ['boot.composerUnavailable', 'The message editor could not load. Your saved draft has not been changed.'],
+  'composer-shell': ['boot.composerUnavailable', 'You can keep writing in the basic editor. Retry to restore rich editing.'],
   'top-bar': ['boot.headerUnavailable', 'The conversation controls could not load.'],
   'msg-list': ['boot.messagesUnavailable', 'The conversation could not load. Your messages have not been changed.'],
 };
@@ -20,11 +22,16 @@ const RECOVERY_MESSAGES: Record<string, [string, string]> = {
 const mountOptions: MountRegistryOptions = {
   onFailure: (failure) => {
     const message = RECOVERY_MESSAGES[failure.spec.label];
-    if (message) {
-      const releaseInput = failure.spec.label === 'composer-shell' ? mountBasicComposer(failure.host) : undefined;
-      const releaseNotice = showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0]);
-      return () => { releaseInput?.(); releaseNotice(); };
-    }
+    if (!message) return;
+    const isComposer = failure.spec.label === 'composer-shell';
+    const releaseInput = isComposer ? mountBasicComposer(failure.host) : undefined;
+    const reload = isComposer && isImportLoadError(failure.error) && canReloadComposer() ? {
+      run: reloadWithComposerDrafts,
+      label: i18n('boot.composerReload', 'Reload page and keep draft'),
+      failureMessage: i18n('boot.composerReloadFailed', 'Could not save the draft for reload. You can keep editing here.'),
+    } : undefined;
+    const releaseNotice = showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0], reload);
+    return () => { releaseInput?.(); releaseNotice(); };
   },
 };
 

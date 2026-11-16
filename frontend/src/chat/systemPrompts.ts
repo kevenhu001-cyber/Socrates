@@ -3,8 +3,8 @@
  *
  * Keep this file provider-neutral and minimal. The global writing rules, the
  * math delimiter contract, the
- * untrusted-data rules, the native tool-calling protocol, and the no-dash hard
- * rule are all server-owned: every request (both /api/chat/stream and the
+ * untrusted-data rules, the native tool-calling protocol, and prose punctuation
+ * are server-owned: every request (both /api/chat/stream and the
  * built-in Beagle proxy) passes through enforceServerSystemBoundary +
  * appendFinalOutputConstraints in server/src/routes/chat/helpers.ts, so
  * repeating those rules here would only bloat the prompt and create drifting
@@ -29,7 +29,7 @@ export const LEARNING_SCAFFOLD_GUIDANCE = `Follow the server's learning-interact
  * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth
  * directive distinguishes verifiable public derivations from private scratch
  * work, consistently with that policy. */
-export const HIGH_EFFORT_OUTPUT_GUIDANCE = `This is high reasoning-effort mode. For substantive requests, deepen the explanation: make important assumptions explicit, explain mechanisms, and include relevant examples, edge cases, or alternatives. Provide the evidence, calculations, or derivations needed to verify the answer, without revealing private chain-of-thought. Keep ordinary conversation proportionate and follow the server policy and the user's explicit depth preferences.`;
+export const HIGH_EFFORT_OUTPUT_GUIDANCE = `Use high reasoning effort to find the decisive point and check it carefully. Show only the evidence, calculation, or derivation needed to verify the answer. Follow the server's response defaults and the user's requested depth.`;
 
 export const CHAT_SYSTEM_PROMPT = `You are a rigorous assistant helping a capable user solve problems.
 

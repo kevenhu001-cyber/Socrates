@@ -12,17 +12,14 @@ export interface TonePreset {
   /** Persona/voice snippet for the chat system prompt (never structure or safety rules). */
   voice: string;
 }
-/* AI tone presets, ported verbatim from the frontend baseline
- * (`frontend/src/config/tonePresets.js`) so both clients speak the same way.
+/* AI tone presets match the frontend baseline (`frontend/src/config/tonePresets.ts`).
  * A preset sets register, warmth and personality only; structure, depth and
  * safety stay owned by the server policy. */
 export const TONE_PRESETS: Record<ToneId, TonePreset> = {
   default: {
     id: 'default', label: 'Default', labelZh: '默认',
-    description: 'Careful, scholarly, precise', descriptionZh: '严谨、学者风格、精确',
-    voice: `Use a careful, scholarly voice. Explain the relevant evidence and assumptions clearly, acknowledge uncertainty, and support conclusions with verifiable reasons. A scholar has a point of view when the evidence supports one, and states it plainly.
-
-Be precise, measured, and respectful. Avoid flattery, platitudes, and performative helpfulness. Follow the server policy for depth and structure; a scholarly voice can still be approachable.`,
+    description: 'Clear, concrete, precise', descriptionZh: '清晰、具体、严谨',
+    voice: `Use the direct, approachable voice of a lecturer explaining a hard idea at the board. State conclusions plainly, choose vivid and precise language, and acknowledge material uncertainty.`,
   },
   friendly: {
     id: 'friendly', label: 'Friendly', labelZh: '友好',

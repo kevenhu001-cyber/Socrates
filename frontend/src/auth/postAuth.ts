@@ -14,6 +14,7 @@ import { saveCurrentSession } from '../session/persistence.ts';
 import { fetchWithAuthGraceRetry, restoreRoutedSession } from './postAuth/flow.ts';
 import { migrateLegacyStorage } from './postAuth/migration.ts';
 import { renderRecents } from '../ui/recentsView.ts';
+import { restoreComposerReloadDrafts } from '../composer/reloadDrafts.ts';
 
 /** Legacy boot hooks still published on the window by main.js. */
 interface PostAuthLegacyWindow extends Window {
@@ -108,6 +109,7 @@ export async function afterAuthEnter(): Promise<void> {
   await fetchBootstrapData();
   refreshAuthenticatedUi();
   await restorePromise;
+  restoreComposerReloadDrafts();
   triggerInitialLoad();
   syncWorkspaceRoute();
 }

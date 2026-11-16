@@ -32,7 +32,9 @@ test('production chat and tutor instructions agree on native learning output and
     const prompt = appendFinalOutputConstraints(messages)[0].content;
     assert.ok(prompt.endsWith(FINAL_OUTPUT_CONSTRAINTS));
     assert.match(prompt, /Output style never overrides these requirements/);
-    assert.match(prompt, /detailed, rich, self-contained explanation/);
+    assert.match(prompt, /one to three short, connected paragraphs/);
+    assert.match(prompt, /a clear MIT lecturer at the board/);
+    assert.doesNotMatch(prompt, /detailed, rich, self-contained explanation/);
     // Actual composed instructions must never teach the retired output format.
     assert.doesNotMatch(prompt, /<(?:quiz|practice|definition|flashcard|correct)[ >]/);
     assert.doesNotMatch(prompt, /explanation attribute|reasons out loud|overrides everything above/);

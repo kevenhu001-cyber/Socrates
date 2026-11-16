@@ -18,6 +18,10 @@ import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 let _batchStoragePending: Record<string, string> | null = null;
 let _storageBlockedNotified = false;
 let _storageBlocked = false;
+
+export function isBrowserStorageBlocked(): boolean {
+  return _storageBlocked;
+}
 let _memStorage: Map<string, string> | null = null;
 let _memSessionStorage: Map<string, string> | null = null;
 

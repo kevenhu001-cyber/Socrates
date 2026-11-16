@@ -33,14 +33,9 @@ export const CJK_FONT_FAMILY = {
 
 export type FontWeight = keyof typeof FONT_FAMILY;
 
-/** Exact SPA CSS family stack. On Web, the platform adapter registers the
- * Expo font assets under these family names and their real weight values;
- * native clients continue to use the named static families above.
- *
- * The platform's own CJK face comes before the bundled one for the same
- * reason the SPA does it: a Chinese screen would otherwise download hundreds
- * of kilobytes of Noto Sans SC slices for glyphs the OS already has. */
-export const WEB_FONT_FAMILY = '"Inter", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+/** The web adapter registers the bundled faces with their real weights. Put
+ * both ahead of system fallback so common Chinese glyphs use Noto Sans SC. */
+export const WEB_FONT_FAMILY = '"Inter", "Noto Sans SC", system-ui, sans-serif';
 const WEB_FONT_WEIGHT: Readonly<Record<FontWeight, '400' | '500' | '600' | '700'>> = {
   regular: '400',
   medium: '500',

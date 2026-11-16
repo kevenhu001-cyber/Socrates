@@ -59,18 +59,12 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   }
 });
 
-test('high-effort prompt prioritizes detailed paragraph-based answers without duplicating global formatting rules', () => {
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /For substantive requests, deepen the explanation/i);
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Keep ordinary conversation proportionate/);
-  /* Paragraph-first / no-bullet formatting and chain-of-thought protection are
-     owned once by SERVER_SYSTEM_POLICY and must not be re-declared here, so
-     the effort level cannot drift from or override the global writing rules. */
-  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /Avoid bullet points/i);
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /without revealing private chain-of-thought/i);
+test('high effort checks the decisive point and defers response length to the server and the user', () => {
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /find the decisive point and check it carefully/i);
+  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Follow the server's response defaults and the user's requested depth/);
   assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /needed to verify the answer/i);
-  assert.doesNotMatch(HIGH_EFFORT_OUTPUT_GUIDANCE, /Do not omit meaningful intermediate reasoning/i);
-  assert.match(CHAT_SYSTEM_PROMPT, /high reasoning-effort mode/i);
-  assert.doesNotMatch(CHAT_CONCISE_PROMPT, /high reasoning-effort mode/i);
+  assert.ok(CHAT_SYSTEM_PROMPT.includes(HIGH_EFFORT_OUTPUT_GUIDANCE));
+  assert.ok(!CHAT_CONCISE_PROMPT.includes(HIGH_EFFORT_OUTPUT_GUIDANCE));
 });
 
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {

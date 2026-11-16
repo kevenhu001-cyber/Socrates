@@ -5,7 +5,9 @@ export const en = {
     "tool.uiInvalid": "Component could not be displayed.",
 
     "intui.learning.incomplete": "This learning card is incomplete. Its available content is shown below.",
-    "boot.composerUnavailable": "The message editor could not load. Your saved draft has not been changed.",
+    "boot.composerUnavailable": "You can keep writing in the basic editor. Retry to restore rich editing.",
+    "boot.composerReload": "Reload page and keep draft",
+    "boot.composerReloadFailed": "Could not save the draft for reload. You can keep editing here.",
     "boot.headerUnavailable": "The conversation controls could not load.",
     "boot.messagesUnavailable": "The conversation could not load. Your messages have not been changed.",
     "boot.navigationUnavailable": "The navigation could not load.",

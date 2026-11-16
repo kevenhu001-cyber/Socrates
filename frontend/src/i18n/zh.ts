@@ -8,7 +8,9 @@ export const zh = {
     "tool.uiInvalid": "组件未能显示。",
 
     "intui.learning.incomplete": "这张学习卡片的内容不完整，下面保留可读部分。",
-    "boot.composerUnavailable": "消息编辑器加载失败，已保存的草稿未被更改。",
+    "boot.composerUnavailable": "可以继续使用简易编辑器。重试可恢复富文本编辑。",
+    "boot.composerReload": "刷新页面并保留草稿",
+    "boot.composerReloadFailed": "刷新前未能保存草稿，可以继续在这里编辑。",
     "boot.headerUnavailable": "对话操作栏加载失败。",
     "boot.messagesUnavailable": "对话加载失败，消息内容未被更改。",
     "boot.navigationUnavailable": "导航加载失败。",

@@ -22,7 +22,7 @@ Style:
 - Match the source language. Do not translate.
 - Write like a careful abstract: concise, calm, and faithful to what the source actually states.
 - Preserve technical terms, proper nouns, numbers, and units exactly.
-- A short bullet list usually works well, but let the passage decide the shape; do not force a fixed structure or a target length.
+- Use a short paragraph by default. Use bullets when requested or when the source contains independent items that need to be scanned.
 - Give the summary directly, without preamble, evaluation, or meta-commentary unless the user asks for them.
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
@@ -79,7 +79,7 @@ Rules:
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
 export const BUILTIN_TEMPLATES: PromptTemplate[]=[
-  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text into bullet points.",icon:ICON_SUMMARIZE,category:"writing",shortcut:"/summarize",body:"Paste the text you want summarized:\n\n",systemPrompt:SYSTEM_PROMPT_SUMMARIZE,isBuiltin:true},
+  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text to its essentials.",icon:ICON_SUMMARIZE,category:"writing",shortcut:"/summarize",body:"Paste the text you want summarized:\n\n",systemPrompt:SYSTEM_PROMPT_SUMMARIZE,isBuiltin:true},
   {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:ICON_TRANSLATE,category:"writing",shortcut:"/translate",body:"Paste the text to translate into English:\n\n",systemPrompt:SYSTEM_PROMPT_TRANSLATE,isBuiltin:true},
   {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet in execution order.",icon:ICON_EXPLAIN_CODE,category:"code",shortcut:"/explain",body:"Paste the code you want explained:\n\n```\n\n```\n",systemPrompt:SYSTEM_PROMPT_EXPLAIN_CODE,isBuiltin:true},
   {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:ICON_DEBUG,category:"code",shortcut:"/debug",body:"Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",systemPrompt:SYSTEM_PROMPT_DEBUG,isBuiltin:true},

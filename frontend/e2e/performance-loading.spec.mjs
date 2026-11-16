@@ -17,7 +17,9 @@ test('download-first UI fonts preload one variable face without duplicate transf
   await page.locator('#composerInputWrap .tiptap').fill('中文字体优先下载');
   await page.evaluate(() => document.fonts.ready);
   const result = await page.evaluate(() => {
-    const fonts = performance.getEntriesByType('resource').filter((entry) => /geist-sans.*\.woff2/.test(entry.name));
+    const resources = performance.getEntriesByType('resource');
+    const fonts = resources.filter((entry) => /geist-sans.*\.woff2/.test(entry.name));
+    const cjkFonts = resources.filter((entry) => /noto-sans-sc-\d+-.*\.woff2/.test(entry.name));
     /* Full-width CJK punctuation is the user-visible property that a wrong
        family order breaks: Geist carries narrow Latin-proportioned glyphs for
        U+FF0C, so a half-width comma is the symptom of a stack that never
@@ -33,19 +35,26 @@ test('download-first UI fonts preload one variable face without duplicate transf
       initiator: fonts[0]?.initiatorType,
       preload: document.querySelectorAll('link[rel="preload"][as="font"]').length,
       family: getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim(),
+      cjkFonts: cjkFonts.map((entry) => new URL(entry.name).origin),
+      appOrigin: location.origin,
       commaWidth,
     };
   });
   expect(result.count).toBe(1);
   expect(result.initiator).toBe('link');
   expect(result.preload).toBe(1);
-  /* P_perf-platform-cjk — Geist stays first for Latin, but the platform's own
-     CJK face must be tried before the bundled Noto Sans SC slices. A Chinese
-     screen used to download ~560 kB of slices for glyphs the OS already has. */
-  expect(result.family.indexOf('Geist Sans')).toBeGreaterThan(-1);
-  expect(result.family.indexOf('Geist Sans')).toBeLessThan(result.family.indexOf('PingFang SC'));
-  expect(result.family.indexOf('PingFang SC')).toBeLessThan(result.family.indexOf('Noto Sans SC'));
-  expect(result.family.indexOf('Microsoft YaHei')).toBeLessThan(result.family.indexOf('Noto Sans SC'));
+  expect(result.family).toMatch(/^"Geist Sans", "Noto Sans SC"/);
+  expect([...new Set(result.cjkFonts)]).toEqual([result.appOrigin]);
+  const devTools = await page.context().newCDPSession(page);
+  await devTools.send('DOM.enable');
+  await devTools.send('CSS.enable');
+  const { root } = await devTools.send('DOM.getDocument');
+  const { nodeId } = await devTools.send('DOM.querySelector', { nodeId: root.nodeId, selector: '#composerInputWrap .tiptap p' });
+  const { fonts: renderedFonts } = await devTools.send('CSS.getPlatformFontsForNode', { nodeId });
+  expect(renderedFonts).toEqual([
+    expect.objectContaining({ familyName: 'Noto Sans SC', isCustomFont: true, glyphCount: 8 }),
+  ]);
+  await devTools.detach();
   expect(result.commaWidth).toBeGreaterThan(14);
   expect(errors).toEqual([]);
   await page.screenshot({ path: 'test-results/download-first-fonts.png' });

@@ -6,8 +6,8 @@ import { expectNoGlobalError, prepareChatWorkbench } from './_chat-workbench.mjs
 import { publishChatRuntime } from './_lib.mjs';
 
 for (const fixture of [
-  { name: 'desktop-light', viewport: { width: 1280, height: 800 }, mode: 'light', lang: 'en', retry: 'Try again', draft: 'saved draft' },
-  { name: 'phone-dark-zh', viewport: { width: 390, height: 844 }, mode: 'dark', lang: 'zh', retry: '重试', draft: '草稿' },
+  { name: 'desktop-light', viewport: { width: 1280, height: 800 }, mode: 'light', lang: 'en', retry: 'Try again', status: 'basic editor' },
+  { name: 'phone-dark-zh', viewport: { width: 390, height: 844 }, mode: 'dark', lang: 'zh', retry: '重试', status: '简易编辑器' },
 ]) {
 test(`a failed composer chunk recovers locally without reloading (${fixture.name})`, async ({ page }) => {
   const graph = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
@@ -31,7 +31,7 @@ test(`a failed composer chunk recovers locally without reloading (${fixture.name
   await waitForAppShell(page);
   const notice = page.locator('#composerInputWrap [data-mount-recovery="composer-shell"]');
   await expect(notice).toBeVisible();
-  await expect(notice.getByRole('status')).toContainText(fixture.draft);
+  await expect(notice.getByRole('status')).toContainText(fixture.status);
   const retryButton = notice.getByRole('button', { name: fixture.retry, exact: true });
   await expect(retryButton).toHaveAttribute('type', 'button');
   await expect(page.locator('#sidebarNav')).toBeAttached();
@@ -123,4 +123,41 @@ test('a transient composer fetch failure retries before showing recovery UI', as
   await expect(page.locator('#composerRoot .rich-composer-editor').first()).toBeVisible();
   expect(requests).toBeGreaterThan(1);
   await expect(page.locator('[data-mount-recovery="composer-shell"]')).toHaveCount(0);
+});
+
+test('a failed static editor dependency can recover in a fresh document with its draft', async ({ page }) => {
+  const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const session = { id, title: 'Editor recovery fixture', kind: 'chat', mode: 'chat', phase: 'chat', messages: [] };
+  await mockAuthedApp(page, { sessions: { sessions: [session] } });
+  await page.route(new RegExp(`/api/(?:v2/)?sessions/${id}(?:\\?|$)`), (route) => route.fulfill({ json: session }));
+  let blocked = true;
+  await page.route('**/assets/vendor-editor-*.js', (route) => blocked ? route.abort('failed') : route.continue());
+  await page.goto(`/?chat=${id}`);
+  await expect(page.locator('#chatView')).toBeVisible();
+  const notice = page.locator('[data-mount-recovery="composer-shell"]');
+  await expect(notice).toBeVisible();
+  const draft = '中文草稿，刷新后应当保留。';
+  await page.locator('[data-basic-composer]').fill(draft);
+  const originalBoot = await page.evaluate(() => performance.timeOrigin);
+
+  // The old document has cached a rejected static dependency. Giving just
+  // the outer dynamic import a new URL cannot clear that dependency.
+  blocked = false;
+  const retry = notice.getByRole('button', { name: 'Try again', exact: true });
+  await retry.click();
+  await expect(retry).toBeEnabled();
+  await expect(page.locator('[data-basic-composer]')).toHaveValue(draft);
+
+  const navigation = page.waitForEvent('framenavigated', (frame) => frame === page.mainFrame());
+  await notice.getByRole('button', { name: 'Reload page and keep draft' }).click();
+  await navigation;
+  const editor = page.locator('#composerRoot .rich-composer-editor').first();
+  await expect(editor).toHaveText(draft);
+  await expect(notice).toHaveCount(0);
+  expect(await page.evaluate(() => performance.timeOrigin)).not.toBe(originalBoot);
+  await expectNoGlobalError(page);
+  await page.screenshot({ path: 'test-results/composer-reload-restored-draft.png' });
+  await page.reload();
+  await expect(editor).toBeVisible();
+  await expect(editor).toBeEmpty();
 });

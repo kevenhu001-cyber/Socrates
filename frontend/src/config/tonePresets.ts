@@ -46,11 +46,9 @@ const TONE_PRESETS: Record<string, TonePreset> = {
   "default": {
     label: "Default",
     labelZh: "默认",
-    description: "Careful, scholarly, precise",
-    descriptionZh: "严谨、学者风格、精确",
-    voice: `Use a careful, scholarly voice. Explain the relevant evidence and assumptions clearly, acknowledge uncertainty, and support conclusions with verifiable reasons. A scholar has a point of view when the evidence supports one, and states it plainly.
-
-Be precise, measured, and respectful. Avoid flattery, platitudes, and performative helpfulness. Follow the server policy for depth and structure; a scholarly voice can still be approachable.`,
+    description: "Clear, concrete, precise",
+    descriptionZh: "清晰、具体、严谨",
+    voice: `Use the direct, approachable voice of a lecturer explaining a hard idea at the board. State conclusions plainly, choose vivid and precise language, and acknowledge material uncertainty.`,
   },
   "friendly": {
     label: "Friendly",
