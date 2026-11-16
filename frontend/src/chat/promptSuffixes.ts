@@ -29,14 +29,10 @@ export interface PromptSuffixDeps {
   getUserMemories: () => unknown;
 }
 
-import { appMode } from '../config/providers.ts';
-import { HIGH_EFFORT_OUTPUT_GUIDANCE } from './systemPrompts.ts';
 import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
-import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
 import { stateStore } from '../state/store.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
-import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 let userMemoriesReader: () => unknown = () => [];
 
@@ -67,16 +63,16 @@ export function memoriesSuffix(): string {
       if (local) s += local;
     }
   }
-  /* Also include user's custom instructions */
-  try {
-    const ci = typeof localStorage !== 'undefined' ? localStorage.getItem('socrates-custom-instructions') : null;
-    if (ci && ci.trim()) {
-      s += '\n\n## User custom instructions\n' + ci.trim() + '\n';
-    }
-  } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/promptSuffixes.ts:75', 'expected');
-    /* ignore */
-  }
+  /* Custom instructions are NOT injected here. They are user directives,
+     not recall data: the server's client-system classifier only treats a
+     system message as application instructions when its first non-empty
+     line carries an application marker, and this block's first line is
+     `## User's saved memories`, so everything appended here landed in the
+     untrusted client_context_data bucket, where the server policy says
+     not to follow directives. It also read the raw localStorage JSON
+     (`{"response":…,"about":…,"savedAt":…}`) instead of the parsed text.
+     The single injection point is chat/api/requestBody.ts, which emits
+     the correctly marked `[User custom instructions]` block. */
   return s;
 }
 
@@ -131,15 +127,13 @@ export function toneVoiceSuffix(): string {
   return '\n\n## VOICE (tone and register)\n' + voice + '\n';
 }
 
-/** Suffix telling the model whether to emit visible thinking. */
+/** Suffix telling the model whether to emit visible thinking.
+ *
+ *  The reasoning-depth directive is NOT here: it is server-owned
+ *  (`[Server policy: reasoning-effort]`), because the server is the side
+ *  that knows which effort level the turn actually runs at, and a client
+ *  copy inside the application-instructions block sat in a lower priority
+ *  tier than the server's own response defaults. */
 export function thinkingSuffix(): string {
-  const highTutorGuidance =
-    appMode === 'tutor' &&
-    getStoredReasoningEffort() === 'high'
-      ? '\n\n' + HIGH_EFFORT_OUTPUT_GUIDANCE
-      : '';
-  return (
-    highTutorGuidance +
-    '\n\nKeep the user-facing reply focused on the answer. Do not emit <think> blocks or reasoning_content in the user-facing message.'
-  );
+  return '\n\nKeep the user-facing reply focused on the answer. Do not emit <think> blocks or reasoning_content in the user-facing message.';
 }

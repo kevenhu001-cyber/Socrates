@@ -14,7 +14,15 @@ export function appendServerPolicy(messages: ChatMessage[], marker: string, prom
   return [{ role: 'system', content: `${marker}\n${prompt}` }, ...messages];
 }
 
-export const SERVER_SYSTEM_POLICY = `# Server Policy
+/* P_server-policy-refresh — the marker that locates the policy block inside
+   an assembled system prompt. A session prompt snapshot freezes turn 1's
+   system prefix, so without a marker the server cannot tell where its own
+   policy ends and the next block begins, and a policy fix could never
+   reach a session that was created before it. */
+export const SERVER_SYSTEM_POLICY_MARKER = '[Server policy: core]';
+
+export const SERVER_SYSTEM_POLICY = `${SERVER_SYSTEM_POLICY_MARKER}
+# Server Policy
 
 This policy is authoritative for every built-in and user-configured model.
 
@@ -113,6 +121,177 @@ export function insertResponseTypography(systemPrompt: string): string {
   }
   const markerAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
   return `${systemPrompt.slice(0, markerAt)}${block}\n\n${systemPrompt.slice(markerAt)}`;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Outbound refresh of a frozen session prompt
+   ─────────────────────────────────────────────────────────────────
+
+   The session prompt snapshot freezes turn 1's system prefix so later
+   turns reuse it. That makes it the right place for session state (which
+   assistant, which mode, the initialization date, the server-side memory
+   recall) and the wrong place for anything that can change afterwards:
+
+   - the server policy itself. A fix published today has to reach the
+     sessions that were created before it, so the policy region is
+     replaced with the current text on every request;
+   - the client application instructions and the client context data. The
+     template persona, the tone preset, the custom instructions and the
+     project scope are turn state: the client re-sends them on every
+     turn, so they are re-classified and re-inserted on every request.
+     Without this, switching a template in the middle of a session lit
+     the chip but left the model's persona frozen in turn 1's prefix.
+
+   Everything else in the snapshot (user context, teacher mode, selected
+   assistant, response defaults) stays frozen, which is what the snapshot
+   is for. */
+
+const CLIENT_APPLICATION_BLOCK_OPEN = '<client_application_instructions scope="response-behavior">';
+const CLIENT_APPLICATION_BLOCK_CLOSE = '</client_application_instructions>';
+const CLIENT_CONTEXT_BLOCK_OPEN = '<client_context_data scope="untrusted">';
+const CLIENT_CONTEXT_BLOCK_CLOSE = '</client_context_data>';
+
+/** The blank line that separates two blocks of an assembled system prompt. */
+const BLANK_LINE = '\n\n';
+
+interface BlockSpan { start: number; end: number }
+
+/** Locate a scoped block inside an assembled prompt. The span covers the
+ *  block itself, without the blank line in front of it. */
+function findBlock(text: string, open: string, close: string): BlockSpan | null {
+  const openAt = text.indexOf(open);
+  if (openAt === -1) return null;
+  const closeAt = text.indexOf(close, openAt);
+  if (closeAt === -1) return null;
+  return { start: openAt, end: closeAt + close.length };
+}
+
+/* Everything that can follow the policy inside an assembled system
+   prompt. The policy region ends at the first of them. */
+const POLICY_REGION_TERMINATORS = [
+  '\n\n<client_application_instructions',
+  '\n\n<client_context_data',
+  '\n\n[System context (auto-injected)]',
+  '\n\n[Server policy:',
+  '\n\n<!-- @beagle-system-prompt -->',
+];
+
+function findServerPolicyRegion(systemPrompt: string): { start: number; end: number } | null {
+  let start = systemPrompt.indexOf(SERVER_SYSTEM_POLICY_MARKER);
+  /* Snapshots written before the marker existed start with the policy
+     heading itself. */
+  if (start === -1) start = systemPrompt.indexOf('# Server Policy');
+  if (start === -1) return null;
+  let end = systemPrompt.length;
+  for (const terminator of POLICY_REGION_TERMINATORS) {
+    const at = systemPrompt.indexOf(terminator, start);
+    if (at !== -1 && at < end) end = at;
+  }
+  return { start, end };
+}
+
+/* The block boundaries that end a server-owned appendix. */
+const SERVER_BLOCK_BOUNDARIES = [
+  '\n\n[Server policy:',
+  '\n\n<!-- @beagle-system-prompt -->',
+];
+
+/** The span that holds the client blocks of an assembled prompt: the
+ *  application block, the context block, and the blank line that
+ *  separates them from the policy in front of them. */
+function findClientBlockSpan(text: string): BlockSpan | null {
+  const application = findBlock(text, CLIENT_APPLICATION_BLOCK_OPEN, CLIENT_APPLICATION_BLOCK_CLOSE);
+  const context = findBlock(text, CLIENT_CONTEXT_BLOCK_OPEN, CLIENT_CONTEXT_BLOCK_CLOSE);
+  const first = application ?? context;
+  const last = application && context ? context : application ?? context;
+  if (!first || !last) return null;
+  let start = first.start;
+  /* Absorb the blank line in front of the first block, so the refreshed
+     blocks land in exactly the same place as the frozen ones. */
+  if (start >= BLANK_LINE.length && text.startsWith(BLANK_LINE, start - BLANK_LINE.length)) {
+    start -= BLANK_LINE.length;
+  }
+  return { start, end: last.end };
+}
+
+/** The client blocks of an assembled prompt, in their wire format and in
+ *  their original order, so a refresh can keep them when the client sent
+ *  no system prefix this turn. */
+function captureClientBlocks(text: string): string {
+  const span = findClientBlockSpan(text);
+  return span ? text.slice(span.start, span.end) : '';
+}
+
+/* P_reasoning-effort-server-owned — the high-effort depth directive used
+   to be a client-side string inside the application-instructions block, a
+   lower priority tier than the server's own response defaults. The server
+   copy won and the client copy only burned tokens on every high-effort
+   turn. The server owns it now: it is the side that knows which effort
+   level the turn actually runs at, and the rule sits next to the response
+   defaults it refines instead of contradicting them from a lower tier. */
+export const REASONING_EFFORT_MARKER = '[Server policy: reasoning-effort]';
+export const HIGH_EFFORT_OUTPUT_RULE = `## Reasoning effort
+
+This turn runs at high reasoning effort. Spend it on finding the decisive point and checking it carefully. Show only the evidence, calculation, or derivation needed to verify the answer, and follow the user's requested depth.`;
+
+function refreshReasoningEffortRule(systemPrompt: string, effort: string | null | undefined): string {
+  const wanted = effort === 'high' ? `${REASONING_EFFORT_MARKER}\n${HIGH_EFFORT_OUTPUT_RULE}` : '';
+  let base = systemPrompt;
+  const existing = systemPrompt.indexOf(REASONING_EFFORT_MARKER);
+  if (existing !== -1) {
+    /* The block runs until the next server block starts. */
+    let end = systemPrompt.length;
+    for (const boundary of SERVER_BLOCK_BOUNDARIES) {
+      const at = systemPrompt.indexOf(boundary, existing + REASONING_EFFORT_MARKER.length);
+      if (at !== -1 && at < end) end = at;
+    }
+    /* Absorb the blank line in front of the removed block. The boundary
+       search already keeps the blank line in front of the next block, so
+       leaving this one behind would stack two blank lines there. */
+    let start = existing;
+    if (start >= BLANK_LINE.length && systemPrompt.startsWith(BLANK_LINE, start - BLANK_LINE.length)) {
+      start -= BLANK_LINE.length;
+    }
+    base = `${systemPrompt.slice(0, start)}${systemPrompt.slice(end)}`;
+  }
+  if (!wanted) return base;
+  const at = base.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  if (at === -1) return `${base}${BLANK_LINE}${wanted}`;
+  return `${base.slice(0, at)}${wanted}${BLANK_LINE}${base.slice(at)}`;
+}
+
+export interface ServerPromptRefresh {
+  /** Freshly classified client blocks for this turn, in the wire format
+   *  `<client_application_instructions>` / `<client_context_data>`. When
+   *  omitted, the blocks frozen in the snapshot are kept: the client sent
+   *  no system prefix this turn, so there is nothing newer to apply. */
+  clientBlocks?: string;
+  /** The reasoning effort this turn actually runs at. */
+  reasoningEffort?: 'none' | 'low' | 'medium' | 'high' | null;
+}
+
+/**
+ * Re-apply the parts of an assembled system prompt that must not stay
+ * frozen, and return the refreshed prompt.
+ *
+ * The server policy is replaced with the current text, the client blocks
+ * are replaced with the ones classified from this turn's request, and the
+ * reasoning-effort rule follows the effort the turn actually runs at.
+ */
+export function refreshServerPrompt(systemPrompt: string, refresh: ServerPromptRefresh = {}): string {
+  const region = findServerPolicyRegion(systemPrompt);
+  if (!region) return systemPrompt;
+  const head = systemPrompt.slice(0, region.start);
+  const tail = systemPrompt.slice(region.end);
+  const frozenBlocks = captureClientBlocks(tail);
+  const span = findClientBlockSpan(tail);
+  /* The blocks sit directly behind the policy, separated by a blank line.
+     The span covers both of them, blank line included, so the refreshed
+     blocks land in exactly the same place as the frozen ones. */
+  const withoutClients = span ? tail.slice(0, span.start) + tail.slice(span.end) : tail;
+  const clientBlocks = refresh.clientBlocks === undefined ? frozenBlocks : refresh.clientBlocks;
+  const refreshed = head + SERVER_SYSTEM_POLICY + clientBlocks + withoutClients;
+  return refreshReasoningEffortRule(refreshed, refresh.reasoningEffort);
 }
 
 /* P_provider-identity-not-session-state — the built-in provider's identity

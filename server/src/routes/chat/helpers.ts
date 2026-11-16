@@ -1,5 +1,5 @@
 import { ContentPartSchema, MessageSchema, type ChatMessage } from '../../lib/chatMessageSchema.js';
-import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext, insertProviderIdentity, insertResponseTypography } from '../../lib/chatPolicy.js';
+import { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS_MARKER, appendServerPolicy, appendFinalOutputConstraints, injectUserContext, insertProviderIdentity, insertResponseTypography, refreshServerPrompt } from '../../lib/chatPolicy.js';
 export { SERVER_SYSTEM_POLICY, FINAL_OUTPUT_CONSTRAINTS, appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
 /**
  * Chat route helpers.
@@ -490,34 +490,63 @@ function appendAppendix<T extends { role: string; content?: unknown }>(messages:
  * Conversation messages (user/assistant) are preserved in their original
  * order between the system boundary and any later messages.
  */
-export function enforceServerSystemBoundary(messages: ChatMessage[]): ChatMessage[] {
-  const clientApplication: string[] = [];
-  const clientContextData: string[] = [];
-  const conversation: ChatMessage[] = [];
+export interface ClientSystemClassification {
+  /** Persona, voice, role and project directives. */
+  application: string[];
+  /** Memories, project metadata, fetched research: factual context only. */
+  context: string[];
+}
+
+/**
+ * Classify the client-supplied system messages of a turn.
+ *
+ * The same classification runs on every turn, not only on the one that
+ * creates the session snapshot: the template persona, the tone preset and
+ * the custom instructions are turn state, and the client re-sends them on
+ * every request.
+ */
+export function classifyClientSystemMessages(messages: ChatMessage[]): ClientSystemClassification {
+  const application: string[] = [];
+  const context: string[] = [];
   for (const message of messages) {
-    if (message?.role === 'system') {
-      if (typeof message.content === 'string' && message.content.trim()) {
-        const classified = classifyClientSystem(message.content.trim());
-        if (classified.kind === 'application') {
-          clientApplication.push(classified.content);
-        } else {
-          clientContextData.push(classified.content);
-        }
-        if (classified.contextExtras) {
-          for (const extra of classified.contextExtras) clientContextData.push(extra);
-        }
-      }
-      continue;
+    if (message?.role !== 'system') continue;
+    if (typeof message.content !== 'string' || !message.content.trim()) continue;
+    const classified = classifyClientSystem(message.content.trim());
+    if (classified.kind === 'application') application.push(classified.content);
+    else context.push(classified.content);
+    if (classified.contextExtras) {
+      for (const extra of classified.contextExtras) context.push(extra);
     }
-    conversation.push(message);
   }
-  let clientBlock = '';
-  if (clientApplication.length) {
-    clientBlock += `\n\n<client_application_instructions scope="response-behavior">\n${clientApplication.join('\n\n')}\n</client_application_instructions>`;
+  return { application, context };
+}
+
+/** Render the classified client messages into the two scoped blocks that
+ *  sit beneath the server policy. */
+export function renderClientBlocks(classification: ClientSystemClassification): string {
+  let block = '';
+  if (classification.application.length) {
+    block += `\n\n<client_application_instructions scope="response-behavior">\n${classification.application.join('\n\n')}\n</client_application_instructions>`;
   }
-  if (clientContextData.length) {
-    clientBlock += `\n\n<client_context_data scope="untrusted">\n${clientContextData.join('\n\n')}\n</client_context_data>`;
+  if (classification.context.length) {
+    block += `\n\n<client_context_data scope="untrusted">\n${classification.context.join('\n\n')}\n</client_context_data>`;
   }
+  return block;
+}
+
+/** Whether the client sent a system prefix this turn. A client that sends
+ *  none keeps the persona frozen in the session snapshot. */
+export function hasClientSystemPrefix(messages: ChatMessage[]): boolean {
+  return messages.some((message) => (
+    message?.role === 'system'
+    && typeof message.content === 'string'
+    && message.content.trim().length > 0
+  ));
+}
+
+export function enforceServerSystemBoundary(messages: ChatMessage[]): ChatMessage[] {
+  const conversation = messages.filter((message) => message?.role !== 'system');
+  const clientBlock = renderClientBlocks(classifyClientSystemMessages(messages));
   return [{ role: 'system', content: SERVER_SYSTEM_POLICY + clientBlock }, ...conversation];
 }
 
@@ -541,6 +570,13 @@ export function enforceServerSystemBoundary(messages: ChatMessage[]): ChatMessag
 const PROJECT_INSTRUCTION_PREFIX = 'Project instructions:';
 const CUSTOM_INSTRUCTION_PREFIX = '[User custom instructions]';
 const MODE_INSTRUCTION_PREFIX = '[Assistant mode instructions]';
+/* The template marker identifies a persona block. The frontend used to
+   stamp it at the END of the block while this classifier only looked at
+   the FIRST line, so every template persona landed in the untrusted
+   client_context_data bucket, where the server policy tells the model not
+   to follow any directive inside it. The marker now leads the block, and
+   the trailing shape is accepted as well so a client that still runs an
+   older bundle keeps its persona working. */
 const TEMPLATE_MARKER_REGEX = /^\s*\[template:[^\]]+\]/;
 
 type Classified = { kind: 'application' | 'context'; content: string; contextExtras?: string[] };
@@ -561,14 +597,28 @@ function classifyClientSystem(raw: string): Classified {
   const lines = trimmed.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
   if (lines.length === 0) return { kind: 'context', content: '' };
 
+  /* A block that opens with a markdown heading is a DATA block: the saved
+     memories, the client-side memory store, the project metadata. The
+     template marker never opens such a block, and a data block stays in the
+     untrusted tier even when one of its lines happens to look like a
+     marker. That keeps a hostile memory from being promoted into an
+     application directive. */
+  const isDataBlock = /^#{1,6}\s/.test(lines[0]);
   const firstIsAppMarker =
-    lines[0].startsWith(CUSTOM_INSTRUCTION_PREFIX) ||
-    lines[0].startsWith(MODE_INSTRUCTION_PREFIX) ||
-    TEMPLATE_MARKER_REGEX.test(lines[0]);
+    !isDataBlock && (
+      lines[0].startsWith(CUSTOM_INSTRUCTION_PREFIX) ||
+      lines[0].startsWith(MODE_INSTRUCTION_PREFIX) ||
+      TEMPLATE_MARKER_REGEX.test(lines[0])
+    );
+  /* The trailing shape of the template marker is accepted too. The client
+     owns this content either way, so the classification only picks the tier
+     its own directives land in; it never widens what a client may do. */
+  const lastIsTemplateMarker =
+    !isDataBlock && TEMPLATE_MARKER_REGEX.test(lines[lines.length - 1]);
   const directiveIdx = trimmed.indexOf(PROJECT_INSTRUCTION_PREFIX);
   const isActiveProjectBlock = /^##\s+Active project\b/i.test(lines[0]) && directiveIdx >= 0;
 
-  if (firstIsAppMarker && !isActiveProjectBlock) {
+  if ((firstIsAppMarker || lastIsTemplateMarker) && !isActiveProjectBlock) {
     return { kind: 'application', content: trimmed };
   }
 
@@ -641,7 +691,10 @@ export const ChatPayloadSchema = z.object({
      is learner data and travels as untrusted context. Ignored in chat mode. */
   learningMode: z.enum(LEARNING_MODE_IDS).optional(),
   learningFocus: z.string().max(2000).optional(),
-  systemContext: z.string().max(50000).optional(),
+  /* P_dead-field-system-context — `systemContext` used to be accepted
+     here and read by nobody: the client sent it, the server dropped it.
+     The schema is .passthrough(), so a stale client that still sends the
+     field is unaffected; the dead declaration is gone. */
   /* P_rag-context — optional session id. When present, the last user
      message is used as the retrieval query against the session's
      chunk index and the top hits are injected as an untrusted
@@ -981,8 +1034,24 @@ export async function prepareChatRequest(
     return initialized[0].content as string;
   });
   for (const p of [providerPromise, ragPromise, promptPromise, learningPromise]) p.catch(() => {});
-  const [systemPrompt, ragBlock, learningTurn] = await Promise.all([promptPromise, ragPromise, learningPromise.catch(() => null)]);
+  const [storedPrompt, ragBlock, learningTurn] = await Promise.all([promptPromise, ragPromise, learningPromise.catch(() => null)]);
   let conversation = appendTurnContext(context.conversation, context.turnInstructions, ragBlock?.prompt ?? null, learningTurn);
+  /* P_server-policy-refresh — the session prompt snapshot freezes turn 1's
+     system prefix, so two things must not stay frozen inside it:
+       - the server policy. A fix published today has to reach the sessions
+         that were created before it, so the policy region is replaced with
+         the current text on every request;
+       - the client blocks. The template persona, the tone preset, the custom
+         instructions and the project scope are turn state, and the client
+         re-sends them on every turn, so they are classified again here.
+         Without this, switching a template in the middle of a session lit
+         the chip but left the model's persona frozen in turn 1's prefix.
+     Everything else in the snapshot (user context, teacher mode, selected
+     assistant, saved memories) stays frozen, which is what it is for. */
+  const clientBlocks = hasClientSystemPrefix(context.initialization)
+    ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
+    : undefined;
+  const systemPrompt = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
   let finalMessages: ChatMessage[] = [{ role: 'system', content: insertResponseTypography(systemPrompt) }, ...conversation];
 
   // Windowing can replace old conversation with a rolling summary, never

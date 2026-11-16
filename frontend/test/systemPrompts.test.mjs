@@ -4,7 +4,6 @@ import test from 'node:test';
 import {
   CHAT_CONCISE_PROMPT,
   CHAT_SYSTEM_PROMPT,
-  HIGH_EFFORT_OUTPUT_GUIDANCE,
   LEARNING_SCAFFOLD_GUIDANCE,
   PYTHON_RUNNABLE_RULES,
 } from '../src/chat/systemPrompts.ts';
@@ -59,12 +58,18 @@ test('chat prompts do not demand disclosure of private chain of thought', () => 
   }
 });
 
-test('high effort checks the decisive point and defers response length to the server and the user', () => {
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /find the decisive point and check it carefully/i);
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /Follow the server's response defaults and the user's requested depth/);
-  assert.match(HIGH_EFFORT_OUTPUT_GUIDANCE, /needed to verify the answer/i);
-  assert.ok(CHAT_SYSTEM_PROMPT.includes(HIGH_EFFORT_OUTPUT_GUIDANCE));
-  assert.ok(!CHAT_CONCISE_PROMPT.includes(HIGH_EFFORT_OUTPUT_GUIDANCE));
+test('the reasoning-depth directive is server-owned, not duplicated in the client prompt', () => {
+  /* P_reasoning-effort-server-owned — the high-effort depth directive used
+     to live here, inside the client-application instructions block, which is
+     a LOWER priority tier than the server's own response defaults. The
+     server copy won, so the client copy only burned tokens on every
+     high-effort turn. The server emits it as `[Server policy:
+     reasoning-effort]` next to the response defaults it refines. */
+  for (const prompt of [CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT]) {
+    assert.doesNotMatch(prompt, /decisive point/i);
+    assert.doesNotMatch(prompt, /reasoning effort/i);
+    assert.doesNotMatch(prompt, /check it carefully/i);
+  }
 });
 
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {

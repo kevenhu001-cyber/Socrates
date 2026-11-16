@@ -25,15 +25,16 @@ Follow the server policy for visualization choices and the supplied tool schemas
 /** Compatibility export name; learning output protocols are server-owned. */
 export const LEARNING_SCAFFOLD_GUIDANCE = `Follow the server's learning-interaction policy and the current native tool schemas. Learning cards supplement the explanation and never wrap the whole answer. Ordinary conversation stays in prose. Use a learning interaction only when it serves the current request; if the tool is unavailable, use ordinary prose or Markdown. Do not emit legacy XML learning tags or invent component functions.`;
 
-/* HIGH_EFFORT_OUTPUT_GUIDANCE carries only the depth directive. Response
- * formatting and math delimiters are owned by SERVER_SYSTEM_POLICY. The depth
- * directive distinguishes verifiable public derivations from private scratch
- * work, consistently with that policy. */
-export const HIGH_EFFORT_OUTPUT_GUIDANCE = `Use high reasoning effort to find the decisive point and check it carefully. Show only the evidence, calculation, or derivation needed to verify the answer. Follow the server's response defaults and the user's requested depth.`;
+/* P_reasoning-effort-server-owned — the high-effort depth directive is
+ * server-owned. It used to sit here, inside the client-application
+ * instructions block, which is a LOWER priority tier than the server's own
+ * response defaults: the server copy won, so the client copy only burned
+ * tokens on every high-effort turn. The server emits it as
+ * `[Server policy: reasoning-effort]` next to the response defaults it
+ * refines, because the server is the side that knows which effort level the
+ * turn actually runs at. */
 
 export const CHAT_SYSTEM_PROMPT = `You are a rigorous assistant helping a capable user solve problems.
-
-${HIGH_EFFORT_OUTPUT_GUIDANCE}
 
 Challenge a false premise politely and explain the correction when relevant to the request.
 

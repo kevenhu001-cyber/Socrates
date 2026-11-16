@@ -51,12 +51,17 @@ test('thinkingSuffix keeps the reply focused without effort guidance in chat mod
   );
 });
 
-test('thinkingSuffix prepends high-effort guidance for tutor mode', () => {
+test('thinkingSuffix carries no effort directive in tutor mode either', () => {
+  /* P_reasoning-effort-server-owned — the depth directive is server-owned
+     (`[Server policy: reasoning-effort]`), because the server is the side
+     that knows which effort level the turn actually runs at. A client copy
+     sat in a lower priority tier than the server's response defaults and
+     only burned tokens. */
   setAppMode('tutor');
   try {
     const suffix = thinkingSuffix();
-    assert.match(suffix, /deepen the explanation/);
     assert.match(suffix, /Do not emit <think> blocks/);
+    assert.doesNotMatch(suffix, /decisive point|reasoning effort|deepen/i);
   } finally {
     setAppMode('chat');
   }

@@ -62,7 +62,16 @@ export function injectTemplateSystemPrompt(messages: PromptMessage[]): PromptMes
       return messages;
     }
   }
-  const stamped = activeTemplate.systemPrompt + '\n\n' + marker;
+  /* The marker MUST lead the block. The server's client-system classifier
+     (server/src/routes/chat/helpers.ts) treats a system message as
+     application instructions only when its FIRST non-empty line matches
+     one of the application markers: `[template:<id>]`, `[User custom
+     instructions]`, `[Assistant mode instructions]`. A trailing marker
+     left the whole template persona in the untrusted client_context_data
+     bucket, where the server policy tells the model not to follow any
+     directive inside it. Keep the marker first, exactly like the other
+     two application markers. */
+  const stamped = marker + '\n\n' + activeTemplate.systemPrompt;
   const cloned = messages.slice();
   /* Find first system message and inject after it; if no
      system message, prepend. */

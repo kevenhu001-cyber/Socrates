@@ -16,7 +16,8 @@
  *   - frontend/src/tutor/{flow,policy}.ts
  *   - frontend/src/config/tonePresets.ts
  *   - packages/ui/src/tutor.ts                     (DOM-free copy for Universal App)
- *   - server/src/routes/chat/helpers.ts            (SERVER_SYSTEM_POLICY + tool hints)
+ *   - server/src/routes/chat/helpers.ts            (tool hints + tool contracts)
+ *   - server/src/lib/chatPolicy.ts                 (SERVER_SYSTEM_POLICY + response defaults)
  *
  * The ratchet baseline lives at scripts/prompt-dashes.baseline.json. Each
  * scan reports the list of offending (file, line) tuples. If a new tuple
@@ -59,6 +60,7 @@ const PROMPT_FILES = [
   'packages/ui/src/tutor.ts',
   /* server-side prompt assembly */
   'server/src/routes/chat/helpers.ts',
+  'server/src/lib/chatPolicy.ts',
 ];
 
 /* Skip-line predicate: ignore block comments and single-line comments,

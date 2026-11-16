@@ -7,12 +7,12 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary, appendAssistantInstructions, appendMemoryContext, prependTeacherModePrompt, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME } from './chat/helpers.js';
+import { enforceServerSystemBoundary, appendAssistantInstructions, appendMemoryContext, prependTeacherModePrompt, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME, classifyClientSystemMessages, renderClientBlocks, hasClientSystemPrefix } from './chat/helpers.js';
 import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
 import { resolveSessionPromptOrAssemble } from '../services/core/sessionPromptSnapshot.js';
 import { splitPromptContext, appendTurnContext } from '../lib/chatPromptContext.js';
-import { insertProviderIdentity, insertResponseTypography } from '../lib/chatPolicy.js';
+import { insertProviderIdentity, insertResponseTypography, refreshServerPrompt } from '../lib/chatPolicy.js';
 import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 
 const router = Router();
@@ -62,7 +62,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
-    let systemPrompt = await resolveSessionPromptOrAssemble(req.userId ?? undefined, sessionId, async () => {
+    const storedPrompt = await resolveSessionPromptOrAssemble(req.userId ?? undefined, sessionId, async () => {
       let initialized = enforceServerSystemBoundary(context.initialization);
       initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
       if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
@@ -71,7 +71,21 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       initialized = appendFinalOutputConstraints(initialized);
       return initialized[0].content as string;
     });
-    systemPrompt = insertProviderIdentity(insertResponseTypography(systemPrompt), await getBeagleSystemPrompt());
+    /* P_server-policy-refresh — the snapshot freezes turn 1's system
+       prefix. The server policy and the client's turn state (template
+       persona, tone preset, custom instructions) are re-derived on every
+       request, so a policy fix reaches the sessions that were created
+       before it and a template switched mid-session changes the persona.
+       The client re-sends its system prefix on every turn, so the blocks
+       can be classified again; a turn without one keeps the frozen
+       blocks. */
+    const clientBlocks = hasClientSystemPrefix(context.initialization)
+      ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
+      : undefined;
+    const systemPrompt = insertProviderIdentity(
+      insertResponseTypography(refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort })),
+      await getBeagleSystemPrompt(),
+    );
     let messages = transformMessagesForModel([
       { role: 'system', content: systemPrompt },
       ...appendTurnContext(context.conversation, context.turnInstructions, null),
