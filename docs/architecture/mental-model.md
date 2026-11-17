@@ -21,10 +21,9 @@ index.html (host ids, no #root)
                           mounts the remaining hosts after auth reveals the shell
 ```
 
-`react/App.tsx` is an **experimental** single-tree composition. It is loaded
-lazily only when a `#root` host exists, and `index.html` does not create one
-yet. Do not treat it as the production entry; either finish the switch (add
-`#root`, run both trees in CI, delete specs) or leave it out of the entry.
+The host registry is the only React composition root. There is no second
+`#root` tree; add a new surface by adding one spec, not by building a parallel
+shell.
 
 ## 2. One chat turn
 
@@ -102,7 +101,7 @@ Do not add a competing palette or a second owner for a surface. The guards in
 
 | Change | Home |
 |---|---|
-| New React surface | `frontend/src/react/<feature>/`, mounted by one spec or by `App.tsx` (not both) |
+| New React surface | `frontend/src/react/<feature>/`, mounted by exactly one spec |
 | Shared presentational component | `packages/ui/<subpath>` (DOM-free, narrow export) |
 | Global state | `frontend/src/store/` domain + typed action |
 | Legacy DOM action | existing module in `frontend/src/chat|ui|render`; do not add a new window bridge |

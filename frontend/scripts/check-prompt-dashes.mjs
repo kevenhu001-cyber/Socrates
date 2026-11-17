@@ -15,7 +15,6 @@
  *   - frontend/src/chat/{socraticDirectives,systemPrompts,promptTemplates,promptSuffixes,lang,turn/controller}.ts
  *   - frontend/src/tutor/{flow,policy}.ts
  *   - frontend/src/config/tonePresets.ts
- *   - packages/ui/src/tutor.ts                     (DOM-free copy for Universal App)
  *   - server/src/routes/chat/prepare/prompts.ts     (tool hints + tool contracts)
  *   - server/src/routes/chat/prepare/clientSystem.ts (client-system boundary)
  *   - server/src/routes/chat/prepare/context.ts      (learning-mode block)
@@ -65,7 +64,6 @@ const PROMPT_FILES = [
   'frontend/src/tutor/policy.ts',
   'frontend/src/config/tonePresets.ts',
   /* DOM-free copy for the Universal App */
-  'packages/ui/src/tutor.ts',
   /* server-side prompt assembly */
   'server/src/routes/chat/prepare/prompts.ts',
   'server/src/routes/chat/prepare/clientSystem.ts',

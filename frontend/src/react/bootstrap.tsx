@@ -10,27 +10,6 @@ import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { canReloadComposer, reloadWithComposerDrafts } from '../composer/reloadDrafts.ts';
 import { isImportLoadError } from './lib/boot/retryImport';
-import { mountOwnedRoot } from './lib/boot/ownedRoot';
-import { createElement } from 'react';
-
-/**
- * Experimental single-tree entry. It is only reachable when the document
- * ships a `#root` host; `index.html` currently does not, so production keeps
- * using the host registry below. Importing `App` lazily keeps the experimental
- * tree (and its component graph) out of the entry chunk until that switch happens.
- */
-export function mountApp(container?: HTMLElement | null): boolean {
-  const host = container || document.getElementById('root');
-  if (!host) return false;
-  void import('./App')
-    .then(({ App }) => {
-      if (host.isConnected) mountOwnedRoot(host, 'app', createElement(App));
-    })
-    .catch((error: unknown) => {
-      reportSwallow(error, 'react/bootstrap.mountApp', 'invariant');
-    });
-  return true;
-}
 
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
@@ -59,11 +38,6 @@ const mountOptions: MountRegistryOptions = {
 export function bootstrapReactCompatibilityRuntime(): void {
   registerAssistantTurnRenderer({ mount: mountAssistantTurn, releaseAll: releaseAssistantTurns });
   publishReactChatRuntime({ type: 'state-synced', reason: 'react-bootstrap' });
-  const root = document.getElementById('root');
-  if (root) {
-    mountApp(root);
-    return;
-  }
   for (const id of ['newReplyPill', 'composerInputWrap']) {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
   }
