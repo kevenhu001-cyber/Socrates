@@ -29,7 +29,7 @@ function useMinuteTick(enabled: boolean): number {
   return tick;
 }
 
-function SessionListInner() {
+export function SessionList() {
   const { sessions, currentSessionId, searchQuery, filter, fetchFailed } = useSessionListSnapshot();
   const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
   const nowTick = useMinuteTick(sidebarOpen);
@@ -102,7 +102,7 @@ export function mountSessionList(): void {
     container,
     'session-list',
     <ErrorBoundary>
-      <SessionListInner />
+      <SessionList />
     </ErrorBoundary>,
   );
 }

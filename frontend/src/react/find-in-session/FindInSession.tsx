@@ -9,7 +9,7 @@ import { FIND_BAR_ID } from './findInSession.constants';
 import { FindInSessionControls } from './FindInSessionControls';
 import type { FindInSessionSnapshot } from './types';
 
-function FindInSession() {
+export function FindInSession() {
   const [snapshot, setSnapshot] = useState<FindInSessionSnapshot>(getFindInSessionSnapshot);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLElement | null>(null);

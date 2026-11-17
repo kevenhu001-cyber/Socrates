@@ -15,7 +15,7 @@ import { buildChips } from './recentsFilterChips.model';
 
 const TARGET_ID = 'recentsFilterChips';
 
-function RecentsFilterChips() {
+export function RecentsFilterChips() {
   const [, refreshLanguage] = useReducer((value: number) => value + 1, 0);
   useEffect(() => {
     document.addEventListener('socrates:langchange', refreshLanguage);

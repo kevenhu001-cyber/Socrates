@@ -16,7 +16,7 @@ import { WorkspaceLoadingView } from '../workspace/WorkspaceLoadingView';
 
 const PANEL_ID = 'scheduledPanel';
 
-function ScheduledPage() {
+export function ScheduledPage() {
   const snap = useScheduledStore();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'all' | 'active'>('all');

@@ -77,7 +77,7 @@ function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MoreP
   );
 }
 
-function MorePopover() {
+export function MorePopover() {
   const isOpen = useMorePopoverSnapshot();
   const { pick } = useMorePopoverDispatch();
   const menuRef = useRef<HTMLDivElement>(null);

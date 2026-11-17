@@ -1,4 +1,4 @@
-export { mountSessionList } from './SessionList';
+export { mountSessionList, SessionList } from './SessionList';
 export {
   getSessionListSnapshot,
   subscribeToSessionList,

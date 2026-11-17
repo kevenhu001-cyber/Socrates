@@ -10,6 +10,15 @@ import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { canReloadComposer, reloadWithComposerDrafts } from '../composer/reloadDrafts.ts';
 import { isImportLoadError } from './lib/boot/retryImport';
+import { App } from './App';
+import { mountOwnedRoot } from './lib/boot/ownedRoot';
+
+export function mountApp(container?: HTMLElement | null): boolean {
+  const host = container || document.getElementById('root');
+  if (!host) return false;
+  mountOwnedRoot(host, 'app', <App />);
+  return true;
+}
 
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
@@ -38,6 +47,11 @@ const mountOptions: MountRegistryOptions = {
 export function bootstrapReactCompatibilityRuntime(): void {
   registerAssistantTurnRenderer({ mount: mountAssistantTurn, releaseAll: releaseAssistantTurns });
   publishReactChatRuntime({ type: 'state-synced', reason: 'react-bootstrap' });
+  const root = document.getElementById('root');
+  if (root) {
+    mountApp(root);
+    return;
+  }
   for (const id of ['newReplyPill', 'composerInputWrap']) {
     if (!document.getElementById(id)) throw new Error(`React mount target "#${id}" was not found.`);
   }

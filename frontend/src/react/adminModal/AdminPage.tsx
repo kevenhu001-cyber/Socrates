@@ -9,7 +9,7 @@ import { LoginPage } from './LoginPage';
 import { SystemModelSection } from './SystemModelSection';
 import { useAdminConsole } from './useAdminConsole';
 
-function AdminPage() {
+export function AdminPage() {
   const admin = useAdminConsole();
 
   if (admin.authed === null) {

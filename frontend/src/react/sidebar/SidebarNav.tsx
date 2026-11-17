@@ -11,7 +11,7 @@ import { SidebarNavButton } from './SidebarNavButton';
 import { BUTTONS, NAV_ID } from './sidebarNav.items';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 
-function SidebarNav() {
+export function SidebarNav() {
   useLocaleRefresh();
   const active = useNavigationStore((state) => state.activeDestination);
   const moreOpen = useMorePopoverStore((state) => state.isOpen);

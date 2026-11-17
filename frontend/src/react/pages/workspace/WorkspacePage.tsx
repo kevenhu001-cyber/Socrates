@@ -6,7 +6,7 @@ import { ProjectsView } from './ProjectsView';
 import { PluginsView } from './PluginsView';
 import { DESTINATIONS, isWorkspacePage, type WorkspacePage as WorkspacePageKey } from '../../../sidebar/navigation.destinations';
 
-function WorkspacePage({ page }: { page: WorkspacePageKey }) {
+export function WorkspacePage({ page }: { page: WorkspacePageKey }) {
   const snap = useWorkspaceSnapshot(page);
   const dispatch = useWorkspaceDispatch();
 
