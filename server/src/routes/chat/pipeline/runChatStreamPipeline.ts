@@ -28,7 +28,7 @@ import {indexMessageChunks} from '../../../services/embeddings/chunkIndex.js';
 import { createTurnEventController } from '../../../services/turnEvents.js';
 import { createTurnActivityController } from '../../../services/turnActivity.js';
 import {completedActivitySummary} from '../../../services/turnSummary.js';
-import {streamChatCompletion} from '../../../services/core/llm.js';
+import {streamChatCompletion} from '../../../services/core/llm/stream.js';
 import {
   MAX_TOOL_ARGUMENT_CHARS,
   normalizeToolCalls,

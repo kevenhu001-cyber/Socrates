@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getActiveApiKey } from '../services/core/apiKey.js';
-import { streamChatCompletion, callChatCompletion } from '../services/core/llm.js';
+import { streamChatCompletion } from '../services/core/llm/stream.js';
+import { callChatCompletion } from '../services/core/llm/complete.js';
 import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../services/core/usageTracker.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';

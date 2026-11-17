@@ -11,7 +11,7 @@ import type { Request, Response } from 'express';
 import { ApiError } from '../../../lib/errors.js';
 import { getActiveApiKey } from '../../../services/core/apiKey.js';
 import { validateThinkingMode } from '../../../services/core/llmProtocol.js';
-import { DEFAULT_MAX_TOKENS } from '../../../services/core/llm.js';
+import { DEFAULT_MAX_TOKENS } from '../../../services/core/llm/types.js';
 import { estimateContextMessageTokens } from '../../../services/core/usageTracker.js';
 import { resolveContextBudget } from '../../../lib/modelCapabilities.js';
 import { isMultimodalProvider } from '../../../lib/multimodal.js';

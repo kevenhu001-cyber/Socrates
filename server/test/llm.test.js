@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for src/services/core/llm.js — the SSE chat-completion
+ * Unit tests for src/services/core/llm/{stream,toolArgs}.ts — the SSE chat-completion
  * proxy. This module is a security boundary (user-supplied API
  * keys, model output, tool-call dispatch) and the streaming
  * pipeline has multiple subtle branches: caller aborts, tool_call
@@ -18,15 +18,15 @@ import { EventEmitter } from 'node:events';
 import { runChatStreamPipeline } from '../src/routes/chat/pipeline/runChatStreamPipeline.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 
+import { streamChatCompletion } from '../src/services/core/llm/stream.js';
+import { callChatCompletion } from '../src/services/core/llm/complete.js';
+import { isToolFinishReason } from '../src/services/core/llm/protocol.js';
 import {
-  streamChatCompletion,
-  callChatCompletion,
-  isToolFinishReason,
   appendToolArgumentDelta,
   createToolArgumentStream,
   mergeToolArgumentDelta,
   mergeToolNameDelta,
-} from '../src/services/core/llm.js';
+} from '../src/services/core/llm/toolArgs.js';
 
 const ORIG_FETCH = globalThis.fetch;
 

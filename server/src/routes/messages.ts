@@ -12,7 +12,7 @@ import { isUuid } from '../lib/validate.js';
 import { sanitizeStoredHtml, sanitizePlainText } from '../lib/sanitize.js';
 import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
-import { streamChatCompletion } from '../services/core/llm.js';
+import { streamChatCompletion } from '../services/core/llm/stream.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { invalidateForMessage, ttsTextHash } from '../services/embeddings/ttsStore.js';
 import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';

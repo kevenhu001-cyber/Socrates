@@ -20,7 +20,7 @@
  *   - Uses the user's active LLM provider (same one the chat route uses).
  */
 
-import { callChatCompletion } from './core/llm.js';
+import { callChatCompletion } from './core/llm/complete.js';
 import { getActiveApiKey } from './core/apiKey.js';
 
 const _cache = new Map<string, string[]>();

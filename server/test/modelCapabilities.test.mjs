@@ -1,6 +1,6 @@
 import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { callChatCompletion } from '../src/services/core/llm.js';
+import { callChatCompletion } from '../src/services/core/llm/complete.js';
 import {
   DEFAULT_CONTEXT_BUDGET_TOKENS,
   resolveContextBudget,

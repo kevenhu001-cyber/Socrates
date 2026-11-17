@@ -20,11 +20,11 @@ import { initDb, closeDb } from '../src/db/index.js';
 import { users, authSessions, sessions, apiKeys } from '../src/db/schema/index.js';
 import { registerStreamRoute } from '../src/routes/chat/stream.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { getLlmDispatcher } from '../src/services/core/llm.js';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 import { errorHandler } from '../src/middleware/error.js';
 import { buildSseErrorFrame } from '../src/lib/sseErrorFrame.js';
-import { LlmProviderError } from '../src/services/core/llm.js';
+import { LlmProviderError } from '../src/services/core/llm/types.js';
 import { ApiError } from '../src/lib/errors.js';
 import { listen } from './_http.js';
 

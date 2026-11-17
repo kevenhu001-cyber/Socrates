@@ -7,7 +7,7 @@ import { getDb } from '../db/index.js';
 import { artifacts, artifactVersions, files } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
-import { callChatCompletion } from '../services/core/llm.js';
+import { callChatCompletion } from '../services/core/llm/complete.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
 import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
 

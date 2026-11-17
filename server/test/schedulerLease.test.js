@@ -11,7 +11,7 @@ import { users, apiKeys, scheduledTasks, scheduledTaskLeases, messages } from '.
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease } from '../src/services/core/scheduledTaskLease.js';
 import { runScheduledTaskNow, pollScheduledTasksOnce, abortActiveScheduledRuns } from '../src/services/core/scheduler.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { getLlmDispatcher } from '../src/services/core/llm.js';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 import { listen } from './_http.js';
 

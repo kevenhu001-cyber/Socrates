@@ -1,7 +1,9 @@
 import test, { after, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createUpstreamRetryBudget, UPSTREAM_RETRY_BUDGET_MS } from '../src/lib/upstreamRetryBudget.ts';
-import { streamChatCompletion, callChatCompletion, getLlmDispatcher } from '../src/services/core/llm.ts';
+import { streamChatCompletion } from '../src/services/core/llm/stream.ts';
+import { callChatCompletion } from '../src/services/core/llm/complete.ts';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.ts';
 import { buildSseErrorFrame } from '../src/lib/sseErrorFrame.ts';
 import { errorHandler } from '../src/middleware/error.ts';
 

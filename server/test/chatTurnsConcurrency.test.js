@@ -12,7 +12,7 @@ import { users, authSessions, chatTurnEvents, chatTurns, sessions, apiKeys } fro
 import { createChatTurn, listChatTurnEvents, claimChatTurnExecution, touchChatTurnExecution, recoverStaleChatTurns, setChatTurnStatus, getChatTurn } from '../src/services/core/chatTurns.js';
 import { registerStreamRoute } from '../src/routes/chat/stream.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { getLlmDispatcher } from '../src/services/core/llm.js';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 import router from '../src/routes/chatTurns.js';
 import { errorHandler } from '../src/middleware/error.js';

@@ -19,7 +19,7 @@ import { memories, messages, sessions, users } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
-import { callChatCompletion } from '../services/core/llm.js';
+import { callChatCompletion } from '../services/core/llm/complete.js';
 
 const router = Router();
 

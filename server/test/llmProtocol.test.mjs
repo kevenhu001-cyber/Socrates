@@ -1,6 +1,9 @@
 import test, { afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { streamChatCompletion, callChatCompletion, upstreamRetryDelayMs, LlmProviderError } from '../src/services/core/llm.js';
+import { streamChatCompletion } from '../src/services/core/llm/stream.js';
+import { callChatCompletion } from '../src/services/core/llm/complete.js';
+import { upstreamRetryDelayMs } from '../src/services/core/llm/retry.js';
+import { LlmProviderError } from '../src/services/core/llm/types.js';
 import { permitsCompatibilityFallback, isPermanentQuotaError } from '../src/services/core/llmProtocol.js';
 import { SseEmitter } from '../src/routes/chat/pipeline/sseEmitter.js';
 import { makeStreamError } from '../../frontend/src/chat/streamFrameProcessor.ts';

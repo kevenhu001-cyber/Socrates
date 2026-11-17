@@ -230,7 +230,7 @@ sequenceDiagram
 | 后端 | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` | [`server/src/db/`](server/src/db/) |
 | 数据库 | PostgreSQL 14+ | `DATABASE_URL` 环境变量 |
-| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/core/llm.ts`](server/src/services/core/llm.ts) |
+| LLM 代理 | `fetch` 到任意 OpenAI 兼容端点 | [`server/src/services/core/llm/stream.ts`](server/src/services/core/llm/stream.ts) |
 | 文档解析 | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
 | Web 搜索 | MiniMax + Bing (并行竞速), SearXNG 降级 | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | 上传 | `multer`；缩略图按客户端提供的衍生文件持久化 | |

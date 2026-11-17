@@ -22,7 +22,7 @@ async function providerPorts(job: ResearchJob): Promise<Omit<ResearchPorts, 'che
   const { getActiveApiKey } = await import('./apiKey.js');
   const provider = await getActiveApiKey(job.userId);
   if (!provider?.keyPlaintext) throw new Error('research_provider_unavailable');
-  const { callChatCompletion } = await import('./llm.js');
+  const { callChatCompletion } = await import('./llm/complete.js');
   const { recordUsage, resolveUsage, estimateMessageTokens, estimateTokens } = await import('./usageTracker.js');
   const { webSearch } = await import('../webSearch.js');
   const { fetchBatch } = await import('../util/fetchBatch.js');

@@ -310,7 +310,7 @@ sequenceDiagram
 | Backend | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
 | ORM | Drizzle ORM 0.40+ + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
 | Database | PostgreSQL 14+ | `DATABASE_URL` env var |
-| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/core/llm.ts`](server/src/services/core/llm.ts) |
+| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/core/llm/stream.ts`](server/src/services/core/llm/stream.ts) |
 | Document parsing | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
 | Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | Uploads | `multer`; thumbnails are stored as supplied derivatives | |

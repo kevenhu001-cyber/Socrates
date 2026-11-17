@@ -29,7 +29,7 @@
 
 import {createHash} from 'node:crypto';
 import {resolveContextBudget} from '../../lib/modelCapabilities.js';
-import {callChatCompletion} from '../core/llm.js';
+import {callChatCompletion} from '../core/llm/complete.js';
 import {getActiveApiKey} from '../core/apiKey.js';
 import {estimateContextMessageTokens} from '../core/usageTracker.js';
 import {createSummaryMemo} from '../../lib/summaryMemo.js';

@@ -7,7 +7,7 @@ import { apiKeys, sessions, sessionPromptSnapshots } from '../src/db/schema/inde
 import { eq } from 'drizzle-orm';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
 import { invalidateApiKeyCache } from '../src/services/core/apiKey.js';
-import { getLlmDispatcher } from '../src/services/core/llm.js';
+import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { BEAGLE_IDENTITY_MARKER, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS, RESPONSE_TYPOGRAPHY_MARKER } from '../src/lib/chatPolicy.js';
 
 const f = appRouteFixture();

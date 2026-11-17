@@ -18,7 +18,7 @@
  */
 
 import { initDb } from '../db/index.js';
-import { getLlmDispatcher, startLlmKeepWarmWorker } from '../services/core/llm.js';
+import { getLlmDispatcher, startLlmKeepWarmWorker } from '../services/core/llm/dispatcher.js';
 
 /** ── 1. Production-only secret validation ──
  * Without SESSION_SECRET the api_keys table is encrypted with a public

@@ -24,7 +24,7 @@ import {
   normalizeProviderUsage,
   resolveUsage,
 } from '../src/services/core/usageTracker.js';
-import { streamChatCompletion } from '../src/services/core/llm.js';
+import { streamChatCompletion } from '../src/services/core/llm/stream.js';
 
 const BASE_OPTS = {
   apiBase: 'https://upstream.invalid/v1',

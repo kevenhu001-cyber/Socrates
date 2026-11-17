@@ -2,7 +2,8 @@
 import { afterEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { getEventListeners } from 'node:events';
-import { streamChatCompletion, callChatCompletion } from '../src/services/core/llm.js';
+import { streamChatCompletion } from '../src/services/core/llm/stream.js';
+import { callChatCompletion } from '../src/services/core/llm/complete.js';
 
 const originalFetch = globalThis.fetch;
 const opts = {

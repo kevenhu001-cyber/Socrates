@@ -16,7 +16,7 @@ import { Conflict, NotFound } from '../../lib/errors.js';
 import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease, type ScheduledLease } from './scheduledTaskLease.js';
 import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema/index.js';
 import { getActiveApiKey } from './apiKey.js';
-import { callChatCompletion } from './llm.js';
+import { callChatCompletion } from './llm/complete.js';
 import {
   WORKSPACE_AGENT_BACKGROUND_ENABLED,
   createAgentRun,

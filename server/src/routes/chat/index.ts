@@ -14,7 +14,7 @@ import { Router } from 'express';
 import { requireAuth } from '../../middleware/auth.js';
 import { resourceScope } from '../../middleware/scopes.js';
 import { audit } from '../../middleware/audit.js';
-import { callChatCompletion } from '../../services/core/llm.js';
+import { callChatCompletion } from '../../services/core/llm/complete.js';
 import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../../services/core/usageTracker.js';
 
 import { prepareChatRequest } from './prepare/request.js';

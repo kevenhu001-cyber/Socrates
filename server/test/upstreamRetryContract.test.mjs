@@ -5,7 +5,7 @@ import {
   TRANSIENT_ATTEMPTS,
   attemptsForUpstreamStatus,
   isRetryableUpstreamFailure,
-} from '../src/services/core/llm.ts';
+} from '../src/services/core/llm/retry.ts';
 import { UPSTREAM_RETRY_BUDGET_MS } from '../src/lib/upstreamRetryBudget.ts';
 
 /**
