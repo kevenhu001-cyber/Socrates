@@ -1,7 +1,7 @@
 /**
  * Upstream retry contract: statuses, attempt counts, backoff and sleep.
  */
-/* ─── P_rpm-backoff — retry policy for upstream failures ────────────────────
+/* ─── retry policy for upstream failures ────────────────────
  *
  * A multi-step turn is many POSTs against one provider key: the tool loop
  * re-calls the model per hop, and retrieval / compression / summary each add

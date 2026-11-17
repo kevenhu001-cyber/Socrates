@@ -6,12 +6,12 @@ import {
   isMsgListMounted,
   isSharedMessageList,
   takeOverSharedMessageList,
-} from '../src/ui/msgListMount.ts';
+} from '../src/legacy/msgListMount.ts';
 import {
   registerAssistantTurnRenderer,
   renderSharedAssistantTurn,
   releaseSharedAssistantTurns,
-} from '../src/ui/assistantTurnRenderer.ts';
+} from '../src/legacy/assistantTurnRenderer.ts';
 
 test('transcript claims follow actual hosts and stale cleanup cannot release a replacement', () => {
   const dom = new JSDOM('<div id="msgList"></div>');

@@ -16,7 +16,7 @@ import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';
-import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
+import { setReactLiveStatus } from '../../legacy/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded } from './ui.ts';
 import { resendLastUserMessage } from './resend.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
@@ -24,7 +24,7 @@ import { turnState } from '../turn/state.ts';
 import { removeSupersededStub } from './anchor/stub.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnMessage, TurnRuntimeState } from './runtimeState.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
@@ -158,7 +158,7 @@ function publishAbortedTurn(state: TurnRuntimeState): void {
  */
 export function createAbortPath(state: TurnRuntimeState): AbortPath {
   function abort(): void {
-    /* P_session-stream-dispose — flip the sticky flag FIRST so any
+    /* flip the sticky flag FIRST so any
        in-flight append()/recordToolUse()/finish() callbacks that
        are already scheduled in the microtask queue (the stream.js
        reader keeps draining the SSE buffer for one or two ticks
@@ -183,7 +183,7 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
     });
     /* A user stop is an intentional end state. Keep any visible text as a
      * normal assistant message so it remains on screen and can be saved.
-     * P_session-cross-talk — verify the slot still holds OUR placeholder
+     * verify the slot still holds OUR placeholder
      * (by clientId) before splicing. If the user switched sessions,
      * stateStore.read("messages") was replaced and msgIdx now points at the new
      * session's message — splicing here would delete the new session's
@@ -199,7 +199,7 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
       .trim();
     const hasPartial = hasVisibleAbortContent(abortedMessage, visibleStoppedRaw);
     if (abortedMessage && !hasPartial) {
-      /* P_supersede-stable — removing the empty placeholder also removes
+      /* removing the empty placeholder also removes
          the turn's viewport reserve, collapsing the scroll range on the
          send frame. Keep the entry as an invisible stub that still holds
          its reserve; the new turn's anchor glides past it and retires it

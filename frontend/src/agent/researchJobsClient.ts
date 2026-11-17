@@ -12,7 +12,7 @@ import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { restoreSessionMessage } from '../session/historyRestore.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { createResearchController, type ResearchScope } from './researchController.ts';
 
 function pending(scope: ResearchScope, value: ResearchJobRequest | null | undefined) {

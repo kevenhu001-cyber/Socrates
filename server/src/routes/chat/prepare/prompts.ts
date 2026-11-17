@@ -16,7 +16,7 @@ import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
 export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
 
-/* P_prep-parallel — every context step below is split into a `resolve…`
+/* every context step below is split into a `resolve…`
    half (the I/O: DB reads, embedding call, prompt file) and the
    appendServerPolicy half that folds its text into the system message.
    prepareChatRequest runs the resolve halves concurrently and applies them in
@@ -113,7 +113,7 @@ export async function prependCodeInterpreterPrompt<T extends { role: string; con
   );
 }
 
-/* P_native-tool-contract — the provider's `tools` array is the executable
+/* the provider's `tools` array is the executable
  * contract.  This small server-owned appendix is generated from the exact
  * definitions attached to the request, so prompt guidance cannot drift when
  * a tool is enabled or removed.  It is inserted before the final hard rule,
@@ -215,7 +215,7 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
   return appendAppendix(messages, NATIVE_TOOL_CONTRACT_MARKER, sections.join('\n'));
 }
 
-/* P_tool_routing_hints — append concise per-tool routing guidance only
+/* append concise per-tool routing guidance only
  * when the matching tool is actually present in this turn's tool set.
  * The previous client-side implementation prepended visual and planning
  * routing prompts unconditionally, even on turns that had no matching

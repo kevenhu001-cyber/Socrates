@@ -1,5 +1,5 @@
 import type { ScrollAnchor } from './progressiveMount';
-import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { writeScrollTop } from '../../legacy/scrollCoordinator.ts';
 
 const MSG_LIST_ID = 'msgList';
 const STICKY_MS = 4000;

@@ -1,7 +1,7 @@
 // frontend/src/react/legacy/types.ts
 // Typed interface for all legacy system actions invoked by React components.
 //
-// Every function here is backed by a legacy JS module (main.js, ui/*.js, etc.)
+// Every function here is backed by a legacy JS module (app entrypoint, legacy/*.js, etc.)
 // and published via window.__socratesLegacy. React code never reads window.X
 // directly — it always goes through getLegacyActions() from gateway.ts.
 //
@@ -14,7 +14,7 @@ export interface LegacyMessages {
   deleteUserMessage(messageId: string): Promise<void> | void;
   branchFromMessage(messageId: string, options?: { reExplain?: boolean }): Promise<void> | void;
   sendFeedback(messageId: string, value: 'up' | 'down'): void;
-  /* P_tts-persist — optional messageId is forwarded to /api/tts so
+  /* optional messageId is forwarded to /api/tts so
      the synthesized audio can be persisted in tts_results and
      replayed for free on subsequent reads of the same message. */
   toggleReadAloud(element: HTMLElement, text: string, messageId?: string): void;
@@ -48,7 +48,7 @@ export interface LegacyNavigation {
 
 /* M4 step 4.5c — confirm-dialog actions, called from React's
    ConfirmDialog.tsx (which owns the overlay skeleton). Backed by
-   ui/confirm.js exports. */
+   legacy/confirm.js exports. */
 export interface LegacyConfirm {
   closeConfirm(resolveWith?: boolean): void;
   showConfirm(title: string, message: string, danger?: boolean): Promise<boolean>;
@@ -133,7 +133,7 @@ export interface LegacyPostRender {
   /**
    * Frame-coalesced variant of processPendingMermaid for per-row callers:
    * many rows mounting in one commit collapse into a single global drain on
-   * the next frame. Used by MessageItem's layout effect (P_mermaid-coalesce).
+   * the next frame. Used by MessageItem's layout effect ().
    */
   schedulePendingMermaid?(): void;
   processPendingViz?(root?: HTMLElement): void;

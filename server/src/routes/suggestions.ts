@@ -1,5 +1,5 @@
 /*
- * P_suggestions-ai — generates the three personalised starter prompts shown
+ * generates the three personalised starter prompts shown
  * beneath the landing composer.
  *
  * Contract:

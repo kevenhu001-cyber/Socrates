@@ -52,7 +52,7 @@ export function ChatConfiguration() {
   const snapshot = useChatConfigurationSnapshot();
   const popRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>('main');
-  /* P_model-capability-registry — what the active model supports, as the
+  /* what the active model supports, as the
      server published it. A stored preference the model cannot satisfy (an
      Instant that the model cannot honour) is shown as the level that is
      actually in effect, so the picker never claims something the request

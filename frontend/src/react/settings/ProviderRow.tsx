@@ -125,7 +125,7 @@ export function ProviderRow({
               {i18n('provider.multimodal', 'Multimodal (vision-capable)')}
             </FieldLabel>
           </Field>
-          {/* P_provider-capability-override — the per-provider statement of
+          {/* the per-provider statement of
             how this endpoint encodes "no thinking". "Automatic" leaves the
             decision to the server's capability registry; the other values
             are the four encodings the server accepts. */}

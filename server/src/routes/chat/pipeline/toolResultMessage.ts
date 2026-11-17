@@ -41,7 +41,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
           'This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
         );
       }
-      // P_exec-remediation-preamble — the structured header
+      // the structured header
       // tells the model WHAT failed; this preamble tells it
       // the most likely fix. Without it, models tend to
       // re-emit the same code on retry, especially for the

@@ -1,4 +1,4 @@
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { t as _t } from '../legacy/gateway.ts';
 import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';

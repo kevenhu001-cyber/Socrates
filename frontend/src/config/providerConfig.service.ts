@@ -1,5 +1,5 @@
 import { apiFetch } from '../util/api/index.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import type { ProviderCapabilities } from '@socrates/contracts';
@@ -112,7 +112,7 @@ function normalizeCapabilities(raw: unknown): ProviderCapabilities | undefined {
   return Object.keys(out).length ? out : undefined;
 }
 
-/* P_provider-capability-override — only the four encodings the server
+/* only the four encodings the server
  * accepts are kept; anything else is treated as "no override" so a
  * malformed row cannot make the browser send an unknown encoding. */
 function normalizeInstantEncoding(raw: unknown): InstantEncoding | null {
@@ -237,7 +237,7 @@ export function updateProviderField(
               field === 'vision'
                 ? Boolean(value)
                 : field === 'instantEncoding'
-                  ? /* P_provider-capability-override — the empty string is the UI's
+                  ? /* the empty string is the UI's
                      * "Automatic" choice and means "no override". */
                     normalizeInstantEncoding(value === '' ? null : value)
                   : String(value),
@@ -388,7 +388,7 @@ async function persistProvider(
         key,
         model: provider.model || '',
         isMultimodal: provider.vision,
-        /* P_provider-capability-override — null clears the override. */
+        /* null clears the override. */
         instantEncoding: provider.instantEncoding,
       },
     });

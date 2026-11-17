@@ -1,10 +1,10 @@
-/* render/katexRefresh.ts — extracted from main.js.
+/* render/katexRefresh.ts — extracted from legacy entry.
  * KaTeX-lazy re-render.
  * Zero-behavior-change lift.
  */
 import { onKatexReady } from '../vendor/lazy.ts';
 import { dispatchSession, sessionStore } from '../store/index.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import {
   processPendingMermaid,
   processPendingViz,

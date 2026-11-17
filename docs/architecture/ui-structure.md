@@ -3,6 +3,8 @@
 更新：2026-11-17。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
+2026-11-17：字符串键状态 facade `state/store.ts` 及其浏览器全局 `window.stateStore` 已退役（文件已删除）；
+状态访问只经 `frontend/src/store/index.ts` 的类型化 hooks 与 bridge，代码树里残留的 `stateStore` 字样只是过期注释。
 2026-11-16：Expo Universal App（`apps/socrates/`）及其专属包、barrel、CI lane 已删除；
 `frontend/` 是唯一生产 Web 客户端，RN UI 就地通过 `react-native-web` 接入。
 
@@ -45,7 +47,10 @@ index.html                         静态 shell / 挂载宿主 / CSP
 - React 从 `store/`、功能 store 或类型化 bridge 读取状态；旧全局动作经
   `react/legacy/gateway.ts` 访问，不在组件里扩散任意 `window.*`。
 - 六个 `state/` 命名空间 store 仅保留模块导出；已删除无消费者的 `window.__socrates{Session,Kb,Search,Call,Ui,Exam}Bridge` 别名。
-  `state/store.ts` 仍安装 `window.stateStore` facade。聊天历史、诊断生成、搜索刷新策略和图表预热仍读取它，浏览器回归也使用它设置和读取状态。
+  字符串键 facade `state/store.ts` 已于 2026-11-17 退役：文件已删除，不再安装或发布 `window.stateStore`，
+  聊天历史、诊断生成和搜索刷新策略改由 `store/index.ts` 的类型化 hooks 与各领域 bridge 读写。
+  代码树里残留的 `stateStore` 字样只是过期注释；仅有两个遗留 e2e 仍引用该全局
+  （`e2e/zz-ui-repro.spec.mjs` 直接调用，`e2e/storage-bootstrap.spec.mjs` 断言它不存在）。
 - `chat/` 不依赖 React 实现；共享类型可来自 `react/types/`，宿主状态与展示模型留在 ui。
   不通过新增 re-export shim 延长旧路径寿命。
 - 首轮发送时预先创建的 streaming placeholder controller 暂存于 `chat/turnState.ts`，由 `askChatTurn()`
@@ -177,12 +182,12 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 领域 | 当前进度 | 下一步 |
 |---|---|---|
 | 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
-| window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` 与认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 分域迁移聊天历史与诊断／搜索的状态读取。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
+| window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` facade 已于 2026-11-17 退役，不再有生产调用；认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 聊天历史与诊断／搜索的状态读取已迁到类型化 store，无需再分域迁移。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
 | `legacy/` / `restore/` | `lint:css-debt` 实测冻结区 `!important` 388、硬编码半径 166、硬编码字号 336、legacy 通道 768。对应的已提交上限是 389／166／337／769。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
 | RN 化签收 | 考试已签收。设置「对话背景网格」使用共享 RN 开关，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。 | 复核字号和内容宽度的分组语义和键盘导航，再逐项迁移。宿主分工、批次和验收范围见 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。 |
 
 DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，共 242 处、105 个文件。这个计数包含
-读取和挂载宿主的查找。`window.stateStore` 的清退还涵盖直接引用它的 100 个 Playwright 文件，按实际场景替换测试夹具后再停止发布全局。
+读取和挂载宿主的查找。`window.stateStore` 的清理已经完成：facade 于 2026-11-17 退役，代码树里残留的 `stateStore` 字样是过期注释，只有两个遗留 e2e 仍引用该全局（`e2e/zz-ui-repro.spec.mjs` 直接调用，`e2e/storage-bootstrap.spec.mjs` 断言它不存在）。
 
 ## 验证记录与入口
 
@@ -206,7 +211,8 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 ## 状态更新（2026-10-30）
 
 - `frontend/src` 的 JavaScript → TypeScript 迁移已签收；不要再把 10 月 26 日记录的 109 个遗留 JS 当作当前数量。
-- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`window.stateStore` 和认证后的 `__socratesMountReactCompatibility` 仍服务旧 DOM 与 React 边界。应用状态 store 已不再发布为 `window.__socrates*Bridge`；迁移到 TypeScript 也不代表 SPA 兼容层整体已退役。
+- 类型化兼容入口仍然存在：`app/legacyBridge.ts` 和认证后的 `__socratesMountReactCompatibility` 仍服务旧 DOM 与 React 边界。应用状态 store 已不再发布为 `window.__socrates*Bridge`；迁移到 TypeScript 也不代表 SPA 兼容层整体已退役。
+  （2026-11-17 更正：本节原列的 `window.stateStore` 已退役——facade 文件已删除，状态访问只走 `store/index.ts` 的类型化 hooks 与 bridge。）
 - 命名 SSE `error` 帧现在把状态码、错误码、是否可重试及限流等待提示一路保留到共享 API 的 `ApiError`。旧式只带消息的帧仍按 `502` 处理。
 - 未埋点空 catch 已清零：170 个调用点接入内容不外发、全局限流的 `reportSwallow`；76 个明确的可选能力、清理或最佳努力场景仅计入开发期预期吞错计数，其余异常按可恢复故障报告。剩下一处遥测初始化的 Vite 元数据回退有理由豁免。
 - 生产数据库迁移、Expo CLI 上游依赖修复、仍在使用的 SPA 兼容边界与跨端功能签收继续单独跟踪；

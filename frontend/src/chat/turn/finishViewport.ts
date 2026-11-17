@@ -6,8 +6,8 @@
  * bottom is never a reason to move the reader to a different paragraph.
  */
 import { sessionBridge, uiBridge } from '../../store/index.ts';
-import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
-import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { updateMessageSnapshot } from '../../legacy/messageSnapshot.ts';
+import { writeScrollTop } from '../../legacy/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
@@ -284,7 +284,7 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
       if (frames < 30) requestAnimationFrame(settleFrame);
       else intent.detach();
     };
-    /* P_stream-finish-paint — settle() runs inside the finish task, before
+    /* settle() runs inside the finish task, before
        React commits the settled snapshot (that commit is a microtask after
        this task). Correcting here only forced a layout of the pre-commit DOM
        and wrote a no-op scrollTop; the first useful correction is in the

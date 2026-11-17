@@ -9,7 +9,12 @@ import {
   isPermanentQuotaError,
 } from '../src/services/core/llmProtocol.js';
 import { SseEmitter } from '../src/routes/chat/pipeline/sseEmitter.js';
-import { makeStreamError } from '../../frontend/src/chat/streamFrameProcessor.ts';
+// Cross-tier contract assertion: the frame the server emits must classify the
+// same way in the browser. This job installs server deps only, so these imports
+// must stay dependency-free leaves — importing anything whose graph reaches the
+// SPA store (e.g. `chat/streamFrameProcessor.ts` → speedFallback → i18n → store)
+// fails here with ERR_MODULE_NOT_FOUND: zustand.
+import { makeStreamError } from '../../frontend/src/chat/api/streamError.ts';
 import { isRetryableAIError } from '../../frontend/src/chat/retryPolicy.ts';
 
 const fetchBefore = globalThis.fetch;

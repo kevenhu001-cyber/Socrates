@@ -3,7 +3,7 @@
  */
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
-/* P_hljs-unknown-lang — validate a code-fence language tag against
+/* validate a code-fence language tag against
    the highlight.js instance on the page. Returns the lowercase tag
    when hljs.getLanguage(name) recognises it; returns '' otherwise
    so the caller emits `<pre><code>` without a `language-*` class and

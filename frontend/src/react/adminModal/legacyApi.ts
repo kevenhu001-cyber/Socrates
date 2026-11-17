@@ -1,5 +1,5 @@
 /**
- * Legacy-facing helpers for the admin modal. main.js and the sidebar
+ * Legacy-facing helpers for the admin modal. app entrypoint and the sidebar
  * chrome import from this module so the React / legacy split stays
  * behind one entry point.
  */

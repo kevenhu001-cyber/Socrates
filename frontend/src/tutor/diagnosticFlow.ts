@@ -1,9 +1,9 @@
-/* tutor/diagnosticFlow.ts — extracted from main.js (B4 batch 1).
+/* tutor/diagnosticFlow.ts — extracted from legacy entry.
  * Diagnostic navigation + results + proceed-to-teaching.
  * Zero-behavior-change lift: cross-cluster callbacks (saveCurrentSession,
  * askNextQuestion, cancel/retry/
  * builtin handlers owned by startSession) are resolved via window.*
- * at call time to avoid circular imports with main.js.
+ * at call time to avoid circular imports with app entrypoint.
  */
 import {
   callBridge,
@@ -20,9 +20,9 @@ import { setDiagnosticCommandHandler } from '../react/tutor/diagnosticHost.tsx';
 import type { DiagnosticCommand } from '../react/tutor/DiagnosticView.tsx';
 import { applyDiagnosticResults } from '../chat/diagnosticResults.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
-import { renderDiagResultsScreen } from '../ui/diagnosticResults.ts';
-import { renderDiagQuestion as renderDiagQuestionUI } from '../ui/diagnosticQuestion.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { renderDiagResultsScreen } from '../legacy/diagnosticResults.ts';
+import { renderDiagQuestion as renderDiagQuestionUI } from '../legacy/diagnosticQuestion.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { askNextQuestion } from './socraticTurn.ts';
@@ -150,13 +150,13 @@ async function loadDiagnosticInsight() {
   );
 }
 
-/* P_test-interpretation — proceed from the results screen to the actual
+/* proceed from the results screen to the actual
    teaching phase. Separated from finishDiagnostic so the user has a
    moment to read the interpretation before teaching begins. */
 export function proceedToTeaching() {
   if (sessionBridge.getSnapshot().phase !== 'diagnostic') return;
   activateMainView('chatView', document);
-  /* P_teaching-plan — generate the structured teaching plan from the
+  /* generate the structured teaching plan from the
      freshly-populated KB. Sub-topics are sorted so blank nodes come
      first (teach the gaps), then fuzzy nodes, with all nodes taught
      from basics regardless of diagnostic result. */

@@ -19,7 +19,7 @@ import { indexMessageChunks } from '../../services/embeddings/chunkIndex.js';
 import { ensureSessionWorkspaceForSession } from '../../services/tools/agentRuntime.js';
 import { md5Hex, SessionPayloadSchema, sanitizeSessionPayload } from './payload.js';
 
-/* P_workspace-ensure-once — see the save handler. Bounded so a long-lived
+/* see the save handler. Bounded so a long-lived
    process cannot grow it without limit. */
 const WORKSPACE_ENSURE_MEMO_MAX = 5_000;
 const _workspaceEnsured = new Set<string>();
@@ -253,7 +253,7 @@ export async function saveSession(
             },
           });
 
-        // P_message-dedup — atomic upsert using the (sessionId, clientId)
+        // atomic upsert using the (sessionId, clientId)
         // unique constraint. Dedupe by clientId before the multi-row INSERT
         // because PostgreSQL's ON CONFLICT clause handles collisions with
         // EXISTING rows but NOT with other rows in the same INSERT. Without
@@ -261,7 +261,7 @@ export async function saveSession(
         // same clientId (placeholder + finalised, or a duplicate tool card)
         // throws 23505 and the POST returns 500.
         if (Array.isArray(persistMsgs) && persistMsgs.length) {
-          /* P_chunk-dirty — the sessionChunks index and its embeddings are
+          /* the sessionChunks index and its embeddings are
            derived purely from `rawText` (see indexMessageChunks, which is
            called with row.rawText below). A row whose rawText is unchanged
            therefore already has a correct index, so re-indexing it is pure
@@ -289,7 +289,7 @@ export async function saveSession(
            disappearing. Backfilling those vectors is a deliberate
            follow-up, not something to pay for on every save. */
           const priorRawTextHashes = new Map<string, string>();
-          /* P_hash-probe-scope — this probe used to read md5(rawText) for EVERY
+          /* this probe used to read md5(rawText) for EVERY
            * message in the session on EVERY save, so a 240-message transcript
            * paid a 240-row index scan per turn even when the delta carried two
            * rows — and a save that only changed a session scalar (title
@@ -338,7 +338,7 @@ export async function saveSession(
           const rows = persistMsgs.map((m, i) => {
             const contentRaw = m.rawText || m.content || '';
             const cleanRaw = sanitizePlainText(contentRaw);
-            /* P_sanitize-once — `content` was derived from the same source as
+            /* `content` was derived from the same source as
              `html`, so calling sanitizeStoredHtml on both independently parsed
              the identical markup twice for every message on every save. On a
              240-message session that is 240 redundant DOM parses per turn.
@@ -357,7 +357,7 @@ export async function saveSession(
               reasoningContent: m.reasoningContent || null,
               turnRuntime: rebaseTurnRuntimeText(m.turnRuntime, contentRaw, cleanRaw),
               attachments: Array.isArray(m.attachments) ? m.attachments.slice(0, 20) : [],
-              /* P_tool-history — persist the tool-calls log so reload
+              /* persist the tool-calls log so reload
                * re-renders the cards. Normalise to plain values so the
                * jsonb payload is deterministic across clients. */
               toolCalls: Array.isArray(m.toolCalls)
@@ -388,7 +388,7 @@ export async function saveSession(
                             };
                           })
                         : [],
-                      /* P_inline-restore — round-trip the pieces the client
+                      /* round-trip the pieces the client
                        * needs to rebuild the inline tool layout: search
                        * results (row source lists), the rawText split
                        * offset, and native visualization specs. */
@@ -448,7 +448,7 @@ export async function saveSession(
               createdAt: new Date(_insertBase + i),
             };
           });
-          /* P_message-dedup-in-stmt — drop duplicate (sessionId, clientId)
+          /* drop duplicate (sessionId, clientId)
            * rows so the multi-row INSERT below does not trip the unique
            * index on (session_id, client_id). Last write wins: the latest
            * entry in the batch represents the freshest UI state. Rows
@@ -471,7 +471,7 @@ export async function saveSession(
               dedupedRows[prev] = r;
             }
           }
-          /* P_upsert-dirty — gate the multi-row upsert on the same probe.
+          /* gate the multi-row upsert on the same probe.
            The client re-POSTs the whole transcript on every save, so the
            statement was rewriting all N message rows each turn even when
            a single row had changed. Filtering to genuinely-dirty rows
@@ -495,7 +495,7 @@ export async function saveSession(
             (r) =>
               r.clientId == null || priorRawTextHashes.get(r.clientId) !== md5Hex(r.rawText || ''),
           );
-          /* P_session-chunks — RETURNING covers both new inserts and
+          /* RETURNING covers both new inserts and
            conflict updates, so a re-save of an existing session
            re-indexes in place. The sessionChunks index is written
            outside the session transaction (see the .then() below). */
@@ -525,8 +525,8 @@ export async function saveSession(
                 role: messages.role,
                 clientId: messages.clientId,
               });
-            /* P_chunk-dirty — RETURNING only ever contains rows that were new
-             or whose rawText moved (see P_upsert-dirty), so every assistant
+            /* RETURNING only ever contains rows that were new
+             or whose rawText moved (see ), so every assistant
              row here genuinely needs a fresh chunk index. The extra hash
              check is kept as a cheap invariant guard: if the gate above is
              ever loosened, this still refuses to re-index identical text. */
@@ -538,7 +538,7 @@ export async function saveSession(
             );
           }
 
-          /* P_file-session-link — adopt attachment uploads into this
+          /* adopt attachment uploads into this
            * session. Composer uploads hit POST /api/files before the
            * session row exists (or while its id is still a client draft),
            * so they land as orphans (session_id IS NULL). Now that the
@@ -597,7 +597,7 @@ export async function saveSession(
      * lock. It is safe to retry here, and the agent-run path repeats the same
      * idempotent ensure before starting Codex.
      *
-     * P_workspace-ensure-once — this ran on EVERY save. For a session that
+     * this ran on EVERY save. For a session that
      * already has a workspace, getOrCreateWorkspace is a SELECT plus an
      * UPDATE that only touches lastUsedAt/updatedAt/status, followed by a
      * blocking mkdirSync — two more round-trips and a synchronous filesystem
@@ -631,7 +631,7 @@ export async function saveSession(
         );
       }
     }
-    /* P_save-response — the client just POSTed this row, so echoing the
+    /* the client just POSTed this row, so echoing the
        whole record back was pure waste: kbNodes / mistakes / teachingPlan /
        boundariesHistory / examData are large JSONB blobs (hundreds of KB on
        a mature session) and the save handler reads none of them. The one

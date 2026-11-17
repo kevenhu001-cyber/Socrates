@@ -9,7 +9,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
-const { resultHosts } = await import('../src/ui/toolPresentationModel.ts');
+const { resultHosts } = await import('../src/legacy/toolPresentationModel.ts');
 
 const CSS_PATH = fileURLToPath(new URL('../src/styles/components/wave.css', import.meta.url));
 

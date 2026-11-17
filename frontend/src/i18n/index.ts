@@ -211,7 +211,7 @@ function consumeMarketingLocale(): 'en' | 'zh' | null {
 /* Load saved language preference. languageState.ts is the single source
    of truth at runtime; setLang() persists changes and applyI18n()
    pushes them onto the DOM.
-   P_lang-persist — defensive dual-write on read: when the saved
+   defensive dual-write on read: when the saved
    value resolves to a known language, we write it back to
    localStorage as well. Some browser flows (Safari private mode,
    cookie-expiry redirects, third-party-script-injected storage

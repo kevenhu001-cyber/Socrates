@@ -1,7 +1,7 @@
 /* chat/turn/state.ts — centralized mutable turn/streaming state.
- * Extracted from main.js module-level vars to enable safe function
+ * extracted from legacy entry module-level vars to enable safe function
  * extraction without circular imports. Single mutable object so both
- * main.js (legacy) and new modules share live state.
+ * app entrypoint (legacy) and new modules share live state.
  * Zero-behavior-change: same initial values, same mutation semantics.
  */
 import { createStreamRetryViewport } from '../streamRetry.ts';
@@ -86,7 +86,7 @@ export interface TurnState {
 }
 
 /* Active-chat controller + pending-turn payloads. Previously module-local
-   vars in main.js with a comment noting window mirrors were removed. */
+   vars in app entry with a comment noting window mirrors were removed. */
 export const turnState: TurnState = {
   activeChatCtl: null,
   activeChatAbort: null,
@@ -137,6 +137,6 @@ export function resetTurnState(): void {
 }
 
 /* Retry-viewport anchoring (consume/measure/capture/prepare/settle):
-   one store per app lifetime. Previously a module-local const in main.js;
+   one store per app lifetime. Previously a module-local const in app entry;
    centralized here so extracted message/streaming modules share it. */
 export const streamRetryViewport = createStreamRetryViewport();

@@ -5,12 +5,12 @@
  */
 import { dispatchSession, sessionStore, uiStore } from '../../../store/index.ts';
 import { subscribeLegacyState } from '../../../store/legacyListeners.ts';
-import { publishReactChatRuntime } from '../../../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../../../ui/messageSnapshot.ts';
-import { writeScrollTop } from '../../../ui/scrollCoordinator.ts';
-import { suppressScrollPositionIntent } from '../../../ui/scrollPill.ts';
-import { getKeyboardLift } from '../../../ui/keyboard/index.ts';
-import type { MessageEntry } from '../../../ui/messageActions.ts';
+import { publishReactChatRuntime } from '../../../legacy/reactBridge.ts';
+import { updateMessageSnapshot } from '../../../legacy/messageSnapshot.ts';
+import { writeScrollTop } from '../../../legacy/scrollCoordinator.ts';
+import { suppressScrollPositionIntent } from '../../../legacy/scrollPill.ts';
+import { getKeyboardLift } from '../../../legacy/keyboard/index.ts';
+import type { MessageEntry } from '../../../legacy/messageActions.ts';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 import {
   clearTurnViewportOwner,
@@ -95,7 +95,7 @@ export function releaseTurnViewportHold(): void {
       /* released controller */
     }
   }
-  /* ui/keyboard reads this flag to leave the transcript alone while the
+  /* legacy/keyboard reads this flag to leave the transcript alone while the
      send anchor owns it; clearing it hands the position back. */
   if (hold.list.dataset) delete hold.list.dataset.turnAnchorHold;
   clearTurnViewportOwner(hold.list);
@@ -317,7 +317,7 @@ export function startTurnViewportHold(
      and the scroll animations already read. `align` is true only once the
      send glide has landed: during the glide `turnAnchorSettling` covers the
      same window, and claiming `turnViewportOwner` earlier stops the glide's
-     own animation on its first frame (ui/scroll.ts aborts a scroll when the
+     own animation on its first frame (legacy/scroll.ts aborts a scroll when the
      list is turn-owned) — exactly the teleport the send motion is meant to
      avoid. The mid-glide hold still owns the composer-resize decision
      through `turnAnchorHold`; ownership is claimed when the glide lands. */

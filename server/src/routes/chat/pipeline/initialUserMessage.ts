@@ -18,7 +18,7 @@ export function persistInitialUserMessage({
   sessionId: string | null;
   turnId: string | null;
 }): void {
-  /* P_ttfb-background-persist — this insert + touch does not feed the
+  /* this insert + touch does not feed the
        upstream request, so awaiting it here would park two serial DB
        round-trips on the path to the first token. It runs detached: the
        client already rendered the message optimistically, the turn's

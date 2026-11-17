@@ -258,7 +258,7 @@ export function savePendingTurn(
   try {
     if (!sessionId || !pointer.turnId) return;
     const record: PendingTurn = { ...pointer, sessionId, updatedAt: Date.now() };
-    /* P_batch-storage — the pending-turn pointer is rewritten on
+    /* the pending-turn pointer is rewritten on
        every turn-bump (interrupt, retry, re-attach) — 1–5 writes per
        session switch. localStorage.setItem is synchronous and forces
        a storage commit, so a burst would serialise on the main

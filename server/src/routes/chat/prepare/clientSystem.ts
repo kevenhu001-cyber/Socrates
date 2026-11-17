@@ -91,7 +91,7 @@ export function enforceServerSystemBoundary(messages: ProviderMessage[]): Provid
   return [{ role: 'system', content: SERVER_SYSTEM_POLICY + clientBlock }, ...conversation];
 }
 
-/* P_client_system_classifier — separate directive content from data
+/* separate directive content from data
  * content sent on `system` role by the client. Three marker families
  * are recognised today:
  *   - `[User custom instructions]…` — application (response style)
@@ -122,7 +122,7 @@ const TEMPLATE_MARKER_REGEX = /^\s*\[template:[^\]]+\]/;
 
 type Classified = { kind: 'application' | 'context'; content: string; contextExtras?: string[] };
 function classifyClientSystem(raw: string): Classified {
-  /* P_injection_purity — a system string is treated as application
+  /* a system string is treated as application
      instructions when the first non-empty line is
      an application marker (`[User custom instructions]` or
      `[template:...]`). Markdown headings and lists inside a marked block

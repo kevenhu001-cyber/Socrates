@@ -1,5 +1,5 @@
 import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { i18n } from './composerToolsMenuData';

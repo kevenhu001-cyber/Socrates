@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const { usageState, setUsageOpen, publishUsageLoading, publishUsageData, publishUsageError } =
-  await import('../src/ui/usageState.ts');
+  await import('../src/legacy/usageState.ts');
 
 test('usage snapshot publishes open, loading, report, and error state for React', () => {
   usageState.__resetForTests();

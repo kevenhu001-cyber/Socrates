@@ -7,7 +7,7 @@
  */
 import { kbBridge, sessionBridge } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
+import { requestMistakeRedo } from '../legacy/mistakeBookCommands.ts';
 import { findArchivedMistake } from './mistakeArchive.ts';
 import type { MistakeStateEntry } from '../state/kb.ts';
 

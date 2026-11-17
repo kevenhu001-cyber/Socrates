@@ -1,4 +1,4 @@
-/* P_perf-self-host — replaces the classic CDN <script>/<link> tags that
+/* replaces the classic CDN <script>/<link> tags that
    used to live in index.html. marked + DOMPurify are bundled eagerly;
    KaTeX, highlight.js and fuse.js load when needed, and the heavy
    renderers (mermaid, echarts, plotly) stay lazy until used. This module

@@ -28,8 +28,8 @@ import { publishAgentRun } from './agentRunStore';
 import { toggleWebSearch } from '../chat/webSearchToggle.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.ts';
-import { showToast } from '../ui/toast.ts';
-import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
+import { showToast } from '../legacy/toast.ts';
+import { openPromptTemplatesModal } from '../legacy/promptTemplates.ts';
 import { openAttachmentPicker } from '../attachments/render.ts';
 import { t } from '../i18n/index.ts';
 

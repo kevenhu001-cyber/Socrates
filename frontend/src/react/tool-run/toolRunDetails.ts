@@ -8,8 +8,8 @@ import {
   queryOf,
   toolRunLabel,
   translate,
-} from '../../ui/toolPresentationModel.ts';
-import { durationOf, toolRunStateOf } from '../../ui/toolPresentationState.ts';
+} from '../../legacy/toolPresentationModel.ts';
+import { durationOf, toolRunStateOf } from '../../legacy/toolPresentationState.ts';
 import type {
   ApprovalDecision,
   ApprovalView,

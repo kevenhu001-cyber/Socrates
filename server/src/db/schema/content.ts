@@ -56,7 +56,7 @@ export const files = pgTable(
     storagePath: text('storage_path').notNull(),
     thumbnailPath: text('thumbnail_path'),
     sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
-    /* P_code_interpreter — null for user uploads; set for files produced by the
+    /* null for user uploads; set for files produced by the
      code-interpreter tool (PNG charts, CSV exports, etc). ON DELETE CASCADE
      so reaping an execution row drops its artifacts too. */
     executionId: uuid('execution_id').references(() => executions.id, { onDelete: 'cascade' }),
@@ -113,7 +113,7 @@ export const artifacts = pgTable(
     sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'set null' }),
     messageId: uuid('message_id').references(() => messages.id, { onDelete: 'set null' }),
     projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
-    /* P_codex-runtime — generated files and reports stay attached to the
+    /* generated files and reports stay attached to the
      * execution that produced them so a project/session can surface them
      * without scraping assistant prose. */
     agentRunId: uuid('agent_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),

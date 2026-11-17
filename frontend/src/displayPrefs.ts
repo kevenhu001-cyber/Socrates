@@ -4,8 +4,8 @@
    ============================================================ */
 
 import { applyCustomBg, removeCustomBg, parseHexColor } from './util/colors.ts';
-import { scrollToBottomIfPinned } from './ui/scroll.ts';
-import { withViewTransition } from './ui/viewTransitions.ts';
+import { scrollToBottomIfPinned } from './legacy/scroll.ts';
+import { withViewTransition } from './legacy/viewTransitions.ts';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 /* ── constants ── */

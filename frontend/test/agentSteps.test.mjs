@@ -7,7 +7,7 @@ import {
   agentStepMeta,
   formatElapsed,
   truncateAgentText,
-} from '../src/ui/agentSteps.ts';
+} from '../src/legacy/agentSteps.ts';
 
 function step(overrides = {}) {
   return {

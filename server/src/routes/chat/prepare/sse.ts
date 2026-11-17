@@ -43,7 +43,7 @@ import type { ErrorLocale } from '../../../lib/errorMessages.js';
 export const SSE_PRIME =
   ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
-/* P_ttfb-prime-first — write the SSE status line + headers + 32 KB
+/* write the SSE status line + headers + 32 KB
    prime comment in one call. The route shell invokes this BEFORE
    awaiting the session-ownership check so the browser sees a 200 /
    text-event-stream response the instant the request lands, instead
@@ -82,7 +82,7 @@ export function writeSsePrime(res: import('express').Response): boolean {
   }
 }
 
-/* P_ttfb-sse-error — short-circuit the SSE response once the route
+/* short-circuit the SSE response once the route
    has already primed it but a later step (ownership, prep, turn
    binding) threw. The client sees a single `event: error` frame
    followed by [DONE] and the socket closes; status stays 200 because
@@ -94,7 +94,7 @@ export function endSseWithError(
   err: unknown,
   locale?: ErrorLocale,
 ): void {
-  /* P_sse-error-contract — the error frame carries the same machine-readable
+  /* the error frame carries the same machine-readable
      fields as the JSON error path (status / code / retryable), so the browser
      can tell a deterministic failure (quota, bad key, unsupported mode) from
      a transient one and does not replay a whole turn for a request that

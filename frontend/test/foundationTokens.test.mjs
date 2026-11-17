@@ -13,7 +13,7 @@ const FOUNDATION_EXPORTS = [
 
 test('web and shared theme expose the same Lobe-aligned foundation metrics', async () => {
   const [web, shared] = await Promise.all([
-    import('../src/ui/tokens.ts'),
+    import('../src/legacy/tokens.ts'),
     import('../../packages/theme/src/tokens.ts'),
   ]);
 

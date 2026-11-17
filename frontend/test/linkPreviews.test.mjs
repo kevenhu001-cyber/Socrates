@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLinkPreviewItems } from '../src/ui/linkPreviews.ts';
+import { buildLinkPreviewItems } from '../src/legacy/linkPreviews.ts';
 
 test('link preview model preserves fetched status while keeping provider copy as text', () => {
   const items = buildLinkPreviewItems(

@@ -51,7 +51,7 @@ export type ExecutionResponse = {
 export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
   const requestStartedAt = Date.now();
   if (EXEC_RUNNER === 'disabled') {
-    /* P_progress — still emit a terminal so the chat route can
+    /* still emit a terminal so the chat route can
        clear its "queued" spinner even on the disabled path. */
     if (typeof opts.onProgress === 'function') {
       try {
@@ -75,7 +75,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   const signal = opts.signal || null;
   const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
 
-  /* P_exec-missing-user — the `executions.user_id` column is
+  /* the `executions.user_id` column is
    * NOT NULL and references users(id). When a caller (currently
    * the chat SSE route) hands us `opts.userId` of null/undefined,
    * the previous code coerced it to null and let the INSERT fail
@@ -138,7 +138,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     };
   }
 
-  /* P_code-size-cap — reject oversized sources BEFORE we touch
+  /* reject oversized sources BEFORE we touch
      the database, the scratch dir, or the worker pool. The user
      sees a stable 'failed/code_too_large' status and we never
      persist a 10 MB `executions.code` row. */
@@ -204,7 +204,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     .returning();
   const executionId = inserted.id;
 
-  /* P_session-scoped-scratch — files written by an earlier execution
+  /* files written by an earlier execution
      in the same conversation remain available in the next run's
      cwd. Without this, the model would write transcendental.png in
      run N, then FileNotFoundError on the same path in run N+1.
@@ -299,7 +299,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
-  /* P_syntax-no-quota — a compile-time rejection (SyntaxError /
+  /* a compile-time rejection (SyntaxError /
      IndentationError / TabError) never executed user code, so the
      row is persisted as 'rejected' instead of 'failed'. The daily
      quota count in the chat executor excludes 'rejected' rows:
@@ -333,7 +333,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     errorMessage: result.errorMessage || null,
   }).catch(() => {});
 
-  // P_session-scoped-scratch — files in the session scratch dir
+  // files in the session scratch dir
   // outlive this run; they're reaped only when the session is
   // deleted (see _reapSessionScratch below) or by the TTL sweep at
   // boot for orphaned sessions whose conversation was abandoned.

@@ -76,7 +76,7 @@ function isRunCodeRequest(value: unknown): value is RunCodeRequest {
    the worker. */
 const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
 
-/* P_matplotlib-cjk-font — Pyodide's matplotlib ships only DejaVu Sans,
+/* Pyodide's matplotlib ships only DejaVu Sans,
    which has no CJK glyphs, so chart text in Chinese renders as tofu
    on the first try. Download a CJK font on first boot, cache it,
    register it with font_manager, and put it first in
@@ -85,7 +85,7 @@ const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
    the fix. If the download fails we log a warning and fall through to
    DejaVu — charts still work, just with tofu for CJK.
 
-   P_cjk-font-path — the notofonts/noto-cjk repo organizes Simplified
+   the notofonts/noto-cjk repo organizes Simplified
    Chinese under `SC/`, not `CN/`. The previous `/CN/` URL 404'd
    silently and burned the 8s download timeout on every worker boot,
    which then ate into the first call's 30s user-code budget and
@@ -322,7 +322,7 @@ async function bootPyodide() {
       // Default indexURL auto-detects the pyodide package's own directory
       // in Node — the WASM blob lives next to pyodide.mjs in node_modules.
       fullStdLib: false,
-      // P_worker-stdio — the pool spawns this file via
+      // the pool spawns this file via
       // `new Worker(entry.file, …)` from codeInterpreter.js, so we run
       // inside a `node:worker_threads` Worker. Workers do not inherit
       // `process.stdout` / `process.stderr` (both are `null`), and Pyodide's
@@ -375,7 +375,7 @@ async function bootPyodide() {
     // enforces a per-run byte cap, and exposes a getvalue() method so we
     // can pull the captured text after the run.
     //
-    // P_matplotlib-backend — matplotlib is preloaded at boot and
+    // matplotlib is preloaded at boot and
     // declares `matplotlib-pyodide` as a dependency. When user code
     // triggers pyplot's auto-backend logic, the candidate list can
     // include `module://matplotlib_pyodide.wasm_backend`, whose top-
@@ -441,7 +441,7 @@ class _CappedStream:
         self._buf.append(s)
         self._n += bs
         self._pending_bytes += bs
-        # P_live-stdout — print() only calls flush() when flush=True,
+        # print() only calls flush() when flush=True,
         # so a flush-only hook left the "live output" stream silent
         # for the entire run. Emit when a line completes, or when the
         # pending delta grows past ~4 KB (covers unterminated writes
@@ -468,7 +468,7 @@ class _CappedStream:
 _stdout_cap = _CappedStream('stdout')
 _stderr_cap = _CappedStream('stderr')
 
-# P_progress — JS-installable hook called from Python's flush().
+# JS-installable hook called from Python's flush().
 # Default is a noop so the stream class is self-contained. The
 # runner sets it from JS via pyodide.globals.set before each run.
 def _socrates_no_flush(_stream, _chunk):
@@ -560,9 +560,9 @@ async function runCode({
     `_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`,
   );
 
-  /* P_progress — install the delta hooks so the parent receives
+  /* install the delta hooks so the parent receives
      incremental stdout/stderr. The stream emits on line boundaries
-     from write() (see P_live-stdout) as well as on explicit flush(),
+     from write() (see ) as well as on explicit flush(),
      because print() only flushes when flush=True. The hook is
      best-effort: a thrown transport just no-ops, the canonical
      stdout/stderr in the final `result` is the source of truth. */
@@ -607,10 +607,10 @@ async function runCode({
   pyodide.FS.mount(pyodide.FS.filesystems.NODEFS, { root: artifactsDir }, '/artifacts');
   pyodide.runPython(`import os; os.chdir('/artifacts')`);
 
-  /* P_session-scoped-scratch — print the current contents of the
+  /* print the current contents of the
      scratch dir on stdout so the model knows what files already
      exist from earlier runs in this conversation. The new format
-     (P_scratch-enriched) sorts by mtime desc and shows size + age
+     () sorts by mtime desc and shows size + age
      so the model can pick "the latest plot" reliably instead of
      guessing among same-named artifacts. Cap at 20 entries; if
      more, report the count of remaining. */
@@ -666,7 +666,7 @@ async function runCode({
     /* non-fatal */
   }
 
-  /* P_auto-import-resolution — scan the user's imports and install
+  /* scan the user's imports and install
      every matching package from the Pyodide distribution (scipy,
      sympy, scikit-learn, statsmodels, networkx, pillow…). This is the
      same mechanism JupyterLite and the Pyodide console use; without
@@ -742,7 +742,7 @@ async function runCode({
     // SystemExit through Pyodide can terminate the worker rather than
     // reject runPythonAsync. Flags below carry the outcome to JS.
     //
-    // P_compact-traceback — a bare `Type: msg` line told the model
+    // a bare `Type: msg` line told the model
     // WHAT failed but not WHERE, so a fix attempt had to guess which
     // line broke and re-emitted near-identical code. The wrapper now
     // also prints a compact traceback (last 3 frames in the user's
@@ -842,7 +842,7 @@ async function runCode({
       }
       void err;
     }
-    // P_user-failed-finalise — if the wrapper hit a user-code
+    // if the wrapper hit a user-code
     // error, the JS-side status/errorMessage haven't been set yet.
     // Finalise them now from the marker that was just printed.
     const userFailed = (() => {
@@ -938,7 +938,7 @@ async function runCode({
     stderrText = stderrText.replace(re, '').trim();
   }
 
-  /* P_syntax-no-quota — a SyntaxError-family failure means compile()
+  /* a SyntaxError-family failure means compile()
      rejected the source before any user code ran, so the run consumed
      ~zero interpreter time. Tag it so the parent can persist the row
      as 'rejected' and keep it out of the daily execution quota.

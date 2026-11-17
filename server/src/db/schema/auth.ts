@@ -106,13 +106,13 @@ export const apiKeys = pgTable(
     keyHint: text('key_hint'), // First 8 chars for UI display
     isActive: boolean('is_active').notNull().default(false),
     isBuiltIn: boolean('is_built_in').notNull().default(false),
-    /* P_attachments-multimodal — user-controlled flag marking this
+    /* user-controlled flag marking this
      * provider as vision-capable. Replaces the previous regex-based
      * detection in lib/multimodal.js. Built-in Beagle rows are seeded
      * with true; custom providers default to false and the user opts
      * in via the API key editor. */
     isMultimodal: boolean('is_multimodal').notNull().default(false),
-    /* P_provider-capability-override — per-provider override for how
+    /* per-provider override for how
      * "no thinking" is encoded on the wire. The capability registry answers
      * from the model id; the ONE case it cannot answer from the model id
      * alone is the same model served by two documented, incompatible

@@ -33,14 +33,14 @@ export const SessionMessageSchema = z.object({
   type: z.string().max(50).optional().nullable(),
   sources: z.array(z.unknown()).max(100).optional().nullable(),
   clientId: z.string().max(100).optional().nullable(),
-  /* P_reasoning-persist — chain-of-thought text from reasoning
+  /* chain-of-thought text from reasoning
      models. Preserved so it survives session save/load. */
   reasoningContent: z.string().max(500000).optional().nullable(),
   turnRuntime: z
     .unknown()
     .optional()
     .transform((value) => normalizeTurnRuntime(value)),
-  /* P_attachments — array of {id, kind, name, mime, fileId?, dataUrl?,
+  /* array of {id, kind, name, mime, fileId?, dataUrl?,
      text?, size, truncated?, error?} representing user-supplied files
      for this message. Persisted so a session reload restores chips,
      thumbnails and the durable file reference the model can re-read
@@ -69,7 +69,7 @@ export const SessionMessageSchema = z.object({
     )
     .max(20)
     .optional(),
-  /* P_tool-history — tool calls the assistant made on this turn
+  /* tool calls the assistant made on this turn
    * (web_search, code_interpreter, etc). Each entry is rendered as
    * a collapsible card under the message on reload so the user can
    * see what tools ran. Capped to 20 calls per message and each
@@ -121,13 +121,13 @@ export const SessionMessageSchema = z.object({
           )
           .max(20)
           .optional(),
-        /* P_inline-restore — character offset in the assistant's rawText
+        /* character offset in the assistant's rawText
          * where this tool call split the reply, plus the native
          * visualization specs the run produced. These are needed to
          * rebuild the inline text→row→chart layout on reload/share. */
         textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
         visualizations: z.array(z.unknown()).max(8).optional(),
-        /* P_tool-run-restore — the Codex step log and the terminal status the
+        /* the Codex step log and the terminal status the
          * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
          * run's state without the live SSE stream. Steps are capped client-side
          * too; the bound here keeps a hostile or buggy client from writing an
@@ -160,12 +160,12 @@ export const SessionPayloadSchema = z
      * the default instead of failing the whole save with a 400. */
     mode: z.enum(['tutor', 'chat']).optional().default('chat').catch('chat'),
     phase: z.enum(['topic', 'diagnostic', 'chat']).optional().default('topic').catch('topic'),
-    /* P_exam-history — top-level session "shape". 'exam' is set by the
+    /* top-level session "shape". 'exam' is set by the
      * front-end when saving a finished exam; the chat service still uses
      * 'tutor' / 'chat'. Default 'chat' keeps every existing client call
      * site working unchanged. */
     kind: z.enum(['chat', 'tutor', 'exam']).optional().default('chat').catch('chat'),
-    /* P_exam-history — full rendered exam payload: {topic, difficulty,
+    /* full rendered exam payload: {topic, difficulty,
      * count, lang, types, questions:[...], answers:{...}, submitted, results?}.
      * Lives on the same row as the session, so a single
      * POST /api/sessions carries the exam to the server and a single

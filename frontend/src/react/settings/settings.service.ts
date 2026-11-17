@@ -1,5 +1,5 @@
-import { showToast } from '../../ui/toast.js';
-import { publishProfileSnapshot } from '../../ui/profile.ts';
+import { showToast } from '../../legacy/toast.js';
+import { publishProfileSnapshot } from '../../legacy/profile.ts';
 import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';

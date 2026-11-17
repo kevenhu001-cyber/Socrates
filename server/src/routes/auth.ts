@@ -537,7 +537,7 @@ router.delete('/account', requireAuth, authLimiter, async (req, res, next) => {
 });
 
 /* ─── OAuth GitHub start ─── */
-/* P_oauth-returnTo-strict-whitelist — M5 audit fix. The previous
+/* M5 audit fix. The previous
  * safeReturnTo accepted any same-origin path. That still allows
  * a crafted OAuth flow to bounce the user into sensitive internal
  * routes (e.g. `/api/account/export`, `/oauth/github/start` again,

@@ -1,4 +1,4 @@
-/* chat/templateSlash.ts — extracted from main.js (B3/B6 batch).
+/* chat/templateSlash.ts — extracted from legacy entry.
  * Template mode state + slash-command palette + composer blur helper.
  * Zero-behavior-change lift. Template state is module-local; the
  * window._activeTemplate mirror is maintained for legacy readers
@@ -86,7 +86,7 @@ configureTemplateSystemPrompt({
     return _activeTemplate;
   },
 });
-/* P_extension-chip — an "extension" template is just a template that
+/* an "extension" template is just a template that
    also updates a piece of mode state (e.g. webSearchOn) when it becomes
    active, and flips it back when it is cleared. The keys here are the
    canonical extension ids used by the + menu and chip badge; send paths
@@ -101,7 +101,7 @@ const EXTENSION_SIDE_EFFECTS: Record<string, (on: boolean) => void> = {
   },
   extensiveThinking: function (on: boolean) {
     setExtensiveThinkingOn(on);
-    /* P_batch-storage — the toggle is a user click that lands in
+    /* the toggle is a user click that lands in
        the middle of a render frame. Coalesce the persist into the
        next microtask's batch so a rapid on/off pair (double-click
        the chip) only writes once. */
@@ -128,7 +128,7 @@ export function _applyExtensionSideEffects(prevExt: string | null, nextExt: stri
     }
   }
 }
-/* P_extension-runs — the chat pipeline publishes workflow-stage events
+/* the chat pipeline publishes workflow-stage events
    for template extensions that carry a runId (research/explore). The
    module's planning event and the chat pipeline's searching/completed
    events share that runId via _activeTemplate. web_search tool_use →
@@ -300,7 +300,7 @@ export function closeSlashCommandPalette() {
 export function positionSlashCommandPalette() {
   const p = document.getElementById('slashCommandPalette');
   if (!p) return;
-  /* P_composer-single — one shell; anchor to it wherever it is parked. */
+  /* one shell; anchor to it wherever it is parked. */
   const anchor =
     document.getElementById('composerInputWrap') || document.getElementById('composerRoot');
   if (!anchor) {

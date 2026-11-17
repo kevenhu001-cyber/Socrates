@@ -311,7 +311,7 @@ router.get('/usage-heatmap', async (req, res, next) => {
  * Returns a Content-Disposition: attachment response so the browser
  * saves the file rather than displaying it inline.
  *
- * P_export-reauth — M7 audit fix. The export endpoint returns the
+ * M7 audit fix. The export endpoint returns the
  * user's entire dataset (sessions, messages, API keys, mistakes,
  * memories, ...). A stolen session cookie alone is enough to
  * trigger a full exfiltration under the previous build. Require

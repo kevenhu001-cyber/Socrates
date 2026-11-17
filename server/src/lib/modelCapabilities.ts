@@ -248,7 +248,7 @@ const MODEL_CAPABILITIES: readonly ModelCapability[] = [
      * Studio is mis-detected and vLLM silently ignores `enable_thinking`.
      * This was the last endpoint-shaped guess in the registry; it is now
      * overridable per provider through `api_keys.instant_encoding`
-     * (P_provider-capability-override), which is what an operator sets
+     * (), which is what an operator sets
      * when the host guess is wrong for their setup. */
     instantEncoding: 'chat_template_kwargs',
     instantEncodingByHost: { host: /dashscope|aliyuncs/i, encoding: 'enable_thinking_false' },
@@ -713,7 +713,7 @@ export function assertThinkingModeSupported(
  * is.
  *
  * The built-in provider's model name is deliberately hidden from the SPA
- * (P_privacy-leak), so a boolean summary is the only way the UI can honour
+ * (), so a boolean summary is the only way the UI can honour
  * the operator's model choice. It is also the only thing the UI needs: the
  * effort picker must not offer "Instant" for a model that cannot switch
  * thinking off, and it must not offer effort levels for a model that has no

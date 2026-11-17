@@ -9,7 +9,7 @@ import {
   patchKnowledgeNode,
   saveKnowledgeBoundarySnapshot,
   updateKnowledgeNodeNote,
-} from '../../ui/knowledgePanelCommands.ts';
+} from '../../legacy/knowledgePanelCommands.ts';
 import { getConceptMapStatus, subscribeConceptMapStatus } from '../../tutor/conceptMap.ts';
 import { practiceKnowledgeNode } from '../../tutor/knowledgePractice.ts';
 

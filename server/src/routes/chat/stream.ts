@@ -63,7 +63,7 @@ async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
  * @param {import('express').Router} router
  */
 export function registerStreamRoute(router: Router) {
-  /* P_stream-auth — the streaming route previously had no auth
+  /* the streaming route previously had no auth
    * middleware, leaving `req.userId` undefined when an unauthenticated
    * caller (or a mis-wired client) hit /stream. The downstream
    * code_interpreter tool then tried to insert into the
@@ -91,7 +91,7 @@ export function registerStreamRoute(router: Router) {
         const projectIdFromBody =
           typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
-        /* P_ttfb-prime-first — validate the body schema BEFORE we
+        /* validate the body schema BEFORE we
          commit the SSE response. prepareChatRequest() does its own
          parse-and-400 path, but a 400 is no longer possible once the
          status line is out: writeSsePrime below sets it to 200 + SSE
@@ -106,7 +106,7 @@ export function registerStreamRoute(router: Router) {
           return;
         }
 
-        /* P_ttfb-prime-first — write SSE status + headers + 32 KB
+        /* write SSE status + headers + 32 KB
          prime NOW, before the session-ownership DB round-trip and
          before the provider/RAG/memory prelude start. The browser
          sees a 200 the instant the request lands, and EdgeOne's
@@ -174,7 +174,7 @@ export function registerStreamRoute(router: Router) {
 /* M1 async — optional detached-turn binding. Two shapes:
  *   turnId        — the client already created the turn (POST /api/chat-turns).
  *                   It must belong to the caller.
- *   clientTurnId  — P_prep-parallel: create-or-get the turn here instead, which
+ *   clientTurnId  — create-or-get the turn here instead, which
  *                   saves the client a full round-trip before the stream can
  *                   start. Idempotent on (user, clientTurnId), exactly like the
  *                   standalone endpoint, so a retried request re-binds the same

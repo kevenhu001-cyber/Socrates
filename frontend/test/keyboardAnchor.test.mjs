@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import { KEYBOARD_PIN_SLACK, decideKeyboardAnchorAction } from '../src/ui/scrollDecision.ts';
+import { KEYBOARD_PIN_SLACK, decideKeyboardAnchorAction } from '../src/legacy/scrollDecision.ts';
 
 /*
  * The keyboard-transition anchor contract:
@@ -13,7 +13,7 @@ import { KEYBOARD_PIN_SLACK, decideKeyboardAnchorAction } from '../src/ui/scroll
  *   - a newer user gesture cancels any compensation,
  *   - a missing anchor is a no-op.
  *
- * These are pure decisions extracted from ui/keyboard/index.ts so they can
+ * These are pure decisions extracted from legacy/keyboard/index.ts so they can
  * be verified without a DOM; the DOM wiring is covered by the Playwright
  * keyboard-viewport / chat-anchor specs.
  */

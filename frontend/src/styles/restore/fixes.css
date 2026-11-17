@@ -151,7 +151,7 @@
     min-height: 26px;
   }
 
-  /* P_has-invalidation — see ui/layoutStateMirror.js. */
+  /* P_has-invalidation — see legacy/layoutStateMirror.js. */
   :where(:root[data-topic-setup-open]) #appShell#appShell #mainInner:not(#_n):not(._n) {
     padding-bottom: 0 !important;
   }

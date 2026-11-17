@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type Ref } from 'react';
 import { LayoutGrid, PanelsTopLeft, Search, Trash2, X } from 'lucide-react';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
 import { Empty, EmptyDescription, EmptyHeader } from '../ui/shadcn/empty';

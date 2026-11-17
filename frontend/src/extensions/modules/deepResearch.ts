@@ -1,4 +1,4 @@
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { setDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 // frontend/src/extensions/modules/deepResearch.ts
 

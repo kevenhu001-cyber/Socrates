@@ -17,7 +17,7 @@ import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
 import { startNewChat, toggleIncognito } from '../../app/lifecycle/index.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
-import { openShareModal } from '../../ui/share.ts';
+import { openShareModal } from '../../legacy/share.ts';
 import { useAppMode } from '../app-mode/useAppMode.ts';
 import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
@@ -41,7 +41,7 @@ import { useTopbarState } from './topbarStore.ts';
  * `.top-mode-switch`, `.top-bar-right`) that the shell's page-level CSS
  * places and hides per surface, and renders everything from stores:
  *
- *   share / find      topbarStore (published by ui/share.impl.ts)
+ *   share / find      topbarStore (published by legacy/share.impl.ts)
  *   tutor stage       app mode + the session's user-turn count
  *   practice          session store
  *   mode switch       app mode, hidden while a conversation runs

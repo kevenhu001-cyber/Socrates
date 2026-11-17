@@ -94,7 +94,7 @@ const SUMMARY_SYSTEM_PROMPT =
   "(3) what was already taught/explained and the user's mastery signals, (4) open questions or unfinished work. " +
   'Be dense but complete. No preamble, no markdown headings — plain paragraphs and short bullets only.';
 
-/* P_compress-memo — the model-input path (routes/chat/prepare/context.ts) can
+/* the model-input path (routes/chat/prepare/context.ts) can
    ask for the same conversation more than once (a retried turn, a
    regenerate that re-sends the same prefix). Each of those re-derives an
    identical head and therefore an identical summary — a full LLM round
@@ -107,7 +107,7 @@ const SUMMARY_SYSTEM_PROMPT =
    turn (new digest) re-summarizes. */
 const compressMemo = createSummaryMemo();
 
-/* P_summary-stable-id — the clientId carried by the synthetic summary
+/* the clientId carried by the synthetic summary
    message. It is no longer persisted anywhere (see the scope note above),
    but it stays fixed rather than time-based so that a summary handed to
    the model is stable across the retries the memo above collapses, and
@@ -126,7 +126,7 @@ export async function compressSessionMessages(
 ): Promise<CompressionResult> {
   const messages = Array.isArray(input) ? input.slice() : [];
   const keepTurns = opts.keepTurns ?? numEnv('SESSION_COMPRESS_KEEP_TURNS', 24);
-  /* P_model-capability-registry — the trigger follows the window of the model
+  /* the trigger follows the window of the model
      the conversation is destined for. It used to be one global constant
      (24 000 tokens) for every model and every endpoint. A model with a small
      window was compressed far too late — the request went out oversized and
@@ -192,7 +192,7 @@ export async function compressSessionMessages(
      marker message mirrors the [Context summary] notice so the reader
      (and the model) can see that earlier turns were dropped rather than
      silently disappearing.
-     P_context-marker-prefix — the prefix has to be one the prompt splitter
+     the prefix has to be one the prompt splitter
      recognises: lib/chatPromptContext.ts keeps "[Conversation summary" and
      "[Context summary" blocks in the conversation. With any other prefix the
      marker was classified as a system initialization block and dropped along
@@ -240,7 +240,7 @@ export async function compressSessionMessages(
     return tailOnly();
   }
 
-  /* P_compress-memo — return the memoized summary for this exact head
+  /* return the memoized summary for this exact head
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
   const digest = createHash('sha256')
@@ -306,7 +306,7 @@ export async function compressSessionMessages(
   function finishWithSummary(summaryText: string, tokens: number): CompressionResult {
     const summaryMessage: CompressibleMessage = {
       role: 'system',
-      /* P_summary-stable-id — was `summary-${Date.now()}`, which made every
+      /* was `summary-${Date.now()}`, which made every
          call mint a distinct identity. Harmless now that nothing persists
          this, but a fixed id keeps the summary stable across the retries
          the memo collapses, and keeps a future persisting caller on the

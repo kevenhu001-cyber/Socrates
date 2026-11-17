@@ -1,6 +1,6 @@
 import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { Icon } from '../../legacy/Icon';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import { i18n, menuCopy, MOBILE_MENU_ITEMS, type MenuItemSpec } from './composerToolsMenuData';
 import type { ComposerToolsAction } from './types';
 

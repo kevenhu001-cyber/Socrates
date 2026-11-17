@@ -45,7 +45,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 router.post('/', requireAuth, async (req, res, next) => {
   try {
     const db = getDb();
-    // Whitelist visibility — see P_share-visibility-enum. Bad
+    // Whitelist visibility — see . Bad
     // input is silently coerced to 'unlisted' rather than 400'd
     // so the SPA can keep working with stale clients that send
     // an old value (e.g. 'link').

@@ -1,4 +1,4 @@
-/* util/ids.ts — extracted from main.js.
+/* util/ids.ts — extracted from legacy entry.
  * UUIDv4-compatible ID generation for client-side message/session IDs.
  * Zero-behavior-change lift.
  */

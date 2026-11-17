@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useSyncExternalStore, useMemo } from 'react';
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 import type { SessionRowProps } from './SessionRow';
 import { SessionRow } from './SessionRow';
 import { formatRelativeTime } from './sessionList.store';

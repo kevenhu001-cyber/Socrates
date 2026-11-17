@@ -2,7 +2,7 @@
  * Turn viewport ownership, reserve math, and the public anchor config.
  */
 export interface TurnAnchorDeps {
-  /** Live reader for React ownership of #msgList, owned by main.js. */
+  /** Live reader for React ownership of #msgList, owned by application bootstrap. */
   isMsgListMounted: () => boolean;
 }
 
@@ -18,7 +18,7 @@ export interface TurnAnchorList extends HTMLElement {
 }
 
 /* One spelling for "the send anchor owns this transcript" — the `data-`
-   attribute every reader already queries (ui/scroll.ts, the mount window,
+   attribute every reader already queries (legacy/scroll.ts, the mount window,
    above-viewport compensation). The old DOM-expando
    `__socratesTurnViewportOwner` was written by the send pass but read by the
    composer-resize handler alone, and nothing but a new user message ever
@@ -76,7 +76,7 @@ export function turnAnchorReserve(
 
 let anchorDeps: TurnAnchorDeps = { isMsgListMounted: () => false };
 
-/** Provide the React-ownership reader owned by main.js. */
+/** Provide the React-ownership reader owned by application bootstrap. */
 export function configureTurnAnchor(next: TurnAnchorDeps): void {
   anchorDeps = next;
 }

@@ -8,7 +8,7 @@ import {
   isTrackedInputFocused,
   isEditableWithin,
   MIN_STABLE_VISUAL_HEIGHT,
-} from '../src/ui/keyboard/geometry.ts';
+} from '../src/legacy/keyboard/geometry.ts';
 
 /*
  * Pure helpers — no DOM, no window. The DOM-touching initKeyboardLift

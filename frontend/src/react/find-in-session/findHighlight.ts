@@ -8,7 +8,7 @@
  * already-rendered markdown/KaTeX/code DOM without re-rendering.
  */
 
-import { prefersReducedMotion } from '../../ui/motion/index.ts';
+import { prefersReducedMotion } from '../../legacy/motion/index.ts';
 import { flushDeferredMessageRows, restoreDeferredMessageRows } from '../message-list/deferredRows';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 

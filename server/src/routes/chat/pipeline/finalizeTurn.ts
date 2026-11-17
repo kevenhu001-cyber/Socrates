@@ -214,7 +214,7 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
       usageSource: settled.usageSource,
     });
   }
-  // P_streaming-survival — mark stream as completed BEFORE clearing
+  // mark stream as completed BEFORE clearing
   // streaming_text, so the close handler doesn't overwrite with stale data.
   onStreamCompleted();
   if (turnId) {
@@ -235,7 +235,7 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
       },
     ).catch(() => {});
   }
-  // P_streaming-survival & backend persistence — save completed assistant message to messages table
+  //  & backend persistence — save completed assistant message to messages table
   if (sessionIdFromQuery && req.userId && (fullText || executedToolCalls.length > 0)) {
     const db = getDb();
     const assistantClientId =
@@ -260,7 +260,7 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
           html: safeContent,
           rawText: safeRaw,
           reasoningContent: fullReasoning || null,
-          /* P_turn-summary — persisted so a session reload still shows the
+          /* persisted so a session reload still shows the
            model's retrospective instead of recomputing a first-sentence
            slice. Null when generation failed; the client falls back. */
           summary: turnSummary,

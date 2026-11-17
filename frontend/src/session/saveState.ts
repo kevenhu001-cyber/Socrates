@@ -1,6 +1,6 @@
 /* session/saveState.ts — centralized mutable save/load coordination state.
- * Extracted from main.js module-level vars to enable safe persistence
- * extraction. Single mutable object shared by main.js and new modules.
+ * extracted from legacy entry module-level vars to enable safe persistence
+ * extraction. Single mutable object shared by app entry and new modules.
  * Zero-behavior-change: same initial values.
  */
 import { createDeletedSessionGuard, type DeletedSessionGuard } from './store.ts';
@@ -9,7 +9,7 @@ import { createDeletedSessionGuard, type DeletedSessionGuard } from './store.ts'
  *  the exact shape; the queue only needs to carry it verbatim. */
 export type SessionSnapshot = Record<string, unknown>;
 
-/* P_delete-resurrect — tombstone set for deleted session ids. Shared by
+/* tombstone set for deleted session ids. Shared by
    persistence (doSave refuses to POST tombstoned ids) and deletion
    (actuallyDeleteSession sets, refresh clears). Centralized here so
    extracted modules share one instance. */
@@ -25,7 +25,7 @@ export function forgetDeletedSession(id: string | null | undefined): void {
 export interface SaveState {
   saveInFlight: Promise<unknown> | null;
   saveDirty: boolean;
-  /* P_save-snapshot — the single queued payload slot, captured at the moment
+  /* the single queued payload slot, captured at the moment
      the state changed and NOT at the moment the queue drains.
 
      Two producers write it: saveCurrentSession() when it finds a save already
@@ -43,7 +43,7 @@ export interface SaveState {
      matter which session is current, so the drain is unnecessary and the
      session switch no longer waits on POST + list refresh + PATCH. */
   pendingSnapshot: SessionSnapshot | null;
-  /* P_reset-defer — payload captured by saveSessionBeforeReset and scheduled
+  /* payload captured by saveSessionBeforeReset and scheduled
      for the next macrotask so the new-chat click frame stays cheap. It is
      parked here for exactly one tick, and the pagehide/visibilitychange
      beacon below flushes it if the tab goes away inside that window —

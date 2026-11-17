@@ -5,7 +5,7 @@ import { encrypt, decrypt, encryptionKey } from '../../lib/crypto.js';
 
 type ApiKeyRow = typeof apiKeys.$inferSelect;
 
-/* P_ttfb-apikey-cache — every chat turn runs `getActiveApiKey` once
+/* every chat turn runs `getActiveApiKey` once
    during the request prelude (helpers.prepareChatRequest → provider
    lookup + decrypt). The DB read is ~3–8ms and the AES-GCM decrypt
    is another ~1ms. Both are wasted on bursts (open → list → send →
@@ -80,7 +80,7 @@ function keyHintFor(key: string): string {
  */
 export async function getActiveApiKey(userId: string | null) {
   const now = Date.now();
-  /* P_ttfb-apikey-cache — short-circuit before the DB round-trip when
+  /* short-circuit before the DB round-trip when
      the per-user cache is warm. The anonymous / global key shares a
      single cache slot because it is the same row for every anonymous
      request. */
@@ -161,12 +161,12 @@ function decryptProvider(key: ApiKeyRow) {
     id: key.id,
     label: key.label,
     isBuiltIn: key.isBuiltIn || false,
-    /* P_attachments-multimodal — propagate the user-controlled
+    /* propagate the user-controlled
      * vision-capable flag so chat.js can decide whether to forward
      * image_url parts. Defaults to false for older rows that
      * pre-date the column. */
     isMultimodal: key.isMultimodal === true,
-    /* P_provider-capability-override — the operator's own statement of
+    /* the operator's own statement of
      * how their endpoint encodes "no thinking". NULL means "use the
      * capability registry's answer". */
     instantEncoding: key.instantEncoding ?? null,
@@ -198,7 +198,7 @@ export async function seedBuiltInProvider() {
       .limit(1);
 
     if (existing) {
-      /* P_privacy-leak — do NOT log the resolved model/url here. The
+      /* do NOT log the resolved model/url here. The
        * built-in "Beagle" provider is an alias; surfacing the real
        * upstream model in the boot log reveals the operator's
        * LLM choice to anyone with access to the systemd journal.
@@ -231,7 +231,7 @@ export async function seedBuiltInProvider() {
           keyHint: keyHintFor(apiKey),
           isBuiltIn: true,
           isActive: true,
-          /* P_attachments-multimodal — built-in Beagle is a vision
+          /* built-in Beagle is a vision
            * model (MiniMax-M3). Force the flag on insert so chat.js
            * forwards image_url parts without any user setup. */
           isMultimodal: true,
@@ -239,7 +239,7 @@ export async function seedBuiltInProvider() {
         .returning({ id: apiKeys.id });
       console.log('[seed] Created built-in Beagle provider (id=' + (ins[0] && ins[0].id) + ')');
     }
-    /* P_ttfb-apikey-cache — the built-in key is the global fallback
+    /* the built-in key is the global fallback
        for both authenticated and anonymous users. Any seed run
        (first boot, re-seed, or the legacy cleanup path above) must
        drop the cached entry so the next /api/chat/stream picks up
@@ -290,7 +290,7 @@ export async function validateApiKeys() {
       console.warn(
         `[validateApiKeys] Cleared ${corruptedCount} corrupted key(s). Users must re-enter their API keys.`,
       );
-      /* P_ttfb-apikey-cache — at least one row was mutated; drop
+      /* at least one row was mutated; drop
          the entire cache so the next read re-resolves. Cheaper than
          tracking which userId's row was touched. */
       invalidateApiKeyCache(null);
@@ -302,7 +302,7 @@ export async function validateApiKeys() {
   }
 }
 
-/* P_apikey-ciphertext-leak — defensive projection. This helper isn't
+/* defensive projection. This helper isn't
  * called by the current route handlers (apiKeys.js does the insert
  * inline with SAFE_PROJECTION), but it remains exported and could
  * easily be wired up later. Returning the raw row would leak the
@@ -349,14 +349,14 @@ export async function createApiKey(
       keyCiphertext,
       keyHint,
       isActive: true,
-      /* P_attachments-multimodal — user-controlled vision flag.
+      /* user-controlled vision flag.
        * Coerced to a strict boolean so a malicious client can't
        * smuggle a non-boolean through zod's passthrough. */
       isMultimodal: isMultimodal === true,
     })
     .returning(SAFE_CREATE_PROJECTION);
 
-  /* P_ttfb-apikey-cache — a new key creates a new active row (the
+  /* a new key creates a new active row (the
      insert is also the activation), so the per-user cache is now
      stale. Drop it so the next /api/chat/stream resolves to the
      new provider. */

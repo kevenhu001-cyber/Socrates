@@ -32,7 +32,7 @@ export const VIZ_ICON_SOURCE =
    font). We use postMessage from the iframe to ask the parent for
    the live token values once on load, then keep them in CSS vars. */
 export const VIZ_THEME_RESET =
-  /* P_perf-self-host — the iframe is a separate document and fonts are
+  /* the iframe is a separate document and fonts are
      now bundled with the parent app, so it uses the platform font stack
      instead of blocking on fonts.googleapis.com. */
   '<style>' +
@@ -62,7 +62,7 @@ import { sessionBridge } from '../store/index.ts';
    runs AFTER every <script> in the user's HTML — so by the time
    we post viz-ready, the user's canvas (if any) is already drawn.
 
-   P_viz-id-safety — the viz id is captured in the IIFE's closure
+   the viz id is captured in the IIFE's closure
    (VIZ_ID_LITERAL is interpolated at srcdoc build time) instead of
    being read off `window.__vizId`. The user code may overwrite
    `window.__vizId`, which used to make the parent drop the postMessage
@@ -97,14 +97,14 @@ function vizRuntime(vizId: string) {
     'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:docH()},"*")}catch(e){}' +
     '}' +
     'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
-    /* P_viz-ping-ack — the parent pings us when its max-wait expires
+    /* the parent pings us when its max-wait expires
          without a viz-ready (the ready post can race the parent's
          listener attachment). We answer with a fresh viz-ready so the
          parent reuses one code path. vizId check keeps cards from
          answering each other's pings. */
     'var _err=null;' +
     'window.addEventListener("message",function(e){var d=e&&e.data;if(d&&d.type==="viz-ping"&&d.vizId===VIZ_ID){var er=errNow();if(er!==null)postError(er);else postReady()}});' +
-    /* P_viz-resize — height is only reported at ready time, but the
+    /* height is only reported at ready time, but the
          body keeps growing afterwards (late images, animations, async
          layout) and gets clipped by the fixed height. Observe the body
          and post throttled deltas so the parent can grow the iframe. */
@@ -187,7 +187,7 @@ export function validMermaid(code: string) {
   }
 }
 
-/* P_mermaid-parse-cache — during streaming the same stableId is re-rendered
+/* during streaming the same stableId is re-rendered
    every painted frame, and each call used to pay a synchronous
    mermaid.parse. The id is derived from the content hash, so a known-good
    id never needs re-validating. */
@@ -201,7 +201,7 @@ const MERMAID_CHECKED_MAX = 500;
 export function renderMermaid(code: string, opts: { stableId?: string }) {
   opts = opts || {};
   const stableId = opts.stableId;
-  /* P_mermaid-parse-once — mermaid.parse is synchronous and expensive, so
+  /* mermaid.parse is synchronous and expensive, so
      whichever check passes here rides along on the queue entry: the drain
      reuses it instead of parsing the same diagram a second time. Only
      mermaid-still-loading callers (validated stays false) are parsed once
@@ -235,7 +235,7 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
       }
     }
   }
-  /* P_viz-stable-id — accept opts.stableId so a streaming fence
+  /* accept opts.stableId so a streaming fence
      keeps the same card id across rAF ticks. Without this the
      streaming renderer (formatMsgProgressive) allocates a new
      viz-card-N every tick, blowing away the previous iframe and
@@ -277,7 +277,7 @@ function encodeSrcdoc(doc: string) {
 
 export function renderVizLoading(opts: { streaming?: boolean; stableId?: string }) {
   opts = opts || {};
-  /* P_viz-no-streaming-spinner — when called during streaming
+  /* when called during streaming
      (markdown.js passes opts.streaming=true), the spinner overlay
      is suppressed. The parent message's own thinking indicator
      already provides feedback; flashing a per-card "Rendering…"
@@ -286,7 +286,7 @@ export function renderVizLoading(opts: { streaming?: boolean; stableId?: string 
      still appears in the FINAL renderViz path (post-stream) so
      the user gets feedback when the iframe is mounting for
      real.
-     P_viz-stable-id — when called during streaming with a stableId,
+     when called during streaming with a stableId,
      reuse that id so the same <div class="viz"> is replaced
      in-place across rAF ticks instead of being torn down and
      re-created. */
@@ -307,7 +307,7 @@ export function renderVizLoading(opts: { streaming?: boolean; stableId?: string 
 }
 
 export function guardUserScripts(html: string, vizId: string) {
-  /* P_viz-safety — wrap EVERY inline <script> in a try/catch so any
+  /* wrap EVERY inline <script> in a try/catch so any
      synchronous error (not just explicit `throw`) posts a viz-error
      back to the parent. The previous version only wrapped scripts
      containing the `throw` keyword, which silently lost the majority
@@ -337,7 +337,7 @@ export function guardUserScripts(html: string, vizId: string) {
 
 export function renderViz(htmlStr: string, opts: { stableId?: string }) {
   opts = opts || {};
-  /* P_viz-stable-id — when formatMsgProgressive closes a fence
+  /* when formatMsgProgressive closes a fence
      and we transition from a loading placeholder to the real
      iframe, the loading placeholder was already mounted under
      a stable id. Reuse that id so the same <div class="viz"> is
@@ -345,7 +345,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
      stable and avoids the iframe tearing down + re-mounting. */
   const id = opts.stableId || 'viz-card-' + ++_vizId;
   const title = (sessionBridge.getSnapshot().topic || 'Canvas').toString().slice(0, 40);
-  // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
+  // strip the `<?xml version="1.0"?>` processing
   // instruction if the user pasted a standalone SVG document. Inside
   // an HTML <body>, the HTML5 tokenizer turns `<?...?>` into a bogus
   // comment (so it does not break parsing), but some browsers
@@ -474,7 +474,7 @@ function parsePlotRangeNumber(tok: string) {
 
 export function renderPlot(spec: string, opts: { stableId?: string }) {
   opts = opts || {};
-  /* P_viz-stable-id — see renderViz for rationale. */
+  /* see renderViz for rationale. */
   const id = opts.stableId || 'viz-card-' + ++_vizId;
   const title = 'Plot';
   const parsed = parsePlotSpec(spec);

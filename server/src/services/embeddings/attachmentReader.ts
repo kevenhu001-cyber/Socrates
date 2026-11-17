@@ -1,7 +1,7 @@
 /**
  * attachmentReader — server-side reader for user-uploaded chat attachments.
  *
- * Attachment contract (P_file-attachments):
+ * Attachment contract ():
  *   - The client uploads every attached file to POST /api/files, which
  *     persists a `files` row (storage path, mime, size, owner).
  *   - The message's attachments[] jsonb stores {kind, name, mime, size,

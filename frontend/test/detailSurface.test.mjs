@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import { createElement } from 'react';
-import { openDetailSurface, closeDetailSurface } from '../src/ui/detailSurface.ts';
-import { activateMainView } from '../src/ui/mainViewController.ts';
+import { openDetailSurface, closeDetailSurface } from '../src/legacy/detailSurface.ts';
+import { activateMainView } from '../src/legacy/mainViewController.ts';
 
 function fixture(width = 1440) {
   const dom = new JSDOM(

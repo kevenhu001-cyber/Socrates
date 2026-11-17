@@ -210,7 +210,7 @@ function runMountSpecs(
 
 /**
  * Read whether a host element has been mounted by the given label.
- * Convenience helper for the `main.js` style `reactOwnsXxx()` probes
+ * Convenience helper for the `app entrypoint` style `reactOwnsXxx()` probes
  * that need to decide whether React owns a legacy host.
  */
 export function hostIsMountedBy(document: Document, hostId: string, label: string): boolean {

@@ -44,15 +44,15 @@ interface StreamingContext {
  *   replaceWithError body — chat/turn/errorPath.js
  */
 import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core/turnRuntime';
-import { normalizePublicTurnActivity } from '../../ui/turnActivityModel';
+import { normalizePublicTurnActivity } from '../../legacy/turnActivityModel';
 import { dispatchBatch, sessionBridge, updateSessionMessage } from '../../store/index.ts';
 import { turnState, streamRetryViewport } from './state.ts';
 import { setChatStopState, markTurnInProgress, quietTurn } from './ui.ts';
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from '../liveTurn.ts';
 import { generateId } from '../../util/ids.ts';
-import { hideNewReplyPill } from '../../ui/scrollPill.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
+import { hideNewReplyPill } from '../../legacy/scrollPill.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
+import { updateMessageSnapshot } from '../../legacy/messageSnapshot.ts';
 import { createStreamPlayer } from '../../render/streamPlayer.js';
 import { scheduleActiveTurnToTop } from './anchor/schedule.ts';
 import {
@@ -68,7 +68,7 @@ import { createAbortPath } from './abortPath.ts';
 import { createErrorPath } from './errorPath.ts';
 import { createMessageOwnership } from './messageOwnership.ts';
 import { createFinishLifecycle } from './finishLifecycle.ts';
-import { toolRunLabel } from '../../ui/toolPresentationModel';
+import { toolRunLabel } from '../../legacy/toolPresentationModel';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { addMessage } from '../messages.ts';
 import { t } from '../../i18n/index.ts';
@@ -591,7 +591,7 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
     t: _t,
     appMode: _appMode,
   };
-  /* P_smooth-stream — `full` is the ARRIVED text (persistence and tool textOffsets index into it). `visibleLen`
+  /* `full` is the ARRIVED text (persistence and tool textOffsets index into it). `visibleLen`
      is how much of it the playback clock has revealed; the live bubble paints
      `full.slice(0,visibleLen)`. With smooth streaming off, the two are kept
      equal so the reader sees the whole arrived text as before. `playbackState`
@@ -599,19 +599,19 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
   const smooth = _smoothStreamEnabled();
   state.visibleLen = 0;
   state.playbackState = 'idle';
-  /* P_reasoning-persist — accumulate reasoning_content deltas so they can
+  /* accumulate reasoning_content deltas so they can
      be included in the session-save payload and restored with the turn. */
 
   /* Thinking pill (for chat-mode reasoning_content). Data-only: the status
      line is written to `message._liveStatus` and drawn by TurnStatus. */
 
   /* Build the status chrome BEFORE the chrome helpers are called below.
-     P_session-stream-dispose / P_session-cross-talk — sticky flag and
+      / sticky flag and
      session-slot guards are owned by the helpers above; status chrome
      only mirrors state, it does not own it. */
   const statusChrome = createStatusChrome(state);
 
-  /* P_session-stream-dispose — when resetApp() or loadSession() aborts
+  /* when resetApp() or loadSession() aborts
      an in-flight stream, already-queued delta chunks from the response
      body can still reach append()/finish() callbacks via stream.js's
      ReadableStream reader (AbortController only aborts the fetch, not
@@ -625,7 +625,7 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
      and every `sessionBridge.getSnapshot().messages[msgIdx]` write site checks it before
      touching state. _disposed is sticky (no resurrection) so even if
      abort races with a late finish callback, the writes stay inert. */
-  /* P_session-cross-talk — capture the session identity at the moment
+  /* capture the session identity at the moment
      this streaming bubble is created (synchronously, before any await).
      All async callbacks (onDelta / onThinking / doRender / finish /
      recordToolUse ...) hold this closure; if the user switches sessions

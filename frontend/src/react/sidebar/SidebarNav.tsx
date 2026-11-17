@@ -1,5 +1,5 @@
 import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';

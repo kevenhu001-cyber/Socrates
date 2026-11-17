@@ -16,7 +16,7 @@ export const CODE_INTERPRETER_TOOL = {
     description:
       '## What this tool does\n' +
       'Executes Python 3.12 in a sandboxed Pyodide WASM runtime and returns stdout plus any matplotlib PNGs / CSV exports written to the current working directory.\n\n' +
-      // P_code-must-be-module-level — the runner is
+      // the runner is
       // `exec(compile(src, "<socrates>", "exec"), {"__name__": "__main__"})`.
       // This is a SYNCHRONOUS module-level exec, not a Jupyter cell. The
       // model used to hit `SyntaxError: 'await' outside function` and

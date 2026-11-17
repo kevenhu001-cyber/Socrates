@@ -260,7 +260,7 @@ body.workspace-active #appShell .main-page {
    The heuristic AI suggestion chips (`.home-suggestions-wrap` and
    `.home-suggestion-*`) were removed from index.html because they read as
    noise on mobile and conflicted with the quick-actions reference block.
-   src/ui/homeSuggestions.ts is kept as a no-op shim so any future
+   src/legacy/homeSuggestions.ts is kept as a no-op shim so any future
    re-introduction (or third-party import) compiles without a sweeping
    refactor. Styles intentionally not deleted yet — search history may
    still reference them in design docs.
@@ -394,7 +394,7 @@ body.workspace-active #appShell .main-page {
     overflow: visible !important;
   }
 
-  /* P_has-invalidation — see ui/layoutStateMirror.js. */
+  /* P_has-invalidation — see legacy/layoutStateMirror.js. */
   :where(:root[data-plugins-panel-open])
     body.workspace-active:not(#_n):not(._n)
     #appShell

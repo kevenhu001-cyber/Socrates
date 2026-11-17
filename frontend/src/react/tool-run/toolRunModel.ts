@@ -6,7 +6,11 @@
  */
 export type * from './toolRunModel.types.ts';
 export { attachmentOutputsOf, toolOutputsOf } from './toolOutputs.ts';
-export { agentRunStateOf, runStartedAt, toolRunStateOf } from '../../ui/toolPresentationState.ts';
+export {
+  agentRunStateOf,
+  runStartedAt,
+  toolRunStateOf,
+} from '../../legacy/toolPresentationState.ts';
 export {
   buildTurnLayout,
   findThinkRanges,

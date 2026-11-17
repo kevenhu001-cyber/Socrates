@@ -3,7 +3,7 @@ import {
   chatRuntimeStore,
   getChatRuntimeSnapshot,
   subscribeToChatRuntime,
-} from '../ui/chatRuntimeStore';
+} from '../legacy/chatRuntimeStore';
 import type { ChatRuntimeSnapshot, ChatStreamStatus } from './types/domain';
 
 const chatRuntimeImmutableBridge = chatRuntimeStore;

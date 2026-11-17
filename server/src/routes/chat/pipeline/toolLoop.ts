@@ -267,7 +267,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
          that keeps them groupable while still showing which hop was slow.
          This is the span that answers "was it the provider or was it us". */
       timing.mark('upstream_started');
-      /* P_turn-watchdog — a new upstream hop is progress too: the turn is
+      /* a new upstream hop is progress too: the turn is
        * alive, it just has not produced bytes yet. */
       watchdog.touch();
       await withSpan(
@@ -284,7 +284,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
               apiKey: provider.keyPlaintext,
               model: provider.model,
               userId: req.userId,
-              /* P_provider-capability-override — the operator's own statement
+              /* the operator's own statement
                * about their endpoint wins over the registry's host heuristic. */
               instantEncoding: provider.instantEncoding ?? null,
               messages: requestMessages,
@@ -353,7 +353,7 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             (tc: ToolCall) => {
               toolCallsThisTurn.push(tc);
             },
-            // P_tool_stream — forward partial tool_call deltas as
+            // forward partial tool_call deltas as
             // `event: tool_call_delta` SSE frames. The chat route uses
             // this to let the frontend render the in-progress JSON
             // (typically the Python source for code_interpreter, or the

@@ -8,7 +8,7 @@
 import { dispatchSession, sessionStore } from '../store/index.ts';
 import type { ChatMessageShape } from '../state/session.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import type { ChatMessage } from '../react/types/domain.ts';
 

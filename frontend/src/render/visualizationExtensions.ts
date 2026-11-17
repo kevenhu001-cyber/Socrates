@@ -12,7 +12,7 @@ export interface ExtensionSpec {
   accessibilitySummary?: string;
 }
 
-/* P_interactive-sim-scripts — `interactive_simulation` would be a
+/* `interactive_simulation` would be a
    contradiction if it rejected <script>: an "interactive" template
    that can never run code fails validation on every genuinely
    interactive submission, then burns the retry budget. Inline
@@ -77,7 +77,7 @@ export function renderExtension(
   const nonce = 'viz-' + cardId + '-' + Math.random().toString(36).slice(2);
   const csp =
     "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; font-src data:; form-action 'none'; base-uri 'none'";
-  /* P_perf-self-host — sandboxed extension iframes use the platform font
+  /* sandboxed extension iframes use the platform font
      stack instead of blocking on fonts.googleapis.com. */
   const svgSource = spec.template === 'svg_illustration' ? standaloneSvgSource(source) : '';
   if (spec.template === 'svg_illustration' && !svgSource)
@@ -94,7 +94,7 @@ export function renderExtension(
       ? 'html,body{width:100%;height:100%;margin:0;padding:0;overflow:hidden;background:transparent}body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);place-items:center;background:transparent}svg{max-width:100%;max-height:100%}'
       : '') +
     '</style>';
-  /* P_ext-viz-error — an interactive_simulation script throwing inside
+  /* an interactive_simulation script throwing inside
      the sandbox used to be invisible: the iframe stayed silent and the
      card looked permanently empty. Report error/unhandledrejection to
      the parent (nonce-tagged, same handshake as socrates-viz-ready) so
@@ -147,7 +147,7 @@ export function renderExtension(
   );
 }
 
-/* P_viz-fix-loop — model-facing repair request for a client-side
+/* model-facing repair request for a client-side
    render failure. Rides the existing `tool-retry` CustomEvent
    (detail.prompt → verbatim next-turn message). The model already has
    the full spec in context from its own tool call, so the prompt only

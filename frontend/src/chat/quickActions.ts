@@ -1,6 +1,6 @@
-/* chat/quickActions.ts — Wave 0e of main-js-split plan.
+/* chat/quickActions.ts
  * Dispatcher for "quick" option buttons rendered inside assistant messages.
- * Extracted from main.js region 26 (L8778). Reads the current snapshot and
+ * Extracted from legacy entry. Reads the current snapshot and
  * calls the turn and session helpers it imports directly.
  */
 
@@ -12,7 +12,7 @@ import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { addMessage } from './messages.ts';
 import { translate } from './send/runtime.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import type { ChatMessageShape } from '../state/session.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 

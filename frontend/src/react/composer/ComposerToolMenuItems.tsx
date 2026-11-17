@@ -12,7 +12,7 @@ import {
   toolDefinitions,
   type MenuItemSpec,
 } from './composerToolsMenuData';
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ComposerToolsAction } from './types';
 
 export function ComposerToolMenuItems({

@@ -1,6 +1,6 @@
 /* chat/toolCallbacks — workflow/agent event publishers + stream tool-callback adapter.
- * Extracted from main.js. Zero-behavior-change lift. Template state reads via
- * window._activeTemplate (mirrored by setActiveTemplate in main.js).
+ * extracted from legacy entry. Zero-behavior-change lift. Template state reads via
+ * window._activeTemplate (mirrored by setActiveTemplate in app entry).
  */
 import { callBridge } from '../store/index.ts';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';
@@ -34,7 +34,7 @@ function publishEvent(event: AgentRunEvent, extra?: Partial<AgentRunEvent> | nul
   }
 }
 
-/* P_extension-runs — the chat pipeline publishes workflow-stage events
+/* the chat pipeline publishes workflow-stage events
    for template extensions that carry a runId (research/explore). */
 export function publishActiveWorkflowEvent(
   stage: AgentRunEvent['stage'],
@@ -62,7 +62,7 @@ export function publishActiveWorkflowFinish(ok: boolean): void {
   });
 }
 
-/* P_codex-agent-store — Codex runs use the same lightweight agent-run
+/* Codex runs use the same lightweight agent-run
  * bridge as Explore/Research. */
 export function publishWorkspaceAgentEvent(
   runId: unknown,
@@ -163,7 +163,7 @@ export function toolCallbacksForStream(
     onExecutionStart(event: unknown): void {
       if (ctl.recordExecutionStart) ctl.recordExecutionStart(event);
     },
-    /* P_codex-steps — Codex activity is rendered as its own step list in
+    /* Codex activity is rendered as its own step list in
        the message flow (运行了命令 / 编辑了文件 / 读取了文件 / 更新了计划),
        so the agent is no longer an opaque single card. */
     onAgentStep(step: unknown): void {

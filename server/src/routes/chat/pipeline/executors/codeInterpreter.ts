@@ -1,9 +1,9 @@
 /**
  * code_interpreter executor.
  *
- * P_illustration-guard detects when the model is using the runtime for
+ *  detects when the model is using the runtime for
  * SVG illustration instead of data analysis; the daily tier limit and the
- * progress streaming (P_progress) mirror the original route behaviour.
+ * progress streaming () mirror the original route behaviour.
  */
 
 import { and, eq, gte, ne, sql } from 'drizzle-orm';
@@ -68,7 +68,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const db = getDb();
-    /* P_syntax-no-quota — rows persisted as 'rejected' were rejected
+    /* rows persisted as 'rejected' were rejected
        at compile time (SyntaxError family) and never ran user code,
        so they don't consume the daily execution budget. */
     const [countRow] = await db
@@ -111,7 +111,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     }
   }
 
-  /* P_progress — onProgress emits incremental events back to the browser
+  /* onProgress emits incremental events back to the browser
      as `event: tool_progress` SSE frames. The callback MUST be safe to
      call from a worker thread (codeInterpreter wraps it in try/catch). */
   let _emittedExecStart = false;

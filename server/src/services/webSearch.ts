@@ -84,7 +84,7 @@ export class WebSearchUnavailableError extends Error {
 
 /* ─── Tool definition (sent to upstream on every chat turn) ───
  *
- * P_tool-contract — the description is a structured contract. Hard
+ * the description is a structured contract. Hard
  * rules: query must be 1-6 words, results are numbered for reference,
  * and the answer can attach structured claim citations to registered sources.
  * Cache key includes the query string, so identical queries within
@@ -230,7 +230,7 @@ async function runWebSearch(
   const hasMinimaxKey = !!(process.env.MINIMAX_SEARCH_KEY || process.env.BEAGLE_SYSTEM_KEY);
   const acSignal = ac.signal;
 
-  /* P_query-expansion — expand the user's query into variants via LLM
+  /* expand the user's query into variants via LLM
      in the background CONCURRENTLY with the primary query search.
      The primary search on the exact query begins immediately at t=0! */
   const variantsPromise = expandQuery(query, {
@@ -239,7 +239,7 @@ async function runWebSearch(
     variantCount: 2,
   }).catch(() => [query]);
 
-  /* P_multi-variant-fan-out — search the primary query immediately across
+  /* search the primary query immediately across
      engines, then merge any resolved query variants concurrently without
      blocking the initial search on the LLM expansion roundtrip. */
   const searchVariants = (
@@ -312,13 +312,13 @@ async function runWebSearch(
     : Promise.resolve([]);
   const bingP = searchVariants(searchBing, 'bing', TIMEOUT_BING_MS);
 
-  /* P_engine-priority — wait for ALL engines in parallel.  Merge
+  /* wait for ALL engines in parallel.  Merge
      priority: mmx (MiniMax CLI) first, then firecrawl (free credits),
      then minimax (direct HTTP), then bing.  The first two are CLI
      spawns (~100-300 ms overhead) but are prioritised because they
      are the project's preferred providers. */
   const settled = await Promise.allSettled([mmxP, firecrawlP, minimaxP, bingP]);
-  /* P_engine-result-guard — each engine promise is wrapped in
+  /* each engine promise is wrapped in
      `withTimeout` which resolves to [] on timeout. The fulfilled
      branch here covers all the happy paths. We still type-guard
      against non-array returns because a buggy / future-version

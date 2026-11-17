@@ -154,7 +154,7 @@ router.post('/:id/share', async (req, res, next) => {
       .limit(1);
     if (!a) throw new NotFound('Artifact not found');
     const token = generateShareToken();
-    /* P_share-visibility-enum — M6 audit fix. Whitelist visibility
+    /* M6 audit fix. Whitelist visibility
      * at the API edge so the DB column cannot be poisoned with
      * arbitrary text (artifacts.visibility is plain TEXT). */
     const visibility = normalizeVisibility(req.body && req.body.visibility);

@@ -1,5 +1,5 @@
 /**
- * P_canvas-mode — minimal i18n hook so CanvasBlock/CanvasToolbar don't
+ * minimal i18n hook so CanvasBlock/CanvasToolbar don't
  * have to thread the t() function through every prop. Falls back to the
  * English string baked into the module when the key is missing, so a
  * missing i18n entry never breaks the canvas UI.

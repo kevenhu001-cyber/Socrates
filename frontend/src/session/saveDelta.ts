@@ -10,7 +10,7 @@
  * The chat client re-POSTs the whole transcript on every save, so a
  * 240-message conversation shipped ~1 MB per save, several times per
  * turn. The server now upserts only the rows whose text actually moved
- * (see P_upsert-dirty in server/src/routes/sessions.ts), which means most
+ * (see  in server/src/routes/sessions.ts), which means most
  * of that body was bytes the server had to parse and then discard.
  *
  * This module reduces the body to the rows the server is not already

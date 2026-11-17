@@ -39,7 +39,7 @@ const searchSchema = z.object({
   minScore: z.number().min(0).max(20).optional(),
 });
 
-/* P_session-chunks-embedding — the hybrid BM25 + vector re-rank is
+/* the hybrid BM25 + vector re-rank is
    now the default. When the admin has not configured an active
    embedding provider, searchSessionChunksHybrid degrades to plain
    BM25 (same contract as the pre-vector endpoint), so the caller

@@ -45,7 +45,7 @@ const MAX_TASKS_PER_POLL = 10;
 
 type ScheduledTaskRow = typeof scheduledTasks.$inferSelect;
 
-/* P_scheduler-mode-marker — the scheduler runs without /api/chat, so we
+/* the scheduler runs without /api/chat, so we
  * can't use prependTeacherModePrompt(). Instead we splice the mode
  * prompt into the canonical first system message with a stable marker
  * so it lands below SERVER_SYSTEM_POLICY but above any client text,
@@ -208,7 +208,7 @@ async function executeTask(
   }
 
   const promptText = (task.prompt || '').trim() || task.title;
-  /* P_scheduler-safety — assemble a system prompt that mirrors the
+  /* assemble a system prompt that mirrors the
    * /api/chat order: SERVER_SYSTEM_POLICY first, then the scheduler
    * mode prompt with its stable marker, then the user-context block
    * (date / display name / image-description rule), and finally the

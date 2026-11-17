@@ -3,7 +3,7 @@
 import { sessionBridge } from '../store/index.ts';
 import { quietTurn } from '../chat/turn/ui.ts';
 import { buildUserContentParts } from '../chat/history.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import {
   bumpPendingSeq,
   clearPendingTurn,
@@ -34,7 +34,7 @@ interface StreamingTurnController {
   replaceWithError?(message: string, retry?: () => unknown): void;
 }
 
-/** Chat bridges published by the legacy shell (main.js / legacyBridge.js). */
+/** Chat bridges published by the legacy shell (app entrypoint / legacyBridge.js). */
 interface PendingRestoreWindow extends Window {
   addMessage?: (role: string, text: string) => void;
   addStreamingMessage?: (options: { onRetry: () => void }) => Promise<StreamingTurnController>;
@@ -350,7 +350,7 @@ async function followPendingTurn(
  * sessions mid-tail the subscription aborts and the bubble's
  * stillOwnsSlot guard keeps the writes inert.
  *
- * P_single-recovery-owner — a session must be recovered by exactly one
+ * a session must be recovered by exactly one
  * owner. The interrupted-response fallback (a partial bubble with its own
  * Retry button) and this live re-attach (a bubble that replays the same
  * answer) would otherwise both render the same text, and the fallback's

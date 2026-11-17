@@ -15,9 +15,9 @@ import {
   type ProviderCapabilitySummary,
 } from '../lib/modelCapabilities.js';
 
-/* P_model-capability-registry — a client cannot tell whether the selected
+/* a client cannot tell whether the selected
  * model can switch thinking off or has effort levels at all: the built-in
- * provider's model name is deliberately hidden (P_privacy-leak), and a
+ * provider's model name is deliberately hidden (), and a
  * user-configured model is an arbitrary string. The registry decides, so the
  * summary travels with the provider row instead of the client guessing from
  * a model name. */
@@ -40,7 +40,7 @@ function summarizeBuiltInCapabilities(model: string): ProviderCapabilitySummary 
   return summarizeModelCapabilities(model);
 }
 
-/* P_apikey-ciphertext-leak — projection shared by every response that
+/* projection shared by every response that
  * returns an apiKeys row. The encrypted AES-GCM payload is stored
  * exclusively for server-side decrypt during chat proxying; it is
  * never useful to the SPA and shipping it down the wire leaks the
@@ -55,7 +55,7 @@ const SAFE_PROJECTION = {
   isActive: apiKeys.isActive,
   isBuiltIn: apiKeys.isBuiltIn,
   isMultimodal: apiKeys.isMultimodal,
-  /* P_provider-capability-override — the operator's own statement about
+  /* the operator's own statement about
    * how their endpoint encodes "no thinking". NULL means "use the
    * capability registry's answer". */
   instantEncoding: apiKeys.instantEncoding,
@@ -67,7 +67,7 @@ const SAFE_PROJECTION = {
   hasKey: sql`TRUE`,
 };
 
-/* P_apiKey-ssrf — H4 audit fix. Provider URLs are forwarded verbatim
+/* H4 audit fix. Provider URLs are forwarded verbatim
  * to the upstream LLM call. Reject any URL that resolves to an
  * internal/private/link-local destination so the user's API key
  * cannot be redirected at the internal network (e.g. to exfiltrate
@@ -78,7 +78,7 @@ import { isAllowedProviderUrl } from '../lib/providerUrl.js';
 
 const router = Router();
 
-/* P_provider-capability-override — read the per-provider instant encoding
+/* read the per-provider instant encoding
  * from a request body.
  *
  * The value must be one of the encodings the registry knows how to send
@@ -104,7 +104,7 @@ router.use(requireAuth);
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    /* P_apikey-list-leak — select `keyCiphertext` under the alias `hasKey`
+    /* select `keyCiphertext` under the alias `hasKey`
        and coerce it to a real boolean in SQL so the AES-GCM ciphertext is
        never returned to the browser. Previously this projection passed the
        raw TEXT column through, so every signed-in client received the
@@ -119,9 +119,9 @@ router.get('/', async (req, res, next) => {
         keyHint: apiKeys.keyHint,
         isActive: apiKeys.isActive,
         isBuiltIn: apiKeys.isBuiltIn,
-        /* P_attachments-multimodal — user-controlled vision flag. */
+        /* user-controlled vision flag. */
         isMultimodal: apiKeys.isMultimodal,
-        /* P_provider-capability-override — per-provider instant encoding. */
+        /* per-provider instant encoding. */
         instantEncoding: apiKeys.instantEncoding,
         hasKey: sql`(${apiKeys.keyCiphertext} IS NOT NULL)`,
         createdAt: apiKeys.createdAt,
@@ -189,11 +189,11 @@ router.post(
         .update(apiKeys)
         .set({ isActive: false })
         .where(and(eq(apiKeys.userId, req.userId!), eq(apiKeys.isActive, true)));
-      /* P_attachments-multimodal — accept the user-controlled flag.
+      /* accept the user-controlled flag.
        * Coerce to strict boolean so a forged payload can't smuggle a
        * truthy non-boolean that survives JSON.parse in the client. */
       const isMultimodal = req.body.isMultimodal === true;
-      /* P_provider-capability-override — accept the per-provider instant
+      /* accept the per-provider instant
        * encoding. Only the four encodings the registry knows how to send
        * are accepted; anything else is a 400 rather than a value that would
        * silently produce a malformed request body. */
@@ -213,7 +213,7 @@ router.post(
         })
         .returning(SAFE_PROJECTION);
 
-      /* P_ttfb-apikey-cache — a fresh row is the new active provider
+      /* a fresh row is the new active provider
        (the deactivation above plus the insert). Drop the cached
        entry for this user so the next /api/chat/stream re-resolves
        to the new key instead of serving the old one. */
@@ -251,7 +251,7 @@ router.patch('/:id', async (req, res, next) => {
       patch.keyCiphertext = encrypt(req.body.key, encryptionKey());
       patch.keyHint = req.body.key.slice(0, 8);
     }
-    /* P_attachments-multimodal — accept the user-controlled flag.
+    /* accept the user-controlled flag.
      * Built-in rows (Beagle) are read-only with respect to
      * isMultimodal: a forged PATCH that tries to clear the flag on
      * a built-in row is silently dropped, preserving the server-
@@ -261,7 +261,7 @@ router.patch('/:id', async (req, res, next) => {
         patch.isMultimodal = req.body.isMultimodal === true;
       }
     }
-    /* P_provider-capability-override — the per-provider instant encoding.
+    /* the per-provider instant encoding.
      * `null` / '' clears the override, so the registry answers again. */
     if (req.body.instantEncoding !== undefined) {
       if (!existing.isBuiltIn) {
@@ -289,7 +289,7 @@ router.patch('/:id', async (req, res, next) => {
       .from(apiKeys)
       .where(eq(apiKeys.id, req.params.id))
       .limit(1);
-    /* P_ttfb-apikey-cache — a PATCH can flip isActive (selecting a
+    /* a PATCH can flip isActive (selecting a
        different key), rotate the ciphertext, or change url/model.
        All three change the answer getActiveApiKey() should give, so
        drop the cached entry. */
@@ -312,7 +312,7 @@ router.delete('/:id', audit('delete_api_key'), async (req, res, next) => {
       .limit(1);
     if (!existing) throw new NotFound('API key not found');
     await db.delete(apiKeys).where(eq(apiKeys.id, req.params.id));
-    /* P_ttfb-apikey-cache — the deleted key may have been the
+    /* the deleted key may have been the
        active row (and likely was, since users delete the key
        they were using). Drop the cached entry so the next
        /api/chat/stream re-resolves, falling through to either

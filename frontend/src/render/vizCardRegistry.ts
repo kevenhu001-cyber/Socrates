@@ -12,7 +12,7 @@ export function configureVizCardRegistry(processPendingViz: () => void): void {
   if (typeof processPendingViz === 'function') _processPendingViz = processPendingViz;
 }
 
-/* P_viz-keepalive — cards that finished rendering (viz-ready handshake or a
+/* cards that finished rendering (viz-ready handshake or a
    completed mermaid render) are registered here so a later innerHTML rewrite
    of the surrounding message can adopt the LIVE element instead of letting
    the fresh placeholder's iframe reload / diagram re-render. Reinserting a
@@ -43,7 +43,7 @@ export function rememberLiveVizCard(id: string, el: Element | null): void {
   }
 }
 
-/* P_viz-park — long sessions accumulate rendered cards and every live
+/* long sessions accumulate rendered cards and every live
    iframe pins a full document (canvas/WebGL contexts included). A card
    that has been scrolled out of view for a while gets "parked": the
    iframe's srcdoc attribute is removed, which navigates the frame to

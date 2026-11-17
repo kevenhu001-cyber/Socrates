@@ -1,4 +1,4 @@
-export type { ConfirmSnapshot } from '../../ui/confirmState.ts';
+export type { ConfirmSnapshot } from '../../legacy/confirmState.ts';
 
 declare global {
   interface Window {

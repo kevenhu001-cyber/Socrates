@@ -3,7 +3,7 @@ import { Button as UiButton } from '../ui/Button';
 import React from 'react';
 import { t } from '../legacy/gateway.ts';
 import { setRecentsFilter } from '../../sidebar/sidebar.service';
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 
 /*
  * RN-10 — the row itself is the shared RN `ConversationRow`

@@ -8,7 +8,7 @@
  * IPs against a single account slips through. This module closes
  * that gap.
  *
- * P_loginLockout-persist — H3 audit fix. Counts are persisted to the
+ * H3 audit fix. Counts are persisted to the
  * `login_failures` table (one row per email, UPSERTed) so the lockout
  * is process-global. Safe under multi-worker / cluster deployments:
  * an attacker rotating across worker processes cannot exceed the

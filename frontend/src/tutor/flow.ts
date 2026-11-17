@@ -1,9 +1,9 @@
 /**
  * tutor/flow.ts — Socratic prompt assembly for teaching turns.
  *
- * Extracted from main.js (Phase 5 split, first slice: prompt builders).
+ * extracted from legacy entry (Phase 5 split, first slice: prompt builders).
  * Builds the system instructions that drive each lesson turn; the turn
- * execution itself (askChatTurn / submitChatMessage) stays in main.js
+ * execution itself (askChatTurn / submitChatMessage) stays in app entry
  * until Phase 4 moves it.
  */
 
@@ -89,12 +89,12 @@ export function buildSocraticMessages(
   const stage = (sessionBridge.getSnapshot().teachingStage as string) || 'motivate';
   const stageInstr = stageInstruction(stage);
   const turnScope = tutorTurnDirective(stage, isFirst);
-  /* P_teaching-plan — Inject the "from basics" directive into every
+  /* Inject the "from basics" directive into every
      teaching turn. The cold-start diagnostic only established a
      baseline; it did NOT verify mastery. Every sub-topic must be
      taught from the foundation, regardless of the node's status. */
   const fromBasicsTxt = fromBasicsDirective(node);
-  /* P_knowledge-point — pull the specific knowledge points that the
+  /* pull the specific knowledge points that the
      diagnostic tested for this node, so the model can address them
      explicitly during teaching. This closes the loop: the diagnostic
      identified what the user was tested on, and the teaching now
@@ -123,7 +123,7 @@ export function buildSocraticMessages(
         'Diagnostic knowledge points for this sub-topic:\n- ' + nodeKps.join('\n- ') + '\n\n';
     }
   }
-  /* P_level-consistency — pass a level string that is consistent with
+  /* pass a level string that is consistent with
      fromBasicsDirective. The old code passed node.status ("fuzzy"),
      which could make the model think the student has some familiarity
      and skip fundamentals. Now we pass a string that reinforces the

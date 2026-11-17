@@ -8,13 +8,13 @@ import {
 } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { pushExamIdToURL } from '../session/store.ts';
-import { toggleShareBtn } from '../ui/share.ts';
-import { prefersReducedMotion } from '../ui/motion/index.ts';
+import { toggleShareBtn } from '../legacy/share.ts';
+import { prefersReducedMotion } from '../legacy/motion/index.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 
 let _examAnswerSaveTimer: number | null | undefined = null;
 let _examSaveInFlight: Promise<void> | null = null;
@@ -131,7 +131,7 @@ export function doSaveExamSession() {
           reportSwallow(e, 'exam.doSaveExamSession.pushExamId');
         }
       }
-      /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
+      /* flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
       return flushRecentsReconcile().then(function () {
         try {

@@ -16,7 +16,7 @@ import {
   sourceCardsOf,
 } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
-import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
+import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
 import { openSourcesPanel } from '../sources/mount';

@@ -1,7 +1,7 @@
 import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
-import { restingRect } from '../../ui/pressFeedback.ts';
+import { restingRect } from '../../legacy/pressFeedback.ts';
 import type {
   ChatConfigurationBridge,
   ChatConfigurationSnapshot,

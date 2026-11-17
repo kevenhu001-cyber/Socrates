@@ -1,6 +1,6 @@
 /**
  * RN-5 adapter for the shared diagnostic panel (packages/ui/src/study).
- * The legacy writers (`ui/diagnostic*.ts`) still build a `DiagnosticScreen`;
+ * The legacy writers (`legacy/diagnostic*.ts`) still build a `DiagnosticScreen`;
  * question copy is formatted here (markdown + KaTeX), option copy inline
  * (KaTeX + bold/code), the notice is
  * HTML from the writer, and the results' names and AI lines go through the

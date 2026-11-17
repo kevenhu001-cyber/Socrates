@@ -1,7 +1,7 @@
 /**
  * render/assistantHtml.ts — final assistant message-body HTML builder.
  *
- * Extracted from renderAssistantHTML in main.js. Takes the raw text the
+ * Extracted from renderAssistantHTML in app entry. Takes the raw text the
  * assistant produced and converts it into the final message-body HTML,
  * including stripping <quiz>, <example>, and <practice> blocks from the
  * prose and injecting interactive/static widgets in their place.
@@ -12,7 +12,7 @@
  * destroy the placeholders. Empty <div> blocks are passed through by
  * marked unchanged.
  *
- * Only the mistake-book writer lives in main.js, so the module takes it
+ * Only the mistake-book writer lives in application bootstrap, so the module takes it
  * via configureAssistantHtml(); everything else (including the appMode
  * live binding) is imported directly.
  */
@@ -38,18 +38,18 @@ export interface PracticeMistakeRecord {
 }
 
 export interface AssistantHtmlDeps {
-  /** Mistake-book writer owned by main.js. */
+  /** Mistake-book writer owned by application bootstrap. */
   recordMistake: (rec: PracticeMistakeRecord) => void;
 }
 
 let deps: AssistantHtmlDeps | undefined;
 
-/** Provide the mistake-book writer owned by main.js. */
+/** Provide the mistake-book writer owned by application bootstrap. */
 export function configureAssistantHtml(next: AssistantHtmlDeps): void {
   deps = next;
 }
 
-/** Global i18n lookup, resolved the same way main.js does. */
+/** Global i18n lookup, resolved the same way app entrypoint does. */
 function t(key: string): string {
   const g = globalThis as unknown as { t: (key: string) => string };
   return g.t(key);
@@ -130,7 +130,7 @@ export function buildAssistantHtml(rawText: unknown): string {
     const stripped = stripTrailingSources(text);
     if (stripped.trim()) text = stripped;
   }
-  /* P_strip-citations — the answer body carries no [1]/[2] search-citation
+  /* the answer body carries no [1]/[2] search-citation
      markers. Sources stay in the search tool card; the models add inline
      markers despite the prompt, so the renderer removes them (code and
      math spans are protected inside the helper). */
@@ -169,7 +169,7 @@ export function buildAssistantHtml(rawText: unknown): string {
 
   /* Widget mounting is deferred until the rendered HTML is in the DOM. */
   scheduleWidgetMounts(scaffoldPH);
-  /* P_canvas-mode — write (and any future canvas-mode extension) wraps the
+  /* write (and any future canvas-mode extension) wraps the
      finalized HTML in a <div class="canvas-block"> so React can mount an
      editable surface from data-canvas-id. The id is read from the message
      entry that finish() seeded just before calling renderAssistantHTML

@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react';
 
-import { openArtifactPreview } from '../../ui/artifactPreview.ts';
+import { openArtifactPreview } from '../../legacy/artifactPreview.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { i18n } from '../legacy/gateway.ts';
 import { ArtifactControl } from '../toolArtifacts/ArtifactControl';

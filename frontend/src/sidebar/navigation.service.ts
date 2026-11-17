@@ -1,5 +1,5 @@
 import { pushHomeRoute, pushWorkspaceRoute, workspaceForPath } from '../app/router.ts';
-import { activateMainView, getVisibleCoreView } from '../ui/mainViewController.ts';
+import { activateMainView, getVisibleCoreView } from '../legacy/mainViewController.ts';
 import { getActiveDestination, setActiveDestination } from './navigation.store.ts';
 import { DESTINATIONS, isPageDestination } from './navigation.destinations';
 import { toggleSidebar } from './sidebar.service';

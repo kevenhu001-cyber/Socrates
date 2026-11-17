@@ -7,7 +7,7 @@ const {
   setCurrentSessionId,
   getSessionListSearchQuery,
   setSessionListSearchQuery,
-} = await import('../src/ui/sessionListState.ts');
+} = await import('../src/legacy/sessionListState.ts');
 
 test('session-list publisher snapshots rows and optimistic selection preserves list filters', () => {
   sessionListState.__resetForTests();

@@ -1,4 +1,4 @@
-// src/batchStorage.ts — Phase 1.5 sub-extraction (main.js A.5)
+// src/batchStorage.ts — Phase 1.5 sub-extraction (app entrypoint A.5)
 // Coalesce multiple localStorage writes within the same microtask
 // tick. During a chat turn, saveCurrentSession and various settings
 // toggles can fire 3-5 independent setItem calls. Each one blocks
@@ -11,7 +11,7 @@
 // in-memory implementations so the ~8 "Tracking Prevention blocked
 // access to storage" warnings per tutor-mode turn go away.
 
-import { showToast } from './ui/toast.js';
+import { showToast } from './legacy/toast.js';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 let _batchStoragePending: Record<string, string> | null = null;
@@ -43,7 +43,7 @@ function _notifyStorageBlockedOnce() {
   }
 }
 
-/* P_storage-shim — Replace `window.localStorage` and `window.sessionStorage`
+/* Replace `window.localStorage` and `window.sessionStorage`
    instances with in-memory shims so the ~60 direct storage callers
    across the codebase don't each emit a "Tracking Prevention blocked
    access to storage" warning (one per call, ~8 per tutor-mode turn).

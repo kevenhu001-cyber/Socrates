@@ -144,7 +144,7 @@ export async function searchArxivPapers(value: unknown) {
     sortOrder: 'descending',
   });
   let response;
-  /* P_arxiv-error-visibility — surface the underlying network error
+  /* surface the underlying network error
    * (undici cause code, fetch abort reason) so server logs and the
    * model's tool_result both show *why* arXiv failed. The original
    * `catch (_)` swallowed everything into a single sentence, which

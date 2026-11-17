@@ -23,11 +23,11 @@ export interface ProviderConfig {
   isBuiltIn: boolean;
   hasKey: boolean;
   serverIsActive?: boolean;
-  /* P_provider-capability-override — the operator's own statement of how
+  /* the operator's own statement of how
      their endpoint encodes "no thinking". `null` means "let the server's
      capability registry decide". */
   instantEncoding: InstantEncoding | null;
-  /* P_model-capability-registry — what the server knows the model can do.
+  /* what the server knows the model can do.
      Absent means "not published": the browser then forwards the user's
      intent and lets the server resolve it, as it did before. */
   capabilities?: ProviderCapabilities;

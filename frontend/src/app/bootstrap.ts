@@ -6,7 +6,7 @@ import { installExtensions } from '../extensions/index.ts';
 /**
  * Functions required by the legacy shell and the React compatibility gateway.
  * Keeping this contract at the composition root makes boot ordering explicit
- * while the individual domains are migrated out of main.js.
+ * while the individual domains are migrated out of legacy entry.
  */
 
 interface BootstrapOptions {

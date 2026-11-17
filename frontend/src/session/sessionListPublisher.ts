@@ -2,11 +2,11 @@ import { sessionBridge } from '../store/index.ts';
 import { getRecents } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
-import { filterRecentsByChip } from '../ui/recentsModel.ts';
-import type { SessionItem } from '../ui/sessionListState.ts';
+import { filterRecentsByChip } from '../legacy/recentsModel.ts';
+import type { SessionItem } from '../legacy/sessionListState.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-import { getSessionListSearchQuery, publishSessionListState } from '../ui/sessionListState.ts';
+import { getSessionListSearchQuery, publishSessionListState } from '../legacy/sessionListState.ts';
 
 export { sameSessionRow, sessionRowFields };
 

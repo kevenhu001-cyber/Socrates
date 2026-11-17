@@ -17,7 +17,7 @@ import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { invalidateForMessage, ttsTextHash } from '../services/embeddings/ttsStore.js';
 import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';
 
-/* P_attachments-shape — mirrors the per-message `attachments` shape
+/* mirrors the per-message `attachments` shape
  * defined in routes/sessions.js (SessionPayloadSchema → messages[].attachments).
  * The POST/PUT session-save path was already Zod-validated upstream,
  * but the PATCH /api/messages/:id path previously trusted the client
@@ -29,7 +29,7 @@ import { indexMessageChunks } from '../services/embeddings/chunkIndex.js';
  * keeps the two write paths in lockstep. */
 const attachmentSchema = z.object({
   id: z.string().max(100),
-  /* P_attachment-kind-alignment — the frontend classifies attachments as
+  /* the frontend classifies attachments as
      image | text | document (attachments.js#classify); 'pdf' survives only
      in legacy rows. The old enum rejected every 'document' attachment on
      the PATCH path even though the session-save path accepted it. */
@@ -149,7 +149,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
      * another browser will then render. */
     const safeContent = sanitizeStoredHtml(content);
     const safeRaw = sanitizePlainText(content);
-    /* P_tts-persist — the cached read-aloud audio is keyed by the
+    /* the cached read-aloud audio is keyed by the
        sha256 of the trimmed text the read-aloud path feeds to
        /api/tts. After the sanitized plain text is known, drop every
        tts_results row whose hash no longer matches — same-shape edits
@@ -162,7 +162,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     } catch (err) {
       console.warn('[messages] tts invalidation failed:', (err as Error).message);
     }
-    /* P_attachments — when the client explicitly sends `attachments`,
+    /* when the client explicitly sends `attachments`,
      * overwrite the stored array; otherwise keep the existing one so
      * a plain text-edit doesn't drop the thumbnails. We cap to 20 and
      * require the same shape SessionPayloadSchema enforces. The empty-
@@ -185,7 +185,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     }
     await db.update(messages).set(updateSet).where(eq(messages.id, msg.id));
 
-    /* P_edit — when the client passes `discardFollowing`, drop every
+    /* when the client passes `discardFollowing`, drop every
      * assistant message that was authored AFTER the edited user turn
      * so the next reload does not surface a stale reply. The client
      * regenerates the new reply in-place; without this cleanup the
@@ -265,7 +265,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
       'X-Accel-Buffering': 'no',
     });
 
-    /* P_sse-metrics — bump the active-connection counter so the
+    /* bump the active-connection counter so the
        /api/health endpoint can report how many SSE streams are open. */
     trackSseConnection(req.app, +1);
 
@@ -317,7 +317,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
               rawText: safeRaw,
             })
             .returning();
-          /* P_session-chunks — re-index the freshly-stored assistant
+          /* re-index the freshly-stored assistant
              message so the next BM25 search across the session finds
              it. The same text was just sanitized for the messages
              row, so chunking is O(N) of the same string. A chunking

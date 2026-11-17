@@ -6,7 +6,7 @@ import {
   restingRect,
   MIN_PRESS_MS,
   RELEASE_MS,
-} from '../src/ui/pressFeedback.ts';
+} from '../src/legacy/pressFeedback.ts';
 
 /* Hand-rolled stubs: a fake document that records listeners, elements with
    a classList, and a manual clock + timer queue so the minimum-press window

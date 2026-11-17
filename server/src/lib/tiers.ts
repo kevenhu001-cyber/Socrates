@@ -28,7 +28,7 @@ export const TIERS = {
     maxSessions: 5,
     maxKeys: 2,
     beagleTokenQuota: 1_000_000,
-    /* P_code_interpreter — sandboxed Python tool calls per UTC day.
+    /* sandboxed Python tool calls per UTC day.
        0 means unlimited. Counted in the `executions` table. */
     executionsPerDay: 20,
   },
@@ -99,7 +99,7 @@ export function getApiKeyLimit(tier: unknown): number {
 }
 
 /**
- * P_code_interpreter — daily cap on sandboxed Python tool calls for the
+ * daily cap on sandboxed Python tool calls for the
  * given tier. 0 means unlimited (Euclid). The chat route enforces this
  * before each codeInterpreter.execute() call so an over-quota user gets
  * a structured error back through the tool-call loop rather than a hard

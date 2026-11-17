@@ -13,8 +13,8 @@ export function shouldRetryInterruptedStream(decision: StreamRetryDecision): boo
 }
 
 import { dispatchSession, dispatchUi, sessionStore, uiStore } from '../store/index.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { smoothScrollToBottom } from '../ui/scroll.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
+import { smoothScrollToBottom } from '../legacy/scroll.ts';
 
 /** A captured viewport offset for one message row. */
 export interface RetryViewportSnapshot {
@@ -31,7 +31,7 @@ export interface RetryViewportSnapshot {
  * starts where the interruption was visible instead of jumping back to
  * the user's prompt. The three snapshots (pending replacement offset,
  * press-time capture, last stable error offset) live in this factory's
- * closure; previously they were module-level vars in main.js.
+ * closure; previously they were module-level vars in app entry.
  */
 export interface StreamRetryViewport {
   /** Take the pending replacement offset, if still fresh. */

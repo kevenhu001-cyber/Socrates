@@ -64,7 +64,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       });
     }
 
-    /* `model` is intentionally not read — see P_privacy-leak below. */
+    /* `model` is intentionally not read — see  below. */
     const {
       messages: rawMessages,
       temperature,
@@ -89,7 +89,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     // /chat and /chat/stream. Switching transport must not replace the prefix.
     const mode = req.body.mode === 'tutor' ? 'tutor' : 'chat';
     const context = splitPromptContext(Array.isArray(rawMessages) ? rawMessages : [], mode);
-    /* P_provider-identity-not-session-state — the built-in provider identity
+    /* the built-in provider identity
      * (prompts/beagle.md) must NOT be frozen into the shared session
      * snapshot. This session may later be served by the user's own BYOK
      * provider, and a snapshot carrying "You are Beagle" would then be sent
@@ -118,7 +118,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         return initialized[0].content as string;
       },
     );
-    /* P_server-policy-refresh — the snapshot freezes turn 1's system
+    /* the snapshot freezes turn 1's system
        prefix. The server policy and the client's turn state (template
        persona, tone preset, custom instructions) are re-derived on every
        request, so a policy fix reaches the sessions that were created
@@ -142,14 +142,14 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       ],
       provider,
     );
-    /* P_privacy-leak — the upstream model name is operator-configured
+    /* the upstream model name is operator-configured
      * and must never be settable from the client. Even though the SPA
      * currently doesn't know the real model (we strip it from
      * /api/config), a determined user could still smuggle a guess
      * into req.body.model and the previous `model || provider.model`
      * pattern would forward it to the upstream. Pin to provider.model. */
     const upstreamModel = provider.model;
-    /* P_extra-body-share — H5 audit fix. Sanitise extra_body against
+    /* H5 audit fix. Sanitise extra_body against
      * the same whitelist chat.js uses, so a forged payload can't smuggle
      * `tools`, `api_key`, etc to the built-in upstream. */
     const safeExtraBody = sanitizeExtraBody(extra_body);
@@ -185,7 +185,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         /* socket already closed */
       }
 
-      /* P_sse-metrics — bump the active-connection counter so the
+      /* bump the active-connection counter so the
          /api/health endpoint can report how many SSE streams are open. */
       trackSseConnection(req.app, +1);
 
@@ -210,7 +210,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           apiBase: provider.url,
           apiKey: provider.keyPlaintext,
           model: upstreamModel,
-          /* P_provider-capability-override — the operator's statement for
+          /* the operator's statement for
            * the built-in endpoint wins over the registry's host guess. */
           instantEncoding: provider.instantEncoding ?? null,
           messages: messages,
@@ -219,7 +219,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           maxTokens: max_tokens,
           temperature: temperature ?? 0.7,
           signal: abortController.signal,
-          /* P_deepseek-mode — forward reasoning flags so the upstream
+          /* forward reasoning flags so the upstream
              emits reasoning_content chunks. */
           reasoning_effort,
           response_speed: responseSpeed,
@@ -297,7 +297,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             });
           }
         },
-        // P_deepseek-mode — forward reasoning_content deltas to the
+        // forward reasoning_content deltas to the
         // client so it can render the thinking pill.
         (reasoning) => {
           try {
@@ -314,7 +314,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       );
     } else {
       // ── Non-streaming: JSON response ──
-      /* P_long-llm-override — same as /api/chat: the non-streaming proxy
+      /* same as /api/chat: the non-streaming proxy
        * waits for the upstream model however long it thinks, so it opts
        * out of the global request deadline (see timeoutMiddleware). */
       res.locals.timeoutMs = 0;
@@ -327,14 +327,14 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
            silently truncated by a small per-model cap. */
         maxTokens: max_tokens,
         temperature: temperature ?? 0.3,
-        /* P_deepseek-mode — forward reasoning flags. */
+        /* forward reasoning flags. */
         reasoning_effort,
         response_speed: responseSpeed,
         extra_body: safeExtraBody,
       });
 
       res.json({
-        /* P_deepseek-mode — preserve reasoning_content on the
+        /* preserve reasoning_content on the
            response so the client can persist it for the next turn. */
         choices: [
           {

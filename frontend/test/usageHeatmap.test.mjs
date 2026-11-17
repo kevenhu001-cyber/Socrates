@@ -5,7 +5,7 @@ import {
   collectUsageEntries,
   monthlyUsageSummaries,
   usageLevel,
-} from '../src/ui/usageModel.ts';
+} from '../src/legacy/usageModel.ts';
 
 test('usage model preserves totals, heatmap levels, limits, and monthly breakdown', () => {
   const entries = [

@@ -1,4 +1,4 @@
-/* session/recents.ts — extracted from main.js (B2/B6 batch).
+/* session/recents.ts — extracted from legacy entry.
  * Recents fetching + session deletion/restore/purge/archive helpers.
  * Zero-behavior-change lift. Render surfaces (renderRecents,
  * renderArchivedList) and app reset resolve via window.* at call time.
@@ -15,25 +15,25 @@ import {
 } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
 import { readBootSessions } from './bootSessions.ts';
-import { getKnownTagsFromSessions } from '../ui/recentsModel.ts';
+import { getKnownTagsFromSessions } from '../legacy/recentsModel.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
 import { clearLocalMemory } from '../storage/localMemory.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { resetShareToken, toggleShareBtn } from '../ui/share.ts';
-import { showConfirm } from '../ui/confirm.js';
-import { showToast } from '../ui/toast.js';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
+import { resetShareToken, toggleShareBtn } from '../legacy/share.ts';
+import { showConfirm } from '../legacy/confirm.js';
+import { showToast } from '../legacy/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
+import { clearLegacyMsgListChildren } from '../legacy/messageListDom.ts';
 import { turnState } from '../chat/turn/state.ts';
 import { detachActiveTurn } from '../chat/turn/cancelActiveTurn.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { t } from '../i18n/index.ts';
-import { renderRecents } from '../ui/recentsView.ts';
-import { renderArchivedList } from '../ui/storage.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
+import { renderArchivedList } from '../legacy/storage.ts';
 
 /* RN-14: a deleted session's mistakes leave the cross-session book. */
 function forgetSessionMistakes(id: string): void {
@@ -120,7 +120,7 @@ export function getKnownTags(): string[] {
 
 export async function refreshServerSessions(): Promise<SessionRow[]> {
   if (!_currentUser()) return [];
-  /* P_delbug-cleanup — the previous `console.warn("[DEL-BUG] ...")`
+  /* the previous `console.warn("[DEL-BUG] ...")`
      tracing logs (incl. a `new Error().stack` capture on every call)
      were left over from a delete-flow debugging session and flooded
      the console on every login / save / delete. Demoted to
@@ -129,7 +129,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
   let ok = false;
   /* Include archived rows so the Storage modal can list them without a
      second fetch. getRecents()/getVisibleSessions still hide archivedAt. */
-  /* P_perf-recents-prefetch — the <head> script started this exact request
+  /* the <head> script started this exact request
      when /me confirmed the user, so it may already be in flight (or done)
      by the time the sidebar asks. Take the one-shot handoff; a missing,
      stale, or failed prefetch falls through to the normal apiFetch path
@@ -146,7 +146,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
       serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
       ok = true;
     } catch (e) {
-      /* P_recents-fetch-fail — retry ONCE on transient failures (network
+      /* retry ONCE on transient failures (network
          blip, 5xx, 429). This covers the "some devices" report where a
          flaky connection or a momentary 502/503 left the user with an
          empty Recents list. Non-retryable errors (401/403/404) skip the
@@ -180,7 +180,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
   serverCache.fetchFailed = !ok;
   return serverCache.sessions.slice();
 }
-/* P_recents-amplify — the one place that owns "when is it worth re-fetching
+/* the one place that owns "when is it worth re-fetching
    all 200 rows". saveCurrentSession() used to await this fetch on EVERY
    successful save, which both amplified the background load and stretched
    `saveInFlight` — and loadSession() drained `saveInFlight`, so the drain
@@ -217,7 +217,7 @@ export function flushRecentsReconcile(): Promise<unknown> {
   }
 }
 
-/* P_recents-fetch-fail — manual retry entry point bound from the
+/* manual retry entry point bound from the
    "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
    then re-renders so the user sees the result immediately. */
 export async function retryRecentsFetch(): Promise<void> {
@@ -246,7 +246,7 @@ export function findServerSessionIndex(id: string): number {
 
 export async function actuallyDeleteSession(id: string, ev?: Event | null): Promise<void> {
   if (!_currentUser()) return;
-  /* P_delete-stale-click — the trash button lives inside
+  /* the trash button lives inside
      `.recent-item` which has onclick="loadSession(...)". Without
      stopping propagation here, clicking delete would ALSO trigger
      loadSession(deletedId): stateStore.read("currentSessionId") would flip to the
@@ -256,7 +256,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
      cleanup branch fired. */
   if (ev && ev.stopPropagation) ev.stopPropagation();
   if (ev && ev.preventDefault) ev.preventDefault();
-  /* P_serialize-delete — await any in-flight save before sending
+  /* await any in-flight save before sending
      the DELETE. Without this, a concurrent _saveCurrentSession()
      POST could land on the server AFTER the DELETE has committed,
      and the upsert would silently re-insert the deleted row —
@@ -282,7 +282,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
   /* P2 SWR — a deleted/archived session must not survive in the detail cache. */
   detailCache.invalidate(id);
   _renderRecents();
-  /* P_delete-resurrect — register this id with the doSave() tombstone
+  /* register this id with the doSave() tombstone
      set BEFORE the network round-trip. Any POST that arrives during the
      request, or a later save cascade, sees the tombstone and cannot
      re-insert the deleted session. */
@@ -295,7 +295,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
     .then(function () {
       showToast(_t('session.deleted'));
       flushRecentsReconcile().then(function () {
-        /* P_delete-resurrect — the server has now confirmed the
+        /* the server has now confirmed the
          row is gone. From this point on, a streaming-callback
          POST that happens to carry this same id is no longer
          a "resurrection" risk (the row is genuinely deleted),
@@ -316,7 +316,7 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
       } catch (e) {
         reportSwallow(e, 'session/recents.deleteSession.toast');
       }
-      /* P_delete-resurrect — keep the tombstone on failure. The
+      /* keep the tombstone on failure. The
        local mirror no longer has the row (we filtered it at
        t≈0) and the server claim is "404 / error", so any
        pending POST is at best a useless retry and at worst a

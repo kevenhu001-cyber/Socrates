@@ -30,7 +30,7 @@
    every streaming frame. */
 const HEADING_RUN_RE = /^([ \t]{0,3}(?:>[ \t]*|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#＃]+)/;
 
-/* P_heading-repair — heading shapes CommonMark rejects that models emit:
+/* heading shapes CommonMark rejects that models emit:
 
    • Invisible or non-ASCII lead-in: a zero-width space, BOM, word joiner,
      NBSP or fullwidth space (U+3000) before the marker. CommonMark only

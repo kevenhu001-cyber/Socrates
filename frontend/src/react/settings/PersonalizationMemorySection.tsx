@@ -7,7 +7,7 @@ import {
   replaceMemoryId,
   setMemory,
 } from '../../storage/memoryStore.ts';
-import { showConfirm } from '../../ui/confirm.ts';
+import { showConfirm } from '../../legacy/confirm.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
 import { PersonalizationMemoryAddForm } from './PersonalizationMemoryAddForm';
 import { PersonalizationMemoryList } from './PersonalizationMemoryList';

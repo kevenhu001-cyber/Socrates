@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStreamFrameProcessor } from '../src/chat/streamFrameProcessor.ts';
 import { dispatchChatSseFrame } from '@socrates/core';
-import { toolRunLabel } from '../src/ui/toolPresentationModel.ts';
-import { deriveTurnPresentationState } from '../src/ui/turnActivityModel.ts';
+import { toolRunLabel } from '../src/legacy/toolPresentationModel.ts';
+import { deriveTurnPresentationState } from '../src/legacy/turnActivityModel.ts';
 
 const frame = 'event: turn_activity\ndata: {"type":"thinking"}\n\n';
 test('public activity is delivered without counting a startup indicator as model output', () => {
@@ -26,7 +26,7 @@ test('shared SSE consumers receive activity and safely ignore it without a handl
 // Response interleaving: a visible answer does not mean the turn finished, so
 // the thinking cue stays until the turn/tool lifecycle actually settles. Only
 // the retired activity types (public_reasoning_summary, synthesizing) disappear
-// on first prose — see observedStatus() in src/ui/turnActivityModel.ts.
+// on first prose — see observedStatus() in src/legacy/turnActivityModel.ts.
 test('thinking cue survives answer prose because the turn may still be working', () => {
   const live = deriveTurnPresentationState(
     {

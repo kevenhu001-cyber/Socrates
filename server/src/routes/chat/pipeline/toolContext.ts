@@ -67,7 +67,7 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   if (!userId) return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
   try {
     const db = getDb();
-    /* P_prep-parallel — two independent reads on the path to the first
+    /* two independent reads on the path to the first
        upstream token; issue them together. A failure in one still leaves the
        other's connectors available, as before. */
     const [personal, project] = await Promise.allSettled([
@@ -142,7 +142,7 @@ export async function createStreamToolContext(
   });
   const toolDefs = toolRegistry.definitions as RuntimeToolDefinition[];
 
-  /* P_native-tool-contract — derive the prompt appendix from the same
+  /* derive the prompt appendix from the same
    * definitions sent in the request. This keeps the injected system
    * guidance aligned with the current tool registry after additions or
    * connector changes. */

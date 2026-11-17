@@ -53,7 +53,7 @@ export function splitPromptContext(
   return { initialization, conversation, turnInstructions };
 }
 
-/* P_style-reminder-card — the full style contract lives in the frozen
+/* the full style contract lives in the frozen
    system prefix (FINAL OUTPUT CONSTRAINTS), but client turn instructions
    sit closer to generation and can out-compete it on recency. This card
    restates only the handful of defaults users actually notice, at the

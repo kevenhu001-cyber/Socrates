@@ -23,7 +23,7 @@ import { JSDOM } from 'jsdom';
 const window = new JSDOM('').window;
 const purify = createDOMPurify(window);
 
-/* P_extra-body-share — H5 audit fix.
+/* H5 audit fix.
  * Whitelist of extra_body keys that may be forwarded to the LLM
  * upstream. The SPA is allowed to tune reasoning / sampling knobs
  * (top_p, top_k, seed, logit_bias, response_format, ...), but it
@@ -83,7 +83,7 @@ export function sanitizeExtraBody(raw: unknown) {
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-/* P_share-visibility-enum — M6 audit fix. Both `shares.visibility`
+/* M6 audit fix. Both `shares.visibility`
  * and `artifacts.visibility` are plain TEXT in the schema (no
  * CHECK constraint), so an unvalidated write can store anything
  * (e.g. `public; DROP TABLE shares; --` or the deprecated value

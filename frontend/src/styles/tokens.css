@@ -5,7 +5,7 @@
  * theme values (light/dark/accent) live in themes.css; this file owns
  * theme-independent foundation and product geometry.
  *
- * Keep the names here aligned with src/ui/tokens.ts so JS-driven and
+ * Keep the names here aligned with src/legacy/tokens.ts so JS-driven and
  * CSS-driven values agree on the same vocabulary.
  */
 
@@ -164,7 +164,7 @@
 
   /* Breakpoints (documented; CSS @media is the consumer, not this file —
      JS-side spacing/rhythm lookups read the full Lobe ladder from
-     src/ui/tokens.ts). */
+     src/legacy/tokens.ts). */
 
   /* Default easing curves — product motion plus explicit Lobe foundation
      durations/easings above. */

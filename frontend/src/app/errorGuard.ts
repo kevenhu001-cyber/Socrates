@@ -1,9 +1,9 @@
-/* app/errorGuard.ts — extracted from main.js.
+/* app/errorGuard.ts — extracted from legacy entry.
  * Global error / unhandledrejection guard with correlation banner.
  * Zero-behavior-change lift; self-contained (window/document only).
  */
 import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
-import { renderActionButton } from '../ui/actionButton.ts';
+import { renderActionButton } from '../legacy/actionButton.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export let __socratesGlobalErrorHandlerInstalled = false;
@@ -174,7 +174,7 @@ export function installGlobalErrorGuard() {
 
   function handle(label: string, payload: unknown) {
     if (inHandler) return;
-    /* P_turn-abort-quiet — lifecycle aborts (session-expired, user-stop,
+    /* lifecycle aborts (session-expired, user-stop,
        superseded, …) are intentional control flow. A late rejection that
        escaped a guarded turn path must not raise the red banner or file
        a client-error report; a one-line console note keeps it greppable. */

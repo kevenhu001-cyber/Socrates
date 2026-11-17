@@ -102,7 +102,7 @@ export interface StreamingSplit {
 }
 
 /**
- * P_tool-order-block — a tool row must never land in the middle of a
+ * a tool row must never land in the middle of a
  * fenced code block, a math block, or a Markdown table row. Those spans
  * are atomic to the reader: splitting them breaks highlighting AND reads
  * as "the tool interrupted the AI mid-sentence". Offsets inside such a
@@ -181,7 +181,7 @@ export function snapToolOffsetOutOfBlock(text: string, offset: number): number {
 }
 
 /**
- * P_tool-order-paragraph — a tool row belongs to the paragraph during
+ * a tool row belongs to the paragraph during
  * which it fired, never in the middle of it and never before it. The
  * model routinely calls the tool mid-paragraph and only writes the
  * framing sentence ("我来搜索一下…") afterwards; parking the row at the

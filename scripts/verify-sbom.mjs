@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const directory = process.argv[2] ?? 'sbom';
-const expected = ['frontend.cdx.json', 'server.cdx.json', 'apps-socrates.cdx.json'];
+const expected = ['frontend.cdx.json', 'server.cdx.json'];
 
 function fail(message) {
   console.error(`SBOM verification failed: ${message}`);

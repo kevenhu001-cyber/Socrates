@@ -7,7 +7,7 @@ interface Catchable {
   catch(onRejected: (error: unknown) => void): unknown;
 }
 
-/* P_turn-abort-quiet — lifecycle aborts (auth expiry, session switch,
+/* lifecycle aborts (auth expiry, session switch,
    turn superseded, …) are intentional control flow, not errors. */
 export function isExpectedTurnAbort(e: unknown): boolean {
   if (!e) return true;
@@ -36,7 +36,7 @@ export function isExpectedTurnAbort(e: unknown): boolean {
   return false;
 }
 
-/* P_turn-abort-quiet — rejection guard for fire-and-forget turn promises.
+/* rejection guard for fire-and-forget turn promises.
    Expected lifecycle aborts vanish; real failures log to console (the
    stream controller already surfaced them in-bubble, so no banner). */
 export function quietTurn<T>(p: T): T {

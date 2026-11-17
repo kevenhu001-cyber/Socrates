@@ -13,9 +13,9 @@ import { formatMsg } from '../render/markdown.ts';
 import { esc } from '../render/text.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { generateId } from '../util/ids.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { registerRecoveredTurnRetry } from '../chat/liveTurn.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { t } from '../i18n/index.ts';
 
@@ -219,7 +219,7 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
     /* The API uses the camelCase schema key. Keep the snake_case fallback
        for any legacy payloads. */
     ...reasoning,
-    /* P_turn-summary — carry the persisted retrospective so the Summary
+    /* carry the persisted retrospective so the Summary
        sheet reads the same after a reload as it did live. */
     summary: m.summary || null,
     turnRuntime: normalizeTurnRuntime(m.turnRuntime),

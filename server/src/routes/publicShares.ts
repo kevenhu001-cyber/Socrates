@@ -76,14 +76,14 @@ router.get('/:token', async (req, res, next) => {
       return res.status(401).json({ code: 'UNAUTHORIZED', message: 'Authentication required' });
     }
 
-    /* P_share-attachments-privacy — public share tokens must NOT leak
+    /* public share tokens must NOT leak
      * private attachment data (base64 image dataUrls, extracted PDF
      * text, etc.) to anyone holding the link. Select an explicit
      * projection that omits the `attachments` jsonb column along with
      * other implementation-detail fields (sources, html) that
      * could leak PII or be used to re-derive the user's input style.
      *
-     * P_share-rawtext — `rawText` is back, and only because the
+     * `rawText` is back, and only because the
      * read-only viewer now lays a turn out from it: the inline tool
      * rows are spliced at `toolCalls[].textOffset`, which indexes the
      * RAW markdown, not the rendered HTML. It is the same body the
@@ -119,7 +119,7 @@ router.get('/:token', async (req, res, next) => {
       topic: session.topic,
       domain: session.domain,
       mode: session.mode,
-      /* P_exam-share — shareable exam sessions need kind + exam_data
+      /* shareable exam sessions need kind + exam_data
        * so the read-only viewer can render the questions/answers
        * instead of (or in addition to) the chat-style message list.
        * exam_data itself may carry per-question attachments via

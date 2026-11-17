@@ -111,11 +111,11 @@ function finalizeOwnedMessage(
 export function createFinishRender(state: TurnRuntimeState): FinishRender {
   function run(): FinishRenderResult {
     const win = window as ActiveTemplateWindow;
-    /* P_canvas-mode — seed a stable canvasId on state BEFORE the
+    /* seed a stable canvasId on state BEFORE the
        buildAssistantHtml call so the canvas wrapper inside that
        function reuses the same id. */
     seedCanvasPendingId(win);
-    /* P_declarative-tool-run — the finalized html carries prose only:
+    /* the finalized html carries prose only:
        react/tool-run splices the rows in from toolCalls[].textOffset,
        so a second copy baked into `html` would render each row twice.
        The split points captured at tool time are stamped onto the

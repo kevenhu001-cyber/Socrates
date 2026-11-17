@@ -1,4 +1,4 @@
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ExtensionDefinition } from '../types';
 
 export const WEB_SEARCH_ICON = interfaceIcon('globe', 18);

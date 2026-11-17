@@ -3,13 +3,13 @@
  * and settle the active turn at its target offset.
  */
 import { dispatchUi, sessionStore, uiStore } from '../../../store/index.ts';
-import { publishReactChatRuntime } from '../../../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../../../ui/messageSnapshot.ts';
-import { cancelScrollAnimation, velocityScrollTo } from '../../../ui/scroll.ts';
-import { writeScrollTop } from '../../../ui/scrollCoordinator.ts';
-import { hideNewReplyPill, suppressScrollPositionIntent } from '../../../ui/scrollPill.ts';
-import { planSendGlide } from '../../../ui/motion/index.ts';
-import type { MessageEntry } from '../../../ui/messageActions.ts';
+import { publishReactChatRuntime } from '../../../legacy/reactBridge.ts';
+import { updateMessageSnapshot } from '../../../legacy/messageSnapshot.ts';
+import { cancelScrollAnimation, velocityScrollTo } from '../../../legacy/scroll.ts';
+import { writeScrollTop } from '../../../legacy/scrollCoordinator.ts';
+import { hideNewReplyPill, suppressScrollPositionIntent } from '../../../legacy/scrollPill.ts';
+import { planSendGlide } from '../../../legacy/motion/index.ts';
+import type { MessageEntry } from '../../../legacy/messageActions.ts';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 import {
   BUBBLE_FADE_MAX_MS,
@@ -313,7 +313,7 @@ function startNormalTurnMotion(context: NormalTurnMotionContext): void {
   /* A snap has no animation to protect, so the send owns the viewport
      immediately. A real glide stays on `turnAnchorSettling` until the hold
      starts aligning (claiming the owner here aborts the glide's first
-     frame in ui/scroll.ts). */
+     frame in legacy/scroll.ts). */
   if (plan.snap) markTurnViewportOwner(list);
   startTurnViewportHold(list, row, holdClientId, targetOffset, false);
   if (!plan.snap) {
@@ -393,7 +393,7 @@ export function scheduleActiveTurnToTop(
      task that mounts this one, so the two never fight over scrollTop. */
   releaseTurnViewportHold();
   let anchorMotionStarted = false;
-  /* P_send-ownership — take the transcript over in the same task as the
+  /* take the transcript over in the same task as the
      submit, not when the reserve finally paints a few frames later. In that
      gap a still-running content-follow (the previous answer streaming, a
      late image, a bottom glide from the keyboard) could otherwise write
@@ -459,7 +459,7 @@ export function scheduleActiveTurnToTop(
     stampTurnAnchor(anchorContext, 'turn', reserve, targetOffset);
     if (!hasTurnAnchorReserve(row)) return;
     /* Ownership stays `turnAnchorSettling` until the glide lands. Writing
-       `turnViewportOwner` here made ui/scroll.ts abort the glide on its
+       `turnViewportOwner` here made legacy/scroll.ts abort the glide on its
        first frame, so the send teleported to the slot; the hold claims the
        owner when it starts aligning. */
     /* Read layout once. Both rects land in the same flush and reusing

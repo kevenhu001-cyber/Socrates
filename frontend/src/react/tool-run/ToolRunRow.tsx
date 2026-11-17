@@ -10,7 +10,7 @@
  */
 import { useRef } from 'react';
 import { ToolErrorNotice } from '@socrates/ui/turn';
-import { translate } from '../../ui/toolPresentationModel.ts';
+import { translate } from '../../legacy/toolPresentationModel.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { ToolRunApproval } from './ToolRunApproval.js';
 import type { ToolCallRecord, ToolRunView } from './toolRunModel';

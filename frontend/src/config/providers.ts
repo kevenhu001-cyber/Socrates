@@ -5,9 +5,9 @@ import {
   saveLastActiveId,
   loadLastActiveId,
 } from './providerConfig.service.ts';
-/* config/providers.ts — Wave 3 of main-js-split plan.
+/* config/providers.ts
  * App preferences and helper functions for reasoning/model detection.
- * Extracted from main.js L9169-L9566 + refreshApiConfig at L9291.
+ * extracted from legacy entry + refreshApiConfig at L9291.
  */
 
 /** Legacy window members this module still coordinates through the shell. */
@@ -109,7 +109,7 @@ function syncAppModeUI(): void {
   } catch (e) {
     reportSwallow(e, 'config/providers.syncAppModeUI#2');
   }
-  /* P_mode-i18n — reroute the topic title / subtitle / disclaimer and
+  /* reroute the topic title / subtitle / disclaimer and
      the chat-input placeholder through applyI18n() so they reflect the
      active mode (chat vs tutor). Without this, toggling the mode from
      Extensions would switch CSS/visibility but leave the topic-setup

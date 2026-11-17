@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const root = resolve(import.meta.dirname, '..');
 const verifier = join(root, 'scripts/verify-sbom.mjs');
-const names = ['frontend.cdx.json', 'server.cdx.json', 'apps-socrates.cdx.json'];
+const names = ['frontend.cdx.json', 'server.cdx.json'];
 
 function fixture() {
   const dir = mkdtempSync(join(tmpdir(), 'socrates-sbom-test-'));
@@ -41,17 +41,23 @@ test('verifier rejects missing, empty, malformed, and structurally empty SBOMs',
   try {
     rmSync(join(dir, names[0]));
     writeFileSync(join(dir, names[1]), '');
-    writeFileSync(
-      join(dir, names[2]),
-      JSON.stringify({ metadata: { component: {} }, components: [] }),
-    );
-    const result = run(dir);
+    let result = run(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing/);
     assert.match(result.stderr, /empty or non-file/);
+
+    writeFileSync(
+      join(dir, names[1]),
+      JSON.stringify({ metadata: { component: {} }, components: [] }),
+    );
+    result = run(dir);
+    assert.equal(result.status, 1);
     assert.match(result.stderr, /no components/);
-    writeFileSync(join(dir, names[0]), '{broken');
-    assert.match(run(dir).stderr, /invalid JSON/);
+
+    writeFileSync(join(dir, names[1]), '{broken');
+    result = run(dir);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /invalid JSON/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

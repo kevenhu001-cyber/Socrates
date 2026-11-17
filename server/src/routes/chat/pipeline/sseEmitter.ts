@@ -65,7 +65,7 @@ export class SseEmitter {
     this.data({ choices: [{ delta: { reasoning_content: chunk } }] });
   }
 
-  /** Partial tool_call delta (P_tool_stream). */
+  /** Partial tool_call delta (). */
   toolCallDelta(delta: ToolCallDelta): void {
     this.event('tool_call_delta', {
       index: delta.index,

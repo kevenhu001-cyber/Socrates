@@ -1,6 +1,6 @@
 import { t } from '../../i18n/index.ts';
 import { sessionStore } from '../../store/index.ts';
-import { showToast } from '../../ui/toast.ts';
+import { showToast } from '../../legacy/toast.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { buildUserContentParts } from '../history.ts';
 import { askChatTurn } from './controller.ts';

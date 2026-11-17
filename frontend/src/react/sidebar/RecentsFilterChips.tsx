@@ -2,7 +2,7 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 import { useEffect, useReducer, useSyncExternalStore } from 'react';
 
-import { getKnownTagsFromSessions } from '../../ui/recentsModel.ts';
+import { getKnownTagsFromSessions } from '../../legacy/recentsModel.ts';
 import { serverCache } from '../../session/serverCache.ts';
 import { getProjectCacheSnapshot, subscribeToProjectCache } from '../../projects/projectCache.ts';
 import { onRecentsFilterChipClick, hydrateRecentsFilterState } from '../../sidebar/sidebar.service';

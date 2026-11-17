@@ -24,7 +24,7 @@ interface CanvasBlockProps {
 }
 
 /**
- * P_canvas-mode — ChatGPT-style editable reply surface.
+ * ChatGPT-style editable reply surface.
  *
  *   ┌────────────────────────────────────────────┐
  *   │ [write icon] write             [orig][edit][copy][iterate][fullscreen] │
@@ -37,7 +37,7 @@ interface CanvasBlockProps {
  *   └────────────────────────────────────────────┘
  *
  * The legacy pipeline writes the canvas wrapper via wrapForCanvas in
- * main.js:renderAssistantHTML. React hydrates from the same data-canvas-id
+ * app entrypoint:renderAssistantHTML. React hydrates from the same data-canvas-id
  * attribute and never enters dangerouslySetInnerHTML for this message.
  */
 export function CanvasBlock({

@@ -1,5 +1,5 @@
 /* Document preview drawer — shared contracts.
-   The panel reuses the detail-surface drawer shell (src/ui/detailSurface.ts);
+   The panel reuses the detail-surface drawer shell (src/legacy/detailSurface.ts);
    every renderer is a lazily imported engine so pdfjs/mammoth never enter the
    entry chunk. */
 

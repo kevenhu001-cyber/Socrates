@@ -25,8 +25,8 @@ import {
   toolRunView,
   visualizationSpecKey,
 } from '../src/react/tool-run/toolRunModel.ts';
-import { toolRunGroupLabel, toolRunLabel } from '../src/ui/toolPresentationModel.ts';
-import { connectorActivityOf, connectorToolIdOf } from '../src/ui/toolActivity.ts';
+import { toolRunGroupLabel, toolRunLabel } from '../src/legacy/toolPresentationModel.ts';
+import { connectorActivityOf, connectorToolIdOf } from '../src/legacy/toolActivity.ts';
 
 const RAW = 'First paragraph.\n\nSecond paragraph here.';
 

@@ -6,7 +6,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 /**
- * P_docs-mcp — documentation MCP surface, separate from the product server.
+ * documentation MCP surface, separate from the product server.
  *
  * orank's "Product + docs MCP coverage" check wants BOTH a "do" server (the
  * API actions at /api/mcp) and a "learn" server that answers questions FROM

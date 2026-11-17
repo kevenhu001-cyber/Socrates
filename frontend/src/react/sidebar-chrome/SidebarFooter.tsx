@@ -1,6 +1,6 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { useCallback, useRef, useState } from 'react';
 import { useUserInfo } from './sidebarChrome.store';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';

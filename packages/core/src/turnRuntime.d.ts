@@ -3,7 +3,7 @@ export function createTurnRuntime(turnId: string): TurnRuntime;
 export function normalizeTurnEvent(value: unknown): TurnEvent | null;
 export function reduceTurnEvent(
   previous: TurnRuntime | null | undefined,
-  event: unknown,
+  input: unknown,
 ): TurnRuntime | null | undefined;
 export function settleTurnRuntime(
   state: TurnRuntime | null | undefined,

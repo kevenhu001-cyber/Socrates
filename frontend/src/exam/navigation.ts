@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from '../ui/motion/index.ts';
+import { prefersReducedMotion } from '../legacy/motion/index.ts';
 import { examBridge } from '../store/index.ts';
 
 export function examNavCurrentIdx() {

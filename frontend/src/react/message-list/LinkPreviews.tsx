@@ -1,4 +1,4 @@
-import type { LinkPreviewItem } from '../../ui/linkPreviews.ts';
+import type { LinkPreviewItem } from '../../legacy/linkPreviews.ts';
 
 function LinkIcon() {
   return (

@@ -17,7 +17,7 @@ interface CanvasToolbarProps {
 }
 
 /**
- * P_canvas-mode — Edit / Done / Copy / Iterate / Fullscreen toolbar for
+ * Edit / Done / Copy / Iterate / Fullscreen toolbar for
  * the ChatGPT-style canvas block. Always rendered above the body; the
  * Edit/Done label toggles based on the current mode.
  */

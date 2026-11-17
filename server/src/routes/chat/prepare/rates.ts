@@ -39,7 +39,7 @@ export async function checkBeagleMonthlyLimit(
   return null;
 }
 
-/* P_tutor-pool — use a request-time middleware that picks the right
+/* use a request-time middleware that picks the right
    limiter based on req.body.mode. Tutor → tutorChatLimiter (separate
    bucket, higher cap). Anything else → chatLimiter. Static middleware
    arrays can't branch, so we wrap the pick in a thin dispatcher. */

@@ -1,7 +1,7 @@
 /* session/recentsReconcile.ts — keep the Recents list correct without
    re-fetching all 200 rows after every save.
 
-   P_recents-amplify (2026-09-27 session-switch profile) — every successful
+    (2026-09-27 session-switch profile) — every successful
    POST /api/sessions used to chain a full
    `GET /api/sessions?limit=200&archived=true` before `saveInFlight` settled.
    One chat turn fires saveCurrentSession() from several call sites, and
@@ -14,7 +14,7 @@
 
    The split is:
      • the save response already carries every scalar the list row renders
-       (sessions.ts P_save-response), so ONE row is patched locally;
+       (sessions.ts ), so ONE row is patched locally;
      • a coalesced + throttled background reconcile handles anything a local
        patch cannot know (rows created elsewhere, archived, deleted, retitled
        by another tab).

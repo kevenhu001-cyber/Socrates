@@ -5,12 +5,12 @@ import {
   setBuiltInProviderModel,
   setServerBuiltInKeyAvailable,
 } from '../../config/providerConfig.service.ts';
-import { showToast } from '../../ui/toast.js';
+import { showToast } from '../../legacy/toast.js';
 import { i18n } from '../../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { publishSidebarChrome } from '../../ui/profile.ts';
+import { publishSidebarChrome } from '../../legacy/profile.ts';
 import { revealAppAndHydrate, showGate, showAuthSignin } from '../index.ts';
 import { captureMarketingQuestion } from '../marketingHandoff.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../../app/lifecycle/index.ts';
@@ -56,7 +56,7 @@ async function publishServerConfig(configRequest: Promise<unknown>): Promise<voi
       if (typeof config.beagleModel === 'string') setBuiltInProviderModel(config.beagleModel);
       hasBuiltInKey = true;
     }
-    /* P_model-capability-registry — the built-in provider's capabilities no
+    /* the built-in provider's capabilities no
        longer come from a coarse boolean here. The server publishes what the
        active model supports alongside the provider list, and the browser
        needs that to know whether Instant is available at all. */

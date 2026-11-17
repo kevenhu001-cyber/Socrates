@@ -6,7 +6,7 @@ import { notificationTokens } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { BadRequest } from '../lib/errors.js';
 
-/* P_notifications-zod
+/*
  * Previous gap: POST /api/notifications/register accepted `req.body.token` and
  * `req.body.platform` as raw user input with no validation. That let clients
  * submit oversized blobs, type-confused objects (PG would coerce arrays to

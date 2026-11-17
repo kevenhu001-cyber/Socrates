@@ -101,7 +101,7 @@ function getTitleGenerationContext(): TitleGenerationContext | null {
   const job = titleJob(sessionId);
   if (currentTitle && !ownsFallback) return null;
   if (job.queued || job.completed || job.attempts >= 3) return null;
-  /* P_title-429 — background title generation must not turn repeated saves
+  /* background title generation must not turn repeated saves
      into a request storm after a rate-limit response. */
   if (Date.now() < job.retryAfter) return null;
   return { sessionId, topic, currentTitle };
@@ -189,7 +189,7 @@ function handleGeneratedTitle(
     scheduleTitleRetry(sessionId);
     return;
   }
-  /* P_title-save-race — the active-session check prevents an old response
+  /* the active-session check prevents an old response
      from saving its title after the user switches sessions. */
   saveGeneratedTitle(title, sessionId);
 }

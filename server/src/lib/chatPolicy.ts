@@ -17,7 +17,7 @@ export function appendServerPolicy(
   return [{ role: 'system', content: `${marker}\n${prompt}` }, ...messages];
 }
 
-/* P_server-policy-refresh — the marker that locates the policy block inside
+/* the marker that locates the policy block inside
    an assembled system prompt. A session prompt snapshot freezes turn 1's
    system prefix, so without a marker the server cannot tell where its own
    policy ends and the next block begins, and a policy fix could never
@@ -65,7 +65,7 @@ When a visual or interactive component helps and the tool is supplied, use \`ren
 
 Distinguish verified facts from inference and state material uncertainty. Never invent facts, citations, sources, URLs, files, tool results, or completed actions. Do not reveal private chain-of-thought; provide the reasons, assumptions, calculations, or evidence needed to verify the answer. Avoid filler, canned preambles, repeated conclusions, and unnecessary follow-up questions. Avoid emoji and decorative symbols unless requested or present in quoted source data. Preserve code, identifiers, quotations, mathematical notation, and exact data faithfully. In mathematical multiple-choice questions, proactively typeset the stem, options and explanation, including variables, fractions and powers; keep option identifiers and executable expressions in their required syntax. For mathematics, use LaTeX with \`$...$\` inline and \`$$...$$\` for display math unless the user requests plain text.`;
 
-/* P_final-response-style — the authoritative punctuation and prose defaults.
+/* the authoritative punctuation and prose defaults.
    It is deliberately NOT part of SERVER_SYSTEM_POLICY: mode prompts
    (teacher-mode, code-interpreter) are appended to the end of the first
    system message after the policy, so a rule placed inside the policy
@@ -239,7 +239,7 @@ function captureClientBlocks(text: string): string {
   return span ? text.slice(span.start, span.end) : '';
 }
 
-/* P_reasoning-effort-server-owned — the high-effort depth directive used
+/* the high-effort depth directive used
    to be a client-side string inside the application-instructions block, a
    lower priority tier than the server's own response defaults. The server
    copy won and the client copy only burned tokens on every high-effort
@@ -320,7 +320,7 @@ export function refreshServerPrompt(
   return refreshReasoningEffortRule(refreshed, refresh.reasoningEffort);
 }
 
-/* P_provider-identity-not-session-state — the built-in provider's identity
+/* the built-in provider's identity
    spec (prompts/beagle.md) is a TRANSPORT concern, not session state. A
    session can switch between the built-in provider and a user-configured
    (BYOK) provider at any time, so the identity must be resolved per request
@@ -351,7 +351,7 @@ export function insertProviderIdentity(
    User-context injection (prompt-injection defence)
    ───────────────────────────────────────────────────────────────── */
 
-/* P_image_description_untrusted — sentinel pair the front-end uses
+/* sentinel pair the front-end uses
    to wrap vision-derived text (mmx vision describe output) so the
    LLM can syntactically distinguish "this is data about an
    attached image" from "this is the user's instruction". The system
@@ -377,7 +377,7 @@ function sanitizePromptScalar(raw: unknown, max = 120): string {
     .slice(0, max);
 }
 
-/* P_USER_CONTEXT — inject a small, server-annotated context block
+/* inject a small, server-annotated context block
    into the first system message so the LLM knows the current date
    and how to address the user. The block is structurally isolated
    with [System context — auto-injected] …[/System context] tags so

@@ -396,7 +396,7 @@ function foldSavedRows(
  * Fold a completed save back into the cached detail response instead of
  * dropping it.
  *
- * P_cache-foldsave — the cache used to be invalidated on EVERY save, so the
+ * the cache used to be invalidated on EVERY save, so the
  * one session most likely to be revisited — the one the user just chatted in
  * — was precisely the one that could never hit it. The save already computes
  * the exact set of message rows that moved (the same delta that made the

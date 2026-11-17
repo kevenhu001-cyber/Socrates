@@ -50,7 +50,7 @@ const ALLOWED_TOPIC_PREFIXES = ['exec_progress:', 'exec_result:'];
 const MAX_PAYLOAD_BYTES = 8 * 1024; // PG NOTIFY payload limit is 8 KB by default
 const RECONNECT_BACKOFF_MS = [500, 1000, 2000, 5000, 10000, 30000]; // capped at 30s
 
-/* Channel name encoding — see P_pg-channel-identifier below.
+/* Channel name encoding — see  below.
  *
  * PostgreSQL's LISTEN command requires the channel name to be an SQL
  * identifier, NOT a string literal (it's `LISTEN channel`, not
@@ -128,7 +128,7 @@ async function publishRaw(topic: string, json: string, forceLocal: boolean) {
   if (!forceLocal && pgListenerReady && pgClient) {
     try {
       // pg_notify takes BOTH arguments as text literals — they're
-      // string values, not identifiers. (P_pg-channel-identifier: the
+      // string values, not identifiers. (the
       // channel name itself was previously escaped as an identifier,
       // but LISTEN requires an identifier so we encode colons → '_'
       // before talking to PG; see encodeChannel at the top.)
@@ -177,7 +177,7 @@ export async function subscribe(topic: string, handler: (payload: unknown) => vo
     throw new Error('pubsub.subscribe: handler must be a function');
   }
 
-  // P_pg-channel-identifier — store under encoded topic so PG
+  // store under encoded topic so PG
   // notification channels (already in encoded form) hit the same Map.
   const enc = encodeChannel(topic);
 
@@ -359,7 +359,7 @@ async function doConnect() {
 async function safeListen(topic: string) {
   if (listenedTopics.has(topic) || !pgClient) return;
   try {
-    // P_pg-channel-identifier — LISTEN takes an identifier, not a
+    // LISTEN takes an identifier, not a
     // string literal. Encode colons to '_' before sending so the
     // channel name is valid SQL identifier syntax.
     const channelId = pgClient.escapeIdentifier(encodeChannel(topic));
@@ -374,7 +374,7 @@ async function safeListen(topic: string) {
 }
 
 function onNotification(msg: { channel: string; payload?: string | null }) {
-  /* P_pg-channel-identifier — msg.channel arrives in encoded form
+  /* msg.channel arrives in encoded form
      (matches the key used by subscribe()). No re-encode needed. */
   const enc = msg.channel;
   let payload: unknown;
@@ -431,7 +431,7 @@ function scheduleReconnect() {
    means a process that publishes through the fallback (because its
    PG isn't ready yet) still feeds its own SSE subscribers. */
 _localEmitter.on('local', (topic, json) => {
-  /* P_pubsub-key-encoding — the handlers map is keyed by the encoded
+  /* the handlers map is keyed by the encoded
      channel name (see subscribe / subscribeLocal). Looking up by the
      raw topic skips every topic that contains a colon or hyphen and
      silently drops the event. */

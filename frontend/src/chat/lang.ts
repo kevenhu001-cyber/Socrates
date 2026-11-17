@@ -1,6 +1,6 @@
-/* chat/lang.ts — Wave 0a of main-js-split plan.
+/* chat/lang.ts
  * Pure functions for language detection and language-specific system-message
- * directives. Extracted from main.js region 7 (L2725-2867) verbatim.
+ * directives. Extracted from legacy entry.
  * No mutation, no DOM, no state/store.ts reads. Only consumer is askChatTurn.
  */
 

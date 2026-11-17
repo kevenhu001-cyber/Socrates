@@ -6,10 +6,10 @@ import {
   looksLikeUserMentionedSite,
   type FetchedPage,
 } from '../webLinks.ts';
-import { buildLinkPreviewItems } from '../../ui/linkPreviews.ts';
+import { buildLinkPreviewItems } from '../../legacy/linkPreviews.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { dispatchSession, sessionStore } from '../../store/index.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
 import type { ChatMessage } from '../../react/types/domain';
 
 export interface TurnPageContext {

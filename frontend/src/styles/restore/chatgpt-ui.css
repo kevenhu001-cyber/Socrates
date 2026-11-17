@@ -768,7 +768,7 @@ body.workspace-active #appShell .workspace-row:hover {
    2. A two-zone idle composer — text area above, controls row below —
       mirroring the multiline/plugin-chips rhythm already used in-session.
    3. A centered row of quick capability chips under the composer
-      (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
+      (markup: #topicQuickActions in index.html; logic: legacy/quickChips.js). */
 
 /* Two-zone idle composer (desktop). Same selector shape as the cascade
    guard so the later declaration wins without specificity games. The

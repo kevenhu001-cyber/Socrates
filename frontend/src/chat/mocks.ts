@@ -1,6 +1,6 @@
-/* chat/mocks.ts — Wave 0c of main-js-split plan.
+/* chat/mocks.ts
  * Legacy fallback mock pools for when no API is available. Extracted from
- * main.js region 14 (L3964..L4185). No external dependencies; pure data
+ * legacy entry. No external dependencies; pure data
  * with random selection. Mutates only module-private state.
  */
 

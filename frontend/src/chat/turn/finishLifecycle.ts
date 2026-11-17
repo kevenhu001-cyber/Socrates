@@ -2,8 +2,8 @@
 import { kbBridge, sessionBridge } from '../../store/index.ts';
 import { turnState } from '../turn/state.ts';
 import { setChatStopState, markTurnEnded } from '../turn/ui.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import { announceTranscript } from '../../ui/liveRegion.js';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
+import { announceTranscript } from '../../legacy/liveRegion.js';
 import { saveCurrentSessionAfterPaint } from '../../session/persistence.ts';
 import { appendLocalMemory } from '../../storage/localMemory.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -175,7 +175,7 @@ export function createFinishLifecycle(
     const visibleFinal = renderResult ? renderResult.visibleFinal : null;
     updateActiveBranchVariant(state, visibleFinal);
 
-    /* P_stream-finish-paint — the settled snapshot reaches React as a
+    /* the settled snapshot reaches React as a
        microtask after this task, so any synchronous work left here delays
        the final frame and the finished answer visibly hangs for a beat.
        Bookkeeping that nothing on screen depends on (the local transcript

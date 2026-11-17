@@ -1,7 +1,7 @@
 import { useBridge } from '../../store/useBridge.ts';
-import { promptTemplatesState } from '../../ui/promptTemplatesState.ts';
+import { promptTemplatesState } from '../../legacy/promptTemplatesState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
-import type { PromptTemplatesSnapshot } from '../../ui/promptTemplatesState.ts';
+import type { PromptTemplatesSnapshot } from '../../legacy/promptTemplatesState.ts';
 
 export function getPromptTemplatesSnapshot(): PromptTemplatesSnapshot {
   return promptTemplatesState.getSnapshot();
