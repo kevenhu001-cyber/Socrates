@@ -1,11 +1,11 @@
 /* chat/liveTurn.ts — extracted from main.js (B5 batch).
  * Live-turn registries: retry owner, runtime map for Codex approvals,
  * message lookup, approval checks, search-retry wiring.
- * Zero-behavior-change lift; state lives in turnState.ts.
+ * Zero-behavior-change lift; state lives in turn/state.ts.
  */
 import { stateStore } from '../state/store.ts';
-import { streamRetryViewport, turnState } from './turnState.ts';
-import type { ActiveChatController, LiveTurnRuntime } from './turnState.ts';
+import { streamRetryViewport, turnState } from './turn/state.ts';
+import type { ActiveChatController, LiveTurnRuntime } from './turn/state.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** The store message the registries look turns up by. */

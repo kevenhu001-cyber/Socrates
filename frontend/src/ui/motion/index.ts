@@ -92,7 +92,7 @@ export function planMotionForUser(distance: number, opts?: MotionOptions) {
 }
 
 /* ── Send glide ──────────────────────────────────────────────────────
- * The send-time turn anchor (chat/turnAnchor.ts) moves the transcript
+ * The send-time turn anchor (chat/turn/anchor.ts) moves the transcript
  * from wherever the reader is — the bottom, one screen up, or the very
  * first message of a long session — to the freshly submitted prompt.
  *

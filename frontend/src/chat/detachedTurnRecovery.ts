@@ -1,6 +1,6 @@
 /* Recover a stream whose HTTP connection dropped while its detached
  * server turn continued running. */
-import { getChatTurn, subscribeChatTurnEvents, type ChatTurn, type TurnEventFrame } from './turnClient.ts';
+import { getChatTurn, subscribeChatTurnEvents, type ChatTurn, type TurnEventFrame } from './turn/client.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { abortableDelay } from '../util/abort.ts';
 

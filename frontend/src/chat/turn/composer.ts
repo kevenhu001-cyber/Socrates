@@ -1,7 +1,7 @@
-import { turnState } from './turnState.ts';
-import { stateStore } from '../state/store.ts';
-import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './turnClient.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
+import { turnState } from './state.ts';
+import { stateStore } from '../../state/store.ts';
+import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './client.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export interface ComposerSendOptions {
   blurAfterSend?: boolean;
@@ -45,32 +45,32 @@ export function handleSendClick(): void {
 
 export function stopChatResponse(): void {
   try { interruptPendingTurn(); }
-  catch (error) { reportSwallow(error, 'chat/composerTurn.stop.interruptPendingTurn'); }
+  catch (error) { reportSwallow(error, 'chat/turn/composer.stop.interruptPendingTurn'); }
   const activeChatCtl = turnState.activeChatCtl;
   if (activeChatCtl) activeChatCtl.abort();
   try { turnState.activeChatAbort?.('user-stop'); }
-  catch (error) { reportSwallow(error, 'chat/composerTurn.stop.abortActive'); }
+  catch (error) { reportSwallow(error, 'chat/turn/composer.stop.abortActive'); }
 }
 
 /** Tell a bound server turn to stop before detaching the local stream. */
 export function interruptPendingTurn(): void {
   let sessionId: string | null = null;
   try { sessionId = stateStore.read('currentSessionId') || null; }
-  catch (error) { reportSwallow(error, 'chat/composerTurn.interrupt.session'); }
+  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.session'); }
   if (!sessionId) return;
 
   let pending: { turnId?: string } | null = null;
   try { pending = loadPendingTurn(sessionId); }
-  catch (error) { reportSwallow(error, 'chat/composerTurn.interrupt.pending'); }
+  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.pending'); }
   if (!pending?.turnId) return;
 
   try { clearPendingTurn(sessionId); }
-  catch (error) { reportSwallow(error, 'chat/composerTurn.interrupt.clear'); }
+  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.clear'); }
   try {
     void interruptChatTurn(pending.turnId).catch((error) => {
-      reportSwallow(error, 'chat/composerTurn.interrupt.server');
+      reportSwallow(error, 'chat/turn/composer.interrupt.server');
     });
   } catch (error) {
-    reportSwallow(error, 'chat/composerTurn.interrupt.serverCall');
+    reportSwallow(error, 'chat/turn/composer.interrupt.serverCall');
   }
 }

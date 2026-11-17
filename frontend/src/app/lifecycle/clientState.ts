@@ -1,7 +1,7 @@
 import { clearSharedProseCache } from '../../render/proseCache.ts';
 import { saveState } from '../../session/saveState.ts';
 import { detailCache } from '../../session/detailCache.ts';
-import { turnState } from '../../chat/turnState.ts';
+import { turnState } from '../../chat/turn/state.ts';
 import { serverCache } from '../../session/serverCache.ts';
 import { setAppMode, LAST_ACTIVE_ID_KEY } from '../../config/providers.ts';
 import { resetProviderConfigForUser } from '../../config/providerConfig.service.ts';

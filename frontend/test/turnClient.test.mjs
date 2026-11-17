@@ -17,7 +17,7 @@ const {
   newClientTurnId,
   pendingKey,
   savePendingTurn,
-} = await import('../src/chat/turnClient.ts');
+} = await import('../src/chat/turn/client.ts');
 
 /* M1: the pending-turn pointer lets a reload/reconnect re-attach to the
    same server turn instead of opening a second LLM call. */

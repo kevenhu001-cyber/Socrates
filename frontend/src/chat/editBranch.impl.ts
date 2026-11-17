@@ -4,8 +4,8 @@
  * resolve via window.* at call time to avoid circular imports.
  */
 import { stateStore } from '../state/store.ts';
-import { turnState, type StreamingTurnController } from './turnState.ts';
-import { interruptPendingTurn, quietTurn } from './turnUi.ts';
+import { turnState, type StreamingTurnController } from './turn/state.ts';
+import { interruptPendingTurn, quietTurn } from './turn/ui.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { findMessageIndex, messageApiPath, MessageEntry, rollbackMessagesAfter } from '../ui/messageActions.ts';
 import { formatMsg } from '../render/markdown.ts';
@@ -18,7 +18,7 @@ import { prepareUserEditBranch, prepareAssistantRegenerateBranch, switchMessageB
 import { saveCurrentSession } from '../session/persistence.ts';
 import { t } from '../i18n/index.ts';
 import { resetApp } from '../app/lifecycle/index.ts';
-import { askChatTurn } from './turnController.ts';
+import { askChatTurn } from './turn/controller.ts';
 
 function _t(key: string) {
   try {

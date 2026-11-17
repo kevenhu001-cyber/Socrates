@@ -1,6 +1,6 @@
-import type { TurnRuntimeState } from './turn/runtimeState.ts';
-import type { MessageOwnership } from './turn/messageOwnership.ts';
-import type { ToolRuntime } from './toolRuntime/index.ts';
+import type { TurnRuntimeState } from './runtimeState.ts';
+import type { MessageOwnership } from './messageOwnership.ts';
+import type { ToolRuntime } from '../toolRuntime/index.ts';
 interface StreamingOptions { clientId?: string; onRetry?: (() => unknown) | null }
 interface StreamingState extends TurnRuntimeState {
   firstDelta: boolean;
@@ -23,7 +23,7 @@ interface StreamingContext {
   abortPath: ReturnType<typeof createAbortPath>;
   errorPath: ReturnType<typeof createErrorPath>;
 }
-/* chat/streamingTurn.ts — streaming turn factory (addStreamingMessage).
+/* chat/turn/streaming.ts — streaming turn factory (addStreamingMessage).
  * React owns the bubble: prose paints from `rawText`, tool rows from
  * `toolCalls[].textOffset`, and the turn chrome from `_liveStatus`.
  * This module owns the data those render from (full/fullReasoning,
@@ -41,31 +41,31 @@ interface StreamingContext {
  *   replaceWithError body — chat/turn/errorPath.js
  */
 import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core/turnRuntime';
-import { normalizePublicTurnActivity } from '../ui/turnActivityModel';
-import { stateStore } from '../state/store.ts';
-import { turnState, streamRetryViewport } from './turnState.ts';
-import { setChatStopState, markTurnInProgress, quietTurn } from './turnUi.ts';
-import { registerLiveTurnRuntime, claimLiveSearchRetry } from './liveTurn.ts';
-import { generateId } from '../util/ids.ts';
-import { hideNewReplyPill } from '../ui/scrollPill.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
-import { createStreamPlayer } from '../render/streamPlayer.js';
-import { scheduleActiveTurnToTop, turnAnchorReserve, TURN_ANCHOR_TOP_OFFSET, RetryViewportOffset } from './turnAnchor.ts';
-import { createToolRuntime } from './toolRuntime/index.ts';
-import { createStatusChrome, StatusChrome } from './turn/statusChrome.ts';
-import { createFinishRender } from './turn/finishRender.ts';
-import { createFinishViewport } from './turn/finishViewport.ts';
-import { createAbortPath } from './turn/abortPath.ts';
-import { createErrorPath } from './turn/errorPath.ts';
-import { createMessageOwnership } from './turn/messageOwnership.ts';
-import { createFinishLifecycle } from './turn/finishLifecycle.ts';
-import { toolRunLabel } from '../ui/toolPresentationModel';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { addMessage } from './messages.ts';
-import { t } from '../i18n/index.ts';
-import { askChatTurn } from './turnController.ts';
-import { getAppMode } from '../config/providers.ts';
+import { normalizePublicTurnActivity } from '../../ui/turnActivityModel';
+import { stateStore } from '../../state/store.ts';
+import { turnState, streamRetryViewport } from './state.ts';
+import { setChatStopState, markTurnInProgress, quietTurn } from './ui.ts';
+import { registerLiveTurnRuntime, claimLiveSearchRetry } from '../liveTurn.ts';
+import { generateId } from '../../util/ids.ts';
+import { hideNewReplyPill } from '../../ui/scrollPill.ts';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
+import { createStreamPlayer } from '../../render/streamPlayer.js';
+import { scheduleActiveTurnToTop, turnAnchorReserve, TURN_ANCHOR_TOP_OFFSET, RetryViewportOffset } from './anchor.ts';
+import { createToolRuntime } from '../toolRuntime/index.ts';
+import { createStatusChrome, StatusChrome } from './statusChrome.ts';
+import { createFinishRender } from './finishRender.ts';
+import { createFinishViewport } from './finishViewport.ts';
+import { createAbortPath } from './abortPath.ts';
+import { createErrorPath } from './errorPath.ts';
+import { createMessageOwnership } from './messageOwnership.ts';
+import { createFinishLifecycle } from './finishLifecycle.ts';
+import { toolRunLabel } from '../../ui/toolPresentationModel';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { addMessage } from '../messages.ts';
+import { t } from '../../i18n/index.ts';
+import { askChatTurn } from './controller.ts';
+import { getAppMode } from '../../config/providers.ts';
 
 function _t(key: string, fallback?: string | null) {
   try {
@@ -163,7 +163,7 @@ function prepareStreamingShell(opts: StreamingOptions){
   };
 }
 
-function createStreamingTurnApi(context: StreamingContext): import("./turnState.ts").StreamingTurnController & { finalizeThinking(): void }{
+function createStreamingTurnApi(context: StreamingContext): import("./state.ts").StreamingTurnController & { finalizeThinking(): void }{
   const state=context.state;
   function finalizeStreamThinking(reason: string){
     if(!state.thinkCtl||typeof state.thinkCtl.finalize!=="function")return;

@@ -1,5 +1,5 @@
 /**
- * chat/turnClient.ts — M1 async turn HTTP client.
+ * chat/turn/client.ts — M1 async turn HTTP client.
  *
  * Thin wrapper over apiFetch/apiFetchRaw for the detached turn API:
  *   POST /api/chat-turns (idempotent on clientTurnId)
@@ -12,10 +12,10 @@
  * M1 ships the client only; turnController switches to it in M2.
  */
 
-import { apiFetch, apiFetchRaw } from '../util/api/index.ts';
-import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.ts';
+import { apiFetch, apiFetchRaw } from '../../util/api/index.ts';
+import { batchPeek, batchRemoveItem, batchSetItem } from '../../batchStorage.ts';
 import { consumeSseBuffer } from '@socrates/core/sse';
-import { reportSwallow } from '../util/reportSwallow.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export interface ChatTurn {
   id: string;
@@ -49,7 +49,7 @@ export function newClientTurnId(): string {
       return crypto.randomUUID();
     }
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turnClient.ts:47');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts:47');
     /* fall through */
   }
   return `turn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -106,7 +106,7 @@ export async function interruptChatTurn(turnId: string): Promise<{ turn: ChatTur
 export function abandonServerTurn(turnId: string | null | undefined): void {
   if (!turnId) return;
   void interruptChatTurn(turnId).catch((error) => {
-    reportSwallow(error, 'chat/turnClient.abandonServerTurn');
+    reportSwallow(error, 'chat/turn/client.abandonServerTurn');
   });
 }
 
@@ -131,7 +131,7 @@ function parseTurnEventFrame(frame: string): TurnEventFrame | null {
     const parsed = JSON.parse(dataParts.join('\n')) as TurnEventFrame;
     return parsed && typeof parsed.sequence === 'number' ? parsed : null;
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turnClient.ts:126');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts:126');
     /* malformed frame — skip */
   }
   return null;
@@ -183,7 +183,7 @@ async function consumeTurnEventStream(
   } finally {
     try { reader.releaseLock(); }
     catch (error) {
-      reportSwallow(error, 'empty catch: chat/turnClient.ts:175', 'expected');
+      reportSwallow(error, 'empty catch: chat/turn/client.ts:175', 'expected');
       /* ignore */
     }
   }
@@ -243,7 +243,7 @@ export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 's
        next load so the slight delay is invisible. */
     batchSetItem(pendingKey(sessionId), JSON.stringify(record));
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turnClient.ts:232');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts:232');
     /* storage full/blocked — resume just won't survive reload */
   }
 }
@@ -267,7 +267,7 @@ export function bumpPendingSeq(sessionId: string, lastSeq: number): void {
     if (!cur) return;
     savePendingTurn(sessionId, { turnId: cur.turnId, clientTurnId: cur.clientTurnId, lastSeq });
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turnClient.ts:253', 'expected');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts:253', 'expected');
     /* ignore */
   }
 }
@@ -287,7 +287,7 @@ export function clearPendingTurn(sessionId: string, clientTurnId?: string): void
     }
     batchRemoveItem(pendingKey(sessionId));
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turnClient.ts:270', 'expected');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts:270', 'expected');
     /* ignore */
   }
 }

@@ -38,7 +38,7 @@ import { planMotionForUser, easeOutHouse } from './motion/index.ts';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
 import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordinator.ts';
 import { stateStore } from '../state/store.ts';
-import { TurnAnchorList } from '@/chat/turnAnchor.ts';
+import { TurnAnchorList } from '@/chat/turn/anchor.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 
@@ -132,7 +132,7 @@ function cancelScrollAnimationFor(list: object | null | undefined){
   activeScrollAnims.delete(list);
 }
 
-/* Public cancellation hook: the send path (chat/turnAnchor.ts) takes the
+/* Public cancellation hook: the send path (chat/turn/anchor.ts) takes the
    transcript over the moment a turn is submitted, so any content-follow or
    bottom glide still in flight must stop before the send glide starts. */
 export function cancelScrollAnimation(list: TurnAnchorList){
@@ -775,7 +775,7 @@ export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } =
   if(!opts.force&&stateStore.read("_userScrolledAway"))return;
   const sc=scrollContainer();
   if(!sc)return;
-  /* A send glide (chat/turnAnchor.ts) owns the transcript while it runs.
+  /* A send glide (chat/turn/anchor.ts) owns the transcript while it runs.
      Thinking pills and tool cards call this on every
      update; starting a bottom glide here would cancel the send glide
      mid-flight and yank the viewport. */

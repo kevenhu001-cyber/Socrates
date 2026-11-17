@@ -61,7 +61,7 @@ export interface KeyboardAnchorContext {
    */
   panDelta?: number;
   /**
-   * A send-time turn anchor (chat/turnAnchor.ts) currently holds the
+   * A send-time turn anchor (chat/turn/anchor.ts) currently holds the
    * submitted prompt at the top of the transcript. Its own reserve
    * controller re-aligns on every layout change, so the keyboard
    * transition must leave the transcript alone — a second writer snapping

@@ -1,15 +1,15 @@
 /** Existing imperative shell hooks. This local contract adds no browser globals.
  * Publishers remain the owners; consumers share their exported signatures. */
 export type RuntimeWindow = Window & {
-  "__loadStreamingTurn": () => Promise<typeof import("../chat/streamingTurn")>;
+  "__loadStreamingTurn": () => Promise<typeof import("../chat/turn/streaming")>;
   "__socratesLegacy"?: unknown;
   "addMessage": typeof import("../chat/messages")["addMessage"];
-  "addStreamingMessage": (...args: Parameters<typeof import("../chat/streamingTurn")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/streamingTurn")["addStreamingMessage"]>>;
-  "askChatTurn": typeof import("../chat/turnController")["askChatTurn"];
+  "addStreamingMessage": (...args: Parameters<typeof import("../chat/turn/streaming")["addStreamingMessage"]>) => ReturnType<typeof import("../chat/turn/streaming")["addStreamingMessage"]> | Promise<ReturnType<typeof import("../chat/turn/streaming")["addStreamingMessage"]>>;
+  "askChatTurn": typeof import("../chat/turn/controller")["askChatTurn"];
   "askNextQuestion": typeof import("../tutor/socraticTurn")["askNextQuestion"];
   "clearPerUserClientState": typeof import("../app/lifecycle/clientState")["clearPerUserClientState"];
   "fetchWebContext": typeof import("../chat/webSearch")['fetchWebContext'];
-  "handleSendClick": typeof import("../chat/composerTurn")["handleSendClick"];
+  "handleSendClick": typeof import("../chat/turn/composer")["handleSendClick"];
   "isInAuthGraceWindow": typeof import("../app/lifecycle")["isInAuthGraceWindow"];
   "loadSession": typeof import("../session/loader")["loadSession"];
   "markAuthSuccess": typeof import("../app/lifecycle")["markAuthSuccess"];
@@ -17,10 +17,10 @@ export type RuntimeWindow = Window & {
   "refreshServerSessions": typeof import("../session/recents")["refreshServerSessions"];
   "renderAssistantHTML": typeof import("../render/assistantHtml")["buildAssistantHtml"];
   "renderRecents": typeof import("../ui/recentsView")["renderRecents"];
-  "resendLastUserMessage": typeof import("../chat/turnUi")["resendLastUserMessage"];
+  "resendLastUserMessage": typeof import("../chat/turn/ui")["resendLastUserMessage"];
   "resetApp": typeof import("../app/lifecycle")["resetApp"];
   "saveCurrentSession": typeof import("../session/persistence")["saveCurrentSession"];
-  "setChatStopState": typeof import("../chat/composerTurn")["setChatStopState"];
+  "setChatStopState": typeof import("../chat/turn/composer")["setChatStopState"];
   "setCurrentUser": typeof import("../app/lifecycle")["setCurrentUser"];
   "showToast": typeof import("../ui/toast")["showToast"];
   "startNewChat": typeof import("../app/lifecycle")["startNewChat"];

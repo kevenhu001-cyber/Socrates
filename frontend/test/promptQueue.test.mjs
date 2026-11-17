@@ -66,7 +66,7 @@ test('promptQueue: subscription receives updates', () => {
 });
 
 test('submitChatMessage enqueues when streaming is active', async () => {
-  const { turnState } = await import('../src/chat/turnState.ts');
+  const { turnState } = await import('../src/chat/turn/state.ts');
   const { submitChatMessage } = await import('../src/chat/sendPipeline.ts');
 
   clearPromptQueue();

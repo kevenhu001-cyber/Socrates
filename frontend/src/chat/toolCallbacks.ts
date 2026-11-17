@@ -5,7 +5,7 @@
 import { stateStore } from '../state/store.ts';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
-import type { StreamingTurnController } from './turnState.ts';
+import type { StreamingTurnController } from './turn/state.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /** Bridges read from the legacy shell. */

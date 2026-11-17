@@ -10,7 +10,7 @@ import { stateStore } from '../state/store.ts';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
 import { archiveSessionMistakes } from '../tutor/mistakeArchive.ts';
-import { turnState } from '../chat/turnState.ts';
+import { turnState } from '../chat/turn/state.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { appMode, ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';

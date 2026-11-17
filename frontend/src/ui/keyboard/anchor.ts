@@ -89,7 +89,7 @@ export class TranscriptAnchor {
     if (!anchor || !list || list.isConnected === false) return;
 
     /* A fresh send owns the transcript offset while its anchor holds the
-       submitted prompt at the top (chat/turnAnchor.ts): that controller
+       submitted prompt at the top (chat/turn/anchor.ts): that controller
        re-aligns on every layout change, and snapping to the bottom here
        would slide the prompt down by the whole viewport delta. Keep the
        captured snapshot current instead, so the first unheld geometry

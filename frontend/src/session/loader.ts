@@ -11,7 +11,7 @@
  * graph to first session restore/switch.
  */
 import { stateStore } from '../state/store.ts';
-import { turnState } from '../chat/turnState.ts';
+import { turnState } from '../chat/turn/state.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';

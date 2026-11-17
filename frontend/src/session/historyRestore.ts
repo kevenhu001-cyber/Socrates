@@ -5,7 +5,7 @@ import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 import { stateStore } from '../state/store.ts';
 import { buildUserContentParts } from '../chat/history.ts';
-import { quietTurn } from '../chat/turnUi.ts';
+import { quietTurn } from '../chat/turn/ui.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { loadLocalMemory, LOCAL_MEMORY_MAX, _memKey } from '../storage/localMemory.ts';
 import { batchSetItem } from '../batchStorage.ts';

@@ -10,7 +10,7 @@ const { stateStore } = await import('../src/state/store.ts');
 /* The public editBranch path lazily loads the state/API implementation. The
    visible edit form is covered through MessageItem in Playwright. */
 const { commitUserMessageEdit } = await import('../src/chat/editBranch.impl.ts');
-const { turnState } = await import('../src/chat/turnState.ts');
+const { turnState } = await import('../src/chat/turn/state.ts');
 
 test('committing a React-edited message replaces state and replays after the server patch settles', async () => {
   stateStore.dispatch({ type: 'session/replace-messages', payload: [

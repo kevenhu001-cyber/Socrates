@@ -5,7 +5,7 @@
  * a retry control in the React turn status. React captures the press-time
  * viewport; the active turn closure owns the retry budget and replacement.
  *
- * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
+ * Extracted from chat/turn/streaming.ts during the 2026-10 addStreamingMessage
  * split. The split is structural only: a transient failure keeps its retry
  * affordance, send-button restore, and stream-failed runtime publish.
  */
@@ -13,9 +13,9 @@ import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
-import { setChatStopState, markTurnEnded } from '../turnUi.ts';
+import { setChatStopState, markTurnEnded } from '../turn/ui.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
-import { turnState, streamRetryViewport } from '../turnState.ts';
+import { turnState, streamRetryViewport } from '../turn/state.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';

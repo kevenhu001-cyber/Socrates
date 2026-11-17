@@ -27,14 +27,14 @@ interface StreamRead { gotAnyData: boolean; bytesReceived: number; error: unknow
 import { apiFetchRaw } from '../util/api/index.ts';
 import { buildChatRequestBody, ChatRequestMessage } from './api/requestBody.ts';
 import { consumeSseBuffer } from '@socrates/core/sse';
-import { createChatTurn, newClientTurnId } from './turnClient.ts';
+import { createChatTurn, newClientTurnId } from './turn/client.ts';
 import { recoverDetachedTurn } from './detachedTurnRecovery.ts';
 import { createStreamFrameProcessor, makeStreamError } from './streamFrameProcessor.ts';
 import { isUserAbort } from './retryPolicy.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { providerErrorMessage } from './providerErrorMessage.ts';
 import { ChatApiError } from './api/shared.ts';
-import { turnState } from './turnState.ts';
+import { turnState } from './turn/state.ts';
 import { t } from '../i18n/index.ts';
 
 function failureMessage(error: ChatApiError | null) {

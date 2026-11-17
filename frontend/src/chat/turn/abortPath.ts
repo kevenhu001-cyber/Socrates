@@ -8,7 +8,7 @@
  * button on top of the streamed HTML so the user can re-run the send
  * path with one click.
  *
- * Extracted from chat/streamingTurn.ts during the 2026-10 addStreamingMessage
+ * Extracted from chat/turn/streaming.ts during the 2026-10 addStreamingMessage
  * split. The slot-ownership guard, partial-text finalize, and
  * superseded-stub retirement all keep their original sequencing.
  */
@@ -17,10 +17,10 @@ import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
-import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turnUi.ts';
+import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turn/ui.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
-import { turnState } from '../turnState.ts';
-import { removeSupersededStub } from '../turnAnchor.ts';
+import { turnState } from '../turn/state.ts';
+import { removeSupersededStub } from '../turn/anchor.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';

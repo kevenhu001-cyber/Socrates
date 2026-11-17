@@ -12,8 +12,8 @@ import { formatMsg } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/text.ts';
 import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { generateId } from '../util/ids.ts';
-import { streamRetryViewport } from './turnState.ts';
-import { clearTurnViewportOwner } from './turnAnchor.ts';
+import { streamRetryViewport } from './turn/state.ts';
+import { clearTurnViewportOwner } from './turn/anchor.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 function _renderAssistantHtml(text: string): string {
@@ -42,7 +42,7 @@ function prepareUserMessageFollow(role: string): void {
   stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
   hideNewReplyPill();
   /* The previous answer's viewport reserve is retired by the send-time
-     anchor (chat/turnAnchor.ts) after it glides past the reserve. */
+     anchor (chat/turn/anchor.ts) after it glides past the reserve. */
   try {
     clearTurnViewportOwner(document.getElementById('msgList'));
   } catch {

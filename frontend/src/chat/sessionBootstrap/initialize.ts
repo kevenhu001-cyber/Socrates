@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.ts';
-import { turnState } from '../turnState.ts';
+import { turnState } from '../turn/state.ts';
 import { generateId } from '../../util/ids.ts';
 import { setCurrentSessionId } from '../../session/loader.ts';
 import { pushChatIdToURL } from '../../session/store.ts';

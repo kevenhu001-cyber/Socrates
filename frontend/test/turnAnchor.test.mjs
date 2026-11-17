@@ -17,7 +17,7 @@ const {
   scheduleTurnToTopForMessage,
   turnAnchorReserve,
   turnRowFor,
-} = await import('../src/chat/turnAnchor.ts');
+} = await import('../src/chat/turn/anchor.ts');
 
 configureTurnAnchor({ isMsgListMounted: () => false });
 

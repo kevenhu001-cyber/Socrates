@@ -1,4 +1,4 @@
-import { isExpectedTurnAbort } from '../turnUi.ts';
+import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { dispatchTutorTurn } from './tutorFlow.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {
@@ -8,7 +8,7 @@ import {
   reportTurnFailure,
 } from './runtime.ts';
 import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
-import type { StreamingTurnController } from '../turnState.ts';
+import type { StreamingTurnController } from '../turn/state.ts';
 
 /** The abort surface of a turn created before the send was dispatched. */
 export interface DispatchSendTurnInput {

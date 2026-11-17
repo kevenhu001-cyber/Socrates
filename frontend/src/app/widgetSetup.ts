@@ -9,7 +9,7 @@ import { configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetSch
 import { formatMsg } from '../render/markdown.ts';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.ts';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';
-import { configureTurnAnchor } from '../chat/turnAnchor.ts';
+import { configureTurnAnchor } from '../chat/turn/anchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { registerMistakeRedoAction } from '../ui/mistakeBookCommands.ts';

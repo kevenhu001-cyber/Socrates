@@ -1,5 +1,5 @@
 /* chat/sendPipeline.ts — public entry point for submitting a chat turn. */
-import { turnState, shouldQueueChatSend } from './turnState.ts';
+import { turnState, shouldQueueChatSend } from './turn/state.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
 import { shouldAutoSearchTutor } from '../tutor/policy.ts';

@@ -1,16 +1,16 @@
-/* chat/turnUi.ts — extracted from main.js (B5 batch).
+/* chat/turn/ui.ts — extracted from main.js (B5 batch).
  * Turn lifecycle UI: abort-quiet guards, turn progress, resend,
  * stop/send button states. Zero-behavior-change lift.
  * Cross-cluster turn entry points (askChatTurn, submitChatMessage)
  * resolve via window.* at call time to avoid circular imports.
  */
-import { stateStore } from '../state/store.ts';
-import { showToast } from '../ui/toast.js';
-import { turnState } from './turnState.ts';
-import { buildUserContentParts } from './history.js';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { t } from '../i18n/index.ts';
-export { setChatStopState, handleSendClick, stopChatResponse, interruptPendingTurn } from './composerTurn.ts';
+import { stateStore } from '../../state/store.ts';
+import { showToast } from '../../ui/toast.js';
+import { turnState } from './state.ts';
+import { buildUserContentParts } from '../history.js';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { t } from '../../i18n/index.ts';
+export { setChatStopState, handleSendClick, stopChatResponse, interruptPendingTurn } from './composer.ts';
 
 /** The chat entry point published by the legacy shell. */
 interface TurnUiWindow extends Window {
@@ -39,7 +39,7 @@ function _t(key: string): string {
     }
     const val = t(key);
     if (val && val !== key) return val;
-  } catch (e) { reportSwallow(e, 'chat/turnUi._t'); }
+  } catch (e) { reportSwallow(e, 'chat/turn/ui._t'); }
   return key;
 }
 
@@ -57,7 +57,7 @@ export function isExpectedTurnAbort(e: unknown): boolean {
   try { s = String((error.reason != null ? error.reason : '') + ' ' + (error.message || e)).toLowerCase(); } catch { return false; }
   if (/session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout/.test(s)) return true;
   let nm = '';
-  try { nm = String(error.name || ''); } catch (err) { reportSwallow(err, 'chat/turnUi.isExpectedTurnAbort'); }
+  try { nm = String(error.name || ''); } catch (err) { reportSwallow(err, 'chat/turn/ui.isExpectedTurnAbort'); }
   if (nm === 'AbortError' && /abort/i.test(s)) return true;
   return false;
 }
@@ -70,7 +70,7 @@ export function quietTurn<T>(p: T): T {
   if (catchable && typeof catchable.catch === 'function') {
     catchable.catch(function (e) {
       if (!isExpectedTurnAbort(e)) {
-        try { console.error('[chat] turn failed:', e); } catch (err) { reportSwallow(err, 'chat/turnUi.quietTurn'); }
+        try { console.error('[chat] turn failed:', e); } catch (err) { reportSwallow(err, 'chat/turn/ui.quietTurn'); }
       }
     });
   }
@@ -120,6 +120,6 @@ export function resendLastUserMessage(): boolean {
     quietTurn(win.askChatTurn(text, parts));
     return true;
   }
-  try { showToast(_t('toast.noRetryTarget')); } catch (e) { reportSwallow(e, 'chat/turnUi.resendLastUserMessage'); }
+  try { showToast(_t('toast.noRetryTarget')); } catch (e) { reportSwallow(e, 'chat/turn/ui.resendLastUserMessage'); }
   return false;
 }

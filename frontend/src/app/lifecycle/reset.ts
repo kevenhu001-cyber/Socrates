@@ -1,5 +1,5 @@
 import { stateStore, resetState } from '../../state/store.ts';
-import { turnState } from '../../chat/turnState.ts';
+import { turnState } from '../../chat/turn/state.ts';
 import { showConfirm } from '../../ui/confirm.js';
 import { resetComposerForNewSession, focusComposerForNewSession } from '../../react/composer-input/lifecycle.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';

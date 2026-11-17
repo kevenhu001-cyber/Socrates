@@ -33,12 +33,12 @@ composer
   └─ chat/sendPipeline.ts
       ├─ chat/send/input.ts        capture + commit composer state
       ├─ chat/send/dispatch.ts     queue or start
-      └─ chat/turnController.ts
+      └─ chat/turn/controller.ts
           ├─ chat/streamAttempt.ts         POST /api/chat/stream
           │   ├─ chat/streamFrameProcessor.ts
-          │   └─ chat/streamingTurn.ts → chat/turn/finish*.ts
+          │   └─ chat/turn/streaming.ts → chat/turn/finish*.ts
           └─ chat/detachedTurnRecovery.ts  /api/chat-turns replay
-              └─ chat/turnClient.ts        durable turn + pending pointer
+              └─ chat/turn/client.ts        durable turn + pending pointer
 
 server
   routes/chat/index.ts           sync /api/chat

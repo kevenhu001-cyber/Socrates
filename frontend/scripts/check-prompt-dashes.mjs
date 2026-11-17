@@ -12,7 +12,7 @@
  * Scope: every file that contributes to the LLM-facing prompt surface.
  *   - prompts/*.md                                 (server-loaded)
  *   - frontend/src/prompts/socratic.ts             (client-loaded)
- *   - frontend/src/chat/{socraticDirectives,systemPrompts,promptTemplates,promptSuffixes,lang,turnController}.ts
+ *   - frontend/src/chat/{socraticDirectives,systemPrompts,promptTemplates,promptSuffixes,lang,turn/controller}.ts
  *   - frontend/src/tutor/{flow,policy}.ts
  *   - frontend/src/config/tonePresets.ts
  *   - packages/ui/src/tutor.ts                     (DOM-free copy for Universal App)
@@ -55,8 +55,8 @@ const PROMPT_FILES = [
   'frontend/src/chat/promptTemplates.ts',
   'frontend/src/chat/promptSuffixes.ts',
   'frontend/src/chat/lang.ts',
-  'frontend/src/chat/turnController.ts',
-  'frontend/src/chat/turnPrompt.ts',
+  'frontend/src/chat/turn/controller.ts',
+  'frontend/src/chat/turn/prompt.ts',
   'frontend/src/chat/templateSystemPrompt.ts',
   'frontend/src/chat/diagnosticGenerator.ts',
   'frontend/src/chat/sessionTitle.ts',

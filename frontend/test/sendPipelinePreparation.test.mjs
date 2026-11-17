@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { turnState, resetTurnState, shouldQueueChatSend } from '../src/chat/turnState.ts';
+import { turnState, resetTurnState, shouldQueueChatSend } from '../src/chat/turn/state.ts';
 
 test('linked-page preparation can be preempted, while normal streaming stays queued', () => {
   resetTurnState();

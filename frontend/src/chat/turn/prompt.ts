@@ -1,10 +1,10 @@
-import { getStoredReasoningEffort } from '../config/chatPreferences.ts';
-import { setExtensiveThinkingOn } from '../config/providers.ts';
-import { appendClientContextMessages, thinkingSuffix, toneVoiceSuffix, type PromptMessage } from './promptSuffixes.ts';
-import { injectTemplateSystemPrompt } from './templateSystemPrompt.ts';
-import { languageDirectiveFor } from './lang.ts';
-import { CHAT_CONCISE_PROMPT, CHAT_SYSTEM_PROMPT } from './systemPrompts.ts';
-import type { HistoryEntry } from './history.ts';
+import { getStoredReasoningEffort } from '../../config/chatPreferences.ts';
+import { setExtensiveThinkingOn } from '../../config/providers.ts';
+import { appendClientContextMessages, thinkingSuffix, toneVoiceSuffix, type PromptMessage } from '../promptSuffixes.ts';
+import { injectTemplateSystemPrompt } from '../templateSystemPrompt.ts';
+import { languageDirectiveFor } from '../lang.ts';
+import { CHAT_CONCISE_PROMPT, CHAT_SYSTEM_PROMPT } from '../systemPrompts.ts';
+import type { HistoryEntry } from '../history.ts';
 
 export interface ChatPromptMessage {
   role: string;

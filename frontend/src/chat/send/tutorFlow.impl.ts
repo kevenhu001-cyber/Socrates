@@ -4,7 +4,7 @@ import { _origGenerateFollowUp } from '../mocks.ts';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.ts';
 import { toolCallbacksForStream } from '../toolCallbacks.ts';
-import { isExpectedTurnAbort } from '../turnUi.ts';
+import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { addAnchoredAssistant, addStreamingMessage, askChatTurn, reportTurnFailure } from './runtime.ts';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.ts';
 import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';

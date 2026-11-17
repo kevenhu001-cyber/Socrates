@@ -20,7 +20,7 @@ import { showToast } from '../ui/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
-import { turnState } from '../chat/turnState.ts';
+import { turnState } from '../chat/turn/state.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';

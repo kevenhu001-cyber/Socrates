@@ -23,7 +23,7 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
 const { stateStore } = await import('../src/state/store.ts');
-const { clearPendingTurn, savePendingTurn } = await import('../src/chat/turnClient.ts');
+const { clearPendingTurn, savePendingTurn } = await import('../src/chat/turn/client.ts');
 const { reattachPendingTurn } = await import('../src/session/pendingTurnRestore.ts');
 
 const encoder = new TextEncoder();

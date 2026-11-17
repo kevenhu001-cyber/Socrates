@@ -18,9 +18,9 @@ import { injectTemplateSystemPrompt } from '../chat/templateSystemPrompt.ts';
 import { _origGenerateSocraticQuestion, _origGetExplanation } from '../chat/mocks.ts';
 import { notifyMockFallbackOnce } from '../chat/mockFallbackNotice.ts';
 import { addMessage as _addMessage } from '../chat/messages.ts';
-import { scheduleTurnToTopForMessage } from '../chat/turnAnchor.ts';
+import { scheduleTurnToTopForMessage } from '../chat/turn/anchor.ts';
 import { toolCallbacksForStream as _toolCallbacksForStream } from '../chat/toolCallbacks.ts';
-import { addStreamingMessage } from '../chat/streamingTurn.ts';
+import { addStreamingMessage } from '../chat/turn/streaming.ts';
 
 
 /* omit entirely; backend passes through */

@@ -8,7 +8,7 @@
    offline status are imported from their module owner. */
 
 import { stateStore } from '../state/store.ts';
-import { turnState } from './turnState.ts';
+import { turnState } from './turn/state.ts';
 import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { offlineGuard, STREAM_MAX_ATTEMPTS } from './offline.ts';
 import {
@@ -17,7 +17,7 @@ import {
   waitForAIRetry,
   type AIRequestOptions,
 } from './retryPolicy.ts';
-import { abandonServerTurn, newClientTurnId } from './turnClient.ts';
+import { abandonServerTurn, newClientTurnId } from './turn/client.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** Resolved value of a completed stream call. */

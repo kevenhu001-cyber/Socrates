@@ -1,10 +1,10 @@
 import { stateStore } from '../../state/store.ts';
-import { turnState, type StreamingTurnController } from '../turnState.ts';
+import { turnState, type StreamingTurnController } from '../turn/state.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
-import { askChatTurn } from '../turnController.js';
-import { isExpectedTurnAbort } from '../turnUi.ts';
+import { askChatTurn } from '../turn/controller.js';
+import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
 import { activateMainView } from '../../ui/mainViewController.ts';

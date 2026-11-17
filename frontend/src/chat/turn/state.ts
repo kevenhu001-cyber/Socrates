@@ -1,10 +1,10 @@
-/* chat/turnState.ts — centralized mutable turn/streaming state.
+/* chat/turn/state.ts — centralized mutable turn/streaming state.
  * Extracted from main.js module-level vars to enable safe function
  * extraction without circular imports. Single mutable object so both
  * main.js (legacy) and new modules share live state.
  * Zero-behavior-change: same initial values, same mutation semantics.
  */
-import { createStreamRetryViewport } from './streamRetry.ts';
+import { createStreamRetryViewport } from '../streamRetry.ts';
 
 /** The abort surface every streaming turn exposes to the rest of the app. */
 export interface ActiveChatController {

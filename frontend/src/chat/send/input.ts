@@ -1,5 +1,5 @@
 import { stateStore } from '../../state/store.ts';
-import { turnState } from '../turnState.ts';
+import { turnState } from '../turn/state.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
@@ -17,7 +17,7 @@ import {
   isDeepResearchOn,
   translate,
 } from './runtime.ts';
-import type { StreamingTurnController } from '../turnState.ts';
+import type { StreamingTurnController } from '../turn/state.ts';
 
 /** The composer snapshot a send is built from, captured before the clear. */
 export interface SendInput {

@@ -1,16 +1,16 @@
-import { turnState } from './turnState.ts';
+import { turnState } from './state.ts';
 import {
   CHAT_PAGE_CONTEXT_TIMEOUT_MS,
   extractHttpUrls,
   fetchPagesForContext,
   looksLikeUserMentionedSite,
   type FetchedPage,
-} from './webLinks.ts';
-import { buildLinkPreviewItems } from '../ui/linkPreviews.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { stateStore } from '../state/store.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import type { LegacyChatMessage } from '../react/types/domain';
+} from '../webLinks.ts';
+import { buildLinkPreviewItems } from '../../ui/linkPreviews.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { stateStore } from '../../state/store.ts';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import type { LegacyChatMessage } from '../../react/types/domain';
 
 export interface TurnPageContext {
   urls: string[];
@@ -39,7 +39,7 @@ function updateLatestUserMessage(userMessage: string, patch: Record<string, unkn
       patch,
     });
     publishReactChatRuntime({ type: 'state-synced', reason: 'user-link-preview-updated' });
-  } catch (error) { reportSwallow(error, 'chat/turnPageContext.updateLatestUserMessage'); }
+  } catch (error) { reportSwallow(error, 'chat/turn/pageContext.updateLatestUserMessage'); }
 }
 
 export async function prepareTurnPageContext(

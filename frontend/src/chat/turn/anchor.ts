@@ -1,5 +1,5 @@
 /**
- * chat/turnAnchor.ts — send-time turn positioning for the transcript.
+ * chat/turn/anchor.ts — send-time turn positioning for the transcript.
  *
  * Extracted from main.js. Positions a newly submitted turn like a
  * document page: the user's prompt and the assistant's "Thinking…" row
@@ -12,16 +12,16 @@
  * without dragging react-dom into the chat domain).
  */
 
-import { stateStore } from '../state/store.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
-import { velocityScrollTo, cancelScrollAnimation } from '../ui/scroll.ts';
-import { writeScrollTop } from '../ui/scrollCoordinator.ts';
-import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill.ts';
-import { planSendGlide } from '../ui/motion/index.ts';
-import { getKeyboardLift } from '../ui/keyboard/index.ts';
-import type { MessageEntry } from '../ui/messageActions.ts';
-import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
+import { stateStore } from '../../state/store.ts';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
+import { velocityScrollTo, cancelScrollAnimation } from '../../ui/scroll.ts';
+import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { suppressScrollPositionIntent, hideNewReplyPill } from '../../ui/scrollPill.ts';
+import { planSendGlide } from '../../ui/motion/index.ts';
+import { getKeyboardLift } from '../../ui/keyboard/index.ts';
+import type { MessageEntry } from '../../ui/messageActions.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 export interface TurnAnchorDeps {
   /** Live reader for React ownership of #msgList, owned by main.js. */
@@ -253,19 +253,19 @@ export function releaseTurnViewportHold(): void {
   hold.unsubScrollIntent?.();
   if (hold.observer) {
     try { hold.observer.disconnect(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:226');
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:226');
       /* detached list */
     }
   }
   if (hold.onViewportResize) {
     try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:229');
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:229');
       /* no window */
     }
   }
   if (hold.unsubInset) {
     try { hold.unsubInset(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:232');
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:232');
       /* released controller */
     }
   }
@@ -390,7 +390,7 @@ function observeTurnViewportRow(el: HTMLElement): void {
   const hold = viewportHold;
   if (!hold || !hold.observer) return;
   try { hold.observer.observe(el); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:345');
+    reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:345');
     /* detached row */
   }
 }
@@ -398,13 +398,13 @@ function observeTurnViewportRow(el: HTMLElement): void {
 function observeHoldTargets(observer: ResizeObserver, list: HTMLElement, anchorRow: HTMLElement): void {
   try { observer.observe(list, { box: 'border-box' }); }
   catch (_) { try { observer.observe(list); } catch (err) {
-    reportEmptyCatch(err, 'empty catch: chat/turnAnchor.ts:375');
+    reportEmptyCatch(err, 'empty catch: chat/turn/anchor.ts:375');
     /* detached list */
   } }
   /* Watching the answer's own row is what retires the hold the moment the
      answer outgrows its reserve and sticky-bottom resumes. */
   try { observer.observe(anchorRow); } catch (err) {
-    reportEmptyCatch(err, 'empty catch: chat/turnAnchor.ts:378');
+    reportEmptyCatch(err, 'empty catch: chat/turn/anchor.ts:378');
     /* detached row */
   }
 }
@@ -449,7 +449,7 @@ function startTurnViewportHold(
      frame's paint, so correcting here keeps the change off screen. */
   hold.onViewportResize = function () { holdTurnViewport(); };
   try { window.addEventListener('resize', hold.onViewportResize); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:385');
+    reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:385');
     /* no window */
   }
   /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame
@@ -864,7 +864,7 @@ export function scheduleActiveTurnToTop(
     if (list.dataset) list.dataset.turnAnchorSettling = 'true';
     cancelScrollAnimation(list);
     try { hideNewReplyPill(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turnAnchor.ts:770');
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor.ts:770');
       /* pill not mounted */
     }
   }

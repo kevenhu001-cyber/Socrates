@@ -1,22 +1,22 @@
 /* Single-turn chat orchestration. Prompt assembly, linked-page preparation,
    and shared stream callbacks live in focused modules beside this entry. */
-import { stateStore } from '../state/store.ts';
-import { turnState, type StreamingTurnController } from './turnState.ts';
-import { interruptPendingTurn, quietTurn } from './turnUi.ts';
-import { hasUsableActive } from '../config/providers.ts';
-import { extractHistory, type HistoryEntry } from './history.ts';
-import { callAPIStream, type StreamResult } from './stream.ts';
-import { handleChatApiResult } from './format.ts';
-import { offlineGuard } from './offline.ts';
-import { toolCallbacksForStream, publishActiveWorkflowFinish } from './toolCallbacks.ts';
-import { clearPendingTurn, newClientTurnId, savePendingTurn } from './turnClient.ts';
-import { addMessage } from './messages.ts';
-import { scheduleTurnToTopForMessage } from './turnAnchor.ts';
-import { saveCurrentSession } from '../session/persistence.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { learningTurnOptions } from '../tutor/learningModeState.ts';
-import { buildChatTurnMessages } from './turnPrompt.ts';
-import { prepareTurnPageContext } from './turnPageContext.ts';
+import { stateStore } from '../../state/store.ts';
+import { turnState, type StreamingTurnController } from './state.ts';
+import { interruptPendingTurn, quietTurn } from './ui.ts';
+import { hasUsableActive } from '../../config/providers.ts';
+import { extractHistory, type HistoryEntry } from '../history.ts';
+import { callAPIStream, type StreamResult } from '../stream.ts';
+import { handleChatApiResult } from '../format.ts';
+import { offlineGuard } from '../offline.ts';
+import { toolCallbacksForStream, publishActiveWorkflowFinish } from '../toolCallbacks.ts';
+import { clearPendingTurn, newClientTurnId, savePendingTurn } from './client.ts';
+import { addMessage } from '../messages.ts';
+import { scheduleTurnToTopForMessage } from './anchor.ts';
+import { saveCurrentSession } from '../../session/persistence.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { learningTurnOptions } from '../../tutor/learningModeState.ts';
+import { buildChatTurnMessages } from './prompt.ts';
+import { prepareTurnPageContext } from './pageContext.ts';
 
 /** Max tokens stays omitted so the backend uses the active model's limit. */
 const MAX_TOKENS_CHAT: undefined = undefined;
@@ -68,28 +68,28 @@ function abortSupersededTurn(precreated: StreamingTurnController | null): void {
   const active = turnState.activeChatCtl;
   if (active && active !== precreated) {
     try { active.abort(); }
-    catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#2'); }
+    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#2'); }
   }
   try { interruptPendingTurn(); }
-  catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#3'); }
+  catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#3'); }
   const abort = turnState.activeChatAbort;
   if (abort) {
     try { abort('superseded'); }
-    catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#4'); }
+    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#4'); }
   }
 }
 
 function consumePendingContent(hasOverride: boolean, override: unknown): unknown {
   const pending = hasOverride ? override : turnState.pendingChatContent;
   try { turnState.pendingChatContent = null; }
-  catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#5'); }
+  catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#5'); }
   return pending;
 }
 
 function showNoProviderReply(userText: string, precreated: StreamingTurnController | null): void {
   if (precreated) {
     try { precreated.abort(); }
-    catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#6'); }
+    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#6'); }
   }
   const topic = String(stateStore.read('topic'));
   const fallback = userText
@@ -148,15 +148,15 @@ function createPendingClientTurn(userText: string, controller: StreamingTurnCont
         break;
       }
     }
-  } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#10'); }
+  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#10'); }
   try {
     if (sessionId) savePendingTurn(sessionId, { turnId: '', clientTurnId: clientTurn.id, lastSeq: 0 });
-  } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#11'); }
+  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#11'); }
   const onTurnBound = (turnId: string): void => {
     if (!turnId) return;
     try {
       if (sessionId) savePendingTurn(sessionId, { turnId, clientTurnId: clientTurn.id, lastSeq: 0 });
-    } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#12'); }
+    } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#12'); }
   };
   return { sessionId, clientTurn, onTurnBound };
 }
@@ -194,7 +194,7 @@ function finishChatTurn(
     if (pending.sessionId && result && (result.text || result.cancelled)) {
       clearPendingTurn(pending.sessionId, pending.clientTurn.id);
     }
-  } catch (error) { reportSwallow(error, 'chat/turnController.askChatTurn#13'); }
+  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#13'); }
   finishTurnFeedback(result);
   saveSessionAfterTurn(controller);
 }

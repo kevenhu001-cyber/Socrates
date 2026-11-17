@@ -6,12 +6,12 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  * all entries resolve to direct imports (no window-read ordering hazards
  * except the documented optional surfaces that remain window.* reads).
  */
-import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.ts';
+import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turn/ui.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle/index.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { openTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
-import { askChatTurn } from '../chat/turnController.js';
-/* chat/streamingTurn.ts (~65KB) is lazy — window.addStreamingMessage is
+import { askChatTurn } from '../chat/turn/controller.js';
+/* chat/turn/streaming.ts (~65KB) is lazy — window.addStreamingMessage is
    an async proxy below; all call sites sit inside async send/restore
    paths and await the controller. */
 import { loadSession } from '../session/loader.ts';
@@ -67,7 +67,7 @@ browserWindow.askChatTurn = askChatTurn;
    inside addStreamingMessage) depend on it. The cold path returns a
    Promise; every internal call site awaits either way. */
 browserWindow.__loadStreamingTurn = _loadStreamingTurn;
-type StreamingTurnModule = typeof import('../chat/streamingTurn.ts');
+type StreamingTurnModule = typeof import('../chat/turn/streaming.ts');
 browserWindow.addStreamingMessage = function (opts: Parameters<StreamingTurnModule['addStreamingMessage']>[0]) {
   if (_streamingModule) return _streamingModule.addStreamingMessage(opts);
   return _loadStreamingTurn().then(function (m) { return m.addStreamingMessage(opts); });
@@ -83,7 +83,7 @@ let _streamingImport: Promise<StreamingTurnModule> | null = null;
 let _streamingModule: StreamingTurnModule | null = null;
 function _loadStreamingTurn() {
   if (!_streamingImport) {
-    _streamingImport = import('../chat/streamingTurn.ts');
+    _streamingImport = import('../chat/turn/streaming.ts');
     _streamingImport.then(function (m) { _streamingModule = m; });
     _streamingImport.catch(function (err) {
       _streamingImport = null;

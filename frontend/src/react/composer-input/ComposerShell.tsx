@@ -182,7 +182,7 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
   useControlTitles(toolsLabel, effortAccessibleLabel, voiceLabel, primaryLabel);
 
   /* The React composer exposes readiness as `data-ready` on the disc, but two
-     older contracts still read the DOM classes: chat/composerTurn.ts uses
+     older contracts still read the DOM classes: chat/turn/composer.ts uses
      `#composerPrimaryBtn.active` when it decides `disabled` after a turn, and
      the composer shell keys `#composerInputWrap.has-text` off having something
      to send (draft *or* attachment). RN Web renders its own className, so the
