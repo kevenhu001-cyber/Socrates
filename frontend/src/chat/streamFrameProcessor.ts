@@ -57,18 +57,11 @@ function warnBadFrame(eventName: string, error: unknown): void {
   }
 }
 
-/* Keep the same error shape for request failures and structured SSE errors. */
-export function makeStreamError(
-  message: unknown,
-  status?: unknown,
-  body?: Record<string, unknown> | null,
-): ChatApiError {
-  const error = new Error(String(message || 'stream request failed')) as ChatApiError;
-  if (status != null) error.status = Number(status);
-  if (body != null) error.body = body;
-  if (body && (body as { code?: string }).code) error.code = (body as { code: string }).code;
-  return error;
-}
+/* Keep the same error shape for request failures and structured SSE errors.
+ * The implementation lives in a leaf module so a server-side contract test can
+ * import it without pulling the SPA store through speedFallback → i18n. */
+import { makeStreamError } from './api/streamError.ts';
+export { makeStreamError };
 
 interface ParsedFrame {
   eventName: string | null;
