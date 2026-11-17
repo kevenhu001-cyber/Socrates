@@ -1,67 +1,28 @@
-import { rebaseTurnRuntimeText } from '@socrates/core/turnRuntimeText';
 /**
- * runChatStreamPipeline — the chat stream orchestrator (M2 of the
- * LobeHub-alignment plan).
+ * runChatStreamPipeline — the chat stream orchestrator.
  *
- * Pipeline stages, in order:
- *   1. SSE lifecycle  — headers, 12/32 KB prime flush, active-connection
- *      metric, keepalive, and the close handler that persists partial
- *      content (P_streaming-survival).
- *   2. Tool context   — turn policy + registry + schemas/examples
- *      (`toolContext.ts`).
- *   3. Tool loop      — one streaming hop per iteration; canonical name
- *      resolution + argument repair; concurrent tool dispatch through
- *      `toolExecutors`; result feedback (`toolFeedback.ts`).
- *   4. Finalisation   — usage recording, streaming_text clear, DONE.
- *
- * Behaviour is a verbatim extraction of the original single-closure
- * handler; the stages only differ in where the closures live.
+ * It owns only the lifecycle around the stages:
+ *   1. streamSetup.ts        SSE headers/prime/keepalive, initial user row
+ *   2. turn binding          checkpoint, interrupt polling, watchdog, close
+ *   3. toolLoop.ts           upstream hops + tool dispatch + usage
+ *   4. finalizeTurn.ts       abort paths, persistence, usage, DONE
  */
-import { reduceTurnEvent, settleTurnRuntime } from '@socrates/core/turnRuntime';
-import type { TurnRuntime } from '@socrates/contracts';
-import {and, eq} from 'drizzle-orm';
-import {getDb} from '../../../db/index.js';
-import {chatTurns, messages, sessions} from '../../../db/schema/index.js';
-import {withChatTurnExecution, publishChatTurnEvent, setChatTurnStatus, subscribeToChatTurn} from '../../../services/core/chatTurns.js';
-import {sanitizeStoredHtml, sanitizePlainText} from '../../../lib/sanitize.js';
-import {indexMessageChunks} from '../../../services/embeddings/chunkIndex.js';
+import { reduceTurnEvent } from '@socrates/core/turnRuntime';
+import { and, eq } from 'drizzle-orm';
+import { getDb } from '../../../db/index.js';
+import { chatTurns, sessions } from '../../../db/schema/index.js';
+import {
+  publishChatTurnEvent,
+  subscribeToChatTurn,
+  withChatTurnExecution,
+} from '../../../services/core/chatTurns.js';
 import { createTurnEventController } from '../../../services/turnEvents.js';
 import { createTurnActivityController } from '../../../services/turnActivity.js';
-import {completedActivitySummary} from '../../../services/turnSummary.js';
-import {streamChatCompletion} from '../../../services/core/llm/stream.js';
-import {
-  MAX_TOOL_ARGUMENT_CHARS,
-  normalizeToolCalls,
-  repairToolArguments,
-  resolveToolName,
-  sanitizeToolCallForProtocol,
-  looksTruncatedToolArguments,
-  TOOL_ARGUMENT_ERRORS,
-  truncatedArgumentsHint,
-  validateToolArguments,
-} from '../../../services/tools/toolCallSafety.js';
-import {toolArgumentPolicy} from '../../../services/tools/toolArgumentPolicy.js';
-import {hashToolArguments} from '../../../services/tools/toolTurnPolicy.js';
-import {dispatchToolCalls} from '../../../services/tools/toolDispatch.js';
-import {
-  estimateMessageTokens,
-  estimateTokens,
-  normalizeProviderUsage,
-  recordUsage,
-  resolveUsage
-} from '../../../services/core/usageTracker.js';
-import {annotateSpan, withSpan} from '../../../lib/telemetry.js';
+import { estimateMessageTokens } from '../../../services/core/usageTracker.js';
 import { createChatTiming } from '../../../lib/chatTiming.js';
-import {startSseKeepalive, trackSseConnection} from '../../../lib/sse.js';
-import {
-  appendNativeToolContract,
-  appendToolRoutingHints,
-  prependCodeInterpreterPrompt,
-} from '../prepare/prompts.js';
-import { SSE_PRIME } from '../prepare/sse.js';
-import {SseEmitter} from './sseEmitter.js';
-import {createToolRunner} from './toolExecutors.js';
-import {createStreamToolContext} from './toolContext.js';
+import { trackSseConnection } from '../../../lib/sse.js';
+import { SseEmitter } from './sseEmitter.js';
+import { createStreamToolContext } from './toolContext.js';
 import {
   createTurnWatchdog,
   turnWatchdogLimits,
@@ -69,29 +30,18 @@ import {
   watchdogError,
   watchdogExpiryFromReason,
   WATCHDOG_CHECK_INTERVAL_MS,
-  type WatchdogExpiry,
 } from '../../../lib/turnWatchdog.js';
 import { resolveErrorLocale } from '../../../lib/errorMessages.js';
-import type {ChatStreamPipelineContext, PreparedCall, ToolCall, ToolCallDelta,} from './types.js';
-import type { StreamMessage } from './types.js';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function requestMessages(body: unknown): Record<string, unknown>[] {
-  const rawMessages = isRecord(body) ? body.messages : undefined;
-  return Array.isArray(rawMessages) ? rawMessages.filter(isRecord) : [];
-}
-
-function contentText(content: unknown): string {
-  if (typeof content === 'string') return content;
-  if (!Array.isArray(content)) return '';
-  return content.flatMap((part): string[] => {
-    if (!isRecord(part) || part.type !== 'text' || typeof part.text !== 'string') return [];
-    return [part.text];
-  }).join('\n');
-}
+import { startSseStream } from './streamSetup.js';
+import { persistInitialUserMessage } from './initialUserMessage.js';
+import { contentText, requestMessages } from './requestBody.js';
+import type { ChatStreamPipelineContext } from './types.js';
+import { runToolLoop } from './toolLoop.js';
+import { finalizeTurn } from './finalizeTurn.js';
+import {
+  accumulatedProviderUsage as readAccumulatedProviderUsage,
+  createToolLoopState,
+} from './turnState.js';
 
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   if (ctx.turnId && !ctx.executionClaimed) {
@@ -124,173 +74,16 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     return p;
   })();
 
-  // Set SSE headers
-  /* P_ttfb-prime-first — when the route shell has already primed
-     the SSE response (writeSsePrime) before awaiting ownership,
-     skip the pipeline's own writeHead + SSE_PRIME write. The two
-     code paths converge here so direct pipeline callers (tests)
-     still get a self-contained pipeline that writes headers itself. */
-  if (!ctx.ssePrimed) {
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    });
+  startSseStream({ res, app: req.app, ssePrimed: ctx.ssePrimed });
 
-    /* Prime the stream BEFORE the upstream has anything to say.
+  persistInitialUserMessage({ req, sessionId: sessionIdFromQuery, turnId: turnId ?? null });
 
-       1. `res.flushHeaders()` forces Node to write the response status
-          line + headers to the socket immediately. Without this, Express
-          buffers the headers until the first body byte arrives from the
-          LLM, which on a fast network can be a few hundred ms — the
-          browser has painted the page but shows nothing yet, making the
-          request look hung.
-
-       2. EdgeOne CDN (~8 KB) and Safari's fetch ReadableStream (~1 KB)
-          both apply a first-chunk buffer: they hold the start of the
-          body until enough bytes accumulate, then switch to streaming
-          mode. A short LLM answer fits entirely inside that buffer, so
-          the client receives the whole response in one shot at the end
-          — no progressive streaming, no Thinking pill.
-
-          SSE_PRIME (32 KB of `:` comment lines, shared with the
-          built-in minimax proxy) overflows both buffers so subsequent
-          writes — even one-byte deltas — flow through immediately.
-          Comment lines are valid per the SSE spec and ignored by every
-          parser, including ours. */
-    try {
-      res.flushHeaders();
-      res.write(SSE_PRIME);
-      try { (res as { flush?: () => void }).flush?.(); } catch {}
-    } catch { /* socket already closed — the req.on('close') guard below handles it */ }
-  }
-
-  /* P_sse-metrics — bump the active-connection counter so the
-     /api/health endpoint can report how many SSE streams are open
-     right now. The close handler (set below) decrements on any
-     disconnect, including client aborts mid-stream. */
-  trackSseConnection(req.app, +1);
-
-  /* SSE keepalive — periodic `:keepalive` comment so the reverse proxy
-     doesn't idle-kill the upstream while a reasoning model is
-     thinking (60–120 s silences are common). The helper emits one
-     comment immediately (so a slow first chunk doesn't look like a
-     hang to nginx / EdgeOne) and self-cleans on res close/finish/
-     error, so the explicit clearInterval(heartbeat) calls scattered
-     through this route are no longer needed. */
-  startSseKeepalive(res, { intervalMs: 10_000 });
-
-  /* P_ttfb-background-persist — this insert + touch does not feed the
-     upstream request, so awaiting it here would park two serial DB
-     round-trips on the path to the first token. It runs detached: the
-     client already rendered the message optimistically, the turn's
-     inputSnapshot covers detached recovery, and the write is idempotent
-     (onConflictDoNothing / pre-existence check), so a late write is
-     indistinguishable from an early one. Failures keep the
-     warn-and-continue contract. */
-  if (sessionIdFromQuery && req.userId) {
-    void (async () => {
-      try {
-        const db = getDb();
-        const requestBody = isRecord(req.body as unknown)
-          ? req.body as unknown as Record<string, unknown>
-          : {};
-        const rawUserMsgs = requestMessages(requestBody);
-        let lastUserMsg: Record<string, unknown> | null = null;
-        for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
-          if (rawUserMsgs[i].role === 'user') {
-            lastUserMsg = rawUserMsgs[i];
-            break;
-          }
-        }
-        if (lastUserMsg) {
-          const userContentStr = contentText(lastUserMsg.content);
-          const userRaw = typeof lastUserMsg.rawText === 'string' && lastUserMsg.rawText
-            ? lastUserMsg.rawText
-            : userContentStr;
-          const clientTurn = isRecord(requestBody.clientTurn)
-            ? requestBody.clientTurn
-            : {};
-          const userClientId = (typeof lastUserMsg.clientId === 'string' ? lastUserMsg.clientId : null)
-            || (typeof clientTurn.userClientId === 'string' ? clientTurn.userClientId : null)
-            || (turnId ? `user-${turnId}` : null);
-          const userAttachments = Array.isArray(lastUserMsg.attachments) ? lastUserMsg.attachments : [];
-
-          const safeUserContent = sanitizeStoredHtml(userContentStr);
-          const safeUserRaw = sanitizePlainText(userRaw);
-
-          if (userClientId) {
-            await db.insert(messages).values({
-              sessionId: sessionIdFromQuery,
-              role: 'user',
-              content: safeUserContent,
-              html: safeUserContent,
-              rawText: safeUserRaw,
-              clientId: userClientId,
-              attachments: userAttachments,
-            }).onConflictDoNothing();
-          } else {
-            const [existingRecent] = await db.select({ id: messages.id })
-              .from(messages)
-              .where(and(eq(messages.sessionId, sessionIdFromQuery), eq(messages.role, 'user'), eq(messages.rawText, userRaw)))
-              .limit(1);
-            if (!existingRecent) {
-              await db.insert(messages).values({
-                sessionId: sessionIdFromQuery,
-                role: 'user',
-                content: safeUserContent,
-                html: safeUserContent,
-                rawText: safeUserRaw,
-                attachments: userAttachments,
-              });
-            }
-          }
-          await db.update(sessions)
-            .set({ updatedAt: new Date() })
-            .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId)));
-        }
-      } catch (err) {
-        console.warn('[chat/stream] persisting initial user message skipped:', (err as Error).message);
-      }
-    })();
-  }
-
-  let turnRuntime: TurnRuntime | null | undefined = null;
-  let fullText = '';
-  let fullReasoning = '';  // P_streaming-survival
+  const toolState = createToolLoopState();
   /* Token accounting — the chars/4 estimate is the fallback. The
      authoritative numbers come from the provider's `usage` frame, which
      `stream_options.include_usage` now asks for (see services/core/llm.ts).
-
-     One chat turn can make SEVERAL upstream calls: every tool iteration is
-     its own streamChatCompletion, each with its own usage frame. Summing is
-     therefore required — taking only the last frame would under-report a
-     tool-using turn by however many iterations preceded it, which is the
-     expensive kind of turn. */
+     The tool loop accumulates it across upstream hops. */
   const promptTokens = estimateMessageTokens(finalMessages);
-  let completionTokens = 0;
-  let usagePromptTotal = 0;
-  let usageCompletionTotal = 0;
-  let sawProviderUsage = false;
-
-  function addProviderUsage(raw: unknown): void {
-    const u = normalizeProviderUsage(raw);
-    if (!u) return;
-    sawProviderUsage = true;
-    usagePromptTotal += u.promptTokens;
-    usageCompletionTotal += u.completionTokens;
-  }
-
-  /* Shaped like a provider usage object so resolveUsage can consume it
-     uniformly; returns null when no iteration reported anything, which is
-     the signal to fall back to the estimate. */
-  function accumulatedProviderUsage(): { prompt_tokens: number; completion_tokens: number } | null {
-    if (!sawProviderUsage) return null;
-    return { prompt_tokens: usagePromptTotal, completion_tokens: usageCompletionTotal };
-  }
 
   const abortController = new AbortController();
   if (ctx.executionSignal) {
@@ -332,7 +125,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (!turnId) return;
     const db = getDb();
     db.update(chatTurns)
-      .set({ fullText: fullText || null, fullReasoning: fullReasoning || null, turnRuntime, updatedAt: new Date() })
+      .set({ fullText: toolState.fullText || null, fullReasoning: toolState.fullReasoning || null, turnRuntime: toolState.turnRuntime, updatedAt: new Date() })
       .where(eq(chatTurns.id, turnId))
       .catch(() => {});
   };
@@ -400,12 +193,12 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     // disconnects mid-stream so a reload can resume / retry.
     // Only save if the stream did NOT complete normally (the
     // normal completion path clears streaming_text itself).
-    if (!streamCompleted && sessionIdFromQuery && (fullText || fullReasoning)) {
+    if (!streamCompleted && sessionIdFromQuery && (toolState.fullText || toolState.fullReasoning)) {
       const db = getDb();
       db.update(sessions)
         .set({
-          streamingText: fullText || null,
-          streamingReasoning: fullReasoning || null,
+          streamingText: toolState.fullText || null,
+          streamingReasoning: toolState.fullReasoning || null,
         })
         .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
         .catch((err) => console.error('[chat/stream] save streaming text on close failed:', err.message));
@@ -452,7 +245,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     const innerFinish = emitter.finish.bind(emitter);
     emitter.finish = () => {
       innerFinish();
-      tap('turn_done', { fullTextLength: fullText.length });
+      tap('turn_done', { fullTextLength: toolState.fullText.length });
     };
     const innerFatal = emitter.fatal.bind(emitter);
     emitter.fatal = (err: Error) => {
@@ -491,7 +284,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
 
   const activityStartedAt = Date.now();
   const turnEvents = createTurnEventController((value) => {
-    turnRuntime = reduceTurnEvent(turnRuntime, value);
+    toolState.turnRuntime = reduceTurnEvent(toolState.turnRuntime, value);
     emitter.event('turn_event', value);
   }, turnId || undefined);
   const activity = createTurnActivityController((value) => {
@@ -522,741 +315,67 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (name === 'tool_result' && data && typeof data === 'object') {
       const result = data as { id: string; ok?: boolean; status?: string };
       if (result.status !== 'awaiting_approval') {
-        turnEvents.toolResult(result.id, result.ok !== false && !['failed', 'error', 'stopped', 'cancelled'].includes(result.status || ''), uiInputs.get(result.id), fullText.length);
+        turnEvents.toolResult(result.id, result.ok !== false && !['failed', 'error', 'stopped', 'cancelled'].includes(result.status || ''), uiInputs.get(result.id), toolState.fullText.length);
       }
     }
   };
   activity.thinking();
 
-  /* ─── Tool-calling loop ─────────────────────────────────────────
-   * The LLM may decide mid-stream to call a native tool. We run
-   * streamChatCompletion, and on finish_reason === 'tool_calls' we:
-   *   1. Emit `event: tool_use` so the client can render a card.
-   *   2. Execute each tool call (concurrently where safe).
-   *   3. Emit `event: tool_result` with the outcome.
-   *   4. Append the tool result as a `role:'tool'` message and
-   *      stream another chat completion that wraps up the answer.
-   *
-   * createToolTurnPolicy owns every limit for the turn: the iteration
-   * budget, the per-round call cap, the absolute call and wall-clock
-   * ceilings, the duplicate-call guard, and per-tool failure
-   * accounting. A failing tool now only withdraws itself — the turn
-   * keeps the rest of its toolset, which is the behaviour users
-   * previously lost whenever one malformed argument object appeared
-   * twice. Every threshold is environment-tunable.
-   * ───────────────────────────────────────────────────────────── */
-  const toolCtx = await toolCtxPromise;
-  timing.mark('tools_ready');
-  const {
-    toolPolicy, toolRegistry, toolDefs, toolNames, initialToolNames, schemaForTool, toolExamples,
-    FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider,
-    connectorCatalog, connectorActivation,
-  } = toolCtx;
-  const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
-  const executionResults = new Map<string, import("./types.js").ToolResult>();
-  const runToolCall = createToolRunner({
-    publicRuntime: { registerSources: turnEvents.registerSources, patchUi: turnEvents.patchUi, citeSources: (args) => turnEvents.citeSources(args, fullText) },
+
+  await runToolLoop({
     req,
+    emitter,
+    timing,
+    watchdog,
+    abortController,
+    turnId: turnId ?? null,
     sessionIdFromQuery,
     projectIdFromBody,
+    provider,
+    finalMessages,
+    safeExtraBody,
     mode,
+    temperature,
+    maxTokens,
+    reasoning_effort,
+    responseSpeed,
+    toolCtxPromise,
+    turnEvents,
+    activity,
+    state: toolState,
+    promptTokens,
+    reportTtfb,
+    checkpointTurn,
+    clearTurnTimer,
+  });
+
+  const { fullText, fullReasoning, executedToolCalls, completionTokens, sawProviderUsage } = toolState;
+  let turnRuntime = toolState.turnRuntime;
+  const accumulatedProviderUsage = () => readAccumulatedProviderUsage(toolState);
+
+
+  await finalizeTurn({
+    req,
     emitter,
-    abortSignal: abortController.signal,
-    toolPolicy,
-    schemaForTool,
-    onResult: (id, result) => executionResults.set(id, result),
-    connectorConnectionsByProvider,
-    projectConnectorConnectionsByProvider,
-    connectorCatalog,
-    connectorActivation,
+    turnEvents,
+    activity,
+    abortController,
+    turnId: turnId ?? null,
+    sessionIdFromQuery,
+    provider,
+    userPrompt,
+    fullText: toolState.fullText,
+    fullReasoning: toolState.fullReasoning,
+    turnRuntime: toolState.turnRuntime,
+    executedToolCalls: toolState.executedToolCalls,
+    promptTokens,
+    completionTokens: toolState.completionTokens,
+    sawProviderUsage: toolState.sawProviderUsage,
+    accumulatedProviderUsage: () => readAccumulatedProviderUsage(toolState),
+    clearTurnTimer,
+    checkpointTurn,
+    onStreamCompleted: () => { streamCompleted = true; },
+    activityStartedAt,
   });
 
-  /* Kept structurally loose to match the legacy `finalMessages` shape that
-     appendNativeToolContract / prependCodeInterpreterPrompt accept. */
-  let workingMessages: StreamMessage[] = [...finalMessages];
-  const executedToolCalls: Array<{ id: string; name: string; input: unknown; output?: unknown; isError?: boolean; status?: string; errorCode?: string | null }> = [];
-  /* Calls that exceeded the per-iteration cap on the previous hop and were
-   * dropped without executing — surfaced in the contract so the model
-   * knows they never ran (they are not echoed upstream either). */
-  let lastDroppedCalls = 0;
-  let speedFallbackEmitted = false;
-  /* finish_reason='length' means the upstream hit max_tokens mid-answer.
-     Rather than ending the turn on a truncated sentence, we re-ask the
-     model to continue exactly where it stopped — bounded so a pathological
-     loop cannot run forever. */
-  const rawMaxLengthContinues = Number(process.env.CHAT_LENGTH_CONTINUE_MAX);
-  const MAX_LENGTH_CONTINUES = Number.isFinite(rawMaxLengthContinues) && rawMaxLengthContinues >= 0
-    ? Math.min(5, Math.floor(rawMaxLengthContinues))
-    : 2;
-  let lengthContinues = 0;
-
-  for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
-    const toolsAllowed = toolPolicy.toolsAllowed(iter);
-    toolPolicy.noteIteration();
-    /* Withdrawn tools are removed from both the request and the prompt,
-     * so the model is never invited to call something the loop will
-     * reject. Everything else stays available. */
-    /* Connected connector tools are not offered until get_connector_spec
-       activates them. The activation set is per-turn and grows only after
-       the model has read that tool's exact schema. */
-    const activeToolNames = toolsAllowed
-      ? toolPolicy.enabledToolNames([...initialToolNames, ...connectorActivation.active()]).slice().sort()
-      : [];
-    const activeToolDefs = toolsAllowed
-      ? toolDefs.filter((tool) => activeToolNames.includes(
-        (tool as { function?: { name?: string } }).function?.name || '',
-      )).sort((a, b) => String(a.function?.name || '').localeCompare(String(b.function?.name || ''), 'en'))
-      : [];
-    /* The model-facing contract must describe the same capability set as
-     * this request. In the final, tools-disabled hop the upstream gets no
-     * `tools` field, so do not leave the initial registry list in the
-     * system message and invite an unavailable call. */
-    // Stable tool guidance comes before the changing per-hop budget. A
-    // counter update must not invalidate the large visualization/code prefix.
-    let requestMessages = appendToolRoutingHints(workingMessages, activeToolNames);
-    /* Keep the code-runtime appendix aligned with the executable tool
-     * list. In particular, the final tools-disabled hop must not tell
-     * the model that code_interpreter is callable. The helper inserts
-     * the appendix before FINAL_OUTPUT_CONSTRAINTS and is idempotent. */
-    if (toolsAllowed && activeToolNames.includes('code_interpreter')) {
-      requestMessages = await prependCodeInterpreterPrompt(requestMessages);
-    }
-    requestMessages = appendNativeToolContract(requestMessages, activeToolNames, {
-      limits: toolsAllowed ? toolPolicy.snapshot() : null,
-      disabledTools: toolPolicy.disabledTools(),
-      examples: toolExamples,
-      droppedCalls: lastDroppedCalls,
-    });
-    let iterFinishReason: string | null = null;
-    const toolCallsThisTurn: ToolCall[] = [];
-    /* Content and reasoning emitted during THIS hop only. When the hop
-       ends in tool_calls, both must be replayed on the assistant message
-       we append to workingMessages — reasoning providers (DeepSeek
-       `reasoning_content`, MiniMax `reasoning_details`) treat a bare
-       assistant tool-call turn as a protocol violation or silently
-       degrade the next hop into re-asking the question. */
-    let iterContent = '';
-    let iterReasoning = '';
-
-    let upstreamErr: Error | null = null;
-    /* One span per upstream call. A tool-using turn makes several, so the
-       iteration index is an attribute rather than a separate span name —
-       that keeps them groupable while still showing which hop was slow.
-       This is the span that answers "was it the provider or was it us". */
-    timing.mark('upstream_started');
-    /* P_turn-watchdog — a new upstream hop is progress too: the turn is
-     * alive, it just has not produced bytes yet. */
-    watchdog.touch();
-    await withSpan('llm.stream', {
-      'llm.model': provider.model,
-      'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,
-      'socrates.tool_iteration': iter,
-    }, async () => await streamChatCompletion(
-      {
-        apiBase: provider.url,
-        apiKey: provider.keyPlaintext,
-        model: provider.model,
-        userId: req.userId,
-        /* P_provider-capability-override — the operator's own statement
-         * about their endpoint wins over the registry's host heuristic. */
-        instantEncoding: provider.instantEncoding ?? null,
-        messages: requestMessages,
-        maxTokens,
-        temperature,
-        signal: abortController.signal,
-        reasoning_effort,
-        response_speed: responseSpeed,
-        extra_body: safeExtraBody,
-        onPreferenceFallback: (detail) => {
-          if (speedFallbackEmitted) return;
-          speedFallbackEmitted = true;
-          emitter.event('preference_fallback', detail);
-        },
-        ...(toolsAllowed && activeToolDefs.length > 0
-          ? {
-            tools: activeToolDefs,
-            /* Let the model select workspace_agent from the user's
-               intent. There is no client-side Agent switch or forced
-               first hop: ordinary questions stay native, while project
-               and file work can enter the Codex runtime automatically. */
-            tool_choice: 'auto',
-          }
-          : {}),
-      } as Parameters<typeof streamChatCompletion>[0],
-      // onChunk
-      (chunk: string) => {
-        turnEvents.generation();
-        watchdog.touch();
-        fullText += chunk;
-        iterContent += chunk;
-        completionTokens = estimateTokens(fullText);
-        reportTtfb('content');
-        emitter.content(chunk);
-      },
-      // onDone — capture finish_reason so the loop can dispatch, and the
-      // provider's `usage` object when it sent one. The tool loop can run
-      // several upstream calls per turn, so usage accumulates across
-      // iterations rather than being overwritten by the last one.
-      ({ finishReason, usage }: { finishReason: string | null; usage?: unknown }) => {
-        iterFinishReason = finishReason;
-        addProviderUsage(usage);
-      },
-      // onError
-      (err: Error) => {
-        upstreamErr = err;
-        emitter.fatal(err);
-      },
-      // onReasoning — emit reasoning_content as SSE delta so the
-      // client renders the thinking pill. Also accumulate so
-      // streaming_text captures it on disconnect.
-      (reasoning: string) => {
-        activity.thinking();
-        turnEvents.reasoning();
-        watchdog.touch();
-        fullReasoning += reasoning;
-        iterReasoning += reasoning;
-        reportTtfb('reasoning');
-        emitter.reasoning(reasoning);
-      },
-      // onToolUse — accumulate tool calls for this iteration. Flush
-      // happens after the stream ends so the client sees a complete
-      // tool_use event even if multiple tool_calls arrive split.
-      (tc: ToolCall) => {
-        toolCallsThisTurn.push(tc);
-      },
-      // P_tool_stream — forward partial tool_call deltas as
-      // `event: tool_call_delta` SSE frames. The chat route uses
-      // this to let the frontend render the in-progress JSON
-      // (typically the Python source for code_interpreter, or the
-      // query string for web_search) live, instead of waiting for
-      // finish_reason='tool_calls'. The frontend correlates the
-      // delta to the eventual tool_use frame via the tool_call id.
-      (delta: ToolCallDelta) => {
-        emitter.toolCallDelta(delta);
-        turnEvents.toolArguments(delta, fullText.length);
-      },
-    ));
-
-    /* Recorded after the call so a slow turn can be attributed without
-       correlating logs: whether the provider reported real token counts is
-       itself diagnostic, since a missing usage frame means the stream ended
-       early. */
-    annotateSpan({
-      'llm.finish_reason': iterFinishReason || 'none',
-      'llm.response_chars': fullText.length,
-      'llm.usage_reported': sawProviderUsage,
-      'llm.tool_calls': toolCallsThisTurn.length,
-    });
-
-    if (upstreamErr) {
-      // Error path already wrote [DONE] and ended the response.
-      if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
-        const settled = resolveUsage(accumulatedProviderUsage(), {
-          promptTokens,
-          completionTokens: estimateTokens(fullText),
-        });
-        recordUsage({
-          userId: req.userId,
-          model: provider.model,
-          sessionId: sessionIdFromQuery,
-          promptTokens: settled.promptTokens,
-          completionTokens: settled.completionTokens,
-          source: 'chat',
-          usageSource: settled.usageSource,
-        });
-      }
-      if (turnId) {
-        clearTurnTimer();
-        checkpointTurn();
-        // An explicit Stop already flipped the row to interrupted via the
-        // interrupt endpoint; don't overwrite it with failed.
-        if (abortController.signal.reason !== 'turn_interrupted') {
-          await setChatTurnStatus(turnId, 'failed', {
-            fullText: fullText || null,
-            fullReasoning: fullReasoning || null,
-            turnRuntime,
-            error: (upstreamErr as Error).message,
-          }).catch(() => {});
-        }
-      }
-      return;
-    }
-
-    const boundedToolCalls = normalizeToolCalls(toolCallsThisTurn, {
-      iteration: iter,
-      maxCalls: toolPolicy.maxCallsPerIteration,
-    }) as ToolCall[];
-
-    // No tool call → done — unless the answer was truncated by the output
-    // token limit. In that case the partial text is echoed back as an
-    // assistant turn plus a "continue" instruction, and the next hop keeps
-    // streaming into the same assistant bubble. Bounded by
-    // CHAT_LENGTH_CONTINUE_MAX (default 2).
-    if (boundedToolCalls.length === 0) {
-      if (
-        iterFinishReason === 'length'
-        && iterContent
-        && lengthContinues < MAX_LENGTH_CONTINUES
-        && !abortController.signal.aborted
-      ) {
-        lengthContinues += 1;
-        const continueAssistant: StreamMessage = { role: 'assistant', content: iterContent };
-        if (iterReasoning) {
-          continueAssistant.reasoning_content = iterReasoning;
-          // Official MiniMax/DeepSeek chat contracts replay reasoning_content,
-          // not an invented duplicate reasoning_details representation.
-        }
-        workingMessages = workingMessages.concat([
-          continueAssistant,
-          {
-            role: 'user',
-            content: '[System note: your previous reply was cut off at the output token limit. Continue exactly where you stopped — do not restart, repeat earlier text, or add a preamble.]',
-          },
-        ]);
-        continue;
-      }
-      break;
-    }
-    if (!toolsAllowed) {
-      emitter.event('error', {
-        error: 'tool_iteration_limit_reached',
-        message: 'Tool iteration limit reached; finishing without another execution.',
-      });
-      break;
-    }
-
-    /* ── Resolve names and repair arguments once per batch ──────────
-     * Models address tools by synonyms (`search`, `functions.web_search`)
-     * and mis-shape arguments in a few repeatable ways. Both are fixed
-     * here, before dispatch, so scheduling hints, the tool_use frame the
-     * client renders, and execution all agree on one canonical name and
-     * one canonical argument object. Anything that cannot be explained
-     * becomes a structured rejection carrying the tool's schema and a
-     * copy-ready example. */
-    /* Count the calls the per-iteration cap just dropped so the next
-       * contract appendix can tell the model they never ran. */
-    const droppedCalls = Math.max(0, toolCallsThisTurn.length - boundedToolCalls.length);
-    lastDroppedCalls = droppedCalls;
-    if (droppedCalls > 0) {
-      console.warn('[chat/stream] dropped tool calls over per-iteration cap', JSON.stringify({
-        dropped: droppedCalls, cap: toolPolicy.maxCallsPerIteration,
-      }));
-    }
-
-    const prepared: PreparedCall[] = boundedToolCalls.map((call) => {
-      const requestedName = call.function?.name || '';
-      /* Fuzzy matching is always attempted, then gated on the RESOLVED
-       * target: a near-miss name that lands on a side-effecting tool
-       * (code_interpreter, workspace_agent, initialize_workspace) must
-       * fail closed as unknown_tool, not execute on a guess. The old
-       * code gated on the requested name, which let `code_interprete`
-       * slide straight into the sandbox. */
-      const resolved = resolveToolName(requestedName, toolNames, { allowFuzzy: true });
-      if (resolved.name && resolved.match === 'fuzzy' && !FUZZY_SAFE(resolved.name)) {
-        resolved.name = null;
-        resolved.match = 'none';
-      }
-      const toolName = resolved.name || requestedName;
-      /* Executors and the protocol echo both read call.function.name;
-         rewrite it to the canonical name so an aliased or fuzzy call
-         (`search` → `web_search`) reaches the right executor instead of
-         being routed by the raw model-supplied string. */
-      if (resolved.name && call.function) call.function.name = resolved.name;
-      if (resolved.name && resolved.match !== 'exact') {
-        console.info('[tool-resolve]', JSON.stringify({
-          requested: requestedName, resolved: resolved.name, match: resolved.match,
-        }));
-      }
-      const registryEntry = resolved.name ? toolRegistry.get(resolved.name) : null;
-      const schema = resolved.name ? schemaForTool(resolved.name) : null;
-      /* The policy declares, per tool, whether unknown keys survive repair
-         and which validator owns the pre-execution check. Tools with a
-         tolerant normalizer keep every key they were sent; tools with a
-         tool-specific validator run it here instead of the generic schema
-         pass. */
-      const argumentPolicy = toolArgumentPolicy(resolved.name);
-      const repaired = repairToolArguments(
-        call.function?.arguments,
-        schema || undefined,
-        { dropUnknown: argumentPolicy.dropUnknown, toolName: resolved.name || undefined },
-      );
-      if (repaired.ok && repaired.repairs.length > 0) {
-        /* Log the repair kinds only — never the argument values. */
-        console.info('[tool-repair]', JSON.stringify({
-          name: toolName, repairs: repaired.repairs.slice(0, 12),
-        }));
-      }
-      const args = (repaired.ok ? repaired.value : {}) as Record<string, unknown>;
-      /* Persist the repaired arguments back onto the call so the
-         assistant-message echo below replays the same canonical JSON the
-         executor consumed rather than the raw (possibly malformed)
-         provider text. */
-      if (repaired.ok && call.function) call.function.arguments = JSON.stringify(args);
-
-      let rejection: PreparedCall['rejection'] = null;
-      if (!resolved.name) {
-        rejection = { code: 'unknown_tool', retryable: false };
-      } else if (!registryEntry || !registryEntry.enabled) {
-        rejection = { code: 'tool_not_available', retryable: false };
-      } else if (toolPolicy.disabledReason(resolved.name)) {
-        rejection = {
-          code: 'tool_not_available',
-          retryable: false,
-          hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
-        };
-      } else if (connectorCatalog.byTool.has(resolved.name) && !connectorActivation.has(resolved.name)) {
-        /* A guessed connector name is not enough: the model must read the
-           exact spec first, which also activates the tool for the next hop. */
-        rejection = {
-          code: 'tool_not_available',
-          retryable: true,
-          hint: `Connector tools are discovered first. Call search_connectors, then get_connector_spec for \`${resolved.name}\`, before calling it.`,
-        };
-      } else if (!repaired.ok) {
-        /* Distinct codes: an oversized payload needs a smaller call, a
-           parse failure needs the arguments re-emitted as one JSON
-           object. One shared code left the model guessing. */
-        rejection = {
-          code: repaired.error,
-          retryable: toolPolicy.remainingRetries(resolved.name) > 1,
-          ...(repaired.error === TOOL_ARGUMENT_ERRORS.tooLarge ? {
-            hint: `The arguments hit the ${Math.floor(MAX_TOOL_ARGUMENT_CHARS / 1024)} KB transport limit and were cut off, so they could not be parsed. Send a smaller payload — split the work across several calls.`,
-          } : looksTruncatedToolArguments(call.function?.arguments) ? {
-            hint: truncatedArgumentsHint(resolved.name),
-          } : {}),
-        };
-      } else {
-        /* Repair coerced the shape; now enforce the declared contract
-         * (required fields, bounds, enums) so a malformed call gets the
-         * correction package instead of a wasted execution. The policy
-         * decides whether the generic schema validator or a tool-specific
-         * validator owns this check; `none` means the executor validates. */
-        const validation: { ok: boolean; fieldErrors: string[]; errorCode?: string; userMessage?: string } =
-          argumentPolicy.validation === 'schema'
-            ? validateToolArguments(args, schema)
-            : argumentPolicy.validation === 'tool' && argumentPolicy.validate
-              ? argumentPolicy.validate(args)
-              : { ok: true, fieldErrors: [] };
-        if (!validation.ok) {
-          const retryable = toolPolicy.remainingRetries(resolved.name) > 1;
-          rejection = {
-            code: validation.errorCode || TOOL_ARGUMENT_ERRORS.schema,
-            retryable,
-            fieldErrors: validation.fieldErrors.join('; '),
-            /* The tool-specific card copy describes a correction attempt, so
-               only use it while another attempt is actually allowed. */
-            ...(retryable && validation.userMessage ? { userMessage: validation.userMessage } : {}),
-          };
-        } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
-          rejection = {
-            code: 'duplicate_tool_call',
-            retryable: true,
-            hint: 'This exact call already ran in this turn, so it was not executed again. Use the previous result, change the arguments materially, or continue in prose.',
-          };
-        }
-      }
-      if (resolved.name && !rejection) {
-        toolPolicy.registerCall(resolved.name, hashToolArguments(args));
-      }
-      return { call, toolName, registryEntry, args, rejection };
-    });
-
-    // Emit tool_use event for the client to render cards.
-    for (const entry of prepared) activity.tool(entry.call.id, entry.toolName);
-    emitter.event('tool_use', prepared.map((entry) => ({
-      id: entry.call.id,
-      name: entry.toolName,
-      input: entry.args,
-    })));
-
-    // Echo the assistant's tool_calls back as a role:'assistant'
-    // message — required by the OpenAI protocol so the next hop
-    // can reference the tool_call_id. The echo uses the CANONICAL
-    // tool names and REPAIRED argument JSON (the same view the
-    // executors consumed), run through sanitizeToolCallForProtocol
-    // so any remnant the repair pass could not fix still reaches the
-    // provider as syntactically valid JSON.
-    const protocolToolCalls = prepared.map((entry) => sanitizeToolCallForProtocol(entry.call));
-    const assistantToolMessage: StreamMessage = {
-      role: 'assistant',
-      /* Empty string is valid OpenAI content and is accepted by
-       * compatibility gateways that reject `content: null`. The
-       * hop's streamed prose is replayed here so the model keeps its
-       * own wording in context instead of an artificial blank. */
-      content: iterContent || '',
-      tool_calls: protocolToolCalls.map((t) => ({
-        id: t.id,
-        type: 'function',
-        function: t.function,
-      })),
-    };
-    if (iterReasoning) {
-      /* Reasoning providers require the thinking that produced the
-         tool_calls to survive the round-trip: DeepSeek reads
-         `reasoning_content`, MiniMax requires `reasoning_details`
-         entries. Providers that emit neither never see these fields. */
-      assistantToolMessage.reasoning_content = iterReasoning;
-      // Preserve one canonical reasoning representation on subsequent hops.
-    }
-    workingMessages = workingMessages.concat([assistantToolMessage]);
-
-    // Abort guard — if the client disconnected during this turn's
-    // LLM streaming, skip tool execution and terminate the loop.
-    if (abortController.signal.aborted) break;
-
-    // Run independent tool calls concurrently to cut turn latency when a
-    // model emits several in one turn (e.g. web_search + visualization).
-    // The registry marks code_interpreter sessionSerial because its
-    // scratch directory is mutable; dispatchToolCalls queues those calls
-    // while retaining the original result order for the provider hop.
-    // SSE frames from independent tools may interleave, but the client
-    // correlates every frame by tool_call id.
-    const toolMessages = await dispatchToolCalls(
-      prepared,
-      /* Scheduling hints must follow the resolved name, otherwise an
-         aliased code_interpreter call would lose its serial slot. */
-      (entry) => entry.toolName,
-      toolRegistry,
-      (entry) => runToolCall(entry, activeToolNames),
-    );
-    workingMessages = workingMessages.concat(toolMessages);
-    activity.synthesizing();
-    for (let i = 0; i < prepared.length; i++) {
-      const prepCall = prepared[i];
-      const toolMsg = toolMessages.find((message) => (
-        'tool_call_id' in message && message.tool_call_id === prepCall.call.id
-      ));
-      const execution = executionResults.get(prepCall.call.id);
-      executedToolCalls.push({
-        id: prepCall.call.id,
-        name: prepCall.toolName,
-        input: prepCall.args,
-        output: toolMsg?.content || null,
-        status: execution?.status,
-        errorCode: execution?.errorCode,
-        isError: execution ? execution.status !== 'completed' && execution.status !== 'awaiting_approval' : !prepCall.registryEntry || prepCall.rejection != null,
-      });
-    }
-
-    /* An exhausted call or time budget ends the tool phase deliberately:
-       the next hop runs without tools so the turn still produces a
-       written answer instead of stopping mid-flight. */
-    const exhausted = toolPolicy.budgetExhausted();
-    if (exhausted) {
-      emitter.event('error', {
-        error: exhausted.code,
-        message: exhausted.message,
-      });
-    }
-  }
-
-  /* Abort guard — with no turn bound, a client disconnect during tool
-   * execution skips finalisation (writing [DONE] to a closed socket would
-   * throw, and the recordUsage below would charge for an incomplete
-   * response). With a turn bound the socket close only detached the feed
-   * (see the req.on('close') handler): the run continues detached unless
-   * the abort came from an explicit Stop (turn_interrupted). */
-  if (abortController.signal.aborted && !turnId) {
-    turnRuntime = settleTurnRuntime(turnRuntime, 'stopped');
-    /* Still record partial usage so the operator can see incomplete
-     * responses in the heatmap and diagnose client-drop patterns. */
-    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
-      const settled = resolveUsage(accumulatedProviderUsage(), {
-        promptTokens,
-        completionTokens: estimateTokens(fullText),
-      });
-      recordUsage({
-        userId: req.userId,
-        model: provider.model,
-        sessionId: sessionIdFromQuery,
-        promptTokens: settled.promptTokens,
-        completionTokens: settled.completionTokens,
-        source: 'chat',
-        usageSource: settled.usageSource,
-      });
-    }
-    return;
-  }
-  if (abortController.signal.aborted && turnId) {
-    turnEvents.done('stopped', Date.now() - activityStartedAt);
-    // Explicit Stop on a bound turn: persist the partial answer so a
-    // re-attach sees what had streamed, then stop. The row itself was
-    // already flipped to interrupted by the interrupt endpoint.
-    clearTurnTimer();
-    checkpointTurn();
-    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
-      const settled = resolveUsage(accumulatedProviderUsage(), {
-        promptTokens,
-        completionTokens: estimateTokens(fullText),
-      });
-      recordUsage({
-        userId: req.userId,
-        model: provider.model,
-        sessionId: sessionIdFromQuery,
-        promptTokens: settled.promptTokens,
-        completionTokens: settled.completionTokens,
-        source: 'chat',
-        usageSource: settled.usageSource,
-      });
-      if (sessionIdFromQuery && fullText.length > 0) {
-        const db = getDb();
-        const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
-          ? req.body.clientTurn.assistantClientId
-          : `ast-${turnId}`;
-        const safeContent = sanitizeStoredHtml(fullText);
-        const safeRaw = sanitizePlainText(fullText);
-        const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
-        db.insert(messages).values({
-          sessionId: sessionIdFromQuery,
-          role: 'assistant',
-          content: safeContent,
-          html: safeContent,
-          rawText: safeRaw,
-          reasoningContent: fullReasoning || null,
-          toolCalls: executedToolCalls,
-          turnRuntime: storedTurnRuntime,
-          model: provider.model,
-          clientId: assistantClientId,
-          type: 'assistant',
-        }).onConflictDoUpdate({
-          target: [messages.sessionId, messages.clientId],
-          set: {
-            content: safeContent,
-            html: safeContent,
-            rawText: safeRaw,
-            reasoningContent: fullReasoning || null,
-            toolCalls: executedToolCalls,
-            turnRuntime: storedTurnRuntime,
-          },
-        }).catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
-
-        db.update(sessions)
-          .set({
-            preview: safeRaw.slice(0, 200),
-            updatedAt: new Date(),
-            streamingText: null,
-            streamingReasoning: null,
-          })
-          .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
-          .catch(() => {});
-      }
-    }
-    return;
-  }
-
-  /* Retrospectives use observed execution facts. Never keep generation
-     active after the answer merely to await a decorative provider call. */
-  const turnSummary = completedActivitySummary({
-    question: userPrompt,
-    toolCalls: executedToolCalls,
-    hasReasoning: Boolean(fullReasoning.trim()),
-  });
-  const emptyTurn = !fullText && !fullReasoning && executedToolCalls.length === 0;
-  turnEvents.done(abortController.signal.aborted ? 'stopped' : emptyTurn ? 'failed' : 'done', Date.now() - activityStartedAt);
-  activity.done(Date.now() - activityStartedAt);
-  if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
-
-  /* Done — record usage, clear streaming text, and close the stream.
-   * Both chat_turns and sessions.messages are now persisted server-side
-   * so client disconnection mid-stream never drops dialogue history. */
-  emitter.finish();
-  if (req.userId) {
-    /* Prefer what the provider says it billed. resolveUsage falls back to
-       the chars/4 estimate when the upstream reported nothing (gateway
-       ignored stream_options, or the stream ended before the usage frame)
-       and tags the row so an aggregate can separate measured from guessed. */
-    const settled = resolveUsage(accumulatedProviderUsage(), { promptTokens, completionTokens });
-    recordUsage({
-      userId: req.userId,
-      model: provider.model,
-      sessionId: sessionIdFromQuery,
-      promptTokens: settled.promptTokens,
-      completionTokens: settled.completionTokens,
-      source: 'chat',
-      usageSource: settled.usageSource,
-    });
-  }
-  // P_streaming-survival — mark stream as completed BEFORE clearing
-  // streaming_text, so the close handler doesn't overwrite with stale data.
-  streamCompleted = true;
-  if (turnId) {
-    clearTurnTimer();
-    checkpointTurn();
-    const isBlank = !fullText && !fullReasoning && executedToolCalls.length === 0;
-    await setChatTurnStatus(turnId, isBlank && !abortController.signal.aborted ? 'failed' : 'completed', {
-      fullText: fullText || null,
-      fullReasoning: fullReasoning || null,
-      toolCalls: executedToolCalls,
-      turnRuntime,
-      ...(isBlank && !abortController.signal.aborted ? { error: 'Upstream returned no content' } : {}),
-    }).catch(() => {});
-  }
-  // P_streaming-survival & backend persistence — save completed assistant message to messages table
-  if (sessionIdFromQuery && req.userId && (fullText || executedToolCalls.length > 0)) {
-    const db = getDb();
-    const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
-      ? req.body.clientTurn.assistantClientId
-      : (turnId ? `ast-${turnId}` : `ast-${Date.now()}`);
-
-    const safeContent = sanitizeStoredHtml(fullText);
-    const safeRaw = sanitizePlainText(fullText);
-    const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
-
-    try {
-      const [inserted] = await db.insert(messages).values({
-        sessionId: sessionIdFromQuery,
-        role: 'assistant',
-        content: safeContent,
-        html: safeContent,
-        rawText: safeRaw,
-        reasoningContent: fullReasoning || null,
-        /* P_turn-summary — persisted so a session reload still shows the
-           model's retrospective instead of recomputing a first-sentence
-           slice. Null when generation failed; the client falls back. */
-        summary: turnSummary,
-        toolCalls: executedToolCalls,
-        turnRuntime: storedTurnRuntime,
-        model: provider.model,
-        clientId: assistantClientId,
-        type: 'assistant',
-      }).onConflictDoUpdate({
-        target: [messages.sessionId, messages.clientId],
-        set: {
-          content: safeContent,
-          html: safeContent,
-          rawText: safeRaw,
-          reasoningContent: fullReasoning || null,
-          summary: turnSummary,
-          toolCalls: executedToolCalls,
-          turnRuntime: storedTurnRuntime,
-          model: provider.model,
-        },
-      }).returning({ id: messages.id });
-
-      if (inserted?.id && safeRaw) {
-        try {
-          await indexMessageChunks(inserted.id, sessionIdFromQuery, safeRaw);
-        } catch (idxErr) {
-          console.warn('[chat/stream] chunk index failed:', (idxErr as Error).message);
-        }
-      }
-
-      await db.update(sessions)
-        .set({
-          preview: safeRaw.slice(0, 200),
-          updatedAt: new Date(),
-          streamingText: null,
-          streamingReasoning: null,
-        })
-        .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)));
-    } catch (err) {
-      console.error('[chat/stream] Failed to persist completed assistant message:', err);
-    }
-  } else if (sessionIdFromQuery) {
-    const db = getDb();
-    db.update(sessions)
-      .set({ streamingText: null, streamingReasoning: null })
-      .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
-      .catch(() => {});
-  }
 }
