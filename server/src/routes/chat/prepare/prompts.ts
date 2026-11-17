@@ -12,7 +12,7 @@ import { getDb } from '../../../db/index.js';
 import { artifacts, sessions } from '../../../db/schema/index.js';
 import { and, eq } from 'drizzle-orm';
 import { NotFound } from '../../../lib/errors.js';
-import type { ChatMessage } from '../../../lib/chatMessageSchema.js';
+import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
 
 export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
@@ -27,13 +27,13 @@ export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
    call shape for other callers and tests. */
 export interface PolicyBlock { marker: string; prompt: string | null }
 
-export function applyPolicyBlock(messages: ChatMessage[], block: PolicyBlock | null): ChatMessage[] {
+export function applyPolicyBlock(messages: ProviderMessage[], block: PolicyBlock | null): ProviderMessage[] {
   return block ? appendServerPolicy(messages, block.marker, block.prompt) : messages;
 }
 
 export async function appendAssistantInstructions(
-  messages: ChatMessage[], assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
-): Promise<ChatMessage[]> {
+  messages: ProviderMessage[], assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+): Promise<ProviderMessage[]> {
   return applyPolicyBlock(messages, await resolveAssistantInstructions(assistantId, sessionId, userId));
 }
 
@@ -60,7 +60,7 @@ export async function resolveAssistantInstructions(
 /* Server-owned mode prompts are appended to the canonical first system
    message. Keeping one authoritative system message prevents client-supplied
    system blocks from interleaving with or outranking server tool policy. */
-export async function prependTeacherModePrompt(messages: ChatMessage[]): Promise<ChatMessage[]> {
+export async function prependTeacherModePrompt(messages: ProviderMessage[]): Promise<ProviderMessage[]> {
   const prompt = await getTeacherModePrompt();
   return appendServerPolicy(messages, TEACHER_MODE_MARKER, prompt);
 }

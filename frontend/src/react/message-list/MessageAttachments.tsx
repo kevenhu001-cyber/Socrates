@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { FileCard, getFileExtension, formatFileSize } from '../attachments/FileCard';
 import { t } from '../legacy/gateway.ts';
 import { canPreviewDocument, openDocumentPreview } from '../../ui/docPreview.ts';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
-type MessageAttachment = NonNullable<LegacyChatMessage['attachments']>[number];
+type MessageAttachment = NonNullable<ChatMessage['attachments']>[number];
 
 const PHOTO_ERROR_ICON = (
   <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

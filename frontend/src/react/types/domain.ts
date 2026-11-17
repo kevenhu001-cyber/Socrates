@@ -1,81 +1,49 @@
 /**
- * Shared contracts for the React migration boundary.
+ * Client-side chat contracts.
  *
- * These types intentionally mirror the existing wire and persistence shapes;
- * they do not change the legacy application's runtime representation.
+ * Persisted fields come from `@socrates/contracts`; this module only adds the
+ * ephemeral fields the web transcript and streaming runtime keep in memory.
  */
+import type {
+  Attachment as ContractAttachment,
+  Message as ContractMessage,
+  ToolCall as ContractToolCall,
+  TurnRuntime,
+} from '@socrates/contracts';
 
 export type ChatRole = 'user' | 'assistant' | 'system';
 
-export interface ChatAttachment {
+export interface ChatAttachment extends Omit<ContractAttachment, 'id' | 'kind' | 'name' | 'mime' | 'size'> {
   id?: string;
-  name: string;
-  mimeType?: string;
+  kind?: string;
+  name?: string;
+  mime?: string;
   size?: number;
-  url?: string;
+  /** Upload pipeline state, never persisted. */
+  pending?: boolean;
+  progress?: number;
+  thumbnailUrl?: string;
+  error?: string;
 }
 
-export interface ToolCall {
-  id: string;
-  name: string;
+export interface ToolCall extends Omit<ContractToolCall, 'input' | 'results' | 'visualizations' | 'detail' | 'artifacts' | 'durationMs' | 'argumentsText' | 'stderr' | 'errorText' | 'userMessage'> {
   input?: unknown;
-  output?: string | null;
-  phase?: 'queued' | 'preparing' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'timed_out';
   durationMs?: number;
-  error?: string | null;
-  isError?: boolean;
-  results?: ReadonlyArray<Record<string, unknown>>;
-  artifacts?: ReadonlyArray<{
-    id: string;
-    name?: string;
-    mimeType?: string;
-  }>;
-  /**
-   * Fields the chat runtime and the persistence layer already write but that
-   * the typed boundary had not exposed. The declarative tool renderer
-   * (react/tool-run) reads all of them, so they are part of the contract:
-   *
-   *  - `textOffset` — index into the assistant `rawText` where this call
-   *    fired. `segBase` in the streaming controller guarantees these are
-   *    strictly increasing per turn; persisted via sessions.ts.
-   *  - `_run` — live, client-only run record from chat/toolRunState.ts.
-   *  - `errorCode` / `retryable` / `userMessage` / `detail` / `stderr` —
-   *    structured failure surface from the backend.
-   *  - `status` — 'awaiting_approval' | 'timeout' | 'completed' | 'failed'.
-   *  - `argumentsText` — cumulative streamed `arguments` while in flight.
-   *  - `visualization(s)` — persisted chart spec(s) for attached viz cards.
-   */
-  textOffset?: number;
-  _run?: { phase?: string; durationMs?: number; startedAt?: number; endedAt?: number };
-  errorCode?: string | null;
-  retryable?: boolean;
-  userMessage?: string;
-  detail?: unknown;
-  stderr?: string;
-  status?: string;
   argumentsText?: string;
+  stderr?: string;
+  errorText?: string | null;
+  userMessage?: string;
+  results?: ReadonlyArray<Record<string, unknown>>;
+  artifacts?: ReadonlyArray<{ id: string; name?: string; mimeType?: string }>;
+  detail?: unknown;
+  visualizations?: unknown[];
+  phase?: 'queued' | 'preparing' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'timed_out';
+  error?: string | null;
+  status?: string;
+  /** Live, client-only run record from chat/toolRunState.ts. */
+  _run?: { phase?: string; durationMs?: number; startedAt?: number; endedAt?: number };
   /** Last `tool_progress` phase (`stdout` / `stderr` / `queued` / …). */
   _progressPhase?: string;
-  visualizations?: unknown[];
-}
-
-export interface ChatMessage {
-  clientId: string;
-  role: ChatRole;
-  rawText: string;
-  html?: string;
-  type?: string;
-  actions?: string[];
-  attachments?: ChatAttachment[];
-  toolCalls?: ToolCall[];
-}
-
-export interface ChatSession {
-  id: string;
-  title: string | null;
-  projectId: string | null;
-  archivedAt?: number | null;
-  messages: ChatMessage[];
 }
 
 export interface TextDeltaFrame {
@@ -117,12 +85,10 @@ export interface ChatMessageSummary {
 }
 
 /**
- * Mirror of the chat message entry shape at the React migration boundary.
- * The session domain now publishes recursively frozen rows, while a few
- * compatibility callers still operate on legacy-shaped data before dispatch.
- * React-side renderers narrow per-role before reading fields.
+ * One transcript row: the persisted `@socrates/contracts` Message plus the
+ * ephemeral fields owned by the web streaming runtime.
  */
-export interface LegacyChatMessage {
+export interface ChatMessage extends Omit<ContractMessage, 'role' | 'attachments' | 'toolCalls' | 'turnRuntime'> {
   clientId?: string;
   id?: string;
   role?: 'user' | 'assistant' | 'system' | string;
@@ -134,24 +100,7 @@ export interface LegacyChatMessage {
     primary?: boolean;
     action?: string;
   }> | null;
-  attachments?: ReadonlyArray<{
-    id?: string;
-    kind?: string;
-    docKind?: string;
-    name?: string;
-    mime?: string;
-    /** Durable files-table id — resolves against /api/v2/files/:id/raw
-        and feeds the model's read_attachment pointer. */
-    fileId?: string;
-    dataUrl?: string;
-    text?: string;
-    truncated?: boolean;
-    error?: string;
-    pending?: boolean;
-    progress?: number;
-    thumbnailUrl?: string;
-    size?: number;
-  }>;
+  attachments?: ReadonlyArray<ChatAttachment>;
   /** Ephemeral preview cards for links fetched from the just-sent user turn. */
   pageLinkPreviews?: ReadonlyArray<import('../../ui/linkPreviews.ts').LinkPreviewItem>;
   /** The user mentioned a site but did not include a fetchable URL. */
@@ -210,7 +159,7 @@ export interface LegacyChatMessage {
   _taskSummary?: string | null;
   /** Server-owned public progress; private reasoning is never used as copy. */
   _activity?: import("@socrates/contracts").PublicTurnActivity;
-  turnRuntime?: import("@socrates/contracts").TurnRuntime | null;
+  turnRuntime?: TurnRuntime | null;
   /** In-place message branching variants and active index (< 1 / 2 >). */
   branchInfo?: {
     currentIndex: number;
@@ -225,7 +174,7 @@ export interface LegacyChatMessage {
       toolCalls?: ReadonlyArray<unknown>;
       turnRuntime?: unknown;
       reasoningContent?: string | null;
-      followingMessages?: ReadonlyArray<LegacyChatMessage>;
+      followingMessages?: ReadonlyArray<ChatMessage>;
     }>;
   } | null;
 }
@@ -268,7 +217,7 @@ export interface ChatRuntimeSnapshot {
   currentSessionId: string | null;
   phase: string;
   messageCount: number;
-  messages: ReadonlyArray<LegacyChatMessage>;
+  messages: ReadonlyArray<ChatMessage>;
   lastMessage: ChatMessageSummary | null;
   isStreaming: boolean;
   stream: ChatStreamSnapshot;

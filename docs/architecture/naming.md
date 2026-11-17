@@ -21,9 +21,10 @@ Use `feature/index.ts` for the public entry instead of `feature.ts` +
 
 ## Canonical names
 
-- One message shape: `Message` (contracts) with boundary adapters. Avoid new
-  `LegacyChatMessage` / `StoredMessage` / `TurnMessage` aliases unless they
-  are local to one module and documented.
+- One message shape: `Message` in `packages/contracts` is the persisted
+  canonical row. `ChatMessage` extends it with web-only ephemeral fields;
+  `ProviderMessage` is the different LLM wire shape. Do not add another
+  `LegacyChatMessage` / `StoredMessage` / `TurnMessage` alias.
 - One turn: `Turn` is the durable unit; `TurnEvent` is its streamed record;
   `ChatStreamFrame` is the live SSE frame. Do not call all three "event".
 - One UI layer name: `react/` is React DOM, `packages/ui/` is RN-Web shared

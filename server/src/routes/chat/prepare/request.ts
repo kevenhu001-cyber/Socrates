@@ -19,7 +19,7 @@ import { getBeagleSystemPrompt, getTeacherModePrompt } from '../../../lib/prompt
 import { appendFinalOutputConstraints, injectUserContext, insertProviderIdentity, insertResponseTypography, refreshServerPrompt } from '../../../lib/chatPolicy.js';
 import { appendTurnContext, splitPromptContext } from '../../../lib/chatPromptContext.js';
 import { resolveSessionPromptOrAssemble } from '../../../services/core/sessionPromptSnapshot.js';
-import type { ChatMessage } from '../../../lib/chatMessageSchema.js';
+import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, resolveAssistantInstructions, TEACHER_MODE_MARKER } from './prompts.js';
 import { buildLearningModeTurn, estimateToolSchemaTokens, resolveMemoryContext, resolveRagContext } from './context.js';
 import { classifyClientSystemMessages, enforceServerSystemBoundary, hasClientSystemPrefix, renderClientBlocks } from './clientSystem.js';
@@ -39,7 +39,7 @@ export async function prepareChatRequest(
   {
     ok: true;
     payload: {
-      messages: ChatMessage[];
+      messages: ProviderMessage[];
       provider: Provider;
       safeExtraBody: Record<string, unknown> | undefined;
       mode: 'tutor' | 'chat';
@@ -112,7 +112,7 @@ export async function prepareChatRequest(
     ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
     : undefined;
   const systemPrompt = refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort });
-  let finalMessages: ChatMessage[] = [{ role: 'system', content: insertResponseTypography(systemPrompt) }, ...conversation];
+  let finalMessages: ProviderMessage[] = [{ role: 'system', content: insertResponseTypography(systemPrompt) }, ...conversation];
 
   // Windowing can replace old conversation with a rolling summary, never
   // regenerate or compress away the frozen system prefix. Include its real
@@ -163,7 +163,7 @@ export async function prepareChatRequest(
       if (compressed.didCompress && compressed.messages.length) {
         // The persistence compressor emits summary.rawText; adapt it to the
         // provider wire format and keep it untrusted, not a new system rule.
-        const wireMessages = compressed.messages.map((m) => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ChatMessage[];
+        const wireMessages = compressed.messages.map((m) => ({ ...m, content: m.content ?? m.rawText ?? '' })) as ProviderMessage[];
         conversation = splitPromptContext(wireMessages, mode).conversation;
         finalMessages = [finalMessages[0], ...conversation];
         console.info('[chat] context window compression', JSON.stringify({

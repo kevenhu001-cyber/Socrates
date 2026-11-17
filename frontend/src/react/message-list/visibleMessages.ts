@@ -1,8 +1,8 @@
 import { getChatRuntimeSnapshot } from '../../ui/chatRuntimeStore.ts';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity.ts';
 
-function isRenderable(entry: LegacyChatMessage): boolean {
+function isRenderable(entry: ChatMessage): boolean {
   if (entry.type === 'streaming') return true;
   if (typeof entry.html === 'string' && entry.html.length > 0) return true;
   if (typeof entry.rawText === 'string' && entry.rawText.length > 0) return true;
@@ -12,17 +12,17 @@ function isRenderable(entry: LegacyChatMessage): boolean {
 }
 
 export interface VisibleMessagesCache {
-  source: ReadonlyArray<LegacyChatMessage>;
-  visible: ReadonlyArray<LegacyChatMessage>;
+  source: ReadonlyArray<ChatMessage>;
+  visible: ReadonlyArray<ChatMessage>;
   /** ids[i] = entryId of source[i] when renderable, else null. */
   ids: ReadonlyArray<string | null>;
   /** counts[i] = number of visible entries among source[0..i]. */
   counts: ReadonlyArray<number>;
 }
 
-function computeFull(messages: ReadonlyArray<LegacyChatMessage>): VisibleMessagesCache {
+function computeFull(messages: ReadonlyArray<ChatMessage>): VisibleMessagesCache {
   const seen = new Set<string>();
-  const next: LegacyChatMessage[] = [];
+  const next: ChatMessage[] = [];
   const ids: (string | null)[] = new Array(messages.length);
   const counts: number[] = new Array(messages.length);
   messages.forEach((entry, index) => {
@@ -53,7 +53,7 @@ function computeFull(messages: ReadonlyArray<LegacyChatMessage>): VisibleMessage
  * the previous visible list without rework.
  */
 export function visibleFromMessages(
-  messages: ReadonlyArray<LegacyChatMessage>,
+  messages: ReadonlyArray<ChatMessage>,
   prev: VisibleMessagesCache | null,
 ): VisibleMessagesCache {
   if (!prev) return computeFull(messages);
@@ -69,7 +69,7 @@ export function visibleFromMessages(
 
   const ids: (string | null)[] = new Array(messages.length);
   const counts: number[] = new Array(messages.length);
-  const next: LegacyChatMessage[] = [];
+  const next: ChatMessage[] = [];
   const seen = new Set<string>();
   if (prefix > 0) {
     for (let i = 0; i < prefix; i++) {
@@ -98,7 +98,7 @@ export function visibleFromMessages(
 
 let cache: VisibleMessagesCache | null = null;
 
-export function getVisibleMessagesSnapshot(): ReadonlyArray<LegacyChatMessage> {
+export function getVisibleMessagesSnapshot(): ReadonlyArray<ChatMessage> {
   const messages = getChatRuntimeSnapshot().messages;
   if (cache?.source === messages) return cache.visible;
   cache = visibleFromMessages(messages, cache);

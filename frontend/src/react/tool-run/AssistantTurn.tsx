@@ -21,10 +21,10 @@ import { TurnSegmentContent } from './TurnSegmentContent';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
 export interface AssistantTurnProps {
-  message: LegacyChatMessage;
+  message: ChatMessage;
   /** Stored HTML is only a compatibility source for old snapshots that do not
    * carry rawText. It is rendered inside the same turn surface, never as a
    * second message-body renderer. */
@@ -74,7 +74,7 @@ function segmentKey(segment: TurnSegment): string {
   return 'think-' + segment.start;
 }
 
-function callsForMessage(message: LegacyChatMessage): ToolCallRecord[] {
+function callsForMessage(message: ChatMessage): ToolCallRecord[] {
   const storedCalls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
   const surfaces = message.turnRuntime?.uiSurfaces || [];
   const calls = storedCalls.map((call) => {
@@ -140,7 +140,7 @@ function TurnSegmentsView({
   prose,
 }: {
   segments: TurnSegment[];
-  message: LegacyChatMessage;
+  message: ChatMessage;
   growingIndex: number;
   messageId: string;
   calls: ToolCallRecord[];

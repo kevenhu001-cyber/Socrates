@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 
 import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { claimReactMessageList, isMsgListMounted, isSharedMessageList, registerSharedMessageListRestorer, takeOverSharedMessageList } from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
@@ -109,7 +109,7 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     return <div data-react-message-list-empty="1" data-react-owned="1" />;
   }
 
-  const latestByRole = new Map<string, LegacyChatMessage>();
+  const latestByRole = new Map<string, ChatMessage>();
   for (const entry of visibleMessages) latestByRole.set(entry.role || 'assistant', entry);
 
   return (
@@ -170,4 +170,4 @@ function releaseMessageList(): void {
 }
 
 export { MessageList };
-export type { LegacyChatMessage };
+export type { ChatMessage };

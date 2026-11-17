@@ -10,7 +10,7 @@ import { buildLinkPreviewItems } from '../../ui/linkPreviews.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { stateStore } from '../../state/store.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import type { LegacyChatMessage } from '../../react/types/domain';
+import type { ChatMessage } from '../../react/types/domain';
 
 export interface TurnPageContext {
   urls: string[];
@@ -21,7 +21,7 @@ export interface TurnPageContext {
 
 function updateLatestUserMessage(userMessage: string, patch: Record<string, unknown>): void {
   try {
-    const messages = stateStore.read('messages') as LegacyChatMessage[];
+    const messages = stateStore.read('messages') as ChatMessage[];
     let index = -1;
     for (let cursor = messages.length - 1; cursor >= 0; cursor -= 1) {
       const message = messages[cursor];

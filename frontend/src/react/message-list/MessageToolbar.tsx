@@ -4,7 +4,7 @@ import { getIconDescriptor, type IconName } from '../../ui/iconRegistry';
 import { animateSpring, readScale } from '../../ui/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow, type OverflowAction } from './MessageOverflow';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { useMessageToolbarCallbacks } from './useMessageActions';
 import { i18n } from '../legacy/gateway';
@@ -78,7 +78,7 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
 }
 
 interface MessageToolbarProps {
-  message: LegacyChatMessage;
+  message: ChatMessage;
   role: 'user' | 'assistant';
   onEdit?: () => void;
   pending?: boolean;

@@ -1,16 +1,16 @@
 import { stripIntelligenceUiBlocks } from '@socrates/core';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { stripHtmlTags } from '../../util/stripHtml.ts';
 
-function messageIdOf(message: LegacyChatMessage): string | null {
+function messageIdOf(message: ChatMessage): string | null {
   if (message.id) return message.id;
   if (message.clientId) return message.clientId;
   return null;
 }
 
-function plainTextOf(message: LegacyChatMessage): string {
+function plainTextOf(message: ChatMessage): string {
   let text = '';
   if (typeof message.rawText === 'string' && message.rawText.length > 0) {
     text = stripIntelligenceUiBlocks(message.rawText);
@@ -46,7 +46,7 @@ function fallbackCopy(text: string): void {
   );
 }
 
-function doCopy(message: LegacyChatMessage): void {
+function doCopy(message: ChatMessage): void {
   const text = plainTextOf(message);
   if (!text) {
     getLegacyActions().messages.showToast?.(i18n('clipboard.nothing', 'Nothing to copy'));
@@ -62,7 +62,7 @@ function doCopy(message: LegacyChatMessage): void {
   }
 }
 
-function doReadAloud(message: LegacyChatMessage, ev: React.MouseEvent<HTMLButtonElement>): void {
+function doReadAloud(message: ChatMessage, ev: React.MouseEvent<HTMLButtonElement>): void {
   const text = plainTextOf(message);
   const legacy = getLegacyActions();
   if (typeof legacy.messages.toggleReadAloud !== 'function') return;
@@ -88,7 +88,7 @@ function userMessageCallbacks(
 }
 
 function assistantMessageCallbacks(
-  message: LegacyChatMessage,
+  message: ChatMessage,
   role: string,
   id: string | null,
   legacy: ReturnType<typeof getLegacyActions> | null,
@@ -116,7 +116,7 @@ function assistantMessageCallbacks(
  * Keeping the indirection in one place means the toolbar component stays
  * declarative (no `if (window.X)` noise in JSX).
  */
-export function useMessageToolbarCallbacks(message: LegacyChatMessage): MessageToolbarCallbacks {
+export function useMessageToolbarCallbacks(message: ChatMessage): MessageToolbarCallbacks {
   const id = messageIdOf(message);
   const role = typeof message.role === 'string' ? message.role : '';
   const legacy = id ? getLegacyActions() : null;

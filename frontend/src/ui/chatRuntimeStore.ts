@@ -34,7 +34,7 @@ import type {
   ChatRuntimeEvent,
   ChatRuntimeSnapshot,
   ChatStreamSnapshot,
-  LegacyChatMessage,
+  ChatMessage,
 } from '../react/types/domain';
 
 type Listener = () => void;
@@ -50,7 +50,7 @@ let snapshot: ChatRuntimeSnapshot = Object.freeze({
   currentSessionId: null,
   phase: 'topic',
   messageCount: 0,
-  messages: Object.freeze([] as ReadonlyArray<LegacyChatMessage>),
+  messages: Object.freeze([] as ReadonlyArray<ChatMessage>),
   lastMessage: null,
   isStreaming: false,
   stream: IDLE_STREAM,
@@ -115,7 +115,7 @@ function asString(value: unknown): string | null {
 function readChatState(): {
   currentSessionId: string | null;
   phase: string;
-  messages: LegacyChatMessage[];
+  messages: ChatMessage[];
 } {
   const messagesCandidate = stateStore.read('messages');
 
@@ -123,13 +123,13 @@ function readChatState(): {
     currentSessionId: asString(stateStore.read('currentSessionId')),
     phase: asString(stateStore.read('phase')) ?? 'topic',
     messages: Array.isArray(messagesCandidate)
-      ? (messagesCandidate as LegacyChatMessage[])
+      ? (messagesCandidate as ChatMessage[])
       : [],
   };
 }
 
-function streamFromMessages(messages: LegacyChatMessage[]): ChatStreamSnapshot {
-  let activeMessage: LegacyChatMessage | undefined;
+function streamFromMessages(messages: ChatMessage[]): ChatStreamSnapshot {
+  let activeMessage: ChatMessage | undefined;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     if (messages[index].type === 'streaming') {
       activeMessage = messages[index];
@@ -150,7 +150,7 @@ function streamFromMessages(messages: LegacyChatMessage[]): ChatStreamSnapshot {
 
 function streamFromEvent(
   event: ChatRuntimeEvent,
-  messages: LegacyChatMessage[],
+  messages: ChatMessage[],
 ): ChatStreamSnapshot {
   /* A superseded turn can finish after the replacement has started. Its
      terminal event still matters to the message row, but must not release
@@ -464,7 +464,7 @@ export const chatRuntimeStore = {
       currentSessionId: null,
       phase: 'topic',
       messageCount: 0,
-      messages: Object.freeze([] as ReadonlyArray<LegacyChatMessage>),
+      messages: Object.freeze([] as ReadonlyArray<ChatMessage>),
       lastMessage: null,
       isStreaming: false,
       stream: IDLE_STREAM,

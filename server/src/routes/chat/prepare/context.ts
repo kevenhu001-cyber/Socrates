@@ -10,7 +10,7 @@ import { getDb } from '../../../db/index.js';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import { withTimeBudget } from '../../../lib/timeBudget.js';
 import { estimateTokens } from '../../../services/core/usageTracker.js';
-import type { ChatMessage } from '../../../lib/chatMessageSchema.js';
+import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, type PolicyBlock } from './prompts.js';
 
 /* P_rag-context — session-scoped RAG injection.
@@ -38,15 +38,15 @@ const RAG_MAX_CHARS_PER_HIT = 1200;
 const RAG_MAX_TOTAL_CHARS = 8000;
 
 export async function appendRagContext(
-  messages: ChatMessage[],
+  messages: ProviderMessage[],
   ragSessionId: string | undefined,
   userId: string | undefined,
-): Promise<ChatMessage[]> {
+): Promise<ProviderMessage[]> {
   return applyPolicyBlock(messages, await resolveRagContext(messages, ragSessionId, userId));
 }
 
 export async function resolveRagContext(
-  messages: ChatMessage[],
+  messages: ProviderMessage[],
   ragSessionId: string | undefined,
   userId: string | undefined,
   signal?: AbortSignal,
@@ -121,11 +121,11 @@ const MEMORY_MAX_CHARS_PER_ENTRY = 500;
 const MEMORY_MAX_TOTAL_CHARS = 6000;
 
 export async function appendMemoryContext(
-  messages: ChatMessage[],
+  messages: ProviderMessage[],
   userId: string | undefined,
   projectId: string | undefined,
   db?: ReturnType<typeof getDb>,
-): Promise<ChatMessage[]> {
+): Promise<ProviderMessage[]> {
   return applyPolicyBlock(messages, await resolveMemoryContext(userId, projectId, db));
 }
 

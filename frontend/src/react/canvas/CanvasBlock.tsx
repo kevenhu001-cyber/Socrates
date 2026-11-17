@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEventHandler } from 'react';
 
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { setComposerMarkdown } from '../../composer/controller.ts';
 import { persistCanvasEdit } from './canvasState.ts';
 import { sanitizeHtml } from '../../render/sanitizeHtml.ts';
@@ -9,7 +9,7 @@ import { useTranslation } from './useTranslation';
 import { CanvasToolbar, type CanvasMode } from './CanvasToolbar';
 
 interface CanvasBlockProps {
-  message: LegacyChatMessage;
+  message: ChatMessage;
   html: string;
   canvasId: string;
   originalText: string;

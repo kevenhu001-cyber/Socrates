@@ -1,4 +1,4 @@
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity.ts';
 
 export const INITIAL_ROWS = 12;
@@ -14,7 +14,7 @@ export interface MountWindowState {
 }
 
 export interface MountTrack extends MountWindowState {
-  items: ReadonlyArray<LegacyChatMessage>;
+  items: ReadonlyArray<ChatMessage>;
 }
 
 export interface ScrollAnchor {
@@ -27,11 +27,11 @@ export interface ScrollAnchor {
 
 export type MountWindowDirection = 'older' | 'newer';
 
-function lastId(items: ReadonlyArray<LegacyChatMessage>): string | null {
+function lastId(items: ReadonlyArray<ChatMessage>): string | null {
   return items.length ? entryId(items[items.length - 1], `idx-${items.length - 1}`) : null;
 }
 
-export function hasLiveTail(items: ReadonlyArray<LegacyChatMessage>): boolean {
+export function hasLiveTail(items: ReadonlyArray<ChatMessage>): boolean {
   const last = items.length ? items[items.length - 1] : null;
   return Boolean(
     last
@@ -42,8 +42,8 @@ export function hasLiveTail(items: ReadonlyArray<LegacyChatMessage>): boolean {
 }
 
 function isReplacement(
-  previous: ReadonlyArray<LegacyChatMessage>,
-  next: ReadonlyArray<LegacyChatMessage>,
+  previous: ReadonlyArray<ChatMessage>,
+  next: ReadonlyArray<ChatMessage>,
 ): boolean {
   const previousLast = lastId(previous);
   if (previousLast === null) return true;
@@ -54,7 +54,7 @@ function isReplacement(
   return true;
 }
 
-export function indexOfId(items: ReadonlyArray<LegacyChatMessage>, id: string): number {
+export function indexOfId(items: ReadonlyArray<ChatMessage>, id: string): number {
   for (let index = 0; index < items.length; index++) {
     if (entryId(items[index], `idx-${index}`) === id) return index;
   }
@@ -62,7 +62,7 @@ export function indexOfId(items: ReadonlyArray<LegacyChatMessage>, id: string): 
 }
 
 function stateFromRange(
-  items: ReadonlyArray<LegacyChatMessage>,
+  items: ReadonlyArray<ChatMessage>,
   start: number,
   end: number,
 ): MountWindowState {
@@ -73,13 +73,13 @@ function stateFromRange(
   };
 }
 
-function tailState(items: ReadonlyArray<LegacyChatMessage>): MountWindowState {
+function tailState(items: ReadonlyArray<ChatMessage>): MountWindowState {
   const start = Math.max(0, items.length - INITIAL_ROWS);
   return stateFromRange(items, start, items.length);
 }
 
 function resolvedIndexes(
-  items: ReadonlyArray<LegacyChatMessage>,
+  items: ReadonlyArray<ChatMessage>,
   state: MountWindowState,
 ): { start: number; end: number; valid: boolean } {
   if (state.full) return { start: 0, end: items.length, valid: true };
@@ -95,7 +95,7 @@ function resolvedIndexes(
 }
 
 export function resolveMountedRows(
-  items: ReadonlyArray<LegacyChatMessage>,
+  items: ReadonlyArray<ChatMessage>,
   previous: MountTrack,
 ): {
   floor: string | null;
@@ -103,7 +103,7 @@ export function resolveMountedRows(
   full: boolean;
   start: number;
   end: number;
-  mounted: ReadonlyArray<LegacyChatMessage>;
+  mounted: ReadonlyArray<ChatMessage>;
   replaced: boolean;
 } {
   const replaced = items !== previous.items && isReplacement(previous.items, items);
@@ -144,7 +144,7 @@ export function resolveMountedRows(
 }
 
 export function shiftMountWindow(
-  items: ReadonlyArray<LegacyChatMessage>,
+  items: ReadonlyArray<ChatMessage>,
   current: MountTrack,
   direction: MountWindowDirection,
 ): MountWindowState {
@@ -187,7 +187,7 @@ export function fullMountWindow(): MountWindowState {
 }
 
 export function windowAroundIndex(
-  items: ReadonlyArray<LegacyChatMessage>,
+  items: ReadonlyArray<ChatMessage>,
   index: number,
 ): MountWindowState {
   if (items.length <= MAX_MOUNTED_ROWS) return stateFromRange(items, 0, items.length);

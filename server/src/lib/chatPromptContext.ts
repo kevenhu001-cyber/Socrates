@@ -1,13 +1,13 @@
-import type { ChatMessage } from './chatMessageSchema.js';
+import type { ProviderMessage } from './providerMessageSchema.js';
 
 export const TURN_INSTRUCTIONS_MARKER = '[Current turn instructions]';
 
 /** Tutor stage/quiz state is not a session-wide persona. New clients mark it
  * explicitly; old tutor clients' unmarked system blocks retain turn scope. */
-export function splitPromptContext(messages: ChatMessage[], mode: 'chat' | 'tutor'): {
-  initialization: ChatMessage[]; conversation: ChatMessage[]; turnInstructions: string[];
+export function splitPromptContext(messages: ProviderMessage[], mode: 'chat' | 'tutor'): {
+  initialization: ProviderMessage[]; conversation: ProviderMessage[]; turnInstructions: string[];
 } {
-  const initialization: ChatMessage[] = [], conversation: ChatMessage[] = [];
+  const initialization: ProviderMessage[] = [], conversation: ProviderMessage[] = [];
   const turnInstructions: string[] = [];
   for (const message of messages) {
     if (message.role !== 'system') { conversation.push(message); continue; }
@@ -45,7 +45,7 @@ export const STYLE_REMINDER = `[Server style defaults for this reply: override a
 /** Variable recall and teaching state live at the current user-turn tail,
  * never rewrite the frozen system prefix or split an assistant/tool group.
  * The server policy's untrusted-data rule still governs retrieved evidence. */
-export function appendTurnContext(messages: ChatMessage[], instructions: string[], recall: string | null, serverTurn: string | null = null): ChatMessage[] {
+export function appendTurnContext(messages: ProviderMessage[], instructions: string[], recall: string | null, serverTurn: string | null = null): ProviderMessage[] {
   const blocks = [
     /* Server-owned turn behavior (RN-6 learning modes) leads, so the
        client-supplied lesson context below is read as subordinate to it. */

@@ -9,7 +9,7 @@ import { stateStore } from '../state/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
-import type { LegacyChatMessage } from '../react/types/domain.ts';
+import type { ChatMessage } from '../react/types/domain.ts';
 
 export interface MessageBranchVariant {
   clientId: string;
@@ -22,7 +22,7 @@ export interface MessageBranchVariant {
   toolCalls?: unknown[];
   turnRuntime?: unknown;
   reasoningContent?: string | null;
-  followingMessages?: LegacyChatMessage[];
+  followingMessages?: ChatMessage[];
 }
 
 export interface MessageBranchInfo {
@@ -32,8 +32,8 @@ export interface MessageBranchInfo {
 
 interface BranchSwitchContext {
   index: number;
-  messages: LegacyChatMessage[];
-  currentMessage: LegacyChatMessage;
+  messages: ChatMessage[];
+  currentMessage: ChatMessage;
   variants: MessageBranchVariant[];
   currentIndex: number;
 }
@@ -41,7 +41,7 @@ interface BranchSwitchContext {
 function getBranchSwitchContext(messageId: string, targetIndex: number): BranchSwitchContext | null {
   const index = findMessageIndex(messageId);
   if (index < 0) return null;
-  const messages = stateStore.read('messages') as LegacyChatMessage[];
+  const messages = stateStore.read('messages') as ChatMessage[];
   const currentMessage = messages[index];
   if (!currentMessage.branchInfo || !Array.isArray(currentMessage.branchInfo.variants)) return null;
 
@@ -53,8 +53,8 @@ function getBranchSwitchContext(messageId: string, targetIndex: number): BranchS
 function stashActiveBranchVariant(
   variants: MessageBranchVariant[],
   currentIndex: number,
-  currentMessage: LegacyChatMessage,
-  messages: LegacyChatMessage[],
+  currentMessage: ChatMessage,
+  messages: ChatMessage[],
   index: number,
 ): void {
   variants[currentIndex] = {
@@ -70,10 +70,10 @@ function stashActiveBranchVariant(
 }
 
 function createSwitchedMessage(
-  currentMessage: LegacyChatMessage,
+  currentMessage: ChatMessage,
   target: MessageBranchVariant,
   branchInfo: MessageBranchInfo,
-): LegacyChatMessage {
+): ChatMessage {
   return {
     ...currentMessage,
     clientId: target.clientId || currentMessage.clientId,
@@ -81,20 +81,20 @@ function createSwitchedMessage(
     role: target.role || currentMessage.role,
     rawText: target.rawText || '',
     html: target.html || null,
-    attachments: (target.attachments as LegacyChatMessage['attachments']) || [],
-    toolCalls: (target.toolCalls as LegacyChatMessage['toolCalls']) || [],
-    turnRuntime: target.turnRuntime as LegacyChatMessage['turnRuntime'],
+    attachments: (target.attachments as ChatMessage['attachments']) || [],
+    toolCalls: (target.toolCalls as ChatMessage['toolCalls']) || [],
+    turnRuntime: target.turnRuntime as ChatMessage['turnRuntime'],
     reasoningContent: target.reasoningContent || null,
     branchInfo,
   };
 }
 
 function replaceBranchSubtree(
-  messages: LegacyChatMessage[],
+  messages: ChatMessage[],
   index: number,
-  switchedMessage: LegacyChatMessage,
+  switchedMessage: ChatMessage,
   target: MessageBranchVariant,
-): LegacyChatMessage[] {
+): ChatMessage[] {
   const prefix = messages.slice(0, index);
   const suffix = Array.isArray(target.followingMessages) ? target.followingMessages : [];
   return [...prefix, switchedMessage, ...suffix];
@@ -110,10 +110,10 @@ export function findMessageIndex(messageId: string): number {
 export function prepareUserEditBranch(
   messageId: string,
   newText: string,
-): { branchInfo: MessageBranchInfo; entry: LegacyChatMessage } | null {
+): { branchInfo: MessageBranchInfo; entry: ChatMessage } | null {
   const idx = findMessageIndex(messageId);
   if (idx < 0) return null;
-  const messages = stateStore.read('messages') as LegacyChatMessage[];
+  const messages = stateStore.read('messages') as ChatMessage[];
   const entry = messages[idx];
   const following = messages.slice(idx + 1);
 
@@ -163,10 +163,10 @@ export function prepareUserEditBranch(
 /** Prepare branch info when starting an assistant regenerate branch */
 export function prepareAssistantRegenerateBranch(
   messageId: string,
-): { branchInfo: MessageBranchInfo; assistantEntry: LegacyChatMessage; userEntry: LegacyChatMessage } | null {
+): { branchInfo: MessageBranchInfo; assistantEntry: ChatMessage; userEntry: ChatMessage } | null {
   const assistantIdx = findMessageIndex(messageId);
   if (assistantIdx < 0) return null;
-  const messages = stateStore.read('messages') as LegacyChatMessage[];
+  const messages = stateStore.read('messages') as ChatMessage[];
   const currentAssistant = messages[assistantIdx];
 
   let userIdx = assistantIdx - 1;

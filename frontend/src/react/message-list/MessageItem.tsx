@@ -1,7 +1,7 @@
 import { memo, useRef, useState, type RefObject } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
 import { useMessageContextMenu } from './useMessageContextMenu';
 import { TutorMessageActions } from './TutorMessageActions';
@@ -16,7 +16,7 @@ import { commitUserMessageEdit } from '../../chat/editBranch.ts';
 import { stripMarkdown } from '../../render/markdown.ts';
 import { i18n } from '../legacy/gateway';
 
-type LiveFields = LegacyChatMessage & {
+type LiveFields = ChatMessage & {
   _turnAnchorMinHeight?: number;
   _turnAnchorMarginTop?: number;
   /** Which anchor rule produced the reserve — see `data-viewport-anchor`. */
@@ -37,17 +37,17 @@ interface ViewportAnchorData {
   target?: string;
 }
 
-function messageRole(message: LegacyChatMessage): string {
+function messageRole(message: ChatMessage): string {
   return typeof message.role === 'string' ? message.role : 'assistant';
 }
 
-function messageClientId(message: LegacyChatMessage): string {
+function messageClientId(message: ChatMessage): string {
   if (typeof message.clientId === 'string') return message.clientId;
   if (typeof message.id === 'string') return message.id;
   return '';
 }
 
-function messageBodyFields(message: LegacyChatMessage) {
+function messageBodyFields(message: ChatMessage) {
   return {
     html: typeof message.html === 'string' ? message.html : '',
     attachments: Array.isArray(message.attachments) ? message.attachments : [],
@@ -68,7 +68,7 @@ function toolbarRole(role: string): 'user' | 'assistant' {
   return role === 'user' ? 'user' : 'assistant';
 }
 
-function turnAnchorOf(message: LegacyChatMessage): TurnAnchor {
+function turnAnchorOf(message: ChatMessage): TurnAnchor {
   const liveMessage = message as LiveFields;
   const minHeight = Number.isFinite(liveMessage._turnAnchorMinHeight)
     ? Math.max(0, Number(liveMessage._turnAnchorMinHeight))
@@ -95,7 +95,7 @@ function usesDeclarativeBody(role: string): boolean {
   return true;
 }
 
-function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
+function isRenderable(message: ChatMessage, live: boolean): boolean {
   /* A turn in flight may have no text yet — its status line or running tool
      row is the content until the first token lands. */
   if (live) return true;
@@ -120,7 +120,7 @@ function isRenderable(message: LegacyChatMessage, live: boolean): boolean {
 
 function MessageContent({ editing, message, role, html, isLive, readOnly, declarative, bodyRef, onCancelEdit, onCommitEdit }: {
   editing: boolean;
-  message: LegacyChatMessage;
+  message: ChatMessage;
   role: string;
   html: string;
   isLive: boolean;
@@ -256,4 +256,4 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
 const MessageItem = memo(MessageItemBase, areMessageItemsEqual);
 
 export { MessageItem };
-export type { LegacyChatMessage };
+export type { ChatMessage };

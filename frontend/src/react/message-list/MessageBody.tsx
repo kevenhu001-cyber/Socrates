@@ -2,7 +2,7 @@ import { useMemo, type MouseEvent, type RefObject } from 'react';
 
 import { CanvasBlock } from '../canvas';
 import { LazyAssistantTurn } from '../tool-run/LazyAssistantTurn';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { openArtifactPreview } from '../../ui/artifactPreview.ts';
 import { LinkPreviews } from './LinkPreviews';
 
@@ -15,7 +15,7 @@ export function MessageBody({
   declarative,
   bodyRef,
 }: {
-  message: LegacyChatMessage;
+  message: ChatMessage;
   role: string;
   html: string;
   isLive: boolean;

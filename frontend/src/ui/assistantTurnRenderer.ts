@@ -1,7 +1,7 @@
-import type { LegacyChatMessage } from '../react/types/domain';
+import type { ChatMessage } from '../react/types/domain';
 
 interface AssistantTurnRenderer {
-  mount: (host: HTMLElement, message: LegacyChatMessage, options: { readOnly: boolean }) => boolean;
+  mount: (host: HTMLElement, message: ChatMessage, options: { readOnly: boolean }) => boolean;
   releaseAll: () => void;
 }
 let renderer: AssistantTurnRenderer | null = null;
@@ -13,7 +13,7 @@ export function registerAssistantTurnRenderer(next: AssistantTurnRenderer): () =
   return () => { if (renderer === next) renderer = null; };
 }
 
-export function renderSharedAssistantTurn(host: HTMLElement, message: LegacyChatMessage): boolean {
+export function renderSharedAssistantTurn(host: HTMLElement, message: ChatMessage): boolean {
   return renderer?.mount(host, message, { readOnly: true }) ?? false;
 }
 

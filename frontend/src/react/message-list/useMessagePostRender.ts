@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react';
 
 import { getLegacyActions } from '../legacy/gateway.ts';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 import { isOffscreenMount, runWhenNearViewport } from './nearViewport';
 
@@ -13,7 +13,7 @@ function runOptionalPostRender(action: (() => void) | undefined): void {
 }
 
 export function useMessagePostRender(
-  message: LegacyChatMessage,
+  message: ChatMessage,
   html: string,
   clientId: string,
   isLive: boolean,

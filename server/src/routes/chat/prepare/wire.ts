@@ -5,7 +5,7 @@
  * adapter receives. Prompt/context assembly lives in the sibling modules.
  */
 import { z } from 'zod';
-import { ContentPartSchema, MessageSchema, type ChatMessage } from '../../../lib/chatMessageSchema.js';
+import { ProviderContentPartSchema, ProviderMessageSchema, type ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { isMultimodalProvider } from '../../../lib/multimodal.js';
 import { LEARNING_MODE_IDS } from '../../../lib/prompts.js';
 import { sanitizeExtraBody } from '../../../lib/sanitize.js';
@@ -20,7 +20,7 @@ import type { Provider } from './types.js';
 // Supports both plain text (string) and multimodal content parts (array)
 // for vision/image attachments.
 export const ChatPayloadSchema = z.object({
-  messages: z.array(MessageSchema).min(1).max(100),
+  messages: z.array(ProviderMessageSchema).min(1).max(100),
   temperature: z.number().min(0).max(2).optional(),
   max_tokens: z.number().int().positive().max(32000).optional(),
   mode: z.enum(['tutor', 'chat']).optional().default('chat'),
@@ -62,7 +62,7 @@ export const ChatPayloadSchema = z.object({
 /** A single chat message; content is either plain text or multimodal parts. */
 
 /** A single multimodal content part (text or image_url). */
-type ContentPart = z.infer<typeof ContentPartSchema>;
+type ContentPart = z.infer<typeof ProviderContentPartSchema>;
 /** The validated chat request payload. */
 export type ChatPayload = z.infer<typeof ChatPayloadSchema>;
 
@@ -137,7 +137,7 @@ export function transformContentForModel(content: string | ContentPart[], multim
 }
 
 /** Return true when any message contains an image_url content part. */
-export function containsImageUrlParts(messages: ChatMessage[]): boolean {
+export function containsImageUrlParts(messages: ProviderMessage[]): boolean {
   return messages.some((message) => Array.isArray(message?.content)
     && message.content.some((part) => part && part.type === 'image_url'));
 }
@@ -149,7 +149,7 @@ export function containsImageUrlParts(messages: ChatMessage[]): boolean {
  * system-image parts. The provider object is the decrypted shape
  * returned by services/core/apiKey.js#decryptProvider; it carries the
  * user-controlled `isMultimodal` boolean. */
-export function transformMessagesForModel(messages: ChatMessage[], provider: Provider): ChatMessage[] {
+export function transformMessagesForModel(messages: ProviderMessage[], provider: Provider): ProviderMessage[] {
   const multimodal = isMultimodalProvider(provider);
   return messages.map((m) => {
     if (!m || typeof m !== 'object') return m;

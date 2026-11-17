@@ -1,6 +1,6 @@
-import type { LegacyChatMessage, ToolCall } from '../react/types/domain';
+import type { ChatMessage, ToolCall } from '../react/types/domain';
 
-function messageIdentityKeys(message: LegacyChatMessage): ReadonlyArray<string> {
+function messageIdentityKeys(message: ChatMessage): ReadonlyArray<string> {
   const keys: string[] = [];
   if (typeof message.clientId === 'string' && message.clientId.length > 0) {
     keys.push(message.clientId);
@@ -65,7 +65,7 @@ function freezeToolCall(call: ToolCall): ToolCall {
  * immutable graph React needs and can cross this boundary zero-copy. Direct or
  * legacy mutable inputs still take the defensive clone/freeze path below.
  */
-export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
+export function snapshotMessage(message: ChatMessage): ChatMessage {
   if (Object.isFrozen(message)) return message;
 
   return Object.freeze({
@@ -104,13 +104,13 @@ export function snapshotMessage(message: LegacyChatMessage): LegacyChatMessage {
  * re-snapshotted rather than being incorrectly matched by array index.
  */
 export function reconcileMessageSnapshots(
-  previous: ReadonlyArray<LegacyChatMessage>,
-  legacy: ReadonlyArray<LegacyChatMessage>,
+  previous: ReadonlyArray<ChatMessage>,
+  legacy: ReadonlyArray<ChatMessage>,
   changedMessageIds: ReadonlySet<string> | null,
-): ReadonlyArray<LegacyChatMessage> {
+): ReadonlyArray<ChatMessage> {
   if (Object.isFrozen(legacy)) return legacy;
 
-  const previousByKey = new Map<string, LegacyChatMessage>();
+  const previousByKey = new Map<string, ChatMessage>();
   previous.forEach((message) => {
     messageIdentityKeys(message).forEach((key) => previousByKey.set(key, message));
   });
@@ -119,7 +119,7 @@ export function reconcileMessageSnapshots(
     const keys = messageIdentityKeys(message);
     const previousMessage = keys
       .map((key) => previousByKey.get(key))
-      .find((candidate): candidate is LegacyChatMessage => candidate !== undefined);
+      .find((candidate): candidate is ChatMessage => candidate !== undefined);
 
     if (Object.isFrozen(message)) return message;
 

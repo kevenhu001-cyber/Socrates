@@ -1,7 +1,7 @@
 import type { User } from '../types/http.js';
-import type { ChatMessage } from './chatMessageSchema.js';
+import type { ProviderMessage } from './providerMessageSchema.js';
 
-export function appendServerPolicy(messages: ChatMessage[], marker: string, prompt: string | null): ChatMessage[] {
+export function appendServerPolicy(messages: ProviderMessage[], marker: string, prompt: string | null): ProviderMessage[] {
   if (!prompt) return messages;
   const first = messages[0];
   if (first && first.role === 'system' && typeof first.content === 'string') {
@@ -86,7 +86,7 @@ When a tool cannot deliver a result, continue with the best supported answer. Me
 Do not end a reply with a question or an offer to help unless the answer genuinely depends on information only the user can provide, or the task is a quiz, exercise, or practice interaction (including a learning card or question the active mode requires). A guiding question belongs inside the explanation, not as a closing pleasantry. End on the substance of the answer.`;
 
 export const FINAL_OUTPUT_CONSTRAINTS_MARKER = '[Server policy: final-output-constraints]';
-export function appendFinalOutputConstraints(messages: ChatMessage[]): ChatMessage[] {
+export function appendFinalOutputConstraints(messages: ProviderMessage[]): ProviderMessage[] {
   const result = appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
   const first = result[0];
   if (!first || first.role !== 'system' || typeof first.content !== 'string') return result;
@@ -369,7 +369,7 @@ function sanitizePromptScalar(raw: unknown, max = 120): string {
    free/paid/guest plan when they ask about feature limits. If a
    specific surface needs the email or plan, it can fetch them
    through a dedicated route rather than have every chat carry them. */
-export function injectUserContext(messages: ChatMessage[], user: User | null, options: { sessionSnapshot?: boolean } = {}): ChatMessage[] {
+export function injectUserContext(messages: ProviderMessage[], user: User | null, options: { sessionSnapshot?: boolean } = {}): ProviderMessage[] {
   if (!user) return messages;
 
   const now = new Date();

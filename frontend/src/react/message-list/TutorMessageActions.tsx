@@ -3,11 +3,11 @@ import { i18n } from '../legacy/gateway';
 import { useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { reportSwallow } from '../../util/reportSwallow';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
 const ACTIONS = new Set(['explain', 'skip', 'retry', 'hint', 'mistake']);
 
-export function TutorMessageActions({ message, messageId, isLatest }: { message: LegacyChatMessage; messageId: string; isLatest?: boolean }) {
+export function TutorMessageActions({ message, messageId, isLatest }: { message: ChatMessage; messageId: string; isLatest?: boolean }) {
   const [pending, setPending] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   if (!isLatest || message.role !== 'assistant' || message.type !== 'suggest') return null;

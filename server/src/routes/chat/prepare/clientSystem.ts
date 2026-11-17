@@ -4,7 +4,7 @@
  * application directives or factual context, never a peer system policy.
  */
 import { SERVER_SYSTEM_POLICY } from '../../../lib/chatPolicy.js';
-import type { ChatMessage } from '../../../lib/chatMessageSchema.js';
+import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
 
 /**
@@ -44,7 +44,7 @@ export interface ClientSystemClassification {
  * the custom instructions are turn state, and the client re-sends them on
  * every request.
  */
-export function classifyClientSystemMessages(messages: ChatMessage[]): ClientSystemClassification {
+export function classifyClientSystemMessages(messages: ProviderMessage[]): ClientSystemClassification {
   const application: string[] = [];
   const context: string[] = [];
   for (const message of messages) {
@@ -75,7 +75,7 @@ export function renderClientBlocks(classification: ClientSystemClassification): 
 
 /** Whether the client sent a system prefix this turn. A client that sends
  *  none keeps the persona frozen in the session snapshot. */
-export function hasClientSystemPrefix(messages: ChatMessage[]): boolean {
+export function hasClientSystemPrefix(messages: ProviderMessage[]): boolean {
   return messages.some((message) => (
     message?.role === 'system'
     && typeof message.content === 'string'
@@ -83,7 +83,7 @@ export function hasClientSystemPrefix(messages: ChatMessage[]): boolean {
   ));
 }
 
-export function enforceServerSystemBoundary(messages: ChatMessage[]): ChatMessage[] {
+export function enforceServerSystemBoundary(messages: ProviderMessage[]): ProviderMessage[] {
   const conversation = messages.filter((message) => message?.role !== 'system');
   const clientBlock = renderClientBlocks(classifyClientSystemMessages(messages));
   return [{ role: 'system', content: SERVER_SYSTEM_POLICY + clientBlock }, ...conversation];

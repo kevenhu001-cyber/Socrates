@@ -7,7 +7,7 @@
  * declaratively.
  */
 
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
 /**
  * Click handler props passed to MessageToolbar. React owns edit state;
@@ -29,7 +29,7 @@ export interface MessageToolbarCallbacks {
 
 export interface MessageItemProps {
   /** Immutable render snapshot published by the chat runtime store. */
-  message: LegacyChatMessage;
+  message: ChatMessage;
   /** Global math-render revision from the remaining legacy KaTeX renderer. */
   mathRevision?: number;
   /** True when this row is the latest message in the visible transcript. */

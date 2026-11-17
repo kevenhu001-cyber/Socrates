@@ -23,7 +23,7 @@ import {
   type MountWindowState,
   type ScrollAnchor,
 } from './progressiveMount';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
 import { setOffscreenMount } from './nearViewport';
 import { useAboveViewportResizeCompensation } from './aboveViewportResize';
@@ -137,8 +137,8 @@ function useDeferredFlusherRegistration(
   ), [anchorRef, rerender, trackRef]);
 }
 
-export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessage>): {
-  mounted: ReadonlyArray<LegacyChatMessage>;
+export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
+  mounted: ReadonlyArray<ChatMessage>;
   start: number;
 } {
   const trackRef = useRef<MountTrack>({

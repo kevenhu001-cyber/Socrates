@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ContentPartSchema = z.object({
+export const ProviderContentPartSchema = z.object({
   type: z.enum(['text', 'image_url']),
   text: z.string().max(200000).optional(),
   image_url: z.object({
@@ -14,11 +14,11 @@ export const ContentPartSchema = z.object({
   }).optional(),
 }).passthrough();
 
-export const MessageSchema = z.object({
+export const ProviderMessageSchema = z.object({
   role: z.enum(['user', 'assistant', 'system']),
   content: z.union([
     z.string().max(200000),
-    z.array(ContentPartSchema).min(1).max(50),
+    z.array(ProviderContentPartSchema).min(1).max(50),
   ]),
   /* P_deepseek-mode — DeepSeek and DeepSeek-compatible reasoning
      models (deepseek-v3, v3.1, v3.2, r1, etc.) carry the chain-of-
@@ -30,4 +30,4 @@ export const MessageSchema = z.object({
   reasoning_content: z.string().max(500000).optional(),
 }).passthrough();
 
-export type ChatMessage = z.infer<typeof MessageSchema>;
+export type ProviderMessage = z.infer<typeof ProviderMessageSchema>;

@@ -1,6 +1,6 @@
 import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
 /** Persist a canvas edit through the session reducer and refresh React's chat snapshot. */
 export function persistCanvasEdit(canvasId: string, editedText: string): boolean {
@@ -12,7 +12,7 @@ export function persistCanvasEdit(canvasId: string, editedText: string): boolean
   const messages = sessionStore.getState().messages;
   if (!Array.isArray(messages)) return false;
 
-  const typedMessages = messages as LegacyChatMessage[];
+  const typedMessages = messages as ChatMessage[];
   const index = typedMessages.findIndex((message) => message.canvasId === canvasId);
   if (index < 0) return false;
 

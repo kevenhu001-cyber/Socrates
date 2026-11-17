@@ -3,7 +3,7 @@ import { createRootGroup } from '../lib/boot/ownedRoot';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { restoredToolCalls, sortableToolCalls } from './toolRunLayout.js';
-import type { LegacyChatMessage } from '../types/domain';
+import type { ChatMessage } from '../types/domain';
 
 const roots = createRootGroup('assistant-turn');
 const AssistantTurn = lazy(() => import('./AssistantTurn').then((module) => ({ default: module.AssistantTurn })));
@@ -23,7 +23,7 @@ export interface MountAssistantTurnOptions {
  */
 export function mountAssistantTurn(
   container: HTMLElement,
-  message: LegacyChatMessage,
+  message: ChatMessage,
   options: MountAssistantTurnOptions = {},
 ): boolean {
   const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];

@@ -1,5 +1,5 @@
 import type { PublicTurnActivity } from '@socrates/contracts';
-import type { LegacyChatMessage, LiveTurnStatus } from '../react/types/domain';
+import type { ChatMessage, LiveTurnStatus } from '../react/types/domain';
 import { toolRunStateOf } from './toolPresentationState';
 import { toolRunLabel, translate, type ToolCallLike } from './toolPresentationModel';
 
@@ -36,7 +36,7 @@ interface PresentationOptions {
  * for a few legacy providers. Treat a think-only payload as non-answer text
  * so the live activity line can stay visible until the first real prose.
  */
-function hasVisibleAnswerText(message: LegacyChatMessage): boolean {
+function hasVisibleAnswerText(message: ChatMessage): boolean {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   return rawText
     .replace(/<think\b[^>]*>[\s\S]*?(?:<\/think>|$)/gi, '')
@@ -45,13 +45,13 @@ function hasVisibleAnswerText(message: LegacyChatMessage): boolean {
 }
 
 /** A startup activity signal is not evidence that the provider is reasoning. */
-function hasObservedReasoning(message: LegacyChatMessage): boolean {
+function hasObservedReasoning(message: ChatMessage): boolean {
   if (typeof message.reasoningContent === 'string' && message.reasoningContent.trim()) return true;
   const raw = typeof message.rawText === 'string' ? message.rawText : '';
   return Boolean(raw.match(/<think\b[^>]*>([\s\S]*?)(?:<\/think>|$)/i)?.[1]?.trim());
 }
 
-function observedThinkingStatus(message: LegacyChatMessage): LiveTurnStatus {
+function observedThinkingStatus(message: ChatMessage): LiveTurnStatus {
   const legacy = message._liveStatus;
   const reasoningHasStarted = hasObservedReasoning(message);
   const phase = hasVisibleAnswerText(message) || reasoningHasStarted ? 'thinking' : 'waiting';
@@ -64,7 +64,7 @@ function observedThinkingStatus(message: LegacyChatMessage): LiveTurnStatus {
   };
 }
 
-function observedToolStatus(message: LegacyChatMessage, activity: Extract<PublicTurnActivity, { type: 'tool' }>): LiveTurnStatus | undefined {
+function observedToolStatus(message: ChatMessage, activity: Extract<PublicTurnActivity, { type: 'tool' }>): LiveTurnStatus | undefined {
   const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
   if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;
   const legacy = message._liveStatus;
@@ -74,7 +74,7 @@ function observedToolStatus(message: LegacyChatMessage, activity: Extract<Public
   return { phase: 'tool-running', toolName: activity.toolName, label };
 }
 
-function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
+function observedStatus(message: ChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
   switch (activity.type) {
     case 'thinking': return observedThinkingStatus(message);
     case 'public_reasoning_summary':
@@ -86,7 +86,7 @@ function observedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
   }
 }
 
-function selectedStatus(message: LegacyChatMessage, activity: PublicTurnActivity | null, live: boolean, options: PresentationOptions): LiveTurnStatus | undefined {
+function selectedStatus(message: ChatMessage, activity: PublicTurnActivity | null, live: boolean, options: PresentationOptions): LiveTurnStatus | undefined {
   const legacy = message._liveStatus || undefined;
   if (legacy?.phase === 'error' || legacy?.phase === 'stopped') return legacy;
   if (live && legacy?.phase === 'retrying') return legacy;
@@ -95,7 +95,7 @@ function selectedStatus(message: LegacyChatMessage, activity: PublicTurnActivity
   return legacy?.phase === 'tool-running' && options.hasSettledTool ? undefined : legacy;
 }
 
-function reasoningSummaryState(activities: NonNullable<LegacyChatMessage['turnRuntime']>['activities'], activity: PublicTurnActivity | null) {
+function reasoningSummaryState(activities: NonNullable<ChatMessage['turnRuntime']>['activities'], activity: PublicTurnActivity | null) {
   const reasoningSummaries = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim());
   const publicSummary = reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim()
     || (activity?.type === 'public_reasoning_summary' ? activity.text : '');
@@ -103,7 +103,7 @@ function reasoningSummaryState(activities: NonNullable<LegacyChatMessage['turnRu
 }
 
 function reasoningDurationSeconds(
-  activities: NonNullable<LegacyChatMessage['turnRuntime']>['activities'],
+  activities: NonNullable<ChatMessage['turnRuntime']>['activities'],
   fallback: number | null | undefined,
 ): number | undefined {
   const ranges = activities
@@ -138,7 +138,7 @@ function activityLabelFor(status: LiveTurnStatus | undefined, intentSummary: str
  * A mounted running tool owns activity; a deferred tool retains its status.
  * Transport completion is distinct from playback completion: a done event
  * cannot mount actions while the final text is still draining. */
-export function deriveTurnPresentationState(message: LegacyChatMessage, options: PresentationOptions = {}) {
+export function deriveTurnPresentationState(message: ChatMessage, options: PresentationOptions = {}) {
   const live = options.live ?? (message.type === 'streaming' && message._streamSettled !== true);
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);
