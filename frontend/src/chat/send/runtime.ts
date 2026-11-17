@@ -2,7 +2,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { appMode, webSearchOn } from '../../config/providers.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { addMessage } from '../messages.ts';
-import { scheduleTurnToTopForMessage } from '../turn/anchor.ts';
+import { scheduleTurnToTopForMessage } from '../turn/anchor/schedule.ts';
 import { t } from '../../i18n/index.ts';
 import type { StreamingTurnController } from '../turn/state.ts';
 

@@ -20,7 +20,7 @@ import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turn/ui.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
 import { turnState } from '../turn/state.ts';
-import { removeSupersededStub } from '../turn/anchor.ts';
+import { removeSupersededStub } from './anchor/stub.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';

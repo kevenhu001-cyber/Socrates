@@ -3,7 +3,7 @@
  */
 
 import { stateStore } from '../state/store.ts';
-import { scheduleTurnToTopForMessage } from './turn/anchor.ts';
+import { scheduleTurnToTopForMessage } from './turn/anchor/schedule.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 type ChatResultWindow = Window & {

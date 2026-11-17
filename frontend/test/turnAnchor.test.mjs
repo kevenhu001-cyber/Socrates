@@ -12,12 +12,14 @@ globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 
 const {
   configureTurnAnchor,
-  releaseTurnViewportHold,
-  scheduleActiveTurnToTop,
-  scheduleTurnToTopForMessage,
   turnAnchorReserve,
   turnRowFor,
-} = await import('../src/chat/turn/anchor.ts');
+} = await import('../src/chat/turn/anchor/ownership.ts');
+const { releaseTurnViewportHold } = await import('../src/chat/turn/anchor/hold.ts');
+const {
+  scheduleActiveTurnToTop,
+  scheduleTurnToTopForMessage,
+} = await import('../src/chat/turn/anchor/schedule.ts');
 
 configureTurnAnchor({ isMsgListMounted: () => false });
 

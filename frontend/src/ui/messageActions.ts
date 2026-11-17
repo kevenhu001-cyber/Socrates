@@ -76,13 +76,13 @@ export interface MessageEntry {
   html?: string | null;
   toolCalls?: ToolCallEntry[];
   attachments?: unknown[];
-  /** Send-time viewport anchor chrome (see chat/turn/anchor.ts). */
+  /** Send-time viewport anchor chrome (see chat/turn/anchor/). */
   _turnAnchorMinHeight?: number;
   _turnAnchorMode?: string;
   _turnViewportTarget?: number;
   _turnAnchorMarginTop?: number;
   /** Superseded empty placeholder kept as an invisible layout stub until
-      the next turn's anchor glides past it (chat/turn/anchor.ts). */
+      the next turn's anchor glides past it (chat/turn/anchor/). */
   _supersededStub?: boolean;
   _toolRunRev?: number;
 }

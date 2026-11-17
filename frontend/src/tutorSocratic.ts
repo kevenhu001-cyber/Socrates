@@ -1,6 +1,6 @@
 import { stateStore } from './state/store.ts';
 import { addMessage } from './chat/messages.ts';
-import { scheduleTurnToTopForMessage } from './chat/turn/anchor.ts';
+import { scheduleTurnToTopForMessage } from './chat/turn/anchor/schedule.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage } from './i18n/languageState.ts';
 import { t } from './i18n/index.ts';

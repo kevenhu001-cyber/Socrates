@@ -28,7 +28,7 @@ function markUserScrollIntent(){
   lastUserScrollIntentAt = Date.now();
 }
 
-/* A layout compensation (chat/turn/anchor.ts retiring a spent answer
+/* A layout compensation (chat/turn/anchor/ retiring a spent answer
    reserve) writes scrollTop upward while the visible content does not
    move at all. Ignore the position listener for a beat so that
    programmatic write is not misread as the reader scrolling away.

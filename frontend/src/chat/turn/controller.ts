@@ -11,7 +11,7 @@ import { offlineGuard } from '../offline.ts';
 import { toolCallbacksForStream, publishActiveWorkflowFinish } from '../toolCallbacks.ts';
 import { clearPendingTurn, newClientTurnId, savePendingTurn } from './client.ts';
 import { addMessage } from '../messages.ts';
-import { scheduleTurnToTopForMessage } from './anchor.ts';
+import { scheduleTurnToTopForMessage } from './anchor/schedule.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { learningTurnOptions } from '../../tutor/learningModeState.ts';
