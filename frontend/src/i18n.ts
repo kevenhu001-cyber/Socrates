@@ -101,6 +101,7 @@ function translateAttribute(selector: string,keyAttribute: string,targetAttribut
 }
 
 function refreshThemeLabel(){
+  void 0;
 }
 
 function updateComposerLabels(){
