@@ -38,19 +38,29 @@ export class ArxivConnectorError extends Error {
 }
 
 function normalizedQuery(value: unknown) {
-  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .slice(0, 200);
 }
 
 function searchExpression(query: string) {
   // Treat text as words, not raw arXiv syntax, so an Apps search cannot
   // accidentally create an unexpectedly broad provider query.
-  return query.split(' ').filter(Boolean).map((word) => `all:${word.replace(/[^\p{L}\p{N}._-]/gu, '')}`).filter((word) => word !== 'all:').join(' AND ');
+  return query
+    .split(' ')
+    .filter(Boolean)
+    .map((word) => `all:${word.replace(/[^\p{L}\p{N}._-]/gu, '')}`)
+    .filter((word) => word !== 'all:')
+    .join(' AND ');
 }
 
 async function pacedFetch(url: string) {
   let release: (() => void) | undefined;
   const previous = requestQueue;
-  requestQueue = new Promise((resolve) => { release = resolve; });
+  requestQueue = new Promise((resolve) => {
+    release = resolve;
+  });
   await previous;
   try {
     const waitMs = Math.max(0, nextRequestAt - Date.now());
@@ -66,8 +76,12 @@ async function pacedFetch(url: string) {
   }
 }
 
-function asArray<T = unknown>(value: T | T[] | null | undefined): T[] { return value == null ? [] : (Array.isArray(value) ? value : [value]); }
-function text(value: unknown) { return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : ''; }
+function asArray<T = unknown>(value: T | T[] | null | undefined): T[] {
+  return value == null ? [] : Array.isArray(value) ? value : [value];
+}
+function text(value: unknown) {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -76,18 +90,29 @@ function paperId(idUrl: unknown) {
   try {
     const url = new URL(text(idUrl));
     if (!/(^|\.)arxiv\.org$/i.test(url.hostname)) return '';
-    return decodeURIComponent(url.pathname.replace(/^\/abs\//, '').replace(/^\//, '')).slice(0, 120);
-  } catch (_) { return ''; }
+    return decodeURIComponent(url.pathname.replace(/^\/abs\//, '').replace(/^\//, '')).slice(
+      0,
+      120,
+    );
+  } catch (_) {
+    return '';
+  }
 }
 
 function toPaper(value: unknown): ArxivPaper {
   const entry = isRecord(value) ? value : {};
   const id = paperId(entry.id);
-  const authors = asArray(entry.author).map((author) => text(isRecord(author) ? author.name : undefined)).filter(Boolean).slice(0, 12);
-  const categories = asArray(entry.category).map((category) => {
-    const attributes = isRecord(category) && isRecord(category.$) ? category.$ : null;
-    return text(attributes?.term);
-  }).filter(Boolean).slice(0, 10);
+  const authors = asArray(entry.author)
+    .map((author) => text(isRecord(author) ? author.name : undefined))
+    .filter(Boolean)
+    .slice(0, 12);
+  const categories = asArray(entry.category)
+    .map((category) => {
+      const attributes = isRecord(category) && isRecord(category.$) ? category.$ : null;
+      return text(attributes?.term);
+    })
+    .filter(Boolean)
+    .slice(0, 10);
   return {
     id,
     title: text(entry.title).slice(0, 500) || 'Untitled paper',
@@ -96,7 +121,9 @@ function toPaper(value: unknown): ArxivPaper {
     categories,
     publishedAt: text(entry.published) || null,
     updatedAt: text(entry.updated) || null,
-    abstractUrl: id ? `https://arxiv.org/abs/${encodeURIComponent(id).replace(/%2F/gi, '/')}` : null,
+    abstractUrl: id
+      ? `https://arxiv.org/abs/${encodeURIComponent(id).replace(/%2F/gi, '/')}`
+      : null,
     pdfUrl: id ? `https://arxiv.org/pdf/${encodeURIComponent(id).replace(/%2F/gi, '/')}.pdf` : null,
   };
 }
@@ -109,7 +136,13 @@ export async function searchArxivPapers(value: unknown) {
   if (!expression) return [];
   const cached = cache.get(query.toLowerCase());
   if (cached && cached.expiresAt > Date.now()) return cached.papers;
-  const params = new URLSearchParams({ search_query: expression, start: '0', max_results: '20', sortBy: 'relevance', sortOrder: 'descending' });
+  const params = new URLSearchParams({
+    search_query: expression,
+    start: '0',
+    max_results: '20',
+    sortBy: 'relevance',
+    sortOrder: 'descending',
+  });
   let response;
   /* P_arxiv-error-visibility — surface the underlying network error
    * (undici cause code, fetch abort reason) so server logs and the
@@ -118,9 +151,11 @@ export async function searchArxivPapers(value: unknown) {
    * is why earlier today a real undici timeout / CDN reset looked
    * identical to a one-off blip. Distinguishing network vs parse vs
    * HTTP is what makes "arXiv unavailable" debuggable. */
-  try { response = await pacedFetch(`${ARXIV_API}?${params.toString()}`); }
-  catch (e) {
-    const reason = (e as { cause?: { code?: string } }).cause?.code || (e as Error).name || 'unknown';
+  try {
+    response = await pacedFetch(`${ARXIV_API}?${params.toString()}`);
+  } catch (e) {
+    const reason =
+      (e as { cause?: { code?: string } }).cause?.code || (e as Error).name || 'unknown';
     throw new ArxivConnectorError(
       `arXiv network error (${reason}): ${(e as Error).message}`,
       isRetryableConnectorFailure(e),
@@ -134,12 +169,18 @@ export async function searchArxivPapers(value: unknown) {
   }
   let parsed: unknown;
   try {
-    parsed = await parseStringPromise(await response.text(), { explicitArray: false, trim: true, normalize: true });
+    parsed = await parseStringPromise(await response.text(), {
+      explicitArray: false,
+      trim: true,
+      normalize: true,
+    });
   } catch (e) {
     throw new ArxivConnectorError(`arXiv returned an unreadable response: ${(e as Error).message}`);
   }
   const feed = isRecord(parsed) && isRecord(parsed.feed) ? parsed.feed : {};
-  const papers = asArray(feed.entry).map(toPaper).filter((paper) => paper.id);
+  const papers = asArray(feed.entry)
+    .map(toPaper)
+    .filter((paper) => paper.id);
   cache.set(query.toLowerCase(), { papers, expiresAt: Date.now() + CACHE_TTL_MS });
   return papers;
 }

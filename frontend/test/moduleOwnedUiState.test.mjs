@@ -23,7 +23,9 @@ test('module-owned UI stores share updates without publishing window globals', a
       const bridge = install();
       assert.equal(install(), bridge);
       let notifications = 0;
-      const unsubscribe = bridge.subscribe(() => { notifications += 1; });
+      const unsubscribe = bridge.subscribe(() => {
+        notifications += 1;
+      });
       const { revision: _revision, ...snapshot } = bridge.getSnapshot();
       bridge.publish({ ...snapshot, [openKey]: true });
       await Promise.resolve();

@@ -77,10 +77,7 @@ test('renderLivePreview: omission marker appears between head and tail, before p
     totalBytes: 0,
     totalLines: 0,
   };
-  assert.equal(
-    renderLivePreview(preview),
-    'h1\nh2\n… +5 lines (40 B) omitted\nt1\npartial',
-  );
+  assert.equal(renderLivePreview(preview), 'h1\nh2\n… +5 lines (40 B) omitted\nt1\npartial');
 });
 
 test('renderLivePreview reflects a real buffer that dropped middle lines', () => {

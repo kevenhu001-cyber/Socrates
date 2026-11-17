@@ -2,24 +2,39 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { getEventListeners } from 'node:events';
-import { createToolRunner } from '../src/routes/chat/pipeline/toolExecutors.js';
-import { dispatchToolCalls } from '../src/services/tools/toolDispatch.js';
+import { createToolRunner } from '../src/routes/chat/pipeline/toolRunner.js';
+import { dispatchToolCalls } from '../src/services/tools/toolScheduler.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
 
-after(async () => { await shutdownPubsub(); });
+after(async () => {
+  await shutdownPubsub();
+});
 
 function prepared(id = 'plan-1') {
-  const args = { kind:'plan', content:{ title: 'Test plan', steps: [{ title: 'One step' }] } };
+  const args = { kind: 'plan', content: { title: 'Test plan', steps: [{ title: 'One step' }] } };
   return {
-    call: { id, type: 'function', function: { name: 'create_document', arguments: JSON.stringify(args) } },
-    toolName: 'create_document', args, rejection: null, registryEntry: null,
+    call: {
+      id,
+      type: 'function',
+      function: { name: 'create_document', arguments: JSON.stringify(args) },
+    },
+    toolName: 'create_document',
+    args,
+    rejection: null,
+    registryEntry: null,
   };
 }
 
 function fixture(signal, delay = 0) {
-  const events = [], results = [], records = [], unmarked = [];
+  const events = [],
+    results = [],
+    records = [],
+    unmarked = [];
   const runner = createToolRunner({
-    req: {}, sessionIdFromQuery: null, projectIdFromBody: null, mode: 'chat',
+    req: {},
+    sessionIdFromQuery: null,
+    projectIdFromBody: null,
+    mode: 'chat',
     abortSignal: signal,
     emitter: { event: (...args) => events.push(args) },
     toolPolicy: {
@@ -30,7 +45,8 @@ function fixture(signal, delay = 0) {
     },
     onResult: (id, result) => results.push({ id, ...result }),
     schemaForTool: () => null,
-    connectorConnectionsByProvider: {}, projectConnectorConnectionsByProvider: {},
+    connectorConnectionsByProvider: {},
+    projectConnectorConnectionsByProvider: {},
   });
   return { runner, events, results, records, unmarked };
 }
@@ -93,12 +109,18 @@ for (const serial of [false, 'workspace']) {
     const ac = new AbortController();
     const f = fixture(ac.signal);
     let releaseFirst;
-    const gate = new Promise((resolve) => { releaseFirst = resolve; });
+    const gate = new Promise((resolve) => {
+      releaseFirst = resolve;
+    });
     let started;
-    const firstStarted = new Promise((resolve) => { started = resolve; });
+    const firstStarted = new Promise((resolve) => {
+      started = resolve;
+    });
     try {
-      const messages = dispatchToolCalls([prepared('first'), prepared('queued')],
-        (entry) => entry.toolName, { get: () => ({ sessionSerial: serial }) },
+      const messages = dispatchToolCalls(
+        [prepared('first'), prepared('queued')],
+        (entry) => entry.toolName,
+        { get: () => ({ sessionSerial: serial }) },
         async (entry) => {
           if (entry.call.id === 'first') {
             started();
@@ -106,12 +128,16 @@ for (const serial of [false, 'workspace']) {
             return { tool_call_id: 'first', content: 'completed' };
           }
           return f.runner(entry, ['create_document']);
-        });
+        },
+      );
       await firstStarted;
       ac.abort();
       releaseFirst();
       const result = await messages;
-      assert.deepEqual(result.map((m) => m.tool_call_id), ['first', 'queued']);
+      assert.deepEqual(
+        result.map((m) => m.tool_call_id),
+        ['first', 'queued'],
+      );
       assertCancelled(f, 'queued');
       const healthy = fixture(new AbortController().signal);
       await healthy.runner(prepared('next'), ['create_document']);

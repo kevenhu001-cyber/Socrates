@@ -8,7 +8,8 @@ import {
   tutorNodeProgressDecision,
 } from '../src/chat/send/tutorPolicy.ts';
 
-const substantiveAnswer = 'A thoughtful answer with enough detail to show how this idea works and why it matters.';
+const substantiveAnswer =
+  'A thoughtful answer with enough detail to show how this idea works and why it matters.';
 
 test('tutor progress counts detailed free-form answers but excludes quiz and practice origins', () => {
   assert.equal(isSubstantiveTutorAnswer(substantiveAnswer), true);
@@ -20,7 +21,8 @@ test('tutor progress counts detailed free-form answers but excludes quiz and pra
 });
 
 test('detailed CJK answers count without whitespace while brief replies do not', () => {
-  const answer = '导数表示函数在某一点附近的瞬时变化率，可以通过割线斜率的极限来理解，它不是简单地把函数值除以自变量。';
+  const answer =
+    '导数表示函数在某一点附近的瞬时变化率，可以通过割线斜率的极限来理解，它不是简单地把函数值除以自变量。';
   assert.equal(isSubstantiveTutorAnswer(answer), true);
   assert.equal(countsTowardTutorProgress(answer), true);
   assert.equal(isSubstantiveTutorAnswer('我不知道'), false);
@@ -49,15 +51,19 @@ test('node completion requires depth, exercise stage, and a free-form turn', () 
 
 test('stuck prompt escalation offers help, tracks rejection, and resets after four options', () => {
   assert.deepEqual(stuckPromptTransition({ stuckCount: 2, offered: false, rejected: 0 }), {
-    action: 'take-time', patch: null,
+    action: 'take-time',
+    patch: null,
   });
   assert.deepEqual(stuckPromptTransition({ stuckCount: 3, offered: false, rejected: 0 }), {
-    action: 'explain-prompt', patch: { stuckCheckOffered: true, stuckCount: 0 },
+    action: 'explain-prompt',
+    patch: { stuckCheckOffered: true, stuckCount: 0 },
   });
   assert.deepEqual(stuckPromptTransition({ stuckCount: 3, offered: true, rejected: 0 }), {
-    action: 'take-time', patch: { stuckCheckRejected: 1, stuckCount: 0 },
+    action: 'take-time',
+    patch: { stuckCheckRejected: 1, stuckCount: 0 },
   });
   assert.deepEqual(stuckPromptTransition({ stuckCount: 3, offered: true, rejected: 1 }), {
-    action: 'four-options', patch: { stuckCount: 0, stuckCheckOffered: false, stuckCheckRejected: 0 },
+    action: 'four-options',
+    patch: { stuckCount: 0, stuckCheckOffered: false, stuckCheckRejected: 0 },
   });
 });

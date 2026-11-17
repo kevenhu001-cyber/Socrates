@@ -2,14 +2,17 @@
  * Session tags, project cycling and context-menu actions.
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
 import { serverCache } from './serverCache.ts';
 import { findServerSessionIndex, getKnownTags, flushRecentsReconcile } from './recents.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { showToast } from '../ui/toast.js';
 import { renderTagEditor } from '../react/session-tags/tagEditorHost.tsx';
-import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-tags/TagEditorPopover.tsx';
+import type {
+  TagEditorLabels,
+  TagEditorPopoverProps,
+} from '../react/session-tags/TagEditorPopover.tsx';
 import { t } from '../i18n/index.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 
@@ -38,8 +41,9 @@ function _t(key: string, fallback?: string): string {
   return fallback != null ? fallback : key;
 }
 function _renderRecents(): void {
-  try { renderRecents(); }
-  catch {
+  try {
+    renderRecents();
+  } catch {
     /* empty-catch: intentional — rendering is best-effort */
   }
 }
@@ -73,7 +77,9 @@ function ensureTagPopover(): HTMLElement {
    so fall back to the row attribute. */
 function positionTagPopover(pop: HTMLElement, id: string, e?: TagEditorEvent | null): void {
   const fromEvent = e && e.currentTarget ? e.currentTarget.closest('.recent-item') : null;
-  const row = fromEvent || document.querySelector('.recent-item[data-recent-actual="' + CSS.escape(id) + '"]');
+  const row =
+    fromEvent ||
+    document.querySelector('.recent-item[data-recent-actual="' + CSS.escape(id) + '"]');
   if (row) {
     const r = row.getBoundingClientRect();
     pop.style.transform = '';
@@ -90,11 +96,15 @@ function tagEditorProps(id: string): TagEditorPopoverProps {
   const idx = findServerSessionIndex(id);
   const session = idx >= 0 ? serverCache.sessions[idx] : null;
   return {
-    tags: session && Array.isArray(session.tags) ? session.tags as string[] : [],
+    tags: session && Array.isArray(session.tags) ? (session.tags as string[]) : [],
     knownTags: getKnownTags(),
     labels: tagEditorLabels(),
-    onAdd: function (tag) { addTagToSession(id, tag); },
-    onRemove: function (tag) { removeTagFromSession(id, tag); },
+    onAdd: function (tag) {
+      addTagToSession(id, tag);
+    },
+    onRemove: function (tag) {
+      removeTagFromSession(id, tag);
+    },
     onClose: closeTagEditor,
   };
 }
@@ -107,7 +117,10 @@ function refreshTagEditor(id: string): void {
 }
 
 export function openTagEditor(id: string, e?: TagEditorEvent | null): void {
-  if (e) { e.stopPropagation(); e.preventDefault(); }
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
   const idx = findServerSessionIndex(id);
   if (idx < 0) return;
   const pop = ensureTagPopover();
@@ -128,7 +141,13 @@ function bindTagEditorDismiss(): void {
     document.addEventListener('click', function (ev) {
       const p = document.getElementById('tagEditorPopover');
       const target = ev.target as Element | null;
-      if (p && p.classList.contains('visible') && target && !p.contains(target) && !target.closest('[data-tag-open]')) {
+      if (
+        p &&
+        p.classList.contains('visible') &&
+        target &&
+        !p.contains(target) &&
+        !target.closest('[data-tag-open]')
+      ) {
         closeTagEditor();
       }
     });
@@ -166,7 +185,9 @@ export function removeTagFromSession(id: string, tag: string | null): void {
   const idx = findServerSessionIndex(id);
   if (idx < 0) return;
   const s = serverCache.sessions[idx];
-  s.tags = (Array.isArray(s.tags) ? s.tags as string[] : []).filter(function (t) { return t !== tag; });
+  s.tags = (Array.isArray(s.tags) ? (s.tags as string[]) : []).filter(function (t) {
+    return t !== tag;
+  });
   apiFetch('/api/sessions/' + encodeURIComponent(id) + '/tags', {
     method: 'PUT',
     body: { tags: s.tags },
@@ -213,24 +234,38 @@ function closeSessionContextMenu(): void {
 export function cycleActiveProject(): void {
   const projects = getCachedProjects();
   if (!projects.length) return;
-  const current = stateStore.read('currentProjectId');
+  const current = sessionStore.getState().currentProjectId;
   let idx = -1;
-  if (current) idx = projects.findIndex(function (p) { return p.id === current; });
+  if (current)
+    idx = projects.findIndex(function (p) {
+      return p.id === current;
+    });
   const next = projects[(idx + 1) % projects.length];
   if (!next) return;
   /* Move current chat to the next project. */
-  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: next.id });
-  const sessionId = stateStore.read('currentSessionId') as string | null;
+  dispatchSession({ type: 'session/set', key: 'currentProjectId', value: next.id });
+  const sessionId = sessionStore.getState().currentSessionId as string | null;
   if (sessionId) {
     /* The try/catch that used to wrap this call could never see a failure:
        apiFetch() is async, so a rejected PATCH escaped as an unhandled
        rejection. Attach the handler to the promise itself; the
        flushRecentsReconcile() below reconciles the list either way. */
     Promise.resolve()
-      .then(function () { return apiFetch('/api/sessions/' + encodeURIComponent(sessionId), { method: 'PATCH', body: { projectId: next.id } }); })
-      .catch(function (err) { console.warn('[projects] failed to move session to project:', (err as { message?: string } | null)?.message || err); });
+      .then(function () {
+        return apiFetch('/api/sessions/' + encodeURIComponent(sessionId), {
+          method: 'PATCH',
+          body: { projectId: next.id },
+        });
+      })
+      .catch(function (err) {
+        console.warn(
+          '[projects] failed to move session to project:',
+          (err as { message?: string } | null)?.message || err,
+        );
+      });
   }
   flushRecentsReconcile();
   _renderRecents();
-  if (typeof showToast === 'function') showToast(_t('toast.projectSwitched').replace('{name}', next.name));
+  if (typeof showToast === 'function')
+    showToast(_t('toast.projectSwitched').replace('{name}', next.name));
 }

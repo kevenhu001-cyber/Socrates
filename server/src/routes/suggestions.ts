@@ -79,11 +79,16 @@ function setCached(userId: string, lang: string, suggestions: Suggestion[]): voi
 }
 
 function truncate(value: unknown, maxLength: number): string {
-  const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
+  const text = String(value == null ? '' : value)
+    .replace(/\s+/g, ' ')
+    .trim();
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-function buildPromptMessages(context: SuggestionContext, lang: string): Array<{ role: string; content: string }> {
+function buildPromptMessages(
+  context: SuggestionContext,
+  lang: string,
+): Array<{ role: string; content: string }> {
   const sessionLines = context.recentSessions
     .map((session) => truncate(session.title || session.topic, 160))
     .filter(Boolean)
@@ -101,10 +106,15 @@ function buildPromptMessages(context: SuggestionContext, lang: string): Array<{ 
   if (context.customInstructions) {
     preferenceLines.push(`- Custom instructions: ${truncate(context.customInstructions, 1000)}`);
   }
-  if (context.preferences && Object.keys(context.preferences as Record<string, unknown>).length > 0) {
+  if (
+    context.preferences &&
+    Object.keys(context.preferences as Record<string, unknown>).length > 0
+  ) {
     try {
       preferenceLines.push(`- Preferences: ${truncate(JSON.stringify(context.preferences), 1200)}`);
-    } catch (_) { /* ignore non-serialisable preference blobs */ }
+    } catch (_) {
+      /* ignore non-serialisable preference blobs */
+    }
   }
   const memoryLines = context.memories
     .map((memory) => truncate(memory, 300))
@@ -161,7 +171,9 @@ function parseSuggestionsArray(content: string): unknown[] | null {
   try {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) return parsed;
-  } catch (_) { /* try the bracket-balanced slice below */ }
+  } catch (_) {
+    /* try the bracket-balanced slice below */
+  }
 
   const open = trimmed.indexOf('[');
   const close = trimmed.lastIndexOf(']');
@@ -193,12 +205,16 @@ function shapeSuggestions(rawArr: unknown, lang: string): Suggestion[] {
 
   const prompts: string[] = [];
   for (const item of rawArr) {
-    const candidate = item && typeof item === 'object'
-      ? (item as { prompt?: unknown; text?: unknown }).prompt ?? (item as { text?: unknown }).text
-      : item;
+    const candidate =
+      item && typeof item === 'object'
+        ? ((item as { prompt?: unknown; text?: unknown }).prompt ??
+          (item as { text?: unknown }).text)
+        : item;
     const prompt = normalizePrompt(candidate, lang);
     if (!prompt) return [];
-    const duplicate = prompts.some((existing) => existing.toLocaleLowerCase() === prompt.toLocaleLowerCase());
+    const duplicate = prompts.some(
+      (existing) => existing.toLocaleLowerCase() === prompt.toLocaleLowerCase(),
+    );
     if (duplicate) return [];
     prompts.push(prompt);
   }
@@ -215,12 +231,13 @@ async function generateStarters(
   lang: string,
 ): Promise<{ suggestions: Suggestion[]; source: string }> {
   const db = getDb();
-  const recentSessions = await db.select({
-    id: sessions.id,
-    title: sessions.title,
-    topic: sessions.topic,
-    mode: sessions.mode,
-  })
+  const recentSessions = await db
+    .select({
+      id: sessions.id,
+      title: sessions.title,
+      topic: sessions.topic,
+      mode: sessions.mode,
+    })
     .from(sessions)
     .where(and(eq(sessions.userId, userId), isNull(sessions.archivedAt)))
     .orderBy(desc(sessions.updatedAt))
@@ -234,29 +251,38 @@ async function generateStarters(
      user's own provider is intentionally ignored: this surface is a
      Beagle capability, not a generic LLM feature. */
   const provider = await getActiveApiKey(null).catch(() => null);
-  if (!provider || !provider.isBuiltIn || !provider.keyPlaintext || !provider.url || !provider.model) {
+  if (
+    !provider ||
+    !provider.isBuiltIn ||
+    !provider.keyPlaintext ||
+    !provider.url ||
+    !provider.model
+  ) {
     return EMPTY_RESULT('empty-no-beagle');
   }
 
   const sessionIds = recentSessions.map((session) => session.id);
   const [messageRows, profileRow, memoryRows] = await Promise.all([
-    db.select({
-      role: messages.role,
-      content: messages.rawText,
-      fallbackContent: messages.content,
-    })
+    db
+      .select({
+        role: messages.role,
+        content: messages.rawText,
+        fallbackContent: messages.content,
+      })
       .from(messages)
       .where(inArray(messages.sessionId, sessionIds))
       .orderBy(desc(messages.createdAt))
       .limit(30),
-    db.select({
-      customInstructions: users.customInstructions,
-      preferences: users.preferences,
-    })
+    db
+      .select({
+        customInstructions: users.customInstructions,
+        preferences: users.preferences,
+      })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1),
-    db.select({ text: memories.text })
+    db
+      .select({ text: memories.text })
       .from(memories)
       .where(and(eq(memories.userId, userId), eq(memories.enabled, true)))
       .orderBy(desc(memories.createdAt))

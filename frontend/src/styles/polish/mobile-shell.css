@@ -9,7 +9,10 @@
     border: 0;
     background: var(--background);
   }
-  #appShell .top-bar-left, #appShell .top-bar-right { gap: 8px; }
+  #appShell .top-bar-left,
+  #appShell .top-bar-right {
+    gap: 8px;
+  }
   #appShell #sidebarOpenBtn {
     width: var(--ui-control-md);
     min-width: var(--ui-control-md);
@@ -22,16 +25,33 @@
   }
   /* Reference header glyphs: 20px, the drawer toggle and new chat in the
      secondary grey (#b0b0b0 dark / #8f8f8f light), trailing actions in ink. */
-  #appShell #sidebarOpenBtn svg { width: 20px; height: 20px; }
-  #appShell .top-bar-left { --ui-ink-secondary: var(--ui-icon-secondary); }
-  #appShell .top-bar-right { --ui-ink-secondary: var(--ui-text-primary); }
+  #appShell #sidebarOpenBtn svg {
+    width: 20px;
+    height: 20px;
+  }
+  #appShell .top-bar-left {
+    --ui-ink-secondary: var(--ui-icon-secondary);
+  }
+  #appShell .top-bar-right {
+    --ui-ink-secondary: var(--ui-text-primary);
+  }
   /* Reference: the sidebar glyph (rounded frame + rail line), not a hamburger. */
-  #appShell #sidebarOpenBtn .glyph-panel { display: block; }
-  #appShell #sidebarOpenBtn .glyph-hamburger { display: none; }
+  #appShell #sidebarOpenBtn .glyph-panel {
+    display: block;
+  }
+  #appShell #sidebarOpenBtn .glyph-hamburger {
+    display: none;
+  }
   /* Directories own their heading/actions; chat configuration has no
      context here, even before the main-view attribute catches up. */
-  body.workspace-active #appShell .top-model-slot { display: none; }
-  #appShell .mobile-newchat-btn { display: inline-flex; align-items: center; justify-content: center; }
+  body.workspace-active #appShell .top-model-slot {
+    display: none;
+  }
+  #appShell .mobile-newchat-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   /* The same React mode control serves desktop and phone. The compact model
      chip is a separate, labelled action at the trailing edge. */
   #appShell .top-mode-switch {
@@ -42,11 +62,19 @@
     --ui-fill: var(--ui-bg-segment);
     --ui-card: var(--ui-bg-field);
   }
-  [data-mode="dark"] #appShell .top-mode-switch { --ui-ink-secondary: var(--ui-text-nav); }
-  [data-mode="light"] #appShell .top-mode-switch { --ui-ink-secondary: var(--ui-text-secondary); }
-  body:not([data-conversation-active="true"]) #appShell .mobile-newchat-btn { display: none; }
+  [data-mode='dark'] #appShell .top-mode-switch {
+    --ui-ink-secondary: var(--ui-text-nav);
+  }
+  [data-mode='light'] #appShell .top-mode-switch {
+    --ui-ink-secondary: var(--ui-text-secondary);
+  }
+  body:not([data-conversation-active='true']) #appShell .mobile-newchat-btn {
+    display: none;
+  }
   /* 手机对话中不显示模型 chip（RN-7 前的行为）；模型设置仍可从提问框的强度胶囊打开。 */
-  body[data-conversation-active="true"] #appShell .top-model-slot { display: none; }
+  body[data-conversation-active='true'] #appShell .top-model-slot {
+    display: none;
+  }
   /* Phone model control: a compact chip that names the model. The desktop
      lockup ("Socrates <model>") is 278px wide, which painted through the
      centred mode switch on a 390px bar; phones drop the brand and cap the
@@ -57,7 +85,10 @@
      mode switch takes another 152px — a 390px bar has nothing left for a chip.
      The composer's effort pill opens the same configuration popover, so the
      phone header keeps only navigation there. */
-  #appShell .main-content, #appShell .main-inner { padding: 0; }
+  #appShell .main-content,
+  #appShell .main-inner {
+    padding: 0;
+  }
   #appShell #topicSetup {
     position: relative;
     display: flex;
@@ -68,7 +99,8 @@
     height: 100%;
     width: 100%;
     gap: 0;
-    padding: 0 var(--ui-mobile-page-gutter) calc(var(--ui-mobile-bottom) + var(--keyboard-inset, 0px));
+    padding: 0 var(--ui-mobile-page-gutter)
+      calc(var(--ui-mobile-bottom) + var(--keyboard-inset, 0px));
     overflow: hidden;
   }
   #appShell #topicSetup .topic-title.greeting {
@@ -92,11 +124,17 @@
      button and the centred mode switch — it used to paint straight through
      the switch. The tutor stage is still announced by the pill's status role
      on wider screens and by the conversation itself on phones. */
-  body.workspace-active #appShell .mobile-newchat-btn { display: none; }
+  body.workspace-active #appShell .mobile-newchat-btn {
+    display: none;
+  }
   /* Reference conversation header: drawer · new chat · title, actions on
      the trailing edge. The left group takes the free width so the title
      can ellipsize instead of pushing find / share off the bar. */
-  body[data-conversation-active="true"] #appShell .top-bar-left { flex: 1 1 auto; min-width: 0; gap: 0; }
+  body[data-conversation-active='true'] #appShell .top-bar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0;
+  }
   #appShell .top-conversation-title {
     flex: 1 1 auto;
     min-width: 0;
@@ -111,7 +149,9 @@
     font-weight: var(--ui-font-weight-semibold);
     line-height: 24px;
   }
-  body.workspace-active #appShell .top-conversation-title { display: none; }
+  body.workspace-active #appShell .top-conversation-title {
+    display: none;
+  }
 }
 
 @media (max-width: 359px) {

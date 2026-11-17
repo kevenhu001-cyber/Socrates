@@ -13,7 +13,10 @@ import type {
 
 export type ChatRole = 'user' | 'assistant' | 'system';
 
-export interface ChatAttachment extends Omit<ContractAttachment, 'id' | 'kind' | 'name' | 'mime' | 'size'> {
+export interface ChatAttachment extends Omit<
+  ContractAttachment,
+  'id' | 'kind' | 'name' | 'mime' | 'size'
+> {
   id?: string;
   kind?: string;
   name?: string;
@@ -26,7 +29,19 @@ export interface ChatAttachment extends Omit<ContractAttachment, 'id' | 'kind' |
   error?: string;
 }
 
-export interface ToolCall extends Omit<ContractToolCall, 'input' | 'results' | 'visualizations' | 'detail' | 'artifacts' | 'durationMs' | 'argumentsText' | 'stderr' | 'errorText' | 'userMessage'> {
+export interface ToolCall extends Omit<
+  ContractToolCall,
+  | 'input'
+  | 'results'
+  | 'visualizations'
+  | 'detail'
+  | 'artifacts'
+  | 'durationMs'
+  | 'argumentsText'
+  | 'stderr'
+  | 'errorText'
+  | 'userMessage'
+> {
   input?: unknown;
   durationMs?: number;
   argumentsText?: string;
@@ -66,12 +81,7 @@ export interface StreamTerminalFrame {
 
 export type ChatStreamFrame = TextDeltaFrame | ToolCallDeltaFrame | StreamTerminalFrame;
 
-export type ChatStreamStatus =
-  | 'idle'
-  | 'streaming'
-  | 'completed'
-  | 'aborted'
-  | 'failed';
+export type ChatStreamStatus = 'idle' | 'streaming' | 'completed' | 'aborted' | 'failed';
 
 export interface ChatStreamSnapshot {
   messageId: string | null;
@@ -88,7 +98,10 @@ export interface ChatMessageSummary {
  * One transcript row: the persisted `@socrates/contracts` Message plus the
  * ephemeral fields owned by the web streaming runtime.
  */
-export interface ChatMessage extends Omit<ContractMessage, 'role' | 'attachments' | 'toolCalls' | 'turnRuntime'> {
+export interface ChatMessage extends Omit<
+  ContractMessage,
+  'role' | 'attachments' | 'toolCalls' | 'turnRuntime'
+> {
   clientId?: string;
   id?: string;
   role?: 'user' | 'assistant' | 'system' | string;
@@ -158,7 +171,7 @@ export interface ChatMessage extends Omit<ContractMessage, 'role' | 'attachments
   /** Transient live task preview from turn_summary initial frames. Not persisted. */
   _taskSummary?: string | null;
   /** Server-owned public progress; private reasoning is never used as copy. */
-  _activity?: import("@socrates/contracts").PublicTurnActivity;
+  _activity?: import('@socrates/contracts').PublicTurnActivity;
   turnRuntime?: TurnRuntime | null;
   /** In-place message branching variants and active index (< 1 / 2 >). */
   branchInfo?: {
@@ -195,7 +208,8 @@ export interface ChatMessage extends Omit<ContractMessage, 'role' | 'attachments
  * line as soon as the real row mounts, so the two never appear together.
  */
 export interface LiveTurnStatus {
-  phase: 'waiting' | 'thinking' | 'synthesizing' | 'retrying' | 'error' | 'stopped' | 'tool-running';
+  phase:
+    'waiting' | 'thinking' | 'synthesizing' | 'retrying' | 'error' | 'stopped' | 'tool-running';
   toolName?: string;
   /** Already-translated copy — the writer knows the app language. */
   label?: string;

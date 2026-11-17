@@ -1,4 +1,3 @@
-
 /*
  * Socrates visual layer
  *
@@ -11,7 +10,7 @@
   /* --cg-font is owned by the themes.css bridge (Inter-first, asserted by
      placeholder-localization.spec); the Plus-Jakarta-first copy that used to
      live here was dead — removed 2026-10-10. */
-  --cg-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --cg-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   --cg-radius-sm: 8px;
   --cg-radius-md: 14px;
   --cg-radius-lg: 22px;
@@ -24,8 +23,6 @@
   --cg-content-width: calc(1024px * var(--app-width-scale, 1));
 }
 
-
-
 html,
 body,
 #appShell {
@@ -36,76 +33,73 @@ body,
   /* --app-sidebar-width is intentionally NOT declared here: sidebarResize.js
      sets it on <html>, and a local declaration would shadow that value and
      freeze the sidebar drag. Falls back to --cg-sidebar-width (240/260px). */
-  --conversation-content-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
-  --conversation-composer-width: min(calc(768px * var(--app-width-scale, 1)), calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px));
+  --conversation-content-width: min(
+    calc(768px * var(--app-width-scale, 1)),
+    calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px)
+  );
+  --conversation-composer-width: min(
+    calc(768px * var(--app-width-scale, 1)),
+    calc(100vw - var(--app-sidebar-width, var(--cg-sidebar-width)) - 48px)
+  );
   --workbench-content-max: var(--cg-content-width);
 }
 
 /* Shell / rail */
 
-
 @media (max-width: 768px) {
-
-#appShell .sidebar::after {
-  display: none !important;
-}
+  #appShell .sidebar::after {
+    display: none !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-logo {
-  color: var(--cg-text);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-header .icon-btn:hover {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--ui-radius-sm);
-}
-
-#appShell .sidebar-header .icon-btn {
-  background: transparent;
-}
+  #appShell .sidebar-logo {
+    color: var(--cg-text);
+  }
 }
 
 @media (max-width: 768px) {
+  #appShell .sidebar-header .icon-btn:hover {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ui-radius-sm);
+  }
 
-#appShell .sidebar-header .icon-btn:hover {
-  color: var(--cg-text);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn svg {
-  opacity: 0.92;
-}
+  #appShell .sidebar-header .icon-btn {
+    background: transparent;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell #navNew.sidebar-nav-btn:hover {
-  background: var(--cg-surface-hover);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-search:focus-within {
-  border-color: var(--cg-border-strong);
-  background: var(--cg-surface);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent);
-}
+  #appShell .sidebar-header .icon-btn:hover {
+    color: var(--cg-text);
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .recents-title {
-  text-transform: none;
+  #appShell .sidebar-nav-btn svg {
+    opacity: 0.92;
+  }
 }
+
+@media (max-width: 768px) {
+  #appShell #navNew.sidebar-nav-btn:hover {
+    background: var(--cg-surface-hover);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .sidebar-search:focus-within {
+    border-color: var(--cg-border-strong);
+    background: var(--cg-surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cg-accent) 14%, transparent);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .recents-title {
+    text-transform: none;
+  }
 }
 
 #appShell .recents-filter-chips {
@@ -113,71 +107,63 @@ body,
 }
 
 @media (max-width: 768px) {
+  #appShell .recent-item:hover .recent-item-text {
+    color: var(--cg-text);
+  }
 
-#appShell .recent-item:hover .recent-item-text {
-  color: var(--cg-text);
-}
-
-#appShell .recent-item.active .recent-item-text {
-  color: var(--cg-text);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .user-row {
-  min-width: 0;
-  padding: 4px;
-  border-radius: var(--ui-radius-sm);
-}
+  #appShell .recent-item.active .recent-item-text {
+    color: var(--cg-text);
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .user-row:hover {
-  background: var(--cg-surface-hover);
-}
+  #appShell .user-row {
+    min-width: 0;
+    padding: 4px;
+    border-radius: var(--ui-radius-sm);
+  }
 }
 
 @media (max-width: 768px) {
+  #appShell .user-row:hover {
+    background: var(--cg-surface-hover);
+  }
+}
 
-#appShell .user-avatar {
-  /* Default identity mark is neutral gray; the gold accent stays reserved
+@media (max-width: 768px) {
+  #appShell .user-avatar {
+    /* Default identity mark is neutral gray; the gold accent stays reserved
      for interactive/active surfaces instead of every avatar. */
-  background: var(--cg-surface-hover);
-  color: var(--cg-text);
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .sidebar-footer-actions > .icon-btn {
-  color: var(--cg-text-muted);
-}
+    background: var(--cg-surface-hover);
+    color: var(--cg-text);
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-footer-actions > .icon-btn:hover {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
+  #appShell .sidebar-footer-actions > .icon-btn {
+    color: var(--cg-text-muted);
+  }
 }
+
+@media (max-width: 768px) {
+  #appShell .sidebar-footer-actions > .icon-btn:hover {
+    color: var(--cg-text);
+    background: var(--cg-surface-hover);
+  }
 }
 
 /* Top bar and landing */
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle {
-  padding: 7px 20px;
-}
+  #appShell .top-mode-tabs .app-mode-toggle {
+    padding: 7px 20px;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle:hover {
-  color: var(--cg-text);
-}
+  #appShell .top-mode-tabs .app-mode-toggle:hover {
+    color: var(--cg-text);
+  }
 }
 
 #appShell .top-bar .toggle-sidebar {
@@ -187,23 +173,21 @@ body,
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-bar .icon-btn,
-#appShell .top-bar .cg-circle-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: var(--cg-text-secondary);
-}
+  #appShell .top-bar .icon-btn,
+  #appShell .top-bar .cg-circle-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    color: var(--cg-text-secondary);
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-bar .icon-btn:hover,
-#appShell .top-bar .cg-circle-btn:hover {
-  color: var(--cg-text);
-  background: var(--cg-surface);
-}
+  #appShell .top-bar .icon-btn:hover,
+  #appShell .top-bar .cg-circle-btn:hover {
+    color: var(--cg-text);
+    background: var(--cg-surface);
+  }
 }
 
 #appShell #mainInner {
@@ -212,10 +196,9 @@ body,
 }
 
 @media (min-width: 769px) {
-
-#appShell #topicSetup {
-  gap: 0;
-}
+  #appShell #topicSetup {
+    gap: 0;
+  }
 }
 
 #appShell #topicSetup::before,
@@ -225,10 +208,9 @@ body,
 }
 
 @media (min-width: 769px) {
-
-#appShell .topic-title.greeting {
-  max-width: 680px;
-}
+  #appShell .topic-title.greeting {
+    max-width: 680px;
+  }
 }
 
 #appShell .topic-sub {
@@ -239,7 +221,6 @@ body,
 
 /* One-row idle composer. The existing editor still expands to the legacy
    multiline grid when its controller adds .composer-multiline. */
-
 
 #appShell .effort-trigger .effort-glyph {
   width: 14px;
@@ -279,12 +260,12 @@ body,
 /* Plus menu: built-in actions remain intact, real connectors occupy a calm
    directory section underneath them. */
 
-#composerToolsMenu .composer-tools-item{
+#composerToolsMenu .composer-tools-item {
   color: var(--cg-text-secondary);
 }
 
 #composerToolsMenu .composer-tools-item:hover,
-#composerToolsMenu .composer-tools-item:focus-visible{
+#composerToolsMenu .composer-tools-item:focus-visible {
   color: var(--cg-text);
   background: var(--cg-surface-hover);
   outline: none;
@@ -296,7 +277,6 @@ body,
   border-top: 1px solid var(--cg-border);
 }
 
-
 .scheduled-section-heading {
   display: flex;
   align-items: center;
@@ -306,7 +286,6 @@ body,
   font-size: 13px;
   font-weight: var(--ui-font-weight-semibold);
 }
-
 
 .scheduled-section-heading > span:last-child {
   color: var(--cg-text-muted);
@@ -346,13 +325,11 @@ body,
 }
 
 .composer-tools-plugin-item.is-unavailable {
-  opacity: .48;
+  opacity: 0.48;
   cursor: not-allowed;
 }
 
-
-
-.composer-tools-plugin-name{
+.composer-tools-plugin-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -363,12 +340,6 @@ body,
   font-size: 12px;
   font-weight: var(--ui-font-weight-semibold);
 }
-
-
-
-
-
-
 
 .composer-tools-plugin-state {
   padding: 18px 8px;
@@ -477,10 +448,9 @@ body.workspace-active #appShell .main-page {
   gap: 0;
 }
 
-
 body.workspace-active #appShell .workspace-primary,
 body.workspace-active #appShell .workspace-secondary,
-body.workspace-active #appShell .workspace-danger{
+body.workspace-active #appShell .workspace-danger {
   height: 36px;
   padding: 0 16px;
   border-radius: var(--radius-md);
@@ -498,24 +468,24 @@ body.workspace-active #appShell .workspace-primary:hover {
   filter: brightness(0.94);
 }
 
-body.workspace-active #appShell .workspace-secondary{
+body.workspace-active #appShell .workspace-secondary {
   border: 1px solid var(--border);
   color: var(--foreground);
   background: var(--background);
 }
 
-body.workspace-active #appShell .workspace-secondary:hover{
+body.workspace-active #appShell .workspace-secondary:hover {
   color: var(--accent-foreground);
   background: var(--accent);
 }
 
-body.workspace-active #appShell .workspace-danger{
+body.workspace-active #appShell .workspace-danger {
   border: 1px solid transparent;
   color: var(--destructive);
   background: transparent;
 }
 
-body.workspace-active #appShell .workspace-danger:hover{
+body.workspace-active #appShell .workspace-danger:hover {
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
 }
 
@@ -529,16 +499,10 @@ body.workspace-active #appShell .workspace-danger:hover{
    in surfaces.css) — the legacy `.plugins-list` host rules were removed with
    the static shell. */
 
-
-
-
-
 /* Kimi-style quiet connected state: a bare accent checkmark instead of a
    text pill. The accessible label lives on the span (aria-label). */
 
 /* Scheduled */
-
-
 
 .scheduled-section-heading {
   margin-top: 30px;
@@ -647,12 +611,6 @@ body.workspace-active #appShell .workspace-danger:hover{
 
 /* Existing library/projects controls inherit the same page rhythm. */
 
-
-
-
-
-
-
 .library-tab {
   min-height: 34px;
   border-radius: 17px;
@@ -663,8 +621,6 @@ body.workspace-active #appShell .workspace-danger:hover{
   color: var(--cg-text);
   background: var(--cg-surface-hover);
 }
-
-
 
 body.workspace-active #appShell .workspace-row {
   border-bottom: 1px solid var(--cg-border);
@@ -719,7 +675,7 @@ body.workspace-active #appShell .workspace-row:hover {
 
 /* A colour swatch is a picker, not a text field: keep it at the control rung
    instead of stretching it across the form. */
-.workspace-field input[type="color"] {
+.workspace-field input[type='color'] {
   width: 48px;
   padding: 2px;
   cursor: pointer;
@@ -747,8 +703,6 @@ body.workspace-active #appShell .workspace-row:hover {
     --conversation-composer-width: calc(100vw - 28px);
   }
 
-
-
   #appShell .top-mode-tabs {
     min-width: 166px;
   }
@@ -765,7 +719,7 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 
   #appShell #topicSetup::before,
-#appShell #topicSetup::after {
+  #appShell #topicSetup::after {
     display: none !important;
   }
 
@@ -788,14 +742,11 @@ body.workspace-active #appShell .workspace-row:hover {
   }
 }
 
-
-
 /* Final cascade guard. The legacy stylesheet contains a few later, highly
    specific composer rules. Keep the new idle geometry authoritative while
    leaving measured multiline and plugin-chip states free to expand. */
 
 @media (max-width: 768px) {
-
   /* A measured multiline draft and a selected plugin stack share the same
      two-tier rhythm: content above, controls below. */
 
@@ -819,19 +770,6 @@ body.workspace-active #appShell .workspace-row:hover {
    3. A centered row of quick capability chips under the composer
       (markup: #topicQuickActions in index.html; logic: ui/quickChips.js). */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Two-zone idle composer (desktop). Same selector shape as the cascade
    guard so the later declaration wins without specificity games. The
    footer stays display:contents — each control is placed onto row 2. */
@@ -850,7 +788,6 @@ body.workspace-active #appShell .workspace-row:hover {
 /* The workspace-active button theme block above forces a 10px radius on
    every action button; the directory's Connect/Refresh pills stay round. */
 
-
 /* ─── Reference-aligned chat and workspace surfaces ─────────────────────
    The supplied desktop references use a quiet, open canvas: one compact
    composer row, broad page gutters, and list rows separated by hairlines.
@@ -858,8 +795,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
 /* The --cg-* palette names that used to be pinned here are owned by the
    themes.css bridge — removed 2026-10-10. */
-
-
 
 body.workspace-active #appShell #mainInner {
   width: min(100%, 1120px);
@@ -886,11 +821,9 @@ body.workspace-active #appShell #mainInner {
 .plugin-directory-head h2 {
   margin: 0;
   color: var(--cg-text);
-  letter-spacing: -.035em;
+  letter-spacing: -0.035em;
   line-height: 1.15;
 }
-
-
 
 .workspace-head-actions {
   display: flex;
@@ -908,7 +841,9 @@ body.workspace-active #appShell #mainInner {
   padding-inline: 14px;
   gap: 10px;
   background: var(--cg-surface);
-  transition: border-color .16s ease, background-color .16s ease;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
 }
 
 .workspace-search-field:focus-within,
@@ -962,9 +897,17 @@ body.workspace-active #appShell #mainInner {
   cursor: pointer;
 }
 
-.workspace-create-button:hover { opacity: .88; }
-.workspace-create-button:focus-visible { outline: 2px solid transparent; outline-offset: 2px; }
-.workspace-create-button svg { width: 18px; height: 18px; }
+.workspace-create-button:hover {
+  opacity: 0.88;
+}
+.workspace-create-button:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.workspace-create-button svg {
+  width: 18px;
+  height: 18px;
+}
 
 .workspace-toolbar {
   display: flex;
@@ -993,7 +936,9 @@ body.workspace-active #appShell #mainInner {
   cursor: pointer;
 }
 
-.workspace-tabs button:hover { color: var(--cg-text); }
+.workspace-tabs button:hover {
+  color: var(--cg-text);
+}
 
 .workspace-tabs button.active {
   color: var(--cg-text);
@@ -1001,7 +946,9 @@ body.workspace-active #appShell #mainInner {
   font-weight: var(--ui-font-weight-semibold);
 }
 
-.workspace-table { width: 100%; }
+.workspace-table {
+  width: 100%;
+}
 .workspace-table-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 180px 110px 60px;
@@ -1019,59 +966,170 @@ body.workspace-active #appShell .library-row {
   border-bottom: 1px solid var(--cg-border);
 }
 
-.library-checkbox-label { padding-left: 4px; opacity: 0; transition: opacity .16s ease; }
+.library-checkbox-label {
+  padding-left: 4px;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
 .library-row:hover .library-checkbox-label,
 .library-row-selected .library-checkbox-label,
-.library-checkbox-label:focus-within { opacity: 1; }
-.library-file-icon { width: 42px; height: 42px; border: 1px solid var(--cg-border); border-radius: 10px; background: var(--cg-surface-raised); cursor: pointer; }
-.library-file-icon svg { width: 19px; height: 19px; }
-.library-row .workspace-row-copy { align-self: center; gap: 3px; cursor: pointer; }
-.library-row .workspace-row-copy strong { color: var(--cg-text); font-size: 14px; font-weight: var(--ui-font-weight-semibold); }
-.library-mobile-meta { display: none; }
+.library-checkbox-label:focus-within {
+  opacity: 1;
+}
+.library-file-icon {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--cg-border);
+  border-radius: 10px;
+  background: var(--cg-surface-raised);
+  cursor: pointer;
+}
+.library-file-icon svg {
+  width: 19px;
+  height: 19px;
+}
+.library-row .workspace-row-copy {
+  align-self: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.library-row .workspace-row-copy strong {
+  color: var(--cg-text);
+  font-size: 14px;
+  font-weight: var(--ui-font-weight-semibold);
+}
+.library-mobile-meta {
+  display: none;
+}
 .library-updated,
-.library-size { align-self: center; color: var(--cg-text-secondary); font-size: 13px; }
-.library-row-actions { align-self: center; justify-self: end; }
-.library-row-actions .workspace-row-action { opacity: 0; }
+.library-size {
+  align-self: center;
+  color: var(--cg-text-secondary);
+  font-size: 13px;
+}
+.library-row-actions {
+  align-self: center;
+  justify-self: end;
+}
+.library-row-actions .workspace-row-action {
+  opacity: 0;
+}
 .library-row:hover .library-row-actions .workspace-row-action,
-.library-row-actions .workspace-row-action:focus-visible { opacity: 1; }
+.library-row-actions .workspace-row-action:focus-visible {
+  opacity: 1;
+}
 
-.projects-list { border-top: 1px solid var(--cg-border); }
+.projects-list {
+  border-top: 1px solid var(--cg-border);
+}
 body.workspace-active #appShell .project-row {
   min-height: 82px;
   padding: 12px 8px;
   border-bottom: 1px solid var(--cg-border);
 }
-.project-main { gap: 16px; }
-.project-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, currentColor 13%, transparent); }
-.project-icon svg { width: 24px; height: 24px; }
-.project-row .workspace-row-copy { gap: 5px; }
-.project-row .workspace-row-copy strong { color: var(--cg-text); font-size: 15px; font-weight: var(--ui-font-weight-semibold); }
-.project-row .workspace-row-copy span { color: var(--cg-text-muted); font-size: 13px; }
-.workspace-icon-action { display: grid; place-items: center; padding: 0; }
-.workspace-icon-action svg { width: 18px; height: 18px; }
+.project-main {
+  gap: 16px;
+}
+.project-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 13%, transparent);
+}
+.project-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.project-row .workspace-row-copy {
+  gap: 5px;
+}
+.project-row .workspace-row-copy strong {
+  color: var(--cg-text);
+  font-size: 15px;
+  font-weight: var(--ui-font-weight-semibold);
+}
+.project-row .workspace-row-copy span {
+  color: var(--cg-text-muted);
+  font-size: 13px;
+}
+.workspace-icon-action {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.workspace-icon-action svg {
+  width: 18px;
+  height: 18px;
+}
 
 @media (max-width: 900px) {
-  .workspace-page-head { align-items: stretch; flex-direction: column; gap: 20px; }
-  .plugin-directory-head { flex-direction: column; }
-  .workspace-head-actions { flex: 0 0 auto; justify-content: flex-start; }
-  .workspace-table-head { grid-template-columns: minmax(0, 1fr) 120px 80px 48px; }
-  body.workspace-active #appShell .library-row { grid-template-columns: 24px 42px minmax(0, 1fr) 120px 80px 48px; }
+  .workspace-page-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .plugin-directory-head {
+    flex-direction: column;
+  }
+  .workspace-head-actions {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+  }
+  .workspace-table-head {
+    grid-template-columns: minmax(0, 1fr) 120px 80px 48px;
+  }
+  body.workspace-active #appShell .library-row {
+    grid-template-columns: 24px 42px minmax(0, 1fr) 120px 80px 48px;
+  }
 }
 
 @media (max-width: 640px) {
   .workspace-page-head h1,
-  .plugin-directory-head h2 { font-size: 26px; }
-  .workspace-head-actions { align-items: stretch; flex-direction: column; }
-  .workspace-search-field { width: 100%; }
-  .workspace-create-button { align-self: flex-start; }
-  .workspace-table-head { display: none; }
-  body.workspace-active #appShell .library-row { grid-template-columns: 20px 40px minmax(0, 1fr) 36px; min-height: 68px; gap: 10px; }
-  .library-file-icon { width: 40px; height: 40px; }
+  .plugin-directory-head h2 {
+    font-size: 26px;
+  }
+  .workspace-head-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .workspace-search-field {
+    width: 100%;
+  }
+  .workspace-create-button {
+    align-self: flex-start;
+  }
+  .workspace-table-head {
+    display: none;
+  }
+  body.workspace-active #appShell .library-row {
+    grid-template-columns: 20px 40px minmax(0, 1fr) 36px;
+    min-height: 68px;
+    gap: 10px;
+  }
+  .library-file-icon {
+    width: 40px;
+    height: 40px;
+  }
   .library-updated,
-  .library-size { display: none; }
-  .library-mobile-meta { display: block; }
-  .library-row-actions { grid-column: 4; }
-  .library-row-actions .workspace-row-action { width: 36px; overflow: hidden; padding: 0; font-size: 0; }
-  .library-row-actions .workspace-row-action::before { content: "•••"; font-size: 12px; }
+  .library-size {
+    display: none;
+  }
+  .library-mobile-meta {
+    display: block;
+  }
+  .library-row-actions {
+    grid-column: 4;
+  }
+  .library-row-actions .workspace-row-action {
+    width: 36px;
+    overflow: hidden;
+    padding: 0;
+    font-size: 0;
+  }
+  .library-row-actions .workspace-row-action::before {
+    content: '•••';
+    font-size: 12px;
+  }
 }
-

@@ -15,13 +15,15 @@ import path from 'node:path';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 export const WORKSPACE_ROOT = String(
-  process.env.WORKSPACE_ROOT
-  || process.env.CODEX_WORKSPACE_ROOT
-  || path.join(os.tmpdir(), 'socrates-workspaces'),
+  process.env.WORKSPACE_ROOT ||
+    process.env.CODEX_WORKSPACE_ROOT ||
+    path.join(os.tmpdir(), 'socrates-workspaces'),
 );
 
 function safeWorkspaceSegment(value: string, maxLength: number): string {
-  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, maxLength);
+  return String(value || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .slice(0, maxLength);
 }
 
 /** Stable server-owned key for the directory attached to one conversation. */
@@ -84,7 +86,10 @@ function writeFileIfAbsent(target: string, contents: string): void {
  * a root AGENTS.md automatically; the file is only created when absent so
  * deliberate workspace instructions are preserved.
  */
-export function ensureWorkspaceInstructions(workspacePath: string, projectInstructions?: string | null): void {
+export function ensureWorkspaceInstructions(
+  workspacePath: string,
+  projectInstructions?: string | null,
+): void {
   const instructions = String(projectInstructions || '').trim();
   const socratesDir = path.join(workspacePath, '.socrates');
   const skillsDir = path.join(workspacePath, '.agents', 'skills');
@@ -92,7 +97,9 @@ export function ensureWorkspaceInstructions(workspacePath: string, projectInstru
   mkdirSync(skillsDir, { recursive: true });
   writeFileSync(
     path.join(socratesDir, 'PROJECT_INSTRUCTIONS.md'),
-    instructions ? `# Socrates project instructions\n\n${instructions.slice(0, 50_000)}\n` : '# Socrates project instructions\n\nNo additional project instructions.\n',
+    instructions
+      ? `# Socrates project instructions\n\n${instructions.slice(0, 50_000)}\n`
+      : '# Socrates project instructions\n\nNo additional project instructions.\n',
     { encoding: 'utf8', mode: 0o600 },
   );
   const agentsPath = path.join(workspacePath, 'AGENTS.md');
@@ -125,7 +132,9 @@ export function removeProjectWorkspace(userId: string | null, projectKey: string
     const safeProject = safeWorkspaceSegment(projectKey, 80);
     const dir = path.join(WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
     rmSync(dir, { recursive: true, force: true });
-  } catch { /* best-effort cleanup */ }
+  } catch {
+    /* best-effort cleanup */
+  }
 }
 
 /** Remove a conversation workspace tree (best-effort). */
@@ -135,5 +144,7 @@ export function removeSessionWorkspace(userId: string | null, sessionId: string)
     const safeSession = safeWorkspaceSegment(sessionId, 64);
     const dir = path.join(WORKSPACE_ROOT, `u_${safeUser}`, `s_${safeSession}`);
     rmSync(dir, { recursive: true, force: true });
-  } catch { /* best-effort cleanup */ }
+  } catch {
+    /* best-effort cleanup */
+  }
 }

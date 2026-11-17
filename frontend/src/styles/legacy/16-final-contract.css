@@ -15,50 +15,59 @@
 /* ChatGPT-like empty state: quiet background, centered greeting, and a
    single broad composer that reads as the primary action. */
 /* P_has-invalidation — see ui/layoutStateMirror.js. */
-:where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg{opacity:.1}
-.top-bar{
-  padding-top:max(8px,env(safe-area-inset-top,0px));
-  padding-left:max(14px,env(safe-area-inset-left,0px));
-  padding-right:max(14px,env(safe-area-inset-right,0px));
+:where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg {
+  opacity: 0.1;
 }
-@media (min-width: 769px){
-.topic-setup{
-  box-sizing:border-box;
-  justify-content:center;
-  gap:0;
-  /* P_topic-lower — shift the centered group slightly below true center
+.top-bar {
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 769px) {
+  .topic-setup {
+    box-sizing: border-box;
+    justify-content: center;
+    gap: 0;
+    /* P_topic-lower — shift the centered group slightly below true center
      so the greeting + input doesn't feel "too high" on tall viewports.
      The 6vh bias pushes the visual center down (was 4vh; bumped so the
      greeting + input sits closer to the optical center, not the
      geometric center). */
-  padding-top:clamp(32px, 6vh, 80px);
-  padding-right:max(12px,env(safe-area-inset-right,0px));
-  padding-bottom:max(40px,env(safe-area-inset-bottom,0px));
-  padding-left:max(12px,env(safe-area-inset-left,0px));
-  scroll-padding-top:16px;
-  scroll-padding-bottom:24px;
-  overscroll-behavior-y:contain;
-}}
-@media (min-width: 769px){
-.topic-title.greeting{
-  margin:0 0 10px;
-  letter-spacing:-.025em;
-}}
-.topic-sub{
-  margin:0 0 22px;
+    padding-top: clamp(32px, 6vh, 80px);
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(40px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    scroll-padding-top: 16px;
+    scroll-padding-bottom: 24px;
+    overscroll-behavior-y: contain;
+  }
+}
+@media (min-width: 769px) {
+  .topic-title.greeting {
+    margin: 0 0 10px;
+    letter-spacing: -0.025em;
+  }
+}
+.topic-sub {
+  margin: 0 0 22px;
 }
 /* P_composer-single — the landing chip geometry is the reference for the
    single shell (union of both predecessors' rules). */
-.composer-input-wrap .attachment-chips{order:0;flex-basis:100%;padding:8px 14px 0;max-height:132px}
+.composer-input-wrap .attachment-chips {
+  order: 0;
+  flex-basis: 100%;
+  padding: 8px 14px 0;
+  max-height: 132px;
+}
 
 /* Chat composer: safe-area aware, in-flow, and bounded by its real content.
    The transcript remains a sibling flex item, so it can never be covered by
    a composer whose height changes after focus or attachment loading. */
 
-@media(max-width:768px){
-  .topic-sub{
-    padding-inline:8px;
-    margin-bottom:18px;
+@media (max-width: 768px) {
+  .topic-sub {
+    padding-inline: 8px;
+    margin-bottom: 18px;
   }
   /* The mobile disclaimer overlap rules were removed together with
      #topicDisclaimer on 2026-11-16; the landing has no footer line to
@@ -68,14 +77,19 @@
      footer use explicit grid tracks rather than changing flex-basis/order;
      that removes the transient width collapse which used to make the input
      jump sideways while focus was entering. */
-  .composer-input-wrap .attachment-chips{
-    order:0;
-    flex:0 0 auto;
-    width:100%;
-    max-height:96px;
+  .composer-input-wrap .attachment-chips {
+    order: 0;
+    flex: 0 0 auto;
+    width: 100%;
+    max-height: 96px;
   }
-  .rich-composer[data-surface="chat"] > div:last-child{width:100%;min-width:0}
-  .rich-composer[data-surface="chat"] .rich-composer-toolbar{display:none}
+  .rich-composer[data-surface='chat'] > div:last-child {
+    width: 100%;
+    min-width: 0;
+  }
+  .rich-composer[data-surface='chat'] .rich-composer-toolbar {
+    display: none;
+  }
   /* Voice input button: the focused grid becomes a two-row layout
      ([editor full-width], then [left-controls][mic][send]). Add a
      third auto column so the mic has a stable slot between the tool
@@ -89,17 +103,17 @@
 
   /* Only the active topic surface is scrolled when the focused editor would
      be covered; the shell itself is never artificially lifted. */
-  :root[data-keyboard-open="true"] .topic-setup,
-  :root[data-keyboard-phase="opening"] .topic-setup,
-  :root[data-keyboard-phase="open"] .topic-setup,
-  :root[data-keyboard-phase="closing"] .topic-setup{
-    scroll-padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  :root[data-keyboard-open='true'] .topic-setup,
+  :root[data-keyboard-phase='opening'] .topic-setup,
+  :root[data-keyboard-phase='open'] .topic-setup,
+  :root[data-keyboard-phase='closing'] .topic-setup {
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
 }
 
-@media(prefers-reduced-motion:reduce){
-  .chat-view{
-    transition:none!important;
+@media (prefers-reduced-motion: reduce) {
+  .chat-view {
+    transition: none !important;
   }
 }
 
@@ -115,17 +129,17 @@
    `.agent-tool-card` (collapse via `.open`, phase via `data-tool-state`), and
    `.msg-body .code-block-header`.
    ───────────────────────────────────────────────────────────────────────── */
-:root{
-  --chat-bubble-pad-y:10px;
-  --chat-bubble-pad-x:16px;
-  --chat-msg-gap:20px;               /* vertical rhythm between turns */
-  --chat-assistant-line-height:1.6;
-  --chat-code-bg:hsl(var(--bg-300));
-  --chat-code-radius:12px;
-  --chat-code-header-pad-y:6px;
-  --chat-code-header-pad-x:12px;
-  --chat-tool-running:hsl(var(--accent-000));
-  --chat-tool-error:hsl(0 70% 55%);
+:root {
+  --chat-bubble-pad-y: 10px;
+  --chat-bubble-pad-x: 16px;
+  --chat-msg-gap: 20px; /* vertical rhythm between turns */
+  --chat-assistant-line-height: 1.6;
+  --chat-code-bg: hsl(var(--bg-300));
+  --chat-code-radius: 12px;
+  --chat-code-header-pad-y: 6px;
+  --chat-code-header-pad-x: 12px;
+  --chat-tool-running: hsl(var(--accent-000));
+  --chat-tool-error: hsl(0 70% 55%);
 }
 
 /* Message rhythm + bubbles. `.msg-list` already sets a 12px gap higher up;
@@ -134,18 +148,22 @@
    value, applied by parity/transcript.css on desktop and
    restore/chat-surface.css on phones. A third literal radius in this file is
    what let the same bubble read as 20px, 15px and 18px at once. */
-.msg-list{gap:var(--chat-msg-gap)}
-.msg.assistant .msg-body{
-  max-width:100%;
-  line-height:var(--chat-assistant-line-height);
+.msg-list {
+  gap: var(--chat-msg-gap);
+}
+.msg.assistant .msg-body {
+  max-width: 100%;
+  line-height: var(--chat-assistant-line-height);
 }
 
 /* Code blocks — the React header keeps the code surface geometry while the
    interactive actions use shadcn button variants. */
-.msg-body .code-block-header{background:var(--chat-code-bg)}
-.msg-body .code-block-header + pre{
-  background:var(--chat-code-bg);
-  border-radius:0 0 var(--chat-code-radius) var(--chat-code-radius);
+.msg-body .code-block-header {
+  background: var(--chat-code-bg);
+}
+.msg-body .code-block-header + pre {
+  background: var(--chat-code-bg);
+  border-radius: 0 0 var(--chat-code-radius) var(--chat-code-radius);
 }
 /* shadcn ghost rung: 24px, rounded-sm, accent hover, ring focus. */
 /* Tool card — collapsible chrome, running shimmer, terminal states.
@@ -154,47 +172,72 @@
    from `data-tool-state` set by the run-state wiring. */
 .agent-tool-card:not(.open) .agent-tool-body,
 .agent-tool-card:not(.open) .agent-tool-out,
-.agent-tool-card:not(.open) .agent-tool-toolbar{display:none}
+.agent-tool-card:not(.open) .agent-tool-toolbar {
+  display: none;
+}
 
 /* Elapsed / duration readout lives in `.agent-tool-status`; keep it tabular
    so a live-updating running timer doesn't jitter the header width. */
-.agent-tool-card .agent-tool-status{font-variant-numeric:tabular-nums}
+.agent-tool-card .agent-tool-status {
+  font-variant-numeric: tabular-nums;
+}
 
 /* Running: shimmer the tool name so an in-flight run reads as active. Pairs
    with the pulsing dot already drawn on `.agent-tool-status::before`. */
-.agent-tool-card[data-tool-state="running"] .agent-tool-name{
-  background:linear-gradient(90deg,hsl(var(--text-300)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-300)) 65%);
-  background-size:200% 100%;
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-  animation:textShimmer 2.4s linear infinite;
+.agent-tool-card[data-tool-state='running'] .agent-tool-name {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--text-300)) 35%,
+    hsl(var(--text-000)) 50%,
+    hsl(var(--text-300)) 65%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: textShimmer 2.4s linear infinite;
 }
-.agent-tool-card[data-tool-state="running"] .agent-tool-status{color:var(--chat-tool-running)!important}
+.agent-tool-card[data-tool-state='running'] .agent-tool-status {
+  color: var(--chat-tool-running) !important;
+}
 
 /* Terminal: settle the header colour by phase. `done` reads on the accent,
    `error` on the danger hue, `cancelled` stays muted. */
-.agent-tool-card[data-tool-state="done"] .agent-tool-status{color:hsl(var(--accent-000))!important}
-.agent-tool-card[data-tool-state="error"] .agent-tool-status{color:var(--chat-tool-error)!important}
-.agent-tool-card[data-tool-state="cancelled"] .agent-tool-status{color:hsl(var(--text-500))!important}
-.agent-tool-card[data-tool-state="error"] .agent-tool-state-icon{color:var(--chat-tool-error)}
-.agent-tool-card[data-tool-state="done"] .agent-tool-state-icon{color:hsl(var(--accent-000))}
+.agent-tool-card[data-tool-state='done'] .agent-tool-status {
+  color: hsl(var(--accent-000)) !important;
+}
+.agent-tool-card[data-tool-state='error'] .agent-tool-status {
+  color: var(--chat-tool-error) !important;
+}
+.agent-tool-card[data-tool-state='cancelled'] .agent-tool-status {
+  color: hsl(var(--text-500)) !important;
+}
+.agent-tool-card[data-tool-state='error'] .agent-tool-state-icon {
+  color: var(--chat-tool-error);
+}
+.agent-tool-card[data-tool-state='done'] .agent-tool-state-icon {
+  color: hsl(var(--accent-000));
+}
 
-@media (prefers-reduced-motion:reduce){
-  .agent-tool-card[data-tool-state="running"] .agent-tool-name{animation:none;color:hsl(var(--text-200));-webkit-text-fill-color:currentColor}
+@media (prefers-reduced-motion: reduce) {
+  .agent-tool-card[data-tool-state='running'] .agent-tool-name {
+    animation: none;
+    color: hsl(var(--text-200));
+    -webkit-text-fill-color: currentColor;
+  }
 }
 
 /* ── Quiet conversation activity + Artifacts preview ───────────────
    Final cascade layer: one calm, Codex-like language for transient work.
    Assistant prose remains unboxed; actions are readable status lines rather
    than nested cards. */
-.msg.assistant .msg-body:has(.agent-tool-card){
-  max-width:100%;
-  padding:0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
+.msg.assistant .msg-body:has(.agent-tool-card) {
+  max-width: 100%;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 /* Running tool name: same stable light sweep as the canonical shimmer
    (features/thinking-activity.css), expressed in the legacy hsl() tokens.
@@ -204,130 +247,191 @@
    the text never fades, only the highlight travels. Tool-inline labels
    are intentionally not overridden here; the canonical #appShell
    shimmer (Tier 3, loaded after this file) owns them. */
-.msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-name{
-  background:linear-gradient(100deg,hsl(var(--text-400)) 0%,hsl(var(--text-400)) 35%,hsl(var(--text-000)) 50%,hsl(var(--text-400)) 65%,hsl(var(--text-400)) 100%);
-  background-size:220% 100%;
-  background-repeat:no-repeat;
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:hsl(var(--text-400));
-  -webkit-text-fill-color:transparent;
-  opacity:1;
-  animation:neutralTextWave 3s linear infinite;
+.msg.assistant .agent-tool-card[data-tool-state='running'] .agent-tool-name {
+  background: linear-gradient(
+    100deg,
+    hsl(var(--text-400)) 0%,
+    hsl(var(--text-400)) 35%,
+    hsl(var(--text-000)) 50%,
+    hsl(var(--text-400)) 65%,
+    hsl(var(--text-400)) 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: hsl(var(--text-400));
+  -webkit-text-fill-color: transparent;
+  opacity: 1;
+  animation: neutralTextWave 3s linear infinite;
 }
 
-.msg.assistant .agent-tool-card{
-  margin:10px 0!important;
-  border:0!important;
-  border-radius:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
+.msg.assistant .agent-tool-card {
+  margin: 10px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
-.msg.assistant .agent-tool-card .agent-tool-head{
-  min-height:28px!important;
-  padding:0 2px!important;
-  gap:8px!important;
-  background:transparent!important;
+.msg.assistant .agent-tool-card .agent-tool-head {
+  min-height: 28px !important;
+  padding: 0 2px !important;
+  gap: 8px !important;
+  background: transparent !important;
 }
-.msg.assistant .agent-tool-card .agent-tool-status{font-size:11px!important;color:hsl(var(--text-500))!important}
-.msg.assistant .agent-tool-card[data-tool-state="running"] .agent-tool-status{visibility:hidden}
+.msg.assistant .agent-tool-card .agent-tool-status {
+  font-size: 11px !important;
+  color: hsl(var(--text-500)) !important;
+}
+.msg.assistant .agent-tool-card[data-tool-state='running'] .agent-tool-status {
+  visibility: hidden;
+}
 
 /* Inline artifacts sit in the reading flow and open in a persistent preview
    rail. HTML is sandboxed both inline and in the larger rail. */
-.tool-inline-attachments{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  margin:8px 0 2px 26px;
+.tool-inline-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 8px 0 2px 26px;
 }
-.exec-artifact{
-  position:relative;
-  width:min(100%,440px);
-  margin:10px 0!important;
-  overflow:hidden;
-  border:1px solid hsl(var(--border-300)/.42);
-  border-radius:12px;
-  background:hsl(var(--bg-100));
-  box-shadow:0 1px 2px hsl(var(--shadow)/.08);
+.exec-artifact {
+  position: relative;
+  width: min(100%, 440px);
+  margin: 10px 0 !important;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border-300) / 0.42);
+  border-radius: 12px;
+  background: hsl(var(--bg-100));
+  box-shadow: 0 1px 2px hsl(var(--shadow) / 0.08);
 }
-.exec-artifact-image{display:block;width:100%;max-height:360px;object-fit:contain;background:hsl(var(--bg-200))}
-.exec-artifact-html{width:min(100%,560px)}
-.exec-artifact-html-frame{display:block;width:100%;height:300px;border:0;background:#fff}
-.exec-artifact-meta{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  min-height:38px;
-  padding:7px 10px;
-  border-top:1px solid hsl(var(--border-300)/.36);
-  color:hsl(var(--text-400));
-  font-size:11.5px;
+.exec-artifact-image {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  background: hsl(var(--bg-200));
 }
-.exec-artifact-meta-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.exec-artifact-open{
-  flex:0 0 auto;
-  padding:4px 7px;
-  border:0;
-  border-radius:6px;
-  background:transparent;
-  color:hsl(var(--text-300));
-  font:inherit;
-  cursor:pointer;
+.exec-artifact-html {
+  width: min(100%, 560px);
 }
-.exec-artifact-open:hover,.exec-artifact-open:focus-visible{background:hsl(var(--bg-300));color:hsl(var(--text-100))}
+.exec-artifact-html-frame {
+  display: block;
+  width: 100%;
+  height: 300px;
+  border: 0;
+  background: #fff;
+}
+.exec-artifact-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border-top: 1px solid hsl(var(--border-300) / 0.36);
+  color: hsl(var(--text-400));
+  font-size: 11.5px;
+}
+.exec-artifact-meta-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exec-artifact-open {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: hsl(var(--text-300));
+  font: inherit;
+  cursor: pointer;
+}
+.exec-artifact-open:hover,
+.exec-artifact-open:focus-visible {
+  background: hsl(var(--bg-300));
+  color: hsl(var(--text-100));
+}
 
-@media(max-width:720px){
-  .tool-inline-attachments{margin-left:0}
-  .exec-artifact,.exec-artifact-html{width:100%}
-  .exec-artifact-html-frame{height:240px}
-
+@media (max-width: 720px) {
+  .tool-inline-attachments {
+    margin-left: 0;
+  }
+  .exec-artifact,
+  .exec-artifact-html {
+    width: 100%;
+  }
+  .exec-artifact-html-frame {
+    height: 240px;
+  }
 }
 
-@media(prefers-reduced-motion:reduce){
-  .shimmer-text,.agent-tool-name{animation:none!important}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer-text,
+  .agent-tool-name {
+    animation: none !important;
+  }
 }
 
 /* Real domain favicons precede every external answer/source link. */
-a.has-site-favicon{
-  display:inline-flex;
-  align-items:baseline;
-  gap:5px;
-  vertical-align:baseline;
+a.has-site-favicon {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  vertical-align: baseline;
 }
-.site-link-favicon{
-  display:inline-block;
-  flex:0 0 16px;
-  width:16px;
-  height:16px;
-  margin:0;
-  border-radius:3px;
-  object-fit:contain;
-  vertical-align:-2px;
-  background:transparent;
+.site-link-favicon {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border-radius: 3px;
+  object-fit: contain;
+  vertical-align: -2px;
+  background: transparent;
 }
-.site-link-favicon.is-unavailable{display:none}
+.site-link-favicon.is-unavailable {
+  display: none;
+}
 
 /* Workspace-agent events use the same screenshot anatomy: icon + sentence.
    The overall run summary owns elapsed time; individual rows keep technical
    metadata inside their expandable body. */
-.agent-step-head{
-  width:max-content;
-  max-width:100%;
-  min-height:26px;
-  gap:9px;
-  color:hsl(var(--text-500));
+.agent-step-head {
+  width: max-content;
+  max-width: 100%;
+  min-height: 26px;
+  gap: 9px;
+  color: hsl(var(--text-500));
 }
-.agent-step-icon{width:18px;height:18px;flex-basis:18px}
-.agent-step-icon svg{width:17px;height:17px;stroke-width:1.55}
-.agent-step-label{font-size:13.5px;font-weight:var(--ui-font-weight-medium)}
-.agent-step-cmd,.agent-step-meta{display:none!important}
+.agent-step-icon {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+}
+.agent-step-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.55;
+}
+.agent-step-label {
+  font-size: 13.5px;
+  font-weight: var(--ui-font-weight-medium);
+}
+.agent-step-cmd,
+.agent-step-meta {
+  display: none !important;
+}
 
-.msg.assistant .agent-tool-card .agent-tool-head{
-  width:max-content!important;
-  max-width:100%;
-  color:hsl(var(--text-500))!important;
+.msg.assistant .agent-tool-card .agent-tool-head {
+  width: max-content !important;
+  max-width: 100%;
+  color: hsl(var(--text-500)) !important;
 }
 .msg.assistant .agent-tool-card .agent-tool-input,
 .msg.assistant .agent-tool-card .agent-tool-status,
-.msg.assistant .agent-tool-card .agent-tool-chev{display:none!important}
+.msg.assistant .agent-tool-card .agent-tool-chev {
+  display: none !important;
+}

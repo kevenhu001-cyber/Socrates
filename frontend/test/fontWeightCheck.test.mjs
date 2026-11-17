@@ -65,7 +65,10 @@ test('the shorthand weight is caught but its size and line-height are not', () =
   assert.equal(scanCss('.a { font: 140px/1.4 "Geist"; }').literals.length, 0);
   /* A unitless line-height follows a `/`. */
   assert.equal(scanCss('.a { font: 700 20px/140 "Geist"; }').literals.length, 1);
-  assert.equal(scanCss('.a { font: var(--ui-font-weight-bold) 20px/140 "Geist"; }').literals.length, 0);
+  assert.equal(
+    scanCss('.a { font: var(--ui-font-weight-bold) 20px/140 "Geist"; }').literals.length,
+    0,
+  );
 });
 
 test('a font-face declares the weights it covers and is exempt', () => {
@@ -112,12 +115,21 @@ test('the token ladder has to be complete and the dark canvas has to step down',
 });
 
 test('a missing dark override or a wrong one is reported', () => {
-  assert.equal(checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-bold: 600; }').failures.length, 1);
   assert.equal(
-    checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-medium: 450; --ui-font-weight-bold: 700; }').failures.length,
+    checkTokenLadder(TOKENS, '[data-mode="dark"] { --ui-font-weight-bold: 600; }').failures.length,
     1,
   );
-  assert.equal(checkTokenLadder(TOKENS, ':root { --ui-font-weight-regular: 400; }').failures.length, 1);
+  assert.equal(
+    checkTokenLadder(
+      TOKENS,
+      '[data-mode="dark"] { --ui-font-weight-medium: 450; --ui-font-weight-bold: 700; }',
+    ).failures.length,
+    1,
+  );
+  assert.equal(
+    checkTokenLadder(TOKENS, ':root { --ui-font-weight-regular: 400; }').failures.length,
+    1,
+  );
 });
 
 test('the dark canvas drops exactly medium and bold', () => {

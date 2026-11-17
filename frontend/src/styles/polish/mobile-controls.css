@@ -5,7 +5,6 @@
  */
 
 @media (max-width: 768px) {
-
   /* The drawer width comes from tokens.css (254px at the reference width);
      retain a hard viewport bound here for very narrow devices. */
   #appShell .sidebar {
@@ -20,7 +19,7 @@
   }
   #appShell .sidebar-header .icon-btn::before,
   #appShell .sidebar-header .btn-icon::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: -4px;
   }
@@ -59,7 +58,7 @@
   #appShell .recent-item-tag-btn::before,
   #appShell .recent-item-archive::before,
   #appShell .recent-item-del::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: -2px;
     pointer-events: auto;
@@ -81,7 +80,10 @@
   }
   #appShell .sidebar-footer .icon-btn svg,
   #appShell .sidebar-footer-actions > .icon-btn svg,
-  #appShell .sidebar-footer .btn-icon svg { width: 18px; height: 18px; }
+  #appShell .sidebar-footer .btn-icon svg {
+    width: 18px;
+    height: 18px;
+  }
 
   /* ── Sidebar view-btn (rail ↔ overlay) — 44 hit area ── */
   #appShell .sidebar-view-btn {
@@ -91,7 +93,10 @@
     min-height: var(--ui-hit-area);
     border-radius: var(--ui-radius-control, 8px);
   }
-  #appShell .sidebar-view-btn svg { width: 18px; height: 18px; }
+  #appShell .sidebar-view-btn svg {
+    width: 18px;
+    height: 18px;
+  }
 
   /* ── Top-bar icon-btn — already 40/44 via layout/app-shell.css; just
        lock the floor and quieten the colour to match the rest of the
@@ -109,14 +114,20 @@
   /* Reference action row (copy · share · edit): 32px buttons set edge to
      edge (a 32px pitch) with 20px glyphs. The tap extension grows only
      vertically so neighbours never overlap. */
-  #appShell .msg-toolbar { gap: 0; height: var(--ui-control-sm); }
+  #appShell .msg-toolbar {
+    gap: 0;
+    height: var(--ui-control-sm);
+  }
   #appShell .msg-toolbar-btn::before {
-    content: "";
+    content: '';
     position: absolute;
     inset: -4px 0;
     pointer-events: auto;
   }
-  #appShell .msg-toolbar-btn svg { width: 20px; height: 20px; }
+  #appShell .msg-toolbar-btn svg {
+    width: 20px;
+    height: 20px;
+  }
 
   /* ── Composer controls hit area ─────────────────────────────────────────
      The hit-area ::before wrapper lives in
@@ -130,10 +141,10 @@
      semantics), but we beat them with equal specificity by living in
      polish/ Tier 5. theme-contrast.spec.mjs validates the visual diff. */
   body #composerToolsMenu.composer-tools-menu {
-    background-color: var(--ui-bg-surface);   /* was #1f1f1f */
+    background-color: var(--ui-bg-surface); /* was #1f1f1f */
   }
-  [data-mode="dark"] body #composerToolsMenu.composer-tools-menu {
-    background-color: var(--ui-bg-surface);   /* was #1b1b1b */
+  [data-mode='dark'] body #composerToolsMenu.composer-tools-menu {
+    background-color: var(--ui-bg-surface); /* was #1b1b1b */
   }
 
   /* ── User bubble mobile ──
@@ -149,131 +160,173 @@
    The historical layers set different row heights and flex bases, which
    made the glyph and text appear to sit on different vertical centers. */
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn {
-  /* Reference drawer: 20px glyph column + 6px gap so the label lands
+  #appShell #sidebarNav .sidebar-nav-btn {
+    /* Reference drawer: 20px glyph column + 6px gap so the label lands
      ~40px from the drawer edge. Padding/min-height/font-size moved on:
      polish/mobile-controls.css owns padding, the ruleset below owns
      min-height + font-size. */
-  text-align: left;
-}
-}
-@media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-glyph"] {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  line-height: 0;
-}
+    text-align: left;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn > svg,
-#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-glyph"] svg {
-  display: block;
-  width: 20px;
-  height: 20px;
-  min-width: 20px;
-  flex: none;
-
-}
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    line-height: 0;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-nav-btn > [data-part="nav-label"] {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-}
-@media (max-width: 768px) {
-#appShell #sidebarNav #navNew { order: 0; }
-}
-@media (max-width: 768px) {
-#appShell #sidebarNav #navImages { order: 1; }
+  #appShell #sidebarNav .sidebar-nav-btn > svg,
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-glyph'] svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    flex: none;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navLibrary { order: 2; }
+  #appShell #sidebarNav .sidebar-nav-btn > [data-part='nav-label'] {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 768px) {
+  #appShell #sidebarNav #navNew {
+    order: 0;
+  }
+}
+@media (max-width: 768px) {
+  #appShell #sidebarNav #navImages {
+    order: 1;
+  }
+}
+@media (max-width: 768px) {
+  #appShell #sidebarNav #navLibrary {
+    order: 2;
+  }
 }
 /* Reference drawer order: New chat · Images · Library · Scheduled · Plugins ·
    Projects(+) · More — exactly matching ChatGPT mobile screenshot. */
 @media (max-width: 768px) {
-#appShell #sidebarNav #navScheduled { order: 3; }
+  #appShell #sidebarNav #navScheduled {
+    order: 3;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navPlugins { order: 4; }
+  #appShell #sidebarNav #navPlugins {
+    order: 4;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav .sidebar-project-nav { order: 5; }
+  #appShell #sidebarNav .sidebar-project-nav {
+    order: 5;
+  }
 }
 @media (max-width: 768px) {
-#appShell #sidebarNav #navMore { order: 7; }
+  #appShell #sidebarNav #navMore {
+    order: 7;
+  }
 }
-
 
 /* Reference shell metrics. This existing mobile owner consumes theme tokens. */
 @media (max-width: 768px) {
-  #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
-  #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
-  #appShell .recent-item.active { box-shadow: none; background: var(--accent); }
+  #appShell #sidebarHeader .cg-sidebar-caret {
+    display: none;
+  }
+  #appShell #sidebarHeader .btn-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  #appShell .recent-item.active {
+    box-shadow: none;
+    background: var(--accent);
+  }
   /* The tier badge size is owned by polish/mobile-sidebar.css:78 (14px, set
      with .user-plan). This block used to restate it as 13px on the same
      selector; mobile-sidebar.css imports later, so the 13px never shipped —
      the phone drawer just carried two declared sizes for one label. */
-  #appShell .sidebar-account-menu .user-plan { color: var(--ui-text-muted); }
+  #appShell .sidebar-account-menu .user-plan {
+    color: var(--ui-text-muted);
+  }
   /* The account-menu avatar shares --ui-avatar-bg with the sidebar identity
      row (parity/sidebar.css), which paints its letter white. A dark letter
      on that tint only reaches 3.1:1 in light mode, so it matches the
      desktop rule instead of inheriting the page's text colour. */
-  #appShell .sidebar-account-menu .user-avatar { place-items: center; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
-  #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
+  #appShell .sidebar-account-menu .user-avatar {
+    place-items: center;
+    background: var(--ui-avatar-bg);
+    color: var(--primary-foreground);
+  }
+  #appShell .sidebar-account-menu .user-identity {
+    display: flex;
+    flex-direction: column;
+  }
 }
 @media (max-width: 768px) {
-  #appShell #sidebarNav #navSites.sidebar-nav-btn { display: grid; order: 6; }
+  #appShell #sidebarNav #navSites.sidebar-nav-btn {
+    display: grid;
+    order: 6;
+  }
 }
 
 /* Mobile toolbar density retained from transcript compatibility rules. */
 @media (max-width: 768px) {
-#appShell .msg-toolbar {
-  height: var(--ui-control-sm);
-  min-height: var(--ui-control-sm);
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-}
-@media (max-width: 768px) {
-#appShell .msg-toolbar::-webkit-scrollbar { display: none; }
+  #appShell .msg-toolbar {
+    height: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn {
-  /* Reference: the quiet chrome-glyph grey (#b0b0b0 dark / #8f8f8f light). */
-  color: var(--ui-icon-secondary, var(--ui-text-muted));
-  transition: background-color var(--ui-duration-fast) ease,
-              color var(--ui-duration-fast) ease,
-              opacity var(--ui-duration-fast) ease;
-}
+  #appShell .msg-toolbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn:active {
-  opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
-  background: var(--accent);
-  color: var(--foreground);
-}
+  #appShell .msg-toolbar-btn {
+    /* Reference: the quiet chrome-glyph grey (#b0b0b0 dark / #8f8f8f light). */
+    color: var(--ui-icon-secondary, var(--ui-text-muted));
+    transition:
+      background-color var(--ui-duration-fast) ease,
+      color var(--ui-duration-fast) ease,
+      opacity var(--ui-duration-fast) ease;
+  }
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn svg { width: 20px; height: 20px; }
+  #appShell .msg-toolbar-btn:active {
+    opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
+    background: var(--accent);
+    color: var(--foreground);
+  }
 }
 @media (max-width: 768px) {
-#appShell .msg-toolbar-btn::after {
-  border-radius: var(--ui-radius-sm, 6px);
-  font-size: 11px;
-  padding: 5px 8px;
+  #appShell .msg-toolbar-btn svg {
+    width: 20px;
+    height: 20px;
+  }
 }
+@media (max-width: 768px) {
+  #appShell .msg-toolbar-btn::after {
+    border-radius: var(--ui-radius-sm, 6px);
+    font-size: 11px;
+    padding: 5px 8px;
+  }
 }
 
 @media (max-width: 768px) {
-  #appShell .msg-toolbar-feedback { display: none; }
-  .msg-action-menu button { min-height: var(--ui-control-touch); }
+  #appShell .msg-toolbar-feedback {
+    display: none;
+  }
+  .msg-action-menu button {
+    min-height: var(--ui-control-touch);
+  }
 }

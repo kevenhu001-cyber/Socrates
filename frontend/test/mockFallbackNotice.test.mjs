@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://app.example.test/' });
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+  url: 'https://app.example.test/',
+});
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.CustomEvent = dom.window.CustomEvent;
 localStorage.setItem('socrates-lang-app', 'en');
-window.stateStore = { read: () => false };
 
 /* `showToast` appends a real `.msg-toast` node to document.body, so the
    notice is observable through the DOM without stubbing the toast layer. */
@@ -48,9 +49,13 @@ test('the notice resolves a localized string through window.t', async () => {
   assert.ok(en && en !== 'toast.mockFallback', 'English dictionary defines toast.mockFallback');
 
   const zhReady = new Promise((resolve) => {
-    document.addEventListener('socrates:langchange', (event) => {
-      if (event.detail.lang === 'zh') resolve();
-    }, { once: true });
+    document.addEventListener(
+      'socrates:langchange',
+      (event) => {
+        if (event.detail.lang === 'zh') resolve();
+      },
+      { once: true },
+    );
   });
   setLang('zh');
   await zhReady;

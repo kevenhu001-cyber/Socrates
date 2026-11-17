@@ -9,7 +9,9 @@ import {
 
 test('React Retry resolves the streaming controller identity and rejects another message', () => {
   let calls = 0;
-  claimLiveRetry({ getClientId: () => 'failed-turn' }, () => { calls += 1; });
+  claimLiveRetry({ getClientId: () => 'failed-turn' }, () => {
+    calls += 1;
+  });
   assert.equal(retryLiveTurn('another-turn'), false);
   assert.equal(calls, 0);
   assert.equal(retryLiveTurn('failed-turn'), true);
@@ -20,7 +22,9 @@ test('React Retry resolves the streaming controller identity and rejects another
 
 test('restored retry owners retain their field-based identity', () => {
   let calls = 0;
-  claimLiveRetry({ clientId: 'restored-turn' }, () => { calls += 1; });
+  claimLiveRetry({ clientId: 'restored-turn' }, () => {
+    calls += 1;
+  });
   assert.equal(retryLiveTurn('restored-turn'), true);
   assert.equal(calls, 1);
   claimLiveRetry(null);
@@ -36,13 +40,19 @@ test('tool retry uses the module-owned live handler instead of a window fallback
 
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
-    value: { addEventListener: (type, listener) => {
-      if (type === 'tool-retry') onToolRetry = listener;
-    } },
+    value: {
+      addEventListener: (type, listener) => {
+        if (type === 'tool-retry') onToolRetry = listener;
+      },
+    },
   });
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
-    value: { __socratesToolRetry: () => { legacyCalls += 1; } },
+    value: {
+      __socratesToolRetry: () => {
+        legacyCalls += 1;
+      },
+    },
   });
 
   try {

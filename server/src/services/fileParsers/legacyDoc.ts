@@ -23,7 +23,10 @@ export async function extract(filepath: string) {
   } catch (e) {
     const em = e as Error;
     if (/password|encrypt/i.test(String(em?.message || ''))) {
-      throw parseError('ENCRYPTED', 'doc_encrypted: this DOC file is password-protected. Remove the password and upload it again.');
+      throw parseError(
+        'ENCRYPTED',
+        'doc_encrypted: this DOC file is password-protected. Remove the password and upload it again.',
+      );
     }
     throw parseError('PARSE_FAILED', 'doc_parse_failed: ' + (em.message || em));
   }

@@ -18,20 +18,42 @@ export interface GeoGebraApi {
 export interface MermaidRuntime {
   initialize(options: Record<string, unknown>): void;
   parse(code: string, options?: { suppressErrors?: boolean }): boolean | Promise<unknown>;
-  render(id: string, code: string): Promise<{ svg: string; bindFunctions?: (element: Element) => void }>;
+  render(
+    id: string,
+    code: string,
+  ): Promise<{ svg: string; bindFunctions?: (element: Element) => void }>;
 }
 export interface VendorGlobals {
-  marked: typeof import('marked')['marked'];
+  marked: (typeof import('marked'))['marked'];
   DOMPurify: typeof import('dompurify').default;
   Fuse: typeof import('fuse.js').default;
   mermaid: MermaidRuntime;
   hljs: typeof import('highlight.js').default;
-  katex: { renderToString(source: string, options?: Record<string, unknown>): string; render(source: string, target: Element, options?: Record<string, unknown>): void };
-  echarts: { init(target: HTMLElement, theme?: string | null, options?: Record<string, unknown>): ChartInstance };
+  katex: {
+    renderToString(source: string, options?: Record<string, unknown>): string;
+    render(source: string, target: Element, options?: Record<string, unknown>): void;
+  };
+  echarts: {
+    init(
+      target: HTMLElement,
+      theme?: string | null,
+      options?: Record<string, unknown>,
+    ): ChartInstance;
+  };
   Plotly: {
-    newPlot(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown>;
+    newPlot(
+      target: HTMLElement | string,
+      data: unknown[],
+      layout?: unknown,
+      config?: unknown,
+    ): Promise<unknown>;
     purge(target: HTMLElement | string): void;
-    react(target: HTMLElement | string, data: unknown[], layout?: unknown, config?: unknown): Promise<unknown>;
+    react(
+      target: HTMLElement | string,
+      data: unknown[],
+      layout?: unknown,
+      config?: unknown,
+    ): Promise<unknown>;
     relayout(target: HTMLElement | string, update: Record<string, unknown>): Promise<unknown>;
     toImage(target: HTMLElement | string, options?: Record<string, unknown>): Promise<string>;
   };

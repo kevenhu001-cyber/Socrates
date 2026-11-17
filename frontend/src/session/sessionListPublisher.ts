@@ -1,4 +1,4 @@
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { getRecents } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
@@ -47,16 +47,20 @@ export function publishSessionList(): void {
     }
 
     const nextRows = sessions.map(stableSessionRow);
-    if (previousRows.length !== nextRows.length || nextRows.some((row, index) => row !== previousRows[index])) previousRows = nextRows;
+    if (
+      previousRows.length !== nextRows.length ||
+      nextRows.some((row, index) => row !== previousRows[index])
+    )
+      previousRows = nextRows;
     publishSessionListState({
       sessions: previousRows,
-      currentSessionId: stateStore.read('currentSessionId') as string | null,
+      currentSessionId: sessionBridge.getSnapshot().currentSessionId as string | null,
       searchQuery: searchQ,
       filter,
       fetchFailed: !!window.SERVER_SESSIONS_FETCH_FAILED,
     });
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: session/sessionListPublisher.ts:63', 'expected');
+    reportEmptyCatch(error, 'empty catch: session/sessionListPublisher.ts', 'expected');
     /* State publication is best-effort during boot/teardown. */
   }
 }

@@ -1,7 +1,7 @@
 import { annotateTurnProse } from '@socrates/core';
 import type { TurnRuntime } from '@socrates/contracts';
 import { Fragment, type ReactNode } from 'react';
-import { IntelligentTextSegment } from '../intelligence-ui/IntelligentTextSegment';
+import { IntelligentTextSegment } from '../intelligent-ui/IntelligentTextSegment';
 import { toolRunView, type ToolCallRecord, type TurnSegment } from './toolRunModel.js';
 import { ToolRunAttachments } from './ToolRunAttachments.js';
 import { ToolRunGroup } from './ToolRunGroup.js';
@@ -43,19 +43,20 @@ export function TurnSegmentContent({
 
   if (segment.kind === 'group') {
     return (
-      <ToolRunGroup
-        segment={segment}
-        tools={tools}
-        messageId={messageId}
-        readOnly={readOnly}
-      />
+      <ToolRunGroup segment={segment} tools={tools} messageId={messageId} readOnly={readOnly} />
     );
   }
 
   if (segment.kind === 'tool') {
     return (
       <Fragment>
-        <ToolRunRow view={toolRunView(segment.call)} call={segment.call} messageId={messageId} readOnly={readOnly} actionsOnly />
+        <ToolRunRow
+          view={toolRunView(segment.call)}
+          call={segment.call}
+          messageId={messageId}
+          readOnly={readOnly}
+          actionsOnly
+        />
         <ToolRunAttachments call={segment.call} tools={tools} readOnly={readOnly} />
       </Fragment>
     );

@@ -8,18 +8,18 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { buildSocraticPrompt, buildSocraticMessages, buildFollowUpMessages } = await import(
-  '../src/tutor/flow.ts'
-);
-const { configureTemplateSystemPrompt, injectTemplateSystemPrompt } = await import(
-  '../src/chat/templateSystemPrompt.ts'
-);
-const { stateStore } = await import('../src/state/store.ts');
-const { getProjectCacheSnapshot, setCachedProjects } = await import('../src/projects/projectCache.ts');
+const { buildSocraticPrompt, buildSocraticMessages, buildFollowUpMessages } =
+  await import('../src/tutor/flow.ts');
+const { configureTemplateSystemPrompt, injectTemplateSystemPrompt } =
+  await import('../src/chat/templateSystemPrompt.ts');
+const { dispatchPatches, dispatchSearch, dispatchSession, searchStore, sessionStore } =
+  await import('../src/store/index.ts');
+const { getProjectCacheSnapshot, setCachedProjects } =
+  await import('../src/projects/projectCache.ts');
 
 test('socratic prompt embeds topic, level, and context', () => {
-  const previousSearch = stateStore.read('searchContext');
-  stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: '' });
+  const previousSearch = searchStore.getState().searchContext;
+  dispatchSearch({ type: 'search/set', key: 'searchContext', value: '' });
   try {
     const prompt = buildSocraticPrompt('Photosynthesis', 'beginner', 'my ctx');
     assert.match(prompt, /^\[Assistant mode instructions\]\n/);
@@ -28,13 +28,13 @@ test('socratic prompt embeds topic, level, and context', () => {
     assert.match(prompt, /my ctx/);
     assert.match(prompt, /no \[Web research\] block is present/);
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: previousSearch ?? '' });
+    dispatchSearch({ type: 'search/set', key: 'searchContext', value: previousSearch ?? '' });
   }
 });
 
 test('socratic prompt notes live research when search context exists', () => {
-  const previousSearch = stateStore.read('searchContext');
-  stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: 'evidence' });
+  const previousSearch = searchStore.getState().searchContext;
+  dispatchSearch({ type: 'search/set', key: 'searchContext', value: 'evidence' });
   try {
     const prompt = buildSocraticPrompt('Topic', 'level');
     assert.match(prompt, /separate \[Web research\] context block follows/);
@@ -42,66 +42,96 @@ test('socratic prompt notes live research when search context exists', () => {
     assert.doesNotMatch(prompt, /do NOT paste result URLs into your reply/i);
     assert.match(prompt, /diagnostic question/);
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'searchContext', value: previousSearch ?? '' });
+    dispatchSearch({ type: 'search/set', key: 'searchContext', value: previousSearch ?? '' });
   }
 });
 
 test('socratic messages open the first turn at the current stage', () => {
-  const previousStage = stateStore.read('teachingStage');
-  stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: 'motivate' });
+  const previousStage = sessionStore.getState().teachingStage;
+  dispatchSession({ type: 'session/set', key: 'teachingStage', value: 'motivate' });
   try {
     const msgs = buildSocraticMessages({ name: 'Fractions' }, 'math', [], true);
     assert.equal(msgs[0].role, 'system');
     assert.match(msgs[0].content, /Fractions/);
     assert.match(msgs[0].content, /You are beginning the 'motivate' stage/);
-    assert.equal(msgs[msgs.length - 1].content, "I'm ready to begin. Please teach me about Fractions.");
+    assert.equal(
+      msgs[msgs.length - 1].content,
+      "I'm ready to begin. Please teach me about Fractions.",
+    );
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: previousStage ?? 'motivate' });
+    dispatchSession({
+      type: 'session/set',
+      key: 'teachingStage',
+      value: previousStage ?? 'motivate',
+    });
   }
 });
 
 test('socratic messages continue without restarting', () => {
-  const previousStage = stateStore.read('teachingStage');
-  stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: 'check' });
+  const previousStage = sessionStore.getState().teachingStage;
+  dispatchSession({ type: 'session/set', key: 'teachingStage', value: 'check' });
   try {
     const msgs = buildSocraticMessages({ name: 'Fractions' }, 'math', [], false);
     assert.match(msgs[0].content, /Do NOT restart from the beginning/);
     assert.equal(msgs[msgs.length - 1].content, 'Continue the lesson from where we left off.');
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: previousStage ?? 'motivate' });
+    dispatchSession({
+      type: 'session/set',
+      key: 'teachingStage',
+      value: previousStage ?? 'motivate',
+    });
   }
 });
 
 test('follow-up messages reflect practice attempts in exercise stage', () => {
-  const previousStage = stateStore.read('teachingStage');
-  const previousAttempts = stateStore.read('practiceAttempts');
-  stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: 'exercise' });
-  stateStore.dispatch({ type: 'state/set', key: 'practiceAttempts', value: 2 });
+  const previousStage = sessionStore.getState().teachingStage;
+  const previousAttempts = sessionStore.getState().practiceAttempts;
+  dispatchSession({ type: 'session/set', key: 'teachingStage', value: 'exercise' });
+  dispatchSession({ type: 'session/set', key: 'practiceAttempts', value: 2 });
   try {
     const msgs = buildFollowUpMessages('42', { name: 'Fractions' }, 'math', []);
     assert.match(msgs[0].content, /2 attempt\(s\)/);
     assert.equal(msgs[msgs.length - 1].content, '42');
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: previousStage ?? 'motivate' });
-    stateStore.dispatch({ type: 'state/set', key: 'practiceAttempts', value: previousAttempts ?? 0 });
+    dispatchSession({
+      type: 'session/set',
+      key: 'teachingStage',
+      value: previousStage ?? 'motivate',
+    });
+    dispatchSession({ type: 'session/set', key: 'practiceAttempts', value: previousAttempts ?? 0 });
   }
 });
 
 test('follow-up messages keep research evidence and project context separate from tutor instructions', () => {
-  const previousSearch = stateStore.read('searchContext');
-  const previousProject = stateStore.read('currentProjectId');
+  const previousSearch = searchStore.getState().searchContext;
+  const previousProject = sessionStore.getState().currentProjectId;
   const previousProjects = getProjectCacheSnapshot();
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    searchContext: '[Web research]\nTutor evidence', currentProjectId: 'tutor-project',
-  } });
-  setCachedProjects([{ id: 'tutor-project', name: 'Calculus notes', systemPrompt: 'Use the shared notation.' }]);
+  dispatchPatches({
+    search: { searchContext: '[Web research]\nTutor evidence' },
+    session: { currentProjectId: 'tutor-project' },
+  });
+  setCachedProjects([
+    { id: 'tutor-project', name: 'Calculus notes', systemPrompt: 'Use the shared notation.' },
+  ]);
   try {
     const messages = buildFollowUpMessages('My answer', { name: 'Derivatives' }, 'math', []);
-    assert.ok(messages.some((message) => message.role === 'system' && message.content.includes('[Web research]\nTutor evidence')));
-    assert.ok(messages.some((message) => message.role === 'system' && message.content.includes('Calculus notes')));
+    assert.ok(
+      messages.some(
+        (message) =>
+          message.role === 'system' && message.content.includes('[Web research]\nTutor evidence'),
+      ),
+    );
+    assert.ok(
+      messages.some(
+        (message) => message.role === 'system' && message.content.includes('Calculus notes'),
+      ),
+    );
     assert.doesNotMatch(messages[0].content, /Tutor evidence|Calculus notes/);
   } finally {
-    stateStore.dispatch({ type: 'state/batch', patch: { searchContext: previousSearch ?? '', currentProjectId: previousProject ?? null } });
+    dispatchPatches({
+      search: { searchContext: previousSearch ?? '' },
+      session: { currentProjectId: previousProject ?? null },
+    });
     setCachedProjects(previousProjects);
   }
 });

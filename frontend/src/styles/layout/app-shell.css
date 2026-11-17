@@ -6,14 +6,15 @@
   color: var(--foreground);
 }
 
-#appShell .main-bg { background-image: none; }
-
-
+#appShell .main-bg {
+  background-image: none;
+}
 
 @media (max-width: 768px) {
-
-#appShell .top-bar-left,
-#appShell .top-bar-right { z-index: 2; }
+  #appShell .top-bar-left,
+  #appShell .top-bar-right {
+    z-index: 2;
+  }
 }
 
 #appShell #sidebarOpenBtn {
@@ -33,12 +34,21 @@
   color: var(--foreground);
 }
 
-#appShell #sidebarOpenBtn svg { width: 24px; height: 24px; }
+#appShell #sidebarOpenBtn svg {
+  width: 24px;
+  height: 24px;
+}
 
-#appShell .mobile-newchat-btn { display: none; }
+#appShell .mobile-newchat-btn {
+  display: none;
+}
 /* 模型 chip 的布局槽位不参与排版；手机对话中由 mobile-shell.css 隐藏。 */
-#appShell .top-model-slot { display: contents; }
-#appShell .toggle-sidebar .glyph-hamburger { display: none; }
+#appShell .top-model-slot {
+  display: contents;
+}
+#appShell .toggle-sidebar .glyph-hamburger {
+  display: none;
+}
 
 #appShell #pluginWorkspaceTabs {
   position: absolute;
@@ -54,7 +64,9 @@
   border-radius: var(--ui-radius-pill);
   background: var(--ui-bg-raised);
 }
-#appShell #pluginWorkspaceTabs[hidden] { display: none !important; }
+#appShell #pluginWorkspaceTabs[hidden] {
+  display: none !important;
+}
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab {
   flex: 1 1 50%;
   min-width: 0;
@@ -73,29 +85,28 @@
   font-weight: var(--ui-font-weight-medium);
 }
 
-
 @media (min-width: 769px) {
-
-
-#appShell #topicSetup .topic-title.greeting {
-  display: block;
-  animation: none;
-  padding: 0;
-  color: var(--foreground);
-  /* No font-family here on purpose. This rule used to open with
+  #appShell #topicSetup .topic-title.greeting {
+    display: block;
+    animation: none;
+    padding: 0;
+    color: var(--foreground);
+    /* No font-family here on purpose. This rule used to open with
      "Plus Jakarta Sans" while polish/composer.css pins the greeting to
      --cg-font (the bundled Inter) at four-#appShell specificity, so the
      declaration never applied — it only made the shell look like it had a
      second typeface. One face, declared once, in themes.css. */
-  font-weight: var(--ui-font-weight-regular);
-  letter-spacing: 0;
-  text-align: center;
-}
+    font-weight: var(--ui-font-weight-regular);
+    letter-spacing: 0;
+    text-align: center;
+  }
 }
 
 #appShell #topicSetup .topic-sub,
 #appShell #topicSetup .mobile-starter-prompts,
-#appShell #topicSetup .cg-history { display: none; }
+#appShell #topicSetup .cg-history {
+  display: none;
+}
 
 /* The landing disclaimer (#topicDisclaimer) and the three landing entries
    under the composer (chat shortcuts, learning-mode capsule, tutor
@@ -125,8 +136,12 @@
      circular new-chat button right. The incognito toggle moved into the
      sidebar 更多 popover; the desktop panel-collapse glyph becomes a
      three-line hamburger. */
-  #appShell .toggle-sidebar .glyph-panel { display: block; }
-  #appShell .toggle-sidebar .glyph-hamburger { display: none; }
+  #appShell .toggle-sidebar .glyph-panel {
+    display: block;
+  }
+  #appShell .toggle-sidebar .glyph-hamburger {
+    display: none;
+  }
   /* The landing column owns its 12px inset itself — the legacy
      .main-inner adds another 8px at ≤480px which would double the
      composer's side margin versus the in-session bar. */
@@ -136,5 +151,7 @@
   #appShell #topicSetup .topic-title.greeting {
     white-space: normal;
   }
-  body #appShell #pluginWorkspaceTabs { display: none; }
+  body #appShell #pluginWorkspaceTabs {
+    display: none;
+  }
 }

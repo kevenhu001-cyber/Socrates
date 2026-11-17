@@ -2,7 +2,11 @@ import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway.ts';
 import type { LiveTurnStatus } from '../types/domain';
 import { normalizeChineseProse } from '../../util/chineseTypography.ts';
-import { captureLiveRetryViewport, retryLiveTurn, retryRecoveredTurn } from '../../chat/liveTurn.ts';
+import {
+  captureLiveRetryViewport,
+  retryLiveTurn,
+  retryRecoveredTurn,
+} from '../../chat/liveTurn.ts';
 
 export interface TurnStatusProps {
   status: LiveTurnStatus;
@@ -45,20 +49,28 @@ function StoppedLine({ status, messageId, readOnly }: TurnStatusProps) {
     retryLiveTurn(messageId);
   };
   return (
-    <div className="turn-surface-status msg-error msg-resend" data-turn-surface-part="terminal" style={{ marginTop: '8px' }}>
-      <span className="msg-error-text">{normalizeChineseProse(status.label || i18n('chat.stopped', 'Response stopped'))}</span>
-      {readOnly ? null : <Button
-        type="button"
-        className="msg-retry-btn chat-resend-btn"
-        data-chat-resend=""
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          resend();
-        }}
-      >
-        {i18n('chat.resend', 'Resend')}
-      </Button>}
+    <div
+      className="turn-surface-status msg-error msg-resend"
+      data-turn-surface-part="terminal"
+      style={{ marginTop: '8px' }}
+    >
+      <span className="msg-error-text">
+        {normalizeChineseProse(status.label || i18n('chat.stopped', 'Response stopped'))}
+      </span>
+      {readOnly ? null : (
+        <Button
+          type="button"
+          className="msg-retry-btn chat-resend-btn"
+          data-chat-resend=""
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            resend();
+          }}
+        >
+          {i18n('chat.resend', 'Resend')}
+        </Button>
+      )}
     </div>
   );
 }

@@ -8,8 +8,7 @@
 export type PracticeAnswerAssessment = 'correct' | 'incorrect' | 'unverified';
 
 type SimpleAnswer =
-  | { kind: 'number'; value: number }
-  | { kind: 'equation'; variable: string; value: number };
+  { kind: 'number'; value: number } | { kind: 'equation'; variable: string; value: number };
 
 const DECIMAL = '[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)';
 const NUMBER_RE = new RegExp(`^${DECIMAL}$`);
@@ -24,7 +23,11 @@ function finiteNumber(value: number): number | null {
 }
 
 function numericValue(raw: string): number | null {
-  let text = raw.trim().replace(/\s+/g, '').replace(/[。．]$/u, '').replace(/％$/u, '%');
+  let text = raw
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[。．]$/u, '')
+    .replace(/％$/u, '%');
   if (/^[+-]?\d{1,3}(,\d{3})+(?:\.\d+)?%?$/.test(text)) text = text.replace(/,/g, '');
   else if (text.includes(',')) return null;
   const percent = text.endsWith('%');
@@ -33,7 +36,8 @@ function numericValue(raw: string): number | null {
   if (fraction) {
     const numerator = Number(fraction[1]);
     const denominator = Number(fraction[2]);
-    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0) return null;
+    if (!Number.isFinite(numerator) || !Number.isFinite(denominator) || denominator === 0)
+      return null;
     const value = numerator / denominator;
     return finiteNumber(percent ? value / 100 : value);
   }
@@ -43,7 +47,11 @@ function numericValue(raw: string): number | null {
 }
 
 function simpleAnswer(raw: string): SimpleAnswer | null {
-  const text = String(raw ?? '').trim().replace(/\s+/g, '').replace(/[。．]$/u, '').replace(/％$/u, '%');
+  const text = String(raw ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[。．]$/u, '')
+    .replace(/％$/u, '%');
   const number = numericValue(text);
   if (number !== null) return { kind: 'number', value: number };
 
@@ -66,7 +74,9 @@ function numericallyEqual(left: number, right: number): boolean {
 
 /** Remove presentation-only punctuation for exact textual self-checks. */
 function normalizedText(value: string): string {
-  const text = String(value ?? '').toLowerCase().replace(/\s/gu, '');
+  const text = String(value ?? '')
+    .toLowerCase()
+    .replace(/\s/gu, '');
   let end = text.length;
   while (end > 0 && TRAILING_PUNCTUATION.has(text[end - 1]!)) end -= 1;
 
@@ -89,7 +99,11 @@ export function evaluatePracticeAnswer(answer: string, correct: string): Practic
   const expected = simpleAnswer(correct);
   if (!submitted || !expected) return 'unverified';
 
-  if (submitted.kind === 'equation' && expected.kind === 'equation'
-    && submitted.variable !== expected.variable) return 'unverified';
+  if (
+    submitted.kind === 'equation' &&
+    expected.kind === 'equation' &&
+    submitted.variable !== expected.variable
+  )
+    return 'unverified';
   return numericallyEqual(submitted.value, expected.value) ? 'correct' : 'incorrect';
 }

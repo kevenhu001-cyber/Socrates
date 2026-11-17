@@ -7,14 +7,16 @@ import type {
   VisualizationOutput,
 } from './toolRunModel.types.ts';
 
-
 /* ── tool output protocol ──────────────────────────────────────────────── */
 
 function outputId(toolCallId: string, kind: ToolOutput['kind'], discriminator: string): string {
   return `${toolCallId}:${kind}:${discriminator}`;
 }
 
-function normalizeVisualizationOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+function normalizeVisualizationOutput(
+  toolCallId: string,
+  record: Record<string, unknown>,
+): ToolOutput | null {
   const spec = record.spec;
   if (!spec || typeof spec !== 'object') return null;
   if ((spec as { version?: unknown }).version !== 1) return null;
@@ -26,7 +28,10 @@ function normalizeVisualizationOutput(toolCallId: string, record: Record<string,
   };
 }
 
-function normalizeArtifactOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+function normalizeArtifactOutput(
+  toolCallId: string,
+  record: Record<string, unknown>,
+): ToolOutput | null {
   const fileId = typeof record.fileId === 'string' ? record.fileId : '';
   if (!fileId) return null;
   return {
@@ -39,12 +44,14 @@ function normalizeArtifactOutput(toolCallId: string, record: Record<string, unkn
   };
 }
 
-function normalizeTextOutput(toolCallId: string, record: Record<string, unknown>): ToolOutput | null {
+function normalizeTextOutput(
+  toolCallId: string,
+  record: Record<string, unknown>,
+): ToolOutput | null {
   const text = typeof record.text === 'string' ? record.text : '';
   if (!text) return null;
-  const stream: ToolTextStream = record.stream === 'stdout' || record.stream === 'stderr'
-    ? record.stream
-    : 'result';
+  const stream: ToolTextStream =
+    record.stream === 'stdout' || record.stream === 'stderr' ? record.stream : 'result';
   return { id: outputId(toolCallId, 'text', stream), toolCallId, kind: 'text', stream, text };
 }
 
@@ -141,15 +148,13 @@ const IMAGE_MIME_RE = /^image\//i;
 export function attachmentOutputsOf(
   call: ToolCallRecord | null | undefined,
 ): Array<VisualizationOutput | ArtifactOutput> {
-  return toolOutputsOf(call).filter(
-    (output): output is VisualizationOutput | ArtifactOutput => {
-      if (output.kind === 'visualization') return true;
-      if (output.kind === 'artifact') {
-        return !output.mimeType || !IMAGE_MIME_RE.test(output.mimeType);
-      }
-      return false;
-    },
-  );
+  return toolOutputsOf(call).filter((output): output is VisualizationOutput | ArtifactOutput => {
+    if (output.kind === 'visualization') return true;
+    if (output.kind === 'artifact') {
+      return !output.mimeType || !IMAGE_MIME_RE.test(output.mimeType);
+    }
+    return false;
+  });
 }
 
 /** The approval prompt as the row needs it: copy plus the decision list. */

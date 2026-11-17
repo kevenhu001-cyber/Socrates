@@ -26,29 +26,38 @@ export const executeCodeInterpreter: ToolExecutor = async (
   const rawCode = args.code || args.script || args.python || args.source || '';
   const code = (typeof rawCode === 'string' ? rawCode : '').toLowerCase();
   const illustrationPatterns = [
-    /<svg[\s>]/,              // building SVG strings
-    /turtle\.(forward|backward|left|right|circle|goto)/,  // turtle graphics
-    /print\(.*<svg/i,         // printing SVG from Python
-    /plt\.savefig.*\.svg/i,   // saving matplotlib as SVG
-    /matplotlib.*svg/i,       // matplotlib SVG output
+    /<svg[\s>]/, // building SVG strings
+    /turtle\.(forward|backward|left|right|circle|goto)/, // turtle graphics
+    /print\(.*<svg/i, // printing SVG from Python
+    /plt\.savefig.*\.svg/i, // saving matplotlib as SVG
+    /matplotlib.*svg/i, // matplotlib SVG output
   ];
-  const isIllustrationAttempt = illustrationPatterns.some(p => p.test(code));
+  const isIllustrationAttempt = illustrationPatterns.some((p) => p.test(code));
   if (isIllustrationAttempt) {
     emitter.event('tool_result', {
-      id: tc.id, ok: false, status: 'failed',
-      output: '', stderr: '',
-      error: 'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
+      id: tc.id,
+      ok: false,
+      status: 'failed',
+      output: '',
+      stderr: '',
+      error:
+        'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
       errorCode: 'illustration_not_supported',
       retryable: false,
-      userMessage: '插画请使用 render_intelligent_ui 工具，通过 Visualization 组件调用 svg_illustration 模板，不要使用代码执行工具。',
-      detail: 'code_interpreter is for data analysis, not illustrations. Call render_intelligent_ui with a Visualization component using the svg_illustration template.',
-      artifacts: [], executionId: null, durationMs: 0,
+      userMessage:
+        '插画请使用 render_intelligent_ui 工具，通过 Visualization 组件调用 svg_illustration 模板，不要使用代码执行工具。',
+      detail:
+        'code_interpreter is for data analysis, not illustrations. Call render_intelligent_ui with a Visualization component using the svg_illustration template.',
+      artifacts: [],
+      executionId: null,
+      durationMs: 0,
     });
     return {
       result: {
         status: 'failed',
         errorCode: 'illustration_not_supported',
-        error: 'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
+        error:
+          'Illustrations should use render_intelligent_ui with a Visualization component using the svg_illustration template, not code_interpreter. Call render_intelligent_ui instead.',
       },
       outcomeRecorded: false,
     };
@@ -62,19 +71,26 @@ export const executeCodeInterpreter: ToolExecutor = async (
     /* P_syntax-no-quota — rows persisted as 'rejected' were rejected
        at compile time (SyntaxError family) and never ran user code,
        so they don't consume the daily execution budget. */
-    const [countRow] = await db.select({
-      count: sql<number>`COUNT(*)::int`,
-    }).from(executions)
-      .where(and(
-        eq(executions.userId, userId),
-        gte(executions.startedAt, today),
-        ne(executions.status, 'rejected'),
-      ));
+    const [countRow] = await db
+      .select({
+        count: sql<number>`COUNT(*)::int`,
+      })
+      .from(executions)
+      .where(
+        and(
+          eq(executions.userId, userId),
+          gte(executions.startedAt, today),
+          ne(executions.status, 'rejected'),
+        ),
+      );
     const usedToday = countRow?.count || 0;
     if (usedToday >= tierLimit) {
       emitter.event('tool_result', {
-        id: tc.id, ok: false, status: 'failed',
-        output: '', stderr: '',
+        id: tc.id,
+        ok: false,
+        status: 'failed',
+        output: '',
+        stderr: '',
         error: `daily_execution_limit_reached: ${tierLimit} executions per day`,
         errorCode: 'daily_execution_limit_reached',
         retryable: false,
@@ -99,7 +115,13 @@ export const executeCodeInterpreter: ToolExecutor = async (
      as `event: tool_progress` SSE frames. The callback MUST be safe to
      call from a worker thread (codeInterpreter wraps it in try/catch). */
   let _emittedExecStart = false;
-  const onProgress = (p: { executionId?: string | null; phase?: string | null; stream?: string | null; chunk?: string; elapsedMs?: number }) => {
+  const onProgress = (p: {
+    executionId?: string | null;
+    phase?: string | null;
+    stream?: string | null;
+    chunk?: string;
+    elapsedMs?: number;
+  }) => {
     try {
       if (!_emittedExecStart && p.executionId) {
         _emittedExecStart = true;
@@ -115,7 +137,9 @@ export const executeCodeInterpreter: ToolExecutor = async (
         chunk: p.chunk || '',
         elapsedMs: p.elapsedMs || 0,
       });
-    } catch (_) { /* client closed */ }
+    } catch (_) {
+      /* client closed */
+    }
   };
 
   const execResult: ToolResult = await codeInterpreter.execute({
@@ -127,14 +151,16 @@ export const executeCodeInterpreter: ToolExecutor = async (
     onProgress,
   });
 
-  const isExecutionTimeout = execResult.status === 'timeout'
-    || execResult.errorCode === 'execution_timeout';
+  const isExecutionTimeout =
+    execResult.status === 'timeout' || execResult.errorCode === 'execution_timeout';
   if (execResult.status !== 'completed') {
     /* Per-tool accounting lives in toolPolicy: the same failing tool
        steps aside after its own limit, and a success anywhere in the
        turn resets its streak. */
     toolPolicy.recordResult('code_interpreter', false, execResult.errorCode || 'execution_failed');
-    execResult.retryable = isExecutionTimeout ? false : toolPolicy.remainingRetries('code_interpreter') > 0;
+    execResult.retryable = isExecutionTimeout
+      ? false
+      : toolPolicy.remainingRetries('code_interpreter') > 0;
     if (!execResult.retryable) {
       execResult.userMessage = isExecutionTimeout
         ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
@@ -150,13 +176,16 @@ export const executeCodeInterpreter: ToolExecutor = async (
     status: execResult.status,
     output: execResult.stdout || '',
     stderr: execResult.stderr || '',
-    error: execResult.status !== 'completed' ? (execResult.errorMessage || execResult.status) : null,
-    errorCode: execResult.errorCode
-      || (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
+    error: execResult.status !== 'completed' ? execResult.errorMessage || execResult.status : null,
+    errorCode:
+      execResult.errorCode ||
+      (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
     retryable: execResult.retryable !== false,
     userMessage: isExecutionTimeout
       ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
-      : (execResult.status === 'completed' ? null : (execResult.userMessage || '代码未能完成执行。')),
+      : execResult.status === 'completed'
+        ? null
+        : execResult.userMessage || '代码未能完成执行。',
     detail: execResult.stderr || execResult.errorMessage || null,
     artifacts: execResult.artifactFileIds || [],
     executionId: execResult.executionId,

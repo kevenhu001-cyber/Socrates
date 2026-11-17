@@ -7,7 +7,6 @@ import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations
 import { dispatchUi, uiStore } from '../store/index.ts';
 import { setTopbarState } from '../react/topbar/topbarStore.ts';
 
-
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
 
 const WORKSPACE_PAGE_IDS = new Set<string>(MAIN_PAGE_IDS.filter((id) => id !== 'examView'));
@@ -21,21 +20,33 @@ function resolveDocument(doc?: Document | null) {
 function setHidden(doc: Document, ids: readonly string[], hidden: boolean) {
   ids.forEach((id) => {
     const element = doc.getElementById(id);
-    if (element && element.classList.contains('hidden') !== hidden) element.classList.toggle('hidden', hidden);
+    if (element && element.classList.contains('hidden') !== hidden)
+      element.classList.toggle('hidden', hidden);
   });
 }
 
 function resetShellState(doc: Document) {
-  doc.body.classList.remove('workspace-active', 'plugins-active', 'library-active', 'projects-active', 'scheduled-active', 'admin-active', 'exam-active');
+  doc.body.classList.remove(
+    'workspace-active',
+    'plugins-active',
+    'library-active',
+    'projects-active',
+    'scheduled-active',
+    'admin-active',
+    'exam-active',
+  );
   const pluginTabs = doc.getElementById('pluginWorkspaceTabs');
   if (pluginTabs) pluginTabs.hidden = true;
-  doc.querySelectorAll<HTMLElement>("[data-exam-only='true']").forEach((element) => element.classList.add('hidden'));
+  doc
+    .querySelectorAll<HTMLElement>("[data-exam-only='true']")
+    .forEach((element) => element.classList.add('hidden'));
 }
 
 function syncChatPageGate(doc: Document) {
   const chatPage = doc.getElementById('chatPage');
   const chatView = doc.getElementById('chatView');
-  if (chatPage && chatView) chatPage.classList.toggle('hidden', chatView.classList.contains('hidden'));
+  if (chatPage && chatView)
+    chatPage.classList.toggle('hidden', chatView.classList.contains('hidden'));
 }
 
 export function hideCoreViews(doc?: Document | null) {
@@ -79,14 +90,23 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   if (viewId !== 'examView' && uiStore.getState()._examInView) {
     dispatchUi({ type: 'ui/set', key: '_examInView', value: false });
   }
-  const previousView = currentDocument.documentElement.dataset.mainView || getVisibleCoreView(currentDocument);
+  const previousView =
+    currentDocument.documentElement.dataset.mainView || getVisibleCoreView(currentDocument);
   if (previousView !== viewId) closeDetailSurface(undefined, currentDocument, false);
   currentDocument.documentElement.dataset.mainView = viewId;
 
   // Keep the active pane laid out during chat-to-chat session switches.
   // Toggling display:none here invalidated editor and transcript geometry.
-  setHidden(currentDocument, CORE_VIEW_IDS.filter((id) => id !== viewId), true);
-  setHidden(currentDocument, MAIN_PAGE_IDS.filter((id) => id !== viewId), true);
+  setHidden(
+    currentDocument,
+    CORE_VIEW_IDS.filter((id) => id !== viewId),
+    true,
+  );
+  setHidden(
+    currentDocument,
+    MAIN_PAGE_IDS.filter((id) => id !== viewId),
+    true,
+  );
   resetShellState(currentDocument);
 
   // Explicit navigation supersedes the first-paint boot hint.
@@ -96,8 +116,11 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   currentDocument.documentElement.toggleAttribute('data-topic-setup-open', viewId === 'topicSetup');
   syncChatPageGate(currentDocument);
   if (viewId === 'topicSetup' || viewId === 'chatView') {
-    try { activateComposerSurface(viewId === 'chatView' ? 'chat' : 'topic', currentDocument); }
-    catch (error) { reportSwallow(error, 'mainViewController.activateComposerSurface'); }
+    try {
+      activateComposerSurface(viewId === 'chatView' ? 'chat' : 'topic', currentDocument);
+    } catch (error) {
+      reportSwallow(error, 'mainViewController.activateComposerSurface');
+    }
   }
 
   const mainInner = currentDocument.getElementById('mainInner');
@@ -112,7 +135,12 @@ export function activateMainView(viewId: string, doc?: Document | null) {
 
 /* Test hook — e2e drives the production view and composer transition. */
 if (typeof window !== 'undefined') {
-  (window as unknown as { __testActivateMainView?: (viewId: string) => boolean }).__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
+  (
+    window as unknown as { __testActivateMainView?: (viewId: string) => boolean }
+  ).__testActivateMainView = (viewId: string) => activateMainView(viewId, document);
   /* RN-7 — the header renders share / find from its store, not a class. */
-  (window as unknown as { __testShowConversationActions?: (show: boolean) => void }).__testShowConversationActions = (show: boolean) => setTopbarState({ conversationActions: show });
+  (
+    window as unknown as { __testShowConversationActions?: (show: boolean) => void }
+  ).__testShowConversationActions = (show: boolean) =>
+    setTopbarState({ conversationActions: show });
 }

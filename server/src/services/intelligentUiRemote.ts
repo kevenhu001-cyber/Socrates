@@ -1,26 +1,42 @@
 import { ApiError } from '../lib/errors.js';
 
-export const remoteUnavailable = () => new ApiError(502, 'UI_REMOTE_UNAVAILABLE', 'The map or image service is temporarily unavailable');
+export const remoteUnavailable = () =>
+  new ApiError(502, 'UI_REMOTE_UNAVAILABLE', 'The map or image service is temporarily unavailable');
 const HEADERS = { 'User-Agent': 'Socrates/1.0 (+https://topodrive.top; Intelligence UI)' };
 
 /** Fixed provider origins; user-controlled URLs can never select a host. */
 function fixedOrigin(hostname: string): string | null {
   switch (hostname) {
-    case 'commons.wikimedia.org': return 'https://commons.wikimedia.org';
-    case 'duckduckgo.com': return 'https://duckduckgo.com';
-    case 'photon.komoot.io': return 'https://photon.komoot.io';
-    case 'router.project-osrm.org': return 'https://router.project-osrm.org';
-    case 'tiles.openfreemap.org': return 'https://tiles.openfreemap.org';
-    case 'upload.wikimedia.org': return 'https://upload.wikimedia.org';
-    case 'tse1.mm.bing.net': return 'https://tse1.mm.bing.net';
-    case 'tse2.mm.bing.net': return 'https://tse2.mm.bing.net';
-    case 'tse3.mm.bing.net': return 'https://tse3.mm.bing.net';
-    case 'tse4.mm.bing.net': return 'https://tse4.mm.bing.net';
-    case 'ts1.mm.bing.net': return 'https://ts1.mm.bing.net';
-    case 'ts2.mm.bing.net': return 'https://ts2.mm.bing.net';
-    case 'ts3.mm.bing.net': return 'https://ts3.mm.bing.net';
-    case 'ts4.mm.bing.net': return 'https://ts4.mm.bing.net';
-    default: return null;
+    case 'commons.wikimedia.org':
+      return 'https://commons.wikimedia.org';
+    case 'duckduckgo.com':
+      return 'https://duckduckgo.com';
+    case 'photon.komoot.io':
+      return 'https://photon.komoot.io';
+    case 'router.project-osrm.org':
+      return 'https://router.project-osrm.org';
+    case 'tiles.openfreemap.org':
+      return 'https://tiles.openfreemap.org';
+    case 'upload.wikimedia.org':
+      return 'https://upload.wikimedia.org';
+    case 'tse1.mm.bing.net':
+      return 'https://tse1.mm.bing.net';
+    case 'tse2.mm.bing.net':
+      return 'https://tse2.mm.bing.net';
+    case 'tse3.mm.bing.net':
+      return 'https://tse3.mm.bing.net';
+    case 'tse4.mm.bing.net':
+      return 'https://tse4.mm.bing.net';
+    case 'ts1.mm.bing.net':
+      return 'https://ts1.mm.bing.net';
+    case 'ts2.mm.bing.net':
+      return 'https://ts2.mm.bing.net';
+    case 'ts3.mm.bing.net':
+      return 'https://ts3.mm.bing.net';
+    case 'ts4.mm.bing.net':
+      return 'https://ts4.mm.bing.net';
+    default:
+      return null;
   }
 }
 
@@ -43,7 +59,13 @@ export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 1
   }
   const hostname = target.hostname;
   const origin = fixedOrigin(hostname);
-  if (target.protocol !== 'https:' || target.username || target.password || target.port || !origin) {
+  if (
+    target.protocol !== 'https:' ||
+    target.username ||
+    target.password ||
+    target.port ||
+    !origin
+  ) {
     throw remoteUnavailable();
   }
   /* Rebuild from an allowlisted origin so the untrusted URL can only select
@@ -52,10 +74,17 @@ export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 1
   safeTarget.pathname = target.pathname;
   safeTarget.search = target.search;
   // lgtm[js/request-forgery] -- The destination origin is one of the literal provider origins above; caller input only supplies its path and query.
-  const response = await fetch(safeTarget.href, { headers: HEADERS, redirect: 'error', signal: AbortSignal.timeout(timeout) });
+  const response = await fetch(safeTarget.href, {
+    headers: HEADERS,
+    redirect: 'error',
+    signal: AbortSignal.timeout(timeout),
+  });
   if (!response.ok || !response.body) throw remoteUnavailable();
   const length = Number(response.headers.get('content-length'));
-  if (length > maxBytes) { await response.body.cancel(); throw remoteUnavailable(); }
+  if (length > maxBytes) {
+    await response.body.cancel();
+    throw remoteUnavailable();
+  }
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -64,11 +93,19 @@ export async function remoteBytes(url: string, maxBytes = 2_000_000, timeout = 1
       const { value, done } = await reader.read();
       if (done) break;
       size += value.byteLength;
-      if (size > maxBytes) { await reader.cancel(); throw remoteUnavailable(); }
+      if (size > maxBytes) {
+        await reader.cancel();
+        throw remoteUnavailable();
+      }
       chunks.push(value);
     }
-  } finally { reader.releaseLock(); }
-  return { bytes: Buffer.concat(chunks), type: (response.headers.get('content-type') || '').split(';')[0].toLowerCase() };
+  } finally {
+    reader.releaseLock();
+  }
+  return {
+    bytes: Buffer.concat(chunks),
+    type: (response.headers.get('content-type') || '').split(';')[0].toLowerCase(),
+  };
 }
 
 export async function remoteJson(url: string, timeout = 8000): Promise<Record<string, unknown>> {
@@ -79,33 +116,52 @@ export async function remoteJson(url: string, timeout = 8000): Promise<Record<st
     if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>;
     }
-  } catch { throw remoteUnavailable(); }
+  } catch {
+    throw remoteUnavailable();
+  }
   throw remoteUnavailable();
 }
 
 /** Bounded cross-user cache for public data; failed requests are never cached. */
-export function createRemoteCache<T>(ttl: number, capacity: number, weight: (value: T) => number = () => 1, maxWeight = capacity) {
+export function createRemoteCache<T>(
+  ttl: number,
+  capacity: number,
+  weight: (value: T) => number = () => 1,
+  maxWeight = capacity,
+) {
   const entries = new Map<string, { at: number; value: T; size: number }>();
   const pending = new Map<string, Promise<T>>();
   let total = 0;
   return async (key: string, read: () => Promise<T>): Promise<T> => {
     const hit = entries.get(key);
-    if (hit && Date.now() - hit.at < ttl) { entries.delete(key); entries.set(key, hit); return hit.value; }
-    if (hit) { total -= hit.size; entries.delete(key); }
+    if (hit && Date.now() - hit.at < ttl) {
+      entries.delete(key);
+      entries.set(key, hit);
+      return hit.value;
+    }
+    if (hit) {
+      total -= hit.size;
+      entries.delete(key);
+    }
     const running = pending.get(key);
     if (running) return running;
     if (pending.size >= 48) throw new ApiError(503, 'UI_REMOTE_BUSY', 'Please try again shortly');
-    const work = Promise.resolve().then(read).then((value) => {
-      const size = weight(value);
-      if (size <= maxWeight) {
-        while (entries.size && (entries.size >= capacity || total + size > maxWeight)) {
-          const first = entries.keys().next().value!;
-          total -= entries.get(first)!.size; entries.delete(first);
+    const work = Promise.resolve()
+      .then(read)
+      .then((value) => {
+        const size = weight(value);
+        if (size <= maxWeight) {
+          while (entries.size && (entries.size >= capacity || total + size > maxWeight)) {
+            const first = entries.keys().next().value!;
+            total -= entries.get(first)!.size;
+            entries.delete(first);
+          }
+          entries.set(key, { at: Date.now(), value, size });
+          total += size;
         }
-        entries.set(key, { at: Date.now(), value, size }); total += size;
-      }
-      return value;
-    }).finally(() => pending.delete(key));
+        return value;
+      })
+      .finally(() => pending.delete(key));
     pending.set(key, work);
     return work;
   };

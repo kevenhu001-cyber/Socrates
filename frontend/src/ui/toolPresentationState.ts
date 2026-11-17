@@ -1,4 +1,4 @@
-import {isTerminalToolPhase} from '../chat/toolRunState.ts';
+import { isTerminalToolPhase } from '../chat/toolRunState.ts';
 import type { ToolCallLike } from './toolPresentationModel';
 
 type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
@@ -31,7 +31,12 @@ function explicitStateOf(
   /* A human decision takes precedence over the run phase so a pending prompt
      cannot be hidden behind a generic "Working…" status. */
   if (isAwaitingDecision(call)) return 'awaiting';
-  if (phase === 'failed' || phase === 'timed_out' || call.isError === true || FAILED_STATUSES.has(status)) {
+  if (
+    phase === 'failed' ||
+    phase === 'timed_out' ||
+    call.isError === true ||
+    FAILED_STATUSES.has(status)
+  ) {
     return 'error';
   }
   if (phase === 'succeeded') return 'done';
@@ -74,9 +79,7 @@ export function toolRunStateOf(call: ToolStateRecord | null | undefined): ToolRu
  * Live rows deliberately leave the terminal state unset; the agent step
  * renderer owns its live status until the enclosing tool actually settles.
  */
-export function agentRunStateOf(
-  state: ToolRunState,
-): 'done' | 'failed' | 'cancelled' | undefined {
+export function agentRunStateOf(state: ToolRunState): 'done' | 'failed' | 'cancelled' | undefined {
   if (state === 'running' || state === 'awaiting') return undefined;
   if (state === 'error') return 'failed';
   if (state === 'stopped') return 'cancelled';
@@ -96,8 +99,7 @@ export function durationOf(call: ToolStateRecord): number {
  * rows use this to tick an elapsed counter; settled rows show durationMs.
  */
 export function runStartedAt(call: ToolStateRecord | null | undefined): number {
-  const started = call && call._run && typeof call._run.startedAt === 'number'
-    ? call._run.startedAt
-    : 0;
+  const started =
+    call && call._run && typeof call._run.startedAt === 'number' ? call._run.startedAt : 0;
   return started > 0 ? started : 0;
 }

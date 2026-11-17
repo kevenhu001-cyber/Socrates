@@ -15,7 +15,12 @@ test('importing visualization stubs does not read the saved view preference', as
   const reads = [];
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
-    value: { getItem(key) { reads.push(key); return 'code'; } },
+    value: {
+      getItem(key) {
+        reads.push(key);
+        return 'code';
+      },
+    },
   });
   const stubs = await freshStubs();
   assert.equal(reads.includes('socrates-viz-view'), false);
@@ -28,7 +33,12 @@ test('an explicit view choice wins without restoring persisted state', async () 
   let reads = 0;
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
-    value: { getItem() { reads++; return 'code'; } },
+    value: {
+      getItem() {
+        reads++;
+        return 'code';
+      },
+    },
   });
   const stubs = await freshStubs();
   stubs.setVizViewPref('preview');
@@ -43,7 +53,10 @@ test('blocked storage falls back to preview and is not retried per card', async 
   let reads = 0;
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
-    get() { reads++; throw new DOMException('Blocked', 'SecurityError'); },
+    get() {
+      reads++;
+      throw new DOMException('Blocked', 'SecurityError');
+    },
   });
   const stubs = await freshStubs();
   const before = reads;
@@ -55,7 +68,11 @@ test('blocked storage falls back to preview and is not retried per card', async 
 test('unknown stored preferences retain the preview default', async () => {
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
-    value: { getItem() { return 'unknown'; } },
+    value: {
+      getItem() {
+        return 'unknown';
+      },
+    },
   });
   const stubs = await freshStubs();
   assert.equal(stubs.vizViewPref(), 'preview');

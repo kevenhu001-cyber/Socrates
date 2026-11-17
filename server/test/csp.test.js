@@ -51,7 +51,7 @@ describe('csp: inline script hashes', () => {
     assert.ok(
       expected.length > 0,
       'no inline <script> found in index.html — if the pre-paint scripts were ' +
-      'extracted to modules, drop the hashes and relax this test deliberately',
+        'extracted to modules, drop the hashes and relax this test deliberately',
     );
   });
 
@@ -93,13 +93,17 @@ describe('csp: nginx SPA policy', () => {
     const scriptSrc = /script-src ([^;"]+)/.exec(NGINX_CONF)?.[1] ?? '';
     if (scriptSrc.includes("'unsafe-inline'")) {
       for (const hash of CSP_INLINE_SCRIPT_HASHES) {
-        assert.ok(!scriptSrc.includes(hash),
-          `${hash} appears alongside 'unsafe-inline', which disables it`);
+        assert.ok(
+          !scriptSrc.includes(hash),
+          `${hash} appears alongside 'unsafe-inline', which disables it`,
+        );
       }
     } else {
       for (const hash of CSP_INLINE_SCRIPT_HASHES) {
-        assert.ok(scriptSrc.includes(hash),
-          `nginx policy is missing ${hash}; the SPA document would refuse its own boot script`);
+        assert.ok(
+          scriptSrc.includes(hash),
+          `nginx policy is missing ${hash}; the SPA document would refuse its own boot script`,
+        );
       }
     }
   });
@@ -135,7 +139,7 @@ describe('csp: nginx SPA policy', () => {
     assert.ok(
       !(hasInline && hasHash),
       "script-src carries BOTH 'unsafe-inline' and a hash: the browser will ignore " +
-      "'unsafe-inline' and srcdoc-based viz cards will stop rendering",
+        "'unsafe-inline' and srcdoc-based viz cards will stop rendering",
     );
   });
 
@@ -156,7 +160,7 @@ describe('csp: retired third-party hosts stay out', () => {
       assert.ok(
         !NGINX_CONF.includes(host),
         `${host} is back in the CSP. Its last consumer was removed by ` +
-        'P_perf-self-host; name the new consumer before re-adding it.',
+          'P_perf-self-host; name the new consumer before re-adding it.',
       );
     });
   }

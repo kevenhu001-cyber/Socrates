@@ -8,20 +8,25 @@ import { marked } from 'marked';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+for (const key of [
+  'Element',
+  'Node',
+  'NodeFilter',
+  'DocumentFragment',
+  'HTMLElement',
+  'HTMLTemplateElement',
+]) {
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
-const {
-  formatMsg,
-  formatMsgProgressive,
-} = await import('../src/render/markdown.ts');
-const {
-  recoverUnclosedDisplayMathBeforeHeading,
-} = await import('../src/render/preprocess.ts');
+const { formatMsg, formatMsgProgressive } = await import('../src/render/markdown.ts');
+const { recoverUnclosedDisplayMathBeforeHeading } = await import('../src/render/preprocess.ts');
 
 function loadRealKatex() {
-  const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');
+  const code = readFileSync(
+    new URL('../src/vendor-files/katex/katex.min.js', import.meta.url),
+    'utf8',
+  );
   const ctx = { console };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
@@ -52,8 +57,16 @@ function assertMathThenHeading(src, headingTag, headingText) {
       ['live-stream', formatMsgProgressive(src, { complete: false })],
     ]) {
       assert.match(html, /class="katex-display"/, `${name}: display math should render`);
-      assert.match(html, new RegExp(`<${headingTag}>${headingText}</${headingTag}>`), `${name}: heading should render after math`);
-      assert.doesNotMatch(html.replace(/<[^>]+>/g, ''), /#{2,6}\s*结论|#{2,6}\s*第二部分/, `${name}: heading marker must not leak`);
+      assert.match(
+        html,
+        new RegExp(`<${headingTag}>${headingText}</${headingTag}>`),
+        `${name}: heading should render after math`,
+      );
+      assert.doesNotMatch(
+        html.replace(/<[^>]+>/g, ''),
+        /#{2,6}\s*结论|#{2,6}\s*第二部分/,
+        `${name}: heading marker must not leak`,
+      );
     }
   });
 }
@@ -62,7 +75,11 @@ test('unclosed $$ display math yields to a following Markdown heading', () => {
   const src = '$$\nE = mc^2\n\n### 结论\n正文';
   const repaired = recoverUnclosedDisplayMathBeforeHeading(src);
   assert.equal(repaired, '$$\nE = mc^2\n\n$$\n### 结论\n正文');
-  assert.equal(recoverUnclosedDisplayMathBeforeHeading(repaired), repaired, 'repair must be idempotent');
+  assert.equal(
+    recoverUnclosedDisplayMathBeforeHeading(repaired),
+    repaired,
+    'repair must be idempotent',
+  );
   assertMathThenHeading(src, 'h3', '结论');
 });
 
@@ -139,4 +156,3 @@ test('unclosed inline math does not swallow following Markdown heading across ne
     assert.match(progressive, /<h2>结论<\/h2>/);
   });
 });
-

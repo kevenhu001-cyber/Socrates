@@ -46,10 +46,7 @@ export function clientErrorLogLevel(
 }
 
 /** Short label for the log line, so grep can separate the classes. */
-export function clientErrorLabel(
-  kind: unknown,
-  severity: ClientErrorSeverity | null,
-): string {
+export function clientErrorLabel(kind: unknown, severity: ClientErrorSeverity | null): string {
   if (kind !== 'swallow') return 'invariant-or-uncaught';
   if (severity === 'expected') return 'suppressed-expected';
   if (severity === 'recoverable') return 'recoverable';

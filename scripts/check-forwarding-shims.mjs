@@ -51,9 +51,7 @@ function walk(dir, out) {
 }
 
 function stripComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+  return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
 }
 
 function isShell(file) {
@@ -83,13 +81,19 @@ const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8'
 function writeBaseline(next) {
   writeFileSync(
     BASELINE,
-    JSON.stringify({ shims: next.length, files: next, generatedBy: 'check-forwarding-shims.mjs --update' }, null, 2) + '\n',
+    JSON.stringify(
+      { shims: next.length, files: next, generatedBy: 'check-forwarding-shims.mjs --update' },
+      null,
+      2,
+    ) + '\n',
   );
 }
 
 if (!baseline) {
   writeBaseline(shells);
-  console.log(`forwarding shims: no baseline found — wrote scripts/forwarding-shims.baseline.json (${shells.length} shells).`);
+  console.log(
+    `forwarding shims: no baseline found — wrote scripts/forwarding-shims.baseline.json (${shells.length} shells).`,
+  );
   console.log('Commit the baseline; growth beyond it now fails.');
 } else if (UPDATE) {
   /* Shrink-only: an update may drop shells, never add one. A legacy

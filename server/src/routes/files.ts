@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { eq, and, sql, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { files, sessions, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from '../db/schema/index.js';
+import {
+  files,
+  sessions,
+  executions as executionsTable,
+  shares as sharesTable,
+  sessions as sessionsTable,
+} from '../db/schema/index.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
@@ -11,7 +17,10 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
-import { extractText as extractDocumentText, SUPPORTED_MIMES } from '../services/fileParsers/index.js';
+import {
+  extractText as extractDocumentText,
+  SUPPORTED_MIMES,
+} from '../services/fileParsers/index.js';
 import {
   TEXT_FILE_EXTENSIONS,
   DOCUMENT_FILE_EXTENSIONS,
@@ -23,8 +32,17 @@ import {
   isTextReadable,
   prewarmAttachmentExtract,
 } from '../services/embeddings/attachmentReader.js';
-import { decodeTextBuffer, cleanExtractedText, truncateHeadTail } from '../services/fileParsers/text.js';
-import { displayFileName, normalizeFileName, safeStorageExtension, contentDisposition } from '../lib/fileName.js';
+import {
+  decodeTextBuffer,
+  cleanExtractedText,
+  truncateHeadTail,
+} from '../services/fileParsers/text.js';
+import {
+  displayFileName,
+  normalizeFileName,
+  safeStorageExtension,
+  contentDisposition,
+} from '../lib/fileName.js';
 import { isUuid } from '../lib/validate.js';
 import { resolveInsideRoot } from '../lib/pathSafety.js';
 import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
@@ -57,11 +75,25 @@ const storage = multer.diskStorage({
    PDF, Office, EPUB/RTF, images) plus media files kept as attachments.
    Extension sets are shared with services/embeddings/attachmentReader.ts. */
 const ALLOWED_EXACT_MIMES = new Set([
-  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/avif',
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/avif',
   'application/pdf',
-  'video/mp4', 'video/webm', 'video/quicktime',
-  'audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/webm', 'audio/ogg',
-  'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/flac',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/flac',
   /* Office formats — see services/fileParsers/index.js for the
      matching extractor set. The raw endpoint force-downloads
      these so the browser never renders embedded script. */
@@ -70,9 +102,12 @@ const ALLOWED_EXACT_MIMES = new Set([
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   /* Legacy Office — stored as attachments; no extractor, the model gets
      metadata only until the file is converted. */
-  'application/msword', 'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'application/msword',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-powerpoint',
   'application/epub+zip',
-  'application/rtf', 'text/rtf',
+  'application/rtf',
+  'text/rtf',
   /* OpenDocument — parsed by the hand-rolled ODF extractors. */
   'application/vnd.oasis.opendocument.text',
   'application/vnd.oasis.opendocument.spreadsheet',
@@ -102,7 +137,11 @@ const upload = multer({
       cb(new BadRequest(`Unsupported file type: ${mime}`));
       return;
     }
-    if (ALLOWED_EXACT_MIMES.has(mime) || TEXTUAL_APPLICATION_MIMES.has(mime) || mime.startsWith('text/')) {
+    if (
+      ALLOWED_EXACT_MIMES.has(mime) ||
+      TEXTUAL_APPLICATION_MIMES.has(mime) ||
+      mime.startsWith('text/')
+    ) {
       cb(null, true);
       return;
     }
@@ -111,11 +150,12 @@ const upload = multer({
        files, documents, media). */
     if (mime === 'application/octet-stream' || mime === 'binary/octet-stream' || !mime) {
       const ext = path.extname(String(file.originalname || '')).toLowerCase();
-      const known = TEXT_FILE_EXTENSIONS.has(ext)
-        || DOCUMENT_FILE_EXTENSIONS.has(ext)
-        || LEGACY_OFFICE_EXTENSIONS.has(ext)
-        || MEDIA_FILE_EXTENSIONS.has(ext)
-        || IMAGE_FILE_EXTENSIONS.has(ext);
+      const known =
+        TEXT_FILE_EXTENSIONS.has(ext) ||
+        DOCUMENT_FILE_EXTENSIONS.has(ext) ||
+        LEGACY_OFFICE_EXTENSIONS.has(ext) ||
+        MEDIA_FILE_EXTENSIONS.has(ext) ||
+        IMAGE_FILE_EXTENSIONS.has(ext);
       if (known) {
         cb(null, true);
         return;
@@ -138,21 +178,25 @@ router.get('/:id/raw', optionalAuth, async (req, res, next) => {
     if (!allowed) {
       let sessionId = file.sessionId;
       if (!sessionId && file.executionId) {
-        const [exec] = await db.select({ sessionId: executionsTable.sessionId })
+        const [exec] = await db
+          .select({ sessionId: executionsTable.sessionId })
           .from(executionsTable)
           .where(eq(executionsTable.id, file.executionId))
           .limit(1);
         sessionId = exec?.sessionId ?? null;
       }
       if (sessionId) {
-        const [share] = await db.select({ token: sharesTable.token })
+        const [share] = await db
+          .select({ token: sharesTable.token })
           .from(sharesTable)
           .innerJoin(sessionsTable, eq(sessionsTable.id, sharesTable.sessionId))
-          .where(and(
-            eq(sharesTable.sessionId, sessionId),
-            inArray(sharesTable.visibility, ['public', 'unlisted']),
-            isNull(sessionsTable.archivedAt),
-          ))
+          .where(
+            and(
+              eq(sharesTable.sessionId, sessionId),
+              inArray(sharesTable.visibility, ['public', 'unlisted']),
+              isNull(sessionsTable.archivedAt),
+            ),
+          )
           .limit(1);
         allowed = !!share;
       }
@@ -161,13 +205,20 @@ router.get('/:id/raw', optionalAuth, async (req, res, next) => {
     res.set('X-Content-Type-Options', 'nosniff');
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.set('Content-Type', file.mimeType);
-    const inlinePreview = req.query.inline === '1' && (
-      file.mimeType.startsWith('audio/')
-      || file.mimeType.startsWith('video/')
-      || (file.mimeType.startsWith('text/') && file.mimeType !== 'text/html' && file.mimeType !== 'text/xhtml' && file.mimeType !== 'text/xhtml+xml')
-      || file.mimeType === 'application/json'
-    );
-    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf' && !inlinePreview) {
+    const inlinePreview =
+      req.query.inline === '1' &&
+      (file.mimeType.startsWith('audio/') ||
+        file.mimeType.startsWith('video/') ||
+        (file.mimeType.startsWith('text/') &&
+          file.mimeType !== 'text/html' &&
+          file.mimeType !== 'text/xhtml' &&
+          file.mimeType !== 'text/xhtml+xml') ||
+        file.mimeType === 'application/json');
+    if (
+      !file.mimeType.startsWith('image/') &&
+      file.mimeType !== 'application/pdf' &&
+      !inlinePreview
+    ) {
       res.set('Content-Disposition', contentDisposition('attachment', file.name));
     } else {
       res.set('Content-Disposition', contentDisposition('inline', file.name));
@@ -185,7 +236,9 @@ router.get('/:id/raw', optionalAuth, async (req, res, next) => {
         next(err);
       }
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.use(requireAuth, resourceScope('files'));
@@ -209,11 +262,18 @@ router.get('/', async (req, res, next) => {
       )`);
     }
 
-    const rows = await db.select({
-      id: files.id, name: files.name, mimeType: files.mimeType,
-      size: files.size, kind: files.kind, sha256: files.sha256,
-      sessionId: files.sessionId, uploadedAt: files.uploadedAt,
-    }).from(files)
+    const rows = await db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        size: files.size,
+        kind: files.kind,
+        sha256: files.sha256,
+        sessionId: files.sessionId,
+        uploadedAt: files.uploadedAt,
+      })
+      .from(files)
       .where(and(...conditions))
       .orderBy(sql`${files.uploadedAt} DESC, ${files.id} DESC`)
       .limit(limit + 1);
@@ -226,7 +286,9 @@ router.get('/', async (req, res, next) => {
       files: rows.map((row) => ({ ...row, name: displayFileName(row.name) })),
       nextCursor: hasMore ? rows[rows.length - 1]?.id : null,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/files/:id/content — return a safe, text-only preview.
@@ -238,10 +300,15 @@ router.get('/', async (req, res, next) => {
 router.get('/:id/content', async (req, res, next) => {
   try {
     const db = getDb();
-    const [file] = await db.select({
-      id: files.id, name: files.name, mimeType: files.mimeType,
-      kind: files.kind, storagePath: files.storagePath,
-    }).from(files)
+    const [file] = await db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        kind: files.kind,
+        storagePath: files.storagePath,
+      })
+      .from(files)
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
@@ -252,7 +319,10 @@ router.get('/:id/content', async (req, res, next) => {
     const mime = String(file.mimeType || '').toLowerCase();
     const name = displayFileName(file.name);
     if (PREVIEW_PARSER_MIMES.has(mime)) {
-      const result = await extractDocumentText(mime, resolveInsideRoot(UPLOAD_DIR, file.storagePath));
+      const result = await extractDocumentText(
+        mime,
+        resolveInsideRoot(UPLOAD_DIR, file.storagePath),
+      );
       text = String(result.text || '');
       meta = result.meta || {};
       truncated = !!result.truncated;
@@ -275,22 +345,34 @@ router.get('/:id/content', async (req, res, next) => {
         truncated = true;
       }
     } else {
-      return res.status(415).json({ ok: false, error: 'This file type cannot be previewed as text.' });
+      return res
+        .status(415)
+        .json({ ok: false, error: 'This file type cannot be previewed as text.' });
     }
 
     if (text.length > MAX_PREVIEW_CHARS) {
       text = truncateHeadTail(text, MAX_PREVIEW_CHARS).text;
       truncated = true;
     }
-    return res.json({ ok: true, id: file.id, name, mimeType: file.mimeType, kind: file.kind, text, truncated, meta });
+    return res.json({
+      ok: true,
+      id: file.id,
+      name,
+      mimeType: file.mimeType,
+      kind: file.kind,
+      text,
+      truncated,
+      meta,
+    });
   } catch (err) {
     if (err instanceof NotFound) throw err;
     const code = (err as { code?: string })?.code;
-    const error = code === 'ENCRYPTED'
-      ? 'This file is password-protected or encrypted and cannot be previewed.'
-      : code === 'EMPTY_DOCUMENT'
-        ? 'This file contains no readable content.'
-        : 'Could not parse this file for preview.';
+    const error =
+      code === 'ENCRYPTED'
+        ? 'This file is password-protected or encrypted and cannot be previewed.'
+        : code === 'EMPTY_DOCUMENT'
+          ? 'This file contains no readable content.'
+          : 'Could not parse this file for preview.';
     return res.status(422).json({ ok: false, error, errorCode: code || 'PARSE_FAILED' });
   }
 });
@@ -333,7 +415,8 @@ function hashFileStreaming(storagePath: string): Promise<string> {
  */
 async function getUserStorageBytes(userId: string, tx?: unknown) {
   const db = tx ?? getDb();
-  const [row] = await (db as ReturnType<typeof getDb>).select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
+  const [row] = await (db as ReturnType<typeof getDb>)
+    .select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
     .from(files)
     .where(eq(files.userId, userId));
   return Number(row?.total) || 0;
@@ -358,103 +441,118 @@ router.post('/', uploadLimiter, async (req, res, next) => {
     return;
   }
   upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
-  try {
-    if (multerErr) {
-      // Multer may leave a truncated file on disk when the client aborts
-      // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
-      const partial = req.file?.path;
-      if (partial) await fs.unlink(resolveInsideRoot(UPLOAD_DIR, partial)).catch(() => {});
-      if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
-        return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
-      }
-      return next(multerErr);
-    }
-    if (!req.file) throw new BadRequest('No file provided');
-
-    const file = req.file;
-    // Client-supplied MIME is never trusted blindly: reject active
-    // content masquerading as an allowed type (e.g. `<svg` bytes labelled
-    // image/png). Text/code formats have no magic, so only binary kinds
-    // and active-content sniffing are enforced here.
-    const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
     try {
-      await fs.chmod(uploadPath, 0o600);
-      const verifiedMime = await assertSafeContent(uploadPath, String(file.mimetype || ''), String(file.originalname || ''));
-      if (verifiedMime && verifiedMime !== file.mimetype) {
-        file.mimetype = verifiedMime;
+      if (multerErr) {
+        // Multer may leave a truncated file on disk when the client aborts
+        // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
+        const partial = req.file?.path;
+        if (partial) await fs.unlink(resolveInsideRoot(UPLOAD_DIR, partial)).catch(() => {});
+        if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
+          return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
+        }
+        return next(multerErr);
       }
-    } catch (sigErr) {
-      await fs.unlink(uploadPath).catch(() => {});
-      throw sigErr;
-    }
-    const sha256 = await hashFileStreaming(uploadPath);
+      if (!req.file) throw new BadRequest('No file provided');
 
-    /* Optional session link: an attachment uploaded from a chat composer
+      const file = req.file;
+      // Client-supplied MIME is never trusted blindly: reject active
+      // content masquerading as an allowed type (e.g. `<svg` bytes labelled
+      // image/png). Text/code formats have no magic, so only binary kinds
+      // and active-content sniffing are enforced here.
+      const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
+      try {
+        await fs.chmod(uploadPath, 0o600);
+        const verifiedMime = await assertSafeContent(
+          uploadPath,
+          String(file.mimetype || ''),
+          String(file.originalname || ''),
+        );
+        if (verifiedMime && verifiedMime !== file.mimetype) {
+          file.mimetype = verifiedMime;
+        }
+      } catch (sigErr) {
+        await fs.unlink(uploadPath).catch(() => {});
+        throw sigErr;
+      }
+      const sha256 = await hashFileStreaming(uploadPath);
+
+      /* Optional session link: an attachment uploaded from a chat composer
        carries sessionId so the file's share/lifecycle follows that
        conversation. The id must be a uuid AND point at one of the
        caller's own sessions — otherwise an arbitrary value could attach
        an upload to somebody else's session (or poison the link). */
-    let sessionId: string | null = null;
-    const rawSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
-    if (rawSessionId && isUuid(rawSessionId)) {
-      const db = getDb();
-      const [owned] = await db.select({ id: sessions.id }).from(sessions)
-        .where(and(eq(sessions.id, rawSessionId), eq(sessions.userId, req.userId!)))
-        .limit(1);
-      if (owned) {
-        sessionId = rawSessionId;
+      let sessionId: string | null = null;
+      const rawSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
+      if (rawSessionId && isUuid(rawSessionId)) {
+        const db = getDb();
+        const [owned] = await db
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(and(eq(sessions.id, rawSessionId), eq(sessions.userId, req.userId!)))
+          .limit(1);
+        if (owned) {
+          sessionId = rawSessionId;
+        }
       }
-    }
 
-    const db = getDb();
-    let record;
-    try {
-      record = await db.transaction(async (tx) => {
-        /* Serialize concurrent uploads from the same user so two
+      const db = getDb();
+      let record;
+      try {
+        record = await db.transaction(async (tx) => {
+          /* Serialize concurrent uploads from the same user so two
            simultaneous SUM checks cannot both pass before either
            INSERT lands. Advisory lock is transaction-scoped. */
-        await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.userId!}))`);
-        const usedBytes = await getUserStorageBytes(req.userId!, tx);
-        if (usedBytes + file.size > USER_QUOTA_BYTES) {
-          throw new PayloadTooLarge(
-            `Storage quota exceeded. You have used ${formatBytes(usedBytes)}; this upload (${formatBytes(file.size)}) would exceed the ${formatBytes(USER_QUOTA_BYTES)} limit.`
-          );
-        }
-        const [row] = await tx.insert(files).values({
-          userId: req.userId!,
-          name: normalizeFileName(file.originalname) || 'file',
-          mimeType: file.mimetype,
-          size: file.size,
-          kind: mimeKind(file.mimetype, file.originalname),
-          sha256,
-          storagePath: uploadPath,
-          sessionId,
-        }).returning();
-        return row;
-      });
-    } catch (err) {
-      // Roll back the on-disk file if the quota check or insert failed.
-      // Any failure after multer saved the file must unlink — otherwise a
-      // DB outage leaves orphan bytes that count against no quota row
-      // and are never reaped.
-      if (file?.path) await fs.unlink(uploadPath).catch(() => {});
-      throw err;
-    }
-    if (!record) {
-      await fs.unlink(uploadPath).catch(() => {});
-      throw new PayloadTooLarge('Storage quota exceeded.');
-    }
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.userId!}))`);
+          const usedBytes = await getUserStorageBytes(req.userId!, tx);
+          if (usedBytes + file.size > USER_QUOTA_BYTES) {
+            throw new PayloadTooLarge(
+              `Storage quota exceeded. You have used ${formatBytes(usedBytes)}; this upload (${formatBytes(file.size)}) would exceed the ${formatBytes(USER_QUOTA_BYTES)} limit.`,
+            );
+          }
+          const [row] = await tx
+            .insert(files)
+            .values({
+              userId: req.userId!,
+              name: normalizeFileName(file.originalname) || 'file',
+              mimeType: file.mimetype,
+              size: file.size,
+              kind: mimeKind(file.mimetype, file.originalname),
+              sha256,
+              storagePath: uploadPath,
+              sessionId,
+            })
+            .returning();
+          return row;
+        });
+      } catch (err) {
+        // Roll back the on-disk file if the quota check or insert failed.
+        // Any failure after multer saved the file must unlink — otherwise a
+        // DB outage leaves orphan bytes that count against no quota row
+        // and are never reaped.
+        if (file?.path) await fs.unlink(uploadPath).catch(() => {});
+        throw err;
+      }
+      if (!record) {
+        await fs.unlink(uploadPath).catch(() => {});
+        throw new PayloadTooLarge('Storage quota exceeded.');
+      }
 
-    /* Warm the extractor while the client is still finishing the upload
+      /* Warm the extractor while the client is still finishing the upload
        animation. The first read_attachment then hits the cache instead of
        pdf.js / the Office parsers. */
-    prewarmAttachmentExtract(record);
+      prewarmAttachmentExtract(record);
 
-    return res.status(201).json({
-      id: record.id, name: record.name, mimeType: record.mimeType,
-      size: record.size, kind: record.kind, sha256: record.sha256,
-    });
-  } catch (err) { next(err); }
+      return res.status(201).json({
+        id: record.id,
+        name: record.name,
+        mimeType: record.mimeType,
+        size: record.size,
+        kind: record.kind,
+        sha256: record.sha256,
+      });
+    } catch (err) {
+      next(err);
+    }
   });
 });
 
@@ -462,12 +560,16 @@ router.post('/', uploadLimiter, async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [file] = await db.select().from(files)
+    const [file] = await db
+      .select()
+      .from(files)
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
     return res.json({ ...file, name: displayFileName(file.name) });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 function sniffImageMime(head: string): string | null {
@@ -487,15 +589,25 @@ function sniffImageMime(head: string): string | null {
 /* Reject active content masquerading as an allowed binary type, without
  * breaking text/code uploads (which have no magic bytes). Reads only the
  * head of the file. Throws BadRequest on mismatch. */
-async function assertSafeContent(storagePath: string, mime: string, originalName: string): Promise<string> {
+async function assertSafeContent(
+  storagePath: string,
+  mime: string,
+  originalName: string,
+): Promise<string> {
   const m = String(mime || '').toLowerCase();
   const ext = path.extname(String(originalName || '')).toLowerCase();
   const isImageMimeOrExt = m.startsWith('image/') || IMAGE_FILE_EXTENSIONS.has(ext);
-  const needsCheck = isImageMimeOrExt || m === 'application/pdf'
-    || m === 'application/octet-stream' || m === 'binary/octet-stream' || !m
-    || m.startsWith('video/') || m.startsWith('audio/')
-    || m === 'application/msword' || m === 'application/vnd.ms-excel'
-    || m.startsWith('application/vnd.oasis.opendocument');
+  const needsCheck =
+    isImageMimeOrExt ||
+    m === 'application/pdf' ||
+    m === 'application/octet-stream' ||
+    m === 'binary/octet-stream' ||
+    !m ||
+    m.startsWith('video/') ||
+    m.startsWith('audio/') ||
+    m === 'application/msword' ||
+    m === 'application/vnd.ms-excel' ||
+    m.startsWith('application/vnd.oasis.opendocument');
   if (!needsCheck) return m;
   let head = '';
   try {
@@ -503,11 +615,18 @@ async function assertSafeContent(storagePath: string, mime: string, originalName
   } catch {
     return m;
   }
-  const trimmed = head.replace(/^[\u0000-\u0020]*/, '').slice(0, 512).toLowerCase();
+  const trimmed = head
+    .replace(/^[\u0000-\u0020]*/, '')
+    .slice(0, 512)
+    .toLowerCase();
   // Active content signatures are never valid file bytes for our allow-list.
-  if (trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html')
-    || trimmed.startsWith('<script') || trimmed.startsWith('<svg')
-    || trimmed.startsWith('<?xml')) {
+  if (
+    trimmed.startsWith('<!doctype html') ||
+    trimmed.startsWith('<html') ||
+    trimmed.startsWith('<script') ||
+    trimmed.startsWith('<svg') ||
+    trimmed.startsWith('<?xml')
+  ) {
     // <?xml alone is ambiguous (svg vs. plain xml data) — only reject when
     // the payload also carries svg/html markers.
     if (trimmed.includes('<svg') || trimmed.includes('<html') || trimmed.includes('<script')) {
@@ -525,14 +644,19 @@ async function assertSafeContent(storagePath: string, mime: string, originalName
     if (detected) {
       return detected;
     }
-    if (m === 'image/png') throw new BadRequest('Unsupported file type: content does not match image/png');
-    if (m === 'image/jpeg' || m === 'image/jpg') throw new BadRequest('Unsupported file type: content does not match image/jpeg');
-    if (m === 'image/gif') throw new BadRequest('Unsupported file type: content does not match image/gif');
+    if (m === 'image/png')
+      throw new BadRequest('Unsupported file type: content does not match image/png');
+    if (m === 'image/jpeg' || m === 'image/jpg')
+      throw new BadRequest('Unsupported file type: content does not match image/jpeg');
+    if (m === 'image/gif')
+      throw new BadRequest('Unsupported file type: content does not match image/gif');
   }
   /* Office binaries: OLE compound magic (D0 CF 11 E0) for legacy
      .doc/.xls; ZIP magic (PK) for OpenDocument containers. */
-  if ((m === 'application/msword' || m === 'application/vnd.ms-excel')
-      && !head.startsWith('ÐÏ\x11à')) {
+  if (
+    (m === 'application/msword' || m === 'application/vnd.ms-excel') &&
+    !head.startsWith('ÐÏ\x11à')
+  ) {
     throw new BadRequest(`Unsupported file type: content does not match ${m}`);
   }
   if (m.startsWith('application/vnd.oasis.opendocument') && !head.startsWith('PK')) {
@@ -545,7 +669,9 @@ async function assertSafeContent(storagePath: string, mime: string, originalName
 router.patch('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [file] = await db.select().from(files)
+    const [file] = await db
+      .select()
+      .from(files)
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
@@ -555,21 +681,27 @@ router.patch('/:id', async (req, res, next) => {
     if (!name) throw new BadRequest('name is required (1-255 chars, no path separators)');
     await db.update(files).set({ name }).where(eq(files.id, req.params.id));
     return res.json({ id: file.id, name });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/files/:id */
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [file] = await db.select().from(files)
+    const [file] = await db
+      .select()
+      .from(files)
       .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
       .limit(1);
     if (!file) throw new NotFound('File not found');
     await fs.unlink(resolveInsideRoot(UPLOAD_DIR, file.storagePath)).catch(() => {});
     await db.delete(files).where(eq(files.id, req.params.id));
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 function mimeKind(mime: string, name?: string) {
@@ -578,9 +710,11 @@ function mimeKind(mime: string, name?: string) {
   if (m.startsWith('video/')) return 'video';
   if (m.startsWith('audio/')) return 'audio';
   if (m === 'application/pdf') return 'pdf';
-  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'docx';
+  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    return 'docx';
   if (m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
-  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
+  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    return 'pptx';
   if (m === 'application/msword') return 'doc';
   if (m === 'application/vnd.ms-excel') return 'xls';
   if (m === 'application/vnd.ms-powerpoint') return 'ppt';
@@ -592,8 +726,10 @@ function mimeKind(mime: string, name?: string) {
   if (m.startsWith('text/') || TEXTUAL_APPLICATION_MIMES.has(m)) return 'text';
   /* octet-stream uploads are classified by extension so a .py or .csv
      file still lands in the 'text' bucket the reader can serve. */
-  if ((m === 'application/octet-stream' || m === 'binary/octet-stream' || !m)
-      && TEXT_FILE_EXTENSIONS.has(path.extname(String(name || '')).toLowerCase())) {
+  if (
+    (m === 'application/octet-stream' || m === 'binary/octet-stream' || !m) &&
+    TEXT_FILE_EXTENSIONS.has(path.extname(String(name || '')).toLowerCase())
+  ) {
     return 'text';
   }
   return 'other';

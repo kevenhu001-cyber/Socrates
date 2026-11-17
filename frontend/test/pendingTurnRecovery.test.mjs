@@ -22,7 +22,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { stateStore } = await import('../src/state/store.ts');
+const { dispatchSession } = await import('../src/store/index.ts');
 const { clearPendingTurn, savePendingTurn } = await import('../src/chat/turn/client.ts');
 const { reattachPendingTurn } = await import('../src/session/pendingTurnRestore.ts');
 
@@ -33,7 +33,9 @@ function jsonResponse(value) {
     ok: true,
     status: 200,
     headers: { get: () => 'application/json' },
-    async text() { return JSON.stringify(value); },
+    async text() {
+      return JSON.stringify(value);
+    },
   };
 }
 
@@ -67,14 +69,21 @@ function makeController() {
     appendThinking() {},
     recordToolUse() {},
     recordToolResult() {},
-    finish() { calls.push('finish'); },
-    replaceWithError(message, retry) { calls.push(['replaceWithError', message, typeof retry]); },
+    finish() {
+      calls.push('finish');
+    },
+    replaceWithError(message, retry) {
+      calls.push(['replaceWithError', message, typeof retry]);
+    },
   };
 }
 
 function installWindow(ctl, extra = {}) {
   const added = [];
-  globalThis.window.addMessage = (role, text) => { added.push([role, text]); return 'client-1'; };
+  globalThis.window.addMessage = (role, text) => {
+    added.push([role, text]);
+    return 'client-1';
+  };
   globalThis.window.addStreamingMessage = async () => ctl;
   globalThis.window.askChatTurn = () => Promise.resolve();
   Object.assign(globalThis.window, extra);
@@ -82,7 +91,7 @@ function installWindow(ctl, extra = {}) {
 }
 
 test('a recoverable pending turn owns the recovery; the partial fallback is not run', async () => {
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'sess-own' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'sess-own' });
   savePendingTurn('sess-own', { turnId: 'turn-own', clientTurnId: 'c-own', lastSeq: 0 });
   const ctl = makeController();
   installWindow(ctl);
@@ -93,27 +102,37 @@ test('a recoverable pending turn owns the recovery; the partial fallback is not 
   };
 
   let fallbackRuns = 0;
-  await reattachPendingTurn('sess-own', () => { fallbackRuns += 1; });
+  await reattachPendingTurn('sess-own', () => {
+    fallbackRuns += 1;
+  });
 
-  assert.equal(fallbackRuns, 0, 'the live re-attach owns the recovery, so the partial must not be rendered too');
+  assert.equal(
+    fallbackRuns,
+    0,
+    'the live re-attach owns the recovery, so the partial must not be rendered too',
+  );
   clearPendingTurn('sess-own');
 });
 
 test('with no pending turn the partial fallback owns the recovery', async () => {
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'sess-none' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'sess-none' });
   clearPendingTurn('sess-none');
   const ctl = makeController();
   installWindow(ctl);
-  globalThis.fetch = async () => { throw new Error('no request expected'); };
+  globalThis.fetch = async () => {
+    throw new Error('no request expected');
+  };
 
   let fallbackRuns = 0;
-  await reattachPendingTurn('sess-none', () => { fallbackRuns += 1; });
+  await reattachPendingTurn('sess-none', () => {
+    fallbackRuns += 1;
+  });
 
   assert.equal(fallbackRuns, 1, 'without a pending turn the partial answer is the only recovery');
 });
 
 test('a dead turn hands the recovery back to the partial fallback', async () => {
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'sess-dead' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'sess-dead' });
   savePendingTurn('sess-dead', { turnId: 'turn-dead', clientTurnId: 'c-dead', lastSeq: 0 });
   const ctl = makeController();
   installWindow(ctl);
@@ -123,7 +142,9 @@ test('a dead turn hands the recovery back to the partial fallback', async () => 
   };
 
   let fallbackRuns = 0;
-  await reattachPendingTurn('sess-dead', () => { fallbackRuns += 1; });
+  await reattachPendingTurn('sess-dead', () => {
+    fallbackRuns += 1;
+  });
 
   assert.equal(fallbackRuns, 1, 'a dead turn cannot own the recovery');
   clearPendingTurn('sess-dead');
@@ -133,7 +154,7 @@ test('a failed turn is not finalized through the success path', async () => {
   /* P_failed-turn-not-success — finalizing a failed turn with finish()
      renders the truncated answer as a normal reply, clears the error state
      and saves it as a good message: the user never learns the turn failed. */
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'sess-fail' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'sess-fail' });
   savePendingTurn('sess-fail', { turnId: 'turn-fail', clientTurnId: 'c-fail', lastSeq: 0 });
   const ctl = makeController();
   installWindow(ctl);
@@ -166,7 +187,7 @@ test('a failed subscription closes the bubble instead of leaving it spinning', a
   /* P_subscribe-failure-not-stuck — the bubble owns the live spinner and the
      1 Hz elapsed timer. If the subscription fails and the module simply
      returns, the bubble spins forever with no way to stop it. */
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'sess-sub' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'sess-sub' });
   savePendingTurn('sess-sub', { turnId: 'turn-sub', clientTurnId: 'c-sub', lastSeq: 0 });
   const ctl = makeController();
   installWindow(ctl);
@@ -192,15 +213,27 @@ test('the session loader never renders the partial fallback on its own', async (
      would render the same text a second time next to the live bubble. */
   const { readFileSync } = await import('node:fs');
   const source = readFileSync(new URL('../src/session/loader.impl.ts', import.meta.url), 'utf8');
-  const directCalls = source.match(/^\s*restoreInterruptedResponse\(/gm) || [];
+  const fallbackStart = source.indexOf('const restorePartialFallback');
+  const reattachStart = source.indexOf('reattachPendingTurn(', fallbackStart);
+  assert.ok(
+    fallbackStart >= 0 && reattachStart > fallbackStart,
+    'the loader must define restorePartialFallback before re-attaching',
+  );
+  const fallbackBlock = source.slice(fallbackStart, reattachStart);
+  const calls = source.match(/\brestoreInterruptedResponse\(/g) || [];
   assert.equal(
-    directCalls.length,
-    0,
-    'the session loader must not render the partial fallback directly — the re-attach owns the recovery',
+    calls.length,
+    1,
+    'the session loader must call restoreInterruptedResponse only through the fallback callback',
+  );
+  assert.match(
+    fallbackBlock,
+    /\brestoreInterruptedResponse\(/,
+    'the fallback callback owns the partial render',
   );
   assert.match(
     source,
-    /reattachPendingTurn\([^,]+,\s*restorePartialFallback\)/,
+    /reattachPendingTurn\([^)]*restorePartialFallback\)/,
     'the loader must hand the partial fallback to the re-attach',
   );
 });

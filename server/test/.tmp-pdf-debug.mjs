@@ -24,22 +24,34 @@ function buildPdf() {
   return body;
 }
 
-const workerPath = new URL('../node_modules/pdf-parse/lib/pdf.js/v1.10.100/build/pdf.worker.js', import.meta.url).pathname.replace(/^\/(\w:)/, '$1');
+const workerPath = new URL(
+  '../node_modules/pdf-parse/lib/pdf.js/v1.10.100/build/pdf.worker.js',
+  import.meta.url,
+).pathname.replace(/^\/(\w:)/, '$1');
 const mod = await import(workerPath);
 const PDFJS = globalThis.PDFJS || mod?.PDFJS;
-console.log('PDFJS found:', !!PDFJS, PDFJS ? Object.keys(PDFJS).filter(k => /xref/i.test(k)) : '');
+console.log(
+  'PDFJS found:',
+  !!PDFJS,
+  PDFJS ? Object.keys(PDFJS).filter((k) => /xref/i.test(k)) : '',
+);
 if (PDFJS?.XRef) {
   const orig = PDFJS.XRef.prototype.fetchUncompressed;
   PDFJS.XRef.prototype.fetchUncompressed = function (ref, xrefEntry, suppressEncryption) {
     try {
       return orig.call(this, ref, xrefEntry, suppressEncryption);
     } catch (e) {
-      console.log(`PATCHED: fetchUncompressed failed ref=${ref?.toString?.()} offset=${xrefEntry?.offset} gen=${xrefEntry?.gen} start=${this.stream?.start} err=${e.message}`);
+      console.log(
+        `PATCHED: fetchUncompressed failed ref=${ref?.toString?.()} offset=${xrefEntry?.offset} gen=${xrefEntry?.gen} start=${this.stream?.start} err=${e.message}`,
+      );
       if (this.stream) {
         const sub = this.stream.makeSubStream(xrefEntry.offset + this.stream.start);
         const bytes = new Uint8Array(64);
         const n = sub.getBytes ? 0 : 0; // avoid API mismatch; read via bytes
-        console.log('peek:', JSON.stringify(Buffer.from(sub.bytes || [], sub.start, 48).toString('binary')));
+        console.log(
+          'peek:',
+          JSON.stringify(Buffer.from(sub.bytes || [], sub.start, 48).toString('binary')),
+        );
       }
       throw e;
     }

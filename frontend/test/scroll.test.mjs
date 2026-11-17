@@ -27,7 +27,9 @@ function makeStub({ reducedMotion = false, withRAF = false } = {}) {
     animate(keyframes, opts) {
       calls.push({ kind: 'animate', keyframes, opts });
       return {
-        then() { return this; },
+        then() {
+          return this;
+        },
         cancel() {},
         onfinish: null,
         oncancel: null,
@@ -50,14 +52,17 @@ function makeStub({ reducedMotion = false, withRAF = false } = {}) {
   const previousCAF = globalThis.cancelAnimationFrame;
   if (withRAF) {
     globalThis.requestAnimationFrame = function (cb) {
-      return setTimeout(function () { cb(performance.now()); }, 0);
+      return setTimeout(function () {
+        cb(performance.now());
+      }, 0);
     };
     globalThis.cancelAnimationFrame = function (id) {
       clearTimeout(id);
     };
   }
   return {
-    list, calls,
+    list,
+    calls,
     restore() {
       globalThis.matchMedia = previousMatchMedia;
       if (previousRAF === undefined) delete globalThis.requestAnimationFrame;
@@ -77,7 +82,7 @@ function makeStub({ reducedMotion = false, withRAF = false } = {}) {
 
 test('smoothScrollToBottom sets and clears data-auto-scrolling on the snap path', async () => {
   const stub = makeStub();
-  stub.list.scrollHeight = 60;  /* target just below the snap threshold */
+  stub.list.scrollHeight = 60; /* target just below the snap threshold */
   try {
     const mod = await import('../src/ui/scroll.ts');
     /* smooth:false forces the snap path even if the planner would
@@ -130,7 +135,10 @@ test('velocityScrollTo snaps short distances (no animation, immediate scrollTop)
     await ret;
     assert.equal(stub.list.scrollTop, 10);
     /* No animate() call for snap */
-    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+    assert.equal(
+      stub.calls.some((c) => c.kind === 'animate'),
+      false,
+    );
   } finally {
     stub.restore();
   }
@@ -143,7 +151,10 @@ test('velocityScrollTo honours prefers-reduced-motion by snapping', async () => 
     const ret = mod.velocityScrollTo(stub.list, 2000, { smooth: true });
     await ret;
     assert.equal(stub.list.scrollTop, 2000);
-    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+    assert.equal(
+      stub.calls.some((c) => c.kind === 'animate'),
+      false,
+    );
   } finally {
     stub.restore();
   }
@@ -169,7 +180,10 @@ test('velocityScrollTo respects opts.smooth === false (instant snap)', async () 
     const ret = mod.velocityScrollTo(stub.list, 3000, { smooth: false });
     await ret;
     assert.equal(stub.list.scrollTop, 3000);
-    assert.equal(stub.calls.some(c => c.kind === 'animate'), false);
+    assert.equal(
+      stub.calls.some((c) => c.kind === 'animate'),
+      false,
+    );
   } finally {
     stub.restore();
   }
@@ -209,21 +223,40 @@ function makeFrameStub({ scrollHeight = 50000, clientHeight = 800, scrollTop = 0
   let now = 0;
   const listeners = new Set();
   const list = {
-    scrollHeight, clientHeight, dataset: {},
+    scrollHeight,
+    clientHeight,
+    dataset: {},
     _top: scrollTop,
-    get scrollTop() { return this._top; },
+    get scrollTop() {
+      return this._top;
+    },
     set scrollTop(v) {
       const max = Math.max(0, this.scrollHeight - this.clientHeight);
       this._top = Math.max(0, Math.min(max, v));
       /* Browsers dispatch scroll asynchronously, after the write returns. */
-      queueMicrotask(() => { for (const fn of listeners) fn(); });
+      queueMicrotask(() => {
+        for (const fn of listeners) fn();
+      });
     },
-    addEventListener(type, fn) { if (type === 'scroll') listeners.add(fn); },
-    removeEventListener(type, fn) { if (type === 'scroll') listeners.delete(fn); },
+    addEventListener(type, fn) {
+      if (type === 'scroll') listeners.add(fn);
+    },
+    removeEventListener(type, fn) {
+      if (type === 'scroll') listeners.delete(fn);
+    },
   };
-  const prev = { raf: globalThis.requestAnimationFrame, caf: globalThis.cancelAnimationFrame, mm: globalThis.matchMedia };
-  globalThis.requestAnimationFrame = (cb) => { queue.push(cb); return queue.length; };
-  globalThis.cancelAnimationFrame = (id) => { if (queue[id - 1]) queue[id - 1] = null; };
+  const prev = {
+    raf: globalThis.requestAnimationFrame,
+    caf: globalThis.cancelAnimationFrame,
+    mm: globalThis.matchMedia,
+  };
+  globalThis.requestAnimationFrame = (cb) => {
+    queue.push(cb);
+    return queue.length;
+  };
+  globalThis.cancelAnimationFrame = (id) => {
+    if (queue[id - 1]) queue[id - 1] = null;
+  };
   globalThis.matchMedia = (q) => ({ matches: false, media: q });
   return {
     list,
@@ -233,11 +266,19 @@ function makeFrameStub({ scrollHeight = 50000, clientHeight = 800, scrollTop = 0
       /* Keep ids stable for cancel: the queue is rebuilt each frame. */
       for (const cb of pending) if (cb) cb(now);
     },
-    run(maxFrames = 200) { const tops = []; for (let i = 0; i < maxFrames && queue.some(Boolean); i += 1) { this.frame(); tops.push(list.scrollTop); } return tops; },
+    run(maxFrames = 200) {
+      const tops = [];
+      for (let i = 0; i < maxFrames && queue.some(Boolean); i += 1) {
+        this.frame();
+        tops.push(list.scrollTop);
+      }
+      return tops;
+    },
     restore() {
       globalThis.requestAnimationFrame = prev.raf;
       globalThis.cancelAnimationFrame = prev.caf;
-      if (prev.mm === undefined) delete globalThis.matchMedia; else globalThis.matchMedia = prev.mm;
+      if (prev.mm === undefined) delete globalThis.matchMedia;
+      else globalThis.matchMedia = prev.mm;
     },
   };
 }
@@ -251,12 +292,18 @@ test('velocityScrollTo with a live target follows a retarget without moving back
     const plan = motion.planSendGlide(20000, 800);
     const done = mod.velocityScrollTo(stub.list, target, { target: () => target, plan });
     const tops = [];
-    for (let i = 0; i < 10; i += 1) { stub.frame(); tops.push(stub.list.scrollTop); }
+    for (let i = 0; i < 10; i += 1) {
+      stub.frame();
+      tops.push(stub.list.scrollTop);
+    }
     target = 21000; /* the reserve painted: destination moved further */
     tops.push(...stub.run());
     await done;
     for (let i = 1; i < tops.length; i += 1) {
-      assert.ok(tops[i] >= tops[i - 1] - 0.5, `frame ${i} moved backwards: ${tops[i - 1]} → ${tops[i]}`);
+      assert.ok(
+        tops[i] >= tops[i - 1] - 0.5,
+        `frame ${i} moved backwards: ${tops[i - 1]} → ${tops[i]}`,
+      );
     }
     assert.equal(stub.list.scrollTop, 21000, 'lands exactly on the live target');
     assert.ok(tops.length >= 8, `glide spans multiple frames (${tops.length})`);
@@ -270,7 +317,10 @@ test('velocityScrollTo clamps a live target to the reachable range', async () =>
   const stub = makeFrameStub({ scrollHeight: 3000, clientHeight: 800 });
   try {
     const mod = await import('../src/ui/scroll.ts');
-    const done = mod.velocityScrollTo(stub.list, null, { target: () => 99999, plan: { duration: 200 } });
+    const done = mod.velocityScrollTo(stub.list, null, {
+      target: () => 99999,
+      plan: { duration: 200 },
+    });
     stub.run();
     await done;
     assert.equal(stub.list.scrollTop, 2200);
@@ -301,7 +351,10 @@ test('velocityScrollTo snaps when an injected plan says snap', async () => {
   const stub = makeFrameStub();
   try {
     const mod = await import('../src/ui/scroll.ts');
-    await mod.velocityScrollTo(stub.list, null, { target: () => 5000, plan: { snap: true, duration: 0 } });
+    await mod.velocityScrollTo(stub.list, null, {
+      target: () => 5000,
+      plan: { snap: true, duration: 0 },
+    });
     assert.equal(stub.list.scrollTop, 5000);
   } finally {
     stub.restore();
@@ -312,7 +365,10 @@ test('velocityScrollTo stops on a foreign scroll write mid-glide', async () => {
   const stub = makeFrameStub();
   try {
     const mod = await import('../src/ui/scroll.ts');
-    const done = mod.velocityScrollTo(stub.list, null, { target: () => 20000, plan: { duration: 800 } });
+    const done = mod.velocityScrollTo(stub.list, null, {
+      target: () => 20000,
+      plan: { duration: 800 },
+    });
     for (let i = 0; i < 5; i += 1) stub.frame();
     stub.list.scrollTop = 100; /* user drag */
     await Promise.resolve(); /* its scroll event */

@@ -14,10 +14,20 @@ import type { SourceCardView } from './toolCardModel';
 
 export const SHEET_BREAKPOINT = 768;
 
-export function DetailSection({ title, kind, children }: { title: string; kind: string; children: ReactNode }) {
+export function DetailSection({
+  title,
+  kind,
+  children,
+}: {
+  title: string;
+  kind: string;
+  children: ReactNode;
+}) {
   return (
     <View testID={`tool-detail-section-${kind}`} style={{ gap: S[75] }}>
-      <UiText variant="labelSm" tone="tertiary">{title}</UiText>
+      <UiText variant="labelSm" tone="tertiary">
+        {title}
+      </UiText>
       {children}
     </View>
   );
@@ -39,7 +49,17 @@ export interface CodeBlockProps {
 }
 
 /** Monospace output block with a copy pill. */
-export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, extra, tone = 'plain', maxHeight = 360, testID }: CodeBlockProps) {
+export function CodeBlock({
+  text,
+  onCopy,
+  copyLabel,
+  copiedLabel,
+  failedLabel,
+  extra,
+  tone = 'plain',
+  maxHeight = 360,
+  testID,
+}: CodeBlockProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
@@ -59,12 +79,21 @@ export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, e
       <ScrollView
         testID={testID}
         horizontal={false}
-        style={{ maxHeight, borderRadius: R.row, backgroundColor: subtle, boxShadow: insetRing(tone === 'error' ? colors.hairlineStrong : colors.hairline) }}
+        style={{
+          maxHeight,
+          borderRadius: R.row,
+          backgroundColor: subtle,
+          boxShadow: insetRing(tone === 'error' ? colors.hairlineStrong : colors.hairline),
+        }}
         contentContainerStyle={{ paddingHorizontal: S[200], paddingVertical: S[100] }}
       >
-        <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>{text}</MonoText>
+        <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>
+          {text}
+        </MonoText>
       </ScrollView>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: S[75] }}>
+      <View
+        style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: S[75] }}
+      >
         {extra}
         {onCopy ? (
           <UiButton
@@ -73,7 +102,9 @@ export function CodeBlock({ text, onCopy, copyLabel, copiedLabel, failedLabel, e
             variant="secondary"
             size={width < SHEET_BREAKPOINT ? 'lg' : 'sm'}
             aria-live="polite"
-            onPress={() => { void copy(); }}
+            onPress={() => {
+              void copy();
+            }}
           />
         ) : null}
       </View>
@@ -86,15 +117,44 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
   const [failed, setFailed] = useState(!source.favicon);
   if (failed || !source.favicon) {
     return (
-      <View aria-hidden style={{ width: 20, height: 20, borderRadius: 6, backgroundColor: colors.fill, alignItems: 'center', justifyContent: 'center' }}>
-        <UiText variant="eyebrow" tone="secondary" style={{ fontSize: 10, lineHeight: 12, letterSpacing: 0 }}>{source.monogram}</UiText>
+      <View
+        aria-hidden
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 6,
+          backgroundColor: colors.fill,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <UiText
+          variant="eyebrow"
+          tone="secondary"
+          style={{ fontSize: 10, lineHeight: 12, letterSpacing: 0 }}
+        >
+          {source.monogram}
+        </UiText>
       </View>
     );
   }
-  return <Image aria-hidden source={{ uri: source.favicon }} onError={() => setFailed(true)} style={{ width: 20, height: 20, borderRadius: 6 }} />;
+  return (
+    <Image
+      aria-hidden
+      source={{ uri: source.favicon }}
+      onError={() => setFailed(true)}
+      style={{ width: 20, height: 20, borderRadius: 6 }}
+    />
+  );
 }
 
-function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url: string) => void }) {
+function SourceCard({
+  source,
+  onOpen,
+}: {
+  source: SourceCardView;
+  onOpen?: (url: string) => void;
+}) {
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
@@ -105,7 +165,9 @@ function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url:
       role={link ? 'link' : undefined}
       aria-label={[source.title, source.host].filter(Boolean).join(' · ')}
       disabled={!link}
-      onPress={() => { if (source.url && onOpen) onOpen(source.url); }}
+      onPress={() => {
+        if (source.url && onOpen) onOpen(source.url);
+      }}
       {...handlers}
       style={{
         flexDirection: 'row',
@@ -122,18 +184,38 @@ function SourceCard({ source, onOpen }: { source: SourceCardView; onOpen?: (url:
     >
       <SourceFavicon source={source} />
       <View style={{ flex: 1, minWidth: 0 }}>
-        <UiText testID="tool-source-title" variant="labelSm" tone="ink" numberOfLines={1}>{source.title}</UiText>
-        {source.host ? <UiText testID="tool-source-host" variant="labelSm" tone="tertiary" numberOfLines={1} style={{ fontWeight: '400' }}>{source.host}</UiText> : null}
+        <UiText testID="tool-source-title" variant="labelSm" tone="ink" numberOfLines={1}>
+          {source.title}
+        </UiText>
+        {source.host ? (
+          <UiText
+            testID="tool-source-host"
+            variant="labelSm"
+            tone="tertiary"
+            numberOfLines={1}
+            style={{ fontWeight: '400' }}
+          >
+            {source.host}
+          </UiText>
+        ) : null}
       </View>
     </Pressable>
   );
 }
 
 /** Search sources as compact cards: favicon, title and domain. */
-export function SourceList({ sources, onOpen }: { sources: ReadonlyArray<SourceCardView>; onOpen?: (url: string) => void }) {
+export function SourceList({
+  sources,
+  onOpen,
+}: {
+  sources: ReadonlyArray<SourceCardView>;
+  onOpen?: (url: string) => void;
+}) {
   return (
     <View testID="tool-sources" style={{ gap: S[75] }}>
-      {sources.map((source) => <SourceCard key={source.key} source={source} onOpen={onOpen} />)}
+      {sources.map((source) => (
+        <SourceCard key={source.key} source={source} onOpen={onOpen} />
+      ))}
     </View>
   );
 }
@@ -149,14 +231,24 @@ export function ImageOutput({ uri, alt }: { uri: string; alt: string }) {
       source={{ uri }}
       resizeMode="contain"
       onLoad={(event) => {
-        const source = (event.nativeEvent as { source?: { width?: number; height?: number } }).source;
+        const source = (event.nativeEvent as { source?: { width?: number; height?: number } })
+          .source;
         if (source?.width && source?.height) setRatio(source.width / source.height);
       }}
-      style={{ width: '100%', aspectRatio: ratio, borderRadius: R.row, backgroundColor: colors.fill }}
+      style={{
+        width: '100%',
+        aspectRatio: ratio,
+        borderRadius: R.row,
+        backgroundColor: colors.fill,
+      }}
     />
   );
 }
 
 export function PlainDetail({ text }: { text: string }) {
-  return <UiText variant="bodySm" tone="secondary">{text}</UiText>;
+  return (
+    <UiText variant="bodySm" tone="secondary">
+      {text}
+    </UiText>
+  );
 }

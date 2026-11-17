@@ -64,10 +64,7 @@ const KEYFRAME_SAMPLES = 48;
  * Returns the running `Animation`, or `null` when the motion was skipped
  * (reduced motion) or the element cannot animate.
  */
-export function animateSpring(
-  element: Element,
-  options: SpringAnimationOptions,
-): Animation | null {
+export function animateSpring(element: Element, options: SpringAnimationOptions): Animation | null {
   const {
     config,
     from,
@@ -99,10 +96,9 @@ export function animateSpring(
   for (let i = 0; i < probe.length; i += 1) {
     if (Math.abs(probe[i].value - to) > restDelta) lastMoving = i;
   }
-  const duration = Math.round(Math.min(
-    maxDuration,
-    Math.max(minDuration, (lastMoving / (PROBE_SAMPLES - 1)) * HORIZON_MS),
-  ));
+  const duration = Math.round(
+    Math.min(maxDuration, Math.max(minDuration, (lastMoving / (PROBE_SAMPLES - 1)) * HORIZON_MS)),
+  );
 
   const frames = sampleSpring(config, {
     from,

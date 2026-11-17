@@ -4,7 +4,7 @@
  * Cross-module actions resolve via direct imports where available,
  * otherwise via window.* / typeof-guarded globals at event time.
  */
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { showToast } from './toast.js';
 import { openCheatsheet, closeCheatsheet } from './cheatsheet.js';
 import { toggleTheme } from '../displayPrefs.ts';
@@ -17,7 +17,11 @@ import { closeStorageModal } from './storage.js';
 import { closePromptTemplatesModal } from './promptTemplates.ts';
 /* Settings is a lazy React surface; the stable close command stays on window. */
 import { closeProfile, openProfile, toggleProfileWebSearch } from './profile.ts';
-import { closeFindInSession, isFindOpen, openFindInSession } from '../react/find-in-session/findInSession.actions.ts';
+import {
+  closeFindInSession,
+  isFindOpen,
+  openFindInSession,
+} from '../react/find-in-session/findInSession.actions.ts';
 import { closeCmdK, openCmdK } from './cmdK.ts';
 import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../composer/controller.ts';
 import { cycleActiveProject, closeTagEditor } from '../session/organizeRuntime.ts';
@@ -28,12 +32,13 @@ import { startNewChat } from '../app/lifecycle/index.ts';
 import { startSession } from '../chat/sessionBootstrap/index.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 
-
 function isCommandShortcut(event: KeyboardEvent, key: string, shiftKey = false) {
-  return (event.metaKey || event.ctrlKey)
-    && !event.altKey
-    && event.shiftKey === shiftKey
-    && (event.key || '').toLowerCase() === key;
+  return (
+    (event.metaKey || event.ctrlKey) &&
+    !event.altKey &&
+    event.shiftKey === shiftKey &&
+    (event.key || '').toLowerCase() === key
+  );
 }
 
 function isVisible(id: string) {
@@ -61,17 +66,23 @@ function closeOpenModal(event: KeyboardEvent) {
     ['storageModalOverlay', closeStorageModal],
     ['promptTemplatesOverlay', closePromptTemplatesModal],
     ['profileOverlay', closeProfile],
-    ['settingsOverlay', () => {
-      void import('../react/settings/settings.service.ts')
-        .then((module) => module.closeSettings())
-        .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeSettings'));
-    }],
+    [
+      'settingsOverlay',
+      () => {
+        void import('../react/settings/settings.service.ts')
+          .then((module) => module.closeSettings())
+          .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeSettings'));
+      },
+    ],
     ['cheatsheetOverlay', closeCheatsheet],
-    ['usageOverlay', () => {
-      void import('./usage.ts')
-        .then((module) => module.closeUsageModal())
-        .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeUsageModal'));
-    }],
+    [
+      'usageOverlay',
+      () => {
+        void import('./usage.ts')
+          .then((module) => module.closeUsageModal())
+          .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeUsageModal'));
+      },
+    ],
     ['tagEditorPopover', closeTagEditor],
     ['shareOverlay', closeShareModal],
   ];
@@ -137,7 +148,7 @@ function handleNewChat(event: KeyboardEvent) {
 function handleShare(event: KeyboardEvent) {
   if (!isCommandShortcut(event, 's', true)) return false;
   event.preventDefault();
-  if (typeof openShareModal === 'function' && stateStore.read('currentSessionId')) {
+  if (typeof openShareModal === 'function' && sessionBridge.getSnapshot().currentSessionId) {
     openShareModal();
   } else {
     showToast(t('toast.shareStartFirst'));
@@ -184,7 +195,8 @@ function handleCycleProject(event: KeyboardEvent) {
 }
 
 function handlePromptRecall(event: KeyboardEvent) {
-  if (event.key !== 'ArrowUp' || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return false;
+  if (event.key !== 'ArrowUp' || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey)
+    return false;
   const composer = (event.target as Element)?.closest?.('.rich-composer[data-surface="chat"]');
   if (!composer || getComposerMarkdown('chat')) return false;
   const lastUserMessage = findLastUserMessage();

@@ -1,7 +1,7 @@
 export type ChatMessageShape = Record<string, unknown> & {
   clientId?: string;
   role?: string;
-  type?: string;
+  type?: string | null;
   actions?: ReadonlyArray<{
     text?: string;
     primary?: boolean;
@@ -27,7 +27,7 @@ export function createInitialSessionState(): {
   domain: string | null;
   totalQ: number;
   stuckCount: number;
-  branchedFrom: string | null;
+  branchedFrom: import('@socrates/contracts').JsonValue;
   messages: ChatMessageShape[];
   currentProjectId: string | null;
   activeProjectFilter: string | null;

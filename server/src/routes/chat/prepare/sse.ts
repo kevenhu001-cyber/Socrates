@@ -40,7 +40,8 @@ import type { ErrorLocale } from '../../../lib/errorMessages.js';
    `data:` line). Split into 33 short lines so no single line exceeds ~1 KB,
    staying under any intermediary line-length limit. Precomputed once at
    module load — zero per-request cost. */
-export const SSE_PRIME = ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
+export const SSE_PRIME =
+  ': open\n' + Array.from({ length: 32 }, () => ':' + 'o'.repeat(1022)).join('\n') + '\n\n';
 
 /* P_ttfb-prime-first — write the SSE status line + headers + 32 KB
    prime comment in one call. The route shell invokes this BEFORE
@@ -61,14 +62,18 @@ export function writeSsePrime(res: import('express').Response): boolean {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Connection': 'keep-alive',
+      Pragma: 'no-cache',
+      Expires: '0',
+      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
     res.flushHeaders?.();
     res.write(SSE_PRIME);
-    try { (res as { flush?: () => void }).flush?.(); } catch { /* best effort */ }
+    try {
+      (res as { flush?: () => void }).flush?.();
+    } catch {
+      /* best effort */
+    }
     return true;
   } catch {
     /* socket already closed — the route's req.on('close') guard
@@ -84,7 +89,11 @@ export function writeSsePrime(res: import('express').Response): boolean {
    the response already committed. Errors BEFORE writeSsePrime should
    still use the legacy `res.status(...).json(...)` path — this helper
    assumes headers are out. */
-export function endSseWithError(res: import('express').Response, err: unknown, locale?: ErrorLocale): void {
+export function endSseWithError(
+  res: import('express').Response,
+  err: unknown,
+  locale?: ErrorLocale,
+): void {
   /* P_sse-error-contract — the error frame carries the same machine-readable
      fields as the JSON error path (status / code / retryable), so the browser
      can tell a deterministic failure (quota, bad key, unsupported mode) from
@@ -93,7 +102,11 @@ export function endSseWithError(res: import('express').Response, err: unknown, l
      provider body is never forwarded to the client. */
   const details = buildSseErrorFrame(err, locale ? { locale } : {});
   const safe = (() => {
-    try { return JSON.stringify(details); } catch { return '{}'; }
+    try {
+      return JSON.stringify(details);
+    } catch {
+      return '{}';
+    }
   })();
   try {
     if (!res.headersSent) {
@@ -107,7 +120,9 @@ export function endSseWithError(res: import('express').Response, err: unknown, l
     res.write(`event: error\ndata: ${safe}\n\n`);
     res.write('data: [DONE]\n\n');
     res.end();
-  } catch { /* socket closed */ }
+  } catch {
+    /* socket closed */
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -134,4 +149,3 @@ export function endSseWithError(res: import('express').Response, err: unknown, l
  * the JSON path return the same status through the error middleware. */
 /** RN-6 — the server-owned learning-mode block for one tutor turn, with the
  * learner's focus (a concept, a mistake) attached as untrusted data. */
-

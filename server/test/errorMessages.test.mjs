@@ -19,8 +19,14 @@ import { buildSseErrorFrame } from '../src/lib/sseErrorFrame.ts';
  */
 
 test('the explicit locale header wins over Accept-Language', () => {
-  assert.equal(resolveErrorLocale({ 'x-socrates-locale': 'zh', 'accept-language': 'en-US,en;q=0.9' }), 'zh');
-  assert.equal(resolveErrorLocale({ 'x-socrates-locale': 'en', 'accept-language': 'zh-CN,zh;q=0.9' }), 'en');
+  assert.equal(
+    resolveErrorLocale({ 'x-socrates-locale': 'zh', 'accept-language': 'en-US,en;q=0.9' }),
+    'zh',
+  );
+  assert.equal(
+    resolveErrorLocale({ 'x-socrates-locale': 'en', 'accept-language': 'zh-CN,zh;q=0.9' }),
+    'en',
+  );
   assert.equal(resolveErrorLocale({ 'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8' }), 'zh');
   assert.equal(resolveErrorLocale({ 'accept-language': 'en-GB' }), 'en');
   /* Unknown clients keep the English default. */
@@ -55,7 +61,8 @@ test('generic copy is translated and the machine contract is untouched', () => {
 test('a sentence the server composed is never translated', () => {
   /* The limit message names the user's plan — translating it would mean
      inventing content the server never wrote. */
-  const custom = 'API key limit reached for diophantus plan (2 keys). Upgrade your plan to add more.';
+  const custom =
+    'API key limit reached for diophantus plan (2 keys). Upgrade your plan to add more.';
   assert.equal(localizeErrorCode('FORBIDDEN', 'zh', custom), custom);
 });
 
@@ -98,7 +105,13 @@ test('an upstream failure frame carries the localized sentence and the same code
 });
 
 test('the not-found default keeps its English sentence and gains a Chinese one', () => {
-  assert.equal(localizeErrorCode('ENDPOINT_NOT_FOUND', 'en', 'Endpoint not found'), 'Endpoint not found');
-  assert.equal(localizeErrorCode('ENDPOINT_NOT_FOUND', 'zh', 'Endpoint not found'), ERROR_COPY.ENDPOINT_NOT_FOUND.zh);
+  assert.equal(
+    localizeErrorCode('ENDPOINT_NOT_FOUND', 'en', 'Endpoint not found'),
+    'Endpoint not found',
+  );
+  assert.equal(
+    localizeErrorCode('ENDPOINT_NOT_FOUND', 'zh', 'Endpoint not found'),
+    ERROR_COPY.ENDPOINT_NOT_FOUND.zh,
+  );
   assert.equal(new NotFound().message, 'Not found');
 });

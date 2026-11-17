@@ -65,7 +65,11 @@ export function chunkText(text: string, options: ChunkOptions = {}): RagChunk[] 
     let offset = 0;
     while (offset < paragraph.length) {
       const windowEnd = Math.min(paragraph.length, offset + maxChars);
-      pushChunk(paragraph.slice(offset, windowEnd), paragraphStart + offset, paragraphStart + windowEnd);
+      pushChunk(
+        paragraph.slice(offset, windowEnd),
+        paragraphStart + offset,
+        paragraphStart + windowEnd,
+      );
       if (windowEnd >= paragraph.length) break;
       offset = windowEnd - overlap;
       if (offset <= 0) offset = windowEnd;
@@ -80,7 +84,11 @@ export function chunkText(text: string, options: ChunkOptions = {}): RagChunk[] 
 const TOKEN_PATTERN = /[\p{L}\p{N}][\p{L}\p{N}_-]*/gu;
 
 export function tokenize(input: string): string[] {
-  return (String(input || '').toLowerCase().match(TOKEN_PATTERN) || []);
+  return (
+    String(input || '')
+      .toLowerCase()
+      .match(TOKEN_PATTERN) || []
+  );
 }
 
 export interface IndexedChunk<T> {
@@ -162,7 +170,7 @@ export function searchRagIndex<T>(
       const idf = Math.log(1 + (documentCount - df + 0.5) / (df + 0.5));
       const saturation = frequency / (index.k1 + frequency);
       const lengthNorm = 1 - index.b + index.b * (document.length / (index.averageLength || 1));
-      score += idf * saturation / lengthNorm;
+      score += (idf * saturation) / lengthNorm;
     }
     if (score > minScore) scores.push({ record: document.chunk, score });
   }

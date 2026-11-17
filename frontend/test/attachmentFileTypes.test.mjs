@@ -45,7 +45,10 @@ test('extension fallbacks preserve readable legacy office and metadata-only form
 
 test('document kind prefers the MIME and falls back to the final filename extension', () => {
   assert.equal(docKindFromFile({ name: 'renamed.docx', type: 'application/pdf' }), 'pdf');
-  assert.equal(docKindFromFile({ name: 'workbook.XLSX', type: 'application/octet-stream' }), 'xlsx');
+  assert.equal(
+    docKindFromFile({ name: 'workbook.XLSX', type: 'application/octet-stream' }),
+    'xlsx',
+  );
   assert.equal(docKindFromFile({ name: 'slides.ppt', type: '' }), 'ppt');
   assert.equal(docKindFromFile({ name: 'archive.bin', type: '' }), 'document');
 });

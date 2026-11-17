@@ -39,11 +39,24 @@ const PI_BIN_CANDIDATES = [
  * out of the agent's environment so a bash step cannot leak them. Extend
  * at deploy time with PI_AGENT_ENV_ALLOWLIST="FOO,BAR". */
 const PI_ENV_ALLOWLIST = [
-  'PATH', 'HOME', 'USER', 'LOGNAME', 'SHELL',
-  'LANG', 'LC_ALL', 'LC_CTYPE', 'TZ', 'TMPDIR',
-  'NODE_ENV', 'VOLTA_HOME',
-  'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY',
-  'http_proxy', 'https_proxy', 'no_proxy',
+  'PATH',
+  'HOME',
+  'USER',
+  'LOGNAME',
+  'SHELL',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TZ',
+  'TMPDIR',
+  'NODE_ENV',
+  'VOLTA_HOME',
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
+  'NO_PROXY',
+  'http_proxy',
+  'https_proxy',
+  'no_proxy',
 ];
 
 export function resolvePiAgentBin(): string | null {
@@ -74,7 +87,8 @@ function probePiBin(bin: string | null): boolean {
   }
 }
 
-export const PI_AGENT_ENABLED = !['0', 'false'].includes(process.env.PI_AGENT_ENABLED || '') && probePiBin(resolvePiAgentBin());
+export const PI_AGENT_ENABLED =
+  !['0', 'false'].includes(process.env.PI_AGENT_ENABLED || '') && probePiBin(resolvePiAgentBin());
 
 export interface PiAgentLimits {
   maxMemoryMb?: number;
@@ -127,26 +141,43 @@ function toolKind(toolName: string, args: Record<string, unknown>): AgentStepKin
   const name = String(toolName || '').toLowerCase();
   if (name === 'bash' || name === 'shell' || name === 'command') return 'command';
   if (name === 'edit' || name === 'write' || name === 'file_change') return 'file_change';
-  if (name === 'grep' || name === 'glob' || name === 'ls' || name === 'web_search' || name === 'search') return 'search';
+  if (
+    name === 'grep' ||
+    name === 'glob' ||
+    name === 'ls' ||
+    name === 'web_search' ||
+    name === 'search'
+  )
+    return 'search';
   if (name === 'read' || name === 'cat') return 'read';
   if (name.startsWith('mcp') || name.includes('mcp')) return 'mcp';
   const command = String(args.command || '');
-  if (command && /^\s*(cat|head|tail|ls|tree|find|grep|rg|sed|awk|wc)\b/.test(command)) return 'read';
+  if (command && /^\s*(cat|head|tail|ls|tree|find|grep|rg|sed|awk|wc)\b/.test(command))
+    return 'read';
   return 'command';
 }
 
 function stepTitle(kind: AgentStepKind): string {
   switch (kind) {
-    case 'command': return AGENT_STEP_LABELS.command;
-    case 'read': return AGENT_STEP_LABELS.read;
-    case 'file_change': return AGENT_STEP_LABELS.fileChange;
-    case 'search': return AGENT_STEP_LABELS.search;
-    case 'mcp': return AGENT_STEP_LABELS.mcp;
-    default: return AGENT_STEP_LABELS.command;
+    case 'command':
+      return AGENT_STEP_LABELS.command;
+    case 'read':
+      return AGENT_STEP_LABELS.read;
+    case 'file_change':
+      return AGENT_STEP_LABELS.fileChange;
+    case 'search':
+      return AGENT_STEP_LABELS.search;
+    case 'mcp':
+      return AGENT_STEP_LABELS.mcp;
+    default:
+      return AGENT_STEP_LABELS.command;
   }
 }
 
-function stepDetail(toolName: string, args: Record<string, unknown>): { detail: string | null; command: string | null } {
+function stepDetail(
+  toolName: string,
+  args: Record<string, unknown>,
+): { detail: string | null; command: string | null } {
   const firstString = (...keys: string[]): string | null => {
     for (const key of keys) {
       const value = args[key];
@@ -207,21 +238,33 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
     const timeoutMs = input.limits?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     const memoryMb = Number(input.limits?.maxMemoryMb);
     const args = [
-      '--mode', 'json',
+      '--mode',
+      'json',
       '--approve',
       '--no-extensions',
-      '--tools', 'read,bash,edit,write',
-      '--session-dir', path.join(input.workspacePath, '.pi-sessions'),
-      '--session-id', input.sessionId,
+      '--tools',
+      'read,bash,edit,write',
+      '--session-dir',
+      path.join(input.workspacePath, '.pi-sessions'),
+      '--session-id',
+      input.sessionId,
     ];
     /* The user's selected model wins: register a throwaway provider that
        points at their endpoint + key through the per-run extension. */
-    const userProvider = input.provider && input.provider.baseUrl && input.provider.model
-      ? input.provider
-      : null;
-    const extensionPath = fileURLToPath(new URL('../../../scripts/pi-run-provider.mjs', import.meta.url));
+    const userProvider =
+      input.provider && input.provider.baseUrl && input.provider.model ? input.provider : null;
+    const extensionPath = fileURLToPath(
+      new URL('../../../scripts/pi-run-provider.mjs', import.meta.url),
+    );
     if (userProvider) {
-      args.push('--extension', extensionPath, '--provider', 'socrates-run', '--model', userProvider.model);
+      args.push(
+        '--extension',
+        extensionPath,
+        '--provider',
+        'socrates-run',
+        '--model',
+        userProvider.model,
+      );
     } else {
       const envProvider = String(process.env.PI_AGENT_PROVIDER || '').trim();
       const envModel = String(process.env.PI_AGENT_MODEL || '').trim();
@@ -240,7 +283,9 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
      * extend the list via PI_AGENT_ENV_ALLOWLIST (comma-separated names). */
     const env: NodeJS.ProcessEnv = { PI_OFFLINE: '0' };
     const extraEnv = String(process.env.PI_AGENT_ENV_ALLOWLIST || '')
-      .split(',').map((name) => name.trim()).filter(Boolean);
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
     for (const key of [...PI_ENV_ALLOWLIST, ...extraEnv]) {
       const value = process.env[key];
       if (value !== undefined) env[key] = value;
@@ -262,7 +307,13 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
       if (!assertWorkspaceDiskWithinLimit(input.workspacePath, input.limits).ok) {
         throw new Error('agent_workspace_disk_limit');
       }
-      const command = isolateAgentCommand(bin, args, input.workspacePath, env, userProvider ? [extensionPath] : []);
+      const command = isolateAgentCommand(
+        bin,
+        args,
+        input.workspacePath,
+        env,
+        userProvider ? [extensionPath] : [],
+      );
       child = spawn(command.bin, command.args, {
         cwd: input.workspacePath,
         env: command.env,
@@ -279,10 +330,23 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
     let lastAssistantText = '';
     let error: string | null = null;
     let settled = false;
-    const steps = new Map<string, { output: string; kind: AgentStepKind; title: string; detail: string | null; command: string | null }>();
+    const steps = new Map<
+      string,
+      {
+        output: string;
+        kind: AgentStepKind;
+        title: string;
+        detail: string | null;
+        command: string | null;
+      }
+    >();
 
     const emit = (event: PiAgentEvent) => {
-      try { input.onEvent?.(event); } catch { /* consumer errors never break the run */ }
+      try {
+        input.onEvent?.(event);
+      } catch {
+        /* consumer errors never break the run */
+      }
     };
 
     const finish = (status: PiAgentRunResult['status'], errorMessage: string | null) => {
@@ -298,7 +362,10 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
 
     const onAbort = () => finish('aborted', 'aborted');
     input.signal?.addEventListener?.('abort', onAbort, { once: true });
-    const timer = setTimeout(() => finish('timeout', `pi_agent_timeout_after_${timeoutMs}ms`), timeoutMs);
+    const timer = setTimeout(
+      () => finish('timeout', `pi_agent_timeout_after_${timeoutMs}ms`),
+      timeoutMs,
+    );
     // Best-effort detection during execution; this is not a filesystem hard quota.
     const diskTimer = setInterval(() => {
       if (!assertWorkspaceDiskWithinLimit(input.workspacePath, input.limits).ok) {
@@ -334,7 +401,9 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
         case 'tool_execution_start': {
           const stepId = String(record.toolCallId || record.id || '');
           const toolName = String(record.toolName || 'tool');
-          const toolArgs = (record.args && typeof record.args === 'object' ? record.args : {}) as Record<string, unknown>;
+          const toolArgs = (
+            record.args && typeof record.args === 'object' ? record.args : {}
+          ) as Record<string, unknown>;
           const kind = toolKind(toolName, toolArgs);
           const { detail, command } = stepDetail(toolName, toolArgs);
           const entry = { output: '', kind, title: stepTitle(kind), detail, command };
@@ -357,10 +426,16 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
           const stepId = String(record.toolCallId || record.id || '');
           const entry = steps.get(stepId);
           const partial = record.partialResult;
-          const chunk = typeof partial === 'string' ? partial
-            : partial && typeof partial === 'object'
-              ? String((partial as Record<string, unknown>).text ?? (partial as Record<string, unknown>).output ?? '')
-              : '';
+          const chunk =
+            typeof partial === 'string'
+              ? partial
+              : partial && typeof partial === 'object'
+                ? String(
+                    (partial as Record<string, unknown>).text ??
+                      (partial as Record<string, unknown>).output ??
+                      '',
+                  )
+                : '';
           if (!chunk) return;
           if (entry) entry.output = clamp(entry.output + chunk, 4000);
           emit({ type: 'step_update', chunk });
@@ -371,11 +446,16 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
           const entry = steps.get(stepId);
           const isError = record.isError === true;
           const result = record.result;
-          const resultText = typeof result === 'string'
-            ? result
-            : result && typeof result === 'object'
-              ? String((result as Record<string, unknown>).text ?? (result as Record<string, unknown>).output ?? '')
-              : '';
+          const resultText =
+            typeof result === 'string'
+              ? result
+              : result && typeof result === 'object'
+                ? String(
+                    (result as Record<string, unknown>).text ??
+                      (result as Record<string, unknown>).output ??
+                      '',
+                  )
+                : '';
           const combined = clamp(entry?.output || resultText, 4000);
           emit({
             type: 'step_end',
@@ -396,15 +476,20 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
           const messages = Array.isArray(record.messages) ? record.messages : [];
           for (let i = messages.length - 1; i >= 0; i -= 1) {
             const text = extractAssistantText(messages[i]);
-            if (text) { lastAssistantText = text; break; }
+            if (text) {
+              lastAssistantText = text;
+              break;
+            }
           }
           return;
         }
         case 'error': {
-          const message = typeof record.message === 'string' ? record.message
-            : record.error && typeof record.error === 'object'
-              ? String((record.error as Record<string, unknown>).message ?? '')
-              : '';
+          const message =
+            typeof record.message === 'string'
+              ? record.message
+              : record.error && typeof record.error === 'object'
+                ? String((record.error as Record<string, unknown>).message ?? '')
+                : '';
           if (message) error = message;
           return;
         }
@@ -427,7 +512,9 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
         if (line) {
           try {
             handleRecord(JSON.parse(line) as Record<string, unknown>);
-          } catch { /* non-JSON banner lines are ignored */ }
+          } catch {
+            /* non-JSON banner lines are ignored */
+          }
         }
         newline = stdoutBuffer.indexOf('\n');
       }

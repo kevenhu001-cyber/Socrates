@@ -31,7 +31,17 @@ export interface ThinkingSurfaceProps {
   children?: ReactNode;
 }
 
-export function ThinkingSurface({ label, durationLabel, live, indicator, expandable, open, onToggle, bodyId, children }: ThinkingSurfaceProps) {
+export function ThinkingSurface({
+  label,
+  durationLabel,
+  live,
+  indicator,
+  expandable,
+  open,
+  onToggle,
+  bodyId,
+  children,
+}: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -67,7 +77,17 @@ export function ThinkingSurface({ label, durationLabel, live, indicator, expanda
         }}
       >
         {live && indicator ? (
-          <View testID="turn-activity-indicator" aria-hidden style={{ width: 18, height: 18, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            testID="turn-activity-indicator"
+            aria-hidden
+            style={{
+              width: 18,
+              height: 18,
+              flexShrink: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             {indicator}
           </View>
         ) : null}
@@ -131,7 +151,14 @@ export function ThinkingTimeline({ children }: { children?: ReactNode }) {
   return (
     <View
       testID="thinking-timeline"
-      style={{ alignSelf: 'stretch', minWidth: 0, marginLeft: S[75], paddingLeft: S[75], borderLeftWidth: 1, borderLeftColor: colors.hairline }}
+      style={{
+        alignSelf: 'stretch',
+        minWidth: 0,
+        marginLeft: S[75],
+        paddingLeft: S[75],
+        borderLeftWidth: 1,
+        borderLeftColor: colors.hairline,
+      }}
     >
       {children}
     </View>
@@ -144,7 +171,17 @@ const ROW_PAD = S[50];
 /** The row's text and its expanded body share one left edge. */
 const DETAIL_INSET = ROW_PAD + ROW_ICON + ROW_GAP;
 
-export function ActivityStep({ icon, label, live, error, expandable, open, onToggle, detail, testID }: ActivityStepProps) {
+export function ActivityStep({
+  icon,
+  label,
+  live,
+  error,
+  expandable,
+  open,
+  onToggle,
+  detail,
+  testID,
+}: ActivityStepProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -181,7 +218,16 @@ export function ActivityStep({ icon, label, live, error, expandable, open, onTog
         cursor: interactive ? 'pointer' : 'auto',
       }}
     >
-      <View aria-hidden style={{ width: ROW_ICON, height: ROW_ICON, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        aria-hidden
+        style={{
+          width: ROW_ICON,
+          height: ROW_ICON,
+          flexShrink: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         {live ? <Spinner /> : icon}
       </View>
       <UiText
@@ -205,7 +251,10 @@ export function ActivityStep({ icon, label, live, error, expandable, open, onTog
         <Animated.View
           testID="thinking-step-detail"
           nativeID={detailId}
-          style={[{ minWidth: 0, paddingLeft: DETAIL_INSET, paddingTop: S[50], paddingBottom: S[100] }, reveal]}
+          style={[
+            { minWidth: 0, paddingLeft: DETAIL_INSET, paddingTop: S[50], paddingBottom: S[100] },
+            reveal,
+          ]}
         >
           {detail}
         </Animated.View>

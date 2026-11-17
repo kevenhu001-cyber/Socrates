@@ -21,11 +21,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import {
-  darkPalette,
-  lightPalette,
-  resolveBackground,
-} from '../../packages/theme/src/tokens.ts';
+import { darkPalette, lightPalette, resolveBackground } from '../../packages/theme/src/tokens.ts';
 import { palettesHex, getUiSurfaceHex } from '../../packages/theme/src/rn.ts';
 
 const THEMES_CSS = new URL('../src/styles/themes.css', import.meta.url);
@@ -78,17 +74,33 @@ function hslToHex(value) {
   const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = lightness - chroma / 2;
   const sector = Math.floor(h / 60);
-  const [r, g, b] = sector === 0 ? [chroma, x, 0]
-    : sector === 1 ? [x, chroma, 0]
-    : sector === 2 ? [0, chroma, x]
-    : sector === 3 ? [0, x, chroma]
-    : sector === 4 ? [x, 0, chroma] : [chroma, 0, x];
-  return `#${[r, g, b].map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, '0')).join('')}`;
+  const [r, g, b] =
+    sector === 0
+      ? [chroma, x, 0]
+      : sector === 1
+        ? [x, chroma, 0]
+        : sector === 2
+          ? [0, chroma, x]
+          : sector === 3
+            ? [0, x, chroma]
+            : sector === 4
+              ? [x, 0, chroma]
+              : [chroma, 0, x];
+  return `#${[r, g, b]
+    .map((channel) =>
+      Math.round((channel + m) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 }
 
 function luminance(hex) {
-  const channels = hex.slice(1).match(/../g).map((channel) => parseInt(channel, 16) / 255)
-    .map((channel) => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+  const channels = hex
+    .slice(1)
+    .match(/../g)
+    .map((channel) => parseInt(channel, 16) / 255)
+    .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4));
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
 }
 
@@ -100,8 +112,11 @@ function contrast(foreground, background) {
 /* Perceived lightness as a percentage — the weighting the ladder's step
  * band is measured in. */
 function lightnessPercent(hex) {
-  const channels = hex.slice(1).match(/../g).map((channel) => parseInt(channel, 16));
-  return (0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]) / 255 * 100;
+  const channels = hex
+    .slice(1)
+    .match(/../g)
+    .map((channel) => parseInt(channel, 16));
+  return ((0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]) / 255) * 100;
 }
 
 /* `rgb(240 119 117)` and `#f07775` are the same colour written two ways; the
@@ -117,7 +132,11 @@ function toHex(value) {
 function checkParity(palette, hex) {
   for (const group of ['accent', 'bg', 'text', 'border']) {
     for (const key of Object.keys(palette[group])) {
-      assert.equal(hslToHex(palette[group][key]), hex[group][key], `${palette.mode}.${group}.${key}`);
+      assert.equal(
+        hslToHex(palette[group][key]),
+        hex[group][key],
+        `${palette.mode}.${group}.${key}`,
+      );
     }
   }
   for (const key of ['muted', 'onAccent']) {
@@ -143,7 +162,10 @@ test('primary, secondary, and readable muted text meet WCAG AA for normal text',
   for (const [mode, palette] of Object.entries(palettesHex)) {
     const background = palette.bg.page;
     for (const role of ['primary', 'secondary', 'muted']) {
-      assert.ok(contrast(palette.text[role], background) >= 4.5, `${mode}.${role} contrast below 4.5:1`);
+      assert.ok(
+        contrast(palette.text[role], background) >= 4.5,
+        `${mode}.${role} contrast below 4.5:1`,
+      );
     }
   }
 });
@@ -158,14 +180,21 @@ test('the background ladder follows the explicit paper-canvas and black-canvas p
     // distinct ladder tones the step band applies to.
     if (mode === 'light') {
       assert.equal(rungs[0], '#fcfcfc', 'light canvas is the paper tint');
-      assert.ok(lightnessPercent(rungs[0]) > lightnessPercent(rungs[1]) && lightnessPercent(rungs[0]) < lightnessPercent(rungs[3]), 'paper tint sits between rail and paper');
+      assert.ok(
+        lightnessPercent(rungs[0]) > lightnessPercent(rungs[1]) &&
+          lightnessPercent(rungs[0]) < lightnessPercent(rungs[3]),
+        'paper tint sits between rail and paper',
+      );
     }
     const banded = mode === 'light' ? rungs.slice(1) : rungs;
     assert.equal(new Set(banded).size, mode === 'light' ? 3 : 4, `${mode} unique surface count`);
     // Black canvas (surface-ladder.baseline.json blackCanvas): only the dark
     // page may be pure #000, and its gap to the rail may reach 12%.
     if (mode === 'dark') assert.equal(rungs[0], '#000000', 'dark canvas is pure black');
-    assert.ok(!rungs.slice(mode === 'dark' ? 1 : 0).includes('#000000'), `${mode} raised rungs must not use pure black`);
+    assert.ok(
+      !rungs.slice(mode === 'dark' ? 1 : 0).includes('#000000'),
+      `${mode} raised rungs must not use pure black`,
+    );
 
     const sorted = [...new Set(banded)].sort((a, b) => lightnessPercent(a) - lightnessPercent(b));
     for (let i = 1; i < sorted.length; i += 1) {
@@ -219,7 +248,7 @@ test('the web palette in themes.css carries the same ladder', async () => {
   const css = (await readFile(THEMES_CSS, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   for (const mode of ['dark', 'light']) {
-    const rule = new RegExp(`\\[data-mode="${mode}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
+    const rule = new RegExp(`\\[data-mode=['"]${mode}['"]\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
     assert.ok(rule, `themes.css has no [data-mode="${mode}"] rule`);
 
     const vars = new Map();
@@ -248,7 +277,7 @@ test('the web palette carries the same semantic tones as the shared package', as
   const css = (await readFile(THEMES_CSS, 'utf8')).replace(/\/\*[\s\S]*?\*\//g, '');
 
   for (const mode of ['dark', 'light']) {
-    const rule = new RegExp(`\\[data-mode="${mode}"\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
+    const rule = new RegExp(`\\[data-mode=['"]${mode}['"]\\]\\s*\\{([\\s\\S]*?)\\n\\}`).exec(css);
     assert.ok(rule, `themes.css has no [data-mode="${mode}"] rule`);
 
     const vars = new Map();

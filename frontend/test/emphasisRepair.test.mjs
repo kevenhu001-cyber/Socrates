@@ -25,7 +25,14 @@ import { marked } from 'marked';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+for (const key of [
+  'Element',
+  'Node',
+  'NodeFilter',
+  'DocumentFragment',
+  'HTMLElement',
+  'HTMLTemplateElement',
+]) {
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
@@ -33,7 +40,10 @@ const { formatMsg, formatMsgProgressive } = await import('../src/render/markdown
 const { fixEmphasisMarkers } = await import('../src/render/markdownRepair.ts');
 
 function loadRealKatex() {
-  const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');
+  const code = readFileSync(
+    new URL('../src/vendor-files/katex/katex.min.js', import.meta.url),
+    'utf8',
+  );
   const ctx = { console };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
@@ -46,9 +56,13 @@ function withRenderers(fn) {
   const prevM = globalThis.marked;
   globalThis.katex = loadRealKatex();
   globalThis.marked = marked;
-  try { return fn(); } finally {
-    if (prevK === undefined) delete globalThis.katex; else globalThis.katex = prevK;
-    if (prevM === undefined) delete globalThis.marked; else globalThis.marked = prevM;
+  try {
+    return fn();
+  } finally {
+    if (prevK === undefined) delete globalThis.katex;
+    else globalThis.katex = prevK;
+    if (prevM === undefined) delete globalThis.marked;
+    else globalThis.marked = prevM;
   }
 }
 

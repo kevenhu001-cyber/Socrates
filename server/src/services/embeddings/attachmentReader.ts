@@ -44,14 +44,14 @@ export const READ_ATTACHMENT_TOOL = {
       '## What this tool does\n' +
       'Reads a file the user attached to the conversation. A user message may contain ' +
       '`[Attached file: "name" (mime, size) — fileId: <uuid>]` pointers; call this tool with ' +
-      'that fileId to fetch the file\'s extracted text page by page, a visual description ' +
+      "that fileId to fetch the file's extracted text page by page, a visual description " +
       'for image attachments, or metadata for media/binary files.\n\n' +
       '## When to call\n' +
-      '- The user asks about an attached file\'s contents: summarize, analyze, quote, extract data, answer questions, review code.\n' +
+      "- The user asks about an attached file's contents: summarize, analyze, quote, extract data, answer questions, review code.\n" +
       '- Always read an attachment before answering questions about it — do not guess its contents from the filename.\n' +
       '- For long documents, page through with `offset` until `hasMore` is false.\n\n' +
       '## When NOT to call\n' +
-      '- The file\'s content was already returned by an earlier call in this turn — reuse it.\n' +
+      "- The file's content was already returned by an earlier call in this turn — reuse it.\n" +
       '- The user mentions a file by name but no `[Attached file: …]` pointer with a fileId exists — there is nothing to read.\n\n' +
       '## Paging\n' +
       'Each call returns at most `limit` characters starting at `offset`. The result header reports ' +
@@ -65,13 +65,15 @@ export const READ_ATTACHMENT_TOOL = {
       properties: {
         fileId: {
           type: 'string',
-          description: 'The fileId uuid exactly as it appears in the [Attached file: …] pointer of the user message.',
+          description:
+            'The fileId uuid exactly as it appears in the [Attached file: …] pointer of the user message.',
         },
         offset: {
           type: 'number',
           default: 0,
           minimum: 0,
-          description: 'Character offset into the extracted text. Use the previous response\'s offset + returned character count to page forward.',
+          description:
+            "Character offset into the extracted text. Use the previous response's offset + returned character count to page forward.",
         },
         limit: {
           type: 'number',
@@ -83,7 +85,8 @@ export const READ_ATTACHMENT_TOOL = {
         question: {
           type: 'string',
           maxLength: 500,
-          description: 'Optional question that focuses an image description (ignored for text-extractable files).',
+          description:
+            'Optional question that focuses an image description (ignored for text-extractable files).',
         },
       },
       required: ['fileId'],
@@ -97,28 +100,142 @@ export const READ_ATTACHMENT_TOOL = {
  * upload allow-list so the two never disagree about what "a text file" is. */
 
 export const TEXT_FILE_EXTENSIONS = new Set([
-  '.txt', '.md', '.markdown', '.csv', '.tsv', '.log', '.json', '.jsonl', '.ndjson',
-  '.xml', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.env', '.tex', '.bib',
-  '.py', '.pyw', '.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.java', '.c', '.h',
-  '.cpp', '.cc', '.cxx', '.hpp', '.hh', '.cs', '.go', '.rs', '.rb', '.php', '.swift',
-  '.kt', '.kts', '.m', '.mm', '.scala', '.sh', '.bash', '.zsh', '.fish', '.pl', '.pm',
-  '.lua', '.r', '.jl', '.sql', '.css', '.scss', '.less', '.vue', '.svelte', '.dart',
-  '.ex', '.exs', '.erl', '.hrl', '.clj', '.cljs', '.hs', '.ml', '.fs', '.vb', '.ps1',
-  '.bat', '.cmd', '.ipynb', '.diff', '.patch', '.gitignore', '.dockerignore', '.proto',
+  '.txt',
+  '.md',
+  '.markdown',
+  '.csv',
+  '.tsv',
+  '.log',
+  '.json',
+  '.jsonl',
+  '.ndjson',
+  '.xml',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.ini',
+  '.cfg',
+  '.conf',
+  '.env',
+  '.tex',
+  '.bib',
+  '.py',
+  '.pyw',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.ts',
+  '.tsx',
+  '.jsx',
+  '.java',
+  '.c',
+  '.h',
+  '.cpp',
+  '.cc',
+  '.cxx',
+  '.hpp',
+  '.hh',
+  '.cs',
+  '.go',
+  '.rs',
+  '.rb',
+  '.php',
+  '.swift',
+  '.kt',
+  '.kts',
+  '.m',
+  '.mm',
+  '.scala',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.fish',
+  '.pl',
+  '.pm',
+  '.lua',
+  '.r',
+  '.jl',
+  '.sql',
+  '.css',
+  '.scss',
+  '.less',
+  '.vue',
+  '.svelte',
+  '.dart',
+  '.ex',
+  '.exs',
+  '.erl',
+  '.hrl',
+  '.clj',
+  '.cljs',
+  '.hs',
+  '.ml',
+  '.fs',
+  '.vb',
+  '.ps1',
+  '.bat',
+  '.cmd',
+  '.ipynb',
+  '.diff',
+  '.patch',
+  '.gitignore',
+  '.dockerignore',
+  '.proto',
 ]);
-export const DOCUMENT_FILE_EXTENSIONS = new Set(['.pdf', '.docx', '.xlsx', '.pptx', '.epub', '.rtf', '.odt', '.ods', '.odp']);
+export const DOCUMENT_FILE_EXTENSIONS = new Set([
+  '.pdf',
+  '.docx',
+  '.xlsx',
+  '.pptx',
+  '.epub',
+  '.rtf',
+  '.odt',
+  '.ods',
+  '.odp',
+]);
 export const LEGACY_OFFICE_EXTENSIONS = new Set(['.doc', '.xls', '.ppt']);
-export const MEDIA_FILE_EXTENSIONS = new Set(['.mp4', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac']);
-export const IMAGE_FILE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif', '.heic', '.ico']);
+export const MEDIA_FILE_EXTENSIONS = new Set([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.mp3',
+  '.wav',
+  '.m4a',
+  '.ogg',
+  '.flac',
+  '.aac',
+]);
+export const IMAGE_FILE_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.avif',
+  '.heic',
+  '.ico',
+]);
 
 /* application/* types that are really plain text inside. Office XML
    containers are NOT here — they are zip files handled by the parsers. */
 export const TEXTUAL_APPLICATION_MIMES = new Set([
-  'application/json', 'application/xml', 'application/javascript',
-  'application/x-javascript', 'application/typescript', 'application/x-typescript',
-  'application/yaml', 'application/x-yaml', 'application/x-sh',
-  'application/sql', 'application/graphql', 'application/x-httpd-php',
-  'application/toml', 'application/ld+json', 'application/x-ndjson', 'application/jsonl',
+  'application/json',
+  'application/xml',
+  'application/javascript',
+  'application/x-javascript',
+  'application/typescript',
+  'application/x-typescript',
+  'application/yaml',
+  'application/x-yaml',
+  'application/x-sh',
+  'application/sql',
+  'application/graphql',
+  'application/x-httpd-php',
+  'application/toml',
+  'application/ld+json',
+  'application/x-ndjson',
+  'application/jsonl',
 ]);
 
 const PARSER_MIMES = new Set(SUPPORTED_MIMES);
@@ -193,7 +310,8 @@ export function isTextReadable(mime: string, name: string, kind?: string | null)
   }
   if (TEXTUAL_APPLICATION_MIMES.has(m)) return true;
   if (kind === 'text') return true;
-  if ((m === 'application/octet-stream' || !m) && TEXT_FILE_EXTENSIONS.has(extOf(name))) return true;
+  if ((m === 'application/octet-stream' || !m) && TEXT_FILE_EXTENSIONS.has(extOf(name)))
+    return true;
   return false;
 }
 
@@ -232,7 +350,11 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
       return {
         readable: true,
         text: normalizeText(described && described.description),
-        meta: { via: 'vision', model: described && described.model, latencyMs: described && described.latencyMs },
+        meta: {
+          via: 'vision',
+          model: described && described.model,
+          latencyMs: described && described.latencyMs,
+        },
         truncated: false,
       };
     }
@@ -265,14 +387,25 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
     const code = (err as NodeJS.ErrnoException)?.code;
     const message = (err as Error)?.message || String(err);
     if (code === 'ENOENT') {
-      throw new AttachmentReadError('file_missing', 'The uploaded file is missing from storage.', false);
+      throw new AttachmentReadError(
+        'file_missing',
+        'The uploaded file is missing from storage.',
+        false,
+      );
     }
     if (code === 'ENCRYPTED') {
-      throw new AttachmentReadError('encrypted',
-        `"${displayName}" is password-protected or encrypted, so its contents cannot be read. ${message}`, false);
+      throw new AttachmentReadError(
+        'encrypted',
+        `"${displayName}" is password-protected or encrypted, so its contents cannot be read. ${message}`,
+        false,
+      );
     }
     if (code === 'EMPTY_DOCUMENT') {
-      throw new AttachmentReadError('empty_document', `"${displayName}" contains no readable content. ${message}`, false);
+      throw new AttachmentReadError(
+        'empty_document',
+        `"${displayName}" contains no readable content. ${message}`,
+        false,
+      );
     }
     if (mime.startsWith('image/')) {
       const status = (err as { status?: number })?.status;
@@ -283,9 +416,17 @@ async function extractFile(file: FileRow, question?: string): Promise<Extracted>
       );
     }
     if (code === 'UNSUPPORTED_MIME') {
-      throw new AttachmentReadError('unsupported_type', `"${displayName}" (${mime || 'unknown type'}) is not a supported document format.`, false);
+      throw new AttachmentReadError(
+        'unsupported_type',
+        `"${displayName}" (${mime || 'unknown type'}) is not a supported document format.`,
+        false,
+      );
     }
-    throw new AttachmentReadError('parse_failed', `Could not extract text from "${displayName}" (the file may be corrupt): ${message}`, false);
+    throw new AttachmentReadError(
+      'parse_failed',
+      `Could not extract text from "${displayName}" (the file may be corrupt): ${message}`,
+      false,
+    );
   }
 }
 
@@ -320,7 +461,9 @@ export function prewarmAttachmentExtract(file: FileRow): void {
   const mime = String(file.mimeType || '').toLowerCase();
   if (!PARSER_MIMES.has(mime)) return;
   setTimeout(() => {
-    void extractCached(file).catch(() => { /* reported by the tool call */ });
+    void extractCached(file).catch(() => {
+      /* reported by the tool call */
+    });
   }, 120);
 }
 
@@ -338,13 +481,19 @@ export async function readAttachmentForUser(input: {
 }): Promise<AttachmentPage> {
   const { fileId, userId } = input;
   const offset = Math.max(0, Math.floor(Number(input.offset) || 0));
-  const limit = Math.min(READ_PAGE_MAX, Math.max(1, Math.floor(Number(input.limit) || READ_PAGE_DEFAULT)));
-  const question = typeof input.question === 'string' && input.question.trim()
-    ? input.question.trim().slice(0, 500)
-    : undefined;
+  const limit = Math.min(
+    READ_PAGE_MAX,
+    Math.max(1, Math.floor(Number(input.limit) || READ_PAGE_DEFAULT)),
+  );
+  const question =
+    typeof input.question === 'string' && input.question.trim()
+      ? input.question.trim().slice(0, 500)
+      : undefined;
 
   const db = getDb();
-  const [file] = await db.select().from(files)
+  const [file] = await db
+    .select()
+    .from(files)
     .where(and(eq(files.id, fileId), eq(files.userId, userId)))
     .limit(1);
   if (!file) {
@@ -393,9 +542,13 @@ export function formatAttachmentReadOutput(page: AttachmentPage): string {
   const noteLine = page.note ? `[note: ${page.note}]\n` : '';
   const end = page.offset + page.returnedChars;
   const omitted = typeof page.meta?.omitted === 'string' ? ` (omitted: ${page.meta.omitted})` : '';
-  const range = `[extract: chars ${page.offset}–${end} of ${page.totalChars}` +
-    (page.hasMore ? ` — more available; call read_attachment again with offset=${end}` : ' — end of file') +
-    (page.truncated ? `; note: the source extraction itself was capped${omitted}` : '') + ']';
+  const range =
+    `[extract: chars ${page.offset}–${end} of ${page.totalChars}` +
+    (page.hasMore
+      ? ` — more available; call read_attachment again with offset=${end}`
+      : ' — end of file') +
+    (page.truncated ? `; note: the source extraction itself was capped${omitted}` : '') +
+    ']';
   return `${header}\n${metaLine}${structure}${noteLine}${range}\n${page.text}`;
 }
 
@@ -405,13 +558,20 @@ function structureHint(page: AttachmentPage): string {
   if (mime === 'application/pdf') {
     return '[layout: each page starts with a "[Page N]" marker line]\n';
   }
-  if (['xlsx', 'xls', 'ods'].includes(kind) || mime.includes('spreadsheet') || mime === 'application/vnd.ms-excel') {
+  if (
+    ['xlsx', 'xls', 'ods'].includes(kind) ||
+    mime.includes('spreadsheet') ||
+    mime === 'application/vnd.ms-excel'
+  ) {
     return '[layout: one markdown table per sheet under "## Sheet: <name>" headings; the first row of each table is the sheet\'s first non-empty row]\n';
   }
   if (['pptx', 'odp'].includes(kind) || mime.includes('presentation')) {
     return '[layout: each slide starts with "## Slide N", its title as "### …", speaker notes as "Notes:"]\n';
   }
-  if (kind === 'docx' || mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+  if (
+    kind === 'docx' ||
+    mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ) {
     return '[layout: markdown — "#" headings, "-"/"1." lists, "|" tables, "[image]" where a picture was]\n';
   }
   return '';

@@ -109,7 +109,10 @@ export function usageLevel(tokens: number, maxDay: number): number {
 }
 
 export function monthlyUsageSummaries(entries: UsageEntry[]): UsageMonthSummary[] {
-  const monthMap: Record<string, { days: Record<string, boolean>; tokens: number; messages: number }> = {};
+  const monthMap: Record<
+    string,
+    { days: Record<string, boolean>; tokens: number; messages: number }
+  > = {};
   entries.forEach((entry) => {
     const month = entry.day.slice(0, 7);
     if (!monthMap[month]) monthMap[month] = { days: {}, tokens: 0, messages: 0 };
@@ -117,15 +120,18 @@ export function monthlyUsageSummaries(entries: UsageEntry[]): UsageMonthSummary[
     monthMap[month].tokens += numeric(entry.tokens);
     monthMap[month].messages += numeric(entry.messages);
   });
-  return Object.keys(monthMap).sort().reverse().map((month) => {
-    const date = new Date(month + '-01');
-    return {
-      month: date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-      activeDays: Object.keys(monthMap[month].days).length,
-      tokens: monthMap[month].tokens,
-      messages: monthMap[month].messages,
-    };
-  });
+  return Object.keys(monthMap)
+    .sort()
+    .reverse()
+    .map((month) => {
+      const date = new Date(month + '-01');
+      return {
+        month: date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
+        activeDays: Object.keys(monthMap[month].days).length,
+        tokens: monthMap[month].tokens,
+        messages: monthMap[month].messages,
+      };
+    });
 }
 
 export function beagleUsageSummary(limits: UsageLimits | null): {
@@ -138,11 +144,18 @@ export function beagleUsageSummary(limits: UsageLimits | null): {
   if (!limits || !limits.beagleLimit) return null;
   const used = numeric(limits.beagleUsed);
   const limit = Number(limits.beagleLimit);
-  const percent = Math.min(100, Math.round(used / limit * 100));
-  const color = percent >= 90
-    ? 'hsl(0 65% 55%)'
-    : percent >= 70
-      ? 'var(--ui-ink-secondary)'
-      : 'hsl(var(--accent-000))';
-  return { used, limit, percent, color, message: percent >= 100 ? 'limit' : percent >= 80 ? 'approaching' : null };
+  const percent = Math.min(100, Math.round((used / limit) * 100));
+  const color =
+    percent >= 90
+      ? 'hsl(0 65% 55%)'
+      : percent >= 70
+        ? 'var(--ui-ink-secondary)'
+        : 'hsl(var(--accent-000))';
+  return {
+    used,
+    limit,
+    percent,
+    color,
+    message: percent >= 100 ? 'limit' : percent >= 80 ? 'approaching' : null,
+  };
 }

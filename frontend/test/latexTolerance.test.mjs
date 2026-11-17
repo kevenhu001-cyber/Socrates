@@ -5,10 +5,7 @@ import {
   renderStreamMath,
   _looksLikeInlineMathTail,
 } from '../src/render/markdownMath.ts';
-import {
-  preprocessMarkdown,
-  preprocessMarkdownForStreaming,
-} from '../src/render/preprocess.ts';
+import { preprocessMarkdown, preprocessMarkdownForStreaming } from '../src/render/preprocess.ts';
 import { stripMarkdown } from '../src/render/markdownText.ts';
 
 function withKatex(katex, fn) {
@@ -29,7 +26,10 @@ test('normalizes common model-produced LaTeX without changing display tags', () 
   );
   assert.equal(display, String.raw`\begin{aligned}x&=&1\tag{A}\end{aligned}`);
 
-  const inline = normalizeMathSource(String.raw`\begin{alignedat}x&=1\tag*{A}\end{alignedat}`, false);
+  const inline = normalizeMathSource(
+    String.raw`\begin{alignedat}x&=1\tag*{A}\end{alignedat}`,
+    false,
+  );
   assert.equal(inline, String.raw`\begin{alignedat}{2}x&=1\end{alignedat}`);
 
   const blockquoted = normalizeMathSource('> x = 1\n> y = 2', true);
@@ -129,13 +129,13 @@ test('stripMarkdown removes multiline display math blocks', () => {
   assert.equal(stripped, '公式如下：\n\n完成');
 });
 
-test('bare-unit repair preserves existing inline and display math in learning cards',()=>{
- const inline='瑞利判据为 $\\theta=1.22\\lambda/D$。';
- assert.equal(preprocessMarkdown(inline),inline);
- const display='公式：$$\\theta=1.22\\lambda/D$$';
- assert.equal(preprocessMarkdown(display),display);
- assert.equal(preprocessMarkdown('电阻为 20\\Omega。'),'电阻为 $20\\Omega$。');
- assert.equal(preprocessMarkdown('代码 `20\\Omega` 保持原样。'),'代码 `20\\Omega` 保持原样。');
+test('bare-unit repair preserves existing inline and display math in learning cards', () => {
+  const inline = '瑞利判据为 $\\theta=1.22\\lambda/D$。';
+  assert.equal(preprocessMarkdown(inline), inline);
+  const display = '公式：$$\\theta=1.22\\lambda/D$$';
+  assert.equal(preprocessMarkdown(display), display);
+  assert.equal(preprocessMarkdown('电阻为 20\\Omega。'), '电阻为 $20\\Omega$。');
+  assert.equal(preprocessMarkdown('代码 `20\\Omega` 保持原样。'), '代码 `20\\Omega` 保持原样。');
 });
 
 test('a bare unit is wrapped outside math but never inside an existing span', () => {

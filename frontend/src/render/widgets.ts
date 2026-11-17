@@ -18,11 +18,31 @@ import {
   TheoremScaffold,
 } from '../react/tutor-widgets/LearnScaffolds.tsx';
 import { isSharedMessageList } from '../ui/msgListMount.ts';
-import type { ParsedDefinition, ParsedDerivation, ParsedExample, ParsedFlashcard, ParsedKeyPoint, ParsedProof } from '@socrates/ui/learn-model';
-import type { ParsedStep, PracticeMountData, QuizMountData, TheoremMountData } from './widgetRuntime.ts';
+import type {
+  ParsedDefinition,
+  ParsedDerivation,
+  ParsedExample,
+  ParsedFlashcard,
+  ParsedKeyPoint,
+  ParsedProof,
+} from '@socrates/ui/learn-model';
+import type {
+  ParsedStep,
+  PracticeMountData,
+  QuizMountData,
+  TheoremMountData,
+} from './widgetRuntime.ts';
 
 export { configureWidgetRuntime, handleQuizPick } from './widgetRuntime.ts';
-export type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData, PickedQuizOption, QuizPickFeedback } from './widgetRuntime.ts';
+export type {
+  WidgetRuntime,
+  QuizMountData,
+  PracticeMountData,
+  ParsedStep,
+  TheoremMountData,
+  PickedQuizOption,
+  QuizPickFeedback,
+} from './widgetRuntime.ts';
 
 /** Public share pages (and any shared transcript host) render scaffolds read-only. */
 function isReadOnlySlot(slot: Element): boolean {
@@ -36,7 +56,11 @@ function isReadOnlySlot(slot: Element): boolean {
 }
 
 function mount(slot: Element, kind: string, card: ReactElement) {
-  return mountTutorWidget(slot, kind, createElement(LearnMount, { readOnly: isReadOnlySlot(slot) }, card));
+  return mountTutorWidget(
+    slot,
+    kind,
+    createElement(LearnMount, { readOnly: isReadOnlySlot(slot) }, card),
+  );
 }
 
 export function mountExampleWidget(slot: Element, parsed: ParsedExample) {

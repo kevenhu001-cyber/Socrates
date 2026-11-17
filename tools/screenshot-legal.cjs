@@ -3,17 +3,17 @@ const fs = require('fs');
 const { chromium } = require(path.join(__dirname, '..', 'node_modules', 'playwright'));
 
 const BASE = 'http://127.0.0.1:4173';
-const OUT  = path.join(__dirname, 'site-screenshots');
+const OUT = path.join(__dirname, 'site-screenshots');
 fs.mkdirSync(OUT, { recursive: true });
 
 const ROUTES = [
   ['privacy', '/privacy.html'],
-  ['terms',   '/terms.html'],
+  ['terms', '/terms.html'],
 ];
 
 const VIEWPORTS = [
   ['desktop', 1280, 800],
-  ['mobile',  390,  844],
+  ['mobile', 390, 844],
 ];
 
 (async () => {
@@ -25,9 +25,11 @@ const VIEWPORTS = [
         const page = await ctx.newPage();
         await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 20000 });
         await page.evaluate(() => {
-          document.querySelectorAll('.xa-reveal, .mk-reveal, .sr').forEach(el => {
-            el.classList.add('is-visible'); el.classList.add('in');
-            el.style.opacity = '1'; el.style.transform = 'none';
+          document.querySelectorAll('.xa-reveal, .mk-reveal, .sr').forEach((el) => {
+            el.classList.add('is-visible');
+            el.classList.add('in');
+            el.style.opacity = '1';
+            el.style.transform = 'none';
           });
         });
         await page.waitForTimeout(300);
@@ -37,5 +39,7 @@ const VIEWPORTS = [
         await ctx.close();
       }
     }
-  } finally { await browser.close(); }
+  } finally {
+    await browser.close();
+  }
 })();

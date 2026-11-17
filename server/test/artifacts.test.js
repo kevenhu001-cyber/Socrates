@@ -39,8 +39,14 @@ describe('requireOwnedArtifact', () => {
     const artifact = await requireOwnedArtifact(db, 'artifact-1', 'user-1');
 
     assert.deepEqual(artifact, { id: 'artifact-1' });
-    assert.equal(db.calls.some((call) => call.op === 'where'), true);
-    assert.equal(db.calls.some((call) => call.op === 'limit' && call.n === 1), true);
+    assert.equal(
+      db.calls.some((call) => call.op === 'where'),
+      true,
+    );
+    assert.equal(
+      db.calls.some((call) => call.op === 'limit' && call.n === 1),
+      true,
+    );
   });
 
   test('throws NotFound when the artifact is missing or belongs to another user', async () => {

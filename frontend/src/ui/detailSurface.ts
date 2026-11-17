@@ -28,7 +28,8 @@ const openRequests = new WeakMap<Document, number>();
 function syncLayout(doc: Document, surface: Surface) {
   const app = surface.appShell ?? doc.getElementById('appShell');
   const sidebar = surface.sidebar ?? doc.getElementById('sidebar');
-  const available = (doc.defaultView?.innerWidth ?? 0) - (sidebar?.getBoundingClientRect().width ?? 0);
+  const available =
+    (doc.defaultView?.innerWidth ?? 0) - (sidebar?.getBoundingClientRect().width ?? 0);
   const docked = available >= 1060;
   doc.documentElement.dataset.detailLayout = docked ? 'docked' : 'modal';
   surface.panel.setAttribute('aria-modal', String(!docked));
@@ -49,7 +50,11 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   const onClose = () => closeDetailSurface(undefined, doc);
   let reactRoot!: OwnedRootHandle;
   flushSync(() => {
-    reactRoot = mountOwnedRoot(root, 'detail-surface', createElement(DetailSurfaceView, { options: null, onClose }));
+    reactRoot = mountOwnedRoot(
+      root,
+      'detail-surface',
+      createElement(DetailSurfaceView, { options: null, onClose }),
+    );
   });
   const appShell = doc.getElementById('appShell');
   const sidebar = doc.getElementById('sidebar');
@@ -60,8 +65,11 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
     panel: root.querySelector<HTMLElement>('.detail-surface')!,
     close: root.querySelector<HTMLButtonElement>('.detail-close')!,
     view: DetailSurfaceView,
-    active: null, trigger: null, inert: null,
-    appShell, sidebar,
+    active: null,
+    trigger: null,
+    inert: null,
+    appShell,
+    sidebar,
   };
   surfaces.set(doc, surface);
   doc.addEventListener('keydown', (event) => {
@@ -70,14 +78,27 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
       event.preventDefault();
       onClose();
     } else if (event.key === 'Tab' && surface.panel.getAttribute('aria-modal') === 'true') {
-      const controls = [...surface.panel.querySelectorAll<HTMLElement>('button, a[href], input, textarea, select, iframe, [tabindex="0"]')]
-        .filter((el) => !el.hasAttribute('disabled') && !el.hidden && el.getClientRects().length > 0);
+      const controls = [
+        ...surface.panel.querySelectorAll<HTMLElement>(
+          'button, a[href], input, textarea, select, iframe, [tabindex="0"]',
+        ),
+      ].filter(
+        (el) => !el.hasAttribute('disabled') && !el.hidden && el.getClientRects().length > 0,
+      );
       const first = controls[0] ?? surface.close;
       const last = controls[controls.length - 1] ?? surface.close;
-      if (event.shiftKey && (doc.activeElement === first || !surface.panel.contains(doc.activeElement))) {
-        event.preventDefault(); last.focus();
-      } else if (!event.shiftKey && (doc.activeElement === last || !surface.panel.contains(doc.activeElement))) {
-        event.preventDefault(); first.focus();
+      if (
+        event.shiftKey &&
+        (doc.activeElement === first || !surface.panel.contains(doc.activeElement))
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (doc.activeElement === last || !surface.panel.contains(doc.activeElement))
+      ) {
+        event.preventDefault();
+        first.focus();
       }
     }
   });
@@ -93,7 +114,10 @@ function ensureSurface(doc: Document, DetailSurfaceView: DetailView): Surface {
   return surface;
 }
 
-export function openDetailSurface(options: DetailOptions, doc: Document = document): Promise<boolean> {
+export function openDetailSurface(
+  options: DetailOptions,
+  doc: Document = document,
+): Promise<boolean> {
   let surface = surfaces.get(doc);
   if (!surface) {
     const previousPending = pendingOptions.get(doc);
@@ -101,22 +125,24 @@ export function openDetailSurface(options: DetailOptions, doc: Document = docume
     const request = (openRequests.get(doc) || 0) + 1;
     openRequests.set(doc, request);
     pendingOptions.set(doc, options);
-    return import('../react/detailSurface/DetailSurfaceView').then(({ DetailSurfaceView }) => {
-      if (openRequests.get(doc) !== request) return false;
-      const pending = pendingOptions.get(doc);
-      if (!pending) return false;
-      pendingOptions.delete(doc);
-      surface = ensureSurface(doc, DetailSurfaceView);
-      activateSurface(surface, pending, doc);
-      return true;
-    }).catch((error) => {
-      if (openRequests.get(doc) === request) {
+    return import('../react/detailSurface/DetailSurfaceView')
+      .then(({ DetailSurfaceView }) => {
+        if (openRequests.get(doc) !== request) return false;
+        const pending = pendingOptions.get(doc);
+        if (!pending) return false;
         pendingOptions.delete(doc);
-        options.onClose?.();
-      }
-      reportSwallow(error, 'ui/detailSurface.ts:openDetailSurface');
-      return false;
-    });
+        surface = ensureSurface(doc, DetailSurfaceView);
+        activateSurface(surface, pending, doc);
+        return true;
+      })
+      .catch((error) => {
+        if (openRequests.get(doc) === request) {
+          pendingOptions.delete(doc);
+          options.onClose?.();
+        }
+        reportSwallow(error, 'ui/detailSurface.ts:openDetailSurface');
+        return false;
+      });
   }
   activateSurface(surface, options, doc);
   return Promise.resolve(true);
@@ -129,7 +155,11 @@ function activateSurface(surface: Surface, options: DetailOptions, doc: Document
   // Ownership changes replace content in place, without a second entrance.
   if (previous && previous.owner !== options.owner) previous.onClose?.();
   surface.root.hidden = false;
-  flushSync(() => surface.reactRoot.render(createElement(surface.view, { options, onClose: () => closeDetailSurface(undefined, doc) })));
+  flushSync(() =>
+    surface.reactRoot.render(
+      createElement(surface.view, { options, onClose: () => closeDetailSurface(undefined, doc) }),
+    ),
+  );
   doc.documentElement.dataset.detailOpen = 'true';
   syncLayout(doc, surface);
   if (!previous) surface.close.focus();
@@ -144,10 +174,14 @@ export function updateDetailSurface(owner: string, meta: string, doc: Document =
   const surface = surfaces.get(doc);
   if (surface?.active?.owner !== owner) return;
   surface.active = { ...surface.active, meta };
-  flushSync(() => surface.reactRoot.render(createElement(surface.view, {
-    options: surface.active,
-    onClose: () => closeDetailSurface(undefined, doc),
-  })));
+  flushSync(() =>
+    surface.reactRoot.render(
+      createElement(surface.view, {
+        options: surface.active,
+        onClose: () => closeDetailSurface(undefined, doc),
+      }),
+    ),
+  );
 }
 
 function cancelPendingOpen(owner: string | undefined, doc: Document): void {
@@ -158,14 +192,25 @@ function cancelPendingOpen(owner: string | undefined, doc: Document): void {
   pending.onClose?.();
 }
 
-export function closeDetailSurface(owner?: string, doc: Document = document, restoreFocus = true): void {
+export function closeDetailSurface(
+  owner?: string,
+  doc: Document = document,
+  restoreFocus = true,
+): void {
   cancelPendingOpen(owner, doc);
   const surface = surfaces.get(doc);
   if (!surface?.active || (owner && surface.active.owner !== owner)) return;
   const previous = surface.active;
   surface.active = null;
   surface.root.hidden = true;
-  flushSync(() => surface.reactRoot.render(createElement(surface.view, { options: null, onClose: () => closeDetailSurface(undefined, doc) })));
+  flushSync(() =>
+    surface.reactRoot.render(
+      createElement(surface.view, {
+        options: null,
+        onClose: () => closeDetailSurface(undefined, doc),
+      }),
+    ),
+  );
   delete doc.documentElement.dataset.detailOpen;
   delete doc.documentElement.dataset.detailLayout;
   const app = surface.appShell ?? doc.getElementById('appShell');

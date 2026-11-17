@@ -12,13 +12,14 @@
  */
 
 import { getWorkspaceContext } from '../../../../services/tools/agentRuntime.js';
-import { runPiAgentTask, type PiAgentEvent, type PiAgentProvider } from '../../../../services/tools/piAgent.js';
+import {
+  runPiAgentTask,
+  type PiAgentEvent,
+  type PiAgentProvider,
+} from '../../../../services/tools/piAgent.js';
 import { getActiveApiKey } from '../../../../services/core/apiKey.js';
 import { checkBeagleMonthlyLimit } from '../../prepare/rates.js';
-import type {
-  ToolExecutor,
-  ToolExecutionResult,
-} from './types.js';
+import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 
 export const executeWorkspaceAgent: ToolExecutor = async (
@@ -31,20 +32,42 @@ export const executeWorkspaceAgent: ToolExecutor = async (
 
   const task = String(args.task || '').trim();
   if (!task) {
-    const result: ToolResult = { status: 'failed', error: 'missing_task', errorCode: 'missing_task', retryable: false };
+    const result: ToolResult = {
+      status: 'failed',
+      error: 'missing_task',
+      errorCode: 'missing_task',
+      retryable: false,
+    };
     emitter.event('tool_result', {
-      id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
-      error: 'missing_task', errorCode: 'missing_task', retryable: false,
+      id: tc.id,
+      name: 'workspace_agent',
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: 'missing_task',
+      errorCode: 'missing_task',
+      retryable: false,
       userMessage: '请提供要交给工作代理的任务。',
     });
     return { result };
   }
 
   if (!sessionIdFromQuery && !projectIdFromBody) {
-    const result: ToolResult = { status: 'failed', error: 'missing_workspace_scope', errorCode: 'missing_workspace_scope', retryable: false };
+    const result: ToolResult = {
+      status: 'failed',
+      error: 'missing_workspace_scope',
+      errorCode: 'missing_workspace_scope',
+      retryable: false,
+    };
     emitter.event('tool_result', {
-      id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
-      error: 'missing_workspace_scope', errorCode: 'missing_workspace_scope', retryable: false,
+      id: tc.id,
+      name: 'workspace_agent',
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: 'missing_workspace_scope',
+      errorCode: 'missing_workspace_scope',
+      retryable: false,
       userMessage: '当前对话没有可用的工作区。',
     });
     return { result };
@@ -55,26 +78,51 @@ export const executeWorkspaceAgent: ToolExecutor = async (
     workspace = await getWorkspaceContext(req.userId!, sessionIdFromQuery, projectIdFromBody);
   } catch (err) {
     const message = (err as Error)?.message || 'workspace unavailable';
-    const result: ToolResult = { status: 'failed', error: message, errorCode: 'workspace_unavailable', retryable: false };
+    const result: ToolResult = {
+      status: 'failed',
+      error: message,
+      errorCode: 'workspace_unavailable',
+      retryable: false,
+    };
     emitter.event('tool_result', {
-      id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
-      error: message, errorCode: 'workspace_unavailable', retryable: false,
+      id: tc.id,
+      name: 'workspace_agent',
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: message,
+      errorCode: 'workspace_unavailable',
+      retryable: false,
     });
     return { result };
   }
 
   if (!workspace.disk.ok) {
     const message = `workspace_disk_limit: ${workspace.disk.usageBytes} bytes used, ${workspace.disk.maxBytes} bytes allowed. Reset the workspace or raise max_disk_mb.`;
-    const result: ToolResult = { status: 'failed', error: message, errorCode: 'workspace_disk_limit', retryable: false };
+    const result: ToolResult = {
+      status: 'failed',
+      error: message,
+      errorCode: 'workspace_disk_limit',
+      retryable: false,
+    };
     emitter.event('tool_result', {
-      id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
-      error: message, errorCode: 'workspace_disk_limit', retryable: false,
+      id: tc.id,
+      name: 'workspace_agent',
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: message,
+      errorCode: 'workspace_disk_limit',
+      retryable: false,
     });
     return { result };
   }
 
   emitter.event('tool_progress', {
-    id: tc.id, phase: 'planning', chunk: '', elapsedMs: 0,
+    id: tc.id,
+    phase: 'planning',
+    chunk: '',
+    elapsedMs: 0,
   });
 
   /* Follow the user's selected model: Pi runs against the same endpoint,
@@ -88,10 +136,21 @@ export const executeWorkspaceAgent: ToolExecutor = async (
         const limitErr = await checkBeagleMonthlyLimit(req.userId!, req.user?.tier);
         if (limitErr) {
           const message = limitErr.message || 'monthly_limit';
-          const result: ToolResult = { status: 'failed', error: message, errorCode: 'monthly_limit', retryable: false };
+          const result: ToolResult = {
+            status: 'failed',
+            error: message,
+            errorCode: 'monthly_limit',
+            retryable: false,
+          };
           emitter.event('tool_result', {
-            id: tc.id, name: 'workspace_agent', ok: false, status: 'failed', output: '',
-            error: message, errorCode: 'monthly_limit', retryable: false,
+            id: tc.id,
+            name: 'workspace_agent',
+            ok: false,
+            status: 'failed',
+            output: '',
+            error: message,
+            errorCode: 'monthly_limit',
+            retryable: false,
           });
           return { result };
         }
@@ -144,19 +203,29 @@ export const executeWorkspaceAgent: ToolExecutor = async (
     }
     if (event.type === 'delta' && event.chunk) {
       emitter.event('tool_progress', {
-        id: tc.id, phase: 'working', chunk: event.chunk, elapsedMs: 0,
+        id: tc.id,
+        phase: 'working',
+        chunk: event.chunk,
+        elapsedMs: 0,
       });
       return;
     }
     if (event.type === 'reasoning' && event.chunk) {
       emitter.event('tool_progress', {
-        id: tc.id, phase: 'working', chunk: event.chunk, event: 'reasoning', elapsedMs: 0,
+        id: tc.id,
+        phase: 'working',
+        chunk: event.chunk,
+        event: 'reasoning',
+        elapsedMs: 0,
       });
       return;
     }
     if (event.type === 'step_update' && event.chunk) {
       emitter.event('tool_progress', {
-        id: tc.id, phase: 'working', chunk: event.chunk, elapsedMs: 0,
+        id: tc.id,
+        phase: 'working',
+        chunk: event.chunk,
+        elapsedMs: 0,
       });
     }
   };

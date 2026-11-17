@@ -5,8 +5,15 @@
  * (packages/ui/src/think/model.ts) owns the rules; this file binds them to
  * the current session and lets React roots subscribe.
  */
-import { EMPTY_CHAIN, appendChainStep, appendOwnQuestion, looksLikeQuestion, seedChain, type ChainState } from '@socrates/ui/think-model';
-import { stateStore } from '../state/store.ts';
+import {
+  EMPTY_CHAIN,
+  appendChainStep,
+  appendOwnQuestion,
+  looksLikeQuestion,
+  seedChain,
+  type ChainState,
+} from '@socrates/ui/think-model';
+import { sessionBridge } from '../store/index.ts';
 import { getAppMode } from '../config/providers.ts';
 
 let chain: ChainState = EMPTY_CHAIN;
@@ -19,20 +26,25 @@ function publish(next: ChainState): void {
 }
 
 function firstUserText(): string {
-  const messages = stateStore.read('messages') as ReadonlyArray<{ role?: string; rawText?: string }> | undefined;
-  const first = messages?.find((message) => message.role === 'user' && typeof message.rawText === 'string' && message.rawText.trim());
+  const messages = sessionBridge.getSnapshot().messages as
+    ReadonlyArray<{ role?: string; rawText?: string }> | undefined;
+  const first = messages?.find(
+    (message) =>
+      message.role === 'user' && typeof message.rawText === 'string' && message.rawText.trim(),
+  );
   return first?.rawText ?? '';
 }
 
 function sessionRoot(): string {
-  const topic = stateStore.read('topic');
+  const topic = sessionBridge.getSnapshot().topic;
   const text = typeof topic === 'string' ? topic.trim() : '';
   return text || firstUserText();
 }
 
 /** Bind the chain to the current session (a new session starts a new chain). */
 export function syncQuestionChain(): ChainState {
-  const sessionKey = (stateStore.read('currentSessionId') as string | null | undefined) ?? null;
+  const sessionKey =
+    (sessionBridge.getSnapshot().currentSessionId as string | null | undefined) ?? null;
   publish(seedChain(chain, sessionKey, sessionRoot()));
   return chain;
 }

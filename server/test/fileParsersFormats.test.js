@@ -46,7 +46,11 @@ test('legacy .xls (BIFF8) extracts sheets as tab-separated text', async () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(
       wb,
-      XLSX.utils.aoa_to_sheet([['Name', 'Age'], ['Alice', 30], ['Bob', 25]]),
+      XLSX.utils.aoa_to_sheet([
+        ['Name', 'Age'],
+        ['Alice', 30],
+        ['Bob', 25],
+      ]),
       'People',
     );
     const fp = path.join(dir, 't.xls');

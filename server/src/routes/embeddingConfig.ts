@@ -35,7 +35,10 @@ import { embeddingConfig } from '../db/schema/index.js';
 import { requireAdminSession } from '../middleware/adminAuth.js';
 import { NotFound, BadRequest } from '../lib/errors.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
-import { isAllowedEmbeddingUrl, invalidateEmbeddingConfigCache } from '../services/embeddings/embedding.js';
+import {
+  isAllowedEmbeddingUrl,
+  invalidateEmbeddingConfigCache,
+} from '../services/embeddings/embedding.js';
 
 const router = Router();
 
@@ -90,7 +93,9 @@ router.get('/', async (req, res, next) => {
       .from(embeddingConfig)
       .orderBy(embeddingConfig.createdAt);
     return res.json(rows);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PUT / — create a new provider row, or update an existing one when
@@ -103,11 +108,15 @@ router.put('/', async (req, res, next) => {
   try {
     const parsed = putSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new BadRequest('Invalid config: ' + (parsed.error.issues[0]?.message || 'validation failed'));
+      throw new BadRequest(
+        'Invalid config: ' + (parsed.error.issues[0]?.message || 'validation failed'),
+      );
     }
     const { id, label, url, model, dimensions, key, keyHint, isActive } = parsed.data;
     if (!isAllowedEmbeddingUrl(url)) {
-      throw new BadRequest('Provider URL must be a public https endpoint (no localhost / private / link-local).');
+      throw new BadRequest(
+        'Provider URL must be a public https endpoint (no localhost / private / link-local).',
+      );
     }
 
     const db = getDb();
@@ -135,12 +144,14 @@ router.put('/', async (req, res, next) => {
       if (values.keyCiphertext === undefined) {
         delete (updateSet as Record<string, unknown>).keyCiphertext;
       }
-      const [existing] = await db.select({ id: embeddingConfig.id })
+      const [existing] = await db
+        .select({ id: embeddingConfig.id })
         .from(embeddingConfig)
         .where(eq(embeddingConfig.id, id))
         .limit(1);
       if (!existing) throw new NotFound('Embedding config not found');
-      [saved] = await db.update(embeddingConfig)
+      [saved] = await db
+        .update(embeddingConfig)
         .set(updateSet)
         .where(eq(embeddingConfig.id, id))
         .returning(SAFE_PROJECTION);
@@ -150,7 +161,8 @@ router.put('/', async (req, res, next) => {
     /* Enforce exactly-one-active. When this row is active, clear
        every other row's flag. */
     if (saved.isActive) {
-      await db.update(embeddingConfig)
+      await db
+        .update(embeddingConfig)
         .set({ isActive: false })
         .where(ne(embeddingConfig.id, saved.id));
     }
@@ -159,7 +171,9 @@ router.put('/', async (req, res, next) => {
        provider stays invisible to the indexing path. */
     invalidateEmbeddingConfigCache();
     return res.json(saved);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /:id — remove a config row. The vector layer degrades to
@@ -170,14 +184,17 @@ router.delete('/:id', async (req, res, next) => {
     if (!/^[0-9a-fA-F-]{8,64}$/.test(String(req.params.id))) {
       throw new BadRequest('Invalid id');
     }
-    const deleted = await db.delete(embeddingConfig)
+    const deleted = await db
+      .delete(embeddingConfig)
       .where(eq(embeddingConfig.id, String(req.params.id)))
       .returning({ id: embeddingConfig.id });
     if (!deleted.length) throw new NotFound('Embedding config not found');
     /* P_embed-cfg-cache — a delete can deactivate the vector layer. */
     invalidateEmbeddingConfigCache();
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

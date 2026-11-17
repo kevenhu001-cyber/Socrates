@@ -1,16 +1,22 @@
-import type { VoiceSession, SpeechRecognitionRuntime, SpeechResultEvent } from "../types/speechRuntime.ts";
+import type {
+  VoiceSession,
+  SpeechRecognitionRuntime,
+  SpeechResultEvent,
+} from '../types/speechRuntime.ts';
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { t } from '../i18n/index.ts';
 import { useVoiceInputStore } from './voiceInput.store.ts';
 
-
 let activeSession: VoiceSession | null = null;
 
 function speechRecognitionConstructor() {
   if (typeof window === 'undefined') return null;
-  const win = window as unknown as { SpeechRecognition?: (new () => SpeechRecognitionRuntime); webkitSpeechRecognition?: (new () => SpeechRecognitionRuntime) };
+  const win = window as unknown as {
+    SpeechRecognition?: new () => SpeechRecognitionRuntime;
+    webkitSpeechRecognition?: new () => SpeechRecognitionRuntime;
+  };
   return win.SpeechRecognition || win.webkitSpeechRecognition || null;
 }
 
@@ -18,7 +24,9 @@ function copy(key: string, english: string, chinese: string) {
   try {
     const translated = t(key);
     if (translated && translated !== key) return translated;
-  } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:16'); }
+  } catch (error) {
+    reportSwallow(error, 'ui/voiceInput.ts:16');
+  }
   return document.documentElement.lang === 'zh' ? chinese : english;
 }
 
@@ -29,10 +37,16 @@ function notify(message: unknown) {
 function stopTracks(stream: MediaStream | null) {
   if (!stream || typeof stream.getTracks !== 'function') return;
   try {
-    stream.getTracks().forEach(function (track: { stop: () => void; }) {
-      try { track.stop(); } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:61', 'expected'); }
+    stream.getTracks().forEach(function (track: { stop: () => void }) {
+      try {
+        track.stop();
+      } catch (error) {
+        reportSwallow(error, 'ui/voiceInput.ts:61', 'expected');
+      }
     });
-  } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:63', 'expected'); }
+  } catch (error) {
+    reportSwallow(error, 'ui/voiceInput.ts:63', 'expected');
+  }
 }
 
 async function requestMicStream() {
@@ -102,7 +116,13 @@ function animateWaveform(session: VoiceSession) {
 }
 
 function setupAudioMeter(session: VoiceSession) {
-  const win = typeof window !== 'undefined' ? (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }) : {};
+  const win =
+    typeof window !== 'undefined'
+      ? (window as unknown as {
+          AudioContext?: typeof AudioContext;
+          webkitAudioContext?: typeof AudioContext;
+        })
+      : {};
   const AudioContextConstructor = win.AudioContext || win.webkitAudioContext;
   if (!session.stream || typeof AudioContextConstructor !== 'function') {
     animateWaveform(session);
@@ -125,11 +145,13 @@ function setupAudioMeter(session: VoiceSession) {
     if (audioContext.state === 'suspended' && typeof audioContext.resume === 'function') {
       const resume = audioContext.resume();
       if (resume && typeof resume.catch === 'function') {
-        resume.catch((error: unknown) => reportSwallow(error, 'ui/voiceInput.resumeWaveform', 'expected'));
+        resume.catch((error: unknown) =>
+          reportSwallow(error, 'ui/voiceInput.resumeWaveform', 'expected'),
+        );
       }
     }
   } catch (_) {
-    reportSwallow(_, 'empty catch: ui/voiceInput.ts:273', 'expected');
+    reportSwallow(_, 'empty catch: ui/voiceInput.ts', 'expected');
     /* Recognition remains useful if a browser exposes a microphone but not
        the Web Audio analyser. The CSS/phase fallback keeps the affordance
        alive without blocking dictation. */
@@ -155,27 +177,43 @@ function cleanupAudio(session: VoiceSession) {
     try {
       const close = session.audioContext.close();
       if (close && typeof close.catch === 'function') {
-        close.catch((error: unknown) => reportSwallow(error, 'ui/voiceInput.closeAudioContext', 'expected'));
+        close.catch((error: unknown) =>
+          reportSwallow(error, 'ui/voiceInput.closeAudioContext', 'expected'),
+        );
       }
-    } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:278'); }
+    } catch (error) {
+      reportSwallow(error, 'ui/voiceInput.ts:278');
+    }
   }
 }
 
 function insertFinalTranscript(session: VoiceSession, transcript: string) {
   if (!transcript || session.inserted || session.discard) return;
   session.inserted = true;
-  const existing = getComposerMarkdown((session.surface as 'topic' | 'chat')).trim();
-  insertComposerText((session.surface as 'topic' | 'chat'), `${existing ? ' ' : ''}${transcript}`);
+  const existing = getComposerMarkdown(session.surface as 'topic' | 'chat').trim();
+  insertComposerText(session.surface as 'topic' | 'chat', `${existing ? ' ' : ''}${transcript}`);
 }
 
 function notifyFinishedSession(session: VoiceSession, transcript: string) {
   if (session.discard) return;
   if (session.error === 'not-allowed' || session.error === 'service-not-allowed') {
-    notify(copy('voice.permission', 'Please allow microphone access to use voice input.', '请允许麦克风权限后使用语音输入。'));
+    notify(
+      copy(
+        'voice.permission',
+        'Please allow microphone access to use voice input.',
+        '请允许麦克风权限后使用语音输入。',
+      ),
+    );
   } else if (session.error === 'no-speech' && !transcript && !session.stopRequested) {
     notify(copy('voice.noSpeech', 'No speech detected.', '没有检测到语音。'));
   } else if (session.error && session.error !== 'aborted' && session.error !== 'no-speech') {
-    notify(copy('voice.error', 'Voice input could not start. Please check microphone access.', '语音输入启动失败，请检查麦克风权限。'));
+    notify(
+      copy(
+        'voice.error',
+        'Voice input could not start. Please check microphone access.',
+        '语音输入启动失败，请检查麦克风权限。',
+      ),
+    );
   }
 }
 
@@ -215,15 +253,24 @@ function collectRecognitionResult(session: VoiceSession, event: SpeechResultEven
 function wireRecognition(session: VoiceSession, recognition: SpeechRecognitionRuntime) {
   session.recognition = recognition;
   let voiceLanguage = 'auto';
-  try { voiceLanguage = localStorage.getItem('socrates-voice-language') || 'auto'; } catch (error) { reportSwallow(error, 'ui/voiceInput.ts:331', 'expected'); }
-  recognition.lang = voiceLanguage === 'auto' ? (document.documentElement.lang || navigator.language || 'en-US') : voiceLanguage;
+  try {
+    voiceLanguage = localStorage.getItem('socrates-voice-language') || 'auto';
+  } catch (error) {
+    reportSwallow(error, 'ui/voiceInput.ts:331', 'expected');
+  }
+  recognition.lang =
+    voiceLanguage === 'auto'
+      ? document.documentElement.lang || navigator.language || 'en-US'
+      : voiceLanguage;
   recognition.continuous = true;
   recognition.interimResults = true;
   recognition.maxAlternatives = 1;
 
   recognition.onstart = function () {
     if (session.startedAt === 0) startTimer(session);
-    useVoiceInputStore.getState().setPhase('listening', copy('voice.listening', 'Listening…', '正在聆听…'));
+    useVoiceInputStore
+      .getState()
+      .setPhase('listening', copy('voice.listening', 'Listening…', '正在聆听…'));
   };
   recognition.onresult = function (event: SpeechResultEvent) {
     collectRecognitionResult(session, event);
@@ -239,7 +286,13 @@ function wireRecognition(session: VoiceSession, recognition: SpeechRecognitionRu
 async function startSpeechInput(surface: VoiceSession['surface']) {
   const Recognition = speechRecognitionConstructor();
   if (!Recognition) {
-    notify(copy('voice.unsupported', 'Voice input is not supported in this browser.', '当前浏览器不支持语音输入。'));
+    notify(
+      copy(
+        'voice.unsupported',
+        'Voice input is not supported in this browser.',
+        '当前浏览器不支持语音输入。',
+      ),
+    );
     return;
   }
 
@@ -284,7 +337,11 @@ async function startSpeechInput(surface: VoiceSession['surface']) {
     }
     recognition.start();
   } catch (error) {
-    if (error && ((error as Error).name === 'NotAllowedError' || (error as Error).name === 'PermissionDeniedError')) {
+    if (
+      error &&
+      ((error as Error).name === 'NotAllowedError' ||
+        (error as Error).name === 'PermissionDeniedError')
+    ) {
       setSessionError(session, 'not-allowed');
     } else if (error && (error as Error).name === 'NotFoundError') {
       setSessionError(session, 'not-allowed');
@@ -302,7 +359,9 @@ export function stopSpeechInput() {
 
   session.stopRequested = true;
   session.stopping = true;
-  useVoiceInputStore.getState().setPhase('processing', copy('voice.processing', 'Processing voice input…', '正在处理语音…'));
+  useVoiceInputStore
+    .getState()
+    .setPhase('processing', copy('voice.processing', 'Processing voice input…', '正在处理语音…'));
   if (!session.recognition) {
     finishSession(session);
     return true;

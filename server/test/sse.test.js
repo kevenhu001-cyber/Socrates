@@ -47,9 +47,15 @@ function fakeRes() {
     writableEnded: false,
     destroyed: false,
     locals: {},
-    setHeader(name, value) { headers[name] = value; },
-    getHeader(name) { return headers[name]; },
-    flushHeaders() { /* noop */ },
+    setHeader(name, value) {
+      headers[name] = value;
+    },
+    getHeader(name) {
+      return headers[name];
+    },
+    flushHeaders() {
+      /* noop */
+    },
     write(chunk) {
       if (writableEnded || destroyed) return false;
       chunks.push(String(chunk));
@@ -66,12 +72,27 @@ function fakeRes() {
       res.destroyed = true;
       ee.emit('close');
     },
-    emit(name) { return ee.emit(name); },
-    on(name, fn) { ee.on(name, fn); return res; },
-    once(name, fn) { ee.once(name, fn); return res; },
-    removeListener(name, fn) { ee.removeListener(name, fn); return res; },
-    get chunks() { return chunks; },
-    get headerMap() { return headers; },
+    emit(name) {
+      return ee.emit(name);
+    },
+    on(name, fn) {
+      ee.on(name, fn);
+      return res;
+    },
+    once(name, fn) {
+      ee.once(name, fn);
+      return res;
+    },
+    removeListener(name, fn) {
+      ee.removeListener(name, fn);
+      return res;
+    },
+    get chunks() {
+      return chunks;
+    },
+    get headerMap() {
+      return headers;
+    },
   };
   return res;
 }

@@ -33,9 +33,9 @@ const USES_RE = /^(\s*(?:-\s*)?uses:\s*)([^\s#]+)(\s*)(#.*)?$/;
 
 const files = existsSync(WORKFLOW_DIR)
   ? readdirSync(WORKFLOW_DIR)
-    .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
-    .map((name) => join(WORKFLOW_DIR, name))
-    .sort()
+      .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
+      .map((name) => join(WORKFLOW_DIR, name))
+      .sort()
   : [];
 
 const unpinned = [];
@@ -80,11 +80,15 @@ function writeBaseline(next) {
 
 if (!baseline) {
   writeBaseline(unpinned);
-  console.log(`action pinning: no baseline found — wrote scripts/action-pinning.baseline.json (${unpinned.length} unpinned of ${total}).`);
+  console.log(
+    `action pinning: no baseline found — wrote scripts/action-pinning.baseline.json (${unpinned.length} unpinned of ${total}).`,
+  );
   console.log('Commit the baseline; growth beyond it now fails.');
 } else if (UPDATE) {
   /* Shrink-only: an update may drop references, never add one. */
-  const known = new Set((baseline.refs ?? []).map((entry) => `${entry.file}:${entry.line}:${entry.target}`));
+  const known = new Set(
+    (baseline.refs ?? []).map((entry) => `${entry.file}:${entry.line}:${entry.target}`),
+  );
   const next = unpinned.filter((entry) => known.has(`${entry.file}:${entry.line}:${entry.target}`));
   writeBaseline(next);
   console.log(`action pinning: baseline updated to ${next.length} (counts only ever shrink).`);
@@ -96,5 +100,7 @@ if (!baseline) {
   for (const entry of unpinned) console.error(`  ${entry.file}:${entry.line}  ${entry.target}`);
   process.exitCode = 1;
 } else {
-  console.log(`action pinning check passed (${total - unpinned.length}/${total} references pinned; baseline only shrinks).`);
+  console.log(
+    `action pinning check passed (${total - unpinned.length}/${total} references pinned; baseline only shrinks).`,
+  );
 }

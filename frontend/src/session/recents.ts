@@ -3,10 +3,16 @@
  * Zero-behavior-change lift. Render surfaces (renderRecents,
  * renderArchivedList) and app reset resolve via window.* at call time.
  */
-import { stateStore, resetState } from '../state/store.ts';
+import { resetDomains, sessionStore } from '../store/index.ts';
 import { serverCache } from './serverCache.ts';
 import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveState.ts';
-import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL, type SessionRow } from './store.ts';
+import {
+  getVisibleSessions,
+  getArchivedSessionsFrom,
+  sweepExpiredArchivesFrom,
+  setChatIdInURL,
+  type SessionRow,
+} from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
 import { readBootSessions } from './bootSessions.ts';
 import { getKnownTagsFromSessions } from '../ui/recentsModel.ts';
@@ -21,6 +27,7 @@ import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { turnState } from '../chat/turn/state.ts';
+import { detachActiveTurn } from '../chat/turn/cancelActiveTurn.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
@@ -61,12 +68,17 @@ function _t(key: string, fallback?: string): string {
     }
     const val = t(key);
     if (val && val !== key) return val;
-  } catch (e) { reportSwallow(e, 'session/recents._t'); }
+  } catch (e) {
+    reportSwallow(e, 'session/recents._t');
+  }
   return fallback != null ? fallback : key;
 }
 function _renderRecents(): void {
-  try { renderRecents(); }
-  catch (e) { reportSwallow(e, 'session/recents._renderRecents'); }
+  try {
+    renderRecents();
+  } catch (e) {
+    reportSwallow(e, 'session/recents._renderRecents');
+  }
 }
 function _renderArchivedList(): void {
   try {
@@ -76,13 +88,17 @@ function _renderArchivedList(): void {
     } else {
       renderArchivedList();
     }
-  } catch (e) { reportSwallow(e, 'session/recents._renderArchivedList'); }
+  } catch (e) {
+    reportSwallow(e, 'session/recents._renderArchivedList');
+  }
 }
 function _saveCurrentSession(): unknown {
   try {
     const win = window as RecentsWindow;
     if (typeof win.saveCurrentSession === 'function') return win.saveCurrentSession();
-  } catch (e) { reportSwallow(e, 'session/recents.saveCurrentSession'); }
+  } catch (e) {
+    reportSwallow(e, 'session/recents.saveCurrentSession');
+  }
   return null;
 }
 function _currentUser(): { tier?: string } | null {
@@ -124,7 +140,9 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
     ok = true;
   } else {
     try {
-      const r = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
+      const r = await apiFetch<{ sessions?: SessionRow[] }>(
+        '/api/sessions?limit=200&archived=true',
+      );
       serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
       ok = true;
     } catch (e) {
@@ -137,12 +155,19 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
          leaving serverCache.sessions=[] and showing "No recent sessions yet."
          even when the user had sessions on the server. */
       const status = errorStatus(e);
-      const retryable = status === 0 || status === 408 || status === 429 ||
-                      (typeof status === 'number' && status >= 500 && status < 600);
+      const retryable =
+        status === 0 ||
+        status === 408 ||
+        status === 429 ||
+        (typeof status === 'number' && status >= 500 && status < 600);
       if (retryable) {
         try {
-          await new Promise(function (res) { setTimeout(res, 400); });
-          const r2 = await apiFetch<{ sessions?: SessionRow[] }>('/api/sessions?limit=200&archived=true');
+          await new Promise(function (res) {
+            setTimeout(res, 400);
+          });
+          const r2 = await apiFetch<{ sessions?: SessionRow[] }>(
+            '/api/sessions?limit=200&archived=true',
+          );
           serverCache.sessions = r2 && Array.isArray(r2.sessions) ? r2.sessions : [];
           ok = true;
         } catch (retryError) {
@@ -164,31 +189,53 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
 const _reconciler = createReconciler({
   refresh: refreshServerSessions,
   onDone: function () {
-    try { _renderRecents(); }
-    catch (e) { reportSwallow(e, 'session/recents.reconciler.onDone'); } /* best effort */
+    try {
+      _renderRecents();
+    } catch (e) {
+      reportSwallow(e, 'session/recents.reconciler.onDone');
+    } /* best effort */
   },
 });
 
 /* Fold a request into the next reconcile window. Cheap to call repeatedly. */
 export function scheduleRecentsReconcile(): void {
-  try { _reconciler.schedule(); }
-  catch (e) { reportSwallow(e, 'session/recents.scheduleReconcile'); }
+  try {
+    _reconciler.schedule();
+  } catch (e) {
+    reportSwallow(e, 'session/recents.scheduleReconcile');
+  }
 }
 
 /* Re-fetch now and drop any pending window. Only for flows that cannot show
    stale rows: delete, archive, restore, purge, sign-in, manual retry. */
 export function flushRecentsReconcile(): Promise<unknown> {
-  try { return _reconciler.flush(); }
-  catch (e) { reportSwallow(e, 'session/recents.flushReconcile'); return Promise.resolve(); }
+  try {
+    return _reconciler.flush();
+  } catch (e) {
+    reportSwallow(e, 'session/recents.flushReconcile');
+    return Promise.resolve();
+  }
 }
 
 /* P_recents-fetch-fail — manual retry entry point bound from the
    "Couldn't load sessions — Retry" empty state. Re-runs the fetch,
    then re-renders so the user sees the result immediately. */
 export async function retryRecentsFetch(): Promise<void> {
-  try { showToast(_t('toast.loadingSessions')); } catch (e) { reportSwallow(e, 'session/recents.fetch.loadingToast'); }
-  try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.fetch.flushReconcile'); }
-  try { _renderRecents(); } catch (e) { reportSwallow(e, 'session/recents.fetch.renderRecents'); }
+  try {
+    showToast(_t('toast.loadingSessions'));
+  } catch (e) {
+    reportSwallow(e, 'session/recents.fetch.loadingToast');
+  }
+  try {
+    await flushRecentsReconcile();
+  } catch (e) {
+    reportSwallow(e, 'session/recents.fetch.flushReconcile');
+  }
+  try {
+    _renderRecents();
+  } catch (e) {
+    reportSwallow(e, 'session/recents.fetch.renderRecents');
+  }
 }
 export function findServerSessionIndex(id: string): number {
   for (let i = 0; i < serverCache.sessions.length; i++) {
@@ -217,21 +264,19 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
      (including the saveState.saveDirty cascade), then register the tombstone
      so no subsequent save can race with the delete. */
   if (saveState.saveInFlight) {
-    try { await saveState.saveInFlight; } catch (e) { reportSwallow(e, 'session/recents.deleteSession.drainInFlight'); }
+    try {
+      await saveState.saveInFlight;
+    } catch (e) {
+      reportSwallow(e, 'session/recents.deleteSession.drainInFlight');
+    }
   }
-  /* If the deleted session is active, leave its view and cancel any
-     in-flight stream so a partial reply cannot reappear after deletion. */
-  const wasActive = stateStore.read('currentSessionId') === id;
-  if (wasActive) {
-    if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.abortTurn'); } }
-    const abortActive = turnState.activeChatAbort;
-    if (abortActive) { try { abortActive('session-deleted'); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.abortActive'); } }
-    bounceOutOfArchivedSession();
-  }
+  exitSessionIfCurrent(id, 'session-deleted');
   /* Drop the session from the local cache immediately so the UI
      updates without waiting for the round-trip. If the server
      call fails, the catch handler re-fetches and re-renders. */
-  serverCache.sessions = serverCache.sessions.filter(function (s) { return s.id !== id; });
+  serverCache.sessions = serverCache.sessions.filter(function (s) {
+    return s.id !== id;
+  });
   clearLocalMemory(id);
   forgetSessionMistakes(id);
   /* P2 SWR — a deleted/archived session must not survive in the detail cache. */
@@ -246,59 +291,42 @@ export async function actuallyDeleteSession(id: string, ev?: Event | null): Prom
      directly without requiring archive first. */
   apiFetch('/api/sessions/' + encodeURIComponent(id), {
     method: 'DELETE',
-  }).then(function () {
-    showToast(_t('session.deleted'));
-    /* P_delete-stale — if no sessions remain, make sure the
-       chat view is hidden and the topic-setup is showing so the
-       user lands on a clean "start a new conversation" surface
-       instead of a blank / stale chat panel. */
-    flushRecentsReconcile().then(function () {
-      /* P_delete-resurrect — the server has now confirmed the
+  })
+    .then(function () {
+      showToast(_t('session.deleted'));
+      flushRecentsReconcile().then(function () {
+        /* P_delete-resurrect — the server has now confirmed the
          row is gone. From this point on, a streaming-callback
          POST that happens to carry this same id is no longer
          a "resurrection" risk (the row is genuinely deleted),
          and the very next _saveCurrentSession() that creates a
          NEW session with a coincidentally-equivalent id would
          be falsely blocked. Lift the tombstone. */
-      forgetDeletedSession(id);
-      const remaining = getRecents().length;
-      if (remaining === 0) {
-        bounceOutOfArchivedSession();
-      } else if (wasActive) {
-        _renderRecents();
+        forgetDeletedSession(id);
+        exitSessionIfCurrent(id, 'session-deleted');
+      });
+    })
+    .catch(function (err) {
+      /* delete sync failed */
+      try {
+        showToast(
+          _t('session.deleteFailedRefresh').replace('{msg}', errorMessage(err) || 'server error'),
+          4000,
+        );
+      } catch (e) {
+        reportSwallow(e, 'session/recents.deleteSession.toast');
       }
-    });
-  }).catch(function (err) {
-    /* delete sync failed */
-    try { showToast(_t('session.deleteFailedRefresh').replace('{msg}', errorMessage(err) || 'server error'), 4000); } catch (e) { reportSwallow(e, 'session/recents.deleteSession.toast'); }
-    /* P_delete-resurrect — keep the tombstone on failure. The
+      /* P_delete-resurrect — keep the tombstone on failure. The
        local mirror no longer has the row (we filtered it at
        t≈0) and the server claim is "404 / error", so any
        pending POST is at best a useless retry and at worst a
        resurrection. Lift it only after a refresh confirms the
        server really is consistent. */
-    flushRecentsReconcile().then(function () {
-      const idx = findServerSessionIndex(id);
-      if (idx < 0) forgetDeletedSession(id);
+      flushRecentsReconcile().then(function () {
+        const idx = findServerSessionIndex(id);
+        if (idx < 0) forgetDeletedSession(id);
+      });
     });
-  });
-}
-
-/* Quick archive from the Recents row menu. Soft-hide only: the row leaves
-   Recents immediately, lands in Storage (Profile → Archived), and can be
-   restored for 30 days. Distinct from deleteSession, which hard-deletes. */
-function stopActiveSessionForArchive(id: string): boolean {
-  const wasActive = stateStore.read('currentSessionId') === id;
-  if (!wasActive) return false;
-  if (turnState.activeChatCtl) {
-    try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortTurn'); }
-  }
-  const abortActive = turnState.activeChatAbort;
-  if (abortActive) {
-    try { abortActive('session-archived'); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.abortActive'); }
-  }
-  bounceOutOfArchivedSession();
-  return true;
 }
 
 function stageSessionArchive(id: string, stamp: number): void {
@@ -313,21 +341,30 @@ function stageSessionArchive(id: string, stamp: number): void {
   _renderArchivedList();
 }
 
-async function finishSessionArchive(wasActive: boolean): Promise<void> {
+async function finishSessionArchive(id: string): Promise<void> {
   showToast(_t('session.archived'));
   await flushRecentsReconcile();
   _renderRecents();
   _renderArchivedList();
-  if (wasActive || getRecents().length === 0) bounceOutOfArchivedSession();
+  exitSessionIfCurrent(id, 'archived-session');
 }
 
 async function rollbackSessionArchive(id: string, error: unknown): Promise<void> {
   const back = findServerSessionIndex(id);
   if (back >= 0) serverCache.sessions[back].archivedAt = null;
   try {
-    showToast(_t('session.archiveFailed').replace('{msg}', errorMessage(error) || 'server error'), 4000);
-  } catch (e) { reportSwallow(e, 'session/recents.archiveSession.toast'); }
-  try { await flushRecentsReconcile(); } catch (e) { reportSwallow(e, 'session/recents.archiveSession.flushReconcile'); }
+    showToast(
+      _t('session.archiveFailed').replace('{msg}', errorMessage(error) || 'server error'),
+      4000,
+    );
+  } catch (e) {
+    reportSwallow(e, 'session/recents.archiveSession.toast');
+  }
+  try {
+    await flushRecentsReconcile();
+  } catch (e) {
+    reportSwallow(e, 'session/recents.archiveSession.flushReconcile');
+  }
   _renderRecents();
   _renderArchivedList();
 }
@@ -337,16 +374,20 @@ export async function archiveSession(id: string, ev?: Event | null): Promise<voi
   if (ev && ev.stopPropagation) ev.stopPropagation();
   if (ev && ev.preventDefault) ev.preventDefault();
   if (saveState.saveInFlight) {
-    try { await saveState.saveInFlight; } catch (e) { reportSwallow(e, 'session/recents.archiveSession.drainInFlight'); }
+    try {
+      await saveState.saveInFlight;
+    } catch (e) {
+      reportSwallow(e, 'session/recents.archiveSession.drainInFlight');
+    }
   }
-  const wasActive = stopActiveSessionForArchive(id);
+  exitSessionIfCurrent(id, 'archived-session');
   const stamp = Date.now();
   stageSessionArchive(id, stamp);
   try {
     await apiFetch('/api/sessions/' + encodeURIComponent(id) + '/archive', {
       method: 'POST',
     });
-    await finishSessionArchive(wasActive);
+    await finishSessionArchive(id);
   } catch (error) {
     /* Roll the optimistic stamp so a failed POST doesn't hide the row. */
     await rollbackSessionArchive(id, error);
@@ -392,28 +433,23 @@ export function confirmPurgeSession(id: string): void {
     if (!yes) return;
     apiFetch('/api/sessions/' + encodeURIComponent(id), {
       method: 'DELETE',
-    }).then(function () {
-      /* P_purge-bounce — if the purged session is the active one,
-         bounce out to the topic-setup screen so stale content isn't
-         shown. without this, the chat view continues displaying the
-         deleted session's messages, topic badge, and knowledge
-         graph until the user manually navigates away. */
-      const wasActive = stateStore.read('currentSessionId') === id;
-      if (wasActive) {
-        if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.purge.abortTurn'); } }
-        const abortActive = turnState.activeChatAbort;
-        if (abortActive) { try { abortActive('session-purged'); } catch (e) { reportSwallow(e, 'session/recents.purge.abortActive'); } }
-        bounceOutOfArchivedSession();
-      }
-      serverCache.sessions = serverCache.sessions.filter(function (r) { return r.id !== id; });
-      clearLocalMemory(id);
-      forgetSessionMistakes(id);
-      _renderArchivedList();
-      _renderRecents();
-      showToast(_t('session.deleted'));
-    }).catch(function (err) {
-      showToast(_t('session.deleteFailedMsg').replace('{msg}', errorMessage(err) || 'server error'));
-    });
+    })
+      .then(function () {
+        exitSessionIfCurrent(id, 'session-purged');
+        serverCache.sessions = serverCache.sessions.filter(function (r) {
+          return r.id !== id;
+        });
+        clearLocalMemory(id);
+        forgetSessionMistakes(id);
+        _renderArchivedList();
+        _renderRecents();
+        showToast(_t('session.deleted'));
+      })
+      .catch(function (err) {
+        showToast(
+          _t('session.deleteFailedMsg').replace('{msg}', errorMessage(err) || 'server error'),
+        );
+      });
   });
 }
 
@@ -434,28 +470,22 @@ export function sweepExpiredArchives(): boolean {
   return result.changed;
 }
 
-/* P2.3 — bounce the user out of an archived session. Used by
-   actuallyDeleteSession when the active session is the one
-   being archived; the chat view collapses back to the topic
-   screen. */
-export function bounceOutOfArchivedSession(): void {
+/** Leave only the session being removed, even after an async response. */
+function exitSessionIfCurrent(
+  id: string,
+  reason: 'archived-session' | 'session-deleted' | 'session-purged',
+): void {
+  if (sessionStore.getState().currentSessionId !== id) return;
   resetShareToken();
-  /* Abort any active chat stream so callbacks don't write to
-     state after resetState() has cleared it. */
-  if (turnState.activeChatAbort) { try { turnState.activeChatAbort('archived-session'); } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.abortActive'); } }
-  if (turnState.activeChatCtl) { try { turnState.activeChatCtl.abort(); } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.abortTurn'); } }
-  turnState.activeChatCtl = null;
-  turnState.activeChatAbort = null;
-  turnState.chatStreaming = false;
-  turnState.chatStopMode = false;
-  try { turnState.pendingChatContent = null; } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.clearPendingChat'); }
-  try { turnState.pendingAttachments = null; } catch (e) { reportSwallow(e, 'session/recents.bounceOutOfArchivedSession.clearPendingAttachments'); }
-  resetState();
+  detachActiveTurn(reason);
+  turnState.pendingChatContent = null;
+  turnState.pendingAttachments = null;
+  resetDomains();
   toggleShareBtn();
   setChatIdInURL(null);
   activateMainView('topicSetup', document);
   clearLegacyMsgListChildren();
-  publishReactChatRuntime({ type: 'state-synced', reason: 'archived-session-reset' });
+  publishReactChatRuntime({ type: 'state-synced', reason: 'removed-session-reset' });
   clearComposer('topic');
   clearComposerPlugins('topic');
   clearComposerPlugins('chat');

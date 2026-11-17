@@ -44,23 +44,44 @@ test('answer keys accept single, joined and separated letters', () => {
 });
 
 test('quiz parse keeps the historical shape and adds multi / explanation only when present', () => {
-  const single = parseQuizInner('<q>Pick one</q><o letter="A">Alpha</o><o letter="B">Beta</o><correct>A</correct>');
-  assert.deepEqual(single, { q: 'Pick one', options: [{ letter: 'A', text: 'Alpha' }, { letter: 'B', text: 'Beta' }], correct: 'A' });
-  const multi = parseQuizInner('<q>Pick</q><o letter="A">1</o><o letter="B">2</o><o letter="C">3</o><correct>C,A</correct><explain>Odd numbers.</explain>');
+  const single = parseQuizInner(
+    '<q>Pick one</q><o letter="A">Alpha</o><o letter="B">Beta</o><correct>A</correct>',
+  );
+  assert.deepEqual(single, {
+    q: 'Pick one',
+    options: [
+      { letter: 'A', text: 'Alpha' },
+      { letter: 'B', text: 'Beta' },
+    ],
+    correct: 'A',
+  });
+  const multi = parseQuizInner(
+    '<q>Pick</q><o letter="A">1</o><o letter="B">2</o><o letter="C">3</o><correct>C,A</correct><explain>Odd numbers.</explain>',
+  );
   assert.equal(multi?.correct, 'AC');
   assert.equal(multi?.multi, true);
   assert.equal(multi?.explanation, 'Odd numbers.');
-  const flagged = parseQuizInner('<q>Pick</q><o letter="A">1</o><o letter="B">2</o><correct>A</correct>', ' type="multiple"');
+  const flagged = parseQuizInner(
+    '<q>Pick</q><o letter="A">1</o><o letter="B">2</o><correct>A</correct>',
+    ' type="multiple"',
+  );
   assert.equal(flagged?.multi, true);
-  const stray = parseQuizInner('<q>Pick</q><o letter="A">1</o><o letter="B">2</o><correct>E</correct>');
+  const stray = parseQuizInner(
+    '<q>Pick</q><o letter="A">1</o><o letter="B">2</o><correct>E</correct>',
+  );
   assert.equal(stray?.correct, null);
   assert.equal(parseQuizInner('<q>Only one</q><o letter="A">1</o>'), null);
   assert.equal(parseQuizInner('<o letter="A">1</o><o letter="B">2</o>'), null);
 });
 
 test('practice and example collect hint levels and keep markdown', () => {
-  assert.deepEqual(parsePracticeInner('<title>Try it</title><problem>Compute</problem><hint>Use x</hint>'), { title: 'Try it', problem: 'Compute', hint: 'Use x' });
-  const levels = parsePracticeInner('<problem>Solve $x^2=4$</problem><hint>Roots</hint><hint>Both signs</hint><solution>$x=\\pm 2$</solution>')!;
+  assert.deepEqual(
+    parsePracticeInner('<title>Try it</title><problem>Compute</problem><hint>Use x</hint>'),
+    { title: 'Try it', problem: 'Compute', hint: 'Use x' },
+  );
+  const levels = parsePracticeInner(
+    '<problem>Solve $x^2=4$</problem><hint>Roots</hint><hint>Both signs</hint><solution>$x=\\pm 2$</solution>',
+  )!;
   assert.deepEqual(levels.hints, ['Roots', 'Both signs']);
   assert.equal(levels.hint, 'Roots');
   assert.equal(levels.solution, '$x=\\pm 2$');
@@ -68,18 +89,30 @@ test('practice and example collect hint levels and keep markdown', () => {
   assert.deepEqual(hintLevels({ hint: 'One' }), ['One']);
   assert.deepEqual(hintLevels({ hint: '' }), []);
   assert.equal(parsePracticeInner('<hint>only</hint>'), null);
-  assert.deepEqual(parseExampleInner('<title>Ex 1</title><problem>Solve</problem><solution>Answer</solution>'), { title: 'Ex 1', problem: 'Solve', solution: 'Answer' });
+  assert.deepEqual(
+    parseExampleInner('<title>Ex 1</title><problem>Solve</problem><solution>Answer</solution>'),
+    { title: 'Ex 1', problem: 'Solve', solution: 'Answer' },
+  );
   assert.equal(parseExampleInner('<q>x</q>'), null);
   assert.equal(parseExampleInner('<problem>p &amp; q</problem>')?.problem, 'p & q');
 });
 
 test('static scaffold parsers', () => {
-  assert.deepEqual(parseDefinitionInner('<term>Group</term><body>A set</body>'), { term: 'Group', body: 'A set' });
+  assert.deepEqual(parseDefinitionInner('<term>Group</term><body>A set</body>'), {
+    term: 'Group',
+    body: 'A set',
+  });
   assert.deepEqual(parseDefinitionInner('plain'), { term: '', body: 'plain' });
   assert.equal(parseFlashcardInner('<front>Q</front>'), null);
-  assert.deepEqual(parseTheoremInner('<statement>a^2+b^2=c^2</statement>'), { title: '', statement: 'a^2+b^2=c^2' });
+  assert.deepEqual(parseTheoremInner('<statement>a^2+b^2=c^2</statement>'), {
+    title: '',
+    statement: 'a^2+b^2=c^2',
+  });
   assert.equal(parseTheoremInner('<term>x</term>'), null);
-  assert.deepEqual(parseProofInner('<title>P</title><body>Done</body>'), { title: 'P', body: 'Done' });
+  assert.deepEqual(parseProofInner('<title>P</title><body>Done</body>'), {
+    title: 'P',
+    body: 'Done',
+  });
   assert.equal(parseDerivationInner('<title>only</title>'), null);
   assert.deepEqual(parseKeyPointInner('  **bold** '), { body: '**bold**' });
   assert.equal(parseKeyPointInner('   '), null);
@@ -87,10 +120,17 @@ test('static scaffold parsers', () => {
 
 test('derivation steps split by paragraph, then by chain continuations, never inside display math', () => {
   assert.deepEqual(splitDerivationSteps('x + 1\n= 2'), ['x + 1', '= 2']);
-  assert.deepEqual(splitDerivationSteps('First line\n\nSecond line'), ['First line', 'Second line']);
+  assert.deepEqual(splitDerivationSteps('First line\n\nSecond line'), [
+    'First line',
+    'Second line',
+  ]);
   assert.deepEqual(splitDerivationSteps('$$\na = b\n\n= c\n$$'), ['$$\na = b\n\n= c\n$$']);
   assert.deepEqual(splitDerivationSteps('a\n\\Rightarrow b\n⇒ c'), ['a', '\\Rightarrow b', '⇒ c']);
-  assert.deepEqual(splitDerivationSteps('$a=b$\n$\\Rightarrow c$\n$= d$'), ['$a=b$', '$\\Rightarrow c$', '$= d$']);
+  assert.deepEqual(splitDerivationSteps('$a=b$\n$\\Rightarrow c$\n$= d$'), [
+    '$a=b$',
+    '$\\Rightarrow c$',
+    '$= d$',
+  ]);
   assert.deepEqual(splitDerivationSteps('   '), []);
 });
 
@@ -105,7 +145,10 @@ test('stream readiness waits for the closing tag and a parsable body', () => {
   assert.equal(scaffoldReadiness('quiz', '', false), 'empty');
   assert.equal(scaffoldReadiness('quiz', '<q>x</q><o letter="A">1</o>', false), 'partial');
   assert.equal(scaffoldReadiness('quiz', '<q>x</q><o letter="A">1</o>', true), 'partial');
-  assert.equal(scaffoldReadiness('quiz', '<q>x</q><o letter="A">1</o><o letter="B">2</o>', true), 'complete');
+  assert.equal(
+    scaffoldReadiness('quiz', '<q>x</q><o letter="A">1</o><o letter="B">2</o>', true),
+    'complete',
+  );
   assert.equal(scaffoldReadiness('key-point', 'body', true), 'complete');
   assert.equal(scaffoldReadiness('theorem', '<title>t</title>', true), 'partial');
 });
@@ -119,7 +162,11 @@ test('single-choice quiz: select replaces, submit, resolve and retry only after 
   assert.deepEqual(state.selected, ['C']);
   state = quizReducer(state, { type: 'submit' });
   assert.equal(state.phase, 'pending');
-  assert.equal(quizReducer(state, { type: 'toggle', letter: 'A', multi: false }), state, 'locked while pending');
+  assert.equal(
+    quizReducer(state, { type: 'toggle', letter: 'A', multi: false }),
+    state,
+    'locked while pending',
+  );
   state = quizReducer(state, { type: 'resolve', verdict: 'incorrect', feedback: 'Wrong: A' });
   assert.equal(state.phase, 'answered');
   assert.equal(state.attempts, 1);
@@ -130,7 +177,12 @@ test('single-choice quiz: select replaces, submit, resolve and retry only after 
   assert.equal(state.phase, 'choosing');
   assert.deepEqual(state.selected, []);
   assert.equal(state.attempts, 1);
-  state = quizReducer(quizReducer(quizReducer(state, { type: 'toggle', letter: 'A', multi: false }), { type: 'submit' }), { type: 'resolve', verdict: 'correct', feedback: 'ok' });
+  state = quizReducer(
+    quizReducer(quizReducer(state, { type: 'toggle', letter: 'A', multi: false }), {
+      type: 'submit',
+    }),
+    { type: 'resolve', verdict: 'correct', feedback: 'ok' },
+  );
   assert.equal(quizOptionMark('A', state, ['A']), 'correct');
   assert.equal(quizReducer(state, { type: 'retry' }), state, 'no retry after a correct answer');
 });
@@ -148,11 +200,18 @@ test('multi-choice quiz toggles letters and grades the whole set', () => {
 });
 
 test('a failed host submission unlocks the quiz; recorded picks never mark right or wrong', () => {
-  let state = quizReducer(quizReducer(initialQuizState, { type: 'toggle', letter: 'A', multi: false }), { type: 'submit' });
+  let state = quizReducer(
+    quizReducer(initialQuizState, { type: 'toggle', letter: 'A', multi: false }),
+    { type: 'submit' },
+  );
   state = quizReducer(state, { type: 'fail' });
   assert.equal(state.phase, 'choosing');
   assert.deepEqual(state.selected, ['A']);
-  state = quizReducer(quizReducer(state, { type: 'submit' }), { type: 'resolve', verdict: 'recorded', feedback: 'Recorded: A' });
+  state = quizReducer(quizReducer(state, { type: 'submit' }), {
+    type: 'resolve',
+    verdict: 'recorded',
+    feedback: 'Recorded: A',
+  });
   assert.equal(quizOptionMark('A', state, []), 'selected');
   assert.equal(quizOptionMark('B', state, []), 'muted');
 });
@@ -184,15 +243,23 @@ test('progressive reveal clamps to its total', () => {
 });
 
 test('derivation steps written as bare LaTeX render as display math, CJK prose keeps inline math', () => {
-  assert.equal(derivationStepSource('\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)'), '$$\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)$$');
-  assert.equal(derivationStepSource('= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}'), '$$= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}$$');
-  assert.equal(derivationStepSource('由柯西定理 \\oint_C f(z)\\,dz = 0，得证'), '由柯西定理 $\\oint_C f(z)\\,dz = 0$，得证');
+  assert.equal(
+    derivationStepSource('\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)'),
+    '$$\\operatorname{Res}(f,z_0) = \\lim_{z\\to z_0}(z-z_0)f(z)$$',
+  );
+  assert.equal(
+    derivationStepSource('= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}'),
+    '$$= \\lim_{z\\to 0} z\\cdot\\frac{e^z}{z}$$',
+  );
+  assert.equal(
+    derivationStepSource('由柯西定理 \\oint_C f(z)\\,dz = 0，得证'),
+    '由柯西定理 $\\oint_C f(z)\\,dz = 0$，得证',
+  );
   assert.equal(derivationStepSource('$a = \\frac{1}{2}$'), '$a = \\frac{1}{2}$');
   assert.equal(derivationStepSource('\\[x = 1\\]'), '\\[x = 1\\]');
   assert.equal(derivationStepSource('= 1'), '= 1');
   assert.equal(derivationStepSource('先找出奇点'), '先找出奇点');
 });
-
 
 test('short-form learning cards retain their Markdown and math without inventing fields', () => {
   const body = '**Concept**: $x < y$ means x is smaller.\n\nMore details.';
@@ -214,9 +281,10 @@ test('plain cards preserve literal XML code examples and continue rejecting brok
   assert.equal(parseQuizInner('<q>Q</q><o letter="A">Only one</o>'), null);
 });
 
-
 test('quiz option explanations are decoded separately from visible choices', () => {
-  const parsed = parseQuizInner('<q>2 + 2?</q><o letter="A" explanation="Two pairs make &quot;four&quot;.">4</o><o letter="B" explanation="One too many.">5</o><correct>A</correct>');
+  const parsed = parseQuizInner(
+    '<q>2 + 2?</q><o letter="A" explanation="Two pairs make &quot;four&quot;.">4</o><o letter="B" explanation="One too many.">5</o><correct>A</correct>',
+  );
   assert.deepEqual(parsed?.options, [
     { letter: 'A', text: '4', explanation: 'Two pairs make "four".' },
     { letter: 'B', text: '5', explanation: 'One too many.' },
@@ -225,14 +293,18 @@ test('quiz option explanations are decoded separately from visible choices', () 
 
 test('scaffold parsers tolerate Chinese quotation marks, unquoted attributes, and tag synonyms', () => {
   // Quiz with Chinese quotes and <question>/<answer>
-  const chineseQuotes = parseQuizInner('<question>测试题</question><o letter=“A” explanation=“解析A”>选项1</o><o letter=“B” explanation=“解析B”>选项2</o><answer>A</answer>');
+  const chineseQuotes = parseQuizInner(
+    '<question>测试题</question><o letter=“A” explanation=“解析A”>选项1</o><o letter=“B” explanation=“解析B”>选项2</o><answer>A</answer>',
+  );
   assert.equal(chineseQuotes?.q, '测试题');
   assert.equal(chineseQuotes?.correct, 'A');
   assert.equal(chineseQuotes?.options[0].letter, 'A');
   assert.equal(chineseQuotes?.options[0].explanation, '解析A');
 
   // Quiz with <option> tags and text-based letter extraction
-  const textLetters = parseQuizInner('<q>选择</q><option>A. 苹果</option><option>B. 香蕉</option><correct>B</correct>');
+  const textLetters = parseQuizInner(
+    '<q>选择</q><option>A. 苹果</option><option>B. 香蕉</option><correct>B</correct>',
+  );
   assert.equal(textLetters?.options[0].letter, 'A');
   assert.equal(textLetters?.options[0].text, '苹果');
   assert.equal(textLetters?.options[1].letter, 'B');
@@ -247,19 +319,32 @@ test('scaffold parsers tolerate Chinese quotation marks, unquoted attributes, an
   assert.deepEqual(thm, { title: '费马小定理', statement: 'a^p ≡ a (mod p)' });
 
   // Example with <question> and <answer>
-  const ex = parseExampleInner('<title>例1</title><question>求积分</question><answer>结果为 x^2/2</answer>');
+  const ex = parseExampleInner(
+    '<title>例1</title><question>求积分</question><answer>结果为 x^2/2</answer>',
+  );
   assert.deepEqual(ex, { title: '例1', problem: '求积分', solution: '结果为 x^2/2' });
 });
 
-
-test('malformed legacy quizzes never produce duplicate options or a partially guessed rubric',()=>{
- const options='<q>Choose</q><o letter="A">One</o><o letter="B">Two</o>';
- assert.equal(parseQuizInner(options+'<correct>AE</correct>')?.correct,null);
- assert.equal(parseQuizInner(options+'<correct>A,I</correct>')?.correct,null);
- assert.equal(parseQuizInner(options+'<correct>A</correct>',' multi="false"')?.multi,undefined);
- assert.equal(parseQuizInner('<q>Choose</q><o letter="A">One</o><o letter="A">Two</o><correct>A</correct>'),null);
- assert.equal(parseQuizInner('<q>Choose</q><o letter="A"></o><o letter="B">Two</o><correct>A</correct>'),null);
- assert.equal(parseQuizInner('<q>Choose</q><o letter="Z">One</o><o letter="B">Two</o><correct>B</correct>'),null);
- assert.equal(parseDefinitionInner('<term>No body</term>'),null);
- assert.equal(parseFlashcardInner('<front>Question</front><back></back>'),null);
+test('malformed legacy quizzes never produce duplicate options or a partially guessed rubric', () => {
+  const options = '<q>Choose</q><o letter="A">One</o><o letter="B">Two</o>';
+  assert.equal(parseQuizInner(options + '<correct>AE</correct>')?.correct, null);
+  assert.equal(parseQuizInner(options + '<correct>A,I</correct>')?.correct, null);
+  assert.equal(
+    parseQuizInner(options + '<correct>A</correct>', ' multi="false"')?.multi,
+    undefined,
+  );
+  assert.equal(
+    parseQuizInner('<q>Choose</q><o letter="A">One</o><o letter="A">Two</o><correct>A</correct>'),
+    null,
+  );
+  assert.equal(
+    parseQuizInner('<q>Choose</q><o letter="A"></o><o letter="B">Two</o><correct>A</correct>'),
+    null,
+  );
+  assert.equal(
+    parseQuizInner('<q>Choose</q><o letter="Z">One</o><o letter="B">Two</o><correct>B</correct>'),
+    null,
+  );
+  assert.equal(parseDefinitionInner('<term>No body</term>'), null);
+  assert.equal(parseFlashcardInner('<front>Question</front><back></back>'), null);
 });

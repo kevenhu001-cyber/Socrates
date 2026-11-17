@@ -7,7 +7,10 @@ import { writeValidatedBaseline } from '../scripts/parity-baseline.mjs';
 
 const valid = () => ({
   scenarios: { 'home-1440-dark-zh': { composer: { w: 768, h: 52 } } },
-  defects: {}, unresolved: [], partial: false, tolerancePx: 1,
+  defects: {},
+  unresolved: [],
+  partial: false,
+  tolerancePx: 1,
 });
 
 for (const [name, override, reason] of [
@@ -23,7 +26,9 @@ for (const [name, override, reason] of [
       writeFileSync(path, 'reviewed baseline\n');
       assert.throws(() => writeValidatedBaseline(path, { ...valid(), ...override }), reason);
       assert.equal(readFileSync(path, 'utf8'), 'reviewed baseline\n');
-    } finally { rmSync(dir, { recursive: true, force: true }); }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 }
 
@@ -36,5 +41,7 @@ test('complete defect-free audit writes the measured baseline without widening t
     assert.deepEqual(baseline.scenarios, valid().scenarios);
     assert.equal(baseline.tolerancePx, 1);
     assert.equal(baseline.generatedBy, 'parity-audit.mjs --update');
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

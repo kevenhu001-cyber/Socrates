@@ -27,7 +27,9 @@ interface ConnectorConnection {
 }
 
 function numericIds(value: unknown): number[] {
-  return Array.isArray(value) ? value.filter((item): item is number => typeof item === 'number' && Number.isSafeInteger(item)) : [];
+  return Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === 'number' && Number.isSafeInteger(item))
+    : [];
 }
 
 /* ─── Tool definitions ───────────────────────────────────── */
@@ -43,7 +45,7 @@ export const ARXIV_TOOL = {
       '- Finding academic papers on a specific research topic (RAG, LLM agents, RLHF, etc.).\n' +
       '- Checking for recent preprints from a known author or lab.\n' +
       '- Literature review or related-work discovery.\n' +
-      '- Answering questions that cite specific papers (the paper\'s metadata is more reliable than the model\'s training recall).\n\n' +
+      "- Answering questions that cite specific papers (the paper's metadata is more reliable than the model's training recall).\n\n" +
       '## When NOT to call\n' +
       '- Questions you can answer from general knowledge or training data.\n' +
       '- Searching for news, products, people, or non-academic content.\n' +
@@ -58,7 +60,8 @@ export const ARXIV_TOOL = {
       properties: {
         query: {
           type: 'string',
-          description: 'Research topic, author name, or paper keywords (2-200 characters, plain words, no arXiv-specific syntax needed).',
+          description:
+            'Research topic, author name, or paper keywords (2-200 characters, plain words, no arXiv-specific syntax needed).',
           minLength: 2,
           maxLength: 200,
         },
@@ -67,7 +70,8 @@ export const ARXIV_TOOL = {
           default: 10,
           minimum: 1,
           maximum: 20,
-          description: 'Number of papers to return (1-20). Use 5-10 for a quick overview, 20 for thorough coverage.',
+          description:
+            'Number of papers to return (1-20). Use 5-10 for a quick overview, 20 for thorough coverage.',
         },
       },
       required: ['query'],
@@ -99,7 +103,8 @@ export const ZOTERO_TOOL = {
       properties: {
         query: {
           type: 'string',
-          description: 'Optional — search by title, author, or year. Omit or leave empty to list the most recent 100 items.',
+          description:
+            'Optional — search by title, author, or year. Omit or leave empty to list the most recent 100 items.',
           minLength: 0,
           maxLength: 200,
         },
@@ -166,7 +171,8 @@ export const GITHUB_TOOL = {
       properties: {
         query: {
           type: 'string',
-          description: 'Optional — filter repositories by name keyword. Case-insensitive partial match.',
+          description:
+            'Optional — filter repositories by name keyword. Case-insensitive partial match.',
           minLength: 0,
           maxLength: 100,
         },
@@ -199,7 +205,8 @@ export const GITEE_TOOL = {
       properties: {
         query: {
           type: 'string',
-          description: 'Optional — filter repositories by name keyword. Case-insensitive partial match.',
+          description:
+            'Optional — filter repositories by name keyword. Case-insensitive partial match.',
           minLength: 0,
           maxLength: 100,
         },
@@ -231,32 +238,53 @@ export const CONNECTOR_TOOL_NAMES = {
  *   Public connectors (arxiv) accept null.
  * @returns {Promise<{status:string, output:string, error?:string, errorCode?:string}>}
  */
-export async function executeConnectorTool(toolName: string, args: Record<string, unknown>, connection: ConnectorConnection | null) {
+export async function executeConnectorTool(
+  toolName: string,
+  args: Record<string, unknown>,
+  connection: ConnectorConnection | null,
+) {
   switch (toolName) {
     /* ── arXiv (public, no auth) ──────────────────────────────── */
     case CONNECTOR_TOOL_NAMES.ARXIV: {
       const query = String(args.query || '').trim();
       if (query.length < 2) {
-        return { status: 'failed', output: '', error: 'Query must be at least 2 characters.', errorCode: 'invalid_query' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Query must be at least 2 characters.',
+          errorCode: 'invalid_query',
+        };
       }
       const limit = Math.min(Math.max(Number(args.limit) || 10, 1), 20);
       try {
         const papers = await searchArxivPapers(query);
         const sliced = papers.slice(0, limit);
         if (sliced.length === 0) {
-          return { status: 'completed', output: 'No arXiv papers found matching your query. Try different keywords or check the spelling.' };
+          return {
+            status: 'completed',
+            output:
+              'No arXiv papers found matching your query. Try different keywords or check the spelling.',
+          };
         }
         const blocks = sliced.map((p, i) => {
-          const authors = (p.authors || []).slice(0, 5).join(', ') + ((p.authors || []).length > 5 ? ' et al.' : '');
+          const authors =
+            (p.authors || []).slice(0, 5).join(', ') +
+            ((p.authors || []).length > 5 ? ' et al.' : '');
           const cats = (p.categories || []).slice(0, 3).join(', ');
           const date = p.publishedAt ? new Date(p.publishedAt).getFullYear() : '';
           return `[${i + 1}] ${p.title}\n   Authors: ${authors}\n   Categories: ${cats}\n   Published: ${date}\n   Abstract: ${(p.summary || '').slice(0, 500)}${p.summary && p.summary.length > 500 ? '…' : ''}\n   URL: ${p.abstractUrl || ''}\n   PDF: ${p.pdfUrl || ''}`;
         });
         return { status: 'completed', output: blocks.join('\n\n') };
       } catch (err) {
-        const msg = (err instanceof ArxivConnectorError) ? err.message : 'arXiv search failed. Try again shortly.';
+        const msg =
+          err instanceof ArxivConnectorError
+            ? err.message
+            : 'arXiv search failed. Try again shortly.';
         return {
-          status: 'failed', output: '', error: msg, errorCode: 'arxiv_search_failed',
+          status: 'failed',
+          output: '',
+          error: msg,
+          errorCode: 'arxiv_search_failed',
           retryable: isRetryableConnectorFailure(err),
         };
       }
@@ -265,49 +293,87 @@ export async function executeConnectorTool(toolName: string, args: Record<string
     /* ── Zotero (requires connection) ─────────────────────────── */
     case CONNECTOR_TOOL_NAMES.ZOTERO: {
       if (!connection) {
-        return { status: 'failed', output: '', error: 'Zotero is not connected. Please connect it first in the Plugins panel.', errorCode: 'not_connected' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Zotero is not connected. Please connect it first in the Plugins panel.',
+          errorCode: 'not_connected',
+        };
       }
       const query = String(args.query || '').trim();
       try {
         const items = await listZoteroItems(connection, query);
         if (items.length === 0) {
-          return { status: 'completed', output: query ? `No Zotero items found matching "${query}".` : 'Your Zotero library appears to be empty.' };
+          return {
+            status: 'completed',
+            output: query
+              ? `No Zotero items found matching "${query}".`
+              : 'Your Zotero library appears to be empty.',
+          };
         }
         const blocks = items.slice(0, 50).map((item, i) => {
-          const creators = (item.creators || []).slice(0, 3).join(', ') + ((item.creators || []).length > 3 ? ' et al.' : '');
+          const creators =
+            (item.creators || []).slice(0, 3).join(', ') +
+            ((item.creators || []).length > 3 ? ' et al.' : '');
           return `[${i + 1}] ${item.title}\n   Type: ${item.itemType}\n   By: ${creators}\n   Date: ${item.date || 'N/A'}\n   Zotero: ${item.url || ''}`;
         });
-        const footer = items.length > 50 ? `\n\n(Showing 50 of ${items.length} items — refine your query to narrow results.)` : '';
+        const footer =
+          items.length > 50
+            ? `\n\n(Showing 50 of ${items.length} items — refine your query to narrow results.)`
+            : '';
         return { status: 'completed', output: blocks.join('\n\n') + footer };
       } catch (err) {
-        const code = (err instanceof ZoteroConnectorError) ? err.code : 'zotero_search_failed';
-        const msg = (err instanceof ZoteroConnectorError) ? err.message : 'Zotero search failed. Try again shortly.';
-        return { status: 'failed', output: '', error: msg, errorCode: code, retryable: isRetryableConnectorFailure(err) };
+        const code = err instanceof ZoteroConnectorError ? err.code : 'zotero_search_failed';
+        const msg =
+          err instanceof ZoteroConnectorError
+            ? err.message
+            : 'Zotero search failed. Try again shortly.';
+        return {
+          status: 'failed',
+          output: '',
+          error: msg,
+          errorCode: code,
+          retryable: isRetryableConnectorFailure(err),
+        };
       }
     }
 
     /* ── Notion (requires connection) ─────────────────────────── */
     case CONNECTOR_TOOL_NAMES.NOTION: {
       if (!connection) {
-        return { status: 'failed', output: '', error: 'Notion is not connected. Please connect it first in the Plugins panel.', errorCode: 'not_connected' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Notion is not connected. Please connect it first in the Plugins panel.',
+          errorCode: 'not_connected',
+        };
       }
       const query = String(args.query || '').trim();
       if (query.length < 1) {
-        return { status: 'failed', output: '', error: 'Query must not be empty.', errorCode: 'invalid_query' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Query must not be empty.',
+          errorCode: 'invalid_query',
+        };
       }
       try {
         const pages = await searchNotionPages(connection, query);
         if (pages.length === 0) {
           return { status: 'completed', output: `No Notion pages found matching "${query}".` };
         }
-        const blocks = pages.map((p, i) =>
-          `[${i + 1}] ${p.title}\n   URL: ${p.url || ''}\n   Updated: ${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'N/A'}`
+        const blocks = pages.map(
+          (p, i) =>
+            `[${i + 1}] ${p.title}\n   URL: ${p.url || ''}\n   Updated: ${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'N/A'}`,
         );
         return { status: 'completed', output: blocks.join('\n\n') };
       } catch (err) {
         return {
-          status: 'failed', output: '', error: (err as Error).message || 'Notion search failed. Try again shortly.',
-          errorCode: 'notion_search_failed', retryable: isRetryableConnectorFailure(err),
+          status: 'failed',
+          output: '',
+          error: (err as Error).message || 'Notion search failed. Try again shortly.',
+          errorCode: 'notion_search_failed',
+          retryable: isRetryableConnectorFailure(err),
         };
       }
     }
@@ -315,29 +381,49 @@ export async function executeConnectorTool(toolName: string, args: Record<string
     /* ── GitHub (requires connection) ─────────────────────────── */
     case CONNECTOR_TOOL_NAMES.GITHUB: {
       if (!connection) {
-        return { status: 'failed', output: '', error: 'GitHub is not connected. Please connect it first in the Plugins panel.', errorCode: 'not_connected' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'GitHub is not connected. Please connect it first in the Plugins panel.',
+          errorCode: 'not_connected',
+        };
       }
-      const filterQuery = String(args.query || '').trim().toLowerCase();
+      const filterQuery = String(args.query || '')
+        .trim()
+        .toLowerCase();
       try {
         const repos = await listGithubInstallationRepositories({
           installationIds: numericIds(connection.installationIds),
         });
         if (repos.length === 0) {
-          return { status: 'completed', output: 'No GitHub repositories are accessible. Make sure the GitHub App is installed on the repositories you want to use.' };
+          return {
+            status: 'completed',
+            output:
+              'No GitHub repositories are accessible. Make sure the GitHub App is installed on the repositories you want to use.',
+          };
         }
-        const filtered = filterQuery ? repos.filter((r) => r.fullName!.toLowerCase().includes(filterQuery)) : repos;
+        const filtered = filterQuery
+          ? repos.filter((r) => r.fullName!.toLowerCase().includes(filterQuery))
+          : repos;
         if (filtered.length === 0) {
           return { status: 'completed', output: `No GitHub repositories match "${filterQuery}".` };
         }
-        const blocks = filtered.slice(0, 50).map((r, i) =>
-          `[${i + 1}] ${r.fullName}\n   Visibility: ${r.private ? 'private' : 'public'}\n   URL: ${r.htmlUrl || ''}\n   Updated: ${r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'N/A'}`
-        );
-        const footer = filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
+        const blocks = filtered
+          .slice(0, 50)
+          .map(
+            (r, i) =>
+              `[${i + 1}] ${r.fullName}\n   Visibility: ${r.private ? 'private' : 'public'}\n   URL: ${r.htmlUrl || ''}\n   Updated: ${r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'N/A'}`,
+          );
+        const footer =
+          filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
         return { status: 'completed', output: blocks.join('\n\n') + footer };
       } catch (err) {
         return {
-          status: 'failed', output: '', error: (err as Error).message || 'GitHub request failed. Try again shortly.',
-          errorCode: 'github_request_failed', retryable: isRetryableConnectorFailure(err),
+          status: 'failed',
+          output: '',
+          error: (err as Error).message || 'GitHub request failed. Try again shortly.',
+          errorCode: 'github_request_failed',
+          retryable: isRetryableConnectorFailure(err),
         };
       }
     }
@@ -345,32 +431,53 @@ export async function executeConnectorTool(toolName: string, args: Record<string
     /* ── Gitee (requires connection) ─────────────────────────── */
     case CONNECTOR_TOOL_NAMES.GITEE: {
       if (!connection) {
-        return { status: 'failed', output: '', error: 'Gitee is not connected. Please connect it first in the Plugins panel.', errorCode: 'not_connected' };
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Gitee is not connected. Please connect it first in the Plugins panel.',
+          errorCode: 'not_connected',
+        };
       }
-      const filterQuery = String(args.query || '').trim().toLowerCase();
+      const filterQuery = String(args.query || '')
+        .trim()
+        .toLowerCase();
       try {
         const repos = await listGiteeRepositories(connection);
         if (repos.length === 0) {
           return { status: 'completed', output: 'No Gitee repositories are accessible.' };
         }
-        const filtered = filterQuery ? repos.filter((r) => r.fullName!.toLowerCase().includes(filterQuery)) : repos;
+        const filtered = filterQuery
+          ? repos.filter((r) => r.fullName!.toLowerCase().includes(filterQuery))
+          : repos;
         if (filtered.length === 0) {
           return { status: 'completed', output: `No Gitee repositories match "${filterQuery}".` };
         }
-        const blocks = filtered.slice(0, 50).map((r, i) =>
-          `[${i + 1}] ${r.fullName}\n   Visibility: ${r.private ? 'private' : 'public'}\n   URL: ${r.htmlUrl || ''}\n   Updated: ${r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'N/A'}`
-        );
-        const footer = filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
+        const blocks = filtered
+          .slice(0, 50)
+          .map(
+            (r, i) =>
+              `[${i + 1}] ${r.fullName}\n   Visibility: ${r.private ? 'private' : 'public'}\n   URL: ${r.htmlUrl || ''}\n   Updated: ${r.updatedAt ? new Date(r.updatedAt).toLocaleDateString() : 'N/A'}`,
+          );
+        const footer =
+          filtered.length > 50 ? `\n\n(Showing 50 of ${filtered.length} repositories.)` : '';
         return { status: 'completed', output: blocks.join('\n\n') + footer };
       } catch (err) {
         return {
-          status: 'failed', output: '', error: (err as Error).message || 'Gitee request failed. Try again shortly.',
-          errorCode: 'gitee_request_failed', retryable: isRetryableConnectorFailure(err),
+          status: 'failed',
+          output: '',
+          error: (err as Error).message || 'Gitee request failed. Try again shortly.',
+          errorCode: 'gitee_request_failed',
+          retryable: isRetryableConnectorFailure(err),
         };
       }
     }
 
     default:
-      return { status: 'failed', output: '', error: 'unknown_connector_tool', errorCode: 'unknown_tool' };
+      return {
+        status: 'failed',
+        output: '',
+        error: 'unknown_connector_tool',
+        errorCode: 'unknown_tool',
+      };
   }
 }

@@ -39,21 +39,25 @@
    geometry lives in parity/composer-unified.css; this policy owns only the
    breathing animation, so a theme or layout change cannot start a second
    pulse beside it. */
-#appShell [data-composer-control="mic"][data-voice-phase="recording"]::before {
+#appShell [data-composer-control='mic'][data-voice-phase='recording']::before {
   animation: ui-mic-halo var(--ui-duration-pulse-slow) cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
 }
 
 @keyframes ui-mic-halo {
-  0%, 100% { transform: scale(1); opacity: 0.55; }
-  50% { transform: scale(1.12); opacity: 0.22; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.22;
+  }
 }
 
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  #appShell :is(
-    .shimmer-text,
-    .agent-step-label
-  ).shimmer-text,
-  #appShell [data-composer-control="mic"][data-voice-phase="recording"]::before {
+  #appShell :is(.shimmer-text, .agent-step-label).shimmer-text,
+  #appShell [data-composer-control='mic'][data-voice-phase='recording']::before {
     animation: none;
   }
 }
@@ -62,49 +66,50 @@
    from the current visual progress; endpoint keyframes used to flash fully
    opaque when an opening menu was dismissed before its entrance finished. */
 .anchored-menu[data-anchored-menu],
-[data-ui-motion="dialog"][data-state] {
+[data-ui-motion='dialog'][data-state] {
   animation: none;
   opacity: 1;
   transform: translateY(0) scale(1);
-  transition: opacity var(--ui-duration-overlay) var(--ui-ease-out),
-              transform var(--ui-duration-normal) var(--ui-ease-out);
+  transition:
+    opacity var(--ui-duration-overlay) var(--ui-ease-out),
+    transform var(--ui-duration-normal) var(--ui-ease-out);
 }
 .anchored-menu[data-anchored-menu][data-starting-style],
 .anchored-menu[data-anchored-menu][data-ending-style] {
   opacity: 0;
   transform: translateY(-4px) scale(var(--ui-overlay-enter-scale));
 }
-.anchored-menu[data-anchored-menu][data-placement="above"][data-starting-style],
-.anchored-menu[data-anchored-menu][data-placement="above"][data-ending-style] {
+.anchored-menu[data-anchored-menu][data-placement='above'][data-starting-style],
+.anchored-menu[data-anchored-menu][data-placement='above'][data-ending-style] {
   transform: translateY(4px) scale(var(--ui-overlay-enter-scale));
 }
-[data-ui-motion="dialog"][data-starting-style],
-[data-ui-motion="dialog"][data-ending-style] {
+[data-ui-motion='dialog'][data-starting-style],
+[data-ui-motion='dialog'][data-ending-style] {
   opacity: 0;
   transform: translateY(6px) scale(var(--ui-overlay-enter-scale));
 }
 .anchored-menu[data-anchored-menu][data-ending-style],
-[data-ui-motion="dialog"][data-ending-style] {
+[data-ui-motion='dialog'][data-ending-style] {
   transition-duration: var(--ui-duration-exit);
 }
-[data-ui-motion="scrim"][data-state] {
+[data-ui-motion='scrim'][data-state] {
   animation: none;
   opacity: 1;
   transition: opacity var(--ui-duration-overlay) var(--ui-ease-out);
 }
-[data-ui-motion="scrim"][data-starting-style],
-[data-ui-motion="scrim"][data-ending-style] {
+[data-ui-motion='scrim'][data-starting-style],
+[data-ui-motion='scrim'][data-ending-style] {
   opacity: 0;
 }
-[data-ui-motion="scrim"][data-ending-style] {
+[data-ui-motion='scrim'][data-ending-style] {
   transition-duration: var(--ui-duration-exit);
 }
 @media (prefers-reduced-motion: reduce), (forced-colors: active) {
   .anchored-menu[data-anchored-menu],
   .anchored-menu[data-anchored-menu]:is([data-starting-style], [data-ending-style]),
-  [data-ui-motion="dialog"][data-state],
-  [data-ui-motion="dialog"][data-state]:is([data-starting-style], [data-ending-style]),
-  [data-ui-motion="scrim"][data-state] {
+  [data-ui-motion='dialog'][data-state],
+  [data-ui-motion='dialog'][data-state]:is([data-starting-style], [data-ending-style]),
+  [data-ui-motion='scrim'][data-state] {
     animation: none;
     transition: none;
     transform: none;

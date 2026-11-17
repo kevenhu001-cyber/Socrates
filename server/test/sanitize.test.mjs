@@ -21,7 +21,10 @@ import { stripChatArtifacts } from '../../frontend/src/util/stripChatArtifacts.j
 
 describe('safe: escapeHtml', () => {
   test('escapes &, <, >, ", \'', () => {
-    assert.equal(escapeHtml('<a href="x">&\'</a>'), '&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
+    assert.equal(
+      escapeHtml('<a href="x">&\'</a>'),
+      '&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;',
+    );
   });
 
   test('handles null / undefined', () => {

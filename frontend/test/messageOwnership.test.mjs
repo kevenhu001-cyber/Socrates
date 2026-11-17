@@ -28,7 +28,9 @@ function createHarness() {
     actions,
     messages,
     ownership,
-    setCurrentSessionId(value) { currentSessionId = value; },
+    setCurrentSessionId(value) {
+      currentSessionId = value;
+    },
     state,
   };
 }

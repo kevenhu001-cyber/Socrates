@@ -5,11 +5,7 @@ function messageIdentityKeys(message: ChatMessage): ReadonlyArray<string> {
   if (typeof message.clientId === 'string' && message.clientId.length > 0) {
     keys.push(message.clientId);
   }
-  if (
-    typeof message.id === 'string'
-    && message.id.length > 0
-    && !keys.includes(message.id)
-  ) {
+  if (typeof message.id === 'string' && message.id.length > 0 && !keys.includes(message.id)) {
     keys.push(message.id);
   }
   return keys;
@@ -50,9 +46,7 @@ function freezeToolCall(call: ToolCall): ToolCall {
     _run: call._run ? freezeToolData(call._run) : call._run,
     results: call.results ? freezeToolData(call.results) : call.results,
     artifacts: call.artifacts ? freezeToolData(call.artifacts) : call.artifacts,
-    visualizations: call.visualizations
-      ? freezeToolData(call.visualizations)
-      : call.visualizations,
+    visualizations: call.visualizations ? freezeToolData(call.visualizations) : call.visualizations,
   });
 }
 
@@ -123,9 +117,10 @@ export function reconcileMessageSnapshots(
 
     if (Object.isFrozen(message)) return message;
 
-    const changed = changedMessageIds === null
-      || keys.length === 0
-      || keys.some((key) => changedMessageIds.has(key));
+    const changed =
+      changedMessageIds === null ||
+      keys.length === 0 ||
+      keys.some((key) => changedMessageIds.has(key));
     if (!changed && previousMessage) return previousMessage;
     return snapshotMessage(message);
   });

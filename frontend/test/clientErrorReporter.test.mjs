@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createClientErrorReporter, sendClientError, CLIENT_ERROR_PATH } from '../src/util/clientErrorReporter.ts';
+import {
+  createClientErrorReporter,
+  sendClientError,
+  CLIENT_ERROR_PATH,
+} from '../src/util/clientErrorReporter.ts';
 
 test('the client-error path resolves to the server route in both topologies', () => {
   /* /api/v2 bypasses the stale CDN cache and is rewritten to /api/* by nginx
@@ -9,7 +13,11 @@ test('the client-error path resolves to the server route in both topologies', ()
      onto it — otherwise every caught error ships a 404 nobody sees. */
   assert.match(CLIENT_ERROR_PATH, /^\/api\/v2\/[\w-]+$/);
   assert.equal(CLIENT_ERROR_PATH.replace('/api/v2', '/api'), '/api/client-error');
-  assert.equal(CLIENT_ERROR_PATH, '/api/v2/client-error', 'errorGuard.js and this module share one path');
+  assert.equal(
+    CLIENT_ERROR_PATH,
+    '/api/v2/client-error',
+    'errorGuard.js and this module share one path',
+  );
 });
 
 test('every emitter in src uses the shared client-error path', async () => {
@@ -27,13 +35,18 @@ test('every emitter in src uses the shared client-error path', async () => {
   (function walk(dir) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
-      if (entry.isDirectory()) { if (entry.name !== 'vendor-files') walk(full); continue; }
+      if (entry.isDirectory()) {
+        if (entry.name !== 'vendor-files') walk(full);
+        continue;
+      }
       if (!/\.(js|ts|tsx)$/.test(entry.name)) continue;
       const rel = relative(SRC, full).split(sep).join('/');
       if (/(^|\/)clientErrorReporter\.ts$/.test(rel)) continue;
-      readFileSync(full, 'utf8').split('\n').forEach((line, i) => {
-        if (/['"`]\/api\/(v2\/)?client-error['"`]/.test(line)) offenders.push(`${rel}:${i + 1}`);
-      });
+      readFileSync(full, 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          if (/['"`]\/api\/(v2\/)?client-error['"`]/.test(line)) offenders.push(`${rel}:${i + 1}`);
+        });
     }
   })(SRC);
   assert.deepEqual(offenders, [], 'a hardcoded client-error path bypasses the shared constant');
@@ -42,14 +55,20 @@ test('every emitter in src uses the shared client-error path', async () => {
 test('production reports contain site, build and request correlation without error content', () => {
   const sent = [];
   const report = createClientErrorReporter({
-    send: (body) => sent.push(JSON.parse(body)), now: () => 123, buildId: 'abc123',
+    send: (body) => sent.push(JSON.parse(body)),
+    now: () => 123,
+    buildId: 'abc123',
   });
   const error = Object.assign(new TypeError('secret prompt token'), {
-    stack: 'secret stack', requestId: 'request-123',
+    stack: 'secret stack',
+    requestId: 'request-123',
   });
   report(error, 'session/save', 'invariant');
   assert.equal(sent.length, 1);
-  assert.match(sent[0].msg, /invariant.*session\/save.*TypeError.*build=abc123.*request=request-123/);
+  assert.match(
+    sent[0].msg,
+    /invariant.*session\/save.*TypeError.*build=abc123.*request=request-123/,
+  );
   assert.match(sent[0].correl, /^sw-/);
   assert.doesNotMatch(JSON.stringify(sent), /secret|stack|href|ua/);
 });
@@ -115,20 +134,35 @@ test('deduplication and a global budget bound storms and reset after a minute', 
 });
 
 test('malicious getters and failing transports never escape or recurse', () => {
-  const report = createClientErrorReporter({ send: () => { throw new Error('sink failed'); } });
-  assert.doesNotThrow(() => report({ get name() { throw new Error('getter failed'); } }, 'getter'));
+  const report = createClientErrorReporter({
+    send: () => {
+      throw new Error('sink failed');
+    },
+  });
+  assert.doesNotThrow(() =>
+    report(
+      {
+        get name() {
+          throw new Error('getter failed');
+        },
+      },
+      'getter',
+    ),
+  );
   assert.doesNotThrow(() => report(new Error(), 'transport'));
 });
 
 test('a rejected beacon falls back to JSON fetch and a rejected fetch stays quiet', async () => {
   const previous = {
-    window: globalThis.window, navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
+    window: globalThis.window,
+    navigator: Object.getOwnPropertyDescriptor(globalThis, 'navigator'),
     fetch: globalThis.fetch,
   };
   const calls = [];
   globalThis.window = {};
   Object.defineProperty(globalThis, 'navigator', {
-    value: { sendBeacon: () => false }, configurable: true,
+    value: { sendBeacon: () => false },
+    configurable: true,
   });
   globalThis.fetch = async (url, options) => {
     calls.push({ url, options });
@@ -141,7 +175,8 @@ test('a rejected beacon falls back to JSON fetch and a rejected fetch stays quie
     assert.equal(calls[0].options.headers['Content-Type'], 'application/json');
     assert.equal(calls[0].options.keepalive, true);
     Object.defineProperty(globalThis, 'navigator', {
-      value: { sendBeacon: () => true }, configurable: true,
+      value: { sendBeacon: () => true },
+      configurable: true,
     });
     sendClientError('{}');
     assert.equal(calls.length, 1, 'accepted beacon does not duplicate the report');

@@ -2,15 +2,15 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import crypto from 'node:crypto';
 import { and, eq, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import {
-  oauthClients,
-  oauthAuthorizationCodes,
-  oauthAccessTokens,
-} from '../db/schema/index.js';
+import { oauthClients, oauthAuthorizationCodes, oauthAccessTokens } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseScopeParam, ALL_SCOPES_SET } from '../middleware/scopes.js';
 import { rotateCsrfToken } from '../middleware/csrf.js';
-import { oauthRegisterLimiter, oauthTokenLimiter, oauthRevokeLimiter } from '../middleware/rateLimit.js';
+import {
+  oauthRegisterLimiter,
+  oauthTokenLimiter,
+  oauthRevokeLimiter,
+} from '../middleware/rateLimit.js';
 import { sha256Hex } from '../services/core/agentKeys.js';
 import {
   ACCESS_TOKEN_TTL_S,
@@ -18,10 +18,7 @@ import {
   refreshWithinWindow,
   revokeTokenValue,
 } from '../services/integrations/oauthTokens.js';
-import {
-  OAUTH_ISSUER,
-  wwwAuthenticateChallenge,
-} from '../lib/oauthMeta.js';
+import { OAUTH_ISSUER, wwwAuthenticateChallenge } from '../lib/oauthMeta.js';
 
 const router = Router();
 
@@ -46,9 +43,10 @@ function s256Challenge(verifier: string): string {
 }
 
 function escapeHtml(value: unknown): string {
-  return String(value ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string
-  ));
+  return String(value ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string,
+  );
 }
 
 /** Body fields arrive via urlencoded OR json parsing; coerce to a single string. */
@@ -100,66 +98,91 @@ export async function createOAuthClient(params: {
  * tightly rate-limited per IP; issued clients carry PKCE + consent by
  * default and can be adopted (or revoked) by an operator later.
  */
-router.post('/register', oauthRegisterLimiter, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const clientName = firstStr(req.body?.client_name)?.trim();
-    if (!clientName || clientName.length > 100) {
-      return res.status(400).json({ error: 'invalid_client_metadata', error_description: 'client_name is required (max 100 chars).' });
-    }
-
-    const rawUris = req.body?.redirect_uris;
-    if (!Array.isArray(rawUris) || rawUris.length === 0 || rawUris.length > 10) {
-      return res.status(400).json({ error: 'invalid_redirect_uri', error_description: 'redirect_uris must be an array of 1-10 absolute URLs.' });
-    }
-    const redirectUris: string[] = [];
-    for (const raw of rawUris) {
-      if (typeof raw !== 'string') {
-        return res.status(400).json({ error: 'invalid_redirect_uri', error_description: 'redirect_uris entries must be strings.' });
+router.post(
+  '/register',
+  oauthRegisterLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const clientName = firstStr(req.body?.client_name)?.trim();
+      if (!clientName || clientName.length > 100) {
+        return res.status(400).json({
+          error: 'invalid_client_metadata',
+          error_description: 'client_name is required (max 100 chars).',
+        });
       }
-      let parsed: URL;
-      try { parsed = new URL(raw); } catch {
-        return res.status(400).json({ error: 'invalid_redirect_uri', error_description: `Not an absolute URL: ${raw.slice(0, 100)}` });
+
+      const rawUris = req.body?.redirect_uris;
+      if (!Array.isArray(rawUris) || rawUris.length === 0 || rawUris.length > 10) {
+        return res.status(400).json({
+          error: 'invalid_redirect_uri',
+          error_description: 'redirect_uris must be an array of 1-10 absolute URLs.',
+        });
       }
-      // Loopback may be http (native-app flow, RFC 8252); everything else must be https.
-      const isLoopback = parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost';
-      if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && isLoopback)) {
-        return res.status(400).json({ error: 'invalid_redirect_uri', error_description: 'redirect_uris must use https (http only for loopback).' });
+      const redirectUris: string[] = [];
+      for (const raw of rawUris) {
+        if (typeof raw !== 'string') {
+          return res.status(400).json({
+            error: 'invalid_redirect_uri',
+            error_description: 'redirect_uris entries must be strings.',
+          });
+        }
+        let parsed: URL;
+        try {
+          parsed = new URL(raw);
+        } catch {
+          return res.status(400).json({
+            error: 'invalid_redirect_uri',
+            error_description: `Not an absolute URL: ${raw.slice(0, 100)}`,
+          });
+        }
+        // Loopback may be http (native-app flow, RFC 8252); everything else must be https.
+        const isLoopback = parsed.hostname === '127.0.0.1' || parsed.hostname === 'localhost';
+        if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && isLoopback)) {
+          return res.status(400).json({
+            error: 'invalid_redirect_uri',
+            error_description: 'redirect_uris must use https (http only for loopback).',
+          });
+        }
+        redirectUris.push(raw);
       }
-      redirectUris.push(raw);
+
+      const scopes = parseScopeParam(
+        Array.isArray(req.body?.scope)
+          ? req.body.scope.join(' ')
+          : typeof req.body?.scope === 'string'
+            ? req.body.scope
+            : undefined,
+      );
+      const allowedScopes = scopes && scopes.length > 0 ? scopes : [...ALL_SCOPES_SET];
+
+      const clientId = `cli_${crypto.randomBytes(9).toString('hex')}`;
+      const { client, clientSecret } = await createOAuthClient({
+        clientId,
+        name: clientName,
+        redirectUris,
+        allowedScopes,
+        ownerUserId: null,
+        requirePkce: true,
+        requireConsent: true,
+      });
+
+      return res.status(201).json({
+        client_id: client.clientId,
+        client_secret: clientSecret,
+        client_id_issued_at: Math.floor(Date.now() / 1000),
+        client_secret_expires_at: 0,
+        client_name: client.name,
+        redirect_uris: client.redirectUris,
+        grant_types: ['authorization_code', 'refresh_token'],
+        response_types: ['code'],
+        token_endpoint_auth_method: 'client_secret_basic',
+        scope: client.allowedScopes.join(' '),
+      });
+    } catch (err) {
+      next(err);
     }
-
-    const scopes = parseScopeParam(
-      Array.isArray(req.body?.scope)
-        ? req.body.scope.join(' ')
-        : typeof req.body?.scope === 'string' ? req.body.scope : undefined,
-    );
-    const allowedScopes = scopes && scopes.length > 0 ? scopes : [...ALL_SCOPES_SET];
-
-    const clientId = `cli_${crypto.randomBytes(9).toString('hex')}`;
-    const { client, clientSecret } = await createOAuthClient({
-      clientId,
-      name: clientName,
-      redirectUris,
-      allowedScopes,
-      ownerUserId: null,
-      requirePkce: true,
-      requireConsent: true,
-    });
-
-    return res.status(201).json({
-      client_id: client.clientId,
-      client_secret: clientSecret,
-      client_id_issued_at: Math.floor(Date.now() / 1000),
-      client_secret_expires_at: 0,
-      client_name: client.name,
-      redirect_uris: client.redirectUris,
-      grant_types: ['authorization_code', 'refresh_token'],
-      response_types: ['code'],
-      token_endpoint_auth_method: 'client_secret_basic',
-      scope: client.allowedScopes.join(' '),
-    });
-  } catch (err) { next(err); }
-});
+  },
+);
 
 /**
  * RFC 6749 §2.3.1 — client credentials via HTTP Basic (preferred) or
@@ -183,7 +206,9 @@ async function authenticateClient(req: Request): Promise<OAuthClient | null> {
           clientId = safeDecode(decoded.slice(0, idx));
           clientSecret = safeDecode(decoded.slice(idx + 1));
         }
-      } catch (_) { /* fall through to body credentials */ }
+      } catch (_) {
+        /* fall through to body credentials */
+      }
     }
   }
 
@@ -205,7 +230,11 @@ async function authenticateClient(req: Request): Promise<OAuthClient | null> {
 }
 
 function safeDecode(value: string): string {
-  try { return decodeURIComponent(value); } catch { return value; }
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 /* ── Shared authorize-parameter validation ─────────────────── */
@@ -238,7 +267,10 @@ async function validateAuthorizeParams(
   rawCodeChallengeMethod: string | null,
 ): Promise<{ ok: true; params: AuthorizeParams } | { ok: false; failure: AuthorizeFailure }> {
   if (!rawClientId || !rawRedirectUri) {
-    return { ok: false, failure: { kind: 'bad_request', message: 'client_id and redirect_uri are required.' } };
+    return {
+      ok: false,
+      failure: { kind: 'bad_request', message: 'client_id and redirect_uri are required.' },
+    };
   }
   const db = getDb();
   const [client] = await db
@@ -251,14 +283,19 @@ async function validateAuthorizeParams(
   }
   // Exact-match against the registered list only.
   if (!client.redirectUris.includes(rawRedirectUri)) {
-    return { ok: false, failure: { kind: 'bad_request', message: 'redirect_uri is not registered for this client.' } };
+    return {
+      ok: false,
+      failure: { kind: 'bad_request', message: 'redirect_uri is not registered for this client.' },
+    };
   }
   if (rawResponseType !== 'code') {
     return {
       ok: false,
       failure: {
-        kind: 'redirect', redirectUri: rawRedirectUri,
-        error: 'unsupported_response_type', description: 'Only response_type=code is supported.',
+        kind: 'redirect',
+        redirectUri: rawRedirectUri,
+        error: 'unsupported_response_type',
+        description: 'Only response_type=code is supported.',
         state: rawState ?? '',
       },
     };
@@ -268,8 +305,10 @@ async function validateAuthorizeParams(
     return {
       ok: false,
       failure: {
-        kind: 'redirect', redirectUri: rawRedirectUri,
-        error: 'invalid_scope', description: 'Requested scope is empty or outside the client allow-list.',
+        kind: 'redirect',
+        redirectUri: rawRedirectUri,
+        error: 'invalid_scope',
+        description: 'Requested scope is empty or outside the client allow-list.',
         state: rawState ?? '',
       },
     };
@@ -281,8 +320,10 @@ async function validateAuthorizeParams(
       return {
         ok: false,
         failure: {
-          kind: 'redirect', redirectUri: rawRedirectUri,
-          error: 'invalid_request', description: 'PKCE code_challenge is required for this client.',
+          kind: 'redirect',
+          redirectUri: rawRedirectUri,
+          error: 'invalid_request',
+          description: 'PKCE code_challenge is required for this client.',
           state: rawState ?? '',
         },
       };
@@ -291,8 +332,10 @@ async function validateAuthorizeParams(
       return {
         ok: false,
         failure: {
-          kind: 'redirect', redirectUri: rawRedirectUri,
-          error: 'invalid_request', description: `code_challenge_method must be ${CHALLENGE_METHOD}.`,
+          kind: 'redirect',
+          redirectUri: rawRedirectUri,
+          error: 'invalid_request',
+          description: `code_challenge_method must be ${CHALLENGE_METHOD}.`,
           state: rawState ?? '',
         },
       };
@@ -301,8 +344,10 @@ async function validateAuthorizeParams(
       return {
         ok: false,
         failure: {
-          kind: 'redirect', redirectUri: rawRedirectUri,
-          error: 'invalid_request', description: 'Malformed code_challenge.',
+          kind: 'redirect',
+          redirectUri: rawRedirectUri,
+          error: 'invalid_request',
+          description: 'Malformed code_challenge.',
           state: rawState ?? '',
         },
       };
@@ -357,11 +402,18 @@ router.get('/authorize', requireAuth, async (req, res, next) => {
     if (!verdict.ok) {
       const f = verdict.failure;
       if (f.kind === 'redirect') {
-        return redirectToClient(res, {
-          client: null as unknown as OAuthClient,
-          redirectUri: f.redirectUri, scopes: [], state: f.state,
-          codeChallenge: null, codeChallengeMethod: null,
-        }, { error: f.error, error_description: f.description });
+        return redirectToClient(
+          res,
+          {
+            client: null as unknown as OAuthClient,
+            redirectUri: f.redirectUri,
+            scopes: [],
+            state: f.state,
+            codeChallenge: null,
+            codeChallengeMethod: null,
+          },
+          { error: f.error, error_description: f.description },
+        );
       }
       return renderErrorPage(res, 400, 'Authorization request failed', f.message);
     }
@@ -377,8 +429,12 @@ router.get('/authorize', requireAuth, async (req, res, next) => {
     // a plain form cannot send X-CSRF-Token headers. rotateCsrfToken returns
     // the value — a plain res.cookie() would leave req.cookies untouched.
     const csrfToken = rotateCsrfToken(res, req);
-    const scopeItems = params.scopes.map((s) => `
-        <li><code>${escapeHtml(s)}</code></li>`).join('');
+    const scopeItems = params.scopes
+      .map(
+        (s) => `
+        <li><code>${escapeHtml(s)}</code></li>`,
+      )
+      .join('');
     return res.type('html').send(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Authorize ${escapeHtml(params.client.name)} — Socrates</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -411,7 +467,9 @@ small{display:block;margin-top:1.2rem;color:#8a7f70;font-size:.78rem;line-height
   <small>Signed in as ${escapeHtml(req.user?.email ?? '')}. You are granting access for a single session; revisit this page any time you re-authorize.</small>
 </div>
 </body></html>`);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 async function issueCodeAndRedirect(req: Request, res: Response, params: AuthorizeParams) {
@@ -441,7 +499,12 @@ router.post('/authorize', requireAuth, async (req, res, next) => {
     const submitted = firstStr(req.body?.csrf_token);
     const cookieToken = req.cookies?.csrf;
     if (typeof cookieToken !== 'string' || !submitted || !timingSafeHex(submitted, cookieToken)) {
-      return renderErrorPage(res, 403, 'Request blocked', 'CSRF validation failed. Go back, reload the authorization page, and try again.');
+      return renderErrorPage(
+        res,
+        403,
+        'Request blocked',
+        'CSRF validation failed. Go back, reload the authorization page, and try again.',
+      );
     }
 
     const decision = firstStr(req.body?.decision);
@@ -457,11 +520,18 @@ router.post('/authorize', requireAuth, async (req, res, next) => {
     if (!verdict.ok) {
       const f = verdict.failure;
       if (f.kind === 'redirect') {
-        return redirectToClient(res, {
-          client: null as unknown as OAuthClient,
-          redirectUri: f.redirectUri, scopes: [], state: f.state,
-          codeChallenge: null, codeChallengeMethod: null,
-        }, { error: f.error, error_description: f.description });
+        return redirectToClient(
+          res,
+          {
+            client: null as unknown as OAuthClient,
+            redirectUri: f.redirectUri,
+            scopes: [],
+            state: f.state,
+            codeChallenge: null,
+            codeChallengeMethod: null,
+          },
+          { error: f.error, error_description: f.description },
+        );
       }
       return renderErrorPage(res, 400, 'Authorization request failed', f.message);
     }
@@ -473,14 +543,24 @@ router.post('/authorize', requireAuth, async (req, res, next) => {
       error: 'access_denied',
       error_description: 'The resource owner denied the request.',
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ── Token-endpoint plumbing ───────────────────────────────── */
 
-function tokenError(res: Response, status: number, error: string, description?: string, basicChallenge = false) {
+function tokenError(
+  res: Response,
+  status: number,
+  error: string,
+  description?: string,
+  basicChallenge = false,
+) {
   if (basicChallenge) res.set('WWW-Authenticate', wwwAuthenticateChallenge());
-  return res.status(status).json({ error, ...(description ? { error_description: description } : {}) });
+  return res
+    .status(status)
+    .json({ error, ...(description ? { error_description: description } : {}) });
 }
 
 /* ── POST /api/oauth/token ─────────────────────────────────── */
@@ -489,7 +569,13 @@ router.post('/token', oauthTokenLimiter, async (req, res, next) => {
   try {
     const client = await authenticateClient(req);
     if (!client) {
-      return tokenError(res, 401, 'invalid_client', 'Client authentication failed.', Boolean(req.headers.authorization));
+      return tokenError(
+        res,
+        401,
+        'invalid_client',
+        'Client authentication failed.',
+        Boolean(req.headers.authorization),
+      );
     }
 
     const grantType = firstStr(req.body?.grant_type);
@@ -499,7 +585,12 @@ router.post('/token', oauthTokenLimiter, async (req, res, next) => {
       const verifier = firstStr(req.body?.code_verifier);
       const redirectUri = firstStr(req.body?.redirect_uri);
       if (!code || !verifier || !redirectUri) {
-        return tokenError(res, 400, 'invalid_request', 'code, code_verifier and redirect_uri are required.');
+        return tokenError(
+          res,
+          400,
+          'invalid_request',
+          'code, code_verifier and redirect_uri are required.',
+        );
       }
 
       const db = getDb();
@@ -508,20 +599,37 @@ router.post('/token', oauthTokenLimiter, async (req, res, next) => {
       const consumed = await db
         .update(oauthAuthorizationCodes)
         .set({ consumedAt: new Date() })
-        .where(and(
-          eq(oauthAuthorizationCodes.codeHash, sha256Hex(code)),
-          isNull(oauthAuthorizationCodes.consumedAt),
-        ))
+        .where(
+          and(
+            eq(oauthAuthorizationCodes.codeHash, sha256Hex(code)),
+            isNull(oauthAuthorizationCodes.consumedAt),
+          ),
+        )
         .returning();
       const row = consumed[0];
       if (!row || row.expiresAt < new Date()) {
-        return tokenError(res, 400, 'invalid_grant', 'Authorization code is invalid, expired, or already used.');
+        return tokenError(
+          res,
+          400,
+          'invalid_grant',
+          'Authorization code is invalid, expired, or already used.',
+        );
       }
       if (row.clientId !== client.clientId) {
-        return tokenError(res, 400, 'invalid_grant', 'Authorization code was issued to another client.');
+        return tokenError(
+          res,
+          400,
+          'invalid_grant',
+          'Authorization code was issued to another client.',
+        );
       }
       if (row.redirectUri !== redirectUri) {
-        return tokenError(res, 400, 'invalid_grant', 'redirect_uri does not match the authorization request.');
+        return tokenError(
+          res,
+          400,
+          'invalid_grant',
+          'redirect_uri does not match the authorization request.',
+        );
       }
       if (!VERIFIER_RE.test(verifier)) {
         return tokenError(res, 400, 'invalid_request', 'Malformed code_verifier.');
@@ -553,14 +661,21 @@ router.post('/token', oauthTokenLimiter, async (req, res, next) => {
       const [row] = await db
         .select()
         .from(oauthAccessTokens)
-        .where(and(
-          eq(oauthAccessTokens.refreshTokenHash, sha256Hex(refreshToken)),
-          eq(oauthAccessTokens.clientId, client.clientId),
-          isNull(oauthAccessTokens.revokedAt),
-        ))
+        .where(
+          and(
+            eq(oauthAccessTokens.refreshTokenHash, sha256Hex(refreshToken)),
+            eq(oauthAccessTokens.clientId, client.clientId),
+            isNull(oauthAccessTokens.revokedAt),
+          ),
+        )
         .limit(1);
       if (!row || !refreshWithinWindow(row)) {
-        return tokenError(res, 400, 'invalid_grant', 'Refresh token is invalid, expired, or revoked.');
+        return tokenError(
+          res,
+          400,
+          'invalid_grant',
+          'Refresh token is invalid, expired, or revoked.',
+        );
       }
 
       // Rotation: the presented refresh token dies with this exchange, so a
@@ -586,8 +701,15 @@ router.post('/token', oauthTokenLimiter, async (req, res, next) => {
       });
     }
 
-    return tokenError(res, 400, 'unsupported_grant_type', 'Supported grant types: authorization_code, refresh_token.');
-  } catch (err) { next(err); }
+    return tokenError(
+      res,
+      400,
+      'unsupported_grant_type',
+      'Supported grant types: authorization_code, refresh_token.',
+    );
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ── POST /api/oauth/revoke (RFC 7009) ─────────────────────── */
@@ -596,7 +718,13 @@ router.post('/revoke', oauthRevokeLimiter, async (req, res, next) => {
   try {
     const client = await authenticateClient(req);
     if (!client) {
-      return tokenError(res, 401, 'invalid_client', 'Client authentication failed.', Boolean(req.headers.authorization));
+      return tokenError(
+        res,
+        401,
+        'invalid_client',
+        'Client authentication failed.',
+        Boolean(req.headers.authorization),
+      );
     }
     const token = firstStr(req.body?.token);
     if (!token) return tokenError(res, 400, 'invalid_request', 'token is required.');
@@ -607,7 +735,9 @@ router.post('/revoke', oauthRevokeLimiter, async (req, res, next) => {
     await revokeTokenValue(client.clientId, token);
 
     return res.status(200).json({});
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

@@ -1,4 +1,9 @@
-import { bumpRecentsVersion, setSidebarOpen, setSidebarRecentsFilter, useSidebarStore } from './sidebar.store';
+import {
+  bumpRecentsVersion,
+  setSidebarOpen,
+  setSidebarRecentsFilter,
+  useSidebarStore,
+} from './sidebar.store';
 import { DESKTOP_VIEWPORT_MIN_PX, isMobileViewport } from './breakpoints.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
@@ -11,12 +16,19 @@ let mainShiftAnimation: Animation | null = null;
 let sidebarRevealAnimation: Animation | null = null;
 
 function storedRecentsFilter(): string | null {
-  try { return localStorage.getItem(RECENTS_FILTER_KEY) || null; } catch { return null; }
+  try {
+    return localStorage.getItem(RECENTS_FILTER_KEY) || null;
+  } catch {
+    return null;
+  }
 }
 
 function prefersReducedMotion(): boolean {
-  try { return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true; }
-  catch { return false; }
+  try {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  } catch {
+    return false;
+  }
 }
 
 function cancelDesktopSidebarMotion(): void {
@@ -57,10 +69,7 @@ function animateDesktopSidebarMotion(
   const deltaX = beforeInset - afterInset;
   if (Math.abs(deltaX) > 0.5) {
     mainShiftAnimation = main.animate(
-      [
-        { transform: `translateX(${deltaX}px)` },
-        { transform: 'translateX(0)' },
-      ],
+      [{ transform: `translateX(${deltaX}px)` }, { transform: 'translateX(0)' }],
       {
         duration: SIDEBAR_SPATIAL_DURATION_MS,
         easing: SIDEBAR_SPATIAL_EASING,
@@ -99,7 +108,7 @@ export function setRecentsFilter(value: string | null): void {
     if (filter) localStorage.setItem(RECENTS_FILTER_KEY, filter);
     else localStorage.removeItem(RECENTS_FILTER_KEY);
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:99', 'expected');
+    reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts', 'expected');
     /* storage is optional in private and embedded contexts */
   }
   setSidebarRecentsFilter(filter);
@@ -135,8 +144,14 @@ export function projectSidebarOpen(open: boolean, opts: { persist?: boolean } = 
   if (sidebar) sidebar.classList.toggle('collapsed', !open);
   setSidebarOpen(open);
   if (opts.persist) {
-    try { localStorage.setItem('socrates-sb', open ? '1' : '0'); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: sidebar/sidebar.service.ts:projectSidebarOpen', 'expected');
+    try {
+      localStorage.setItem('socrates-sb', open ? '1' : '0');
+    } catch (error) {
+      reportEmptyCatch(
+        error,
+        'empty catch: sidebar/sidebar.service.ts:projectSidebarOpen',
+        'expected',
+      );
       /* storage is optional */
     }
   }

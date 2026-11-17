@@ -28,7 +28,11 @@ test('invariant and non-swallow reports log at error level', () => {
   assert.equal(clientErrorLogLevel('swallow', 'invariant'), 'error');
   assert.equal(clientErrorLogLevel(undefined, null), 'error', 'the error guard sends no severity');
   assert.equal(clientErrorLogLevel(undefined, undefined), 'error');
-  assert.equal(clientErrorLogLevel('error', 'recoverable'), 'error', 'only swallow reports can be downgraded');
+  assert.equal(
+    clientErrorLogLevel('error', 'recoverable'),
+    'error',
+    'only swallow reports can be downgraded',
+  );
 });
 
 test('best-effort and expected swallow reports never log as errors', () => {
@@ -38,7 +42,18 @@ test('best-effort and expected swallow reports never log as errors', () => {
 
 test('an unrecognized severity leaves a swallowed report unclassified', () => {
   assert.equal(normalizeClientErrorSeverity('invariant'), 'invariant');
-  for (const bogus of ['INVARIANT', ' critical ', 'error', 'fatal', '', null, undefined, 0, {}, []]) {
+  for (const bogus of [
+    'INVARIANT',
+    ' critical ',
+    'error',
+    'fatal',
+    '',
+    null,
+    undefined,
+    0,
+    {},
+    [],
+  ]) {
     assert.equal(normalizeClientErrorSeverity(bogus), null, String(bogus));
   }
   /* A malformed severity must not turn a best-effort swallowed catch into an
@@ -65,7 +80,8 @@ test('the frontend severity vocabulary and the server allow-list agree', async (
     assert.ok(src.includes(`'${severity}'`), `clientError.ts must list ${severity}`);
   }
   const reporter = readFileSync(
-    new URL('../../frontend/src/util/clientErrorReporter.ts', import.meta.url), 'utf8',
+    new URL('../../frontend/src/util/clientErrorReporter.ts', import.meta.url),
+    'utf8',
   );
   const union = reporter.match(/'expected'\s*\|\s*'recoverable'\s*\|\s*'invariant'/);
   assert.ok(union, 'clientErrorReporter.ts must declare the same three severities');

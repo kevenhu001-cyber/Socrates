@@ -1,6 +1,12 @@
 import { configureWidgetRuntime } from './widgetRuntime.ts';
 import { processPendingMermaid, processPendingViz, processPendingVizActions } from './vizStubs.ts';
-import type { WidgetRuntime, QuizMountData, PracticeMountData, ParsedStep, TheoremMountData } from './widgetRuntime.ts';
+import type {
+  WidgetRuntime,
+  QuizMountData,
+  PracticeMountData,
+  ParsedStep,
+  TheoremMountData,
+} from './widgetRuntime.ts';
 import type {
   ParsedDefinition,
   ParsedDerivation,
@@ -65,15 +71,23 @@ export function configureWidgetRuntimeEarly(cfg: Partial<WidgetRuntime>): void {
 
 export function mountQuizWidget(slot: Element, parsed: QuizMountData): unknown {
   if (_widgetsModule) return _widgetsModule.mountQuizWidget(slot, parsed);
-  return loadWidgets().then(function (m) { return m.mountQuizWidget(slot, parsed); });
+  return loadWidgets().then(function (m) {
+    return m.mountQuizWidget(slot, parsed);
+  });
 }
 
 export function mountPracticeWidget(slot: Element, parsed: PracticeMountData): unknown {
   if (_widgetsModule) return _widgetsModule.mountPracticeWidget(slot, parsed);
-  return loadWidgets().then(function (m) { return m.mountPracticeWidget(slot, parsed); });
+  return loadWidgets().then(function (m) {
+    return m.mountPracticeWidget(slot, parsed);
+  });
 }
 
-export function handleQuizPick(...args: Parameters<WidgetsModule['handleQuizPick']>): ReturnType<WidgetsModule['handleQuizPick']> | Promise<ReturnType<WidgetsModule['handleQuizPick']>> {
+export function handleQuizPick(
+  ...args: Parameters<WidgetsModule['handleQuizPick']>
+):
+  | ReturnType<WidgetsModule['handleQuizPick']>
+  | Promise<ReturnType<WidgetsModule['handleQuizPick']>> {
   if (_widgetsModule) return _widgetsModule.handleQuizPick(...args);
   return loadWidgets().then(function (m) {
     return m.handleQuizPick(...args);
@@ -98,9 +112,14 @@ function mountSlots<Parsed>(
   return mounted;
 }
 
-const _raf: (cb: () => void) => void = typeof requestAnimationFrame === 'function'
-  ? function (cb) { requestAnimationFrame(cb); }
-  : function (cb) { setTimeout(cb, 0); };
+const _raf: (cb: () => void) => void =
+  typeof requestAnimationFrame === 'function'
+    ? function (cb) {
+        requestAnimationFrame(cb);
+      }
+    : function (cb) {
+        setTimeout(cb, 0);
+      };
 
 /** How long the scheduler keeps looking for a slot that never entered the DOM. */
 const MOUNT_TIMEOUT_MS = 10_000;
@@ -134,9 +153,17 @@ export function scheduleWidgetMounts({
   theoremPH = [],
   keyPointPH = [],
 }: WidgetMountLists = {}): void {
-  const total = quizPH.length + examplePH.length + practicePH.length + definitionPH.length
-    + stepPH.length + flashcardPH.length + derivationPH.length
-    + proofPH.length + theoremPH.length + keyPointPH.length;
+  const total =
+    quizPH.length +
+    examplePH.length +
+    practicePH.length +
+    definitionPH.length +
+    stepPH.length +
+    flashcardPH.length +
+    derivationPH.length +
+    proofPH.length +
+    theoremPH.length +
+    keyPointPH.length;
   if (!total) return;
 
   let mounted = 0;
@@ -184,7 +211,10 @@ export function scheduleWidgetMounts({
          the fold once the host actually exists, or the extras would be
          removed while the list itself never mounted. */
       if (firstSlot) {
-        widgets.mountStepList(firstSlot, stepPH.map((step) => step.parsed));
+        widgets.mountStepList(
+          firstSlot,
+          stepPH.map((step) => step.parsed),
+        );
         mounted += stepPH.length;
         stepPH.slice(1).forEach((item) => {
           const slot = document.querySelector(`[data-step-id="${item.id}"]`);
@@ -199,9 +229,21 @@ export function scheduleWidgetMounts({
     mounted += mountSlots(theoremPH, 'data-theorem-id', widgets.mountTheoremWidget);
     mounted += mountSlots(keyPointPH, 'data-key-point-id', widgets.mountKeyPointWidget);
 
-    try { processPendingMermaid(); } catch { /* empty-catch: intentional — best-effort drain */ }
-    try { processPendingViz(); } catch { /* empty-catch: intentional — best-effort drain */ }
-    try { processPendingVizActions(); } catch { /* empty-catch: intentional — best-effort drain */ }
+    try {
+      processPendingMermaid();
+    } catch {
+      /* empty-catch: intentional — best-effort drain */
+    }
+    try {
+      processPendingViz();
+    } catch {
+      /* empty-catch: intentional — best-effort drain */
+    }
+    try {
+      processPendingVizActions();
+    } catch {
+      /* empty-catch: intentional — best-effort drain */
+    }
 
     if (mounted >= total) {
       stop();
@@ -210,7 +252,9 @@ export function scheduleWidgetMounts({
     /* The slot has not entered the DOM yet. Watch for it instead of polling:
        the observer fires only when the document actually changes. */
     if (!observer && typeof MutationObserver === 'function') {
-      observer = new MutationObserver(function () { scheduleAttempt(); });
+      observer = new MutationObserver(function () {
+        scheduleAttempt();
+      });
       observer.observe(document.documentElement, { childList: true, subtree: true });
     } else if (!observer) {
       scheduleAttempt();

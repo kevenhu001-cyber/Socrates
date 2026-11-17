@@ -43,37 +43,43 @@ const timestamp = () => fc.integer({ min: 0, max: 2 ** 45 });
 
 /* A running call: a non-terminal phase and a startedAt. endedAt may be present
    or absent — a running row ignores it and times from `now`. */
-const runningCall = () => fc.record({
-  phase: fc.constantFrom(...NON_TERMINAL_PHASES),
-  startedAt: timestamp(),
-  endedAt: fc.option(timestamp(), { nil: undefined }),
-}).map(({ phase, startedAt, endedAt }) => ({
-  id: 'call-1',
-  name: 'sandbox',
-  _run: {
-    phase,
-    startedAt,
-    ...(endedAt === undefined ? {} : { endedAt }),
-  },
-}));
+const runningCall = () =>
+  fc
+    .record({
+      phase: fc.constantFrom(...NON_TERMINAL_PHASES),
+      startedAt: timestamp(),
+      endedAt: fc.option(timestamp(), { nil: undefined }),
+    })
+    .map(({ phase, startedAt, endedAt }) => ({
+      id: 'call-1',
+      name: 'sandbox',
+      _run: {
+        phase,
+        startedAt,
+        ...(endedAt === undefined ? {} : { endedAt }),
+      },
+    }));
 
 /* A terminal call: a terminal phase, a startedAt, and an endedAt that may be
    before, at, or after startedAt so the >= 0 clamp is exercised. */
-const terminalCall = () => fc.record({
-  phase: fc.constantFrom(...TERMINAL_PHASES),
-  startedAt: timestamp(),
-  endedAt: fc.option(timestamp(), { nil: undefined }),
-  durationMs: fc.option(timestamp(), { nil: undefined }),
-}).map(({ phase, startedAt, endedAt, durationMs }) => ({
-  id: 'call-1',
-  name: 'sandbox',
-  _run: {
-    phase,
-    startedAt,
-    ...(endedAt === undefined ? {} : { endedAt }),
-    ...(durationMs === undefined ? {} : { durationMs }),
-  },
-}));
+const terminalCall = () =>
+  fc
+    .record({
+      phase: fc.constantFrom(...TERMINAL_PHASES),
+      startedAt: timestamp(),
+      endedAt: fc.option(timestamp(), { nil: undefined }),
+      durationMs: fc.option(timestamp(), { nil: undefined }),
+    })
+    .map(({ phase, startedAt, endedAt, durationMs }) => ({
+      id: 'call-1',
+      name: 'sandbox',
+      _run: {
+        phase,
+        startedAt,
+        ...(endedAt === undefined ? {} : { endedAt }),
+        ...(durationMs === undefined ? {} : { durationMs }),
+      },
+    }));
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 13: the tool row reflects the run
@@ -122,9 +128,10 @@ test('Feature: chat-experience-revamp, Property 13: the tool row reflects the ru
       // Terminal semantics: the duration is independent of `now` and never
       // negative.
       const duration = durationOf(call);
-      const expected = typeof call._run.durationMs === 'number' && call._run.durationMs > 0
-        ? call._run.durationMs
-        : 0;
+      const expected =
+        typeof call._run.durationMs === 'number' && call._run.durationMs > 0
+          ? call._run.durationMs
+          : 0;
       assert.ok(duration >= 0);
       assert.equal(duration, expected);
 
@@ -159,15 +166,17 @@ function labelToMs(label) {
   if (sMatch) return Math.round(Number(sMatch[1]) * 1000);
   const mMatch = /^(\d+)m (\d{2})s$/.exec(label);
   if (mMatch) return (Number(mMatch[1]) * 60 + Number(mMatch[2])) * 1000;
-  throw new assert.AssertionError({ message: `formatSeconds produced an undefined label: ${JSON.stringify(label)}` });
+  throw new assert.AssertionError({
+    message: `formatSeconds produced an undefined label: ${JSON.stringify(label)}`,
+  });
 }
 
 test('Feature: chat-experience-revamp, Property 13: formatSeconds is defined and non-decreasing in the elapsed time', () => {
   const anyMs = fc.oneof(
-    fc.integer({ min: -1000, max: 10 }),          // negatives + tiny values (clamp)
-    fc.integer({ min: 0, max: 5000 }),            // ms / early seconds boundary
-    fc.integer({ min: 0, max: 5 * 60 * 1000 }),   // up to minutes tier
-    fc.integer({ min: 0, max: 2 ** 40 }),         // large values
+    fc.integer({ min: -1000, max: 10 }), // negatives + tiny values (clamp)
+    fc.integer({ min: 0, max: 5000 }), // ms / early seconds boundary
+    fc.integer({ min: 0, max: 5 * 60 * 1000 }), // up to minutes tier
+    fc.integer({ min: 0, max: 2 ** 40 }), // large values
   );
 
   fc.assert(

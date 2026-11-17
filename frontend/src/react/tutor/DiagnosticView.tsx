@@ -52,21 +52,35 @@ function useKatexRevision(): number {
   return revision;
 }
 
-export function DiagnosticView({ screen, onCommand }: { screen: DiagnosticScreen; onCommand: DiagnosticCommandHandler }) {
+export function DiagnosticView({
+  screen,
+  onCommand,
+}: {
+  screen: DiagnosticScreen;
+  onCommand: DiagnosticCommandHandler;
+}) {
   const revision = useKatexRevision();
   const renderText = useInlineMath();
-  const renderRich = useCallback<RenderDiagnosticRich>((source, part) => (
-    <div
-      className={RICH_CLASS[part]}
-      data-part={part}
-      data-math-rev={revision}
-      dangerouslySetInnerHTML={{ __html: richHtml(source, part) }}
-    />
-  ), [revision]);
+  const renderRich = useCallback<RenderDiagnosticRich>(
+    (source, part) => (
+      <div
+        className={RICH_CLASS[part]}
+        data-part={part}
+        data-math-rev={revision}
+        dangerouslySetInnerHTML={{ __html: richHtml(source, part) }}
+      />
+    ),
+    [revision],
+  );
   return (
     <div className={`diag-rn diag-${screen.kind}`} style={{ paddingInline: 12 }}>
       <WebUiTheme>
-        <DiagnosticPanel screen={screen} onCommand={onCommand} renderRich={renderRich} renderText={renderText} />
+        <DiagnosticPanel
+          screen={screen}
+          onCommand={onCommand}
+          renderRich={renderRich}
+          renderText={renderText}
+        />
       </WebUiTheme>
     </div>
   );

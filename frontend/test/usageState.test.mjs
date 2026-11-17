@@ -1,24 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const {
-  usageState,
-  setUsageOpen,
-  publishUsageLoading,
-  publishUsageData,
-  publishUsageError,
-} = await import('../src/ui/usageState.ts');
+const { usageState, setUsageOpen, publishUsageLoading, publishUsageData, publishUsageError } =
+  await import('../src/ui/usageState.ts');
 
 test('usage snapshot publishes open, loading, report, and error state for React', () => {
   usageState.__resetForTests();
   let notifications = 0;
-  const unsubscribe = usageState.subscribe(() => { notifications += 1; });
+  const unsubscribe = usageState.subscribe(() => {
+    notifications += 1;
+  });
 
   setUsageOpen(true);
   publishUsageLoading('year');
   usageState.flush();
   assert.deepEqual(
-    Object.fromEntries(Object.entries(usageState.getSnapshot()).filter(([key]) => key !== 'revision')),
+    Object.fromEntries(
+      Object.entries(usageState.getSnapshot()).filter(([key]) => key !== 'revision'),
+    ),
     { open: true, status: 'loading', errorKey: null, entries: [], limits: null, period: 'year' },
   );
 
@@ -29,7 +28,9 @@ test('usage snapshot publishes open, loading, report, and error state for React'
   entries[0].tokens = 0;
   limits.beagleUsed = 0;
   assert.deepEqual(
-    Object.fromEntries(Object.entries(usageState.getSnapshot()).filter(([key]) => key !== 'revision')),
+    Object.fromEntries(
+      Object.entries(usageState.getSnapshot()).filter(([key]) => key !== 'revision'),
+    ),
     {
       open: true,
       status: 'loaded',

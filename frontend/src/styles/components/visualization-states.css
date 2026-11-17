@@ -50,10 +50,22 @@
   display: grid;
   align-content: space-evenly;
 }
-.viz-state-skeleton[data-renderer="tldraw"] .viz-skeleton-stage { height: 520px; padding: 0; }
-.viz-state-skeleton[data-renderer="geogebra"] .viz-skeleton-stage { height: 480px; padding: 0; }
-.viz-state-skeleton[data-renderer="three"] .viz-skeleton-stage { height: 430px; }
-.viz-state-skeleton[data-renderer="mermaid"] .viz-skeleton-stage { height: auto; min-height: 300px; padding: 22px; }
+.viz-state-skeleton[data-renderer='tldraw'] .viz-skeleton-stage {
+  height: 520px;
+  padding: 0;
+}
+.viz-state-skeleton[data-renderer='geogebra'] .viz-skeleton-stage {
+  height: 480px;
+  padding: 0;
+}
+.viz-state-skeleton[data-renderer='three'] .viz-skeleton-stage {
+  height: 430px;
+}
+.viz-state-skeleton[data-renderer='mermaid'] .viz-skeleton-stage {
+  height: auto;
+  min-height: 300px;
+  padding: 22px;
+}
 .viz-skeleton-gridline {
   display: block;
   height: 0;
@@ -71,16 +83,22 @@
 .viz-skeleton-caption {
   margin: 0;
   padding: 10px 0 12px;
-  border-top: 1px solid hsl(var(--border-100) / .6);
+  border-top: 1px solid hsl(var(--border-100) / 0.6);
   color: var(--muted-foreground);
   font-size: 12px;
   line-height: 1.45;
 }
 @media (max-width: 520px) {
-  .viz-skeleton-stage { height: 292px; padding: 2px; }
+  .viz-skeleton-stage {
+    height: 292px;
+    padding: 2px;
+  }
 }
 /* The engine's card is in the host: it owns the footprint from here on. */
-.openui-visualization:has(> .openui-visualization-host > .visualization-card) > .viz-state-skeleton { display: none; }
+.openui-visualization:has(> .openui-visualization-host > .visualization-card)
+  > .viz-state-skeleton {
+  display: none;
+}
 .viz-state-reason,
 .viz-state-note {
   margin: 0;
@@ -88,14 +106,41 @@
   font-size: var(--ui-font-size-xs);
   line-height: 1.5;
 }
-.viz-state-body { display: grid; gap: var(--ui-space-xs); justify-items: start; }
-.viz-state-heading { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-semibold); }
-.viz-state-actions { display: flex; flex-wrap: wrap; gap: var(--ui-space-xs); margin-top: var(--ui-space-xs); }
-.viz-state-details { color: var(--muted-foreground); font-size: var(--ui-font-size-xs); }
-.viz-state-details summary { cursor: pointer; }
-.viz-state-details code { display: block; margin-top: var(--ui-space-xxs); white-space: pre-wrap; overflow-wrap: anywhere; }
-.viz-state-table { max-width: 100%; }
-.viz-state-table td[data-numeric="true"] { text-align: right; font-variant-numeric: tabular-nums; }
+.viz-state-body {
+  display: grid;
+  gap: var(--ui-space-xs);
+  justify-items: start;
+}
+.viz-state-heading {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.viz-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+  margin-top: var(--ui-space-xs);
+}
+.viz-state-details {
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+}
+.viz-state-details summary {
+  cursor: pointer;
+}
+.viz-state-details code {
+  display: block;
+  margin-top: var(--ui-space-xxs);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.viz-state-table {
+  max-width: 100%;
+}
+.viz-state-table td[data-numeric='true'] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Legacy imperative card: progress line inside the reserved stage, and the
    compact notice above an automatic table fallback. */
@@ -106,11 +151,18 @@
   font-size: var(--ui-font-size-xs);
   font-family: var(--font-sans);
 }
-.visualization-stage.visualization-stage-collapsed { height: auto; min-height: 0; }
+.visualization-stage.visualization-stage-collapsed {
+  height: auto;
+  min-height: 0;
+}
 /* A timeline, process or number line laid out at a phone stage's own width
    is drawn 1:1: the stage takes the drawing's height. */
-.visualization-stage[data-semantic-layout="narrow"] { height: auto; }
-.visualization-stage[data-semantic-layout="narrow"] > svg { height: auto; }
+.visualization-stage[data-semantic-layout='narrow'] {
+  height: auto;
+}
+.visualization-stage[data-semantic-layout='narrow'] > svg {
+  height: auto;
+}
 .visualization-fallback.visualization-fallback-inline {
   display: grid;
   place-content: start;
@@ -119,8 +171,12 @@
   padding: var(--ui-space-sm) var(--ui-space-md);
   text-align: start;
 }
-.visualization-fallback-inline .visualization-fallback-actions { justify-content: flex-start; }
-.openui-visualization { min-width: 0; }
+.visualization-fallback-inline .visualization-fallback-actions {
+  justify-content: flex-start;
+}
+.openui-visualization {
+  min-width: 0;
+}
 
 /* Mermaid lays a diagram out by measuring its labels in a temporary
    container it appends to <body>. Under prefers-reduced-motion the global
@@ -128,17 +184,22 @@
    mid-transition and the layout comes out many times too large: the diagram
    then shrinks into a corner of its stage. Diagrams never animate, so their
    measuring containers simply have no transitions. */
-[id^="dsocrates-mermaid-"],
-[id^="dsocrates-mermaid-"] *,
-[id^="dmermaid-svg-"],
-[id^="dmermaid-svg-"] * {
+[id^='dsocrates-mermaid-'],
+[id^='dsocrates-mermaid-'] *,
+[id^='dmermaid-svg-'],
+[id^='dmermaid-svg-'] * {
   transition-property: none;
 }
 
 /* Placeholders animate without changing the reserved card geometry. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   .viz-skeleton-stage {
-    background-image: linear-gradient(100deg, transparent 25%, var(--ui-fill-pressed) 50%, transparent 75%);
+    background-image: linear-gradient(
+      100deg,
+      transparent 25%,
+      var(--ui-fill-pressed) 50%,
+      transparent 75%
+    );
     background-size: 250% 100%;
     animation: thinking-text-shimmer var(--ui-duration-shimmer) ease-in-out infinite alternate;
   }

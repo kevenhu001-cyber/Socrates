@@ -1,24 +1,30 @@
 /**
- * toolExecutors — the pipeline dispatcher (LobeHub-alignment: self-
+ * toolRunner — the pipeline dispatcher (LobeHub-alignment: self-
  * registering tools).
  *
  * This module no longer branches on tool names. It owns only the parts
  * every tool shares:
  *   1. the pre-execution rejection path (unknown / withdrawn / invalid /
  *      duplicate calls) with the structured correction package,
- *   2. executor lookup against `executors/registry.ts`,
+ *   2. executor lookup against `executors/executorLookup.ts`,
  *   3. the execution try/catch that must never crash the SSE stream,
  *   4. generic per-tool outcome accounting on the turn policy,
- *   5. the model-facing role:'tool' feedback (`toolFeedback.ts`).
+ *   5. the model-facing role:'tool' feedback (`toolResultMessage.ts`).
  *
  * Adding a tool means adding one executor module + one registry entry;
  * the dispatcher stays untouched.
  */
 
-import {buildToolErrorFeedback} from '../../../services/tools/toolErrorFeedback.js';
-import {TOOL_ARGUMENT_ERRORS, wrapUntrustedToolResult} from '../../../services/tools/toolCallSafety.js';
-import {recordToolOutcome} from '../../../lib/telemetry.js';
-import { intelligentUiExample, inferIntelligentUiExample } from '../../../services/intelligentUiExamples.js';
+import { buildToolErrorFeedback } from '../../../services/tools/toolCorrectionMessage.js';
+import {
+  TOOL_ARGUMENT_ERRORS,
+  wrapUntrustedToolResult,
+} from '../../../services/tools/toolCallSafety.js';
+import { recordToolOutcome } from '../../../lib/telemetry.js';
+import {
+  intelligentUiExample,
+  inferIntelligentUiExample,
+} from '../../../services/intelligentUiExamples.js';
 
 /** Every code that means "the arguments were wrong", for logging. */
 const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
@@ -26,13 +32,13 @@ const ARGUMENT_ERROR_CODES: ReadonlySet<string> = new Set<string>([
   'invalid_tool_arguments',
 ]);
 
-import {hashToolArguments, type ToolTurnPolicy} from '../../../services/tools/toolTurnPolicy.js';
-import {SseEmitter} from './sseEmitter.js';
-import {formatToolResultContent} from './toolFeedback.js';
-import {canRetryIdenticalToolCall, normalizeToolResultRetryability} from './toolResultPolicy.js';
-import {createToolExecutorRegistry} from './executors/registry.js';
-import type {ToolExecutorContext} from './executors/types.js';
-import type {PreparedCall, StreamMessage, ToolResult,} from './types.js';
+import { hashToolArguments, type ToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
+import { SseEmitter } from './sseEmitter.js';
+import { formatToolResultContent } from './toolResultMessage.js';
+import { canRetryIdenticalToolCall, normalizeToolResultRetryability } from './toolResultPolicy.js';
+import { createToolExecutorRegistry } from './executors/executorLookup.js';
+import type { ToolExecutorContext } from './executors/types.js';
+import type { PreparedCall, StreamMessage, ToolResult } from './types.js';
 
 export interface ToolRunnerDeps {
   publicRuntime?: ToolExecutorContext['publicRuntime'];
@@ -43,18 +49,17 @@ export interface ToolRunnerDeps {
   emitter: SseEmitter;
   abortSignal: AbortSignal;
   toolPolicy: ToolTurnPolicy;
-  onResult?: (toolCallId: string, result: import("./types.js").ToolResult) => void;
-  schemaForTool: (name: string) => import('../../../services/tools/toolCallSafety.js').JsonSchemaNode | null;
+  onResult?: (toolCallId: string, result: import('./types.js').ToolResult) => void;
+  schemaForTool: (
+    name: string,
+  ) => import('../../../services/tools/toolCallSafety.js').JsonSchemaNode | null;
   connectorConnectionsByProvider: ToolExecutorContext['connectorConnectionsByProvider'];
   projectConnectorConnectionsByProvider: ToolExecutorContext['projectConnectorConnectionsByProvider'];
   connectorCatalog: ToolExecutorContext['connectorCatalog'];
   connectorActivation: ToolExecutorContext['connectorActivation'];
 }
 
-export type ToolRunner = (
-  entry: PreparedCall,
-  activeToolNames: string[],
-) => Promise<StreamMessage>;
+export type ToolRunner = (entry: PreparedCall, activeToolNames: string[]) => Promise<StreamMessage>;
 
 export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
   const registry = createToolExecutorRegistry();
@@ -74,18 +79,34 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
     connectorActivation: deps.connectorActivation,
   };
 
-  const runToolCall = async (entry: PreparedCall, activeToolNames: string[]): Promise<StreamMessage> => {
+  const runToolCall = async (
+    entry: PreparedCall,
+    activeToolNames: string[],
+  ): Promise<StreamMessage> => {
     const tc = entry.call;
     const toolName: string = entry.toolName;
     const cancelled = (): StreamMessage => {
-      const result = { status: 'cancelled', error: 'tool_cancelled', errorCode: 'tool_cancelled', retryable: false };
+      const result = {
+        status: 'cancelled',
+        error: 'tool_cancelled',
+        errorCode: 'tool_cancelled',
+        retryable: false,
+      };
       deps.emitter.event('tool_result', { id: tc.id, name: toolName, ok: false, ...result });
       deps.onResult?.(tc.id, result);
-      recordToolOutcome({ tool: toolName, outcome: 'cancelled', errorCode: 'tool_cancelled', retryable: false, stage: 'cancelled' });
+      recordToolOutcome({
+        tool: toolName,
+        outcome: 'cancelled',
+        errorCode: 'tool_cancelled',
+        retryable: false,
+        stage: 'cancelled',
+      });
       // Stopping is not a tool failure and must not consume its retry budget.
       deps.toolPolicy.unmarkCall(toolName, hashToolArguments(entry.args));
       return {
-        role: 'tool', tool_call_id: tc.id, name: toolName,
+        role: 'tool',
+        tool_call_id: tc.id,
+        name: toolName,
         content: wrapUntrustedToolResult(toolName, '[cancelled] Tool execution was stopped.'),
       };
     };
@@ -99,9 +120,10 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
      * exactly what was wrong. */
     if (entry.rejection) {
       const { code, retryable, hint, fieldErrors, userMessage } = entry.rejection;
-      const exampleOverride = toolName === 'render_intelligent_ui'
-        ? inferIntelligentUiExample(entry.args, tc.function?.arguments)
-        : null;
+      const exampleOverride =
+        toolName === 'render_intelligent_ui'
+          ? inferIntelligentUiExample(entry.args, tc.function?.arguments)
+          : null;
       const feedback = buildToolErrorFeedback({
         toolName,
         schema: deps.schemaForTool(toolName),
@@ -117,31 +139,45 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         /* The code itself now carries the stage (parse / schema / size),
            which used to be a single `invalid_tool_arguments` for all three;
            `stage` is kept in the log line for continuity with old logs. */
-        console.warn('[chat/stream] invalid tool arguments', JSON.stringify({
-          id: tc.id,
-          name: toolName || 'unknown_tool',
-          code,
-          stage: code === TOOL_ARGUMENT_ERRORS.schema ? 'schema'
-            : code === TOOL_ARGUMENT_ERRORS.tooLarge ? 'size' : 'parse',
-          fieldErrors: fieldErrors ? String(fieldErrors).slice(0, 300) : undefined,
-          length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
-          remainingRetries: deps.toolPolicy.remainingRetries(toolName),
-        }));
+        console.warn(
+          '[chat/stream] invalid tool arguments',
+          JSON.stringify({
+            id: tc.id,
+            name: toolName || 'unknown_tool',
+            code,
+            stage:
+              code === TOOL_ARGUMENT_ERRORS.schema
+                ? 'schema'
+                : code === TOOL_ARGUMENT_ERRORS.tooLarge
+                  ? 'size'
+                  : 'parse',
+            fieldErrors: fieldErrors ? String(fieldErrors).slice(0, 300) : undefined,
+            length: typeof tc.function?.arguments === 'string' ? tc.function.arguments.length : 0,
+            remainingRetries: deps.toolPolicy.remainingRetries(toolName),
+          }),
+        );
       }
       /* A duplicate is a routing mistake rather than a tool defect, so
        * it must not push the tool towards being withdrawn. */
       if (code !== 'duplicate_tool_call') deps.toolPolicy.recordResult(toolName, false, code);
       recordToolOutcome({
-        tool: code === 'unknown_tool' ? 'unknown_tool' : (toolName || 'unknown_tool'),
+        tool: code === 'unknown_tool' ? 'unknown_tool' : toolName || 'unknown_tool',
         outcome: 'failed',
         errorCode: code,
         retryable,
         stage: 'rejected',
       });
       deps.emitter.event('tool_result', {
-        id: tc.id, name: toolName, ok: false, status: 'failed',
-        output: '', stderr: '', artifacts: [],
-        error: code, errorCode: code, retryable,
+        id: tc.id,
+        name: toolName,
+        ok: false,
+        status: 'failed',
+        output: '',
+        stderr: '',
+        artifacts: [],
+        error: code,
+        errorCode: code,
+        retryable,
         userMessage: feedback.userMessage,
         detail: feedback.detail,
       });
@@ -174,7 +210,10 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
             resolve();
           };
           const timer = setTimeout(settle, backoffMs);
-          if (deps.abortSignal.aborted) { settle(); return; }
+          if (deps.abortSignal.aborted) {
+            settle();
+            return;
+          }
           deps.abortSignal.addEventListener('abort', settle, { once: true });
         });
       }
@@ -184,20 +223,33 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
       } catch (err) {
         // Tool execution itself threw — never let this bubble out
         // and crash the SSE stream. Tell the model so it can pivot.
-        const msg = String(err && (err as Error).message || err);
+        const msg = String((err && (err as Error).message) || err);
         const result = normalizeToolResultRetryability({
           status: 'failed',
           error: msg,
           errorCode: 'tool_execution_failed',
           retryable: false,
         });
-        recordToolOutcome({ tool: toolName, outcome: 'failed', errorCode: 'tool_execution_failed', retryable: false, stage: 'threw' });
+        recordToolOutcome({
+          tool: toolName,
+          outcome: 'failed',
+          errorCode: 'tool_execution_failed',
+          retryable: false,
+          stage: 'threw',
+        });
         deps.emitter.event('tool_result', {
-          id: tc.id, name: toolName, ok: false, status: result.status,
-          output: '', stderr: '', artifacts: [],
+          id: tc.id,
+          name: toolName,
+          ok: false,
+          status: result.status,
+          output: '',
+          stderr: '',
+          artifacts: [],
           error: result.error,
-          errorCode: result.errorCode, retryable: result.retryable,
-          userMessage: '工具执行失败。', detail: msg,
+          errorCode: result.errorCode,
+          retryable: result.retryable,
+          userMessage: '工具执行失败。',
+          detail: msg,
         });
         outcome = { result };
       }
@@ -211,22 +263,46 @@ export function createToolRunner(deps: ToolRunnerDeps): ToolRunner {
         retryable: false,
         availableTools: activeToolNames,
       });
-      recordToolOutcome({ tool: toolName, outcome: 'failed', errorCode: 'unknown_tool', retryable: false, stage: 'missing_executor' });
-      deps.emitter.event('tool_result', {
-        id: tc.id, ok: false, status: 'failed',
-        output: '', stderr: '', artifacts: [],
-        error: 'unknown_tool',
-        errorCode: 'unknown_tool', retryable: false,
-        userMessage: feedback.userMessage, detail: feedback.detail,
+      recordToolOutcome({
+        tool: toolName,
+        outcome: 'failed',
+        errorCode: 'unknown_tool',
+        retryable: false,
+        stage: 'missing_executor',
       });
-      outcome = { result: { status: 'failed', error: 'unknown_tool', errorCode: 'unknown_tool', correction: feedback.modelMessage } };
+      deps.emitter.event('tool_result', {
+        id: tc.id,
+        ok: false,
+        status: 'failed',
+        output: '',
+        stderr: '',
+        artifacts: [],
+        error: 'unknown_tool',
+        errorCode: 'unknown_tool',
+        retryable: false,
+        userMessage: feedback.userMessage,
+        detail: feedback.detail,
+      });
+      outcome = {
+        result: {
+          status: 'failed',
+          error: 'unknown_tool',
+          errorCode: 'unknown_tool',
+          correction: feedback.modelMessage,
+        },
+      };
     }
 
     const result: ToolResult = normalizeToolResultRetryability(outcome.result);
     deps.onResult?.(tc.id, result);
     recordToolOutcome({
       tool: toolName,
-      outcome: result.status === 'completed' ? 'completed' : result.status === 'cancelled' ? 'cancelled' : 'failed',
+      outcome:
+        result.status === 'completed'
+          ? 'completed'
+          : result.status === 'cancelled'
+            ? 'cancelled'
+            : 'failed',
       errorCode: result.errorCode || result.error || null,
       retryable: result.retryable,
       stage: 'executed',

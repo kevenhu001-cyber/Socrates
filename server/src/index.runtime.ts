@@ -41,7 +41,9 @@ async function main() {
 
   // ── Start HTTP server ──
   const server = app.listen(PORT, () => {
-    console.log(`[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
+    console.log(
+      `[server] Listening on http://0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`,
+    );
   });
 
   /* P_sse-nodelay — Node leaves Nagle's algorithm ON by default: small SSE
@@ -52,7 +54,11 @@ async function main() {
    * and the upstream LLM pool already runs with noDelay for the same
    * reason (services/core/llm.ts). */
   server.on('connection', (socket) => {
-    try { socket.setNoDelay(true); } catch { /* socket closed already */ }
+    try {
+      socket.setNoDelay(true);
+    } catch {
+      /* socket closed already */
+    }
   });
 
   installShutdown(server);
@@ -64,7 +70,9 @@ async function main() {
      existing handlers rather than replacing them. */
   if (tracingEnabled()) {
     for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-      process.once(signal, () => { void stopTracing(); });
+      process.once(signal, () => {
+        void stopTracing();
+      });
     }
   }
 }

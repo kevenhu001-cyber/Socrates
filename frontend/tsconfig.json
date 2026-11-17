@@ -13,7 +13,18 @@
     /* Pinned so devDependencies that ship @types/node (react-native, kept
        for its type definitions only) do not swap browser timer types for
        Node's. Matches the set that was implicitly included before RN-1. */
-    "types": ["esrecurse", "estree", "geojson", "json-schema", "minimatch", "react", "react-dom", "trusted-types", "use-sync-external-store", "validator"],
+    "types": [
+      "esrecurse",
+      "estree",
+      "geojson",
+      "json-schema",
+      "minimatch",
+      "react",
+      "react-dom",
+      "trusted-types",
+      "use-sync-external-store",
+      "validator"
+    ],
     "paths": {
       "@/*": ["./src/*"],
       "@socrates/contracts": ["../packages/contracts/src/index.ts"],
@@ -40,6 +51,11 @@
       "react-native": ["./node_modules/react-native"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "../packages/core/src/**/*.ts", "../packages/contracts/src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "../packages/core/src/**/*.ts",
+    "../packages/contracts/src/**/*.ts"
+  ],
   "exclude": ["../packages/core/src/**/*.test.ts", "../packages/contracts/src/**/*.test.ts"]
 }

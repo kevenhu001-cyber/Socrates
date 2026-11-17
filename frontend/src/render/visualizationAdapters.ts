@@ -9,28 +9,36 @@ import type { GeoGebraApi } from '../types/vendorRuntime.ts';
 
 export interface SpecializedVisualizationResult {
   handled: boolean;
-  chart?: { dispatchAction?: (action?: unknown) => void; getDataURL: (options?: unknown) => string | Promise<string> } | null;
+  chart?: {
+    dispatchAction?: (action?: unknown) => void;
+    getDataURL: (options?: unknown) => string | Promise<string>;
+  } | null;
   cleanup?: () => void;
 }
 
-
 let plotlyPromise: ReturnType<typeof ensurePlotly> | null = null;
 let mermaidPromise: ReturnType<typeof ensureMermaid> | null = null;
-let threePromise: Promise<[typeof import('three'), typeof import('three/addons/controls/OrbitControls.js')]> | null = null;
-type GeoGebraAppletConstructor = new (options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void }, useBrowser: boolean) => { inject(target: HTMLElement | string): void };
+let threePromise: Promise<
+  [typeof import('three'), typeof import('three/addons/controls/OrbitControls.js')]
+> | null = null;
+type GeoGebraAppletConstructor = new (
+  options: Record<string, unknown> & { appletOnLoad?: (api: GeoGebraApi) => void },
+  useBrowser: boolean,
+) => { inject(target: HTMLElement | string): void };
 interface GeoGebraWindow {
   GGBApplet?: GeoGebraAppletConstructor;
 }
 let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
 
-
 export function usesSpecializedRenderer(template: string) {
-  return template === 'function'
-    || template === 'paper_chart'
-    || template === 'math_construction'
-    || template === 'geometry_3d'
-    || template === 'whiteboard'
-    || STRUCTURE_TEMPLATES.has(template);
+  return (
+    template === 'function' ||
+    template === 'paper_chart' ||
+    template === 'math_construction' ||
+    template === 'geometry_3d' ||
+    template === 'whiteboard' ||
+    STRUCTURE_TEMPLATES.has(template)
+  );
 }
 
 function cssColor(name: string, fallback: string) {
@@ -45,22 +53,33 @@ function cssColor(name: string, fallback: string) {
    the same hook for the specialised renderers. Returns a disconnect fn. */
 function watchTheme(onChange: (mode: string | null) => void) {
   if (typeof MutationObserver === 'undefined') return;
-  const themeKey = () => ['data-mode', 'data-theme'].map((name) => document.documentElement.getAttribute(name)).join('|');
+  const themeKey = () =>
+    ['data-mode', 'data-theme']
+      .map((name) => document.documentElement.getAttribute(name))
+      .join('|');
   let last = themeKey();
   const observer = new MutationObserver(() => {
     const mode = document.documentElement.getAttribute('data-mode');
     const next = themeKey();
     if (next === last) return;
     last = next;
-    try { onChange(mode); }
-    catch (error) { reportSwallow(error, 'visualizationAdapters.themeChange'); }
+    try {
+      onChange(mode);
+    } catch (error) {
+      reportSwallow(error, 'visualizationAdapters.themeChange');
+    }
   });
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-mode', 'data-theme'],
+  });
   return () => observer.disconnect();
 }
 
 function plotlyColors() {
-  const isDark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-mode') === 'dark';
+  const isDark =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-mode') === 'dark';
   return {
     text: cssColor('--text-100', isDark ? '#ededed' : '#1c2637'),
     muted: cssColor('--text-300', isDark ? '#a1a1a1' : '#68748a'),
@@ -77,7 +96,12 @@ function plotlyColors() {
    left to its default, Plotly derives it from paper_bgcolor 'transparent'
    and paints a 50% black bar with 30% white icons — a dark strip on every
    light chart (always visible on touch devices). */
-function plotlyThemeUpdate(colors: { text: string; muted: string; grid: string; primary?: string }) {
+function plotlyThemeUpdate(colors: {
+  text: string;
+  muted: string;
+  grid: string;
+  primary?: string;
+}) {
   return {
     'font.color': colors.text,
     'xaxis.gridcolor': colors.grid,
@@ -96,12 +120,18 @@ type ThreeGeometry = InstanceType<ThreeRuntime['SphereGeometry']>;
 function geometryForThreeObject(THREE: ThreeRuntime, object: ThreeGeometryObject): ThreeGeometry {
   const size = object.size || [1, 1, 1];
   if (object.type === 'sphere') return new THREE.SphereGeometry(size[0] || 1, 40, 24);
-  if (object.type === 'cylinder') return new THREE.CylinderGeometry(size[0] || 1, size[0] || 1, size[1] || 2, 36);
+  if (object.type === 'cylinder')
+    return new THREE.CylinderGeometry(size[0] || 1, size[0] || 1, size[1] || 2, 36);
   if (object.type === 'cone') return new THREE.ConeGeometry(size[0] || 1, size[1] || 2, 36);
   return new THREE.BoxGeometry(size[0] || 1, size[1] || 1, size[2] || 1);
 }
 
-function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['Object3D']>, material: InstanceType<ThreeRuntime['MeshStandardMaterial']>, objects: ThreeGeometryObject[]) {
+function addThreeObjects(
+  THREE: ThreeRuntime,
+  scene: InstanceType<ThreeRuntime['Object3D']>,
+  material: InstanceType<ThreeRuntime['MeshStandardMaterial']>,
+  objects: ThreeGeometryObject[],
+) {
   objects.forEach((object) => {
     const mesh = new THREE.Mesh(geometryForThreeObject(THREE, object), material.clone());
     const position = object.position || [0, 0.5, 0];
@@ -110,9 +140,26 @@ function addThreeObjects(THREE: ThreeRuntime, scene: InstanceType<ThreeRuntime['
   });
 }
 
-export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: string; muted?: string; grid?: string; primary: string; secondary?: string; comparison?: string; highlight?: string }, sampleFunctionImpl: typeof import('@socrates/core/visualizationMath').sampleFunction) {
+export function plotlyTracesForVisualization(
+  spec: VizSpec,
+  colors: {
+    text?: string;
+    muted?: string;
+    grid?: string;
+    primary: string;
+    secondary?: string;
+    comparison?: string;
+    highlight?: string;
+  },
+  sampleFunctionImpl: typeof import('@socrates/core/visualizationMath').sampleFunction,
+) {
   if (spec.template === 'function') {
-    const paletteList = [colors.primary, colors.secondary || '#0d9488', colors.comparison || '#7c3aed', colors.highlight || '#f59e0b'];
+    const paletteList = [
+      colors.primary,
+      colors.secondary || '#0d9488',
+      colors.comparison || '#7c3aed',
+      colors.highlight || '#f59e0b',
+    ];
     return (spec.payload.functions || []).map((fn, index) => {
       const sampled = sampleFunctionImpl(fn.expression, fn.domain, 900);
       return {
@@ -131,7 +178,8 @@ export function plotlyTracesForVisualization(spec: VizSpec, colors: { text?: str
     x: categories.length ? categories : series.data.map((_, i) => i + 1),
     y: series.data,
     type: series.kind === 'bar' ? 'bar' : 'scatter',
-    mode: series.kind === 'scatter' ? 'markers' : series.kind === 'bar' ? undefined : 'lines+markers',
+    mode:
+      series.kind === 'scatter' ? 'markers' : series.kind === 'bar' ? undefined : 'lines+markers',
     name: series.name || `Series ${index + 1}`,
     line: { width: 2.2 },
   }));
@@ -147,49 +195,88 @@ function downloadSvgAdapter(stage: HTMLElement) {
   };
 }
 
-async function mountPlotly(spec: VizSpec, stage: HTMLElement, helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction }) {
+async function mountPlotly(
+  spec: VizSpec,
+  stage: HTMLElement,
+  helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
+) {
   /* P_perf-self-host — plotly UMD is copied as a static asset and
      injected only when a Plotly card mounts. */
-  plotlyPromise ||= ensurePlotly().catch((error: unknown) => { plotlyPromise = null; throw error; });
+  plotlyPromise ||= ensurePlotly().catch((error: unknown) => {
+    plotlyPromise = null;
+    throw error;
+  });
   const Plotly = await plotlyPromise;
   const colors = plotlyColors();
   const traces = plotlyTracesForVisualization(spec, colors, helpers.sampleFunction);
   const categories = spec.payload.categories || [];
-  const longestCategory = categories.reduce<number>((max, value) => Math.max(max, Array.from(String(value ?? '')).length), 0);
-  const tickAngle = categories.length > 10 ? -40 : (categories.length > 6 && longestCategory > 18 ? -28 : 0);
+  const longestCategory = categories.reduce<number>(
+    (max, value) => Math.max(max, Array.from(String(value ?? '')).length),
+    0,
+  );
+  const tickAngle =
+    categories.length > 10 ? -40 : categories.length > 6 && longestCategory > 18 ? -28 : 0;
   await whenFontsReady('Geist Sans');
-  await Plotly.newPlot(stage, traces, {
-    autosize: true,
-    margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'transparent',
-    font: { family: VIZ_FONT_FAMILY, color: colors.text, size: 12 },
-    xaxis: { title: { text: spec.payload.xLabel || 'x' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true, tickangle: tickAngle },
-    yaxis: { title: { text: spec.payload.yLabel || 'y' }, gridcolor: colors.grid, zerolinecolor: colors.muted, automargin: true },
-    legend: { orientation: 'h', y: 1.08 },
-    hovermode: 'closest',
-    modebar: { bgcolor: 'rgba(0,0,0,0)', color: colors.muted, activecolor: colors.text },
-  }, {
-    responsive: true,
-    displaylogo: false,
-    scrollZoom: true,
-    modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
-  });
+  await Plotly.newPlot(
+    stage,
+    traces,
+    {
+      autosize: true,
+      margin: { l: 58, r: 22, t: 24, b: tickAngle ? 96 : 58 },
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { family: VIZ_FONT_FAMILY, color: colors.text, size: 12 },
+      xaxis: {
+        title: { text: spec.payload.xLabel || 'x' },
+        gridcolor: colors.grid,
+        zerolinecolor: colors.muted,
+        automargin: true,
+        tickangle: tickAngle,
+      },
+      yaxis: {
+        title: { text: spec.payload.yLabel || 'y' },
+        gridcolor: colors.grid,
+        zerolinecolor: colors.muted,
+        automargin: true,
+      },
+      legend: { orientation: 'h', y: 1.08 },
+      hovermode: 'closest',
+      modebar: { bgcolor: 'rgba(0,0,0,0)', color: colors.muted, activecolor: colors.text },
+    },
+    {
+      responsive: true,
+      displaylogo: false,
+      scrollZoom: true,
+      modeBarButtonsToRemove: ['sendDataToCloud', 'lasso2d', 'select2d'],
+    },
+  );
   const stopWatchingTheme = watchTheme(() => {
     Plotly.relayout(stage, plotlyThemeUpdate(plotlyColors()));
   });
   return {
     handled: true,
     chart: {
-      dispatchAction() { Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true }); },
-      getDataURL() { return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 }); },
+      dispatchAction() {
+        Plotly.relayout(stage, { 'xaxis.autorange': true, 'yaxis.autorange': true });
+      },
+      getDataURL() {
+        return Plotly.toImage(stage, { format: 'png', width: 1400, height: 820, scale: 1 });
+      },
     },
-    cleanup() { stopWatchingTheme?.(); Plotly.purge(stage); },
+    cleanup() {
+      stopWatchingTheme?.();
+      Plotly.purge(stage);
+    },
   };
 }
 
 function compactMermaidLabel(value: unknown, max = 48) {
-  return truncateLabel(String(value ?? '').replace(/\s+/g, ' ').trim(), max);
+  return truncateLabel(
+    String(value ?? '')
+      .replace(/\s+/g, ' ')
+      .trim(),
+    max,
+  );
 }
 
 export function mermaidText(spec: VizSpec) {
@@ -197,25 +284,40 @@ export function mermaidText(spec: VizSpec) {
   const nodes = payload.nodes || [];
   const edges = payload.edges || [];
   const safeId = (value: unknown) => `n_${String(value).replace(/[^a-zA-Z0-9_]/g, '_')}`;
-  const safeLabel = (value: unknown) => compactMermaidLabel(value).replace(/[\r\n]/g, ' ')
-    .replace(/[&<>;#"|]/g, (char) => `#${char.charCodeAt(0)};`);
+  const safeLabel = (value: unknown) =>
+    compactMermaidLabel(value)
+      .replace(/[\r\n]/g, ' ')
+      .replace(/[&<>;#"|]/g, (char) => `#${char.charCodeAt(0)};`);
   if (spec.template === 'sequence') {
-    const participants = nodes.map((node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`);
-    const messages = edges.map((edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`);
+    const participants = nodes.map(
+      (node) => `participant ${safeId(node.id)} as ${safeLabel(node.label)}`,
+    );
+    const messages = edges.map(
+      (edge) => `${safeId(edge.from)}->>${safeId(edge.to)}: ${safeLabel(edge.label || '')}`,
+    );
     return ['sequenceDiagram', ...participants, ...messages].join('\n');
   }
   if (spec.template === 'state') {
     return [
       'stateDiagram-v2',
       ...nodes.map((node) => `state "${safeLabel(node.label)}" as ${safeId(node.id)}`),
-      ...edges.map((edge) => `${safeId(edge.from)} --> ${safeId(edge.to)}${edge.label ? ` : ${safeLabel(edge.label)}` : ''}`),
+      ...edges.map(
+        (edge) =>
+          `${safeId(edge.from)} --> ${safeId(edge.to)}${edge.label ? ` : ${safeLabel(edge.label)}` : ''}`,
+      ),
     ].join('\n');
   }
-  const direction = (payload as VizSpec['payload'] & { direction?: string }).direction === 'horizontal' ? 'LR' : 'TB';
+  const direction =
+    (payload as VizSpec['payload'] & { direction?: string }).direction === 'horizontal'
+      ? 'LR'
+      : 'TB';
   return [
     `flowchart ${direction}`,
     ...nodes.map((node) => `${safeId(node.id)}["${safeLabel(node.label)}"]`),
-    ...edges.map((edge) => `${safeId(edge.from)} -->${edge.label ? `|"${safeLabel(edge.label)}"|` : ''} ${safeId(edge.to)}`),
+    ...edges.map(
+      (edge) =>
+        `${safeId(edge.from)} -->${edge.label ? `|"${safeLabel(edge.label)}"|` : ''} ${safeId(edge.to)}`,
+    ),
   ].join('\n');
 }
 
@@ -225,14 +327,21 @@ export function applyGeoGebraCommands(api: Pick<GeoGebraApi, 'evalCommand'>, com
   for (const command of commands) {
     if (typeof command !== 'string') throw new Error('Construction commands must be text.');
     const accepted = api.evalCommand(command);
-    if (accepted === false) throw new Error(`Construction app rejected a command: ${String(command).slice(0, 120)}`);
+    if (accepted === false)
+      throw new Error(`Construction app rejected a command: ${String(command).slice(0, 120)}`);
   }
 }
 
-async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<SpecializedVisualizationResult> {
+async function mountMermaid(
+  spec: VizSpec,
+  stage: HTMLElement,
+): Promise<SpecializedVisualizationResult> {
   /* P_perf-self-host — mermaid UMD is copied as a static asset and
      injected only when a mermaid card mounts. */
-  mermaidPromise ||= ensureMermaid().catch((error: unknown) => { mermaidPromise = null; throw error; });
+  mermaidPromise ||= ensureMermaid().catch((error: unknown) => {
+    mermaidPromise = null;
+    throw error;
+  });
   const mermaid = await mermaidPromise;
   const text = mermaidText(spec);
   /* Mermaid bakes the theme into the SVG, so a theme switch re-renders.
@@ -271,57 +380,110 @@ async function mountMermaid(spec: VizSpec, stage: HTMLElement): Promise<Speciali
   await whenFontsReady('Geist Sans');
   await draw();
   const stopWatchingTheme = watchTheme(() => {
-    draw().catch((error) => { reportSwallow(error, 'visualizationAdapters.mermaid.themeRender'); });
+    draw().catch((error) => {
+      reportSwallow(error, 'visualizationAdapters.mermaid.themeRender');
+    });
   });
   return {
     handled: true,
     chart: downloadSvgAdapter(stage),
-    cleanup() { disposed = true; stopWatchingTheme?.(); stage.replaceChildren(); },
+    cleanup() {
+      disposed = true;
+      stopWatchingTheme?.();
+      stage.replaceChildren();
+    },
   };
 }
 
-async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<SpecializedVisualizationResult> {
+async function mountThree(
+  spec: VizSpec,
+  stage: HTMLElement,
+): Promise<SpecializedVisualizationResult> {
   threePromise ||= Promise.all([
     import('three'),
     import('three/addons/controls/OrbitControls.js'),
-  ]).catch((error: unknown) => { threePromise = null; throw error; });
+  ]).catch((error: unknown) => {
+    threePromise = null;
+    throw error;
+  });
   const [THREE, controlsModule] = await threePromise;
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(42, Math.max(stage.clientWidth, 1) / Math.max(stage.clientHeight, 1), 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(
+    42,
+    Math.max(stage.clientWidth, 1) / Math.max(stage.clientHeight, 1),
+    0.1,
+    1000,
+  );
   camera.position.set(6, 5, 8);
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2));
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    preserveDrawingBuffer: true,
+  });
+  renderer.setPixelRatio(
+    Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2),
+  );
   renderer.setSize(Math.max(stage.clientWidth, 1), Math.max(stage.clientHeight, 1), false);
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
   stage.appendChild(renderer.domElement);
   scene.add(new THREE.HemisphereLight(0xffffff, 0x273149, 2.1));
-  const key = new THREE.DirectionalLight(0xffffff, 2.5); key.position.set(5, 8, 4); scene.add(key);
-  const isDarkInitial = typeof document !== 'undefined' && document.documentElement.getAttribute('data-mode') === 'dark';
-  const gridHelper = new THREE.GridHelper(12, 12, isDarkInitial ? 0x94a3b8 : 0x8893a5, isDarkInitial ? 0x334155 : 0xdbe2ea);
+  const key = new THREE.DirectionalLight(0xffffff, 2.5);
+  key.position.set(5, 8, 4);
+  scene.add(key);
+  const isDarkInitial =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-mode') === 'dark';
+  const gridHelper = new THREE.GridHelper(
+    12,
+    12,
+    isDarkInitial ? 0x94a3b8 : 0x8893a5,
+    isDarkInitial ? 0x334155 : 0xdbe2ea,
+  );
   scene.add(gridHelper);
   const stopWatchingTheme = watchTheme((mode) => {
     const isDark = mode === 'dark';
     if (Array.isArray(gridHelper.material)) {
       gridHelper.material.forEach((mat) => {
-        if ('color' in mat) (mat as { color: { setHex: (hex: number) => void } }).color.setHex(isDark ? 0x475569 : 0xdbe2ea);
+        if ('color' in mat)
+          (mat as { color: { setHex: (hex: number) => void } }).color.setHex(
+            isDark ? 0x475569 : 0xdbe2ea,
+          );
       });
     } else if ('color' in gridHelper.material) {
-      (gridHelper.material as { color: { setHex: (hex: number) => void } }).color.setHex(isDark ? 0x475569 : 0xdbe2ea);
+      (gridHelper.material as { color: { setHex: (hex: number) => void } }).color.setHex(
+        isDark ? 0x475569 : 0xdbe2ea,
+      );
     }
   });
-  const material = new THREE.MeshStandardMaterial({ color: 0x4f78dd, roughness: 0.42, metalness: 0.05, transparent: true, opacity: 0.9 });
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x4f78dd,
+    roughness: 0.42,
+    metalness: 0.05,
+    transparent: true,
+    opacity: 0.9,
+  });
   const objects = new THREE.Group();
   scene.add(objects);
-  addThreeObjects(THREE, objects, material, (spec.payload.objects as ThreeGeometryObject[] | undefined) || []);
+  addThreeObjects(
+    THREE,
+    objects,
+    material,
+    (spec.payload.objects as ThreeGeometryObject[] | undefined) || [],
+  );
   material.dispose(); // each mesh owns its clone
   const bounds = new THREE.Box3().setFromObject(objects);
   const sphere = bounds.getBoundingSphere(new THREE.Sphere());
   const center = sphere.center;
   const fitCamera = () => {
-    const angle = Math.min(camera.fov * Math.PI / 360, Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect));
-    const distance = Math.max(sphere.radius, .1) / Math.sin(angle) * 1.15;
-    camera.position.copy(center).add(new THREE.Vector3(6, 5, 8).normalize().multiplyScalar(distance));
-    camera.near = Math.max(.01, distance / 1000);
+    const angle = Math.min(
+      (camera.fov * Math.PI) / 360,
+      Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect),
+    );
+    const distance = (Math.max(sphere.radius, 0.1) / Math.sin(angle)) * 1.15;
+    camera.position
+      .copy(center)
+      .add(new THREE.Vector3(6, 5, 8).normalize().multiplyScalar(distance));
+    camera.near = Math.max(0.01, distance / 1000);
     camera.far = Math.max(1000, distance * 10);
     camera.updateProjectionMatrix();
   };
@@ -340,30 +502,47 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
   draw();
   /* Only animate while the card is on screen; an offscreen WebGL loop
      keeps the main thread and GPU busy for the whole session. */
-  const visibility = typeof IntersectionObserver === 'function'
-    ? new IntersectionObserver(([entry]) => {
-      visible = !!entry?.isIntersecting;
-      if (visible && !frame) frame = requestAnimationFrame(draw);
-    })
-    : null;
+  const visibility =
+    typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(([entry]) => {
+          visible = !!entry?.isIntersecting;
+          if (visible && !frame) frame = requestAnimationFrame(draw);
+        })
+      : null;
   visibility?.observe(stage);
-  let lastWidth = 0, lastHeight = 0;
+  let lastWidth = 0,
+    lastHeight = 0;
   const resize = new ResizeObserver(() => {
-    const width = Math.max(stage.clientWidth, 1), height = Math.max(stage.clientHeight, 1);
+    const width = Math.max(stage.clientWidth, 1),
+      height = Math.max(stage.clientHeight, 1);
     if (width === lastWidth && height === lastHeight) return;
-    lastWidth = width; lastHeight = height;
-    camera.aspect = width / height; camera.updateProjectionMatrix(); renderer.setSize(width, height, false);
+    lastWidth = width;
+    lastHeight = height;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
     if (!frame) renderer.render(scene, camera);
   });
   resize.observe(stage);
   return {
     handled: true,
     chart: {
-      dispatchAction() { fitCamera(); controls.target.copy(center); controls.update(); },
-      getDataURL() { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
+      dispatchAction() {
+        fitCamera();
+        controls.target.copy(center);
+        controls.update();
+      },
+      getDataURL() {
+        renderer.render(scene, camera);
+        return renderer.domElement.toDataURL('image/png');
+      },
     },
     cleanup() {
-      visible = false; cancelAnimationFrame(frame); resize.disconnect(); visibility?.disconnect(); controls.dispose();
+      visible = false;
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      visibility?.disconnect();
+      controls.dispose();
       stopWatchingTheme?.();
       scene.traverse((object) => {
         if (!(object instanceof THREE.Mesh || object instanceof THREE.LineSegments)) return;
@@ -371,13 +550,17 @@ async function mountThree(spec: VizSpec, stage: HTMLElement): Promise<Specialize
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.forEach((item) => item.dispose());
       });
-      renderer.dispose(); renderer.forceContextLoss(); scene.clear();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      scene.clear();
     },
   };
 }
 
 function getGGBApplet(): GeoGebraAppletConstructor | undefined {
-  return typeof window !== 'undefined' ? (window as unknown as GeoGebraWindow).GGBApplet : undefined;
+  return typeof window !== 'undefined'
+    ? (window as unknown as GeoGebraWindow).GGBApplet
+    : undefined;
 }
 
 function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
@@ -421,38 +604,56 @@ function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
   return geogebraPromise!;
 }
 
-async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<SpecializedVisualizationResult> {
+async function mountGeoGebra(
+  spec: VizSpec,
+  stage: HTMLElement,
+): Promise<SpecializedVisualizationResult> {
   const GGBApplet = await loadGeoGebra();
   let api: GeoGebraApi | undefined;
   await new Promise<void>((resolve, reject) => {
     let settled = false;
-    const timer = setTimeout(() => finish(new Error('GeoGebra applet did not finish loading.')), 20000);
-    const finish = (error?: Error|undefined) => {
+    const timer = setTimeout(
+      () => finish(new Error('GeoGebra applet did not finish loading.')),
+      20000,
+    );
+    const finish = (error?: Error | undefined) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       if (error) reject(error);
       else resolve();
     };
-    const applet = new GGBApplet({
-      appName: spec.payload.appName || 'geometry',
-      width: Math.max(stage.clientWidth, 320),
-      height: Math.max(stage.clientHeight, 300),
-      showToolBar: true,
-      showAlgebraInput: true,
-      showMenuBar: false,
-      appletOnLoad(ggbApi) {
-        if (settled) { ggbApi.remove?.(); return; }
-        api = ggbApi;
-        try {
-          applyGeoGebraCommands(ggbApi, spec.payload.commands);
-          finish();
-        } catch (error) {
-          finish(error instanceof Error ? error : new Error('GeoGebra construction command failed.'));
-        }
+    const applet = new GGBApplet(
+      {
+        appName: spec.payload.appName || 'geometry',
+        width: Math.max(stage.clientWidth, 320),
+        height: Math.max(stage.clientHeight, 300),
+        showToolBar: true,
+        showAlgebraInput: true,
+        showMenuBar: false,
+        appletOnLoad(ggbApi) {
+          if (settled) {
+            ggbApi.remove?.();
+            return;
+          }
+          api = ggbApi;
+          try {
+            applyGeoGebraCommands(ggbApi, spec.payload.commands);
+            finish();
+          } catch (error) {
+            finish(
+              error instanceof Error ? error : new Error('GeoGebra construction command failed.'),
+            );
+          }
+        },
       },
-    }, true);
-    try { applet.inject(stage); } catch (error) { finish(error instanceof Error ? error : new Error('GeoGebra applet could not be started.')); }
+      true,
+    );
+    try {
+      applet.inject(stage);
+    } catch (error) {
+      finish(error instanceof Error ? error : new Error('GeoGebra applet could not be started.'));
+    }
   }).catch((error) => {
     api?.remove?.();
     stage.replaceChildren();
@@ -460,8 +661,18 @@ async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<Special
   });
   return {
     handled: true,
-    chart: { dispatchAction() { api?.setCoordSystem?.(-10, 10, -8, 8); }, getDataURL() { return api?.getPNGBase64 ? `data:image/png;base64,${api.getPNGBase64(1, false, 96)}` : ''; } },
-    cleanup() { api?.remove?.(); stage.replaceChildren(); },
+    chart: {
+      dispatchAction() {
+        api?.setCoordSystem?.(-10, 10, -8, 8);
+      },
+      getDataURL() {
+        return api?.getPNGBase64 ? `data:image/png;base64,${api.getPNGBase64(1, false, 96)}` : '';
+      },
+    },
+    cleanup() {
+      api?.remove?.();
+      stage.replaceChildren();
+    },
   };
 }
 
@@ -473,8 +684,13 @@ async function mountGeoGebra(spec: VizSpec, stage: HTMLElement): Promise<Special
  * through `disposeCard`, which guards against double disposal. The React host
  * only ever calls mount / dispose; it never inspects which library ran.
  */
-export async function mountSpecializedVisualization(spec: VizSpec, stage: HTMLElement, helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction }): Promise<SpecializedVisualizationResult> {
-  if (spec.template === 'function' || spec.template === 'paper_chart') return mountPlotly(spec, stage, helpers);
+export async function mountSpecializedVisualization(
+  spec: VizSpec,
+  stage: HTMLElement,
+  helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
+): Promise<SpecializedVisualizationResult> {
+  if (spec.template === 'function' || spec.template === 'paper_chart')
+    return mountPlotly(spec, stage, helpers);
   if (STRUCTURE_TEMPLATES.has(spec.template)) return mountMermaid(spec, stage);
   if (spec.template === 'geometry_3d') return mountThree(spec, stage);
   if (spec.template === 'math_construction') return mountGeoGebra(spec, stage);

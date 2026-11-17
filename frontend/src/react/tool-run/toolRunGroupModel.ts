@@ -1,6 +1,6 @@
-import {toolCategory} from '../../render/toolCategory.ts';
-import {formatSeconds, toolRunGroupLabel, translate} from '../../ui/toolPresentationModel.ts';
-import {durationOf, toolRunStateOf} from '../../ui/toolPresentationState.ts';
+import { toolCategory } from '../../render/toolCategory.ts';
+import { formatSeconds, toolRunGroupLabel, translate } from '../../ui/toolPresentationModel.ts';
+import { durationOf, toolRunStateOf } from '../../ui/toolPresentationState.ts';
 import {
   filePathSummaries,
   fileSummaryOf,
@@ -17,12 +17,17 @@ import type {
   TurnSegment,
 } from './toolRunModel.types.ts';
 
-function groupSectionsOf(members: ToolCallRecord[], views: ToolRunGroupView['members']): DetailSection[] {
+function groupSectionsOf(
+  members: ToolCallRecord[],
+  views: ToolRunGroupView['members'],
+): DetailSection[] {
   const sections: DetailSection[] = [];
   const sources = groupSources(members);
   /* Merging is the aggregate's job: with only one member that has sources, the
      panel would repeat that member's own expanded row verbatim one level up. */
-  const contributing = members.filter((member) => normalizeSources(member.results).length > 0).length;
+  const contributing = members.filter(
+    (member) => normalizeSources(member.results).length > 0,
+  ).length;
   if (sources.length && contributing > 1) {
     sections.push({ kind: 'sources', title: translate('tool.sources', 'Sources'), items: sources });
   }
@@ -35,7 +40,11 @@ function groupSectionsOf(members: ToolCallRecord[], views: ToolRunGroupView['mem
   for (const member of views) {
     for (const section of member.sections) {
       if (section.kind === 'error') {
-        sections.push({ kind: 'error', title: `${member.name}: ${section.title}`, text: section.text });
+        sections.push({
+          kind: 'error',
+          title: `${member.name}: ${section.title}`,
+          text: section.text,
+        });
       }
     }
   }
@@ -47,7 +56,11 @@ function groupTechOf(members: ToolCallRecord[]): TechSection[] {
   const failedMembers = members.filter((member) => toolRunStateOf(member) === 'error');
   const firstFailed = failedMembers[0];
   if (firstFailed?.errorCode) {
-    tech.push({ kind: 'fact', title: translate('tool.errorCode', 'Error code'), text: String(firstFailed.errorCode) });
+    tech.push({
+      kind: 'fact',
+      title: translate('tool.errorCode', 'Error code'),
+      text: String(firstFailed.errorCode),
+    });
   }
   if (failedMembers.length) {
     /* Aggregate hint: retryable only when every failed member is. */
@@ -75,7 +88,7 @@ export function toolRunGroupView(
   const label = toolRunGroupLabel(all, state === 'awaiting' ? 'done' : state);
   const meta = label.meta ? label.meta.slice() : [];
   const totalMs = all.reduce((sum, call) => sum + durationOf(call), 0);
-  const seconds = (state === 'running' || state === 'awaiting') ? '' : formatSeconds(totalMs);
+  const seconds = state === 'running' || state === 'awaiting' ? '' : formatSeconds(totalMs);
   if (seconds) meta.push(seconds);
 
   const sections = groupSectionsOf(members, memberViews);
@@ -85,7 +98,7 @@ export function toolRunGroupView(
   const retry = memberViews.find((m) => m.retry)?.retry;
 
   return {
-    id: members.length ? members[0].id : (running.length ? running[0].id : ''),
+    id: members.length ? members[0].id : running.length ? running[0].id : '',
     name: members.length ? members[0].name : '',
     category: toolCategory(members.length ? members[0].name : ''),
     state,

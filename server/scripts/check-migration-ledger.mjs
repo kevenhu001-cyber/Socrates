@@ -54,7 +54,9 @@ async function readLedger(client) {
   const result = await client.query(
     'select count(*)::int as count, max(created_at)::bigint as newest from drizzle.__drizzle_migrations',
   );
-  const rows = await client.query('select created_at::bigint as created_at from drizzle.__drizzle_migrations order by created_at');
+  const rows = await client.query(
+    'select created_at::bigint as created_at from drizzle.__drizzle_migrations order by created_at',
+  );
   return {
     count: result.rows[0]?.count ?? 0,
     newest: result.rows[0]?.newest ?? null,
@@ -75,14 +77,25 @@ async function readForeignKeys(client) {
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    console.error('check-migration-ledger: DATABASE_URL is required. This script only runs SELECTs.');
+    console.error(
+      'check-migration-ledger: DATABASE_URL is required. This script only runs SELECTs.',
+    );
     process.exit(2);
   }
 
   const journal = loadJournal();
   const client = new pg.Client({ connectionString });
   await client.connect();
-  const report = { ok: false, journal: journal.length, ledger: 0, missing: [], extra: [], foreignKeys: [], problems: [], notes: [] };
+  const report = {
+    ok: false,
+    journal: journal.length,
+    ledger: 0,
+    missing: [],
+    extra: [],
+    foreignKeys: [],
+    problems: [],
+    notes: [],
+  };
   try {
     const ledger = await readLedger(client);
     report.ledger = ledger.count;
@@ -92,11 +105,17 @@ async function main() {
      * migration that was skipped is named, not guessed. */
     const applied = new Set(ledger.appliedAt);
     const expected = new Set(journal.map((entry) => String(entry.when)));
-    report.missing = journal.filter((entry) => !applied.has(String(entry.when))).map((entry) => entry.tag);
+    report.missing = journal
+      .filter((entry) => !applied.has(String(entry.when)))
+      .map((entry) => entry.tag);
     report.extra = [...applied].filter((when) => !expected.has(when));
 
     const foreignKeys = await readForeignKeys(client);
-    report.foreignKeys = foreignKeys.map((row) => ({ name: row.conname, deleteRule: row.confdeltype, validated: row.convalidated }));
+    report.foreignKeys = foreignKeys.map((row) => ({
+      name: row.conname,
+      deleteRule: row.confdeltype,
+      validated: row.convalidated,
+    }));
     for (const expectedKey of SCHEDULED_TASK_FOREIGN_KEYS) {
       const found = foreignKeys.find((row) => row.conname === expectedKey.name);
       if (!found) {
@@ -114,16 +133,21 @@ async function main() {
     }
 
     if (report.missing.length > 0) {
-      report.problems.push(`${report.missing.length} migration(s) in the journal are not in the ledger: ${report.missing.join(', ')}`);
+      report.problems.push(
+        `${report.missing.length} migration(s) in the journal are not in the ledger: ${report.missing.join(', ')}`,
+      );
     }
     /* Ledger rows that match no journal entry are informational, not a
      * fault: a database that was migrated from an earlier revision of the
      * journal carries the timestamps that revision recorded. The
      * actionable direction is the other one — a journal migration with no
      * ledger row. */
-    report.notes = report.extra.length > 0
-      ? [`${report.extra.length} ledger row(s) match no journal entry (the database was migrated from an earlier journal revision)`]
-      : [];
+    report.notes =
+      report.extra.length > 0
+        ? [
+            `${report.extra.length} ledger row(s) match no journal entry (the database was migrated from an earlier journal revision)`,
+          ]
+        : [];
     report.ok = report.problems.length === 0;
   } finally {
     await client.end();
@@ -134,7 +158,8 @@ async function main() {
   } else {
     console.log(`[ledger] journal entries: ${report.journal}`);
     console.log(`[ledger] applied rows:    ${report.ledger}`);
-    if (report.missing.length === 0) console.log('[ledger] every migration in the journal is recorded');
+    if (report.missing.length === 0)
+      console.log('[ledger] every migration in the journal is recorded');
     else console.log(`[ledger] NOT applied:     ${report.missing.join(', ')}`);
     console.log('[ledger] scheduled_tasks foreign keys:');
     for (const key of report.foreignKeys) {
@@ -147,8 +172,8 @@ async function main() {
   if (!report.ok) {
     console.error(
       '\n[ledger] The database does not match the repository migrations.\n' +
-      '         Apply the missing migrations with the normal Drizzle migrator (npm run db:migrate)\n' +
-      '         — do NOT execute SQL by hand and do NOT edit the ledger to make it match.',
+        '         Apply the missing migrations with the normal Drizzle migrator (npm run db:migrate)\n' +
+        '         — do NOT execute SQL by hand and do NOT edit the ledger to make it match.',
     );
     process.exit(1);
   }

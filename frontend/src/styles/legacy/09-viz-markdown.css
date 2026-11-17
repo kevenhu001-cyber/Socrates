@@ -31,66 +31,129 @@
 /* Viz — minimal diagram/canvas renderer.
    No card wrapper, no header toolbar, no elaborate loading effects.
    Just the content with subtle hover actions. */
-.viz{
-  position:relative;margin:10px 0;
-  border:1px solid var(--ui-border-subtle);
-  border-radius:var(--ui-radius-lg);
-  background:var(--ui-bg-surface);
-  overflow:hidden;
-  transition:background-color 0.2s ease,border-color 0.2s ease;
+.viz {
+  position: relative;
+  margin: 10px 0;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+  overflow: hidden;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
-.viz-actions{
-  position:absolute;top:4px;right:4px;z-index:2;
-  display:flex;align-items:center;gap:2px;
+.viz-actions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
-.viz-status{
-  display:inline-flex;align-items:center;gap:5px;
-  height:26px;padding:0 7px;
-  border-radius:var(--ui-radius-sm);
-  background:hsl(var(--bg-200)/.9);
-  color:hsl(var(--text-400));
-  font-size:calc(10px * var(--app-font-scale, 1));
-  line-height:1;
-  transition:opacity 0.2s ease;
+.viz-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--ui-radius-sm);
+  background: hsl(var(--bg-200) / 0.9);
+  color: hsl(var(--text-400));
+  font-size: calc(10px * var(--app-font-scale, 1));
+  line-height: 1;
+  transition: opacity 0.2s ease;
 }
-.viz-status-dot{width:6px;height:6px;border-radius:50%;background:hsl(var(--accent-000));flex:0 0 auto}
-.viz[data-viz-state="loading"] .viz-status-dot{animation:ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite}
-.viz[data-viz-state="loading"] .viz-status-label::before{content:"Rendering"}
-.viz[data-viz-state="ready"] .viz-status{opacity:0;pointer-events:none}
-.viz[data-viz-state="ready"]:hover .viz-status,.viz[data-viz-state="ready"]:focus-within .viz-status{opacity:1;pointer-events:auto}
-.viz[data-viz-state="ready"] .viz-status-label::before{content:"Interactive"}
-.viz[data-viz-state="ready"] .viz-status-dot{background:var(--ui-ink)}
-.viz[data-viz-state="error"] .viz-status-label::before{content:"Needs attention"}
-.viz[data-viz-state="error"] .viz-status-dot{background:hsl(30 70% 48%)}
-.viz-btn{opacity:.35;transform:translateY(0);transition:opacity .18s cubic-bezier(.4,0,.2,1),transform .12s ease}
-.viz:hover .viz-btn,.viz:focus-within .viz-btn{opacity:1}
-.viz-btn:hover{transform:translateY(-1px)}
+.viz-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--accent-000));
+  flex: 0 0 auto;
+}
+.viz[data-viz-state='loading'] .viz-status-dot {
+  animation: ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite;
+}
+.viz[data-viz-state='loading'] .viz-status-label::before {
+  content: 'Rendering';
+}
+.viz[data-viz-state='ready'] .viz-status {
+  opacity: 0;
+  pointer-events: none;
+}
+.viz[data-viz-state='ready']:hover .viz-status,
+.viz[data-viz-state='ready']:focus-within .viz-status {
+  opacity: 1;
+  pointer-events: auto;
+}
+.viz[data-viz-state='ready'] .viz-status-label::before {
+  content: 'Interactive';
+}
+.viz[data-viz-state='ready'] .viz-status-dot {
+  background: var(--ui-ink);
+}
+.viz[data-viz-state='error'] .viz-status-label::before {
+  content: 'Needs attention';
+}
+.viz[data-viz-state='error'] .viz-status-dot {
+  background: hsl(30 70% 48%);
+}
+.viz-btn {
+  opacity: 0.35;
+  transform: translateY(0);
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s ease;
+}
+.viz:hover .viz-btn,
+.viz:focus-within .viz-btn {
+  opacity: 1;
+}
+.viz-btn:hover {
+  transform: translateY(-1px);
+}
 /* Preview / Code segmented toggle. Unlike the icon buttons it stays
    visible without hover — discoverability is the point: teaching code
    inside a canvas card must be one click away. */
 /* Code view: hide the live iframe + loading skeleton, show the source
    pane. Error banners are siblings of the iframe inside .viz-body, so
    they remain visible in both views. */
-.viz-code-pane{
-  display:none;
-  margin:0;max-height:360px;overflow:auto;
-  padding:12px 14px;
-  background:hsl(var(--bg-200)/0.5);
-  border-radius:8px;
-  font-family:var(--font-mono);
-  font-size:calc(11.5px * var(--app-font-scale, 1));
-  line-height:1.5;
-  color:hsl(var(--text-200));
+.viz-code-pane {
+  display: none;
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px 14px;
+  background: hsl(var(--bg-200) / 0.5);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: calc(11.5px * var(--app-font-scale, 1));
+  line-height: 1.5;
+  color: hsl(var(--text-200));
 }
-.viz-code-pane code{font:inherit;color:inherit;background:transparent;padding:0}
-.viz[data-viz-view="code"] .viz-code-pane{display:block}
+.viz-code-pane code {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+.viz[data-viz-view='code'] .viz-code-pane {
+  display: block;
+}
 /* !important: the iframe carries an inline display:block baked into its
    markup, which would otherwise beat this view-state rule. */
-.viz[data-viz-view="code"] .viz-body>iframe,
-.viz[data-viz-view="code"] .viz-body>.viz-loading{display:none !important}
-.viz-body{position:relative}
-.viz-body iframe{
-  display:block;width:100%;border:0;background:transparent
+.viz[data-viz-view='code'] .viz-body > iframe,
+.viz[data-viz-view='code'] .viz-body > .viz-loading {
+  display: none !important;
+}
+.viz-body {
+  position: relative;
+}
+.viz-body iframe {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
 }
 /* Loading-skeleton lifecycle:
    - Card mounts → JS sets data-viz-state="loading"; .viz-loading
@@ -116,316 +179,909 @@
    the iframe was `visibility:hidden` while loading, so any path
    where the JS handshake (postMessage viz-ready) failed left the
    card blank after the skeleton faded. */
-.viz[data-viz-state="loading"] iframe{visibility:visible}
-@keyframes viz-skeleton-fadeout{
-  0%{opacity:1;max-height:80px}
-  80%{opacity:1;max-height:80px}
-  100%{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin:0}
+.viz[data-viz-state='loading'] iframe {
+  visibility: visible;
 }
-.viz[data-viz-state="loading"] .viz-loading{
+@keyframes viz-skeleton-fadeout {
+  0% {
+    opacity: 1;
+    max-height: 80px;
+  }
+  80% {
+    opacity: 1;
+    max-height: 80px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
+  }
+}
+.viz[data-viz-state='loading'] .viz-loading {
   animation: viz-skeleton-fadeout 800ms ease-out 0s 1 forwards;
-  overflow:hidden;
+  overflow: hidden;
 }
 /* When JS flips state to ready, cancel the animation so the
    skeleton disappears immediately rather than waiting for the
    animation to finish. */
-.viz[data-viz-state="ready"] .viz-loading,
-.viz[data-viz-state="error"] .viz-loading{
-  animation:none;
-  display:none;
+.viz[data-viz-state='ready'] .viz-loading,
+.viz[data-viz-state='error'] .viz-loading {
+  animation: none;
+  display: none;
 }
-.viz-loading{
-  display:flex;align-items:center;gap:6px;
-  padding:24px 16px;
-  font-size:calc(12.5px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
-  background:hsl(var(--bg-200)/0.4);
-  border-radius:8px;
+.viz-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 24px 16px;
+  font-size: calc(12.5px * var(--app-font-scale, 1));
+  color: hsl(var(--text-400));
+  background: hsl(var(--bg-200) / 0.4);
+  border-radius: 8px;
 }
-.viz-spinner{
-  width:10px;height:10px;border-radius:50%;
-  border:1.5px solid hsl(var(--text-400)/0.4);
-  border-top-color:hsl(var(--text-400));
-  animation:loadingSpin var(--ui-duration-spin) linear infinite;
-  flex-shrink:0;
+.viz-spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid hsl(var(--text-400) / 0.4);
+  border-top-color: hsl(var(--text-400));
+  animation: loadingSpin var(--ui-duration-spin) linear infinite;
+  flex-shrink: 0;
 }
-.viz-error{
-  display:flex;flex-wrap:wrap;align-items:flex-start;gap:6px;
-  font-size:calc(12px * var(--app-font-scale, 1));
-  color:hsl(var(--text-400));
-  padding:10px 12px;
-  background:hsl(var(--bg-200)/0.5);
-  border-radius:8px;
-  line-height:1.5;
+.viz-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: calc(12px * var(--app-font-scale, 1));
+  color: hsl(var(--text-400));
+  padding: 10px 12px;
+  background: hsl(var(--bg-200) / 0.5);
+  border-radius: 8px;
+  line-height: 1.5;
 }
-.viz-error-icon{
-  flex-shrink:0;width:16px;height:16px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:50%;background:hsl(30 70% 50%/0.2);color:hsl(30 70% 45%);
-  font-size:calc(10px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-bold);margin-top:2px;
+.viz-error-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: hsl(30 70% 50%/0.2);
+  color: hsl(30 70% 45%);
+  font-size: calc(10px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-bold);
+  margin-top: 2px;
 }
-.viz-error-actions{display:flex;gap:6px;align-items:center}
-.viz-error-source{
-  width:100%;overflow-x:auto;
-  font-family:var(--font-mono);font-size:calc(11px * var(--app-font-scale, 1));
-  background:hsl(var(--bg-300)/0.4);padding:8px 10px;border-radius:6px;
-  line-height:1.4;margin:0;
+.viz-error-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.viz-error-source {
+  width: 100%;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--app-font-scale, 1));
+  background: hsl(var(--bg-300) / 0.4);
+  padding: 8px 10px;
+  border-radius: 6px;
+  line-height: 1.4;
+  margin: 0;
 }
 /* Fullscreen modal */
-.viz-modal-backdrop{
-  position:fixed;inset:0;z-index:200;
-  background:hsl(var(--always-black)/0.6);
-  -webkit-backdrop-filter:blur(4px);
-  backdrop-filter:blur(4px);
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;
-  animation:vizModalIn .1s ease-out;
+.viz-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: hsl(var(--always-black) / 0.6);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: vizModalIn 0.1s ease-out;
 }
-@keyframes vizModalIn{from{opacity:0}to{opacity:1}}
-.viz-modal{
-  width:min(96vw,1200px);height:min(92vh,860px);
-  background:hsl(var(--bg-000));
-  border:0.5px solid hsl(var(--border-300)/0.2);
-  border-radius:10px;
-  box-shadow:0 20px 60px hsl(var(--always-black)/0.4);
-  display:flex;flex-direction:column;overflow:hidden;
+@keyframes vizModalIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-.viz-modal-head{
-  display:flex;align-items:center;gap:8px;
-  height:40px;padding:0 8px 0 14px;
-  border-bottom:0.5px solid hsl(var(--border-300)/0.1);
-  flex-shrink:0;
+.viz-modal {
+  width: min(96vw, 1200px);
+  height: min(92vh, 860px);
+  background: hsl(var(--bg-000));
+  border: 0.5px solid hsl(var(--border-300) / 0.2);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px hsl(var(--always-black) / 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.viz-modal-title{font-size:calc(13px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);flex:1}
-.viz-modal-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
-.viz-modal-body{flex:1;min-height:0;background:transparent}
-.viz-modal-body-raw{display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;background:hsl(var(--bg-200)/0.6)}
-.img-lightbox{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:100%}
-.img-lightbox img{max-width:100%;max-height:calc(100vh - 140px);object-fit:contain;border-radius:6px;box-shadow:0 8px 24px hsl(var(--always-black)/0.3)}
-.viz-modal-body iframe{width:100%;height:100%;border:0;background:transparent;display:block}
-.viz-source-modal{width:min(92vw,920px);height:min(82vh,720px)}
-.viz-source-body{overflow:auto;background:hsl(var(--bg-100)/.72)}
-.viz-source-code{
-  min-height:100%;
-  margin:0;
-  padding:18px 20px;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  color:hsl(var(--text-200));
-  font-family:var(--font-mono);
-  font-size:calc(11.5px * var(--app-font-scale, 1));
-  line-height:1.55;
-  white-space:pre-wrap;
-  word-break:break-word;
+.viz-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 8px 0 14px;
+  border-bottom: 0.5px solid hsl(var(--border-300) / 0.1);
+  flex-shrink: 0;
 }
-@media (hover:none){.viz-btn{opacity:1;transform:none}.viz-status-label{display:none}}
+.viz-modal-title {
+  font-size: calc(13px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  flex: 1;
+}
+.viz-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.viz-modal-body {
+  flex: 1;
+  min-height: 0;
+  background: transparent;
+}
+.viz-modal-body-raw {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+  background: hsl(var(--bg-200) / 0.6);
+}
+.img-lightbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+.img-lightbox img {
+  max-width: 100%;
+  max-height: calc(100vh - 140px);
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px hsl(var(--always-black) / 0.3);
+}
+.viz-modal-body iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  display: block;
+}
+.viz-source-modal {
+  width: min(92vw, 920px);
+  height: min(82vh, 720px);
+}
+.viz-source-body {
+  overflow: auto;
+  background: hsl(var(--bg-100) / 0.72);
+}
+.viz-source-code {
+  min-height: 100%;
+  margin: 0;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: hsl(var(--text-200));
+  font-family: var(--font-mono);
+  font-size: calc(11.5px * var(--app-font-scale, 1));
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (hover: none) {
+  .viz-btn {
+    opacity: 1;
+    transform: none;
+  }
+  .viz-status-label {
+    display: none;
+  }
+}
 /* P_viz-btn-reduced-motion — when the user opts out of motion,
    the `.viz:hover` reveal never fires (no hover intent) and the
    0.35 opacity leaves ghost buttons. Force the buttons to full
    opacity so they're discoverable via keyboard or screen reader
    even when animations/hover are off. */
-@media (prefers-reduced-motion: reduce){.viz-btn{opacity:1;transform:none}}
-
+@media (prefers-reduced-motion: reduce) {
+  .viz-btn {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 /* Markdown rendered content */
-.msg-body h1{font-size:1.4em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-000));margin:16px 0 8px;line-height:1.3}
-.msg-body h2{font-size:1.2em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-000));margin:14px 0 6px;line-height:1.3}
+.msg-body h1 {
+  font-size: 1.4em;
+  font-weight: var(--ui-font-weight-medium);
+  color: hsl(var(--text-000));
+  margin: 16px 0 8px;
+  line-height: 1.3;
+}
+.msg-body h2 {
+  font-size: 1.2em;
+  font-weight: var(--ui-font-weight-medium);
+  color: hsl(var(--text-000));
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
 /* P_h3-cjk-contrast — the previous 1.05em + weight 500 + --text-100 was
    visually indistinguishable from body text in CJK runs (Chinese chars
    look almost identical at 1.05em vs 1em, and `--text-100` matches body
    colour on the dark canvas). Bumping to 1.18em + weight 600 +
    `--text-000` makes `### 标题` read as a heading without changing the
    h1/h2/h4–h6 hierarchy. */
-.msg-body h3{font-size:1.18em;font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-000));letter-spacing:-0.005em;margin:14px 0 6px;line-height:1.3}
-.msg-body h4,.msg-body h5,.msg-body h6{font-size:1em;font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-100));margin:10px 0 4px}
-.msg-body ul,.msg-body ol{padding-left:20px;margin:6px 0 10px}
-.msg-body li{margin-bottom:3px}
-.msg-body li::marker{color:hsl(var(--text-500))}
-.msg-body blockquote{border-left:2px solid hsl(var(--accent-000)/0.4);padding:4px 0 4px 14px;margin:8px 0;color:hsl(var(--text-300));font-style:italic}
-.msg-body table{border-collapse:collapse;width:100%;margin:8px 0;font-size:calc(13px * var(--app-font-scale, 1))}
-.msg-body th,.msg-body td{border:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));padding:8px 12px;text-align:left}
-.msg-body th{background:hsl(var(--bg-200));font-weight:var(--ui-font-weight-semibold);color:hsl(var(--text-100))}
-.msg-body td{color:hsl(var(--text-200))}
-.msg-body hr{border:none;border-top:0.5px solid hsl(var(--border-300)/var(--cell-border-alpha,0.6));margin:14px 0}
-.msg-body a{color:hsl(var(--accent-000));text-decoration:underline;text-underline-offset:2px}
-.msg-body a:hover{color:hsl(var(--accent-100))}
-.msg-body img:not(.site-link-favicon){max-width:100%;max-height:280px;border-radius:10px;margin:8px 0;cursor:zoom-in;transition:opacity .18s ease,transform .18s ease}
-.msg-body img:not(.site-link-favicon):hover{opacity:.92;transform:scale(1.005)}
+.msg-body h3 {
+  font-size: 1.18em;
+  font-weight: var(--ui-font-weight-semibold);
+  color: hsl(var(--text-000));
+  letter-spacing: -0.005em;
+  margin: 14px 0 6px;
+  line-height: 1.3;
+}
+.msg-body h4,
+.msg-body h5,
+.msg-body h6 {
+  font-size: 1em;
+  font-weight: var(--ui-font-weight-medium);
+  color: hsl(var(--text-100));
+  margin: 10px 0 4px;
+}
+.msg-body ul,
+.msg-body ol {
+  padding-left: 20px;
+  margin: 6px 0 10px;
+}
+.msg-body li {
+  margin-bottom: 3px;
+}
+.msg-body li::marker {
+  color: hsl(var(--text-500));
+}
+.msg-body blockquote {
+  border-left: 2px solid hsl(var(--accent-000) / 0.4);
+  padding: 4px 0 4px 14px;
+  margin: 8px 0;
+  color: hsl(var(--text-300));
+  font-style: italic;
+}
+.msg-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: calc(13px * var(--app-font-scale, 1));
+}
+.msg-body th,
+.msg-body td {
+  border: 0.5px solid hsl(var(--border-300) / var(--cell-border-alpha, 0.6));
+  padding: 8px 12px;
+  text-align: left;
+}
+.msg-body th {
+  background: hsl(var(--bg-200));
+  font-weight: var(--ui-font-weight-semibold);
+  color: hsl(var(--text-100));
+}
+.msg-body td {
+  color: hsl(var(--text-200));
+}
+.msg-body hr {
+  border: none;
+  border-top: 0.5px solid hsl(var(--border-300) / var(--cell-border-alpha, 0.6));
+  margin: 14px 0;
+}
+.msg-body a {
+  color: hsl(var(--accent-000));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.msg-body a:hover {
+  color: hsl(var(--accent-100));
+}
+.msg-body img:not(.site-link-favicon) {
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  margin: 8px 0;
+  cursor: zoom-in;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.msg-body img:not(.site-link-favicon):hover {
+  opacity: 0.92;
+  transform: scale(1.005);
+}
 /* P_code-block-header — a minimal header bar atop <pre> blocks with
    the language label + an expand button. Always visible at low opacity,
    brightens on hover. Reuses the viz-btn visual language. */
-.msg-body .code-block-header{display:flex;align-items:center;gap:6px;height:28px;padding:0 6px 0 12px;margin-bottom:-2px;border:0.5px solid hsl(var(--border-300)/0.08);border-bottom:none;border-radius:16px 16px 0 0;font-size:calc(10.5px * var(--app-font-scale,1));color:hsl(var(--text-500));opacity:.85;transition:opacity .18s ease}
-.msg-body .code-block-header:hover{opacity:1}
-.msg-body .code-block-header + pre{margin-top:0;border-top:none}
-.code-block-header-lang{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-mono);text-transform:lowercase}
-.code-block-actions{display:flex;align-items:center;gap:4px;flex:none}
+.msg-body .code-block-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px 0 12px;
+  margin-bottom: -2px;
+  border: 0.5px solid hsl(var(--border-300) / 0.08);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  font-size: calc(10.5px * var(--app-font-scale, 1));
+  color: hsl(var(--text-500));
+  opacity: 0.85;
+  transition: opacity 0.18s ease;
+}
+.msg-body .code-block-header:hover {
+  opacity: 1;
+}
+.msg-body .code-block-header + pre {
+  margin-top: 0;
+  border-top: none;
+}
+.code-block-header-lang {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  text-transform: lowercase;
+}
+.code-block-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
 /* P_smooth-stream tail fade — freshly revealed text of the LIVE tail
    (render/tailReveal.ts). Opacity only: no rise, no blur, and the spans
    stay `display:inline` so line breaking — CJK included — never changes.
    The span's negative animation-delay resumes the fade across re-renders.
    The streaming cursor lives in polish/transcript.css. */
-.stream-fade{display:inline;animation:streamFade .25s ease-out both}
-@keyframes streamFade{from{opacity:0}to{opacity:1}}
-@media (prefers-reduced-motion: reduce){.stream-fade{animation:none}}
+.stream-fade {
+  display: inline;
+  animation: streamFade 0.25s ease-out both;
+}
+@keyframes streamFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stream-fade {
+    animation: none;
+  }
+}
 
 /* In-progress streaming placeholders (table / code block) */
-.table-stream-placeholder{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 14px;
-  margin:8px 0;
-  border-radius:var(--ui-radius-control);
-  border:1px dashed hsl(var(--border-200));
-  background:hsl(var(--surface-100)/.5);
-  color:hsl(var(--text-400));
-  font-size:0.9em;
+.table-stream-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin: 8px 0;
+  border-radius: var(--ui-radius-control);
+  border: 1px dashed hsl(var(--border-200));
+  background: hsl(var(--surface-100) / 0.5);
+  color: hsl(var(--text-400));
+  font-size: 0.9em;
 }
-.table-stream-icon{font-size:1.1em;opacity:0.7}
+.table-stream-icon {
+  font-size: 1.1em;
+  opacity: 0.7;
+}
 
-.stream-code-pending{
-  display:block;
-  margin:10px 0;
-  padding:10px 14px;
-  border-radius:var(--ui-radius-control);
-  border:1px solid hsl(var(--border-150));
-  background:hsl(var(--surface-150)/.4);
+.stream-code-pending {
+  display: block;
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-radius: var(--ui-radius-control);
+  border: 1px solid hsl(var(--border-150));
+  background: hsl(var(--surface-150) / 0.4);
 }
-.stream-code-pending-header{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  font-size:0.82em;
-  font-family:var(--font-mono, monospace);
-  color:hsl(var(--text-400));
+.stream-code-pending-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82em;
+  font-family: var(--font-mono, monospace);
+  color: hsl(var(--text-400));
 }
-.stream-code-badge{
-  padding:1px 6px;
-  border-radius:var(--ui-radius-xs);
-  background:hsl(var(--surface-250)/.6);
-  font-weight:var(--ui-font-weight-medium);
+.stream-code-badge {
+  padding: 1px 6px;
+  border-radius: var(--ui-radius-xs);
+  background: hsl(var(--surface-250) / 0.6);
+  font-weight: var(--ui-font-weight-medium);
 }
 
 /* Tables and formulas are rendered only once the splitter has closed them
    (isStableMarkdownPrefix): they appear whole, with no per-glyph animation. */
 
 /* KaTeX dark theme overrides */
-.katex{font-size:1.05em}
+.katex {
+  font-size: 1.05em;
+}
 /* UI-align: KaTeX display scroll — the horizontal scrollbar stays
    invisible until the formula is hovered (open-webui pattern), so
    wide equations don't carry a permanent gray bar underneath. */
-.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0;margin:8px 0}@supports (scrollbar-width:thin){.katex-display{scrollbar-width:thin}}@supports (scrollbar-color:transparent transparent){.katex-display{scrollbar-color:transparent transparent}}
-@supports (scrollbar-color:hsl(var(--text-000)/0.25) transparent){.katex-display:hover{scrollbar-color:hsl(var(--text-000)/0.25) transparent}}
-.katex-display::-webkit-scrollbar{height:5px}
-.katex-display::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
-.katex-display:hover::-webkit-scrollbar-thumb{background:hsl(var(--text-000)/0.25)}
-.katex-display>.katex{font-size:1.1em}
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  margin: 8px 0;
+}
+@supports (scrollbar-width: thin) {
+  .katex-display {
+    scrollbar-width: thin;
+  }
+}
+@supports (scrollbar-color: transparent transparent) {
+  .katex-display {
+    scrollbar-color: transparent transparent;
+  }
+}
+@supports (scrollbar-color: hsl(var(--text-000) / 0.25) transparent) {
+  .katex-display:hover {
+    scrollbar-color: hsl(var(--text-000) / 0.25) transparent;
+  }
+}
+.katex-display::-webkit-scrollbar {
+  height: 5px;
+}
+.katex-display::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.katex-display:hover::-webkit-scrollbar-thumb {
+  background: hsl(var(--text-000) / 0.25);
+}
+.katex-display > .katex {
+  font-size: 1.1em;
+}
 /* Streaming math that is still arriving: render/markdown.ts neutralizes
    KaTeX's own .katex-error spans (red, inline color:#cc0000) into this
    class, so a half-typed formula reads as calm, dimmed live text instead
    of an error message. The span keeps the partial source KaTeX preserved,
    so the completed render is a seamless continuation of the last frame. */
-.math-stream-pending{color:hsl(var(--text-400));font-style:italic}
-.katex .mord{color:hsl(var(--text-100))}
-.katex .mbin{color:hsl(var(--accent-000))}
-.katex .mrel{color:hsl(var(--accent-000))}
+.math-stream-pending {
+  color: hsl(var(--text-400));
+  font-style: italic;
+}
+.katex .mord {
+  color: hsl(var(--text-100));
+}
+.katex .mbin {
+  color: hsl(var(--accent-000));
+}
+.katex .mrel {
+  color: hsl(var(--accent-000));
+}
 /* Force all KaTeX output to use normal (non-italic) style. KaTeX
    applies italic to variables by default, which can look odd in
    mixed-language chat. Use !important to override KaTeX's inline
    style="font-style:italic" on mathnormal spans. */
-.katex .mathnormal{font-style:normal !important}
+.katex .mathnormal {
+  font-style: normal !important;
+}
 
-@media(max-width:768px){.sidebar{position:fixed;left:0;top:0;bottom:0;z-index:30;background:hsl(var(--bg-000));box-shadow:0 0 0 1px hsl(var(--always-black)/0.2),0 8px 40px hsl(var(--always-black)/0.4);transform:translateX(0);transition:transform .3s cubic-bezier(0.4,0,0.2,1)}.sidebar.collapsed{width:18rem;min-width:18rem;transform:translateX(-100%);box-shadow:none}.sidebar.collapsed .sidebar-inner{opacity:0;transition:opacity .1s var(--ease-out)}.sidebar .sidebar-inner{opacity:1;transition:opacity .25s var(--ease-out)}.chat-input-bar{padding-top:6px}}
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    background: hsl(var(--bg-000));
+    box-shadow:
+      0 0 0 1px hsl(var(--always-black) / 0.2),
+      0 8px 40px hsl(var(--always-black) / 0.4);
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar.collapsed {
+    width: 18rem;
+    min-width: 18rem;
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
+  .sidebar.collapsed .sidebar-inner {
+    opacity: 0;
+    transition: opacity 0.1s var(--ease-out);
+  }
+  .sidebar .sidebar-inner {
+    opacity: 1;
+    transition: opacity 0.25s var(--ease-out);
+  }
+  .chat-input-bar {
+    padding-top: 6px;
+  }
+}
 /* The dim and the blur both come from tokens now (components/sidebar.css
    owns the live rule). The 50% literal plus a 4px blur here meant the drawer
    scrim dimmed and fogged differently from every dialog behind it. */
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:var(--ui-backdrop);z-index:80;-webkit-backdrop-filter:none;backdrop-filter:none;animation:fadeIn .15s forwards}
-.sidebar-backdrop.show{display:block}
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--ui-backdrop);
+  z-index: 80;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: fadeIn 0.15s forwards;
+}
+.sidebar-backdrop.show {
+  display: block;
+}
 
 /* Auth gate */
-.auth-gate{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;overflow-y:auto}
-.auth-gate.hidden{display:none}
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-image:
+    linear-gradient(to right, hsl(var(--bg-200)) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--bg-200)) 1px, transparent 1px);
+  background-size: 32px 32px;
+  overflow-y: auto;
+}
+.auth-gate.hidden {
+  display: none;
+}
 /* P0.6 — pre-boot hidden state. When <html data-boot-state="checking">
    neither the auth gate nor the app shell is shown, so the user never
    sees a flash of the wrong view during the async /api/auth/me call.
    The boot IIFE flips data-boot-state to "auth" or "app" once /me
    resolves, which then reveals the correct view via these rules. */
-html[data-boot-state="checking"] #authGate,
-html[data-boot-state="checking"] #appShell{display:none !important}
-html[data-boot-state="app"] #authGate{display:none !important}
-html[data-boot-state="auth"] #appShell{display:none !important}
+html[data-boot-state='checking'] #authGate,
+html[data-boot-state='checking'] #appShell {
+  display: none !important;
+}
+html[data-boot-state='app'] #authGate {
+  display: none !important;
+}
+html[data-boot-state='auth'] #appShell {
+  display: none !important;
+}
 /* Pre-boot loading shell — covers the viewport while the auth check
    is in flight. Uses the same dotted background as the auth gate so
    the transition is invisible when /me resolves to "auth". */
-.boot-loading{position:fixed;inset:0;z-index:190;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:hsl(var(--bg-100));background-image:linear-gradient(to right,hsl(var(--bg-200)) 1px,transparent 1px),linear-gradient(to bottom,hsl(var(--bg-200)) 1px,transparent 1px);background-size:32px 32px;opacity:1;transition:opacity .25s var(--ease-out)}
-html[data-show-grid="false"] .boot-loading{background-image:none}
-html[data-boot-state="app"] .boot-loading,
-html[data-boot-state="auth"] .boot-loading{opacity:0;pointer-events:none;visibility:hidden;transition:opacity .25s var(--ease-out),visibility 0s linear .25s}
+.boot-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: hsl(var(--bg-100));
+  background-image:
+    linear-gradient(to right, hsl(var(--bg-200)) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--bg-200)) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 1;
+  transition: opacity 0.25s var(--ease-out);
+}
+html[data-show-grid='false'] .boot-loading {
+  background-image: none;
+}
+html[data-boot-state='app'] .boot-loading,
+html[data-boot-state='auth'] .boot-loading {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.25s var(--ease-out),
+    visibility 0s linear 0.25s;
+}
 /* The layer is never removed from the DOM, so its two infinite rings keep
    ticking under opacity:0 for the whole session. Stop them once boot is done. */
-html[data-boot-state="app"] .boot-loading-dots::before,
-html[data-boot-state="app"] .boot-loading-dots::after,
-html[data-boot-state="auth"] .boot-loading-dots::before,
-html[data-boot-state="auth"] .boot-loading-dots::after{animation:none}
-.boot-loading-logo{display:flex;align-items:center;gap:8px;color:hsl(var(--text-300));font-weight:var(--ui-font-weight-semibold);font-size:calc(15px * var(--app-font-scale,1));letter-spacing:-.02em}
-.boot-loading-logo svg,.boot-loading-logo img{flex-shrink:0;color:hsl(var(--brand-000))}
-.boot-loading-dots{display:inline-flex;align-items:center;margin-left:6px;width:16px;height:16px;position:relative}
-.boot-loading-dots span{display:none}
-.boot-loading-dots::before{content:"";display:block;width:100%;height:100%;border-radius:50%;border:2px solid hsl(var(--border-300)/0.3);border-top-color:hsl(var(--accent-000));border-right-color:hsl(var(--brand-000));animation:bootSpin 1s cubic-bezier(.4,0,.2,1) infinite;box-sizing:border-box}
-.boot-loading-dots::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1px solid hsl(var(--accent-000)/0.2);animation:bootSpin 2s linear infinite reverse;opacity:.5}
-@keyframes bootSpin{to{transform:rotate(360deg)}}
-.auth-card{width:100%;max-width:420px;padding:32px 28px}
+html[data-boot-state='app'] .boot-loading-dots::before,
+html[data-boot-state='app'] .boot-loading-dots::after,
+html[data-boot-state='auth'] .boot-loading-dots::before,
+html[data-boot-state='auth'] .boot-loading-dots::after {
+  animation: none;
+}
+.boot-loading-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--text-300));
+  font-weight: var(--ui-font-weight-semibold);
+  font-size: calc(15px * var(--app-font-scale, 1));
+  letter-spacing: -0.02em;
+}
+.boot-loading-logo svg,
+.boot-loading-logo img {
+  flex-shrink: 0;
+  color: hsl(var(--brand-000));
+}
+.boot-loading-dots {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+.boot-loading-dots span {
+  display: none;
+}
+.boot-loading-dots::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid hsl(var(--border-300) / 0.3);
+  border-top-color: hsl(var(--accent-000));
+  border-right-color: hsl(var(--brand-000));
+  animation: bootSpin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-sizing: border-box;
+}
+.boot-loading-dots::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid hsl(var(--accent-000) / 0.2);
+  animation: bootSpin 2s linear infinite reverse;
+  opacity: 0.5;
+}
+@keyframes bootSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 28px;
+}
 /* P4.5 — transient banner shown at the top of the auth gate when a
    401 from any background apiFetch triggers handleAuthExpired(). */
-.auth-expired-banner{
-  background:hsl(var(--accent-900));
-  color:hsl(var(--accent-100));
-  padding:10px 18px;
-  border-radius:10px;
-  font-size:13px;
-  text-align:center;
-  margin:0 auto 12px;
-  max-width:420px;
-  border:0.5px solid hsl(var(--accent-000)/0.4);
+.auth-expired-banner {
+  background: hsl(var(--accent-900));
+  color: hsl(var(--accent-100));
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+  margin: 0 auto 12px;
+  max-width: 420px;
+  border: 0.5px solid hsl(var(--accent-000) / 0.4);
 }
-.auth-brand{display:flex;align-items:center;gap:8px;justify-content:center;font-weight:var(--ui-font-weight-semibold);font-size:calc(17px * var(--app-font-scale, 1));margin-bottom:24px}
-.auth-brand svg{color:hsl(var(--accent-000))}
-.auth-tabs{display:flex;border-bottom:0.5px solid hsl(var(--border-300)/0.18);margin-bottom:22px}
-.auth-tab{appearance:none;flex:1;text-align:center;padding:10px 0;font:var(--ui-font-weight-medium) calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);color:hsl(var(--text-400));border:0;border-bottom:2px solid transparent;background:transparent;cursor:pointer;font-weight:var(--ui-font-weight-medium);transition:color .1s,border-color .1s}
-.auth-tab:hover{color:hsl(var(--text-200))}
-.auth-tab.active{color:hsl(var(--text-100));border-bottom-color:hsl(var(--accent-000))}
-.auth-view{display:flex;flex-direction:column;gap:6px}
-.auth-lede{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.55;margin:0 0 12px;text-align:center}
-.auth-title{font-size:calc(20px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);text-align:center;margin:4px 0 8px;line-height:1.3}
-.auth-icon{display:flex;align-items:center;justify-content:center;width:64px;height:64px;border-radius:50%;background:hsl(var(--accent-000)/0.1);color:hsl(var(--accent-000));margin:0 auto 12px}
-.auth-icon-warn{background:hsl(0 60% 50%/0.1);color:hsl(0 60% 65%)}
-.auth-icon-ok{background:var(--ui-fill);color:var(--ui-ink)}
-.auth-label{font-size:calc(11px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);color:hsl(var(--text-400));text-transform:uppercase;letter-spacing:.05em;margin:6px 0 2px}
-.auth-input{width:100%;padding:10px 12px;font-size:calc(14px * var(--app-font-scale, 1));outline:none;margin-bottom:4px}
-.auth-input:focus{border-color:hsl(var(--accent-000)/0.5)}
-.auth-input::placeholder{color:hsl(var(--text-500))}
-.auth-error{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(0 60% 70%);min-height:14px;line-height:1.4;padding:2px 0}
-.auth-btn{padding:10px 18px;border-radius:10px;font-size:calc(14px * var(--app-font-scale, 1));font-weight:var(--ui-font-weight-medium);cursor:pointer;transition:background .1s,color .1s;border:0;margin-top:10px}
-.auth-btn.primary{background:hsl(var(--accent-000));color:hsl(var(--oncolor-100))}
-.auth-btn.primary:hover{background:hsl(var(--accent-100))}
-.auth-btn.primary:disabled{background:hsl(var(--bg-300));color:hsl(var(--text-500));cursor:not-allowed}
-.auth-btn.secondary{background:transparent;color:hsl(var(--text-200));border:0.5px solid hsl(var(--border-300)/0.3)}
-.auth-btn.secondary:hover{background:hsl(var(--bg-200));color:hsl(var(--text-100))}
-.auth-foot{text-align:center;font-size:calc(12px * var(--app-font-scale, 1));margin-top:14px}
-.auth-foot a{text-decoration:none}
-.auth-foot a:hover{text-decoration:underline}
-.auth-footnote{font-size:calc(11.5px * var(--app-font-scale, 1));margin-top:18px;letter-spacing:-.005em}
-.auth-inline-link{font-size:calc(12px * var(--app-font-scale, 1));text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.auth-inline-link:hover{text-decoration:underline}
-.auth-back-link{font-size:calc(12px * var(--app-font-scale, 1));color:hsl(var(--text-500));text-decoration:none;cursor:pointer;display:flex;align-items:center;gap:3px;margin-bottom:6px}
-.auth-back-link:hover{color:hsl(var(--text-200))}
-.auth-code-input{font-family:var(--font-mono,monospace);font-size:calc(22px * var(--app-font-scale, 1));letter-spacing:8px;text-align:center;padding:10px 12px;font-weight:var(--ui-font-weight-semibold)}
-.auth-view-separator{text-align:center;font-size:calc(11px * var(--app-font-scale, 1));margin:10px 0 6px;position:relative}
-.auth-view-separator::before,.auth-view-separator::after{content:"";position:absolute;top:50%;width:calc(50% - 24px);height:0.5px;background:hsl(var(--border-300)/0.18)}
-.auth-view-separator::before{left:0}
-.auth-view-separator::after{right:0}
-.auth-msg{font-size:calc(13px * var(--app-font-scale, 1));color:hsl(var(--text-400));line-height:1.5;margin:4px 0 10px;text-align:center}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-weight: var(--ui-font-weight-semibold);
+  font-size: calc(17px * var(--app-font-scale, 1));
+  margin-bottom: 24px;
+}
+.auth-brand svg {
+  color: hsl(var(--accent-000));
+}
+.auth-tabs {
+  display: flex;
+  border-bottom: 0.5px solid hsl(var(--border-300) / 0.18);
+  margin-bottom: 22px;
+}
+.auth-tab {
+  appearance: none;
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font: var(--ui-font-weight-medium) calc(13px * var(--app-font-scale, 1))/1.2 var(--font-sans);
+  color: hsl(var(--text-400));
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-weight: var(--ui-font-weight-medium);
+  transition:
+    color 0.1s,
+    border-color 0.1s;
+}
+.auth-tab:hover {
+  color: hsl(var(--text-200));
+}
+.auth-tab.active {
+  color: hsl(var(--text-100));
+  border-bottom-color: hsl(var(--accent-000));
+}
+.auth-view {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-lede {
+  font-size: calc(13px * var(--app-font-scale, 1));
+  color: hsl(var(--text-400));
+  line-height: 1.55;
+  margin: 0 0 12px;
+  text-align: center;
+}
+.auth-title {
+  font-size: calc(20px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  text-align: center;
+  margin: 4px 0 8px;
+  line-height: 1.3;
+}
+.auth-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: hsl(var(--accent-000) / 0.1);
+  color: hsl(var(--accent-000));
+  margin: 0 auto 12px;
+}
+.auth-icon-warn {
+  background: hsl(0 60% 50%/0.1);
+  color: hsl(0 60% 65%);
+}
+.auth-icon-ok {
+  background: var(--ui-fill);
+  color: var(--ui-ink);
+}
+.auth-label {
+  font-size: calc(11px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  color: hsl(var(--text-400));
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 6px 0 2px;
+}
+.auth-input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: calc(14px * var(--app-font-scale, 1));
+  outline: none;
+  margin-bottom: 4px;
+}
+.auth-input:focus {
+  border-color: hsl(var(--accent-000) / 0.5);
+}
+.auth-input::placeholder {
+  color: hsl(var(--text-500));
+}
+.auth-error {
+  font-size: calc(12px * var(--app-font-scale, 1));
+  color: hsl(0 60% 70%);
+  min-height: 14px;
+  line-height: 1.4;
+  padding: 2px 0;
+}
+.auth-btn {
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: calc(14px * var(--app-font-scale, 1));
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+  border: 0;
+  margin-top: 10px;
+}
+.auth-btn.primary {
+  background: hsl(var(--accent-000));
+  color: hsl(var(--oncolor-100));
+}
+.auth-btn.primary:hover {
+  background: hsl(var(--accent-100));
+}
+.auth-btn.primary:disabled {
+  background: hsl(var(--bg-300));
+  color: hsl(var(--text-500));
+  cursor: not-allowed;
+}
+.auth-btn.secondary {
+  background: transparent;
+  color: hsl(var(--text-200));
+  border: 0.5px solid hsl(var(--border-300) / 0.3);
+}
+.auth-btn.secondary:hover {
+  background: hsl(var(--bg-200));
+  color: hsl(var(--text-100));
+}
+.auth-foot {
+  text-align: center;
+  font-size: calc(12px * var(--app-font-scale, 1));
+  margin-top: 14px;
+}
+.auth-foot a {
+  text-decoration: none;
+}
+.auth-foot a:hover {
+  text-decoration: underline;
+}
+.auth-footnote {
+  font-size: calc(11.5px * var(--app-font-scale, 1));
+  margin-top: 18px;
+  letter-spacing: -0.005em;
+}
+.auth-inline-link {
+  font-size: calc(12px * var(--app-font-scale, 1));
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.auth-inline-link:hover {
+  text-decoration: underline;
+}
+.auth-back-link {
+  font-size: calc(12px * var(--app-font-scale, 1));
+  color: hsl(var(--text-500));
+  text-decoration: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+.auth-back-link:hover {
+  color: hsl(var(--text-200));
+}
+.auth-code-input {
+  font-family: var(--font-mono, monospace);
+  font-size: calc(22px * var(--app-font-scale, 1));
+  letter-spacing: 8px;
+  text-align: center;
+  padding: 10px 12px;
+  font-weight: var(--ui-font-weight-semibold);
+}
+.auth-view-separator {
+  text-align: center;
+  font-size: calc(11px * var(--app-font-scale, 1));
+  margin: 10px 0 6px;
+  position: relative;
+}
+.auth-view-separator::before,
+.auth-view-separator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 24px);
+  height: 0.5px;
+  background: hsl(var(--border-300) / 0.18);
+}
+.auth-view-separator::before {
+  left: 0;
+}
+.auth-view-separator::after {
+  right: 0;
+}
+.auth-msg {
+  font-size: calc(13px * var(--app-font-scale, 1));
+  color: hsl(var(--text-400));
+  line-height: 1.5;
+  margin: 4px 0 10px;
+  text-align: center;
+}
 
 /* "Jump to bottom" floating button. Shown whenever the user has
    scrolled away from the bottom of the chat — even mid-reveal. */

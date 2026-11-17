@@ -16,7 +16,9 @@ test('AI retry policy allows one automatic replay after a transient failure', as
   let retries = 0;
   const options = {
     source: 'chat',
-    sleep: async (delayMs) => { delays.push(delayMs); },
+    sleep: async (delayMs) => {
+      delays.push(delayMs);
+    },
     onRetry: (notice) => notices.push(notice),
   };
 
@@ -28,7 +30,10 @@ test('AI retry policy allows one automatic replay after a transient failure', as
   assert.equal(AI_MAX_ATTEMPTS, 2);
   assert.equal(retries, 1);
   assert.deepEqual(delays, [AI_RETRY_DELAY_MS]);
-  assert.deepEqual(notices.map((notice) => notice.retryNumber), [1]);
+  assert.deepEqual(
+    notices.map((notice) => notice.retryNumber),
+    [1],
+  );
   assert.ok(notices.every((notice) => notice.maxRetries === 1 && notice.delayMs === 5000));
 });
 
@@ -55,7 +60,14 @@ test('aborting the retry delay rejects immediately and does not start another at
 });
 
 test('lifecycle aborts unwind quietly without retry (P_turn-abort-quiet)', () => {
-  for (const reason of ['session-expired', 'session-switch', 'superseded', 'new-session', 'msg-edit', 'user-stop']) {
+  for (const reason of [
+    'session-expired',
+    'session-switch',
+    'superseded',
+    'new-session',
+    'msg-edit',
+    'user-stop',
+  ]) {
     const controller = new AbortController();
     controller.abort(reason);
     assert.equal(isUserAbort(null, controller.signal), true, reason);

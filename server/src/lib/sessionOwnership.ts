@@ -27,12 +27,9 @@ export function parseChatSessionId(value: unknown): string | null {
  * id and comparing in JavaScript. This avoids exposing whether another
  * tenant's session exists and gives every caller the same invariant.
  */
-export async function getOwnedSession(
-  db: Database,
-  sessionId: string,
-  userId: string,
-) {
-  const [session] = await db.select({ id: sessions.id })
+export async function getOwnedSession(db: Database, sessionId: string, userId: string) {
+  const [session] = await db
+    .select({ id: sessions.id })
     .from(sessions)
     .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
     .limit(1);
@@ -40,11 +37,7 @@ export async function getOwnedSession(
 }
 
 /** Resolve an owned session or return a non-enumerating 404. */
-export async function requireOwnedSession(
-  db: Database,
-  sessionId: string,
-  userId: string,
-) {
+export async function requireOwnedSession(db: Database, sessionId: string, userId: string) {
   const session = await getOwnedSession(db, sessionId, userId);
   if (!session) throw new NotFound('Session not found');
   return session;

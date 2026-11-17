@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  beginScrollOwner,
-  endScrollOwner,
-  writeScrollTop,
-} from '../src/ui/scrollCoordinator.ts';
+import { beginScrollOwner, endScrollOwner, writeScrollTop } from '../src/ui/scrollCoordinator.ts';
 
 test('higher-priority scroll owners block lower-priority writes', () => {
   const list = { scrollTop: 10 };

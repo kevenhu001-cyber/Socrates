@@ -44,8 +44,11 @@ export function subscribeLearningMode(listener: () => void): () => void {
 export function setLearningMode(id: LearningModeId): void {
   if (id === current) return;
   current = id;
-  try { localStorage.setItem(STORAGE_KEY, id); }
-  catch (error) { reportSwallow(error, 'tutor/learningModeState.persist'); }
+  try {
+    localStorage.setItem(STORAGE_KEY, id);
+  } catch (error) {
+    reportSwallow(error, 'tutor/learningModeState.persist');
+  }
   listeners.forEach((listener) => listener());
 }
 

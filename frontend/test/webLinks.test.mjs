@@ -9,7 +9,8 @@ globalThis.document = dom.window.document;
 const urls = ['https://example.com/page'];
 
 test('URL extraction accepts domains while filtering filenames and IP addresses', () => {
-  const text = 'Read https://example.com/article, then example.org/about. Avoid report.pdf and 192.168.1.1.';
+  const text =
+    'Read https://example.com/article, then example.org/about. Avoid report.pdf and 192.168.1.1.';
   assert.deepEqual(extractHttpUrls(text), [
     'https://example.com/article',
     'https://example.org/about',
@@ -17,9 +18,19 @@ test('URL extraction accepts domains while filtering filenames and IP addresses'
 });
 
 test('page preparation preserves successful content and preview metadata', async (t) => {
-  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({
-    results: [{ ok: true, title: 'Reference', content: 'Verified page contents', truncated: true }],
-  }), { headers: { 'content-type': 'application/json' } }));
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          results: [
+            { ok: true, title: 'Reference', content: 'Verified page contents', truncated: true },
+          ],
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      ),
+  );
   const result = await fetchPagesForContext(urls);
   assert.match(result.blocks[0], /Title: Reference/);
   assert.match(result.blocks[0], /Verified page contents/);

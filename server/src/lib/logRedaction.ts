@@ -24,13 +24,13 @@
  * passing a credential through a query parameter.
  */
 const SENSITIVE_PARAMS = new Set([
-  'token',         // password reset, email verify, share
+  'token', // password reset, email verify, share
   'access_token',
   'id_token',
   'refresh_token',
-  'code',          // OAuth authz code
-  'state',         // OAuth state
-  'sid',           // session id (rarely seen in URL, but defensive)
+  'code', // OAuth authz code
+  'state', // OAuth state
+  'sid', // session id (rarely seen in URL, but defensive)
   'reset_token',
   'verify_token',
   'share_token',
@@ -63,7 +63,11 @@ export function safeUrl(rawUrl: unknown): string {
     const eq = p.indexOf('=');
     const rawKey = eq >= 0 ? p.slice(0, eq) : p;
     let key;
-    try { key = decodeURIComponent(rawKey); } catch { key = rawKey; }
+    try {
+      key = decodeURIComponent(rawKey);
+    } catch {
+      key = rawKey;
+    }
     if (SENSITIVE_PARAMS.has(key.toLowerCase())) {
       return `${rawKey}=[REDACTED]`;
     }
@@ -105,9 +109,10 @@ export function sanitizeLogValue(value: unknown, maxLength = 300): string {
   let escaped = '';
   for (const character of String(value ?? '')) {
     const codePoint = character.codePointAt(0)!;
-    const encoded = codePoint === 0x85 || codePoint === 0x2028 || codePoint === 0x2029
-      ? `\\u${codePoint.toString(16).padStart(4, '0')}`
-      : JSON.stringify(character)!.slice(1, -1);
+    const encoded =
+      codePoint === 0x85 || codePoint === 0x2028 || codePoint === 0x2029
+        ? `\\u${codePoint.toString(16).padStart(4, '0')}`
+        : JSON.stringify(character)!.slice(1, -1);
     if (escaped.length + encoded.length > limit) break;
     escaped += encoded;
   }

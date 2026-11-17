@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { agentStepCommand, agentStepLabel, agentStepMeta, formatElapsed, MAX_OUTPUT_CHARS, type AgentPlanData, type AgentStepData } from '../../ui/agentSteps.ts';
+import {
+  agentStepCommand,
+  agentStepLabel,
+  agentStepMeta,
+  formatElapsed,
+  MAX_OUTPUT_CHARS,
+  type AgentPlanData,
+  type AgentStepData,
+} from '../../ui/agentSteps.ts';
 import { agentStepIcon } from '../../ui/icons/toolIcons.ts';
 import type { ToolRunView } from './toolRunModel';
 import { i18n } from '../legacy/gateway.ts';
@@ -17,7 +25,13 @@ function translate(key: string): string {
 }
 
 function StepIcon({ kind }: { kind: string }) {
-  return <span className="agent-step-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: agentStepIcon(kind) }} />;
+  return (
+    <span
+      className="agent-step-icon"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: agentStepIcon(kind) }}
+    />
+  );
 }
 
 function AgentPlan({ plan }: { plan: AgentPlanData }) {
@@ -27,8 +41,14 @@ function AgentPlan({ plan }: { plan: AgentPlanData }) {
   return (
     <section className="agent-plan" data-progress={`${done}/${plan.steps.length}`}>
       <div className="agent-plan-head">
-        <span className="agent-plan-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: agentStepIcon('plan') }} />
-        <span className="agent-plan-title">{title === 'agent.stepPlan' ? '更新了计划' : title}</span>
+        <span
+          className="agent-plan-icon"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: agentStepIcon('plan') }}
+        />
+        <span className="agent-plan-title">
+          {title === 'agent.stepPlan' ? '更新了计划' : title}
+        </span>
       </div>
       <ol className="agent-plan-list">
         {plan.steps.slice(0, 40).map((step, index) => (
@@ -38,22 +58,30 @@ function AgentPlan({ plan }: { plan: AgentPlanData }) {
           </li>
         ))}
       </ol>
-      <p className="agent-plan-note" hidden={!plan.explanation}>{plan.explanation || ''}</p>
+      <p className="agent-plan-note" hidden={!plan.explanation}>
+        {plan.explanation || ''}
+      </p>
     </section>
   );
 }
 
-function AgentStep({ step, state, live }: { step: AgentStepData; state: ToolRunAgentStepsProps['state']; live: boolean }) {
-  const status = !live && step.status === 'running'
-    ? state === 'failed' ? 'failed' : 'done'
-    : step.status;
+function AgentStep({
+  step,
+  state,
+  live,
+}: {
+  step: AgentStepData;
+  state: ToolRunAgentStepsProps['state'];
+  live: boolean;
+}) {
+  const status =
+    !live && step.status === 'running' ? (state === 'failed' ? 'failed' : 'done') : step.status;
   const displayedStep = status === step.status ? step : { ...step, status };
   const command = agentStepCommand(displayedStep);
   const meta = agentStepMeta(displayedStep, translate);
   const bodyOutput = String(displayedStep.output || '');
-  const visibleOutput = bodyOutput.length > MAX_OUTPUT_CHARS
-    ? `…${bodyOutput.slice(-MAX_OUTPUT_CHARS)}`
-    : bodyOutput;
+  const visibleOutput =
+    bodyOutput.length > MAX_OUTPUT_CHARS ? `…${bodyOutput.slice(-MAX_OUTPUT_CHARS)}` : bodyOutput;
   const paths = displayedStep.diffStat?.paths || [];
   const flat = !displayedStep.command && paths.length === 0 && !displayedStep.output;
 
@@ -67,17 +95,29 @@ function AgentStep({ step, state, live }: { step: AgentStepData; state: ToolRunA
       <summary className="agent-step-head">
         <StepIcon kind={displayedStep.kind} />
         <span className="agent-step-label">{agentStepLabel(displayedStep, translate)}</span>
-        <code className="agent-step-cmd" hidden={!command}>{command}</code>
+        <code className="agent-step-cmd" hidden={!command}>
+          {command}
+        </code>
         <span className="agent-step-meta">{meta}</span>
       </summary>
       <div className="agent-step-body">
-        {displayedStep.command ? <pre className="agent-step-pre" data-kind="command">{displayedStep.command}</pre> : null}
+        {displayedStep.command ? (
+          <pre className="agent-step-pre" data-kind="command">
+            {displayedStep.command}
+          </pre>
+        ) : null}
         {paths.length ? (
           <ul className="agent-step-paths">
-            {paths.slice(0, 20).map((path) => <li key={path}>{path}</li>)}
+            {paths.slice(0, 20).map((path) => (
+              <li key={path}>{path}</li>
+            ))}
           </ul>
         ) : null}
-        {displayedStep.output ? <pre className="agent-step-pre" data-kind="output">{visibleOutput}</pre> : null}
+        {displayedStep.output ? (
+          <pre className="agent-step-pre" data-kind="output">
+            {visibleOutput}
+          </pre>
+        ) : null}
       </div>
     </details>
   );
@@ -97,9 +137,10 @@ export function ToolRunAgentSteps({ run, live, state }: ToolRunAgentStepsProps) 
     return () => clearInterval(timer);
   }, [live]);
 
-  const finalDuration = run.durationMs != null && run.durationMs > 0
-    ? run.durationMs
-    : Math.max(0, now - startedAtRef.current.at);
+  const finalDuration =
+    run.durationMs != null && run.durationMs > 0
+      ? run.durationMs
+      : Math.max(0, now - startedAtRef.current.at);
   const runState = live ? 'running' : state || 'done';
   const elapsed = formatElapsed(finalDuration, translate);
   const steps = run.steps.slice(0, 200);
@@ -113,14 +154,20 @@ export function ToolRunAgentSteps({ run, live, state }: ToolRunAgentStepsProps) 
         data-started-at={startedAtRef.current.at}
         data-duration-ms={!live ? Math.round(finalDuration) : undefined}
       >
-        <details className="agent-run-shell" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+        <details
+          className="agent-run-shell"
+          open={open}
+          onToggle={(event) => setOpen(event.currentTarget.open)}
+        >
           <summary className="agent-run-summary">
             <span className="agent-run-elapsed">{elapsed}</span>
             <span className="agent-run-chev" aria-hidden="true" />
           </summary>
           <div className="agent-run-steps">
             {run.plan ? <AgentPlan plan={run.plan} /> : null}
-            {steps.map((step) => <AgentStep key={step.stepId} step={step} state={state} live={live} />)}
+            {steps.map((step) => (
+              <AgentStep key={step.stepId} step={step} state={state} live={live} />
+            ))}
           </div>
         </details>
       </section>

@@ -5,19 +5,23 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', 'site');
-const FILES = fs.readdirSync(ROOT)
-  .filter(f => f.endsWith('.html'))
-  .map(f => path.join(ROOT, f));
-const ZH = fs.readdirSync(path.join(ROOT, 'zh'))
-  .filter(f => f.endsWith('.html'))
-  .map(f => path.join(ROOT, 'zh', f));
+const FILES = fs
+  .readdirSync(ROOT)
+  .filter((f) => f.endsWith('.html'))
+  .map((f) => path.join(ROOT, f));
+const ZH = fs
+  .readdirSync(path.join(ROOT, 'zh'))
+  .filter((f) => f.endsWith('.html'))
+  .map((f) => path.join(ROOT, 'zh', f));
 const ALL = [...FILES, ...ZH];
 
 // Different contexts get different SVG sizes/classes. The default
 // replacement is a 14x14 arrow that fits in a text-action / list-row.
-const ARROW_14 = '<svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"/></svg>';
+const ARROW_14 =
+  '<svg class="xa-link-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"/></svg>';
 // 16x16 inline (used inside .xa-arrow-button / answer submit)
-const ARROW_16 = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"/></svg>';
+const ARROW_16 =
+  '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 16.5H16V9.41406L6.99998 18.4141L5.58591 17L14.5859 8H7.49998V6H18V16.5Z"/></svg>';
 
 let totalReplacements = 0;
 for (const file of ALL) {
@@ -34,7 +38,7 @@ for (const file of ALL) {
   // replace with the inline 14x14 arrow.
   src = src.replace(/↗/g, ARROW_14);
 
-  const replaced = (before.length - src.length) !== 0 || before !== src;
+  const replaced = before.length - src.length !== 0 || before !== src;
   if (replaced) {
     fs.writeFileSync(file, src, 'utf8');
     totalReplacements += 1;

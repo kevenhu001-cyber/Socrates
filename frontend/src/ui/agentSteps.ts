@@ -37,7 +37,9 @@ function translate(entry: { key: string; text: string }, translator: AgentTransl
 }
 
 export function truncateAgentText(text: string, max: number): string {
-  const collapsed = String(text || '').replace(/\s+/g, ' ').trim();
+  const collapsed = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return collapsed.length > max ? `${collapsed.slice(0, max - 1)}…` : collapsed;
 }
 
@@ -55,11 +57,15 @@ export function formatElapsed(ms: number, translator: AgentTranslator = () => ''
   return `${elapsedLabel && elapsedLabel !== 'agent.elapsed' ? elapsedLabel : '用时'} ${parts.join(' ')}`;
 }
 
-export function agentStepLabel(step: AgentStepData, translator: AgentTranslator = () => ''): string {
+export function agentStepLabel(
+  step: AgentStepData,
+  translator: AgentTranslator = () => '',
+): string {
   if (step.kind === 'command' && step.status !== 'running' && step.command) {
     return `${translate(LABELS.commandDone, translator)} ${truncateAgentText(step.command, MAX_COMMAND_CHARS)}`;
   }
-  const label = LABELS[step.kind as keyof typeof LABELS] as { key: string; text: string } | undefined;
+  const label = LABELS[step.kind as keyof typeof LABELS] as
+    { key: string; text: string } | undefined;
   if (label) return translate(label, translator);
   return String(step.title || '').trim() || translate(LABELS.command, translator);
 }
@@ -96,9 +102,9 @@ export function agentStepCommand(step: AgentStepData): string {
 export function agentStepMeta(step: AgentStepData, translator: AgentTranslator = () => ''): string {
   const bits = [diffStatText(step), stepDuration(step.durationMs)].filter(Boolean);
   if (step.status === 'failed') {
-    bits.push(step.exitCode != null
-      ? `exit ${step.exitCode}`
-      : translate(LABELS.failed, translator));
+    bits.push(
+      step.exitCode != null ? `exit ${step.exitCode}` : translate(LABELS.failed, translator),
+    );
   }
   return bits.join('  ·  ');
 }

@@ -14,7 +14,9 @@ import { ActionRow, PillAction, Rich, ScaffoldCard, Section } from './parts';
 function Qed() {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-      <UiText variant="label" tone="ink" testID="proof-qed" aria-label="QED">∎</UiText>
+      <UiText variant="label" tone="ink" testID="proof-qed" aria-label="QED">
+        ∎
+      </UiText>
     </View>
   );
 }
@@ -31,7 +33,15 @@ function ProofBody({ title, body, part }: { title?: string; body: string; part: 
   );
 }
 
-export function DefinitionCard({ term, body, testID }: { term: string; body: string; testID?: string }) {
+export function DefinitionCard({
+  term,
+  body,
+  testID,
+}: {
+  term: string;
+  body: string;
+  testID?: string;
+}) {
   const { strings } = useLearnHost();
   return (
     <ScaffoldCard kind="definition" label={strings.label.definition} testID={testID}>
@@ -50,7 +60,13 @@ export function KeyPointCard({ body, testID }: { body: string; testID?: string }
   );
 }
 
-export function TheoremCard({ title, statement, proofTitle, proofBody, testID }: {
+export function TheoremCard({
+  title,
+  statement,
+  proofTitle,
+  proofBody,
+  testID,
+}: {
   title?: string;
   statement: string;
   proofTitle?: string;
@@ -87,7 +103,15 @@ export function TheoremCard({ title, statement, proofTitle, proofBody, testID }:
 }
 
 /** Standalone proof: open by default (it is the reply's content), foldable from the header. */
-export function ProofCard({ title, body, testID }: { title?: string; body: string; testID?: string }) {
+export function ProofCard({
+  title,
+  body,
+  testID,
+}: {
+  title?: string;
+  body: string;
+  testID?: string;
+}) {
   const { strings } = useLearnHost();
   const [open, setOpen] = useState(true);
   return (
@@ -95,7 +119,7 @@ export function ProofCard({ title, body, testID }: { title?: string; body: strin
       kind="proof"
       label={strings.label.proof}
       testID={testID}
-      trailing={(
+      trailing={
         <PillAction
           label={open ? strings.proofHide : strings.proofShow}
           tone="quiet"
@@ -105,11 +129,17 @@ export function ProofCard({ title, body, testID }: { title?: string; body: strin
           testID="proof-toggle"
           onPress={() => setOpen(!open)}
         />
-      )}
+      }
     >
-      {open
-        ? <ProofBody title={title} body={body} part="proof" />
-        : (title && title.trim() !== strings.label.proof ? <Rich source={title} part="proof-title" /> : <UiText variant="bodySm" tone="tertiary">…</UiText>)}
+      {open ? (
+        <ProofBody title={title} body={body} part="proof" />
+      ) : title && title.trim() !== strings.label.proof ? (
+        <Rich source={title} part="proof-title" />
+      ) : (
+        <UiText variant="bodySm" tone="tertiary">
+          …
+        </UiText>
+      )}
     </ScaffoldCard>
   );
 }

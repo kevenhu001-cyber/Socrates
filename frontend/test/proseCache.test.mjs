@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createProseCache, createSettledProseCache, sharedFinalProseCache, clearSharedProseCache } from '../src/render/proseCache.ts';
+import {
+  createProseCache,
+  createSettledProseCache,
+  sharedFinalProseCache,
+  clearSharedProseCache,
+} from '../src/render/proseCache.ts';
 const box = (text) => ({ __html: `<p>${text}</p>` });
 
 test('LRU tracks retained source and HTML exactly through repeated evictions', () => {
@@ -8,7 +13,10 @@ test('LRU tracks retained source and HTML exactly through repeated evictions', (
   for (let i = 0; i < 1000; i++) {
     const key = String(i).padStart(10, '0');
     cache.set(key, { __html: 'h'.repeat(10) });
-    assert.deepEqual(cache.stats(), { chars: Math.min(i + 1, 5) * 20, entries: Math.min(i + 1, 5) });
+    assert.deepEqual(cache.stats(), {
+      chars: Math.min(i + 1, 5) * 20,
+      entries: Math.min(i + 1, 5),
+    });
   }
   assert.ok(cache.get('0000000995'));
   assert.ok(cache.get('0000000999'));
@@ -18,7 +26,8 @@ test('LRU tracks retained source and HTML exactly through repeated evictions', (
 test('LRU evicts least recently used entries, replaces weights, and bounds tiny entries', () => {
   const cache = createProseCache(100, 2);
   const a = box('a');
-  cache.set('a', a); cache.set('b', box('b'));
+  cache.set('a', a);
+  cache.set('b', box('b'));
   assert.strictEqual(cache.get('a'), a);
   cache.set('c', box('c'));
   assert.equal(cache.get('b'), undefined);
@@ -41,7 +50,10 @@ test('account boundary drops shared finalized prose', () => {
 test('a prefix larger than the lookup cache never reparses unchanged blocks', () => {
   const renderPrefix = createSettledProseCache();
   let paints = 0;
-  const paint = (text) => { paints++; return box(text); };
+  const paint = (text) => {
+    paints++;
+    return box(text);
+  };
   const blocks = Array.from({ length: 260 }, (_, i) => `Block ${i}`);
   const first = renderPrefix(blocks, paint);
   for (let frame = 0; frame < 60; frame++) assert.strictEqual(renderPrefix(blocks, paint), first);
@@ -56,7 +68,10 @@ test('a prefix larger than the lookup cache never reparses unchanged blocks', ()
 test('prefix cache handles replacement, truncation, renderer changes and replay', () => {
   const renderPrefix = createSettledProseCache();
   let paints = 0;
-  const paint = (text) => { paints++; return box(text); };
+  const paint = (text) => {
+    paints++;
+    return box(text);
+  };
   const first = renderPrefix(['one', 'two'], paint);
   const replacement = renderPrefix(['one', 'changed'], paint);
   assert.strictEqual(replacement[0], first[0]);

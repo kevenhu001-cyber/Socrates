@@ -62,8 +62,12 @@ class WorkerSlot {
     this.worker = w;
     this._readyResolved = false;
     const bootFailure = (value: unknown) => {
-      const source = value instanceof Error ? value : new Error(String(value || 'pyodide boot failed'));
-      const error = new Error(source.message || 'pyodide boot failed') as Error & { code?: string; status?: string };
+      const source =
+        value instanceof Error ? value : new Error(String(value || 'pyodide boot failed'));
+      const error = new Error(source.message || 'pyodide boot failed') as Error & {
+        code?: string;
+        status?: string;
+      };
       error.code = 'pyodide_worker_boot_failed';
       error.status = 'failed';
       return error;
@@ -145,7 +149,9 @@ class WorkerSlot {
     // the old resolved _claimChain) now queues behind us instead of
     // racing past busy=true.
     let resolveNextRelease!: () => void;
-    this._claimChain = new Promise<void>((resolve) => { resolveNextRelease = resolve; });
+    this._claimChain = new Promise<void>((resolve) => {
+      resolveNextRelease = resolve;
+    });
     this._installReleaseTrap(resolveNextRelease);
     return true;
   }
@@ -198,13 +204,17 @@ class WorkerSlot {
    */
   _installReleaseTrap(resolveNextRelease: (() => void) | null) {
     let resolveRelease!: () => void;
-    const myRelease = new Promise<void>((resolve) => { resolveRelease = resolve; });
+    const myRelease = new Promise<void>((resolve) => {
+      resolveRelease = resolve;
+    });
     this._releaseCurrent = resolveRelease;
-    myRelease.then(() => {
-      this.busy = false;
-      this._releaseCurrent = null;
-      if (resolveNextRelease) resolveNextRelease();
-    }).catch(() => {});
+    myRelease
+      .then(() => {
+        this.busy = false;
+        this._releaseCurrent = null;
+        if (resolveNextRelease) resolveNextRelease();
+      })
+      .catch(() => {});
   }
   /**
    * Release the slot. Resolves the in-flight claim's release promise so
@@ -228,7 +238,9 @@ class WorkerSlot {
     if (this.worker) {
       /* terminate() resolves when the worker exits; the exit handler below is
          what clears worker/busy. A rejection here is not actionable. */
-      try { this.worker.terminate().catch(() => {}); } catch (_) {}
+      try {
+        this.worker.terminate().catch(() => {});
+      } catch (_) {}
     }
     if (this._releaseCurrent) {
       const r = this._releaseCurrent;
@@ -313,7 +325,9 @@ export async function getPool() {
     _poolInitLock = (async () => {
       try {
         pool = new PyodidePool({ size: POOL_SIZE });
-        console.log(`[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`);
+        console.log(
+          `[code-interpreter] pool ready (${POOL_SIZE} workers, pyodide ${PYODIDE_VERSION})`,
+        );
       } finally {
         /* Clear the lock so a later call can retry on failure. The
            next caller sees `pool === null` (init never produced one)

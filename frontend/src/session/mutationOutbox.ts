@@ -76,9 +76,11 @@ let draining = false;
 
 function isMessageOp(op: unknown): op is MessageOp {
   const candidate = op as Partial<MessageOp> | null;
-  return !!candidate
-    && typeof candidate.id === 'string'
-    && (candidate.type === 'patch' || candidate.type === 'delete');
+  return (
+    !!candidate &&
+    typeof candidate.id === 'string' &&
+    (candidate.type === 'patch' || candidate.type === 'delete')
+  );
 }
 
 function readQueue(): MessageOp[] {
@@ -119,7 +121,10 @@ function writeQueue(ops: MessageOp[]): void {
  */
 function opPath(sessionId: string | null, id: string): string {
   const path = '/api/messages/' + encodeURIComponent(id);
-  if (sessionId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+  if (
+    sessionId &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)
+  ) {
     return path + '?sessionId=' + encodeURIComponent(sessionId);
   }
   return path;

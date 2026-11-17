@@ -6,8 +6,12 @@ import { parse } from 'yaml';
 import { projectPublicSchema } from '../scripts/generate-site-openapi.mjs';
 
 test('published OpenAPI is a deterministic projection of canonical schema and excludes operator-only routes', () => {
-  const published = JSON.parse(readFileSync(new URL('../site/openapi.json', import.meta.url), 'utf8'));
-  const canonical = parse(readFileSync(new URL('../docs/api/openapi.yaml', import.meta.url), 'utf8'));
+  const published = JSON.parse(
+    readFileSync(new URL('../site/openapi.json', import.meta.url), 'utf8'),
+  );
+  const canonical = parse(
+    readFileSync(new URL('../docs/api/openapi.yaml', import.meta.url), 'utf8'),
+  );
   assert.equal(published.openapi, canonical.openapi);
   assert.ok(published.paths['/api/health']);
   assert.ok(published.paths['/api/oauth/token']);
@@ -15,12 +19,23 @@ test('published OpenAPI is a deterministic projection of canonical schema and ex
   for (const [path, pathItem] of Object.entries(canonical.paths)) {
     for (const [method, operation] of Object.entries(pathItem)) {
       if (!/^(get|post|put|patch|delete|head|options|trace)$/i.test(method)) continue;
-      const shouldPublish = !operation?.tags?.includes('admin') && operation?.['x-internal'] !== true &&
-        pathItem?.['x-internal'] !== true && !path.split('/').includes('_internal');
-      assert.equal(Boolean(published.paths[path]?.[method]), shouldPublish, `${method.toUpperCase()} ${path}`);
+      const shouldPublish =
+        !operation?.tags?.includes('admin') &&
+        operation?.['x-internal'] !== true &&
+        pathItem?.['x-internal'] !== true &&
+        !path.split('/').includes('_internal');
+      assert.equal(
+        Boolean(published.paths[path]?.[method]),
+        shouldPublish,
+        `${method.toUpperCase()} ${path}`,
+      );
     }
   }
-  assert.doesNotThrow(() => execFileSync(process.execPath, ['scripts/generate-site-openapi.mjs', '--check'], { stdio: 'pipe' }));
+  assert.doesNotThrow(() =>
+    execFileSync(process.execPath, ['scripts/generate-site-openapi.mjs', '--check'], {
+      stdio: 'pipe',
+    }),
+  );
 });
 
 test('projection filters both pathItem and operation x-internal markers without mutating source', () => {

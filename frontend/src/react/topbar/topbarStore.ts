@@ -21,14 +21,20 @@ export function readTopbarState(): TopbarState {
 
 export function setTopbarState(patch: Partial<TopbarState>): void {
   const next = { ...state, ...patch };
-  if (next.conversationActions === state.conversationActions && next.sharedView === state.sharedView) return;
+  if (
+    next.conversationActions === state.conversationActions &&
+    next.sharedView === state.sharedView
+  )
+    return;
   state = next;
   listeners.forEach((listener) => listener());
 }
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function useTopbarState(): TopbarState {

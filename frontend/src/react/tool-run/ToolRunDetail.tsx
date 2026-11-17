@@ -7,7 +7,14 @@
  */
 import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { CodeBlock, DetailSection, ImageOutput, PlainDetail, SourceList, sourceCardsOf } from '@socrates/ui/turn';
+import {
+  CodeBlock,
+  DetailSection,
+  ImageOutput,
+  PlainDetail,
+  SourceList,
+  sourceCardsOf,
+} from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
@@ -43,18 +50,24 @@ function TextSection({ section }: { section: Extract<Section, { kind: 'output' |
         tone={section.kind === 'error' ? 'error' : 'plain'}
         onCopy={() => copyText(section.fullText || section.text)}
         {...copyLabels()}
-        extra={expandable ? (
-          <UiButton
-            testID="tool-output-expand"
-            variant="ghost"
-            size={width < 768 ? 'lg' : 'sm'}
-            aria-expanded={expanded}
-            label={expanded
-              ? translate('tool.showLess', 'Show less')
-              : tf('tool.showAll', 'Show all ({n} chars)', { n: (section.fullText || '').length.toLocaleString() })}
-            onPress={() => setExpanded((value) => !value)}
-          />
-        ) : null}
+        extra={
+          expandable ? (
+            <UiButton
+              testID="tool-output-expand"
+              variant="ghost"
+              size={width < 768 ? 'lg' : 'sm'}
+              aria-expanded={expanded}
+              label={
+                expanded
+                  ? translate('tool.showLess', 'Show less')
+                  : tf('tool.showAll', 'Show all ({n} chars)', {
+                      n: (section.fullText || '').length.toLocaleString(),
+                    })
+              }
+              onPress={() => setExpanded((value) => !value)}
+            />
+          ) : null
+        }
       />
     </DetailSection>
   );
@@ -78,10 +91,12 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
           variant="ghost"
           size="sm"
           label={translate('sources.viewAll', 'View all sources')}
-          onPress={() => openSourcesPanel(
-            { key: `tool-${entryKey}`, title: section.title, items },
-            document.activeElement instanceof HTMLElement ? document.activeElement : null,
-          )}
+          onPress={() =>
+            openSourcesPanel(
+              { key: `tool-${entryKey}`, title: section.title, items },
+              document.activeElement instanceof HTMLElement ? document.activeElement : null,
+            )
+          }
         />
       </DetailSection>
     );
@@ -97,9 +112,17 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
 }
 
 function imageOutputsOf(call: ToolCallRecord | undefined) {
-  return toolOutputsOf(call).flatMap((output) => output.kind === 'artifact' && /^image\//i.test(output.mimeType || '')
-    ? [{ id: output.id, uri: `/api/files/${encodeURIComponent(output.fileId)}/raw`, name: output.name || '' }]
-    : []);
+  return toolOutputsOf(call).flatMap((output) =>
+    output.kind === 'artifact' && /^image\//i.test(output.mimeType || '')
+      ? [
+          {
+            id: output.id,
+            uri: `/api/files/${encodeURIComponent(output.fileId)}/raw`,
+            name: output.name || '',
+          },
+        ]
+      : [],
+  );
 }
 
 interface LiveOutputSectionProps {
@@ -109,8 +132,22 @@ interface LiveOutputSectionProps {
 function LiveOutputSection({ view }: LiveOutputSectionProps) {
   return (
     <DetailSection title={translate('tool.detail.liveOutput', 'Live output')} kind="live">
-      {view.livePreview ? <CodeBlock testID="tool-live-preview" maxHeight={200} text={view.livePreview} {...copyLabels()} /> : null}
-      {view.liveOutput ? <CodeBlock testID="tool-live-output" maxHeight={200} text={view.liveOutput} {...copyLabels()} /> : null}
+      {view.livePreview ? (
+        <CodeBlock
+          testID="tool-live-preview"
+          maxHeight={200}
+          text={view.livePreview}
+          {...copyLabels()}
+        />
+      ) : null}
+      {view.liveOutput ? (
+        <CodeBlock
+          testID="tool-live-output"
+          maxHeight={200}
+          text={view.liveOutput}
+          {...copyLabels()}
+        />
+      ) : null}
     </DetailSection>
   );
 }
@@ -122,27 +159,47 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
   const results = view.sections.filter((section) => section.kind !== 'error');
   const errors = view.sections.filter((section) => section.kind === 'error');
   const images = imageOutputsOf(call);
-  const empty = !args.length && !hasLiveOutput && !view.sections.length && !images.length && !facts.length;
+  const empty =
+    !args.length && !hasLiveOutput && !view.sections.length && !images.length && !facts.length;
   const entryKey = call?.id || view.id;
   return (
     <>
       {args.map((section, index) => (
-        <DetailSection key={`args-${index}`} title={translate('tool.detail.input', 'Input')} kind="input">
+        <DetailSection
+          key={`args-${index}`}
+          title={translate('tool.detail.input', 'Input')}
+          kind="input"
+        >
           <CodeBlock text={section.text} onCopy={copyText} {...copyLabels()} />
         </DetailSection>
       ))}
       {hasLiveOutput ? <LiveOutputSection view={view} /> : null}
-      {!hasLiveOutput ? results.map((section, index) => <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />) : null}
+      {!hasLiveOutput
+        ? results.map((section, index) => (
+            <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
+          ))
+        : null}
       {images.length ? (
         <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
-          {images.map((image) => <ImageOutput key={image.id} uri={image.uri} alt={image.name || translate('tool.detail.images', 'Images')} />)}
+          {images.map((image) => (
+            <ImageOutput
+              key={image.id}
+              uri={image.uri}
+              alt={image.name || translate('tool.detail.images', 'Images')}
+            />
+          ))}
         </DetailSection>
       ) : null}
-      {errors.map((section, index) => <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />)}
+      {errors.map((section, index) => (
+        <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />
+      ))}
       {facts.length ? (
         <DetailSection title={translate('tool.techDetails', 'Technical details')} kind="technical">
           {facts.map((section, index) => (
-            <PlainDetail key={`${section.title}-${index}`} text={`${section.title}: ${section.text}`} />
+            <PlainDetail
+              key={`${section.title}-${index}`}
+              text={`${section.title}: ${section.text}`}
+            />
           ))}
         </DetailSection>
       ) : null}

@@ -21,10 +21,10 @@ let returnFocusElement: HTMLElement | null = null;
 export function publishConfirmState(snapshot: ConfirmStateUpdate): void {
   if (snapshot.open && !confirmState.getSnapshot().open) {
     const activeElement = typeof document === 'undefined' ? null : document.activeElement;
-    const HTMLElementType = typeof document === 'undefined' ? undefined : document.defaultView?.HTMLElement;
-    returnFocusElement = HTMLElementType && activeElement instanceof HTMLElementType
-      ? activeElement
-      : null;
+    const HTMLElementType =
+      typeof document === 'undefined' ? undefined : document.defaultView?.HTMLElement;
+    returnFocusElement =
+      HTMLElementType && activeElement instanceof HTMLElementType ? activeElement : null;
   }
   confirmState.dispatch(snapshot);
 }

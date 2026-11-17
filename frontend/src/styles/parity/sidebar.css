@@ -13,29 +13,54 @@
  */
 
 /* The toggle carries two glyphs; phones keep the drawer's ×. */
-#appShell #sidebarCloseBtn .sidebar-toggle-panel { display: none; }
+#appShell #sidebarCloseBtn .sidebar-toggle-panel {
+  display: none;
+}
 
 /* The React search row publishes the selected sidebar panel. The legacy
    content hosts stay in index.html while CSS applies that state without a
    second imperative owner mutating their classes. */
-#sidebar #knowledgePanel { display: none; }
-#sidebar #mistakesPanel { display: none; }
-body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="knowledge"]) #recentsPanel { display: none; }
-body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"]) #recentsPanel { display: none; }
-body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="knowledge"]) #knowledgePanel { display: flex; }
-body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"]) #mistakesPanel { display: flex; }
+#sidebar #knowledgePanel {
+  display: none;
+}
+#sidebar #mistakesPanel {
+  display: none;
+}
+body[data-app-mode='tutor'] #appShell #sidebar:has([data-sidebar-view='knowledge']) #recentsPanel {
+  display: none;
+}
+body[data-app-mode='tutor'] #appShell #sidebar:has([data-sidebar-view='mistakes']) #recentsPanel {
+  display: none;
+}
+body[data-app-mode='tutor']
+  #appShell
+  #sidebar:has([data-sidebar-view='knowledge'])
+  #knowledgePanel {
+  display: flex;
+}
+body[data-app-mode='tutor'] #appShell #sidebar:has([data-sidebar-view='mistakes']) #mistakesPanel {
+  display: flex;
+}
 
-.sidebar-project-nav { display: contents; }
-.sidebar-project-create { display: none; }
+.sidebar-project-nav {
+  display: contents;
+}
+.sidebar-project-create {
+  display: none;
+}
 
-.sidebar-more-popover[data-open="false"] {
+.sidebar-more-popover[data-open='false'] {
   visibility: hidden;
   pointer-events: none;
 }
 
 @media (min-width: 769px) {
-  #appShell #sidebarCloseBtn .sidebar-toggle-close { display: none; }
-  #appShell #sidebarCloseBtn .sidebar-toggle-panel { display: block; }
+  #appShell #sidebarCloseBtn .sidebar-toggle-close {
+    display: none;
+  }
+  #appShell #sidebarCloseBtn .sidebar-toggle-panel {
+    display: block;
+  }
 
   #appShell {
     --sidebar-rail: 52px;
@@ -112,16 +137,26 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     letter-spacing: -0.015em;
     white-space: nowrap;
   }
-  #appShell #sidebarHeader .sidebar-logo-img { width: var(--ui-space-xl); height: var(--ui-space-xl); border-radius: var(--ui-radius-sm); }
-  #appShell #sidebarHeader .sidebar-logo > span { font: inherit; }
-  #appShell #sidebarHeader .cg-sidebar-caret { display: none; }
+  #appShell #sidebarHeader .sidebar-logo-img {
+    width: var(--ui-space-xl);
+    height: var(--ui-space-xl);
+    border-radius: var(--ui-radius-sm);
+  }
+  #appShell #sidebarHeader .sidebar-logo > span {
+    font: inherit;
+  }
+  #appShell #sidebarHeader .cg-sidebar-caret {
+    display: none;
+  }
   #appShell #sidebarHeader > div:last-child,
   #appShell #sidebarHeader .sidebar-header-actions {
     display: flex;
     align-items: center;
     gap: 2px;
   }
-  #appShell #sidebarSearchBtn { display: none; }
+  #appShell #sidebarSearchBtn {
+    display: none;
+  }
   /* The shadcn buttons own their 32px size and radius. The shell keeps only
      the state colors and icon drawing size here. */
   #appShell #newChatBtn,
@@ -129,7 +164,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     background: transparent;
     color: var(--muted-foreground);
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover {
@@ -137,7 +174,10 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     color: var(--foreground);
   }
   #appShell #newChatBtn svg,
-  #appShell #sidebarCloseBtn svg { width: 20px; height: 20px; }
+  #appShell #sidebarCloseBtn svg {
+    width: 20px;
+    height: 20px;
+  }
 
   /* ── Rows (primary nav, search, history) ─────────────────────────────── */
   #appShell #sidebarNav {
@@ -214,7 +254,7 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   /* Selected is a solid step of the ladder, not the hover wash, so the
      current chat stays marked while the pointer moves over its neighbours. */
   #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current="true"] {
+  #appShell #sidebar .recent-item[aria-current='true'] {
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
@@ -224,18 +264,28 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
      role: it has to survive the pointer leaving the row, and it must not
      be the same value a hover paints, or the two states are
      indistinguishable. */
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell
+    #sidebarNav
+    #navNew.sidebar-nav-btn {
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
   /* Same visible set and order as before the parity pass. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
-  #appShell #sidebarNav #navExam.sidebar-nav-btn { display: none; }
-  #appShell #sidebarNav #navSites.sidebar-nav-btn { order: 6; }
-  #appShell #sidebarNav #navMore.sidebar-nav-btn { order: 7; }
-  #appShell #sidebarNav #navSkills.sidebar-nav-btn { order: 8; }
+  #appShell #sidebarNav #navExam.sidebar-nav-btn {
+    display: none;
+  }
+  #appShell #sidebarNav #navSites.sidebar-nav-btn {
+    order: 6;
+  }
+  #appShell #sidebarNav #navMore.sidebar-nav-btn {
+    order: 7;
+  }
+  #appShell #sidebarNav #navSkills.sidebar-nav-btn {
+    order: 8;
+  }
 
   /* "Search chats" reads as a nav row whose label is the input.
      The row is the one collapsible block in the sidebar: it collapses on
@@ -274,8 +324,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     border: 0;
     border-radius: var(--ui-radius-pill);
     background: var(--ui-card);
-    transition: background-color var(--ui-duration-hover) ease,
-                border-color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      border-color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .sidebar-search:hover {
     border-color: var(--ui-border-strong);
@@ -304,15 +355,22 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
   }
-  #appShell #sidebarSearch::placeholder { color: var(--ui-text-tertiary); opacity: 1; }
-  #appShell #sidebarSearch:focus::placeholder { color: var(--ui-text-placeholder); }
+  #appShell #sidebarSearch::placeholder {
+    color: var(--ui-text-tertiary);
+    opacity: 1;
+  }
+  #appShell #sidebarSearch:focus::placeholder {
+    color: var(--ui-text-placeholder);
+  }
   /* The search field is a bare input inside a ghost pill — it has no frame
      of its own, so the global focus contract painted a hard ring around
      something that looks like a label, and the ring read as a box drawn
      around the sidebar (the "black frame" report). The pill carries the
      focus treatment instead; see polish/sidebar.css .sidebar-search:
      focus-within. */
-  #appShell #sidebar .sidebar-search input:focus-visible { box-shadow: none; }
+  #appShell #sidebar .sidebar-search input:focus-visible {
+    box-shadow: none;
+  }
 
   /* ── History ─────────────────────────────────────────────────────────── */
   #appShell #recentsPanel {
@@ -327,7 +385,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     overflow-y: auto;
     scrollbar-width: thin;
   }
-  #appShell #recentsPanel.hidden { display: none; }
+  #appShell #recentsPanel.hidden {
+    display: none;
+  }
   #appShell #sidebar .recents-header {
     display: flex;
     align-items: center;
@@ -344,7 +404,10 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     font-weight: var(--ui-font-weight-regular);
     line-height: var(--ui-text-ui-line);
   }
-  #appShell #sidebar .recents-list-content { display: flex; flex-direction: column; }
+  #appShell #sidebar .recents-list-content {
+    display: flex;
+    flex-direction: column;
+  }
   #appShell #sidebar .recents-time-label {
     padding: 12px 10px 4px;
     color: var(--ui-text-muted);
@@ -352,11 +415,15 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     font-weight: var(--ui-font-weight-medium);
     line-height: 16px;
   }
-  #appShell #sidebar .recents-list-content > .recents-time-label:first-child { padding-top: 0; }
+  #appShell #sidebar .recents-list-content > .recents-time-label:first-child {
+    padding-top: 0;
+  }
 
   /* One line per chat, like chatgpt.com: title only; the relative time
      stays available as the row's tooltip (title attribute set by React). */
-  #appShell #sidebar .recent-item { gap: 8px; }
+  #appShell #sidebar .recent-item {
+    gap: 8px;
+  }
   #appShell #sidebar .recent-mode-badge {
     flex: 0 0 6px;
     width: 6px;
@@ -371,7 +438,12 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     gap: 0;
     min-width: 0;
   }
-  #appShell #sidebar .recent-item-title-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  #appShell #sidebar .recent-item-title-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
   #appShell #sidebar .recent-item-text {
     min-width: 0;
     overflow: hidden;
@@ -382,7 +454,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  #appShell #sidebar .recent-item-meta { display: none; }
+  #appShell #sidebar .recent-item-meta {
+    display: none;
+  }
   #appShell #sidebar .recent-item-actions {
     display: flex;
     flex: 0 0 auto;
@@ -394,9 +468,13 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   }
   #appShell #sidebar .recent-item:hover .recent-item-actions,
   #appShell #sidebar .recent-item:focus-within .recent-item-actions,
-  #appShell #sidebar .recent-item.actions-open .recent-item-actions { opacity: 1; }
+  #appShell #sidebar .recent-item.actions-open .recent-item-actions {
+    opacity: 1;
+  }
   @media (hover: none) {
-    #appShell #sidebar .recent-item-actions { opacity: 0.65; }
+    #appShell #sidebar .recent-item-actions {
+      opacity: 0.65;
+    }
   }
   /* The reference row shows a single quiet ⋯ trigger on hover — the
      tag/archive/delete actions live inside its dropdown (the menu is a
@@ -421,11 +499,18 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     background: var(--accent);
     color: var(--foreground);
   }
-  #appShell #sidebar .recent-item-overflow svg { width: 16px; height: 16px; }
+  #appShell #sidebar .recent-item-overflow svg {
+    width: 16px;
+    height: 16px;
+  }
   /* The pin toggle is the phone drawer's (polish/mobile-sidebar.css); the
      desktop row keeps pinning inside the ⋯ menu. */
-  #appShell #sidebar .recent-item-pin-toggle { display: none; }
-  #appShell #sidebar .recent-item.actions-open { background: var(--accent); }
+  #appShell #sidebar .recent-item-pin-toggle {
+    display: none;
+  }
+  #appShell #sidebar .recent-item.actions-open {
+    background: var(--accent);
+  }
 
   /* ── Footer: account row + quick actions ─────────────────────────────── */
   #appShell #sidebarFooter {
@@ -449,8 +534,14 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     border-radius: var(--ui-radius-row);
     transition: background-color var(--ui-duration-hover) ease;
   }
-  #appShell #sidebarUserRow:hover { background: var(--accent); }
-  #appShell #sidebarFooter .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
+  #appShell #sidebarUserRow:hover {
+    background: var(--accent);
+  }
+  #appShell #sidebarFooter .sidebar-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
 
   /* P_sidebar-parity — 图1 closes the drawer on a single full-width blue
      pill. It is the one solid brand surface here, so it reads as the
@@ -471,11 +562,16 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     height: 32px;
     border-radius: var(--ui-radius-md);
     color: var(--muted-foreground);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
-  #appShell #sidebarFooter .icon-btn:hover { background: var(--accent); color: var(--foreground); }
-  [data-mode="light"] :is(#newChatBtn, #sidebarCloseBtn),
-  [data-mode="light"] #sidebarFooter .icon-btn {
+  #appShell #sidebarFooter .icon-btn:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+  [data-mode='light'] :is(#newChatBtn, #sidebarCloseBtn),
+  [data-mode='light'] #sidebarFooter .icon-btn {
     color: var(--foreground);
   }
 
@@ -486,8 +582,12 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     transform: none;
     border-right-color: var(--ui-sidebar-border);
   }
-  #appShell #sidebar.collapsed ~ .main { --app-sidebar-width: var(--sidebar-rail); }
-  #appShell #sidebar.collapsed .sidebar-inner { opacity: 1; }
+  #appShell #sidebar.collapsed ~ .main {
+    --app-sidebar-width: var(--sidebar-rail);
+  }
+  #appShell #sidebar.collapsed .sidebar-inner {
+    opacity: 1;
+  }
   #appShell #sidebar.collapsed #sidebarHeader {
     flex-direction: column;
     justify-content: flex-start;
@@ -495,8 +595,13 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     padding: 8px 8px 4px;
   }
   #appShell #sidebar.collapsed #sidebarHeader .sidebar-logo,
-  #appShell #sidebar.collapsed #newChatBtn { display: none; }
-  #appShell #sidebar.collapsed #sidebarNav { padding: 0 8px; align-items: center; }
+  #appShell #sidebar.collapsed #newChatBtn {
+    display: none;
+  }
+  #appShell #sidebar.collapsed #sidebarNav {
+    padding: 0 8px;
+    align-items: center;
+  }
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn {
     justify-content: center;
     width: var(--sidebar-row);
@@ -509,10 +614,14 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   #appShell #sidebar.collapsed .knowledge-panel,
   #appShell #sidebar.collapsed .sidebar-footer-actions,
   #appShell #sidebar.collapsed .user-identity,
-  #appShell #sidebar.collapsed .sidebar-resize-handle { display: none; }
-  #appShell #sidebar.collapsed #sidebarNav .nav-new-badge { display: none; }
+  #appShell #sidebar.collapsed .sidebar-resize-handle {
+    display: none;
+  }
+  #appShell #sidebar.collapsed #sidebarNav .nav-new-badge {
+    display: none;
+  }
   /* Labels stay in the accessibility tree so each icon keeps its name. */
-  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > [data-part="nav-label"] {
+  #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn > [data-part='nav-label'] {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -547,18 +656,29 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
     animation: railTooltipIn 120ms var(--ui-ease-out) forwards;
   }
   @keyframes railTooltipIn {
-    from { opacity: 0; transform: translate(-4px, -50%); }
-    to   { opacity: 1; transform: translate(0, -50%); }
+    from {
+      opacity: 0;
+      transform: translate(-4px, -50%);
+    }
+    to {
+      opacity: 1;
+      transform: translate(0, -50%);
+    }
   }
   #appShell #sidebar.collapsed #sidebarFooter {
     justify-content: center;
     margin-top: auto;
     padding: 8px 0;
   }
-  #appShell #sidebar.collapsed #sidebarUserRow { flex: 0 0 auto; justify-content: center; }
+  #appShell #sidebar.collapsed #sidebarUserRow {
+    flex: 0 0 auto;
+    justify-content: center;
+  }
 
   /* The rail owns the toggle; the top-bar opener is never needed here. */
-  #appShell #sidebarOpenBtn { display: none; }
+  #appShell #sidebarOpenBtn {
+    display: none;
+  }
 
   /* Main column follows the sidebar edge. */
   #appShell #sidebar ~ .main {
@@ -568,7 +688,9 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
 
 @media (min-width: 769px) and (prefers-reduced-motion: reduce) {
   #appShell #sidebar,
-  #appShell #sidebar ~ .main { transition: none; }
+  #appShell #sidebar ~ .main {
+    transition: none;
+  }
 }
 
 /* ── Nav trailing badge ─────────────────────────────────────────────────── */
@@ -593,14 +715,15 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
      the phone drawer (polish/mobile-sidebar.css keeps the 10px row). */
   #appShell #sidebarNav .sidebar-nav-btn,
   #appShell #sidebar .recent-item {
-    transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+    transition:
+      background-color var(--ui-duration-fast) ease,
+      color var(--ui-duration-fast) ease;
   }
 
   #appShell #sidebarNav .sidebar-nav-btn svg,
   #appShell #sidebar .recent-item svg {
     stroke-linecap: round;
     stroke-linejoin: round;
-
   }
 
   #appShell #sidebar .sidebar-scroll-area {
@@ -610,14 +733,20 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
 }
 /* Recents header icons are a phone-drawer affordance; desktop keeps the
    bare "Recents" label. */
-#appShell .recents-header-actions { display: none; }
+#appShell .recents-header-actions {
+  display: none;
+}
 
 /* ── Session-row ⋯ menu anchor (all widths) ─────────────────────────────
    The dropdown positions itself against the actions box; `contain:
    layout` on .recent-item gives each row its own stacking context, so an
    open row must lift above its siblings for the menu to paint on top. */
-#appShell .recent-item-actions { position: relative; }
-#appShell .recent-item.actions-open { z-index: var(--ui-z-popover, 200); }
+#appShell .recent-item-actions {
+  position: relative;
+}
+#appShell .recent-item.actions-open {
+  z-index: var(--ui-z-popover, 200);
+}
 
 /* ── Account row (all widths) — avatar + name over plan tier ──────────────
    Mirrors the reference drawer's two-line identity block. The avatar and
@@ -693,28 +822,56 @@ body[data-app-mode="tutor"] #appShell #sidebar:has([data-sidebar-view="mistakes"
   white-space: nowrap;
 }
 /* Collapsed rail: the avatar alone, centred in the rail. */
-#appShell #sidebar.collapsed #sidebarUserRow { justify-content: center; }
-#appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-static { flex: 0 0 auto; padding: 4px; }
-#appShell #sidebar.collapsed #sidebarUserRow .user-identity { display: none; }
+#appShell #sidebar.collapsed #sidebarUserRow {
+  justify-content: center;
+}
+#appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-static {
+  flex: 0 0 auto;
+  padding: 4px;
+}
+#appShell #sidebar.collapsed #sidebarUserRow .user-identity {
+  display: none;
+}
 
-#appShell .recent-item input[name="title"] { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--ui-border-strong); border-radius: var(--ui-radius-control); background: var(--secondary); color: var(--foreground); font: inherit; padding: 4px; }
+#appShell .recent-item input[name='title'] {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-control);
+  background: var(--secondary);
+  color: var(--foreground);
+  font: inherit;
+  padding: 4px;
+}
 
-#appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-trigger { justify-content: center; padding: 4px; }
+#appShell #sidebar.collapsed #sidebarUserRow .sidebar-account-trigger {
+  justify-content: center;
+  padding: 4px;
+}
 
 /* The shell reserves one detail column; renderers cannot resize the main pane. */
-html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
+html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   margin-inline-end: var(--ui-detail-width);
 }
 
 /* Window slots preserve measured row heights; spacers must not flex-shrink. */
-#appShell #sidebar .recents-window-row { display: flow-root; flex-shrink: 0; }
-#appShell #sidebar .recents-window-row[data-timeline-index="0"] > .recents-time-label { padding-top: 0; }
+#appShell #sidebar .recents-window-row {
+  display: flow-root;
+  flex-shrink: 0;
+}
+#appShell #sidebar .recents-window-row[data-timeline-index='0'] > .recents-time-label {
+  padding-top: 0;
+}
 
 /* RN-7 — one line weight for every outline glyph on this surface. The
    icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
    width is set in screen pixels with a non-scaling stroke: every glyph draws
    the same 1.5px line whatever its viewBox or rendered size. */
-#appShell #sidebar svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+#appShell
+  #sidebar
+  svg[stroke='currentColor']
+  :is(path, line, polyline, polygon, rect, circle, ellipse) {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }
@@ -727,8 +884,15 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
    folded into the soft shadow. Rows round to 12; the current row is a
    small white card of its own, hover is the 4% fill. */
 @media (min-width: 769px) {
-  body #appShell { background: var(--ui-surface); }
-  body #appShell .main { background: transparent; padding-top: var(--ui-step-75); padding-right: var(--ui-step-75); padding-bottom: var(--ui-step-75); }
+  body #appShell {
+    background: var(--ui-surface);
+  }
+  body #appShell .main {
+    background: transparent;
+    padding-top: var(--ui-step-75);
+    padding-right: var(--ui-step-75);
+    padding-bottom: var(--ui-step-75);
+  }
   /* The card stays opaque on the empty home too: layoutStateMirror's
      topic-setup rule dims `.main-bg` to 0.1 at (1,3,0) specificity. */
   body #appShell .main:not(#_n) .main-bg {
@@ -739,20 +903,32 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
     opacity: 1;
     box-shadow: var(--ui-elevation-raised);
   }
-  body #appShell .main-content { background: transparent; border-radius: 0 0 var(--ui-round-lg) var(--ui-round-lg); }
+  body #appShell .main-content {
+    background: transparent;
+    border-radius: 0 0 var(--ui-round-lg) var(--ui-round-lg);
+  }
 
-  #appShell #sidebar { background: transparent; border-right: 0; }
+  #appShell #sidebar {
+    background: transparent;
+    border-right: 0;
+  }
 
   #appShell #sidebar .recent-item,
-  #appShell #sidebarNav .sidebar-nav-btn { border-radius: var(--ui-round-md); }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    border-radius: var(--ui-round-md);
+  }
   #appShell #sidebar .recent-item:hover,
   #appShell #sidebar .recent-item:focus-within,
-  #appShell #sidebarNav .sidebar-nav-btn:hover { background: var(--ui-fill); }
+  #appShell #sidebarNav .sidebar-nav-btn:hover {
+    background: var(--ui-fill);
+  }
   #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current="true"],
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current="page"],
-  body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-    #appShell #sidebarNav #navNew.sidebar-nav-btn {
+  #appShell #sidebar .recent-item[aria-current='true'],
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'],
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell
+    #sidebarNav
+    #navNew.sidebar-nav-btn {
     background: var(--ui-card);
     box-shadow: var(--ui-elevation-raised);
     color: var(--ui-ink);
@@ -765,13 +941,21 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
     background: var(--ui-card);
     box-shadow: var(--ui-elevation-ring);
   }
-  #appShell #sidebar .sidebar-search:focus-within { border: 0; background: var(--ui-card); box-shadow: 0 0 0 1px var(--ui-hairline-focus); }
+  #appShell #sidebar .sidebar-search:focus-within {
+    border: 0;
+    background: var(--ui-card);
+    box-shadow: 0 0 0 1px var(--ui-hairline-focus);
+  }
 
   /* Header icon controls: 4% fill on hover, pill-round. */
   #appShell #newChatBtn,
-  #appShell #sidebarCloseBtn { border-radius: var(--ui-round-pill); }
+  #appShell #sidebarCloseBtn {
+    border-radius: var(--ui-round-pill);
+  }
   #appShell #newChatBtn:hover,
-  #appShell #sidebarCloseBtn:hover { background: var(--ui-fill); }
+  #appShell #sidebarCloseBtn:hover {
+    background: var(--ui-fill);
+  }
 }
 
 /* RN-7 — header icon actions are RN Pressables (packages/ui/src/shell).
@@ -784,4 +968,6 @@ html[data-detail-open="true"][data-detail-layout="docked"] #appShell .main {
 }
 /* Same reset on the nav rows: the phone drawer lays them out as a grid,
    whose single track would otherwise sit at the top of the 48px row. */
-#appShell #sidebarNav .sidebar-nav-btn { align-content: center; }
+#appShell #sidebarNav .sidebar-nav-btn {
+  align-content: center;
+}

@@ -18,7 +18,14 @@ export function ToolRunGroup({ segment, messageId, readOnly, tools }: ToolRunGro
   return (
     <>
       <ToolRunRows segment={segment} messageId={messageId} readOnly={readOnly} actionsOnly />
-      {groupOutputCalls(segment).map((call) => <ToolRunAttachments key={`output-${call.id}`} call={call} tools={tools} readOnly={readOnly} />)}
+      {groupOutputCalls(segment).map((call) => (
+        <ToolRunAttachments
+          key={`output-${call.id}`}
+          call={call}
+          tools={tools}
+          readOnly={readOnly}
+        />
+      ))}
     </>
   );
 }

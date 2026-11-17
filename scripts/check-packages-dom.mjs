@@ -53,7 +53,9 @@ for (const pkg of PACKAGES) {
 if (violations.length) {
   console.error('[check-packages-dom] DOM/ReactDOM usage in shared packages:');
   for (const v of violations) console.error(`  ${v}`);
-  console.error('\nPlatform differences belong in host adapters (e.g. frontend/src/react/rn/), never in packages/.');
+  console.error(
+    '\nPlatform differences belong in host adapters (e.g. frontend/src/react/rn/), never in packages/.',
+  );
   process.exit(1);
 }
 console.log('[check-packages-dom] OK — packages/ DOM-free.');

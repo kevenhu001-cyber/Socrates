@@ -45,7 +45,9 @@ const BCRYPT_ROUNDS = 12;
 
 async function main() {
   if (!process.env.DATABASE_URL) {
-    console.error('FATAL: DATABASE_URL is not set. Configure it in server/.env or pass it in the environment.');
+    console.error(
+      'FATAL: DATABASE_URL is not set. Configure it in server/.env or pass it in the environment.',
+    );
     process.exit(1);
   }
 
@@ -60,7 +62,8 @@ async function main() {
 
   const [existing] = await db.select().from(users).where(eq(users.email, TEST_EMAIL)).limit(1);
   if (existing) {
-    await db.update(users)
+    await db
+      .update(users)
       .set({
         passwordHash,
         verifiedAt: now,
@@ -73,15 +76,18 @@ async function main() {
       .where(eq(users.id, existing.id));
     console.log(`[seed] updated existing user id=${existing.id} (${TEST_EMAIL})`);
   } else {
-    const [inserted] = await db.insert(users).values({
-      email: TEST_EMAIL,
-      displayName: 'Test User',
-      passwordHash,
-      tier: 'descartes',        // paid-equivalent tier so quotas aren't a blocker
-      plan: 'descartes',
-      isGuest: false,
-      verifiedAt: now,         // skip email verification
-    }).returning();
+    const [inserted] = await db
+      .insert(users)
+      .values({
+        email: TEST_EMAIL,
+        displayName: 'Test User',
+        passwordHash,
+        tier: 'descartes', // paid-equivalent tier so quotas aren't a blocker
+        plan: 'descartes',
+        isGuest: false,
+        verifiedAt: now, // skip email verification
+      })
+      .returning();
     console.log(`[seed] created user id=${inserted.id} (${TEST_EMAIL})`);
   }
 
@@ -98,6 +104,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[seed] failed:', err && err.stack || err);
+  console.error('[seed] failed:', (err && err.stack) || err);
   process.exit(1);
 });

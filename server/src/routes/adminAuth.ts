@@ -37,7 +37,12 @@ import {
   adminLockoutKey,
   ADMIN_SESSION_TTL_MS,
 } from '../services/core/adminAuth.js';
-import { ADMIN_THRESHOLD, checkLockout, recordFailure, recordSuccess } from '../services/core/loginLockout.js';
+import {
+  ADMIN_THRESHOLD,
+  checkLockout,
+  recordFailure,
+  recordSuccess,
+} from '../services/core/loginLockout.js';
 import { authLimiter } from '../middleware/rateLimit.js';
 import { BadRequest } from '../lib/errors.js';
 
@@ -55,7 +60,10 @@ const adminLoginLimiter = rateLimit({
   keyGenerator: (req) => `admin-login:${rateLimitIpKey(req)}`,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { code: 'TOO_MANY_REQUESTS', message: 'Too many admin login attempts; try again later.' },
+  message: {
+    code: 'TOO_MANY_REQUESTS',
+    message: 'Too many admin login attempts; try again later.',
+  },
 });
 
 const loginSchema = z.object({
@@ -109,11 +117,15 @@ router.post('/login', authLimiter, adminLoginLimiter, async (req, res, next) => 
          the limiters, never a way to turn a wrong password into a
          500). */
       if (lockKey) {
-        try { await recordFailure(lockKey, ADMIN_THRESHOLD); } catch (err) {
+        try {
+          await recordFailure(lockKey, ADMIN_THRESHOLD);
+        } catch (err) {
           console.warn('[adminAuth] lockout record failed:', (err as Error).message);
         }
       }
-      return res.status(401).json({ error: 'admin_bad_password', message: 'Incorrect admin password.' });
+      return res
+        .status(401)
+        .json({ error: 'admin_bad_password', message: 'Incorrect admin password.' });
     }
     /* Successful login clears the failure counter so a legit operator
        who mistyped twice is not locked out on the next miss. */
@@ -127,8 +139,13 @@ router.post('/login', authLimiter, adminLoginLimiter, async (req, res, next) => 
       maxAge: ADMIN_SESSION_TTL_MS,
       path: '/',
     });
-    return res.json({ token, expiresAt: new Date(Date.now() + ADMIN_SESSION_TTL_MS).toISOString() });
-  } catch (err) { next(err); }
+    return res.json({
+      token,
+      expiresAt: new Date(Date.now() + ADMIN_SESSION_TTL_MS).toISOString(),
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/logout', (req, res) => {

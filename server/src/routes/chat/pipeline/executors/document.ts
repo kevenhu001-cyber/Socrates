@@ -3,7 +3,7 @@
  */
 
 import { executeDocument } from '../../../../services/core/planning.js';
-import { buildToolErrorFeedback } from '../../../../services/tools/toolErrorFeedback.js';
+import { buildToolErrorFeedback } from '../../../../services/tools/toolCorrectionMessage.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 

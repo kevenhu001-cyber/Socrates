@@ -12,8 +12,17 @@ export function missingScheduledTaskForeignKeys(rows: ForeignKeyShape[]): string
   return [
     { column: 'user_id', target: 'users', action: 'c' },
     { column: 'session_id', target: 'sessions', action: 'n' },
-  ].filter((expected) => !rows.some((row) => row.source_column === expected.column
-    && row.target_table === expected.target && row.target_column === 'id'
-    && row.on_delete === expected.action && row.validated))
+  ]
+    .filter(
+      (expected) =>
+        !rows.some(
+          (row) =>
+            row.source_column === expected.column &&
+            row.target_table === expected.target &&
+            row.target_column === 'id' &&
+            row.on_delete === expected.action &&
+            row.validated,
+        ),
+    )
     .map((expected) => `scheduled_tasks.${expected.column} -> ${expected.target}.id`);
 }

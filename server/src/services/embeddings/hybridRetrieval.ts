@@ -30,17 +30,32 @@ export async function collectHybridRetrieval(
         fused.set(key, entry);
       });
     }
-    return [...fused.values()].sort((a, b) => b.score - a.score).slice(0, limit)
+    return [...fused.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
       .map(({ chunk, score }) => ({
-        id: chunk.id, messageId: chunk.messageId, ordinal: chunk.ordinal, text: chunk.text, score,
+        id: chunk.id,
+        messageId: chunk.messageId,
+        ordinal: chunk.ordinal,
+        text: chunk.text,
+        score,
       }));
   };
-  return withTimeBudget(async (signal) => {
-    await Promise.all([
-      lexical(signal).then((hits) => { if (!signal.aborted) lexicalHits = hits; }),
-      withTimeBudget(vector, { signal, timeoutMs: options.vectorTimeoutMs }, () => null)
-        .then((hits) => { if (!signal.aborted) vectorHits = hits; }),
-    ]);
-    return result();
-  }, options, result);
+  return withTimeBudget(
+    async (signal) => {
+      await Promise.all([
+        lexical(signal).then((hits) => {
+          if (!signal.aborted) lexicalHits = hits;
+        }),
+        withTimeBudget(vector, { signal, timeoutMs: options.vectorTimeoutMs }, () => null).then(
+          (hits) => {
+            if (!signal.aborted) vectorHits = hits;
+          },
+        ),
+      ]);
+      return result();
+    },
+    options,
+    result,
+  );
 }

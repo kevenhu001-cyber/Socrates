@@ -70,14 +70,15 @@ async function main() {
         AND target_schema.nspname = 'public'
     `);
     const missingKeys = missingScheduledTaskForeignKeys(constraints);
-    if (missingKeys.length) throw new Error(`Missing validated foreign keys: ${missingKeys.join(', ')}. Apply migration 0045; do not bypass this gate.`);
+    if (missingKeys.length)
+      throw new Error(
+        `Missing validated foreign keys: ${missingKeys.join(', ')}. Apply migration 0045; do not bypass this gate.`,
+      );
 
     /* Informational only: without the pgvector extension the
        session_chunks.embedding column + HNSW index are skipped by
        migration 0031 and retrieval degrades to BM25-only. Not fatal. */
-    const ext = await q<unknown>(
-      sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`,
-    );
+    const ext = await q<unknown>(sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`);
     if (ext.length === 0) {
       console.warn(
         'VERIFY-SCHEMA WARN: pgvector extension absent — RAG runs BM25-only. ' +

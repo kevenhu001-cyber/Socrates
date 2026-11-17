@@ -52,7 +52,10 @@ test('registry placement ordering is ascending', () => {
 
   const tools = r.byPlacement('tools');
   const orders = tools.map((d) => d.placement.tools ?? -1);
-  assert.deepEqual(orders, [...orders].sort((a, b) => a - b));
+  assert.deepEqual(
+    orders,
+    [...orders].sort((a, b) => a - b),
+  );
   assert.ok(orders.length >= 6, 'tools menu should have 6+ items');
   assert.equal(tools[0].key, 'upload', 'upload opens the tools menu');
   assert.equal(tools[tools.length - 1].key, 'skills', 'skills closes the tools menu');
@@ -82,22 +85,28 @@ test('outputMode, when declared, is one of chat or canvas', () => {
     if (def.outputMode === undefined) continue;
     assert.ok(
       ['chat', 'canvas'].includes(def.outputMode),
-      `${def.key} outputMode must be 'chat' or 'canvas' (got ${def.outputMode})`
+      `${def.key} outputMode must be 'chat' or 'canvas' (got ${def.outputMode})`,
     );
   }
 });
 
 test('write is the only canvas extension at ship time', () => {
   const canvasKeys = MODULES.filter((d) => d.outputMode === 'canvas').map((d) => d.key);
-  assert.deepEqual(canvasKeys, ['write'],
-    `Only 'write' should opt into canvas right now; found ${canvasKeys.join(',')}`);
+  assert.deepEqual(
+    canvasKeys,
+    ['write'],
+    `Only 'write' should opt into canvas right now; found ${canvasKeys.join(',')}`,
+  );
 });
 
 test('canvas extension autoLaunch is false (input bar stays visible)', () => {
   for (const def of MODULES) {
     if (def.outputMode !== 'canvas') continue;
-    assert.equal(def.autoLaunch, false,
-      `${def.key} is canvas so autoLaunch should be false (user iterates)`);
+    assert.equal(
+      def.autoLaunch,
+      false,
+      `${def.key} is canvas so autoLaunch should be false (user iterates)`,
+    );
   }
 });
 

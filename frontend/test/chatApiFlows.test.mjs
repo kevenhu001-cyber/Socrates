@@ -17,7 +17,7 @@ globalThis.window = {
 };
 
 const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api/index.ts');
-const { stateStore } = await import('../src/state/store.ts');
+const { callStore, dispatchCall, dispatchSession } = await import('../src/store/index.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
 const { publishProviderConfig } = await import('../src/config/providerConfig.store.ts');
 const encoder = new TextEncoder();
@@ -28,9 +28,15 @@ function setProvider(provider) {
     return;
   }
   const active = {
-    id: 'test-provider', label: 'Test provider', url: 'https://provider.example/v1',
-    model: 'test-model', vision: false, isBuiltIn: false, hasKey: true,
-    instantEncoding: null, ...provider,
+    id: 'test-provider',
+    label: 'Test provider',
+    url: 'https://provider.example/v1',
+    model: 'test-model',
+    vision: false,
+    isBuiltIn: false,
+    hasKey: true,
+    instantEncoding: null,
+    ...provider,
   };
   publishProviderConfig({ providers: [active], activeId: active.id, fetched: true });
 }
@@ -47,9 +53,9 @@ function streamResponse(frames) {
 
 function clearContext() {
   setProvider(null);
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
-  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: null });
-  stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: null });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: null });
+  dispatchSession({ type: 'session/set', key: 'currentProjectId', value: null });
+  dispatchCall({ type: 'call/set', key: 'lastCallError', value: null });
   storage.delete('session:socrates-active-assistant');
   storage.delete('socrates-response-speed');
   setAppMode('chat');
@@ -59,14 +65,19 @@ function clearContext() {
 
 test('request body copies messages and includes session, project, assistant, and preference context', () => {
   clearContext();
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'session-7' });
-  stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: 'project-3' });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'session-7' });
+  dispatchSession({ type: 'session/set', key: 'currentProjectId', value: 'project-3' });
   sessionStorage.setItem('socrates-active-assistant', 'assistant-2');
   localStorage.setItem('socrates-response-speed', 'fast');
   setAppMode('tutor');
-  localStorage.setItem('socrates-custom-instructions', JSON.stringify({
-    response: 'Prefer concise explanations.', about: '', savedAt: '',
-  }));
+  localStorage.setItem(
+    'socrates-custom-instructions',
+    JSON.stringify({
+      response: 'Prefer concise explanations.',
+      about: '',
+      savedAt: '',
+    }),
+  );
   localStorage.setItem('socrates-reasoning-effort', 'high');
   const messages = [{ role: 'user', content: 'Explain recursion.' }];
 
@@ -82,7 +93,8 @@ test('request body copies messages and includes session, project, assistant, and
   assert.equal('getCustomInstructionsString' in window, false);
   assert.equal('getReasoningEffort' in window, false);
   assert.deepEqual(body.messages[0], {
-    role: 'system', content: '[User custom instructions]\n[How to respond]\nPrefer concise explanations.',
+    role: 'system',
+    content: '[User custom instructions]\n[How to respond]\nPrefer concise explanations.',
   });
   assert.deepEqual(messages, [{ role: 'user', content: 'Explain recursion.' }]);
   clearContext();
@@ -100,13 +112,16 @@ test('API facade routes custom providers and reports a missing provider', async 
   };
   setProvider({ isBuiltIn: false });
 
-  assert.equal(await callAPI([{ role: 'user', content: 'hi' }], 100, { maxRetries: 0 }), 'custom answer');
+  assert.equal(
+    await callAPI([{ role: 'user', content: 'hi' }], 100, { maxRetries: 0 }),
+    'custom answer',
+  );
   assert.equal(new URL(request.path, 'http://localhost').pathname, '/api/v2/chat');
   assert.deepEqual(JSON.parse(request.options.body).messages, [{ role: 'user', content: 'hi' }]);
 
   setProvider(null);
   assert.equal(await callAPI([], 100, { maxRetries: 0 }), null);
-  assert.equal(stateStore.read('lastCallError'), 'no provider');
+  assert.equal(callStore.getState().lastCallError, 'no provider');
 });
 
 test('built-in provider uses the raw endpoint and parses a successful completion', async () => {
@@ -115,13 +130,19 @@ test('built-in provider uses the raw endpoint and parses a successful completion
   setProvider({ isBuiltIn: true, key: 'beagle-test-key' });
   globalThis.fetch = async (path, options) => {
     requests.push({ path, options });
-    return new Response(JSON.stringify({ choices: [{ message: { content: 'built-in answer' } }] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ choices: [{ message: { content: 'built-in answer' } }] }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   };
 
-  assert.equal(await callAPI([{ role: 'user', content: 'hi' }], 100, { maxRetries: 0 }), 'built-in answer');
+  assert.equal(
+    await callAPI([{ role: 'user', content: 'hi' }], 100, { maxRetries: 0 }),
+    'built-in answer',
+  );
   assert.equal(requests.length, 1);
   assert.equal(requests[0].path, '/api/v2/minimax/v1/chat/completions');
   assert.equal(requests[0].options.headers.Authorization, 'Bearer beagle-test-key');
@@ -133,17 +154,24 @@ test('monthly limits are terminal for custom-provider calls', async () => {
   setProvider({ isBuiltIn: false });
   globalThis.fetch = async () => {
     requests += 1;
-    return new Response(JSON.stringify({
-      code: 'MONTHLY_LIMIT', message: 'Try again next month.',
-    }), {
-      status: 429,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        code: 'MONTHLY_LIMIT',
+        message: 'Try again next month.',
+      }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   };
 
   assert.equal(await callAPI([], 100), null);
   assert.equal(requests, 1);
-  assert.equal(stateStore.read('lastCallError'), 'Monthly Beagle usage limit reached. Try again next month.');
+  assert.equal(
+    callStore.getState().lastCallError,
+    'Monthly Beagle usage limit reached. Try again next month.',
+  );
 });
 
 test('probe retries transient SSE errors before output and then returns the complete text', async () => {
@@ -152,7 +180,8 @@ test('probe retries transient SSE errors before output and then returns the comp
   setProvider({ isBuiltIn: false });
   globalThis.fetch = async () => {
     requests += 1;
-    if (requests === 1) return streamResponse(['event: error\ndata: {"status":503,"message":"temporary"}\n\n']);
+    if (requests === 1)
+      return streamResponse(['event: error\ndata: {"status":503,"message":"temporary"}\n\n']);
     return streamResponse(['data: {"choices":[{"delta":{"content":"full answer"}}]}\n\n']);
   };
 
@@ -177,7 +206,13 @@ test('probe never replays after semantic output has started', async () => {
     ]);
   };
 
-  assert.equal(await callAPIChat([{ role: 'user', content: 'probe' }], 100, { maxRetries: 3, sleep: async () => {} }), null);
+  assert.equal(
+    await callAPIChat([{ role: 'user', content: 'probe' }], 100, {
+      maxRetries: 3,
+      sleep: async () => {},
+    }),
+    null,
+  );
   assert.equal(requests, 1);
-  assert.match(stateStore.read('lastCallError'), /late failure/);
+  assert.match(callStore.getState().lastCallError, /late failure/);
 });

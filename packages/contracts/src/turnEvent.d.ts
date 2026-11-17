@@ -10,11 +10,27 @@ export interface TurnActivityEntry {
   toolCallId?: string;
   toolName?: string;
 }
-export interface TurnSource { id: string; url: string; title: string; snippet: string }
-export interface TurnCitation { id: string; sourceId: string }
-export interface TurnClaim { id: string; start: number; end: number; quote: string; citationIds: string[] }
-export type TurnUiEdit = { op: 'patch'; nodeId: string; props: Record<string, unknown> }
-  | { op: 'add'; node: TurnUiNode } | { op: 'remove'; nodeId: string };
+export interface TurnSource {
+  id: string;
+  url: string;
+  title: string;
+  snippet: string;
+}
+export interface TurnCitation {
+  id: string;
+  sourceId: string;
+}
+export interface TurnClaim {
+  id: string;
+  start: number;
+  end: number;
+  quote: string;
+  citationIds: string[];
+}
+export type TurnUiEdit =
+  | { op: 'patch'; nodeId: string; props: Record<string, unknown> }
+  | { op: 'add'; node: TurnUiNode }
+  | { op: 'remove'; nodeId: string };
 export type TurnUiNode = { id: string; type: string; parent?: string; [key: string]: unknown };
 export interface TurnUiSurface {
   id: string;

@@ -3,25 +3,33 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { getDb } from '../../db/index.js';
-import { users, authSessions, verificationTokens, pendingRegistrations, files, loginFailures } from '../../db/schema/index.js';
+import {
+  users,
+  authSessions,
+  verificationTokens,
+  pendingRegistrations,
+  files,
+  loginFailures,
+} from '../../db/schema/index.js';
 import type { User } from '../../types/http.js';
 import {
-  hashPassword, comparePassword,
-  generateSessionToken, generateShortToken, generateLoginCode,
+  hashPassword,
+  comparePassword,
+  generateSessionToken,
+  generateShortToken,
+  generateLoginCode,
 } from '../../lib/crypto.js';
-import {
-  BadRequest, Unauthorized, Forbidden, NotFound, Conflict,
-} from '../../lib/errors.js';
+import { BadRequest, Unauthorized, Forbidden, NotFound, Conflict } from '../../lib/errors.js';
 import { invalidateAuthCache, invalidateAuthCacheForUser } from '../../lib/authCache.js';
-import { sanitizeLogValue } from '../../lib/log.js';
+import { sanitizeLogValue } from '../../lib/logRedaction.js';
 import { isEmail } from '../../lib/validate.js';
 import {
-  sendVerificationEmail, sendPasswordResetEmail, sendLoginCode,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendLoginCode,
   sendDuplicateRegistrationEmail,
 } from './email.js';
-import {
-  checkLockout, recordFailure, recordSuccess,
-} from './loginLockout.js';
+import { checkLockout, recordFailure, recordSuccess } from './loginLockout.js';
 
 /**
  * Mask an email for log output — enough context to correlate log
@@ -158,10 +166,9 @@ export async function createBrowserSession(userId: string) {
   // so the table doesn't grow unbounded. Done in the same await
   // chain as the insert so the new session is created atomically
   // with the cleanup.
-  await db.delete(authSessions).where(and(
-    eq(authSessions.userId, userId),
-    sql`${authSessions.expiresAt} < NOW()`,
-  ));
+  await db
+    .delete(authSessions)
+    .where(and(eq(authSessions.userId, userId), sql`${authSessions.expiresAt} < NOW()`));
 
   const token = generateSessionToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
@@ -183,10 +190,9 @@ export async function createMobileTokenPair(userId: string): Promise<MobileToken
   const pair = buildMobileTokenPair();
 
   await db.transaction(async (tx) => {
-    await tx.delete(authSessions).where(and(
-      eq(authSessions.userId, userId),
-      sql`${authSessions.expiresAt} < NOW()`,
-    ));
+    await tx
+      .delete(authSessions)
+      .where(and(eq(authSessions.userId, userId), sql`${authSessions.expiresAt} < NOW()`));
     await tx.insert(authSessions).values([
       { token: pair.accessToken, userId, expiresAt: pair.accessExpiresAt },
       { token: pair.refreshToken, userId, expiresAt: pair.refreshExpiresAtDate },
@@ -217,7 +223,8 @@ export async function refreshMobileTokenPair(refreshToken: unknown): Promise<Mob
   const db = getDb();
   const nextPair = buildMobileTokenPair();
   return db.transaction(async (tx) => {
-    const [refresh] = await tx.delete(authSessions)
+    const [refresh] = await tx
+      .delete(authSessions)
       .where(eq(authSessions.token, refreshToken))
       .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
 
@@ -228,14 +235,21 @@ export async function refreshMobileTokenPair(refreshToken: unknown): Promise<Mob
     // Revoke the prior short-lived bearer for this pair as soon as refresh is
     // consumed.  The pair id is hex and the dot separators are literal in SQL
     // LIKE, so this cannot accidentally match a different pair.
-    await tx.delete(authSessions)
-      .where(and(
-        eq(authSessions.userId, refresh.userId),
-        like(authSessions.token, mobileAccessPattern(parsed.pairId)),
-      ));
+    await tx
+      .delete(authSessions)
+      .where(
+        and(
+          eq(authSessions.userId, refresh.userId),
+          like(authSessions.token, mobileAccessPattern(parsed.pairId)),
+        ),
+      );
     await tx.insert(authSessions).values([
       { token: nextPair.accessToken, userId: refresh.userId, expiresAt: nextPair.accessExpiresAt },
-      { token: nextPair.refreshToken, userId: refresh.userId, expiresAt: nextPair.refreshExpiresAtDate },
+      {
+        token: nextPair.refreshToken,
+        userId: refresh.userId,
+        expiresAt: nextPair.refreshExpiresAtDate,
+      },
     ]);
 
     /* P1-auth-lookup — the prior ma.* bearer just got revoked by the DELETE
@@ -262,15 +276,19 @@ export async function logoutMobile(refreshToken: unknown) {
 
   const db = getDb();
   await db.transaction(async (tx) => {
-    const [refresh] = await tx.delete(authSessions)
+    const [refresh] = await tx
+      .delete(authSessions)
       .where(eq(authSessions.token, refreshToken))
       .returning({ userId: authSessions.userId });
     if (!refresh) return;
-    await tx.delete(authSessions)
-      .where(and(
-        eq(authSessions.userId, refresh.userId),
-        like(authSessions.token, mobileAccessPattern(parsed.pairId)),
-      ));
+    await tx
+      .delete(authSessions)
+      .where(
+        and(
+          eq(authSessions.userId, refresh.userId),
+          like(authSessions.token, mobileAccessPattern(parsed.pairId)),
+        ),
+      );
     /* P1-auth-lookup — the ma.* bearer this call just revoked is a live
        credential until this commit; the cache must not outlive it. */
     invalidateAuthCacheForUser(refresh.userId);
@@ -294,10 +312,23 @@ export type EmbeddedMobileTarget =
   | 'exam';
 
 const EMBEDDED_MOBILE_TARGETS = new Set<EmbeddedMobileTarget>([
-  'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
-  'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
+  'projects',
+  'scheduled',
+  'plugins',
+  'knowledge',
+  'mistakes',
+  'skills',
+  'api-settings',
+  'profile',
+  'usage',
+  'storage',
+  'display',
+  'shortcuts',
+  'library',
+  'exam',
 ]);
-const MOBILE_WEB_SESSION_RE = /^mw\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings|profile|usage|storage|display|shortcuts|library|exam)\.([a-f0-9]{64})$/;
+const MOBILE_WEB_SESSION_RE =
+  /^mw\.(projects|scheduled|plugins|knowledge|mistakes|skills|api-settings|profile|usage|storage|display|shortcuts|library|exam)\.([a-f0-9]{64})$/;
 const MOBILE_OAUTH_EXCHANGE_RE = /^mo\.([a-f0-9]{64})$/;
 
 export function isEmbeddedMobileTarget(value: unknown): value is EmbeddedMobileTarget {
@@ -307,7 +338,7 @@ export function isEmbeddedMobileTarget(value: unknown): value is EmbeddedMobileT
 function mobileWebSessionTarget(token: unknown): EmbeddedMobileTarget | null {
   if (typeof token !== 'string') return null;
   const match = MOBILE_WEB_SESSION_RE.exec(token);
-  return match ? match[1] as EmbeddedMobileTarget : null;
+  return match ? (match[1] as EmbeddedMobileTarget) : null;
 }
 
 /** Issue a one-time, five-minute web capability.  It is consumed by a
@@ -327,7 +358,8 @@ export async function consumeMobileWebSession(token: unknown) {
   const target = mobileWebSessionTarget(token);
   if (!target || typeof token !== 'string') throw new Unauthorized('Invalid web session');
   const db = getDb();
-  const [row] = await db.delete(authSessions)
+  const [row] = await db
+    .delete(authSessions)
     .where(eq(authSessions.token, token))
     .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
   if (!row || row.expiresAt < new Date()) throw new Unauthorized('Web session expired');
@@ -349,10 +381,12 @@ export async function exchangeMobileOAuthToken(token: unknown): Promise<MobileTo
     throw new Unauthorized('Invalid OAuth exchange token');
   }
   const db = getDb();
-  const [exchange] = await db.delete(authSessions)
+  const [exchange] = await db
+    .delete(authSessions)
     .where(eq(authSessions.token, token))
     .returning({ userId: authSessions.userId, expiresAt: authSessions.expiresAt });
-  if (!exchange || exchange.expiresAt < new Date()) throw new Unauthorized('OAuth exchange token expired');
+  if (!exchange || exchange.expiresAt < new Date())
+    throw new Unauthorized('OAuth exchange token expired');
   return createMobileTokenPair(exchange.userId);
 }
 
@@ -382,8 +416,10 @@ export async function register(email: string, password: string) {
   if (!isEmail(normalizedEmail)) {
     throw new BadRequest('Invalid email format');
   }
-  if (password.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
-  if (password.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
+  if (password.length < MIN_PASSWORD_LENGTH)
+    throw new BadRequest('Password must be at least 8 characters');
+  if (password.length > MAX_PASSWORD_LENGTH)
+    throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
 
@@ -394,14 +430,23 @@ export async function register(email: string, password: string) {
   // caller's perspective as a fresh registration.
   const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (existing) {
-    console.log(`[auth] register: user already exists for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`);
-    try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', (e as Error).message); }
+    console.log(
+      `[auth] register: user already exists for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`,
+    );
+    try {
+      await sendDuplicateRegistrationEmail(normalizedEmail);
+    } catch (e) {
+      console.warn('[auth] duplicate-registration notice failed:', (e as Error).message);
+    }
     return { ok: true };
   }
 
   // Check for existing pending registration — re-send or silently no-op
-  const [existingPending] = await db.select().from(pendingRegistrations)
-    .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
+  const [existingPending] = await db
+    .select()
+    .from(pendingRegistrations)
+    .where(eq(pendingRegistrations.email, normalizedEmail))
+    .limit(1);
   if (existingPending) {
     if (existingPending.expiresAt < new Date()) {
       // Expired — clear it so we can re-create below with a fresh token.
@@ -441,8 +486,11 @@ export async function resendVerification(email: string) {
   const normalizedEmail = email.toLowerCase().trim();
   const db = getDb();
 
-  const [pending] = await db.select().from(pendingRegistrations)
-    .where(eq(pendingRegistrations.email, normalizedEmail)).limit(1);
+  const [pending] = await db
+    .select()
+    .from(pendingRegistrations)
+    .where(eq(pendingRegistrations.email, normalizedEmail))
+    .limit(1);
 
   // Don't reveal registration state. Two distinct no-op paths:
   //   - existing verified user → notify them of the attempt;
@@ -451,17 +499,24 @@ export async function resendVerification(email: string) {
   // We send the duplicate-registration notice on EITHER path so the
   // owner is always told an attempt happened; the only difference is
   // whether a fresh verification link is in flight.
-  const [existing] = await db.select().from(users)
-    .where(eq(users.email, normalizedEmail)).limit(1);
+  const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!pending && !existing) {
-    console.log(`[auth] resend-verification: no pending or existing user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
+    console.log(
+      `[auth] resend-verification: no pending or existing user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`,
+    );
     return { ok: true };
   }
   if (existing) {
     // Already verified — send the duplicate-registration notice so
     // the address owner is informed.
-    console.log(`[auth] resend-verification: existing verified user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`);
-    try { await sendDuplicateRegistrationEmail(normalizedEmail); } catch (e) { console.warn('[auth] duplicate-registration notice failed:', (e as Error).message); }
+    console.log(
+      `[auth] resend-verification: existing verified user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)} — sending duplicate-registration notice`,
+    );
+    try {
+      await sendDuplicateRegistrationEmail(normalizedEmail);
+    } catch (e) {
+      console.warn('[auth] duplicate-registration notice failed:', (e as Error).message);
+    }
     return { ok: true };
   }
   if (!pending) {
@@ -572,11 +627,13 @@ async function verifyPendingEmail(token: string) {
   if (!token) throw new BadRequest('Verification token is required');
   const db = getDb();
 
-  const [pending] = await db.select().from(pendingRegistrations)
-    .where(and(
-      eq(pendingRegistrations.token, token),
-      gte(pendingRegistrations.expiresAt, new Date()),
-    )).limit(1);
+  const [pending] = await db
+    .select()
+    .from(pendingRegistrations)
+    .where(
+      and(eq(pendingRegistrations.token, token), gte(pendingRegistrations.expiresAt, new Date())),
+    )
+    .limit(1);
 
   if (!pending) throw new BadRequest('Invalid or expired verification token');
 
@@ -588,11 +645,14 @@ async function verifyPendingEmail(token: string) {
   }
 
   // Create the user from the pending registration
-  const [user] = await db.insert(users).values({
-    email: pending.email,
-    passwordHash: pending.passwordHash,
-    verifiedAt: new Date(),
-  }).returning();
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: pending.email,
+      passwordHash: pending.passwordHash,
+      verifiedAt: new Date(),
+    })
+    .returning();
 
   // Clean up the pending registration
   await db.delete(pendingRegistrations).where(eq(pendingRegistrations.id, pending.id));
@@ -623,7 +683,9 @@ export async function sendCode(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists; still "send" the code
-    console.log(`[auth] send-code: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
+    console.log(
+      `[auth] send-code: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`,
+    );
     return;
   }
 
@@ -677,13 +739,18 @@ async function consumeLoginCode(email: string, code: string) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) throw new Unauthorized('Invalid or expired code');
 
-  const [vt] = await db.select().from(verificationTokens)
-    .where(and(
-      eq(verificationTokens.token, normalizedCode),
-      eq(verificationTokens.kind, 'login_code'),
-      eq(verificationTokens.userId, user.id),
-      gte(verificationTokens.expiresAt, new Date()),
-    )).limit(1);
+  const [vt] = await db
+    .select()
+    .from(verificationTokens)
+    .where(
+      and(
+        eq(verificationTokens.token, normalizedCode),
+        eq(verificationTokens.kind, 'login_code'),
+        eq(verificationTokens.userId, user.id),
+        gte(verificationTokens.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
 
   if (!vt) throw new Unauthorized('Invalid or expired code');
 
@@ -716,7 +783,9 @@ export async function forgotPassword(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   if (!user) {
     // Don't reveal whether the user exists
-    console.log(`[auth] forgot-password: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`);
+    console.log(
+      `[auth] forgot-password: no user for ${sanitizeLogValue(maskEmail(normalizedEmail), 200)}`,
+    );
     return;
   }
 
@@ -731,12 +800,17 @@ export async function getResetInfo(token: string) {
   if (!token) throw new BadRequest('Reset token is required');
   const db = getDb();
 
-  const [vt] = await db.select().from(verificationTokens)
-    .where(and(
-      eq(verificationTokens.token, token),
-      eq(verificationTokens.kind, 'password_reset'),
-      gte(verificationTokens.expiresAt, new Date()),
-    )).limit(1);
+  const [vt] = await db
+    .select()
+    .from(verificationTokens)
+    .where(
+      and(
+        eq(verificationTokens.token, token),
+        eq(verificationTokens.kind, 'password_reset'),
+        gte(verificationTokens.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
 
   if (!vt) throw new BadRequest('Invalid or expired reset token');
 
@@ -758,17 +832,24 @@ export async function getResetInfo(token: string) {
  */
 export async function resetPassword(token: string, newPassword: string) {
   if (!token || !newPassword) throw new BadRequest('Token and new password are required');
-  if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
-  if (newPassword.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
+  if (newPassword.length < MIN_PASSWORD_LENGTH)
+    throw new BadRequest('Password must be at least 8 characters');
+  if (newPassword.length > MAX_PASSWORD_LENGTH)
+    throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
 
-  const [vt] = await db.select().from(verificationTokens)
-    .where(and(
-      eq(verificationTokens.token, token),
-      eq(verificationTokens.kind, 'password_reset'),
-      gte(verificationTokens.expiresAt, new Date()),
-    )).limit(1);
+  const [vt] = await db
+    .select()
+    .from(verificationTokens)
+    .where(
+      and(
+        eq(verificationTokens.token, token),
+        eq(verificationTokens.kind, 'password_reset'),
+        gte(verificationTokens.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
 
   if (!vt) throw new BadRequest('Invalid or expired reset token');
 
@@ -801,10 +882,18 @@ export async function resetPassword(token: string, newPassword: string) {
  * changing the password). A compromised device or stolen cookie
  * therefore can't outlive a legitimate password change.
  */
-export async function changePassword(userId: string, oldPassword: string, newPassword: string, currentSid?: string | null) {
-  if (!oldPassword || !newPassword) throw new BadRequest('Current password and new password are required');
-  if (newPassword.length < MIN_PASSWORD_LENGTH) throw new BadRequest('Password must be at least 8 characters');
-  if (newPassword.length > MAX_PASSWORD_LENGTH) throw new BadRequest('Password is too long (maximum 64 characters)');
+export async function changePassword(
+  userId: string,
+  oldPassword: string,
+  newPassword: string,
+  currentSid?: string | null,
+) {
+  if (!oldPassword || !newPassword)
+    throw new BadRequest('Current password and new password are required');
+  if (newPassword.length < MIN_PASSWORD_LENGTH)
+    throw new BadRequest('Password must be at least 8 characters');
+  if (newPassword.length > MAX_PASSWORD_LENGTH)
+    throw new BadRequest('Password is too long (maximum 64 characters)');
 
   const db = getDb();
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -821,17 +910,21 @@ export async function changePassword(userId: string, oldPassword: string, newPas
   // mobile client signed in until the first refresh and then abruptly fail.
   const mobilePair = mobileTokenParts(currentSid);
   if (mobilePair?.kind === 'ma' && currentSid) {
-    await db.delete(authSessions).where(and(
-      eq(authSessions.userId, userId),
-      sql`${authSessions.token} NOT LIKE ${`ma.${mobilePair.pairId}.%`}
+    await db.delete(authSessions).where(
+      and(
+        eq(authSessions.userId, userId),
+        sql`${authSessions.token} NOT LIKE ${`ma.${mobilePair.pairId}.%`}
         AND ${authSessions.token} NOT LIKE ${`mr.${mobilePair.pairId}.%`}`,
-    ));
+      ),
+    );
   } else if (currentSid) {
-    await db.delete(authSessions).where(and(
-      eq(authSessions.userId, userId),
-      // Drizzle's `ne` is the NOT-EQUALS operator; imported below.
-      ne(authSessions.token, currentSid),
-    ));
+    await db.delete(authSessions).where(
+      and(
+        eq(authSessions.userId, userId),
+        // Drizzle's `ne` is the NOT-EQUALS operator; imported below.
+        ne(authSessions.token, currentSid),
+      ),
+    );
   } else {
     // Fallback: we don't know the calling sid (defensive). Drop
     // everything — the client will get a 401 on the next request
@@ -872,7 +965,8 @@ export async function deleteAccount(userId: string, email?: string | null) {
   // 1. Best-effort physical file cleanup. Run BEFORE the cascade
   //    delete so we can still read the storage paths.
   try {
-    const rows = await db.select({ storagePath: files.storagePath })
+    const rows = await db
+      .select({ storagePath: files.storagePath })
       .from(files)
       .where(eq(files.userId, userId));
     for (const r of rows) {
@@ -881,8 +975,12 @@ export async function deleteAccount(userId: string, email?: string | null) {
       // Reject anything that escapes the upload root — defence in
       // depth against a poisoned DB column.
       if (!resolved.startsWith(uploadRoot + path.sep) && resolved !== uploadRoot) continue;
-      try { await fs.unlink(resolved); }
-      catch (e) { if ((e as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('[auth] delete-account: unlink failed for', resolved, (e as Error).message); }
+      try {
+        await fs.unlink(resolved);
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'ENOENT')
+          console.warn('[auth] delete-account: unlink failed for', resolved, (e as Error).message);
+      }
     }
   } catch (e) {
     // Non-fatal — the row-level cascade still cleans the DB even if
@@ -903,7 +1001,10 @@ export async function deleteAccount(userId: string, email?: string | null) {
   // 3. login_failures is keyed by email, not userId — and not in the
   //    cascade tree. Look up by the email the route handed us.
   if (email) {
-    try { await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase())); }
-    catch (e) { /* non-fatal — orphaned lockout is bounded harm */ }
+    try {
+      await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase()));
+    } catch (e) {
+      /* non-fatal — orphaned lockout is bounded harm */
+    }
   }
 }

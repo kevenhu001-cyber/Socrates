@@ -1,5 +1,17 @@
-import { createParser, evaluate, split, tokenize, walkAST, type ASTNode, type LibraryJSONSchema } from '@openuidev/lang-core';
-import { OPENUI_AST_BUDGET, openUiProgramIssues, openUiRuntimeIssues } from '@socrates/core/openUiProgram';
+import {
+  createParser,
+  evaluate,
+  split,
+  tokenize,
+  walkAST,
+  type ASTNode,
+  type LibraryJSONSchema,
+} from '@openuidev/lang-core';
+import {
+  OPENUI_AST_BUDGET,
+  openUiProgramIssues,
+  openUiRuntimeIssues,
+} from '@socrates/core/openUiProgram';
 import { validateVisualizationSpec } from './visualization.js';
 import { OPENUI_SCHEMA } from './openUiPrompt.generated.js';
 
@@ -9,11 +21,17 @@ const parser = createParser(OPENUI_SCHEMA as LibraryJSONSchema, 'Col');
 /** The parser stops at the first type mismatch and reports the missing
  * arguments it could not fill. On its own that reads like "add a payload", so
  * the argument shape is spelled out once the component is named in the error. */
-const VISUALIZATION_ARGUMENT_HINT = 'Visualization takes four arguments in order: the template name, a short title, the template payload and an accessibility summary. The payload is the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}. Do not pass the visualization envelope {version, template, title, accessibilitySummary, payload} as one object or as the payload.';
+const VISUALIZATION_ARGUMENT_HINT =
+  'Visualization takes four arguments in order: the template name, a short title, the template payload and an accessibility summary. The payload is the template inner data, for example {"categories":["A"],"series":[{"name":"Values","data":[1,2]}]}. Do not pass the visualization envelope {version, template, title, accessibilitySummary, payload} as one object or as the payload.';
 
 function withVisualizationArgumentHint(issues: string[]): string[] {
-  const confused = issues.some((issue) => issue.includes('"component":"Visualization"')
-    && (issue.includes('"/template"') || issue.includes('"/payload"') || issue.includes('"/accessibilitySummary"')));
+  const confused = issues.some(
+    (issue) =>
+      issue.includes('"component":"Visualization"') &&
+      (issue.includes('"/template"') ||
+        issue.includes('"/payload"') ||
+        issue.includes('"/accessibilitySummary"')),
+  );
   return confused ? [...issues, VISUALIZATION_ARGUMENT_HINT] : issues;
 }
 
@@ -50,7 +68,10 @@ export function inspectOpenUiProgram(source: string): OpenUiInspection {
   try {
     const declarations = split(tokenize(source)).map((statement) => statement.id);
     const parsed = parser.parse(source);
-    const embedded = inspectEmbeddedVisualizations([parsed.root, parsed.rootExpression], parsed.stateDeclarations);
+    const embedded = inspectEmbeddedVisualizations(
+      [parsed.root, parsed.rootExpression],
+      parsed.stateDeclarations,
+    );
     const issues = [
       ...withVisualizationArgumentHint(openUiProgramIssues(parsed, declarations)),
       ...openUiRuntimeIssues(parsed, parsed.stateDeclarations),
@@ -67,7 +88,9 @@ export function inspectOpenUiProgram(source: string): OpenUiInspection {
     };
   } catch (error) {
     return {
-      issues: [`OpenUI program could not be parsed (${String((error as Error)?.message || 'syntax error').slice(0, 120)}); use the supplied component signatures`],
+      issues: [
+        `OpenUI program could not be parsed (${String((error as Error)?.message || 'syntax error').slice(0, 120)}); use the supplied component signatures`,
+      ],
       visualizations: [],
       failures: [],
       warnings: [],
@@ -84,12 +107,21 @@ function looksUnterminated(source: string): boolean {
   let escaped = false;
   for (const char of source) {
     if (quote) {
-      if (escaped) { escaped = false; continue; }
-      if (char === '\\') { escaped = true; continue; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
       if (char === quote) quote = '';
       continue;
     }
-    if (char === '"' || char === "'") { quote = char; continue; }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
     if ('([{'.includes(char)) depth++;
     else if (')]}'.includes(char)) depth--;
   }
@@ -119,7 +151,10 @@ function envelopeMisuse(props: Record<string, unknown>): string | null {
 
 /** Apply the existing visual contract to composed visuals whenever defaults are evaluable.
  * Custom client-only functions stay with the client; they are never executed here. */
-function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unknown>): {
+function inspectEmbeddedVisualizations(
+  root: unknown,
+  state: Record<string, unknown>,
+): {
   issues: string[];
   visualizations: Array<Record<string, unknown>>;
   failures: OpenUiVisualizationFailure[];
@@ -135,13 +170,21 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
     const node = value as Record<string, unknown>;
     if (node.typeName === 'Visualization' || (node.k === 'Comp' && node.name === 'Visualization')) {
       const names = ['template', 'title', 'payload', 'accessibilitySummary', 'caption'];
-      const props = (node.props || node.mappedProps || Object.fromEntries(names.map((name, index) => [name, (node.args as unknown[])[index]]))) as Record<string, unknown>;
+      const props = (node.props ||
+        node.mappedProps ||
+        Object.fromEntries(
+          names.map((name, index) => [name, (node.args as unknown[])[index]]),
+        )) as Record<string, unknown>;
       const misuse = envelopeMisuse(props);
       if (misuse) {
         issues.push(misuse);
-        failures.push({ template: null, title: null, stage: 'envelope_misuse', issues: [{ path: 'Visualization', message: misuse }] });
-      }
-      else {
+        failures.push({
+          template: null,
+          title: null,
+          stage: 'envelope_misuse',
+          issues: [{ path: 'Visualization', message: misuse }],
+        });
+      } else {
         let unresolved = false;
         const resolve = (input: unknown): unknown => {
           if (!input || typeof input !== 'object') return input;
@@ -154,24 +197,41 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
             walkAST(input as ASTNode, (ast) => {
               if (ast.k === 'Comp' && ast.fn) clientOnly = true;
             });
-            if (clientOnly) { unresolved = true; return undefined; }
+            if (clientOnly) {
+              unresolved = true;
+              return undefined;
+            }
             return evaluate(input as ASTNode, {
               getState: (name) => state[name],
-              resolveRef: () => { unresolved = true; return undefined; },
-              reportError: () => { unresolved = true; },
+              resolveRef: () => {
+                unresolved = true;
+                return undefined;
+              },
+              reportError: () => {
+                unresolved = true;
+              },
             });
           }
-          return Object.fromEntries(Object.entries(item).map(([key, entry]) => [key, resolve(entry)]));
+          return Object.fromEntries(
+            Object.entries(item).map(([key, entry]) => [key, resolve(entry)]),
+          );
         };
         const spec = resolve({ version: 1, ...props });
         if (!unresolved) {
           const validation = validateVisualizationSpec(spec);
-          const record = spec && typeof spec === 'object' ? spec as Record<string, unknown> : {};
+          const record = spec && typeof spec === 'object' ? (spec as Record<string, unknown>) : {};
           if (!validation.ok) {
-            const label = typeof record.title === 'string' && record.title ? ` "${record.title.slice(0, 60)}"` : '';
-            issues.push(`Visualization${label}: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`);
+            const label =
+              typeof record.title === 'string' && record.title
+                ? ` "${record.title.slice(0, 60)}"`
+                : '';
+            issues.push(
+              `Visualization${label}: ${validation.issues?.map((issue) => `${issue.path}: ${issue.message}`).join('; ')}`,
+            );
             failures.push({
-              template: validation.template ?? (typeof record.template === 'string' ? record.template : null),
+              template:
+                validation.template ??
+                (typeof record.template === 'string' ? record.template : null),
               title: typeof record.title === 'string' ? record.title : null,
               stage: validation.stage,
               issues: validation.issues ?? [],
@@ -186,5 +246,10 @@ function inspectEmbeddedVisualizations(root: unknown, state: Record<string, unkn
     for (const item of Object.values(node)) walk(item, depth + 1);
   };
   walk(root);
-  return { issues: [...new Set(issues)].slice(0, 8), visualizations, failures: failures.slice(0, 8), warnings: [...new Set(warnings)].slice(0, 8) };
+  return {
+    issues: [...new Set(issues)].slice(0, 8),
+    visualizations,
+    failures: failures.slice(0, 8),
+    warnings: [...new Set(warnings)].slice(0, 8),
+  };
 }

@@ -5,9 +5,16 @@ import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 
 const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
-Object.assign(globalThis, { window: dom.window, document: dom.window.document, localStorage: dom.window.localStorage, IS_REACT_ACT_ENVIRONMENT: true });
-const { useWorkspaceSnapshot, useWorkspaceDispatch } = await import('../src/react/pages/workspace/workspace.hooks.ts');
-const { patchLibraryData, setWorkspaceLoading, setWorkspaceProjects, useWorkspaceStore } = await import('../src/react/pages/workspace/workspace.store.ts');
+Object.assign(globalThis, {
+  window: dom.window,
+  document: dom.window.document,
+  localStorage: dom.window.localStorage,
+  IS_REACT_ACT_ENVIRONMENT: true,
+});
+const { useWorkspaceSnapshot, useWorkspaceDispatch } =
+  await import('../src/react/pages/workspace/workspace.hooks.ts');
+const { patchLibraryData, setWorkspaceLoading, setWorkspaceProjects, useWorkspaceStore } =
+  await import('../src/react/pages/workspace/workspace.store.ts');
 
 test('workspace pages subscribe independently and keep stable actions during unrelated updates', async () => {
   const root = createRoot(document.getElementById('root'));
@@ -21,7 +28,11 @@ test('workspace pages subscribe independently and keep stable actions during unr
     return null;
   }
   try {
-    await act(() => root.render(['library', 'projects', 'plugins'].map((page) => createElement(Probe, { key: page, page }))));
+    await act(() =>
+      root.render(
+        ['library', 'projects', 'plugins'].map((page) => createElement(Probe, { key: page, page })),
+      ),
+    );
     const initialActions = actions.library;
     assert.deepEqual(renders, { library: 1, projects: 1, plugins: 1 });
     await act(() => patchLibraryData({ query: 'lesson' }));

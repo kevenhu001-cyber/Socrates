@@ -68,13 +68,21 @@ export function subscribeReviewDeck(listener: () => void): () => void {
 function publish(next: ReviewDeck): void {
   if (next === deck) return;
   deck = next;
-  try { localStorage.setItem(deckKey, JSON.stringify(next)); }
-  catch (error) { reportSwallow(error, 'tutor/reviewDeck.persist', 'expected'); }
+  try {
+    localStorage.setItem(deckKey, JSON.stringify(next));
+  } catch (error) {
+    reportSwallow(error, 'tutor/reviewDeck.persist', 'expected');
+  }
   listeners.forEach((listener) => listener());
 }
 
 /** Schedule a card from its rating. Returns the card as now scheduled, or null for a blank front. */
-export function recordReview(front: string, back: string, rating: RecallRating, now = Date.now()): ReviewCard | null {
+export function recordReview(
+  front: string,
+  back: string,
+  rating: RecallRating,
+  now = Date.now(),
+): ReviewCard | null {
   const next = rateReviewCard(getReviewDeck(), { front, back }, rating, now);
   /* getReviewDeck() above settled deckKey for the signed-in user. */
   publish(next);

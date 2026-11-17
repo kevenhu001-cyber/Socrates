@@ -29,21 +29,20 @@ const ALL_PHASES = [...NON_TERMINAL_PHASES, ...TERMINAL_PHASES];
 /* A phase-transition sequence: each element is the next phase fed to
    transitionToolRun. Include the empty sequence and unknown phases so the
    generator covers the whole transition space, not just the happy path. */
-const phaseSequence = () => fc.array(
-  fc.oneof(
-    fc.constantFrom(...ALL_PHASES),
-    fc.constantFrom('', 'unknown', 'weird_phase'),
-  ),
-  { minLength: 0, maxLength: 25 },
-);
+const phaseSequence = () =>
+  fc.array(
+    fc.oneof(fc.constantFrom(...ALL_PHASES), fc.constantFrom('', 'unknown', 'weird_phase')),
+    { minLength: 0, maxLength: 25 },
+  );
 
 /* A starting run in an arbitrary non-terminal phase. */
-const startingRun = () => fc.constantFrom(...NON_TERMINAL_PHASES).map((phase) => ({
-  id: 'run-1',
-  tool: 'sandbox',
-  phase,
-  startedAt: 0,
-}));
+const startingRun = () =>
+  fc.constantFrom(...NON_TERMINAL_PHASES).map((phase) => ({
+    id: 'run-1',
+    tool: 'sandbox',
+    phase,
+    startedAt: 0,
+  }));
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 5: The first terminal phase latches

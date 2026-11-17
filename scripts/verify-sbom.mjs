@@ -38,7 +38,9 @@ for (const name of expected) {
 
 let extras;
 try {
-  extras = readdirSync(directory).filter((name) => name.endsWith('.cdx.json') && !expected.includes(name));
+  extras = readdirSync(directory).filter(
+    (name) => name.endsWith('.cdx.json') && !expected.includes(name),
+  );
 } catch {
   // Missing expected files have already been reported above.
 }

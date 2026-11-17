@@ -27,8 +27,7 @@ import { INTERFACE_ICON_STROKE } from './icons/interfaceIcons';
 import { type IconName } from './iconRegistry';
 import { getIconDescriptor } from './iconRegistry';
 
-export interface IconProps
-  extends Omit<React.SVGAttributes<SVGSVGElement>, 'name' | 'children'> {
+export interface IconProps extends Omit<React.SVGAttributes<SVGSVGElement>, 'name' | 'children'> {
   name: IconName;
   size?: number;
   strokeWidth?: number;

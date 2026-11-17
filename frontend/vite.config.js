@@ -16,21 +16,32 @@ function getBuildId() {
     const root = fileURLToPath(new URL('..', import.meta.url));
     let gitDir = join(root, '.git');
     if (!existsSync(join(gitDir, 'HEAD'))) {
-      gitDir = resolve(root, readFileSync(gitDir, 'utf8').trim().replace(/^gitdir:\s*/, ''));
+      gitDir = resolve(
+        root,
+        readFileSync(gitDir, 'utf8')
+          .trim()
+          .replace(/^gitdir:\s*/, ''),
+      );
     }
     let sha = readFileSync(join(gitDir, 'HEAD'), 'utf8').trim();
     if (sha.startsWith('ref: ')) {
       const ref = sha.slice(5);
       const commonFile = join(gitDir, 'commondir');
       const common = existsSync(commonFile)
-        ? resolve(gitDir, readFileSync(commonFile, 'utf8').trim()) : gitDir;
+        ? resolve(gitDir, readFileSync(commonFile, 'utf8').trim())
+        : gitDir;
       const refFile = join(common, ref);
-      sha = existsSync(refFile) ? readFileSync(refFile, 'utf8').trim()
-        : readFileSync(join(common, 'packed-refs'), 'utf8').split('\n')
-          .find((line) => line.endsWith(' ' + ref))?.split(' ')[0] || '';
+      sha = existsSync(refFile)
+        ? readFileSync(refFile, 'utf8').trim()
+        : readFileSync(join(common, 'packed-refs'), 'utf8')
+            .split('\n')
+            .find((line) => line.endsWith(' ' + ref))
+            ?.split(' ')[0] || '';
     }
     if (/^[a-f0-9]{40}$/i.test(sha)) return sha.slice(0, 12);
-  } catch (_) { /* source archives may not include git metadata */ }
+  } catch (_) {
+    /* source archives may not include git metadata */
+  }
   return 'local-' + Date.now().toString(36);
 }
 
@@ -54,11 +65,14 @@ function createPrecompressedAssetsPlugin() {
         const raw = readFileSync(file);
         writeFileSync(file + '.gz', gzipSync(raw, { level: 9 }));
         try {
-          writeFileSync(file + '.br', brotliCompressSync(raw, {
-            params: {
-              [zlibConstants.BROTLI_PARAM_QUALITY]: 11,
-            },
-          }));
+          writeFileSync(
+            file + '.br',
+            brotliCompressSync(raw, {
+              params: {
+                [zlibConstants.BROTLI_PARAM_QUALITY]: 11,
+              },
+            }),
+          );
         } catch (_) {}
       };
       try {
@@ -116,8 +130,14 @@ function createPdfjsRuntimeAssetsPlugin() {
     },
     closeBundle() {
       try {
-        cpSync(join(packageDir, 'cmaps'), join(process.cwd(), 'dist', 'assets', 'pdfjs', 'cmaps'), { recursive: true });
-        cpSync(join(packageDir, 'standard_fonts'), join(process.cwd(), 'dist', 'assets', 'pdfjs', 'standard_fonts'), { recursive: true });
+        cpSync(join(packageDir, 'cmaps'), join(process.cwd(), 'dist', 'assets', 'pdfjs', 'cmaps'), {
+          recursive: true,
+        });
+        cpSync(
+          join(packageDir, 'standard_fonts'),
+          join(process.cwd(), 'dist', 'assets', 'pdfjs', 'standard_fonts'),
+          { recursive: true },
+        );
       } catch (error) {
         if (error && error.code !== 'ENOENT') throw error;
       }
@@ -138,7 +158,8 @@ function createPdfjsRuntimeAssetsPlugin() {
 function createStripHtmlCommentsPlugin() {
   /* A script/style block is consumed as one unit, so a comment inside it is
      never offered to the comment branch. */
-  const PROTECTED_BLOCK = /(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>)|<!--[\s\S]*?-->/g;
+  const PROTECTED_BLOCK =
+    /(<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>)|<!--[\s\S]*?-->/g;
   return {
     name: 'strip-html-comments',
     apply: 'build',
@@ -179,38 +200,82 @@ export default defineConfig({
          matches string aliases by prefix, so a bare `@socrates/core` would
          swallow `@socrates/core/motion/spring` and look for it *inside*
          index.ts. */
-      '@socrates/core/motion/spring': fileURLToPath(new URL('../packages/core/src/motion/spring.ts', import.meta.url)),
-      '@socrates/core/visualizationMath': fileURLToPath(new URL('../packages/core/src/visualizationMath.js', import.meta.url)),
-      '@socrates/core/visualizationNormalize': fileURLToPath(new URL('../packages/core/src/visualizationNormalize.js', import.meta.url)),
-      '@socrates/core/learningBlocks': fileURLToPath(new URL('../packages/core/src/learningBlocks.ts', import.meta.url)),
-      '@socrates/core/turnRuntime': fileURLToPath(new URL('../packages/core/src/turnRuntime.js', import.meta.url)),
+      '@socrates/core/motion/spring': fileURLToPath(
+        new URL('../packages/core/src/motion/spring.ts', import.meta.url),
+      ),
+      '@socrates/core/visualizationMath': fileURLToPath(
+        new URL('../packages/core/src/visualizationMath.js', import.meta.url),
+      ),
+      '@socrates/core/visualizationNormalize': fileURLToPath(
+        new URL('../packages/core/src/visualizationNormalize.js', import.meta.url),
+      ),
+      '@socrates/core/learningBlocks': fileURLToPath(
+        new URL('../packages/core/src/learningBlocks.ts', import.meta.url),
+      ),
+      '@socrates/core/turnRuntime': fileURLToPath(
+        new URL('../packages/core/src/turnRuntime.js', import.meta.url),
+      ),
       /* P_perf-core-barrel — the eager graph only needs frame splitting and
          the tool-run contract. A bare `@socrates/core` import pulls the whole
          barrel (demonstration/physics/visualization runtimes) into the boot
          chunk, so narrow subpaths keep that code in lazy chunks. */
       '@socrates/core/sse': fileURLToPath(new URL('../packages/core/src/sse.ts', import.meta.url)),
-      '@socrates/core/toolRun': fileURLToPath(new URL('../packages/core/src/toolRun.ts', import.meta.url)),
-      '@socrates/contracts': fileURLToPath(new URL('../packages/contracts/src/index.ts', import.meta.url)),
+      '@socrates/core/toolRun': fileURLToPath(
+        new URL('../packages/core/src/toolRun.ts', import.meta.url),
+      ),
+      '@socrates/contracts': fileURLToPath(
+        new URL('../packages/contracts/src/index.ts', import.meta.url),
+      ),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.
          Only the narrow entries are aliased, so the web shell never pulls in
          the full packages/ui barrel (svg, reanimated, markdown). */
       '@socrates/theme': fileURLToPath(new URL('../packages/theme/src/index.ts', import.meta.url)),
-      '@socrates/ui/primitives': fileURLToPath(new URL('../packages/ui/src/primitives/index.ts', import.meta.url)),
-      '@socrates/ui/home': fileURLToPath(new URL('../packages/ui/src/home/index.ts', import.meta.url)),
-      '@socrates/ui/turn': fileURLToPath(new URL('../packages/ui/src/turn/index.ts', import.meta.url)),
-      '@socrates/ui/learn-model': fileURLToPath(new URL('../packages/ui/src/learn/model.ts', import.meta.url)),
-      '@socrates/ui/learn-split': fileURLToPath(new URL('../packages/ui/src/learn/split.ts', import.meta.url)),
-      '@socrates/ui/learn': fileURLToPath(new URL('../packages/ui/src/learn/index.ts', import.meta.url)),
-      '@socrates/ui/think-model': fileURLToPath(new URL('../packages/ui/src/think/model.ts', import.meta.url)),
-      '@socrates/ui/think': fileURLToPath(new URL('../packages/ui/src/think/index.ts', import.meta.url)),
-      '@socrates/ui/study-model': fileURLToPath(new URL('../packages/ui/src/study/model.ts', import.meta.url)),
-      '@socrates/ui/study': fileURLToPath(new URL('../packages/ui/src/study/index.ts', import.meta.url)),
-      '@socrates/ui/composer': fileURLToPath(new URL('../packages/ui/src/composer/index.ts', import.meta.url)),
-      '@socrates/ui/shell': fileURLToPath(new URL('../packages/ui/src/shell/index.ts', import.meta.url)),
-      '@socrates/ui/settings': fileURLToPath(new URL('../packages/ui/src/settings/index.tsx', import.meta.url)),
-      '@socrates/ui/exam': fileURLToPath(new URL('../packages/ui/src/exam/index.ts', import.meta.url)),
-      '@socrates/ui/exam-model': fileURLToPath(new URL('../packages/ui/src/examModel.ts', import.meta.url)),
+      '@socrates/ui/primitives': fileURLToPath(
+        new URL('../packages/ui/src/primitives/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/home': fileURLToPath(
+        new URL('../packages/ui/src/home/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/turn': fileURLToPath(
+        new URL('../packages/ui/src/turn/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/learn-model': fileURLToPath(
+        new URL('../packages/ui/src/learn/model.ts', import.meta.url),
+      ),
+      '@socrates/ui/learn-split': fileURLToPath(
+        new URL('../packages/ui/src/learn/split.ts', import.meta.url),
+      ),
+      '@socrates/ui/learn': fileURLToPath(
+        new URL('../packages/ui/src/learn/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/think-model': fileURLToPath(
+        new URL('../packages/ui/src/think/model.ts', import.meta.url),
+      ),
+      '@socrates/ui/think': fileURLToPath(
+        new URL('../packages/ui/src/think/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/study-model': fileURLToPath(
+        new URL('../packages/ui/src/study/model.ts', import.meta.url),
+      ),
+      '@socrates/ui/study': fileURLToPath(
+        new URL('../packages/ui/src/study/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/composer': fileURLToPath(
+        new URL('../packages/ui/src/composer/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/shell': fileURLToPath(
+        new URL('../packages/ui/src/shell/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/settings': fileURLToPath(
+        new URL('../packages/ui/src/settings/index.tsx', import.meta.url),
+      ),
+      '@socrates/ui/exam': fileURLToPath(
+        new URL('../packages/ui/src/exam/index.ts', import.meta.url),
+      ),
+      '@socrates/ui/exam-model': fileURLToPath(
+        new URL('../packages/ui/src/examModel.ts', import.meta.url),
+      ),
       'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React
@@ -219,7 +284,19 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-native-web'],
     /* Platform files win on web (`Foo.web.tsx` before `Foo.tsx`), matching
        Metro's resolution for apps/socrates. */
-    extensions: ['.web.tsx', '.web.ts', '.web.mjs', '.web.js', '.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json'],
+    extensions: [
+      '.web.tsx',
+      '.web.ts',
+      '.web.mjs',
+      '.web.js',
+      '.mjs',
+      '.js',
+      '.mts',
+      '.ts',
+      '.jsx',
+      '.tsx',
+      '.json',
+    ],
   },
   optimizeDeps: {
     /* react-native-web ships CommonJS helpers (fbjs, inline-style-prefixer);
@@ -250,27 +327,35 @@ export default defineConfig({
     assetsInlineLimit: (filePath) => {
       // Libraries fetch JSON URL imports (including tldraw's empty en.json).
       // A data: URL is blocked by connect-src; emit a same-origin file instead.
-      if (typeof filePath === 'string' && (filePath.endsWith('.css') || filePath.endsWith('.json'))) return false;
+      if (typeof filePath === 'string' && (filePath.endsWith('.css') || filePath.endsWith('.json')))
+        return false;
       return undefined;
     },
     rollupOptions: {
       preserveEntrySignatures: false,
       onwarn(warning, defaultHandler) {
-        const source = String(warning.id || (warning.loc && warning.loc.file) || warning.message || '')
-          .replace(/\\/g, '/');
+        const source = String(
+          warning.id || (warning.loc && warning.loc.file) || warning.message || '',
+        ).replace(/\\/g, '/');
         /* Client-only React packages publish a `use client` boundary for
            frameworks with server components. This Vite SPA bundles every
            imported module for the browser, so Rollup drops that directive
            without changing behavior. Keep every other build warning visible. */
-        if (warning.code === 'MODULE_LEVEL_DIRECTIVE'
-            && warning.message.includes('"use client"')
-            && source.includes('node_modules/')) return;
+        if (
+          warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
+          warning.message.includes('"use client"') &&
+          source.includes('node_modules/')
+        )
+          return;
         /* Zod 4.6 ships two misplaced @__PURE__ comments. Rollup removes
            those comments itself because they are outside a call expression;
            ignore only that discarded-annotation notice from the dependency. */
-        if (warning.code === 'INVALID_ANNOTATION'
-            && warning.message.includes('comment will be removed')
-            && source.includes('node_modules/zod/')) return;
+        if (
+          warning.code === 'INVALID_ANNOTATION' &&
+          warning.message.includes('comment will be removed') &&
+          source.includes('node_modules/zod/')
+        )
+          return;
         defaultHandler(warning);
       },
       output: {
@@ -280,41 +365,58 @@ export default defineConfig({
         strictExecutionOrder: true,
         codeSplitting: {
           includeDependenciesRecursively: false,
-          groups: [{ debugName: 'explicit-vendors', name(id) {
-            const f = id.split('\\').join('/');
-            if (f.includes('@oxc-project') && f.includes('/helpers/')) return 'vendor-runtime';
-            // The shared preload helper must not pull a lazy vendor into boot.
-            if (f.includes('vite/preload-helper')) {
-              return 'vendor-react';
-            }
-            if (f.includes('/node_modules/')) {
-              // Shared positioning/store helpers must not belong to an editor.
-              if (f.includes('/node_modules/@floating-ui/')) return 'vendor-floating';
-              if (f.includes('/node_modules/use-sync-external-store/')) return 'vendor-react';
-              if (f.includes('/node_modules/react-dom/') || f.includes('/node_modules/react/') || f.includes('/node_modules/scheduler/') || f.includes('/node_modules/zustand/')) {
-                return 'vendor-react';
-              }
-              if (f.includes('/node_modules/@tiptap/') || f.includes('/node_modules/prosemirror-') || f.includes('/node_modules/orderedmap/')) {
-                return 'vendor-editor';
-              }
-              if (f.includes('/node_modules/marked/') || f.includes('/node_modules/dompurify/')) {
-                return 'vendor-markdown';
-              }
-              if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
-                return 'vendor-tldraw';
-              }
-              if (f.includes('/node_modules/three/')) {
-                return 'vendor-three';
-              }
-              if (f.includes('/node_modules/@lobehub/')) {
-                return 'vendor-icons';
-              }
-              return;
-            }
-            if (f.includes('connector-icons') || f.includes('/assets/connector-icons/')) {
-              return 'vendor-connector-icons';
-            }
-          } }],
+          groups: [
+            {
+              debugName: 'explicit-vendors',
+              name(id) {
+                const f = id.split('\\').join('/');
+                if (f.includes('@oxc-project') && f.includes('/helpers/')) return 'vendor-runtime';
+                // The shared preload helper must not pull a lazy vendor into boot.
+                if (f.includes('vite/preload-helper')) {
+                  return 'vendor-react';
+                }
+                if (f.includes('/node_modules/')) {
+                  // Shared positioning/store helpers must not belong to an editor.
+                  if (f.includes('/node_modules/@floating-ui/')) return 'vendor-floating';
+                  if (f.includes('/node_modules/use-sync-external-store/')) return 'vendor-react';
+                  if (
+                    f.includes('/node_modules/react-dom/') ||
+                    f.includes('/node_modules/react/') ||
+                    f.includes('/node_modules/scheduler/') ||
+                    f.includes('/node_modules/zustand/')
+                  ) {
+                    return 'vendor-react';
+                  }
+                  if (
+                    f.includes('/node_modules/@tiptap/') ||
+                    f.includes('/node_modules/prosemirror-') ||
+                    f.includes('/node_modules/orderedmap/')
+                  ) {
+                    return 'vendor-editor';
+                  }
+                  if (
+                    f.includes('/node_modules/marked/') ||
+                    f.includes('/node_modules/dompurify/')
+                  ) {
+                    return 'vendor-markdown';
+                  }
+                  if (f.includes('/node_modules/tldraw/') || f.includes('/node_modules/@tldraw/')) {
+                    return 'vendor-tldraw';
+                  }
+                  if (f.includes('/node_modules/three/')) {
+                    return 'vendor-three';
+                  }
+                  if (f.includes('/node_modules/@lobehub/')) {
+                    return 'vendor-icons';
+                  }
+                  return;
+                }
+                if (f.includes('connector-icons') || f.includes('/assets/connector-icons/')) {
+                  return 'vendor-connector-icons';
+                }
+              },
+            },
+          ],
         },
         entryFileNames: 'assets/[name]-[hash].js',
         // nginx's default MIME table serves .mjs as octet-stream. Module
@@ -373,18 +475,20 @@ export default defineConfig({
     },
     port: 5173,
     strictPort: false,
-    proxy: (LOCAL_AUTH_BYPASS ? {
-      '/api': {
-        target: `http://127.0.0.1:${process.env.API_PORT || 3037}`,
-        bypass(req) {
-          const [pathOnly] = (req.url || '').split('?');
-          if (pathOnly.startsWith('/api/auth/') || pathOnly.startsWith('/api/v2/auth/')) {
-            return pathOnly;
-          }
+    proxy: LOCAL_AUTH_BYPASS
+      ? {
+          '/api': {
+            target: `http://127.0.0.1:${process.env.API_PORT || 3037}`,
+            bypass(req) {
+              const [pathOnly] = (req.url || '').split('?');
+              if (pathOnly.startsWith('/api/auth/') || pathOnly.startsWith('/api/v2/auth/')) {
+                return pathOnly;
+              }
+            },
+          },
+        }
+      : {
+          '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
         },
-      },
-    } : {
-      '/api': `http://127.0.0.1:${process.env.API_PORT || 3037}`,
-    }),
   },
 });

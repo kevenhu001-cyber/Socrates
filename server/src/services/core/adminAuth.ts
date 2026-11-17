@@ -72,7 +72,7 @@ function ipToLong(ip: string): number | null {
   for (const part of parts) {
     const n = Number.parseInt(part, 10);
     if (!Number.isInteger(n) || n < 0 || n > 255 || !/^\d{1,3}$/.test(part)) return null;
-    out = (out * 256) + n;
+    out = out * 256 + n;
   }
   return out >>> 0;
 }
@@ -80,7 +80,11 @@ function ipToLong(ip: string): number | null {
 /* Parse once per call — the allowlist is tiny (a handful of entries)
    and correctness beats caching here. Returns null when the env var
    is unset/empty, which the caller treats as "allow all". */
-export function parseAdminIpAllowlist(): Array<{ ip: number | null; prefix: number | null; raw: string }> | null {
+export function parseAdminIpAllowlist(): Array<{
+  ip: number | null;
+  prefix: number | null;
+  raw: string;
+}> | null {
   const raw = process.env.ADMIN_IP_ALLOWLIST;
   if (typeof raw !== 'string' || !raw.trim()) return null;
   const entries: Array<{ ip: number | null; prefix: number | null; raw: string }> = [];
@@ -127,8 +131,8 @@ export function isAdminIpAllowed(ip: string | null | undefined): boolean {
       /* IPv6 / unparseable: exact string equality. */
       if (candidate === entry.raw) return true;
     } else if (candidateLong !== null && entry.ip !== null && entry.prefix !== null) {
-      const mask = entry.prefix === 0 ? 0 : (0xFFFFFFFF << (32 - entry.prefix)) >>> 0;
-      if (((candidateLong & mask) >>> 0) === ((entry.ip & mask) >>> 0)) return true;
+      const mask = entry.prefix === 0 ? 0 : (0xffffffff << (32 - entry.prefix)) >>> 0;
+      if ((candidateLong & mask) >>> 0 === (entry.ip & mask) >>> 0) return true;
     }
   }
   return false;
@@ -146,7 +150,11 @@ export function adminLockoutKey(ip: string | null | undefined): string | null {
 
 /* ── 3. Slow hash (memoized bcrypt) ────────────────────────────── */
 
-interface MemoizedHash { source: string; hash: string | null; error: string | null; }
+interface MemoizedHash {
+  source: string;
+  hash: string | null;
+  error: string | null;
+}
 let memo: MemoizedHash | null = null;
 
 /**
@@ -233,7 +241,10 @@ export function verifyAdminSessionToken(token: unknown): boolean {
 
 /* ── 5. Admin gate middleware helper ───────────────────────────── */
 
-export function extractAdminToken(req: { headers: Record<string, unknown>; cookies?: Record<string, unknown> }): string | null {
+export function extractAdminToken(req: {
+  headers: Record<string, unknown>;
+  cookies?: Record<string, unknown>;
+}): string | null {
   const header = req.headers['x-admin-token'];
   if (typeof header === 'string' && header) return header;
   const cookie = req.cookies?.['socrates_admin_session'];

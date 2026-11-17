@@ -30,12 +30,19 @@ interface NormalizedFunctionSeries {
 function colorFor(role: string | undefined, index: number, colors: VizColors): string {
   const byRole = role ? (colors as unknown as Record<string, string>)[role] : undefined;
   if (byRole) return byRole;
-  return [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline][index % 5];
+  return [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline][
+    index % 5
+  ];
 }
 
 function escapeTooltip(value: unknown): string {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
-    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[char];
+    return (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<
+        string,
+        string
+      >
+    )[char];
   });
 }
 
@@ -46,18 +53,31 @@ function normalizeFunction(spec: VizSpec): {
 } {
   const payload = spec.payload || {};
   let allValues: number[] = [];
-  let minX = Infinity, maxX = -Infinity;
+  let minX = Infinity,
+    maxX = -Infinity;
   const rawFunctions = Array.isArray(payload.functions) ? payload.functions : [];
   const series: NormalizedFunctionSeries[] = [];
   rawFunctions.forEach(function (fn) {
     if (!fn || typeof fn.expression !== 'string' || !fn.expression.trim()) return;
     const sample = sampleFunction(fn.expression, fn.domain, 760);
     if (!sample || !Array.isArray(sample.points)) return;
-    const finitePoints = sample.points.filter(function (point) { return point && Number.isFinite(point[1]); });
+    const finitePoints = sample.points.filter(function (point) {
+      return point && Number.isFinite(point[1]);
+    });
     if (!finitePoints.length) return;
-    allValues = allValues.concat(finitePoints.map(function (point) { return point[1] as number; }));
-    minX = Math.min(minX, sample.domain[0]); maxX = Math.max(maxX, sample.domain[1]);
-    series.push({ name: fn.label || fn.expression, role: fn.role, data: sample.points, expression: fn.expression });
+    allValues = allValues.concat(
+      finitePoints.map(function (point) {
+        return point[1] as number;
+      }),
+    );
+    minX = Math.min(minX, sample.domain[0]);
+    maxX = Math.max(maxX, sample.domain[1]);
+    series.push({
+      name: fn.label || fn.expression,
+      role: fn.role,
+      data: sample.points,
+      expression: fn.expression,
+    });
   });
   const yExtent = robustExtent(allValues);
   return { series: series, xExtent: [minX, maxX], yExtent: yExtent };
@@ -65,7 +85,8 @@ function normalizeFunction(spec: VizSpec): {
 
 /* Canvas/SVG renderers need a concrete family list. Keep it aligned with
    themes.css so chart labels use the same Geist and Noto faces as the UI. */
-export const VIZ_FONT_FAMILY = "'Geist Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',Arial,sans-serif";
+export const VIZ_FONT_FAMILY =
+  "'Geist Sans','Noto Sans SC','PingFang SC','Microsoft YaHei',Arial,sans-serif";
 
 function legendOptions(
   series: readonly unknown[],
@@ -82,7 +103,9 @@ function legendOptions(
     width: '86%',
     pageTextStyle: { color: colors.muted, fontFamily: fontFamily },
     textStyle: { color: colors.text, fontFamily: fontFamily },
-    formatter: function (name: string) { return truncateLabel(name, 24); },
+    formatter: function (name: string) {
+      return truncateLabel(name, 24);
+    },
   };
 }
 
@@ -108,35 +131,75 @@ function functionChartOption(
   tooltipBase: ChartOption,
 ): ChartOption {
   const normalized = normalizeFunction(spec);
-  if (!normalized.series.length) throw new Error('No finite function values were produced for the requested domain.');
+  if (!normalized.series.length)
+    throw new Error('No finite function values were produced for the requested domain.');
   const hasLn = normalized.series.some((item) => /\b(?:ln|log)\s*\(/i.test(item.expression || ''));
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     color: normalized.series.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'axis', valueFormatter: (value: number) => Number(value).toPrecision(5) }, tooltipBase),
+    tooltip: Object.assign(
+      { trigger: 'axis', valueFormatter: (value: number) => Number(value).toPrecision(5) },
+      tooltipBase,
+    ),
     legend: legendOptions(normalized.series, colors, fontFamily),
-    grid: { left: 56, right: 20, top: normalized.series.length > 1 ? 38 : 18, bottom: 50, containLabel: false },
+    grid: {
+      left: 56,
+      right: 20,
+      top: normalized.series.length > 1 ? 38 : 18,
+      bottom: 50,
+      containLabel: false,
+    },
     xAxis: {
-      type: 'value', name: spec.payload.xLabel || 'x', min: Math.min(0, normalized.xExtent[0]), max: normalized.xExtent[1],
-      nameTextStyle: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
-      axisLabel: { color: colors.text, fontFamily }, splitLine: { lineStyle: { color: colors.grid } },
+      type: 'value',
+      name: spec.payload.xLabel || 'x',
+      min: Math.min(0, normalized.xExtent[0]),
+      max: normalized.xExtent[1],
+      nameTextStyle: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
+      axisLabel: { color: colors.text, fontFamily },
+      splitLine: { lineStyle: { color: colors.grid } },
     },
     yAxis: {
-      type: 'value', name: spec.payload.yLabel || 'y', min: normalized.yExtent[0], max: normalized.yExtent[1],
-      nameTextStyle: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
-      axisLabel: { color: colors.text, fontFamily }, splitLine: { lineStyle: { color: colors.grid } },
+      type: 'value',
+      name: spec.payload.yLabel || 'y',
+      min: normalized.yExtent[0],
+      max: normalized.yExtent[1],
+      nameTextStyle: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
+      axisLabel: { color: colors.text, fontFamily },
+      splitLine: { lineStyle: { color: colors.grid } },
     },
     dataZoom: [{ type: 'inside', zoomOnMouseWheel: true, moveOnMouseMove: true }],
     series: normalized.series.map((item, index) => {
       const series: ChartOption = {
-        type: 'line', name: item.name, data: item.data, showSymbol: false,
-        connectNulls: false, smooth: false,
-        lineStyle: { width: 2.35, color: colorFor(item.role, index, colors) }, emphasis: { focus: 'series' },
+        type: 'line',
+        name: item.name,
+        data: item.data,
+        showSymbol: false,
+        connectNulls: false,
+        smooth: false,
+        lineStyle: { width: 2.35, color: colorFor(item.role, index, colors) },
+        emphasis: { focus: 'series' },
       };
       if (index === 0 && hasLn) {
-        series.markPoint = { symbolSize: 8, data: [{ coord: [1, 0], name: '(1, 0)', label: { formatter: '(1, 0)', color: colors.text, fontFamily } }] };
-        series.markLine = { silent: true, symbol: 'none', lineStyle: { type: 'dashed', color: colors.baseline }, data: [{ xAxis: 0 }] };
+        series.markPoint = {
+          symbolSize: 8,
+          data: [
+            {
+              coord: [1, 0],
+              name: '(1, 0)',
+              label: { formatter: '(1, 0)', color: colors.text, fontFamily },
+            },
+          ],
+        };
+        series.markLine = {
+          silent: true,
+          symbol: 'none',
+          lineStyle: { type: 'dashed', color: colors.baseline },
+          data: [{ xAxis: 0 }],
+        };
       }
       return series;
     }),
@@ -153,12 +216,15 @@ function pieChartOption(
   const payload = spec.payload;
   const categories = payload.categories || [];
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     color: [colors.primary, colors.secondary, colors.comparison, colors.highlight, colors.baseline],
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
     tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
     legend: {
-      type: categories.length > 6 ? 'scroll' : 'plain', bottom: 0, width: '88%',
+      type: categories.length > 6 ? 'scroll' : 'plain',
+      bottom: 0,
+      width: '88%',
       textStyle: { color: colors.text, fontFamily },
       formatter: (name: string) => truncateLabel(name, 22),
     },
@@ -167,11 +233,12 @@ function pieChartOption(
       radius: spec.template === 'pie' ? '58%' : ['38%', '62%'],
       center: ['50%', '45%'],
       avoidLabelOverlap: true,
-      data: series.data.map((value, index) => typeof value === 'object'
-        ? value
-        : { name: String(categories[index] || index + 1), value }),
+      data: series.data.map((value, index) =>
+        typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value },
+      ),
       label: {
-        color: colors.text, fontFamily,
+        color: colors.text,
+        fontFamily,
         formatter: (params: { name: string }) => truncateLabel(params.name, 18),
       },
       labelLayout: { hideOverlap: true, moveOverlap: 'shiftY' },
@@ -191,48 +258,92 @@ function heatmapChartOption(
   const xCategories = payload.xCategories || [];
   const yCategories = payload.yCategories || [];
   const matrix = payload.values || [];
-  const heatValues = matrix.flat().filter((value) => typeof value === 'number' && Number.isFinite(value));
+  const heatValues = matrix
+    .flat()
+    .filter((value) => typeof value === 'number' && Number.isFinite(value));
   if (!heatValues.length) throw new Error('Heatmap needs at least one finite measurement.');
   const heatMin = Math.min.apply(null, heatValues);
   let heatMax = Math.max.apply(null, heatValues);
   if (heatMin === heatMax) heatMax = heatMin + 1;
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'item', formatter: (params: { value: number[] }) =>
-      escapeTooltip(truncateLabel(yCategories[params.value[1]], 24)) + ' · '
-        + escapeTooltip(truncateLabel(xCategories[params.value[0]], 24)) + ': '
-        + escapeTooltip(params.value[2]) }, tooltipBase),
+    tooltip: Object.assign(
+      {
+        trigger: 'item',
+        formatter: (params: { value: number[] }) =>
+          escapeTooltip(truncateLabel(yCategories[params.value[1]], 24)) +
+          ' · ' +
+          escapeTooltip(truncateLabel(xCategories[params.value[0]], 24)) +
+          ': ' +
+          escapeTooltip(params.value[2]),
+      },
+      tooltipBase,
+    ),
     grid: { left: 82, right: 76, top: 18, bottom: 56, containLabel: true },
     xAxis: {
-      type: 'category', data: xCategories, splitArea: { show: true },
+      type: 'category',
+      data: xCategories,
+      splitArea: { show: true },
       axisLabel: {
-        color: colors.text, fontFamily, interval: 0, hideOverlap: xCategories.length > 20,
+        color: colors.text,
+        fontFamily,
+        interval: 0,
+        hideOverlap: xCategories.length > 20,
         formatter: (value: unknown) => truncateLabel(value, 16),
       },
       axisLine: { lineStyle: { color: colors.line } },
     },
     yAxis: {
-      type: 'category', data: yCategories, inverse: true, splitArea: { show: true },
-      axisLabel: { color: colors.text, fontFamily, formatter: (value: unknown) => truncateLabel(value, 18) },
+      type: 'category',
+      data: yCategories,
+      inverse: true,
+      splitArea: { show: true },
+      axisLabel: {
+        color: colors.text,
+        fontFamily,
+        formatter: (value: unknown) => truncateLabel(value, 18),
+      },
       axisLine: { lineStyle: { color: colors.line } },
     },
     visualMap: {
-      min: heatMin, max: heatMax, calculable: true, orient: 'vertical', right: 4, top: 'center',
-      textStyle: { color: colors.text, fontFamily }, inRange: { color: ['#e8efff', colors.primary] },
+      min: heatMin,
+      max: heatMax,
+      calculable: true,
+      orient: 'vertical',
+      right: 4,
+      top: 'center',
+      textStyle: { color: colors.text, fontFamily },
+      inRange: { color: ['#e8efff', colors.primary] },
     },
-    series: [{
-      type: 'heatmap',
-      /* The ramp runs from a pale tint to the accent in both themes, so a
+    series: [
+      {
+        type: 'heatmap',
+        /* The ramp runs from a pale tint to the accent in both themes, so a
          cell's label follows its own fill, not the page: ink on pale cells,
          white on deep ones. Theme text made pale cells unreadable in dark. */
-      data: matrix.flatMap((row, y) => row.flatMap((value, x) => typeof value === 'number' && Number.isFinite(value) ? [{
-        value: [x, y, value],
-        label: { color: (Number(value) - heatMin) / (heatMax - heatMin) > 0.6 ? '#ffffff' : '#1c2637' },
-      }] : [])),
-      label: { show: xCategories.length * yCategories.length <= 80, fontFamily },
-      emphasis: { itemStyle: { borderColor: colors.text, borderWidth: 1 } },
-    }],
+        data: matrix.flatMap((row, y) =>
+          row.flatMap((value, x) =>
+            typeof value === 'number' && Number.isFinite(value)
+              ? [
+                  {
+                    value: [x, y, value],
+                    label: {
+                      color:
+                        (Number(value) - heatMin) / (heatMax - heatMin) > 0.6
+                          ? '#ffffff'
+                          : '#1c2637',
+                    },
+                  },
+                ]
+              : [],
+          ),
+        ),
+        label: { show: xCategories.length * yCategories.length <= 80, fontFamily },
+        emphasis: { itemStyle: { borderColor: colors.text, borderWidth: 1 } },
+      },
+    ],
   };
 }
 
@@ -254,25 +365,34 @@ function radarChartOption(
     return { name: indicator.name, min: Math.min(low, upper - 0.001), max: upper };
   });
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     color: radarSeries.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
     tooltip: Object.assign({ trigger: 'item' }, tooltipBase),
     legend: legendOptions(radarSeries, colors, fontFamily, 'bottom'),
     radar: {
-      indicator: radarIndicators, shape: 'polygon', radius: '66%', center: ['50%', radarSeries.length > 1 ? '45%' : '50%'],
-      axisName: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
+      indicator: radarIndicators,
+      shape: 'polygon',
+      radius: '66%',
+      center: ['50%', radarSeries.length > 1 ? '45%' : '50%'],
+      axisName: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.line } },
       splitArea: { areaStyle: { color: ['rgba(128,140,160,.025)', 'rgba(128,140,160,.07)'] } },
     },
-    series: [{
-      type: 'radar',
-      data: radarSeries.map((series, index) => ({
-        name: series.name || 'Series ' + (index + 1), value: series.data,
-        itemStyle: { color: colorFor(series.role, index, colors) },
-        lineStyle: { width: 2 }, areaStyle: { opacity: 0.12 },
-      })),
-    }],
+    series: [
+      {
+        type: 'radar',
+        data: radarSeries.map((series, index) => ({
+          name: series.name || 'Series ' + (index + 1),
+          value: series.data,
+          itemStyle: { color: colorFor(series.role, index, colors) },
+          lineStyle: { width: 2 },
+          areaStyle: { opacity: 0.12 },
+        })),
+      },
+    ],
   };
 }
 
@@ -286,45 +406,80 @@ function scatterChartOption(
   const payload = spec.payload;
   const scatterSeries = payload.series || [];
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     color: scatterSeries.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
-    tooltip: Object.assign({ trigger: 'item', formatter: (params: { seriesName?: string; value: number[] }) =>
-      escapeTooltip(params.seriesName || '') + '<br>'
-        + escapeTooltip(payload.xLabel || 'x') + ': ' + escapeTooltip(params.value[0]) + '<br>'
-        + escapeTooltip(payload.yLabel || 'y') + ': ' + escapeTooltip(params.value[1]) }, tooltipBase),
+    tooltip: Object.assign(
+      {
+        trigger: 'item',
+        formatter: (params: { seriesName?: string; value: number[] }) =>
+          escapeTooltip(params.seriesName || '') +
+          '<br>' +
+          escapeTooltip(payload.xLabel || 'x') +
+          ': ' +
+          escapeTooltip(params.value[0]) +
+          '<br>' +
+          escapeTooltip(payload.yLabel || 'y') +
+          ': ' +
+          escapeTooltip(params.value[1]),
+      },
+      tooltipBase,
+    ),
     legend: legendOptions(scatterSeries, colors, fontFamily),
-    grid: { left: 62, right: 22, top: scatterSeries.length > 1 ? 44 : 18, bottom: 52, containLabel: true },
+    grid: {
+      left: 62,
+      right: 22,
+      top: scatterSeries.length > 1 ? 44 : 18,
+      bottom: 52,
+      containLabel: true,
+    },
     /* Axis names sit centred along their axis. At the default end position
        the x name ran past the 22px right margin and the y name above the
        18px top margin, so a phone-width card clipped both. */
     xAxis: {
-      type: 'value', name: payload.xLabel || '', nameLocation: 'middle', nameGap: 30,
+      type: 'value',
+      name: payload.xLabel || '',
+      nameLocation: 'middle',
+      nameGap: 30,
       nameTextStyle: { color: colors.text, fontFamily },
-      axisLabel: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
+      axisLabel: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },
     yAxis: {
-      type: 'value', name: payload.yLabel || '', nameLocation: 'middle', nameGap: 40,
+      type: 'value',
+      name: payload.yLabel || '',
+      nameLocation: 'middle',
+      nameGap: 40,
       nameTextStyle: { color: colors.text, fontFamily },
-      axisLabel: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
+      axisLabel: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },
     dataZoom: [{ type: 'inside' }],
     series: scatterSeries.map((series, index) => ({
-      name: series.name || 'Series ' + (index + 1), type: 'scatter',
+      name: series.name || 'Series ' + (index + 1),
+      type: 'scatter',
       data: series.data.map((point) => {
         const value = point as { x?: unknown; y?: unknown };
         return Array.isArray(point) ? point : [value.x, value.y];
       }),
-      symbolSize: 9, emphasis: { focus: 'series', scale: 1.25 },
+      symbolSize: 9,
+      emphasis: { focus: 'series', scale: 1.25 },
     })),
   };
 }
 
 const SERIES_TYPE_BY_CHART: Record<string, string> = {
-  line: 'line', area: 'line', bar: 'bar', scatter: 'scatter', histogram: 'bar',
-  heatmap: 'heatmap', radar: 'radar', boxplot: 'boxplot',
+  line: 'line',
+  area: 'line',
+  bar: 'bar',
+  scatter: 'scatter',
+  histogram: 'bar',
+  heatmap: 'heatmap',
+  radar: 'radar',
+  boxplot: 'boxplot',
 };
 
 function cartesianChartOption(
@@ -339,47 +494,77 @@ function cartesianChartOption(
   let categories: Array<string | number> = payload.categories || [];
   let axisLayout = categoryAxisLayout(categories);
   const seriesInput = payload.series || [];
-  if (!categories.length && seriesInput.length && ['line', 'area', 'bar', 'histogram', 'boxplot'].includes(chartType)) {
-    const categoryCount = Math.max.apply(null, seriesInput.map((series) => (series.data || []).length));
+  if (
+    !categories.length &&
+    seriesInput.length &&
+    ['line', 'area', 'bar', 'histogram', 'boxplot'].includes(chartType)
+  ) {
+    const categoryCount = Math.max.apply(
+      null,
+      seriesInput.map((series) => (series.data || []).length),
+    );
     categories = Array.from({ length: categoryCount }, (_, index) => String(index + 1));
     axisLayout = categoryAxisLayout(categories);
   }
   const seriesType = SERIES_TYPE_BY_CHART[chartType] || 'line';
   return {
-    backgroundColor: 'transparent', textStyle,
+    backgroundColor: 'transparent',
+    textStyle,
     color: seriesInput.map((item, index) => colorFor(item.role, index, colors)),
     aria: { enabled: true, description: { summary: spec.accessibilitySummary } },
     tooltip: Object.assign({ trigger: 'axis' }, tooltipBase),
     legend: legendOptions(seriesInput, colors, fontFamily),
-    grid: { left: 56, right: 22, top: seriesInput.length > 1 ? 44 : 18, bottom: axisLayout.bottom, containLabel: false },
+    grid: {
+      left: 56,
+      right: 22,
+      top: seriesInput.length > 1 ? 44 : 18,
+      bottom: axisLayout.bottom,
+      containLabel: false,
+    },
     xAxis: {
-      type: 'category', data: categories, name: payload.xLabel || '',
+      type: 'category',
+      data: categories,
+      name: payload.xLabel || '',
       nameGap: axisLayout.rotate ? 58 : 34,
       nameTextStyle: { color: colors.text, fontFamily },
       axisLabel: {
-        color: colors.text, fontFamily, interval: 0, rotate: axisLayout.rotate,
-        hideOverlap: categories.length > 20, margin: 12,
-        formatter: (value: unknown) => formatCategoryLabel(value, {
-          rotate: axisLayout.rotate,
-          maxChars: axisLayout.maxChars,
-          lineChars: axisLayout.lineChars,
-        }),
+        color: colors.text,
+        fontFamily,
+        interval: 0,
+        rotate: axisLayout.rotate,
+        hideOverlap: categories.length > 20,
+        margin: 12,
+        formatter: (value: unknown) =>
+          formatCategoryLabel(value, {
+            rotate: axisLayout.rotate,
+            maxChars: axisLayout.maxChars,
+            lineChars: axisLayout.lineChars,
+          }),
       },
       axisLine: { lineStyle: { color: colors.line } },
       splitLine: { show: false, lineStyle: { color: colors.grid } },
     },
     yAxis: {
-      type: 'value', name: payload.yLabel || '', nameTextStyle: { color: colors.text, fontFamily },
-      axisLabel: { color: colors.text, fontFamily }, axisLine: { lineStyle: { color: colors.line } },
+      type: 'value',
+      name: payload.yLabel || '',
+      nameTextStyle: { color: colors.text, fontFamily },
+      axisLabel: { color: colors.text, fontFamily },
+      axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },
-    dataZoom: ['line', 'area', 'bar', 'histogram'].includes(chartType) ? [{ type: 'inside' }] : undefined,
+    dataZoom: ['line', 'area', 'bar', 'histogram'].includes(chartType)
+      ? [{ type: 'inside' }]
+      : undefined,
     series: seriesInput.map((series, index) => ({
-      name: series.name || 'Series ' + (index + 1), type: seriesType, data: series.data, showSymbol: false,
+      name: series.name || 'Series ' + (index + 1),
+      type: seriesType,
+      data: series.data,
+      showSymbol: false,
       barMaxWidth: chartType === 'bar' || chartType === 'histogram' ? 54 : undefined,
       barCategoryGap: chartType === 'histogram' ? '8%' : undefined,
       areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined,
-      smooth: chartType === 'area', emphasis: { focus: 'series' },
+      smooth: chartType === 'area',
+      emphasis: { focus: 'series' },
     })),
   };
 }
@@ -389,10 +574,14 @@ export function optionForChart(spec: VizSpec, colors: VizColors): ChartOption {
   const fontFamily = VIZ_FONT_FAMILY;
   const textStyle = { fontFamily };
   const tooltipBase = chartTooltipBase(colors, fontFamily);
-  if (spec.template === 'function') return functionChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  if (spec.template === 'function')
+    return functionChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
   if (chartType === 'pie') return pieChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'heatmap') return heatmapChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'radar') return radarChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'scatter') return scatterChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  if (chartType === 'heatmap')
+    return heatmapChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  if (chartType === 'radar')
+    return radarChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  if (chartType === 'scatter')
+    return scatterChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
   return cartesianChartOption(spec, colors, fontFamily, textStyle, tooltipBase, chartType);
 }

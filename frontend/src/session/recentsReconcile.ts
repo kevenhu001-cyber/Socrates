@@ -89,7 +89,9 @@ function pick(source: Record<string, unknown>, key: string): unknown {
   if (source[key] != null) return source[key];
   /* Tolerate a snake_case response body as well, so this keeps working if the
      endpoint is ever serialized differently. */
-  const snake = key.replace(/[A-Z]/g, function (c) { return '_' + c.toLowerCase(); });
+  const snake = key.replace(/[A-Z]/g, function (c) {
+    return '_' + c.toLowerCase();
+  });
   return source[snake];
 }
 
@@ -104,8 +106,11 @@ function firstTruthy<T>(first: T | null | undefined, second: T | null | undefine
   return (first || second || fallback) as T;
 }
 
-function resolveProjectId(saved: string | null | undefined, payload: string | null | undefined): string | null {
-  return saved != null ? saved : (payload || null);
+function resolveProjectId(
+  saved: string | null | undefined,
+  payload: string | null | undefined,
+): string | null {
+  return saved != null ? saved : payload || null;
 }
 
 function resolveArchivedAt(value: number | string | null | undefined): number | string | null {
@@ -227,13 +232,28 @@ export interface Reconciler {
  */
 export function createReconciler(options: ReconcilerOptions): Reconciler {
   const refresh = options.refresh;
-  const onDone = options.onDone || function () { return undefined; };
-  const minIntervalMs = options.minIntervalMs == null
-    ? RECONCILE_MIN_INTERVAL_MS
-    : options.minIntervalMs;
-  const now = options.now || function () { return Date.now(); };
-  const setTimer = options.setTimer || function (fn, ms) { return setTimeout(fn, ms); };
-  const clearTimer = options.clearTimer || function (handle) { clearTimeout(handle as ReturnType<typeof setTimeout>); };
+  const onDone =
+    options.onDone ||
+    function () {
+      return undefined;
+    };
+  const minIntervalMs =
+    options.minIntervalMs == null ? RECONCILE_MIN_INTERVAL_MS : options.minIntervalMs;
+  const now =
+    options.now ||
+    function () {
+      return Date.now();
+    };
+  const setTimer =
+    options.setTimer ||
+    function (fn, ms) {
+      return setTimeout(fn, ms);
+    };
+  const clearTimer =
+    options.clearTimer ||
+    function (handle) {
+      clearTimeout(handle as ReturnType<typeof setTimeout>);
+    };
 
   let timer: unknown = null;
   let running = false;
@@ -275,7 +295,7 @@ export function createReconciler(options: ReconcilerOptions): Reconciler {
   }
 
   function schedule(): void {
-    if (timer !== null) return;   // already folded into the open window
+    if (timer !== null) return; // already folded into the open window
     const wait = Math.max(0, minIntervalMs - (now() - lastRunAt));
     timer = setTimer(function () {
       timer = null;
@@ -286,6 +306,8 @@ export function createReconciler(options: ReconcilerOptions): Reconciler {
   return {
     schedule: schedule,
     flush: run,
-    isScheduled: function () { return timer !== null; },
+    isScheduled: function () {
+      return timer !== null;
+    },
   };
 }

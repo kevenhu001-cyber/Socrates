@@ -20,18 +20,24 @@ import { readMessageId } from '../src/routes/tts.ts';
 
 describe('tts route: readMessageId', () => {
   test('accepts a canonical UUID', () => {
-    assert.equal(readMessageId('00000000-0000-0000-0000-0000000000c1'),
-      '00000000-0000-0000-0000-0000000000c1');
+    assert.equal(
+      readMessageId('00000000-0000-0000-0000-0000000000c1'),
+      '00000000-0000-0000-0000-0000000000c1',
+    );
   });
 
   test('accepts a hex-only id (32 hex chars, used by some SPA-side ids)', () => {
-    assert.equal(readMessageId('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4'),
-      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4');
+    assert.equal(
+      readMessageId('a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4'),
+      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4',
+    );
   });
 
   test('trims surrounding whitespace', () => {
-    assert.equal(readMessageId('  00000000-0000-0000-0000-0000000000c1  '),
-      '00000000-0000-0000-0000-0000000000c1');
+    assert.equal(
+      readMessageId('  00000000-0000-0000-0000-0000000000c1  '),
+      '00000000-0000-0000-0000-0000000000c1',
+    );
   });
 
   test('rejects empty / non-string values', () => {

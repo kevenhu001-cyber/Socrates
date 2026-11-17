@@ -35,7 +35,8 @@ export function takeBootSessionPrefetch(
   if (!boot || !prefetch) return null;
   delete boot.sessions;
   const age = now - prefetch.startedAt;
-  if (!Number.isFinite(prefetch.startedAt) || age < 0 || age > BOOT_SESSIONS_MAX_AGE_MS) return null;
+  if (!Number.isFinite(prefetch.startedAt) || age < 0 || age > BOOT_SESSIONS_MAX_AGE_MS)
+    return null;
   return prefetch.promise;
 }
 
@@ -48,9 +49,10 @@ export async function readBootSessions(
   if (!promise) return null;
   try {
     const response = await promise;
-    if (!response || response.failed || response.status < 200 || response.status >= 300) return null;
+    if (!response || response.failed || response.status < 200 || response.status >= 300)
+      return null;
     const sessions = (response.json as { sessions?: unknown } | null | undefined)?.sessions;
-    return Array.isArray(sessions) ? sessions as SessionRow[] : null;
+    return Array.isArray(sessions) ? (sessions as SessionRow[]) : null;
   } catch {
     return null;
   }

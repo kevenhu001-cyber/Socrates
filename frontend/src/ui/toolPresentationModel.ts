@@ -55,18 +55,14 @@ export function translate(key: string, fallback: string): string {
       if (s && s !== key) return s;
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts:56');
+    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts');
     /* non-browser harness */
   }
   return fallback;
 }
 
 /** `t()` with optional `{name}` interpolation — legacy `t()` takes no args. */
-export function tf(
-  key: string,
-  fallback: string,
-  vars?: Record<string, string | number>,
-): string {
+export function tf(key: string, fallback: string, vars?: Record<string, string | number>): string {
   let out = translate(key, fallback);
   for (const name of Object.keys(vars || {})) {
     out = out.split('{' + name + '}').join(String((vars as Record<string, string | number>)[name]));
@@ -78,14 +74,19 @@ const LABEL_TARGET_MAX = 48;
 
 /** Collapse whitespace and clip a query/command to one readable line. */
 export function clip(text: string, max: number = LABEL_TARGET_MAX): string {
-  const one = String(text || '').replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  const one = String(text || '')
+    .replace(/\s*\n\s*/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
   if (one.length <= max) return one;
   return one.slice(0, Math.max(1, max - 1)).trimEnd() + '…';
 }
 
 /** Last path segment, tolerating both separators. */
 export function basename(path: string): string {
-  const p = String(path || '').trim().replace(/[\\/]+$/, '');
+  const p = String(path || '')
+    .trim()
+    .replace(/[\\/]+$/, '');
   if (!p) return '';
   const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
   return i >= 0 ? p.slice(i + 1) : p;
@@ -124,7 +125,7 @@ export function hostOf(url: string): string {
   try {
     if (/^https?:\/\//i.test(raw)) return new URL(raw).hostname.replace(/^www\./i, '');
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts:122');
+    reportEmptyCatch(_, 'empty catch: ui/toolPresentationModel.ts');
     /* fall through */
   }
   const noProto = raw.replace(/^[a-z]+:\/\//i, '');
@@ -176,12 +177,21 @@ export function isImageAttachment(fileName?: string, mimeType?: string): boolean
 }
 
 export function attachmentInfo(call: ToolCallLike): { fileName: string; isImage: boolean } {
-  const input = (call && call.input && typeof call.input === 'object' ? call.input : {}) as Record<string, unknown>;
-  const rawFile = strField(input, 'fileName', 'filename', 'name', 'file_name')
-    || (typeof (call as Record<string, unknown>).fileName === 'string' ? ((call as Record<string, unknown>).fileName as string) : '')
-    || '';
-  const mimeType = strField(input, 'mimeType', 'mime_type')
-    || (typeof (call as Record<string, unknown>).mimeType === 'string' ? ((call as Record<string, unknown>).mimeType as string) : '');
+  const input = (call && call.input && typeof call.input === 'object' ? call.input : {}) as Record<
+    string,
+    unknown
+  >;
+  const rawFile =
+    strField(input, 'fileName', 'filename', 'name', 'file_name') ||
+    (typeof (call as Record<string, unknown>).fileName === 'string'
+      ? ((call as Record<string, unknown>).fileName as string)
+      : '') ||
+    '';
+  const mimeType =
+    strField(input, 'mimeType', 'mime_type') ||
+    (typeof (call as Record<string, unknown>).mimeType === 'string'
+      ? ((call as Record<string, unknown>).mimeType as string)
+      : '');
   const base = basename(rawFile) || rawFile;
   return {
     fileName: base,
@@ -226,18 +236,37 @@ function connectorLabel(call: ToolCallLike): RunLabel | null {
   if (!activity) return null;
   const { service, action } = activity;
   if (service === 'GitHub') {
-    if (/^(?:get_job_logs|download_(?:job|workflow_run)_logs|get_workflow_run_logs)$/.test(action)) {
-      return { text: tf('tool.connectorWorkflowLogs', 'Read {service} Actions workflow logs', { service }) };
+    if (
+      /^(?:get_job_logs|download_(?:job|workflow_run)_logs|get_workflow_run_logs)$/.test(action)
+    ) {
+      return {
+        text: tf('tool.connectorWorkflowLogs', 'Read {service} Actions workflow logs', { service }),
+      };
     }
     if (/^(?:list_workflow_run_jobs|get_workflow_run_jobs|get_job)$/.test(action)) {
-      return { text: tf('tool.connectorWorkflowJobs', 'Check {service} Actions workflow steps', { service }) };
+      return {
+        text: tf('tool.connectorWorkflowJobs', 'Check {service} Actions workflow steps', {
+          service,
+        }),
+      };
     }
     if (/^(?:list_workflow_runs|get_workflow_run|list_repo_workflows)$/.test(action)) {
-      return { text: tf('tool.connectorWorkflowRuns', 'Check {service} Actions workflow runs', { service }) };
+      return {
+        text: tf('tool.connectorWorkflowRuns', 'Check {service} Actions workflow runs', {
+          service,
+        }),
+      };
     }
   }
-  const description = action.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').trim();
-  return { text: description ? tf('tool.connectorNamedAction', '{service} · {action}', { service, action: description }) : service };
+  const description = action
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .trim();
+  return {
+    text: description
+      ? tf('tool.connectorNamedAction', '{service} · {action}', { service, action: description })
+      : service,
+  };
 }
 
 function runningCommandLabel(call: ToolCallLike, name: string): RunLabel | null {
@@ -250,7 +279,8 @@ function runningCodeLabel(call: ToolCallLike): RunLabel {
   /* Once the sandbox has printed something, "executing" is stale: the wait
      is on the analysis, and the reader sees that. */
   const phase = String(call._progressPhase || '');
-  if (phase === 'stdout' || phase === 'stderr') return { text: translate('tool.actionAnalyze', 'Analyzing data…') };
+  if (phase === 'stdout' || phase === 'stderr')
+    return { text: translate('tool.actionAnalyze', 'Analyzing data…') };
   const run = (call as Record<string, unknown>)._run as Record<string, unknown> | undefined;
   if (run?.phase === 'running') return { text: translate('tool.actionCode', 'Executing code…') };
   if (call.argumentsText && !call.output && !phase) {
@@ -263,11 +293,19 @@ function runningAttachmentLabel(call: ToolCallLike): RunLabel {
   const { fileName, isImage } = attachmentInfo(call);
   if (isImage) {
     return fileName
-      ? { text: tf('tool.recognizingImage', 'Recognizing image {file}…', { file: clip(fileName, 32) }) }
+      ? {
+          text: tf('tool.recognizingImage', 'Recognizing image {file}…', {
+            file: clip(fileName, 32),
+          }),
+        }
       : { text: translate('tool.actionRecognizeImage', 'Recognizing image…') };
   }
   return fileName
-    ? { text: tf('tool.readingAttachment', 'Reading attachment {file}…', { file: clip(fileName, 32) }) }
+    ? {
+        text: tf('tool.readingAttachment', 'Reading attachment {file}…', {
+          file: clip(fileName, 32),
+        }),
+      }
     : { text: translate('tool.actionRead', 'Reading files') };
 }
 
@@ -279,19 +317,30 @@ function runningFileLabel(call: ToolCallLike, name: string): RunLabel {
       ? { text: tf('tool.readingFile', 'Reading {file}…', { file }) }
       : { text: translate('tool.actionRead', 'Reading files') };
   }
-  if (name === 'Write' && path) return { text: tf('tool.creatingFile', 'Creating {file}…', { file: path }) };
-  if (name === 'Edit' && path) return { text: tf('tool.editingFile', 'Editing {file}…', { file: path }) };
+  if (name === 'Write' && path)
+    return { text: tf('tool.creatingFile', 'Creating {file}…', { file: path }) };
+  if (name === 'Edit' && path)
+    return { text: tf('tool.editingFile', 'Editing {file}…', { file: path }) };
   return { text: translate('tool.actionWrite', 'Updating files') };
 }
 
 const RUNNING_STATIC_LABELS = new Map<string, () => RunLabel>([
   ['cite_sources', () => ({ text: translate('tool.actionCite', 'Checking references…') })],
-  ['patch_intelligent_ui', () => ({ text: translate('tool.actionPatchUi', 'Updating the visual…') })],
+  [
+    'patch_intelligent_ui',
+    () => ({ text: translate('tool.actionPatchUi', 'Updating the visual…') }),
+  ],
   ['render_intelligent_ui', () => ({ text: translate('tool.actionVisual', 'Creating a visual') })],
   ['workspace_agent', () => ({ text: translate('tool.actionCodex', 'Working in the workspace…') })],
-  ['initialize_workspace', () => ({ text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') })],
+  [
+    'initialize_workspace',
+    () => ({ text: translate('tool.actionInitWorkspace', 'Initializing the workspace…') }),
+  ],
   ['create_document', () => ({ text: translate('tool.actionDocument', 'Drafting a document…') })],
-  ['create_site', () => ({ text: translate('tool.actionSite', 'Building and publishing the site…') })],
+  [
+    'create_site',
+    () => ({ text: translate('tool.actionSite', 'Building and publishing the site…') }),
+  ],
 ]);
 
 function runningSearchLabel(call: ToolCallLike): RunLabel {
@@ -302,8 +351,10 @@ function runningSearchLabel(call: ToolCallLike): RunLabel {
 }
 
 const RUNNING_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
-  ['web_fetch', runningFetchLabel], ['WebFetch', runningFetchLabel],
-  ['code_interpreter', runningCodeLabel], ['Code', runningCodeLabel],
+  ['web_fetch', runningFetchLabel],
+  ['WebFetch', runningFetchLabel],
+  ['code_interpreter', runningCodeLabel],
+  ['Code', runningCodeLabel],
   ['read_attachment', runningAttachmentLabel],
   ['Read', (call) => runningFileLabel(call, 'Read')],
   ['Glob', (call) => runningFileLabel(call, 'Glob')],
@@ -324,11 +375,12 @@ function runningLabel(call: ToolCallLike): RunLabel {
   const dynamicLabel = isInlineSearchTool(name)
     ? runningSearchLabel(call)
     : RUNNING_LABEL_HANDLERS.get(name)?.(call);
-  return runningCommandLabel(call, name)
-    || dynamicLabel
-    || RUNNING_STATIC_LABELS.get(name)?.()
-    || connectorLabel(call)
-    || { text: translate('tool.actionDefault', 'Using a tool') };
+  return (
+    runningCommandLabel(call, name) ||
+    dynamicLabel ||
+    RUNNING_STATIC_LABELS.get(name)?.() ||
+    connectorLabel(call) || { text: translate('tool.actionDefault', 'Using a tool') }
+  );
 }
 
 /* ── Settled copy ──────────────────────────────────────────────────────── */
@@ -336,9 +388,14 @@ function runningLabel(call: ToolCallLike): RunLabel {
 function doneSearchLabel(call: ToolCallLike): RunLabel {
   const count = resultCount(call);
   const query = queryOf(call.input);
-  const meta = count > 0
-    ? [count === 1 ? translate('tool.nSourceOne', '1 source') : tf('tool.nSources', '{n} sources', { n: count })]
-    : [];
+  const meta =
+    count > 0
+      ? [
+          count === 1
+            ? translate('tool.nSourceOne', '1 source')
+            : tf('tool.nSources', '{n} sources', { n: count }),
+        ]
+      : [];
   const text = query
     ? tf('tool.searchedFor', 'Searched for “{query}”', { query })
     : count > 0
@@ -351,7 +408,9 @@ function doneAttachmentLabel(call: ToolCallLike): RunLabel {
   const { fileName, isImage } = attachmentInfo(call);
   if (isImage) {
     return fileName
-      ? { text: tf('tool.recognizedImage', 'Recognized image {file}', { file: clip(fileName, 32) }) }
+      ? {
+          text: tf('tool.recognizedImage', 'Recognized image {file}', { file: clip(fileName, 32) }),
+        }
       : { text: translate('tool.actionRecognizeImage', 'Recognized image') };
   }
   return fileName
@@ -363,7 +422,8 @@ function doneFileLabel(call: ToolCallLike, name: string): RunLabel {
   const file = basename(filePathOf(call.input));
   if (name === 'Read' || name === 'Glob' || name === 'Grep') {
     const target = file || clip(queryOf(call.input), 32);
-    return target ? { text: tf('tool.readFile', 'Read {file}', { file: target }) }
+    return target
+      ? { text: tf('tool.readFile', 'Read {file}', { file: target }) }
       : { text: translate('tool.doneRead', 'Read files') };
   }
   if (name === 'Write' && file) return { text: tf('tool.createdFile', 'Created {file}', { file }) };
@@ -392,8 +452,10 @@ function doneCodeLabel(call: ToolCallLike): RunLabel {
 }
 
 const DONE_LABEL_HANDLERS = new Map<string, (call: ToolCallLike) => RunLabel>([
-  ['web_fetch', doneFetchLabel], ['WebFetch', doneFetchLabel],
-  ['code_interpreter', doneCodeLabel], ['Code', doneCodeLabel],
+  ['web_fetch', doneFetchLabel],
+  ['WebFetch', doneFetchLabel],
+  ['code_interpreter', doneCodeLabel],
+  ['Code', doneCodeLabel],
   ['read_attachment', doneAttachmentLabel],
   ['Bash', doneBashLabel],
   ['Read', (call) => doneFileLabel(call, 'Read')],
@@ -413,7 +475,10 @@ const DONE_STATIC_LABELS = new Map<string, () => RunLabel>([
   ['patch_intelligent_ui', () => ({ text: translate('tool.donePatchUi', 'Updated the visual') })],
   ['render_intelligent_ui', () => ({ text: translate('tool.doneVisual', 'Created a visual') })],
   ['workspace_agent', () => ({ text: translate('tool.doneCodex', 'Workspace run') })],
-  ['initialize_workspace', () => ({ text: translate('tool.doneInitWorkspace', 'Workspace ready') })],
+  [
+    'initialize_workspace',
+    () => ({ text: translate('tool.doneInitWorkspace', 'Workspace ready') }),
+  ],
   ['create_document', () => ({ text: translate('tool.doneDocument', 'Drafted a document') })],
   ['create_site', () => ({ text: translate('tool.doneSite', 'Site published') })],
 ]);
@@ -560,7 +625,13 @@ export function toolRunGroupLabel(
        is the only place a collapsed group reports it. */
     const sources = members.reduce((sum, m) => sum + resultCount(m), 0);
     if (sources > 0) {
-      return { text: tf('tool.groupSearchDone', 'Found {n} sources · {m} searches', { n: sources, m: total }), meta };
+      return {
+        text: tf('tool.groupSearchDone', 'Found {n} sources · {m} searches', {
+          n: sources,
+          m: total,
+        }),
+        meta,
+      };
     }
     return { text: tf('tool.groupSearchEmpty', 'No results · {m} searches', { m: total }), meta };
   }
@@ -582,33 +653,45 @@ const MIXED_BUCKETS: ReadonlyArray<{
   match: (name: string) => boolean;
 }> = [
   {
-    key: 'tool.clauseRanCommands', fallback: 'ran {n} commands',
-    oneKey: 'tool.clauseRanCommandOne', oneFallback: 'ran a command',
+    key: 'tool.clauseRanCommands',
+    fallback: 'ran {n} commands',
+    oneKey: 'tool.clauseRanCommandOne',
+    oneFallback: 'ran a command',
     match: (n) => n === 'Bash',
   },
   {
-    key: 'tool.clauseReadFiles', fallback: 'read {n} files',
-    oneKey: 'tool.clauseReadFileOne', oneFallback: 'read a file',
+    key: 'tool.clauseReadFiles',
+    fallback: 'read {n} files',
+    oneKey: 'tool.clauseReadFileOne',
+    oneFallback: 'read a file',
     match: (n) => toolCategory(n) === 'read',
   },
   {
-    key: 'tool.clauseEditedFiles', fallback: 'edited {n} files',
-    oneKey: 'tool.clauseEditedFileOne', oneFallback: 'edited a file',
+    key: 'tool.clauseEditedFiles',
+    fallback: 'edited {n} files',
+    oneKey: 'tool.clauseEditedFileOne',
+    oneFallback: 'edited a file',
     match: (n) => n === 'Edit',
   },
   {
-    key: 'tool.clauseCreatedFiles', fallback: 'created {n} files',
-    oneKey: 'tool.clauseCreatedFileOne', oneFallback: 'created a file',
+    key: 'tool.clauseCreatedFiles',
+    fallback: 'created {n} files',
+    oneKey: 'tool.clauseCreatedFileOne',
+    oneFallback: 'created a file',
     match: (n) => n === 'Write',
   },
   {
-    key: 'tool.clauseSearched', fallback: 'searched {n} times',
-    oneKey: 'tool.clauseSearchedOne', oneFallback: 'searched the web',
+    key: 'tool.clauseSearched',
+    fallback: 'searched {n} times',
+    oneKey: 'tool.clauseSearchedOne',
+    oneFallback: 'searched the web',
     match: (n) => isInlineSearchTool(n) || toolCategory(n) === 'fetch',
   },
   {
-    key: 'tool.clauseRanCode', fallback: 'ran {n} code blocks',
-    oneKey: 'tool.clauseRanCodeOne', oneFallback: 'ran code',
+    key: 'tool.clauseRanCode',
+    fallback: 'ran {n} code blocks',
+    oneKey: 'tool.clauseRanCodeOne',
+    oneFallback: 'ran code',
     match: (n) => toolCategory(n) === 'code',
   },
 ];
@@ -631,9 +714,11 @@ function mixedRunClauses(members: ToolCallLike[]): string {
     const n = countBy(members, (m) => bucket.match(String(m.name || '')));
     if (n === 0) continue;
     covered += n;
-    clauses.push(n === 1
-      ? translate(bucket.oneKey, bucket.oneFallback)
-      : tf(bucket.key, bucket.fallback, { n }));
+    clauses.push(
+      n === 1
+        ? translate(bucket.oneKey, bucket.oneFallback)
+        : tf(bucket.key, bucket.fallback, { n }),
+    );
   }
   /* Every call has to land in a bucket: a run that also touched something
      unclassified would report a total that does not add up. */

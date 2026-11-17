@@ -40,5 +40,7 @@ export async function requireAdminSession(req: Request, _res: Response, next: Ne
       throw new Forbidden('Admin session required — sign in at /admin.');
     }
     return next();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 }

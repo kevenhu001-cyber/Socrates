@@ -6,17 +6,27 @@ const { sidebarUserState, publishSidebarUser } = await import('../src/ui/sidebar
 test('sidebar user publisher shares the current account identity', () => {
   sidebarUserState.__resetForTests();
   let notifications = 0;
-  const unsubscribe = sidebarUserState.subscribe(() => { notifications += 1; });
+  const unsubscribe = sidebarUserState.subscribe(() => {
+    notifications += 1;
+  });
 
   publishSidebarUser({
-    initials: 'AT', displayName: 'Ada', email: 'ada@example.test',
-    tier: 'descartes', tierLabel: 'Descartes', isSignedIn: true,
+    initials: 'AT',
+    displayName: 'Ada',
+    email: 'ada@example.test',
+    tier: 'descartes',
+    tierLabel: 'Descartes',
+    isSignedIn: true,
   });
   sidebarUserState.flush();
 
   assert.deepEqual(sidebarUserState.getSnapshot().user, {
-    initials: 'AT', displayName: 'Ada', email: 'ada@example.test',
-    tier: 'descartes', tierLabel: 'Descartes', isSignedIn: true,
+    initials: 'AT',
+    displayName: 'Ada',
+    email: 'ada@example.test',
+    tier: 'descartes',
+    tierLabel: 'Descartes',
+    isSignedIn: true,
   });
   assert.equal(notifications, 1);
 

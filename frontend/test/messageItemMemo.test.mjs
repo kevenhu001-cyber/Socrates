@@ -54,13 +54,9 @@ test('render, tool, process, and anchor changes invalidate through snapshot iden
   ];
 
   for (const changedMessage of changes) {
-    assert.equal(
-      areMessageItemsEqual(props(currentMessage), props(changedMessage)),
-      false,
-    );
+    assert.equal(areMessageItemsEqual(props(currentMessage), props(changedMessage)), false);
   }
 });
-
 
 test('latest per role and read-only changes refresh actions without changing the message', () => {
   const current = props(message());

@@ -39,23 +39,30 @@ test('normalises connector ids and decorates connection state', () => {
 
 test('loads a catalog and keeps connected entries distinguishable', async () => {
   const previousFetch = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    configured: true,
-    connectors: [
-      { id: 'github', name: 'GitHub', connection: { status: 'connected' } },
-      { id: 'gmail', name: 'Gmail', connection: null },
-      { id: 'disabled', name: 'Disabled', configured: false },
-    ],
-  }), { status: 200, headers: { 'content-type': 'application/json' } });
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        configured: true,
+        connectors: [
+          { id: 'github', name: 'GitHub', connection: { status: 'connected' } },
+          { id: 'gmail', name: 'Gmail', connection: null },
+          { id: 'disabled', name: 'Disabled', configured: false },
+        ],
+      }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    );
 
   try {
     resetPluginCatalogForTests();
     const catalog = await loadPluginCatalog(true);
-    assert.deepEqual(catalog.map((entry) => [entry.id, entry.connectionStatus]), [
-      ['github', 'connected'],
-      ['gmail', 'disconnected'],
-      ['disabled', 'unavailable'],
-    ]);
+    assert.deepEqual(
+      catalog.map((entry) => [entry.id, entry.connectionStatus]),
+      [
+        ['github', 'connected'],
+        ['gmail', 'disconnected'],
+        ['disabled', 'unavailable'],
+      ],
+    );
   } finally {
     globalThis.fetch = previousFetch;
     resetPluginCatalogForTests();
@@ -75,10 +82,15 @@ test('an older failed catalog request cannot evict a newer in-flight request', a
     await assert.rejects(older);
     const reused = loadPluginCatalog();
     assert.equal(pending.length, 2);
-    pending[1].resolve(new Response(JSON.stringify({
-      configured: true,
-      connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
-    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    pending[1].resolve(
+      new Response(
+        JSON.stringify({
+          configured: true,
+          connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    );
     assert.equal((await newer)[0].id, 'github');
     assert.equal((await reused)[0].id, 'github');
   } finally {
@@ -111,11 +123,17 @@ test('supports independent multi-plugin chip selection and removal', () => {
   toggleComposerPlugin('topic', github, '<svg />');
   toggleComposerPlugin('topic', notion, '<svg />');
   bridge.flush();
-  assert.deepEqual(bridge.getSnapshot().topic.map((plugin) => plugin.id), ['github', 'notion']);
+  assert.deepEqual(
+    bridge.getSnapshot().topic.map((plugin) => plugin.id),
+    ['github', 'notion'],
+  );
   assert.equal(bridge.getSnapshot().chat.length, 0);
 
   removeComposerPlugin('topic', 'github');
   bridge.flush();
-  assert.deepEqual(bridge.getSnapshot().topic.map((plugin) => plugin.id), ['notion']);
+  assert.deepEqual(
+    bridge.getSnapshot().topic.map((plugin) => plugin.id),
+    ['notion'],
+  );
   bridge.__resetForTests();
 });

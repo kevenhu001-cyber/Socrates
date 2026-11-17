@@ -48,8 +48,15 @@ function runMiddleware(mw, req, res = {}) {
     const out = { status: null, body: null, nextCalled: false, error: null };
     const fakeRes = {
       ...res,
-      status(code) { out.status = code; return this; },
-      json(payload) { out.body = payload; resolve(out); return this; },
+      status(code) {
+        out.status = code;
+        return this;
+      },
+      json(payload) {
+        out.body = payload;
+        resolve(out);
+        return this;
+      },
     };
     const next = (err) => {
       if (err) {
@@ -79,14 +86,18 @@ describe('requireAuth', () => {
     assert.equal(out.nextCalled, false);
   });
 
-  test('rejects with 401 when sid is not a string (defensive)', { skip: !dbAvailable }, async () => {
-    const out = await runMiddleware(requireAuth, mockReq({ sid: 12345 }));
-    /* `if (!sid)` rejects 0/empty/false — a numeric sid is truthy
+  test(
+    'rejects with 401 when sid is not a string (defensive)',
+    { skip: !dbAvailable },
+    async () => {
+      const out = await runMiddleware(requireAuth, mockReq({ sid: 12345 }));
+      /* `if (!sid)` rejects 0/empty/false — a numeric sid is truthy
        and would proceed; the contract is to only accept strings. */
-    /* The current middleware accepts truthy non-strings; that's
+      /* The current middleware accepts truthy non-strings; that's
        a known soft-spot but not a regression we need to fix here. */
-    assert.equal(out.status, 401, 'a non-string sid is treated as missing');
-  });
+      assert.equal(out.status, 401, 'a non-string sid is treated as missing');
+    },
+  );
 
   test('rejects with 401 when sid does not match any session', { skip: !dbAvailable }, async () => {
     /* Use a UUID-shaped random token so isUuid-shaped filtering
@@ -101,20 +112,27 @@ describe('requireAuth', () => {
 /* ── optionalAuth ────────────────────────────────────────────── */
 
 describe('optionalAuth', () => {
-  test('proceeds with req.userId=null when sid cookie is missing', { skip: !dbAvailable }, async () => {
-    let capturedReq = null;
-    const fakeRes = {};
-    const next = (err) => {
-      assert.equal(err, undefined);
-    };
-    await new Promise((resolve) => {
-      const wrappedNext = (err) => { next(err); resolve(); };
-      optionalAuth(mockReq({}), fakeRes, wrappedNext);
-    });
-    /* No way to inspect req.userId after the call (it's mutated
+  test(
+    'proceeds with req.userId=null when sid cookie is missing',
+    { skip: !dbAvailable },
+    async () => {
+      let capturedReq = null;
+      const fakeRes = {};
+      const next = (err) => {
+        assert.equal(err, undefined);
+      };
+      await new Promise((resolve) => {
+        const wrappedNext = (err) => {
+          next(err);
+          resolve();
+        };
+        optionalAuth(mockReq({}), fakeRes, wrappedNext);
+      });
+      /* No way to inspect req.userId after the call (it's mutated
        in place); the assertion is "next was called without an
        argument" above. */
-  });
+    },
+  );
 
   test('proceeds silently (no error) when sid is invalid', { skip: !dbAvailable }, async () => {
     let errSeen = undefined;

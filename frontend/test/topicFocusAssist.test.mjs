@@ -5,8 +5,8 @@ import { initTopicFocusAssist } from '../src/ui/topicFocusAssist.ts';
 
 function createBrowser({ keyboardOpen = false, coarsePointer = false, initialScrollTop = 0 } = {}) {
   const dom = new JSDOM(
-    '<!doctype html><html><body><section id="topicSetup"><div id="composerRoot">'
-      + '<div contenteditable="true"></div></div></section></body></html>',
+    '<!doctype html><html><body><section id="topicSetup"><div id="composerRoot">' +
+      '<div contenteditable="true"></div></div></section></body></html>',
     { url: 'http://localhost/' },
   );
   const previousGlobals = new Map();
@@ -52,7 +52,16 @@ function createBrowser({ keyboardOpen = false, coarsePointer = false, initialScr
 function setComposerRect(composer, top, bottom) {
   Object.defineProperty(composer, 'getBoundingClientRect', {
     configurable: true,
-    value: () => ({ top, bottom, left: 0, right: 100, x: 0, y: top, width: 100, height: bottom - top }),
+    value: () => ({
+      top,
+      bottom,
+      left: 0,
+      right: 100,
+      x: 0,
+      y: top,
+      width: 100,
+      height: bottom - top,
+    }),
   });
 }
 

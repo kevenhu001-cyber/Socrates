@@ -10,7 +10,9 @@ const listeners = new Set<() => void>();
 
 export function subscribeMathRenderRevision(listener: () => void): () => void {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function getMathRenderRevision(): number {

@@ -13,7 +13,7 @@ const preferences = await import('../src/config/providers.ts');
 
 test('web-search changes publish the state consumed by React shortcut and composer chips', () => {
   const seen = [];
-  const listener = event => seen.push(event.detail.on);
+  const listener = (event) => seen.push(event.detail.on);
   document.addEventListener('socrates:websearchchange', listener);
   try {
     preferences.setWebSearchOn(true);
@@ -21,7 +21,9 @@ test('web-search changes publish the state consumed by React shortcut and compos
     preferences.setWebSearchOn(false);
     assert.equal(preferences.webSearchOn, false);
     assert.deepEqual(seen, [true, false]);
-  } finally { document.removeEventListener('socrates:websearchchange', listener); }
+  } finally {
+    document.removeEventListener('socrates:websearchchange', listener);
+  }
 });
 
 test('the chip preference persists without requiring any legacy chip nodes', () => {

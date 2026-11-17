@@ -27,7 +27,14 @@ interface Fixture {
   transition: Array<{ current: string; next: string; expected: string; why?: string }>;
   summarize: Array<{
     runs: (string | null)[];
-    expected: { total: number; succeeded: number; failed: number; cancelled: number; timed_out: number; active: number };
+    expected: {
+      total: number;
+      succeeded: number;
+      failed: number;
+      cancelled: number;
+      timed_out: number;
+      active: number;
+    };
     why?: string;
   }>;
 }
@@ -35,12 +42,13 @@ interface Fixture {
 // Dual-runtime: jest (mobile suite) evaluates this file as CJS where
 // import.meta.url is undefined, while `node --test` (shared CI job) runs it
 // as ESM where __dirname is undefined.
-const FIXTURE_PATH = typeof __dirname === 'string'
-  ? join(__dirname, '..', '..', 'contracts', 'toolRunConformance.fixture.json')
-  : join(
-      dirname(fileURLToPath(import.meta.url)),
-      '../../contracts/toolRunConformance.fixture.json',
-    );
+const FIXTURE_PATH =
+  typeof __dirname === 'string'
+    ? join(__dirname, '..', '..', 'contracts', 'toolRunConformance.fixture.json')
+    : join(
+        dirname(fileURLToPath(import.meta.url)),
+        '../../contracts/toolRunConformance.fixture.json',
+      );
 const fixture: Fixture = JSON.parse(readFileSync(FIXTURE_PATH, 'utf8'));
 
 const api = pureToolRunApi;
@@ -106,7 +114,8 @@ describe('toolRun conformance: summarizeToolRuns', () => {
   for (const [i, c] of fixture.summarize.entries()) {
     test(`case ${i}: [${c.runs.map((r) => (r === null ? 'null' : JSON.stringify(r))).join(', ')}]`, () => {
       const runs = c.runs.map((phase) =>
-        phase === null ? null : { id: 'r', tool: 't', phase, startedAt: 0 });
+        phase === null ? null : { id: 'r', tool: 't', phase, startedAt: 0 },
+      );
       const got = api.summarizeToolRuns(runs as never);
       assert.deepEqual(
         {

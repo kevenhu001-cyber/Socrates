@@ -11,7 +11,11 @@ function renderButton(component, props, children) {
 }
 
 test('button preserves form intent, surface classes and explicit busy state', () => {
-  const ordinary = renderButton(Button, { className: 'settings-close', 'aria-busy': true }, 'Close');
+  const ordinary = renderButton(
+    Button,
+    { className: 'settings-close', 'aria-busy': true },
+    'Close',
+  );
   assert.equal(ordinary.type, 'button');
   assert.equal(ordinary.className, 'settings-close');
   assert.equal(ordinary.getAttribute('aria-busy'), 'true');

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { formatToolResultContent } from '../src/routes/chat/pipeline/toolFeedback.js';
+import { formatToolResultContent } from '../src/routes/chat/pipeline/toolResultMessage.js';
 import {
   normalizeToolResultRetryability,
   recordToolResultAndBoundRetryability,
@@ -55,9 +55,16 @@ test('code interpreter failures preserve remediation details and stderr tail', (
 });
 
 test('visualization, plan and spec feedback covers success and correction paths', () => {
-  const plan = formatToolResultContent('create_document', { status: 'completed', plan: {title:'Plan'}, output: 'plan body' });
+  const plan = formatToolResultContent('create_document', {
+    status: 'completed',
+    plan: { title: 'Plan' },
+    output: 'plan body',
+  });
   assert.match(plan, /\[plan card rendered\]/);
-  const spec = formatToolResultContent('create_document', { status: 'completed', output: 'spec body' });
+  const spec = formatToolResultContent('create_document', {
+    status: 'completed',
+    output: 'spec body',
+  });
   assert.match(spec, /\[spec card rendered\]/);
 
   const correction = formatToolResultContent('create_document', {
@@ -106,7 +113,11 @@ test('workspace, search, fetch and connector failures explain the next action', 
     ['invalid_paging_arguments', /max_chars from 1 to 30000/],
     ['network_failed', /web_search and rely on the snippets/],
   ]) {
-    const fetch = formatToolResultContent('web_fetch', { status: 'failed', errorCode, detail: 'details' });
+    const fetch = formatToolResultContent('web_fetch', {
+      status: 'failed',
+      errorCode,
+      detail: 'details',
+    });
     assert.match(fetch, expected);
   }
 
@@ -176,17 +187,33 @@ test('failure feedback keeps error narration out of the answer body', () => {
 });
 
 test('generic correction and terminal results retain their original payload', () => {
-  assert.equal(formatToolResultContent('some_tool', { correction: 'schema feedback' }), 'schema feedback');
-  assert.equal(formatToolResultContent('some_tool', { status: 'completed', output: 'result' }), 'result');
-  assert.match(formatToolResultContent('some_tool', { status: 'failed', error: 'failed' }), /\[retryable: no\]/);
+  assert.equal(
+    formatToolResultContent('some_tool', { correction: 'schema feedback' }),
+    'schema feedback',
+  );
+  assert.equal(
+    formatToolResultContent('some_tool', { status: 'completed', output: 'result' }),
+    'result',
+  );
+  assert.match(
+    formatToolResultContent('some_tool', { status: 'failed', error: 'failed' }),
+    /\[retryable: no\]/,
+  );
 });
 
 test('tool failures expose the same explicit retryability to connector events and model feedback', async () => {
-  const missingRetryability = normalizeToolResultRetryability({ status: 'failed', errorCode: 'app_not_connected' });
+  const missingRetryability = normalizeToolResultRetryability({
+    status: 'failed',
+    errorCode: 'app_not_connected',
+  });
   assert.equal(missingRetryability.retryable, false);
   assert.match(formatToolResultContent('some_tool', missingRetryability), /\[retryable: no\]/);
 
-  const transient = normalizeToolResultRetryability({ status: 'failed', errorCode: 'provider_down', retryable: true });
+  const transient = normalizeToolResultRetryability({
+    status: 'failed',
+    errorCode: 'provider_down',
+    retryable: true,
+  });
   assert.equal(transient.retryable, true);
   assert.match(formatToolResultContent('some_tool', transient), /\[retryable: yes\]/);
 
@@ -210,11 +237,15 @@ test('tool failures expose the same explicit retryability to connector events an
 
 test('transient connector retries stop when the per-tool failure budget is exhausted', () => {
   const policy = createToolTurnPolicy({ perToolFailureLimit: 1 });
-  const result = recordToolResultAndBoundRetryability('oomol_gmail_search_threads', {
-    status: 'failed',
-    errorCode: 'rate_limited',
-    retryable: true,
-  }, policy);
+  const result = recordToolResultAndBoundRetryability(
+    'oomol_gmail_search_threads',
+    {
+      status: 'failed',
+      errorCode: 'rate_limited',
+      retryable: true,
+    },
+    policy,
+  );
 
   assert.equal(result.retryable, false);
   assert.equal(policy.remainingRetries('oomol_gmail_search_threads'), 0);

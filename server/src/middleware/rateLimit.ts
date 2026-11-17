@@ -61,12 +61,12 @@ const jsonLimit = (code: string, message: string) => ({
    paid tiers scale roughly linearly with their monthly token quota
    (Riemann 100M, Descartes 300M, Euclid 800M) so they get proportional
    request headroom. */
-const CHAT_BASE_LIMIT = 240;          // requests / hour
+const CHAT_BASE_LIMIT = 240; // requests / hour
 const CHAT_TIER_MULTIPLIERS: Record<string, number> = {
-  diophantus: 1,                     // 240/h
-  riemann:    2,                     // 480/h
-  descartes:  4,                     // 960/h
-  euclid:     8,                     // 1920/h
+  diophantus: 1, // 240/h
+  riemann: 2, // 480/h
+  descartes: 4, // 960/h
+  euclid: 8, // 1920/h
 };
 function chatLimitForTier(tier?: string | null): number {
   const mult = CHAT_TIER_MULTIPLIERS[tier ?? ''] || 1;
@@ -83,7 +83,7 @@ function chatLimitForTier(tier?: string | null): number {
    600/h × tier multiplier — that's ≈10 tutor turns/min sustained for
    the free tier, 20/min for riemann, etc. The limit-per-request
    callback reads the same `tier` so paid users scale linearly. */
-const TUTOR_BASE_LIMIT = 600;         // requests / hour
+const TUTOR_BASE_LIMIT = 600; // requests / hour
 function tutorLimitForTier(tier?: string | null): number {
   const mult = CHAT_TIER_MULTIPLIERS[tier ?? ''] || 1;
   return TUTOR_BASE_LIMIT * mult;
@@ -147,7 +147,7 @@ export const chatLimiter = rateLimit({
   /* max is overridden per-request via the keyGenerator+limit callback
      so each tier gets its own effective cap. The plain `max` is only
      used as the absolute hard ceiling for unknown tiers / fallback. */
-  max: CHAT_BASE_LIMIT * 8,           // 1920/h absolute ceiling (Euclid)
+  max: CHAT_BASE_LIMIT * 8, // 1920/h absolute ceiling (Euclid)
   limit: (req) => chatLimitForTier(req.user && req.user.tier),
   keyGenerator: (req) => req.userId || rateLimitIpKey(req),
   standardHeaders: true,
@@ -163,7 +163,7 @@ export const chatLimiter = rateLimit({
    routes/chat.js. */
 export const tutorChatLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: TUTOR_BASE_LIMIT * 8,          // 4800/h absolute ceiling (Euclid)
+  max: TUTOR_BASE_LIMIT * 8, // 4800/h absolute ceiling (Euclid)
   limit: (req) => tutorLimitForTier(req.user && req.user.tier),
   keyGenerator: (req) => `tutor:${req.userId || rateLimitIpKey(req)}`,
   standardHeaders: true,

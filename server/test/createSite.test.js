@@ -13,7 +13,11 @@ test('create_site argument failures give the model a targeted correction', async
     projectIdFromBody: null,
     toolPolicy: createToolTurnPolicy(),
   };
-  const call = { id: 'call-1', type: 'function', function: { name: 'create_site', arguments: '{}' } };
+  const call = {
+    id: 'call-1',
+    type: 'function',
+    function: { name: 'create_site', arguments: '{}' },
+  };
 
   const missingTitle = await executeCreateSite({ title: '', source: '<html></html>' }, call, ctx);
   assert.equal(missingTitle.result.errorCode, 'SITE_TITLE_REQUIRED');

@@ -17,8 +17,12 @@ import { createToolRuntime as createRuntime } from '../src/chat/toolRuntime/inde
 
 function makeBody() {
   return {
-    querySelector() { return null; },
-    querySelectorAll() { return []; },
+    querySelector() {
+      return null;
+    },
+    querySelectorAll() {
+      return [];
+    },
   };
 }
 
@@ -29,7 +33,10 @@ test('ToolRuntime coalesces orphan deltas before a tool card exists', () => {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    requestAnimationFrame(callback) { scheduled = callback; return 11; },
+    requestAnimationFrame(callback) {
+      scheduled = callback;
+      return 11;
+    },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'detailed',
@@ -41,7 +48,7 @@ test('ToolRuntime coalesces orphan deltas before a tool card exists', () => {
   scheduled();
 
   assert.equal(message._orphanDeltas, undefined);
-  runtime.recordToolUse({id: 'early', name: 'code_interpreter', input: null});
+  runtime.recordToolUse({ id: 'early', name: 'code_interpreter', input: null });
   assert.equal(message.toolCalls[0].argumentsText, '{"code":"ab"}');
   runtime.dispose();
 });
@@ -59,15 +66,24 @@ test('ToolRuntime dispose cancels queued work and closes execution streams', () 
       this.listeners = {};
       sources.push(this);
     }
-    addEventListener(name, callback) { this.listeners[name] = callback; }
-    close() { this.closed = true; }
+    addEventListener(name, callback) {
+      this.listeners[name] = callback;
+    }
+    close() {
+      this.closed = true;
+    }
   }
 
   const runtime = createToolRuntime({
     body: makeBody(),
     getMessage: () => message,
-    requestAnimationFrame(callback) { scheduled = callback; return 17; },
-    cancelAnimationFrame(id) { cancelledFrame = id; },
+    requestAnimationFrame(callback) {
+      scheduled = callback;
+      return 17;
+    },
+    cancelAnimationFrame(id) {
+      cancelledFrame = id;
+    },
     EventSource: FakeEventSource,
     useExecutionEventSource: true,
     mode: 'detailed',
@@ -96,7 +112,9 @@ test('ToolRuntime treats duplicate tool_use events as idempotent', () => {
   const runtime = createToolRuntime({
     body: makeBody(),
     getMessage: () => message,
-    onInlineTool(entry, row) { mounted.push({ entry, row }); },
+    onInlineTool(entry, row) {
+      mounted.push({ entry, row });
+    },
     EventSource: null,
     mode: 'compact',
   });
@@ -135,7 +153,10 @@ test('ToolRuntime uses the main chat SSE as the default execution channel', () =
   const message = { toolCalls: [{ id: 'code-main', name: 'code_interpreter' }] };
   const sources = [];
   class FakeEventSource {
-    constructor(url) { this.url = url; sources.push(this); }
+    constructor(url) {
+      this.url = url;
+      sources.push(this);
+    }
     addEventListener() {}
     close() {}
   }
@@ -155,8 +176,14 @@ test('ToolRuntime does not open a progress stream after a terminal result', () =
   const message = { toolCalls: [] };
   const sources = [];
   class FakeEventSource {
-    constructor(url) { this.url = url; this.listeners = {}; sources.push(this); }
-    addEventListener(name, callback) { this.listeners[name] = callback; }
+    constructor(url) {
+      this.url = url;
+      this.listeners = {};
+      sources.push(this);
+    }
+    addEventListener(name, callback) {
+      this.listeners[name] = callback;
+    }
     close() {}
   }
   const runtime = createToolRuntime({
@@ -190,8 +217,14 @@ test('ToolRuntime records rows on the data instead of mounting DOM', () => {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    onInlineTool(entry, row) { mounted.push({ entry, row }); return 42; },
-    requestAnimationFrame(callback) { scheduled = callback; return 19; },
+    onInlineTool(entry, row) {
+      mounted.push({ entry, row });
+      return 42;
+    },
+    requestAnimationFrame(callback) {
+      scheduled = callback;
+      return 19;
+    },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'compact',
@@ -239,7 +272,7 @@ test('ToolRuntime exposes whether any tool is still active', () => {
   });
 
   assert.equal(runtime.hasActiveTools(), true);
-  runtime.recordToolResult({id: message.toolCalls[0].id, ok: true, output: 'done'});
+  runtime.recordToolResult({ id: message.toolCalls[0].id, ok: true, output: 'done' });
   assert.equal(runtime.hasActiveTools(), false);
   runtime.dispose();
 });
@@ -259,7 +292,9 @@ test('ToolRuntime ignores the retired live single-card slot and persists every c
     stillOwnsSlot: () => true,
     getMessage: () => message,
     liveSingleCardSlot: {},
-    onInlineTool() { return offsets[next++]; },
+    onInlineTool() {
+      return offsets[next++];
+    },
     EventSource: null,
     mode: 'compact',
   });
@@ -268,9 +303,15 @@ test('ToolRuntime ignores the retired live single-card slot and persists every c
   runtime.recordToolUse({ id: 'B', name: 'code_interpreter', input: { q: 2 } });
   runtime.recordToolUse({ id: 'C', name: 'web_search', input: { q: 3 } });
 
-  assert.deepEqual(message.toolCalls.map((t) => t.id), ['A', 'B', 'C']);
-  assert.deepEqual(message.toolCalls.map((t) => t.textOffset), [10, 20, 30],
-    'each call keeps its own split point — no shared head offset');
+  assert.deepEqual(
+    message.toolCalls.map((t) => t.id),
+    ['A', 'B', 'C'],
+  );
+  assert.deepEqual(
+    message.toolCalls.map((t) => t.textOffset),
+    [10, 20, 30],
+    'each call keeps its own split point — no shared head offset',
+  );
   runtime.dispose();
 });
 
@@ -280,7 +321,9 @@ test('ToolRuntime consecutive same-category calls are independent entries', () =
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    onInlineTool() { return 0; },
+    onInlineTool() {
+      return 0;
+    },
     EventSource: null,
     mode: 'compact',
   });
@@ -290,7 +333,11 @@ test('ToolRuntime consecutive same-category calls are independent entries', () =
   runtime.recordToolUse({ id: 'g3', name: 'code_interpreter' });
 
   assert.equal(message.toolCalls.length, 3);
-  assert.equal(message.toolCalls[1]._groupHeadId, undefined, 'no merge metadata leaks onto the data');
+  assert.equal(
+    message.toolCalls[1]._groupHeadId,
+    undefined,
+    'no merge metadata leaks onto the data',
+  );
   runtime.noteTextDelta();
   runtime.recordToolUse({ id: 'g4', name: 'web_search' });
   assert.equal(message.toolCalls.length, 4);
@@ -303,7 +350,9 @@ test('ToolRuntime settles each entry independently on terminal results', () => {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    onInlineTool() { return 7; },
+    onInlineTool() {
+      return 7;
+    },
     EventSource: null,
     mode: 'compact',
   });
@@ -311,7 +360,10 @@ test('ToolRuntime settles each entry independently on terminal results', () => {
   runtime.recordToolUse({ id: 's1', name: 'web_search', input: { query: 'a' } });
   runtime.recordToolUse({ id: 's2', name: 'web_search', input: { query: 'b' } });
   runtime.recordToolResult({
-    id: 's2', ok: true, status: 'completed', output: 'b',
+    id: 's2',
+    ok: true,
+    status: 'completed',
+    output: 'b',
     results: [{ title: 'B', url: 'https://b.test' }],
   });
   runtime.recordToolResult({ id: 'f1', ok: false, status: 'failed', output: 'boom' });
@@ -331,7 +383,9 @@ test('ToolRuntime cancel marks every open run cancelled on the data', () => {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    onInlineTool() { return 0; },
+    onInlineTool() {
+      return 0;
+    },
     EventSource: null,
     mode: 'compact',
   });
@@ -353,11 +407,16 @@ function agentRuntimeHarness() {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    requestAnimationFrame(callback) { callback(); return 1; },
+    requestAnimationFrame(callback) {
+      callback();
+      return 1;
+    },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'compact',
-    onInlineTool() { return 0; },
+    onInlineTool() {
+      return 0;
+    },
   });
   return { message, runtime };
 }
@@ -386,11 +445,19 @@ test('agent steps persist on the tool call keyed by stepId', () => {
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: { task: 'do it' } });
   runtime.recordAgentStep(stepFrame());
   runtime.recordAgentStep(stepFrame({ status: 'done', durationMs: 1500 }));
-  runtime.recordAgentStep(stepFrame({ stepId: 's2', kind: 'read', command: 'cat a.ts', status: 'done' }));
+  runtime.recordAgentStep(
+    stepFrame({ stepId: 's2', kind: 'read', command: 'cat a.ts', status: 'done' }),
+  );
 
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.equal(entry.runId, 'run-1');
-  assert.deepEqual(entry.steps.map((step) => [step.stepId, step.status]), [['s1', 'done'], ['s2', 'done']]);
+  assert.deepEqual(
+    entry.steps.map((step) => [step.stepId, step.status]),
+    [
+      ['s1', 'done'],
+      ['s2', 'done'],
+    ],
+  );
   assert.equal(entry.steps[0].durationMs, 1500);
   runtime.dispose();
 });
@@ -399,16 +466,29 @@ test('agent plan frames update the persisted checklist in place', () => {
   const { message, runtime } = agentRuntimeHarness();
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentPlan({
-    type: 'plan', id: 'agent-1', runId: 'run-1',
-    steps: [{ title: 'a', status: 'in_progress' }, { title: 'b', status: 'todo' }],
+    type: 'plan',
+    id: 'agent-1',
+    runId: 'run-1',
+    steps: [
+      { title: 'a', status: 'in_progress' },
+      { title: 'b', status: 'todo' },
+    ],
     explanation: 'why',
   });
   runtime.recordAgentPlan({
-    type: 'plan', id: 'agent-1', runId: 'run-1',
-    steps: [{ title: 'a', status: 'done' }, { title: 'b', status: 'in_progress' }],
+    type: 'plan',
+    id: 'agent-1',
+    runId: 'run-1',
+    steps: [
+      { title: 'a', status: 'done' },
+      { title: 'b', status: 'in_progress' },
+    ],
   });
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
-  assert.deepEqual(entry.plan.steps.map((step) => step.status), ['done', 'in_progress']);
+  assert.deepEqual(
+    entry.plan.steps.map((step) => step.status),
+    ['done', 'in_progress'],
+  );
   runtime.dispose();
 });
 
@@ -429,8 +509,12 @@ test('the agent result latches the terminal phase and duration on the data', () 
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentStep(stepFrame());
   runtime.recordToolResult({
-    id: 'agent-1', name: 'workspace_agent', ok: true, status: 'completed',
-    output: 'done', durationMs: 62_000,
+    id: 'agent-1',
+    name: 'workspace_agent',
+    ok: true,
+    status: 'completed',
+    output: 'done',
+    durationMs: 62_000,
   });
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.equal(entry._run.phase, 'succeeded');
@@ -447,17 +531,29 @@ test('visualization results retain terminal metadata and spec for session saves'
     accessibilitySummary: 'A bar chart of market values.',
     payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
   };
-  runtime.recordToolUse({ id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]} });
+  runtime.recordToolUse({
+    id: 'viz-1',
+    name: 'render_intelligent_ui',
+    input: { version: 1, nodes: [{ ...spec, id: 'visual', type: 'visualization' }] },
+  });
   runtime.recordToolResult({
-    id: 'viz-1', name: 'render_intelligent_ui', ok: true, status: 'completed',
-    output: 'Visualization ready', visualizations: [{...spec,nodeId:'visual',index:0}], durationMs: 900,
+    id: 'viz-1',
+    name: 'render_intelligent_ui',
+    ok: true,
+    status: 'completed',
+    output: 'Visualization ready',
+    visualizations: [{ ...spec, nodeId: 'visual', index: 0 }],
+    durationMs: 900,
   });
 
   const entry = message.toolCalls.find((call) => call.id === 'viz-1');
   assert.equal(entry.status, 'completed');
   assert.equal(entry.durationMs, 900);
-  assert.deepEqual(entry.visualizations, [{...spec,nodeId:'visual',index:0}]);
-  assert.deepEqual(entry.input, {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]});
+  assert.deepEqual(entry.visualizations, [{ ...spec, nodeId: 'visual', index: 0 }]);
+  assert.deepEqual(entry.input, {
+    version: 1,
+    nodes: [{ ...spec, id: 'visual', type: 'visualization' }],
+  });
   runtime.dispose();
 });
 
@@ -470,10 +566,18 @@ test('Intelligent UI result snapshots survive tool runtime projection for sessio
     accessibilitySummary: 'Signups by day.',
     payload: { categories: ['Mon'], series: [{ name: 'Signups', data: [8] }] },
   };
-  runtime.recordToolUse({ id: 'ui-viz-1', name: 'render_intelligent_ui', input: { version: 1, nodes: [] } });
+  runtime.recordToolUse({
+    id: 'ui-viz-1',
+    name: 'render_intelligent_ui',
+    input: { version: 1, nodes: [] },
+  });
   runtime.recordToolResult({
-    id: 'ui-viz-1', name: 'render_intelligent_ui', ok: true, status: 'completed',
-    output: 'Rendered 1 UI nodes', visualizations: [spec],
+    id: 'ui-viz-1',
+    name: 'render_intelligent_ui',
+    ok: true,
+    status: 'completed',
+    output: 'Rendered 1 UI nodes',
+    visualizations: [spec],
   });
   const entry = message.toolCalls.find((call) => call.id === 'ui-viz-1');
   assert.deepEqual(entry.visualizations, [spec]);
@@ -485,7 +589,11 @@ test('a failed agent run marks the entry failed on the data', () => {
   runtime.recordToolUse({ id: 'agent-1', name: 'workspace_agent', input: {} });
   runtime.recordAgentStep(stepFrame());
   runtime.recordToolResult({
-    id: 'agent-1', name: 'workspace_agent', ok: false, status: 'failed', error: 'boom',
+    id: 'agent-1',
+    name: 'workspace_agent',
+    ok: false,
+    status: 'failed',
+    error: 'boom',
   });
   const entry = message.toolCalls.find((call) => call.id === 'agent-1');
   assert.equal(entry._run.phase, 'failed');
@@ -514,7 +622,10 @@ function publishHarness(offset) {
     getMessage: () => message,
     publishRuntimeEvent: (event) => events.push(event),
     onInlineTool: () => offset,
-    requestAnimationFrame(callback) { scheduled = callback; return 3; },
+    requestAnimationFrame(callback) {
+      scheduled = callback;
+      return 3;
+    },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'compact',
@@ -527,8 +638,10 @@ test('a live tool call carries its split point on the data, before finish()', ()
   try {
     h.runtime.recordToolUse({ id: 'tc-1', name: 'web_search', input: { query: 'q' } });
     assert.equal(h.message.toolCalls[0].textOffset, 7, 'offset stamped at mount time');
-    assert.ok(h.events.some((e) => e.type === 'tool-run-updated' && e.messageId === 'msg-live-1'),
-      'the mount is published — a row has to appear without waiting for the next text delta');
+    assert.ok(
+      h.events.some((e) => e.type === 'tool-run-updated' && e.messageId === 'msg-live-1'),
+      'the mount is published — a row has to appear without waiting for the next text delta',
+    );
     assert.ok((h.message._toolRunRev || 0) >= 1, 'revision bumped');
   } finally {
     h.runtime.dispose();
@@ -550,15 +663,26 @@ test('streamed arguments land on the entry so a running row can preview them', (
 test('a terminal result publishes, so the row stops spinning', () => {
   const h = publishHarness(3);
   try {
-    h.runtime.recordToolUse({ id: 'tc-2', name: 'web_fetch', input: { url: 'https://arxiv.org/x' } });
+    h.runtime.recordToolUse({
+      id: 'tc-2',
+      name: 'web_fetch',
+      input: { url: 'https://arxiv.org/x' },
+    });
     h.events.length = 0;
     h.runtime.recordToolResult({
-      id: 'tc-2', name: 'web_fetch', ok: true, status: 'completed',
-      output: 'Fetched', durationMs: 120,
+      id: 'tc-2',
+      name: 'web_fetch',
+      ok: true,
+      status: 'completed',
+      output: 'Fetched',
+      durationMs: 120,
     });
     const entry = h.message.toolCalls[0];
     assert.equal(entry._toolResultApplied, true);
-    assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'the settle is published');
+    assert.ok(
+      h.events.some((e) => e.type === 'tool-run-updated'),
+      'the settle is published',
+    );
   } finally {
     h.runtime.dispose();
   }
@@ -570,7 +694,10 @@ test('cancelling a turn publishes the stopped state', () => {
     h.runtime.recordToolUse({ id: 'tc-3', name: 'web_search', input: { query: 'q' } });
     h.events.length = 0;
     h.runtime.cancel();
-    assert.ok(h.events.some((e) => e.type === 'tool-run-updated'), 'cancel repaints the rows');
+    assert.ok(
+      h.events.some((e) => e.type === 'tool-run-updated'),
+      'cancel repaints the rows',
+    );
   } finally {
     h.runtime.dispose();
   }
@@ -589,8 +716,12 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
     id: 'tc-codex-1',
     name: 'workspace_agent',
     approval: {
-      id: 'tc-codex-1', runId, approvalId, status: 'pending',
-      kind: 'commandExecution', reason: 'Run the verification command',
+      id: 'tc-codex-1',
+      runId,
+      approvalId,
+      status: 'pending',
+      kind: 'commandExecution',
+      reason: 'Run the verification command',
     },
   };
 
@@ -602,10 +733,18 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
   globalThis.fetch = async (url, opts = {}) => {
     calls.push({ url: String(url), method: opts.method || 'GET', body: opts.body });
     if (String(url).includes('/approvals/')) {
-      return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true, status: 'accepted' }) };
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ ok: true, status: 'accepted' }),
+      };
     }
     /* Run-status poll: report completed so the poll self-terminates. */
-    return { ok: true, status: 200, text: async () => JSON.stringify({ run: { id: runId, status: 'completed' }, approvals: [] }) };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ run: { id: runId, status: 'completed' }, approvals: [] }),
+    };
   };
 
   try {
@@ -619,12 +758,20 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
     /* Finish the turn while an approval is pending: this pins
        postFinishApprovalMessage and keeps the runtime alive. */
     runtime.dispose();
-    assert.equal(typeof runtime.decideApproval, 'function', 'runtime must stay actionable after dispose');
+    assert.equal(
+      typeof runtime.decideApproval,
+      'function',
+      'runtime must stay actionable after dispose',
+    );
 
     /* The store then swaps the message object (same clientId, fresh
        object with the same pending approval) — exactly what the final
        session/update-message write-back does in main.js finish(). */
-    message = { clientId: 'msg-postfinish-1', id: 'msg-postfinish-1', toolCalls: [{ ...pendingCall }] };
+    message = {
+      clientId: 'msg-postfinish-1',
+      id: 'msg-postfinish-1',
+      toolCalls: [{ ...pendingCall }],
+    };
 
     await runtime.decideApproval('tc-codex-1', 'accept');
 
@@ -633,7 +780,11 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
     assert.equal(JSON.parse(post.body).decision, 'accept');
     assert.ok(post.url.includes(runId), 'POST uses the durable run id');
     assert.ok(post.url.includes(approvalId), 'POST uses the durable approval id');
-    assert.equal(message.toolCalls[0].approval.status, 'accept', 'entry approval flips to accepted');
+    assert.equal(
+      message.toolCalls[0].approval.status,
+      'accept',
+      'entry approval flips to accepted',
+    );
   } finally {
     globalThis.fetch = originalFetch;
     window.setTimeout = originalTimeout;
@@ -642,7 +793,10 @@ test('decideApproval still POSTs after dispose when the store swaps the message 
 
 // The shell mirrors session/update-message; entries are replaced on each commit.
 function createToolRuntime(options) {
-  return createRuntime({...options, updateMessage(patch) {
-    Object.assign(options.getMessage(), patch);
-  }});
+  return createRuntime({
+    ...options,
+    updateMessage(patch) {
+      Object.assign(options.getMessage(), patch);
+    },
+  });
 }

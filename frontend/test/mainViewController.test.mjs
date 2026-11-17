@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-import {
-  activateMainView,
-  getVisibleCoreView,
-} from '../src/ui/mainViewController.ts';
+import { activateMainView, getVisibleCoreView } from '../src/ui/mainViewController.ts';
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">
@@ -39,7 +36,15 @@ test('activateMainView makes one workspace page authoritative', () => {
   activateMainView('libraryPanel', document);
 
   assert.equal(isHidden(document, 'libraryPanel'), false);
-  for (const id of ['topicSetup', 'diagnosticView', 'chatView', 'spacesPanel', 'scheduledPanel', 'pluginsPanel', 'examView']) {
+  for (const id of [
+    'topicSetup',
+    'diagnosticView',
+    'chatView',
+    'spacesPanel',
+    'scheduledPanel',
+    'pluginsPanel',
+    'examView',
+  ]) {
     assert.equal(isHidden(document, id), true, `${id} should be hidden`);
   }
   assert.equal(isHidden(document, 'mainInner'), false);
@@ -93,7 +98,6 @@ test('activateMainView moves tutor sessions into the diagnostic view', () => {
   assert.equal(document.body.className, '');
 });
 
-
 test('switching chats keeps the current transcript pane visible throughout', () => {
   const document = createDocument();
   activateMainView('chatView', document);
@@ -102,11 +106,13 @@ test('switching chats keeps the current transcript pane visible throughout', () 
   observer.observe(chat, { attributes: true, attributeFilter: ['class'], attributeOldValue: true });
   activateMainView('chatView', document);
   const records = observer.takeRecords();
-  assert.equal(records.some((record) => record.oldValue?.split(/\s+/).includes('hidden')), false);
+  assert.equal(
+    records.some((record) => record.oldValue?.split(/\s+/).includes('hidden')),
+    false,
+  );
   assert.equal(chat.classList.contains('hidden'), false);
   observer.disconnect();
 });
-
 
 test('explicit home navigation clears boot and stale conversation visibility synchronously', () => {
   const document = createDocument();

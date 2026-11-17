@@ -93,7 +93,8 @@ export function createToolRunApi(
     if (w) return w.phase_from_progress_js(String((progress && progress.phase) || ''));
     const phase = String((progress && progress.phase) || '').toLowerCase();
     if (phase === 'queued') return TOOL_RUN_PHASES.queued;
-    if (phase === 'ready' || phase === 'preparing' || phase === 'booting') return TOOL_RUN_PHASES.preparing;
+    if (phase === 'ready' || phase === 'preparing' || phase === 'booting')
+      return TOOL_RUN_PHASES.preparing;
     if (phase === 'completed' || phase === 'complete') return TOOL_RUN_PHASES.succeeded;
     if (phase === 'cancelled' || phase === 'skipped') return TOOL_RUN_PHASES.cancelled;
     if (phase === 'timeout') return TOOL_RUN_PHASES.timed_out;
@@ -123,7 +124,14 @@ export function createToolRunApi(
     const list = Array.isArray(runs) ? runs : [];
     const w = getW();
     if (w && list.length > 0) return w.summarize_runs(list as ToolRun[]);
-    const counts: ToolRunSummary = { total: list.length, active: 0, succeeded: 0, failed: 0, cancelled: 0, timed_out: 0 };
+    const counts: ToolRunSummary = {
+      total: list.length,
+      active: 0,
+      succeeded: 0,
+      failed: 0,
+      cancelled: 0,
+      timed_out: 0,
+    };
     for (const run of list) {
       if (!run || !run.phase) continue;
       if (run.phase === TOOL_RUN_PHASES.succeeded) counts.succeeded++;

@@ -7,15 +7,19 @@
  * example, and activates that one tool for the next hop.
  */
 
-import { canonicalToolExampleJson, describeToolSchema } from '../tools/toolErrorFeedback.js';
-import type { ConnectorCatalog, ConnectorCatalogEntry, ConnectorMatch } from './connectorCatalog.js';
+import { canonicalToolExampleJson, describeToolSchema } from '../tools/toolCorrectionMessage.js';
+import type {
+  ConnectorCatalog,
+  ConnectorCatalogEntry,
+  ConnectorMatch,
+} from './connectorCatalog.js';
 
 export const SEARCH_CONNECTORS_TOOL = {
   type: 'function' as const,
   function: {
     name: 'search_connectors',
     description:
-      'Search the user\'s connected apps for a tool that can answer the request. Returns matching tool names, the connected service, and a short description. Use this instead of guessing a connector tool name. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.',
+      "Search the user's connected apps for a tool that can answer the request. Returns matching tool names, the connected service, and a short description. Use this instead of guessing a connector tool name. After choosing a result, call get_connector_spec with the exact tool name to read its arguments; that tool becomes callable on the next step.",
     parameters: {
       type: 'object',
       additionalProperties: false,
@@ -25,7 +29,8 @@ export const SEARCH_CONNECTORS_TOOL = {
           type: 'string',
           minLength: 1,
           maxLength: 300,
-          description: 'What the user wants to do, using the app name and action in English when possible, e.g. "calendar events", "gmail search", "github repos", "notion pages". Common Chinese app names are also matched.',
+          description:
+            'What the user wants to do, using the app name and action in English when possible, e.g. "calendar events", "gmail search", "github repos", "notion pages". Common Chinese app names are also matched.',
         },
         limit: {
           type: 'integer',
@@ -61,7 +66,9 @@ export const GET_CONNECTOR_SPEC_TOOL = {
 };
 
 function shortDescription(description: string): string {
-  const text = String(description || '').replace(/\s+/g, ' ').trim();
+  const text = String(description || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (text.length <= 320) return text;
   return `${text.slice(0, 317)}...`;
 }
@@ -79,9 +86,10 @@ export function formatConnectorSearchResult(
       'A broader query with the app name and the action may match, for example "gmail search", "calendar events", "github repos", or "notion pages".',
     ].join('\n');
   }
-  const lines = matches.map((match, index) => (
-    `${index + 1}. ${match.tool} (${match.service}) - ${shortDescription(match.description)}`
-  ));
+  const lines = matches.map(
+    (match, index) =>
+      `${index + 1}. ${match.tool} (${match.service}) - ${shortDescription(match.description)}`,
+  );
   return [
     `Matching connector tools (${matches.length}):`,
     ...lines,
@@ -104,6 +112,6 @@ export function formatConnectorSpec(entry: ConnectorCatalogEntry): string {
     schema || '(no arguments)',
     ...(example ? ['', `Example: ${example}`] : []),
     '',
-    'The tool is now callable on the next step; its exact JSON schema is also supplied in that step\'s tools list.',
+    "The tool is now callable on the next step; its exact JSON schema is also supplied in that step's tools list.",
   ].join('\n');
 }

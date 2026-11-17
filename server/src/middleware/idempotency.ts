@@ -20,7 +20,14 @@ const MAX_ENTRIES = 5000;
 const MAX_RESPONSE_BYTES = 256 * 1024;
 const MAX_TOTAL_BYTES = 32 * 1024 * 1024;
 
-type CapturedResponse = { status: number; contentType: string; body: string | null; bytes: number; expiresAt: number; fingerprint: string };
+type CapturedResponse = {
+  status: number;
+  contentType: string;
+  body: string | null;
+  bytes: number;
+  expiresAt: number;
+  fingerprint: string;
+};
 
 const store = new Map<string, CapturedResponse>();
 const inFlight = new Map<string, { fingerprint: string; expiresAt: number }>();
@@ -37,7 +44,10 @@ function prune(now: number, additionalBytes: number): void {
   }
   // Fresh entries must also be bounded; expiry-only pruning lets a busy
   // process grow without limit during the 24h TTL.
-  while (store.size && (store.size >= MAX_ENTRIES || storedBytes + additionalBytes > MAX_TOTAL_BYTES)) {
+  while (
+    store.size &&
+    (store.size >= MAX_ENTRIES || storedBytes + additionalBytes > MAX_TOTAL_BYTES)
+  ) {
     remove(store.keys().next().value!);
   }
 }
@@ -71,14 +81,21 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
   const key = Array.isArray(raw) ? raw[0] : raw;
   // Absent key → nothing to do. Oversized keys are ignored rather than
   // stored so a hostile caller cannot bloat the map with junk values.
-  if (typeof key !== 'string' || key.length === 0 || key.length > 200 || !/^[\x21-\x7E]+$/.test(key)) {
+  if (
+    typeof key !== 'string' ||
+    key.length === 0 ||
+    key.length > 200 ||
+    !/^[\x21-\x7E]+$/.test(key)
+  ) {
     return next();
   }
 
   const scope = credentialScope(req);
   const cacheKey = `${scope}|${method}|${req.baseUrl}${req.url}|${key}`;
   const now = Date.now();
-  const fingerprint = createHash('sha256').update(JSON.stringify(req.body ?? null)).digest('hex');
+  const fingerprint = createHash('sha256')
+    .update(JSON.stringify(req.body ?? null))
+    .digest('hex');
 
   const conflict = (message: string) => {
     res.status(409).json({ code: 'IDEMPOTENCY_CONFLICT', message });
@@ -86,9 +103,13 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
 
   const hit = store.get(cacheKey);
   if (hit && hit.expiresAt > now) {
-    if (hit.fingerprint !== fingerprint) return conflict('Idempotency-Key was already used with a different request body');
+    if (hit.fingerprint !== fingerprint)
+      return conflict('Idempotency-Key was already used with a different request body');
     if (hit.body === null) {
-      res.status(409).json({ code: 'IDEMPOTENCY_RESULT_UNAVAILABLE', message: 'Write completed; retrieve the resource instead of repeating it' });
+      res.status(409).json({
+        code: 'IDEMPOTENCY_RESULT_UNAVAILABLE',
+        message: 'Write completed; retrieve the resource instead of repeating it',
+      });
       return;
     }
     res.set('Idempotency-Replayed', 'true');
@@ -98,9 +119,13 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
   }
   const pending = inFlight.get(cacheKey);
   if (pending !== undefined && pending.expiresAt > now) {
-    if (pending.fingerprint !== fingerprint) return conflict('Idempotency-Key is in use with a different request body');
+    if (pending.fingerprint !== fingerprint)
+      return conflict('Idempotency-Key is in use with a different request body');
     res.set('Retry-After', '1');
-    res.status(409).json({ code: 'IDEMPOTENCY_IN_PROGRESS', message: 'Request is still running; retry with the same key' });
+    res.status(409).json({
+      code: 'IDEMPOTENCY_IN_PROGRESS',
+      message: 'Request is still running; retry with the same key',
+    });
     return;
   }
   for (const [key, reservation] of inFlight) {
@@ -108,12 +133,16 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
   }
   if (inFlight.size >= MAX_ENTRIES) {
     res.set('Retry-After', '1');
-    res.status(503).json({ code: 'IDEMPOTENCY_CAPACITY', message: 'Too many in-flight writes; retry later' });
+    res
+      .status(503)
+      .json({ code: 'IDEMPOTENCY_CAPACITY', message: 'Too many in-flight writes; retry later' });
     return;
   }
   const reservation = { fingerprint, expiresAt: now + TTL_MS };
   inFlight.set(cacheKey, reservation);
-  const release = () => { if (inFlight.get(cacheKey) === reservation) inFlight.delete(cacheKey); };
+  const release = () => {
+    if (inFlight.get(cacheKey) === reservation) inFlight.delete(cacheKey);
+  };
   res.once('finish', release);
   // A disconnected socket does not imply the business write stopped. Keep
   // its reservation until the handler responds (or the TTL expires).
@@ -126,7 +155,12 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
      * after login, after fixing the payload, or after the rate window
      * resets would keep receiving the stale rejection without ever
      * reaching the handler (and would extend a 429 penalty to a day). */
-    if (!captured && typeof res.statusCode === 'number' && res.statusCode >= 200 && res.statusCode < 300) {
+    if (
+      !captured &&
+      typeof res.statusCode === 'number' &&
+      res.statusCode >= 200 &&
+      res.statusCode < 300
+    ) {
       captured = true;
       const serialized = JSON.stringify(body) ?? '';
       const size = Buffer.byteLength(serialized);
@@ -145,7 +179,11 @@ export function idempotencyMiddleware(req: Request, res: Response, next: NextFun
       });
       storedBytes += bytes;
     }
-    try { return originalJson(body); } finally { release(); }
+    try {
+      return originalJson(body);
+    } finally {
+      release();
+    }
   }) as typeof res.json;
 
   next();

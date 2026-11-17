@@ -9,7 +9,10 @@ import type { DocumentPreviewSource, PreviewKind } from '../react/docPreview/typ
     plain download link. Exported so the message list gates with the same
     predicate the drawer applies. */
 export function canPreviewDocument(source: DocumentPreviewSource): boolean {
-  return Boolean(source.fileId) && previewKindFor(source.name, source.mime, source.docKind) !== 'unsupported';
+  return (
+    Boolean(source.fileId) &&
+    previewKindFor(source.name, source.mime, source.docKind) !== 'unsupported'
+  );
 }
 
 function previewMeta(source: DocumentPreviewSource, kind: PreviewKind): string {
@@ -31,12 +34,14 @@ export function openDocumentPreview(source: DocumentPreviewSource): Promise<bool
   const kind = previewKindFor(source.name, source.mime, source.docKind);
   if (kind === 'unsupported' || !source.fileId) return Promise.resolve(false);
   return import('../react/docPreview/DocumentPreviewView')
-    .then(({ DocumentPreviewView }) => openDetailSurface({
-      owner: 'doc-preview',
-      title: source.name,
-      meta: previewMeta(source, kind),
-      closeLabel: i18n('dialog.close', 'Close'),
-      content: createElement(DocumentPreviewView, { source, kind }),
-    }))
+    .then(({ DocumentPreviewView }) =>
+      openDetailSurface({
+        owner: 'doc-preview',
+        title: source.name,
+        meta: previewMeta(source, kind),
+        closeLabel: i18n('dialog.close', 'Close'),
+        content: createElement(DocumentPreviewView, { source, kind }),
+      }),
+    )
     .catch(() => false);
 }

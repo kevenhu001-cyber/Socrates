@@ -35,15 +35,34 @@ import { createElement, ReactNode } from 'react';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
 import { VizCardControls, VizErrorActions } from '../react/visualization/VizCardControls.tsx';
 import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.ts';
-import { configureVizCardRegistry, findLiveVizFrame, parkVizCardForTest, reclaimVizCards, rememberLiveVizCard as _rememberLiveVizCard, unparkVizCardForTest } from './vizCardRegistry.ts';
-import { configureVizMermaidQueue, mermaidCardIsNearViewportForTest, processPendingMermaid, resetMermaidGateForTest, schedulePendingMermaid } from './vizMermaidQueue.ts';
+import {
+  configureVizCardRegistry,
+  findLiveVizFrame,
+  parkVizCardForTest,
+  reclaimVizCards,
+  rememberLiveVizCard as _rememberLiveVizCard,
+  unparkVizCardForTest,
+} from './vizCardRegistry.ts';
+import {
+  configureVizMermaidQueue,
+  mermaidCardIsNearViewportForTest,
+  processPendingMermaid,
+  resetMermaidGateForTest,
+  schedulePendingMermaid,
+} from './vizMermaidQueue.ts';
 export { parkVizCardForTest, unparkVizCardForTest, reclaimVizCards };
 export { mermaidCardIsNearViewportForTest, resetMermaidGateForTest };
 export { processPendingMermaid, schedulePendingMermaid };
 export { openVizModal };
 export { openVizModalRaw } from './vizModals.ts';
-import { _pendingViz, takePendingViz, takePendingActions, nextVizId, queueVizActions, setVizViewPref } from './vizStubs.ts';
-
+import {
+  _pendingViz,
+  takePendingViz,
+  takePendingActions,
+  nextVizId,
+  queueVizActions,
+  setVizViewPref,
+} from './vizStubs.ts';
 
 /* P_viz-fix-loop — feed a client-side render failure back to the
    model. The banner's own text + the card's source attribute are
@@ -54,29 +73,30 @@ import { _pendingViz, takePendingViz, takePendingActions, nextVizId, queueVizAct
    user-turn message. */
 function vizRepairPrompt(card: Element, errMsg: unknown) {
   const iframe = card && card.querySelector('iframe');
-  let src = iframe ? (iframe.getAttribute('data-source') || '') : '';
+  let src = iframe ? iframe.getAttribute('data-source') || '' : '';
   if (!src) {
     const pre = card && card.querySelector('.viz-error-source');
     src = pre?.textContent || '';
   } else {
     src = decodeSrcdoc(src);
   }
-  let prompt = 'A visualization block in your previous answer failed to render in the client'
-    + (errMsg ? ': "' + String(errMsg).slice(0, 300) + '"' : '')
-    + '. Please rewrite it as a corrected self-contained fenced ```viz or ```html block — no external network resources, no <script> that depends on globals.';
+  let prompt =
+    'A visualization block in your previous answer failed to render in the client' +
+    (errMsg ? ': "' + String(errMsg).slice(0, 300) + '"' : '') +
+    '. Please rewrite it as a corrected self-contained fenced ```viz or ```html block — no external network resources, no <script> that depends on globals.';
   if (src) prompt += '\nFailing source (truncated):\n' + src.slice(0, 1200);
   return prompt;
 }
 
 function dispatchVizRepair(card: Element | null, errMsg: unknown) {
   if (!card || typeof card.dispatchEvent !== 'function') return;
-  card.dispatchEvent(new CustomEvent('tool-retry', {
-    bubbles: true,
-    detail: { tool: 'viz_block', prompt: vizRepairPrompt(card, errMsg) },
-  }));
+  card.dispatchEvent(
+    new CustomEvent('tool-retry', {
+      bubbles: true,
+      detail: { tool: 'viz_block', prompt: vizRepairPrompt(card, errMsg) },
+    }),
+  );
 }
-
-
 
 /* Track which card ids we are still waiting for. Each entry holds a
    timeout handle + a list of callbacks. When the iframe posts
@@ -137,7 +157,8 @@ function mountVizCardControls(host: Element | null) {
   const cardId = host.getAttribute('data-viz-card-id') || '';
   const content = createElement(VizCardControls, {
     cardId: cardId,
-    initialView: host.closest('.viz')?.getAttribute('data-viz-view') === 'code' ? 'code' : 'preview',
+    initialView:
+      host.closest('.viz')?.getAttribute('data-viz-view') === 'code' ? 'code' : 'preview',
     showSource: host.getAttribute('data-viz-show-source') === 'true',
     viewToggle: host.getAttribute('data-viz-view-toggle') === 'true',
     onViewChange: function (view) {
@@ -145,16 +166,24 @@ function mountVizCardControls(host: Element | null) {
       if (!card) return;
       card.setAttribute('data-viz-view', view);
       setVizViewPref(view);
-      try { localStorage.setItem('socrates-viz-view', view); }
-      catch (error) { reportSwallow(error, 'viz.setVizViewPref.persist'); }
+      try {
+        localStorage.setItem('socrates-viz-view', view);
+      } catch (error) {
+        reportSwallow(error, 'viz.setVizViewPref.persist');
+      }
     },
     onSource: function () {
       const card = document.getElementById(cardId);
       if (!card) return;
       const frame = card.querySelector('iframe');
-      openVizSourceModal((frame && (frame.dataset.source || frame.dataset.srcdoc)) || '', card.dataset.title || 'Canvas');
+      openVizSourceModal(
+        (frame && (frame.dataset.source || frame.dataset.srcdoc)) || '',
+        card.dataset.title || 'Canvas',
+      );
     },
-    onReload: function () { reloadVizCard(document.getElementById(cardId)); },
+    onReload: function () {
+      reloadVizCard(document.getElementById(cardId));
+    },
     onExpand: function () {
       const card = document.getElementById(cardId);
       if (!card) return;
@@ -175,7 +204,10 @@ function mountVizErrorActions(host: Element | null) {
     },
     onFix: function () {
       const banner = host.closest('.viz-error');
-      dispatchVizRepair(banner && banner.closest('.viz'), banner && banner.querySelector('.viz-error-msg')?.textContent || '');
+      dispatchVizRepair(
+        banner && banner.closest('.viz'),
+        (banner && banner.querySelector('.viz-error-msg')?.textContent) || '',
+      );
     },
   });
   mountVizReactSurface(isHTMLElement(host) ? host : null, 'error-actions', content);
@@ -190,13 +222,18 @@ export function processPendingViz(root?: ParentNode) {
     const queued = root.querySelectorAll('.viz[id][data-viz-state="loading"]');
     for (let qi = 0; qi < queued.length; qi++) {
       const queuedId = queued[qi].id;
-      if (queuedId && !_pendingViz.some(function (item) { return item.id === queuedId; })) {
+      if (
+        queuedId &&
+        !_pendingViz.some(function (item) {
+          return item.id === queuedId;
+        })
+      ) {
         _pendingViz.push({ id: queuedId });
       }
     }
   }
   const pending = takePendingViz();
-  pending.forEach(function (item: { id: string; }) {
+  pending.forEach(function (item: { id: string }) {
     const el = document.getElementById(item.id);
     if (!el) return;
     /* A card adopted from the live registry already completed its
@@ -252,8 +289,15 @@ export function processPendingViz(root?: ParentNode) {
         const card = entry.card;
         if (!card || card.getAttribute('data-viz-state') === 'ready') return;
         if (!card.isConnected) return;
-  try { if (iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*'); }
-        catch (e) { reportSwallow(e, 'viz.processPendingViz.pingCard'); /* cannot even post → the grace window lapses into the banner */ }
+        try {
+          if (iframe.contentWindow)
+            iframe.contentWindow.postMessage({ type: 'viz-ping', vizId: item.id }, '*');
+        } catch (e) {
+          reportSwallow(
+            e,
+            'viz.processPendingViz.pingCard',
+          ); /* cannot even post → the grace window lapses into the banner */
+        }
         entry.pingTimer = setTimeout(function () {
           // A ping answer arrives as an ordinary viz-ready; if the
           // card flipped state in the meantime, stand down.
@@ -278,7 +322,11 @@ export function processPendingViz(root?: ParentNode) {
     _pendingReady[item.id] = entry;
     _vizCards[item.id] = entry;
   });
-  try { processPendingVizActions(); } catch (e) { reportSwallow(e, 'viz.processPendingViz.drainActions'); }
+  try {
+    processPendingVizActions();
+  } catch (e) {
+    reportSwallow(e, 'viz.processPendingViz.drainActions');
+  }
   _ensureMessageListener();
 }
 
@@ -292,7 +340,10 @@ function _markReady(id: string) {
   const entry = _pendingReady[id];
   if (!entry) return;
   const card = entry.card;
-  if (!card) { delete _pendingReady[id]; return; }
+  if (!card) {
+    delete _pendingReady[id];
+    return;
+  }
   if (card.getAttribute('data-viz-state') === 'ready') {
     clearTimeout(entry.maxTimer);
     if (entry.pingTimer) clearTimeout(entry.pingTimer);
@@ -307,7 +358,8 @@ function _markReady(id: string) {
   // Clamped to the same bounds viz-resize uses so a pathological
   // document can't grow a card without limit.
   if (entry.lastHeight && entry.lastHeight > 16) {
-    entry.iframe.style.height = Math.min(Math.max(entry.lastHeight, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H) + 'px';
+    entry.iframe.style.height =
+      Math.min(Math.max(entry.lastHeight, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H) + 'px';
   }
   _hideLoading(card);
   clearTimeout(entry.maxTimer);
@@ -323,7 +375,11 @@ function _errorBannerSource(entry: PendingVizHandshake | undefined, card: HTMLEl
   return (entrySource || cardSource || '').slice(0, 2000);
 }
 
-function _insertErrorBanner(card: HTMLElement, entry: PendingVizHandshake | undefined, message: unknown) {
+function _insertErrorBanner(
+  card: HTMLElement,
+  entry: PendingVizHandshake | undefined,
+  message: unknown,
+) {
   const body = card.querySelector('.viz-body');
   if (!body) return;
   const banner = document.createElement('div');
@@ -354,7 +410,7 @@ function _clearErrorRegistry(id: string, entry: PendingVizHandshake | undefined)
   _dropErrorRegistry(id);
 }
 
-function _dropErrorRegistry(id: string|number) {
+function _dropErrorRegistry(id: string | number) {
   delete _pendingReady[id];
   delete _vizCards[id];
 }
@@ -368,7 +424,10 @@ function _markError(id: string, message: unknown) {
   const entry = _pendingReady[id] || _vizCards[id];
   let card: HTMLElement | null | undefined = entry && entry.card;
   if (!card) card = document.getElementById(id);
-  if (!card) { _dropErrorRegistry(id); return; }
+  if (!card) {
+    _dropErrorRegistry(id);
+    return;
+  }
   if (card.getAttribute('data-viz-state') === 'error') return;
   card.setAttribute('data-viz-state', 'error');
   _rememberLiveVizCard(id, card);
@@ -389,11 +448,13 @@ function _vizSenderFrame(source: unknown) {
   let id, entry;
   for (id in _pendingReady) {
     entry = _pendingReady[id];
-    if (entry && entry.iframe && entry.iframe.contentWindow === source) return { id: id, iframe: entry.iframe };
+    if (entry && entry.iframe && entry.iframe.contentWindow === source)
+      return { id: id, iframe: entry.iframe };
   }
   for (id in _vizCards) {
     entry = _vizCards[id];
-    if (entry && entry.iframe && entry.iframe.contentWindow === source) return { id: id, iframe: entry.iframe };
+    if (entry && entry.iframe && entry.iframe.contentWindow === source)
+      return { id: id, iframe: entry.iframe };
   }
   return findLiveVizFrame(source);
 }
@@ -410,7 +471,11 @@ function _handleVizReady(id: string, data: { h?: unknown }) {
   }
 }
 
-function _handleVizResize(sender: { id?: string; iframe: HTMLIFrameElement }, id: string, data: { h?: unknown }) {
+function _handleVizResize(
+  sender: { id?: string; iframe: HTMLIFrameElement },
+  id: string,
+  data: { h?: unknown },
+) {
   const height = Number(data.h);
   if (!isFinite(height)) return;
   const clamped = Math.min(Math.max(height, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H);
@@ -435,11 +500,18 @@ function _handleVizMessage(ev: MessageEvent<Record<string, unknown>>) {
 
 let _themeWatcherInstalled = false;
 function _ensureThemeWatcher() {
-  if (_themeWatcherInstalled || typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+  if (
+    _themeWatcherInstalled ||
+    typeof document === 'undefined' ||
+    typeof MutationObserver === 'undefined'
+  )
+    return;
   _themeWatcherInstalled = true;
   const broadcastTheme = () => {
     const mode = document.documentElement.getAttribute('data-mode') || 'light';
-    const iframes = document.querySelectorAll<HTMLIFrameElement>('.viz iframe, iframe.visualization-extension');
+    const iframes = document.querySelectorAll<HTMLIFrameElement>(
+      '.viz iframe, iframe.visualization-extension',
+    );
     iframes.forEach((frame) => {
       try {
         frame.contentWindow?.postMessage({ type: 'socrates-theme-change', mode }, '*');
@@ -449,26 +521,44 @@ function _ensureThemeWatcher() {
     });
   };
   const obs = new MutationObserver(broadcastTheme);
-  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-mode', 'data-theme'],
+  });
 }
 
 function _ensureMessageListener() {
   _ensureThemeWatcher();
-  if (_msgListenerInstalled || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+  if (
+    _msgListenerInstalled ||
+    typeof window === 'undefined' ||
+    typeof window.addEventListener !== 'function'
+  )
+    return;
   _msgListenerInstalled = true;
   window.addEventListener('message', _handleVizMessage);
 }
 
 export function renderVizError(htmlStr: unknown, errorMsg: unknown) {
-  const id = "viz-card-" + (nextVizId());
+  const id = 'viz-card-' + nextVizId();
   const msg = esc(String(errorMsg || 'Could not load canvas').slice(0, 240));
   const source = esc(htmlStr || '');
   queueVizActions(id);
-  return '<div class="viz" id="' + id + '" data-viz-state="error">' +
-    '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' + id + '" data-viz-show-source="true"></div>' +
-    '<div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span class="viz-error-msg">' + msg + '</span>' +
-      '<div class="viz-error-action-host" data-viz-error-actions-root></div><pre class="viz-error-source" hidden>' + source + '</pre></div></div>' +
-  '</div>';
+  return (
+    '<div class="viz" id="' +
+    id +
+    '" data-viz-state="error">' +
+    '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' +
+    id +
+    '" data-viz-show-source="true"></div>' +
+    '<div class="viz-body"><div class="viz-error"><span class="viz-error-icon">!</span><span class="viz-error-msg">' +
+    msg +
+    '</span>' +
+    '<div class="viz-error-action-host" data-viz-error-actions-root></div><pre class="viz-error-source" hidden>' +
+    source +
+    '</pre></div></div>' +
+    '</div>'
+  );
 }
 
 /* Module-level test seam for the handshake unit tests. Keep registry
@@ -481,7 +571,6 @@ export function getLiveVizCardIds() {
   return ids;
 }
 
-
 export function processPendingVizActions(root?: ParentNode) {
   /* React can recreate a completed card without going through renderViz(),
      so mount only control hosts inside the supplied message root. */
@@ -490,8 +579,10 @@ export function processPendingVizActions(root?: ParentNode) {
     for (let ai = 0; ai < actionHosts.length; ai++) mountVizCardControls(actionHosts[ai]);
     const errorHosts = root.querySelectorAll('.viz-error [data-viz-error-actions-root]');
     for (let ei = 0; ei < errorHosts.length; ei++) mountVizErrorActions(errorHosts[ei]);
-    if (root instanceof Element && root.matches('.viz [data-viz-actions-root]')) mountVizCardControls(root);
-    if (root instanceof Element && root.matches('.viz-error [data-viz-error-actions-root]')) mountVizErrorActions(root);
+    if (root instanceof Element && root.matches('.viz [data-viz-actions-root]'))
+      mountVizCardControls(root);
+    if (root instanceof Element && root.matches('.viz-error [data-viz-error-actions-root]'))
+      mountVizErrorActions(root);
   }
   const pending = takePendingActions();
   pending.forEach(function (item) {
@@ -503,7 +594,7 @@ export function processPendingVizActions(root?: ParentNode) {
   });
 }
 
-function reloadVizCard(card: HTMLElement|null) {
+function reloadVizCard(card: HTMLElement | null) {
   const iframe = card && card.querySelector('iframe');
   if (!iframe || !iframe.dataset.srcdoc) return;
   if (card.id && _pendingReady[card.id]) {

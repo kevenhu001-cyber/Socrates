@@ -4,7 +4,16 @@ import { publishProviderConfig, resetProviderConfig } from '../src/config/provid
 export function installTestProvider() {
   resetProviderConfig();
   publishProviderConfig({
-    providers: [{ id: 'test', name: 'test', isBuiltIn: false, apiBase: 'https://provider.example.test/v1', apiKey: 'test-key', model: 'test-model' }],
+    providers: [
+      {
+        id: 'test',
+        name: 'test',
+        isBuiltIn: false,
+        apiBase: 'https://provider.example.test/v1',
+        apiKey: 'test-key',
+        model: 'test-model',
+      },
+    ],
     activeId: 'test',
     fetched: true,
   });

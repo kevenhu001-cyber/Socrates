@@ -27,9 +27,15 @@
   "tags": [
     { "name": "Health", "description": "Liveness and capability probes." },
     { "name": "Bootstrap", "description": "Cold-start contracts for thin clients and shells." },
-    { "name": "Auth", "description": "Browser session cookies, CSRF, and third-party login flows." },
+    {
+      "name": "Auth",
+      "description": "Browser session cookies, CSRF, and third-party login flows."
+    },
     { "name": "Mobile", "description": "Bearer-token issuance for native mobile clients." },
-    { "name": "OAuth", "description": "Authorization-server endpoints (RFC 7591 register, RFC 7009 revoke)." },
+    {
+      "name": "OAuth",
+      "description": "Authorization-server endpoints (RFC 7591 register, RFC 7009 revoke)."
+    },
     { "name": "Agents", "description": "Scoped long-lived API keys for headless agents." },
     { "name": "Jobs", "description": "Long-running async operations (bulk import, etc.)." },
     { "name": "Batch", "description": "Bulk operations that don't merit a per-item endpoint." }
@@ -213,7 +219,9 @@
         "description": "GitHub redirects back here with `code` and `state`. The server exchanges the code, finds-or-creates the user, and either sets the `sid` cookie or returns a short-lived mobile-exchange token.",
         "security": [],
         "responses": {
-          "302": { "description": "Redirected back to the originating return path with `sid` cookie set." },
+          "302": {
+            "description": "Redirected back to the originating return path with `sid` cookie set."
+          },
           "400": { "$ref": "#/components/responses/BadRequest" }
         }
       }
@@ -237,8 +245,68 @@
         }
       }
     },
-    "/auth/mobile/browser/authorize": {"post": {"operationId": "mobileBrowserAuthorize", "tags": ["Mobile"], "summary": "Issue one-time Android browser handoff code", "description": "Requires a live browser sid, exact same-origin Origin, and matching CSRF cookie/header. Fixed callback; five-minute code expiry.", "security": [{"sessionCookie": []}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["state", "codeChallenge"], "properties": {"state": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "codeChallenge": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43}$"}}}}}}, "responses": {"200": {"description": "Fixed callback URL and expiry"}, "401": {"description": "No browser session"}, "403": {"description": "Origin or CSRF rejected"}}}},
-    "/auth/mobile/browser/exchange": {"post": {"operationId": "mobileBrowserExchange", "tags": ["Mobile"], "summary": "Exchange one-time handoff code using PKCE", "description": "Cookie-free and CSRF-exempt. Code expires in five minutes and is single-use.", "security": [], "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "required": ["code", "codeVerifier"], "properties": {"code": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "codeVerifier": {"type": "string", "minLength": 43, "maxLength": 128, "pattern": "^[A-Za-z0-9._~-]+$"}}}}}}, "responses": {"200": {"description": "Mobile access and refresh token pair"}, "400": {"description": "Invalid, expired, or replayed code"}}}},
+    "/auth/mobile/browser/authorize": {
+      "post": {
+        "operationId": "mobileBrowserAuthorize",
+        "tags": ["Mobile"],
+        "summary": "Issue one-time Android browser handoff code",
+        "description": "Requires a live browser sid, exact same-origin Origin, and matching CSRF cookie/header. Fixed callback; five-minute code expiry.",
+        "security": [{ "sessionCookie": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["state", "codeChallenge"],
+                "properties": {
+                  "state": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                  "codeChallenge": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Fixed callback URL and expiry" },
+          "401": { "description": "No browser session" },
+          "403": { "description": "Origin or CSRF rejected" }
+        }
+      }
+    },
+    "/auth/mobile/browser/exchange": {
+      "post": {
+        "operationId": "mobileBrowserExchange",
+        "tags": ["Mobile"],
+        "summary": "Exchange one-time handoff code using PKCE",
+        "description": "Cookie-free and CSRF-exempt. Code expires in five minutes and is single-use.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "codeVerifier"],
+                "properties": {
+                  "code": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+                  "codeVerifier": {
+                    "type": "string",
+                    "minLength": 43,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9._~-]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Mobile access and refresh token pair" },
+          "400": { "description": "Invalid, expired, or replayed code" }
+        }
+      }
+    },
     "/mobile/login": {
       "post": {
         "tags": ["Auth", "Mobile"],
@@ -455,7 +523,9 @@
           }
         },
         "responses": {
-          "200": { "description": "Revocation accepted (idempotent — a no-op on an unknown token still returns 200)." }
+          "200": {
+            "description": "Revocation accepted (idempotent — a no-op on an unknown token still returns 200)."
+          }
         }
       }
     },
@@ -484,9 +554,7 @@
         "summary": "Mint a scoped agent API key",
         "description": "Create a long-lived scoped API key for a headless agent. The full credential is returned exactly once in the create response; subsequent reads never expose the secret.",
         "security": [{ "sessionCookie": [], "csrfDoubleSubmit": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/IdempotencyKey" }
-        ],
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
         "requestBody": {
           "required": true,
           "content": {
@@ -533,9 +601,7 @@
         "summary": "Revoke an agent API key",
         "description": "Immediate, idempotent revocation. The key stops authenticating on the next request.",
         "security": [{ "sessionCookie": [], "csrfDoubleSubmit": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/IdempotencyKey" }
-        ],
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
         "responses": {
           "200": {
             "description": "Key revoked (or already not present).",
@@ -579,9 +645,7 @@
         "summary": "Queue a bulk import",
         "description": "Submit a bulk import of sessions, messages, or other resources. Returns a job identifier; poll `GET /api/import/{id}` for status. Use the `Idempotency-Key` header to make retries safe — the same key returns the same job.",
         "security": [{ "sessionCookie": [], "oauthBearer": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/IdempotencyKey" }
-        ],
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
         "requestBody": {
           "required": true,
           "content": {
@@ -678,9 +742,7 @@
         "summary": "Bulk-create sessions",
         "description": "Create up to 50 sessions in one request. Each entry is validated independently — the response carries the per-item outcome so partial successes are reported precisely.",
         "security": [{ "sessionCookie": [], "oauthBearer": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/IdempotencyKey" }
-        ],
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
         "requestBody": {
           "required": true,
           "content": {
@@ -711,9 +773,7 @@
         "summary": "Streaming chat completion",
         "description": "Stream a Socratic tutor reply as `text/event-stream`. A session's system instructions, selected assistant, user context and saved memories are initialized once and stored server-side. Later turns reuse the same frozen prompt bytes; changed persona/custom instructions/memories apply to new sessions. Dynamic lesson state, recall and live tool budgets do not regenerate that base prefix. Existing sessions initialize lazily on their next chat; sessionless completions remain stateless. No new client field is required. The tutor asks before it answers. Reuse the same `Idempotency-Key` to make network retries safe — replays return the same stream.",
         "security": [{ "sessionCookie": [], "oauthBearer": [] }],
-        "parameters": [
-          { "$ref": "#/components/parameters/IdempotencyKey" }
-        ],
+        "parameters": [{ "$ref": "#/components/parameters/IdempotencyKey" }],
         "requestBody": {
           "required": true,
           "content": {
@@ -1046,7 +1106,16 @@
       },
       "MobileBootstrap": {
         "type": "object",
-        "required": ["ok", "contractVersion", "product", "platform", "webBaseUrl", "apiBaseUrl", "canonicalApiBaseUrl", "healthPath"],
+        "required": [
+          "ok",
+          "contractVersion",
+          "product",
+          "platform",
+          "webBaseUrl",
+          "apiBaseUrl",
+          "canonicalApiBaseUrl",
+          "healthPath"
+        ],
         "properties": {
           "ok": { "type": "boolean", "enum": [true] },
           "contractVersion": { "type": "integer", "enum": [1] },
@@ -1070,10 +1139,22 @@
         "type": "object",
         "required": ["accessToken", "refreshToken", "expiresAt", "refreshExpiresAt"],
         "properties": {
-          "accessToken": { "type": "string", "description": "ma.<pairId>.<64-hex>", "example": "ma.01JABC...XYZ" },
+          "accessToken": {
+            "type": "string",
+            "description": "ma.<pairId>.<64-hex>",
+            "example": "ma.01JABC...XYZ"
+          },
           "refreshToken": { "type": "string", "description": "mr.<pairId>.<64-hex>" },
-          "expiresAt": { "type": "string", "format": "date-time", "description": "Access token expiry (ISO 8601, typically 15 min after issue)." },
-          "refreshExpiresAt": { "type": "string", "format": "date-time", "description": "Refresh token expiry (ISO 8601, 30 days after issue)." }
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Access token expiry (ISO 8601, typically 15 min after issue)."
+          },
+          "refreshExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Refresh token expiry (ISO 8601, 30 days after issue)."
+          }
         }
       },
       "OAuthClientRegistrationRequest": {
@@ -1086,21 +1167,39 @@
             "minItems": 1,
             "items": { "type": "string", "format": "uri" }
           },
-          "scope": { "type": "string", "description": "Space-separated subset of `chat|memory|sessions|files|projects` × `read|write`." },
-          "token_endpoint_auth_method": { "type": "string", "enum": ["client_secret_basic", "client_secret_post", "none"], "default": "client_secret_basic" },
-          "grant_types": { "type": "array", "items": { "type": "string", "enum": ["authorization_code", "refresh_token"] } },
+          "scope": {
+            "type": "string",
+            "description": "Space-separated subset of `chat|memory|sessions|files|projects` × `read|write`."
+          },
+          "token_endpoint_auth_method": {
+            "type": "string",
+            "enum": ["client_secret_basic", "client_secret_post", "none"],
+            "default": "client_secret_basic"
+          },
+          "grant_types": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["authorization_code", "refresh_token"] }
+          },
           "response_types": { "type": "array", "items": { "type": "string", "enum": ["code"] } }
         }
       },
       "OAuthClientRegistrationResponse": {
         "type": "object",
-        "required": ["client_id", "client_secret", "client_id_issued_at", "token_endpoint_auth_method"],
+        "required": [
+          "client_id",
+          "client_secret",
+          "client_id_issued_at",
+          "token_endpoint_auth_method"
+        ],
         "properties": {
           "client_id": { "type": "string", "example": "cli_01HXYZ..." },
           "client_secret": { "type": "string", "description": "Returned ONCE. Store immediately." },
           "client_id_issued_at": { "type": "integer", "description": "Unix seconds." },
           "redirect_uris": { "type": "array", "items": { "type": "string" } },
-          "token_endpoint_auth_method": { "type": "string", "enum": ["client_secret_basic", "client_secret_post"] },
+          "token_endpoint_auth_method": {
+            "type": "string",
+            "enum": ["client_secret_basic", "client_secret_post"]
+          },
           "grant_types": { "type": "array", "items": { "type": "string" } },
           "scope": { "type": "string" }
         }
@@ -1110,11 +1209,20 @@
         "required": ["grant_type"],
         "properties": {
           "grant_type": { "type": "string", "enum": ["authorization_code", "refresh_token"] },
-          "code": { "type": "string", "description": "Required when grant_type=authorization_code." },
+          "code": {
+            "type": "string",
+            "description": "Required when grant_type=authorization_code."
+          },
           "redirect_uri": { "type": "string", "format": "uri" },
           "code_verifier": { "type": "string", "minLength": 43, "maxLength": 128 },
-          "refresh_token": { "type": "string", "description": "Required when grant_type=refresh_token." },
-          "scope": { "type": "string", "description": "Optional; must be a subset of the originally granted scopes." }
+          "refresh_token": {
+            "type": "string",
+            "description": "Required when grant_type=refresh_token."
+          },
+          "scope": {
+            "type": "string",
+            "description": "Optional; must be a subset of the originally granted scopes."
+          }
         }
       },
       "OAuthTokenResponse": {
@@ -1123,8 +1231,14 @@
         "properties": {
           "access_token": { "type": "string", "example": "at_01HXYZ..." },
           "token_type": { "type": "string", "enum": ["Bearer"] },
-          "expires_in": { "type": "integer", "description": "Access token TTL in seconds (typically 3600)." },
-          "refresh_token": { "type": "string", "description": "Omitted only if the originally issued grant had no refresh scope." },
+          "expires_in": {
+            "type": "integer",
+            "description": "Access token TTL in seconds (typically 3600)."
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "Omitted only if the originally issued grant had no refresh scope."
+          },
           "scope": { "type": "string", "description": "Space-separated granted scopes." }
         }
       },
@@ -1166,10 +1280,25 @@
             "minItems": 1,
             "items": {
               "type": "string",
-              "enum": ["chat:read", "chat:write", "memory:read", "memory:write", "sessions:read", "sessions:write", "files:read", "files:write", "projects:read", "projects:write"]
+              "enum": [
+                "chat:read",
+                "chat:write",
+                "memory:read",
+                "memory:write",
+                "sessions:read",
+                "sessions:write",
+                "files:read",
+                "files:write",
+                "projects:read",
+                "projects:write"
+              ]
             }
           },
-          "expiresAt": { "type": "string", "format": "date-time", "description": "Optional, capped at 1 year from creation." }
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Optional, capped at 1 year from creation."
+          }
         }
       },
       "AgentKeyCreateResponse": {
@@ -1227,7 +1356,9 @@
         "required": ["source", "payload"],
         "properties": {
           "source": { "type": "string", "example": "chatgpt" },
-          "payload": { "description": "Source-specific blob. For `chatgpt`, pass the standard `conversations.json` array (or `{ sessions: [...] }`)." }
+          "payload": {
+            "description": "Source-specific blob. For `chatgpt`, pass the standard `conversations.json` array (or `{ sessions: [...] }`)."
+          }
         }
       },
       "ImportJobListResponse": {
@@ -1315,11 +1446,23 @@
               "type": "object",
               "required": ["index", "status"],
               "properties": {
-                "index": { "type": "integer", "description": "Position in the request `items` array." },
+                "index": {
+                  "type": "integer",
+                  "description": "Position in the request `items` array."
+                },
                 "status": { "type": "string", "enum": ["created", "failed"] },
-                "id": { "type": "string", "description": "New session id, present when status=created." },
-                "code": { "type": "string", "description": "Machine-readable error code, present when status=failed." },
-                "message": { "type": "string", "description": "Human-readable error, present when status=failed." }
+                "id": {
+                  "type": "string",
+                  "description": "New session id, present when status=created."
+                },
+                "code": {
+                  "type": "string",
+                  "description": "Machine-readable error code, present when status=failed."
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Human-readable error, present when status=failed."
+                }
               }
             }
           }
@@ -1329,12 +1472,28 @@
         "type": "object",
         "required": ["sessionId", "content"],
         "properties": {
-          "sessionId": { "type": "string", "format": "uuid", "description": "Owned conversation scope for the immutable server-side prompt snapshot. Body and query sessionId must agree when both are supplied. Deleting the session cascades the snapshot; it is not exposed in session metadata or shares." },
+          "sessionId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owned conversation scope for the immutable server-side prompt snapshot. Body and query sessionId must agree when both are supplied. Deleting the session cascades the snapshot; it is not exposed in session metadata or shares."
+          },
           "content": { "type": "string", "minLength": 1, "maxLength": 32000 },
           "mode": { "type": "string", "enum": ["socratic", "tutor"], "default": "socratic" },
-          "response_speed": { "type": "string", "enum": ["standard", "fast"], "default": "standard", "description": "Requests priority service when fast; unsupported providers automatically fall back to standard." },
-          "reasoning_effort": { "type": "string", "enum": ["none", "low", "medium", "high"], "description": "Use none for Instant only on models that support disabling thinking. Unsupported modes (including Instant on MiniMax-M3.1-Flash) fail locally with 400 MODEL_MODE_UNSUPPORTED and are not retried. Low/medium/high tune supported thinking models." },
-          "extra_body": { "type": "object", "description": "Allowlisted provider options. Instant uses thinking.type=disabled, enable_thinking=false, or chat_template_kwargs.enable_thinking=false for the matching provider." }
+          "response_speed": {
+            "type": "string",
+            "enum": ["standard", "fast"],
+            "default": "standard",
+            "description": "Requests priority service when fast; unsupported providers automatically fall back to standard."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "enum": ["none", "low", "medium", "high"],
+            "description": "Use none for Instant only on models that support disabling thinking. Unsupported modes (including Instant on MiniMax-M3.1-Flash) fail locally with 400 MODEL_MODE_UNSUPPORTED and are not retried. Low/medium/high tune supported thinking models."
+          },
+          "extra_body": {
+            "type": "object",
+            "description": "Allowlisted provider options. Instant uses thinking.type=disabled, enable_thinking=false, or chat_template_kwargs.enable_thinking=false for the matching provider."
+          }
         }
       },
       "ChatStreamEvent": {
@@ -1344,9 +1503,34 @@
         "properties": {
           "event": {
             "type": "string",
-            "enum": ["start", "token", "tool", "preference_fallback", "turn_summary", "complete", "error"]
+            "enum": [
+              "start",
+              "token",
+              "tool",
+              "preference_fallback",
+              "turn_summary",
+              "complete",
+              "error"
+            ]
           },
-          "data": { "type": "object", "additionalProperties": true, "properties": { "status": { "type": "integer", "description": "On error events, the upstream or local validation status; the SSE HTTP response may already be 200." }, "code": { "type": "string", "description": "Safe machine-readable error code, without provider credentials or response bodies." }, "retryable": { "type": "boolean", "description": "False when the server has exhausted provider retries or the error is deterministic. Clients must not automatically replay the turn." } } }
+          "data": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "status": {
+                "type": "integer",
+                "description": "On error events, the upstream or local validation status; the SSE HTTP response may already be 200."
+              },
+              "code": {
+                "type": "string",
+                "description": "Safe machine-readable error code, without provider credentials or response bodies."
+              },
+              "retryable": {
+                "type": "boolean",
+                "description": "False when the server has exhausted provider retries or the error is deterministic. Clients must not automatically replay the turn."
+              }
+            }
+          }
         }
       }
     }

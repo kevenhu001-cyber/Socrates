@@ -11,13 +11,12 @@
 
 import fs from 'node:fs/promises';
 
-export type ParseErrorCode =
-  | 'PARSE_FAILED'
-  | 'ENCRYPTED'
-  | 'EMPTY_DOCUMENT'
-  | 'UNSUPPORTED_MIME';
+export type ParseErrorCode = 'PARSE_FAILED' | 'ENCRYPTED' | 'EMPTY_DOCUMENT' | 'UNSUPPORTED_MIME';
 
-export function parseError(code: ParseErrorCode, message: string): Error & { code: ParseErrorCode } {
+export function parseError(
+  code: ParseErrorCode,
+  message: string,
+): Error & { code: ParseErrorCode } {
   const err = new Error(message) as Error & { code: ParseErrorCode };
   err.code = code;
   return err;
@@ -28,11 +27,13 @@ export function parseError(code: ParseErrorCode, message: string): Error & { cod
 /* Very common Chinese characters (simplified + traditional forms). A
    correct decode of Chinese prose hits this set often; decoding GBK bytes
    as Big5 (or the reverse) produces mostly rare characters instead. */
-const COMMON_CJK = new Set(Array.from(
-  '的一是不了人我在有他这這为為之大来來以个個中上们們到说說国國和地也子时時道出而要于於就下得可你年生' +
-  '自会會那后後能对對着著事其里裡所去行过過家十用发發天如然作方成者多日都三小军軍二无無同么麼经經法当當' +
-  '起与與好看学學进進种種将將还還分此心前面又定见見只主没沒公从從知问問题題数數实實点點题习習课課答案'
-));
+const COMMON_CJK = new Set(
+  Array.from(
+    '的一是不了人我在有他这這为為之大来來以个個中上们們到说說国國和地也子时時道出而要于於就下得可你年生' +
+      '自会會那后後能对對着著事其里裡所去行过過家十用发發天如然作方成者多日都三小军軍二无無同么麼经經法当當' +
+      '起与與好看学學进進种種将將还還分此心前面又定见見只主没沒公从從知问問题題数數实實点點题习習课課答案',
+  ),
+);
 
 function tryDecode(buf: Uint8Array, label: string): string | null {
   try {
@@ -78,7 +79,9 @@ export function decodeTextBuffer(input: Uint8Array): DecodedText {
   if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) {
     try {
       return { text: new TextDecoder('utf-16be').decode(buf.subarray(2)), encoding: 'utf-16be' };
-    } catch { /* codec unavailable — fall through */ }
+    } catch {
+      /* codec unavailable — fall through */
+    }
   }
   const sample = buf.subarray(0, 256 * 1024);
   const utf8 = tryDecode(sample, 'utf-8');
@@ -95,7 +98,9 @@ export function decodeTextBuffer(input: Uint8Array): DecodedText {
   if (best) {
     try {
       return { text: new TextDecoder(best.label).decode(buf), encoding: best.label };
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
   return { text: new TextDecoder('utf-8').decode(buf), encoding: 'utf-8 (lossy)' };
 }
@@ -186,7 +191,8 @@ export function truncateHeadTail(text: string, maxChars: number, headShare = 0.7
   if (nlTail !== -1 && nlTail - tailStart < (text.length - tailStart) * 0.2) tailStart = nlTail + 1;
   const omitted = tailStart - headEnd;
   const omittedLines = text.slice(headEnd, tailStart).split('\n').length - 1;
-  const note = `\n\n[… ${omitted} characters (~${omittedLines} lines) omitted from the middle of this file; ` +
+  const note =
+    `\n\n[… ${omitted} characters (~${omittedLines} lines) omitted from the middle of this file; ` +
     `${text.length} characters in total. Showing the beginning and the end. …]\n\n`;
   return {
     text: text.slice(0, headEnd) + note + text.slice(tailStart),
@@ -212,10 +218,15 @@ export async function assertNotEncryptedOoxml(filepath: string, kind: string): P
     await handle.close();
   }
   if (head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0) {
-    throw parseError('ENCRYPTED',
-      `${kind}_encrypted: this ${kind.toUpperCase()} file is password-protected (or saved in a legacy binary format with a modern extension). Remove the password or re-save it, then upload again.`);
+    throw parseError(
+      'ENCRYPTED',
+      `${kind}_encrypted: this ${kind.toUpperCase()} file is password-protected (or saved in a legacy binary format with a modern extension). Remove the password or re-save it, then upload again.`,
+    );
   }
   if (!(head[0] === 0x50 && head[1] === 0x4b)) {
-    throw parseError('PARSE_FAILED', `${kind}_not_zip: this file is not a valid ${kind.toUpperCase()} document.`);
+    throw parseError(
+      'PARSE_FAILED',
+      `${kind}_not_zip: this file is not a valid ${kind.toUpperCase()} document.`,
+    );
   }
 }

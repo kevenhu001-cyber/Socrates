@@ -61,7 +61,11 @@ export function publishUsageLoading(period: UsagePeriod): void {
   usageState.dispatch({ type: 'loading', period });
 }
 
-export function publishUsageData(entries: UsageEntry[], limits: UsageLimits, period: UsagePeriod): void {
+export function publishUsageData(
+  entries: UsageEntry[],
+  limits: UsageLimits,
+  period: UsagePeriod,
+): void {
   usageState.dispatch({
     type: 'loaded',
     period,
@@ -70,6 +74,9 @@ export function publishUsageData(entries: UsageEntry[], limits: UsageLimits, per
   });
 }
 
-export function publishUsageError(period: UsagePeriod, errorKey: NonNullable<UsageSnapshot['errorKey']>): void {
+export function publishUsageError(
+  period: UsagePeriod,
+  errorKey: NonNullable<UsageSnapshot['errorKey']>,
+): void {
   usageState.dispatch({ type: 'error', period, errorKey });
 }

@@ -11,7 +11,10 @@ describe('safe.js URL sanitization (F4 attack vectors)', () => {
 
   it('blocks data:text/html and data:image/svg+xml', () => {
     assert.equal(sanitizeUrl('data:text/html,<script>alert(1)</script>'), '#');
-    assert.equal(sanitizeUrl('data:image/svg+xml;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='), '#');
+    assert.equal(
+      sanitizeUrl('data:image/svg+xml;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg=='),
+      '#',
+    );
     assert.equal(sanitizeUrl('data:application/xhtml+xml,<p>x</p>'), '#');
   });
 
@@ -24,7 +27,10 @@ describe('safe.js URL sanitization (F4 attack vectors)', () => {
   });
 
   it('allows raster data-images, blocks non-base64', () => {
-    assert.equal(sanitizeUrl('data:image/png;base64,iVBORw0KGgo='), 'data:image/png;base64,iVBORw0KGgo=');
+    assert.equal(
+      sanitizeUrl('data:image/png;base64,iVBORw0KGgo='),
+      'data:image/png;base64,iVBORw0KGgo=',
+    );
     assert.equal(sanitizeUrl('data:image/png noto-a-real-image'), '#');
   });
 
@@ -36,6 +42,9 @@ describe('safe.js URL sanitization (F4 attack vectors)', () => {
   });
 
   it('escapeHtml neutralizes tag breakouts', () => {
-    assert.equal(escapeHtml('</script><script>alert(1)</script>'), '&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;');
+    assert.equal(
+      escapeHtml('</script><script>alert(1)</script>'),
+      '&lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;',
+    );
   });
 });

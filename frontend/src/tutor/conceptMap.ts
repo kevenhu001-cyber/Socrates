@@ -14,9 +14,13 @@
  *   node.links       ConceptLinkRecord AI links that start at this node
  * Old sessions have neither and the map shows what it showed before.
  */
-import { normalizeConceptMap, stripNextQuestions, type ConceptMapResult } from '@socrates/core/learningBlocks';
+import {
+  normalizeConceptMap,
+  stripNextQuestions,
+  type ConceptMapResult,
+} from '@socrates/core/learningBlocks';
 import { callAPI, type ChatRequestMessage } from '../chat/api/index.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchKb, kbStore, sessionStore } from '../store/index.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
@@ -28,7 +32,14 @@ export interface ConceptLinkRecord {
   why: string;
 }
 
-const LANG_NAMES: Record<string, string> = { zh: 'Chinese', ja: 'Japanese', ko: 'Korean', ru: 'Russian', ar: 'Arabic', en: 'English' };
+const LANG_NAMES: Record<string, string> = {
+  zh: 'Chinese',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ru: 'Russian',
+  ar: 'Arabic',
+  en: 'English',
+};
 export const CONCEPT_MAP_MAX_NODES = 8;
 
 export function languageName(language: string): string {
@@ -48,12 +59,29 @@ export const CONCEPT_MAP_FORMAT =
   '- Inside strings never use ASCII double quotes; use 「」 for CJK or no quotes.';
 
 /** Write a normalized concept map onto the session's nodes. Returns the new list. */
-export function applyConceptMap(nodes: readonly KbNode[], map: ConceptMapResult, opts: { replaceDefinitions?: boolean } = {}): KbNode[] {
+export function applyConceptMap(
+  nodes: readonly KbNode[],
+  map: ConceptMapResult,
+  opts: { replaceDefinitions?: boolean } = {},
+): KbNode[] {
   if (map.status !== 'ok') return nodes.slice();
   const out: KbNode[] = map.nodes.map((entry, index) => {
     const existing = nodes[index];
-    const base: KbNode = existing ? { ...existing } : { name: entry.name, status: 'blank', questions: 0, system_note: '', user_note: '', confidence_score: 0, history: [] };
-    if (entry.definition && (opts.replaceDefinitions || typeof base.definition !== 'string' || !base.definition)) {
+    const base: KbNode = existing
+      ? { ...existing }
+      : {
+          name: entry.name,
+          status: 'blank',
+          questions: 0,
+          system_note: '',
+          user_note: '',
+          confidence_score: 0,
+          history: [],
+        };
+    if (
+      entry.definition &&
+      (opts.replaceDefinitions || typeof base.definition !== 'string' || !base.definition)
+    ) {
       base.definition = entry.definition;
     }
     return base;
@@ -100,13 +128,24 @@ export function subscribeConceptMapStatus(listener: () => void): () => void {
 }
 
 function conversationExcerpt(limit = 8, perMessage = 700): string {
-  const messages = (stateStore.read('messages') || []) as ReadonlyArray<{ role?: string; rawText?: string }>;
+  const messages = (sessionStore.getState().messages || []) as ReadonlyArray<{
+    role?: string;
+    rawText?: string;
+  }>;
   return messages
-    .filter((message) => (message.role === 'user' || message.role === 'assistant') && typeof message.rawText === 'string' && message.rawText.trim())
+    .filter(
+      (message) =>
+        (message.role === 'user' || message.role === 'assistant') &&
+        typeof message.rawText === 'string' &&
+        message.rawText.trim(),
+    )
     .slice(-limit)
     .map((message) => {
       const text = stripNextQuestions(message.rawText!).replace(/\s+/g, ' ').trim();
-      const clipped = Array.from(text).length > perMessage ? Array.from(text).slice(0, perMessage).join('') + '…' : text;
+      const clipped =
+        Array.from(text).length > perMessage
+          ? Array.from(text).slice(0, perMessage).join('') + '…'
+          : text;
       return (message.role === 'user' ? 'Learner: ' : 'Tutor: ') + clipped;
     })
     .join('\n');
@@ -122,35 +161,57 @@ let inflight: Promise<boolean> | null = null;
 export function refreshConceptMap(_reason: 'conversation' = 'conversation'): Promise<boolean> {
   if (inflight) return inflight;
   inflight = (async () => {
-    const sessionId = stateStore.read('currentSessionId');
-    const nodes = (stateStore.read('kbNodes') || []) as KbNode[];
+    const sessionId = sessionStore.getState().currentSessionId;
+    const nodes = (kbStore.getState().kbNodes || []) as KbNode[];
     if (!nodes.length) return false;
     setStatus('loading');
     try {
       const names = nodes.map((node) => node.name);
-      const topic = String(stateStore.read('domain') || stateStore.read('topic') || '');
+      const topic = String(sessionStore.getState().domain || sessionStore.getState().topic || '');
       const prompt =
-        'You maintain a learner\'s knowledge map for the topic: ' + topic + '.\n' +
-        'Current nodes, in order: ' + JSON.stringify(names) + '.\n' +
+        "You maintain a learner's knowledge map for the topic: " +
+        topic +
+        '.\n' +
+        'Current nodes, in order: ' +
+        JSON.stringify(names) +
+        '.\n' +
         'Using the conversation excerpt, write or improve the definition of every current node, add at most ' +
-        Math.max(0, CONCEPT_MAP_MAX_NODES - names.length) + ' new nodes only for central ideas the conversation introduced that the map lacks ' +
+        Math.max(0, CONCEPT_MAP_MAX_NODES - names.length) +
+        ' new nodes only for central ideas the conversation introduced that the map lacks ' +
         '(reuse the exact names above for existing nodes), and write the links between all nodes.\n' +
-        'Write every definition, relation and why in ' + languageName(getCurrentLanguage()) + ', matching the language of the conversation.\n' +
+        'Write every definition, relation and why in ' +
+        languageName(getCurrentLanguage()) +
+        ', matching the language of the conversation.\n' +
         CONCEPT_MAP_FORMAT;
       const msgs: ChatRequestMessage[] = [
         { role: 'system', content: prompt },
-        { role: 'user', content: 'Conversation excerpt:\n' + (conversationExcerpt() || '(no messages yet)') },
+        {
+          role: 'user',
+          content: 'Conversation excerpt:\n' + (conversationExcerpt() || '(no messages yet)'),
+        },
       ];
       const resp = await callAPI(msgs, 3000);
-      if (stateStore.read('currentSessionId') !== sessionId) return false;
-      const map = normalizeConceptMap(typeof resp === 'string' ? resp : '', names, CONCEPT_MAP_MAX_NODES);
+      if (sessionStore.getState().currentSessionId !== sessionId) return false;
+      const map = normalizeConceptMap(
+        typeof resp === 'string' ? resp : '',
+        names,
+        CONCEPT_MAP_MAX_NODES,
+      );
       if (map.status !== 'ok') {
         setStatus('error');
         return false;
       }
-      const latest = (stateStore.read('kbNodes') || []) as KbNode[];
-      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: applyConceptMap(latest, map, { replaceDefinitions: true }) });
-      try { saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/conceptMap.save'); }
+      const latest = (kbStore.getState().kbNodes || []) as KbNode[];
+      dispatchKb({
+        type: 'kb/set',
+        key: 'kbNodes',
+        value: applyConceptMap(latest, map, { replaceDefinitions: true }),
+      });
+      try {
+        saveCurrentSession();
+      } catch (error) {
+        reportSwallow(error, 'tutor/conceptMap.save');
+      }
       setStatus('idle');
       return true;
     } catch (error) {

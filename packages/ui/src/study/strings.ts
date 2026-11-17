@@ -66,7 +66,11 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
   updating: 'Updating definitions and connections…',
   updateFailed: 'Could not update the map this time.',
   status: { internalized: 'Familiar (self-reported)', fuzzy: 'Some gaps', blank: 'Not assessed' },
-  section: { internalized: 'Self-reported familiarity', fuzzy: 'Needs checking', blank: 'Not assessed' },
+  section: {
+    internalized: 'Self-reported familiarity',
+    fuzzy: 'Needs checking',
+    blank: 'Not assessed',
+  },
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   zoomFit: 'Fit to view',
@@ -95,8 +99,10 @@ export const defaultKnowledgeStrings: KnowledgeStrings = {
     noConnections: 'This is the only idea on the map so far.',
     before: 'Comes before',
     after: 'Comes next',
-    whyBefore: '“{a}” comes right before “{b}” on your learning path, so it is the ground “{b}” stands on.',
-    whyAfter: '“{b}” comes right after “{a}” on your learning path; it builds on what you settle here.',
+    whyBefore:
+      '“{a}” comes right before “{b}” on your learning path, so it is the ground “{b}” stands on.',
+    whyAfter:
+      '“{b}” comes right after “{a}” on your learning path; it builds on what you settle here.',
     open: 'Open {name}',
   },
 };
@@ -159,5 +165,7 @@ export const defaultMistakeStrings: MistakeStrings = {
 };
 
 export function fill(template: string, values: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
 }

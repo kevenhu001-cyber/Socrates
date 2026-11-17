@@ -17,12 +17,24 @@ globalThis.document = dom.window.document;
 /* Pretend the browser supports IntersectionObserver — the gate's "should I
    defer this?" branch is only reachable when it does. */
 class FakeObserver {
-  constructor(cb, opts) { this.cb = cb; this.opts = opts; this.targets = new Set(); }
-  observe(el) { this.targets.add(el); }
-  unobserve(el) { this.targets.delete(el); }
-  disconnect() { this.targets.clear(); }
+  constructor(cb, opts) {
+    this.cb = cb;
+    this.opts = opts;
+    this.targets = new Set();
+  }
+  observe(el) {
+    this.targets.add(el);
+  }
+  unobserve(el) {
+    this.targets.delete(el);
+  }
+  disconnect() {
+    this.targets.clear();
+  }
   /* Drive the wake-up the real browser would fire. */
-  fireIntersecting(el) { this.cb([{ target: el, isIntersecting: true }], this); }
+  fireIntersecting(el) {
+    this.cb([{ target: el, isIntersecting: true }], this);
+  }
 }
 let lastObserver = null;
 globalThis.IntersectionObserver = function (cb, opts) {
@@ -30,10 +42,8 @@ globalThis.IntersectionObserver = function (cb, opts) {
   return lastObserver;
 };
 
-const {
-  mermaidCardIsNearViewportForTest,
-  resetMermaidGateForTest,
-} = await import('../src/render/viz.ts');
+const { mermaidCardIsNearViewportForTest, resetMermaidGateForTest } =
+  await import('../src/render/viz.ts');
 
 const MARGIN = 600;
 
@@ -53,7 +63,11 @@ function makeCard(id, rect) {
 /* jsdom reports innerHeight 0 by default; the gate reads it as the
    viewport height, so pin a realistic one for these cases. */
 function setViewportHeight(px) {
-  Object.defineProperty(dom.window, 'innerHeight', { value: px, configurable: true, writable: true });
+  Object.defineProperty(dom.window, 'innerHeight', {
+    value: px,
+    configurable: true,
+    writable: true,
+  });
 }
 
 test.beforeEach(() => {
@@ -95,7 +109,12 @@ test('a zero-size (unlaid-out) card is never held — it would strand', () => {
 
 test('a hidden tab renders rather than holding the whole backlog', () => {
   Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
-  const card = makeCard('offscreen-hidden-tab', { top: 9000, bottom: 9200, width: 600, height: 200 });
+  const card = makeCard('offscreen-hidden-tab', {
+    top: 9000,
+    bottom: 9200,
+    width: 600,
+    height: 200,
+  });
   assert.equal(mermaidCardIsNearViewportForTest(card), true);
 });
 
@@ -112,7 +131,9 @@ test('without IntersectionObserver support everything renders (no stranding)', (
 
 test('an element whose rect throws renders rather than throwing out of the drain', () => {
   const card = makeCard('throws', null);
-  card.getBoundingClientRect = () => { throw new Error('detached'); };
+  card.getBoundingClientRect = () => {
+    throw new Error('detached');
+  };
   assert.equal(mermaidCardIsNearViewportForTest(card), true);
 });
 
@@ -120,7 +141,12 @@ test('a drain before lazy prose commits retains the diagram until its card mount
   const { _pendingMermaid } = await import('../src/render/vizStubs.ts');
   const { processPendingMermaid } = await import('../src/render/vizMermaidQueue.ts');
   let rendered = 0;
-  globalThis.mermaid = { render: async () => { rendered++; return { svg: '<svg><text>A</text></svg>' }; } };
+  globalThis.mermaid = {
+    render: async () => {
+      rendered++;
+      return { svg: '<svg><text>A</text></svg>' };
+    },
+  };
   _pendingMermaid.push({ id: 'late-prose', code: 'graph TD\nA[A]', validated: true });
   try {
     processPendingMermaid();
@@ -132,5 +158,7 @@ test('a drain before lazy prose commits retains the diagram until its card mount
     assert.equal(rendered, 1);
     assert.equal(card.getAttribute('data-viz-state'), 'ready');
     assert.equal(_pendingMermaid.length, 0);
-  } finally { delete globalThis.mermaid; }
+  } finally {
+    delete globalThis.mermaid;
+  }
 });

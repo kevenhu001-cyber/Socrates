@@ -26,7 +26,14 @@
  * press handlers and, on the web, its structural class hooks through `parts`.
  */
 import { useState, type ReactNode } from 'react';
-import { StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { uiMotion, uiRadius, uiStep } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiIcon } from '../primitives/UiIcon';
@@ -34,7 +41,12 @@ import { dataSet } from '../learn/parts';
 import { conversationRowPaint, isRowActivationKey } from './conversationRowModel';
 
 /* Text inherits the shell's type: the rows keep the sizes the sidebar CSS sets. */
-const inheritType = { fontFamily: 'inherit', fontSize: 'inherit', lineHeight: 'inherit', color: 'inherit' } as unknown as TextStyle;
+const inheritType = {
+  fontFamily: 'inherit',
+  fontSize: 'inherit',
+  lineHeight: 'inherit',
+  color: 'inherit',
+} as unknown as TextStyle;
 
 const styles = StyleSheet.create({
   row: {
@@ -62,13 +74,20 @@ const styles = StyleSheet.create({
 });
 
 export type ConversationRowPart =
-  | 'row' | 'badge' | 'main' | 'titleRow' | 'title' | 'pin' | 'label' | 'meta' | 'tags' | 'actions';
+  'row' | 'badge' | 'main' | 'titleRow' | 'title' | 'pin' | 'label' | 'meta' | 'tags' | 'actions';
 
 /** Web structural hooks, one compiled style per part (RNW `$$css`). */
-export type ConversationRowParts = Partial<Record<ConversationRowPart, StyleProp<ViewStyle & TextStyle>>>;
+export type ConversationRowParts = Partial<
+  Record<ConversationRowPart, StyleProp<ViewStyle & TextStyle>>
+>;
 
 /** Web keyboard / click events, as react-native-web hands them over. */
-interface RowKeyEvent { key?: string; target?: unknown; currentTarget?: unknown; preventDefault?: () => void }
+interface RowKeyEvent {
+  key?: string;
+  target?: unknown;
+  currentTarget?: unknown;
+  preventDefault?: () => void;
+}
 
 export interface ConversationRowProps {
   /** Stable row id, published as `data-recent-id`. */
@@ -110,9 +129,28 @@ export interface ConversationRowProps {
 }
 
 export function ConversationRow({
-  rowId, conversationId, title, active, pinned = false, pinnedLabel, pinnedI18nKey, mode, label, meta, error,
-  menuOpen = false, dragging = false, renaming = false, renameSlot, tags, actions, activeShadow, parts = {},
-  onPress, onIntent, rowRef,
+  rowId,
+  conversationId,
+  title,
+  active,
+  pinned = false,
+  pinnedLabel,
+  pinnedI18nKey,
+  mode,
+  label,
+  meta,
+  error,
+  menuOpen = false,
+  dragging = false,
+  renaming = false,
+  renameSlot,
+  tags,
+  actions,
+  activeShadow,
+  parts = {},
+  onPress,
+  onIntent,
+  rowRef,
 }: ConversationRowProps) {
   const { colors } = useUiTheme();
   const [hovered, setHovered] = useState(false);
@@ -133,18 +171,29 @@ export function ConversationRow({
       ref={rowRef as never}
       {...dataSet({ recentId: rowId, recentActual: conversationId })}
       {...web}
-      onPointerEnter={() => { setHovered(true); onIntent?.(); }}
+      onPointerEnter={() => {
+        setHovered(true);
+        onIntent?.();
+      }}
       onPointerLeave={() => setHovered(false)}
       onTouchStart={() => onIntent?.()}
       style={[
         styles.row,
         parts.row,
         paint as ViewStyle | null,
-        { transitionProperty: 'background-color, box-shadow, opacity', transitionDuration: `${uiMotion.fast}ms` } as object,
+        {
+          transitionProperty: 'background-color, box-shadow, opacity',
+          transitionDuration: `${uiMotion.fast}ms`,
+        } as object,
       ]}
     >
       {mode ? (
-        <Text {...dataSet({ i18nKey: mode.i18nKey, i18nTitle: mode.i18nKey })} style={[styles.badge, parts.badge]}>{mode.label}</Text>
+        <Text
+          {...dataSet({ i18nKey: mode.i18nKey, i18nTitle: mode.i18nKey })}
+          style={[styles.badge, parts.badge]}
+        >
+          {mode.label}
+        </Text>
       ) : null}
       <View style={[styles.main, parts.main]}>
         <View style={[styles.titleRow, parts.titleRow]}>
@@ -158,14 +207,30 @@ export function ConversationRow({
               <UiIcon name="pin" size={12} color={colors.inkTertiary} />
             </View>
           ) : null}
-          {renaming && renameSlot ? renameSlot : (
-            <Text numberOfLines={1} style={[styles.title, parts.title]}>{title}</Text>
+          {renaming && renameSlot ? (
+            renameSlot
+          ) : (
+            <Text numberOfLines={1} style={[styles.title, parts.title]}>
+              {title}
+            </Text>
           )}
-          {error ? <Text role="alert" style={styles.metaItem}>{error}</Text> : null}
-          {label ? <Text numberOfLines={1} style={[styles.label, parts.label]}>{label}</Text> : null}
+          {error ? (
+            <Text role="alert" style={styles.metaItem}>
+              {error}
+            </Text>
+          ) : null}
+          {label ? (
+            <Text numberOfLines={1} style={[styles.label, parts.label]}>
+              {label}
+            </Text>
+          ) : null}
         </View>
         <View style={[styles.meta, parts.meta]}>
-          {(meta ?? []).map((item, index) => <Text key={index} style={styles.metaItem}>{item}</Text>)}
+          {(meta ?? []).map((item, index) => (
+            <Text key={index} style={styles.metaItem}>
+              {item}
+            </Text>
+          ))}
         </View>
         {tags ? <View style={[styles.meta, parts.tags]}>{tags}</View> : null}
       </View>
@@ -184,9 +249,19 @@ export interface ConversationGroupHeadingProps {
 }
 
 /** The heading over a run of rows. A level-3 heading, set in the shell's quiet label type. */
-export function ConversationGroupHeading({ label, kind, hostStyle }: ConversationGroupHeadingProps) {
+export function ConversationGroupHeading({
+  label,
+  kind,
+  hostStyle,
+}: ConversationGroupHeadingProps) {
   return (
-    <Text role="heading" aria-level={3} numberOfLines={kind === 'project' ? 1 : undefined} {...dataSet({ groupKind: kind })} style={[styles.heading, hostStyle]}>
+    <Text
+      role="heading"
+      aria-level={3}
+      numberOfLines={kind === 'project' ? 1 : undefined}
+      {...dataSet({ groupKind: kind })}
+      style={[styles.heading, hostStyle]}
+    >
       {label}
     </Text>
   );

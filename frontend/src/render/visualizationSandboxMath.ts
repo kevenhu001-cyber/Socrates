@@ -6,33 +6,52 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
   let sequence = 0;
   let queued = false;
   const dirty = new Set<Node>();
-  const elementFor = (node: Node) => node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
+  const elementFor = (node: Node) =>
+    node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
   function scan() {
     queued = false;
     const roots = [...dirty];
     dirty.clear();
     for (const root of roots) {
-      if (!root.isConnected || elementFor(root)?.closest('script,style,textarea,pre,code,math,[data-viz-math]')) continue;
+      if (
+        !root.isConnected ||
+        elementFor(root)?.closest('script,style,textarea,pre,code,math,[data-viz-math]')
+      )
+        continue;
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      let node: Text | null = root.nodeType === Node.TEXT_NODE ? root as Text : walker.nextNode() as Text | null;
+      let node: Text | null =
+        root.nodeType === Node.TEXT_NODE ? (root as Text) : (walker.nextNode() as Text | null);
       for (; node; node = walker.nextNode() as Text | null) {
         const source = node.data;
-        if (!/\$|\\[([]/.test(source) || node.parentElement?.closest('script,style,textarea,pre,code,math,[data-viz-math]')) continue;
+        if (
+          !/\$|\\[([]/.test(source) ||
+          node.parentElement?.closest('script,style,textarea,pre,code,math,[data-viz-math]')
+        )
+          continue;
         if (requested.get(node) === source) continue;
         // Retain unprocessed roots when the bridge is saturated. A response
         // frees a slot and resumes work; no formula is silently abandoned.
-        if (pending.size >= 200) { dirty.add(root); break; }
+        if (pending.size >= 200) {
+          dirty.add(root);
+          break;
+        }
         const id = ++sequence;
         requested.set(node, source);
         pending.set(id, { node, source });
-        window.parent.postMessage({ type: 'socrates-viz-math', cardId, nonce, id, source: source.slice(0, 8000) }, '*');
+        window.parent.postMessage(
+          { type: 'socrates-viz-math', cardId, nonce, id, source: source.slice(0, 8000) },
+          '*',
+        );
       }
     }
   }
   function schedule() {
-    if (!queued && dirty.size && pending.size < 200) { queued = true; requestAnimationFrame(scan); }
+    if (!queued && dirty.size && pending.size < 200) {
+      queued = true;
+      requestAnimationFrame(scan);
+    }
   }
-  const observer = new MutationObserver(records => {
+  const observer = new MutationObserver((records) => {
     for (const record of records) {
       if (record.type === 'characterData') dirty.add(record.target);
       else for (const node of record.addedNodes) dirty.add(node);
@@ -48,7 +67,8 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     overlay.setAttribute('y', String(box.y - box.height));
     overlay.setAttribute('width', String(Math.max(80, box.width)));
     overlay.setAttribute('height', String(Math.max(40, box.height * 3)));
-    if (svgText.hasAttribute('transform')) overlay.setAttribute('transform', svgText.getAttribute('transform')!);
+    if (svgText.hasAttribute('transform'))
+      overlay.setAttribute('transform', svgText.getAttribute('transform')!);
     overlay.style.cssText = 'overflow:visible;pointer-events:none';
     const content = document.createElement('div');
     content.style.color = getComputedStyle(svgText).fill;
@@ -72,9 +92,15 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     node.replaceWith(span);
   }
 
-  window.addEventListener('message', event => {
+  window.addEventListener('message', (event) => {
     const data = event.data;
-    if (event.source !== window.parent || data?.type !== 'socrates-viz-math-result' || data.cardId !== cardId || data.nonce !== nonce) return;
+    if (
+      event.source !== window.parent ||
+      data?.type !== 'socrates-viz-math-result' ||
+      data.cardId !== cardId ||
+      data.nonce !== nonce
+    )
+      return;
     const entry = pending.get(data.id);
     pending.delete(data.id);
     schedule();
@@ -88,7 +114,12 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
       applySpanMath(entry.node, data.html);
     }
   });
-  function start() { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); dirty.add(document.body); scan(); }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+  function start() {
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    dirty.add(document.body);
+    scan();
+  }
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', start, { once: true });
   else start();
 }

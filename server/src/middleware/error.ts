@@ -1,8 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ApiError } from '../lib/errors.js';
-import { safeUrl, sanitizeLogValue } from '../lib/log.js';
+import { safeUrl, sanitizeLogValue } from '../lib/logRedaction.js';
 import { wwwAuthenticateChallenge, OAUTH_AUTHORIZATION_ENDPOINT } from '../lib/oauthMeta.js';
-import { localizeErrorCode, resolveErrorLocale, upstreamFailureMessage } from '../lib/errorMessages.js';
+import {
+  localizeErrorCode,
+  resolveErrorLocale,
+  upstreamFailureMessage,
+} from '../lib/errorMessages.js';
 
 /**
  * Global request timeout middleware.
@@ -43,7 +47,11 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
       /* Headers already sent — we can't change the status code, but
        * destroying the socket still stops the downstream handler from
        * consuming resources indefinitely. */
-      try { res.destroy(); } catch (err) { console.warn('[timeout] socket destroy failed:', (err as Error).message); }
+      try {
+        res.destroy();
+      } catch (err) {
+        console.warn('[timeout] socket destroy failed:', (err as Error).message);
+      }
       return;
     }
     /* P_long-llm-override — non-streaming LLM routes (POST /api/chat,
@@ -64,12 +72,20 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
     }
     res.status(504).json({
       code: 'REQUEST_TIMEOUT',
-      message: localizeErrorCode('REQUEST_TIMEOUT', resolveErrorLocale(req?.headers), 'Request timed out'),
+      message: localizeErrorCode(
+        'REQUEST_TIMEOUT',
+        resolveErrorLocale(req?.headers),
+        'Request timed out',
+      ),
     });
   };
   timer = setTimeout(fire, DEFAULT_TIMEOUT_MS);
-  res.on('finish', () => { if (timer) clearTimeout(timer); });
-  res.on('close', () => { if (timer) clearTimeout(timer); });
+  res.on('finish', () => {
+    if (timer) clearTimeout(timer);
+  });
+  res.on('close', () => {
+    if (timer) clearTimeout(timer);
+  });
   next();
 }
 
@@ -86,18 +102,28 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   // Strip tokens from the logged URL — share / verify / reset links
   // carry long-lived credentials in the query string and we don't
   // want those landing in operator log streams.
-  const meta = req ? `${sanitizeLogValue(req.method, 16)} ${sanitizeLogValue(safeUrl(req.originalUrl), 400)}` : '';
+  const meta = req
+    ? `${sanitizeLogValue(req.method, 16)} ${sanitizeLogValue(safeUrl(req.originalUrl), 400)}`
+    : '';
   // In production we MUST NOT print full stack traces: they leak
   // internal paths, file layout, and (occasionally) secrets embedded
   // in error messages. Operators can still find the matching request
   // id and look up the structured fields in the database.
-  const errorDetails = err && typeof err === 'object'
-    ? err as Record<string, unknown>
-    : null;
+  const errorDetails = err && typeof err === 'object' ? (err as Record<string, unknown>) : null;
   if (process.env.NODE_ENV === 'production') {
-    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, sanitizeLogValue(errorDetails?.message || err, 800));
+    console.error(
+      '[error]',
+      `req=${sanitizeLogValue(rid, 64)}`,
+      meta,
+      sanitizeLogValue(errorDetails?.message || err, 800),
+    );
   } else {
-    console.error('[error]', `req=${sanitizeLogValue(rid, 64)}`, meta, errorDetails?.stack ? sanitizeLogValue(errorDetails.stack, 1200) : sanitizeLogValue(err, 800));
+    console.error(
+      '[error]',
+      `req=${sanitizeLogValue(rid, 64)}`,
+      meta,
+      errorDetails?.stack ? sanitizeLogValue(errorDetails.stack, 1200) : sanitizeLogValue(err, 800),
+    );
   }
 
   // Echo the request id back so the browser can correlate too —
@@ -126,10 +152,13 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(err.status).json({
       code: err.code,
       message: localizeErrorCode(err.code, locale, err.message),
-      ...(err.code === 'LLM_UPSTREAM_ERROR' ? {
-        upstreamStatus: err.status, retryable: false,
-        ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
-      } : {}),
+      ...(err.code === 'LLM_UPSTREAM_ERROR'
+        ? {
+            upstreamStatus: err.status,
+            retryable: false,
+            ...(Number.isFinite(err.retryAfterMs) ? { retryAfterMs: err.retryAfterMs } : {}),
+          }
+        : {}),
       detail: err.detail || undefined,
       ...(typeof err.retryable === 'boolean' ? { retryable: err.retryable } : {}),
     });
@@ -139,7 +168,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   // but embed the provider's raw response text in their message. Report the
   // status and code so the browser can tell an exhausted upstream budget from
   // a transient failure — and never forward the provider body.
-  if (errorDetails && (errorDetails.name === 'LlmProviderError' || errorDetails.code === 'LLM_UPSTREAM_ERROR') && typeof errorDetails.status === 'number') {
+  if (
+    errorDetails &&
+    (errorDetails.name === 'LlmProviderError' || errorDetails.code === 'LLM_UPSTREAM_ERROR') &&
+    typeof errorDetails.status === 'number'
+  ) {
     return res.status(errorDetails.status).json({
       code: 'LLM_UPSTREAM_ERROR',
       message: upstreamFailureMessage(errorDetails.status, resolveErrorLocale(req?.headers)),
@@ -147,19 +180,27 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
       // would just repeat the same paid failure.
       retryable: false,
       upstreamStatus: errorDetails.status,
-      ...(typeof errorDetails.retryAfterMs === 'number' && Number.isFinite(errorDetails.retryAfterMs) ? { retryAfterMs: errorDetails.retryAfterMs } : {}),
+      ...(typeof errorDetails.retryAfterMs === 'number' &&
+      Number.isFinite(errorDetails.retryAfterMs)
+        ? { retryAfterMs: errorDetails.retryAfterMs }
+        : {}),
     });
   }
 
   // Zod validation errors — strip issues in production to avoid
   // leaking schema details or user input through error messages.
   if (errorDetails?.name === 'ZodError') {
-    const detail = process.env.NODE_ENV === 'production'
-      ? undefined
-      : (errorDetails.issues || errorDetails.errors);
+    const detail =
+      process.env.NODE_ENV === 'production'
+        ? undefined
+        : errorDetails.issues || errorDetails.errors;
     return res.status(400).json({
       code: 'VALIDATION_ERROR',
-      message: localizeErrorCode('VALIDATION_ERROR', resolveErrorLocale(req?.headers), 'Request validation failed'),
+      message: localizeErrorCode(
+        'VALIDATION_ERROR',
+        resolveErrorLocale(req?.headers),
+        'Request validation failed',
+      ),
       detail,
     });
   }
@@ -168,14 +209,22 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (errorDetails?.code === 'LIMIT_FILE_SIZE') {
     return res.status(413).json({
       code: 'FILE_TOO_LARGE',
-      message: localizeErrorCode('FILE_TOO_LARGE', resolveErrorLocale(req?.headers), 'File exceeds the 25 MB size limit'),
+      message: localizeErrorCode(
+        'FILE_TOO_LARGE',
+        resolveErrorLocale(req?.headers),
+        'File exceeds the 25 MB size limit',
+      ),
     });
   }
 
   // Catch-all — don't leak internals
   return res.status(500).json({
     code: 'INTERNAL_ERROR',
-    message: localizeErrorCode('INTERNAL_ERROR', resolveErrorLocale(req?.headers), 'An unexpected error occurred'),
+    message: localizeErrorCode(
+      'INTERNAL_ERROR',
+      resolveErrorLocale(req?.headers),
+      'An unexpected error occurred',
+    ),
     ...(errorDetails?.retryable === false ? { retryable: false } : {}),
   });
 }
@@ -188,30 +237,35 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
  * the discovery surfaces that DO exist.
  */
 export function notFoundHandler(req: Request, res: Response) {
-  const accept = req && req.headers && req.headers.accept
-    ? String(req.headers.accept)
-    : '';
-  const wantsMarkdown = accept.includes('text/markdown')
-    || (req && typeof req.path === 'string' && req.path.endsWith('.md'));
+  const accept = req && req.headers && req.headers.accept ? String(req.headers.accept) : '';
+  const wantsMarkdown =
+    accept.includes('text/markdown') ||
+    (req && typeof req.path === 'string' && req.path.endsWith('.md'));
   if (wantsMarkdown) {
     res.status(404).type('text/markdown; charset=utf-8');
-    return res.send([
-      '# 404 — Not found',
-      '',
-      'This path does not exist on the Socrates API. Start from one of these instead:',
-      '',
-      '- OpenAPI specification: `/openapi.json`',
-      '- Developer portal: `https://topodrive.top/developers`',
-      '- Auth reference: `https://topodrive.top/auth.md`',
-      '- Navigation index: `https://topodrive.top/llms.txt`',
-      '- Sitemap: `https://topodrive.top/sitemap.xml`',
-      '',
-      '_Request id: see the `X-Request-Id` response header._',
-    ].join('\n'));
+    return res.send(
+      [
+        '# 404 — Not found',
+        '',
+        'This path does not exist on the Socrates API. Start from one of these instead:',
+        '',
+        '- OpenAPI specification: `/openapi.json`',
+        '- Developer portal: `https://topodrive.top/developers`',
+        '- Auth reference: `https://topodrive.top/auth.md`',
+        '- Navigation index: `https://topodrive.top/llms.txt`',
+        '- Sitemap: `https://topodrive.top/sitemap.xml`',
+        '',
+        '_Request id: see the `X-Request-Id` response header._',
+      ].join('\n'),
+    );
   }
   return res.status(404).json({
     code: 'NOT_FOUND',
-    message: localizeErrorCode('ENDPOINT_NOT_FOUND', resolveErrorLocale(req?.headers), 'Endpoint not found'),
+    message: localizeErrorCode(
+      'ENDPOINT_NOT_FOUND',
+      resolveErrorLocale(req?.headers),
+      'Endpoint not found',
+    ),
     hint: {
       openapi: '/openapi.json',
       developers: 'https://topodrive.top/developers',

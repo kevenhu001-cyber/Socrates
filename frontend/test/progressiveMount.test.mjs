@@ -12,10 +12,11 @@ import {
 } from '../src/react/message-list/progressiveMount.ts';
 import { turnOwnsMountViewport } from '../src/react/message-list/useProgressiveMessageMount.ts';
 
-const history = (count, prefix = 'message') => Array.from({ length: count }, (_, index) => ({
-  id: `${prefix}-${index}`,
-  rawText: `Message ${index}`,
-}));
+const history = (count, prefix = 'message') =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${prefix}-${index}`,
+    rawText: `Message ${index}`,
+  }));
 
 const emptyTrack = () => ({ items: [], floor: null, ceiling: null, full: false });
 
@@ -23,7 +24,10 @@ test('progressive mount yields viewport shifts while a send turn owns the anchor
   assert.equal(turnOwnsMountViewport({ dataset: { turnAnchorSettling: 'true' } }), true);
   assert.equal(turnOwnsMountViewport({ dataset: { turnViewportOwner: 'turn' } }), true);
   assert.equal(turnOwnsMountViewport({ dataset: {} }), false);
-  assert.equal(turnOwnsMountViewport({ dataset: { turnAnchorSettling: 'false', turnViewportOwner: 'user' } }), false);
+  assert.equal(
+    turnOwnsMountViewport({ dataset: { turnAnchorSettling: 'false', turnViewportOwner: 'user' } }),
+    false,
+  );
 });
 
 test('initial history mounts the newest chunk first', () => {
@@ -110,13 +114,20 @@ for (const count of [13, 25, 30, MAX_MOUNTED_ROWS]) {
       const previousStart = resolved.start;
       track = { items, ...shiftMountWindow(items, track, 'older') };
       resolved = resolveMountedRows(items, track);
-      assert.ok(resolved.start < previousStart, 'older history must not be stranded outside the window');
+      assert.ok(
+        resolved.start < previousStart,
+        'older history must not be stranded outside the window',
+      );
       assert.equal(resolved.end, count);
       assert.ok(resolved.mounted.length <= MAX_MOUNTED_ROWS);
     }
 
     assert.deepEqual(resolved.mounted, items);
-    assert.equal(resolved.full, false, 'normal expansion must not enable the explicit full-mount override');
+    assert.equal(
+      resolved.full,
+      false,
+      'normal expansion must not enable the explicit full-mount override',
+    );
   });
 }
 

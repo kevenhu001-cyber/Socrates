@@ -68,7 +68,11 @@ export function isRetryableUpstreamFailure(status: number): boolean {
  * jitter: several tool hops would otherwise retry in lockstep against the same
  * exhausted window and burn the remaining attempts simultaneously.
  */
-export function upstreamRetryDelayMs(status: number, attempt: number, retryAfterHeader: string | null): number {
+export function upstreamRetryDelayMs(
+  status: number,
+  attempt: number,
+  retryAfterHeader: string | null,
+): number {
   const value = (retryAfterHeader || '').trim();
   const retryAfterMs = /^\d+(?:\.\d+)?$/.test(value)
     ? Number(value) * 1000

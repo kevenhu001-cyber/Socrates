@@ -1,46 +1,82 @@
 import type { ScrollOwner } from './scrollCoordinator.ts';
-interface ScrollPlan { duration: number; snap?: boolean; ease?: (progress: number) => number; distance?: number }
-interface ScrollOptions {
- smooth?: boolean; owner?: ScrollOwner; retarget?: boolean; target?: () => number;
- plan?: ScrollPlan; motion?: Parameters<typeof planMotionForUser>[1];
+interface ScrollPlan {
+  duration: number;
+  snap?: boolean;
+  ease?: (progress: number) => number;
+  distance?: number;
 }
-interface ScrollMetrics { scrollHeight: number; scrollTop: number; clientHeight: number }
-interface ContentMetrics extends ScrollMetrics { msg?: HTMLElement | null; msgHeight?: number | null }
-interface PinState { lastMetrics: ContentMetrics | null; lastPinned: boolean; observedViewportHeight: number | null }
+interface ScrollOptions {
+  smooth?: boolean;
+  owner?: ScrollOwner;
+  retarget?: boolean;
+  target?: () => number;
+  plan?: ScrollPlan;
+  motion?: Parameters<typeof planMotionForUser>[1];
+}
+interface ScrollMetrics {
+  scrollHeight: number;
+  scrollTop: number;
+  clientHeight: number;
+}
+interface ContentMetrics extends ScrollMetrics {
+  msg?: HTMLElement | null;
+  msgHeight?: number | null;
+}
+interface PinState {
+  lastMetrics: ContentMetrics | null;
+  lastPinned: boolean;
+  observedViewportHeight: number | null;
+}
 interface MessageObserverHooks {
- getLastMessage(): HTMLElement | null;
- setLastMessage(message: HTMLElement | null): void;
- readMetrics(): ContentMetrics | null;
- setContentMetrics(metrics: ContentMetrics | null): void;
- getContentBaseline(): ContentMetrics | null;
- getContentFrame(): number;
- setContentFrame(frame: number): void;
- scheduleContentFollow(baseline?: ContentMetrics | null): void;
- rememberMetrics(): void;
+  getLastMessage(): HTMLElement | null;
+  setLastMessage(message: HTMLElement | null): void;
+  readMetrics(): ContentMetrics | null;
+  setContentMetrics(metrics: ContentMetrics | null): void;
+  getContentBaseline(): ContentMetrics | null;
+  getContentFrame(): number;
+  setContentFrame(frame: number): void;
+  scheduleContentFollow(baseline?: ContentMetrics | null): void;
+  rememberMetrics(): void;
 }
 interface ComposerResizeHooks {
- readMetrics(): ContentMetrics | null;
- keyboardTransitionActive(): boolean;
- userScrolledAway(): boolean;
- rememberMetrics(): void;
- armComposerFollow(): void;
+  readMetrics(): ContentMetrics | null;
+  keyboardTransitionActive(): boolean;
+  userScrolledAway(): boolean;
+  rememberMetrics(): void;
+  armComposerFollow(): void;
 }
 interface ScrollSetup {
- owner: ScrollOwner; ownerToken: number; startTop: number; targetTop: number; distance: number;
- liveTarget: (() => number) | null; resolveTarget: () => number; options: ScrollOptions; plan: ScrollPlan | null;
+  owner: ScrollOwner;
+  ownerToken: number;
+  startTop: number;
+  targetTop: number;
+  distance: number;
+  liveTarget: (() => number) | null;
+  resolveTarget: () => number;
+  options: ScrollOptions;
+  plan: ScrollPlan | null;
 }
 interface ScrollAnimation extends Omit<ScrollSetup, 'options' | 'plan'> {
- list: HTMLElement; duration: number; ease: (progress: number) => number; settle: () => void;
- promise: Promise<void>; resolvePromise: () => void; direction: number; startedAt: number;
- handle: number; cancelled: boolean; lastWrittenTop: number; stop: () => void; onScroll: () => void;
+  list: HTMLElement;
+  duration: number;
+  ease: (progress: number) => number;
+  settle: () => void;
+  promise: Promise<void>;
+  resolvePromise: () => void;
+  direction: number;
+  startedAt: number;
+  handle: number;
+  cancelled: boolean;
+  lastWrittenTop: number;
+  stop: () => void;
+  onScroll: () => void;
 }
 import { planMotionForUser, easeOutHouse } from './motion/index.ts';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
 import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordinator.ts';
-import { stateStore } from '../state/store.ts';
+import { uiBridge } from '../store/index.ts';
 import { TurnAnchorList } from '@/chat/turn/anchor/ownership.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-
 
 /* Re-export the pure auto-scroll decision predicates through scroll.js so
    the DOM-wiring callers (main.js) import the "where do I scroll" surface
@@ -84,25 +120,30 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
    Return whichever is currently scrollable. This centralises the
    "where do I scroll" question so we don't have to chase it every
    time we add a new auto-scroll point. */
-export function scrollContainer(){
-  const ml=document.getElementById("msgList");
+export function scrollContainer() {
+  const ml = document.getElementById('msgList');
   /* A visible chat always owns scrolling, even before its first overflow.
      Falling back to #mainContent at the exact non-scrollable -> scrollable
      boundary makes the first long reply target the wrong element and leaves
      the transcript one render behind the real bottom. */
-  if(ml&&ml.offsetParent!==null){
+  if (ml && ml.offsetParent !== null) {
     return ml;
   }
-  return document.getElementById("mainContent");
+  return document.getElementById('mainContent');
 }
 
 /* Detect reduced-motion preference once and cache it. Browsers do not
    fire change events here reliably inside WebView, so the cached value
    is acceptable for a UX animation preference. `globalThis` fallback
    covers the Node unit-test stub. */
-function prefersReducedMotion(){
+function prefersReducedMotion() {
   try {
-    const host = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null);
+    const host =
+      typeof window !== 'undefined'
+        ? window
+        : typeof globalThis !== 'undefined'
+          ? globalThis
+          : null;
     if (!host || typeof host.matchMedia !== 'function') return false;
     return host.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch (_) {
@@ -123,10 +164,12 @@ const activeScrollAnims = typeof WeakMap === 'function' ? new WeakMap() : null;
    one) and by the composer-geometry pin watch, which needs to stop a
    stale content-follow motion before snapping the reader to a new
    bottom. */
-function cancelScrollAnimationFor(list: object | null | undefined){
-  if(!list||!activeScrollAnims||!activeScrollAnims.has(list))return;
-  try{activeScrollAnims.get(list).cancel();}catch(_){
-    reportEmptyCatch(_, 'empty catch: ui/scroll.ts:111');
+function cancelScrollAnimationFor(list: object | null | undefined) {
+  if (!list || !activeScrollAnims || !activeScrollAnims.has(list)) return;
+  try {
+    activeScrollAnims.get(list).cancel();
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/scroll.ts');
     /* detached node */
   }
   activeScrollAnims.delete(list);
@@ -135,7 +178,7 @@ function cancelScrollAnimationFor(list: object | null | undefined){
 /* Public cancellation hook: the send path (chat/turn/anchor/) takes the
    transcript over the moment a turn is submitted, so any content-follow or
    bottom glide still in flight must stop before the send glide starts. */
-export function cancelScrollAnimation(list: TurnAnchorList){
+export function cancelScrollAnimation(list: TurnAnchorList) {
   cancelScrollAnimationFor(list);
 }
 
@@ -168,17 +211,22 @@ export function cancelScrollAnimation(list: TurnAnchorList){
    while the motion runs and clears it on completion so the global
    scroll listener (scrollPill.js) does not treat the programmatic
    motion as user scroll-away intent. */
-export function velocityScrollTo(list: HTMLElement | null, targetTop: number, opts: ScrollOptions = {}){
-  if(!list)return Promise.resolve();
-  const options=opts||{};
-  const active=activeBottomFollowAnimation(list,options);
-  return active||startScroll(list,targetTop,options);
+export function velocityScrollTo(
+  list: HTMLElement | null,
+  targetTop: number,
+  opts: ScrollOptions = {},
+) {
+  if (!list) return Promise.resolve();
+  const options = opts || {};
+  const active = activeBottomFollowAnimation(list, options);
+  return active || startScroll(list, targetTop, options);
 }
 
-function activeBottomFollowAnimation(list: HTMLElement, options: ScrollOptions){
-  const active=activeScrollAnims&&activeScrollAnims.get(list);
-  return options.retarget===true&&active&&active.retargetKey==='bottom-follow'
-    ?active.promise:null;
+function activeBottomFollowAnimation(list: HTMLElement, options: ScrollOptions) {
+  const active = activeScrollAnims && activeScrollAnims.get(list);
+  return options.retarget === true && active && active.retargetKey === 'bottom-follow'
+    ? active.promise
+    : null;
 }
 
 function resolveUsableScrollPlan(
@@ -189,20 +237,26 @@ function resolveUsableScrollPlan(
   absDistance: number,
 ): { usablePlan: ScrollPlan | null; liveDistance: number } {
   const liveDistance = liveTarget ? Math.abs(resolveTarget() - startTop) : absDistance;
-  const plannedDistance = injectedPlan && typeof injectedPlan.distance === 'number' ? injectedPlan.distance : null;
-  const staleSnapPlan = Boolean(injectedPlan && injectedPlan.snap && plannedDistance !== null && liveDistance > plannedDistance + 24);
+  const plannedDistance =
+    injectedPlan && typeof injectedPlan.distance === 'number' ? injectedPlan.distance : null;
+  const staleSnapPlan = Boolean(
+    injectedPlan &&
+    injectedPlan.snap &&
+    plannedDistance !== null &&
+    liveDistance > plannedDistance + 24,
+  );
   const usablePlan = injectedPlan && !staleSnapPlan ? injectedPlan : null;
   return { usablePlan, liveDistance };
 }
 
-function startScroll(list: HTMLElement, targetTop: number, options: ScrollOptions){
-  const owner=options.owner||'content';
-  const startTop=list!.scrollTop;
+function startScroll(list: HTMLElement, targetTop: number, options: ScrollOptions) {
+  const owner = options.owner || 'content';
+  const startTop = list!.scrollTop;
   /* `opts.target` — a live target. Re-read every frame (and clamped to the
      reachable range) so a layout that settles mid-glide (a React commit, a
      reserve repaint, a late image) bends the motion toward the real
      destination instead of landing on a stale one and snapping. */
-  const liveTarget=typeof options.target==='function'?options.target:null;
+  const liveTarget = typeof options.target === 'function' ? options.target : null;
   const resolveTarget = targetResolver(list, targetTop, liveTarget);
   const initialTarget = resolveTarget();
   const distance = initialTarget - startTop;
@@ -211,214 +265,305 @@ function startScroll(list: HTMLElement, targetTop: number, options: ScrollOption
   if (ownerToken == null) return Promise.resolve();
   const absDistance = Math.abs(distance);
   const reduced = prefersReducedMotion();
-  const injectedPlan=options.plan&&typeof options.plan==='object'?options.plan:null;
-  const { usablePlan, liveDistance } = resolveUsableScrollPlan(injectedPlan, liveTarget, resolveTarget, startTop, absDistance);
-  const snap=shouldSnapScroll(options,reduced,liveDistance,usablePlan);
+  const injectedPlan = options.plan && typeof options.plan === 'object' ? options.plan : null;
+  const { usablePlan, liveDistance } = resolveUsableScrollPlan(
+    injectedPlan,
+    liveTarget,
+    resolveTarget,
+    startTop,
+    absDistance,
+  );
+  const snap = shouldSnapScroll(options, reduced, liveDistance, usablePlan);
   if (snap) {
     snapScrollToTarget(list, liveTarget ? resolveTarget() : targetTop, owner, ownerToken);
     return Promise.resolve();
   }
   return animateScroll(list, {
-    owner, ownerToken, startTop, targetTop, distance, liveTarget, resolveTarget,
-    options, plan: usablePlan,
+    owner,
+    ownerToken,
+    startTop,
+    targetTop,
+    distance,
+    liveTarget,
+    resolveTarget,
+    options,
+    plan: usablePlan,
   });
 }
 
-function targetResolver(list: HTMLElement, targetTop: number, liveTarget: (() => number) | null){
-  if (!liveTarget) return function(){ return targetTop; };
-  return function(){
-    let next=Number(liveTarget());
-    if(!isFinite(next))next=Number(targetTop);
-    if(!isFinite(next))next=list.scrollTop;
-    const max=Math.max(0,(list.scrollHeight||0)-(list.clientHeight||0));
-    return Math.max(0,Math.min(max,next));
+function targetResolver(list: HTMLElement, targetTop: number, liveTarget: (() => number) | null) {
+  if (!liveTarget)
+    return function () {
+      return targetTop;
+    };
+  return function () {
+    let next = Number(liveTarget());
+    if (!isFinite(next)) next = Number(targetTop);
+    if (!isFinite(next)) next = list.scrollTop;
+    const max = Math.max(0, (list.scrollHeight || 0) - (list.clientHeight || 0));
+    return Math.max(0, Math.min(max, next));
   };
 }
 
-function shouldSnapScroll(options: ScrollOptions, reduced: boolean, distance: number, injectedPlan: ScrollPlan | null){
-  return reduced||options.smooth===false||distance<=24||
-    typeof requestAnimationFrame!=='function'||
-    !!(injectedPlan&&(injectedPlan.snap||!(injectedPlan.duration>0)));
+function shouldSnapScroll(
+  options: ScrollOptions,
+  reduced: boolean,
+  distance: number,
+  injectedPlan: ScrollPlan | null,
+) {
+  return (
+    reduced ||
+    options.smooth === false ||
+    distance <= 24 ||
+    typeof requestAnimationFrame !== 'function' ||
+    !!(injectedPlan && (injectedPlan.snap || !(injectedPlan.duration > 0)))
+  );
 }
 
-function beginAutoScrollState(list: HTMLElement){
-  const previous=list.dataset.autoScrolling;
-  list.dataset.autoScrolling='true';
-  return function(){
-    try{
-      if(previous===undefined)delete list.dataset.autoScrolling;
-      else list.dataset.autoScrolling=previous;
-    }catch(_){
-      reportEmptyCatch(_, 'empty catch: ui/scroll.ts:218');
+function beginAutoScrollState(list: HTMLElement) {
+  const previous = list.dataset.autoScrolling;
+  list.dataset.autoScrolling = 'true';
+  return function () {
+    try {
+      if (previous === undefined) delete list.dataset.autoScrolling;
+      else list.dataset.autoScrolling = previous;
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/scroll.ts');
       /* detached node */
     }
   };
 }
 
-function snapScrollToTarget(list: HTMLElement, targetTop: number, owner: ScrollOwner, ownerToken: number){
+function snapScrollToTarget(
+  list: HTMLElement,
+  targetTop: number,
+  owner: ScrollOwner,
+  ownerToken: number,
+) {
   cancelScrollAnimationFor(list);
-  const settle=beginAutoScrollState(list);
-  writeScrollTop(list,targetTop,owner);
+  const settle = beginAutoScrollState(list);
+  writeScrollTop(list, targetTop, owner);
   settle();
-  endScrollOwner(list,ownerToken);
+  endScrollOwner(list, ownerToken);
 }
 
-function animateScroll(list: HTMLElement, config: ScrollSetup){
-  const { owner, ownerToken, startTop, targetTop, distance, liveTarget, resolveTarget, options, plan: injectedPlan }=config;
-  const plan: ScrollPlan=injectedPlan||planMotionForUser(Math.abs(distance),options.motion);
-  const duration=plan.duration;
-  const ease=typeof plan.ease==='function'?plan.ease:easeOutHouse;
+function animateScroll(list: HTMLElement, config: ScrollSetup) {
+  const {
+    owner,
+    ownerToken,
+    startTop,
+    targetTop,
+    distance,
+    liveTarget,
+    resolveTarget,
+    options,
+    plan: injectedPlan,
+  } = config;
+  const plan: ScrollPlan = injectedPlan || planMotionForUser(Math.abs(distance), options.motion);
+  const duration = plan.duration;
+  const ease = typeof plan.ease === 'function' ? plan.ease : easeOutHouse;
   cancelScrollAnimationFor(list);
-  const settle=beginAutoScrollState(list);
+  const settle = beginAutoScrollState(list);
   let resolvePromise!: () => void;
-  const promise=new Promise<void>(function(resolve){resolvePromise=resolve;});
-  const animation: ScrollAnimation={
-    list,owner,ownerToken,startTop,targetTop,distance,liveTarget,resolveTarget,
-    duration,ease,settle,promise,resolvePromise,
-    direction:distance>0?1:-1,
-    startedAt:0,handle:0,cancelled:false,lastWrittenTop:startTop,
-    stop:() => undefined,onScroll:() => undefined,
-  };
-  animation.stop=function(){stopScrollAnimation(animation);};
-  animation.onScroll=function(){cancelOnForeignScroll(animation);};
-  list.addEventListener('scroll',animation.onScroll,{passive:true});
-  if(activeScrollAnims)activeScrollAnims.set(list,{
-    cancel:animation.stop,
-    retargetKey:options.retarget===true?'bottom-follow':null,
-    promise,
+  const promise = new Promise<void>(function (resolve) {
+    resolvePromise = resolve;
   });
-  animation.handle=requestAnimationFrame((now)=>advanceScrollAnimation(animation,now));
+  const animation: ScrollAnimation = {
+    list,
+    owner,
+    ownerToken,
+    startTop,
+    targetTop,
+    distance,
+    liveTarget,
+    resolveTarget,
+    duration,
+    ease,
+    settle,
+    promise,
+    resolvePromise,
+    direction: distance > 0 ? 1 : -1,
+    startedAt: 0,
+    handle: 0,
+    cancelled: false,
+    lastWrittenTop: startTop,
+    stop: () => undefined,
+    onScroll: () => undefined,
+  };
+  animation.stop = function () {
+    stopScrollAnimation(animation);
+  };
+  animation.onScroll = function () {
+    cancelOnForeignScroll(animation);
+  };
+  list.addEventListener('scroll', animation.onScroll, { passive: true });
+  if (activeScrollAnims)
+    activeScrollAnims.set(list, {
+      cancel: animation.stop,
+      retargetKey: options.retarget === true ? 'bottom-follow' : null,
+      promise,
+    });
+  animation.handle = requestAnimationFrame((now) => advanceScrollAnimation(animation, now));
   return promise;
 }
 
-function cancelOnForeignScroll(animation: ScrollAnimation){
-  if(animation.cancelled)return;
-  if(Math.abs(animation.list.scrollTop-animation.lastWrittenTop)>1)animation.stop();
+function cancelOnForeignScroll(animation: ScrollAnimation) {
+  if (animation.cancelled) return;
+  if (Math.abs(animation.list.scrollTop - animation.lastWrittenTop) > 1) animation.stop();
 }
 
-function stopScrollAnimation(animation: ScrollAnimation){
-  if(animation.cancelled)return;
-  animation.cancelled=true;
-  if(animation.handle)cancelAnimationFrame(animation.handle);
-  animation.list.removeEventListener('scroll',animation.onScroll);
-  if(activeScrollAnims)activeScrollAnims.delete(animation.list);
-  endScrollOwner(animation.list,animation.ownerToken);
+function stopScrollAnimation(animation: ScrollAnimation) {
+  if (animation.cancelled) return;
+  animation.cancelled = true;
+  if (animation.handle) cancelAnimationFrame(animation.handle);
+  animation.list.removeEventListener('scroll', animation.onScroll);
+  if (activeScrollAnims) activeScrollAnims.delete(animation.list);
+  endScrollOwner(animation.list, animation.ownerToken);
   animation.settle();
   animation.resolvePromise();
 }
 
-function advanceScrollAnimation(animation: ScrollAnimation, now: number){
-  if(animation.cancelled)return;
-  const {list}=animation;
-  if((list.dataset&&list.dataset.turnViewportOwner==='turn')||
-      (typeof window!=='undefined'&&stateStore.read('_userScrolledAway'))){
+function advanceScrollAnimation(animation: ScrollAnimation, now: number) {
+  if (animation.cancelled) return;
+  const { list } = animation;
+  if (
+    (list.dataset && list.dataset.turnViewportOwner === 'turn') ||
+    (typeof window !== 'undefined' && uiBridge.getSnapshot()._userScrolledAway)
+  ) {
     animation.stop();
     return;
   }
-  if(!animation.startedAt)animation.startedAt=now;
-  const elapsed=now-animation.startedAt;
-  if(elapsed>=animation.duration){
-    writeScrollTop(list,animation.liveTarget?animation.resolveTarget():animation.targetTop,animation.owner);
+  if (!animation.startedAt) animation.startedAt = now;
+  const elapsed = now - animation.startedAt;
+  if (elapsed >= animation.duration) {
+    writeScrollTop(
+      list,
+      animation.liveTarget ? animation.resolveTarget() : animation.targetTop,
+      animation.owner,
+    );
     animation.stop();
     return;
   }
-  const next=nextScrollPosition(animation,elapsed/animation.duration);
-  writeScrollTop(list,next,animation.owner);
-  animation.lastWrittenTop=list.scrollTop;
-  animation.handle=requestAnimationFrame((frameTime)=>advanceScrollAnimation(animation,frameTime));
+  const next = nextScrollPosition(animation, elapsed / animation.duration);
+  writeScrollTop(list, next, animation.owner);
+  animation.lastWrittenTop = list.scrollTop;
+  animation.handle = requestAnimationFrame((frameTime) =>
+    advanceScrollAnimation(animation, frameTime),
+  );
 }
 
-function nextScrollPosition(animation: ScrollAnimation, progress: number){
-  const {startTop,distance,ease,liveTarget,resolveTarget,direction,lastWrittenTop}=animation;
-  if(!liveTarget)return startTop+distance*ease(progress);
-  const target=resolveTarget();
-  let next=startTop+(target-startTop)*ease(progress);
-  if(direction>0){
-    next=Math.max(next,lastWrittenTop);
-    if(next>target)next=target;
-  }else{
-    next=Math.min(next,lastWrittenTop);
-    if(next<target)next=target;
+function nextScrollPosition(animation: ScrollAnimation, progress: number) {
+  const { startTop, distance, ease, liveTarget, resolveTarget, direction, lastWrittenTop } =
+    animation;
+  if (!liveTarget) return startTop + distance * ease(progress);
+  const target = resolveTarget();
+  let next = startTop + (target - startTop) * ease(progress);
+  if (direction > 0) {
+    next = Math.max(next, lastWrittenTop);
+    if (next > target) next = target;
+  } else {
+    next = Math.min(next, lastWrittenTop);
+    if (next < target) next = target;
   }
   return next;
 }
 
-function measureContentGrowth(previous: ContentMetrics | null, current: ContentMetrics | null, list: HTMLElement){
-  const sameMessage=!!(previous&&current&&previous.msg&&
-    previous.msg===current.msg&&
-    previous.msgHeight!=null&&current.msgHeight!=null);
-  const growth=sameMessage?current.msgHeight!-previous.msgHeight!:null;
-  const grew=!!current&&(growth!=null
-    ?growth>1
-    :(!!previous&&current.scrollHeight>previous.scrollHeight+1));
-  const beforeGrowth=previous&&list?{
-    scrollHeight:growth!=null?current!.scrollHeight-growth:previous.scrollHeight,
-    scrollTop:list.scrollTop,
-    clientHeight:previous.clientHeight
-  }:null;
-  return {grew:grew,beforeGrowth:beforeGrowth};
+function measureContentGrowth(
+  previous: ContentMetrics | null,
+  current: ContentMetrics | null,
+  list: HTMLElement,
+) {
+  const sameMessage = !!(
+    previous &&
+    current &&
+    previous.msg &&
+    previous.msg === current.msg &&
+    previous.msgHeight != null &&
+    current.msgHeight != null
+  );
+  const growth = sameMessage ? current.msgHeight! - previous.msgHeight! : null;
+  const grew =
+    !!current &&
+    (growth != null ? growth > 1 : !!previous && current.scrollHeight > previous.scrollHeight + 1);
+  const beforeGrowth =
+    previous && list
+      ? {
+          scrollHeight: growth != null ? current!.scrollHeight - growth : previous.scrollHeight,
+          scrollTop: list.scrollTop,
+          clientHeight: previous.clientHeight,
+        }
+      : null;
+  return { grew: grew, beforeGrowth: beforeGrowth };
 }
 
-function contentFollowIsBlocked(list: HTMLElement, lastMessage: HTMLElement | null){
-  const retryOwnsViewport=!!(lastMessage&&
-    lastMessage.getAttribute("data-viewport-anchor")==="retry");
-  const turnAnchorSettling=!!(list&&list.dataset&&list.dataset.turnAnchorSettling==="true");
-  const turnAnchorHold=!!(list&&list.dataset&&list.dataset.turnAnchorHold==="true");
-  return retryOwnsViewport||turnAnchorSettling||turnAnchorHold;
+function contentFollowIsBlocked(list: HTMLElement, lastMessage: HTMLElement | null) {
+  const retryOwnsViewport = !!(
+    lastMessage && lastMessage.getAttribute('data-viewport-anchor') === 'retry'
+  );
+  const turnAnchorSettling = !!(list && list.dataset && list.dataset.turnAnchorSettling === 'true');
+  const turnAnchorHold = !!(list && list.dataset && list.dataset.turnAnchorHold === 'true');
+  return retryOwnsViewport || turnAnchorSettling || turnAnchorHold;
 }
 
-function createMessageObservers(list: HTMLElement, hooks: MessageObserverHooks){
-  const resizeObserver=typeof ResizeObserver==="function"
-    ?new ResizeObserver(function(){hooks.scheduleContentFollow();})
-    :null;
-  const subtreeObserver=typeof MutationObserver==="function"
-    ?new MutationObserver(function(){
-      const baseline=hooks.getContentBaseline();
-      if(hooks.getContentFrame())return;
-      hooks.setContentFrame(requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          hooks.setContentFrame(0);
-          hooks.scheduleContentFollow(baseline);
-        });
-      }));
-    })
-    :null;
+function createMessageObservers(list: HTMLElement, hooks: MessageObserverHooks) {
+  const resizeObserver =
+    typeof ResizeObserver === 'function'
+      ? new ResizeObserver(function () {
+          hooks.scheduleContentFollow();
+        })
+      : null;
+  const subtreeObserver =
+    typeof MutationObserver === 'function'
+      ? new MutationObserver(function () {
+          const baseline = hooks.getContentBaseline();
+          if (hooks.getContentFrame()) return;
+          hooks.setContentFrame(
+            requestAnimationFrame(function () {
+              requestAnimationFrame(function () {
+                hooks.setContentFrame(0);
+                hooks.scheduleContentFollow(baseline);
+              });
+            }),
+          );
+        })
+      : null;
 
-  function observeLastMessage(){
-    if(!list||!resizeObserver)return;
-    const messages=list.querySelectorAll<HTMLElement>(":scope > .msg");
-    const next=messages.length?messages[messages.length-1]:null;
-    if(next===hooks.getLastMessage())return;
+  function observeLastMessage() {
+    if (!list || !resizeObserver) return;
+    const messages = list.querySelectorAll<HTMLElement>(':scope > .msg');
+    const next = messages.length ? messages[messages.length - 1] : null;
+    if (next === hooks.getLastMessage()) return;
     resizeObserver.disconnect();
     hooks.setLastMessage(next);
     /* Appending or replacing a row is not in-message content growth. */
     hooks.setContentMetrics(hooks.readMetrics());
-    if(next)resizeObserver.observe(next);
-    if(subtreeObserver){
+    if (next) resizeObserver.observe(next);
+    if (subtreeObserver) {
       subtreeObserver.disconnect();
-      if(next)subtreeObserver.observe(next,{subtree:true,childList:true});
+      if (next) subtreeObserver.observe(next, { subtree: true, childList: true });
     }
   }
 
-  const mutationObserver=typeof MutationObserver==="function"
-    ?new MutationObserver(function(){
-      observeLastMessage();
-      hooks.rememberMetrics();
-    })
-    :null;
+  const mutationObserver =
+    typeof MutationObserver === 'function'
+      ? new MutationObserver(function () {
+          observeLastMessage();
+          hooks.rememberMetrics();
+        })
+      : null;
 
-  function observe(){
+  function observe() {
     observeLastMessage();
-    if(mutationObserver)mutationObserver.observe(list,{childList:true});
+    if (mutationObserver) mutationObserver.observe(list, { childList: true });
   }
 
-  function disconnect(){
-    if(resizeObserver)resizeObserver.disconnect();
-    if(subtreeObserver)subtreeObserver.disconnect();
-    if(mutationObserver)mutationObserver.disconnect();
+  function disconnect() {
+    if (resizeObserver) resizeObserver.disconnect();
+    if (subtreeObserver) subtreeObserver.disconnect();
+    if (mutationObserver) mutationObserver.disconnect();
   }
 
-  return {observe:observe,disconnect:disconnect};
+  return { observe: observe, disconnect: disconnect };
 }
 
 /* Glide the scrollable chat container to its current bottom using the
@@ -430,129 +575,188 @@ function createMessageObservers(list: HTMLElement, hooks: MessageObserverHooks){
    `opts.smooth` defaults to true; setting it to false forces an
    instant snap. Set `retarget: true` for repeated bottom updates so
    one live animation follows the moving scroll boundary. */
-export function smoothScrollToBottom(list: HTMLElement | null, opts: ScrollOptions = {}){
-  if(!list)return Promise.resolve();
-  const o=opts||{};
-  const retarget=o.retarget===true;
-  const target=retarget
-    ?Math.max(0,list.scrollHeight-list.clientHeight)
-    :list.scrollHeight;
-  if(typeof target !== 'number' || !isFinite(target)) return Promise.resolve();
-  return velocityScrollTo(list,target,retarget?{
-    ...o,
-    target:function(){return Math.max(0,(list.scrollHeight||0)-(list.clientHeight||0))}
-  }:o);
+export function smoothScrollToBottom(list: HTMLElement | null, opts: ScrollOptions = {}) {
+  if (!list) return Promise.resolve();
+  const o = opts || {};
+  const retarget = o.retarget === true;
+  const target = retarget ? Math.max(0, list.scrollHeight - list.clientHeight) : list.scrollHeight;
+  if (typeof target !== 'number' || !isFinite(target)) return Promise.resolve();
+  return velocityScrollTo(
+    list,
+    target,
+    retarget
+      ? {
+          ...o,
+          target: function () {
+            return Math.max(0, (list.scrollHeight || 0) - (list.clientHeight || 0));
+          },
+        }
+      : o,
+  );
 }
 
-function createComposerResizeHandler(list: HTMLElement | null,pinState: PinState,hooks: ComposerResizeHooks,pinSlack: number){
-  return function(){
-    const current=hooks.readMetrics();
-    const heightBeforeResize=pinState.observedViewportHeight;
-    if(current)pinState.observedViewportHeight=current.clientHeight;
-    if(hooks.keyboardTransitionActive()||!list||hooks.userScrolledAway())return;
+function createComposerResizeHandler(
+  list: HTMLElement | null,
+  pinState: PinState,
+  hooks: ComposerResizeHooks,
+  pinSlack: number,
+) {
+  return function () {
+    const current = hooks.readMetrics();
+    const heightBeforeResize = pinState.observedViewportHeight;
+    if (current) pinState.observedViewportHeight = current.clientHeight;
+    if (hooks.keyboardTransitionActive() || !list || hooks.userScrolledAway()) return;
 
-    let pinnedBeforeResize=pinState.lastPinned;
-    if(!pinnedBeforeResize&&current){
-      const previous=pinState.lastMetrics;
-      const heightBefore=heightBeforeResize!=null?heightBeforeResize:
-        (previous?previous.clientHeight:null);
-      if(heightBefore!=null){
-        pinnedBeforeResize=current.scrollHeight-current.scrollTop-heightBefore<=pinSlack;
+    let pinnedBeforeResize = pinState.lastPinned;
+    if (!pinnedBeforeResize && current) {
+      const previous = pinState.lastMetrics;
+      const heightBefore =
+        heightBeforeResize != null ? heightBeforeResize : previous ? previous.clientHeight : null;
+      if (heightBefore != null) {
+        pinnedBeforeResize = current.scrollHeight - current.scrollTop - heightBefore <= pinSlack;
       }
     }
-    if(!pinnedBeforeResize){hooks.rememberMetrics();return;}
-    if(list.dataset&&list.dataset.turnViewportOwner==='turn')return;
-    smoothScrollToBottom(list,{smooth:false});
+    if (!pinnedBeforeResize) {
+      hooks.rememberMetrics();
+      return;
+    }
+    if (list.dataset && list.dataset.turnViewportOwner === 'turn') return;
+    smoothScrollToBottom(list, { smooth: false });
     hooks.rememberMetrics();
     hooks.armComposerFollow();
   };
 }
 
-function observeComposerLayout(list: Element,chatView: Element|null,followResize: () => void,keyboardTransitionActive: () => boolean,armComposerFollow: () => void){
-  const resizeObserver=typeof ResizeObserver==="function"&&chatView
-    ?new ResizeObserver(followResize):null;
-  if(resizeObserver){
-    try{resizeObserver.observe((chatView as Element),{box:"border-box"});}
-    catch(_){resizeObserver.observe((chatView as Element));}
-    try{resizeObserver.observe(list,{box:"border-box"});}
-    catch(_){resizeObserver.observe(list);}
-  }
-
-  let keyboardStyleFollowFrame=0;
-  const styleObserver=typeof MutationObserver==="function"&&document.documentElement
-    ?new MutationObserver(function(){
-      const root=document.documentElement;
-      const inset=parseFloat(root.style.getPropertyValue("--keyboard-inset"))||0;
-      if(inset<=0||root.dataset.keyboardOpen==="true"||keyboardTransitionActive()||keyboardStyleFollowFrame)return;
-      keyboardStyleFollowFrame=requestAnimationFrame(function(){
-        keyboardStyleFollowFrame=0;
-        followResize();
-      });
-    })
-    :null;
-  if(styleObserver)styleObserver.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
-
-  function onTransition(event: Event){
-    if(keyboardTransitionActive())return;
-    const target=event&&event.target;
-    if(target&&(target as Element).closest&&(target as Element).closest(".composer-input-wrap"))armComposerFollow();
-  }
-  if(chatView){
-    chatView.addEventListener("transitionrun",onTransition);
-    chatView.addEventListener("transitionstart",onTransition);
-  }
-
-  function disconnect(){
-    if(resizeObserver)resizeObserver.disconnect();
-    if(keyboardStyleFollowFrame)cancelAnimationFrame(keyboardStyleFollowFrame);
-    if(styleObserver)styleObserver.disconnect();
-    if(chatView){
-      chatView.removeEventListener("transitionrun",onTransition);
-      chatView.removeEventListener("transitionstart",onTransition);
+function observeComposerLayout(
+  list: Element,
+  chatView: Element | null,
+  followResize: () => void,
+  keyboardTransitionActive: () => boolean,
+  armComposerFollow: () => void,
+) {
+  const resizeObserver =
+    typeof ResizeObserver === 'function' && chatView ? new ResizeObserver(followResize) : null;
+  if (resizeObserver) {
+    try {
+      resizeObserver.observe(chatView as Element, { box: 'border-box' });
+    } catch (_) {
+      resizeObserver.observe(chatView as Element);
+    }
+    try {
+      resizeObserver.observe(list, { box: 'border-box' });
+    } catch (_) {
+      resizeObserver.observe(list);
     }
   }
-  return {disconnect:disconnect};
+
+  let keyboardStyleFollowFrame = 0;
+  const styleObserver =
+    typeof MutationObserver === 'function' && document.documentElement
+      ? new MutationObserver(function () {
+          const root = document.documentElement;
+          const inset = parseFloat(root.style.getPropertyValue('--keyboard-inset')) || 0;
+          if (
+            inset <= 0 ||
+            root.dataset.keyboardOpen === 'true' ||
+            keyboardTransitionActive() ||
+            keyboardStyleFollowFrame
+          )
+            return;
+          keyboardStyleFollowFrame = requestAnimationFrame(function () {
+            keyboardStyleFollowFrame = 0;
+            followResize();
+          });
+        })
+      : null;
+  if (styleObserver)
+    styleObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['style'],
+    });
+
+  function onTransition(event: Event) {
+    if (keyboardTransitionActive()) return;
+    const target = event && event.target;
+    if (
+      target &&
+      (target as Element).closest &&
+      (target as Element).closest('.composer-input-wrap')
+    )
+      armComposerFollow();
+  }
+  if (chatView) {
+    chatView.addEventListener('transitionrun', onTransition);
+    chatView.addEventListener('transitionstart', onTransition);
+  }
+
+  function disconnect() {
+    if (resizeObserver) resizeObserver.disconnect();
+    if (keyboardStyleFollowFrame) cancelAnimationFrame(keyboardStyleFollowFrame);
+    if (styleObserver) styleObserver.disconnect();
+    if (chatView) {
+      chatView.removeEventListener('transitionrun', onTransition);
+      chatView.removeEventListener('transitionstart', onTransition);
+    }
+  }
+  return { disconnect: disconnect };
 }
 
-function createPinMetrics(list: HTMLElement, pinState: PinState, getLastMessage: () => HTMLElement | null, pinSlack: number){
-  function readMetrics(){
-    if(!list)return null;
-    const message=getLastMessage();
+function createPinMetrics(
+  list: HTMLElement,
+  pinState: PinState,
+  getLastMessage: () => HTMLElement | null,
+  pinSlack: number,
+) {
+  function readMetrics() {
+    if (!list) return null;
+    const message = getLastMessage();
     return {
-      scrollHeight:list.scrollHeight,
-      scrollTop:list.scrollTop,
-      clientHeight:list.clientHeight,
-      msg:message,
-      msgHeight:message?message.offsetHeight:null
+      scrollHeight: list.scrollHeight,
+      scrollTop: list.scrollTop,
+      clientHeight: list.clientHeight,
+      msg: message,
+      msgHeight: message ? message.offsetHeight : null,
     };
   }
-  function userScrolledAway(){return !!stateStore.read("_userScrolledAway")}
-  function wasPinned(metrics: ScrollMetrics | null){
-    return !!metrics&&!userScrolledAway()&&
-      metrics.scrollHeight-metrics.scrollTop-metrics.clientHeight<=pinSlack;
+  function userScrolledAway() {
+    return !!uiBridge.getSnapshot()._userScrolledAway;
   }
-  function rememberMetrics(){
-    const current=readMetrics();
-    if(!current)return;
-    const previous=pinState.lastMetrics;
-    const geometryOnly=pinState.lastPinned&&previous&&
-      current.scrollHeight===previous.scrollHeight&&
-      current.clientHeight!==previous.clientHeight&&
-      Math.abs(current.scrollTop-previous.scrollTop)<=1;
-    pinState.lastMetrics=current;
-    if(!geometryOnly)pinState.lastPinned=wasPinned(current);
+  function wasPinned(metrics: ScrollMetrics | null) {
+    return (
+      !!metrics &&
+      !userScrolledAway() &&
+      metrics.scrollHeight - metrics.scrollTop - metrics.clientHeight <= pinSlack
+    );
   }
-  function rememberScrollPosition(){
-    const current=readMetrics();
-    if(!current)return;
-    const previous=pinState.lastMetrics;
-    const previousTop=previous?previous.scrollTop:current.scrollTop;
-    const previousHeight=previous&&previous.clientHeight;
-    if(previousHeight!=null&&current.clientHeight<previousHeight-1&&current.scrollTop>=previousTop-1)return;
-    pinState.lastMetrics=current;
-    pinState.lastPinned=wasPinned(current);
+  function rememberMetrics() {
+    const current = readMetrics();
+    if (!current) return;
+    const previous = pinState.lastMetrics;
+    const geometryOnly =
+      pinState.lastPinned &&
+      previous &&
+      current.scrollHeight === previous.scrollHeight &&
+      current.clientHeight !== previous.clientHeight &&
+      Math.abs(current.scrollTop - previous.scrollTop) <= 1;
+    pinState.lastMetrics = current;
+    if (!geometryOnly) pinState.lastPinned = wasPinned(current);
   }
-  return {readMetrics,userScrolledAway,wasPinned,rememberMetrics,rememberScrollPosition};
+  function rememberScrollPosition() {
+    const current = readMetrics();
+    if (!current) return;
+    const previous = pinState.lastMetrics;
+    const previousTop = previous ? previous.scrollTop : current.scrollTop;
+    const previousHeight = previous && previous.clientHeight;
+    if (
+      previousHeight != null &&
+      current.clientHeight < previousHeight - 1 &&
+      current.scrollTop >= previousTop - 1
+    )
+      return;
+    pinState.lastMetrics = current;
+    pinState.lastPinned = wasPinned(current);
+  }
+  return { readMetrics, userScrolledAway, wasPinned, rememberMetrics, rememberScrollPosition };
 }
 
 /* Keep a reader who was pinned to the bottom of the transcript
@@ -572,29 +776,36 @@ function createPinMetrics(list: HTMLElement, pinState: PinState, getLastMessage:
    the visual motion and the JS no longer resets scrollTop every
    frame mid-animation. The bounded composer-follow sequence below only
      runs while a focus/composer transition is active. */
-export function initChatComposerReserve(options: { list?: TurnAnchorList | null } = {}){
-  options=options||{};
-  const list=options.list||document.getElementById("msgList");
-  if(!list)return () => undefined;
+export function initChatComposerReserve(options: { list?: TurnAnchorList | null } = {}) {
+  options = options || {};
+  const list = options.list || document.getElementById('msgList');
+  if (!list) return () => undefined;
 
-  let contentFrame=0;
-  const pinSlack=96;
-  const pinState: PinState={lastMetrics:null,lastPinned:false,observedViewportHeight:null};
-  let lastMessage: HTMLElement | null=null;
-  const pinMetrics=createPinMetrics(list,pinState,function(){return lastMessage},pinSlack);
-  const readMetrics=pinMetrics.readMetrics;
-  const userScrolledAway=pinMetrics.userScrolledAway;
-  const wasPinned=pinMetrics.wasPinned;
-  const rememberMetrics=pinMetrics.rememberMetrics;
-  const rememberScrollPosition=pinMetrics.rememberScrollPosition;
+  let contentFrame = 0;
+  const pinSlack = 96;
+  const pinState: PinState = { lastMetrics: null, lastPinned: false, observedViewportHeight: null };
+  let lastMessage: HTMLElement | null = null;
+  const pinMetrics = createPinMetrics(
+    list,
+    pinState,
+    function () {
+      return lastMessage;
+    },
+    pinSlack,
+  );
+  const readMetrics = pinMetrics.readMetrics;
+  const userScrolledAway = pinMetrics.userScrolledAway;
+  const wasPinned = pinMetrics.wasPinned;
+  const rememberMetrics = pinMetrics.rememberMetrics;
+  const rememberScrollPosition = pinMetrics.rememberScrollPosition;
   /* Scroll events may arrive after layout growth but before its observer.
      They must not consume the previous message-height measurement. */
-  let contentMetrics: ContentMetrics | null=null;
-  let composerFollowFrame=0;
-  let composerFollowUntil=0;
+  let contentMetrics: ContentMetrics | null = null;
+  let composerFollowFrame = 0;
+  let composerFollowUntil = 0;
   /* True while another controller owns the viewport (see scheduleContentFollow).
      Carries the reader's pin membership across a held window. */
-  let followOwnedElsewhere=false;
+  let followOwnedElsewhere = false;
   /* The transcript viewport height as the ResizeObserver last saw it. Only
      this observer writes the value. The shared metrics snapshot
      is refreshed by the content-follow path and by the scroll listener, so by
@@ -607,39 +818,47 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
      short, observable composer transition; this is a bounded rAF sequence,
      not a permanent measurement loop or a height reserve. Any wheel/touch
      intent flips _userScrolledAway and stops it on the next frame. */
-  function stopComposerFollow(){
-    if(composerFollowFrame){cancelAnimationFrame(composerFollowFrame);composerFollowFrame=0;}
-    composerFollowUntil=0;
+  function stopComposerFollow() {
+    if (composerFollowFrame) {
+      cancelAnimationFrame(composerFollowFrame);
+      composerFollowFrame = 0;
+    }
+    composerFollowUntil = 0;
   }
-  function keyboardTransitionActive(){
-    const phase=document.documentElement&&document.documentElement.dataset
-      ?document.documentElement.dataset.keyboardPhase
-      :'';
-    return phase==='opening'||phase==='closing';
+  function keyboardTransitionActive() {
+    const phase =
+      document.documentElement && document.documentElement.dataset
+        ? document.documentElement.dataset.keyboardPhase
+        : '';
+    return phase === 'opening' || phase === 'closing';
   }
-  function runComposerFollow(){
-    composerFollowFrame=0;
-    if(keyboardTransitionActive()){
+  function runComposerFollow() {
+    composerFollowFrame = 0;
+    if (keyboardTransitionActive()) {
       stopComposerFollow();
       return;
     }
-    if(!list||userScrolledAway()||!pinState.lastPinned||
-       (list.querySelector&&list.querySelector(".turn-viewport-anchor"))){
+    if (
+      !list ||
+      userScrolledAway() ||
+      !pinState.lastPinned ||
+      (list.querySelector && list.querySelector('.turn-viewport-anchor'))
+    ) {
       stopComposerFollow();
       return;
     }
-    smoothScrollToBottom(list,{smooth:false});
+    smoothScrollToBottom(list, { smooth: false });
     rememberMetrics();
-    if(Date.now()<composerFollowUntil){
-      composerFollowFrame=requestAnimationFrame(runComposerFollow);
-    }else{
-      composerFollowUntil=0;
+    if (Date.now() < composerFollowUntil) {
+      composerFollowFrame = requestAnimationFrame(runComposerFollow);
+    } else {
+      composerFollowUntil = 0;
     }
   }
-  function armComposerFollow(){
-    if(!list||userScrolledAway()||!pinState.lastPinned)return;
-    composerFollowUntil=Date.now()+420;
-    if(!composerFollowFrame)composerFollowFrame=requestAnimationFrame(runComposerFollow);
+  function armComposerFollow() {
+    if (!list || userScrolledAway() || !pinState.lastPinned) return;
+    composerFollowUntil = Date.now() + 420;
+    if (!composerFollowFrame) composerFollowFrame = requestAnimationFrame(runComposerFollow);
   }
 
   /* Composer geometry is now owned by flex layout and ui/keyboard.
@@ -649,18 +868,26 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
      There is intentionally no interval or CSS-variable height measurement;
      the short transition-bound follow sequence only writes scrollTop while
      the composer is visibly changing size. */
-  const chatView=typeof document!=="undefined"
-    ?document.querySelector("#chatView, .chat-view")
-    :null;
-  const followComposerResize=createComposerResizeHandler(list,pinState,{
-    readMetrics:readMetrics,
-    keyboardTransitionActive:keyboardTransitionActive,
-    userScrolledAway:userScrolledAway,
-    rememberMetrics:rememberMetrics,
-    armComposerFollow:armComposerFollow
-  },pinSlack);
-  const composerLayout=observeComposerLayout(
-    list,chatView,followComposerResize,keyboardTransitionActive,armComposerFollow
+  const chatView =
+    typeof document !== 'undefined' ? document.querySelector('#chatView, .chat-view') : null;
+  const followComposerResize = createComposerResizeHandler(
+    list,
+    pinState,
+    {
+      readMetrics: readMetrics,
+      keyboardTransitionActive: keyboardTransitionActive,
+      userScrolledAway: userScrolledAway,
+      rememberMetrics: rememberMetrics,
+      armComposerFollow: armComposerFollow,
+    },
+    pinSlack,
+  );
+  const composerLayout = observeComposerLayout(
+    list,
+    chatView,
+    followComposerResize,
+    keyboardTransitionActive,
+    armComposerFollow,
   );
 
   /* Rich content can keep changing size after the stream has finished:
@@ -670,16 +897,16 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
      deliberately moved upward keeps the exact same scrollTop. The
      smooth path is delegated to smoothScrollToBottom() so the same
      motion language (and reduced-motion handling) applies. */
-  function scheduleContentFollow(baselineOverride?: ContentMetrics | null){
-    if(contentFrame||!list)return;
+  function scheduleContentFollow(baselineOverride?: ContentMetrics | null) {
+    if (contentFrame || !list) return;
     /* The mutation fallback passes the baseline captured BEFORE the DOM
        change; neither path uses a baseline advanced by scroll events. */
-    const previous=baselineOverride||contentMetrics||pinState.lastMetrics;
-    contentFrame=requestAnimationFrame(function(){
-      contentFrame=0;
+    const previous = baselineOverride || contentMetrics || pinState.lastMetrics;
+    contentFrame = requestAnimationFrame(function () {
+      contentFrame = 0;
       /* Read at execution, not notification: more growth may be coalesced into
          this frame, including the final resize of a streamed answer. */
-      const current=readMetrics();
+      const current = readMetrics();
       /* The list-level baseline can hold a transient mid-commit height that
          settled with no observer replay (batched React commits, the
          scrollbar-gutter reflow shortening every message, a font swap). A
@@ -688,7 +915,7 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
          same message element persists between samples, undo just its own
          height delta — an append to it never moves scrollTop, so this
          reconstructs the true pre-growth bottom exactly. */
-      const growth=measureContentGrowth(previous,current,list);
+      const growth = measureContentGrowth(previous, current, list);
       /* A controller (the send-time turn anchor) can own scrollTop while the
          answer grows. Its held geometry is not reader position, so neither
          follow nor forget the reader's pin here: following would fight that
@@ -697,47 +924,60 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
          baseline is what left a pinned reader stranded mid-answer once the
          anchor released. Keep the height baseline fresh, keep the pin truth,
          and follow on the first sample after the viewport comes back. */
-      if (contentFollowIsBlocked(list,lastMessage)) {
+      if (contentFollowIsBlocked(list, lastMessage)) {
         followOwnedElsewhere = true;
-        contentMetrics=current;
+        contentMetrics = current;
         return;
       }
-      const pinned=wasPinned(growth.beforeGrowth) || (followOwnedElsewhere && pinState.lastPinned);
+      const pinned =
+        wasPinned(growth.beforeGrowth) || (followOwnedElsewhere && pinState.lastPinned);
       followOwnedElsewhere = false;
-      const shouldFollow=growth.grew&&pinned;
-      if(shouldFollow&&!userScrolledAway()){
+      const shouldFollow = growth.grew && pinned;
+      if (shouldFollow && !userScrolledAway()) {
         /* Keep one bottom-follow animation active; its live target moves with
            streamed content instead of restarting the easing curve per update. */
-        smoothScrollToBottom(list,{smooth:true,retarget:true});
+        smoothScrollToBottom(list, { smooth: true, retarget: true });
       }
-      contentMetrics=current;
+      contentMetrics = current;
       rememberMetrics();
     });
   }
 
-  const messageObservers=createMessageObservers(list,{
-    getLastMessage:function(){return lastMessage},
-    setLastMessage:function(next: HTMLElement | null){lastMessage=next},
-    readMetrics:readMetrics,
-    setContentMetrics:function(metrics: ContentMetrics | null){contentMetrics=metrics},
-    getContentBaseline:function(){return contentMetrics||pinState.lastMetrics},
-    getContentFrame:function(){return contentFrame},
-    setContentFrame:function(frame: number){contentFrame=frame},
-    scheduleContentFollow:scheduleContentFollow,
-    rememberMetrics:rememberMetrics
+  const messageObservers = createMessageObservers(list, {
+    getLastMessage: function () {
+      return lastMessage;
+    },
+    setLastMessage: function (next: HTMLElement | null) {
+      lastMessage = next;
+    },
+    readMetrics: readMetrics,
+    setContentMetrics: function (metrics: ContentMetrics | null) {
+      contentMetrics = metrics;
+    },
+    getContentBaseline: function () {
+      return contentMetrics || pinState.lastMetrics;
+    },
+    getContentFrame: function () {
+      return contentFrame;
+    },
+    setContentFrame: function (frame: number) {
+      contentFrame = frame;
+    },
+    scheduleContentFollow: scheduleContentFollow,
+    rememberMetrics: rememberMetrics,
   });
 
-  pinState.lastMetrics=readMetrics();
-  pinState.lastPinned=wasPinned(pinState.lastMetrics);
-  list.addEventListener("scroll",rememberScrollPosition,{passive:true});
+  pinState.lastMetrics = readMetrics();
+  pinState.lastPinned = wasPinned(pinState.lastMetrics);
+  list.addEventListener('scroll', rememberScrollPosition, { passive: true });
   messageObservers.observe();
 
-  return function(){
-    if(contentFrame)cancelAnimationFrame(contentFrame);
+  return function () {
+    if (contentFrame) cancelAnimationFrame(contentFrame);
     stopComposerFollow();
     messageObservers.disconnect();
     composerLayout.disconnect();
-    list.removeEventListener("scroll",rememberScrollPosition);
+    list.removeEventListener('scroll', rememberScrollPosition);
   };
 }
 
@@ -746,22 +986,22 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
    user changes font-size / content-width — otherwise the same
    content recomputes to a larger/smaller height and the user's
    visible window ends up somewhere in the middle of the list. */
-export function scrollToBottomIfPinned(){
-  const sc=scrollContainer();
-  if(!sc)return;
-  const slack=80; /* pixels from bottom considered "pinned" */
-  const wasPinned=isPinnedToBottom(sc.scrollHeight-sc.scrollTop-sc.clientHeight,slack);
+export function scrollToBottomIfPinned() {
+  const sc = scrollContainer();
+  if (!sc) return;
+  const slack = 80; /* pixels from bottom considered "pinned" */
+  const wasPinned = isPinnedToBottom(sc.scrollHeight - sc.scrollTop - sc.clientHeight, slack);
   /* Do the scroll on the next frame so the new font-size / width has
      been applied to the layout. */
-  requestAnimationFrame(function(){
-    const sc2=scrollContainer();
-    if(!sc2)return;
-    if(wasPinned){
+  requestAnimationFrame(function () {
+    const sc2 = scrollContainer();
+    if (!sc2) return;
+    if (wasPinned) {
       writeScrollTop(sc2, sc2.scrollHeight, 'content');
-    }else{
+    } else {
       /* Even if not pinned, keep the relative position stable. */
-      const ratio=sc.scrollTop/Math.max(1,sc.scrollHeight-sc.clientHeight);
-      writeScrollTop(sc2, Math.round(ratio*(sc2.scrollHeight-sc2.clientHeight)), 'history');
+      const ratio = sc.scrollTop / Math.max(1, sc.scrollHeight - sc.clientHeight);
+      writeScrollTop(sc2, Math.round(ratio * (sc2.scrollHeight - sc2.clientHeight)), 'history');
     }
   });
 }
@@ -770,25 +1010,31 @@ export function scrollToBottomIfPinned(){
    Moved from main.js so all scroll ownership lives in this module.
    A forced scroll bypasses the pin check; otherwise the scroll only
    happens when the reader is pinned and has not scrolled away. */
-export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}){
-  opts=opts||{};
-  if(!opts.force&&stateStore.read("_userScrolledAway"))return;
-  const sc=scrollContainer();
-  if(!sc)return;
+export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}) {
+  opts = opts || {};
+  if (!opts.force && uiBridge.getSnapshot()._userScrolledAway) return;
+  const sc = scrollContainer();
+  if (!sc) return;
   /* A send glide (chat/turn/anchor/) owns the transcript while it runs.
      Thinking pills and tool cards call this on every
      update; starting a bottom glide here would cancel the send glide
      mid-flight and yank the viewport. */
-  if(!opts.force&&sc.dataset&&sc.dataset.turnAnchorSettling==="true")return;
+  if (!opts.force && sc.dataset && sc.dataset.turnAnchorSettling === 'true') return;
   /* Centralise the pin decision behind the pure shouldAutoScroll predicate
      (slack = SCROLL_SLACK = 64) so the "auto-scroll only when pinned and the
      reader has not scrolled away" rule is defined once and unit-tested in
      scrollDecision.ts. */
-  const distanceFromBottom=sc.scrollHeight-sc.scrollTop-sc.clientHeight;
-  if(opts.force||shouldAutoScroll(distanceFromBottom,stateStore.read("_userScrolledAway"))){
+  const distanceFromBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight;
+  if (
+    opts.force ||
+    shouldAutoScroll(distanceFromBottom, uiBridge.getSnapshot()._userScrolledAway)
+  ) {
     /* Share one bottom-follow owner across ordinary pinned-reader updates;
        the send-time turn anchor is guarded above. */
-    smoothScrollToBottom(sc,{smooth:opts.smooth!==false,retarget:!opts.force&&opts.smooth!==false});
+    smoothScrollToBottom(sc, {
+      smooth: opts.smooth !== false,
+      retarget: !opts.force && opts.smooth !== false,
+    });
   }
 }
 
@@ -797,9 +1043,9 @@ export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } =
    early: the DOM write has not yet completed layout and scrollHeight
    reflects the pre-bubble height, so the smooth scroll targets a stale
    bottom. */
-export function scheduleScrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}){
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
+export function scheduleScrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}) {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
       scrollMainToBottom(opts);
     });
   });

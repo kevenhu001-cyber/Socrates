@@ -33,10 +33,10 @@
      keyboard band, so no re-anchoring is needed. No shrink, no dim, no
      jump. */
   :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="closing"] #appShell#appShell #topicTitle.greeting {
+  :root[data-keyboard-open='true'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='opening'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='open'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='closing'] #appShell#appShell #topicTitle.greeting {
     visibility: visible !important;
   }
 }

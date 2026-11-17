@@ -1,4 +1,3 @@
-
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /* ── Modal focus + Esc helper ──
@@ -53,9 +52,17 @@ function updateAppShellInert() {
  * @param {HTMLElement | null} [previousElement]
  * @param {{ focusManaged?: boolean }} [options]
  */
-export function setModalOpen(id: string, isOpen: boolean, previousElement: HTMLElement | null = null, options: { focusManaged?: boolean } = {}) {
+export function setModalOpen(
+  id: string,
+  isOpen: boolean,
+  previousElement: HTMLElement | null = null,
+  options: { focusManaged?: boolean } = {},
+) {
   if (isOpen) {
-    _openTracker.set(id, previousElement || (typeof document !== 'undefined' ? document.activeElement : null));
+    _openTracker.set(
+      id,
+      previousElement || (typeof document !== 'undefined' ? document.activeElement : null),
+    );
     if (options.focusManaged) _managedFocus.add(id);
     else _managedFocus.delete(id);
   } else {
@@ -67,9 +74,11 @@ export function setModalOpen(id: string, isOpen: boolean, previousElement: HTMLE
 
 export function trapFocus(e: KeyboardEvent, container: HTMLElement) {
   if (e.key !== 'Tab' || !container) return;
-  const candidates = Array.from(container.querySelectorAll<HTMLElement>(
-    'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-  )).filter(function (el) {
+  const candidates = Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter(function (el) {
     return el.offsetParent !== null || el.getClientRects().length > 0;
   });
   if (candidates.length === 0) {
@@ -81,54 +90,82 @@ export function trapFocus(e: KeyboardEvent, container: HTMLElement) {
   if (e.shiftKey) {
     if (document.activeElement === first || !container.contains(document.activeElement)) {
       e.preventDefault();
-      try { last.focus(); } catch (error) { reportSwallow(error, 'ui/modalA11y.ts:73', 'expected'); }
+      try {
+        last.focus();
+      } catch (error) {
+        reportSwallow(error, 'ui/modalA11y.ts:73', 'expected');
+      }
     }
   } else {
     if (document.activeElement === last || !container.contains(document.activeElement)) {
       e.preventDefault();
-      try { first.focus(); } catch (error) { reportSwallow(error, 'ui/modalA11y.ts:78', 'expected'); }
+      try {
+        first.focus();
+      } catch (error) {
+        reportSwallow(error, 'ui/modalA11y.ts:78', 'expected');
+      }
     }
   }
 }
 
 function bindModalTabTrap(overlay: HTMLElement) {
-  overlay.addEventListener('keydown', function (e: KeyboardEvent) {
-    trapFocus(e, overlay);
-  }, true);
+  overlay.addEventListener(
+    'keydown',
+    function (e: KeyboardEvent) {
+      trapFocus(e, overlay);
+    },
+    true,
+  );
 }
 
 if (typeof document !== 'undefined') {
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Tab' || _openTracker.size === 0) return;
-    const keys = Array.from(_openTracker.keys());
-    const activeOverlayId = keys[keys.length - 1];
-    if (_managedFocus.has(activeOverlayId)) return;
-    const overlay = document.getElementById(activeOverlayId);
-    if (overlay && !overlay.classList.contains('hidden')) {
-      trapFocus(e, overlay);
-    }
-  }, true);
+  document.addEventListener(
+    'keydown',
+    function (e) {
+      if (e.key !== 'Tab' || _openTracker.size === 0) return;
+      const keys = Array.from(_openTracker.keys());
+      const activeOverlayId = keys[keys.length - 1];
+      if (_managedFocus.has(activeOverlayId)) return;
+      const overlay = document.getElementById(activeOverlayId);
+      if (overlay && !overlay.classList.contains('hidden')) {
+        trapFocus(e, overlay);
+      }
+    },
+    true,
+  );
 }
 
-function focusFirst(overlay: HTMLElement|null) {
+function focusFirst(overlay: HTMLElement | null) {
   /* Find the first focusable element inside the overlay.
      Focus is normally directed at inputs/textareas/selects; modals
      that need an action button as the primary focus can set
      `data-initial-focus` on that element. */
   const explicit = overlay!.querySelector('[data-initial-focus]');
-  if (explicit) { focusEl((explicit as HTMLElement | null)); return; }
+  if (explicit) {
+    focusEl(explicit as HTMLElement | null);
+    return;
+  }
   const candidates = overlay!.querySelectorAll(
-    'input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    'input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
   );
   for (let i = 0; i < candidates.length; i++) {
-    if (focusEl((candidates[i] as HTMLElement | null))) return;
+    if (focusEl(candidates[i] as HTMLElement | null)) return;
   }
 }
 
 function focusEl(el: HTMLElement | null) {
   if (!el || ('disabled' in el && el.disabled)) return false;
-  try { el.focus({ preventScroll: true }); return true; }
-  catch (_) { try { el.focus(); return true; } catch (__) { return false; } }
+  try {
+    el.focus({ preventScroll: true });
+    return true;
+  } catch (_) {
+    try {
+      el.focus();
+      return true;
+    } catch (__) {
+      return false;
+    }
+  }
 }
 
 function bindModalEsc(overlay: HTMLElement, closeFn: () => void) {
@@ -156,15 +193,27 @@ function bindModalEsc(overlay: HTMLElement, closeFn: () => void) {
                   flows where the overlay's state is driven imperatively
                   and an observer would race with the host's logic).
 */
-export function installModalA11y(opts: { overlayId: string; closeFn: () => void; onOpen?: () => void; onClose?: () => void; skipObserve?: boolean }) {
+export function installModalA11y(opts: {
+  overlayId: string;
+  closeFn: () => void;
+  onOpen?: () => void;
+  onClose?: () => void;
+  skipObserve?: boolean;
+}) {
   const overlay = document.getElementById(opts.overlayId);
   if (!overlay || _wired[opts.overlayId]) return;
   _wired[opts.overlayId] = true;
 
   function handleOpen() {
-    try { _openTracker.set(opts.overlayId, document.activeElement); } catch (error) { reportSwallow(error, 'ui/modalA11y.ts:154'); }
+    try {
+      _openTracker.set(opts.overlayId, document.activeElement);
+    } catch (error) {
+      reportSwallow(error, 'ui/modalA11y.ts:154');
+    }
     updateAppShellInert();
-    setTimeout(function () { focusFirst(overlay); }, 50);
+    setTimeout(function () {
+      focusFirst(overlay);
+    }, 50);
     if (typeof opts.onOpen === 'function') opts.onOpen();
   }
 
@@ -173,7 +222,11 @@ export function installModalA11y(opts: { overlayId: string; closeFn: () => void;
     _openTracker.delete(opts.overlayId);
     updateAppShellInert();
     if (prev && typeof (prev as HTMLElement).focus === 'function') {
-      try { (prev as HTMLElement).focus({ preventScroll: true }); } catch (error) { reportSwallow(error, 'ui/modalA11y.ts:165', 'expected'); }
+      try {
+        (prev as HTMLElement).focus({ preventScroll: true });
+      } catch (error) {
+        reportSwallow(error, 'ui/modalA11y.ts:165', 'expected');
+      }
     }
     if (typeof opts.onClose === 'function') opts.onClose();
   }
@@ -194,7 +247,8 @@ export function installModalA11y(opts: { overlayId: string; closeFn: () => void;
     const open = !overlay.classList.contains('hidden');
     if (open === prevOpen) return;
     prevOpen = open;
-    if (open) handleOpen(); else handleClose();
+    if (open) handleOpen();
+    else handleClose();
   });
   modalEl.__classObserver = classObserver;
   classObserver.observe(overlay, { attributes: true, attributeFilter: ['class'] });

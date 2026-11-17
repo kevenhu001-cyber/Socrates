@@ -6,14 +6,31 @@
  * save queue posts a self-contained snapshot (see session/saveState.ts).
  */
 import { afterSessionPaint } from './afterSessionPaint.ts';
-import { stateStore } from '../state/store.ts';
+import {
+  dispatchExam,
+  dispatchPatches,
+  dispatchSession,
+  dispatchUi,
+  kbStore,
+  sessionStore,
+  type KbSnapshot,
+  type SessionSnapshot,
+} from '../store/index.ts';
 import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
 import { archiveSessionMistakes } from '../tutor/mistakeArchive.ts';
 import { turnState } from '../chat/turn/state.ts';
+import { detachActiveTurn } from '../chat/turn/cancelActiveTurn.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
-import { appMode, ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
+import {
+  appMode,
+  ensureSessionShape,
+  setAppMode,
+  syncAppModeUI,
+  syncSidebarForMode,
+  type AppMode,
+} from '../config/providers.ts';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
 import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
@@ -37,7 +54,6 @@ import { activateMainView } from '../ui/mainViewController.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { dispatchExam, dispatchSession, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { renderRecents } from '../ui/recentsView.ts';
@@ -56,19 +72,19 @@ export interface LoadedSession {
   phase?: string;
   projectId?: string | null;
   assistantId?: string | null;
-  kbNodes?: unknown[];
-  mistakes?: unknown[];
+  kbNodes?: KbSnapshot['kbNodes'];
+  mistakes?: KbSnapshot['mistakes'];
   messages?: PersistedMessage[];
   examData?: ExamDataShape | null;
-  teachingPlan?: unknown;
+  teachingPlan?: SessionSnapshot['teachingPlan'];
   teachingStage?: string;
   currentExampleIdx?: number;
   practiceAttempts?: number;
   practicePhase?: string;
   currentNode?: number;
   totalQ?: number;
-  branchedFrom?: unknown;
-  boundariesHistory?: unknown[];
+  branchedFrom?: SessionSnapshot['branchedFrom'];
+  boundariesHistory?: KbSnapshot['boundariesHistory'];
   mistakeFilter?: string;
   [key: string]: unknown;
 }
@@ -93,7 +109,9 @@ function _t(key: string, fallback?: string): string {
     }
     const val = t(key);
     if (val && val !== key) return val;
-  } catch (e) { reportSwallow(e, 'session/loader._t'); }
+  } catch (e) {
+    reportSwallow(e, 'session/loader._t');
+  }
   return fallback != null ? fallback : key;
 }
 function _appMode(): string {
@@ -102,17 +120,21 @@ function _appMode(): string {
 function _renderRecents(): void {
   try {
     renderRecents();
-  } catch (e) { reportSwallow(e, 'session/loader._renderRecents'); }
+  } catch (e) {
+    reportSwallow(e, 'session/loader._renderRecents');
+  }
 }
 function _clearActiveTemplate(): void {
   try {
     clearActiveTemplate();
-  } catch (e) { reportSwallow(e, 'session/loader._clearActiveTemplate'); }
+  } catch (e) {
+    reportSwallow(e, 'session/loader._clearActiveTemplate');
+  }
 }
 
 function restoredExamQuestions(session: LoadedSession): ExamQuestion[] {
-  const questions = session.examData && Array.isArray(session.examData.questions)
-    ? session.examData.questions : [];
+  const questions =
+    session.examData && Array.isArray(session.examData.questions) ? session.examData.questions : [];
   return questions.map((question, index) => ({ ...question, _idx: index }));
 }
 
@@ -127,7 +149,7 @@ function buildRestoredExamState(session: LoadedSession, questions: ExamQuestion[
     examDifficulty: (exam && exam.difficulty) || 'intermediate',
     examTypes: exam && Array.isArray(exam.types) ? exam.types : [],
     examQuestions: questions,
-    examAnswers: (exam && exam.answers || {}) as Record<string, string | number | undefined>,
+    examAnswers: ((exam && exam.answers) || {}) as Record<string, string | number | undefined>,
     examSubmitted: !!(exam && exam.submitted),
     examViewMode: 'questions' as const,
     examStatusMessage: '',
@@ -139,8 +161,11 @@ function restoreExamState(session: LoadedSession, questions: ExamQuestion[]): vo
   dispatchSession({ type: 'session/set', key: 'currentSessionId', value: session.id });
   dispatchUi({ type: 'ui/set', key: '_examInView', value: true });
   dispatchExam({ type: 'exam/patch', patch: buildRestoredExamState(session, questions) });
-  try { pushExamIdToURL(session.id); }
-  catch (error) { reportSwallow(error, 'session/loader.loadSession.examUrl'); }
+  try {
+    pushExamIdToURL(session.id);
+  } catch (error) {
+    reportSwallow(error, 'session/loader.loadSession.examUrl');
+  }
 }
 
 export async function loadExamSession(session: LoadedSession): Promise<void> {
@@ -151,7 +176,8 @@ export async function loadExamSession(session: LoadedSession): Promise<void> {
   restoreExamState(session, questions);
   toggleShareBtn();
   _renderRecents();
-  const scroller = document.getElementById('scrollContainer') || document.getElementById('msgScroll');
+  const scroller =
+    document.getElementById('scrollContainer') || document.getElementById('msgScroll');
   if (scroller) scroller.scrollTop = 0;
 }
 /* F2c — clear every cross-round transient so a previous session's
@@ -160,44 +186,66 @@ export async function loadExamSession(session: LoadedSession): Promise<void> {
    loadSession() (server-driven switch) and startSession() (user
    clicks Begin with a new topic). */
 export function resetSessionTransients(): void {
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    searchContext: null,
-    searchResults: [],
-    searchContextAt: 0,
-    searchContextCount: 0,
-    searchContextQuery: null,
-    searchContextError: null,
-    lastCallSource: null,
-    lastCallError: null,
-    sessionTitle: null,
-  } });
-  try { clearComposer('chat'); } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients'); }
-  try { if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null; } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~3'); }
-  try { if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null; } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~4'); }
+  dispatchPatches({
+    search: {
+      searchContext: null,
+      searchResults: [],
+      searchContextAt: 0,
+      searchContextCount: 0,
+      searchContextQuery: null,
+      searchContextError: null,
+    },
+    call: { lastCallSource: null, lastCallError: null },
+    session: { sessionTitle: null },
+  });
+  try {
+    clearComposer('chat');
+  } catch (e) {
+    reportSwallow(e, 'session/loader.resetSessionTransients');
+  }
+  try {
+    if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null;
+  } catch (e) {
+    reportSwallow(e, 'session/loader.resetSessionTransients~3');
+  }
+  try {
+    if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null;
+  } catch (e) {
+    reportSwallow(e, 'session/loader.resetSessionTransients~4');
+  }
   /* F2a-ext — clear the active template so a slash-command template
      (/quiz, /summarize, etc.) from the previous session doesn't
      inject its systemPrompt into the new session's LLM call via
      injectTemplateSystemPrompt (main.js:3910). The template is a
      user-level tool, not a session-scoped state; resetting it on
      session switch prevents the #1 cross-session context leak. */
-  try { _clearActiveTemplate(); } catch (e) { reportSwallow(e, 'session/loader.resetSessionTransients~5'); }
+  try {
+    _clearActiveTemplate();
+  } catch (e) {
+    reportSwallow(e, 'session/loader.resetSessionTransients~5');
+  }
 }
 
-/* F2d — update the canonical session id in stateStore. Its lookup table
-   keeps the legacy and namespaced state views synchronized. */
 export function setCurrentSessionId(id: string | null, silent?: boolean): void {
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: id });
   if (!silent) publishReactChatRuntime({ type: 'state-synced', reason: 'session-id-changed' });
 }
 
 function syncRestoredTutorPlan(): void {
-  const nodes = stateStore.read('kbNodes') as unknown[] | null;
+  const nodes = kbStore.getState().kbNodes;
   if (_appMode() === 'chat' || !nodes || !nodes.length) return;
-  stateStore.dispatch({
-    type: 'state/set', key: 'teachingPlan', value: buildTeachingPlanFromKB(stateView()),
+  dispatchSession({
+    type: 'session/set',
+    key: 'teachingPlan',
+    value: buildTeachingPlanFromKB(stateView()),
   });
   const planSync = syncCurrentNodeFromTeachingPlan(stateView());
-  if (planSync) stateStore.dispatch({ type: 'state/batch', patch: planSync });
+  if (planSync) {
+    dispatchPatches({
+      session: { teachingPlan: planSync.teachingPlan },
+      kb: { currentNode: planSync.currentNode },
+    });
+  }
 }
 
 /* A cache-hit paints immediately; this background fetch refreshes it and
@@ -210,18 +258,23 @@ function revalidateCachedSession(
 ): void {
   if (!cachedDetail || session.kind === 'exam' || detailCache.isFresh(cachedDetail)) return;
   const paintedSignature = cachedDetail.sig;
-  Promise.resolve().then(function () {
-    return apiFetch<LoadedSession>(sessionDetailPath(id), { signal: abortController.signal });
-  }).then(function (fresh) {
-    if (!fresh || abortController.signal.aborted || saveState.loadSessionId !== id) return;
-    normalizeDetailPage(fresh);
-    if (stateStore.read('currentSessionId') !== id) return;
-    detailCache.store(id, fresh);
-    if (detailCache.signature(fresh) !== paintedSignature) {
-      detailCache.invalidate(id);
-      loadSession(id);
-    }
-  }).catch(function () { /* empty-catch: intentional — a failed revalidate keeps the painted copy */ });
+  Promise.resolve()
+    .then(function () {
+      return apiFetch<LoadedSession>(sessionDetailPath(id), { signal: abortController.signal });
+    })
+    .then(function (fresh) {
+      if (!fresh || abortController.signal.aborted || saveState.loadSessionId !== id) return;
+      normalizeDetailPage(fresh);
+      if (sessionStore.getState().currentSessionId !== id) return;
+      detailCache.store(id, fresh);
+      if (detailCache.signature(fresh) !== paintedSignature) {
+        detailCache.invalidate(id);
+        loadSession(id);
+      }
+    })
+    .catch(function () {
+      /* empty-catch: intentional — a failed revalidate keeps the painted copy */
+    });
 }
 
 /* Keep stale-load races inert, preserve the previous transcript for transient
@@ -239,9 +292,10 @@ function evictMissingSession(id: string): void {
 }
 
 function shouldResetMissingSessionView(id: string): boolean {
-  const currentId = stateStore.read('currentSessionId');
-  const isUrlMatch = typeof location !== 'undefined'
-    && location.search.indexOf('chat=' + encodeURIComponent(id)) >= 0;
+  const currentId = sessionStore.getState().currentSessionId;
+  const isUrlMatch =
+    typeof location !== 'undefined' &&
+    location.search.indexOf('chat=' + encodeURIComponent(id)) >= 0;
   return currentId === id || !currentId || isUrlMatch;
 }
 
@@ -264,10 +318,11 @@ function resetMissingSessionView(): void {
   try {
     endHistoryPaging();
     clearLegacyMsgListChildren();
-    stateStore.dispatch({ type: 'state/batch', patch: {
-      currentSessionId: null, topic: '', kbNodes: [], phase: 'topic',
-    } });
-    stateStore.dispatch({ type: 'session/replace-messages', payload: [] });
+    dispatchPatches({
+      session: { currentSessionId: null, topic: '', phase: 'topic' },
+      kb: { kbNodes: [] },
+    });
+    dispatchSession({ type: 'session/replace-messages', payload: [] });
     publishReactChatRuntime({ type: 'state-synced', reason: 'session-not-found' });
     activateMainView('topicSetup', document);
   } catch (error) {
@@ -288,29 +343,42 @@ function handleSessionLoadFailure(
   error: unknown,
   abortController: AbortController,
   historyRebuildStarted: boolean,
-  previousMessages: unknown[] | null,
+  previousMessages: SessionSnapshot['messages'] | null,
 ): void {
   if (abortController.signal.aborted || saveState.loadSessionId !== id) return;
   if (historyRebuildStarted && previousMessages) {
     try {
-      stateStore.dispatch({ type: 'session/replace-messages', payload: previousMessages });
+      dispatchSession({ type: 'session/replace-messages', payload: previousMessages });
       publishReactChatRuntime({ type: 'state-synced', reason: 'session-load-failed' });
-    } catch (e) { reportSwallow(e, 'session/loader.handleSessionLoadFailure.restore'); }
+    } catch (e) {
+      reportSwallow(e, 'session/loader.handleSessionLoadFailure.restore');
+    }
   }
 
-  const status = (error && typeof (error as { status?: unknown }).status === 'number')
-    ? (error as { status: number }).status
-    : 0;
+  const status =
+    error && typeof (error as { status?: unknown }).status === 'number'
+      ? (error as { status: number }).status
+      : 0;
   if (status === 404) {
     handleMissingSession(id);
     return;
   }
-  console.warn('[loadSession] transient error loading session', id, 'status=' + status, (error as { message?: string } | null)?.message);
-  showToast(_t('session.loadFailed').replace('{msg}', (error as { message?: string } | null)?.message || 'temporary error'));
+  console.warn(
+    '[loadSession] transient error loading session',
+    id,
+    'status=' + status,
+    (error as { message?: string } | null)?.message,
+  );
+  showToast(
+    _t('session.loadFailed').replace(
+      '{msg}',
+      (error as { message?: string } | null)?.message || 'temporary error',
+    ),
+  );
 }
 
 interface SessionLoadRecovery {
-  previousMessages: unknown[] | null;
+  previousMessages: SessionSnapshot['messages'] | null;
   historyRebuildStarted: boolean;
 }
 
@@ -322,22 +390,14 @@ function beginSessionLoad(id: string): AbortController {
   saveState.saveDirty = false;
   saveState.pendingSnapshot = null;
 
-  if (turnState.activeChatAbort) {
-    try { turnState.activeChatAbort('session-switch'); }
-    catch (error) { reportSwallow(error, 'session/loader.loadSession'); }
-  }
-  if (turnState.activeChatCtl) {
-    try { turnState.activeChatCtl.abort(); }
-    catch (error) { reportSwallow(error, 'session/loader.loadSession~2'); }
-  }
-  turnState.activeChatCtl = null;
-  turnState.activeChatAbort = null;
-  turnState.chatStreaming = false;
-  turnState.chatStopMode = false;
+  detachActiveTurn('session-switch');
 
   if (saveState.loadAbortCtl) {
-    try { saveState.loadAbortCtl.abort(); }
-    catch (error) { reportSwallow(error, 'session/loader.loadSession~3'); }
+    try {
+      saveState.loadAbortCtl.abort();
+    } catch (error) {
+      reportSwallow(error, 'session/loader.loadSession~3');
+    }
   }
   const controller = new AbortController();
   saveState.loadAbortCtl = controller;
@@ -354,7 +414,7 @@ async function fetchSessionSnapshot(
 
   const inflight = detailCache.getInflight(id);
   let session = inflight
-    ? await inflight as LoadedSession
+    ? ((await inflight) as LoadedSession)
     : await apiFetch<LoadedSession>(sessionDetailPath(id), { signal: controller.signal });
   if (!session) {
     session = await apiFetch<LoadedSession>(sessionDetailPath(id), { signal: controller.signal });
@@ -365,22 +425,14 @@ async function fetchSessionSnapshot(
   return session;
 }
 
-function buildSessionCoreFields(session: LoadedSession): Record<string, unknown> {
+function buildSessionFields(session: LoadedSession): Partial<Omit<SessionSnapshot, 'revision'>> {
   return {
-    topic: session.topic,
-    domain: session.domain,
-    kbNodes: session.kbNodes || [],
-    currentNode: session.currentNode || 0,
+    topic: session.topic ?? '',
+    domain: session.domain ?? null,
     totalQ: session.totalQ || 0,
     phase: session.phase || 'chat',
     currentProjectId: session.projectId || null,
-    mistakes: session.mistakes || [],
     sessionTitle: session.title || null,
-  };
-}
-
-function buildSessionTeachingFields(session: LoadedSession): Record<string, unknown> {
-  return {
     substantiveCount: 0,
     stuckCount: 0,
     diagIndex: 0,
@@ -392,15 +444,14 @@ function buildSessionTeachingFields(session: LoadedSession): Record<string, unkn
     practiceAttempts: session.practiceAttempts || 0,
     practicePhase: session.practicePhase || 'foundation',
     teachingPlan: session.teachingPlan || null,
-    'session.branchedFrom': session.branchedFrom || null,
-    'kb.boundariesHistory': Array.isArray(session.boundariesHistory) ? session.boundariesHistory : [],
-    'kb.mistakeFilter': session.mistakeFilter || 'all',
+    branchedFrom: session.branchedFrom || null,
   };
 }
 
 function restoreAssistantSelection(session: LoadedSession): void {
   try {
-    if (session.assistantId) sessionStorage.setItem('socrates-active-assistant', session.assistantId);
+    if (session.assistantId)
+      sessionStorage.setItem('socrates-active-assistant', session.assistantId);
     else sessionStorage.removeItem('socrates-active-assistant');
   } catch (error) {
     reportSwallow(error, 'session/loader.loadSession~4', 'expected');
@@ -416,10 +467,16 @@ function refreshLoadedSessionProject(session: LoadedSession): void {
 function hydrateSessionFields(session: LoadedSession): void {
   /* Clear previous-session transients before restoring this session's title. */
   resetSessionTransients();
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    ...buildSessionCoreFields(session),
-    ...buildSessionTeachingFields(session),
-  } });
+  dispatchPatches({
+    session: buildSessionFields(session),
+    kb: {
+      kbNodes: session.kbNodes || [],
+      currentNode: session.currentNode || 0,
+      mistakes: session.mistakes || [],
+      boundariesHistory: Array.isArray(session.boundariesHistory) ? session.boundariesHistory : [],
+      mistakeFilter: session.mistakeFilter || 'all',
+    },
+  });
   /* RN-14: mirror this session's mistakes for the cross-session book. */
   archiveSessionMistakes(session.id, session.title || session.topic || '', session.mistakes);
   restoreAssistantSelection(session);
@@ -436,7 +493,7 @@ function restoreLoadedChat(
   recovery: SessionLoadRecovery,
 ): void {
   activateMainView('chatView', document);
-  recovery.previousMessages = (stateStore.read('messages') as unknown[]).slice();
+  recovery.previousMessages = sessionStore.getState().messages.slice();
   recovery.historyRebuildStarted = true;
   clearLegacyMsgListChildren();
 
@@ -444,12 +501,15 @@ function restoreLoadedChat(
   /* R7 phase 2 — open the paging walk before the rows publish, so the list's
      first render already knows whether older pages exist. */
   beginHistoryPaging(session.id, session);
-  stateStore.dispatch({ type: 'session/replace-messages', payload: restoredMessages });
+  dispatchSession({ type: 'session/replace-messages', payload: restoredMessages });
   seedSyncedMessages(session.id, restoredMessages);
   restoreLocalAssistantFallback(session, olderRowCount(session));
   const restorePartialFallback = (): void => {
-    try { restoreInterruptedResponse(session); }
-    catch (error) { reportSwallow(error, 'session/loader.restorePartialFallback'); }
+    try {
+      restoreInterruptedResponse(session);
+    } catch (error) {
+      reportSwallow(error, 'session/loader.restorePartialFallback');
+    }
   };
 
   /* Set the id only after replacing messages so saves cannot pair a new id
@@ -467,7 +527,8 @@ function restoreLoadedChat(
   syncRestoredTutorPlan();
   publishReactChatRuntime({ type: 'state-synced', reason: 'session-loaded' });
 
-  const stillCurrent = () => !controller.signal.aborted && stateStore.read('currentSessionId') === session.id;
+  const stillCurrent = () =>
+    !controller.signal.aborted && sessionStore.getState().currentSessionId === session.id;
   afterSessionPaint(controller.signal, stillCurrent, () => {
     mirrorSessionHistory(session, stillCurrent, controller.signal);
   });
@@ -479,7 +540,11 @@ export async function loadSession(id: string): Promise<void> {
 
   /* Phone recents live in the overlay drawer: picking one has to reveal the
      conversation it just loaded. No-op on desktop and when already closed. */
-  try { closeSidebarOnMobile(); } catch (error) { reportSwallow(error, 'session/loader.closeSidebarOnMobile'); }
+  try {
+    closeSidebarOnMobile();
+  } catch (error) {
+    reportSwallow(error, 'session/loader.closeSidebarOnMobile');
+  }
 
   const controller = beginSessionLoad(id);
   const cachedDetail = detailCache.lookup(id);

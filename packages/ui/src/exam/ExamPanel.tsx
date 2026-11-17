@@ -12,7 +12,15 @@ import { defaultExamStrings, type ExamStrings } from './strings';
 
 const plainText: RenderExamText = (text) => text;
 
-export function ExamPanel({ screen, strings = defaultExamStrings, onCommand, onAnswer, onDraftChange, renderText = plainText, ids }: {
+export function ExamPanel({
+  screen,
+  strings = defaultExamStrings,
+  onCommand,
+  onAnswer,
+  onDraftChange,
+  renderText = plainText,
+  ids,
+}: {
   screen: ExamScreen;
   strings?: ExamStrings;
   onCommand: ExamCommandHandler;

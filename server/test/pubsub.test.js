@@ -53,11 +53,23 @@ describe('pubsub local delivery', () => {
   test('topics that differ only by a UUID hyphen are independently keyed', async () => {
     const a = [];
     const b = [];
-    const unA = subscribeLocal('exec_progress:11111111-1111-4111-8111-aaaaaaaaaaaa', (p) => a.push(p));
-    const unB = subscribeLocal('exec_progress:11111111-1111-4111-8111-bbbbbbbbbbbb', (p) => b.push(p));
+    const unA = subscribeLocal('exec_progress:11111111-1111-4111-8111-aaaaaaaaaaaa', (p) =>
+      a.push(p),
+    );
+    const unB = subscribeLocal('exec_progress:11111111-1111-4111-8111-bbbbbbbbbbbb', (p) =>
+      b.push(p),
+    );
     try {
-      await publish('exec_progress:11111111-1111-4111-8111-aaaaaaaaaaaa', { phase: 'a' }, { local: true });
-      await publish('exec_progress:11111111-1111-4111-8111-bbbbbbbbbbbb', { phase: 'b' }, { local: true });
+      await publish(
+        'exec_progress:11111111-1111-4111-8111-aaaaaaaaaaaa',
+        { phase: 'a' },
+        { local: true },
+      );
+      await publish(
+        'exec_progress:11111111-1111-4111-8111-bbbbbbbbbbbb',
+        { phase: 'b' },
+        { local: true },
+      );
       assert.equal(a.length, 1);
       assert.equal(b.length, 1);
       assert.equal(a[0].phase, 'a');

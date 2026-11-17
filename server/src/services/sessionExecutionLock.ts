@@ -13,7 +13,9 @@ export function createSessionExecutionLock() {
 
     const previous = tails.get(sessionId) || Promise.resolve();
     let release!: () => void;
-    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     const ownTail = previous.catch(() => undefined).then(() => gate);
     tails.set(sessionId, ownTail);
 
@@ -29,7 +31,11 @@ export function createSessionExecutionLock() {
   return {
     run,
     /** Test/diagnostic aid. Never used for authorization decisions. */
-    get pendingSessions() { return tails.size; },
-    clear() { tails.clear(); },
+    get pendingSessions() {
+      return tails.size;
+    },
+    clear() {
+      tails.clear();
+    },
   };
 }

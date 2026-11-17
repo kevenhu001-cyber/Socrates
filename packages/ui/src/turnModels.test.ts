@@ -30,14 +30,27 @@ const ZH: ThinkingLabels = {
 };
 
 test('splitSummary reads bold, heading, line and sentence shapes', () => {
-  assert.deepEqual(splitSummary('**梳理问题**\n\n先确认 **路由** 稳定性。'), { title: '梳理问题', summary: '先确认 路由 稳定性。' });
-  assert.deepEqual(splitSummary('## Plan\nCheck the docs first.'), { title: 'Plan', summary: 'Check the docs first.' });
+  assert.deepEqual(splitSummary('**梳理问题**\n\n先确认 **路由** 稳定性。'), {
+    title: '梳理问题',
+    summary: '先确认 路由 稳定性。',
+  });
+  assert.deepEqual(splitSummary('## Plan\nCheck the docs first.'), {
+    title: 'Plan',
+    summary: 'Check the docs first.',
+  });
   assert.deepEqual(splitSummary('查资料\n读两篇论文'), { title: '查资料', summary: '读两篇论文' });
   assert.deepEqual(splitSummary('短句'), { title: '短句', summary: '' });
-  assert.deepEqual(splitSummary('Comparing the sources. Both agree on the loss term and its weight.'), {
-    title: 'Comparing the sources', summary: 'Both agree on the loss term and its weight.',
+  assert.deepEqual(
+    splitSummary('Comparing the sources. Both agree on the loss term and its weight.'),
+    {
+      title: 'Comparing the sources',
+      summary: 'Both agree on the loss term and its weight.',
+    },
+  );
+  assert.deepEqual(splitSummary('Checked the relevant sources.'), {
+    title: 'Checked the relevant sources.',
+    summary: '',
   });
-  assert.deepEqual(splitSummary('Checked the relevant sources.'), { title: 'Checked the relevant sources.', summary: '' });
   assert.deepEqual(splitSummary(''), { title: '', summary: '' });
 });
 
@@ -50,7 +63,10 @@ test('only public reasoning summaries become steps; raw reasoning never does', (
     { id: 'tool', kind: 'tool', text: 'web_search' },
     { id: 'b', kind: 'reasoning_summary', text: 'Second step', phase: 'running', startedAt: 3 },
   ]);
-  assert.deepEqual(steps.map((step) => step.id), ['a', 'b']);
+  assert.deepEqual(
+    steps.map((step) => step.id),
+    ['a', 'b'],
+  );
   assert.ok(!JSON.stringify(steps).includes('PRIVATE'));
   assert.equal(steps[1].phase, 'running');
   assert.deepEqual(publicSummariesOf(null), []);
@@ -75,28 +91,51 @@ test('timeline interleaves by time and merges consecutive tools into one group',
     { id: 't4', item: 't4' },
   ];
   const timeline = activityTimeline(steps, tools);
-  assert.deepEqual(timeline.map((entry) => entry.kind === 'step' ? entry.step.id : entry.tools.join('+')), ['s1', 't1+t2', 's2', 't3+t4']);
+  assert.deepEqual(
+    timeline.map((entry) => (entry.kind === 'step' ? entry.step.id : entry.tools.join('+'))),
+    ['s1', 't1+t2', 's2', 't3+t4'],
+  );
   // Untimed history tools follow the summaries.
-  const history = activityTimeline(steps, [{ id: 'a', item: 'a' }, { id: 'b', item: 'b' }]);
-  assert.deepEqual(history.map((entry) => entry.kind), ['step', 'step', 'tools']);
+  const history = activityTimeline(steps, [
+    { id: 'a', item: 'a' },
+    { id: 'b', item: 'b' },
+  ]);
+  assert.deepEqual(
+    history.map((entry) => entry.kind),
+    ['step', 'step', 'tools'],
+  );
 });
 
 test('the current action leads while elapsed time stays out of the live announcement', () => {
   assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: true }), ZH), '正在处理…');
   for (const durationSec of [0, 1, 22.4, 120]) {
-    const header = thinkingHeaderOf({ live: true, durationSec, statusLabel: ' 正在搜索网页… ', toolCount: 3 });
+    const header = thinkingHeaderOf({
+      live: true,
+      durationSec,
+      statusLabel: ' 正在搜索网页… ',
+      toolCount: 3,
+    });
     assert.equal(thinkingLabelOf(header, ZH), '正在搜索网页…');
   }
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: 11.4 }), ZH), '思考过程');
+  assert.equal(
+    thinkingLabelOf(thinkingHeaderOf({ live: false, durationSec: 11.4 }), ZH),
+    '思考过程',
+  );
   assert.equal(thinkingHeaderOf({ live: false, durationSec: 0.2 }).durationSec, 1);
   assert.equal(thinkingHeaderOf({ live: false, durationSec: Number.NaN }).durationSec, null);
 });
 
 test('settled headers count actual tool calls, not summaries or successful steps', () => {
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 3, statusLabel: 'Searching…' }), ZH), '使用了 3 个工具');
+  assert.equal(
+    thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 3, statusLabel: 'Searching…' }), ZH),
+    '使用了 3 个工具',
+  );
   const en = { ...ZH, usedTool: 'Used {n} tool', usedTools: 'Used {n} tools' };
   assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 1 }), en), 'Used 1 tool');
-  assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 2 }), en), 'Used 2 tools');
+  assert.equal(
+    thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount: 2 }), en),
+    'Used 2 tools',
+  );
   for (const toolCount of [undefined, -1, Number.NaN, Infinity]) {
     assert.equal(thinkingLabelOf(thinkingHeaderOf({ live: false, toolCount }), ZH), '思考过程');
   }
@@ -150,7 +189,10 @@ test('source cards carry favicon, monogram and safe links only', () => {
   assert.equal(faviconUrlOf('javascript:alert(1)'), null);
   assert.equal(monogramOf('www.github.com'), 'G');
   assert.equal(monogramOf(''), '?');
-  const cards = sourceCardsOf([{ title: 'Paper', url: 'https://arxiv.org/abs/1' }, { title: 'Bad', url: 'javascript:x' }]);
+  const cards = sourceCardsOf([
+    { title: 'Paper', url: 'https://arxiv.org/abs/1' },
+    { title: 'Bad', url: 'javascript:x' },
+  ]);
   assert.equal(cards[0].host, 'arxiv.org');
   assert.equal(cards[1].url, null);
   assert.equal(cards[1].favicon, null);

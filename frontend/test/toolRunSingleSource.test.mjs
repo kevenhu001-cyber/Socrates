@@ -14,8 +14,12 @@ const { toolRunLabel } = await import('../src/ui/toolPresentationModel.ts');
 
 function makeBody() {
   return {
-    querySelector() { return null; },
-    querySelectorAll() { return []; },
+    querySelector() {
+      return null;
+    },
+    querySelectorAll() {
+      return [];
+    },
   };
 }
 
@@ -25,15 +29,26 @@ function makeRuntime(message) {
     body: makeBody(),
     stillOwnsSlot: () => true,
     getMessage: () => message,
-    requestAnimationFrame(callback) { scheduled = callback; return 1; },
+    requestAnimationFrame(callback) {
+      scheduled = callback;
+      return 1;
+    },
     cancelAnimationFrame() {},
     EventSource: null,
     mode: 'detailed',
   });
   return {
     runtime,
-    flush() { if (scheduled) { const fn = scheduled; scheduled = null; fn(); } },
-    dispose() { runtime.dispose(); },
+    flush() {
+      if (scheduled) {
+        const fn = scheduled;
+        scheduled = null;
+        fn();
+      }
+    },
+    dispose() {
+      runtime.dispose();
+    },
   };
 }
 
@@ -42,9 +57,18 @@ function makeRuntime(message) {
    copy ("Searching \"q\"…") reaches both surfaces instead of the old generic
    verbs living in a second table. */
 test('M4 summary copy carries the tool object like the React row', () => {
-  assert.equal(toolRunLabel({ name: 'web_search', input: { query: 'fusion coils' } }, 'running').text, 'Searching "fusion coils"…');
-  assert.equal(toolRunLabel({ name: 'code_interpreter', input: {} }, 'running').text, 'Executing code…');
-  assert.equal(toolRunLabel({ name: 'code_interpreter', input: {}, _progressPhase: 'stdout' }, 'running').text, 'Analyzing data…');
+  assert.equal(
+    toolRunLabel({ name: 'web_search', input: { query: 'fusion coils' } }, 'running').text,
+    'Searching "fusion coils"…',
+  );
+  assert.equal(
+    toolRunLabel({ name: 'code_interpreter', input: {} }, 'running').text,
+    'Executing code…',
+  );
+  assert.equal(
+    toolRunLabel({ name: 'code_interpreter', input: {}, _progressPhase: 'stdout' }, 'running').text,
+    'Analyzing data…',
+  );
   assert.equal(toolRunLabel({ name: 'mystery_tool' }, 'running').text, 'Using a tool');
 });
 
@@ -56,12 +80,12 @@ test('M4 orphan progress is capped by key and by list', () => {
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolProgress({ id: `ghost-${i}`, phase: 'stdout', chunk: 'x', elapsedMs: 10 });
   }
-  h.runtime.recordToolUse({id: 'ghost-0', name: 'code_interpreter'});
+  h.runtime.recordToolUse({ id: 'ghost-0', name: 'code_interpreter' });
   assert.equal(message.toolCalls[0]._liveOutput, undefined, 'oldest orphan key evicted');
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolProgress({ id: 'same-ghost', phase: 'stdout', chunk: 'x', elapsedMs: 10 });
   }
-  h.runtime.recordToolUse({id: 'same-ghost', name: 'code_interpreter'});
+  h.runtime.recordToolUse({ id: 'same-ghost', name: 'code_interpreter' });
   assert.equal(message.toolCalls.at(-1)._liveOutput.length, 50, 'only the last 50 chunks replay');
   h.dispose();
 });
@@ -73,9 +97,9 @@ test('M4 orphan deltas are capped after flush', () => {
     h.runtime.recordToolCallDelta({ id: `early-${i}`, index: 0, arguments: '{"a":1}' });
   }
   h.flush();
-  h.runtime.recordToolUse({id: 'early-0', name: 'code_interpreter'});
+  h.runtime.recordToolUse({ id: 'early-0', name: 'code_interpreter' });
   assert.equal(message.toolCalls[0].argumentsText, undefined);
-  h.runtime.recordToolUse({id: 'early-59', name: 'code_interpreter'});
+  h.runtime.recordToolUse({ id: 'early-59', name: 'code_interpreter' });
   assert.equal(message.toolCalls.at(-1).argumentsText, '{"a":1}');
   h.dispose();
 });
@@ -86,16 +110,19 @@ test('M4 orphan approvals are capped', () => {
   for (let i = 0; i < 60; i++) {
     h.runtime.recordToolApproval({ id: `nope-${i}`, runId: `run-${i}`, approvalId: `ap-${i}` });
   }
-  h.runtime.recordToolUse({id: 'nope-0', name: 'workspace_agent'});
+  h.runtime.recordToolUse({ id: 'nope-0', name: 'workspace_agent' });
   assert.equal(message.toolCalls[0].approval, undefined);
-  h.runtime.recordToolUse({id: 'nope-59', name: 'workspace_agent'});
+  h.runtime.recordToolUse({ id: 'nope-59', name: 'workspace_agent' });
   assert.equal(message.toolCalls.at(-1).approval.approvalId, 'ap-59');
   h.dispose();
 });
 
 // The shell mirrors session/update-message; entries are replaced on each commit.
 function createToolRuntime(options) {
-  return createRuntime({...options, updateMessage(patch) {
-    Object.assign(options.getMessage(), patch);
-  }});
+  return createRuntime({
+    ...options,
+    updateMessage(patch) {
+      Object.assign(options.getMessage(), patch);
+    },
+  });
 }

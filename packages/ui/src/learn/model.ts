@@ -19,10 +19,18 @@ export { plainScaffoldBody, stripTags };
 export { evaluatePracticeAnswer, type PracticeAnswerAssessment } from './practiceAnswer.ts';
 
 export const SCAFFOLD_KINDS = [
-  'quiz', 'flashcard', 'practice', 'example', 'step',
-  'definition', 'theorem', 'proof', 'derivation', 'key-point',
+  'quiz',
+  'flashcard',
+  'practice',
+  'example',
+  'step',
+  'definition',
+  'theorem',
+  'proof',
+  'derivation',
+  'key-point',
 ] as const;
-export type ScaffoldKind = typeof SCAFFOLD_KINDS[number];
+export type ScaffoldKind = (typeof SCAFFOLD_KINDS)[number];
 
 export function isScaffoldKind(value: string): value is ScaffoldKind {
   return (SCAFFOLD_KINDS as readonly string[]).includes(value);
@@ -58,7 +66,8 @@ export function fieldMatches(
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(source)) !== null) {
-    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index)
+      codeIndex += 1;
     const codeRange = codeRanges[codeIndex];
     if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
 
@@ -133,7 +142,9 @@ export function parseAnswerKey(raw: string | null | undefined): string[] {
     if (!token) continue;
     if (/^[A-H]+$/.test(token)) token.split('').forEach((letter) => letters.add(letter));
   }
-  return Array.from(letters).filter((letter) => OPTION_LETTER.test(letter)).sort();
+  return Array.from(letters)
+    .filter((letter) => OPTION_LETTER.test(letter))
+    .sort();
 }
 
 /** Display form of a key: "A" or "A, C". */
@@ -182,13 +193,22 @@ export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
   const oMatches = fieldMatches(inner, 'o');
   const optionMatches = oMatches.length >= 2 ? oMatches : fieldMatches(inner, 'option');
   const targetMatches = optionMatches.length >= oMatches.length ? optionMatches : oMatches;
-  if(targetMatches.some(match=>/\bletter\s*=/.test(match.attrs)&&!match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])(?=["'“”‘’\s]|$)/i)))return null;
+  if (
+    targetMatches.some(
+      (match) =>
+        /\bletter\s*=/.test(match.attrs) &&
+        !match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])(?=["'“”‘’\s]|$)/i),
+    )
+  )
+    return null;
   let autoIndex = 0;
   const options = targetMatches.flatMap((match): QuizOption[] => {
     let letter = match.attrs.match(/\bletter\s*=\s*["'“”‘’]?([A-Ha-h])["'“”‘’]?/i)?.[1];
     let text = stripTags(decodeEntities(match.inner.trim()));
     if (!letter) {
-      const leadingMatch = text.match(/^\s*(?:[\(\[]\s*)?([A-Ha-h])\s*(?:[\)\]\.\、\:\：\-])\s*(.*)$/s);
+      const leadingMatch = text.match(
+        /^\s*(?:[\(\[]\s*)?([A-Ha-h])\s*(?:[\)\]\.\、\:\：\-])\s*(.*)$/s,
+      );
       if (leadingMatch) {
         letter = leadingMatch[1];
         text = leadingMatch[2].trim();
@@ -198,27 +218,55 @@ export function parseQuizInner(inner: string, attrs = ''): ParsedQuiz | null {
     }
     autoIndex += 1;
     if (!letter) return [];
-    const explanation = match.attrs.match(/\bexplanation\s*=\s*(?:["“]([^"”]*)[”"]|['‘]([^'’]*)['’]|"([^"]*)"|'([^']*)'|([^>\s]+))/i);
-    const explanationText = explanation ? (explanation[1] ?? explanation[2] ?? explanation[3] ?? explanation[4] ?? explanation[5] ?? '') : '';
-    return [{
-      letter: letter.toUpperCase(),
-      text,
-      ...(explanationText ? { explanation: stripTags(decodeEntities(explanationText)) } : {}),
-    }];
+    const explanation = match.attrs.match(
+      /\bexplanation\s*=\s*(?:["“]([^"”]*)[”"]|['‘]([^'’]*)['’]|"([^"]*)"|'([^']*)'|([^>\s]+))/i,
+    );
+    const explanationText = explanation
+      ? (explanation[1] ??
+        explanation[2] ??
+        explanation[3] ??
+        explanation[4] ??
+        explanation[5] ??
+        '')
+      : '';
+    return [
+      {
+        letter: letter.toUpperCase(),
+        text,
+        ...(explanationText ? { explanation: stripTags(decodeEntities(explanationText)) } : {}),
+      },
+    ];
   });
-  if (!q || options.length < 2 || options.length > 8 || options.some(option => !option.text.trim())) return null;
+  if (
+    !q ||
+    options.length < 2 ||
+    options.length > 8 ||
+    options.some((option) => !option.text.trim())
+  )
+    return null;
   const letters = new Set(options.map((option) => option.letter));
   if (letters.size !== options.length) return null;
   const correctRaw = fieldsOf(inner, 'correct');
-  const keySource = correctRaw.length ? correctRaw : fieldsOf(inner, 'answer').concat(fieldsOf(inner, 'ans'));
+  const keySource = correctRaw.length
+    ? correctRaw
+    : fieldsOf(inner, 'answer').concat(fieldsOf(inner, 'ans'));
   const declared = keySource.flatMap((value) => parseAnswerKey(value));
   // A partially invalid key must never become a different, apparently valid key.
-  const validNotation=keySource.every(value=>/^[A-H]+$/.test(value.toUpperCase().replace(/\bAND\b/g,',').replace(/[\s,，、;；/|&]+/g,'')));
-  const key = validNotation && declared.every(letter => letters.has(letter)) ? declared : [];
+  const validNotation = keySource.every((value) =>
+    /^[A-H]+$/.test(
+      value
+        .toUpperCase()
+        .replace(/\bAND\b/g, ',')
+        .replace(/[\s,，、;；/|&]+/g, ''),
+    ),
+  );
+  const key = validNotation && declared.every((letter) => letters.has(letter)) ? declared : [];
   const unique = Array.from(new Set(key)).sort();
   const parsed: ParsedQuiz = { q, options, correct: unique.length ? unique.join('') : null };
-  const multiAttribute=attrs.match(/\b(?:multi|multiple)\s*=\s*["'“”‘’]?([A-Za-z0-9]+)/i);
-  const multiple=multiAttribute?/^(true|1)$/i.test(multiAttribute[1]):/\b(?:multi|multiple)\b(?!\s*=)/i.test(attrs);
+  const multiAttribute = attrs.match(/\b(?:multi|multiple)\s*=\s*["'“”‘’]?([A-Za-z0-9]+)/i);
+  const multiple = multiAttribute
+    ? /^(true|1)$/i.test(multiAttribute[1])
+    : /\b(?:multi|multiple)\b(?!\s*=)/i.test(attrs);
   if (unique.length > 1 || multiple) parsed.multi = true;
   const explanation = fieldOf(inner, 'explain') ?? fieldOf(inner, 'explanation');
   if (explanation) parsed.explanation = explanation;
@@ -242,7 +290,11 @@ export function parseExampleInner(inner: string): ParsedExample | null {
     const plain = plainScaffoldBody(inner);
     return plain ? { title: 'Example', problem: plain, solution: '' } : null;
   }
-  const parsed: ParsedExample = { title: title ?? 'Example', problem: problem ?? '', solution: solution ?? '' };
+  const parsed: ParsedExample = {
+    title: title ?? 'Example',
+    problem: problem ?? '',
+    solution: solution ?? '',
+  };
   const hints = fieldsOf(inner, 'hint');
   if (hints.length) parsed.hints = hints;
   return parsed;
@@ -262,13 +314,14 @@ export interface ParsedPractice {
 }
 
 export function parsePracticeInner(inner: string, correct?: string | null): ParsedPractice | null {
-  const problem = fieldOf(inner, 'problem') ?? fieldOf(inner, 'question') ?? plainScaffoldBody(inner);
+  const problem =
+    fieldOf(inner, 'problem') ?? fieldOf(inner, 'question') ?? plainScaffoldBody(inner);
   if (problem === null) return null;
   const hints = fieldsOf(inner, 'hint');
   const parsed: ParsedPractice = {
     title: fieldOf(inner, 'title') ?? 'Practice',
     problem,
-    hint: hints[0] ?? (fieldOf(inner, 'hint') ?? ''),
+    hint: hints[0] ?? fieldOf(inner, 'hint') ?? '',
   };
   if (hints.length > 1) parsed.hints = hints;
   const solution = fieldOf(inner, 'solution') ?? fieldOf(inner, 'answer');
@@ -283,11 +336,18 @@ export function hintLevels(parsed: { hint?: string; hints?: string[] }): string[
   return parsed.hint ? [parsed.hint] : [];
 }
 
-export interface ParsedDefinition { term: string; body: string }
+export interface ParsedDefinition {
+  term: string;
+  body: string;
+}
 
 export function parseDefinitionInner(inner: string): ParsedDefinition | null {
   const term = fieldOf(inner, 'term') ?? fieldOf(inner, 'concept') ?? fieldOf(inner, 'title');
-  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'statement') ?? fieldOf(inner, 'explanation');
+  const body =
+    fieldOf(inner, 'body') ??
+    fieldOf(inner, 'content') ??
+    fieldOf(inner, 'statement') ??
+    fieldOf(inner, 'explanation');
   if (term === null && body === null) {
     const plain = plainScaffoldBody(inner);
     return plain ? { term: '', body: plain } : null;
@@ -296,7 +356,10 @@ export function parseDefinitionInner(inner: string): ParsedDefinition | null {
   return { term: term ?? '', body };
 }
 
-export interface ParsedFlashcard { front: string; back: string }
+export interface ParsedFlashcard {
+  front: string;
+  back: string;
+}
 
 export function parseFlashcardInner(inner: string): ParsedFlashcard | null {
   const front = fieldOf(inner, 'front') ?? fieldOf(inner, 'question') ?? fieldOf(inner, 'q');
@@ -315,28 +378,48 @@ export interface ParsedTheorem {
 
 export function parseTheoremInner(inner: string): ParsedTheorem | null {
   if (fieldOf(inner, 'term') !== null) return null;
-  const statement = fieldOf(inner, 'statement') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'body') ?? plainScaffoldBody(inner);
+  const statement =
+    fieldOf(inner, 'statement') ??
+    fieldOf(inner, 'content') ??
+    fieldOf(inner, 'body') ??
+    plainScaffoldBody(inner);
   if (statement === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', statement };
 }
 
-export interface ParsedProof { title: string; body: string }
+export interface ParsedProof {
+  title: string;
+  body: string;
+}
 
 export function parseProofInner(inner: string): ParsedProof | null {
-  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'content') ?? fieldOf(inner, 'solution') ?? plainScaffoldBody(inner);
+  const body =
+    fieldOf(inner, 'body') ??
+    fieldOf(inner, 'content') ??
+    fieldOf(inner, 'solution') ??
+    plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }
 
-export interface ParsedDerivation { title: string; body: string }
+export interface ParsedDerivation {
+  title: string;
+  body: string;
+}
 
 export function parseDerivationInner(inner: string): ParsedDerivation | null {
-  const body = fieldOf(inner, 'body') ?? fieldOf(inner, 'steps') ?? fieldOf(inner, 'content') ?? plainScaffoldBody(inner);
+  const body =
+    fieldOf(inner, 'body') ??
+    fieldOf(inner, 'steps') ??
+    fieldOf(inner, 'content') ??
+    plainScaffoldBody(inner);
   if (body === null) return null;
   return { title: fieldOf(inner, 'title') ?? '', body };
 }
 
-export interface ParsedKeyPoint { body: string }
+export interface ParsedKeyPoint {
+  body: string;
+}
 
 export function parseKeyPointInner(inner: string): ParsedKeyPoint | null {
   const body = decodeEntities(inner.trim());
@@ -347,7 +430,8 @@ export function parseKeyPointInner(inner: string): ParsedKeyPoint | null {
 /* Derivation steps and proof ending                                   */
 /* ------------------------------------------------------------------ */
 
-const CONTINUATION = /^\s*\$*\s*(?:=|≈|≤|≥|<|>|⇒|⟹|→|∴|\\Rightarrow|\\implies|\\Longrightarrow|\\therefore)/;
+const CONTINUATION =
+  /^\s*\$*\s*(?:=|≈|≤|≥|<|>|⇒|⟹|→|∴|\\Rightarrow|\\implies|\\Longrightarrow|\\therefore)/;
 
 /**
  * Split a derivation body into numbered steps without breaking math:
@@ -356,7 +440,9 @@ const CONTINUATION = /^\s*\$*\s*(?:=|≈|≤|≥|<|>|⇒|⟹|→|∴|\\Rightarro
  * split. Returns at least one step for a non-empty body.
  */
 export function splitDerivationSteps(body: string): string[] {
-  const text = String(body || '').replace(/\r\n?/g, '\n').trim();
+  const text = String(body || '')
+    .replace(/\r\n?/g, '\n')
+    .trim();
   if (!text) return [];
   const lines = text.split('\n');
   const blocks: string[] = [];
@@ -388,7 +474,7 @@ export function splitDerivationSteps(body: string): string[] {
       step = [];
     }
     step.push(line);
-    if (((line.match(/\$\$/g) || []).length) % 2 === 1) inDisplayMath = !inDisplayMath;
+    if ((line.match(/\$\$/g) || []).length % 2 === 1) inDisplayMath = !inDisplayMath;
   }
   if (step.length) steps.push(step.join('\n').trim());
   return steps.filter(Boolean);
@@ -423,7 +509,9 @@ export function derivationStepSource(step: string): string {
   if (!EAST_ASIAN_RUN.test(text)) return '$$' + text.trim().replace(/\s*\n\s*/g, ' ') + '$$';
   return text
     .split(EAST_ASIAN_RUN)
-    .map((piece, index) => (index % 2 === 0 && LATEX_COMMAND.test(piece) ? wrapInlineMath(piece) : piece))
+    .map((piece, index) =>
+      index % 2 === 0 && LATEX_COMMAND.test(piece) ? wrapInlineMath(piece) : piece,
+    )
     .join('');
 }
 
@@ -450,15 +538,24 @@ export function scaffoldReadiness(kind: string, inner: string, closed: boolean):
   if (!source.trim()) return 'empty';
   if (!closed) return 'partial';
   switch (kind) {
-    case 'quiz': return parseQuizInner(source) ? 'complete' : 'partial';
-    case 'practice': return parsePracticeInner(source) ? 'complete' : 'partial';
-    case 'example': return parseExampleInner(source) ? 'complete' : 'partial';
-    case 'flashcard': return parseFlashcardInner(source) ? 'complete' : 'partial';
-    case 'definition': return parseDefinitionInner(source) ? 'complete' : 'partial';
-    case 'theorem': return parseTheoremInner(source) ? 'complete' : 'partial';
-    case 'proof': return parseProofInner(source) ? 'complete' : 'partial';
-    case 'derivation': return parseDerivationInner(source) ? 'complete' : 'partial';
-    default: return 'complete';
+    case 'quiz':
+      return parseQuizInner(source) ? 'complete' : 'partial';
+    case 'practice':
+      return parsePracticeInner(source) ? 'complete' : 'partial';
+    case 'example':
+      return parseExampleInner(source) ? 'complete' : 'partial';
+    case 'flashcard':
+      return parseFlashcardInner(source) ? 'complete' : 'partial';
+    case 'definition':
+      return parseDefinitionInner(source) ? 'complete' : 'partial';
+    case 'theorem':
+      return parseTheoremInner(source) ? 'complete' : 'partial';
+    case 'proof':
+      return parseProofInner(source) ? 'complete' : 'partial';
+    case 'derivation':
+      return parseDerivationInner(source) ? 'complete' : 'partial';
+    default:
+      return 'complete';
   }
 }
 
@@ -485,24 +582,39 @@ export type QuizAction =
   | { type: 'fail' }
   | { type: 'retry' };
 
-export const initialQuizState: QuizState = { selected: [], phase: 'choosing', verdict: null, feedback: '', attempts: 0 };
+export const initialQuizState: QuizState = {
+  selected: [],
+  phase: 'choosing',
+  verdict: null,
+  feedback: '',
+  attempts: 0,
+};
 
 export function quizReducer(state: QuizState, action: QuizAction): QuizState {
   switch (action.type) {
     case 'toggle': {
       if (state.phase !== 'choosing') return state;
       const letter = action.letter.toUpperCase();
-      if (!action.multi) return { ...state, selected: state.selected[0] === letter ? [] : [letter] };
+      if (!action.multi)
+        return { ...state, selected: state.selected[0] === letter ? [] : [letter] };
       const selected = state.selected.includes(letter)
         ? state.selected.filter((value) => value !== letter)
         : [...state.selected, letter].sort();
       return { ...state, selected };
     }
     case 'submit':
-      return state.phase === 'choosing' && state.selected.length ? { ...state, phase: 'pending' } : state;
+      return state.phase === 'choosing' && state.selected.length
+        ? { ...state, phase: 'pending' }
+        : state;
     case 'resolve':
       return state.phase === 'pending'
-        ? { ...state, phase: 'answered', verdict: action.verdict, feedback: action.feedback, attempts: state.attempts + 1 }
+        ? {
+            ...state,
+            phase: 'answered',
+            verdict: action.verdict,
+            feedback: action.feedback,
+            attempts: state.attempts + 1,
+          }
         : state;
     case 'fail':
       return state.phase === 'pending' ? { ...state, phase: 'choosing' } : state;
@@ -528,9 +640,14 @@ export type QuizOptionMark = 'idle' | 'selected' | 'correct' | 'incorrect' | 'mi
  * a picked right answer is `correct`, a picked wrong one `incorrect`, an
  * unpicked right one `missed`, everything else `muted`.
  */
-export function quizOptionMark(letter: string, state: QuizState, key: readonly string[]): QuizOptionMark {
+export function quizOptionMark(
+  letter: string,
+  state: QuizState,
+  key: readonly string[],
+): QuizOptionMark {
   const picked = state.selected.includes(letter);
-  if (state.phase !== 'answered' || state.verdict === 'recorded' || !key.length) return picked ? 'selected' : (state.phase === 'answered' ? 'muted' : 'idle');
+  if (state.phase !== 'answered' || state.verdict === 'recorded' || !key.length)
+    return picked ? 'selected' : state.phase === 'answered' ? 'muted' : 'idle';
   const right = key.includes(letter);
   if (picked) return right ? 'correct' : 'incorrect';
   return right ? 'missed' : 'muted';
@@ -549,7 +666,8 @@ export interface FlashcardState {
   readonly flips: number;
 }
 
-export type FlashcardAction = { type: 'flip' } | { type: 'rate'; rating: RecallRating } | { type: 'reset' };
+export type FlashcardAction =
+  { type: 'flip' } | { type: 'rate'; rating: RecallRating } | { type: 'reset' };
 
 export const initialFlashcardState: FlashcardState = { face: 'front', rating: null, flips: 0 };
 
@@ -558,11 +676,21 @@ export const initialFlashcardState: FlashcardState = { face: 'front', rating: nu
  * with the answer side showing (a rating belongs to the back), and a
  * missing or malformed snapshot starts the card fresh.
  */
-export function resumeFlashcardState(snapshot: Partial<FlashcardState> | null | undefined): FlashcardState {
+export function resumeFlashcardState(
+  snapshot: Partial<FlashcardState> | null | undefined,
+): FlashcardState {
   if (!snapshot) return initialFlashcardState;
   const face = snapshot.face === 'back' ? 'back' : 'front';
-  const rating = snapshot.rating === 'good' || snapshot.rating === 'fuzzy' || snapshot.rating === 'forgot' ? snapshot.rating : null;
-  const flips = typeof snapshot.flips === 'number' && snapshot.flips > 0 ? Math.floor(snapshot.flips) : (face === 'back' ? 1 : 0);
+  const rating =
+    snapshot.rating === 'good' || snapshot.rating === 'fuzzy' || snapshot.rating === 'forgot'
+      ? snapshot.rating
+      : null;
+  const flips =
+    typeof snapshot.flips === 'number' && snapshot.flips > 0
+      ? Math.floor(snapshot.flips)
+      : face === 'back'
+        ? 1
+        : 0;
   return { face, rating: rating && (face === 'back' || flips > 0) ? rating : null, flips };
 }
 
@@ -612,7 +740,9 @@ export function isFullyRevealed(state: RevealState): boolean {
 
 /** Replace `{n}` / `{total}` in a localized template. */
 export function fillTemplate(template: string, values: Record<string, string | number>): string {
-  return String(template).replace(/\{(\w+)\}/g, (match, name: string) => (name in values ? String(values[name]) : match));
+  return String(template).replace(/\{(\w+)\}/g, (match, name: string) =>
+    name in values ? String(values[name]) : match,
+  );
 }
 
 export * from './review';

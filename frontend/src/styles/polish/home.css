@@ -34,4 +34,6 @@
 
 /* The static h1 is a first-paint placeholder only; the mounted hero
    replaces it. Keep its box but never flash the legacy typography. */
-#appShell #homeHero [data-greeting-static] { visibility: hidden; }
+#appShell #homeHero [data-greeting-static] {
+  visibility: hidden;
+}

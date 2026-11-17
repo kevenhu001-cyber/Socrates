@@ -54,7 +54,12 @@ export interface ReviewSessionProps {
 
 const COMPACT = 640;
 
-export function ReviewSession({ cards, strings = defaultReviewStrings, onRate, onClose }: ReviewSessionProps) {
+export function ReviewSession({
+  cards,
+  strings = defaultReviewStrings,
+  onRate,
+  onClose,
+}: ReviewSessionProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const compact = width < COMPACT;
@@ -71,34 +76,117 @@ export function ReviewSession({ cards, strings = defaultReviewStrings, onRate, o
   };
 
   const panel = compact
-    ? { position: 'absolute' as const, left: 0, right: 0, bottom: 0, maxHeight: '90%' as const, borderTopLeftRadius: R.stage, borderTopRightRadius: R.stage }
-    : { position: 'absolute' as const, top: '12%' as const, alignSelf: 'center' as const, width: Math.min(560, width - 48), maxHeight: '76%' as const, borderRadius: R.stage };
+    ? {
+        position: 'absolute' as const,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        maxHeight: '90%' as const,
+        borderTopLeftRadius: R.stage,
+        borderTopRightRadius: R.stage,
+      }
+    : {
+        position: 'absolute' as const,
+        top: '12%' as const,
+        alignSelf: 'center' as const,
+        width: Math.min(560, width - 48),
+        maxHeight: '76%' as const,
+        borderRadius: R.stage,
+      };
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1 }}>
-        <Pressable aria-label={strings.close} onPress={onClose} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.16)' }} />
+        <Pressable
+          aria-label={strings.close}
+          onPress={onClose}
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            backgroundColor: 'rgba(0,0,0,0.16)',
+          }}
+        />
         <View
           role="dialog"
           aria-modal
           aria-label={strings.title}
           testID="review-session"
           {...dataSet({ reviewPosition: card ? position + 1 : 0, reviewTotal: cards.length })}
-          style={[panel, { backgroundColor: colors.card, boxShadow: shadow(colors, 'dialog'), overflow: 'hidden' }]}
+          style={[
+            panel,
+            {
+              backgroundColor: colors.card,
+              boxShadow: shadow(colors, 'dialog'),
+              overflow: 'hidden',
+            },
+          ]}
         >
-          {compact ? <View aria-hidden style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: R.pill, backgroundColor: colors.hairlineStrong, marginTop: S[75] }} /> : null}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[100], paddingHorizontal: S[300], paddingTop: S[300], paddingBottom: S[200] }}>
-            <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'baseline', gap: S[100] }}>
+          {compact ? (
+            <View
+              aria-hidden
+              style={{
+                alignSelf: 'center',
+                width: 36,
+                height: 4,
+                borderRadius: R.pill,
+                backgroundColor: colors.hairlineStrong,
+                marginTop: S[75],
+              }}
+            />
+          ) : null}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: S[100],
+              paddingHorizontal: S[300],
+              paddingTop: S[300],
+              paddingBottom: S[200],
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                minWidth: 0,
+                flexDirection: 'row',
+                alignItems: 'baseline',
+                gap: S[100],
+              }}
+            >
               <UiText variant="title">{strings.title}</UiText>
               {card ? (
-                <UiText variant="labelSm" tone="tertiary" testID="review-progress" style={{ fontVariant: ['tabular-nums'] }}>
-                  {strings.progress.replace('{n}', String(position + 1)).replace('{total}', String(cards.length))}
+                <UiText
+                  variant="labelSm"
+                  tone="tertiary"
+                  testID="review-progress"
+                  style={{ fontVariant: ['tabular-nums'] }}
+                >
+                  {strings.progress
+                    .replace('{n}', String(position + 1))
+                    .replace('{total}', String(cards.length))}
                 </UiText>
               ) : null}
             </View>
-            <PillAction size="sm" tone="soft" label="✕" accessibilityLabel={strings.close} onPress={onClose} testID="review-close" />
+            <PillAction
+              size="sm"
+              tone="soft"
+              label="✕"
+              accessibilityLabel={strings.close}
+              onPress={onClose}
+              testID="review-close"
+            />
           </View>
-          <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={{ paddingHorizontal: S[300], paddingBottom: S[300], gap: S[200] }}>
+          <ScrollView
+            style={{ flexGrow: 0, flexShrink: 1 }}
+            contentContainerStyle={{
+              paddingHorizontal: S[300],
+              paddingBottom: S[300],
+              gap: S[200],
+            }}
+          >
             {card ? (
               <>
                 <FlashcardCard
@@ -122,9 +210,16 @@ export function ReviewSession({ cards, strings = defaultReviewStrings, onRate, o
               </>
             ) : (
               <View testID="review-done" style={{ gap: S[200], paddingTop: S[100] }}>
-                <UiText variant="bodySm" tone="secondary">{strings.done}</UiText>
+                <UiText variant="bodySm" tone="secondary">
+                  {strings.done}
+                </UiText>
                 <ActionRow end>
-                  <PillAction tone="solid" label={strings.close} testID="review-done-close" onPress={onClose} />
+                  <PillAction
+                    tone="solid"
+                    label={strings.close}
+                    testID="review-done-close"
+                    onPress={onClose}
+                  />
                 </ActionRow>
               </View>
             )}

@@ -7,7 +7,10 @@ export function rebaseTurnRuntimeText(value, original, clean) {
   const runtime = normalizeTurnRuntime(value);
   if (!runtime || original === clean) return runtime;
   const points = new Set(runtime.uiSurfaces.map((surface) => surface.textOffset));
-  for (const claim of runtime.claims || []) { points.add(claim.start); points.add(claim.end); }
+  for (const claim of runtime.claims || []) {
+    points.add(claim.start);
+    points.add(claim.end);
+  }
   const mapped = new Map();
   let written = 0;
   for (let read = 0; read <= original.length; read++) {
@@ -16,12 +19,17 @@ export function rebaseTurnRuntimeText(value, original, clean) {
   }
   if (written !== clean.length) return null;
   const claims = (runtime.claims || []).flatMap((claim) => {
-    const start = mapped.get(claim.start), end = mapped.get(claim.end);
+    const start = mapped.get(claim.start),
+      end = mapped.get(claim.end);
     if (start === undefined || end === undefined || end <= start) return [];
     return [{ ...claim, start, end, quote: clean.slice(start, end) }];
   });
-  return { ...runtime,
-    uiSurfaces: runtime.uiSurfaces.map((surface) => ({ ...surface, textOffset: mapped.get(surface.textOffset) ?? clean.length })),
+  return {
+    ...runtime,
+    uiSurfaces: runtime.uiSurfaces.map((surface) => ({
+      ...surface,
+      textOffset: mapped.get(surface.textOffset) ?? clean.length,
+    })),
     ...(runtime.claims ? { claims } : {}),
   };
 }

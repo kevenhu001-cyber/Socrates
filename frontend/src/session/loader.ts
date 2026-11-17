@@ -10,7 +10,7 @@
  * facade keeps public import paths stable while moving its heavy dependency
  * graph to first session restore/switch.
  */
-import { stateStore } from '../state/store.ts';
+import { dispatchPatches, dispatchSession } from '../store/index.ts';
 import { turnState } from '../chat/turn/state.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
@@ -48,44 +48,64 @@ function clearActiveTemplate(): void {
  * history switching. It stays synchronous and dependency-light; do not move
  * it behind the restore chunk. */
 export function resetSessionTransients(): void {
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    searchContext: null,
-    searchResults: [],
-    searchContextAt: 0,
-    searchContextCount: 0,
-    searchContextQuery: null,
-    searchContextError: null,
-    lastCallSource: null,
-    lastCallError: null,
-    sessionTitle: null,
-  } });
-  try { clearComposer('chat'); } catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients'); }
-  try { if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null; }
-  catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~3'); }
-  try { if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null; }
-  catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~4'); }
-  try { clearActiveTemplate(); }
-  catch (error) { reportSwallow(error, 'session/loader.resetSessionTransients~5'); }
+  dispatchPatches({
+    search: {
+      searchContext: null,
+      searchResults: [],
+      searchContextAt: 0,
+      searchContextCount: 0,
+      searchContextQuery: null,
+      searchContextError: null,
+    },
+    call: { lastCallSource: null, lastCallError: null },
+    session: { sessionTitle: null },
+  });
+  try {
+    clearComposer('chat');
+  } catch (error) {
+    reportSwallow(error, 'session/loader.resetSessionTransients');
+  }
+  try {
+    if (turnState.pendingChatContent !== undefined) turnState.pendingChatContent = null;
+  } catch (error) {
+    reportSwallow(error, 'session/loader.resetSessionTransients~3');
+  }
+  try {
+    if (turnState.pendingAttachments !== undefined) turnState.pendingAttachments = null;
+  } catch (error) {
+    reportSwallow(error, 'session/loader.resetSessionTransients~4');
+  }
+  try {
+    clearActiveTemplate();
+  } catch (error) {
+    reportSwallow(error, 'session/loader.resetSessionTransients~5');
+  }
 }
 
 /* F2d — synchronous session-id update used while creating a fresh session.
  * Keeping this helper here prevents chat/sessionBootstrap from retaining the
  * full restore runtime dependency graph. */
 export function setCurrentSessionId(id: string | null, silent?: boolean): void {
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: id });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: id });
   if (!silent) publishReactChatRuntime({ type: 'state-synced', reason: 'session-id-changed' });
 }
 
 /** Full server-backed session restore; loaded only when actually requested. */
 export function loadSession(id: string): Promise<void> {
-  return loadLoaderImpl().then(function (module) { return module.loadSession(id); });
+  return loadLoaderImpl().then(function (module) {
+    return module.loadSession(id);
+  });
 }
 
 /** Exam-session restore shares the same deferred restore runtime. */
 export function loadExamSession(session: LoadedSession): Promise<void> {
-  return loadLoaderImpl().then(function (module) { return module.loadExamSession(session); });
+  return loadLoaderImpl().then(function (module) {
+    return module.loadExamSession(session);
+  });
 }
 
 export function reattachPendingTurn(sessionId: string): Promise<void> {
-  return loadLoaderImpl().then(function (module) { return module.reattachPendingTurn(sessionId); });
+  return loadLoaderImpl().then(function (module) {
+    return module.reattachPendingTurn(sessionId);
+  });
 }

@@ -137,7 +137,10 @@ test('easeInOutQuad is bounded, monotonic, and starts gentle', () => {
   let previous = easeInOutQuad(0);
   for (const t of samples) {
     const e = easeInOutQuad(t);
-    assert.ok(e > previous, `easeInOutQuad must be monotonic; got ${e} after ${previous} at t=${t}`);
+    assert.ok(
+      e > previous,
+      `easeInOutQuad must be monotonic; got ${e} after ${previous} at t=${t}`,
+    );
     assert.ok(e <= 1);
     previous = e;
   }
@@ -162,7 +165,10 @@ test('easeInOutCubic is bounded, monotonic, and starts almost flat', () => {
   let previous = easeInOutCubic(0);
   for (const t of samples) {
     const e = easeInOutCubic(t);
-    assert.ok(e > previous, `easeInOutCubic must be monotonic; got ${e} after ${previous} at t=${t}`);
+    assert.ok(
+      e > previous,
+      `easeInOutCubic must be monotonic; got ${e} after ${previous} at t=${t}`,
+    );
     assert.ok(e <= 1);
     previous = e;
   }
@@ -190,7 +196,10 @@ test('smoothDampStep converges to the target without overshooting it', () => {
   assert.ok(Math.abs(value - 300) < 0.5, `did not settle: ${value}`);
   /* Monotonic ascent to the target — critically damped, no crossing. */
   for (let i = 1; i < positions.length; i += 1) {
-    assert.ok(positions[i] >= positions[i - 1] - 1e-9, `reversed at ${i}: ${positions[i - 1]} -> ${positions[i]}`);
+    assert.ok(
+      positions[i] >= positions[i - 1] - 1e-9,
+      `reversed at ${i}: ${positions[i - 1]} -> ${positions[i]}`,
+    );
     assert.ok(positions[i] <= 300 + 1e-9, `overshot at ${i}: ${positions[i]}`);
   }
 });
@@ -241,12 +250,16 @@ test('planSendGlide snaps sub-perceptual distances and invalid input', async () 
 });
 
 test('planSendGlide duration grows monotonically with distance and stays within bounds', async () => {
-  const { planSendGlide, SEND_GLIDE_MIN_MS, SEND_GLIDE_MAX_MS } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide, SEND_GLIDE_MIN_MS, SEND_GLIDE_MAX_MS } =
+    await import('../src/ui/motion/index.ts');
   let prev = 0;
   for (const d of [30, 100, 400, 800, 1600, 4000, 12000, 40000, 400000]) {
     const plan = planSendGlide(d, 800);
     assert.ok(plan.duration >= prev, `duration non-decreasing at ${d}`);
-    assert.ok(plan.duration >= SEND_GLIDE_MIN_MS && plan.duration <= SEND_GLIDE_MAX_MS, `bounded at ${d}`);
+    assert.ok(
+      plan.duration >= SEND_GLIDE_MIN_MS && plan.duration <= SEND_GLIDE_MAX_MS,
+      `bounded at ${d}`,
+    );
     prev = plan.duration;
   }
   assert.equal(planSendGlide(1e9, 800).duration, SEND_GLIDE_MAX_MS);
@@ -256,9 +269,15 @@ test('planSendGlide keeps send acknowledgement inside the interaction-time envel
   const { planSendGlide, SEND_GLIDE_MAX_MS } = await import('../src/ui/motion/index.ts');
   const oneScreen = planSendGlide(800, 800);
   const far = planSendGlide(20000, 800);
-  assert.ok(oneScreen.duration >= 180 && oneScreen.duration <= 220, `one-screen send should land near 200ms, got ${oneScreen.duration}`);
+  assert.ok(
+    oneScreen.duration >= 180 && oneScreen.duration <= 220,
+    `one-screen send should land near 200ms, got ${oneScreen.duration}`,
+  );
   assert.equal(far.duration, SEND_GLIDE_MAX_MS);
-  assert.ok(far.duration < MOTION_MAX_DURATION_MS, 'send glide must stay shorter than the generic long-motion cap');
+  assert.ok(
+    far.duration < MOTION_MAX_DURATION_MS,
+    'send glide must stay shorter than the generic long-motion cap',
+  );
   /* A negative distance (upward glide) plans like its magnitude. */
   assert.equal(planSendGlide(-20000, 800).duration, far.duration);
 });

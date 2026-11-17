@@ -19,8 +19,11 @@ test('tail promotion retains paragraph, selection and code DOM through completio
   dom.window.__socratesLegacy = { postRender: {} };
   const host = document.getElementById('root');
   const root = createRoot(host);
-  const paint = text => ({ __html: marked.parse(text) });
-  const render = (text, live = true) => act(() => root.render(createElement(LiveTextSegment, { text, live, settled: paint, tail: paint })));
+  const paint = (text) => ({ __html: marked.parse(text) });
+  const render = (text, live = true) =>
+    act(() =>
+      root.render(createElement(LiveTextSegment, { text, live, settled: paint, tail: paint })),
+    );
   try {
     await render('First paragraph.');
     const paragraph = host.querySelector('p');
@@ -64,25 +67,52 @@ test('raw-only assistant prose wires visualization placeholders after the lazy c
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
   const { setLegacyActions, resetBridgeCache } = await import('../src/react/legacy/gateway.ts');
   const calls = [];
-  setLegacyActions({ postRender: {
-    reclaimVizCards: () => calls.push('reclaim'),
-    schedulePendingMermaid: () => calls.push('mermaid'),
-    processPendingViz: () => calls.push('viz'),
-    processPendingVizActions: () => calls.push('actions'),
-    wireCodeBlockHeaders: () => calls.push('headers'),
-  } });
+  setLegacyActions({
+    postRender: {
+      reclaimVizCards: () => calls.push('reclaim'),
+      schedulePendingMermaid: () => calls.push('mermaid'),
+      processPendingViz: () => calls.push('viz'),
+      processPendingVizActions: () => calls.push('actions'),
+      wireCodeBlockHeaders: () => calls.push('headers'),
+    },
+  });
   const host = document.getElementById('root');
   const root = createRoot(host);
-  const paint = text => ({ __html: text ? '<div class="viz" data-viz-state="loading"><div class="viz-body">Rendering</div></div>' : '' });
+  const paint = (text) => ({
+    __html: text
+      ? '<div class="viz" data-viz-state="loading"><div class="viz-body">Rendering</div></div>'
+      : '',
+  });
   try {
-    await act(() => root.render(createElement(LiveTextSegment, { text: 'A diagram', live: false, settled: paint, tail: paint })));
+    await act(() =>
+      root.render(
+        createElement(LiveTextSegment, {
+          text: 'A diagram',
+          live: false,
+          settled: paint,
+          tail: paint,
+        }),
+      ),
+    );
     assert.deepEqual(calls.slice(0, 5), ['reclaim', 'mermaid', 'viz', 'actions', 'headers']);
     calls.length = 0;
-    const { IntelligentTextSegment } = await import('../src/react/intelligence-ui/IntelligentTextSegment.tsx');
-    await act(() => root.render(createElement(IntelligentTextSegment, {
-      text: 'A restored diagram', live: false, tools: [], prose: { settled: paint, tail: paint },
-    })));
-    assert.deepEqual(calls.slice(0, 5), ['reclaim', 'mermaid', 'viz', 'actions', 'headers'], 'settled raw-only prose owns the same widget initialization');
+    const { IntelligentTextSegment } =
+      await import('../src/react/intelligent-ui/IntelligentTextSegment.tsx');
+    await act(() =>
+      root.render(
+        createElement(IntelligentTextSegment, {
+          text: 'A restored diagram',
+          live: false,
+          tools: [],
+          prose: { settled: paint, tail: paint },
+        }),
+      ),
+    );
+    assert.deepEqual(
+      calls.slice(0, 5),
+      ['reclaim', 'mermaid', 'viz', 'actions', 'headers'],
+      'settled raw-only prose owns the same widget initialization',
+    );
   } finally {
     await act(() => root.unmount());
     resetBridgeCache();

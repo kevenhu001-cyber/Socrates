@@ -21,7 +21,11 @@ async function multipart(pathname, as, content, filename, type = 'text/plain') {
     method: 'POST',
     headers: { Cookie: `sid=${as.sid}; csrf=${as.csrf}`, 'X-CSRF-Token': as.csrf },
     body: form,
-  }).then(async (r) => ({ status: r.status, headers: r.headers, body: await r.json().catch(() => null) }));
+  }).then(async (r) => ({
+    status: r.status,
+    headers: r.headers,
+    body: await r.json().catch(() => null),
+  }));
 }
 
 after(async () => {
@@ -50,7 +54,10 @@ test('file routes require authentication and isolate lists and metadata by owner
   assert.equal((await f.request(`${endpoint}/${id}/content`, { as: f.other })).status, 404);
   const preview = await f.request(`${endpoint}/${id}/content`);
   assert.equal(preview.body.text, 'owned notes\nsecond line');
-  assert.equal((await f.request(endpoint, { as: f.other })).body.files.some((x) => x.id === id), false);
+  assert.equal(
+    (await f.request(endpoint, { as: f.other })).body.files.some((x) => x.id === id),
+    false,
+  );
   assert.equal((await f.request(`${endpoint}/${id}/raw`, { as: f.other })).status, 404);
   assert.equal((await f.request(`${endpoint}/${id}/raw`)).status, 200);
   assert.equal((await f.request(`${endpoint}/${id}`, { method: 'DELETE' })).status, 204);
@@ -68,27 +75,67 @@ test('owned file listing uses cursor pagination and rename/delete affect only ow
   assert.equal(next.body.files.length, 1);
   assert.notEqual(next.body.files[0].id, listed.body.files[0].id);
   assert.ok(next.body.nextCursor === null || typeof next.body.nextCursor === 'string');
-  assert.equal((await f.request(`${endpoint}/${first.body.id}`, { method: 'PATCH', as: f.other, body: { name: 'stolen.txt' } })).status, 404);
-  const renamed = await f.request(`${endpoint}/${first.body.id}`, { method: 'PATCH', body: { name: '../renamed.txt' } });
+  assert.equal(
+    (
+      await f.request(`${endpoint}/${first.body.id}`, {
+        method: 'PATCH',
+        as: f.other,
+        body: { name: 'stolen.txt' },
+      })
+    ).status,
+    404,
+  );
+  const renamed = await f.request(`${endpoint}/${first.body.id}`, {
+    method: 'PATCH',
+    body: { name: '../renamed.txt' },
+  });
   assert.equal(renamed.body.name, 'renamed.txt');
-  const normalized = await f.request(`${endpoint}/${first.body.id}`, { method: 'PATCH', body: { name: 'bad/name.txt' } });
+  const normalized = await f.request(`${endpoint}/${first.body.id}`, {
+    method: 'PATCH',
+    body: { name: 'bad/name.txt' },
+  });
   assert.equal(normalized.status, 200);
   assert.equal(normalized.body.name, 'name.txt');
-  assert.equal((await f.request(`${endpoint}/${second.body.id}`, { method: 'DELETE', as: f.other })).status, 404);
-  assert.equal((await f.request(`${endpoint}/${second.body.id}`, { method: 'DELETE' })).status, 204);
+  assert.equal(
+    (await f.request(`${endpoint}/${second.body.id}`, { method: 'DELETE', as: f.other })).status,
+    404,
+  );
+  assert.equal(
+    (await f.request(`${endpoint}/${second.body.id}`, { method: 'DELETE' })).status,
+    204,
+  );
   assert.equal((await f.request(`${endpoint}/${second.body.id}`)).status, 404);
 });
 
 test('uploads reject absent or active-content files and accept safe text; extraction is auth protected and cleans parse failures', async () => {
   assert.equal((await multipart(endpoint, f.owner, null, '')).status, 400);
-  assert.equal((await multipart(endpoint, f.owner, '<svg onload=alert(1)>', 'bad.svg', 'image/svg+xml')).status, 400);
-  assert.equal((await multipart(endpoint, f.owner, '<html>active</html>', 'bad.png', 'image/png')).status, 400);
+  assert.equal(
+    (await multipart(endpoint, f.owner, '<svg onload=alert(1)>', 'bad.svg', 'image/svg+xml'))
+      .status,
+    400,
+  );
+  assert.equal(
+    (await multipart(endpoint, f.owner, '<html>active</html>', 'bad.png', 'image/png')).status,
+    400,
+  );
   assert.equal((await f.request(`${endpoint}/extract`, { as: null, method: 'POST' })).status, 401);
-  const unsupported = await multipart(`${endpoint}/extract`, f.owner, 'hello', 'x.txt', 'text/plain');
+  const unsupported = await multipart(
+    `${endpoint}/extract`,
+    f.owner,
+    'hello',
+    'x.txt',
+    'text/plain',
+  );
   assert.equal(unsupported.status, 400);
   // A deliberately malformed document exercises the real parser error path,
   // without external services/models or a mocked router.
-  const brokenDoc = await multipart(`${endpoint}/extract`, f.owner, 'not a zip document', 'broken.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  const brokenDoc = await multipart(
+    `${endpoint}/extract`,
+    f.owner,
+    'not a zip document',
+    'broken.docx',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  );
   assert.equal(brokenDoc.status, 200);
   assert.equal(brokenDoc.body.ok, false);
   assert.equal(brokenDoc.body.kind, 'docx');
@@ -101,8 +148,13 @@ test('uploads reject absent or active-content files and accept safe text; extrac
   assert.equal(jpegWithPngMime.body.kind, 'image');
 
   // Octet-stream with image extension
-  const octetImg = await multipart(endpoint, f.owner, jpegBytes, 'photo.jpg', 'application/octet-stream');
+  const octetImg = await multipart(
+    endpoint,
+    f.owner,
+    jpegBytes,
+    'photo.jpg',
+    'application/octet-stream',
+  );
   assert.equal(octetImg.status, 201);
   assert.equal(octetImg.body.kind, 'image');
 });
-

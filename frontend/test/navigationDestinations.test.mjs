@@ -1,13 +1,30 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { DESTINATIONS, isPageDestination, isWorkspacePage } from '../src/sidebar/navigation.destinations.ts';
+import {
+  DESTINATIONS,
+  isPageDestination,
+  isWorkspacePage,
+} from '../src/sidebar/navigation.destinations.ts';
 import { WORKSPACE_ROUTES, workspaceForPath } from '../src/app/router.ts';
-import { openNav, exitPluginsView, registerNavigationAdapters, syncWorkspaceRoute } from '../src/sidebar/navigation.service.ts';
+import {
+  openNav,
+  exitPluginsView,
+  registerNavigationAdapters,
+  syncWorkspaceRoute,
+} from '../src/sidebar/navigation.service.ts';
 import { getActiveDestination } from '../src/sidebar/navigation.store.ts';
 
-const dom = new JSDOM('<!doctype html><html><body><div id="topicSetup" class="hidden"></div><div id="chatView"></div><div id="pluginsPanel" class="hidden"></div><div id="spacesPanel" class="hidden"></div></body></html>', { url: 'http://localhost/' });
-Object.assign(globalThis, { window: dom.window, document: dom.window.document, location: dom.window.location, history: dom.window.history });
+const dom = new JSDOM(
+  '<!doctype html><html><body><div id="topicSetup" class="hidden"></div><div id="chatView"></div><div id="pluginsPanel" class="hidden"></div><div id="spacesPanel" class="hidden"></div></body></html>',
+  { url: 'http://localhost/' },
+);
+Object.assign(globalThis, {
+  window: dom.window,
+  document: dom.window.document,
+  location: dom.window.location,
+  history: dom.window.history,
+});
 
 test('route metadata resolves trailing slashes and rejects non-page keys', () => {
   for (const [name, { path }] of Object.entries(DESTINATIONS)) {

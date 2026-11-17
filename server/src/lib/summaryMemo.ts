@@ -1,6 +1,8 @@
 /** Bounded process-local cache of successful summaries. Callers hash the
  * owner/session/provider and source. Concurrent retries share one operation. */
-export function createSummaryMemo(options: { maxEntries?: number; ttlMs?: number; now?: () => number } = {}) {
+export function createSummaryMemo(
+  options: { maxEntries?: number; ttlMs?: number; now?: () => number } = {},
+) {
   const maxEntries = options.maxEntries ?? 8;
   const ttlMs = options.ttlMs ?? 10 * 60 * 1000;
   const now = options.now ?? Date.now;
@@ -32,6 +34,8 @@ export function createSummaryMemo(options: { maxEntries?: number; ttlMs?: number
         if (pending.get(key) === work) pending.delete(key);
       }
     },
-    clear() { saved.clear(); },
+    clear() {
+      saved.clear();
+    },
   };
 }

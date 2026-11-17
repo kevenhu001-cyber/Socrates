@@ -19,7 +19,11 @@ function setMockCookie(raw) {
   if (eq <= 0) return;
   const name = first.slice(0, eq).trim();
   const value = first.slice(eq + 1).trim();
-  const kept = mockCookies.split(';').filter(Boolean).map((c) => c.trim()).filter((c) => c.split('=')[0] !== name);
+  const kept = mockCookies
+    .split(';')
+    .filter(Boolean)
+    .map((c) => c.trim())
+    .filter((c) => c.split('=')[0] !== name);
   kept.push(name + '=' + value);
   mockCookies = kept.join('; ');
 }
@@ -33,7 +37,7 @@ function installMockEnvironment() {
   previous.window = globalThis.window;
 
   globalThis.localStorage = {
-    getItem: (key) => mockStorage.has(String(key)) ? mockStorage.get(String(key)) : null,
+    getItem: (key) => (mockStorage.has(String(key)) ? mockStorage.get(String(key)) : null),
     setItem: (key, value) => mockStorage.set(String(key), String(value)),
     removeItem: (key) => mockStorage.delete(String(key)),
     clear: () => mockStorage.clear(),
@@ -69,10 +73,18 @@ test('cookie consent starts with no choice and gates non-essential cookies', () 
 
     installCookieGuard();
     document.cookie = 'analytics_id=abc; path=/; max-age=3600';
-    assert.equal(document.cookie.includes('analytics_id=abc'), false, 'non-essential cookie must be blocked before consent');
+    assert.equal(
+      document.cookie.includes('analytics_id=abc'),
+      false,
+      'non-essential cookie must be blocked before consent',
+    );
 
     document.cookie = 'csrf=token-123; path=/';
-    assert.equal(document.cookie.includes('csrf=token-123'), true, 'essential cookies must still be writable');
+    assert.equal(
+      document.cookie.includes('csrf=token-123'),
+      true,
+      'essential cookies must still be writable',
+    );
   } finally {
     restoreEnvironment();
   }
@@ -88,7 +100,11 @@ test('accepting consent persists the choice and unlocks non-essential cookies', 
     assert.equal(allowsNonEssential(), true);
 
     document.cookie = 'analytics_id=abc; path=/; max-age=3600';
-    assert.equal(document.cookie.includes('analytics_id=abc'), true, 'accepted consent must allow non-essential cookies');
+    assert.equal(
+      document.cookie.includes('analytics_id=abc'),
+      true,
+      'accepted consent must allow non-essential cookies',
+    );
 
     // The consent choice itself is stored locally and in the consent cookie.
     const stored = JSON.parse(localStorage.getItem(CONSENT_KEY));
@@ -108,7 +124,11 @@ test('essential-only choice persists and keeps non-essential cookies blocked', (
     assert.equal(getConsentPreference().choice, 'essential');
 
     document.cookie = 'marketing_uid=1; path=/; max-age=3600';
-    assert.equal(document.cookie.includes('marketing_uid=1'), false, 'essential-only must keep non-essential cookies blocked');
+    assert.equal(
+      document.cookie.includes('marketing_uid=1'),
+      false,
+      'essential-only must keep non-essential cookies blocked',
+    );
 
     // The shared cookie survives localStorage being cleared, so the banner
     // does not reappear on the next visit.

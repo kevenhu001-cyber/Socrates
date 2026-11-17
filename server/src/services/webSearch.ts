@@ -1,4 +1,4 @@
-import {BadRequest} from '../lib/errors.js';
+import { BadRequest } from '../lib/errors.js';
 import {
   detectLanguageCluster,
   scoreAuthority,
@@ -13,12 +13,12 @@ import {
 } from './embeddings/scoring.js';
 import * as searchResultCache from '../lib/searchResultCache.js';
 import { decodeHtmlEntities } from '../lib/sanitize.js';
-import {expandQuery} from './queryExpander.js';
-import {searchMinimax} from './searchEngines/minimax.js';
-import {searchMmx} from './searchEngines/mmx.js';
-import {searchFirecrawl} from './searchEngines/firecrawl.js';
-import {searchSearxng} from './searchEngines/searxng.js';
-import {searchBing} from './searchEngines/bing.js';
+import { expandQuery } from './queryExpander.js';
+import { searchMinimax } from './searchEngines/minimax.js';
+import { searchMmx } from './searchEngines/mmx.js';
+import { searchFirecrawl } from './searchEngines/firecrawl.js';
+import { searchSearxng } from './searchEngines/searxng.js';
+import { searchBing } from './searchEngines/bing.js';
 
 /**
  * Aggregate result shape produced by merging the per-engine search
@@ -90,7 +90,8 @@ export class WebSearchUnavailableError extends Error {
  * Cache key includes the query string, so identical queries within
  * 5 minutes return identical results without re-running engines.
  */
-export const WEB_SEARCH_CITATION_GUIDANCE = 'Write factual claims in natural prose, then call cite_sources with exact quotes and the Source IDs returned by the tools. Do not invent source IDs or write numerical reference markers. The UI renders inline citations and a Sources list. If a result has no Source ID, use a Markdown link to its URL.';
+export const WEB_SEARCH_CITATION_GUIDANCE =
+  'Write factual claims in natural prose, then call cite_sources with exact quotes and the Source IDs returned by the tools. Do not invent source IDs or write numerical reference markers. The UI renders inline citations and a Sources list. If a result has no Source ID, use a Markdown link to its URL.';
 
 export const WEB_SEARCH_TOOL = {
   type: 'function',
@@ -117,7 +118,9 @@ export const WEB_SEARCH_TOOL = {
       '- Bad:  "what is the latest version of python and when was it released"\n' +
       '- Good: "Python latest version release date"\n\n' +
       '## Output format\n' +
-      'Results are numbered [1], [2], … and sorted by an estimated relevance score (query-term match, agreement across engines, source authority, freshness). The order is a heuristic, not ground truth — judge each result by its title, URL, and snippet before deciding what to open with web_fetch. ' + WEB_SEARCH_CITATION_GUIDANCE + '\n\n' +
+      'Results are numbered [1], [2], … and sorted by an estimated relevance score (query-term match, agreement across engines, source authority, freshness). The order is a heuristic, not ground truth — judge each result by its title, URL, and snippet before deciding what to open with web_fetch. ' +
+      WEB_SEARCH_CITATION_GUIDANCE +
+      '\n\n' +
       '## Caching\n' +
       'Identical queries within the same session are cached for 5 minutes. Re-running the same query does NOT re-hit the engines and will not surface fresher results — wait 5 minutes or change the query wording if you need a refresh.',
     parameters: {
@@ -125,7 +128,8 @@ export const WEB_SEARCH_TOOL = {
       properties: {
         query: {
           type: 'string',
-          description: 'The search query (1-6 words, specific and concise). Bad: "what is the latest version of python and when was it released". Good: "Python latest version release date".',
+          description:
+            'The search query (1-6 words, specific and concise). Bad: "what is the latest version of python and when was it released". Good: "Python latest version release date".',
           minLength: 1,
           maxLength: 200,
         },
@@ -134,7 +138,8 @@ export const WEB_SEARCH_TOOL = {
           default: 8,
           minimum: 1,
           maximum: 12,
-          description: 'How many results to return. 8 is a good default; use 3-5 for a quick check, 10-12 for a thorough sweep.',
+          description:
+            'How many results to return. 8 is a good default; use 3-5 for a quick check, 10-12 for a thorough sweep.',
         },
       },
       required: ['query'],
@@ -145,16 +150,16 @@ export const WEB_SEARCH_TOOL = {
 
 /* ─── Configuration ─── */
 
-const MAX_RESULTS = 12;           // final merged count / per-source limit
+const MAX_RESULTS = 12; // final merged count / per-source limit
 
 /* ═══════════════════════════════════════════════════════════════════
    Web search — parallel fan-out across mmx, firecrawl, MiniMax, Bing, searXNG
    ═══════════════════════════════════════════════════════════════════ */
 
-const TIMEOUT_MINIMAX_MS   = 8_000;
+const TIMEOUT_MINIMAX_MS = 8_000;
 const TIMEOUT_FIRECRAWL_MS = 10_000;
-const TIMEOUT_BING_MS      = 8_000;
-const TIMEOUT_SEARXNG_MS   = 6_000;
+const TIMEOUT_BING_MS = 8_000;
+const TIMEOUT_SEARXNG_MS = 6_000;
 
 const TOTAL_SEARCH_TIMEOUT = 12_000;
 
@@ -186,7 +191,11 @@ function withTimeout(
   ]).finally(() => clearTimeout(timer));
 }
 
-export async function webSearch(query: string, count: string | number = 10, opts: { userId?: string; locale?: string; apiKeyHint?: string } = {}) {
+export async function webSearch(
+  query: string,
+  count: string | number = 10,
+  opts: { userId?: string; locale?: string; apiKeyHint?: string } = {},
+) {
   if (!query || !String(query).trim()) {
     throw new BadRequest('Query is required');
   }
@@ -202,9 +211,8 @@ export async function webSearch(query: string, count: string | number = 10, opts
     return cacheHit;
   }
 
-  return searchResultCache.getOrCreateInFlight(
-    searchResultCache.keyFor(cacheInput),
-    () => runWebSearch(query, limit, locale, apiKeyHint, opts.userId, langCluster),
+  return searchResultCache.getOrCreateInFlight(searchResultCache.keyFor(cacheInput), () =>
+    runWebSearch(query, limit, locale, apiKeyHint, opts.userId, langCluster),
   );
 }
 
@@ -216,7 +224,6 @@ async function runWebSearch(
   userId: string | undefined,
   langCluster: ReturnType<typeof detectLanguageCluster>,
 ): Promise<SearchResult[]> {
-
   const ac = new AbortController();
   const totalTimer = setTimeout(() => ac.abort('total_timeout'), TOTAL_SEARCH_TIMEOUT);
 
@@ -241,23 +248,30 @@ async function runWebSearch(
     timeoutMs: number,
   ): Promise<SearchResult[]> => {
     const engineController = new AbortController();
-    const engineSignal = typeof AbortSignal.any === 'function'
-      ? AbortSignal.any([acSignal, engineController.signal])
-      : (acSignal.aborted ? acSignal : engineController.signal);
+    const engineSignal =
+      typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([acSignal, engineController.signal])
+        : acSignal.aborted
+          ? acSignal
+          : engineController.signal;
 
     const primaryP = searchFn(query, limit, engineSignal).then((results) => {
       return Array.isArray(results) ? results : [];
     });
 
-    const secondaryP = variantsPromise.then(async (vars) => {
-      const extra = vars.filter((v) => v !== query);
-      if (!extra.length) return [];
-      const perVariantLimit = Math.max(1, Math.ceil(limit / vars.length));
-      const subArrays = await Promise.all(
-        extra.map((v) => searchFn(v, perVariantLimit, engineSignal).then((r) => (Array.isArray(r) ? r : []))),
-      );
-      return subArrays.flat();
-    }).catch(() => []);
+    const secondaryP = variantsPromise
+      .then(async (vars) => {
+        const extra = vars.filter((v) => v !== query);
+        if (!extra.length) return [];
+        const perVariantLimit = Math.max(1, Math.ceil(limit / vars.length));
+        const subArrays = await Promise.all(
+          extra.map((v) =>
+            searchFn(v, perVariantLimit, engineSignal).then((r) => (Array.isArray(r) ? r : [])),
+          ),
+        );
+        return subArrays.flat();
+      })
+      .catch(() => []);
 
     return withTimeout(
       Promise.all([primaryP, secondaryP]).then(([primaryRes, secondaryRes]) => {
@@ -285,7 +299,9 @@ async function runWebSearch(
       }),
       timeoutMs,
       label,
-      (reason) => { if (!engineController.signal.aborted) engineController.abort(reason); },
+      (reason) => {
+        if (!engineController.signal.aborted) engineController.abort(reason);
+      },
     );
   };
 
@@ -301,9 +317,7 @@ async function runWebSearch(
      then minimax (direct HTTP), then bing.  The first two are CLI
      spawns (~100-300 ms overhead) but are prioritised because they
      are the project's preferred providers. */
-  const settled = await Promise.allSettled([
-    mmxP, firecrawlP, minimaxP, bingP,
-  ]);
+  const settled = await Promise.allSettled([mmxP, firecrawlP, minimaxP, bingP]);
   /* P_engine-result-guard — each engine promise is wrapped in
      `withTimeout` which resolves to [] on timeout. The fulfilled
      branch here covers all the happy paths. We still type-guard
@@ -317,7 +331,11 @@ async function runWebSearch(
       return { name, results: [] as SearchResult[], status: 'error' };
     }
     const results = settledResult.value;
-    return { name, results, status: (results as SearchResult[] & { _engineStatus?: string })._engineStatus || 'ok' };
+    return {
+      name,
+      results,
+      status: (results as SearchResult[] & { _engineStatus?: string })._engineStatus || 'ok',
+    };
   };
   const outcomes = [
     pickOutcome('mmx', settled[0]),
@@ -325,23 +343,35 @@ async function runWebSearch(
     pickOutcome('minimax', settled[2]),
     pickOutcome('bing', settled[3]),
   ];
-  let finalResults = rankSearchResults(outcomes.map((o) => o.results), query, langCluster, limit);
+  let finalResults = rankSearchResults(
+    outcomes.map((o) => o.results),
+    query,
+    langCluster,
+    limit,
+  );
 
   if (finalResults.length === 0) {
     const fallbackController = new AbortController();
-    const fallbackSignal = typeof AbortSignal.any === 'function'
-      ? AbortSignal.any([acSignal, fallbackController.signal])
-      : (acSignal.aborted ? acSignal : fallbackController.signal);
+    const fallbackSignal =
+      typeof AbortSignal.any === 'function'
+        ? AbortSignal.any([acSignal, fallbackController.signal])
+        : acSignal.aborted
+          ? acSignal
+          : fallbackController.signal;
     const searxngResults = await withTimeout(
       searchSearxng(query, limit, fallbackSignal),
       TIMEOUT_SEARXNG_MS,
       'searxng',
-      (reason) => { if (!fallbackController.signal.aborted) fallbackController.abort(reason); },
+      (reason) => {
+        if (!fallbackController.signal.aborted) fallbackController.abort(reason);
+      },
     ).catch(() => unavailableResults('error'));
     outcomes.push({
       name: 'searxng',
       results: Array.isArray(searxngResults) ? searxngResults : [],
-      status: Array.isArray(searxngResults) ? ((searxngResults as SearchResult[] & { _engineStatus?: string })._engineStatus || 'ok') : 'error',
+      status: Array.isArray(searxngResults)
+        ? (searxngResults as SearchResult[] & { _engineStatus?: string })._engineStatus || 'ok'
+        : 'error',
     });
     if (Array.isArray(searxngResults) && searxngResults.length > 0) {
       finalResults = searxngResults;
@@ -385,14 +415,22 @@ async function runWebSearch(
       configurable: true,
       writable: false,
     });
-  } catch { /* metadata is best-effort */ }
+  } catch {
+    /* metadata is best-effort */
+  }
 
   try {
     searchResultCache.set({
-      userId, query, count: limit, locale, apiKeyHint,
+      userId,
+      query,
+      count: limit,
+      locale,
+      apiKeyHint,
       result: finalResults,
     });
-  } catch { /* cache is best-effort */ }
+  } catch {
+    /* cache is best-effort */
+  }
 
   return finalResults;
 }
@@ -422,7 +460,8 @@ export function rankSearchResults(
         existing.sourceCount++;
         existing._engineRanks.push(rank);
         if (!existing.result.date && r.date) existing.result.date = r.date;
-        if ((r.snippet || '').length > (existing.result.snippet || '').length) existing.result.snippet = r.snippet;
+        if ((r.snippet || '').length > (existing.result.snippet || '').length)
+          existing.result.snippet = r.snippet;
       } else {
         byUrl.set(r.url, { result: { ...r }, sourceCount: 1, _engineRanks: [rank] });
       }
@@ -432,12 +471,13 @@ export function rankSearchResults(
   const bigrams = tokenBigrams(words);
   const scored = [...byUrl.values()].map((c) => {
     const { title, snippet, url, date, authority } = c.result;
-    const score = scoreKeywordSignals(title, snippet, words, bigrams)
-      + scoreAuthority(authority)
-      + scoreFreshness(date || scoreDateFromUrlPath(url))
-      + scoreCrossSource(c)
-      + scoreLanguageMatch(langCluster, `${title || ''} ${snippet || ''}`)
-      - scoreSpamPenalty(url, title);
+    const score =
+      scoreKeywordSignals(title, snippet, words, bigrams) +
+      scoreAuthority(authority) +
+      scoreFreshness(date || scoreDateFromUrlPath(url)) +
+      scoreCrossSource(c) +
+      scoreLanguageMatch(langCluster, `${title || ''} ${snippet || ''}`) -
+      scoreSpamPenalty(url, title);
     return { result: c.result, score };
   });
   scored.sort((a, b) => b.score - a.score);
@@ -448,8 +488,8 @@ export function rankSearchResults(
    Image search (unchanged — Bing Images only)
    ═══════════════════════════════════════════════════════════════════ */
 
-const BING_HOST_INTL   = process.env.WEB_SEARCH_HOST || 'www.bing.com';
-const REQUEST_TIMEOUT  = 12_000;
+const BING_HOST_INTL = process.env.WEB_SEARCH_HOST || 'www.bing.com';
+const REQUEST_TIMEOUT = 12_000;
 const MAX_NEWS_RESULTS = 15;
 
 const USER_AGENTS = [
@@ -497,7 +537,8 @@ export function parseBingImageHtml(html: string): ImageResult[] {
     } catch (_) {}
   }
   if (!results.length) {
-    const imgRe = /<img[^>]*src="(https?:\/\/[^"]+)"[^>]*alt="([^"]*)"[^>]*data-src="(https?:\/\/[^"]+)"/g;
+    const imgRe =
+      /<img[^>]*src="(https?:\/\/[^"]+)"[^>]*alt="([^"]*)"[^>]*data-src="(https?:\/\/[^"]+)"/g;
     let im: RegExpExecArray | null;
     while ((im = imgRe.exec(html)) !== null) {
       const thumbUrl = im[1];
@@ -522,9 +563,13 @@ export async function imageSearch(query: string, count: string | number = 8) {
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   try {
     const r = await fetch(url, {
-      method: 'GET', signal: controller.signal,
-      headers: { 'User-Agent': randomUA(), 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7' },
+      method: 'GET',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': randomUA(),
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+      },
       redirect: 'follow',
     });
     clearTimeout(timer);

@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { promptTemplatesState, publishPromptTemplatesState } = await import('../src/ui/promptTemplatesState.ts');
+const { promptTemplatesState, publishPromptTemplatesState } =
+  await import('../src/ui/promptTemplatesState.ts');
 
 test('prompt template publisher updates the shared snapshot and notifies subscribers', () => {
   promptTemplatesState.__resetForTests();
   let notifications = 0;
-  const unsubscribe = promptTemplatesState.subscribe(() => { notifications += 1; });
+  const unsubscribe = promptTemplatesState.subscribe(() => {
+    notifications += 1;
+  });
 
   publishPromptTemplatesState({
     open: true,

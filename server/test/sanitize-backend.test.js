@@ -40,7 +40,7 @@ describe('sanitizeExtraBody', () => {
   test('drops unknown keys, keeps whitelisted primitives', () => {
     const out = sanitizeExtraBody({
       top_p: 0.9,
-      temperature: 0.7,           // not whitelisted
+      temperature: 0.7, // not whitelisted
       thinking: { type: 'enabled' }, // nested object
     });
     assert.deepEqual(out, { top_p: 0.9, thinking: { type: 'enabled' } });
@@ -72,10 +72,10 @@ describe('sanitizeExtraBody', () => {
   test('accepts primitive arrays for whitelisted keys', () => {
     const out = sanitizeExtraBody({
       stop: ['\n', '###'],
-      logit_bias: { '50256': -100 },
+      logit_bias: { 50256: -100 },
     });
     assert.deepEqual(out.stop, ['\n', '###']);
-    assert.deepEqual(out.logit_bias, { '50256': -100 });
+    assert.deepEqual(out.logit_bias, { 50256: -100 });
   });
 
   test('returns undefined when nothing remains after filtering', () => {

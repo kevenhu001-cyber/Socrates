@@ -21,7 +21,8 @@ export function VizModalActions({ onClose, onCopy }: VizModalActionsProps) {
     window.setTimeout(() => setCopyState('idle'), 1200);
   }
 
-  const copyLabel = copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy source';
+  const copyLabel =
+    copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy source';
 
   return (
     <>
@@ -31,7 +32,14 @@ export function VizModalActions({ onClose, onCopy }: VizModalActionsProps) {
           {copyLabel}
         </Button>
       )}
-      <Button variant="ghost" size="icon-sm" className="viz-modal-close" aria-label="Close" title="Close" onClick={onClose}>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="viz-modal-close"
+        aria-label="Close"
+        title="Close"
+        onClick={onClose}
+      >
         <X aria-hidden="true" />
       </Button>
     </>

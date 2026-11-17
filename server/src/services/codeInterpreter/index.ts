@@ -97,7 +97,9 @@ export const codeInterpreter = {
   async reapSessionScratch(sessionId?: string | null, userId?: string | null) {
     if (!sessionId || !isUuid(sessionId)) return;
     if (userId && isUuid(userId)) {
-      await fs.rm(sessionScratchPath(userId, sessionId), { recursive: true, force: true }).catch(() => {});
+      await fs
+        .rm(sessionScratchPath(userId, sessionId), { recursive: true, force: true })
+        .catch(() => {});
       return;
     }
 
@@ -105,17 +107,34 @@ export const codeInterpreter = {
        this path for execution; it merely clears legacy root-layout dirs and
        discovers the owner namespace during deletion/cleanup. UUID validation
        above keeps every joined path beneath SCRATCH_DIR. */
-    await fs.rm(resolveInsideRoot(SCRATCH_DIR, sessionId), { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(resolveInsideRoot(SCRATCH_DIR, sessionId), { recursive: true, force: true })
+      .catch(() => {});
     let owners: import('node:fs').Dirent[] = [];
-    try { owners = await fs.readdir(SCRATCH_DIR, { withFileTypes: true }); } catch { return; }
-    await Promise.all(owners
-      .filter((entry) => entry.isDirectory() && isUuid(entry.name))
-      .map((entry) => fs.rm(resolveInsideRoot(SCRATCH_DIR, path.join(entry.name, sessionId)), { recursive: true, force: true }).catch(() => {})));
+    try {
+      owners = await fs.readdir(SCRATCH_DIR, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    await Promise.all(
+      owners
+        .filter((entry) => entry.isDirectory() && isUuid(entry.name))
+        .map((entry) =>
+          fs
+            .rm(resolveInsideRoot(SCRATCH_DIR, path.join(entry.name, sessionId)), {
+              recursive: true,
+              force: true,
+            })
+            .catch(() => {}),
+        ),
+    );
   },
 
   async reapExecutionScratch(executionId?: string | null, userId?: string | null) {
     if (!executionId || !userId || !isUuid(executionId) || !isUuid(userId)) return;
-    await fs.rm(executionScratchPath(userId, executionId), { recursive: true, force: true }).catch(() => {});
+    await fs
+      .rm(executionScratchPath(userId, executionId), { recursive: true, force: true })
+      .catch(() => {});
   },
 
   /* TTL sweep — remove session dirs whose conversation hasn't run
@@ -134,12 +153,17 @@ export const codeInterpreter = {
         if (st.mtimeMs >= cutoff) return;
         await fs.rm(dir, { recursive: true, force: true });
         removed++;
-      } catch (_) { /* skip — race with delete or transient ENOENT */ }
+      } catch (_) {
+        /* skip — race with delete or transient ENOENT */
+      }
     };
     const visit = async (dir: string, depth: number): Promise<void> => {
       let entries: import('node:fs').Dirent[];
-      try { entries = await fs.readdir(dir, { withFileTypes: true }); }
-      catch (_) { return; }
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch (_) {
+        return;
+      }
       // A scratch root always owns an artifacts child. Treat it as a leaf
       // rather than recursing into artifact files themselves.
       if (entries.some((entry) => entry.isDirectory() && entry.name === 'artifacts')) {
@@ -160,13 +184,23 @@ export const codeInterpreter = {
       // Keep a small finite walk so malformed filesystem contents cannot turn
       // a periodic cleanup into an unbounded recursive scan.
       if (depth >= 3) return;
-      await Promise.all(entries
-        .filter((entry) => entry.isDirectory() && (isUuid(entry.name) || entry.name === 'executions'))
-        .map((entry) => visit(path.join(dir, entry.name), depth + 1)));
+      await Promise.all(
+        entries
+          .filter(
+            (entry) => entry.isDirectory() && (isUuid(entry.name) || entry.name === 'executions'),
+          )
+          .map((entry) => visit(path.join(dir, entry.name), depth + 1)),
+      );
     };
-    try { await visit(SCRATCH_DIR, 0); }
-    catch (e) { return { removed: 0, error: String(e && (e as Error).message || e) }; }
-    if (removed > 0) console.log(`[code-interpreter] TTL sweep reaped ${removed} stale session scratch dir(s) (older than ${days}d)`);
+    try {
+      await visit(SCRATCH_DIR, 0);
+    } catch (e) {
+      return { removed: 0, error: String((e && (e as Error).message) || e) };
+    }
+    if (removed > 0)
+      console.log(
+        `[code-interpreter] TTL sweep reaped ${removed} stale session scratch dir(s) (older than ${days}d)`,
+      );
     return { removed };
   },
 };

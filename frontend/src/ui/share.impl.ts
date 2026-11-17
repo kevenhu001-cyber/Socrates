@@ -12,7 +12,7 @@
  */
 
 import { apiFetch } from '../util/api/index.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchPatches, dispatchSession, sessionStore, uiStore } from '../store/index.ts';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
@@ -34,7 +34,12 @@ interface SharedMessage extends MessageEntry {
   content?: unknown;
   reasoningContent?: unknown;
 }
-interface SharedExamData { questions?: ExamQuestion[]; answers?: Record<string, string | number | undefined>; submitted?: boolean; topic?: string }
+interface SharedExamData {
+  questions?: ExamQuestion[];
+  answers?: Record<string, string | number | undefined>;
+  submitted?: boolean;
+  topic?: string;
+}
 interface SharedSession {
   id: string;
   topic?: string;
@@ -51,39 +56,75 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseSharedSession(value: unknown): SharedSession | null {
   if (!isRecord(value) || typeof value.id !== 'string') return null;
-  const messages = Array.isArray(value.messages) ? value.messages.flatMap((message): SharedMessage[] => {
-    if (!isRecord(message) || typeof message.role !== 'string') return [];
-    return [{
-      id: typeof message.id === 'string' ? message.id : undefined,
-      role: message.role,
-      rawText: typeof message.rawText === 'string' ? message.rawText : undefined,
-      content: message.content,
-      html: typeof message.html === 'string' ? message.html : undefined,
-      reasoningContent: message.reasoningContent,
-      toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls as SharedMessage['toolCalls'] : [],
-    }];
-  }) : [];
+  const messages = Array.isArray(value.messages)
+    ? value.messages.flatMap((message): SharedMessage[] => {
+        if (!isRecord(message) || typeof message.role !== 'string') return [];
+        return [
+          {
+            id: typeof message.id === 'string' ? message.id : undefined,
+            role: message.role,
+            rawText: typeof message.rawText === 'string' ? message.rawText : undefined,
+            content: message.content,
+            html: typeof message.html === 'string' ? message.html : undefined,
+            reasoningContent: message.reasoningContent,
+            toolCalls: Array.isArray(message.toolCalls)
+              ? (message.toolCalls as SharedMessage['toolCalls'])
+              : [],
+          },
+        ];
+      })
+    : [];
   const rawExam = isRecord(value.examData) ? value.examData : null;
-  const examData = rawExam ? {
-    questions: Array.isArray(rawExam.questions) ? rawExam.questions.flatMap((question): ExamQuestion[] => {
-      if (!isRecord(question) || typeof question.q !== 'string' || typeof question.type !== 'string') return [];
-      const type = question.type === 'multiple-choice' || question.type === 'fill-blank' || question.type === 'short-answer' || question.type === 'error'
-        ? question.type : 'error';
-      const parsed: ExamQuestion = { q: question.q, type };
-      if (typeof question.explanation === 'string') parsed.explanation = question.explanation;
-      if (typeof question.answer === 'string' || typeof question.answer === 'number') parsed.answer = question.answer;
-      if (Array.isArray(question.answers)) parsed.answers = question.answers.filter((answer): answer is string => typeof answer === 'string');
-      if (Array.isArray(question.opts)) parsed.opts = question.opts.flatMap((option) => {
-        if (!isRecord(option)) return [];
-        const text = typeof option.text === 'string' || option.text === null ? option.text : null;
-        return [{ letter: typeof option.letter === 'string' ? option.letter : undefined, text }];
-      });
-      return [parsed];
-    }) : [],
-    answers: isRecord(rawExam.answers) ? Object.fromEntries(Object.entries(rawExam.answers).filter((entry): entry is [string, string | number] => typeof entry[1] === 'string' || typeof entry[1] === 'number')) : undefined,
-    submitted: typeof rawExam.submitted === 'boolean' ? rawExam.submitted : undefined,
-    topic: typeof rawExam.topic === 'string' ? rawExam.topic : undefined,
-  } : undefined;
+  const examData = rawExam
+    ? {
+        questions: Array.isArray(rawExam.questions)
+          ? rawExam.questions.flatMap((question): ExamQuestion[] => {
+              if (
+                !isRecord(question) ||
+                typeof question.q !== 'string' ||
+                typeof question.type !== 'string'
+              )
+                return [];
+              const type =
+                question.type === 'multiple-choice' ||
+                question.type === 'fill-blank' ||
+                question.type === 'short-answer' ||
+                question.type === 'error'
+                  ? question.type
+                  : 'error';
+              const parsed: ExamQuestion = { q: question.q, type };
+              if (typeof question.explanation === 'string')
+                parsed.explanation = question.explanation;
+              if (typeof question.answer === 'string' || typeof question.answer === 'number')
+                parsed.answer = question.answer;
+              if (Array.isArray(question.answers))
+                parsed.answers = question.answers.filter(
+                  (answer): answer is string => typeof answer === 'string',
+                );
+              if (Array.isArray(question.opts))
+                parsed.opts = question.opts.flatMap((option) => {
+                  if (!isRecord(option)) return [];
+                  const text =
+                    typeof option.text === 'string' || option.text === null ? option.text : null;
+                  return [
+                    { letter: typeof option.letter === 'string' ? option.letter : undefined, text },
+                  ];
+                });
+              return [parsed];
+            })
+          : [],
+        answers: isRecord(rawExam.answers)
+          ? Object.fromEntries(
+              Object.entries(rawExam.answers).filter(
+                (entry): entry is [string, string | number] =>
+                  typeof entry[1] === 'string' || typeof entry[1] === 'number',
+              ),
+            )
+          : undefined,
+        submitted: typeof rawExam.submitted === 'boolean' ? rawExam.submitted : undefined,
+        topic: typeof rawExam.topic === 'string' ? rawExam.topic : undefined,
+      }
+    : undefined;
   return {
     id: value.id,
     topic: typeof value.topic === 'string' ? value.topic : undefined,
@@ -95,13 +136,12 @@ function parseSharedSession(value: unknown): SharedSession | null {
   };
 }
 
-
 let _shareSessionId: string | null = null;
-let _shareVisibility: ShareVisibility = "public";
+let _shareVisibility: ShareVisibility = 'public';
 let _shareToken: string | null = null;
-let _shareUrl = "";
-let _shareStatus = "";
-let _shareError = "";
+let _shareUrl = '';
+let _shareStatus = '';
+let _shareError = '';
 let _shareOpen = false;
 let sharedShellRestore: (() => void) | null = null;
 
@@ -126,25 +166,37 @@ function toggleShareBtn() {
   /* RN-7 — share and find share one visibility rule (only useful while a
      conversation or exam is on screen). The top bar renders from the
      header store; nothing here touches the buttons. */
-  const show = !!(getCurrentUser() && (stateStore.read("currentSessionId") || stateStore.read("_examInView")));
+  const show = !!(
+    getCurrentUser() &&
+    (sessionStore.getState().currentSessionId || uiStore.getState()._examInView)
+  );
   setTopbarState({ conversationActions: show });
   if (!show) {
-    try { closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:75'); }
+    try {
+      closeFindInSession();
+    } catch (error) {
+      reportSwallow(error, 'ui/share.impl.ts:75');
+    }
   }
 }
 
 function hideAuthGate() {
-  try { hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:hideGate'); }
+  try {
+    hideGate();
+  } catch (error) {
+    reportSwallow(error, 'ui/share.impl.ts:hideGate');
+  }
 }
 
 function openShareModal(sessionId?: string) {
-  _shareSessionId = typeof sessionId === "string" ? sessionId : stateStore.read("currentSessionId");
+  _shareSessionId =
+    typeof sessionId === 'string' ? sessionId : sessionStore.getState().currentSessionId;
   _shareToken = null;
-  _shareUrl = "";
-  _shareStatus = "";
-  _shareError = "";
+  _shareUrl = '';
+  _shareStatus = '';
+  _shareError = '';
   _shareOpen = true;
-  _shareVisibility = "public";
+  _shareVisibility = 'public';
   _publishShareState();
 }
 
@@ -154,7 +206,7 @@ function closeShareModal() {
 }
 
 function selectShareVis(vis: string) {
-  _shareVisibility = vis === "private" ? "private" : "public";
+  _shareVisibility = vis === 'private' ? 'private' : 'public';
   _publishShareState();
 }
 
@@ -163,35 +215,41 @@ function renderShareModal() {
 }
 
 function _setShareError(msg: string) {
-  _shareError = msg || "";
+  _shareError = msg || '';
   _publishShareState();
 }
 
 function _setShareStatus(msg: string) {
-  _shareStatus = msg || "";
+  _shareStatus = msg || '';
   _publishShareState();
 }
 
 async function createShareLink() {
-  const sessionId = _shareSessionId || stateStore.read("currentSessionId");
-  if (!sessionId) { _setShareError("No active session"); return; }
-  _setShareError("");
-  _setShareStatus("Creating share link…");
+  const sessionId = _shareSessionId || sessionStore.getState().currentSessionId;
+  if (!sessionId) {
+    _setShareError('No active session');
+    return;
+  }
+  _setShareError('');
+  _setShareStatus('Creating share link…');
   try {
-    const r = await apiFetch<{ token?: string }>("/api/sessions/" + encodeURIComponent(sessionId) + "/share", {
-      method: "POST",
-      body: { visibility: _shareVisibility },
-    });
+    const r = await apiFetch<{ token?: string }>(
+      '/api/sessions/' + encodeURIComponent(sessionId) + '/share',
+      {
+        method: 'POST',
+        body: { visibility: _shareVisibility },
+      },
+    );
     if (r && r.token) {
       _shareToken = r.token;
-      _shareUrl = location.origin + "?share=" + encodeURIComponent(r.token);
-      _setShareStatus("Share link ready — copy and send to your recipient.");
+      _shareUrl = location.origin + '?share=' + encodeURIComponent(r.token);
+      _setShareStatus('Share link ready — copy and send to your recipient.');
       renderShareModal();
     } else {
-      _setShareError("Failed to create share link");
+      _setShareError('Failed to create share link');
     }
   } catch (e) {
-    _setShareError("Error: " + ((e as Error).message || "network error"));
+    _setShareError('Error: ' + ((e as Error).message || 'network error'));
   }
 }
 
@@ -199,43 +257,44 @@ async function createShareLink() {
    fall back to a selection copy when the async clipboard API is missing.
    This module only owns the link itself. */
 
-/* Session-teardown hook: main.js's reset paths (bounceOutOfArchivedSession,
-   resetState, sign-out) call this so a stale share token can't be reused
-   after the active session changes. The legacy paths only nulled the
-   window copy, which share.js never read — the module var kept the stale
-   token alive. */
+/* Session exits and sign-out clear the module's share token so the
+   next chat cannot reuse it. */
 function resetShareToken() {
   _shareToken = null;
 }
 
 async function revokeShareLink() {
-  const sessionId = _shareSessionId || stateStore.read("currentSessionId");
+  const sessionId = _shareSessionId || sessionStore.getState().currentSessionId;
   if (!_shareToken || !sessionId) return;
   try {
-    await apiFetch("/api/sessions/" + encodeURIComponent(sessionId) + "/share", { method: "DELETE" });
+    await apiFetch('/api/sessions/' + encodeURIComponent(sessionId) + '/share', {
+      method: 'DELETE',
+    });
     _shareToken = null;
-    _shareUrl = "";
-    _setShareStatus("Share link revoked.");
+    _shareUrl = '';
+    _setShareStatus('Share link revoked.');
     renderShareModal();
   } catch (e) {
-    _setShareError("Error revoking: " + ((e as Error).message || "network error"));
+    _setShareError('Error revoking: ' + ((e as Error).message || 'network error'));
   }
 }
 
 function _renderSharedMessageList() {
   publishReactChatRuntime({ type: 'state-synced', reason: 'shared-session-loaded' });
-  import('../react/message-list/MessageList.tsx').then(({ mountSharedMessageList }) => {
-    mountSharedMessageList();
-  }).catch((err) => reportSwallow(err, 'share._renderSharedMessageList'));
+  import('../react/message-list/MessageList.tsx')
+    .then(({ mountSharedMessageList }) => {
+      mountSharedMessageList();
+    })
+    .catch((err) => reportSwallow(err, 'share._renderSharedMessageList'));
 }
 function displayReadOnlyBanner(banner: HTMLElement | null): void {
   if (!banner) return;
-  document.getElementById("chatPage")?.prepend(banner);
-  banner.classList.remove("hidden");
+  document.getElementById('chatPage')?.prepend(banner);
+  banner.classList.remove('hidden');
   const label = banner.querySelector("[data-i18n-key='share.readOnlyBanner']");
   if (label) {
-    const text = t("share.readOnlyBanner");
-    if (text && text !== "share.readOnlyBanner") label.textContent = text;
+    const text = t('share.readOnlyBanner');
+    if (text && text !== 'share.readOnlyBanner') label.textContent = text;
   }
 }
 
@@ -258,7 +317,11 @@ function createSharedViewRestorer(
   return () => {
     if (banner) {
       banner.classList.add('hidden');
-      if (bannerParent) bannerParent.insertBefore(banner, bannerNextSibling?.parentNode === bannerParent ? bannerNextSibling : null);
+      if (bannerParent)
+        bannerParent.insertBefore(
+          banner,
+          bannerNextSibling?.parentNode === bannerParent ? bannerNextSibling : null,
+        );
     }
     saved.inputBar?.classList.toggle('hidden', saved.inputBarWasHidden);
     if (saved.topBar) saved.topBar.style.display = saved.topBarDisplay;
@@ -297,25 +360,25 @@ function applySharedViewOverrides(
   composer: HTMLElement | null,
   recentsPane: HTMLElement | null,
 ) {
-  inputBar?.classList.add("hidden");
-  if (topBar) topBar.style.display = "none";
+  inputBar?.classList.add('hidden');
+  if (topBar) topBar.style.display = 'none';
   setTopbarState({ sharedView: true });
-  composer?.setAttribute("aria-disabled", "true");
-  recentsPane?.classList.add("hidden");
+  composer?.setAttribute('aria-disabled', 'true');
+  recentsPane?.classList.add('hidden');
 }
 
 function _switchToSharedChatView() {
   restoreSharedViewShell();
-  const banner = document.getElementById("sharedBanner");
+  const banner = document.getElementById('sharedBanner');
   const bannerParent = banner?.parentElement || null;
   const bannerNextSibling = banner?.nextSibling || null;
-  const inputBar = document.getElementById("chatInputBar");
-  const topBar = document.querySelector(".chat-top-bar") as HTMLElement | null;
-  const composer = document.getElementById("composerRoot");
-  const recentsPane = document.getElementById("recentsPane");
+  const inputBar = document.getElementById('chatInputBar');
+  const topBar = document.querySelector('.chat-top-bar') as HTMLElement | null;
+  const composer = document.getElementById('composerRoot');
+  const recentsPane = document.getElementById('recentsPane');
 
   const saved = captureSharedViewShell(inputBar, topBar, composer, recentsPane);
-  activateMainView("chatView", document);
+  activateMainView('chatView', document);
   displayReadOnlyBanner(banner);
   applySharedViewOverrides(inputBar, topBar, composer, recentsPane);
 
@@ -330,15 +393,20 @@ function restoreSharedViewShell(): void {
 registerSharedViewCleanup(restoreSharedViewShell);
 
 function restoreSharedMessage(message: SharedMessage) {
-  const rawText = typeof message.rawText === 'string' ? message.rawText : typeof message.content === 'string' ? message.content : '';
+  const rawText =
+    typeof message.rawText === 'string'
+      ? message.rawText
+      : typeof message.content === 'string'
+        ? message.content
+        : '';
   return {
-    clientId: message.id || ("shared-" + Math.random().toString(36).slice(2, 10)),
-    role: message.role || "user",
+    clientId: message.id || 'shared-' + Math.random().toString(36).slice(2, 10),
+    role: message.role || 'user',
     /* rawText is the markdown the inline tool rows are spliced into, so
        keep it distinct from the rendered `content` snapshot. */
     rawText: rawText,
-    html: "",
-    type: message.role || "user",
+    html: '',
+    type: message.role || 'user',
     reasoningContent: message.reasoningContent || null,
     toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls : [],
     restoredFromHistory: true,
@@ -346,39 +414,48 @@ function restoreSharedMessage(message: SharedMessage) {
 }
 
 function installSharedSessionState(session: SharedSession) {
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    topic: session.topic || '',
-    currentSessionId: session.id,
-    sessionTitle: session.title || null,
-    domain: session.domain || null,
-  } });
-  stateStore.dispatch({ type: 'session/replace-messages', payload:
-    (session.messages || []).map(restoreSharedMessage)
+  dispatchPatches({
+    session: {
+      topic: session.topic || '',
+      currentSessionId: session.id,
+      sessionTitle: session.title || null,
+      domain: session.domain || null,
+    },
+  });
+  dispatchSession({
+    type: 'session/replace-messages',
+    payload: (session.messages || []).map(restoreSharedMessage),
   });
 }
 
 function showSharedChatSession() {
   _switchToSharedChatView();
   _renderSharedMessageList();
-  document.documentElement.dataset.bootState = "app";
+  document.documentElement.dataset.bootState = 'app';
   renderRecents();
 }
 
 function recoverFailedSharedSessionLoad() {
-  console.log("[share] load failed");
-  document.documentElement.dataset.bootState = "app";
-  try { hideGate(); } catch (error) { reportSwallow(error, 'ui/share.impl.ts:371'); }
-  showToast("Shared session not found or has expired.");
+  console.log('[share] load failed');
+  document.documentElement.dataset.bootState = 'app';
+  try {
+    hideGate();
+  } catch (error) {
+    reportSwallow(error, 'ui/share.impl.ts:371');
+  }
+  showToast('Shared session not found or has expired.');
 }
 
-async function loadSharedSession(token: string|number|boolean) {
+async function loadSharedSession(token: string | number | boolean) {
   if (!token) return;
   try {
-    const response = await apiFetch<unknown>("/api/shares/" + encodeURIComponent(token), { _authEndpoint: true });
+    const response = await apiFetch<unknown>('/api/shares/' + encodeURIComponent(token), {
+      _authEndpoint: true,
+    });
     const session = parseSharedSession(response);
-    if (!session) throw new Error("Invalid response");
+    if (!session) throw new Error('Invalid response');
     installSharedSessionState(session);
-    if (session.kind === "exam" && session.examData) {
+    if (session.kind === 'exam' && session.examData) {
       /* Awaited so a render failure lands in the catch below (toast + gate
          teardown) instead of escaping as an unhandled rejection. */
       await loadSharedExamSession(session);
@@ -390,25 +467,32 @@ async function loadSharedSession(token: string|number|boolean) {
   }
 }
 
-function prepareSharedExamState(session: { topic?: string }, exam: SharedExamData, questions: ExamQuestion[]) {
-  dispatchExam({ type: 'exam/patch', patch: {
-    examReadOnly: true,
-    examQuestions: questions,
-    examAnswers: exam.answers || {},
-    examSubmitted: !!exam.submitted,
-    examTopic: exam.topic || session.topic || '',
-    examCount: questions.length,
-    examViewMode: 'questions',
-    examCancel: false,
-    examStatusMessage: '',
-    examStatusDetail: '',
-  } })
-  dispatchUi({ type: 'ui/set', key: '_examInView', value: true })
+function prepareSharedExamState(
+  session: { topic?: string },
+  exam: SharedExamData,
+  questions: ExamQuestion[],
+) {
+  dispatchExam({
+    type: 'exam/patch',
+    patch: {
+      examReadOnly: true,
+      examQuestions: questions,
+      examAnswers: exam.answers || {},
+      examSubmitted: !!exam.submitted,
+      examTopic: exam.topic || session.topic || '',
+      examCount: questions.length,
+      examViewMode: 'questions',
+      examCancel: false,
+      examStatusMessage: '',
+      examStatusDetail: '',
+    },
+  });
+  dispatchUi({ type: 'ui/set', key: '_examInView', value: true });
 }
 
 function revealSharedExam() {
-  hideAuthGate()
-  document.documentElement.dataset.bootState = 'app'
+  hideAuthGate();
+  document.documentElement.dataset.bootState = 'app';
 }
 
 async function loadSharedExamSession(session: SharedSession) {
@@ -423,8 +507,16 @@ async function loadSharedExamSession(session: SharedSession) {
 }
 export {
   toggleShareBtn,
-  openShareModal, closeShareModal, selectShareVis, renderShareModal,
-  createShareLink, revokeShareLink, resetShareToken,
-  loadSharedSession, loadSharedExamSession,
-  _shareVisibility, _shareToken, _shareUrl,
+  openShareModal,
+  closeShareModal,
+  selectShareVis,
+  renderShareModal,
+  createShareLink,
+  revokeShareLink,
+  resetShareToken,
+  loadSharedSession,
+  loadSharedExamSession,
+  _shareVisibility,
+  _shareToken,
+  _shareUrl,
 };

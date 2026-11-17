@@ -8,8 +8,12 @@ import { appendMemoryContext } from '../src/routes/chat/prepare/context.js';
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
 describe('appendMemoryContext: PostgreSQL recall', { skip: !databaseUrl }, () => {
-  before(() => { initDb(databaseUrl); });
-  after(async () => { await closeDb(); });
+  before(() => {
+    initDb(databaseUrl);
+  });
+  after(async () => {
+    await closeDb();
+  });
 
   test('isolates owners and projects, excludes disabled and mislabeled rows, and orders newest first', async () => {
     const rollback = Symbol('rollback');
@@ -30,16 +34,53 @@ describe('appendMemoryContext: PostgreSQL recall', { skip: !databaseUrl }, () =>
         ]);
         await db.insert(memories).values([
           { userId, text: 'older global fact', scope: 'global', createdAt: new Date(base) },
-          { userId, text: 'newer project fact', scope: 'project', projectId, createdAt: new Date(base + 1000) },
-          { userId, text: 'other project secret', scope: 'project', projectId: otherProjectId, createdAt: new Date(base + 2000) },
-          { userId, text: 'disabled fact', scope: 'global', enabled: false, createdAt: new Date(base + 3000) },
-          { userId: otherUserId, text: 'other user secret', scope: 'global', createdAt: new Date(base + 4000) },
-          { userId, text: 'mislabeled project fact', scope: 'other', projectId, createdAt: new Date(base + 5000) },
+          {
+            userId,
+            text: 'newer project fact',
+            scope: 'project',
+            projectId,
+            createdAt: new Date(base + 1000),
+          },
+          {
+            userId,
+            text: 'other project secret',
+            scope: 'project',
+            projectId: otherProjectId,
+            createdAt: new Date(base + 2000),
+          },
+          {
+            userId,
+            text: 'disabled fact',
+            scope: 'global',
+            enabled: false,
+            createdAt: new Date(base + 3000),
+          },
+          {
+            userId: otherUserId,
+            text: 'other user secret',
+            scope: 'global',
+            createdAt: new Date(base + 4000),
+          },
+          {
+            userId,
+            text: 'mislabeled project fact',
+            scope: 'other',
+            projectId,
+            createdAt: new Date(base + 5000),
+          },
         ]);
-        const messages = [{ role: 'system', content: 'Base' }, { role: 'user', content: 'Hello' }];
+        const messages = [
+          { role: 'system', content: 'Base' },
+          { role: 'user', content: 'Hello' },
+        ];
         const scoped = await appendMemoryContext(messages, userId, projectId, db);
         assert.match(scoped[0].content, /newer project fact[\s\S]*older global fact/);
-        for (const excluded of ['other project secret', 'disabled fact', 'other user secret', 'mislabeled project fact']) {
+        for (const excluded of [
+          'other project secret',
+          'disabled fact',
+          'other user secret',
+          'mislabeled project fact',
+        ]) {
           assert.doesNotMatch(scoped[0].content, new RegExp(excluded));
         }
         const globalOnly = await appendMemoryContext(messages, userId, undefined, db);

@@ -111,8 +111,8 @@ test('defaults mirror Codex LiveCommandOutput (50 lines / 1 MiB)', () => {
 
 test('the byte cap bounds completed lines, not the pending partial line', () => {
   const b = createLiveOutputBuffer(50, 1024);
-  b.push('x'.repeat(512) + '\n');          // one completed line, within the cap
-  b.push('y'.repeat(4096));                 // one unterminated line, way over
+  b.push('x'.repeat(512) + '\n'); // one completed line, within the cap
+  b.push('y'.repeat(4096)); // one unterminated line, way over
   const p = b.preview();
   assert.equal(p.totalBytes, 512 + 1 + 4096, 'the chunk byte count includes the newline');
   assert.equal(p.omittedBytes, 0, 'the completed line was stored, not omitted');
@@ -121,7 +121,7 @@ test('the byte cap bounds completed lines, not the pending partial line', () => 
 
 test('a long unterminated line is never truncated by the caps', () => {
   const b = createLiveOutputBuffer(2, 10);
-  for (let i = 0; i < 200; i++) b.push('ab');   // 400 bytes, no newline at all
+  for (let i = 0; i < 200; i++) b.push('ab'); // 400 bytes, no newline at all
   const p = b.preview();
   assert.equal(p.pending.length, 400);
   assert.equal(p.totalLines, 0);

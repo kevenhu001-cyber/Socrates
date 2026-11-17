@@ -50,7 +50,10 @@ export const WORKSPACE_AGENT_BACKGROUND_ENABLED = PI_AGENT_ENABLED;
 const MAX_TASK_LENGTH = 20_000;
 const MAX_EVENT_TEXT = 120_000;
 const MAX_RUN_OUTPUT_CHARS = 2_000_000;
-const TURN_TIMEOUT_MS = Math.max(60_000, Number(process.env.PI_AGENT_TURN_TIMEOUT_MS || process.env.CODEX_TURN_TIMEOUT_MS || 15 * 60_000));
+const TURN_TIMEOUT_MS = Math.max(
+  60_000,
+  Number(process.env.PI_AGENT_TURN_TIMEOUT_MS || process.env.CODEX_TURN_TIMEOUT_MS || 15 * 60_000),
+);
 
 export const WORKSPACE_AGENT_TOOL = {
   type: 'function',
@@ -65,12 +68,14 @@ export const WORKSPACE_AGENT_TOOL = {
           type: 'string',
           minLength: 1,
           maxLength: MAX_TASK_LENGTH,
-          description: 'A precise multi-step task for the project workspace agent. Include the desired outcome and relevant constraints.',
+          description:
+            'A precise multi-step task for the project workspace agent. Include the desired outcome and relevant constraints.',
         },
         mode: {
           type: 'string',
           enum: ['inspect', 'implement', 'experiment'],
-          description: 'Optional intent hint. The server applies its fixed execution policy regardless.',
+          description:
+            'Optional intent hint. The server applies its fixed execution policy regardless.',
         },
       },
       required: ['task'],
@@ -111,7 +116,8 @@ export const INITIALIZE_WORKSPACE_TOOL = {
         },
         reset: {
           type: 'boolean',
-          description: 'When true, delete the existing workspace contents and start from an empty tree.',
+          description:
+            'When true, delete the existing workspace contents and start from an empty tree.',
         },
       },
       additionalProperties: false,
@@ -185,7 +191,10 @@ interface RuntimeSubscriber {
 
 const subscribers = new Map<string, Set<RuntimeSubscriber>>();
 const sequenceQueues = new Map<string, Promise<unknown>>();
-const activeTurns = new Map<string, { threadId: string; turnId: string | null; abort?: () => void }>();
+const activeTurns = new Map<
+  string,
+  { threadId: string; turnId: string | null; abort?: () => void }
+>();
 
 function safeText(value: unknown, workspacePath?: string): string {
   let text = String(value ?? '');
@@ -209,7 +218,8 @@ function appendBoundedOutput(current: string, chunk: unknown): string {
 function redactForEvent(value: unknown, workspacePath?: string, depth = 0): unknown {
   if (depth > 5) return '[truncated]';
   if (typeof value === 'string') return safeText(value, workspacePath);
-  if (Array.isArray(value)) return value.slice(0, 50).map((item) => redactForEvent(item, workspacePath, depth + 1));
+  if (Array.isArray(value))
+    return value.slice(0, 50).map((item) => redactForEvent(item, workspacePath, depth + 1));
   if (!value || typeof value !== 'object') return value;
   const out: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
@@ -224,24 +234,38 @@ function redactForEvent(value: unknown, workspacePath?: string, depth = 0): unkn
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : {};
 }
 
 function isValidUuid(value: unknown): value is string {
-  return typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+  );
 }
-
-
 
 function artifactLanguage(filePath: string): string | null {
   const ext = path.extname(filePath).toLowerCase();
   const map: Record<string, string> = {
-    '.ts': 'typescript', '.tsx': 'tsx', '.js': 'javascript', '.jsx': 'jsx',
-    '.py': 'python', '.rs': 'rust', '.go': 'go', '.java': 'java',
-    '.css': 'css', '.html': 'html', '.svg': 'svg', '.json': 'json',
-    '.yaml': 'yaml', '.yml': 'yaml', '.sql': 'sql', '.md': 'markdown',
-    '.txt': 'text', '.csv': 'csv',
+    '.ts': 'typescript',
+    '.tsx': 'tsx',
+    '.js': 'javascript',
+    '.jsx': 'jsx',
+    '.py': 'python',
+    '.rs': 'rust',
+    '.go': 'go',
+    '.java': 'java',
+    '.css': 'css',
+    '.html': 'html',
+    '.svg': 'svg',
+    '.json': 'json',
+    '.yaml': 'yaml',
+    '.yml': 'yaml',
+    '.sql': 'sql',
+    '.md': 'markdown',
+    '.txt': 'text',
+    '.csv': 'csv',
   };
   return map[ext] || null;
 }
@@ -255,10 +279,21 @@ async function collectWorkspaceArtifacts(
   const visit = (dir: string, depth: number) => {
     if (depth > 5 || candidates.length >= 24) return;
     let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }> = [];
-    try { entries = readdirSync(dir, { withFileTypes: true }) as unknown as typeof entries; } catch { return; }
+    try {
+      entries = readdirSync(dir, { withFileTypes: true }) as unknown as typeof entries;
+    } catch {
+      return;
+    }
     for (const entry of entries) {
       if (candidates.length >= 24) break;
-      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === '.agents' || entry.name === '.socrates' || entry.name === 'AGENTS.md') continue;
+      if (
+        entry.name === '.git' ||
+        entry.name === 'node_modules' ||
+        entry.name === '.agents' ||
+        entry.name === '.socrates' ||
+        entry.name === 'AGENTS.md'
+      )
+        continue;
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) visit(fullPath, depth + 1);
       else if (entry.isFile() && artifactLanguage(fullPath)) candidates.push(fullPath);
@@ -276,29 +311,61 @@ async function collectWorkspaceArtifacts(
       if (raw.length <= 0 || raw.length > 250_000) continue;
       source = raw.toString('utf8');
       if (source.includes('\u0000')) continue;
-    } catch { continue; }
+    } catch {
+      continue;
+    }
     const relativeName = path.relative(workspacePath, filePath).replace(/\\/g, '/');
     const language = artifactLanguage(filePath);
-    const type = language === 'markdown' || language === 'text' ? 'markdown' : language === 'svg' ? 'svg' : 'code';
-    const [existing] = await db.select({ id: artifacts.id, title: artifacts.title, type: artifacts.type, language: artifacts.language })
+    const type =
+      language === 'markdown' || language === 'text'
+        ? 'markdown'
+        : language === 'svg'
+          ? 'svg'
+          : 'code';
+    const [existing] = await db
+      .select({
+        id: artifacts.id,
+        title: artifacts.title,
+        type: artifacts.type,
+        language: artifacts.language,
+      })
       .from(artifacts)
       .where(and(eq(artifacts.agentRunId, run.id), eq(artifacts.title, relativeName)))
       .limit(1);
     if (existing) {
-      collected.push({ id: existing.id, name: existing.title, type: existing.type, language: existing.language });
+      collected.push({
+        id: existing.id,
+        name: existing.title,
+        type: existing.type,
+        language: existing.language,
+      });
       continue;
     }
-    const [artifact] = await db.insert(artifacts).values({
-      userId: run.userId,
-      type,
-      title: relativeName,
-      source: safeText(source, workspacePath),
-      language,
-      sessionId: run.sessionId,
-      projectId: run.projectId,
-      agentRunId: run.id,
-    }).returning({ id: artifacts.id, title: artifacts.title, type: artifacts.type, language: artifacts.language });
-    if (artifact) collected.push({ id: artifact.id, name: artifact.title, type: artifact.type, language: artifact.language });
+    const [artifact] = await db
+      .insert(artifacts)
+      .values({
+        userId: run.userId,
+        type,
+        title: relativeName,
+        source: safeText(source, workspacePath),
+        language,
+        sessionId: run.sessionId,
+        projectId: run.projectId,
+        agentRunId: run.id,
+      })
+      .returning({
+        id: artifacts.id,
+        title: artifacts.title,
+        type: artifacts.type,
+        language: artifacts.language,
+      });
+    if (artifact)
+      collected.push({
+        id: artifact.id,
+        name: artifact.title,
+        type: artifact.type,
+        language: artifact.language,
+      });
   }
   return collected;
 }
@@ -307,7 +374,11 @@ function publishToSubscribers(event: AgentRuntimeEvent) {
   const set = subscribers.get(event.runId);
   if (!set) return;
   for (const listener of [...set]) {
-    try { listener(event); } catch (err) { console.warn('[agent-runtime] subscriber failed:', (err as Error).message); }
+    try {
+      listener(event);
+    } catch (err) {
+      console.warn('[agent-runtime] subscriber failed:', (err as Error).message);
+    }
   }
 }
 
@@ -319,18 +390,21 @@ export function publishAgentEvent(
   workspacePath?: string,
 ): Promise<AgentRuntimeEvent> {
   const previous = sequenceQueues.get(runId) || Promise.resolve();
-  const next = previous.catch(() => undefined).then(async () => {
-    const db = getDb();
-    const [last] = await db.select({ sequence: max(agentRunEvents.sequence) })
-      .from(agentRunEvents)
-      .where(eq(agentRunEvents.runId, runId));
-    const sequence = Number(last?.sequence || 0) + 1;
-    const safeData = asRecord(redactForEvent(data, workspacePath));
-    await db.insert(agentRunEvents).values({ runId, sequence, event, payload: safeData });
-    const runtimeEvent: AgentRuntimeEvent = { runId, sequence, event, data: safeData };
-    publishToSubscribers(runtimeEvent);
-    return runtimeEvent;
-  });
+  const next = previous
+    .catch(() => undefined)
+    .then(async () => {
+      const db = getDb();
+      const [last] = await db
+        .select({ sequence: max(agentRunEvents.sequence) })
+        .from(agentRunEvents)
+        .where(eq(agentRunEvents.runId, runId));
+      const sequence = Number(last?.sequence || 0) + 1;
+      const safeData = asRecord(redactForEvent(data, workspacePath));
+      await db.insert(agentRunEvents).values({ runId, sequence, event, payload: safeData });
+      const runtimeEvent: AgentRuntimeEvent = { runId, sequence, event, data: safeData };
+      publishToSubscribers(runtimeEvent);
+      return runtimeEvent;
+    });
   sequenceQueues.set(runId, next);
   void next.finally(() => {
     if (sequenceQueues.get(runId) === next) sequenceQueues.delete(runId);
@@ -356,8 +430,11 @@ async function resolveContext(input: CreateAgentRunInput) {
   let session: typeof sessions.$inferSelect | null = null;
   if (input.sessionId != null) {
     if (!isValidUuid(input.sessionId)) throw new BadRequest('Invalid sessionId');
-    const [row] = await db.select().from(sessions)
-      .where(and(eq(sessions.id, input.sessionId), eq(sessions.userId, input.userId))).limit(1);
+    const [row] = await db
+      .select()
+      .from(sessions)
+      .where(and(eq(sessions.id, input.sessionId), eq(sessions.userId, input.userId)))
+      .limit(1);
     if (!row) throw new NotFound('Session not found');
     session = row;
   }
@@ -366,8 +443,11 @@ async function resolveContext(input: CreateAgentRunInput) {
   let project: typeof projects.$inferSelect | null = null;
   if (requestedProjectId != null) {
     if (!isValidUuid(requestedProjectId)) throw new BadRequest('Invalid projectId');
-    const [row] = await db.select().from(projects)
-      .where(and(eq(projects.id, requestedProjectId), eq(projects.userId, input.userId))).limit(1);
+    const [row] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, requestedProjectId), eq(projects.userId, input.userId)))
+      .limit(1);
     if (!row) throw new NotFound('Project not found');
     project = row;
   }
@@ -388,51 +468,74 @@ async function getOrCreateWorkspace(
     : projectId
       ? `project:${projectId}`
       : 'user:default';
-  const [existing] = await db.select().from(codexWorkspaces)
-    .where(and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey))).limit(1);
+  const [existing] = await db
+    .select()
+    .from(codexWorkspaces)
+    .where(and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey)))
+    .limit(1);
   if (existing) {
-    await db.update(codexWorkspaces).set({
-      projectId,
-      lastUsedAt: new Date(),
-      updatedAt: new Date(),
-      status: 'active',
-    })
+    await db
+      .update(codexWorkspaces)
+      .set({
+        projectId,
+        lastUsedAt: new Date(),
+        updatedAt: new Date(),
+        status: 'active',
+      })
       .where(eq(codexWorkspaces.id, existing.id));
     return {
       row: { ...existing, projectId },
-      path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+      path: sessionId
+        ? ensureSessionWorkspace(userId, sessionId)
+        : ensureProjectWorkspace(userId, workspaceKey),
     };
   }
   /* Two requests can create the first task for a session at the same time
    * (for example a retry plus the chat stream). Let the unique key arbitrate
    * that race, then read the winner instead of surfacing a 23505 as an
    * unexplained "workspace initialization failed" error. */
-  const [created] = await db.insert(codexWorkspaces).values({
-    userId,
-    projectId,
-    workspaceKey,
-    policy: workspacePolicy,
-  }).onConflictDoNothing({
-    target: [codexWorkspaces.userId, codexWorkspaces.workspaceKey],
-  }).returning();
-  if (!created) {
-    const [raced] = await db.select().from(codexWorkspaces)
-      .where(and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey))).limit(1);
-    if (!raced) throw new Error('Unable to create Codex workspace');
-    await db.update(codexWorkspaces).set({
+  const [created] = await db
+    .insert(codexWorkspaces)
+    .values({
+      userId,
       projectId,
-      lastUsedAt: new Date(),
-      updatedAt: new Date(),
-      status: 'active',
-    }).where(eq(codexWorkspaces.id, raced.id));
+      workspaceKey,
+      policy: workspacePolicy,
+    })
+    .onConflictDoNothing({
+      target: [codexWorkspaces.userId, codexWorkspaces.workspaceKey],
+    })
+    .returning();
+  if (!created) {
+    const [raced] = await db
+      .select()
+      .from(codexWorkspaces)
+      .where(
+        and(eq(codexWorkspaces.userId, userId), eq(codexWorkspaces.workspaceKey, workspaceKey)),
+      )
+      .limit(1);
+    if (!raced) throw new Error('Unable to create Codex workspace');
+    await db
+      .update(codexWorkspaces)
+      .set({
+        projectId,
+        lastUsedAt: new Date(),
+        updatedAt: new Date(),
+        status: 'active',
+      })
+      .where(eq(codexWorkspaces.id, raced.id));
     return {
       row: { ...raced, projectId },
-      path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+      path: sessionId
+        ? ensureSessionWorkspace(userId, sessionId)
+        : ensureProjectWorkspace(userId, workspaceKey),
     };
   }
   return {
     row: created,
-    path: sessionId ? ensureSessionWorkspace(userId, sessionId) : ensureProjectWorkspace(userId, workspaceKey),
+    path: sessionId
+      ? ensureSessionWorkspace(userId, sessionId)
+      : ensureProjectWorkspace(userId, workspaceKey),
   };
 }
 
@@ -487,9 +590,10 @@ export async function getWorkspaceContext(
   projectId: string | null,
 ) {
   const workspace = await getOrCreateWorkspace(userId, sessionId, projectId, DEFAULT_POLICY);
-  const policy = workspace.row.policy && typeof workspace.row.policy === 'object'
-    ? (workspace.row.policy as Record<string, unknown>)
-    : { ...DEFAULT_POLICY };
+  const policy =
+    workspace.row.policy && typeof workspace.row.policy === 'object'
+      ? (workspace.row.policy as Record<string, unknown>)
+      : { ...DEFAULT_POLICY };
   return {
     workspaceId: workspace.row.id,
     workspaceKey: workspace.row.workspaceKey,
@@ -522,12 +626,14 @@ export async function updateWorkspacePolicy(input: UpdateWorkspacePolicyInput) {
     mkdirSync(workspace.path, { recursive: true });
   }
   ensureWorkspaceInstructions(workspace.path, null);
-  const previous = workspace.row.policy && typeof workspace.row.policy === 'object'
-    ? (workspace.row.policy as Record<string, unknown>)
-    : {};
+  const previous =
+    workspace.row.policy && typeof workspace.row.policy === 'object'
+      ? (workspace.row.policy as Record<string, unknown>)
+      : {};
   const policy = { ...DEFAULT_POLICY, ...previous, ...limits };
   const db = getDb();
-  await db.update(codexWorkspaces)
+  await db
+    .update(codexWorkspaces)
     .set({ policy, status: 'active', updatedAt: new Date(), lastUsedAt: new Date() })
     .where(eq(codexWorkspaces.id, workspace.row.id));
   return {
@@ -540,33 +646,53 @@ export async function updateWorkspacePolicy(input: UpdateWorkspacePolicyInput) {
 }
 
 /** Reconcile the durable workspace for every existing session after startup. */
-export async function ensureSessionWorkspacesOnStartup(): Promise<{ checked: number; created: number; failed: number }> {
+export async function ensureSessionWorkspacesOnStartup(): Promise<{
+  checked: number;
+  created: number;
+  failed: number;
+}> {
   if (!WORKSPACE_AGENT_ENABLED) return { checked: 0, created: 0, failed: 0 };
   const db = getDb();
-  const rows = await db.select({ id: sessions.id, userId: sessions.userId, projectId: sessions.projectId }).from(sessions);
+  const rows = await db
+    .select({ id: sessions.id, userId: sessions.userId, projectId: sessions.projectId })
+    .from(sessions);
   let created = 0;
   let failed = 0;
   for (const session of rows) {
     try {
-      const workspace = await getOrCreateWorkspace(session.userId, session.id, session.projectId, DEFAULT_POLICY);
+      const workspace = await getOrCreateWorkspace(
+        session.userId,
+        session.id,
+        session.projectId,
+        DEFAULT_POLICY,
+      );
       if (workspace.row.createdAt.getTime() >= Date.now() - 5_000) created++;
     } catch (err) {
       failed++;
-      console.warn(`[agent-runtime] session workspace ${session.id} could not be initialized: ${(err as Error).message}`);
+      console.warn(
+        `[agent-runtime] session workspace ${session.id} could not be initialized: ${(err as Error).message}`,
+      );
     }
   }
   return { checked: rows.length, created, failed };
 }
 
 /** Remove session workspace records and their private filesystem trees. */
-export async function removeSessionWorkspacesForUser(userId: string, sessionIds: string[]): Promise<void> {
+export async function removeSessionWorkspacesForUser(
+  userId: string,
+  sessionIds: string[],
+): Promise<void> {
   const ids = sessionIds.filter(isValidUuid);
   if (ids.length === 0) return;
   const db = getDb();
-  await db.delete(codexWorkspaces).where(and(
-    eq(codexWorkspaces.userId, userId),
-    inArray(codexWorkspaces.workspaceKey, ids.map(sessionWorkspaceKey)),
-  ));
+  await db
+    .delete(codexWorkspaces)
+    .where(
+      and(
+        eq(codexWorkspaces.userId, userId),
+        inArray(codexWorkspaces.workspaceKey, ids.map(sessionWorkspaceKey)),
+      ),
+    );
   for (const sessionId of ids) removeSessionWorkspace(userId, sessionId);
 }
 
@@ -587,11 +713,16 @@ async function resolvePiProvider(userId: string): Promise<PiAgentProvider | null
 
 function piStepItemType(kind: string): string {
   switch (kind) {
-    case 'command': return 'commandExecution';
-    case 'file_change': return 'fileChange';
-    case 'search': return 'webSearch';
-    case 'mcp': return 'mcpToolCall';
-    default: return 'commandExecution';
+    case 'command':
+      return 'commandExecution';
+    case 'file_change':
+      return 'fileChange';
+    case 'search':
+      return 'webSearch';
+    case 'mcp':
+      return 'mcpToolCall';
+    default:
+      return 'commandExecution';
   }
 }
 
@@ -619,23 +750,31 @@ export async function createAgentRun(input: CreateAgentRunInput) {
   if (!disk.ok) {
     throw new BadRequest(
       `workspace_disk_limit: ${disk.usageBytes} bytes used, ${disk.maxBytes} bytes allowed. ` +
-      'Reset the workspace (initialize_workspace with reset=true) or raise max_disk_mb before continuing.',
+        'Reset the workspace (initialize_workspace with reset=true) or raise max_disk_mb before continuing.',
     );
   }
-  const [run] = await db.insert(agentRuns).values({
-    userId: input.userId,
-    sessionId: context.session?.id || null,
-    projectId: context.projectId,
-    workspaceId: workspace.row.id,
-    task,
-    status: 'starting',
-    mode: 'workspace',
-    kind: input.kind || 'chat',
-    source: input.source || 'api',
-    threadId: input.threadId || null,
-  }).returning();
+  const [run] = await db
+    .insert(agentRuns)
+    .values({
+      userId: input.userId,
+      sessionId: context.session?.id || null,
+      projectId: context.projectId,
+      workspaceId: workspace.row.id,
+      task,
+      status: 'starting',
+      mode: 'workspace',
+      kind: input.kind || 'chat',
+      source: input.source || 'api',
+      threadId: input.threadId || null,
+    })
+    .returning();
   if (!run) throw new Error('Unable to create agent run');
-  await db.insert(agentJobs).values({ runId: run.id, userId: input.userId, kind: input.kind === 'retry' ? 'retry' : 'run', status: 'queued' });
+  await db.insert(agentJobs).values({
+    runId: run.id,
+    userId: input.userId,
+    kind: input.kind === 'retry' ? 'retry' : 'run',
+    status: 'queued',
+  });
   await publishAgentEvent(run.id, 'run_started', {
     task,
     kind: run.kind,
@@ -649,8 +788,11 @@ export async function createAgentRun(input: CreateAgentRunInput) {
 
 async function loadRun(runId: string, userId: string) {
   const db = getDb();
-  const [run] = await db.select().from(agentRuns)
-    .where(and(eq(agentRuns.id, runId), eq(agentRuns.userId, userId))).limit(1);
+  const [run] = await db
+    .select()
+    .from(agentRuns)
+    .where(and(eq(agentRuns.id, runId), eq(agentRuns.userId, userId)))
+    .limit(1);
   if (!run) throw new NotFound('Agent run not found');
   return run;
 }
@@ -658,9 +800,15 @@ async function loadRun(runId: string, userId: string) {
 async function workspaceForRun(run: typeof agentRuns.$inferSelect) {
   const db = getDb();
   if (run.workspaceId) {
-    const [workspace] = await db.select().from(codexWorkspaces).where(eq(codexWorkspaces.id, run.workspaceId)).limit(1);
+    const [workspace] = await db
+      .select()
+      .from(codexWorkspaces)
+      .where(eq(codexWorkspaces.id, run.workspaceId))
+      .limit(1);
     if (workspace) {
-      await db.update(codexWorkspaces).set({ lastUsedAt: new Date(), updatedAt: new Date(), status: 'active' })
+      await db
+        .update(codexWorkspaces)
+        .set({ lastUsedAt: new Date(), updatedAt: new Date(), status: 'active' })
         .where(eq(codexWorkspaces.id, workspace.id));
       return { row: workspace, path: ensureWorkspaceForKey(run.userId, workspace.workspaceKey) };
     }
@@ -669,7 +817,12 @@ async function workspaceForRun(run: typeof agentRuns.$inferSelect) {
   /* Repair legacy runs created before workspace binding, or runs whose
    * workspace row was removed during session cleanup. This makes resume and
    * retry self-healing instead of ending in the opaque "no workspace" error. */
-  const repaired = await getOrCreateWorkspace(run.userId, run.sessionId, run.projectId, DEFAULT_POLICY);
+  const repaired = await getOrCreateWorkspace(
+    run.userId,
+    run.sessionId,
+    run.projectId,
+    DEFAULT_POLICY,
+  );
   await db.update(agentRuns).set({ workspaceId: repaired.row.id }).where(eq(agentRuns.id, run.id));
   return repaired;
 }
@@ -678,23 +831,47 @@ function projectForRun(run: typeof agentRuns.$inferSelect) {
   return (async () => {
     const db = getDb();
     if (!run.projectId) return null;
-    const [project] = await db.select().from(projects).where(eq(projects.id, run.projectId)).limit(1);
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, run.projectId))
+      .limit(1);
     return project || null;
   })();
 }
 
-async function updateRunStatus(runId: string, status: AgentRunStatus, patch: Record<string, unknown> = {}) {
+async function updateRunStatus(
+  runId: string,
+  status: AgentRunStatus,
+  patch: Record<string, unknown> = {},
+) {
   const db = getDb();
-  await db.update(agentRuns).set({ status, ...patch, ...(status === 'completed' || status === 'failed' || status === 'interrupted' ? { completedAt: new Date() } : {}) })
+  await db
+    .update(agentRuns)
+    .set({
+      status,
+      ...patch,
+      ...(status === 'completed' || status === 'failed' || status === 'interrupted'
+        ? { completedAt: new Date() }
+        : {}),
+    })
     .where(eq(agentRuns.id, runId));
   if (['completed', 'failed', 'interrupted', 'disconnected'].includes(status)) {
-    await db.update(agentJobs).set({ status: status === 'completed' ? 'completed' : 'failed', updatedAt: new Date(), error: typeof patch.error === 'string' ? patch.error : null })
+    await db
+      .update(agentJobs)
+      .set({
+        status: status === 'completed' ? 'completed' : 'failed',
+        updatedAt: new Date(),
+        error: typeof patch.error === 'string' ? patch.error : null,
+      })
       .where(eq(agentJobs.runId, runId));
   } else if (status === 'awaiting_approval') {
-    await db.update(agentJobs).set({ status: 'awaiting_approval', updatedAt: new Date() }).where(eq(agentJobs.runId, runId));
+    await db
+      .update(agentJobs)
+      .set({ status: 'awaiting_approval', updatedAt: new Date() })
+      .where(eq(agentJobs.runId, runId));
   }
 }
-
 
 export async function runAgentTurn(
   runId: string,
@@ -717,19 +894,34 @@ export async function runAgentTurn(
     project = await projectForRun(run);
   } catch (err) {
     const message = safeText((err as Error).message || err, workspace?.path);
-    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
-    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace?.path).catch(() => undefined);
+    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(
+      () => undefined,
+    );
+    await publishAgentEvent(
+      runId,
+      'run_failed',
+      { status: 'failed', error: message },
+      workspace?.path,
+    ).catch(() => undefined);
     throw err;
   }
   if (!workspace) throw new Error('Workspace initialization returned no directory');
-  const policy = workspace.row.policy && typeof workspace.row.policy === 'object'
-    ? (workspace.row.policy as Record<string, unknown>)
-    : { ...DEFAULT_POLICY };
+  const policy =
+    workspace.row.policy && typeof workspace.row.policy === 'object'
+      ? (workspace.row.policy as Record<string, unknown>)
+      : { ...DEFAULT_POLICY };
   const disk = assertWorkspaceDiskWithinLimit(workspace.path, policy);
   if (!disk.ok) {
     const message = `workspace_disk_limit: ${disk.usageBytes} bytes used, ${disk.maxBytes} bytes allowed.`;
-    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(() => undefined);
-    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace.path).catch(() => undefined);
+    await updateRunStatus(runId, 'failed', { error: message, summary: null }).catch(
+      () => undefined,
+    );
+    await publishAgentEvent(
+      runId,
+      'run_failed',
+      { status: 'failed', error: message },
+      workspace.path,
+    ).catch(() => undefined);
     throw new BadRequest(message);
   }
   const piProvider = await resolvePiProvider(userId);
@@ -751,23 +943,33 @@ export async function runAgentTurn(
       return;
     }
     if (event.type === 'step_start' && event.step) {
-      void publishAgentEvent(runId, 'tool', {
-        itemId: event.step.stepId,
-        type: piStepItemType(event.step.kind),
-        command: event.step.command,
-        status: 'inProgress',
-      }, workspace.path);
+      void publishAgentEvent(
+        runId,
+        'tool',
+        {
+          itemId: event.step.stepId,
+          type: piStepItemType(event.step.kind),
+          command: event.step.command,
+          status: 'inProgress',
+        },
+        workspace.path,
+      );
       return;
     }
     if (event.type === 'step_end' && event.step) {
-      void publishAgentEvent(runId, 'item_completed', {
-        itemId: event.step.stepId,
-        type: piStepItemType(event.step.kind),
-        command: event.step.command,
-        status: event.step.isError ? 'failed' : 'completed',
-        exitCode: event.step.isError ? 1 : 0,
-        aggregatedOutput: event.step.output,
-      }, workspace.path);
+      void publishAgentEvent(
+        runId,
+        'item_completed',
+        {
+          itemId: event.step.stepId,
+          type: piStepItemType(event.step.kind),
+          command: event.step.command,
+          status: event.step.isError ? 'failed' : 'completed',
+          exitCode: event.step.isError ? 1 : 0,
+          aggregatedOutput: event.step.output,
+        },
+        workspace.path,
+      );
     }
   };
 
@@ -794,28 +996,43 @@ export async function runAgentTurn(
       onEvent,
     });
     output = agentResult.output || output;
-    const finalStatus: AgentRunStatus = agentResult.status === 'completed'
-      ? 'completed'
-      : agentResult.status === 'aborted'
-        ? 'interrupted'
-        : 'failed';
+    const finalStatus: AgentRunStatus =
+      agentResult.status === 'completed'
+        ? 'completed'
+        : agentResult.status === 'aborted'
+          ? 'interrupted'
+          : 'failed';
     const finalError = agentResult.error || null;
-    const summary = output.trim().slice(0, 12_000) || (finalError ? null : 'The workspace agent completed the task.');
+    const summary =
+      output.trim().slice(0, 12_000) ||
+      (finalError ? null : 'The workspace agent completed the task.');
     let artifactsFound: Array<Record<string, unknown>> = [];
     if (finalStatus === 'completed') {
-      try { artifactsFound = await collectWorkspaceArtifacts(run, workspace.path); }
-      catch (err) { console.warn('[agent-runtime] artifact collection failed:', (err as Error).message); }
+      try {
+        artifactsFound = await collectWorkspaceArtifacts(run, workspace.path);
+      } catch (err) {
+        console.warn('[agent-runtime] artifact collection failed:', (err as Error).message);
+      }
     }
     await updateRunStatus(runId, finalStatus, {
       summary,
       error: finalError,
       usage: {},
     });
-    await publishAgentEvent(runId, finalStatus === 'completed' ? 'run_completed' : finalStatus === 'interrupted' ? 'run_interrupted' : 'run_failed', {
-      status: finalStatus,
-      summary,
-      error: finalError,
-    }, workspace.path);
+    await publishAgentEvent(
+      runId,
+      finalStatus === 'completed'
+        ? 'run_completed'
+        : finalStatus === 'interrupted'
+          ? 'run_interrupted'
+          : 'run_failed',
+      {
+        status: finalStatus,
+        summary,
+        error: finalError,
+      },
+      workspace.path,
+    );
     return {
       runId,
       status: finalStatus,
@@ -828,7 +1045,12 @@ export async function runAgentTurn(
   } catch (err) {
     const message = safeText((err as Error).message || err, workspace.path);
     await updateRunStatus(runId, 'failed', { error: message, summary: null });
-    await publishAgentEvent(runId, 'run_failed', { status: 'failed', error: message }, workspace.path);
+    await publishAgentEvent(
+      runId,
+      'run_failed',
+      { status: 'failed', error: message },
+      workspace.path,
+    );
     throw err;
   } finally {
     activeTurns.delete(runId);
@@ -844,13 +1066,15 @@ export async function runWorkspaceAgent(input: CreateAgentRunInput, signal?: Abo
 export async function getAgentRun(userId: string, runId: string) {
   const run = await loadRun(runId, userId);
   const db = getDb();
-  const generatedArtifacts = await db.select({
-    id: artifacts.id,
-    name: artifacts.title,
-    type: artifacts.type,
-    language: artifacts.language,
-    createdAt: artifacts.createdAt,
-  }).from(artifacts)
+  const generatedArtifacts = await db
+    .select({
+      id: artifacts.id,
+      name: artifacts.title,
+      type: artifacts.type,
+      language: artifacts.language,
+      createdAt: artifacts.createdAt,
+    })
+    .from(artifacts)
     .where(and(eq(artifacts.agentRunId, run.id), eq(artifacts.userId, userId)))
     .orderBy(asc(artifacts.createdAt));
   return { run, artifacts: generatedArtifacts };
@@ -864,29 +1088,43 @@ export async function getAgentRun(userId: string, runId: string) {
  * is open anymore.
  */
 
-export async function listAgentRuns(userId: string, filters: { sessionId?: string; projectId?: string; limit?: number } = {}) {
+export async function listAgentRuns(
+  userId: string,
+  filters: { sessionId?: string; projectId?: string; limit?: number } = {},
+) {
   const db = getDb();
   const predicates = [eq(agentRuns.userId, userId)];
   if (filters.sessionId) predicates.push(eq(agentRuns.sessionId, filters.sessionId));
   if (filters.projectId) predicates.push(eq(agentRuns.projectId, filters.projectId));
-  return db.select().from(agentRuns).where(and(...predicates)).orderBy(desc(agentRuns.startedAt)).limit(Math.min(100, Math.max(1, filters.limit || 30)));
+  return db
+    .select()
+    .from(agentRuns)
+    .where(and(...predicates))
+    .orderBy(desc(agentRuns.startedAt))
+    .limit(Math.min(100, Math.max(1, filters.limit || 30)));
 }
 
 export async function listAgentEvents(userId: string, runId: string, after = 0, limit = 500) {
   await loadRun(runId, userId);
   const db = getDb();
-  return db.select().from(agentRunEvents)
+  return db
+    .select()
+    .from(agentRunEvents)
     .where(and(eq(agentRunEvents.runId, runId)))
-    .orderBy(asc(agentRunEvents.sequence)).limit(Math.min(2_000, Math.max(1, limit)))
-    .then((rows) => rows.filter((row) => row.sequence > after).map((row) => ({
-      runId: row.runId,
-      sequence: row.sequence,
-      event: row.event,
-      data: asRecord(row.payload),
-      createdAt: row.createdAt.toISOString(),
-    })));
+    .orderBy(asc(agentRunEvents.sequence))
+    .limit(Math.min(2_000, Math.max(1, limit)))
+    .then((rows) =>
+      rows
+        .filter((row) => row.sequence > after)
+        .map((row) => ({
+          runId: row.runId,
+          sequence: row.sequence,
+          event: row.event,
+          data: asRecord(row.payload),
+          createdAt: row.createdAt.toISOString(),
+        })),
+    );
 }
-
 
 export async function interruptAgentRun(userId: string, runId: string) {
   await loadRun(runId, userId);
@@ -900,7 +1138,12 @@ export async function interruptAgentRun(userId: string, runId: string) {
   return { ok: true, status: 'interrupt_requested' };
 }
 
-export async function resumeAgentRun(userId: string, runId: string, task?: string, signal?: AbortSignal) {
+export async function resumeAgentRun(
+  userId: string,
+  runId: string,
+  task?: string,
+  signal?: AbortSignal,
+) {
   await loadRun(runId, userId);
   return runAgentTurn(runId, userId, task, signal);
 }
@@ -918,18 +1161,24 @@ export async function retryAgentRun(userId: string, runId: string, signal?: Abor
   return runAgentTurn(retry.id, userId, undefined, signal);
 }
 
-
 /**
  * On server restart every in-flight Pi process is gone. Mark unfinished
  * runs explicitly interrupted so the UI offers a resume/retry instead of
  * leaving them pinned in `running`.
  */
-export async function recoverAgentRunsOnStartup(): Promise<{ checked: number; recovered: number; disconnected: number }> {
+export async function recoverAgentRunsOnStartup(): Promise<{
+  checked: number;
+  recovered: number;
+  disconnected: number;
+}> {
   if (!WORKSPACE_AGENT_ENABLED) return { checked: 0, recovered: 0, disconnected: 0 };
   const db = getDb();
-  const rows = await db.select().from(agentRuns)
+  const rows = await db
+    .select()
+    .from(agentRuns)
     .where(inArray(agentRuns.status, ['starting', 'running', 'awaiting_approval']))
-    .orderBy(asc(agentRuns.startedAt)).limit(100);
+    .orderBy(asc(agentRuns.startedAt))
+    .limit(100);
   let recovered = 0;
   let disconnected = 0;
   for (const run of rows) {

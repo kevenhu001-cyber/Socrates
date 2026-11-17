@@ -27,13 +27,14 @@ export function setSidebarOpen(isOpen: boolean): void {
   useSidebarStore.setState({ isOpen });
 }
 
-
 export function setSidebarPanelView(activePanel: SidebarPanelView): void {
   if (useSidebarStore.getState().activePanel === activePanel) return;
   useSidebarStore.setState({ activePanel });
 }
 
-export function toggleSidebarPanelView(view: Exclude<SidebarPanelView, 'recents'>): SidebarPanelView {
+export function toggleSidebarPanelView(
+  view: Exclude<SidebarPanelView, 'recents'>,
+): SidebarPanelView {
   const activePanel = useSidebarStore.getState().activePanel === view ? 'recents' : view;
   setSidebarPanelView(activePanel);
   return activePanel;

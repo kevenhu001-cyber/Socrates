@@ -75,9 +75,32 @@ const MAX_PLAN_STEPS = 40;
 
 /** Commands that only inspect the workspace get the "读取了文件" label. */
 const READ_ONLY_COMMANDS = new Set([
-  'cat', 'head', 'tail', 'less', 'more', 'ls', 'tree', 'find', 'stat', 'file',
-  'grep', 'rg', 'ag', 'ack', 'sed', 'awk', 'wc', 'diff', 'nl', 'realpath',
-  'pwd', 'which', 'type', 'basename', 'dirname', 'readlink',
+  'cat',
+  'head',
+  'tail',
+  'less',
+  'more',
+  'ls',
+  'tree',
+  'find',
+  'stat',
+  'file',
+  'grep',
+  'rg',
+  'ag',
+  'ack',
+  'sed',
+  'awk',
+  'wc',
+  'diff',
+  'nl',
+  'realpath',
+  'pwd',
+  'which',
+  'type',
+  'basename',
+  'dirname',
+  'readlink',
 ]);
 
 /** The agent sends a command as argv, a string, or a shell wrapper. */
@@ -106,8 +129,16 @@ export function normalizeCommand(command: unknown): string {
 
 function isShellExecutable(token: string): boolean {
   const base = (token.split('/').pop() || token).toLowerCase();
-  return base === 'sh' || base === 'bash' || base === 'zsh' || base === 'ksh'
-    || base === 'dash' || base === 'pwsh' || base === 'powershell' || base === 'powershell.exe';
+  return (
+    base === 'sh' ||
+    base === 'bash' ||
+    base === 'zsh' ||
+    base === 'ksh' ||
+    base === 'dash' ||
+    base === 'pwsh' ||
+    base === 'powershell' ||
+    base === 'powershell.exe'
+  );
 }
 
 /** Strip one layer of surrounding quotes from a shell -c payload. */
@@ -149,9 +180,23 @@ function tailOutput(value: unknown): string | null {
 
 function statusFrom(value: unknown, fallback: AgentStepStatus): AgentStepStatus {
   const status = String(value ?? '').toLowerCase();
-  if (status === 'inprogress' || status === 'in_progress' || status === 'running' || status === 'pending') return 'running';
-  if (status === 'completed' || status === 'success' || status === 'succeeded' || status === 'done') return 'done';
-  if (status === 'failed' || status === 'error' || status === 'declined' || status === 'cancelled' || status === 'aborted') return 'failed';
+  if (
+    status === 'inprogress' ||
+    status === 'in_progress' ||
+    status === 'running' ||
+    status === 'pending'
+  )
+    return 'running';
+  if (status === 'completed' || status === 'success' || status === 'succeeded' || status === 'done')
+    return 'done';
+  if (
+    status === 'failed' ||
+    status === 'error' ||
+    status === 'declined' ||
+    status === 'cancelled' ||
+    status === 'aborted'
+  )
+    return 'failed';
   return fallback;
 }
 
@@ -187,14 +232,12 @@ function fileChangeDetail(changes: unknown): string | null {
 function planStatus(value: unknown): AgentPlanStepStatus {
   const status = String(value ?? '').toLowerCase();
   if (status === 'completed' || status === 'done') return 'done';
-  if (status === 'inprogress' || status === 'in_progress' || status === 'active') return 'in_progress';
+  if (status === 'inprogress' || status === 'in_progress' || status === 'active')
+    return 'in_progress';
   return 'todo';
 }
 
-function commandStep(
-  data: Record<string, unknown>,
-  status: AgentStepStatus,
-): AgentStep {
+function commandStep(data: Record<string, unknown>, status: AgentStepStatus): AgentStep {
   const command = normalizeCommand(data.command);
   const readOnly = isReadOnlyCommand(command);
   const finished = status !== 'running';
@@ -218,7 +261,14 @@ function commandStep(
   };
 }
 
-function baseStep(partial: Partial<AgentStep> & { stepId: string; kind: AgentStepKind; title: string; status: AgentStepStatus }): AgentStep {
+function baseStep(
+  partial: Partial<AgentStep> & {
+    stepId: string;
+    kind: AgentStepKind;
+    title: string;
+    status: AgentStepStatus;
+  },
+): AgentStep {
   return {
     type: 'step',
     detail: null,
@@ -238,22 +288,30 @@ function baseStep(partial: Partial<AgentStep> & { stepId: string; kind: AgentSte
  * deltas (the chat bubble and thinking pill already render those), lifecycle
  * bookkeeping, approvals (they have their own inline card), and usage.
  */
-export function projectAgentEvent(event: {
-  event?: string;
-  data?: Record<string, unknown> | null;
-} | null | undefined): AgentProjection | null {
+export function projectAgentEvent(
+  event:
+    | {
+        event?: string;
+        data?: Record<string, unknown> | null;
+      }
+    | null
+    | undefined,
+): AgentProjection | null {
   if (!event || !event.event) return null;
   const data = (event.data || {}) as Record<string, unknown>;
 
   if (event.event === 'plan') {
     const rawSteps = Array.isArray(data.plan) ? data.plan : [];
-    const steps = rawSteps.slice(0, MAX_PLAN_STEPS).map((raw) => {
-      const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-      return {
-        title: truncate(String(item.step ?? item.title ?? ''), MAX_DETAIL_CHARS),
-        status: planStatus(item.status),
-      };
-    }).filter((step) => step.title.length > 0);
+    const steps = rawSteps
+      .slice(0, MAX_PLAN_STEPS)
+      .map((raw) => {
+        const item = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+        return {
+          title: truncate(String(item.step ?? item.title ?? ''), MAX_DETAIL_CHARS),
+          status: planStatus(item.status),
+        };
+      })
+      .filter((step) => step.title.length > 0);
     if (steps.length === 0) return null;
     return {
       type: 'plan',
@@ -274,7 +332,8 @@ export function projectAgentEvent(event: {
       const step = commandStep(data, status);
       /* A non-zero exit is a failure even when the runtime only reports
          `completed`, so the step row can show it in the error state. */
-      if (!started && typeof step.exitCode === 'number' && step.exitCode !== 0) step.status = 'failed';
+      if (!started && typeof step.exitCode === 'number' && step.exitCode !== 0)
+        step.status = 'failed';
       return step;
     }
     case 'fileChange':

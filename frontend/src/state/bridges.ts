@@ -1,9 +1,8 @@
 /**
  * The six domain namespaces (session / kb / search / call / ui / exam).
  *
- * Each namespace owns one `createDomainStore` instance. The legacy
- * `state/store.ts` facade forwards string-keyed actions here, while React
- * reads through the typed hooks in `store/index.ts`.
+ * Each namespace owns one `createDomainStore` instance. Callers use
+ * the typed readers and actions in `store/index.ts`.
  *
  * Independent namespaces keep unrelated commits from re-rendering every
  * subscriber: the session changes on every chat turn, while `ui` and `call`
@@ -12,32 +11,12 @@
 
 import { createDomainStore } from '../store/createDomainStore.ts';
 import type { Bridge, RevisionedSnapshot } from '../store/bridge.ts';
-import {
-  createInitialKbState,
-  type KbState,
-  type KbNode,
-} from './kb.ts';
-import {
-  createInitialSearchState,
-  type SearchState,
-} from './search.ts';
-import {
-  createInitialCallState,
-  type CallState,
-} from './call.ts';
-import {
-  createInitialUiState,
-  type UiState,
-} from './ui.ts';
-import {
-  createInitialExamState,
-  type ExamState,
-} from './exam.ts';
-import {
-  createInitialSessionState,
-  type SessionState,
-  type ChatMessageShape,
-} from './session.ts';
+import { createInitialKbState, type KbState, type KbNode } from './kb.ts';
+import { createInitialSearchState, type SearchState } from './search.ts';
+import { createInitialCallState, type CallState } from './call.ts';
+import { createInitialUiState, type UiState } from './ui.ts';
+import { createInitialExamState, type ExamState } from './exam.ts';
+import { createInitialSessionState, type SessionState, type ChatMessageShape } from './session.ts';
 
 /* ────────────────────────── Session ─────────────────────────── */
 
@@ -75,9 +54,7 @@ function updateSessionMessage(
   if (!Number.isInteger(idx) || !current) return state;
   if (action.clientId && current.clientId !== action.clientId) return state;
   const updated = { ...current, ...action.patch };
-  const messages = state.messages
-    .slice(0, idx)
-    .concat([updated], state.messages.slice(idx + 1));
+  const messages = state.messages.slice(0, idx).concat([updated], state.messages.slice(idx + 1));
   return { ...state, messages };
 }
 
@@ -89,9 +66,7 @@ function removeSessionMessage(
   const candidate = state.messages[idx];
   if (!Number.isInteger(idx) || !candidate) return state;
   if (action.clientId && candidate.clientId !== action.clientId) return state;
-  const messages = state.messages
-    .slice(0, idx)
-    .concat(state.messages.slice(idx + 1));
+  const messages = state.messages.slice(0, idx).concat(state.messages.slice(idx + 1));
   return { ...state, messages };
 }
 
@@ -104,10 +79,7 @@ function truncateSessionMessages(
   return { ...state, messages: state.messages.slice(0, keep + 1) };
 }
 
-function sessionReducer(
-  state: SessionSnapshot,
-  action: SessionAction,
-): SessionSnapshot {
+function sessionReducer(state: SessionSnapshot, action: SessionAction): SessionSnapshot {
   switch (action.type) {
     case 'session/set':
       return { ...state, [action.key]: action.value };
@@ -199,10 +171,7 @@ export type SearchAction =
 
 export type SearchSnapshot = SearchState & RevisionedSnapshot;
 
-function searchReducer(
-  state: SearchSnapshot,
-  action: SearchAction,
-): SearchSnapshot {
+function searchReducer(state: SearchSnapshot, action: SearchAction): SearchSnapshot {
   switch (action.type) {
     case 'search/set':
       return { ...state, [action.key]: action.value };
@@ -324,28 +293,3 @@ export const examDomain = createDomainStore<ExamSnapshot, ExamAction>({
 
 export const examBridge: Bridge<ExamSnapshot, ExamAction> = examDomain.bridge;
 export const examStore = examDomain.store;
-
-/* ────────────────────────── Aggregate ──────────────────────── */
-
-/**
- * All namespace bridges — used by `state/store.ts` to forward actions to
- * the correct bridge and to aggregate snapshots/subscriptions.
- */
-export const namespaceBridges = {
-  session: sessionBridge,
-  kb: kbBridge,
-  search: searchBridge,
-  call: callBridge,
-  ui: uiBridge,
-  exam: examBridge,
-} as const;
-
-export type NamespaceName = keyof typeof namespaceBridges;
-
-/** Re-export `createInitialSessionState` so tests can reset a single bridge. */
-export { createInitialSessionState };
-export { createInitialKbState };
-export { createInitialSearchState };
-export { createInitialCallState };
-export { createInitialUiState };
-export { createInitialExamState };

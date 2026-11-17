@@ -16,10 +16,18 @@ import { recordConnectorSearch } from '../../../../lib/telemetry.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 
-function complete(ctx: Parameters<ToolExecutor>[2], call: Parameters<ToolExecutor>[1], output: string): ToolExecutionResult {
+function complete(
+  ctx: Parameters<ToolExecutor>[2],
+  call: Parameters<ToolExecutor>[1],
+  output: string,
+): ToolExecutionResult {
   const result: ToolResult = { status: 'completed', output, retryable: false };
   ctx.emitter.event('tool_result', {
-    id: call.id, ok: true, status: 'completed', output, retryable: false,
+    id: call.id,
+    ok: true,
+    status: 'completed',
+    output,
+    retryable: false,
   });
   return { result };
 }
@@ -31,10 +39,23 @@ function fail(
   detail: string,
   userMessage: string,
 ): ToolExecutionResult {
-  const result: ToolResult = { status: 'failed', error: code, errorCode: code, retryable: true, detail };
+  const result: ToolResult = {
+    status: 'failed',
+    error: code,
+    errorCode: code,
+    retryable: true,
+    detail,
+  };
   ctx.emitter.event('tool_result', {
-    id: call.id, ok: false, status: 'failed', output: '',
-    error: code, errorCode: code, retryable: true, userMessage, detail,
+    id: call.id,
+    ok: false,
+    status: 'failed',
+    output: '',
+    error: code,
+    errorCode: code,
+    retryable: true,
+    userMessage,
+    detail,
   });
   return { result };
 }
@@ -42,7 +63,13 @@ function fail(
 export const executeSearchConnectors: ToolExecutor = async (args, call, ctx) => {
   const query = String(args.query || '').trim();
   if (!query) {
-    return fail(ctx, call, 'missing_query', 'Provide a non-empty `query` string.', '请提供要查找的连接器用途。');
+    return fail(
+      ctx,
+      call,
+      'missing_query',
+      'Provide a non-empty `query` string.',
+      '请提供要查找的连接器用途。',
+    );
   }
   const requestedLimit = Number(args.limit);
   const limit = Number.isFinite(requestedLimit) ? requestedLimit : 8;
@@ -54,11 +81,14 @@ export const executeSearchConnectors: ToolExecutor = async (args, call, ctx) => 
   });
   /* Never log the raw query: it is user text. The hit count and the top
      tool names are enough to measure retrieval quality. */
-  console.info('[connector-search]', JSON.stringify({
-    queryChars: query.length,
-    matches: matches.length,
-    top: matches.slice(0, 3).map((match) => match.tool),
-  }));
+  console.info(
+    '[connector-search]',
+    JSON.stringify({
+      queryChars: query.length,
+      matches: matches.length,
+      top: matches.slice(0, 3).map((match) => match.tool),
+    }),
+  );
   return complete(ctx, call, formatConnectorSearchResult(ctx.connectorCatalog, query, matches));
 };
 

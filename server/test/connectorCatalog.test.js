@@ -45,7 +45,13 @@ test('search ranks the requested service and action first', () => {
 
 test('initial tool names exclude connector tools but keep discovery tools', () => {
   const initial = splitInitialToolNames(
-    ['web_search', 'search_connectors', 'get_connector_spec', 'github_list_repos', 'oc_jira_get_issue'],
+    [
+      'web_search',
+      'search_connectors',
+      'get_connector_spec',
+      'github_list_repos',
+      'oc_jira_get_issue',
+    ],
     catalog,
   );
   assert.deepEqual(initial, ['web_search', 'search_connectors', 'get_connector_spec']);

@@ -27,7 +27,10 @@ function hasInlineMarks(text: string): boolean {
   return CODE_RE.test(text) || BOLD_RE.test(text);
 }
 
-export function renderInlineMathHtml(text: string, output: 'htmlAndMathml' | 'mathml' = 'htmlAndMathml'): string | null {
+export function renderInlineMathHtml(
+  text: string,
+  output: 'htmlAndMathml' | 'mathml' = 'htmlAndMathml',
+): string | null {
   const source = String(text ?? '');
   const hasMath = hasMathDelimiters(source);
   const hasMarks = hasInlineMarks(source);
@@ -47,17 +50,28 @@ export function renderInlineMathHtml(text: string, output: 'htmlAndMathml' | 'ma
     typesetCount += 1;
     let html: string;
     try {
-      html = katex.renderToString(math.trim(), { displayMode: false, output, throwOnError: false, macros: KATEX_MACROS });
+      html = katex.renderToString(math.trim(), {
+        displayMode: false,
+        output,
+        throwOnError: false,
+        macros: KATEX_MACROS,
+      });
     } catch {
       html = esc(math);
     }
     return stash(html);
   };
-  let marked = source.replace(CODE_RE, (_match, code: string) => stash(`<code>${esc(code)}</code>`));
+  let marked = source.replace(CODE_RE, (_match, code: string) =>
+    stash(`<code>${esc(code)}</code>`),
+  );
   // `$$…$$` stays on the line (inline mode) so a stem never grows a block.
   marked = marked.replace(/\$\$([\s\S]+?)\$\$/g, (match, math: string) => typeset(math, match));
   marked = replaceInlineDollarMath(marked, false, (math) => typeset(math, `$${math}$`));
-  marked = marked.replace(/\\\((.+?)\\\)|\\\[([\s\S]+?)\\\]/g, (match, inline: string | undefined, block: string | undefined) => typeset(inline ?? block ?? '', match));
+  marked = marked.replace(
+    /\\\((.+?)\\\)|\\\[([\s\S]+?)\\\]/g,
+    (match, inline: string | undefined, block: string | undefined) =>
+      typeset(inline ?? block ?? '', match),
+  );
   if (!typesetCount && !hasMarks) return null;
   const tokenRe = new RegExp(`${TOKEN}(\\d+)${TOKEN}`, 'g');
   return esc(marked)

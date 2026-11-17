@@ -26,7 +26,9 @@ export function getKatex(text?: string): KatexLike | undefined {
   const katex = (globalThis as { katex?: KatexLike }).katex;
   if (!katex && (text === undefined || hasMathDelimiters(text))) {
     // katexRefresh owns the single ready subscription and repaint revision.
-    void ensureKatex().catch(() => { /* text stays readable; a later render can retry */ });
+    void ensureKatex().catch(() => {
+      /* text stays readable; a later render can retry */
+    });
   }
   return katex;
 }
@@ -53,11 +55,16 @@ function closeUnclosedEnvironments(src: string): string {
   const begins = src.match(/\\begin\{([^}]+)\}/g) || [];
   const ends = src.match(/\\end\{([^}]+)\}/g) || [];
   const openNames: string[] = [];
-  begins.forEach(function (b) { openNames.push(b.slice(7, -1)); });
+  begins.forEach(function (b) {
+    openNames.push(b.slice(7, -1));
+  });
   ends.forEach(function (e) {
     const name = e.slice(5, -1);
     for (let k = openNames.length - 1; k >= 0; k--) {
-      if (openNames[k] === name) { openNames.splice(k, 1); break; }
+      if (openNames[k] === name) {
+        openNames.splice(k, 1);
+        break;
+      }
     }
   });
   let closed = src;
@@ -88,7 +95,10 @@ function balanceStreamingMath(src: string): string {
   let depth = 0;
   for (let i = 0; i < src.length; i += 1) {
     const c = src.charAt(i);
-    if (c === '\\') { i += 1; continue; }
+    if (c === '\\') {
+      i += 1;
+      continue;
+    }
     if (c === '{') depth += 1;
     else if (c === '}' && depth > 0) depth -= 1;
   }
@@ -122,14 +132,20 @@ export function streamingMathPrefixes(src: string): string[] {
 
 function neutralizeKatexErrors(html: string): string {
   if (html.indexOf('katex-error') === -1) return html;
-  return html.replace(/<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
+  return html.replace(
+    /<span class="katex-error"([^>]*)>([\s\S]*?)<\/span>/g,
     function (_m, attrs: string, inner: string) {
-      return '<span class="math-stream-pending"' +
+      return (
+        '<span class="math-stream-pending"' +
         String(attrs)
           .replace(/\s+style="[^"]*"/g, '')
           .replace(/\s+title="[^"]*"/g, '') +
-        '>' + inner + '</span>';
-    });
+        '>' +
+        inner +
+        '</span>'
+      );
+    },
+  );
 }
 
 /* A closed formula may contain any compact identifier, including ct, dt,
@@ -166,8 +182,10 @@ function _isSpacedMathList(trimmed: string): boolean {
   let hasSeparator = false;
   for (let i = 0; i < words.length; i++) {
     if (!_isCompactMathToken(words[i])) return false;
-    if ((i < words.length - 1 && MATH_SEPARATOR_RE.test(words[i]))
-        || MATH_OPERATOR_WORD_RE.test(words[i])) {
+    if (
+      (i < words.length - 1 && MATH_SEPARATOR_RE.test(words[i])) ||
+      MATH_OPERATOR_WORD_RE.test(words[i])
+    ) {
       hasSeparator = true;
     }
   }
@@ -186,10 +204,10 @@ export function _looksLikeInlineMath(s: string): boolean {
   if (!/[A-Za-z]/.test(trimmed)) return false;
   if (!/\s/.test(trimmed)) return _isCompactMathToken(trimmed);
   /* `x, y`-style symbol lists and spaced calls (`u(x, y)`) both count. */
-  return _isSpacedMathList(trimmed)
-    || (SPACED_CALL_RE.test(trimmed)
-      && SPACED_MATH_CHARS_RE.test(trimmed)
-      && trimmed.indexOf(')') > 0);
+  return (
+    _isSpacedMathList(trimmed) ||
+    (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed) && trimmed.indexOf(')') > 0)
+  );
 }
 
 /* P_numeric-math — letter-free formulas: `$1/2$`, `$3+4=7$`, `$2^{10}$`,
@@ -215,7 +233,12 @@ export function _looksLikeNumericMath(raw: string, next: string): boolean {
 }
 
 /** Locate a closing delimiter without crossing a paragraph or heading. */
-function findInlineDollarClose(s: string, open: number, multiline: boolean, isEscaped: (index: number) => boolean): number {
+function findInlineDollarClose(
+  s: string,
+  open: number,
+  multiline: boolean,
+  isEscaped: (index: number) => boolean,
+): number {
   for (let j = open + 1; j < s.length; j++) {
     const c = s.charAt(j);
     if (c === '\n') {
@@ -240,7 +263,9 @@ function findInlineDollarClose(s: string, open: number, multiline: boolean, isEs
    amount (`$ 123 $`) by testing the trimmed content — a digit run with no
    letters cannot be prose, so the padding is unambiguous. */
 function _acceptInlineMath(raw: string, next: string): boolean {
-  return _looksLikeInlineMath(String(raw).trim()) || _looksLikeNumericMath(String(raw).trim(), next);
+  return (
+    _looksLikeInlineMath(String(raw).trim()) || _looksLikeNumericMath(String(raw).trim(), next)
+  );
 }
 
 /* Closed inline `$…$` replacement, shared by the streaming and final passes.
@@ -323,8 +348,10 @@ function looksLikeOpenFraction(trimmed: string): boolean {
 function looksLikeSpacedMathTail(trimmed: string): boolean {
   /* Same widening as the closed pass: `$x, y` renders live while a
      spaced prose tail (`$5 USD`) still waits for its closing `$`. */
-  return _isSpacedMathList(trimmed)
-    || (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed));
+  return (
+    _isSpacedMathList(trimmed) ||
+    (SPACED_CALL_RE.test(trimmed) && SPACED_MATH_CHARS_RE.test(trimmed))
+  );
 }
 
 function looksLikeNumericMathTail(trimmed: string): boolean {
@@ -374,9 +401,10 @@ export function _stashInlineCode(source: string): { text: string; restore: (s: s
   });
   return {
     text,
-    restore: (s: string) => s.replace(/\uE000SOCRATES_CODE_(\d+)\uE001/g, function (_m, id: string) {
-      return stash[Number(id)];
-    }),
+    restore: (s: string) =>
+      s.replace(/\uE000SOCRATES_CODE_(\d+)\uE001/g, function (_m, id: string) {
+        return stash[Number(id)];
+      }),
   };
 }
 
@@ -391,8 +419,13 @@ const MATH_HTML_CACHE_MAX = 200;
 /* Render math for a possibly-unfinished stream frame. Returns the KaTeX
    HTML, or null when KaTeX is not available yet (the caller keeps the
    raw source so the one-shot re-render can fix it up later). */
-export function renderStreamMath(math: string, displayMode: boolean, unclosed: boolean): string | null {
-  const cacheKey = (displayMode ? 'D' : 'i') + (unclosed ? 'U' : 'C') + '\x00' + String(math).trim();
+export function renderStreamMath(
+  math: string,
+  displayMode: boolean,
+  unclosed: boolean,
+): string | null {
+  const cacheKey =
+    (displayMode ? 'D' : 'i') + (unclosed ? 'U' : 'C') + '\x00' + String(math).trim();
   const hit = _mathHtmlCache.get(cacheKey);
   if (hit !== undefined) return hit;
   const html = _renderStreamMath(math, displayMode, unclosed);
@@ -423,7 +456,7 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
   try {
     return render(source, false);
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: render/markdownMath.ts:397');
+    reportEmptyCatch(_, 'empty catch: render/markdownMath.ts');
     /* incomplete or malformed — tolerant passes below */
   }
 
@@ -434,7 +467,7 @@ function _renderStreamMath(math: string, displayMode: boolean, unclosed: boolean
     try {
       return render(closed, false);
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: render/markdownMath.ts:405');
+      reportEmptyCatch(_, 'empty catch: render/markdownMath.ts');
       /* still structurally incomplete */
     }
     source = closed;

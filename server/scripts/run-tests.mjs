@@ -21,7 +21,9 @@ const childEnv = { ...process.env };
 if (strict) {
   childEnv.SOCRATES_TEST_STRICT = '1';
   if (!childEnv.DATABASE_URL) {
-    console.error('[test] --strict requires DATABASE_URL (DB suites would silently skip without it)');
+    console.error(
+      '[test] --strict requires DATABASE_URL (DB suites would silently skip without it)',
+    );
     process.exit(1);
   }
 }
@@ -39,22 +41,24 @@ for (const testFile of testFiles) {
   // silently skip, leaving the OAuth and auth-middleware paths uncovered.
   // dotenv never overrides variables already present in the environment, so
   // CI can still pin NODE_ENV/DATABASE_URL explicitly.
-  const nodeArgs = ['--import', 'tsx', '--import', resolve(serverDir, 'scripts/test-env.mjs'), '--test'];
+  const nodeArgs = [
+    '--import',
+    'tsx',
+    '--import',
+    resolve(serverDir, 'scripts/test-env.mjs'),
+    '--test',
+  ];
   nodeArgs.push(resolve(testDir, testFile));
 
-  const result = spawnSync(
-    process.execPath,
-    nodeArgs,
-    {
-      cwd: serverDir,
-      env: childEnv,
-      stdio: 'inherit',
-      // Worker-backed suites can pay a cold loader/antivirus cost on Windows.
-      // Keep a hard bound, but do not turn transient process startup pressure
-      // into a false test failure.
-      timeout: 120_000,
-    },
-  );
+  const result = spawnSync(process.execPath, nodeArgs, {
+    cwd: serverDir,
+    env: childEnv,
+    stdio: 'inherit',
+    // Worker-backed suites can pay a cold loader/antivirus cost on Windows.
+    // Keep a hard bound, but do not turn transient process startup pressure
+    // into a false test failure.
+    timeout: 120_000,
+  });
 
   if (result.error) {
     // A timeout still runs every other suite; see the summary below.
@@ -66,7 +70,6 @@ for (const testFile of testFiles) {
   if (result.status !== 0) {
     console.error(`[test] ${testFile}: exit ${result.status}`);
     failures.push(testFile);
-
   }
 }
 

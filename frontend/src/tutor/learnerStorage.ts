@@ -8,12 +8,16 @@
 export const REVIEW_DECK_BASE = 'socrates-review-deck-v1';
 export const MISTAKE_ARCHIVE_BASE = 'socrates-mistake-archive-v1';
 
-interface UserWindow { CURRENT_USER?: { id?: unknown } | null }
+interface UserWindow {
+  CURRENT_USER?: { id?: unknown } | null;
+}
 
 function ownerId(): string {
   try {
-    const user = typeof window !== 'undefined' ? (window as unknown as UserWindow).CURRENT_USER : null;
-    const id = user && (typeof user.id === 'string' || typeof user.id === 'number') ? String(user.id) : '';
+    const user =
+      typeof window !== 'undefined' ? (window as unknown as UserWindow).CURRENT_USER : null;
+    const id =
+      user && (typeof user.id === 'string' || typeof user.id === 'number') ? String(user.id) : '';
     return id || 'guest';
   } catch (_) {
     return 'guest';

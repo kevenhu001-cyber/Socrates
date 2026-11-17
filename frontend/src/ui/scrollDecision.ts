@@ -71,9 +71,7 @@ export interface KeyboardAnchorContext {
 }
 
 export type KeyboardAnchorAction =
-  | { type: 'follow-bottom' }
-  | { type: 'restore'; top: number }
-  | { type: 'none' };
+  { type: 'follow-bottom' } | { type: 'restore'; top: number } | { type: 'none' };
 
 /**
  * Decide what a keyboard transition should do to the transcript:
@@ -95,15 +93,11 @@ export function decideKeyboardAnchorAction(
      top; the send controller re-aligns on this same layout change. */
   if (context.viewportOwnerHeld) return { type: 'none' };
   if (anchor.pinned && !context.scrolledAway) return { type: 'follow-bottom' };
-  const maxTop = Number.isFinite(context.maxScrollTop)
-    ? Math.max(0, context.maxScrollTop)
-    : 0;
+  const maxTop = Number.isFinite(context.maxScrollTop) ? Math.max(0, context.maxScrollTop) : 0;
   const pan = Number.isFinite(context.panDelta) ? (context.panDelta as number) : 0;
   /* `offsetTop` grows when the visual viewport pans down the layout, so the
    * same scrollTop would render the content higher on screen. Subtract the
    * pan to keep it visually still; adding it doubled the jump. */
-  const captured = Number.isFinite(anchor.scrollTop)
-    ? Math.max(0, anchor.scrollTop - pan)
-    : 0;
+  const captured = Number.isFinite(anchor.scrollTop) ? Math.max(0, anchor.scrollTop - pan) : 0;
   return { type: 'restore', top: Math.min(maxTop, captured) };
 }

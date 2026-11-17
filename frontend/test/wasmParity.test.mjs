@@ -95,7 +95,11 @@ test('wasm is_terminal_phase matches TS', async (t) => {
     'preparing',
     'Succeeded',
   ]) {
-    assert.equal(w.is_terminal_phase(String(phase || '')), isTerminalToolPhase(phase), `phase ${phase}`);
+    assert.equal(
+      w.is_terminal_phase(String(phase || '')),
+      isTerminalToolPhase(phase),
+      `phase ${phase}`,
+    );
   }
 });
 
@@ -132,7 +136,11 @@ test('wasm transition_run matches TS transitionToolRun', async (t) => {
           String((run && run.phase) || TOOL_RUN_PHASES.preparing),
           String(nextPhase || ''),
         );
-        assert.equal(wPhase, expected.phase, `transition phase for run=${JSON.stringify(run)} next=${nextPhase}`);
+        assert.equal(
+          wPhase,
+          expected.phase,
+          `transition phase for run=${JSON.stringify(run)} next=${nextPhase}`,
+        );
       }
     }
   }
@@ -160,7 +168,11 @@ test('wasm summarize_runs matches TS summarizeToolRuns', async (t) => {
     ],
   ];
   for (const runs of cases) {
-    assert.deepEqual(w.summarize_runs(runs), summarizeToolRuns(runs), `summarize mismatch for ${JSON.stringify(runs)}`);
+    assert.deepEqual(
+      w.summarize_runs(runs),
+      summarizeToolRuns(runs),
+      `summarize mismatch for ${JSON.stringify(runs)}`,
+    );
   }
 });
 
@@ -202,7 +214,13 @@ test('wasm truncate matches the TS fallback truncateLines on edge cases', async 
     '第一行\n第二行\n第三行', // unicode lines
   ];
   for (const text of cases) {
-    for (const [head, tail] of [[5, 5], [2, 4], [0, 2], [1, 1], [3, 0]]) {
+    for (const [head, tail] of [
+      [5, 5],
+      [2, 4],
+      [0, 2],
+      [1, 1],
+      [3, 0],
+    ]) {
       assert.deepEqual(
         w.truncate_tool_output(text, head, tail),
         truncateLines(text, head, tail),
@@ -239,18 +257,34 @@ test('wasm categorize_tool_js matches TS toolCategory fallback', async (t) => {
   if (!w) return;
 
   const names = [
-    'web_search', 'arxiv_search', 'zotero_search', 'notion_search_pages',
-    'github_list_repos', 'gitee_list_repos',
-    'code_interpreter', 'Code',
-    'web_fetch', 'WebFetch',
+    'web_search',
+    'arxiv_search',
+    'zotero_search',
+    'notion_search_pages',
+    'github_list_repos',
+    'gitee_list_repos',
+    'code_interpreter',
+    'Code',
+    'web_fetch',
+    'WebFetch',
     'render_intelligent_ui',
     'create_document',
-    'Read', 'Glob', 'Grep',
-    'Write', 'Edit', 'Bash',
-    'unknown_tool', '', 'WebSearch',
+    'Read',
+    'Glob',
+    'Grep',
+    'Write',
+    'Edit',
+    'Bash',
+    'unknown_tool',
+    '',
+    'WebSearch',
   ];
   for (const name of names) {
-    assert.equal(w.categorize_tool_js(name), toolCategory(name), `category mismatch for ${JSON.stringify(name)}`);
+    assert.equal(
+      w.categorize_tool_js(name),
+      toolCategory(name),
+      `category mismatch for ${JSON.stringify(name)}`,
+    );
   }
 });
 
@@ -269,7 +303,11 @@ test('wasm LiveOutputBuffer matches TS fallback across chunk sequences', async (
     ['a\r\nb\r\nc\r\n'], // CRLF
     ['', 'x', '\n', '\n'],
   ];
-  for (const [capLines, capBytes] of [[2, 10_000], [5, 10], [50, 1024 * 1024]]) {
+  for (const [capLines, capBytes] of [
+    [2, 10_000],
+    [5, 10],
+    [50, 1024 * 1024],
+  ]) {
     for (const chunks of sequences) {
       const wasmBuf = new w.LiveOutputBuffer(capLines, capBytes);
       const tsBuf = createLiveOutputBuffer(capLines, capBytes);
@@ -310,11 +348,12 @@ const PARITY_RUNS = 200;
 // All phases the state machine knows about, plus a few unknowns that must pass
 // through untouched (matching transition_run's "unknown phases pass through").
 const KNOWN_PHASES = Object.values(TOOL_RUN_PHASES);
-const parityPhase = () => fc.oneof(
-  fc.constantFrom(...KNOWN_PHASES),
-  // Unknown / edge phases exercised by the existing example cases.
-  fc.constantFrom('', 'preparing', 'mystery', 'Succeeded', 'RUNNING', 'unknown'),
-);
+const parityPhase = () =>
+  fc.oneof(
+    fc.constantFrom(...KNOWN_PHASES),
+    // Unknown / edge phases exercised by the existing example cases.
+    fc.constantFrom('', 'preparing', 'mystery', 'Succeeded', 'RUNNING', 'unknown'),
+  );
 
 /**
  * Fold a sequence of next-phase events through the WASM entry points, applying
@@ -388,25 +427,23 @@ test('Feature: chat-experience-revamp, Property 6: WASM and TypeScript tool-run 
 
   // A single run is either null (skipped by both paths) or an object with a
   // phase drawn from the known + edge phase space.
-  const runEntry = () => fc.oneof(
-    fc.constant(null),
-    parityPhase().map((phase) => ({ id: 'r', tool: 't', phase, startedAt: 0 })),
-    // Runs with no phase at all — summarizeToolRuns skips these in TS; the
-    // wasm summarizer must agree.
-    fc.constant({ id: 'r', tool: 't', startedAt: 0 }),
-  );
+  const runEntry = () =>
+    fc.oneof(
+      fc.constant(null),
+      parityPhase().map((phase) => ({ id: 'r', tool: 't', phase, startedAt: 0 })),
+      // Runs with no phase at all — summarizeToolRuns skips these in TS; the
+      // wasm summarizer must agree.
+      fc.constant({ id: 'r', tool: 't', startedAt: 0 }),
+    );
 
   fc.assert(
-    fc.property(
-      fc.array(runEntry(), { minLength: 0, maxLength: 30 }),
-      (runs) => {
-        assert.deepEqual(
-          w.summarize_runs(runs),
-          summarizeToolRuns(runs),
-          `summary mismatch for runs=${JSON.stringify(runs)}`,
-        );
-      },
-    ),
+    fc.property(fc.array(runEntry(), { minLength: 0, maxLength: 30 }), (runs) => {
+      assert.deepEqual(
+        w.summarize_runs(runs),
+        summarizeToolRuns(runs),
+        `summary mismatch for runs=${JSON.stringify(runs)}`,
+      );
+    }),
     { numRuns: PARITY_RUNS },
   );
 });

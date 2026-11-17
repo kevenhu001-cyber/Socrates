@@ -15,17 +15,22 @@ export function UiPill({ label, tone = 'fill', style }: UiPillProps) {
   const { colors } = useUiTheme();
   return (
     <View
-      style={[{
-        alignSelf: 'flex-start',
-        paddingHorizontal: uiSpace[3],
-        paddingVertical: 3,
-        borderRadius: uiRadius.pill,
-        backgroundColor: tone === 'fill' ? colors.fill : 'transparent',
-        borderWidth: tone === 'outline' ? 1 : 0,
-        borderColor: colors.hairline,
-      }, style]}
+      style={[
+        {
+          alignSelf: 'flex-start',
+          paddingHorizontal: uiSpace[3],
+          paddingVertical: 3,
+          borderRadius: uiRadius.pill,
+          backgroundColor: tone === 'fill' ? colors.fill : 'transparent',
+          borderWidth: tone === 'outline' ? 1 : 0,
+          borderColor: colors.hairline,
+        },
+        style,
+      ]}
     >
-      <UiText variant="labelSm" tone="secondary" numberOfLines={1}>{label}</UiText>
+      <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
+        {label}
+      </UiText>
     </View>
   );
 }

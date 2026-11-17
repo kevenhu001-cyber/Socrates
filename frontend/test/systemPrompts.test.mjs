@@ -15,7 +15,10 @@ test('Chat and Tutor defer learning output protocols to the server', () => {
   }
   assert.match(LEARNING_SCAFFOLD_GUIDANCE, /server's learning-interaction policy/);
   assert.match(LEARNING_SCAFFOLD_GUIDANCE, /ordinary conversation stays in prose/i);
-  assert.doesNotMatch(LEARNING_SCAFFOLD_GUIDANCE, /<(?:quiz|practice|theorem|definition|flashcard)[ >]/);
+  assert.doesNotMatch(
+    LEARNING_SCAFFOLD_GUIDANCE,
+    /<(?:quiz|practice|theorem|definition|flashcard)[ >]/,
+  );
   assert.match(LEARNING_SCAFFOLD_GUIDANCE, /never wrap the whole answer/);
 });
 
@@ -73,15 +76,26 @@ test('the reasoning-depth directive is server-owned, not duplicated in the clien
 });
 
 test('chat prompt policies stay compact enough to avoid crowding user context', () => {
-  assert.ok(CHAT_SYSTEM_PROMPT.length < 5_000, `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`);
-  assert.ok(CHAT_CONCISE_PROMPT.length < 4_500, `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`);
-  assert.ok(PYTHON_RUNNABLE_RULES.length < 2_500, `python appendix is ${PYTHON_RUNNABLE_RULES.length} chars`);
+  assert.ok(
+    CHAT_SYSTEM_PROMPT.length < 5_000,
+    `high-effort prompt is ${CHAT_SYSTEM_PROMPT.length} chars`,
+  );
+  assert.ok(
+    CHAT_CONCISE_PROMPT.length < 4_500,
+    `concise prompt is ${CHAT_CONCISE_PROMPT.length} chars`,
+  );
+  assert.ok(
+    PYTHON_RUNNABLE_RULES.length < 2_500,
+    `python appendix is ${PYTHON_RUNNABLE_RULES.length} chars`,
+  );
 });
-
 
 test('client learning guidance stays compact and does not teach a competing protocol', () => {
   assert.ok(LEARNING_SCAFFOLD_GUIDANCE.length < 700);
   assert.match(LEARNING_SCAFFOLD_GUIDANCE, /Do not emit legacy XML learning tags/);
-  assert.match(LEARNING_SCAFFOLD_GUIDANCE, /if the tool is unavailable, use ordinary prose or Markdown/);
+  assert.match(
+    LEARNING_SCAFFOLD_GUIDANCE,
+    /if the tool is unavailable, use ordinary prose or Markdown/,
+  );
   assert.doesNotMatch(LEARNING_SCAFFOLD_GUIDANCE, /explanation attribute|<correct>|QuizCard\(/);
 });

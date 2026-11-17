@@ -11,7 +11,8 @@ import test from 'node:test';
  * known" and must not change what is sent. Only an explicit "no" does.
  */
 
-const { resolveEffortRequest, resolveEffectiveEffort } = await import('../src/config/effectiveEffort.ts');
+const { resolveEffortRequest, resolveEffectiveEffort } =
+  await import('../src/config/effectiveEffort.ts');
 
 test('without a capability summary the intent is forwarded unchanged', () => {
   for (const caps of [undefined, null, {}]) {

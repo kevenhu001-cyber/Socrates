@@ -35,7 +35,13 @@ declare module 'multer' {
     fileFilter?: (req: Request, file: UploadedFile, callback: FileFilterCallback) => void;
   }
   export interface Instance {
-    single(fieldName: string): (req: Request, res: Response, callback: (error: (Error & { code?: string }) | null) => void) => void;
+    single(
+      fieldName: string,
+    ): (
+      req: Request,
+      res: Response,
+      callback: (error: (Error & { code?: string }) | null) => void,
+    ) => void;
   }
 
   function multer(options?: Options): Instance;

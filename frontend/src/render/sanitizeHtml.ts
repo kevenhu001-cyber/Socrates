@@ -22,15 +22,49 @@ const PURIFY_CONFIG: {
   KEEP_CONTENT: true,
   RETURN_DOM_FRAGMENT: false,
   RETURN_DOM: false,
-  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form',
-                'meta', 'link', 'base', 'frame', 'frameset', 'noframes',
-                'noscript', 'html', 'head', 'body'],
-  FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover', 'onfocus',
-                'onblur', 'onchange', 'onsubmit', 'onkeydown', 'onkeyup',
-                'onkeypress', 'onmousedown', 'onmouseup', 'onmousemove',
-                'onmouseout', 'onmouseenter', 'onmouseleave', 'oninput',
-                'onpointerdown', 'onpointerup', 'onanimationend',
-                'onanimationstart', 'ontransitionend'],
+  FORBID_TAGS: [
+    'script',
+    'style',
+    'iframe',
+    'object',
+    'embed',
+    'form',
+    'meta',
+    'link',
+    'base',
+    'frame',
+    'frameset',
+    'noframes',
+    'noscript',
+    'html',
+    'head',
+    'body',
+  ],
+  FORBID_ATTR: [
+    'onerror',
+    'onclick',
+    'onload',
+    'onmouseover',
+    'onfocus',
+    'onblur',
+    'onchange',
+    'onsubmit',
+    'onkeydown',
+    'onkeyup',
+    'onkeypress',
+    'onmousedown',
+    'onmouseup',
+    'onmousemove',
+    'onmouseout',
+    'onmouseenter',
+    'onmouseleave',
+    'oninput',
+    'onpointerdown',
+    'onpointerup',
+    'onanimationend',
+    'onanimationstart',
+    'ontransitionend',
+  ],
 };
 
 interface DomPurifyLike {
@@ -43,9 +77,7 @@ interface SanitizeHtmlOptions {
 }
 
 function purifyConfig(options: SanitizeHtmlOptions) {
-  return options.keepContent === false
-    ? { ...PURIFY_CONFIG, KEEP_CONTENT: false }
-    : PURIFY_CONFIG;
+  return options.keepContent === false ? { ...PURIFY_CONFIG, KEEP_CONTENT: false } : PURIFY_CONFIG;
 }
 
 /* Rendered answers can carry many images (markdown images, illustration
@@ -99,4 +131,3 @@ export function sanitizeHtml(html: string, options: SanitizeHtmlOptions = {}): s
   }
   return escHTML(html);
 }
-

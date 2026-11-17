@@ -22,21 +22,27 @@ function addCodeBlockActions(header: Element): void {
   const lang = header.querySelector('.code-block-header-lang')?.textContent?.trim() || '';
   const request = (renderRequests.get(host) || 0) + 1;
   renderRequests.set(host, request);
-  void import('../react/render/CodeBlockActions.tsx').then(({ CodeBlockActions }) => {
-    if (!host.isConnected || renderRequests.get(host) !== request) return;
-    const content = createElement(CodeBlockActions, { codeElement: pre as HTMLElement, language: lang });
-    /* createRootGroup.render() commits the element; a second render() here
+  void import('../react/render/CodeBlockActions.tsx')
+    .then(({ CodeBlockActions }) => {
+      if (!host.isConnected || renderRequests.get(host) !== request) return;
+      const content = createElement(CodeBlockActions, {
+        codeElement: pre as HTMLElement,
+        language: lang,
+      });
+      /* createRootGroup.render() commits the element; a second render() here
        (the old flushSync dance) mounted every code block twice. */
-    codeActionRoots.render(host, content);
-  }).catch((error) => {
-    reportSwallow(error, 'render/markdownCodeCopy.ts:addCodeBlockActions');
-  });
+      codeActionRoots.render(host, content);
+    })
+    .catch((error) => {
+      reportSwallow(error, 'render/markdownCodeCopy.ts:addCodeBlockActions');
+    });
 }
 
 function hostsWithin(root: Node): HTMLElement[] {
   const hosts: HTMLElement[] = [];
   const rootEl = root as Element;
-  if (typeof rootEl.matches === 'function' && rootEl.matches(ACTION_HOST_SELECTOR)) hosts.push(rootEl as HTMLElement);
+  if (typeof rootEl.matches === 'function' && rootEl.matches(ACTION_HOST_SELECTOR))
+    hosts.push(rootEl as HTMLElement);
   if (typeof rootEl.querySelectorAll === 'function') {
     hosts.push(...Array.from(rootEl.querySelectorAll<HTMLElement>(ACTION_HOST_SELECTOR)));
   }
@@ -46,10 +52,16 @@ function hostsWithin(root: Node): HTMLElement[] {
 function wireCodeBlockActions(root: ParentNode): void {
   const headers: Element[] = [];
   const rootEl = root as Element;
-  if (typeof rootEl.matches === 'function' && rootEl.matches(COPY_HEADER_SELECTOR)) headers.push(rootEl);
+  if (typeof rootEl.matches === 'function' && rootEl.matches(COPY_HEADER_SELECTOR))
+    headers.push(rootEl);
   headers.push(...Array.from(root.querySelectorAll(COPY_HEADER_SELECTOR)));
   headers.forEach((header) => {
-    if (header.closest('.exec-artifact') || header.closest('.agent-tool-card') || header.closest('.viz')) return;
+    if (
+      header.closest('.exec-artifact') ||
+      header.closest('.agent-tool-card') ||
+      header.closest('.viz')
+    )
+      return;
     addCodeBlockActions(header);
   });
 }
@@ -57,7 +69,12 @@ function wireCodeBlockActions(root: ParentNode): void {
 let _codeCopyInstalled = false;
 
 export function installCodeBlockCopy(): void {
-  if (_codeCopyInstalled || typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+  if (
+    _codeCopyInstalled ||
+    typeof document === 'undefined' ||
+    typeof MutationObserver === 'undefined'
+  )
+    return;
   _codeCopyInstalled = true;
 
   const observer = new MutationObserver((mutations) => {
@@ -92,5 +109,6 @@ export function installCodeBlockCopy(): void {
   };
 
   if (document.body) start();
-  else if (typeof window !== 'undefined') window.addEventListener('DOMContentLoaded', start, { once: true });
+  else if (typeof window !== 'undefined')
+    window.addEventListener('DOMContentLoaded', start, { once: true });
 }

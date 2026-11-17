@@ -8,8 +8,8 @@
  *     loop + finalisation (the orchestration stage list is documented
  *     there).
  *   pipeline/toolContext.ts           — turn policy + registry.
- *   pipeline/toolExecutors.ts         — one executor per callable tool.
- *   pipeline/toolFeedback.ts          — model-facing result content.
+ *   pipeline/toolRunner.ts            — one executor per callable tool.
+ *   pipeline/toolResultMessage.ts     — model-facing result content.
  *   pipeline/sseEmitter.ts            — SSE frame writing.
  *
  * This file keeps only the route concerns that Express owns: middleware
@@ -48,9 +48,8 @@ async function requireOwnedSessionAfterSave(sessionId: string, userId: string) {
     try {
       return await requireOwnedSession(getDb(), sessionId, userId);
     } catch (err: unknown) {
-      const status = err && typeof err === 'object'
-        ? (err as { status?: unknown }).status
-        : undefined;
+      const status =
+        err && typeof err === 'object' ? (err as { status?: unknown }).status : undefined;
       if (status !== 404 || attempt === attempts - 1) throw err;
       await new Promise<void>((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
     }
@@ -75,17 +74,24 @@ export function registerStreamRoute(router: Router) {
    * with the sync POST / route in chat.js — both endpoints spend
    * the user's LLM quota and write per-user rows, so both must be
    * gated identically. */
-  router.post('/stream', (_req, res, next) => {
-    res.locals.chatTiming = createChatTiming();
-    next();
-  }, requireAuth, resourceScope('chat'), chatRateLimitDispatch, async (req, res, next) => {
-    const timing = res.locals.chatTiming as ChatTiming;
-    timing.mark('authenticated');
-    try {
-      const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
-      const projectIdFromBody = typeof req.body?.projectId === 'string' ? req.body.projectId : null;
+  router.post(
+    '/stream',
+    (_req, res, next) => {
+      res.locals.chatTiming = createChatTiming();
+      next();
+    },
+    requireAuth,
+    resourceScope('chat'),
+    chatRateLimitDispatch,
+    async (req, res, next) => {
+      const timing = res.locals.chatTiming as ChatTiming;
+      timing.mark('authenticated');
+      try {
+        const sessionIdFromQuery = parseChatSessionId(req.query.sessionId ?? req.body?.sessionId);
+        const projectIdFromBody =
+          typeof req.body?.projectId === 'string' ? req.body.projectId : null;
 
-      /* P_ttfb-prime-first — validate the body schema BEFORE we
+        /* P_ttfb-prime-first — validate the body schema BEFORE we
          commit the SSE response. prepareChatRequest() does its own
          parse-and-400 path, but a 400 is no longer possible once the
          status line is out: writeSsePrime below sets it to 200 + SSE
@@ -93,14 +99,14 @@ export function registerStreamRoute(router: Router) {
          therefore gets the legacy JSON 400 here so the client gets a
          structured error, while every error AFTER the prime is
          surfaced as an SSE `event: error` frame. */
-      try {
-        ChatPayloadSchema.parse(req.body);
-      } catch (err) {
-        res.status(400).json({ code: 'INVALID_REQUEST', message: (err as Error).message });
-        return;
-      }
+        try {
+          ChatPayloadSchema.parse(req.body);
+        } catch (err) {
+          res.status(400).json({ code: 'INVALID_REQUEST', message: (err as Error).message });
+          return;
+        }
 
-      /* P_ttfb-prime-first — write SSE status + headers + 32 KB
+        /* P_ttfb-prime-first — write SSE status + headers + 32 KB
          prime NOW, before the session-ownership DB round-trip and
          before the provider/RAG/memory prelude start. The browser
          sees a 200 the instant the request lands, and EdgeOne's
@@ -110,45 +116,59 @@ export function registerStreamRoute(router: Router) {
          point, endSseWithError writes a single `event: error`
          frame so the client gets a structured failure rather than a
          half-open connection. */
-      const ssePrimed = writeSsePrime(res);
+        const ssePrimed = writeSsePrime(res);
 
-      const ownershipPromise: Promise<unknown> = sessionIdFromQuery
-        ? requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!)
-        : Promise.resolve(null);
-      const turnPromise = resolveTurnBinding(req, sessionIdFromQuery, ownershipPromise);
-      const [, turnId] = await Promise.all([ownershipPromise, turnPromise]);
-      timing.mark('bound');
+        const ownershipPromise: Promise<unknown> = sessionIdFromQuery
+          ? requireOwnedSessionAfterSave(sessionIdFromQuery, req.userId!)
+          : Promise.resolve(null);
+        const turnPromise = resolveTurnBinding(req, sessionIdFromQuery, ownershipPromise);
+        const [, turnId] = await Promise.all([ownershipPromise, turnPromise]);
+        timing.mark('bound');
 
-      // Claim before preparation: RAG/provider prelude can itself call an
-      // upstream model. Losing retries must not perform that work either.
-      try {
-        await withChatTurnExecution(req.userId!, turnId, async (executionSignal) => {
-          timing.mark('claimed');
-          const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
-          const toolCtxPromise = createStreamToolContext(
-            req as typeof req & { userId?: string }, bodyMode === 'tutor' ? 'tutor' : 'chat',
-          );
-          toolCtxPromise.catch(() => {});
-          const prep = await prepareChatRequest(req, res, { signal: executionSignal, toolCtxPromise });
-          timing.mark('prepared');
-          if (executionSignal.aborted) throw new Error('Turn execution interrupted during preparation');
-          await runChatStreamPipeline({
-            req: req as typeof req & { userId?: string }, res, prep,
-            sessionIdFromQuery, projectIdFromBody, turnId, toolCtxPromise, ssePrimed,
-            executionSignal, executionClaimed: true, timing,
+        // Claim before preparation: RAG/provider prelude can itself call an
+        // upstream model. Losing retries must not perform that work either.
+        try {
+          await withChatTurnExecution(req.userId!, turnId, async (executionSignal) => {
+            timing.mark('claimed');
+            const bodyMode = (req.body as { mode?: unknown } | undefined)?.mode;
+            const toolCtxPromise = createStreamToolContext(
+              req as typeof req & { userId?: string },
+              bodyMode === 'tutor' ? 'tutor' : 'chat',
+            );
+            toolCtxPromise.catch(() => {});
+            const prep = await prepareChatRequest(req, res, {
+              signal: executionSignal,
+              toolCtxPromise,
+            });
+            timing.mark('prepared');
+            if (executionSignal.aborted)
+              throw new Error('Turn execution interrupted during preparation');
+            await runChatStreamPipeline({
+              req: req as typeof req & { userId?: string },
+              res,
+              prep,
+              sessionIdFromQuery,
+              projectIdFromBody,
+              turnId,
+              toolCtxPromise,
+              ssePrimed,
+              executionSignal,
+              executionClaimed: true,
+              timing,
+            });
           });
-        });
+        } catch (err) {
+          // A retry that only supplied clientTurn.id still needs the durable
+          // server ID to reconnect after losing its execution claim.
+          if (err instanceof Conflict) writeSseEvent(res, 'turn_bound', { turnId });
+          throw err;
+        }
       } catch (err) {
-        // A retry that only supplied clientTurn.id still needs the durable
-        // server ID to reconnect after losing its execution claim.
-        if (err instanceof Conflict) writeSseEvent(res, 'turn_bound', { turnId });
-        throw err;
+        if (res.headersSent) endSseWithError(res, err, resolveErrorLocale(req.headers));
+        else next(err);
       }
-    } catch (err) {
-      if (res.headersSent) endSseWithError(res, err, resolveErrorLocale(req.headers));
-      else next(err);
-    }
-  });
+    },
+  );
 }
 
 /* M1 async — optional detached-turn binding. Two shapes:
@@ -168,18 +188,22 @@ async function resolveTurnBinding(
   const rawTurnId = req.query.turnId ?? req.body?.turnId;
   if (typeof rawTurnId === 'string' && rawTurnId) {
     if (!isUuid(rawTurnId)) throw new NotFound('Chat turn not found');
-    const [owned] = await getDb().select({ id: chatTurns.id, sessionId: chatTurns.sessionId })
+    const [owned] = await getDb()
+      .select({ id: chatTurns.id, sessionId: chatTurns.sessionId })
       .from(chatTurns)
       .where(and(eq(chatTurns.id, rawTurnId), eq(chatTurns.userId, req.userId!)))
       .limit(1);
-    if (!owned || owned.sessionId !== sessionId) throw new NotFound('Chat turn not found for this session');
+    if (!owned || owned.sessionId !== sessionId)
+      throw new NotFound('Chat turn not found for this session');
     return owned.id;
   }
   const clientTurn = req.body?.clientTurn;
-  const providedTurnId = clientTurn && typeof clientTurn.id === 'string' ? clientTurn.id.trim() : '';
-  const effectiveTurnId = (providedTurnId && providedTurnId.length <= 200)
-    ? providedTurnId
-    : `srv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const providedTurnId =
+    clientTurn && typeof clientTurn.id === 'string' ? clientTurn.id.trim() : '';
+  const effectiveTurnId =
+    providedTurnId && providedTurnId.length <= 200
+      ? providedTurnId
+      : `srv-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   await ownership;
   const created = await createChatTurn({
     userId: req.userId!,

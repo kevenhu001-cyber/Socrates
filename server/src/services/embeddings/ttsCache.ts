@@ -33,8 +33,16 @@ export interface TtsCacheOptions {
   now?: () => number;
 }
 
-export function ttsCacheKey(userId: string, text: string, voice: string, format: string, lang: string = ''): string {
-  return createHash('sha256').update(`${userId}\u0000${text}\u0000${voice}\u0000${format}\u0000${lang}`).digest('hex');
+export function ttsCacheKey(
+  userId: string,
+  text: string,
+  voice: string,
+  format: string,
+  lang: string = '',
+): string {
+  return createHash('sha256')
+    .update(`${userId}\u0000${text}\u0000${voice}\u0000${format}\u0000${lang}`)
+    .digest('hex');
 }
 
 export class TtsCache {
@@ -84,7 +92,11 @@ export class TtsCache {
     // Oldest first — Map preserves insertion order.
     for (const [key, entry] of this.entries) {
       if (this.bytes <= this.maxBytes && this.entries.size <= this.maxEntries) break;
-      if (this.now() - entry.createdAt > this.ttlMs || this.bytes > this.maxBytes || this.entries.size > this.maxEntries) {
+      if (
+        this.now() - entry.createdAt > this.ttlMs ||
+        this.bytes > this.maxBytes ||
+        this.entries.size > this.maxEntries
+      ) {
         this.delete(key);
       }
     }

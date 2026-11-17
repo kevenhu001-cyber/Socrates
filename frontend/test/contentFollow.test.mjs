@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { stateStore } from '../src/state/store.ts';
+import { dispatchUi, uiStore } from '../src/store/index.ts';
 
 function makeHarness({ away = false, turnHold = false, turnSettling = false, retry = false } = {}) {
-  const previousAway = stateStore.read('_userScrolledAway');
-  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: away });
+  const previousAway = uiStore.getState()._userScrolledAway;
+  dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: away });
   const frames = [];
   const observers = [];
   const scrollListeners = new Set();
@@ -17,52 +17,91 @@ function makeHarness({ away = false, turnHold = false, turnSettling = false, ret
     document: globalThis.document,
   };
   class FakeResizeObserver {
-    constructor(callback) { this.callback = callback; this.targets = []; observers.push(this); }
-    observe(target) { this.targets.push(target); }
+    constructor(callback) {
+      this.callback = callback;
+      this.targets = [];
+      observers.push(this);
+    }
+    observe(target) {
+      this.targets.push(target);
+    }
     disconnect() {}
-    deliver(entries = []) { this.callback(entries, this); }
+    deliver(entries = []) {
+      this.callback(entries, this);
+    }
   }
   class FakeMutationObserver {
-    constructor(callback) { this.callback = callback; }
+    constructor(callback) {
+      this.callback = callback;
+    }
     observe() {}
     disconnect() {}
   }
   globalThis.ResizeObserver = FakeResizeObserver;
   globalThis.MutationObserver = FakeMutationObserver;
-  globalThis.requestAnimationFrame = (callback) => { frames.push(callback); return frames.length; };
+  globalThis.requestAnimationFrame = (callback) => {
+    frames.push(callback);
+    return frames.length;
+  };
   globalThis.cancelAnimationFrame = () => {};
 
   const message = {
     offsetHeight: 100,
-    getAttribute(name) { return name === 'data-viewport-anchor' && retry ? 'retry' : null; },
+    getAttribute(name) {
+      return name === 'data-viewport-anchor' && retry ? 'retry' : null;
+    },
   };
   const list = {
-    scrollHeight: 1000, scrollTop: 400, clientHeight: 600, dataset: {},
-    addEventListener(type, listener) { if (type === 'scroll') scrollListeners.add(listener); },
-    removeEventListener(type, listener) { if (type === 'scroll') scrollListeners.delete(listener); },
-    querySelectorAll(selector) { return selector === ':scope > .msg' ? [message] : []; },
-    querySelector(selector) { return selector === '.turn-viewport-anchor' && (turnHold || turnSettling) ? {} : null; },
+    scrollHeight: 1000,
+    scrollTop: 400,
+    clientHeight: 600,
+    dataset: {},
+    addEventListener(type, listener) {
+      if (type === 'scroll') scrollListeners.add(listener);
+    },
+    removeEventListener(type, listener) {
+      if (type === 'scroll') scrollListeners.delete(listener);
+    },
+    querySelectorAll(selector) {
+      return selector === ':scope > .msg' ? [message] : [];
+    },
+    querySelector(selector) {
+      return selector === '.turn-viewport-anchor' && (turnHold || turnSettling) ? {} : null;
+    },
   };
   if (turnHold) list.dataset.turnAnchorHold = 'true';
   if (turnSettling) list.dataset.turnAnchorSettling = 'true';
   const chatView = { addEventListener() {}, removeEventListener() {} };
   globalThis.document = {
-    documentElement: { dataset: {}, style: { getPropertyValue() { return ''; } } },
-    querySelector(selector) { return selector === '#chatView, .chat-view' ? chatView : null; },
-    getElementById() { return list; },
+    documentElement: {
+      dataset: {},
+      style: {
+        getPropertyValue() {
+          return '';
+        },
+      },
+    },
+    querySelector(selector) {
+      return selector === '#chatView, .chat-view' ? chatView : null;
+    },
+    getElementById() {
+      return list;
+    },
   };
-  globalThis.window = { stateStore: { read(key) { return key === '_userScrolledAway' && away; } } };
+  globalThis.window = {};
 
   function restore() {
-    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: previousAway });
+    dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: previousAway });
     for (const key of Object.keys(previous)) {
       if (previous[key] === undefined) delete globalThis[key];
       else globalThis[key] = previous[key];
     }
   }
-  function flushFrames() { while (frames.length) frames.shift()(0); }
+  function flushFrames() {
+    while (frames.length) frames.shift()(0);
+  }
   function fireGrowth({ grow = true, scrollBeforeResize = false, amount = 20, flush = true } = {}) {
-    const messageObserver = observers.find(observer => observer.targets.includes(message));
+    const messageObserver = observers.find((observer) => observer.targets.includes(message));
     assert.ok(messageObserver, 'the newest message is observed');
     if (grow) {
       message.offsetHeight += amount;
@@ -74,9 +113,11 @@ function makeHarness({ away = false, turnHold = false, turnSettling = false, ret
     assert.ok(frames.length, 'observer delivery schedules content-follow evaluation');
     if (flush) flushFrames();
   }
-  function fireScroll() { for (const listener of scrollListeners) listener(); }
+  function fireScroll() {
+    for (const listener of scrollListeners) listener();
+  }
   function fireComposerResize() {
-    observers.find(observer => observer.targets.includes(list)).deliver([{ target: list }]);
+    observers.find((observer) => observer.targets.includes(list)).deliver([{ target: list }]);
   }
   return { list, restore, fireGrowth, flushFrames, frames, fireScroll, fireComposerResize };
 }
@@ -89,8 +130,12 @@ test('ResizeObserver follows a pinned reader when the newest message grows witho
     try {
       h.fireGrowth();
       assert.equal(h.list.scrollTop, 420, 'pure resize follows the new bottom');
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('a queued scroll event cannot consume growth before ResizeObserver sees it', async () => {
@@ -102,8 +147,12 @@ test('a queued scroll event cannot consume growth before ResizeObserver sees it'
       h.fireGrowth({ grow: false });
       h.fireGrowth({ scrollBeforeResize: true });
       assert.equal(h.list.scrollTop, 420, 'the new height must still trigger content-follow');
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('coalesced resize notifications follow the final height using one content frame', async () => {
@@ -118,8 +167,12 @@ test('coalesced resize notifications follow the final height using one content f
       assert.equal(h.frames.length, 1, 'notifications coalesce without a polling loop');
       h.flushFrames();
       assert.equal(h.list.scrollTop, 420, 'the frame sees growth after the first notification');
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('ResizeObserver content growth does not follow when user intent or an anchor owns the viewport', async (t) => {
@@ -138,8 +191,12 @@ test('ResizeObserver content growth does not follow when user intent or an ancho
           h.fireGrowth();
           assert.equal(h.list.scrollTop, 400, 'the existing viewport position is preserved');
           assert.notEqual(h.list.dataset.autoScrolling, 'true');
-        } finally { dispose(); }
-      } finally { h.restore(); }
+        } finally {
+          dispose();
+        }
+      } finally {
+        h.restore();
+      }
     });
   }
 });
@@ -153,8 +210,12 @@ test('ResizeObserver does not follow when the newest message did not grow', asyn
       h.fireGrowth({ grow: false });
       assert.equal(h.list.scrollTop, 400);
       assert.notEqual(h.list.dataset.autoScrolling, 'true');
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('a first bottom scroll delivered after viewport shrink retains the pre-resize geometry', async () => {
@@ -163,7 +224,9 @@ test('a first bottom scroll delivered after viewport shrink retains the pre-resi
     let top = 0;
     Object.defineProperty(h.list, 'scrollTop', {
       get: () => top,
-      set: value => { top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight)); },
+      set: (value) => {
+        top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
+      },
     });
     const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
@@ -175,8 +238,12 @@ test('a first bottom scroll delivered after viewport shrink retains the pre-resi
       h.fireScroll();
       h.fireComposerResize();
       assert.equal(h.list.scrollHeight - h.list.scrollTop - h.list.clientHeight, 0);
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('a viewport shrink overlapping a genuine upward scroll never restores the bottom', async (t) => {
@@ -193,8 +260,12 @@ test('a viewport shrink overlapping a genuine upward scroll never restores the b
           h.fireScroll();
           h.fireComposerResize();
           assert.equal(h.list.scrollTop, readingTop);
-        } finally { dispose(); }
-      } finally { h.restore(); }
+        } finally {
+          dispose();
+        }
+      } finally {
+        h.restore();
+      }
     });
   }
 });
@@ -205,7 +276,9 @@ test('a composer shrink re-pins a reader whose transcript height settled after t
     let top = 0;
     Object.defineProperty(h.list, 'scrollTop', {
       get: () => top,
-      set: value => { top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight)); },
+      set: (value) => {
+        top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
+      },
     });
     const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
@@ -227,8 +300,12 @@ test('a composer shrink re-pins a reader whose transcript height settled after t
         0,
         'a reader who was at the bottom stays at the bottom',
       );
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('a composer shrink re-pins a reader even when a later sample replaced the pre-shrink viewport height', async () => {
@@ -237,7 +314,9 @@ test('a composer shrink re-pins a reader even when a later sample replaced the p
     let top = 0;
     Object.defineProperty(h.list, 'scrollTop', {
       get: () => top,
-      set: value => { top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight)); },
+      set: (value) => {
+        top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
+      },
     });
     const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
@@ -257,8 +336,12 @@ test('a composer shrink re-pins a reader even when a later sample replaced the p
         0,
         'the pre-shrink viewport height survives the later sample',
       );
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });
 
 test('a downward scroll that was not pinned before viewport shrink keeps its reading position', async () => {
@@ -280,6 +363,10 @@ test('a downward scroll that was not pinned before viewport shrink keeps its rea
       h.fireScroll();
       h.fireComposerResize();
       assert.equal(h.list.scrollTop, 400);
-    } finally { dispose(); }
-  } finally { h.restore(); }
+    } finally {
+      dispose();
+    }
+  } finally {
+    h.restore();
+  }
 });

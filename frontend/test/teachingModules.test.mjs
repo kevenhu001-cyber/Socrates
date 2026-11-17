@@ -55,7 +55,7 @@ test('socraticDirectives: stageInstruction is stable per teaching stage', () => 
   );
   assert.equal(
     stageInstruction('exercise'),
-    'Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student\'s attempt.',
+    "Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student's attempt.",
   );
   assert.equal(
     stageInstruction('check'),
@@ -151,39 +151,49 @@ test('diagnostic: normalizeDiagQuestions drops malformed questions and caps at 5
 });
 
 test('diagnostic: preserves all four options and their declared assessment levels', () => {
-  const question = parseOneDiagResponse(JSON.stringify({
-    q: 'Choose your understanding',
-    opts: [
-      { text: 'New to me', level: 'blank' },
-      { text: 'Some gaps', level: 'fuzzy' },
-      { text: 'Can explain it', level: 'internalized' },
-      { text: 'Need examples', level: 'blank' },
+  const question = parseOneDiagResponse(
+    JSON.stringify({
+      q: 'Choose your understanding',
+      opts: [
+        { text: 'New to me', level: 'blank' },
+        { text: 'Some gaps', level: 'fuzzy' },
+        { text: 'Can explain it', level: 'internalized' },
+        { text: 'Need examples', level: 'blank' },
+      ],
+    }),
+    2,
+  );
+  assert.deepEqual(
+    question.opts.map(({ letter, level }) => ({ letter, level })),
+    [
+      { letter: 'A', level: 'blank' },
+      { letter: 'B', level: 'fuzzy' },
+      { letter: 'C', level: 'internalized' },
+      { letter: 'D', level: 'blank' },
     ],
-  }), 2);
-  assert.deepEqual(question.opts.map(({ letter, level }) => ({ letter, level })), [
-    { letter: 'A', level: 'blank' },
-    { letter: 'B', level: 'fuzzy' },
-    { letter: 'C', level: 'internalized' },
-    { letter: 'D', level: 'blank' },
-  ]);
+  );
   const nodes = applyDiagnosticResults({
     kbNodes: Array.from({ length: 5 }, (_, i) => ({ name: `Node ${i}`, status: 'blank' })),
-    diagQuestions: [question], diagAnswers: [2],
+    diagQuestions: [question],
+    diagAnswers: [2],
   });
   assert.equal(nodes[2].status, 'fuzzy', 'baseline familiarity is not verified mastery');
 });
 
 test('diagnostic: questions six through ten map back to the five knowledge dimensions', () => {
   const payload = JSON.stringify({ q: 'Q', opts: [{ text: 'A' }, { text: 'B' }, { text: 'C' }] });
-  assert.deepEqual(Array.from({ length: 10 }, (_, i) => parseOneDiagResponse(payload, i).nodeIdx),
-    [0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
+  assert.deepEqual(
+    Array.from({ length: 10 }, (_, i) => parseOneDiagResponse(payload, i).nodeIdx),
+    [0, 1, 2, 3, 4, 0, 1, 2, 3, 4],
+  );
 });
 
 test('diagnostic: extractDiagQuestionsBalanced recovers objects from a fixed array body', () => {
-  const text = '[{"q":"What is x?","subarea":"Basics","nodeIdx":0,'
-    + '"opts":[{"letter":"A","text":"know","level":"internalized"},'
-    + '{"letter":"B","text":"fuzzy","level":"fuzzy"},'
-    + '{"letter":"C","text":"blank","level":"blank"}]}]';
+  const text =
+    '[{"q":"What is x?","subarea":"Basics","nodeIdx":0,' +
+    '"opts":[{"letter":"A","text":"know","level":"internalized"},' +
+    '{"letter":"B","text":"fuzzy","level":"fuzzy"},' +
+    '{"letter":"C","text":"blank","level":"blank"}]}]';
   const out = extractDiagQuestionsBalanced(text);
   assert.equal(out.length, 1);
   assert.equal(out[0].q, 'What is x?');
@@ -243,11 +253,25 @@ test('visualization: category label formatting and axis layout are stable for fi
  * ------------------------------------------------------------------- */
 test('routing: visualization templates dispatch to the specialized vs generic renderer', () => {
   // Specialized-renderer templates.
-  for (const template of ['function', 'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard']) {
+  for (const template of [
+    'function',
+    'paper_chart',
+    'math_construction',
+    'geometry_3d',
+    'whiteboard',
+  ]) {
     assert.equal(usesSpecializedRenderer(template), true, `${template} should be specialized`);
   }
   // Structure templates route to the specialized (mermaid-style) path.
-  for (const template of ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map']) {
+  for (const template of [
+    'flowchart',
+    'sequence',
+    'state',
+    'tree',
+    'mindmap',
+    'network',
+    'concept_map',
+  ]) {
     assert.equal(usesSpecializedRenderer(template), true, `${template} should be specialized`);
   }
   // Plain chart templates fall through to the generic renderer.

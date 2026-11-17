@@ -3,7 +3,7 @@
 const TABLE_ROOT = '.ds-table-wrap, .ds-table';
 
 function asElement(node: Node): Element | null {
-  return node.nodeType === 1 ? node as Element : null;
+  return node.nodeType === 1 ? (node as Element) : null;
 }
 
 function containsTable(element: Element | null): boolean {
@@ -15,7 +15,8 @@ function syncAttributes(current: Element, next: Element): void {
     if (!next.hasAttribute(attribute.name)) current.removeAttribute(attribute.name);
   }
   for (const attribute of [...next.attributes]) {
-    if (current.getAttribute(attribute.name) !== attribute.value) current.setAttribute(attribute.name, attribute.value);
+    if (current.getAttribute(attribute.name) !== attribute.value)
+      current.setAttribute(attribute.name, attribute.value);
   }
 }
 
@@ -24,7 +25,11 @@ function reconcile(current: Node, next: Node, inTable = false, root = false): vo
   const currentElement = asElement(current);
   const nextElement = asElement(next);
   const tablePath = inTable || containsTable(nextElement);
-  if (current.nodeType !== next.nodeType || current.nodeName !== next.nodeName || (!tablePath && !root)) {
+  if (
+    current.nodeType !== next.nodeType ||
+    current.nodeName !== next.nodeName ||
+    (!tablePath && !root)
+  ) {
     // The root is a clone of the same host; replacement only handles its children.
     current.parentNode!.replaceChild(next.cloneNode(true), current);
     return;

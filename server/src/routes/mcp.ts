@@ -45,27 +45,92 @@ const transports = new Map<string, StreamableHTTPServerTransport>();
  * usable even when the database is unreachable. The research pages are
  * /var/www/topodrive.top/research/<slug>/ and the docs are site pages. */
 const RESEARCH_INDEX = [
-  { slug: 'explanation-evidence', title: 'When a clear explanation becomes evidence', date: '2026-07-29', url: 'https://topodrive.top/research/explanation-evidence/' },
-  { slug: 'honest-pause',        title: 'The value of an honest pause',                       date: '2026-07-11', url: 'https://topodrive.top/research/honest-pause/' },
-  { slug: 'memory-recall',       title: 'The route back to an idea',                          date: '2026-08-12', url: 'https://topodrive.top/research/memory-recall/' },
-  { slug: 'maps-preserve-path',  title: 'Maps that preserve the path',                        date: '2026-06-24', url: 'https://topodrive.top/research/maps-preserve-path/' },
-  { slug: 'tutor-curiosity',     title: 'When a tutor should say it is unsure',               date: '2026-05-14', url: 'https://topodrive.top/research/tutor-curiosity/' },
-  { slug: 'what-learners-keep',  title: 'What learners keep after a session',                 date: '2026-04-30', url: 'https://topodrive.top/research/what-learners-keep/' },
+  {
+    slug: 'explanation-evidence',
+    title: 'When a clear explanation becomes evidence',
+    date: '2026-07-29',
+    url: 'https://topodrive.top/research/explanation-evidence/',
+  },
+  {
+    slug: 'honest-pause',
+    title: 'The value of an honest pause',
+    date: '2026-07-11',
+    url: 'https://topodrive.top/research/honest-pause/',
+  },
+  {
+    slug: 'memory-recall',
+    title: 'The route back to an idea',
+    date: '2026-08-12',
+    url: 'https://topodrive.top/research/memory-recall/',
+  },
+  {
+    slug: 'maps-preserve-path',
+    title: 'Maps that preserve the path',
+    date: '2026-06-24',
+    url: 'https://topodrive.top/research/maps-preserve-path/',
+  },
+  {
+    slug: 'tutor-curiosity',
+    title: 'When a tutor should say it is unsure',
+    date: '2026-05-14',
+    url: 'https://topodrive.top/research/tutor-curiosity/',
+  },
+  {
+    slug: 'what-learners-keep',
+    title: 'What learners keep after a session',
+    date: '2026-04-30',
+    url: 'https://topodrive.top/research/what-learners-keep/',
+  },
 ];
 
 const DOCS_INDEX = [
-  { slug: 'about',         title: 'About Socrates',                            kind: 'page',  url: 'https://topodrive.top/about' },
-  { slug: 'pricing',       title: 'Pricing',                                    kind: 'page',  url: 'https://topodrive.top/pricing' },
-  { slug: 'product',       title: 'The learning loop',                         kind: 'page',  url: 'https://topodrive.top/product' },
-  { slug: 'policy',        title: 'Principles',                                kind: 'page',  url: 'https://topodrive.top/policy' },
-  { slug: 'guide',         title: 'Learning guide',                            kind: 'page',  url: 'https://topodrive.top/guide' },
-  { slug: 'learn',         title: 'Learn',                                     kind: 'page',  url: 'https://topodrive.top/learn' },
-  { slug: 'announcements', title: 'Announcements',                            kind: 'page',  url: 'https://topodrive.top/announcements' },
-  { slug: 'documents',     title: 'Documents index',                           kind: 'page',  url: 'https://topodrive.top/documents' },
-  { slug: 'llms.txt',      title: 'Navigation index for AI agents',            kind: 'tool',  url: 'https://topodrive.top/llms.txt' },
-  { slug: 'llms-full.txt', title: 'Long-form context for AI agents',           kind: 'tool',  url: 'https://topodrive.top/llms-full.txt' },
-  { slug: 'agents.md',     title: 'Agent instructions',                       kind: 'tool',  url: 'https://topodrive.top/agents.md' },
-  { slug: 'openapi.json',  title: 'OpenAPI 3.0 specification',                kind: 'tool',  url: 'https://topodrive.top/openapi.json' },
+  { slug: 'about', title: 'About Socrates', kind: 'page', url: 'https://topodrive.top/about' },
+  { slug: 'pricing', title: 'Pricing', kind: 'page', url: 'https://topodrive.top/pricing' },
+  {
+    slug: 'product',
+    title: 'The learning loop',
+    kind: 'page',
+    url: 'https://topodrive.top/product',
+  },
+  { slug: 'policy', title: 'Principles', kind: 'page', url: 'https://topodrive.top/policy' },
+  { slug: 'guide', title: 'Learning guide', kind: 'page', url: 'https://topodrive.top/guide' },
+  { slug: 'learn', title: 'Learn', kind: 'page', url: 'https://topodrive.top/learn' },
+  {
+    slug: 'announcements',
+    title: 'Announcements',
+    kind: 'page',
+    url: 'https://topodrive.top/announcements',
+  },
+  {
+    slug: 'documents',
+    title: 'Documents index',
+    kind: 'page',
+    url: 'https://topodrive.top/documents',
+  },
+  {
+    slug: 'llms.txt',
+    title: 'Navigation index for AI agents',
+    kind: 'tool',
+    url: 'https://topodrive.top/llms.txt',
+  },
+  {
+    slug: 'llms-full.txt',
+    title: 'Long-form context for AI agents',
+    kind: 'tool',
+    url: 'https://topodrive.top/llms-full.txt',
+  },
+  {
+    slug: 'agents.md',
+    title: 'Agent instructions',
+    kind: 'tool',
+    url: 'https://topodrive.top/agents.md',
+  },
+  {
+    slug: 'openapi.json',
+    title: 'OpenAPI 3.0 specification',
+    kind: 'tool',
+    url: 'https://topodrive.top/openapi.json',
+  },
 ];
 
 function registerTools(server: McpServer): void {
@@ -73,7 +138,9 @@ function registerTools(server: McpServer): void {
     'socrates.bootstrap',
     'Return the mobile-shell bootstrap contract (product, platform, webBaseUrl, apiBaseUrl, healthPath).',
     async () => ({
-      content: [{ type: 'text' as const, text: JSON.stringify(buildMobileBootstrapConfig(), null, 2) }],
+      content: [
+        { type: 'text' as const, text: JSON.stringify(buildMobileBootstrapConfig(), null, 2) },
+      ],
     }),
   );
 
@@ -105,7 +172,8 @@ function registerTools(server: McpServer): void {
       let hasBeagleKey = false;
       try {
         const db = getDb();
-        const [row] = await db.select({ id: apiKeys.id })
+        const [row] = await db
+          .select({ id: apiKeys.id })
           .from(apiKeys)
           .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
           .orderBy(apiKeys.createdAt)
@@ -126,14 +194,20 @@ function registerTools(server: McpServer): void {
     'socrates.openapi_url',
     'Pointer to the Socrates OpenAPI 3.0 specification.',
     async () => ({
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({
-          url: 'https://topodrive.top/openapi.json',
-          version: SERVER_VERSION,
-          title: 'Socrates API',
-        }, null, 2),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify(
+            {
+              url: 'https://topodrive.top/openapi.json',
+              version: SERVER_VERSION,
+              title: 'Socrates API',
+            },
+            null,
+            2,
+          ),
+        },
+      ],
     }),
   );
 
@@ -141,7 +215,9 @@ function registerTools(server: McpServer): void {
     'socrates.research_index',
     'Index of the six published research notes (slug, title, date, url).',
     async () => ({
-      content: [{ type: 'text' as const, text: JSON.stringify({ items: RESEARCH_INDEX }, null, 2) }],
+      content: [
+        { type: 'text' as const, text: JSON.stringify({ items: RESEARCH_INDEX }, null, 2) },
+      ],
     }),
   );
 
@@ -149,11 +225,10 @@ function registerTools(server: McpServer): void {
     'socrates.docs',
     'Catalogue of long-form documentation pages. Optional kind filter: "page" | "article" | "tool".',
     {
-      kind: z.enum(['page', 'article', 'tool']).optional()
-        .describe('Filter to one document kind.'),
+      kind: z.enum(['page', 'article', 'tool']).optional().describe('Filter to one document kind.'),
     },
     async ({ kind }) => {
-      const items = kind ? DOCS_INDEX.filter(d => d.kind === kind) : DOCS_INDEX;
+      const items = kind ? DOCS_INDEX.filter((d) => d.kind === kind) : DOCS_INDEX;
       return { content: [{ type: 'text' as const, text: JSON.stringify({ items }, null, 2) }] };
     },
   );

@@ -24,7 +24,7 @@ import dns from 'node:dns/promises';
 
 import { fetchBatch, WEB_FETCH_TOOL } from '../src/services/util/fetchBatch.js';
 import { executeWebFetch } from '../src/routes/chat/pipeline/executors/webFetch.js';
-import { formatToolResultContent } from '../src/routes/chat/pipeline/toolFeedback.js';
+import { formatToolResultContent } from '../src/routes/chat/pipeline/toolResultMessage.js';
 import { stopContentExtractorPool } from '../src/services/embeddings/contentExtractor.js';
 
 const ORIG_DNS_LOOKUP = dns.lookup;
@@ -84,7 +84,11 @@ describe('fetchBatch — input validation', () => {
     const fetchCalls = [];
     globalThis.fetch = mock.fn(async (url) => {
       fetchCalls.push(url);
-      return makeResponse({ status: 200, headers: { 'content-type': 'text/html' }, body: '<html><title>t</title></html>' });
+      return makeResponse({
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+        body: '<html><title>t</title></html>',
+      });
     });
 
     const urls = Array.from({ length: 15 }, (_, i) => `https://a.test/${i}`);
@@ -156,7 +160,7 @@ describe('fetchBatch — SSRF defence (DNS resolution)', () => {
   });
 
   test('blocks URLs resolving to 127.0.0.0/8 (loopback)', async () => {
-    stubDns({ 'localhost': [{ address: '127.0.0.1', family: 4 }] });
+    stubDns({ localhost: [{ address: '127.0.0.1', family: 4 }] });
     const out = await fetchBatch(['http://localhost:8080/admin']);
     assert.equal(out.results[0].ok, false);
     assert.match(out.results[0].reason, /Blocked.*private IP/);
@@ -228,10 +232,12 @@ describe('fetchBatch — SSRF defence (DNS resolution)', () => {
        even ONE is private, the whole hostname is suspect — the
        resolver could be rotating through them and one unlucky
        hop would land in private space. */
-    stubDns({ 'mixed.test': [
-      { address: '8.8.8.8', family: 4 },
-      { address: '10.0.0.5', family: 4 },
-    ] });
+    stubDns({
+      'mixed.test': [
+        { address: '8.8.8.8', family: 4 },
+        { address: '10.0.0.5', family: 4 },
+      ],
+    });
     const out = await fetchBatch(['https://mixed.test/']);
     assert.equal(out.results[0].ok, false);
     assert.match(out.results[0].reason, /Blocked.*private IP/);
@@ -242,7 +248,11 @@ describe('fetchBatch — SSRF defence (DNS resolution)', () => {
     let fetchCalled = false;
     globalThis.fetch = mock.fn(async () => {
       fetchCalled = true;
-      return makeResponse({ status: 200, headers: { 'content-type': 'text/html' }, body: '<html><title>t</title></html>' });
+      return makeResponse({
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+        body: '<html><title>t</title></html>',
+      });
     });
     const out = await fetchBatch(['https://public.test/']);
     assert.equal(out.results[0].ok, true);
@@ -255,9 +265,7 @@ describe('fetchBatch — SSRF defence (DNS resolution)', () => {
 describe('fetchBatch — redirect chain defence', () => {
   test('rejects redirect with no Location header', async () => {
     stubDns({ 'a.test': [{ address: '8.8.8.8', family: 4 }] });
-    globalThis.fetch = mock.fn(async () =>
-      new Response(null, { status: 302, headers: {} }),
-    );
+    globalThis.fetch = mock.fn(async () => new Response(null, { status: 302, headers: {} }));
     const out = await fetchBatch(['https://a.test/']);
     assert.equal(out.results[0].ok, false);
     assert.match(out.results[0].reason, /no Location/);
@@ -373,7 +381,11 @@ describe('fetchBatch — response handling', () => {
        bloat the LLM context — refuse them up front. */
     stubDns({ 'a.test': [{ address: '8.8.8.8', family: 4 }] });
     globalThis.fetch = mock.fn(async () =>
-      makeResponse({ status: 200, headers: { 'content-type': 'application/octet-stream' }, body: '\x00\x01' }),
+      makeResponse({
+        status: 200,
+        headers: { 'content-type': 'application/octet-stream' },
+        body: '\x00\x01',
+      }),
     );
     const out = await fetchBatch(['https://a.test/']);
     assert.equal(out.results[0].ok, false);
@@ -397,10 +409,12 @@ describe('fetchBatch — response handling', () => {
     const startXref = Buffer.byteLength(source, 'binary');
     source += `xref\n0 6\n0000000000 65535 f \r\n${offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \r\n`).join('')}trailer\n<</Size 6/Root 1 0 R>>\nstartxref\n${startXref}\n%%EOF`;
     stubDns({ 'valid-pdf.test': [{ address: '8.8.8.8', family: 4 }] });
-    globalThis.fetch = mock.fn(async () => makeResponse({
-      headers: { 'content-type': 'application/pdf' },
-      body: Buffer.from(source, 'binary'),
-    }));
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({
+        headers: { 'content-type': 'application/pdf' },
+        body: Buffer.from(source, 'binary'),
+      }),
+    );
     const out = await fetchBatch(['https://valid-pdf.test/report.pdf']);
     assert.equal(out.results[0].ok, true);
     assert.equal(out.results[0].method, 'pdf');
@@ -410,10 +424,12 @@ describe('fetchBatch — response handling', () => {
 
   test('reports corrupt PDF responses as a structured parse failure', async () => {
     stubDns({ 'corrupt-pdf.test': [{ address: '8.8.8.8', family: 4 }] });
-    globalThis.fetch = mock.fn(async () => makeResponse({
-      headers: { 'content-type': 'application/pdf' },
-      body: '%PDF-1.4\nnot a valid document',
-    }));
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({
+        headers: { 'content-type': 'application/pdf' },
+        body: '%PDF-1.4\nnot a valid document',
+      }),
+    );
     const out = await fetchBatch(['https://corrupt-pdf.test/document.pdf']);
     assert.equal(out.results[0].ok, false);
     assert.equal(out.results[0].code, 'pdf_parse_failed');
@@ -435,7 +451,9 @@ describe('fetchBatch — response handling', () => {
   test('web_fetch continues beyond 20k and the ordinary 200 KB page limit', async () => {
     stubDns({ 'paged.test': [{ address: '8.8.8.8', family: 4 }] });
     const body = 'A'.repeat(220_000) + 'PAGED_MARKER' + 'B'.repeat(25_000);
-    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body }));
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({ headers: { 'content-type': 'text/plain' }, body }),
+    );
     const events = [];
     const ctx = { emitter: { event: (_name, payload) => events.push(payload) } };
     const call = { id: 'fetch-page', function: { name: 'web_fetch' } };
@@ -444,7 +462,9 @@ describe('fetchBatch — response handling', () => {
     assert.match(first.result.output, /\[range: 0-20000 of \d+ available chars\]/);
     assert.match(first.result.output, /\[has_more: yes\]/);
     assert.match(first.result.output, /\[next_offset: 20000\]/);
-    const later = await executeWebFetch({ url, offset: 220_000, max_chars: 100 }, call, ctx, { activeToolNames: [] });
+    const later = await executeWebFetch({ url, offset: 220_000, max_chars: 100 }, call, ctx, {
+      activeToolNames: [],
+    });
     assert.match(later.result.output, /PAGED_MARKER/);
     assert.match(later.result.output, /\[range: 220000-220100 of \d+ available chars\]/);
     assert.equal(events[1].hasMore, true);
@@ -459,10 +479,12 @@ describe('fetchBatch — response handling', () => {
       'batch-two.test': [{ address: '8.8.4.4', family: 4 }],
       'batch-private.test': [{ address: '10.0.0.1', family: 4 }],
     });
-    globalThis.fetch = mock.fn(async (url) => makeResponse({
-      headers: { 'content-type': 'text/plain' },
-      body: url.includes('batch-one') ? 'First page text' : 'Second page text',
-    }));
+    globalThis.fetch = mock.fn(async (url) =>
+      makeResponse({
+        headers: { 'content-type': 'text/plain' },
+        body: url.includes('batch-one') ? 'First page text' : 'Second page text',
+      }),
+    );
     const events = [];
     const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'batch-fetch', function: { name: 'web_fetch' } };
@@ -473,18 +495,29 @@ describe('fetchBatch — response handling', () => {
     ];
     const { result } = await executeWebFetch({ urls }, call, ctx, { activeToolNames: [] });
     assert.equal(result.status, 'completed');
-    assert.match(result.output, /\[page 1\/3\][\s\S]*Second page text[\s\S]*\[page 2\/3\][\s\S]*\[error: dns_failure[\s\S]*\[page 3\/3\][\s\S]*First page text/);
+    assert.match(
+      result.output,
+      /\[page 1\/3\][\s\S]*Second page text[\s\S]*\[page 2\/3\][\s\S]*\[error: dns_failure[\s\S]*\[page 3\/3\][\s\S]*First page text/,
+    );
     const toolResult = events.find(({ name }) => name === 'tool_result')?.payload;
     assert.ok(toolResult, 'expected a tool_result event');
-    assert.deepEqual(toolResult.pages.map((p) => p.url), urls);
-    assert.deepEqual(toolResult.pages.map((p) => p.ok), [true, false, true]);
+    assert.deepEqual(
+      toolResult.pages.map((p) => p.url),
+      urls,
+    );
+    assert.deepEqual(
+      toolResult.pages.map((p) => p.ok),
+      [true, false, true],
+    );
     assert.equal(toolResult.truncated, true);
     assert.equal(globalThis.fetch.mock.calls.length, 2);
   });
 
   test('web_fetch batch limits requests to four URLs', async () => {
     stubDns({ 'batch-cap.test': [{ address: '8.8.8.8', family: 4 }] });
-    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Page content' }));
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Page content' }),
+    );
     const events = [];
     const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'batch-cap', function: { name: 'web_fetch' } };
@@ -493,27 +526,42 @@ describe('fetchBatch — response handling', () => {
     assert.equal(result.status, 'completed');
     const toolResult = events.find(({ name }) => name === 'tool_result')?.payload;
     assert.ok(toolResult, 'expected a tool_result event');
-    assert.deepEqual(toolResult.pages.map((p) => p.url), urls.slice(0, 4));
+    assert.deepEqual(
+      toolResult.pages.map((p) => p.url),
+      urls.slice(0, 4),
+    );
     assert.equal(globalThis.fetch.mock.calls.length, 4);
   });
 
   test('continuation without its earlier snapshot asks to restart instead of mixing pages', async () => {
     const ctx = { emitter: { event: () => {} } };
     const call = { id: 'missing-snapshot', function: { name: 'web_fetch' } };
-    const result = await executeWebFetch({ url: 'https://uncached.test/page', offset: 20000 }, call, ctx, { activeToolNames: [] });
+    const result = await executeWebFetch(
+      { url: 'https://uncached.test/page', offset: 20000 },
+      call,
+      ctx,
+      { activeToolNames: [] },
+    );
     assert.equal(result.result.errorCode, 'page_cache_miss');
-    assert.match(formatToolResultContent('web_fetch', result.result), /restart this URL at offset 0/i);
+    assert.match(
+      formatToolResultContent('web_fetch', result.result),
+      /restart this URL at offset 0/i,
+    );
   });
 
   test('a source cap is not misreported as another readable page', async () => {
     stubDns({ 'bounded.test': [{ address: '8.8.8.8', family: 4 }] });
-    globalThis.fetch = mock.fn(async () => makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Z'.repeat(1_050_000) }));
+    globalThis.fetch = mock.fn(async () =>
+      makeResponse({ headers: { 'content-type': 'text/plain' }, body: 'Z'.repeat(1_050_000) }),
+    );
     const events = [];
     const ctx = { emitter: { event: (name, payload) => events.push({ name, payload }) } };
     const call = { id: 'bounded', function: { name: 'web_fetch' } };
     const url = 'https://bounded.test/page';
     await executeWebFetch({ url }, call, ctx, { activeToolNames: [] });
-    const response = await executeWebFetch({ url, offset: 999_500, max_chars: 1000 }, call, ctx, { activeToolNames: [] });
+    const response = await executeWebFetch({ url, offset: 999_500, max_chars: 1000 }, call, ctx, {
+      activeToolNames: [],
+    });
     assert.match(response.result.output, /\[source_truncated: yes/);
     assert.match(response.result.output, /\[has_more: no\]/);
     const toolResults = events
@@ -523,7 +571,9 @@ describe('fetchBatch — response handling', () => {
     assert.ok(continuationResult, 'expected the continuation tool_result event');
     assert.equal(continuationResult.hasMore, false);
     assert.equal(continuationResult.sourceTruncated, true);
-    const invalid = await executeWebFetch({ url, offset: 1_000_000 }, call, ctx, { activeToolNames: [] });
+    const invalid = await executeWebFetch({ url, offset: 1_000_000 }, call, ctx, {
+      activeToolNames: [],
+    });
     assert.equal(invalid.result.errorCode, 'offset_out_of_range');
     assert.match(formatToolResultContent('web_fetch', invalid.result), /restart at offset 0/i);
     assert.equal(globalThis.fetch.mock.calls.length, 1);
@@ -579,7 +629,11 @@ describe('fetchBatch — response handling', () => {
       'bad.test': [{ address: '10.0.0.1', family: 4 }],
     });
     globalThis.fetch = mock.fn(async (url) =>
-      makeResponse({ status: 200, headers: { 'content-type': 'text/html' }, body: '<html><title>t</title></html>' }),
+      makeResponse({
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+        body: '<html><title>t</title></html>',
+      }),
     );
     const out = await fetchBatch(['https://good.test/', 'https://bad.test/']);
     assert.equal(out.results.length, 2);

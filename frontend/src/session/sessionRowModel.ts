@@ -20,7 +20,7 @@ export function sessionRowFields(row: SessionRow): SessionItem {
     phase: (row.phase as string) || '',
     kind: (row.kind as string) || '',
     pinned: !!row.pinned,
-    tags: Array.isArray(row.tags) ? row.tags as string[] : [],
+    tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
     label: '',
     archivedAt: typeof row.archivedAt === 'number' ? row.archivedAt : null,
     branchedFrom: (row.branchedFrom || null) as SessionItem['branchedFrom'],
@@ -28,18 +28,30 @@ export function sessionRowFields(row: SessionRow): SessionItem {
 }
 
 function sameSessionRowFields(a: SessionItem, b: SessionItem): boolean {
-  return a.title === b.title && a.topic === b.topic && a.updatedAt === b.updatedAt
-    && a.createdAt === b.createdAt && a.totalQ === b.totalQ && a.mode === b.mode
-    && a.phase === b.phase && a.kind === b.kind && a.pinned === b.pinned
-    && a.label === b.label && a.archivedAt === b.archivedAt && a.projectId === b.projectId;
+  return (
+    a.title === b.title &&
+    a.topic === b.topic &&
+    a.updatedAt === b.updatedAt &&
+    a.createdAt === b.createdAt &&
+    a.totalQ === b.totalQ &&
+    a.mode === b.mode &&
+    a.phase === b.phase &&
+    a.kind === b.kind &&
+    a.pinned === b.pinned &&
+    a.label === b.label &&
+    a.archivedAt === b.archivedAt &&
+    a.projectId === b.projectId
+  );
 }
 
 function sameBranchSource(a: SessionItem, b: SessionItem): boolean {
   if (a.branchedFrom === b.branchedFrom) return true;
   if (!a.branchedFrom || !b.branchedFrom) return false;
-  return a.branchedFrom.sessionId === b.branchedFrom.sessionId
-    && a.branchedFrom.messageId === b.branchedFrom.messageId
-    && a.branchedFrom.reExplain === b.branchedFrom.reExplain;
+  return (
+    a.branchedFrom.sessionId === b.branchedFrom.sessionId &&
+    a.branchedFrom.messageId === b.branchedFrom.messageId &&
+    a.branchedFrom.reExplain === b.branchedFrom.reExplain
+  );
 }
 
 function sameTags(a: SessionItem, b: SessionItem): boolean {

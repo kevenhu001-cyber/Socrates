@@ -63,8 +63,11 @@ function measure(proj) {
   let out;
   try {
     out = execSync('npm run test:coverage', {
-      cwd: `${ROOT}${proj}`, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
-      maxBuffer: 256 * 1024 * 1024, timeout: 45 * 60 * 1000,
+      cwd: `${ROOT}${proj}`,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      maxBuffer: 256 * 1024 * 1024,
+      timeout: 45 * 60 * 1000,
       env: { ...process.env, FORCE_COLOR: '0' },
     });
   } catch (err) {
@@ -103,14 +106,18 @@ if (update) {
     recorded: new Date().toISOString().slice(0, 10),
   };
   writeFileSync(BASELINE, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8');
-  console.log(`[coverage] ${project}: floor recorded — line ${measured.line}% branch ${measured.branch}% func ${measured.func}%`);
+  console.log(
+    `[coverage] ${project}: floor recorded — line ${measured.line}% branch ${measured.branch}% func ${measured.func}%`,
+  );
   process.exit(0);
 }
 
 const floor = baseline[project];
 if (!floor) {
-  console.error(`[coverage] no floor recorded for "${project}".\n` +
-                `           Record it with: node scripts/coverage-ratchet.mjs ${project} --update`);
+  console.error(
+    `[coverage] no floor recorded for "${project}".\n` +
+      `           Record it with: node scripts/coverage-ratchet.mjs ${project} --update`,
+  );
   process.exit(1);
 }
 
@@ -126,28 +133,38 @@ for (const [key, label] of METRICS) {
   const now = measured[key];
   const min = floor[key];
   if (now < min - JITTER) {
-    regressions.push(`${label}: ${now.toFixed(2)}% is ${(min - now).toFixed(2)} below the ${min.toFixed(2)}% floor`);
+    regressions.push(
+      `${label}: ${now.toFixed(2)}% is ${(min - now).toFixed(2)} below the ${min.toFixed(2)}% floor`,
+    );
   } else if (now > min + SLACK) {
-    improvements.push(`${label}: ${now.toFixed(2)}% vs floor ${min.toFixed(2)}% (+${(now - min).toFixed(2)})`);
+    improvements.push(
+      `${label}: ${now.toFixed(2)}% vs floor ${min.toFixed(2)}% (+${(now - min).toFixed(2)})`,
+    );
   }
 }
 
-console.log(`[coverage] ${project}: line ${measured.line}% branch ${measured.branch}% func ${measured.func}% ` +
-            `(floor ${floor.line}/${floor.branch}/${floor.func}, recorded ${floor.recorded})`);
+console.log(
+  `[coverage] ${project}: line ${measured.line}% branch ${measured.branch}% func ${measured.func}% ` +
+    `(floor ${floor.line}/${floor.branch}/${floor.func}, recorded ${floor.recorded})`,
+);
 
 if (regressions.length > 0) {
   console.error(`\n[coverage] ${project}: coverage regressed:`);
   for (const r of regressions) console.error(`  - ${r}`);
-  console.error('\n  Add tests for the code this change introduced. Lowering the floor is\n' +
-                '  a deliberate act: it needs a reason in the commit message.');
+  console.error(
+    '\n  Add tests for the code this change introduced. Lowering the floor is\n' +
+      '  a deliberate act: it needs a reason in the commit message.',
+  );
   process.exit(1);
 }
 
 if (improvements.length > 0) {
   console.error(`\n[coverage] ${project}: coverage improved past the floor — raise it:`);
   for (const i of improvements) console.error(`  - ${i}`);
-  console.error(`\n  Run: node scripts/coverage-ratchet.mjs ${project} --update\n` +
-                '  (A floor left behind by real progress stops protecting anything.)');
+  console.error(
+    `\n  Run: node scripts/coverage-ratchet.mjs ${project} --update\n` +
+      '  (A floor left behind by real progress stops protecting anything.)',
+  );
   process.exit(1);
 }
 

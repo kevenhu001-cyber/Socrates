@@ -51,26 +51,49 @@ before(async () => {
     await db.select().from(sessionChunks).limit(0);
     /* Seed the two sessions / two messages the tests need. */
     try {
-      await db.insert(users).values([
-        { id: TEST_USER_ID, email: 'chunkindex-' + Date.now() + '-a@test.local', passwordHash: 'x' },
-        { id: TEST_OTHER_USER_ID, email: 'chunkindex-' + Date.now() + '-b@test.local', passwordHash: 'x' },
-      ]).onConflictDoNothing();
-      await db.insert(sessions).values([
-        { id: TEST_SESSION_ID, userId: TEST_USER_ID, title: 'chunkindex-a' },
-        { id: TEST_OTHER_SESSION_ID, userId: TEST_OTHER_USER_ID, title: 'chunkindex-b' },
-      ]).onConflictDoNothing();
-      await db.insert(messages).values([
-        {
-          id: TEST_MESSAGE_ID, sessionId: TEST_SESSION_ID, role: 'assistant',
-          content: '<p>index target</p>', rawText: 'index target',
-        },
-        {
-          id: TEST_OTHER_MESSAGE_ID, sessionId: TEST_OTHER_SESSION_ID, role: 'assistant',
-          content: '<p>other target</p>', rawText: 'other target',
-        },
-      ]).onConflictDoNothing();
+      await db
+        .insert(users)
+        .values([
+          {
+            id: TEST_USER_ID,
+            email: 'chunkindex-' + Date.now() + '-a@test.local',
+            passwordHash: 'x',
+          },
+          {
+            id: TEST_OTHER_USER_ID,
+            email: 'chunkindex-' + Date.now() + '-b@test.local',
+            passwordHash: 'x',
+          },
+        ])
+        .onConflictDoNothing();
+      await db
+        .insert(sessions)
+        .values([
+          { id: TEST_SESSION_ID, userId: TEST_USER_ID, title: 'chunkindex-a' },
+          { id: TEST_OTHER_SESSION_ID, userId: TEST_OTHER_USER_ID, title: 'chunkindex-b' },
+        ])
+        .onConflictDoNothing();
+      await db
+        .insert(messages)
+        .values([
+          {
+            id: TEST_MESSAGE_ID,
+            sessionId: TEST_SESSION_ID,
+            role: 'assistant',
+            content: '<p>index target</p>',
+            rawText: 'index target',
+          },
+          {
+            id: TEST_OTHER_MESSAGE_ID,
+            sessionId: TEST_OTHER_SESSION_ID,
+            role: 'assistant',
+            content: '<p>other target</p>',
+            rawText: 'other target',
+          },
+        ])
+        .onConflictDoNothing();
     } catch (seedErr) {
-      console.log('[chunkIndex] seed insert skipped:', (seedErr).message);
+      console.log('[chunkIndex] seed insert skipped:', seedErr.message);
     }
     dbAvailable = true;
   } catch (err) {
@@ -86,9 +109,9 @@ before(async () => {
     if (process.env.SOCRATES_TEST_STRICT === '1') {
       throw new Error(
         '[chunkIndex] strict mode: DATABASE_URL is set but session_chunks is ' +
-        'not queryable, so the suite would silently skip. Run migrations, and ' +
-        'use a Postgres image with pgvector so 0031 installs the embedding ' +
-        `column. Underlying error: ${err.message}`,
+          'not queryable, so the suite would silently skip. Run migrations, and ' +
+          'use a Postgres image with pgvector so 0031 installs the embedding ' +
+          `column. Underlying error: ${err.message}`,
       );
     }
     console.log('[chunkIndex] DB not reachable — skipping integration tests:', err.message);
@@ -107,7 +130,9 @@ after(async () => {
     await db.delete(messages).where(eq(messages.id, TEST_OTHER_MESSAGE_ID));
     await db.delete(sessions).where(eq(sessions.id, TEST_OTHER_SESSION_ID));
     await db.delete(users).where(eq(users.id, TEST_OTHER_USER_ID));
-  } catch (_) { /* best effort */ }
+  } catch (_) {
+    /* best effort */
+  }
   await closeDb();
 });
 
@@ -127,7 +152,9 @@ describe('chunkIndex.indexMessageChunks', () => {
     const text = 'The Eiffel Tower is in Paris, France.\n\nPhotosynthesis happens in plant leaves.';
     const chunks1 = await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, text);
     assert.ok(chunks1.length >= 2);
-    const rows1 = await db.select().from(sessionChunks)
+    const rows1 = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.equal(rows1.length, chunks1.length);
 
@@ -135,7 +162,9 @@ describe('chunkIndex.indexMessageChunks', () => {
        same count) — never grows unbounded. */
     const chunks2 = await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, text);
     assert.equal(chunks2.length, chunks1.length);
-    const rows2 = await db.select().from(sessionChunks)
+    const rows2 = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.equal(rows2.length, chunks1.length, 're-index collapsed to the same row count');
   });
@@ -144,13 +173,21 @@ describe('chunkIndex.indexMessageChunks', () => {
     if (!dbAvailable) return t.skip();
     const db = getDb();
     await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, 'original text');
-    const before = await db.select().from(sessionChunks)
+    const before = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.equal(before.length, 1);
     const originalOrdinal = before[0].ordinal;
 
-    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, 'completely new content with several words');
-    const after = await db.select().from(sessionChunks)
+    await indexMessageChunks(
+      TEST_MESSAGE_ID,
+      TEST_SESSION_ID,
+      'completely new content with several words',
+    );
+    const after = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.equal(after.length, 1, 're-index kept exactly one row');
     assert.notEqual(after[0].text, before[0].text, 'row reflects the new text');
@@ -164,11 +201,15 @@ describe('chunkIndex.indexMessageChunks', () => {
     if (!dbAvailable) return t.skip();
     const db = getDb();
     await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, 'something to keep');
-    const before = await db.select().from(sessionChunks)
+    const before = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.ok(before.length > 0);
     await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, '   ');
-    const after = await db.select().from(sessionChunks)
+    const after = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
     assert.equal(after.length, 0);
   });
@@ -181,9 +222,13 @@ describe('chunkIndex.removeMessageChunks', () => {
     await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID, 'a message we will clean up');
     await indexMessageChunks(TEST_OTHER_MESSAGE_ID, TEST_OTHER_SESSION_ID, 'other user message');
     await removeMessageChunks(TEST_MESSAGE_ID);
-    const a = await db.select().from(sessionChunks)
+    const a = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_MESSAGE_ID));
-    const b = await db.select().from(sessionChunks)
+    const b = await db
+      .select()
+      .from(sessionChunks)
       .where(eq(sessionChunks.messageId, TEST_OTHER_MESSAGE_ID));
     assert.equal(a.length, 0);
     assert.equal(b.length, 1, "another message's chunks are untouched");
@@ -194,16 +239,21 @@ describe('chunkIndex.searchSessionChunks', () => {
   test('ranks the matching chunk first', async (t) => {
     if (!dbAvailable) return t.skip();
     /* Fresh state for this case. */
-    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID,
+    await indexMessageChunks(
+      TEST_MESSAGE_ID,
+      TEST_SESSION_ID,
       'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.\n\n' +
-      'Photosynthesis converts light energy into chemical energy in plants.\n\n' +
-      'The Great Wall of China runs along the northern border of ancient China.');
-    const hits = await searchSessionChunks(
-      TEST_SESSION_ID, 'Where is the Eiffel Tower located?', { limit: 3 },
+        'Photosynthesis converts light energy into chemical energy in plants.\n\n' +
+        'The Great Wall of China runs along the northern border of ancient China.',
     );
+    const hits = await searchSessionChunks(TEST_SESSION_ID, 'Where is the Eiffel Tower located?', {
+      limit: 3,
+    });
     assert.ok(hits.length >= 1, 'at least one hit');
-    assert.ok(hits[0].text.toLowerCase().includes('eiffel tower'),
-      'first hit mentions the Eiffel Tower');
+    assert.ok(
+      hits[0].text.toLowerCase().includes('eiffel tower'),
+      'first hit mentions the Eiffel Tower',
+    );
     assert.ok(hits[0].score > 0, 'first hit has a positive score');
   });
 
@@ -221,11 +271,16 @@ describe('chunkIndex.searchSessionChunks', () => {
     /* session A has a chunk with 'eiffel' from the previous test.
        session B has a chunk about eiffel that must not appear in
        A's search. */
-    await indexMessageChunks(TEST_OTHER_MESSAGE_ID, TEST_OTHER_SESSION_ID,
-      'Unrelated content for the other session. No eiffel here.');
+    await indexMessageChunks(
+      TEST_OTHER_MESSAGE_ID,
+      TEST_OTHER_SESSION_ID,
+      'Unrelated content for the other session. No eiffel here.',
+    );
     const hitsA = await searchSessionChunks(TEST_SESSION_ID, 'eiffel', { limit: 10 });
-    assert.ok(hitsA.every((h) => h.messageId === TEST_MESSAGE_ID),
-      'every hit in session A came from session A');
+    assert.ok(
+      hitsA.every((h) => h.messageId === TEST_MESSAGE_ID),
+      'every hit in session A came from session A',
+    );
   });
 });
 
@@ -243,26 +298,41 @@ describe('chunkIndex.searchSessionChunksHybrid', () => {
 
   test('still retrieves once the session has chunks (probe is not over-eager)', async (t) => {
     if (!dbAvailable) return t.skip();
-    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID,
-      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.');
+    await indexMessageChunks(
+      TEST_MESSAGE_ID,
+      TEST_SESSION_ID,
+      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.',
+    );
     const hits = await searchSessionChunksHybrid(
-      TEST_SESSION_ID, 'Where is the Eiffel Tower located?', { limit: 3 },
+      TEST_SESSION_ID,
+      'Where is the Eiffel Tower located?',
+      { limit: 3 },
     );
     assert.ok(hits.length >= 1, 'at least one hit');
-    assert.ok(hits[0].text.toLowerCase().includes('eiffel tower'),
-      'first hit mentions the Eiffel Tower');
+    assert.ok(
+      hits[0].text.toLowerCase().includes('eiffel tower'),
+      'first hit mentions the Eiffel Tower',
+    );
   });
 
   test('budgeted chat retrieval retains lexical hits and still gates injection by ownership', async (t) => {
     if (!dbAvailable) return t.skip();
-    await indexMessageChunks(TEST_MESSAGE_ID, TEST_SESSION_ID,
-      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.');
+    await indexMessageChunks(
+      TEST_MESSAGE_ID,
+      TEST_SESSION_ID,
+      'The Eiffel Tower is a wrought-iron lattice tower in Paris, France.',
+    );
     const query = 'Where is the Eiffel Tower located?';
     const hits = await searchSessionChunksHybrid(TEST_SESSION_ID, query, {
-      limit: 3, timeoutMs: 2000, vectorTimeoutMs: 500,
+      limit: 3,
+      timeoutMs: 2000,
+      vectorTimeoutMs: 500,
     });
     assert.ok(hits.some((hit) => hit.text.includes('Eiffel Tower')));
-    const input = [{ role: 'system', content: 'Base policy' }, { role: 'user', content: query }];
+    const input = [
+      { role: 'system', content: 'Base policy' },
+      { role: 'user', content: query },
+    ];
     const owned = await appendRagContext(input, TEST_SESSION_ID, TEST_USER_ID);
     assert.match(owned[0].content, /Eiffel Tower/);
     assert.equal(await appendRagContext(input, TEST_SESSION_ID, TEST_OTHER_USER_ID), input);

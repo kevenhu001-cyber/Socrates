@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import { marked } from 'marked';
 import { normalizeChineseProse } from '../src/util/chineseTypography.ts';
 import { zh } from '../src/i18n/zh.ts';
-import { asProse, asText } from '../src/react/intelligence-ui/renderRuntime.ts';
+import { asProse, asText } from '../src/react/intelligent-ui/renderRuntime.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
@@ -14,16 +14,29 @@ const { formatMsg, formatMsgProgressive } = await import('../src/render/markdown
 const { showToast } = await import('../src/ui/toast.js');
 const { showConfirm, closeConfirm } = await import('../src/ui/confirm.js');
 const { confirmState } = await import('../src/ui/confirmState.js');
-const asDom = (html) => { const root = document.createElement('div'); root.innerHTML = html; return root; };
+const asDom = (html) => {
+  const root = document.createElement('div');
+  root.innerHTML = html;
+  return root;
+};
 
 test('Chinese prose is preserved verbatim without forced punctuation replacement', () => {
   const input = `你好,世界. 他说:"先理解'概念',再练习!" (准备好了吗?)`;
   assert.equal(normalizeChineseProse(input), input);
-  assert.equal(normalizeChineseProse('使用 OpenAI, Claude (可选); 好吗? 可以!'), '使用 OpenAI, Claude (可选); 好吗? 可以!');
-  assert.equal(normalizeChineseProse('你好。 Hello, world! 接下来,继续.'), '你好。 Hello, world! 接下来,继续.');
+  assert.equal(
+    normalizeChineseProse('使用 OpenAI, Claude (可选); 好吗? 可以!'),
+    '使用 OpenAI, Claude (可选); 好吗? 可以!',
+  );
+  assert.equal(
+    normalizeChineseProse('你好。 Hello, world! 接下来,继续.'),
+    '你好。 Hello, world! 接下来,继续.',
+  );
   const chinese = '他说：“先理解‘概念’，再练习。”';
   assert.equal(normalizeChineseProse(chinese), chinese);
-  assert.equal(normalizeChineseProse("Don't change English, punctuation (or quotes)."), "Don't change English, punctuation (or quotes).");
+  assert.equal(
+    normalizeChineseProse("Don't change English, punctuation (or quotes)."),
+    "Don't change English, punctuation (or quotes).",
+  );
   assert.equal(normalizeChineseProse('1. 特征方程法'), '1. 特征方程法');
 });
 
@@ -36,9 +49,19 @@ test('technical tokens and abbreviations remain exact', () => {
 
 test('URLs, file paths, JSON, formulas, numbers, versions and template data remain exact', () => {
   for (const data of [
-    'https://example.test/中文?q=1,2', 'name@example.test', 'C:\\目录\\配置.json', '配置.json',
-    'GPT-5.5', '1,000.50', '12:30', 'f(x, y)', '{hh}:{mm}', '{"提示":"你好,世界.","值":1.5}',
-    '[{"提示":"你好,世界."},2]', '$f(x)=1.5,\\text{你好,世界.}$', '\\(f(x)=1.5,\\text{你好.}\\)',
+    'https://example.test/中文?q=1,2',
+    'name@example.test',
+    'C:\\目录\\配置.json',
+    '配置.json',
+    'GPT-5.5',
+    '1,000.50',
+    '12:30',
+    'f(x, y)',
+    '{hh}:{mm}',
+    '{"提示":"你好,世界.","值":1.5}',
+    '[{"提示":"你好,世界."},2]',
+    '$f(x)=1.5,\\text{你好,世界.}$',
+    '\\(f(x)=1.5,\\text{你好.}\\)',
   ]) {
     assert.equal(normalizeChineseProse('内容: ' + data), '内容: ' + data, data);
   }
@@ -50,18 +73,23 @@ test('generated UI labels and action/data strings stay exact', () => {
 });
 
 for (const [name, render] of [
-  ['finished', formatMsg], ['streaming', formatMsgProgressive],
+  ['finished', formatMsg],
+  ['streaming', formatMsgProgressive],
   ['settled', (text) => formatMsgProgressive(text, { complete: true })],
 ]) {
   test(`${name}: quotes span emphasis, Markdown links work, and code/math remain exact`, () => {
-    const source = '他说: "**你好**,世界!" (再试一次); 下一步?\n\n' +
+    const source =
+      '他说: "**你好**,世界!" (再试一次); 下一步?\n\n' +
       '[文档](https://example.test/中文?q=1,2) 和 `print("你好,世界.")`.\n\n' +
       '```json\n{"提示":"你好,世界.","值":1.5}\n```\n\n' +
       '数学: $f(x)=1.5,\\text{你好,世界.}$';
     const root = asDom(render(source));
     assert.match(root.textContent, /他说: "\s*你好\s*,世界!" \(再试一次\); 下一步\?/);
     assert.equal(root.querySelector('strong').textContent, '你好');
-    assert.equal(root.querySelector('a').getAttribute('href'), 'https://example.test/%E4%B8%AD%E6%96%87?q=1,2');
+    assert.equal(
+      root.querySelector('a').getAttribute('href'),
+      'https://example.test/%E4%B8%AD%E6%96%87?q=1,2',
+    );
     assert.equal(root.querySelector('code').textContent, 'print("你好,世界.")');
     assert.match(root.querySelector('pre code').textContent, /\{"提示":"你好,世界\.","值":1\.5\}/);
     if (name === 'streaming') {
@@ -82,8 +110,12 @@ test('renderer fallback keeps code untouched and never rewrites HTML attributes'
     const root = asDom(formatMsg('中文: "你好!"\n\n```text\n你好,世界.\n```'));
     assert.match(root.textContent, /中文: "你好!"/);
     assert.match(root.querySelector('pre code').textContent, /你好,世界\./);
-  } finally { globalThis.marked = saved; }
-  const root = asDom(formatMsg('<p title="你好,世界.">正文: "你好!"</p><img src=x onerror="alert(1)">'));
+  } finally {
+    globalThis.marked = saved;
+  }
+  const root = asDom(
+    formatMsg('<p title="你好,世界.">正文: "你好!"</p><img src=x onerror="alert(1)">'),
+  );
   assert.match(root.textContent, /正文: "你好!"/);
   assert.equal(root.querySelector('p').getAttribute('title'), '你好,世界.');
   assert.equal(root.querySelector('[onerror]'), null);
@@ -103,4 +135,3 @@ test('Chinese system hints, confirmations and toast copy preserve verbatim', asy
   confirmState.flush();
   assert.equal(await confirmation, false);
 });
-

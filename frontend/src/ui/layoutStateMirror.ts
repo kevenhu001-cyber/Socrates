@@ -30,10 +30,34 @@
  */
 
 const MIRRORS: { id: string; attr: string; on: (el: HTMLElement) => boolean }[] = [
-  { id: 'chatView', attr: 'data-chat-view-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
-  { id: 'topicSetup', attr: 'data-topic-setup-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
-  { id: 'pluginsPanel', attr: 'data-plugins-panel-open', on: function (el: HTMLElement) { return !el.classList.contains('hidden'); } },
-  { id: 'sidebar', attr: 'data-sidebar-collapsed', on: function (el: HTMLElement) { return el.classList.contains('collapsed'); } },
+  {
+    id: 'chatView',
+    attr: 'data-chat-view-open',
+    on: function (el: HTMLElement) {
+      return !el.classList.contains('hidden');
+    },
+  },
+  {
+    id: 'topicSetup',
+    attr: 'data-topic-setup-open',
+    on: function (el: HTMLElement) {
+      return !el.classList.contains('hidden');
+    },
+  },
+  {
+    id: 'pluginsPanel',
+    attr: 'data-plugins-panel-open',
+    on: function (el: HTMLElement) {
+      return !el.classList.contains('hidden');
+    },
+  },
+  {
+    id: 'sidebar',
+    attr: 'data-sidebar-collapsed',
+    on: function (el: HTMLElement) {
+      return el.classList.contains('collapsed');
+    },
+  },
 ];
 
 function setFlag(root: HTMLElement, attr: string, value: boolean) {
@@ -62,7 +86,11 @@ export function syncLayoutStateMirror(doc?: Document | null) {
   const wrap = d.getElementById('composerInputWrap');
   const ts = els['topicSetup'] ?? d.getElementById('topicSetup');
   const topicVisible = !!ts && !ts.classList.contains('hidden');
-  setFlag(root, 'data-topic-input-focus', topicVisible && !!wrap && !!d.activeElement && wrap.contains(d.activeElement));
+  setFlag(
+    root,
+    'data-topic-input-focus',
+    topicVisible && !!wrap && !!d.activeElement && wrap.contains(d.activeElement),
+  );
   /* Compat resync: legacy/test writers may toggle #chatView.hidden without
      going through mainViewController — keep #chatPage's gate aligned. */
   const chatView = els['chatView'] ?? d.getElementById('chatView');
@@ -81,7 +109,9 @@ export function installLayoutStateMirror(doc?: Document | null) {
   const root = d.documentElement;
   syncLayoutStateMirror(d);
   if (typeof MutationObserver === 'function') {
-    const mo = new MutationObserver(function () { syncLayoutStateMirror(d); });
+    const mo = new MutationObserver(function () {
+      syncLayoutStateMirror(d);
+    });
     for (let i = 0; i < MIRRORS.length; i++) {
       const el = d.getElementById(MIRRORS[i].id);
       if (el) mo.observe(el, { attributes: true, attributeFilter: ['class'] });

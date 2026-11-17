@@ -1,13 +1,18 @@
-import {toolCategory} from '../../render/toolCategory.ts';
+import { toolCategory } from '../../render/toolCategory.ts';
 import {
   isParagraphStart,
   restoredToolRowAnchorOffset,
   snapToolOffsetOutOfBlock,
   toolRowAnchorOffset,
 } from '../../render/streaming.ts';
-import {summarizeToolRuns, type ToolRun} from '../../chat/toolRunState.ts';
-import {toolRunStateOf} from '../../ui/toolPresentationState.ts';
-import type {ToolCallRecord, ToolRunState, ThinkRange, TurnSegment} from './toolRunModel.types.ts';
+import { summarizeToolRuns, type ToolRun } from '../../chat/toolRunState.ts';
+import { toolRunStateOf } from '../../ui/toolPresentationState.ts';
+import type {
+  ToolCallRecord,
+  ToolRunState,
+  ThinkRange,
+  TurnSegment,
+} from './toolRunModel.types.ts';
 
 /* ── turn layout ───────────────────────────────────────────────────────── */
 
@@ -39,10 +44,17 @@ export function sortableToolCalls(
   const raw = String(rawText || '');
   const list = Array.isArray(toolCalls) ? (toolCalls as ToolCallRecord[]) : [];
   return list
-    .filter((tc) => !!(tc && tc.id && tc.name
-      && typeof tc.textOffset === 'number'
-      && tc.textOffset >= 0
-      && tc.textOffset <= raw.length))
+    .filter(
+      (tc) =>
+        !!(
+          tc &&
+          tc.id &&
+          tc.name &&
+          typeof tc.textOffset === 'number' &&
+          tc.textOffset >= 0 &&
+          tc.textOffset <= raw.length
+        ),
+    )
     .slice()
     .sort((a, b) => (a.textOffset as number) - (b.textOffset as number));
 }
@@ -67,7 +79,8 @@ export function restoredToolCalls(
   const out: ToolCallRecord[] = [];
   for (const tc of list) {
     if (!tc || !tc.id || !tc.name) continue;
-    const usable = typeof tc.textOffset === 'number' && tc.textOffset >= 0 && tc.textOffset <= raw.length;
+    const usable =
+      typeof tc.textOffset === 'number' && tc.textOffset >= 0 && tc.textOffset <= raw.length;
     const textOffset = usable ? tc.textOffset : raw.length;
     out.push(usable ? tc : { ...tc, textOffset });
   }
@@ -142,19 +155,19 @@ export function buildTurnLayout(
   const raw = String(rawText || '');
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
   const defer = opts?.deferOpenParagraph === true;
-  const rowAnchor = opts?.restoredFromHistory && !defer
-    ? restoredToolRowAnchorOffset
-    : toolRowAnchorOffset;
-  const calls = (opts?.restoredFromHistory ? restoredToolCalls(raw, toolCalls) : sortableToolCalls(raw, toolCalls)).filter((call) => {
+  const rowAnchor =
+    opts?.restoredFromHistory && !defer ? restoredToolRowAnchorOffset : toolRowAnchorOffset;
+  const calls = (
+    opts?.restoredFromHistory
+      ? restoredToolCalls(raw, toolCalls)
+      : sortableToolCalls(raw, toolCalls)
+  ).filter((call) => {
     if (!defer) return true;
     /* Approvals need a human decision: never hide them behind prose. */
     if (call.approval && call.approval.approvalId) return true;
     /* P_tool-order-defer — mount only behind a finished paragraph. */
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
-    const visual = snapToolOffsetOutOfBlock(
-      raw,
-      rowAnchor(raw, persistedOffset),
-    );
+    const visual = snapToolOffsetOutOfBlock(raw, rowAnchor(raw, persistedOffset));
     return isRowMountableAt(raw, visual);
   });
   const segments: TurnSegment[] = [];
@@ -181,13 +194,7 @@ export function buildTurnLayout(
        the next sentence boundary so one long paragraph cannot strand every
        tool row at EOF. Both paths keep code/table spans atomic, and `prev`
        preserves order when several calls share a sentence. */
-    const offset = Math.max(
-      prev,
-      snapToolOffsetOutOfBlock(
-        raw,
-        rowAnchor(raw, persistedOffset),
-      ),
-    );
+    const offset = Math.max(prev, snapToolOffsetOutOfBlock(raw, rowAnchor(raw, persistedOffset)));
     pushProse(prev, offset);
     segments.push({ kind: 'tool', call });
     prev = offset;
@@ -261,9 +268,14 @@ function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return '[' + value.map(stableStringify).join(',') + ']';
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    return '{' + Object.keys(record).sort()
-      .map((key) => JSON.stringify(key) + ':' + stableStringify(record[key]))
-      .join(',') + '}';
+    return (
+      '{' +
+      Object.keys(record)
+        .sort()
+        .map((key) => JSON.stringify(key) + ':' + stableStringify(record[key]))
+        .join(',') +
+      '}'
+    );
   }
   const encoded = JSON.stringify(value);
   return encoded === undefined ? 'null' : encoded;
@@ -287,10 +299,7 @@ export function visualizationSpecKey(spec: unknown): string {
   }
 }
 
-function groupState(
-  members: ToolCallRecord[],
-  running: ToolCallRecord[],
-): ToolRunState {
+function groupState(members: ToolCallRecord[], running: ToolCallRecord[]): ToolRunState {
   if (running.length) return 'running';
   const runs: ToolRun[] = members.map((m) => ({
     id: m.id,

@@ -18,12 +18,25 @@ test('session save accepts the persisted Message fields it owns', () => {
     sources: [{ title: 'source' }],
     reasoningContent: 'thinking',
     turnRuntime: { version: 1 },
-    attachments: [{
-      id: 'file-1', kind: 'pdf', name: 'paper.pdf', mime: 'application/pdf', size: 12, fileId: 'file-1',
-    }],
-    toolCalls: [{
-      id: 'call-1', name: 'web_search', input: { query: 'q' }, output: 'result', isError: false,
-    }],
+    attachments: [
+      {
+        id: 'file-1',
+        kind: 'pdf',
+        name: 'paper.pdf',
+        mime: 'application/pdf',
+        size: 12,
+        fileId: 'file-1',
+      },
+    ],
+    toolCalls: [
+      {
+        id: 'call-1',
+        name: 'web_search',
+        input: { query: 'q' },
+        output: 'result',
+        isError: false,
+      },
+    ],
   });
 
   assert.equal(parsed.role, 'assistant');

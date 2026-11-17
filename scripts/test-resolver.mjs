@@ -13,7 +13,8 @@ export async function resolve(specifier, context, nextResolve) {
     const pkg = JSON.parse(readFileSync(resolvePath(directory, 'package.json'), 'utf8'));
     return nextResolve(pathToFileURL(resolvePath(directory, pkg.main)).href, context);
   }
-  if (specifier === 'react' || specifier === 'zustand' || specifier === 'marked') return nextResolve(pathToFileURL(peerRequire.resolve(specifier)).href, context);
+  if (specifier === 'react' || specifier === 'zustand' || specifier === 'marked')
+    return nextResolve(pathToFileURL(peerRequire.resolve(specifier)).href, context);
   if (specifier.startsWith('.') && !/\.\w+$/.test(specifier)) {
     const source = new URL(`${specifier}.ts`, context.parentURL);
     if (existsSync(source)) return nextResolve(source.href, context);

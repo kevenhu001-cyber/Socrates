@@ -23,7 +23,10 @@ export interface PromptTemplatesSnapshot {
 
 export type PromptTemplatesUpdate = Omit<PromptTemplatesSnapshot, 'revision'>;
 
-export const promptTemplatesState = createImmutableBridge<PromptTemplatesSnapshot, PromptTemplatesUpdate>({
+export const promptTemplatesState = createImmutableBridge<
+  PromptTemplatesSnapshot,
+  PromptTemplatesUpdate
+>({
   initial: { open: false, view: 'list', builtins: [], customs: [], editor: null, revision: 0 },
   reducer: (_state, update) => update,
 });

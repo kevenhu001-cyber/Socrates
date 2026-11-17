@@ -21,10 +21,7 @@ test('provenance counts distinct hosts, not results', () => {
   const twoResultsOneHost = {
     name: 'web_search',
     input: { query: 'gdp' },
-    results: [
-      { url: 'https://www.stats.gov.cn/a' },
-      { url: 'https://stats.gov.cn/b' },
-    ],
+    results: [{ url: 'https://www.stats.gov.cn/a' }, { url: 'https://stats.gov.cn/b' }],
   };
   /* Two results from one domain is one site the answer leaned on. */
   assert.deepEqual(resultHosts(twoResultsOneHost), ['stats.gov.cn']);
@@ -32,10 +29,7 @@ test('provenance counts distinct hosts, not results', () => {
   const twoHosts = {
     name: 'web_search',
     input: { query: 'gdp' },
-    results: [
-      { url: 'https://www.stats.gov.cn/a' },
-      { url: 'https://example.com/b' },
-    ],
+    results: [{ url: 'https://www.stats.gov.cn/a' }, { url: 'https://example.com/b' }],
   };
   assert.deepEqual(resultHosts(twoHosts), ['stats.gov.cn', 'example.com']);
 });
@@ -43,11 +37,7 @@ test('provenance counts distinct hosts, not results', () => {
 test('provenance caps at two hosts and drops unusable rows', () => {
   const many = {
     name: 'web_search',
-    results: [
-      { url: 'https://a.com/1' },
-      { url: 'https://b.com/2' },
-      { url: 'https://c.com/3' },
-    ],
+    results: [{ url: 'https://a.com/1' }, { url: 'https://b.com/2' }, { url: 'https://c.com/3' }],
   };
   /* One or two hosts is a fact; five is a list, and the sources section
      already holds the full set. */

@@ -1,4 +1,7 @@
-import { normalizeIntelligentUiArgs, normalizeIntelligentUiPatchArgs } from '../intelligentUiNormalize.js';
+import {
+  normalizeIntelligentUiArgs,
+  normalizeIntelligentUiPatchArgs,
+} from '../intelligentUiNormalize.js';
 
 /* Advertised tool schemas must never promise a larger payload than this
  * transport cap accepts — a model that follows the schema would otherwise
@@ -15,7 +18,6 @@ export const MAX_TOOL_ARGUMENT_CHARS = 80_000;
  */
 export const MAX_TOOL_STRING_FIELD_CHARS = MAX_TOOL_ARGUMENT_CHARS - 8192;
 const MAX_TOOL_RESULT_CHARS = 60_000;
-
 
 export interface NormalizedToolCall {
   id: string;
@@ -62,7 +64,8 @@ export const TOOL_ARGUMENT_ERRORS = {
   tooLarge: 'arguments_too_large',
 } as const;
 
-export type ToolArgumentErrorCode = typeof TOOL_ARGUMENT_ERRORS[keyof typeof TOOL_ARGUMENT_ERRORS];
+export type ToolArgumentErrorCode =
+  (typeof TOOL_ARGUMENT_ERRORS)[keyof typeof TOOL_ARGUMENT_ERRORS];
 
 /** True when `text` is at or over the cap, i.e. it was (or will be) cut. */
 export function isOversizedToolArguments(text: unknown): boolean {
@@ -86,12 +89,21 @@ export function looksTruncatedToolArguments(text: unknown): boolean {
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
     if (inString) {
-      if (escaped) { escaped = false; continue; }
-      if (char === '\\') { escaped = true; continue; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
       if (char === '"') inString = false;
       continue;
     }
-    if (char === '"') { inString = true; continue; }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
     if (char === '{' || char === '[') depth++;
     else if (char === '}' || char === ']') depth--;
   }
@@ -102,7 +114,8 @@ const VISUAL_TOOLS = new Set(['render_intelligent_ui', 'patch_intelligent_ui']);
 
 /** Model-facing instruction for arguments that were cut off mid-object. */
 export function truncatedArgumentsHint(toolName: string | null | undefined): string {
-  const base = 'The arguments stopped mid-object (an unclosed string or bracket), which usually means the output limit was reached while writing them. Do not resend the same payload.';
+  const base =
+    'The arguments stopped mid-object (an unclosed string or bracket), which usually means the output limit was reached while writing them. Do not resend the same payload.';
   if (toolName && VISUAL_TOOLS.has(toolName)) {
     return `${base} Send fewer data points: downsample each series to at most 200 points (never more than 5000), shorten labels, drop decorative text, or split the visual into several smaller calls.`;
   }
@@ -127,12 +140,21 @@ function extractTopLevelObjects(source: string): string[] {
   for (let index = 0; index < source.length; index++) {
     const char = source[index];
     if (inString) {
-      if (escaped) { escaped = false; continue; }
-      if (char === '\\') { escaped = true; continue; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
       if (char === '"') inString = false;
       continue;
     }
-    if (char === '"') { inString = true; continue; }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
     if (char === '{') {
       if (depth === 0) start = index;
       depth++;
@@ -151,14 +173,15 @@ function extractTopLevelObjects(source: string): string[] {
   return found.sort((a, b) => b.length - a.length).slice(0, 4);
 }
 
-export function parseToolArguments(raw: unknown):
-  | { ok: true; value: Record<string, unknown> }
-  | { ok: false; error: ToolArgumentErrorCode } {
+export function parseToolArguments(
+  raw: unknown,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: ToolArgumentErrorCode } {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
     return { ok: true, value: raw as Record<string, unknown> };
   }
   if (typeof raw !== 'string') return { ok: false, error: TOOL_ARGUMENT_ERRORS.parse };
-  if (raw.length > MAX_TOOL_ARGUMENT_CHARS) return { ok: false, error: TOOL_ARGUMENT_ERRORS.tooLarge };
+  if (raw.length > MAX_TOOL_ARGUMENT_CHARS)
+    return { ok: false, error: TOOL_ARGUMENT_ERRORS.tooLarge };
 
   /* Several OpenAI-compatible providers occasionally wrap otherwise-valid
      function arguments in a Markdown JSON fence, prefix them with
@@ -195,7 +218,12 @@ export function parseToolArguments(raw: unknown):
         /* `{}` is only an answer when it is all the model sent: when a
            larger object is also present in the text, that object is the
            real payload (see extractTopLevelObjects). */
-        if (Object.keys(value).length === 0 && attempts.some((other) => other !== attempt && other.length > attempt.length && other.includes('{'))) {
+        if (
+          Object.keys(value).length === 0 &&
+          attempts.some(
+            (other) => other !== attempt && other.length > attempt.length && other.includes('{'),
+          )
+        ) {
           continue;
         }
         return { ok: true, value: value as Record<string, unknown> };
@@ -229,7 +257,15 @@ export function parseToolArguments(raw: unknown):
    ──────────────────────────────────────────────────────────────────── */
 
 /** Keys models use to wrap the real argument object. */
-const WRAPPER_KEYS = ['input', 'arguments', 'args', 'parameters', 'params', 'tool_input', 'payload'];
+const WRAPPER_KEYS = [
+  'input',
+  'arguments',
+  'args',
+  'parameters',
+  'params',
+  'tool_input',
+  'payload',
+];
 const MAX_UNWRAP_DEPTH = 3;
 const MAX_SCHEMA_DEPTH = 8;
 const TOOL_ARGUMENT_ALIASES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
@@ -289,9 +325,9 @@ export function repairToolArguments(
   if (strict.ok) {
     candidate = strict.value;
   } else if (
-    (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === ''))
-    && schema
-    && !schema.required?.length
+    (raw === null || raw === undefined || (typeof raw === 'string' && raw.trim() === '')) &&
+    schema &&
+    !schema.required?.length
   ) {
     /* OpenAI-compatible providers often encode a no-argument function call
        as an empty string or omit the value. `{}` is valid only when the
@@ -306,9 +342,12 @@ export function repairToolArguments(
     }
   }
   if (!candidate) {
-    const error = !strict.ok && strict.error === TOOL_ARGUMENT_ERRORS.tooLarge
-      ? TOOL_ARGUMENT_ERRORS.tooLarge
-      : isOversizedToolArguments(raw) ? TOOL_ARGUMENT_ERRORS.tooLarge : TOOL_ARGUMENT_ERRORS.parse;
+    const error =
+      !strict.ok && strict.error === TOOL_ARGUMENT_ERRORS.tooLarge
+        ? TOOL_ARGUMENT_ERRORS.tooLarge
+        : isOversizedToolArguments(raw)
+          ? TOOL_ARGUMENT_ERRORS.tooLarge
+          : TOOL_ARGUMENT_ERRORS.parse;
     return { ok: false, error, repairs };
   }
 
@@ -324,7 +363,10 @@ export function repairToolArguments(
     candidate = normalizeIntelligentUiPatchArgs(candidate) as Record<string, unknown>;
   }
   if (schema && schema.properties) {
-    candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<string, unknown>;
+    candidate = coerceObjectToSchema(candidate, schema, repairs, '', 0, dropUnknown) as Record<
+      string,
+      unknown
+    >;
   }
   return { ok: true, value: candidate, repairs };
 }
@@ -356,7 +398,8 @@ function normalizeToolArgumentAliases(
   const keys = Object.keys(current);
   if (keys.length !== 1 || !WRAPPER_KEYS.includes(keys[0])) return current;
   const wrapperValue = current[keys[0]];
-  if (!wrapperValue || typeof wrapperValue !== 'object' || Array.isArray(wrapperValue)) return current;
+  if (!wrapperValue || typeof wrapperValue !== 'object' || Array.isArray(wrapperValue))
+    return current;
   const nested = normalizeToolArgumentAliases(
     wrapperValue as Record<string, unknown>,
     toolName,
@@ -380,7 +423,8 @@ function unwrapArgumentWrapper(
     const [key] = keys;
     if (!WRAPPER_KEYS.includes(key)) return current;
     // A schema that genuinely declares this property owns it.
-    if (schema?.properties && Object.prototype.hasOwnProperty.call(schema.properties, key)) return current;
+    if (schema?.properties && Object.prototype.hasOwnProperty.call(schema.properties, key))
+      return current;
     const inner = current[key];
     if (!inner || typeof inner !== 'object' || Array.isArray(inner)) return current;
     const innerRecord = inner as Record<string, unknown>;
@@ -390,9 +434,11 @@ function unwrapArgumentWrapper(
        single-property object is never flattened. */
     if (schema?.properties) {
       const innerKeys = Object.keys(innerRecord);
-      const matchesSchema = innerKeys.some((innerKey) => (
-        Object.prototype.hasOwnProperty.call(schema.properties!, innerKey) || WRAPPER_KEYS.includes(innerKey)
-      ));
+      const matchesSchema = innerKeys.some(
+        (innerKey) =>
+          Object.prototype.hasOwnProperty.call(schema.properties!, innerKey) ||
+          WRAPPER_KEYS.includes(innerKey),
+      );
       if (!matchesSchema) return current;
     }
     repairs.push(`unwrapped:${key}`);
@@ -430,13 +476,19 @@ function parseLooseObjectLiteral(raw: string): Record<string, unknown> | null {
       continue;
     }
     if (char === 'T' && source.startsWith('True', index) && !isWordChar(source[index + 4])) {
-      out += 'true'; index += 3; continue;
+      out += 'true';
+      index += 3;
+      continue;
     }
     if (char === 'F' && source.startsWith('False', index) && !isWordChar(source[index + 5])) {
-      out += 'false'; index += 4; continue;
+      out += 'false';
+      index += 4;
+      continue;
     }
     if (char === 'N' && source.startsWith('None', index) && !isWordChar(source[index + 4])) {
-      out += 'null'; index += 3; continue;
+      out += 'null';
+      index += 3;
+      continue;
     }
     if (/[A-Za-z_$]/.test(char)) {
       // A bare identifier is only accepted as an object key.
@@ -481,10 +533,30 @@ function readStringLiteral(
     if (char === '\\') {
       const next = source[index + 1];
       if (next === undefined) return null;
-      if (next === quote) { value += next; index += 1; continue; }
+      if (next === quote) {
+        value += next;
+        index += 1;
+        continue;
+      }
       // Preserve the escape for JSON.stringify to re-encode.
-      const decoded = ({ n: '\n', t: '\t', r: '\r', b: '\b', f: '\f', '\\': '\\', '/': '/', '"': '"', "'": "'" } as Record<string, string>)[next];
-      if (decoded !== undefined) { value += decoded; index += 1; continue; }
+      const decoded = (
+        {
+          n: '\n',
+          t: '\t',
+          r: '\r',
+          b: '\b',
+          f: '\f',
+          '\\': '\\',
+          '/': '/',
+          '"': '"',
+          "'": "'",
+        } as Record<string, string>
+      )[next];
+      if (decoded !== undefined) {
+        value += decoded;
+        index += 1;
+        continue;
+      }
       if (next === 'u') {
         const hex = source.slice(index + 2, index + 6);
         if (/^[0-9a-fA-F]{4}$/.test(hex)) {
@@ -525,7 +597,14 @@ function coerceObjectToSchema(
       out[key] = raw;
       continue;
     }
-    out[key] = coerceValueToSchema(raw, propertySchema, repairs, path ? `${path}.${key}` : key, depth + 1, dropUnknown);
+    out[key] = coerceValueToSchema(
+      raw,
+      propertySchema,
+      repairs,
+      path ? `${path}.${key}` : key,
+      depth + 1,
+      dropUnknown,
+    );
   }
   return out;
 }
@@ -547,9 +626,9 @@ function coerceValueToSchema(
   const type = schemaTypeOf(schema);
 
   if (Array.isArray(schema.enum) && typeof value === 'string') {
-    const match = schema.enum.find((option) => (
-      typeof option === 'string' && option.toLowerCase() === value.toLowerCase()
-    ));
+    const match = schema.enum.find(
+      (option) => typeof option === 'string' && option.toLowerCase() === value.toLowerCase(),
+    );
     if (match !== undefined && match !== value) {
       repairs.push(`coerced:${path}:enum_case`);
       return match;
@@ -572,10 +651,19 @@ function coerceValueToSchema(
       if (typeof value === 'boolean') return value;
       if (typeof value === 'string') {
         const normalized = value.trim().toLowerCase();
-        if (['true', 'yes', '1'].includes(normalized)) { repairs.push(`coerced:${path}:string_to_boolean`); return true; }
-        if (['false', 'no', '0'].includes(normalized)) { repairs.push(`coerced:${path}:string_to_boolean`); return false; }
+        if (['true', 'yes', '1'].includes(normalized)) {
+          repairs.push(`coerced:${path}:string_to_boolean`);
+          return true;
+        }
+        if (['false', 'no', '0'].includes(normalized)) {
+          repairs.push(`coerced:${path}:string_to_boolean`);
+          return false;
+        }
       }
-      if (value === 1 || value === 0) { repairs.push(`coerced:${path}:number_to_boolean`); return value === 1; }
+      if (value === 1 || value === 0) {
+        repairs.push(`coerced:${path}:number_to_boolean`);
+        return value === 1;
+      }
       return value;
     }
     case 'string': {
@@ -591,13 +679,24 @@ function coerceValueToSchema(
           repairs.push(`coerced:${path}:json_to_string`);
           return serialized;
         }
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
       return value;
     }
     case 'array': {
       const itemSchema = schema.items || {};
       if (Array.isArray(value)) {
-        return value.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+        return value.map((item, index) =>
+          coerceValueToSchema(
+            item,
+            itemSchema,
+            repairs,
+            `${path}[${index}]`,
+            depth + 1,
+            dropUnknown,
+          ),
+        );
       }
       /* XML-style tool calls encode a repeated element as `{item: ...}` (one
          entry) or `{items: [...]}`. The schema says this position is an
@@ -607,7 +706,16 @@ function coerceValueToSchema(
         if (entries.length === 1 && (entries[0][0] === 'item' || entries[0][0] === 'items')) {
           const list = Array.isArray(entries[0][1]) ? entries[0][1] : [entries[0][1]];
           repairs.push(`coerced:${path}:item_collection_to_array`);
-          return list.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+          return list.map((item, index) =>
+            coerceValueToSchema(
+              item,
+              itemSchema,
+              repairs,
+              `${path}[${index}]`,
+              depth + 1,
+              dropUnknown,
+            ),
+          );
         }
       }
       if (typeof value === 'string') {
@@ -617,27 +725,59 @@ function coerceValueToSchema(
             const parsed = JSON.parse(trimmed) as unknown;
             if (Array.isArray(parsed)) {
               repairs.push(`coerced:${path}:json_string_to_array`);
-              return parsed.map((item, index) => coerceValueToSchema(item, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+              return parsed.map((item, index) =>
+                coerceValueToSchema(
+                  item,
+                  itemSchema,
+                  repairs,
+                  `${path}[${index}]`,
+                  depth + 1,
+                  dropUnknown,
+                ),
+              );
             }
-          } catch { /* fall through to delimiter split */ }
+          } catch {
+            /* fall through to delimiter split */
+          }
         }
         /* A delimited list is the other unambiguous single-value form.
            Items are coerced individually below, so a numeric item schema
            still ends up with numbers rather than strings. */
-        const parts = trimmed.split(/\s*[\n,]\s*/).map((part) => part.trim()).filter(Boolean);
+        const parts = trimmed
+          .split(/\s*[\n,]\s*/)
+          .map((part) => part.trim())
+          .filter(Boolean);
         if (parts.length > 1) {
           repairs.push(`coerced:${path}:delimited_string_to_array`);
-          return parts.map((part, index) => coerceValueToSchema(part, itemSchema, repairs, `${path}[${index}]`, depth + 1, dropUnknown));
+          return parts.map((part, index) =>
+            coerceValueToSchema(
+              part,
+              itemSchema,
+              repairs,
+              `${path}[${index}]`,
+              depth + 1,
+              dropUnknown,
+            ),
+          );
         }
       }
       if (value == null) return value;
       repairs.push(`coerced:${path}:scalar_to_array`);
-      return [coerceValueToSchema(value, itemSchema, repairs, `${path}[0]`, depth + 1, dropUnknown)];
+      return [
+        coerceValueToSchema(value, itemSchema, repairs, `${path}[0]`, depth + 1, dropUnknown),
+      ];
     }
     case 'object': {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         return schema.properties
-          ? coerceObjectToSchema(value as Record<string, unknown>, schema, repairs, path, depth, dropUnknown)
+          ? coerceObjectToSchema(
+              value as Record<string, unknown>,
+              schema,
+              repairs,
+              path,
+              depth,
+              dropUnknown,
+            )
           : value;
       }
       if (typeof value === 'string') {
@@ -666,10 +806,11 @@ export function normalizeToolCalls(
   if (!Array.isArray(calls)) return [];
   const seenIds = new Set<string>();
   return calls.slice(0, Math.max(0, options.maxCalls)).map((raw, index) => {
-    const call = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
-    const fn = call.function && typeof call.function === 'object'
-      ? call.function as Record<string, unknown>
-      : {};
+    const call = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+    const fn =
+      call.function && typeof call.function === 'object'
+        ? (call.function as Record<string, unknown>)
+        : {};
     const baseId = String(call.id || `tool-call-${options.iteration}-${index}`).slice(0, 160);
     let id = baseId || `tool-call-${options.iteration}-${index}`;
     let suffix = 1;
@@ -683,10 +824,15 @@ export function normalizeToolCalls(
         // envelope. Keep the original call unavailable, but give the next
         // provider hop a syntactically valid name.
         name: String(fn.name || 'unknown_tool').slice(0, 128),
-        arguments: (
-          fn.arguments && typeof fn.arguments === 'object'
-            ? (() => { try { return JSON.stringify(fn.arguments); } catch { return ''; } })()
-            : String(fn.arguments || '')
+        arguments: (fn.arguments && typeof fn.arguments === 'object'
+          ? (() => {
+              try {
+                return JSON.stringify(fn.arguments);
+              } catch {
+                return '';
+              }
+            })()
+          : String(fn.arguments || '')
         ).slice(0, MAX_TOOL_ARGUMENT_CHARS),
       },
     };
@@ -707,17 +853,32 @@ export function normalizeToolCalls(
 /** Synonyms that map unambiguously onto one canonical tool. */
 const TOOL_NAME_ALIASES: Record<string, string> = {
   // search
-  search: 'web_search', websearch: 'web_search', search_web: 'web_search',
-  google: 'web_search', google_search: 'web_search', bing: 'web_search',
-  internet_search: 'web_search', browser_search: 'web_search',
+  search: 'web_search',
+  websearch: 'web_search',
+  search_web: 'web_search',
+  google: 'web_search',
+  google_search: 'web_search',
+  bing: 'web_search',
+  internet_search: 'web_search',
+  browser_search: 'web_search',
   // fetch
-  webfetch: 'web_fetch', fetch: 'web_fetch', fetch_url: 'web_fetch',
-  open_url: 'web_fetch', read_url: 'web_fetch', browse: 'web_fetch',
-  url_fetch: 'web_fetch', http_get: 'web_fetch',
+  webfetch: 'web_fetch',
+  fetch: 'web_fetch',
+  fetch_url: 'web_fetch',
+  open_url: 'web_fetch',
+  read_url: 'web_fetch',
+  browse: 'web_fetch',
+  url_fetch: 'web_fetch',
+  http_get: 'web_fetch',
   // python sandbox (WASM-confined, so alias recovery is acceptable here)
-  python: 'code_interpreter', run_python: 'code_interpreter', python_exec: 'code_interpreter',
-  exec_python: 'code_interpreter', run_code: 'code_interpreter', execute_code: 'code_interpreter',
-  code: 'code_interpreter', repl: 'code_interpreter',
+  python: 'code_interpreter',
+  run_python: 'code_interpreter',
+  python_exec: 'code_interpreter',
+  exec_python: 'code_interpreter',
+  run_code: 'code_interpreter',
+  execute_code: 'code_interpreter',
+  code: 'code_interpreter',
+  repl: 'code_interpreter',
   /* workspace_agent deliberately has NO aliases: generic shell names
    * (`bash`, `shell`, `terminal`, `run_command`, …) are exactly what a
    * model hallucinates when it wants to run a command directly, and
@@ -725,12 +886,23 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
    * hallucination into an execution. Those calls get the standard
    * unknown_tool correction instead. */
   // visualization
-  visualize: 'render_intelligent_ui', visualization: 'render_intelligent_ui',
-  chart: 'render_intelligent_ui', plot: 'render_intelligent_ui', draw: 'render_intelligent_ui',
+  visualize: 'render_intelligent_ui',
+  visualization: 'render_intelligent_ui',
+  chart: 'render_intelligent_ui',
+  plot: 'render_intelligent_ui',
+  draw: 'render_intelligent_ui',
 };
 
 /** Namespace prefixes providers prepend to a function name. */
-const TOOL_NAME_PREFIXES = ['functions', 'function', 'tools', 'tool', 'namespace', 'default_api', 'api'];
+const TOOL_NAME_PREFIXES = [
+  'functions',
+  'function',
+  'tools',
+  'tool',
+  'namespace',
+  'default_api',
+  'api',
+];
 
 export type ToolNameMatch = 'exact' | 'normalized' | 'alias' | 'fuzzy' | 'none';
 
@@ -745,7 +917,9 @@ export interface ResolvedToolName {
 
 /** Lowercase, drop namespace prefixes, and collapse separators. */
 export function normalizeToolName(raw: unknown): string {
-  let name = String(raw ?? '').trim().toLowerCase();
+  let name = String(raw ?? '')
+    .trim()
+    .toLowerCase();
   for (let depth = 0; depth < 3; depth++) {
     const separator = name.search(/[.:/]/);
     if (separator <= 0) break;
@@ -772,7 +946,11 @@ export function resolveToolName(
   options: { allowFuzzy?: boolean } = {},
 ): ResolvedToolName {
   const requestedName = String(requested ?? '');
-  const result = (name: string | null, match: ToolNameMatch): ResolvedToolName => ({ name, match, requested: requestedName });
+  const result = (name: string | null, match: ToolNameMatch): ResolvedToolName => ({
+    name,
+    match,
+    requested: requestedName,
+  });
   if (!requestedName || candidates.length === 0) return result(null, 'none');
   if (candidates.includes(requestedName)) return result(requestedName, 'exact');
 
@@ -848,10 +1026,16 @@ function validateValueAgainstSchema(
 
   if (Array.isArray(schema.enum) && schema.enum.length > 0) {
     const matched = schema.enum.some((option) => {
-      try { return JSON.stringify(option) === JSON.stringify(value); } catch { return option === value; }
+      try {
+        return JSON.stringify(option) === JSON.stringify(value);
+      } catch {
+        return option === value;
+      }
     });
     if (!matched) {
-      errors.push(`${path || 'value'}: must be one of ${schema.enum.map((o) => JSON.stringify(o)).join(' | ')}`);
+      errors.push(
+        `${path || 'value'}: must be one of ${schema.enum.map((o) => JSON.stringify(o)).join(' | ')}`,
+      );
       return;
     }
   }
@@ -860,8 +1044,8 @@ function validateValueAgainstSchema(
   const actualType = jsonTypeOf(value);
   /* `integer` is a JSON Schema refinement of number: a numeric value is
      type-compatible but must still be integral (checked below). */
-  const typeOk = types.includes(actualType)
-    || (actualType === 'number' && types.includes('integer'));
+  const typeOk =
+    types.includes(actualType) || (actualType === 'number' && types.includes('integer'));
   if (types.length > 0 && !typeOk) {
     /* The common null-vs-optional case is not an error: optional fields
        may legitimately arrive as null on OpenAI-compatible providers. */
@@ -878,8 +1062,10 @@ function validateValueAgainstSchema(
   if (typeof value === 'string' && types.includes('string')) {
     const min = typeof schema.minLength === 'number' ? schema.minLength : null;
     const max = typeof schema.maxLength === 'number' ? schema.maxLength : null;
-    if (min !== null && value.length < min) errors.push(`${path}: must be at least ${min} characters`);
-    if (max !== null && value.length > max) errors.push(`${path}: must be at most ${max} characters`);
+    if (min !== null && value.length < min)
+      errors.push(`${path}: must be at least ${min} characters`);
+    if (max !== null && value.length > max)
+      errors.push(`${path}: must be at most ${max} characters`);
   }
   if (typeof value === 'number' && (types.includes('number') || types.includes('integer'))) {
     const min = typeof schema.minimum === 'number' ? schema.minimum : null;
@@ -894,7 +1080,15 @@ function validateValueAgainstSchema(
     if (min !== null && value.length < min) errors.push(`${path}: must have at least ${min} items`);
     if (max !== null && value.length > max) errors.push(`${path}: must have at most ${max} items`);
     if (schema.items) {
-      value.forEach((item, index) => validateValueAgainstSchema(item, schema.items as JsonSchemaNode, `${path}[${index}]`, depth + 1, errors));
+      value.forEach((item, index) =>
+        validateValueAgainstSchema(
+          item,
+          schema.items as JsonSchemaNode,
+          `${path}[${index}]`,
+          depth + 1,
+          errors,
+        ),
+      );
     }
   }
   if (value && typeof value === 'object' && !Array.isArray(value) && schema.properties) {
@@ -969,7 +1163,9 @@ export function wrapUntrustedToolResult(toolName: string | undefined, content: u
        two: a single `.replace('<', …)` leaves the rest of an attribute
        value able to close the wrapper tag. */
     .replace(/<\/?tool_data\b[^>]*>/gi, (tag) => tag.replace(/</g, '&lt;').replace(/>/g, '&gt;'));
-  const label = String(toolName || 'tool').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 128);
+  const label = String(toolName || 'tool')
+    .replace(/[^a-zA-Z0-9_.:-]/g, '_')
+    .slice(0, 128);
   const body = truncated
     ? `${escaped}\n\n[...truncated to ${MAX_TOOL_RESULT_CHARS} chars — the remainder of the tool output was dropped...]`
     : escaped;

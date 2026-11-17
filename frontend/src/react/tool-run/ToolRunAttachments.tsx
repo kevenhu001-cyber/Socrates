@@ -12,14 +12,19 @@
  * adapters wait for its DOM node.
  */
 import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
-import { LazyIntelligenceUiBlock } from '../intelligence-ui/LazyIntelligenceUiBlock';
-import { NormalizedVisualizationsContext } from '../intelligence-ui/openui/normalizedVisualizations';
-import { IntelligenceUiFailureCard } from '../intelligence-ui/IntelligenceUiFailureCard';
+import { LazyIntelligentUiBlock } from '../intelligent-ui/LazyIntelligentUiBlock';
+import { NormalizedVisualizationsContext } from '../intelligent-ui/openui/normalizedVisualizations';
+import { IntelligentUiFailureCard } from '../intelligent-ui/IntelligentUiFailureCard';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
 import { ToolOutputRenderer } from '../tool-output/ToolOutputRenderer';
-import { attachmentOutputsOf, toolOutputsOf, toolRunStateOf, type ToolCallRecord } from './toolRunModel';
+import {
+  attachmentOutputsOf,
+  toolOutputsOf,
+  toolRunStateOf,
+  type ToolCallRecord,
+} from './toolRunModel';
 
 export interface ToolRunAttachmentsProps {
   call: ToolCallRecord;
@@ -27,12 +32,12 @@ export interface ToolRunAttachmentsProps {
   readOnly?: boolean;
 }
 
-interface IntelligenceUiDocument {
+interface IntelligentUiDocument {
   version: 1;
   nodes: unknown[];
 }
 
-function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | null {
+function parseIntelligentUiDocument(value: unknown): IntelligentUiDocument | null {
   let candidate = value;
   if (typeof candidate === 'string') {
     const text = candidate.trim();
@@ -49,7 +54,10 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
   const normalized = normalizeIntelligentUiArgs(candidate) as Record<string, unknown>;
   if (!normalized || normalized.version !== 1 || !Array.isArray(normalized.nodes)) return null;
   const validation = validateIntelligentUi(normalized);
-  if (!validation.ok && !['learning', 'control', 'visualization', 'demonstration'].includes(validation.kind || '')) {
+  if (
+    !validation.ok &&
+    !['learning', 'control', 'visualization', 'demonstration'].includes(validation.kind || '')
+  ) {
     return null;
   }
   /* A persisted call can carry an argument skeleton whose visualization node
@@ -58,7 +66,10 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
      instead of the OpenUI path drawing an empty chart over it. */
   const nodes = normalized.nodes as Array<Record<string, unknown>>;
   const hasVisualization = nodes.some((node) => node && node.type === 'visualization');
-  const hasRenderableVisualization = nodes.some((node) => node && node.type === 'visualization' && typeof node.template === 'string' && node.template);
+  const hasRenderableVisualization = nodes.some(
+    (node) =>
+      node && node.type === 'visualization' && typeof node.template === 'string' && node.template,
+  );
   if (hasVisualization && !hasRenderableVisualization) return null;
   return { version: 1, nodes: normalized.nodes };
 }
@@ -69,26 +80,27 @@ function parseIntelligenceUiDocument(value: unknown): IntelligenceUiDocument | n
  * `tool_call_delta.argumentsText`. Reading all three removes event-order races
  * without changing the persisted tool protocol.
  */
-function intelligenceUiDocumentOf(call: ToolCallRecord): IntelligenceUiDocument | null {
-  const direct = parseIntelligenceUiDocument(call.input);
+function intelligentUiDocumentOf(call: ToolCallRecord): IntelligentUiDocument | null {
+  const direct = parseIntelligentUiDocument(call.input);
   if (direct) return direct;
 
   if (call.input && typeof call.input === 'object' && !Array.isArray(call.input)) {
     const raw = (call.input as Record<string, unknown>).__raw;
-    const recovered = parseIntelligenceUiDocument(raw);
+    const recovered = parseIntelligentUiDocument(raw);
     if (recovered) return recovered;
   }
 
-  return parseIntelligenceUiDocument(call.argumentsText);
+  return parseIntelligentUiDocument(call.argumentsText);
 }
 
-function resolveIntelligenceUiSource(
+function resolveIntelligentUiSource(
   call: ToolCallRecord,
   surface: ToolCallRecord['uiSurface'],
 ): { source: string | null; hasVisualization: boolean } {
-  const document = surface && surface.phase !== 'aborted'
-    ? { version: 1, nodes: surface.nodes }
-    : intelligenceUiDocumentOf(call);
+  const document =
+    surface && surface.phase !== 'aborted'
+      ? { version: 1, nodes: surface.nodes }
+      : intelligentUiDocumentOf(call);
 
   if (!document) {
     const hasVisualization = toolOutputsOf(call).some((output) => output.kind === 'visualization');
@@ -98,7 +110,7 @@ function resolveIntelligenceUiSource(
   return { source, hasVisualization: false };
 }
 
-function renderIntelligenceUiAttachment(
+function renderIntelligentUiAttachment(
   call: ToolCallRecord,
   tools: ReadonlyArray<ToolCallRecord>,
   readOnly?: boolean,
@@ -106,26 +118,33 @@ function renderIntelligenceUiAttachment(
   const state = toolRunStateOf(call);
   const surface = call.uiSurface;
   if (surface?.phase === 'aborted' && state !== 'done') return false;
-  if (state === 'error') return renderIntelligenceUiFailure(call, tools, readOnly);
+  if (state === 'error') return renderIntelligentUiFailure(call, tools, readOnly);
   if (state === 'stopped') return null;
 
-  const { source, hasVisualization } = resolveIntelligenceUiSource(call, surface);
+  const { source, hasVisualization } = resolveIntelligentUiSource(call, surface);
   if (!source) {
     if (hasVisualization) return null;
-    if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
+    if (state === 'done') return renderIntelligentUiFailure(call, tools, readOnly);
     return null;
   }
   const serverSpecs = Array.isArray(call.visualizations)
-    ? call.visualizations.filter((spec): spec is Record<string, unknown> => !!spec && typeof spec === 'object' && !Array.isArray(spec))
+    ? call.visualizations.filter(
+        (spec): spec is Record<string, unknown> =>
+          !!spec && typeof spec === 'object' && !Array.isArray(spec),
+      )
     : [];
   return (
     <div className="tool-inline-attachments" data-tool-anchor={call.id}>
       <NormalizedVisualizationsContext.Provider value={serverSpecs}>
-        <LazyIntelligenceUiBlock
+        <LazyIntelligentUiBlock
           source={source}
           showActivityCue={false}
           tools={tools}
-          open={surface && surface.phase !== 'aborted' ? surface.phase === 'streaming' : state === 'running' || state === 'awaiting'}
+          open={
+            surface && surface.phase !== 'aborted'
+              ? surface.phase === 'streaming'
+              : state === 'running' || state === 'awaiting'
+          }
           readOnly={readOnly}
         />
       </NormalizedVisualizationsContext.Provider>
@@ -133,13 +152,16 @@ function renderIntelligenceUiAttachment(
   );
 }
 
-function supersededByLaterAttempt(call: ToolCallRecord, tools: ReadonlyArray<ToolCallRecord>): boolean {
+function supersededByLaterAttempt(
+  call: ToolCallRecord,
+  tools: ReadonlyArray<ToolCallRecord>,
+): boolean {
   const index = tools.findIndex((entry) => entry.id === call.id);
   if (index < 0) return false;
   return tools.slice(index + 1).some((entry) => entry.name === call.name);
 }
 
-function renderIntelligenceUiFailure(
+function renderIntelligentUiFailure(
   call: ToolCallRecord,
   tools: ReadonlyArray<ToolCallRecord>,
   readOnly?: boolean,
@@ -147,7 +169,7 @@ function renderIntelligenceUiFailure(
   if (supersededByLaterAttempt(call, tools)) return null;
   return (
     <div className="tool-inline-attachments" data-tool-anchor={call.id} data-tool-failed="true">
-      <IntelligenceUiFailureCard call={call} readOnly={readOnly} />
+      <IntelligentUiFailureCard call={call} readOnly={readOnly} />
     </div>
   );
 }
@@ -164,18 +186,14 @@ export function ToolRunAttachments({ call, tools = [call], readOnly }: ToolRunAt
   }, [call.id]);
 
   if (call.name === 'render_intelligent_ui') {
-    const intelligentUiAttachment = renderIntelligenceUiAttachment(call, tools, readOnly);
+    const intelligentUiAttachment = renderIntelligentUiAttachment(call, tools, readOnly);
     if (intelligentUiAttachment === false) return null;
     if (intelligentUiAttachment) return intelligentUiAttachment;
   }
   if (!outputs.length) return null;
 
   return (
-    <div
-      className="tool-inline-attachments"
-      data-tool-anchor={call.id}
-      ref={hostRef}
-    >
+    <div className="tool-inline-attachments" data-tool-anchor={call.id} ref={hostRef}>
       {outputs.map((output) => (
         <ToolOutputRenderer key={output.id} output={output} host={host ?? undefined} />
       ))}

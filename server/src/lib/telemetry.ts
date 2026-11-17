@@ -109,8 +109,12 @@ export async function startTracing(): Promise<void> {
         new HttpInstrumentation({
           ignoreIncomingRequestHook: (req) => {
             const url = req.url || '';
-            return url.startsWith('/api/health') || url.startsWith('/api/status') ||
-              url.startsWith('/api/_internal/metrics') || url.startsWith('/api/v2/_internal/metrics');
+            return (
+              url.startsWith('/api/health') ||
+              url.startsWith('/api/status') ||
+              url.startsWith('/api/_internal/metrics') ||
+              url.startsWith('/api/v2/_internal/metrics')
+            );
           },
         }),
         new ExpressInstrumentation(),
@@ -270,7 +274,10 @@ export interface ToolOutcomeRecord {
 export function recordToolOutcome(record: ToolOutcomeRecord): void {
   /* A model can invent a tool name; keep the metric label bounded and
      low-cardinality instead of turning every hallucination into a series. */
-  const tool = String(record.tool || 'unknown').replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 80) || 'unknown';
+  const tool =
+    String(record.tool || 'unknown')
+      .replace(/[^a-zA-Z0-9_.:-]/g, '_')
+      .slice(0, 80) || 'unknown';
   const errorCode = String(record.errorCode || 'none').slice(0, 80);
   const retryable = record.retryable ? 'yes' : 'no';
   const stage = record.stage || 'executed';
@@ -309,9 +316,8 @@ export interface ConnectorSearchRecord {
 
 export function recordConnectorSearch(record: ConnectorSearchRecord): void {
   const hit = record.matches > 0 ? 'yes' : 'no';
-  const bucket = record.matches === 0 ? '0'
-    : record.matches <= 2 ? '1-2'
-      : record.matches <= 5 ? '3-5' : '6+';
+  const bucket =
+    record.matches === 0 ? '0' : record.matches <= 2 ? '1-2' : record.matches <= 5 ? '3-5' : '6+';
   const topFamily = record.topFamily || 'none';
   const topService = record.topService || 'none';
   connectorSearches.add(1, {

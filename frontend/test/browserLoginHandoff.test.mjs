@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 import {
-  parseBrowserLoginRequest, readBrowserLoginRequest, validateBrowserLoginCallback,
-  captureBrowserLoginRequest, offerBrowserLoginHandoff,
+  parseBrowserLoginRequest,
+  readBrowserLoginRequest,
+  validateBrowserLoginCallback,
+  captureBrowserLoginRequest,
+  offerBrowserLoginHandoff,
 } from '../src/native/browserLoginHandoff.ts';
 
 const state = 'a'.repeat(64);
@@ -16,30 +19,50 @@ const key = 'socrates.android.browser-login.v1';
 
 function browser(url = start) {
   const dom = new JSDOM('<!doctype html><body></body>', { url });
-  for (const name of ['window', 'document', 'location', 'history', 'sessionStorage']) globalThis[name] = dom.window[name];
-  dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
-  dom.window.HTMLDialogElement.prototype.close = function () { this.open = false; };
+  for (const name of ['window', 'document', 'location', 'history', 'sessionStorage'])
+    globalThis[name] = dom.window[name];
+  dom.window.HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  dom.window.HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
   window.CURRENT_USER = { id: 'u1', email: 'test@example.test' };
   return dom;
 }
 function cleanup(dom) {
   dom.window.close();
-  for (const name of ['window', 'document', 'location', 'history', 'sessionStorage']) delete globalThis[name];
+  for (const name of ['window', 'document', 'location', 'history', 'sessionStorage'])
+    delete globalThis[name];
 }
 async function waitForButtons(count = 1) {
   const deadline = Date.now() + 1000;
   while (document.querySelectorAll('dialog button').length < count && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  assert.ok(document.querySelectorAll('dialog button').length >= count, 'lazy browser login dialog mounts');
+  assert.ok(
+    document.querySelectorAll('dialog button').length >= count,
+    'lazy browser login dialog mounts',
+  );
 }
 
 test('request accepts only production origin and singleton well-formed parameters', () => {
-  assert.deepEqual(parseBrowserLoginRequest(new URL(start), 123), { state, codeChallenge: challenge, createdAt: 123 });
-  for (const url of [start.replace('https:', 'http:'), start.replace('app.topodrive.top', 'evil.test'),
-    start + '&state=' + state, start + '&native_login=1', start + '&code_challenge=' + challenge,
-    start.replace('native_login=1', 'native_login=0'), start.replace(state, 'bad'),
-    start.replace(challenge, 'bad'), start.replace('/?', '/other?')]) {
+  assert.deepEqual(parseBrowserLoginRequest(new URL(start), 123), {
+    state,
+    codeChallenge: challenge,
+    createdAt: 123,
+  });
+  for (const url of [
+    start.replace('https:', 'http:'),
+    start.replace('app.topodrive.top', 'evil.test'),
+    start + '&state=' + state,
+    start + '&native_login=1',
+    start + '&code_challenge=' + challenge,
+    start.replace('native_login=1', 'native_login=0'),
+    start.replace(state, 'bad'),
+    start.replace(challenge, 'bad'),
+    start.replace('/?', '/other?'),
+  ]) {
     assert.equal(parseBrowserLoginRequest(new URL(url)), null, url);
   }
 });
@@ -55,16 +78,34 @@ test('stored requests expire, reject future timestamps/corruption, and fail clos
     }
     sessionStorage.setItem(key, 'invalid json');
     assert.equal(readBrowserLoginRequest(sessionStorage, now), null);
-    assert.equal(readBrowserLoginRequest({ getItem() { throw new Error('blocked'); } }, now), null);
-  } finally { cleanup(dom); }
+    assert.equal(
+      readBrowserLoginRequest(
+        {
+          getItem() {
+            throw new Error('blocked');
+          },
+        },
+        now,
+      ),
+      null,
+    );
+  } finally {
+    cleanup(dom);
+  }
 });
 
 test('callbacks reject redirects, query secrets, extra/duplicate parameters and mismatched state', () => {
   assert.equal(validateBrowserLoginCallback(callback, state), callback);
-  for (const url of [callback.replace(base, 'https://evil.test'), callback.replace('https:', 'socrates:'),
-    callback.replace('/auth/android/callback', '/elsewhere'), callback.replace('#', '?x=1#'),
-    callback + '&state=' + state, callback + '&extra=1', callback.replace(code, 'bad'),
-    callback.replace(base, 'https://user@app.topodrive.top')]) {
+  for (const url of [
+    callback.replace(base, 'https://evil.test'),
+    callback.replace('https:', 'socrates:'),
+    callback.replace('/auth/android/callback', '/elsewhere'),
+    callback.replace('#', '?x=1#'),
+    callback + '&state=' + state,
+    callback + '&extra=1',
+    callback.replace(code, 'bad'),
+    callback.replace(base, 'https://user@app.topodrive.top'),
+  ]) {
     assert.equal(validateBrowserLoginCallback(url, state), null, url);
   }
   assert.equal(validateBrowserLoginCallback(callback, 'd'.repeat(64)), null);
@@ -82,13 +123,18 @@ test('capture strips request from URL, survives OAuth navigation, and malformed 
     history.replaceState(null, '', '/?native_login=1&state=bad');
     captureBrowserLoginRequest();
     assert.equal(sessionStorage.getItem(key), null);
-  } finally { cleanup(dom); }
+  } finally {
+    cleanup(dom);
+  }
 });
 
 test('browser callback fallback removes secrets and pending without reauthorizing', () => {
   const dom = browser(callback);
   try {
-    sessionStorage.setItem(key, JSON.stringify({ state, codeChallenge: challenge, createdAt: Date.now() }));
+    sessionStorage.setItem(
+      key,
+      JSON.stringify({ state, codeChallenge: challenge, createdAt: Date.now() }),
+    );
     captureBrowserLoginRequest();
     offerBrowserLoginHandoff();
     assert.equal(location.hash, '');
@@ -96,7 +142,9 @@ test('browser callback fallback removes secrets and pending without reauthorizin
     assert.equal(document.querySelectorAll('dialog').length, 1);
     assert.equal(document.querySelectorAll('a').length, 0);
     assert.ok(!document.body.textContent.includes(code));
-  } finally { cleanup(dom); }
+  } finally {
+    cleanup(dom);
+  }
 });
 
 test('explicit consent issues one cookie/CSRF request then exposes only validated one-time link', async () => {
@@ -110,7 +158,13 @@ test('explicit consent issues one cookie/CSRF request then exposes only validate
       calls.push({ path, options });
       if (path.endsWith('csrf-token')) return { ok: true };
       if (path.endsWith('/me')) return { ok: true, json: async () => ({ user: { id: 'u1' } }) };
-      return { ok: true, json: async () => ({ url: callback, expiresAt: new Date(Date.now() + 300000).toISOString() }) };
+      return {
+        ok: true,
+        json: async () => ({
+          url: callback,
+          expiresAt: new Date(Date.now() + 300000).toISOString(),
+        }),
+      };
     };
     offerBrowserLoginHandoff();
     offerBrowserLoginHandoff();
@@ -133,7 +187,10 @@ test('explicit consent issues one cookie/CSRF request then exposes only validate
     assert.equal(link.referrerPolicy, 'no-referrer');
     assert.equal(sessionStorage.getItem(key), null);
     document.querySelectorAll('button')[1].click();
-  } finally { globalThis.fetch = originalFetch; cleanup(dom); }
+  } finally {
+    globalThis.fetch = originalFetch;
+    cleanup(dom);
+  }
 });
 
 test('cancel never issues a handoff and failed/unsafe responses cannot expose a link', async () => {
@@ -148,7 +205,13 @@ test('cancel never issues a handoff and failed/unsafe responses cannot expose a 
         count++;
         if (count === 1) return { ok: true };
         if (count === 2) return { ok: true, json: async () => ({ user: { id: 'u1' } }) };
-        return { ok: !unsafe, json: async () => ({ url: 'https://evil.test/#secret', expiresAt: new Date(Date.now() + 300000).toISOString() }) };
+        return {
+          ok: !unsafe,
+          json: async () => ({
+            url: 'https://evil.test/#secret',
+            expiresAt: new Date(Date.now() + 300000).toISOString(),
+          }),
+        };
       };
       offerBrowserLoginHandoff();
       await waitForButtons(2);
@@ -166,7 +229,10 @@ test('cancel never issues a handoff and failed/unsafe responses cannot expose a 
       assert.equal(document.querySelector('a').hidden, true);
       assert.equal(sessionStorage.getItem(key), null);
       document.querySelectorAll('button')[1].click();
-    } finally { globalThis.fetch = originalFetch; cleanup(dom); }
+    } finally {
+      globalThis.fetch = originalFetch;
+      cleanup(dom);
+    }
   }
 });
 
@@ -186,11 +252,17 @@ test('a changed browser account cannot authorize the identity shown in the confi
     await waitForButtons(2);
     document.querySelector('button').click();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.equal(paths.some((path) => path.endsWith('/authorize')), false);
+    assert.equal(
+      paths.some((path) => path.endsWith('/authorize')),
+      false,
+    );
     assert.equal(document.querySelector('a').hidden, true);
     assert.equal(sessionStorage.getItem(key), null);
     document.querySelectorAll('button')[1].click();
-  } finally { globalThis.fetch = originalFetch; cleanup(dom); }
+  } finally {
+    globalThis.fetch = originalFetch;
+    cleanup(dom);
+  }
 });
 
 test('cancelling an in-flight handoff never reveals its returned code', async () => {
@@ -203,7 +275,9 @@ test('cancelling an in-flight handoff never reveals its returned code', async ()
     globalThis.fetch = async (path) => {
       if (path.endsWith('csrf-token')) return { ok: true };
       if (path.endsWith('/me')) return { ok: true, json: async () => ({ user: { id: 'u1' } }) };
-      return new Promise((resolve) => { complete = resolve; });
+      return new Promise((resolve) => {
+        complete = resolve;
+      });
     };
     offerBrowserLoginHandoff();
     await waitForButtons(2);
@@ -211,10 +285,16 @@ test('cancelling an in-flight handoff never reveals its returned code', async ()
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(typeof complete, 'function');
     document.querySelectorAll('button')[1].click();
-    complete({ ok: true, json: async () => ({ url: callback, expiresAt: new Date(Date.now() + 300000).toISOString() }) });
+    complete({
+      ok: true,
+      json: async () => ({ url: callback, expiresAt: new Date(Date.now() + 300000).toISOString() }),
+    });
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(document.querySelectorAll('dialog').length, 0);
     assert.equal(document.querySelectorAll('a').length, 0);
     assert.equal(sessionStorage.getItem(key), null);
-  } finally { globalThis.fetch = originalFetch; cleanup(dom); }
+  } finally {
+    globalThis.fetch = originalFetch;
+    cleanup(dom);
+  }
 });

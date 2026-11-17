@@ -18,26 +18,50 @@ test('projects Pi tool lifecycle events into command / file / search steps', () 
 
   const done = projectAgentEvent({
     event: 'item_completed',
-    data: { itemId: 'c1', type: 'commandExecution', command: 'npm run build', status: 'completed', exitCode: 0, aggregatedOutput: 'ok' },
+    data: {
+      itemId: 'c1',
+      type: 'commandExecution',
+      command: 'npm run build',
+      status: 'completed',
+      exitCode: 0,
+      aggregatedOutput: 'ok',
+    },
   });
   assert.equal(done.kind, 'command');
   assert.equal(done.status, 'done');
 
   const read = projectAgentEvent({
     event: 'item_completed',
-    data: { itemId: 'r1', type: 'commandExecution', command: 'ls -la', status: 'completed', exitCode: 0 },
+    data: {
+      itemId: 'r1',
+      type: 'commandExecution',
+      command: 'ls -la',
+      status: 'completed',
+      exitCode: 0,
+    },
   });
   assert.equal(read.kind, 'read');
 
   const failed = projectAgentEvent({
     event: 'item_completed',
-    data: { itemId: 'c2', type: 'commandExecution', command: 'false', status: 'completed', exitCode: 2 },
+    data: {
+      itemId: 'c2',
+      type: 'commandExecution',
+      command: 'false',
+      status: 'completed',
+      exitCode: 2,
+    },
   });
   assert.equal(failed.status, 'failed');
 
   const file = projectAgentEvent({
     event: 'item_completed',
-    data: { itemId: 'f1', type: 'fileChange', status: 'completed', changes: [{ path: 'src/a.ts', kind: 'edit' }] },
+    data: {
+      itemId: 'f1',
+      type: 'fileChange',
+      status: 'completed',
+      changes: [{ path: 'src/a.ts', kind: 'edit' }],
+    },
   });
   assert.equal(file.kind, 'file_change');
 
@@ -71,7 +95,10 @@ test('projects plans, file diffs, MCP calls and bounded output', () => {
     },
   });
   assert.equal(plan.type, 'plan');
-  assert.deepEqual(plan.steps.map((step) => step.status), ['done', 'in_progress']);
+  assert.deepEqual(
+    plan.steps.map((step) => step.status),
+    ['done', 'in_progress'],
+  );
   assert.equal(plan.explanation, 'working through the repair');
   assert.equal(projectAgentEvent({ event: 'plan', data: { plan: [{}] } }), null);
 
@@ -90,21 +117,43 @@ test('projects plans, file diffs, MCP calls and bounded output', () => {
     },
   });
   assert.equal(file.status, 'done');
-  assert.deepEqual(file.diffStat, { files: 4, added: 2, removed: 1, paths: ['src/one.ts', 'src/two.ts', 'src/three.ts', 'src/four.ts'] });
+  assert.deepEqual(file.diffStat, {
+    files: 4,
+    added: 2,
+    removed: 1,
+    paths: ['src/one.ts', 'src/two.ts', 'src/three.ts', 'src/four.ts'],
+  });
   assert.match(file.detail, /等 4 个文件/);
 
   const mcp = projectAgentEvent({
     event: 'tool',
-    data: { itemId: 'm1', type: 'mcpToolCall', server: 'docs', name: 'search', status: 'pending', durationMs: 12 },
+    data: {
+      itemId: 'm1',
+      type: 'mcpToolCall',
+      server: 'docs',
+      name: 'search',
+      status: 'pending',
+      durationMs: 12,
+    },
   });
   assert.equal(mcp.kind, 'mcp');
   assert.equal(mcp.detail, 'docs · search');
   assert.equal(mcp.durationMs, 12);
-  assert.equal(projectAgentEvent({ event: 'item_completed', data: { itemId: 'm2', type: 'mcpToolCall' } }).detail, null);
+  assert.equal(
+    projectAgentEvent({ event: 'item_completed', data: { itemId: 'm2', type: 'mcpToolCall' } })
+      .detail,
+    null,
+  );
 
   const longOutput = projectAgentEvent({
     event: 'item_completed',
-    data: { itemId: 'c3', type: 'commandExecution', command: { argv: ['python', '-c', 'print(1)'] }, status: 'succeeded', aggregatedOutput: 'x'.repeat(4100) },
+    data: {
+      itemId: 'c3',
+      type: 'commandExecution',
+      command: { argv: ['python', '-c', 'print(1)'] },
+      status: 'succeeded',
+      aggregatedOutput: 'x'.repeat(4100),
+    },
   });
   assert.equal(longOutput.status, 'done');
   assert.match(longOutput.output, /^…/);
@@ -116,8 +165,26 @@ test('normalizes command variants and rejects hidden or malformed events', () =>
   assert.equal(normalizeCommand(['/bin/bash', '-lc', "echo 'quoted'"]), "echo 'quoted'");
   assert.equal(normalizeCommand(null), '');
 
-  assert.equal(projectAgentEvent({ event: 'item_completed', data: { itemId: 'c4', type: 'commandExecution', command: 'cat file', status: 'error' } }).status, 'failed');
-  assert.equal(projectAgentEvent({ event: 'tool', data: { itemId: 'c5', type: 'commandExecution', command: '', status: 'unknown' } }).title, AGENT_STEP_LABELS.command);
-  assert.equal(projectAgentEvent({ event: 'item_completed', data: { itemId: 'x1', type: 'futureType' } }), null);
-  assert.equal(projectAgentEvent({ event: 'item_completed', data: { type: 'commandExecution' } }), null);
+  assert.equal(
+    projectAgentEvent({
+      event: 'item_completed',
+      data: { itemId: 'c4', type: 'commandExecution', command: 'cat file', status: 'error' },
+    }).status,
+    'failed',
+  );
+  assert.equal(
+    projectAgentEvent({
+      event: 'tool',
+      data: { itemId: 'c5', type: 'commandExecution', command: '', status: 'unknown' },
+    }).title,
+    AGENT_STEP_LABELS.command,
+  );
+  assert.equal(
+    projectAgentEvent({ event: 'item_completed', data: { itemId: 'x1', type: 'futureType' } }),
+    null,
+  );
+  assert.equal(
+    projectAgentEvent({ event: 'item_completed', data: { type: 'commandExecution' } }),
+    null,
+  );
 });

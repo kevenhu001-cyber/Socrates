@@ -6,7 +6,8 @@ import { JSDOM } from 'jsdom';
    openNav() directly rather than probing window.openNav. Boot the whole
    module graph against a jsdom document and let jsdom's history carry the
    route change openNav('projects') pushes. */
-const dom = new JSDOM(`<!doctype html><html><body>
+const dom = new JSDOM(
+  `<!doctype html><html><body>
   <div id="sidebar" class="collapsed"></div>
   <div id="sidebarBackdrop"></div>
   <div id="mainInner">
@@ -24,17 +25,20 @@ const dom = new JSDOM(`<!doctype html><html><body>
     <div id="adminPanel" class="main-page hidden"></div>
     <div id="examView" class="hidden"></div>
   </div>
-</body></html>`, { url: 'https://app.example.test/' });
+</body></html>`,
+  { url: 'https://app.example.test/' },
+);
 
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.location = dom.window.location;
 globalThis.history = dom.window.history;
 globalThis.localStorage = dom.window.localStorage;
-globalThis.fetch = async () => new Response(JSON.stringify({ projects: [] }), {
-  status: 200,
-  headers: { 'Content-Type': 'application/json' },
-});
+globalThis.fetch = async () =>
+  new Response(JSON.stringify({ projects: [] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
 window.t = (key, fallback) => (fallback !== undefined ? fallback : key);
 
 const { openMobileTargetFromUrl } = await import('../src/native/mobileWebSessionBridge.ts');
@@ -46,7 +50,12 @@ function recordReplaceState() {
     calls.push({ state, url });
     return real(state, title, url);
   };
-  return { calls, restore: () => { window.history.replaceState = real; } };
+  return {
+    calls,
+    restore: () => {
+      window.history.replaceState = real;
+    },
+  };
 }
 
 test('mobile WebView target cleanup preserves the workspace route it just opened', async () => {
@@ -76,7 +85,9 @@ test('unknown mobile targets stay inert and do not rewrite history', async () =>
 
 test('window-backed targets open and preserve unrelated query parameters', () => {
   let opened = 0;
-  window.openProfile = () => { opened += 1; };
+  window.openProfile = () => {
+    opened += 1;
+  };
   window.history.replaceState({}, '', '/?mobile_target=profile&chat=keep');
   try {
     assert.equal(openMobileTargetFromUrl(), true);

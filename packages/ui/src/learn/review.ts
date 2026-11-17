@@ -46,11 +46,17 @@ export interface ReviewDeck {
   cards: Record<string, ReviewCard>;
 }
 
-export const EMPTY_REVIEW_DECK: ReviewDeck = Object.freeze({ version: 1, cards: Object.freeze({}) as Record<string, ReviewCard> }) as ReviewDeck;
+export const EMPTY_REVIEW_DECK: ReviewDeck = Object.freeze({
+  version: 1,
+  cards: Object.freeze({}) as Record<string, ReviewCard>,
+}) as ReviewDeck;
 
 /** The identity of a card: its front with markup and runs of space flattened. */
 export function reviewCardKey(front: string): string {
-  const text = String(front ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const text = String(front ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   const chars = Array.from(text);
   return chars.length > KEY_LIMIT ? `${chars.slice(0, KEY_LIMIT - 1).join('')}…` : text;
 }
@@ -60,7 +66,11 @@ function clampEase(value: number): number {
 }
 
 /** Schedule one rating. `previous` is the card as it stood, if it was seen before. */
-export function scheduleReview(previous: Pick<ReviewCard, 'reps' | 'interval' | 'ease'> | null | undefined, rating: RecallRating, now: number): Pick<ReviewCard, 'reps' | 'interval' | 'ease' | 'due'> {
+export function scheduleReview(
+  previous: Pick<ReviewCard, 'reps' | 'interval' | 'ease'> | null | undefined,
+  rating: RecallRating,
+  now: number,
+): Pick<ReviewCard, 'reps' | 'interval' | 'ease' | 'due'> {
   const reps = previous?.reps ?? 0;
   const interval = previous?.interval ?? 0;
   const ease = previous?.ease ?? REVIEW_EASE_START;
@@ -70,10 +80,20 @@ export function scheduleReview(previous: Pick<ReviewCard, 'reps' | 'interval' | 
   const nextReps = reps + 1;
   if (rating === 'fuzzy') {
     const days = nextReps === 1 ? 1 : Math.max(1, Math.round(interval * 1.2));
-    return { reps: nextReps, interval: days, ease: clampEase(ease - 0.15), due: now + days * REVIEW_DAY_MS };
+    return {
+      reps: nextReps,
+      interval: days,
+      ease: clampEase(ease - 0.15),
+      due: now + days * REVIEW_DAY_MS,
+    };
   }
   const days = nextReps === 1 ? 1 : nextReps === 2 ? 3 : Math.max(1, Math.round(interval * ease));
-  return { reps: nextReps, interval: days, ease: clampEase(ease + 0.1), due: now + days * REVIEW_DAY_MS };
+  return {
+    reps: nextReps,
+    interval: days,
+    ease: clampEase(ease + 0.1),
+    due: now + days * REVIEW_DAY_MS,
+  };
 }
 
 function trimField(value: string): string {
@@ -82,7 +102,12 @@ function trimField(value: string): string {
 }
 
 /** Record a rating for the card with this front/back. Returns a new deck; a blank front changes nothing. */
-export function rateReviewCard(deck: ReviewDeck, card: { front: string; back: string }, rating: RecallRating, now: number): ReviewDeck {
+export function rateReviewCard(
+  deck: ReviewDeck,
+  card: { front: string; back: string },
+  rating: RecallRating,
+  now: number,
+): ReviewDeck {
   const id = reviewCardKey(card.front);
   if (!id) return deck;
   const previous = deck.cards[id];
@@ -141,7 +166,11 @@ function finite(value: unknown, fallback: number): number {
 export function parseReviewDeck(raw: unknown): ReviewDeck {
   let value = raw;
   if (typeof value === 'string') {
-    try { value = JSON.parse(value); } catch { return { version: 1, cards: {} }; }
+    try {
+      value = JSON.parse(value);
+    } catch {
+      return { version: 1, cards: {} };
+    }
   }
   const source = value && typeof value === 'object' ? (value as { cards?: unknown }).cards : null;
   if (!source || typeof source !== 'object') return { version: 1, cards: {} };

@@ -18,11 +18,7 @@
  */
 
 /** Hosts that should get the shared `.topodrive.top` cookie domain. */
-const SHARED_DOMAIN_HOSTS = new Set([
-  'app.topodrive.top',
-  'topodrive.top',
-  'www.topodrive.top',
-]);
+const SHARED_DOMAIN_HOSTS = new Set(['app.topodrive.top', 'topodrive.top', 'www.topodrive.top']);
 
 /** The shared cookie domain. Exported for tests + clearCookie symmetry. */
 export const SHARED_COOKIE_DOMAIN = '.topodrive.top';

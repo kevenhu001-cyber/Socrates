@@ -21,7 +21,7 @@ export function safeHljsLang(lang: string): string {
       if (!hljs.getLanguage(l)) return '';
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: render/code.ts:24');
+    reportEmptyCatch(_, 'empty catch: render/code.ts');
     /* hljs missing or threw — fall through and keep the lang */
   }
   return l;

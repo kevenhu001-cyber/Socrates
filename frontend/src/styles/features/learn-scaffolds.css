@@ -42,12 +42,23 @@
   overflow-wrap: anywhere;
 }
 
-.sc-rich > :first-child { margin-top: 0; }
-.sc-rich > :last-child { margin-bottom: 0; }
-.sc-rich p { margin: 0 0 0.5em; }
+.sc-rich > :first-child {
+  margin-top: 0;
+}
+.sc-rich > :last-child {
+  margin-bottom: 0;
+}
+.sc-rich p {
+  margin: 0 0 0.5em;
+}
 .sc-rich ul,
-.sc-rich ol { margin: 0.25em 0 0.5em; padding-left: 1.4em; }
-.sc-rich strong { font-weight: var(--ui-font-weight-semibold); }
+.sc-rich ol {
+  margin: 0.25em 0 0.5em;
+  padding-left: 1.4em;
+}
+.sc-rich strong {
+  font-weight: var(--ui-font-weight-semibold);
+}
 
 .sc-rich .katex-display {
   margin: 0.4em 0;
@@ -55,26 +66,28 @@
   overflow-y: hidden;
 }
 
-.sc-rich[data-part="quiz-q"],
-.sc-rich[data-part$="-title"],
-.sc-rich[data-part="theorem-statement"] {
+.sc-rich[data-part='quiz-q'],
+.sc-rich[data-part$='-title'],
+.sc-rich[data-part='theorem-statement'] {
   font-weight: var(--ui-font-weight-medium);
 }
 
-.sc-rich[data-part="definition-term"] {
+.sc-rich[data-part='definition-term'] {
   font-size: var(--prose-size, var(--ui-text-body));
   line-height: 1.45;
   font-weight: var(--ui-font-weight-medium);
 }
 
-.sc-rich[data-part="quiz-option"],
-.sc-rich[data-part="hint"],
-.sc-rich[data-part="quiz-explanation"],
-.sc-rich[data-part="practice-answer"] {
+.sc-rich[data-part='quiz-option'],
+.sc-rich[data-part='hint'],
+.sc-rich[data-part='quiz-explanation'],
+.sc-rich[data-part='practice-answer'] {
   font-size: var(--prose-size, var(--ui-text-body));
 }
 
-.sc-rich[data-part$="-step"] .katex-display { margin: 0; }
+.sc-rich[data-part$='-step'] .katex-display {
+  margin: 0;
+}
 
 /* ---- streaming preview ------------------------------------------------ */
 /* RN-8: the preview is the card's own geometry (16px radius, 36px head,
@@ -90,7 +103,9 @@
 }
 
 @media (max-width: 768px) {
-  .sc-live { --sc-pad: var(--ui-gap-3); }
+  .sc-live {
+    --sc-pad: var(--ui-gap-3);
+  }
 }
 
 .sc-live-head {
@@ -112,7 +127,9 @@
   color: var(--ui-ink-tertiary);
 }
 
-.sc-live-label { color: var(--ui-ink); }
+.sc-live-label {
+  color: var(--ui-ink);
+}
 
 .sc-live-body {
   display: flex;
@@ -152,9 +169,18 @@
      stronger so the sweep still reads. */
   --skeleton-shimmer-highlight: color-mix(in srgb, var(--ui-ink) 14%, transparent);
 }
-.sc-live-pill--quiet { background-color: var(--ui-card); box-shadow: inset 0 0 0 1px var(--ui-hairline-strong); }
-.sc-live-head .sc-live-pill { height: 32px; }
-.sc-live[data-scaffold-live="quiz"] .sc-live-head .sc-live-pill { height: 24px; box-shadow: none; background-color: var(--ui-fill); }
+.sc-live-pill--quiet {
+  background-color: var(--ui-card);
+  box-shadow: inset 0 0 0 1px var(--ui-hairline-strong);
+}
+.sc-live-head .sc-live-pill {
+  height: 32px;
+}
+.sc-live[data-scaffold-live='quiz'] .sc-live-head .sc-live-pill {
+  height: 24px;
+  box-shadow: none;
+  background-color: var(--ui-fill);
+}
 
 .sc-live-options {
   display: flex;
@@ -196,9 +222,17 @@
 
 /* Option rows still to come while a quiz streams: same 44px row and letter
    ring as a real option, with a shimmering line where the text will be. */
-.sc-live-option--pending { align-items: center; }
-.sc-live-option--pending > .sc-live-skeleton { flex: none; width: 52%; margin: 0; }
-.sc-live-option--pending:nth-child(even) > .sc-live-skeleton { width: 38%; }
+.sc-live-option--pending {
+  align-items: center;
+}
+.sc-live-option--pending > .sc-live-skeleton {
+  flex: none;
+  width: 52%;
+  margin: 0;
+}
+.sc-live-option--pending:nth-child(even) > .sc-live-skeleton {
+  width: 38%;
+}
 
 .sc-live-input {
   box-sizing: border-box;
@@ -254,10 +288,12 @@
   padding-bottom: var(--ui-gap-5);
 }
 
-.sc-live-step:last-child .sc-live-step-body { padding-bottom: 0; }
+.sc-live-step:last-child .sc-live-step-body {
+  padding-bottom: 0;
+}
 
 .sc-live-step:not(:last-child)::after {
-  content: "";
+  content: '';
   position: absolute;
   top: 28px;
   bottom: -4px;
@@ -268,35 +304,41 @@
 
 /* Consecutive <step> previews read as one list, like the mounted card: the
    seam between them is clipped out of the shared lift. */
-.sc-live[data-scaffold-live="step"]:has(+ .sc-live[data-scaffold-live="step"]) {
+.sc-live[data-scaffold-live='step']:has(+ .sc-live[data-scaffold-live='step']) {
   margin-bottom: 0;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   clip-path: inset(-24px -24px 0 -24px);
 }
 
-.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] {
+.sc-live[data-scaffold-live='step'] + .sc-live[data-scaffold-live='step'] {
   margin-top: 0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
   clip-path: inset(0 -24px -24px -24px);
 }
 
-.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-head { display: none; }
-.sc-live[data-scaffold-live="step"]:has(+ .sc-live[data-scaffold-live="step"]) > .sc-live-body { padding-bottom: 0; }
-.sc-live[data-scaffold-live="step"] + .sc-live[data-scaffold-live="step"] > .sc-live-body { padding-top: var(--ui-gap-5); }
+.sc-live[data-scaffold-live='step'] + .sc-live[data-scaffold-live='step'] > .sc-live-head {
+  display: none;
+}
+.sc-live[data-scaffold-live='step']:has(+ .sc-live[data-scaffold-live='step']) > .sc-live-body {
+  padding-bottom: 0;
+}
+.sc-live[data-scaffold-live='step'] + .sc-live[data-scaffold-live='step'] > .sc-live-body {
+  padding-top: var(--ui-gap-5);
+}
 
 /* A field that is a single formula renders as display math in prose; inside
    option rows and step lists it reads as a line of text, start-aligned. */
-.sc-rich[data-part="quiz-option"] .katex-display,
-.sc-rich[data-part$="-step"] .katex-display {
+.sc-rich[data-part='quiz-option'] .katex-display,
+.sc-rich[data-part$='-step'] .katex-display {
   display: block;
   margin: 0;
   text-align: start;
 }
 
-.sc-rich[data-part="quiz-option"] .katex-display > .katex,
-.sc-rich[data-part$="-step"] .katex-display > .katex {
+.sc-rich[data-part='quiz-option'] .katex-display > .katex,
+.sc-rich[data-part$='-step'] .katex-display > .katex {
   text-align: start;
 }
 
@@ -313,4 +355,7 @@
    (foundations/base.css) without changing the reserved card geometry. */
 
 /* Rich headings follow the transcript body size. */
-.sc-rich :is(h1, h2, h3, h4, h5, h6) { font-size: inherit; line-height: inherit; }
+.sc-rich :is(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  line-height: inherit;
+}

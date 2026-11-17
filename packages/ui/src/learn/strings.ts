@@ -7,7 +7,19 @@
  */
 
 export interface LearnStrings {
-  label: Record<'quiz' | 'flashcard' | 'practice' | 'example' | 'step' | 'definition' | 'theorem' | 'proof' | 'derivation' | 'keyPoint', string>;
+  label: Record<
+    | 'quiz'
+    | 'flashcard'
+    | 'practice'
+    | 'example'
+    | 'step'
+    | 'definition'
+    | 'theorem'
+    | 'proof'
+    | 'derivation'
+    | 'keyPoint',
+    string
+  >;
   quizMulti: string;
   quizSubmit: string;
   quizRetry: string;
@@ -47,8 +59,16 @@ export interface LearnStrings {
 
 export const defaultLearnStrings: LearnStrings = {
   label: {
-    quiz: 'Quiz', flashcard: 'Flashcard', practice: 'Practice', example: 'Example', step: 'Steps',
-    definition: 'Definition', theorem: 'Theorem', proof: 'Proof', derivation: 'Derivation', keyPoint: 'Key Point',
+    quiz: 'Quiz',
+    flashcard: 'Flashcard',
+    practice: 'Practice',
+    example: 'Example',
+    step: 'Steps',
+    definition: 'Definition',
+    theorem: 'Theorem',
+    proof: 'Proof',
+    derivation: 'Derivation',
+    keyPoint: 'Key Point',
   },
   quizMulti: 'Select all that apply',
   quizSubmit: 'Check answer',
@@ -95,8 +115,16 @@ export const defaultLearnStrings: LearnStrings = {
  */
 const LEARN_STRINGS_ZH: LearnStrings = {
   label: {
-    quiz: '选择题', flashcard: '知识卡片', practice: '练习', example: '例题', step: '分步',
-    definition: '定义', theorem: '定理', proof: '证明', derivation: '推导', keyPoint: '要点',
+    quiz: '选择题',
+    flashcard: '知识卡片',
+    practice: '练习',
+    example: '例题',
+    step: '分步',
+    definition: '定义',
+    theorem: '定理',
+    proof: '证明',
+    derivation: '推导',
+    keyPoint: '要点',
   },
   quizMulti: '多选',
   quizSubmit: '提交答案',

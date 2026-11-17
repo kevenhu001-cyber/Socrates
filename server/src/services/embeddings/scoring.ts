@@ -20,7 +20,12 @@
  * @param {string[]} queryBigrams  pairs of adjacent query words
  * @returns {number}
  */
-export function scoreKeywordSignals(title: string, snippet: string, queryWords: string[], queryBigrams: string[]): number {
+export function scoreKeywordSignals(
+  title: string,
+  snippet: string,
+  queryWords: string[],
+  queryBigrams: string[],
+): number {
   const t = (title || '').toLowerCase();
   const s = (snippet || '').toLowerCase();
   let score = 0;
@@ -134,13 +139,7 @@ const SPAMMY_HOSTNAMES = [
   'adservice.google.',
 ];
 
-const FORUM_HOSTNAMES = [
-  'reddit.com',
-  'quora.com',
-  'facebook.com',
-  'twitter.com',
-  'x.com',
-];
+const FORUM_HOSTNAMES = ['reddit.com', 'quora.com', 'facebook.com', 'twitter.com', 'x.com'];
 
 /**
  * Demote results that are likely to be SEO spam, forum thin content,
@@ -149,7 +148,10 @@ const FORUM_HOSTNAMES = [
  *
  * Returns a NEGATIVE number (penalty). Add to _relevance.
  */
-export function scoreSpamPenalty(url: string | null | undefined, title: string | null | undefined): number {
+export function scoreSpamPenalty(
+  url: string | null | undefined,
+  title: string | null | undefined,
+): number {
   let penalty = 0;
   if (title) {
     if (title.length > 140) penalty += 4;
@@ -161,8 +163,8 @@ export function scoreSpamPenalty(url: string | null | undefined, title: string |
   if (!url) return penalty;
   try {
     const host = new URL(url).hostname.toLowerCase();
-    if (SPAMMY_HOSTNAMES.some(s => host.indexOf(s) !== -1)) penalty += 5;
-    if (FORUM_HOSTNAMES.some(s => host === s || host.endsWith('.' + s))) penalty += 3;
+    if (SPAMMY_HOSTNAMES.some((s) => host.indexOf(s) !== -1)) penalty += 5;
+    if (FORUM_HOSTNAMES.some((s) => host === s || host.endsWith('.' + s))) penalty += 3;
     // PDF-only sources — but whitelist arXiv, which we route through
     // its abstract HTML page (arxiv.org/abs/<id>), not the PDF itself.
     if (/\.pdf(\?|$)/i.test(url) && !/(^|\.)arxiv\.org$/i.test(host)) {
@@ -183,7 +185,7 @@ export function contentQualityBoost(wordCount: number): number {
   if (n >= 800) return 4;
   if (n >= 300) return 2;
   if (n >= 120) return 0;
-  if (n > 0)   return -6;  // present but too thin to be useful
+  if (n > 0) return -6; // present but too thin to be useful
   return 0;
 }
 
@@ -204,8 +206,13 @@ let _segmenter: Intl.Segmenter | false | null = null;
 function getSegmenter(): Intl.Segmenter | null {
   if (_segmenter) return _segmenter;
   if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
-    try { _segmenter = new Intl.Segmenter(undefined, { granularity: 'word' }); return _segmenter; }
-    catch { _segmenter = false; return null; }
+    try {
+      _segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+      return _segmenter;
+    } catch {
+      _segmenter = false;
+      return null;
+    }
   }
   _segmenter = false;
   return null;
@@ -216,13 +223,15 @@ function getSegmenter(): Intl.Segmenter | null {
  * 'cjk' | 'cyrillic' | 'latin' | 'other'. Used to:
  *   - Pick the right Bing host (cn.bing.com for cjk, www.bing.com otherwise)
  *   - Skip engines that have been returning wrong-cluster results for
- *     this query's cluster (see searchHealth.js)
+ *     this query's cluster
  *   - Boost results whose language cluster matches the query's cluster
  */
 export function detectLanguageCluster(s: string): 'cjk' | 'cyrillic' | 'latin' | 'other' {
   if (!s) return 'other';
   const str = String(s);
-  let cjk = 0, cyr = 0, lat = 0;
+  let cjk = 0,
+    cyr = 0,
+    lat = 0;
   // Sample at most 200 chars for performance.
   const sample = str.length > 200 ? str.slice(0, 200) : str;
   for (const ch of sample) {

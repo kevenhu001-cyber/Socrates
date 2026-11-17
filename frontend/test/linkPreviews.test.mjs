@@ -3,16 +3,19 @@ import assert from 'node:assert/strict';
 import { buildLinkPreviewItems } from '../src/ui/linkPreviews.ts';
 
 test('link preview model preserves fetched status while keeping provider copy as text', () => {
-  const items = buildLinkPreviewItems(['https://www.example.com/article', 'https://example.org'], [
-    {
-      ok: true,
-      title: '<script>alert(1)</script>',
-      content: 'x'.repeat(230),
-      truncated: true,
-      chars: 230,
-    },
-    { ok: false, reason: '<img src=x onerror=alert(1)>' },
-  ]);
+  const items = buildLinkPreviewItems(
+    ['https://www.example.com/article', 'https://example.org'],
+    [
+      {
+        ok: true,
+        title: '<script>alert(1)</script>',
+        content: 'x'.repeat(230),
+        truncated: true,
+        chars: 230,
+      },
+      { ok: false, reason: '<img src=x onerror=alert(1)>' },
+    ],
+  );
 
   assert.deepEqual(items, [
     {

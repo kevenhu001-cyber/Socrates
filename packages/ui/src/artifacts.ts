@@ -62,10 +62,23 @@ function truncate(value: string, max: number): string {
 
 function documentPalette(mode: ThemeMode) {
   const p = getThemePaletteHex(mode);
-  return { page: p.bg.page, raised: p.bg.raised, text: p.text.primary, muted: p.text.muted, border: p.border.default, accent: p.accent.strong };
+  return {
+    page: p.bg.page,
+    raised: p.bg.raised,
+    text: p.text.primary,
+    muted: p.text.muted,
+    border: p.border.default,
+    accent: p.accent.strong,
+  };
 }
 
-function sourceDescriptor(input: { id: string; kind: string; title: string; source: string; mode: ThemeMode }): ArtifactDescriptor {
+function sourceDescriptor(input: {
+  id: string;
+  kind: string;
+  title: string;
+  source: string;
+  mode: ThemeMode;
+}): ArtifactDescriptor {
   const { id, kind, title, source, mode } = input;
   return {
     id,
@@ -77,18 +90,23 @@ function sourceDescriptor(input: { id: string; kind: string; title: string; sour
       return kind === 'html'
         ? buildEmbeddedDocument({ artifactId: id, kind, title, source, palette })
         : buildArtifactDocument({
-          artifactId: id,
-          kind,
-          title,
-          palette,
-          bodyHtml: `<div class="artifact-head"><h1 class="artifact-title">${escapeHtml(title)}</h1><span class="artifact-kind">${escapeHtml(kind)}</span></div>`
-            + `<pre class="artifact-source">${escapeHtml(source)}</pre>`,
-        });
+            artifactId: id,
+            kind,
+            title,
+            palette,
+            bodyHtml:
+              `<div class="artifact-head"><h1 class="artifact-title">${escapeHtml(title)}</h1><span class="artifact-kind">${escapeHtml(kind)}</span></div>` +
+              `<pre class="artifact-source">${escapeHtml(source)}</pre>`,
+          });
     },
   };
 }
 
-export function descriptorFromVisualization(spec: VisualizationSpec, mode: ThemeMode, id: string): ArtifactDescriptor {
+export function descriptorFromVisualization(
+  spec: VisualizationSpec,
+  mode: ThemeMode,
+  id: string,
+): ArtifactDescriptor {
   return {
     id,
     kind: islandKindForTemplate(spec.template),
@@ -99,11 +117,15 @@ export function descriptorFromVisualization(spec: VisualizationSpec, mode: Theme
 }
 
 /** Visualization cards for each call (exact duplicate specs within a call are removed). */
-export function artifactsFromToolCalls(toolCalls: ToolCall[] | undefined, mode: ThemeMode): ArtifactDescriptor[] {
+export function artifactsFromToolCalls(
+  toolCalls: ToolCall[] | undefined,
+  mode: ThemeMode,
+): ArtifactDescriptor[] {
   const descriptors: ArtifactDescriptor[] = [];
   (toolCalls || []).forEach((tool, index) => {
     const phase = String(tool.progressPhase || '').toLowerCase();
-    if (tool.isError === true || ['failed', 'cancelled', 'stopped', 'aborted'].includes(phase)) return;
+    if (tool.isError === true || ['failed', 'cancelled', 'stopped', 'aborted'].includes(phase))
+      return;
     const candidates: VisualizationSpec[] = [];
     for (const value of tool.visualizations ?? []) {
       if (isVisualizationSpec(value)) candidates.push(value);
@@ -117,14 +139,21 @@ export function artifactsFromToolCalls(toolCalls: ToolCall[] | undefined, mode: 
     });
     specs.forEach((spec, specIndex) => {
       const suffix = specs.length > 1 ? `-${specIndex + 1}` : '';
-      descriptors.push(descriptorFromVisualization(spec, mode, `artifact-${tool.id || index}${suffix}`));
+      descriptors.push(
+        descriptorFromVisualization(spec, mode, `artifact-${tool.id || index}${suffix}`),
+      );
     });
   });
   return descriptors;
 }
 
 /** Build a descriptor from a fenced island block; returns null for plain code. */
-export function artifactFromFence(input: { lang?: string | null; text: string; mode: ThemeMode; index: number }): ArtifactDescriptor | null {
+export function artifactFromFence(input: {
+  lang?: string | null;
+  text: string;
+  mode: ThemeMode;
+  index: number;
+}): ArtifactDescriptor | null {
   const kind = islandKindForLang(input.lang);
   if (!kind) return null;
   const id = `artifact-fence-${input.index}`;
@@ -132,10 +161,18 @@ export function artifactFromFence(input: { lang?: string | null; text: string; m
     try {
       const parsed: unknown = JSON.parse(input.text);
       if (isVisualizationSpec(parsed)) return descriptorFromVisualization(parsed, input.mode, id);
-    } catch { /* not JSON — fall through to a source preview */ }
+    } catch {
+      /* not JSON — fall through to a source preview */
+    }
   }
   const firstLine = input.text.split('\n').find((line) => line.trim()) || kind;
-  return sourceDescriptor({ id, kind, title: truncate(firstLine, 80), source: input.text, mode: input.mode });
+  return sourceDescriptor({
+    id,
+    kind,
+    title: truncate(firstLine, 80),
+    source: input.text,
+    mode: input.mode,
+  });
 }
 
 /** Validate an untrusted island message before it reaches the host. Accepts
@@ -143,16 +180,24 @@ export function artifactFromFence(input: { lang?: string | null; text: string; m
 export function parseArtifactBridgeMessage(data: unknown): ArtifactBridgeMessage | null {
   let value: unknown = data;
   if (typeof data === 'string') {
-    try { value = JSON.parse(data); } catch { return null; }
+    try {
+      value = JSON.parse(data);
+    } catch {
+      return null;
+    }
   }
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   switch (record.type) {
     case 'ready':
-      return typeof record.artifactId === 'string' && record.artifactId ? { type: 'ready', artifactId: record.artifactId } : null;
+      return typeof record.artifactId === 'string' && record.artifactId
+        ? { type: 'ready', artifactId: record.artifactId }
+        : null;
     case 'resize': {
       const height = record.height;
-      return typeof height === 'number' && Number.isFinite(height) && height > 0 ? { type: 'resize', height } : null;
+      return typeof height === 'number' && Number.isFinite(height) && height > 0
+        ? { type: 'resize', height }
+        : null;
     }
     case 'openLink': {
       const url = typeof record.url === 'string' ? safeLink(record.url) : null;
@@ -162,7 +207,8 @@ export function parseArtifactBridgeMessage(data: unknown): ArtifactBridgeMessage
       return typeof record.text === 'string' ? { type: 'copy', text: record.text } : null;
     case 'share':
       return typeof record.title === 'string' && typeof record.content === 'string'
-        ? { type: 'share', title: record.title, content: record.content } : null;
+        ? { type: 'share', title: record.title, content: record.content }
+        : null;
     case 'error':
       return typeof record.message === 'string' ? { type: 'error', message: record.message } : null;
     default:

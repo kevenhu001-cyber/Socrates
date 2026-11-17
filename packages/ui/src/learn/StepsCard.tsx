@@ -11,7 +11,14 @@ import { R, S, insetRing } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';
-import { fillTemplate, isFullyRevealed, revealAll, revealNext, revealState, type RevealState } from './model';
+import {
+  fillTemplate,
+  isFullyRevealed,
+  revealAll,
+  revealNext,
+  revealState,
+  type RevealState,
+} from './model';
 import { ActionRow, PillAction, Rich, ScaffoldCard } from './parts';
 
 export interface StepItem {
@@ -32,7 +39,17 @@ export interface StepsCardProps {
  * on a 1px rail that runs down to the next step. The capsule carries the
  * number, so the rail never needs a marker.
  */
-function StepRow({ step, last, kind, first }: { step: StepItem; last: boolean; kind: string; /** The step just revealed while stepping through: its capsule is ink. */ first: boolean }) {
+function StepRow({
+  step,
+  last,
+  kind,
+  first,
+}: {
+  step: StepItem;
+  last: boolean;
+  kind: string;
+  /** The step just revealed while stepping through: its capsule is ink. */ first: boolean;
+}) {
   const { colors } = useUiTheme();
   return (
     <View testID={`${kind}-step-${step.n}`} style={{ flexDirection: 'row', gap: S[200] }}>
@@ -49,9 +66,26 @@ function StepRow({ step, last, kind, first }: { step: StepItem; last: boolean; k
             boxShadow: first ? undefined : insetRing(colors.hairlineStrong),
           }}
         >
-          <UiText variant="labelSm" tone={first ? 'onInk' : 'secondary'} style={{ fontVariant: ['tabular-nums'] }}>{String(step.n).padStart(2, '0')}</UiText>
+          <UiText
+            variant="labelSm"
+            tone={first ? 'onInk' : 'secondary'}
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {String(step.n).padStart(2, '0')}
+          </UiText>
         </View>
-        {last ? null : <View style={{ flex: 1, width: 1, minHeight: 8, marginTop: S[50], marginBottom: -S[50], backgroundColor: colors.hairlineStrong }} />}
+        {last ? null : (
+          <View
+            style={{
+              flex: 1,
+              width: 1,
+              minHeight: 8,
+              marginTop: S[50],
+              marginBottom: -S[50],
+              backgroundColor: colors.hairlineStrong,
+            }}
+          />
+        )}
       </View>
       <View style={{ flex: 1, minWidth: 0, paddingTop: 1, paddingBottom: last ? 0 : S[300] }}>
         <Rich source={step.body} part={`${kind}-step`} />
@@ -72,23 +106,31 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
       kind={kind}
       label={label}
       testID={testID}
-      trailing={canStep && !stepping ? (
-        <PillAction
-          label={strings.stepsStepMode}
-          tone="quiet"
-          size="sm"
-          testID={`${kind}-step-mode`}
-          onPress={() => {
-            setStepping(true);
-            setReveal(revealState(steps.length, 1));
-          }}
-        />
-      ) : undefined}
+      trailing={
+        canStep && !stepping ? (
+          <PillAction
+            label={strings.stepsStepMode}
+            tone="quiet"
+            size="sm"
+            testID={`${kind}-step-mode`}
+            onPress={() => {
+              setStepping(true);
+              setReveal(revealState(steps.length, 1));
+            }}
+          />
+        ) : undefined
+      }
     >
       {title && title.trim() !== label ? <Rich source={title} part={`${kind}-title`} /> : null}
       <View role="group" aria-label={title || label}>
         {visible.map((step, index) => (
-          <StepRow key={`${step.n}-${index}`} step={step} kind={kind} first={stepping && index === visible.length - 1} last={index === visible.length - 1} />
+          <StepRow
+            key={`${step.n}-${index}`}
+            step={step}
+            kind={kind}
+            first={stepping && index === visible.length - 1}
+            last={index === visible.length - 1}
+          />
         ))}
       </View>
       {stepping && !isFullyRevealed(reveal) ? (

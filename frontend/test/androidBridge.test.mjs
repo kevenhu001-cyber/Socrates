@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM(`<!doctype html><html><body>
+const dom = new JSDOM(
+  `<!doctype html><html><body>
   <div id="sidebar" class="collapsed"></div>
   <div id="sidebarBackdrop"></div>
   <div id="confirmOverlay" class="hidden"></div>
@@ -12,7 +13,9 @@ const dom = new JSDOM(`<!doctype html><html><body>
   <div id="profileOverlay" class="hidden"></div>
   <div id="cheatsheetOverlay" class="hidden"></div>
   <div id="shareOverlay" class="hidden"></div>
-</body></html>`, { url: 'https://appassets.androidplatform.net/assets/spa/index.html' });
+</body></html>`,
+  { url: 'https://appassets.androidplatform.net/assets/spa/index.html' },
+);
 
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;

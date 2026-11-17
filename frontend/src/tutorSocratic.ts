@@ -1,4 +1,4 @@
-import { stateStore } from './state/store.ts';
+import { dispatchKb, dispatchSession, kbStore, sessionStore } from './store/index.ts';
 import { addMessage } from './chat/messages.ts';
 import { scheduleTurnToTopForMessage } from './chat/turn/anchor/schedule.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
@@ -38,19 +38,19 @@ const tutorSocraticRuntime = (function () {
      no emoji. The labels read like status badges. */
   const STAGE_LABELS = {
     motivate: '建立直觉',
-    define:   '精确定义',
-    develop:  '深入推导',
+    define: '精确定义',
+    develop: '深入推导',
     illustrate: '应用示例',
     exercise: '动手练习',
-    check:    '阶段检查'
+    check: '阶段检查',
   };
   const STAGE_LABELS_EN = {
     motivate: 'Intuition',
-    define:   'Definition',
-    develop:  'Development',
+    define: 'Definition',
+    develop: 'Development',
     illustrate: 'Worked example',
     exercise: 'Practice',
-    check:    'Check'
+    check: 'Check',
   };
 
   function currentLang() {
@@ -63,21 +63,23 @@ const tutorSocraticRuntime = (function () {
     try {
       const v = t(key);
       if (v && v !== key) return v;
-    } catch (error) { reportSwallow(error, 'tutorSocratic.js:80'); }
+    } catch (error) {
+      reportSwallow(error, 'tutorSocratic.js:80');
+    }
     return fallback;
   }
-  function stageLabel(stage: string|number) {
+  function stageLabel(stage: string | number) {
     /* Prefer the i18n key (so users can rename stages without
        code changes); fall back to the hardcoded bilingual
        table. The i18n key uses a stable identifier so it is
        safe to look up across locale switches. */
     const keyMap: Record<string, string> = {
-      motivate:    'tutor.stageMotivate',
-      define:      'tutor.stageDefine',
-      develop:     'tutor.stageDevelop',
-      illustrate:  'tutor.stageIllustrate',
-      exercise:    'tutor.stageExercise',
-      check:       'tutor.stageCheck'
+      motivate: 'tutor.stageMotivate',
+      define: 'tutor.stageDefine',
+      develop: 'tutor.stageDevelop',
+      illustrate: 'tutor.stageIllustrate',
+      exercise: 'tutor.stageExercise',
+      check: 'tutor.stageCheck',
     };
     const k = keyMap[stage];
     if (k) {
@@ -110,8 +112,18 @@ const tutorSocraticRuntime = (function () {
     /* Explicit hedge phrases. Bilingual so the detector works in
        either language without configuration. */
     const hedges = [
-      'idk', "i don't know", 'not sure', "don't know", 'no idea',
-      '不知道', '不懂', '不清楚', '不会', '没学过', '?', '？'
+      'idk',
+      "i don't know",
+      'not sure',
+      "don't know",
+      'no idea',
+      '不知道',
+      '不懂',
+      '不清楚',
+      '不会',
+      '没学过',
+      '?',
+      '？',
     ];
     const lower = text.toLowerCase();
     for (let i = 0; i < hedges.length; i++) {
@@ -147,12 +159,20 @@ const tutorSocraticRuntime = (function () {
    * system auto-falls through to an explanation.
    * ---------------------------------------------------------------- */
   function showExplainPrompt() {
-    const msg = ti('tutor.explainPrompt', currentLang() === 'zh'
-      ? '这里需要梳理一下吗？'
-      : 'Want to walk through this concept?');
+    const msg = ti(
+      'tutor.explainPrompt',
+      currentLang() === 'zh' ? '这里需要梳理一下吗？' : 'Want to walk through this concept?',
+    );
     const actions = [
-      { text: ti('tutor.explain', currentLang() === 'zh' ? '讲解一下' : 'Explain'), action: 'explain', primary: true },
-      { text: ti('tutor.explainKeepTrying', currentLang() === 'zh' ? '再想想' : 'Keep trying'), action: 'retry' }
+      {
+        text: ti('tutor.explain', currentLang() === 'zh' ? '讲解一下' : 'Explain'),
+        action: 'explain',
+        primary: true,
+      },
+      {
+        text: ti('tutor.explainKeepTrying', currentLang() === 'zh' ? '再想想' : 'Keep trying'),
+        action: 'retry',
+      },
     ];
     const clientId = addMessage('assistant', msg, 'suggest', actions);
     const list = document.getElementById('msgList');
@@ -169,28 +189,50 @@ const tutorSocraticRuntime = (function () {
    *   跳过      → mark this practice problem as skipped
    * ---------------------------------------------------------------- */
   function showFourOptionDialog(questionText: string) {
-    const preview = questionText && questionText.length > 80
-      ? questionText.slice(0, 80) + '…'
-      : (questionText || '');
-    const msg = ti('tutor.fourOptionTitle', currentLang() === 'zh'
-      ? '练习题卡住了，下一步？'
-      : 'Stuck on the practice? Pick a next step.');
+    const preview =
+      questionText && questionText.length > 80
+        ? questionText.slice(0, 80) + '…'
+        : questionText || '';
+    const msg = ti(
+      'tutor.fourOptionTitle',
+      currentLang() === 'zh'
+        ? '练习题卡住了，下一步？'
+        : 'Stuck on the practice? Pick a next step.',
+    );
     const actions = [
-      { text: ti('tutor.fourOptionHint',     currentLang() === 'zh' ? '提示' : 'Hint'),          action: 'hint',     primary: true },
-      { text: ti('tutor.fourOptionFull',     currentLang() === 'zh' ? '完整讲解' : 'Full explanation'), action: 'explain' },
-      { text: ti('tutor.fourOptionMistake',  currentLang() === 'zh' ? '加入错题本' : 'Add to mistakes'), action: 'mistake' },
-      { text: ti('tutor.fourOptionSkip',     currentLang() === 'zh' ? '跳过' : 'Skip'),          action: 'skip' }
+      {
+        text: ti('tutor.fourOptionHint', currentLang() === 'zh' ? '提示' : 'Hint'),
+        action: 'hint',
+        primary: true,
+      },
+      {
+        text: ti('tutor.fourOptionFull', currentLang() === 'zh' ? '完整讲解' : 'Full explanation'),
+        action: 'explain',
+      },
+      {
+        text: ti(
+          'tutor.fourOptionMistake',
+          currentLang() === 'zh' ? '加入错题本' : 'Add to mistakes',
+        ),
+        action: 'mistake',
+      },
+      {
+        text: ti('tutor.fourOptionSkip', currentLang() === 'zh' ? '跳过' : 'Skip'),
+        action: 'skip',
+      },
     ];
     const clientId = addMessage('assistant', msg, 'suggest', actions);
     const list = document.getElementById('msgList');
     scheduleTurnToTopForMessage(list, clientId);
     try {
-      stateStore.dispatch({
-        type: 'state/set',
-        key: 'session.fourOptionDialog',
-        value: { questionPreview: preview, at: Date.now() }
+      dispatchSession({
+        type: 'session/set',
+        key: 'fourOptionDialog',
+        value: { questionPreview: preview, at: Date.now() },
       });
-    } catch (error) { reportSwallow(error, 'tutorSocratic.js:221'); }
+    } catch (error) {
+      reportSwallow(error, 'tutorSocratic.js:221');
+    }
   }
 
   /* ----------------------------------------------------------------
@@ -214,20 +256,20 @@ const tutorSocraticRuntime = (function () {
     const entry: import('./state/kb.ts').MistakeStateEntry = {
       id: 'm-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       type: opts.type || 'practice',
-      topic: opts.topic || (stateStore.read("topic") || ''),
+      topic: opts.topic || sessionStore.getState().topic || '',
       q: opts.q || '',
       options: opts.options || [],
       correct: opts.correct || null,
       userAnswer: opts.userAnswer || null,
       timestamp: Date.now(),
       source: opts.source || 'four-option',
-      resolved: false
+      resolved: false,
     };
-    const mistakes = stateStore.read('mistakes');
-    stateStore.dispatch({
-      type: 'state/set',
+    const mistakes = kbStore.getState().mistakes;
+    dispatchKb({
+      type: 'kb/set',
       key: 'mistakes',
-      value: [entry].concat(Array.isArray(mistakes) ? mistakes : [])
+      value: [entry].concat(Array.isArray(mistakes) ? mistakes : []),
     });
     return entry;
   }
@@ -241,11 +283,12 @@ const tutorSocraticRuntime = (function () {
     detectStuck: detectStuck,
     showExplainPrompt: showExplainPrompt,
     showFourOptionDialog: showFourOptionDialog,
-    recordMistakeNotice: recordMistakeNotice
+    recordMistakeNotice: recordMistakeNotice,
   };
 })();
 
 if (typeof window !== 'undefined') {
-  (window as unknown as { tutorSocratic?: typeof tutorSocraticRuntime }).tutorSocratic = tutorSocraticRuntime;
+  (window as unknown as { tutorSocratic?: typeof tutorSocraticRuntime }).tutorSocratic =
+    tutorSocraticRuntime;
 }
 export type TutorSocraticRuntime = typeof tutorSocraticRuntime;

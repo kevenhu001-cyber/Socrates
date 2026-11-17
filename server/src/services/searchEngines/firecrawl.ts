@@ -48,7 +48,11 @@ function unavailable(reason: string): SearchResult[] {
  * @param {AbortSignal|null} [signal]  External timeout signal.
  * @returns {Promise<Array<{title,url,snippet,date,authority,source}>>}
  */
-export async function searchFirecrawl(query: string, limit = 10, signal?: AbortSignal | null): Promise<SearchResult[]> {
+export async function searchFirecrawl(
+  query: string,
+  limit = 10,
+  signal?: AbortSignal | null,
+): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
   /* Skip the spawn entirely when the CLI is not installed — an ENOENT
      per query used to waste a child-process attempt and log a warning on
@@ -87,12 +91,15 @@ export async function searchFirecrawl(query: string, limit = 10, signal?: AbortS
   const items = parsed?.data?.web;
   if (!Array.isArray(items) || items.length === 0) return [];
 
-  return items.slice(0, cap).map((item): SearchResult => ({
-    title: item.title || '',
-    url: item.url || '',
-    snippet: item.description || item.snippet || '',
-    date: item.date || null,
-    authority: 'normal',
-    source: 'firecrawl',
-  })).filter((r) => r.url && r.title);
+  return items
+    .slice(0, cap)
+    .map((item): SearchResult => ({
+      title: item.title || '',
+      url: item.url || '',
+      snippet: item.description || item.snippet || '',
+      date: item.date || null,
+      authority: 'normal',
+      source: 'firecrawl',
+    }))
+    .filter((r) => r.url && r.title);
 }

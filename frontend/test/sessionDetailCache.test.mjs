@@ -2,7 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  signature, lookup, store, invalidate, has, foldSave, _reset, _size, limits, detailCache,
+  signature,
+  lookup,
+  store,
+  invalidate,
+  has,
+  foldSave,
+  _reset,
+  _size,
+  limits,
+  detailCache,
 } from '../src/session/detailCache.ts';
 
 /* session/detailCache.js is pure in-memory state; reset between tests so the
@@ -28,7 +37,11 @@ test('exam sessions are never cached (different render path)', () => {
 
 test('oversized responses are skipped to bound memory', () => {
   _reset();
-  const big = { id: 'B', kind: 'chat', messages: [{ id: 'x', html: 'y'.repeat(limits.MAX_ENTRY_BYTES + 10) }] };
+  const big = {
+    id: 'B',
+    kind: 'chat',
+    messages: [{ id: 'x', html: 'y'.repeat(limits.MAX_ENTRY_BYTES + 10) }],
+  };
   store('B', big);
   assert.equal(lookup('B'), null);
   assert.equal(_size(), 0);
@@ -60,13 +73,29 @@ test('entries expire after MAX_AGE and read as a miss', () => {
 });
 
 test('signature is stable for identical paint-relevant content and ignores updatedAt', () => {
-  const a = { title: 'T', topic: 'Q', phase: 'chat', kind: 'chat', updatedAt: 'x', messages: [{ id: '1', html: '<p>a</p>' }] };
+  const a = {
+    title: 'T',
+    topic: 'Q',
+    phase: 'chat',
+    kind: 'chat',
+    updatedAt: 'x',
+    messages: [{ id: '1', html: '<p>a</p>' }],
+  };
   const b = { ...a, updatedAt: 'later' };
   assert.equal(signature(a), signature(b));
 });
 
 test('signature changes when messages are added, edited in place, or a title moves', () => {
-  const base = { title: 'T', topic: 'Q', phase: 'chat', kind: 'chat', messages: [{ id: '1', html: '<p>a</p>' }, { id: '2', html: '<p>b</p>' }] };
+  const base = {
+    title: 'T',
+    topic: 'Q',
+    phase: 'chat',
+    kind: 'chat',
+    messages: [
+      { id: '1', html: '<p>a</p>' },
+      { id: '2', html: '<p>b</p>' },
+    ],
+  };
   const s0 = signature(base);
   const added = { ...base, messages: base.messages.concat([{ id: '3', html: '<p>c</p>' }]) };
   assert.notEqual(signature(added), s0);
@@ -89,7 +118,11 @@ test('isFresh: a just-stored entry skips background revalidation, an older one d
 test('size cap counts attachment payloads, not only message html', () => {
   _reset();
   const dataUrl = 'data:image/png;base64,' + 'A'.repeat(limits.MAX_ENTRY_BYTES);
-  store('I', { id: 'I', kind: 'chat', messages: [{ id: 'm', html: '<p>x</p>', attachments: [{ kind: 'image', dataUrl }] }] });
+  store('I', {
+    id: 'I',
+    kind: 'chat',
+    messages: [{ id: 'm', html: '<p>x</p>', attachments: [{ kind: 'image', dataUrl }] }],
+  });
   assert.equal(has('I'), false);
 });
 
@@ -101,7 +134,9 @@ test('size cap counts attachment payloads, not only message html', () => {
 test('foldSave replaces an edited row in place and keeps the server id', () => {
   _reset();
   const resp = {
-    id: 'S', title: 'old', kind: 'chat',
+    id: 'S',
+    title: 'old',
+    kind: 'chat',
     messages: [
       { id: 'srv-1', clientId: 'c1', html: '<p>before</p>' },
       { id: 'srv-2', clientId: 'c2', html: '<p>other</p>' },
@@ -109,7 +144,7 @@ test('foldSave replaces an edited row in place and keeps the server id', () => {
   };
   store('S', resp);
   foldSave('S', { id: 'S', title: 'old' }, [
-    { clientId: 'c1', html: '<p>after</p>' },   // client copy has no server id
+    { clientId: 'c1', html: '<p>after</p>' }, // client copy has no server id
   ]);
   const out = lookup('S').response;
   assert.equal(out.messages.length, 2, 'an edit must not append a duplicate');
@@ -121,7 +156,8 @@ test('foldSave replaces an edited row in place and keeps the server id', () => {
 test('foldSave appends a brand-new row in arrival order', () => {
   _reset();
   store('S', {
-    id: 'S', kind: 'chat',
+    id: 'S',
+    kind: 'chat',
     messages: [{ id: 'srv-1', clientId: 'c1', html: '<p>a</p>' }],
   });
   foldSave('S', { id: 'S' }, [
@@ -130,15 +166,22 @@ test('foldSave appends a brand-new row in arrival order', () => {
   ]);
   const out = lookup('S').response;
   assert.equal(out.messages.length, 3);
-  assert.deepEqual(out.messages.map((m) => m.clientId), ['c1', 'c2', 'c3']);
+  assert.deepEqual(
+    out.messages.map((m) => m.clientId),
+    ['c1', 'c2', 'c3'],
+  );
 });
 
 test('foldSave carries scalars from the save response but keeps the dropped blobs', () => {
   _reset();
   store('S', {
-    id: 'S', kind: 'chat', title: 'old', phase: 'learn',
+    id: 'S',
+    kind: 'chat',
+    title: 'old',
+    phase: 'learn',
     /* The save handler deliberately omits the big JSONB from its reply. */
-    kbNodes: [{ id: 'n1' }], teachingPlan: { stage: 3 },
+    kbNodes: [{ id: 'n1' }],
+    teachingPlan: { stage: 3 },
     messages: [],
   });
   foldSave('S', { id: 'S', title: 'new', phase: 'teach' }, []);
@@ -190,13 +233,16 @@ test('prefetch returns cached response immediately if already cached', async () 
   assert.equal(detailCache.getInflight('P1'), null);
 });
 
-
 test('prefetch shares two slots, deduplicates, and invalidation cannot resurrect stale data', async () => {
   _reset();
   const originalFetch = globalThis.fetch;
   const pending = [];
-  globalThis.fetch = (url, options) => new Promise((resolve) => pending.push({ url, options, resolve }));
-  const respond = (request, id) => request.resolve(new Response(JSON.stringify({ id, kind: 'chat', messages: [] }), { status: 200 }));
+  globalThis.fetch = (url, options) =>
+    new Promise((resolve) => pending.push({ url, options, resolve }));
+  const respond = (request, id) =>
+    request.resolve(
+      new Response(JSON.stringify({ id, kind: 'chat', messages: [] }), { status: 200 }),
+    );
   const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
   try {
     const a = detailCache.prefetch('queue-a');
@@ -215,25 +261,33 @@ test('prefetch shares two slots, deduplicates, and invalidation cannot resurrect
     respond(pending[2], 'queue-c');
     assert.equal((await b).id, 'queue-b');
     assert.equal((await c).id, 'queue-c');
-  } finally { detailCache.clear(); globalThis.fetch = originalFetch; }
+  } finally {
+    detailCache.clear();
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('account clear resolves queued work and late responses cannot repopulate cache', async () => {
   _reset();
   const originalFetch = globalThis.fetch;
   const pending = [];
-  globalThis.fetch = (_url, options) => new Promise((resolve) => pending.push({ options, resolve }));
+  globalThis.fetch = (_url, options) =>
+    new Promise((resolve) => pending.push({ options, resolve }));
   try {
     const jobs = ['old-a', 'old-b', 'old-c'].map(detailCache.prefetch);
     detailCache.clear();
     assert.deepEqual(await Promise.all(jobs), [null, null, null]);
     assert.equal(pending.length, 2, 'queued request never started');
     assert.ok(pending.every((request) => request.options.signal.aborted));
-    for (const request of pending) request.resolve(new Response(JSON.stringify({ id: 'old-a', messages: [] })));
+    for (const request of pending)
+      request.resolve(new Response(JSON.stringify({ id: 'old-a', messages: [] })));
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(_size(), 0);
     assert.equal(detailCache.getInflight('old-a'), null);
-  } finally { detailCache.clear(); globalThis.fetch = originalFetch; }
+  } finally {
+    detailCache.clear();
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('idle warmups share one cancellable job and hover backlog stays bounded', async () => {
@@ -241,10 +295,13 @@ test('idle warmups share one cancellable job and hover backlog stays bounded', a
   const originalFetch = globalThis.fetch;
   const originalIdle = globalThis.requestIdleCallback;
   const originalCancel = globalThis.cancelIdleCallback;
-  let scheduled = 0, cancelled = 0;
+  let scheduled = 0,
+    cancelled = 0;
   const pending = [];
   globalThis.requestIdleCallback = () => ++scheduled;
-  globalThis.cancelIdleCallback = () => { cancelled++; };
+  globalThis.cancelIdleCallback = () => {
+    cancelled++;
+  };
   globalThis.fetch = () => new Promise((resolve) => pending.push(resolve));
   try {
     detailCache.idleWarmup(['warm-a', 'warm-b']);
@@ -254,7 +311,9 @@ test('idle warmups share one cancellable job and hover backlog stays bounded', a
     assert.equal(cancelled, 1);
     const jobs = Array.from({ length: 30 }, (_, i) => detailCache.prefetch(`hover-${i}`));
     assert.equal(pending.length, 2);
-    const queued = Array.from({ length: 30 }, (_, i) => detailCache.getInflight(`hover-${i}`)).filter(Boolean);
+    const queued = Array.from({ length: 30 }, (_, i) =>
+      detailCache.getInflight(`hover-${i}`),
+    ).filter(Boolean);
     assert.equal(queued.length, limits.MAX_ENTRIES + 2);
     assert.equal(await jobs[2], null, 'oldest queued hover was dropped');
     detailCache.clear();

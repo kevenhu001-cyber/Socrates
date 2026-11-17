@@ -27,7 +27,7 @@ export function useToolRunDisclosure(id: string) {
   const [localOpen, setLocalOpen] = useState(false);
   return {
     open: context ? context.expanded.has(id) : localOpen,
-    setOpen: (open: boolean) => context ? context.setExpanded(id, open) : setLocalOpen(open),
+    setOpen: (open: boolean) => (context ? context.setExpanded(id, open) : setLocalOpen(open)),
   };
 }
 

@@ -39,5 +39,7 @@ export function announceTranscript(text?: string | null): void {
     requestAnimationFrame(() => {
       if (node.isConnected) node.textContent = value;
     });
-  } catch (_) { /* empty-catch: intentional — never break the stream for an announcement */ }
+  } catch (_) {
+    /* empty-catch: intentional — never break the stream for an announcement */
+  }
 }

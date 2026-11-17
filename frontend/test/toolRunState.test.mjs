@@ -28,7 +28,14 @@ test('tool run summaries distinguish active, completed, and failed work', () => 
     { phase: TOOL_RUN_PHASES.succeeded },
     { phase: TOOL_RUN_PHASES.failed },
   ]);
-  assert.deepEqual(summary, { total: 3, active: 1, succeeded: 1, failed: 1, cancelled: 0, timed_out: 0 });
+  assert.deepEqual(summary, {
+    total: 3,
+    active: 1,
+    succeeded: 1,
+    failed: 1,
+    cancelled: 0,
+    timed_out: 0,
+  });
 });
 
 test('agent run state follows the enclosing tool lifecycle', () => {

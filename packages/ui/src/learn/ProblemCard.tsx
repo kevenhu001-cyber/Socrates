@@ -10,7 +10,14 @@ import { H, R, S, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';
-import { fillTemplate, isFullyRevealed, revealNext, revealNone, revealState, type RevealState } from './model';
+import {
+  fillTemplate,
+  isFullyRevealed,
+  revealNext,
+  revealNone,
+  revealState,
+  type RevealState,
+} from './model';
 import { ActionRow, PillAction, Rich, ScaffoldCard, Section, VerdictGlyph, dataSet } from './parts';
 
 export type AnswerFeedbackState = '' | 'ok' | 'bad' | 'recorded';
@@ -42,33 +49,64 @@ export interface ProblemCardProps {
   testID?: string;
 }
 
-function HintLevels({ hints, reveal, setReveal }: { hints: readonly string[]; reveal: RevealState; setReveal: (next: RevealState) => void }) {
+function HintLevels({
+  hints,
+  reveal,
+  setReveal,
+}: {
+  hints: readonly string[];
+  reveal: RevealState;
+  setReveal: (next: RevealState) => void;
+}) {
   const { strings } = useLearnHost();
   if (!hints.length) return null;
   const more = !isFullyRevealed(reveal);
-  const label = reveal.shown === 0
-    ? strings.hintShow
-    : fillTemplate(strings.hintNext, { n: reveal.shown + 1, total: reveal.total });
+  const label =
+    reveal.shown === 0
+      ? strings.hintShow
+      : fillTemplate(strings.hintNext, { n: reveal.shown + 1, total: reveal.total });
   return (
     <>
       {hints.slice(0, reveal.shown).map((hint, index) => (
-        <Section key={index} label={fillTemplate(strings.hintLevel, { n: index + 1 })} testID={`hint-${index + 1}`}>
+        <Section
+          key={index}
+          label={fillTemplate(strings.hintLevel, { n: index + 1 })}
+          testID={`hint-${index + 1}`}
+        >
           <Rich source={hint} part="hint" />
         </Section>
       ))}
       <ActionRow>
         {more ? (
-          <PillAction label={label} tone="quiet" chevron expanded={false} testID="hint-next" onPress={() => setReveal(revealNext(reveal))} />
+          <PillAction
+            label={label}
+            tone="quiet"
+            chevron
+            expanded={false}
+            testID="hint-next"
+            onPress={() => setReveal(revealNext(reveal))}
+          />
         ) : null}
         {reveal.shown > 0 ? (
-          <PillAction label={strings.hintHide} tone="quiet" chevron expanded testID="hint-hide" onPress={() => setReveal(revealNone(reveal))} />
+          <PillAction
+            label={strings.hintHide}
+            tone="quiet"
+            chevron
+            expanded
+            testID="hint-hide"
+            onPress={() => setReveal(revealNone(reveal))}
+          />
         ) : null}
       </ActionRow>
     </>
   );
 }
 
-function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<ProblemCardProps, 'onSubmitAnswer' | 'onRevealAnswer' | 'hasAnswerKey'>) {
+function AnswerBox({
+  onSubmitAnswer,
+  onRevealAnswer,
+  hasAnswerKey,
+}: Pick<ProblemCardProps, 'onSubmitAnswer' | 'onRevealAnswer' | 'hasAnswerKey'>) {
   const { strings } = useLearnHost();
   const { colors, fontFamily, typeScale } = useUiTheme();
   const { subtle } = sheets(colors);
@@ -104,43 +142,84 @@ function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<Proble
         testID="practice-input"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{
-          minHeight: 84,
-          paddingHorizontal: S[200],
-          paddingVertical: S[100],
-          borderRadius: R.row,
-          borderWidth: 0,
-          /* Site question box: hairline ring at rest, a deeper ring plus a
+        style={
+          {
+            minHeight: 84,
+            paddingHorizontal: S[200],
+            paddingVertical: S[100],
+            borderRadius: R.row,
+            borderWidth: 0,
+            /* Site question box: hairline ring at rest, a deeper ring plus a
              4px halo on focus — never a colour. */
-          boxShadow: focused
-            ? `${insetRing(colors.inkTertiary)}, 0 0 0 4px ${colors.fill}`
-            : insetRing(colors.hairlineStrong),
-          backgroundColor: done ? subtle : colors.card,
-          color: colors.ink,
-          fontFamily,
-          fontSize: uiType.bodySm.size * typeScale,
-          lineHeight: uiType.bodySm.lineHeight * typeScale,
-          textAlignVertical: 'top',
-          outlineStyle: 'none',
-        } as object}
+            boxShadow: focused
+              ? `${insetRing(colors.inkTertiary)}, 0 0 0 4px ${colors.fill}`
+              : insetRing(colors.hairlineStrong),
+            backgroundColor: done ? subtle : colors.card,
+            color: colors.ink,
+            fontFamily,
+            fontSize: uiType.bodySm.size * typeScale,
+            lineHeight: uiType.bodySm.lineHeight * typeScale,
+            textAlignVertical: 'top',
+            outlineStyle: 'none',
+          } as object
+        }
       />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: S[75],
+          minHeight: H.action,
+        }}
+      >
         <View
           testID="practice-feedback"
           role="status"
           aria-live="polite"
           {...dataSet({ state: feedback.state })}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: S[75], flexShrink: 1, flexGrow: 1 }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: S[75],
+            flexShrink: 1,
+            flexGrow: 1,
+          }}
         >
-          {feedback.state === 'ok' || (feedback.state === 'bad' && done) ? <VerdictGlyph verdict={feedback.state === 'ok' ? 'correct' : 'incorrect'} /> : null}
-          {feedback.rich ? <Rich source={feedback.rich} part="practice-answer" style={{ flexShrink: 1 }} /> : null}
+          {feedback.state === 'ok' || (feedback.state === 'bad' && done) ? (
+            <VerdictGlyph verdict={feedback.state === 'ok' ? 'correct' : 'incorrect'} />
+          ) : null}
+          {feedback.rich ? (
+            <Rich source={feedback.rich} part="practice-answer" style={{ flexShrink: 1 }} />
+          ) : null}
           {!feedback.rich && feedback.text ? (
-            <UiText variant="labelSm" tone={feedback.state === 'ok' ? 'ink' : 'secondary'} style={{ flexShrink: 1 }}>{feedback.text}</UiText>
+            <UiText
+              variant="labelSm"
+              tone={feedback.state === 'ok' ? 'ink' : 'secondary'}
+              style={{ flexShrink: 1 }}
+            >
+              {feedback.text}
+            </UiText>
           ) : null}
         </View>
         <ActionRow>
-          {hasAnswerKey ? <PillAction label={strings.answerReveal} tone="quiet" testID="practice-reveal" disabled={done} onPress={reveal} /> : null}
-          <PillAction label={strings.answerSubmit} tone="solid" testID="practice-submit" disabled={done} onPress={submit} />
+          {hasAnswerKey ? (
+            <PillAction
+              label={strings.answerReveal}
+              tone="quiet"
+              testID="practice-reveal"
+              disabled={done}
+              onPress={reveal}
+            />
+          ) : null}
+          <PillAction
+            label={strings.answerSubmit}
+            tone="solid"
+            testID="practice-submit"
+            disabled={done}
+            onPress={submit}
+          />
         </ActionRow>
       </View>
     </View>
@@ -148,7 +227,8 @@ function AnswerBox({ onSubmitAnswer, onRevealAnswer, hasAnswerKey }: Pick<Proble
 }
 
 export function ProblemCard(props: ProblemCardProps) {
-  const { kind, title, problem, hints, solution, initialSolutionOpen, onSolutionToggle, testID } = props;
+  const { kind, title, problem, hints, solution, initialSolutionOpen, onSolutionToggle, testID } =
+    props;
   const { strings, readOnly } = useLearnHost();
   const [reveal, setReveal] = useState<RevealState>(() => revealState(hints.length));
   const [solutionOpen, setSolutionOpen] = useState(Boolean(initialSolutionOpen));
@@ -159,7 +239,11 @@ export function ProblemCard(props: ProblemCardProps) {
     onSolutionToggle?.(next);
   };
   return (
-    <ScaffoldCard kind={kind} label={kind === 'example' ? strings.label.example : strings.label.practice} testID={testID}>
+    <ScaffoldCard
+      kind={kind}
+      label={kind === 'example' ? strings.label.example : strings.label.practice}
+      testID={testID}
+    >
       {showTitle ? <Rich source={title || ''} part={`${kind}-title`} /> : null}
       <Rich source={problem} part={`${kind}-problem`} />
       <HintLevels hints={hints} reveal={reveal} setReveal={setReveal} />
@@ -183,7 +267,11 @@ export function ProblemCard(props: ProblemCardProps) {
         </>
       ) : null}
       {kind === 'practice' && !readOnly && props.onSubmitAnswer ? (
-        <AnswerBox onSubmitAnswer={props.onSubmitAnswer} onRevealAnswer={props.onRevealAnswer} hasAnswerKey={props.hasAnswerKey} />
+        <AnswerBox
+          onSubmitAnswer={props.onSubmitAnswer}
+          onRevealAnswer={props.onRevealAnswer}
+          hasAnswerKey={props.hasAnswerKey}
+        />
       ) : null}
     </ScaffoldCard>
   );

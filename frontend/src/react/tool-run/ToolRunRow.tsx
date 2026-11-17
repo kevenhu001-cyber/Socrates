@@ -32,7 +32,8 @@ export function callDurationMs(call: ToolCallRecord | undefined): number | null 
   if (typeof record.durationMs === 'number') return record.durationMs;
   const run = call._run;
   if (run && typeof run.durationMs === 'number') return run.durationMs;
-  if (run && typeof run.startedAt === 'number' && typeof run.endedAt === 'number') return run.endedAt - run.startedAt;
+  if (run && typeof run.startedAt === 'number' && typeof run.endedAt === 'number')
+    return run.endedAt - run.startedAt;
   return null;
 }
 
@@ -55,15 +56,26 @@ function ToolRunActions({ view, call, messageId, readOnly }: ToolRunRowProps) {
           <ToolErrorNotice
             message={message || translate('tool.statusFailed', 'Failed')}
             retryLabel={retry ? translate('tool.retry', 'Retry search') : undefined}
-            onRetry={retry ? () => {
-              /* Same event the delegated listener in liveTurn already handles. */
-              host.current?.dispatchEvent(new CustomEvent('tool-retry', { bubbles: true, detail: retry }));
-            } : undefined}
+            onRetry={
+              retry
+                ? () => {
+                    /* Same event the delegated listener in liveTurn already handles. */
+                    host.current?.dispatchEvent(
+                      new CustomEvent('tool-retry', { bubbles: true, detail: retry }),
+                    );
+                  }
+                : undefined
+            }
           />
         </WebUiTheme>
       ) : null}
       {view.approval ? (
-        <ToolRunApproval view={view.approval} messageId={messageId || ''} toolCallId={view.id} readOnly={readOnly} />
+        <ToolRunApproval
+          view={view.approval}
+          messageId={messageId || ''}
+          toolCallId={view.id}
+          readOnly={readOnly}
+        />
       ) : null}
     </div>
   );

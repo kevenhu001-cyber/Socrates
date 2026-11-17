@@ -1,6 +1,8 @@
 /* Conversation reading column and message materials. The chat view remains
    structurally unchanged; this module is its sole visual owner. */
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+  #appShell
+  .chat-view {
   width: 100%;
   max-width: calc(var(--ui-content-chat) + 2 * var(--ui-content-gutter));
   margin-inline: auto;
@@ -15,130 +17,167 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
    the messages and its edges missed theirs. The phone layout keeps its own
    reference-pinned gutters, so the padding is desktop-only. */
 @media (min-width: 769px) {
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .chat-view {
     box-sizing: border-box;
     padding-inline: var(--ui-content-gutter);
   }
 }
 
 @media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: calc(var(--ui-content-chat) + 40px);
-  margin-inline: auto;
-  gap: 24px;
-  padding: 28px 20px 24px;
-  scroll-padding-block: 24px;
-}
-}
-
-@media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0;
-  color: var(--foreground);
-}
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #msgList {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(var(--ui-content-chat) + 40px);
+    margin-inline: auto;
+    gap: 24px;
+    padding: 28px 20px 24px;
+    scroll-padding-block: 24px;
+  }
 }
 
 @media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList > .msg.user {
-  align-items: flex-end;
-}
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #msgList
+    > .msg {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0;
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-
-/* Include read-only transcripts that do not set conversation-active. */
-#appShell .msg-body { --msg-para-gap: var(--ui-space-md); }
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body {
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  font-size: var(--ui-text-body);
-  font-weight: var(--ui-font-weight-regular);
-  /* Phone reference prose: 16px on a 25.3–26px line pitch (desktop keeps 28). */
-  line-height: calc(26px * var(--app-type-scale));
-  letter-spacing: normal;
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #msgList
+    > .msg.user {
+    align-items: flex-end;
+  }
 }
 
-/* Headings keep the same semantic weight as the desktop reading column.
+@media (max-width: 768px) {
+  /* Include read-only transcripts that do not set conversation-active. */
+  #appShell .msg-body {
+    --msg-para-gap: var(--ui-space-md);
+  }
+
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body {
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--ui-text-body);
+    font-weight: var(--ui-font-weight-regular);
+    /* Phone reference prose: 16px on a 25.3–26px line pitch (desktop keeps 28). */
+    line-height: calc(26px * var(--app-type-scale));
+    letter-spacing: normal;
+  }
+
+  /* Headings keep the same semantic weight as the desktop reading column.
    Phone reference: h1 20px, h2 18px (glyph advance 19.5 / 17.6). */
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body :is(h1, h2, h3, h4) {
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: normal;
-}
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body
+    :is(h1, h2, h3, h4) {
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-weight: var(--ui-font-weight-semibold);
+    letter-spacing: normal;
+  }
 
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h1 {
-  font-size: var(--ui-font-size-xl);
-  line-height: 1.4;
-  margin: var(--ui-space-xl) 0 var(--ui-space-md);
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h2 {
-  font-size: var(--ui-font-size-lg);
-  line-height: 1.45;
-  margin: var(--ui-space-xl) 0 var(--ui-space-md);
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h3 {
-  font-size: var(--ui-text-body);
-  line-height: 1.55;
-  margin: var(--ui-space-xl) 0 var(--ui-space-sm);
-}
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-body h4 {
-  font-size: var(--ui-text-body);
-  line-height: var(--ui-text-body-line);
-  margin: var(--ui-space-lg) 0 var(--ui-space-xs);
-}
-}
-
-@media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
-  max-width: min(76%, 680px);
-  padding: 10px 16px;
-  border: 0;
-  border-radius: var(--ui-radius-bubble);
-  background: var(--ui-bg-bubble);
-  box-shadow: none;
-}
-}
-
-@media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.assistant .msg-body {
-  width: 100%;
-  max-width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body
+    h1 {
+    font-size: var(--ui-font-size-xl);
+    line-height: 1.4;
+    margin: var(--ui-space-xl) 0 var(--ui-space-md);
+  }
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body
+    h2 {
+    font-size: var(--ui-font-size-lg);
+    line-height: 1.45;
+    margin: var(--ui-space-xl) 0 var(--ui-space-md);
+  }
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body
+    h3 {
+    font-size: var(--ui-text-body);
+    line-height: 1.55;
+    margin: var(--ui-space-xl) 0 var(--ui-space-sm);
+  }
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-body
+    h4 {
+    font-size: var(--ui-text-body);
+    line-height: var(--ui-text-body-line);
+    margin: var(--ui-space-lg) 0 var(--ui-space-xs);
+  }
 }
 
 @media (max-width: 768px) {
-
-body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg-toolbar {
-  min-height: 32px;
-  height: 32px;
-  margin-top: 6px;
-}
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg.user
+    .msg-body {
+    max-width: min(76%, 680px);
+    padding: 10px 16px;
+    border: 0;
+    border-radius: var(--ui-radius-bubble);
+    background: var(--ui-bg-bubble);
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 768px) {
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .chat-view {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg.assistant
+    .msg-body {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg-toolbar {
+    min-height: 32px;
+    height: 32px;
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .chat-view {
     max-width: none;
   }
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell #msgList {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    #msgList {
     max-width: none;
     padding: 20px 16px 36px;
   }
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #appShell .msg.user .msg-body {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell
+    .msg.user
+    .msg-body {
     max-width: 88%;
   }
 }
@@ -241,7 +280,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
      height during composer reflow, moving scrollTop upward and falsely
      releasing the reader's bottom-follow intent. Anchors also need exact
      geometry. Older settled history still skips off-screen layout. */
-  #appShell #msgList > .msg.assistant[data-stream-settled="true"]:nth-last-child(n + 3):not(.turn-viewport-anchor) {
+  #appShell
+    #msgList
+    > .msg.assistant[data-stream-settled='true']:nth-last-child(n + 3):not(.turn-viewport-anchor) {
     content-visibility: auto;
     contain-intrinsic-size: auto 240px;
   }
@@ -270,11 +311,17 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   #appShell #msgList > .msg.user {
     contain-intrinsic-size: auto 64px;
   }
-  html:not([data-keyboard-phase="opening"]):not([data-keyboard-phase="closing"]) #appShell #msgList:not([data-turn-anchor-settling="true"]) > .msg.assistant[data-stream-settled="true"]:nth-last-child(n + 4):not(.turn-viewport-anchor) {
+  html:not([data-keyboard-phase='opening']):not([data-keyboard-phase='closing'])
+    #appShell
+    #msgList:not([data-turn-anchor-settling='true'])
+    > .msg.assistant[data-stream-settled='true']:nth-last-child(n + 4):not(.turn-viewport-anchor) {
     content-visibility: auto;
     contain-intrinsic-size: auto 200px;
   }
-  html:not([data-keyboard-phase="opening"]):not([data-keyboard-phase="closing"]) #appShell #msgList:not([data-turn-anchor-settling="true"]) > .msg.user:nth-last-child(n + 4):not(.turn-viewport-anchor) {
+  html:not([data-keyboard-phase='opening']):not([data-keyboard-phase='closing'])
+    #appShell
+    #msgList:not([data-turn-anchor-settling='true'])
+    > .msg.user:nth-last-child(n + 4):not(.turn-viewport-anchor) {
     content-visibility: auto;
     contain-intrinsic-size: auto 64px;
   }
@@ -282,14 +329,36 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 
 /* Answer actions are mounted by React after playback settles.
  * Toolbar ownership has moved out of legacy, restore, parity and polish. */
-.msg-toolbar{display:flex;gap:2px;align-items:center;margin-top:2px;opacity:0;transition:opacity var(--ui-duration-fast) var(--ui-ease-out);min-height:var(--ui-control-sm)}
-.msg.assistant .msg-toolbar{justify-content:flex-start;margin-left:2px}
-.msg.user .msg-toolbar{justify-content:flex-end;margin-right:0}
-@media (hover:hover) {.msg:hover .msg-toolbar{opacity:1}
+.msg-toolbar {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  min-height: var(--ui-control-sm);
 }
-@media (hover:none) {.msg-toolbar{opacity:.7}
+.msg.assistant .msg-toolbar {
+  justify-content: flex-start;
+  margin-left: 2px;
 }
-.msg-list>.msg.assistant:last-child .msg-toolbar{opacity:1}
+.msg.user .msg-toolbar {
+  justify-content: flex-end;
+  margin-right: 0;
+}
+@media (hover: hover) {
+  .msg:hover .msg-toolbar {
+    opacity: 1;
+  }
+}
+@media (hover: none) {
+  .msg-toolbar {
+    opacity: 0.7;
+  }
+}
+.msg-list > .msg.assistant:last-child .msg-toolbar {
+  opacity: 1;
+}
 /* Older answers keep their actions on hover only. Forcing every settled row
    visible put five buttons under every answer in a long transcript — the row
    belongs to the message you are reading, and `.msg:focus-within` below
@@ -298,23 +367,78 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
  * ToolButton.tsx): 32px square, --ui-radius-md, ghost hover — all from
  * --ui-* tokens. What stays here is the affordance layer: the ::after
  * tooltip, the state skins, the light-theme tint and the glyph rung. */
-.msg-toolbar-btn::after{content:attr(aria-label);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(3px);background:var(--popover);color:var(--foreground);font-family:var(--font-sans);font-size:var(--ui-font-size-xxs);font-weight:var(--ui-font-weight-medium);letter-spacing:-0.01em;line-height:1;padding:6px 8px;border-radius:var(--ui-radius-sm);border:1px solid var(--ui-border-subtle);box-shadow:var(--ui-shadow-menu);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity var(--ui-duration-fast) ease,transform var(--ui-duration-fast) ease;z-index:var(--ui-z-menu)}
-.msg-toolbar-btn:hover::after{opacity:1;transform:translateX(-50%) translateY(0);transition:opacity var(--ui-duration-fast) ease 250ms,transform var(--ui-duration-fast) var(--ui-ease-spring-gentle) 250ms}
-.msg-toolbar-btn.active{color:var(--foreground);background:var(--accent)}
-.msg-toolbar-btn.active:hover{background:var(--accent)}
-.msg-toolbar-btn.is-speaking{color:var(--primary-foreground);background:var(--primary);animation:readAloudPulse 1.4s ease-in-out infinite}
-.msg-toolbar-btn.is-speaking:hover{background:var(--primary)}
-.msg-toolbar-btn svg{width:16px;height:16px}
+.msg-toolbar-btn::after {
+  content: attr(aria-label);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  background: var(--popover);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-medium);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border-subtle);
+  box-shadow: var(--ui-shadow-menu);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity var(--ui-duration-fast) ease,
+    transform var(--ui-duration-fast) ease;
+  z-index: var(--ui-z-menu);
+}
+.msg-toolbar-btn:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  transition:
+    opacity var(--ui-duration-fast) ease 250ms,
+    transform var(--ui-duration-fast) var(--ui-ease-spring-gentle) 250ms;
+}
+.msg-toolbar-btn.active {
+  color: var(--foreground);
+  background: var(--accent);
+}
+.msg-toolbar-btn.active:hover {
+  background: var(--accent);
+}
+.msg-toolbar-btn.is-speaking {
+  color: var(--primary-foreground);
+  background: var(--primary);
+  animation: readAloudPulse 1.4s ease-in-out infinite;
+}
+.msg-toolbar-btn.is-speaking:hover {
+  background: var(--primary);
+}
+.msg-toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+}
 /* 消息工具栏的所有图标（复制、编辑、重新生成、赞/踩、分享、分支、朗读、换个角度、「更多」、版本切换箭头）
    统一画成屏幕上的 1.5px 线：non-scaling-stroke 让线宽按渲染像素算，
    不随 18px（桌面）/16px（手机）的缩放或 2.5 的箭头描边变化。 */
-.msg-toolbar-btn svg :is(path,line,polyline,polygon,rect,circle,ellipse){vector-effect:non-scaling-stroke;stroke-width:1.5px}
-@keyframes readAloudPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.msg-toolbar-btn svg :is(path, line, polyline, polygon, rect, circle, ellipse) {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}
+@keyframes readAloudPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
 #appShell#appShell .msg-toolbar {
   color: var(--ui-text-tertiary);
 }
-[data-mode="light"] .msg-toolbar-btn,
-[data-mode="light"] #appShell .msg-toolbar {
+[data-mode='light'] .msg-toolbar-btn,
+[data-mode='light'] #appShell .msg-toolbar {
   color: var(--foreground);
 }
 @media (min-width: 769px) {
@@ -324,10 +448,16 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   }
 }
 @media (min-width: 769px) {
-  #appShell #msgList .msg.user .msg-toolbar { margin: 4px -6px 0 0; }
+  #appShell #msgList .msg.user .msg-toolbar {
+    margin: 4px -6px 0 0;
+  }
 }
 @media (min-width: 769px) {
-  #appShell #msgList .msg-toolbar-btn svg { width: 18px; height: 18px; shape-rendering: geometricPrecision; }
+  #appShell #msgList .msg-toolbar-btn svg {
+    width: 18px;
+    height: 18px;
+    shape-rendering: geometricPrecision;
+  }
 }
 #appShell .msg-toolbar-btn.is-copied svg {
   animation: checkmarkPop var(--ui-duration-fast) var(--ui-ease-spring-bouncy) forwards;
@@ -337,14 +467,28 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   color: var(--ui-ink);
 }
 @keyframes checkmarkPop {
-  0% { transform: scale(0.65); opacity: 0; }
-  60% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.65);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-.msg:focus-within .msg-toolbar { opacity: 1; }
+.msg:focus-within .msg-toolbar {
+  opacity: 1;
+}
 
-.msg-toolbar-feedback { display: flex; gap: 2px; }
+.msg-toolbar-feedback {
+  display: flex;
+  gap: 2px;
+}
 
 /* ── Follow-up Suggestion Chips ───────────────────────────────────── */
 .msg-follow-ups {
@@ -427,8 +571,15 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   text-align: start;
   cursor: pointer;
 }
-.msg-action-menu button:hover, .msg-action-menu button:focus-visible { background: var(--accent); }
-.msg-action-menu svg { width: 16px; height: 16px; flex-shrink: 0; }
+.msg-action-menu button:hover,
+.msg-action-menu button:focus-visible {
+  background: var(--accent);
+}
+.msg-action-menu svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 
 /* ── Message Branch Switcher (< 1 / 2 > in-place navigation) ────────── */
 .msg-branch-switcher {
@@ -461,7 +612,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   background: transparent;
   color: var(--muted-foreground);
   cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease;
 }
 
 .msg-branch-btn:hover:not(:disabled) {
@@ -499,22 +652,33 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 .math-pending-bar {
   display: block;
   width: min(12em, 60%);
-  height: .5em;
+  height: 0.5em;
   border-radius: var(--ui-round-pill);
-  background: linear-gradient(90deg, var(--ui-fill) 0%, var(--ui-fill-pressed) 50%, var(--ui-fill) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--ui-fill) 0%,
+    var(--ui-fill-pressed) 50%,
+    var(--ui-fill) 100%
+  );
   background-size: 200% 100%;
   animation: mathPendingShimmer 1.6s ease-in-out infinite;
 }
-.math-stream-placeholder[data-math-pending="inline"] {
+.math-stream-placeholder[data-math-pending='inline'] {
   display: inline-block;
   width: 1.2em;
 }
 @keyframes mathPendingShimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .math-pending-bar { animation: none; }
+  .math-pending-bar {
+    animation: none;
+  }
 }
 
 /* Chat-Demo aligned FileCard and message attachment strips */
@@ -628,7 +792,9 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
 }
 
 @keyframes fileCardSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .file-card-retry-btn {
@@ -715,4 +881,3 @@ body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active) #
   object-fit: cover;
   flex-shrink: 0;
 }
-

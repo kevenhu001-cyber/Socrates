@@ -25,7 +25,9 @@ function subscribeReducedMotion(): void {
     reducedNow = Boolean(value);
     reducedListeners.forEach((listener) => listener(reducedNow));
   };
-  AccessibilityInfo.isReduceMotionEnabled?.().then(publish).catch(() => undefined);
+  AccessibilityInfo.isReduceMotionEnabled?.()
+    .then(publish)
+    .catch(() => undefined);
   AccessibilityInfo.addEventListener?.('reduceMotionChanged', publish);
 }
 
@@ -44,7 +46,15 @@ export function useReducedMotion(): boolean {
 
 /** Chevron drawn from two hairline borders. Points right when closed and
  * turns down when open, so the rotation itself says "this expands here". */
-export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: boolean; size?: number; tone?: 'ink' | 'secondary' | 'tertiary' }) {
+export function Chevron({
+  open = false,
+  size = 7,
+  tone = 'tertiary',
+}: {
+  open?: boolean;
+  size?: number;
+  tone?: 'ink' | 'secondary' | 'tertiary';
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const turn = useRef(new Animated.Value(open ? 1 : 0)).current;
@@ -53,12 +63,27 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
       turn.setValue(open ? 1 : 0);
       return;
     }
-    Animated.timing(turn, { toValue: open ? 1 : 0, duration: uiMotion.fast, easing: Easing.out(Easing.quad), useNativeDriver: nativeDriver }).start();
+    Animated.timing(turn, {
+      toValue: open ? 1 : 0,
+      duration: uiMotion.fast,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: nativeDriver,
+    }).start();
   }, [open, reduced, turn]);
-  const color = tone === 'ink' ? colors.ink : tone === 'secondary' ? colors.inkSecondary : colors.inkTertiary;
+  const color =
+    tone === 'ink' ? colors.ink : tone === 'secondary' ? colors.inkSecondary : colors.inkTertiary;
   const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['-45deg', '45deg'] });
   return (
-    <View aria-hidden style={{ width: 16, height: 16, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}>
+    <View
+      aria-hidden
+      style={{
+        width: 16,
+        height: 16,
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
       <Animated.View
         style={{
           width: size,
@@ -75,7 +100,9 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
   );
 }
 
-/** Opacity breathing for an in-flight status word (e.g. 「进行中」). */export function useBreathing(active: boolean): Animated.Value {
+/** Opacity breathing for an in-flight status word (e.g. 「进行中」). */ export function useBreathing(
+  active: boolean,
+): Animated.Value {
   const reduced = useReducedMotion();
   const value = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -84,10 +111,22 @@ export function Chevron({ open = false, size = 7, tone = 'tertiary' }: { open?: 
       value.setValue(1);
       return;
     }
-    const loop = Animated.loop(Animated.sequence([
-      Animated.timing(value, { toValue: 0.45, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: nativeDriver }),
-      Animated.timing(value, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: nativeDriver }),
-    ]));
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(value, {
+          toValue: 0.45,
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: nativeDriver,
+        }),
+        Animated.timing(value, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: nativeDriver,
+        }),
+      ]),
+    );
     loop.start();
     return () => loop.stop();
   }, [active, reduced, value]);
@@ -105,11 +144,18 @@ export function useReveal(visible: boolean, distance = 4) {
       value.setValue(visible ? 1 : 0);
       return;
     }
-    Animated.timing(value, { toValue: visible ? 1 : 0, duration: uiMotion.medium, easing: Easing.out(Easing.cubic), useNativeDriver: nativeDriver }).start();
+    Animated.timing(value, {
+      toValue: visible ? 1 : 0,
+      duration: uiMotion.medium,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: nativeDriver,
+    }).start();
   }, [visible, reduced, value]);
   return {
     opacity: value,
-    transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [-distance, 0] }) }],
+    transform: [
+      { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [-distance, 0] }) },
+    ],
   };
 }
 
@@ -126,12 +172,14 @@ function retainSpin(): void {
   spinSubscribers += 1;
   if (spinLoop) return;
   spinProgress.setValue(0);
-  spinLoop = Animated.loop(Animated.timing(spinProgress, {
-    toValue: 1,
-    duration: SPIN_MS,
-    easing: Easing.linear,
-    useNativeDriver: nativeDriver,
-  }));
+  spinLoop = Animated.loop(
+    Animated.timing(spinProgress, {
+      toValue: 1,
+      duration: SPIN_MS,
+      easing: Easing.linear,
+      useNativeDriver: nativeDriver,
+    }),
+  );
   spinLoop.start();
 }
 

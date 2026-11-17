@@ -55,15 +55,17 @@ for (const failure of ['timeout', 'exit', 'error']) {
         await stopContentExtractorPool();
       }
     `;
-    const result = spawnSync(process.execPath, [
-      '--experimental-test-module-mocks', '--import', 'tsx', '--input-type=module', '-e', source,
-    ], {
-      cwd: fileURLToPath(new URL('..', import.meta.url)),
-      encoding: 'utf8',
-      env: { ...process.env, CONTENT_EXTRACT_POOL_SIZE: '1', CONTENT_EXTRACT_TIMEOUT_MS: '500' },
-      timeout: 10_000,
-      killSignal: 'SIGKILL',
-    });
+    const result = spawnSync(
+      process.execPath,
+      ['--experimental-test-module-mocks', '--import', 'tsx', '--input-type=module', '-e', source],
+      {
+        cwd: fileURLToPath(new URL('..', import.meta.url)),
+        encoding: 'utf8',
+        env: { ...process.env, CONTENT_EXTRACT_POOL_SIZE: '1', CONTENT_EXTRACT_TIMEOUT_MS: '500' },
+        timeout: 10_000,
+        killSignal: 'SIGKILL',
+      },
+    );
     assert.ifError(result.error);
     assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   });

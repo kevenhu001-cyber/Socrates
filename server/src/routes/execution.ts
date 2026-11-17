@@ -6,7 +6,13 @@ import { executions, files } from '../db/schema/index.js';
 import { isUuid } from '../lib/validate.js';
 import { NotFound } from '../lib/errors.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
-import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult, type ProgressEvent } from '../services/codeInterpreter/index.js';
+import {
+  subscribeExecution,
+  subscribeExecutionResult,
+  unsubscribeExecution,
+  unsubscribeExecutionResult,
+  type ProgressEvent,
+} from '../services/codeInterpreter/index.js';
 
 const router = Router();
 
@@ -30,7 +36,9 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
       return res.status(400).json({ code: 'BAD_REQUEST', message: 'Invalid execution ID format' });
     }
     const db = getDb();
-    const [exec] = await db.select().from(executions)
+    const [exec] = await db
+      .select()
+      .from(executions)
       .where(and(eq(executions.id, executionId), eq(executions.userId, req.userId!)))
       .limit(1);
     if (!exec) throw new NotFound('Execution not found');
@@ -38,9 +46,9 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'Connection': 'keep-alive',
+      Pragma: 'no-cache',
+      Expires: '0',
+      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
     res.flushHeaders();
@@ -54,10 +62,16 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
        look like a hang) and self-cleans on res close/finish/error. */
     startSseKeepalive(res, { intervalMs: 10_000 });
 
-    if (exec.status === 'completed' || exec.status === 'failed' || exec.status === 'timeout' || exec.status === 'cancelled') {
+    if (
+      exec.status === 'completed' ||
+      exec.status === 'failed' ||
+      exec.status === 'timeout' ||
+      exec.status === 'cancelled'
+    ) {
       let artifactFileIds: Array<{ id: string; name: string; mimeType: string }> = [];
       try {
-        const artifactRows = await db.select({ id: files.id, name: files.name, mimeType: files.mimeType })
+        const artifactRows = await db
+          .select({ id: files.id, name: files.name, mimeType: files.mimeType })
           .from(files)
           .where(eq(files.executionId, executionId));
         artifactFileIds = artifactRows;
@@ -65,16 +79,18 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
         console.warn('[execution] artifact fetch failed:', (err as Error).message);
       }
 
-      res.write(`event: result\ndata: ${JSON.stringify({
-        status: exec.status,
-        executionId: exec.id,
-        stdout: exec.stdout || '',
-        stderr: exec.stderr || '',
-        durationMs: exec.durationMs || 0,
-        exitCode: exec.exitCode,
-        errorMessage: (exec as { errorMessage?: string | null }).errorMessage || null,
-        artifactFileIds,
-      })}\n\n`);
+      res.write(
+        `event: result\ndata: ${JSON.stringify({
+          status: exec.status,
+          executionId: exec.id,
+          stdout: exec.stdout || '',
+          stderr: exec.stderr || '',
+          durationMs: exec.durationMs || 0,
+          exitCode: exec.exitCode,
+          errorMessage: (exec as { errorMessage?: string | null }).errorMessage || null,
+          artifactFileIds,
+        })}\n\n`,
+      );
       (res as { flush?: () => void }).flush?.();
       res.end();
       trackSseConnection(req.app, -1);
@@ -83,11 +99,15 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
 
     const onProgress = (event: ProgressEvent) => {
       try {
-        res.write(`event: progress\ndata: ${JSON.stringify({
-          phase: event.phase, stream: event.stream,
-          chunk: event.chunk || '', executionId: event.executionId,
-          elapsedMs: event.elapsedMs || 0,
-        })}\n\n`);
+        res.write(
+          `event: progress\ndata: ${JSON.stringify({
+            phase: event.phase,
+            stream: event.stream,
+            chunk: event.chunk || '',
+            executionId: event.executionId,
+            elapsedMs: event.elapsedMs || 0,
+          })}\n\n`,
+        );
         (res as { flush?: () => void }).flush?.();
       } catch {}
     };
@@ -109,12 +129,26 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
 
     req.on('close', () => {
       trackSseConnection(req.app, -1);
-      if (unsubProgress) { try { unsubProgress(); } catch {} }
-      if (unsubResult) { try { unsubResult(); } catch {} }
-      try { unsubscribeExecution(executionId, onProgress); } catch {}
-      try { unsubscribeExecutionResult(executionId, onResult); } catch {}
+      if (unsubProgress) {
+        try {
+          unsubProgress();
+        } catch {}
+      }
+      if (unsubResult) {
+        try {
+          unsubResult();
+        } catch {}
+      }
+      try {
+        unsubscribeExecution(executionId, onProgress);
+      } catch {}
+      try {
+        unsubscribeExecutionResult(executionId, onResult);
+      } catch {}
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

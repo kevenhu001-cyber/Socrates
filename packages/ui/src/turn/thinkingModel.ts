@@ -32,8 +32,7 @@ export interface TimedTool<T> {
 }
 
 export type ActivityTimelineEntry<T> =
-  | { kind: 'step'; step: ThinkingStep }
-  | { kind: 'tools'; id: string; tools: T[] };
+  { kind: 'step'; step: ThinkingStep } | { kind: 'tools'; id: string; tools: T[] };
 
 const MAX_STEPS = 12;
 const TITLE_MAX = 40;
@@ -67,13 +66,16 @@ export function splitSummary(raw: string): { title: string; summary: string } {
   }
   if (plain.length <= 24) return { title: plain, summary: '' };
   const sentence = /^(.{2,40}?[。！？.!?])\s*([\s\S]+)$/.exec(plain);
-  if (sentence) return { title: sentence[1].replace(/[。.]$/, '').trim(), summary: sentence[2].trim() };
+  if (sentence)
+    return { title: sentence[1].replace(/[。.]$/, '').trim(), summary: sentence[2].trim() };
   if (plain.length <= TITLE_MAX) return { title: plain, summary: '' };
   return { title: '', summary: plain };
 }
 
 /** Public summaries only, de-duplicated by text, oldest first. */
-export function publicSummariesOf(activities: ReadonlyArray<ActivityLike> | null | undefined): ThinkingStep[] {
+export function publicSummariesOf(
+  activities: ReadonlyArray<ActivityLike> | null | undefined,
+): ThinkingStep[] {
   const seen = new Set<string>();
   const steps: ThinkingStep[] = [];
   for (const entry of activities || []) {
@@ -88,7 +90,10 @@ export function publicSummariesOf(activities: ReadonlyArray<ActivityLike> | null
 }
 
 /** Fallback when only the transport's latest public summary is known. */
-export function stepsWithFallback(steps: ThinkingStep[], publicSummary: string | undefined): ThinkingStep[] {
+export function stepsWithFallback(
+  steps: ThinkingStep[],
+  publicSummary: string | undefined,
+): ThinkingStep[] {
   if (steps.length) return steps;
   const text = String(publicSummary || '').trim();
   if (!text) return [];
@@ -103,12 +108,17 @@ export function stepsWithFallback(steps: ThinkingStep[], publicSummary: string |
  * after the timed ones, so history (which often lacks tool start times)
  * still reads summary-first.
  */
-export function activityTimeline<T>(steps: ThinkingStep[], tools: ReadonlyArray<TimedTool<T>>): ActivityTimelineEntry<T>[] {
+export function activityTimeline<T>(
+  steps: ThinkingStep[],
+  tools: ReadonlyArray<TimedTool<T>>,
+): ActivityTimelineEntry<T>[] {
   type Raw = { at: number; order: number; step?: ThinkingStep; tool?: TimedTool<T> };
   const raw: Raw[] = [];
   steps.forEach((step, order) => raw.push({ at: finiteOr(step.startedAt), order, step }));
-  tools.forEach((tool, index) => raw.push({ at: finiteOr(tool.startedAt), order: steps.length + index, tool }));
-  raw.sort((a, b) => (a.at - b.at) || (a.order - b.order));
+  tools.forEach((tool, index) =>
+    raw.push({ at: finiteOr(tool.startedAt), order: steps.length + index, tool }),
+  );
+  raw.sort((a, b) => a.at - b.at || a.order - b.order);
   const out: ActivityTimelineEntry<T>[] = [];
   for (const entry of raw) {
     if (entry.step) {
@@ -144,11 +154,22 @@ export function thinkingHeaderOf(input: {
   toolCount?: number;
   statusLabel?: string;
 }): ThinkingHeader {
-  const duration = typeof input.durationSec === 'number' && Number.isFinite(input.durationSec) && input.durationSec > 0
-    ? Math.max(1, Math.round(input.durationSec)) : null;
-  const toolCount = typeof input.toolCount === 'number' && Number.isFinite(input.toolCount)
-    ? Math.max(0, Math.floor(input.toolCount)) : 0;
-  return { live: Boolean(input.live), durationSec: duration, toolCount, statusLabel: input.statusLabel?.trim() || '' };
+  const duration =
+    typeof input.durationSec === 'number' &&
+    Number.isFinite(input.durationSec) &&
+    input.durationSec > 0
+      ? Math.max(1, Math.round(input.durationSec))
+      : null;
+  const toolCount =
+    typeof input.toolCount === 'number' && Number.isFinite(input.toolCount)
+      ? Math.max(0, Math.floor(input.toolCount))
+      : 0;
+  return {
+    live: Boolean(input.live),
+    durationSec: duration,
+    toolCount,
+    statusLabel: input.statusLabel?.trim() || '',
+  };
 }
 
 export interface ThinkingLabels {
@@ -159,11 +180,16 @@ export interface ThinkingLabels {
 }
 
 function fill(template: string, values: Record<string, number>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => key in values ? String(values[key]) : match);
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    key in values ? String(values[key]) : match,
+  );
 }
 
 export function thinkingLabelOf(header: ThinkingHeader, labels: ThinkingLabels): string {
   if (header.live) return header.statusLabel || labels.runningNoTime;
-  if (header.toolCount > 0) return fill(header.toolCount === 1 ? labels.usedTool : labels.usedTools, { n: header.toolCount });
+  if (header.toolCount > 0)
+    return fill(header.toolCount === 1 ? labels.usedTool : labels.usedTools, {
+      n: header.toolCount,
+    });
   return labels.doneNoTime;
 }

@@ -8,7 +8,7 @@ import { CSP_INLINE_SCRIPT_HASHES } from './generated/cspInlineHashes.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
-import { sanitizeLogValue } from './lib/log.js';
+import { sanitizeLogValue } from './lib/logRedaction.js';
 import { clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
 import {
   normalizeClientErrorSeverity,
@@ -99,9 +99,9 @@ const app = express();
  * without a proxy. Update this list whenever the operator adds a
  * new tier of CDN / WAF / VPN in front of nginx. */
 app.set('trust proxy', [
-  'loopback',           // 127.0.0.1, ::1
-  'linklocal',          // 169.254.0.0/16, fe80::/10
-  'uniquelocal',        // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7
+  'loopback', // 127.0.0.1, ::1
+  'linklocal', // 169.254.0.0/16, fe80::/10
+  'uniquelocal', // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7
   // EdgeOne + Cloudflare + nginx hops arrive from these subnets in
   // practice. Add your exact upstream CIDRs here — DO NOT use a
   // numeric trust-proxy count because it will silently mis-attribute
@@ -150,29 +150,18 @@ app.disable('x-powered-by');
 // document's CSP, and the viz cards render model-authored inline scripts. See
 // the long note in scripts/gen-csp-hashes.mjs for the measurement (23 failing
 // specs without it) and the route to removing it.
-const CSP_SCRIPT_SOURCES = [
-  "'self'",
-  "'unsafe-inline'",
-];
+const CSP_SCRIPT_SOURCES = ["'self'", "'unsafe-inline'"];
 const CSP_STYLE_SOURCES = [
   "'self'",
-  "'unsafe-inline'",        // Vite emits a small inline style block
+  "'unsafe-inline'", // Vite emits a small inline style block
 ];
-const CSP_FONT_SOURCES = [
-  "'self'",
-  'data:',
-];
+const CSP_FONT_SOURCES = ["'self'", 'data:'];
 // img-src keeps `https:` deliberately: assistant replies routinely contain
 // markdown images pointing at arbitrary hosts, and /api/image-search
 // returns third-party thumbnail URLs. Narrowing this would silently break
 // both features. Images cannot execute, so the residual risk is referrer
 // leakage / tracking pixels, already bounded by referrerPolicy above.
-const CSP_IMG_SOURCES = [
-  "'self'",
-  'data:',
-  'https:',
-  'blob:',
-];
+const CSP_IMG_SOURCES = ["'self'", 'data:', 'https:', 'blob:'];
 const CSP_CONNECT_SOURCES = [
   "'self'",
   'https://www.geogebra.org',
@@ -185,94 +174,96 @@ const CSP_CONNECT_SOURCES = [
 // own origins, the pinned CDN scripts, and the hash of the inline
 // pre-boot script. HSTS is 2 years + preload + subdomains so the
 // browser refuses to ever speak plain HTTP to *.topodrive.top.
-app.use(helmet({
-  contentSecurityPolicy: {
-    useDefaults: false,
-    directives: {
-      defaultSrc: ["'self'"],
-      // Inline scripts are gated by hash; the dev-only 'unsafe-eval'
-      // is required for Vite HMR. Production emits NO inline scripts
-      // (Vite bundles to /assets/index-*.js).
-      //
-      // P_csp-dev-eval — previously this branch was gated on
-      // `process.env.NODE_ENV === 'production'`, which had two
-      // failure modes:
-      //   1. NODE_ENV unset → defaults to 'development' → unsafe-eval
-      //      silently allowed in production. (Node's default for an
-      //      unset NODE_ENV is 'development'; pm2 / systemd / Docker
-      //      setups that omit NODE_ENV would weaken CSP without any
-      //      log warning.)
-      //   2. NODE_ENV='staging' / 'preview' / 'qa' (any non-'production'
-      //      value) → same silent weakening.
-      // Replace with an explicit opt-in: an operator who wants Vite
-      // HMR / dev tooling must set ALLOW_DEV_EVAL=1 deliberately.
-      // Leaving it unset (the production default) keeps the strict
-      // policy regardless of NODE_ENV.
-      scriptSrc: [
-        ...CSP_SCRIPT_SOURCES,
-        'https://www.geogebra.org',
-        // Hashes are deliberately NOT appended while 'unsafe-inline' is in
-        // CSP_SCRIPT_SOURCES: CSP3 makes a browser ignore 'unsafe-inline' as
-        // soon as a hash is present, which would re-enable hash-only
-        // enforcement and break every `<iframe srcdoc>` viz card (measured:
-        // 23 failing Playwright specs). scripts/gen-csp-hashes.mjs applies the
-        // same rule to ops/nginx/csp-spa.conf, and CSP_INLINE_SCRIPT_HASHES
-        // stays imported and drift-checked for the day the viz iframes move to
-        // a real URL and this can become hash-only.
-        ...(CSP_SCRIPT_SOURCES.includes("'unsafe-inline'") ? [] : CSP_INLINE_SCRIPT_HASHES),
-        ...(process.env.ALLOW_DEV_EVAL === '1' ? ["'unsafe-eval'"] : []),
-      ],
-      styleSrc: CSP_STYLE_SOURCES,
-      fontSrc: CSP_FONT_SOURCES,
-      imgSrc: CSP_IMG_SOURCES,
-      // SSE streams from /api/chat/stream and web-search/image-search hit
-      // our own origin. 'connect-src' covers fetch / XHR / EventSource.
-      connectSrc: CSP_CONNECT_SOURCES,
-      // SSE needs the worker/blob sources for streaming.
-      workerSrc: ["'self'", "blob:"],
-      frameSrc: ["'self'", 'https://www.geogebra.org'],
-      objectSrc: ["'none'"],
-      frameAncestors: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      manifestSrc: ["'self'"],
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        // Inline scripts are gated by hash; the dev-only 'unsafe-eval'
+        // is required for Vite HMR. Production emits NO inline scripts
+        // (Vite bundles to /assets/index-*.js).
+        //
+        // P_csp-dev-eval — previously this branch was gated on
+        // `process.env.NODE_ENV === 'production'`, which had two
+        // failure modes:
+        //   1. NODE_ENV unset → defaults to 'development' → unsafe-eval
+        //      silently allowed in production. (Node's default for an
+        //      unset NODE_ENV is 'development'; pm2 / systemd / Docker
+        //      setups that omit NODE_ENV would weaken CSP without any
+        //      log warning.)
+        //   2. NODE_ENV='staging' / 'preview' / 'qa' (any non-'production'
+        //      value) → same silent weakening.
+        // Replace with an explicit opt-in: an operator who wants Vite
+        // HMR / dev tooling must set ALLOW_DEV_EVAL=1 deliberately.
+        // Leaving it unset (the production default) keeps the strict
+        // policy regardless of NODE_ENV.
+        scriptSrc: [
+          ...CSP_SCRIPT_SOURCES,
+          'https://www.geogebra.org',
+          // Hashes are deliberately NOT appended while 'unsafe-inline' is in
+          // CSP_SCRIPT_SOURCES: CSP3 makes a browser ignore 'unsafe-inline' as
+          // soon as a hash is present, which would re-enable hash-only
+          // enforcement and break every `<iframe srcdoc>` viz card (measured:
+          // 23 failing Playwright specs). scripts/gen-csp-hashes.mjs applies the
+          // same rule to ops/nginx/csp-spa.conf, and CSP_INLINE_SCRIPT_HASHES
+          // stays imported and drift-checked for the day the viz iframes move to
+          // a real URL and this can become hash-only.
+          ...(CSP_SCRIPT_SOURCES.includes("'unsafe-inline'") ? [] : CSP_INLINE_SCRIPT_HASHES),
+          ...(process.env.ALLOW_DEV_EVAL === '1' ? ["'unsafe-eval'"] : []),
+        ],
+        styleSrc: CSP_STYLE_SOURCES,
+        fontSrc: CSP_FONT_SOURCES,
+        imgSrc: CSP_IMG_SOURCES,
+        // SSE streams from /api/chat/stream and web-search/image-search hit
+        // our own origin. 'connect-src' covers fetch / XHR / EventSource.
+        connectSrc: CSP_CONNECT_SOURCES,
+        // SSE needs the worker/blob sources for streaming.
+        workerSrc: ["'self'", 'blob:'],
+        frameSrc: ["'self'", 'https://www.geogebra.org'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        manifestSrc: ["'self'"],
+      },
     },
-  },
-  // 2 years, includeSubDomains, eligible for the HSTS preload list.
-  // Once a browser sees this it refuses plain HTTP for the entire domain.
-  strictTransportSecurity: {
-    maxAge: 63072000,
-    includeSubDomains: true,
-    preload: true,
-  },
-  // API/SPA should never be framed.
-  frameguard: { action: 'deny' },
-  // Block MIME sniffing.
-  noSniff: true,
-  // Don't allow the browser to send the full URL as Referer; we don't
-  // need that and it can leak query-string tokens.
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  // Restrict powerful APIs the SPA doesn't need.
-  permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-  // Cross-Origin-Embedder-Policy defaults to "require-corp" in helmet,
-  // which would force every cross-origin subresource to opt in via CORP
-  // headers. We don't need SharedArrayBuffer / cross-origin isolation, and
-  // enabling it would break remote markdown images (img-src https:) and the
-  // GeoGebra embed. Disabled deliberately.
-  crossOriginEmbedderPolicy: false,
-  // CORP is left at "cross-origin" rather than tightened to "same-origin".
-  // The pre-2026-09-25 comment justified it with SRI-pinned
-  // cdn.jsdelivr.net scripts, which no longer exist — and the SPA reaches
-  // the API same-origin through the nginx /api/v2 reverse proxy, so that
-  // rationale never applied either. The honest reason to keep it wide is
-  // that the non-browser clients have not been audited for
-  // no-cors subresource loads against the API host; narrowing this is a
-  // separate, testable change. (The Capacitor shell that used to be the
-  // second such client was removed 2026-10-15 — ADR 0016.)
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  // Same-origin opener — prevents window.opener leaks.
-  crossOriginOpenerPolicy: { policy: 'same-origin' },
-}));
+    // 2 years, includeSubDomains, eligible for the HSTS preload list.
+    // Once a browser sees this it refuses plain HTTP for the entire domain.
+    strictTransportSecurity: {
+      maxAge: 63072000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    // API/SPA should never be framed.
+    frameguard: { action: 'deny' },
+    // Block MIME sniffing.
+    noSniff: true,
+    // Don't allow the browser to send the full URL as Referer; we don't
+    // need that and it can leak query-string tokens.
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    // Restrict powerful APIs the SPA doesn't need.
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    // Cross-Origin-Embedder-Policy defaults to "require-corp" in helmet,
+    // which would force every cross-origin subresource to opt in via CORP
+    // headers. We don't need SharedArrayBuffer / cross-origin isolation, and
+    // enabling it would break remote markdown images (img-src https:) and the
+    // GeoGebra embed. Disabled deliberately.
+    crossOriginEmbedderPolicy: false,
+    // CORP is left at "cross-origin" rather than tightened to "same-origin".
+    // The pre-2026-09-25 comment justified it with SRI-pinned
+    // cdn.jsdelivr.net scripts, which no longer exist — and the SPA reaches
+    // the API same-origin through the nginx /api/v2 reverse proxy, so that
+    // rationale never applied either. The honest reason to keep it wide is
+    // that the non-browser clients have not been audited for
+    // no-cors subresource loads against the API host; narrowing this is a
+    // separate, testable change. (The Capacitor shell that used to be the
+    // second such client was removed 2026-10-15 — ADR 0016.)
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    // Same-origin opener — prevents window.opener leaks.
+    crossOriginOpenerPolicy: { policy: 'same-origin' },
+  }),
+);
 
 // Request-timing sampler for the public status metrics. Records each
 // completed request's duration + success into a rolling in-memory
@@ -295,7 +286,11 @@ app.use(function requestTiming(req, res, next) {
     // anything about real traffic. No-op when telemetry is off. The /api/v2
     // alias is stripped first — this middleware runs before apiV2Rewrite,
     // so mobile's /api/v2/health probes would otherwise slip the filter.
-    if (!url.startsWith('/api/health') && !url.startsWith('/api/status') && !url.startsWith('/api/_internal/metrics')) {
+    if (
+      !url.startsWith('/api/health') &&
+      !url.startsWith('/api/status') &&
+      !url.startsWith('/api/_internal/metrics')
+    ) {
       const route = `${req.baseUrl || ''}${(req.route as { path?: string } | undefined)?.path || ''}`;
       recordHttpMetrics(ms, route, req.method, res.statusCode);
     }
@@ -306,7 +301,7 @@ app.use(function requestTiming(req, res, next) {
 // Request id — set before anything else so downstream middleware
 // (csrf, auth, error handler) can include it in logs / headers for
 // log correlation across server + browser.
-app.use(function requestId(req, res, next){
+app.use(function requestId(req, res, next) {
   req.id = crypto.randomUUID();
   res.setHeader('X-Request-Id', req.id);
   next();
@@ -325,17 +320,24 @@ app.use(function apiV2Rewrite(req, _res, next) {
 // SSE (text/event-stream) must NOT be compressed — compression
 // buffers small frames and prevents incremental delivery through
 // nginx/proxies/CDNs, which breaks streaming output on mobile.
-app.use(compression({
-  level: 6,
-  filter: (req, res) => {
-    if (res.getHeader && res.getHeader('Content-Type') === 'text/event-stream') return false;
-    return compression.filter(req, res);
-  }
-}));
+app.use(
+  compression({
+    level: 6,
+    filter: (req, res) => {
+      if (res.getHeader && res.getHeader('Content-Type') === 'text/event-stream') return false;
+      return compression.filter(req, res);
+    },
+  }),
+);
 
 // GitHub signatures cover the exact bytes. This must precede express.json
 // and CSRF, otherwise the body is mutated before signature verification.
-app.post('/api/connectors/github/webhook', webhookLimiter, express.raw({ type: 'application/json', limit: '2mb' }), githubWebhookHandler);
+app.post(
+  '/api/connectors/github/webhook',
+  webhookLimiter,
+  express.raw({ type: 'application/json', limit: '2mb' }),
+  githubWebhookHandler,
+);
 
 // Body parsing.
 // P_image-payload-alignment — the limit must fit a full chat payload with
@@ -366,9 +368,20 @@ app.use(timeoutMiddleware);
 // so an operator can add / remove hosts without redeploying the
 // server.
 const DEFAULT_CORS_HOSTS = [
-  'app.topodrive.top', 'topodrive.top', 'www.topodrive.top', 'status.topodrive.top',
-  'localhost:8080', 'localhost:3000', 'localhost:5173', 'localhost:5174', 'localhost:5175',
-  '127.0.0.1:8080', '127.0.0.1:3000', '127.0.0.1:5173', '127.0.0.1:5174', '127.0.0.1:5175',
+  'app.topodrive.top',
+  'topodrive.top',
+  'www.topodrive.top',
+  'status.topodrive.top',
+  'localhost:8080',
+  'localhost:3000',
+  'localhost:5173',
+  'localhost:5174',
+  'localhost:5175',
+  '127.0.0.1:8080',
+  '127.0.0.1:3000',
+  '127.0.0.1:5173',
+  '127.0.0.1:5174',
+  '127.0.0.1:5175',
 ];
 const CORS_ALLOWED_HOSTS = (process.env.CORS_ALLOWED_HOSTS || '')
   .split(',')
@@ -376,19 +389,23 @@ const CORS_ALLOWED_HOSTS = (process.env.CORS_ALLOWED_HOSTS || '')
   .filter(Boolean);
 const ALLOWED_HOSTS = new Set([...DEFAULT_CORS_HOSTS, ...CORS_ALLOWED_HOSTS]);
 
-app.use(cors({
-  origin(origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) {
-    // Same-origin (no Origin header) is always allowed — covers direct
-    // browser nav and same-origin fetches.
-    if (!origin) return cb(null, true);
-    try {
-      const host = new URL(origin).host.toLowerCase();
-      if (ALLOWED_HOSTS.has(host)) return cb(null, true);
-    } catch (_) { /* fall through */ }
-    cb(null, false);
-  },
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin(origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) {
+      // Same-origin (no Origin header) is always allowed — covers direct
+      // browser nav and same-origin fetches.
+      if (!origin) return cb(null, true);
+      try {
+        const host = new URL(origin).host.toLowerCase();
+        if (ALLOWED_HOSTS.has(host)) return cb(null, true);
+      } catch (_) {
+        /* fall through */
+      }
+      cb(null, false);
+    },
+    credentials: true,
+  }),
+);
 
 /* P_client-error-severity — the SPA instruments ~480 deliberately-swallowed
  * catch sites (frontend/src/util/reportSwallow.ts). Almost every one is
@@ -399,7 +416,9 @@ app.use(cors({
  * mapping so it stays unit-testable without booting the server. */
 app.post('/api/client-error', clientErrorLimiter, express.json({ limit: '10kb' }), (req, res) => {
   const { kind, correl, msg, stack, href, ua } = req.body || {};
-  const severity = normalizeClientErrorSeverity((req.body as { severity?: unknown } | undefined)?.severity);
+  const severity = normalizeClientErrorSeverity(
+    (req.body as { severity?: unknown } | undefined)?.severity,
+  );
   const level = clientErrorLogLevel(kind, severity);
   const write = level === 'error' ? console.error.bind(console) : console.warn.bind(console);
   write(
@@ -524,10 +543,23 @@ app.get('/.well-known/openid-configuration', sendOauthMetadata);
 app.get('/.well-known/assetlinks.json', (_req, res) => {
   const packageName = process.env.ANDROID_APP_LINKS_PACKAGE_NAME;
   const raw = process.env.ANDROID_APP_LINKS_SHA256_FINGERPRINTS ?? '';
-  const fingerprints = raw.split(',').map((value) => value.trim().toUpperCase()).filter((value) => /^[A-F0-9]{2}(?::[A-F0-9]{2}){31}$/.test(value));
+  const fingerprints = raw
+    .split(',')
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => /^[A-F0-9]{2}(?::[A-F0-9]{2}){31}$/.test(value));
   res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-  if (!packageName || !/^[A-Za-z0-9_.]+$/.test(packageName) || !fingerprints.length) return res.json([]);
-  return res.json([{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: packageName, sha256_cert_fingerprints: [...new Set(fingerprints)] } }]);
+  if (!packageName || !/^[A-Za-z0-9_.]+$/.test(packageName) || !fingerprints.length)
+    return res.json([]);
+  return res.json([
+    {
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: packageName,
+        sha256_cert_fingerprints: [...new Set(fingerprints)],
+      },
+    },
+  ]);
 });
 
 // Public configuration endpoint (no auth required).
@@ -554,14 +586,17 @@ app.get('/api/config', async (_req, res) => {
   let hasBeagleKey = false;
   try {
     const db = getDb();
-    const [row] = await db.select({ id: apiKeys.id })
+    const [row] = await db
+      .select({ id: apiKeys.id })
       .from(apiKeys)
       .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .orderBy(apiKeys.createdAt)
       .limit(1);
     hasBeagleKey = !!row;
     cachedBeagleKeyResult = { hasBeagleKey, expiry: now + 30_000 };
-  } catch (_) { /* best-effort */ }
+  } catch (_) {
+    /* best-effort */
+  }
   res.json({
     hasBeagleKey,
     /* P_privacy-leak — expose only a boolean capability hint, never the
@@ -671,7 +706,6 @@ app.use('/api', tagRouter);
 // Migrate (Phase 4)
 app.use('/api/migrate', migrateRouter);
 
-
 // Artifacts (Phase 5)
 app.use('/api/artifacts', artifactRouter);
 app.use('/api/creations', creationsRouter);
@@ -718,7 +752,6 @@ app.use('/api/vision', visionRouter);
  * never supplies config/policy — the server builds the per-thread
  * provider + workspace + approval/sandbox overrides from the DB. */
 
-
 /* ────────────────────────────
    Static SPA — serve the built frontend from frontend/dist/
    ------------------------------------------------------------
@@ -738,14 +771,16 @@ const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
 // artifact store. A sandboxed CSP keeps author content isolated from the
 // authenticated app even though the URL uses the same host.
 app.use('/s', publicSitesRouter);
-app.use(express.static(FRONTEND_DIST, {
-  // index.html is the SPA shell — let the route below handle
-  // history-mode navigations. Static assets (JS / CSS / images)
-  // still go through the default file lookup.
-  index: false,
-  fallthrough: true,
-  maxAge: '1h',
-}));
+app.use(
+  express.static(FRONTEND_DIST, {
+    // index.html is the SPA shell — let the route below handle
+    // history-mode navigations. Static assets (JS / CSS / images)
+    // still go through the default file lookup.
+    index: false,
+    fallthrough: true,
+    maxAge: '1h',
+  }),
+);
 // SPA fallback: any non-/api GET that didn't match a static file
 // returns index.html so client-side routing keeps working.
 //

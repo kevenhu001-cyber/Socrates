@@ -22,7 +22,9 @@ test('publishes into the in-process chat runtime store', () => {
 
 test('fires the chat runtime CustomEvent for browser integrations', () => {
   let captured = null;
-  const handler = (event) => { captured = event.detail; };
+  const handler = (event) => {
+    captured = event.detail;
+  };
   window.addEventListener('socrates:chat-runtime-changed', handler);
   publishReactChatRuntime({ type: 'state-synced', reason: 'event-test' });
   assert.deepEqual(captured, { type: 'state-synced', reason: 'event-test' });
@@ -31,11 +33,15 @@ test('fires the chat runtime CustomEvent for browser integrations', () => {
 
 test('subscriber failures do not break publishing or other subscribers', () => {
   let received = null;
-  const removeThrowing = chatRuntimeStore.subscribe(() => { throw new Error('subscriber exploded'); });
+  const removeThrowing = chatRuntimeStore.subscribe(() => {
+    throw new Error('subscriber exploded');
+  });
   const removeObserver = chatRuntimeStore.subscribe(() => {
     received = chatRuntimeStore.getSnapshot().lastEvent;
   });
-  assert.doesNotThrow(() => publishReactChatRuntime({ type: 'state-synced', reason: 'failure-test' }));
+  assert.doesNotThrow(() =>
+    publishReactChatRuntime({ type: 'state-synced', reason: 'failure-test' }),
+  );
   assert.equal(received, 'state-synced');
   removeThrowing();
   removeObserver();
@@ -45,7 +51,9 @@ test('the publisher works without a browser global', () => {
   const previousWindow = globalThis.window;
   try {
     globalThis.window = undefined;
-    assert.doesNotThrow(() => publishReactChatRuntime({ type: 'state-synced', reason: 'ssr-test' }));
+    assert.doesNotThrow(() =>
+      publishReactChatRuntime({ type: 'state-synced', reason: 'ssr-test' }),
+    );
     assert.equal(chatRuntimeStore.getSnapshot().lastEvent, 'state-synced');
   } finally {
     globalThis.window = previousWindow;
@@ -54,7 +62,9 @@ test('the publisher works without a browser global', () => {
 
 test('a missing event is ignored by the store and normalized for CustomEvent listeners', () => {
   let captured = 'not-an-object';
-  const handler = (event) => { captured = event.detail; };
+  const handler = (event) => {
+    captured = event.detail;
+  };
   window.addEventListener('socrates:chat-runtime-changed', handler);
   publishReactChatRuntime(null);
   assert.deepEqual(captured, {});

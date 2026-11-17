@@ -77,7 +77,9 @@ async function runStream(options = {}) {
       full = acc;
       events.push({ type: 'text', delta, full: acc });
     },
-    (t) => { thinking.push(t); },
+    (t) => {
+      thinking.push(t);
+    },
     {
       maxAttempts: 1,
       onToolUse: (calls) => {
@@ -90,11 +92,7 @@ async function runStream(options = {}) {
 }
 
 test('tiny head chunks survive the think-tag hold', async () => {
-  installEnvironment([
-    frame('你好'),
-    frame('，我是'),
-    frame('AI助手，很高兴为你服务。'),
-  ]);
+  installEnvironment([frame('你好'), frame('，我是'), frame('AI助手，很高兴为你服务。')]);
 
   const { result, full } = await runStream();
   assert.ok(result, 'stream should resolve to a result');
@@ -138,7 +136,10 @@ test('tool_use commits chunked visible text before the call offset is observed',
   assert.equal(offsets[0], 'A short preamble split across deltas before the tool');
   assert.ok(toolIndex > 0, 'tool_use should follow the committed visible-text callbacks');
   assert.equal(events.slice(0, toolIndex).at(-1).full, offsets[0]);
-  assert.equal(result.text, 'A short preamble split across deltas before the tool and a follow-up sentence.');
+  assert.equal(
+    result.text,
+    'A short preamble split across deltas before the tool and a follow-up sentence.',
+  );
   assert.equal(full, result.text);
 });
 
@@ -179,10 +180,7 @@ test('plain prose reaches onDelta with the delta that carried it', async () => {
   /* P_think-tail-hold — the scanner used to keep the last 7 characters of
      every delta, so the typing frontier lagged and an answer's final
      characters only appeared with the finish re-render. */
-  installEnvironment([
-    frame('第一句话说完了。'),
-    frame('第二句也说完了。'),
-  ]);
+  installEnvironment([frame('第一句话说完了。'), frame('第二句也说完了。')]);
 
   const { result, events } = await runStream();
   const texts = events.filter((event) => event.type === 'text');

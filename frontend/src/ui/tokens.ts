@@ -205,72 +205,72 @@ export const breakpoints = {
 export const darkPalette: ThemePalette = {
   mode: 'dark',
   accent: {
-    strong: '0 0% 92.94%',      // #ededed
-    soft: '0 0% 12.16%',       // #1f1f1f
-    surface: '0 0% 12.16%',    // #1f1f1f
+    strong: '0 0% 92.94%', // #ededed
+    soft: '0 0% 12.16%', // #1f1f1f
+    surface: '0 0% 12.16%', // #1f1f1f
   },
   bg: {
     /* Four-step ladder, projected from four consecutive steps of the Geist
      * surface ramp: L1 0% (pure black, the reference canvas) → L2 10.2% →
      * L3 12.16% → L4 16.08%. */
-    page: '0 0% 0%',           // #000000  L1 — pure black (reference canvas)
-    raised: '0 0% 12.16%',     // #1f1f1f  L3 — cards on the canvas
-    overlay: '0 0% 16.08%',    // #292929  L4 — floating bars, menus
-    hover: '0 0% 21.18%',      // #363636  selected/hover tint
-    sunken: '0 0% 0%',         // #000000  L1 — inset wells
+    page: '0 0% 0%', // #000000  L1 — pure black (reference canvas)
+    raised: '0 0% 12.16%', // #1f1f1f  L3 — cards on the canvas
+    overlay: '0 0% 16.08%', // #292929  L4 — floating bars, menus
+    hover: '0 0% 21.18%', // #363636  selected/hover tint
+    sunken: '0 0% 0%', // #000000  L1 — inset wells
   },
   text: {
-    primary: '0 0% 92.94%',    // #ededed
-    secondary: '0 0% 63.14%',  // #a1a1a1
-    tertiary: '0 0% 60%',      // #999999
-    muted: '0 0% 60%',         // description / idle icon role
-    disabled: '0 0% 60%',      // #999999
+    primary: '0 0% 92.94%', // #ededed
+    secondary: '0 0% 63.14%', // #a1a1a1
+    tertiary: '0 0% 60%', // #999999
+    muted: '0 0% 60%', // description / idle icon role
+    disabled: '0 0% 60%', // #999999
   },
   border: {
-    subtle: '0 0% 16.08%',     // #292929
-    default: '0 0% 18.04%',    // #2e2e2e
-    strong: '0 0% 27.06%',     // #454545
+    subtle: '0 0% 16.08%', // #292929
+    default: '0 0% 18.04%', // #2e2e2e
+    strong: '0 0% 27.06%', // #454545
   },
-  danger: '1 80% 70%',        // #f07775 — clears AA on every dark rung
-  success: '90 58% 49%',      // #80c933
+  danger: '1 80% 70%', // #f07775 — clears AA on every dark rung
+  success: '90 58% 49%', // #80c933
   muted: '0 0% 60%',
-  onAccent: '0 0% 3.92%',     // #0a0a0a
+  onAccent: '0 0% 3.92%', // #0a0a0a
 };
 
 export const lightPalette: ThemePalette = {
   mode: 'light',
   accent: {
-    strong: '0 0% 9.02%',      // #171717
-    soft: '0 0% 92.16%',       // #ebebeb
-    surface: '0 0% 92.16%',    // #ebebeb
+    strong: '0 0% 9.02%', // #171717
+    soft: '0 0% 92.16%', // #ebebeb
+    surface: '0 0% 92.16%', // #ebebeb
   },
   bg: {
     /* Same four-step ladder as dark mode, running the other way:
      * L1 100% → L2 98.04% → L3 94.9% → L4 92.16%. The canvas is L2 — the
      * paper (L1) is what raised and overlay surfaces are cut from, so they
      * read as *lighter* than the page they stand on. */
-    page: '0 0% 98.04%',       // #fafafa  L2 — the canvas
-    raised: '0 0% 100%',       // #ffffff  L1 — cards on the canvas
-    overlay: '0 0% 100%',      // #ffffff  L1 — floating bars, menus
-    hover: '0 0% 87.84%',      // #e0e0e0  selected/hover tint
-    sunken: '0 0% 92.16%',     // #ebebeb  L4 — inset wells
+    page: '0 0% 98.04%', // #fafafa  L2 — the canvas
+    raised: '0 0% 100%', // #ffffff  L1 — cards on the canvas
+    overlay: '0 0% 100%', // #ffffff  L1 — floating bars, menus
+    hover: '0 0% 87.84%', // #e0e0e0  selected/hover tint
+    sunken: '0 0% 92.16%', // #ebebeb  L4 — inset wells
   },
   text: {
-    primary: '0 0% 9.02%',     // #171717
-    secondary: '0 0% 30.2%',   // #4d4d4d
-    tertiary: '0 0% 40%',      // #666666
+    primary: '0 0% 9.02%', // #171717
+    secondary: '0 0% 30.2%', // #4d4d4d
+    tertiary: '0 0% 40%', // #666666
     muted: '0 0% 40%',
-    disabled: '0 0% 56.08%',   // #8f8f8f
+    disabled: '0 0% 56.08%', // #8f8f8f
   },
   border: {
-    subtle: '0 0% 92.16%',     // #ebebeb
-    default: '0 0% 91.76%',    // #eaeaea
-    strong: '0 0% 78.82%',     // #c9c9c9
+    subtle: '0 0% 92.16%', // #ebebeb
+    default: '0 0% 91.76%', // #eaeaea
+    strong: '0 0% 78.82%', // #c9c9c9
   },
-  danger: '7 73% 40%',           // #b02d1c — matches the web palette
-  success: '144 80% 24%',         // #0c6e33 — matches the web palette
+  danger: '7 73% 40%', // #b02d1c — matches the web palette
+  success: '144 80% 24%', // #0c6e33 — matches the web palette
   muted: '0 0% 40%',
-  onAccent: '0 0% 100%',       // #ffffff
+  onAccent: '0 0% 100%', // #ffffff
 };
 
 export const palettes: Readonly<Record<ThemeMode, ThemePalette>> = {

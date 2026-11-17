@@ -8,7 +8,12 @@
 
 import { Router, type Request, type Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { startSseKeepalive, trackSseConnection, writeSseEvent, writeSseHeaders } from '../lib/sse.js';
+import {
+  startSseKeepalive,
+  trackSseConnection,
+  writeSseEvent,
+  writeSseHeaders,
+} from '../lib/sse.js';
 import {
   WORKSPACE_AGENT_ENABLED,
   WORKSPACE_AGENT_BACKGROUND_ENABLED,
@@ -91,7 +96,11 @@ async function streamRun(req: Request, res: Response, runId: string, run: Promis
     done = true;
     abort.abort('client_disconnected');
     if (!res.writableEnded && !res.destroyed) res.end();
-    try { trackSseConnection(req.app, -1); } catch { /* ignore */ }
+    try {
+      trackSseConnection(req.app, -1);
+    } catch {
+      /* ignore */
+    }
   };
   req.on('close', finish);
 
@@ -136,7 +145,9 @@ router.get('/', requireAuth, async (req, res, next) => {
       limit: typeof req.query.limit === 'string' ? Number(req.query.limit) : undefined,
     });
     res.json({ runs: rows.map(publicRun) });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/', requireAuth, async (req, res, next) => {
@@ -148,20 +159,35 @@ router.post('/', requireAuth, async (req, res, next) => {
       task,
       sessionId: body.sessionId ?? null,
       projectId: body.projectId ?? null,
-      kind: body.kind === 'tutor' || body.kind === 'scheduled' || body.kind === 'retry' ? body.kind : 'chat',
+      kind:
+        body.kind === 'tutor' || body.kind === 'scheduled' || body.kind === 'retry'
+          ? body.kind
+          : 'chat',
       source: body.source === 'tutor' || body.source === 'scheduled' ? body.source : 'api',
       threadId: body.threadId ?? null,
     });
-    res.status(201).json({ run: publicRun(created.run), workspace: { id: created.run.workspaceId || null }, capabilities: { resumable: true } });
-  } catch (err) { next(err); }
+    res.status(201).json({
+      run: publicRun(created.run),
+      workspace: { id: created.run.workspaceId || null },
+      capabilities: { resumable: true },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get('/:id', requireAuth, async (req, res, next) => {
   try {
     const result = await getAgentRun(req.userId!, String(req.params.id));
     const events = await listAgentEvents(req.userId!, String(req.params.id), 0, 80);
-    res.json({ run: publicRun(result.run), artifacts: (result.artifacts || []).map(publicArtifact), events });
-  } catch (err) { next(err); }
+    res.json({
+      run: publicRun(result.run),
+      artifacts: (result.artifacts || []).map(publicArtifact),
+      events,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get('/:id/events', requireAuth, async (req, res, next) => {
@@ -193,7 +219,11 @@ router.get('/:id/events', requireAuth, async (req, res, next) => {
       closed = true;
       unsubscribe?.();
       keepalive?.stop();
-      try { trackSseConnection(req.app, -1); } catch { /* ignore */ }
+      try {
+        trackSseConnection(req.app, -1);
+      } catch {
+        /* ignore */
+      }
     });
   } catch (err) {
     unsubscribe?.();
@@ -215,22 +245,36 @@ router.post('/:id/turns', requireAuth, async (req, res, next) => {
 });
 
 router.post('/:id/interrupt', requireAuth, async (req, res, next) => {
-  try { res.json(await interruptAgentRun(req.userId!, String(req.params.id))); }
-  catch (err) { next(err); }
+  try {
+    res.json(await interruptAgentRun(req.userId!, String(req.params.id)));
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/:id/resume', requireAuth, async (req, res, next) => {
   try {
-    const result = await resumeAgentRun(req.userId!, String(req.params.id), req.body?.input == null ? undefined : String(req.body.input));
-    res.json({ run: publicRun(await getAgentRun(req.userId!, result.runId).then((value) => value.run)), result });
-  } catch (err) { next(err); }
+    const result = await resumeAgentRun(
+      req.userId!,
+      String(req.params.id),
+      req.body?.input == null ? undefined : String(req.body.input),
+    );
+    res.json({
+      run: publicRun(await getAgentRun(req.userId!, result.runId).then((value) => value.run)),
+      result,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/:id/retry', requireAuth, async (req, res, next) => {
   try {
     const result = await retryAgentRun(req.userId!, String(req.params.id));
     res.status(202).json({ result, runId: result.runId });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

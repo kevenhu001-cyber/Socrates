@@ -2,13 +2,34 @@
  * Streaming chat completion over OpenAI-compatible SSE.
  */
 import { randomUUID } from 'node:crypto';
-import { applyProviderControls, isPermanentQuotaError, permitsCompatibilityFallback, providerHeaders, providerPayloadFailure } from '../llmProtocol.js';
+import {
+  applyProviderControls,
+  isPermanentQuotaError,
+  permitsCompatibilityFallback,
+  providerHeaders,
+  providerPayloadFailure,
+} from '../llmProtocol.js';
 import { createUpstreamRetryBudget } from '../../../lib/upstreamRetryBudget.js';
 import { getLlmDispatcher, markLlmActivity } from './dispatcher.js';
 import { LlmProviderError, type ChatCompletionRequestOptions } from './types.js';
-import { RATE_LIMIT_ATTEMPTS, RATE_LIMIT_STATUS, TRANSIENT_ATTEMPTS, TRANSIENT_RETRYABLE_STATUS, attemptsForUpstreamStatus, isRetryableUpstreamStatus, isRetryableUpstreamFailure, sleep, upstreamRetryDelayMs } from './retry.js';
+import {
+  RATE_LIMIT_ATTEMPTS,
+  RATE_LIMIT_STATUS,
+  TRANSIENT_ATTEMPTS,
+  TRANSIENT_RETRYABLE_STATUS,
+  attemptsForUpstreamStatus,
+  isRetryableUpstreamStatus,
+  isRetryableUpstreamFailure,
+  sleep,
+  upstreamRetryDelayMs,
+} from './retry.js';
 import { isToolFinishReason, nextCompatibilityVariant, requestBodyVariants } from './protocol.js';
-import { appendToolArgumentDelta, createToolArgumentStream, mergeToolArgumentDelta, mergeToolNameDelta } from './toolArgs.js';
+import {
+  appendToolArgumentDelta,
+  createToolArgumentStream,
+  mergeToolArgumentDelta,
+  mergeToolNameDelta,
+} from './toolArgs.js';
 import { reasoningText } from './values.js';
 
 export async function streamChatCompletion(
@@ -17,8 +38,19 @@ export async function streamChatCompletion(
   onDone: (info: { finishReason: string | null; usage?: unknown }) => void,
   onError: (err: Error) => void,
   onReasoning?: (reasoning: string) => void,
-  onToolUse?: (tc: { id: string; type: 'function'; function: { name: string; arguments: string } }) => void,
-  onToolCallDelta?: (delta: { index: number; id?: string; name?: string; argumentsDelta?: string; arguments: string; final?: boolean }) => void,
+  onToolUse?: (tc: {
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }) => void,
+  onToolCallDelta?: (delta: {
+    index: number;
+    id?: string;
+    name?: string;
+    argumentsDelta?: string;
+    arguments: string;
+    final?: boolean;
+  }) => void,
 ) {
   const { apiBase, apiKey, signal, tools } = opts;
   const retryBudget = createUpstreamRetryBudget();
@@ -30,7 +62,12 @@ export async function streamChatCompletion(
        * provider-agnostic tool names are enough to confirm what
        * capabilities we're sending; the model identity stays in the
        * DB only. */
-      console.log('[DEBUG-LLM] Sending tools to upstream:', JSON.stringify(tools.map(t => t.function?.name)), 'tools.length:', tools.length);
+      console.log(
+        '[DEBUG-LLM] Sending tools to upstream:',
+        JSON.stringify(tools.map((t) => t.function?.name)),
+        'tools.length:',
+        tools.length,
+      );
     }
     let response: Response | undefined;
     /* P_llm-retry — rate limits (429 rpm exhausted) and transient 5xx
@@ -72,24 +109,42 @@ export async function streamChatCompletion(
           }
 
           const errBody = await response.text().catch(() => '');
-          const delayMs = upstreamRetryDelayMs(response.status, attempt, response.headers.get('retry-after'));
-          lastError = new LlmProviderError(response.status, errBody,
-            response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody) ? delayMs : undefined);
-          const fallbackIndex = response.status === 400 ? nextCompatibilityVariant(variants, variantIndex, errBody) : -1;
+          const delayMs = upstreamRetryDelayMs(
+            response.status,
+            attempt,
+            response.headers.get('retry-after'),
+          );
+          lastError = new LlmProviderError(
+            response.status,
+            errBody,
+            response.status === RATE_LIMIT_STATUS && !isPermanentQuotaError(errBody)
+              ? delayMs
+              : undefined,
+          );
+          const fallbackIndex =
+            response.status === 400
+              ? nextCompatibilityVariant(variants, variantIndex, errBody)
+              : -1;
           if (fallbackIndex >= 0) {
             tryNextVariant = true;
             variantIndex = fallbackIndex - 1; // outer loop advances to the diagnosed body
             if (variants[fallbackIndex]?.reason === 'provider-400-with-tools') {
-              console.warn('[LLM] provider rejected native tool request; retrying with compatibility payload', JSON.stringify({
-                status: response.status,
-                toolCount: Array.isArray(tools) ? tools.length : 0,
-                maxTokens: variant.body.max_tokens,
-              }));
+              console.warn(
+                '[LLM] provider rejected native tool request; retrying with compatibility payload',
+                JSON.stringify({
+                  status: response.status,
+                  toolCount: Array.isArray(tools) ? tools.length : 0,
+                  maxTokens: variant.body.max_tokens,
+                }),
+              );
             } else {
-              console.warn('[LLM] provider rejected optional request fields; retrying with compatibility payload', JSON.stringify({
-                status: response.status,
-                maxTokens: variant.body.max_tokens,
-              }));
+              console.warn(
+                '[LLM] provider rejected optional request fields; retrying with compatibility payload',
+                JSON.stringify({
+                  status: response.status,
+                  maxTokens: variant.body.max_tokens,
+                }),
+              );
             }
             break;
           }
@@ -99,12 +154,15 @@ export async function streamChatCompletion(
           const total = attemptsForUpstreamStatus(response.status);
           if (attempt >= total - 1) break;
           if (!retryBudget.reserve(delayMs)) break;
-          console.warn('[LLM] upstream ' + response.status + '; retrying', JSON.stringify({
-            attempt: attempt + 1,
-            of: total,
-            delayMs,
-            variantIndex,
-          }));
+          console.warn(
+            '[LLM] upstream ' + response.status + '; retrying',
+            JSON.stringify({
+              attempt: attempt + 1,
+              of: total,
+              delayMs,
+              variantIndex,
+            }),
+          );
           await sleep(delayMs, signal);
           if (signal && signal.aborted) {
             onError(new Error('LLM request aborted'));
@@ -166,21 +224,32 @@ export async function streamChatCompletion(
        typewriter effect instead of jittery 1-char bursts. */
     let _lastDeltaEmit = 0;
     let _lastDeltaBytes = 0;
-    const _emitToolDelta = (entry: { __index: number; id?: string; function: { name: string; arguments: string } }, full: string) => {
+    const _emitToolDelta = (
+      entry: { __index: number; id?: string; function: { name: string; arguments: string } },
+      full: string,
+    ) => {
       if (typeof onToolCallDelta !== 'function') return;
       const now = Date.now();
       const bytes = (entry.function.arguments || '').length;
       if (now - _lastDeltaEmit < 30 && bytes - _lastDeltaBytes < 64) return;
       _lastDeltaEmit = now;
       _lastDeltaBytes = bytes;
-      try { onToolCallDelta({
-        index: entry.__index,
-        id: entry.id,
-        name: entry.function.name,
-        arguments: entry.function.arguments,
-      }); } catch { /* ignore listener errors */ }
+      try {
+        onToolCallDelta({
+          index: entry.__index,
+          id: entry.id,
+          name: entry.function.name,
+          arguments: entry.function.arguments,
+        });
+      } catch {
+        /* ignore listener errors */
+      }
     };
-    const _accumulateToolCall = (tc: Record<string, unknown>, positionInDelta = 0, entriesInDelta = 1) => {
+    const _accumulateToolCall = (
+      tc: Record<string, unknown>,
+      positionInDelta = 0,
+      entriesInDelta = 1,
+    ) => {
       const rawIndex = tc.index;
       const id = typeof tc.id === 'string' && tc.id ? tc.id : '';
       /* Slot resolution, most reliable signal first:
@@ -202,9 +271,10 @@ export async function streamChatCompletion(
       _nextToolSlot = Math.max(_nextToolSlot, slot + 1);
       _lastToolSlot = slot;
 
-      const functionPart = tc.function && typeof tc.function === 'object'
-        ? tc.function as Record<string, unknown>
-        : undefined;
+      const functionPart =
+        tc.function && typeof tc.function === 'object'
+          ? (tc.function as Record<string, unknown>)
+          : undefined;
       const incomingName = functionPart?.name ?? tc.name;
       const incomingArguments = functionPart?.arguments ?? tc.arguments;
       const prev = toolCallAcc.get(slot) || {
@@ -258,7 +328,9 @@ export async function streamChatCompletion(
                 onError(new LlmProviderError(failure.status, failure.body));
                 return;
               }
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
           continue;
         }
@@ -293,7 +365,11 @@ export async function streamChatCompletion(
           if (typeof onReasoning === 'function') {
             const reasoning = reasoningText(delta);
             if (reasoning.length > 0) {
-              try { onReasoning(reasoning); } catch { /* ignore */ }
+              try {
+                onReasoning(reasoning);
+              } catch {
+                /* ignore */
+              }
             }
           }
           /* Tool-call deltas. Each entry carries a partial id/name/
@@ -353,7 +429,11 @@ export async function streamChatCompletion(
           if (typeof onReasoning === 'function') {
             const reasoning = reasoningText(delta);
             if (reasoning.length > 0) {
-              try { onReasoning(reasoning); } catch { /* ignore */ }
+              try {
+                onReasoning(reasoning);
+              } catch {
+                /* ignore */
+              }
             }
           }
           if (Array.isArray(delta.tool_calls) && delta.tool_calls.length > 0) {
@@ -369,14 +449,19 @@ export async function streamChatCompletion(
           const content = delta.content || '';
           if (content) onChunk(content);
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
-    const hasCallableTools = Array.from(toolCallAcc.values()).some((entry) => Boolean(entry.function?.name));
-    const shouldDispatchTools = isToolFinishReason(finishReason)
-      || finishReason == null
-      || finishReason === 'length'
-      || (finishReason === 'stop' && hasCallableTools);
+    const hasCallableTools = Array.from(toolCallAcc.values()).some((entry) =>
+      Boolean(entry.function?.name),
+    );
+    const shouldDispatchTools =
+      isToolFinishReason(finishReason) ||
+      finishReason == null ||
+      finishReason === 'length' ||
+      (finishReason === 'stop' && hasCallableTools);
     const finalizedToolCalls = Array.from(toolCallAcc.values()).map((entry) => ({
       ...entry,
       id: entry.id || (shouldDispatchTools ? `call_${randomUUID()}` : undefined),
@@ -389,13 +474,17 @@ export async function streamChatCompletion(
        argument string until the next onToolUse frame arrives. */
     if (typeof onToolCallDelta === 'function') {
       for (const entry of finalizedToolCalls) {
-        try { onToolCallDelta({
-          index: entry.__index,
-          id: entry.id,
-          name: entry.function.name,
-          arguments: entry.function.arguments,
-          final: true,
-        }); } catch { /* ignore listener errors */ }
+        try {
+          onToolCallDelta({
+            index: entry.__index,
+            id: entry.id,
+            name: entry.function.name,
+            arguments: entry.function.arguments,
+            final: true,
+          });
+        } catch {
+          /* ignore listener errors */
+        }
       }
     }
 
@@ -417,10 +506,17 @@ export async function streamChatCompletion(
           /* Hand out the protocol shape only — the accumulator's slot index
              and stream-mode state must not leak into the tool-call object
              the pipeline echoes back to the provider. */
-          try { onToolUse({ id: tc.id, type: 'function', function: { ...tc.function } }); } catch { /* ignore listener errors */ }
+          try {
+            onToolUse({ id: tc.id, type: 'function', function: { ...tc.function } });
+          } catch {
+            /* ignore listener errors */
+          }
         }
       } else {
-        console.warn('[LLM] streamed tool calls dropped — upstream finish_reason was', JSON.stringify(finishReason));
+        console.warn(
+          '[LLM] streamed tool calls dropped — upstream finish_reason was',
+          JSON.stringify(finishReason),
+        );
       }
     }
 
@@ -429,16 +525,21 @@ export async function streamChatCompletion(
     if ((signal && signal.aborted) || (err as Error | undefined)?.name === 'AbortError') {
       onDone({ finishReason: null });
     } else {
-      const normalized = err instanceof Error
-        ? err
-        : new Error(typeof err === 'string' && err.length > 0 ? err : 'LLM request failed');
+      const normalized =
+        err instanceof Error
+          ? err
+          : new Error(typeof err === 'string' && err.length > 0 ? err : 'LLM request failed');
       onError(normalized);
     }
   } finally {
     if (reader) {
       // Early error frames and DONE must not leave an unread provider body
       // holding a pool slot. Cleanup errors must not mask the stream result.
-      try { await reader.cancel(); } catch { /* upstream may already have failed */ }
+      try {
+        await reader.cancel();
+      } catch {
+        /* upstream may already have failed */
+      }
       reader.releaseLock();
     }
   }

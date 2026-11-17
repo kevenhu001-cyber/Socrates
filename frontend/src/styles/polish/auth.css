@@ -22,8 +22,12 @@
   box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 6%));
 }
 
-.auth-brand { letter-spacing: -0.01em; }
-.auth-gate .auth-brand { margin-bottom: var(--ui-space-sm); }
+.auth-brand {
+  letter-spacing: -0.01em;
+}
+.auth-gate .auth-brand {
+  margin-bottom: var(--ui-space-sm);
+}
 .auth-screen-title {
   margin: 0 0 var(--ui-space-xs);
   color: var(--foreground);
@@ -71,7 +75,9 @@
     width: 360px;
     flex: 0 1 360px;
   }
-  .socrates-cookie-consent--auth { width: min(360px, 100%); }
+  .socrates-cookie-consent--auth {
+    width: min(360px, 100%);
+  }
 }
 @media (max-width: 520px) {
   .auth-gate:has(.socrates-cookie-consent--auth) {
@@ -106,7 +112,9 @@
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
 }
-.auth-gate .auth-tab:hover { color: var(--foreground); }
+.auth-gate .auth-tab:hover {
+  color: var(--foreground);
+}
 .auth-gate .auth-tab.active {
   background: var(--background);
   color: var(--foreground);
@@ -135,13 +143,17 @@
   font-size: var(--ui-font-size-sm);
   box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 4%));
   outline: none;
-  transition: border-color var(--ui-duration-fast) ease, box-shadow var(--ui-duration-fast) ease;
+  transition:
+    border-color var(--ui-duration-fast) ease,
+    box-shadow var(--ui-duration-fast) ease;
 }
 .auth-gate .auth-input:focus {
   border-color: var(--ring);
   box-shadow: var(--ui-focus-shadow);
 }
-.auth-gate .auth-input::placeholder { color: var(--muted-foreground); }
+.auth-gate .auth-input::placeholder {
+  color: var(--muted-foreground);
+}
 
 .auth-gate .auth-btn {
   height: 36px;
@@ -150,37 +162,59 @@
   border-radius: var(--radius-md);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
+  transition:
+    background-color var(--ui-duration-fast) ease,
+    color var(--ui-duration-fast) ease;
 }
 .auth-gate .auth-btn.primary {
   background: var(--primary);
   color: var(--primary-foreground);
 }
-.auth-gate .auth-btn.primary:hover { filter: brightness(0.94); }
+.auth-gate .auth-btn.primary:hover {
+  filter: brightness(0.94);
+}
 .auth-gate .auth-btn.secondary {
   border: 1px solid var(--border);
   background: var(--background);
   color: var(--foreground);
 }
-.auth-gate .auth-btn.secondary:hover { background: var(--accent); color: var(--accent-foreground); }
+.auth-gate .auth-btn.secondary:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
 
 .auth-gate .auth-lede,
 .auth-gate .auth-view-separator,
 .auth-gate .auth-foot,
-.auth-gate .auth-footnote { color: var(--ui-text-secondary); }
+.auth-gate .auth-footnote {
+  color: var(--ui-text-secondary);
+}
 .auth-gate .auth-foot a,
-.auth-gate .auth-inline-link { color: var(--ui-text-secondary); }
-.auth-foot a:hover, .auth-inline-link:hover { color: var(--foreground); }
+.auth-gate .auth-inline-link {
+  color: var(--ui-text-secondary);
+}
+.auth-foot a:hover,
+.auth-inline-link:hover {
+  color: var(--foreground);
+}
 
-.auth-error { border-radius: var(--ui-radius-control); }
+.auth-error {
+  border-radius: var(--ui-radius-control);
+}
 
 /* Phones: iOS Safari zooms the whole page when a focused field is under 16px,
    which leaves the card half off-screen on a 390px viewport. Match the text
    size to the platform floor and give every control a 44px touch target. */
 @media (max-width: 768px) {
-  .auth-gate { padding: 20px 16px; }
-  .auth-gate .auth-card { padding: 24px 20px; }
-  .auth-gate .auth-tab { height: 40px; }
+  .auth-gate {
+    padding: 20px 16px;
+  }
+  .auth-gate .auth-card {
+    padding: 24px 20px;
+  }
+  .auth-gate .auth-tab {
+    height: 40px;
+  }
   .auth-gate .auth-input {
     height: 44px;
     font-size: var(--ui-font-size-md);
@@ -194,13 +228,28 @@
 /* Short phones (320×568 and landscape keyboards) lose the last row of the
    sign-in form to the fold; tighten the vertical rhythm instead of clipping. */
 @media (max-width: 768px) and (max-height: 700px) {
-  .auth-gate { padding: 12px 12px 20px; }
-  .auth-gate .auth-card { padding: 18px 16px; }
-  .auth-gate .auth-tabs { margin-bottom: 12px; }
-  .auth-gate .auth-input { margin-bottom: 0; }
-  .auth-gate .auth-btn { margin-top: 6px; }
-  .auth-gate .auth-foot { margin-top: 8px; }
-  .auth-footnote { margin-top: 10px; font-size: var(--ui-font-size-xxs); }
+  .auth-gate {
+    padding: 12px 12px 20px;
+  }
+  .auth-gate .auth-card {
+    padding: 18px 16px;
+  }
+  .auth-gate .auth-tabs {
+    margin-bottom: 12px;
+  }
+  .auth-gate .auth-input {
+    margin-bottom: 0;
+  }
+  .auth-gate .auth-btn {
+    margin-top: 6px;
+  }
+  .auth-gate .auth-foot {
+    margin-top: 8px;
+  }
+  .auth-footnote {
+    margin-top: 10px;
+    font-size: var(--ui-font-size-xxs);
+  }
 }
 
 /* Scoped top-layer browser-to-Android account confirmation. */
@@ -217,14 +266,19 @@
   box-shadow: var(--ui-shadow-dialog);
   font-family: inherit;
 }
-.browser-login-handoff::backdrop { background: var(--ui-backdrop); }
-.browser-login-handoff h2 { margin: 0 0 var(--ui-space-md); font-size: var(--ui-text-body); }
+.browser-login-handoff::backdrop {
+  background: var(--ui-backdrop);
+}
+.browser-login-handoff h2 {
+  margin: 0 0 var(--ui-space-md);
+  font-size: var(--ui-text-body);
+}
 .browser-login-handoff p {
   margin: 0 0 var(--ui-space-lg);
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.browser-login-handoff [data-slot="button"]:not([hidden]),
+.browser-login-handoff [data-slot='button']:not([hidden]),
 .browser-login-handoff .browser-login-handoff-link {
   display: flex;
   align-items: center;

@@ -57,11 +57,15 @@ export async function resolveRagContext(
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     if (m && m.role === 'user') {
-      query = typeof m.content === 'string'
-        ? m.content
-        : (Array.isArray(m.content)
-          ? m.content.filter((p) => p && p.type === 'text').map((p) => (p as { text?: string }).text || '').join(' ')
-          : '');
+      query =
+        typeof m.content === 'string'
+          ? m.content
+          : Array.isArray(m.content)
+            ? m.content
+                .filter((p) => p && p.type === 'text')
+                .map((p) => (p as { text?: string }).text || '')
+                .join(' ')
+            : '';
       break;
     }
   }
@@ -69,22 +73,37 @@ export async function resolveRagContext(
   if (!query) return null;
 
   try {
-    const { searchSessionChunksHybrid, sessionOwnedBy } = await import('../../../services/embeddings/chunkIndex.js');
+    const { searchSessionChunksHybrid, sessionOwnedBy } =
+      await import('../../../services/embeddings/chunkIndex.js');
     // Preserve completed lexical recall when optional vector enrichment runs
     // out of time. Ownership remains an independent, mandatory injection gate.
     const rawTimeout = Number(process.env.CHAT_RAG_TIMEOUT_MS);
-    const timeoutMs = Number.isFinite(rawTimeout) && rawTimeout > 0
-      ? Math.min(10_000, Math.floor(rawTimeout))
-      : 2000;
+    const timeoutMs =
+      Number.isFinite(rawTimeout) && rawTimeout > 0
+        ? Math.min(10_000, Math.floor(rawTimeout))
+        : 2000;
     /* The ownership check gates what is INJECTED, not what is read: the
        search is scoped to the session id and its hits are discarded unless
        the caller owns the session, so both can run at once. */
     const rawVectorTimeout = Number(process.env.CHAT_RAG_VECTOR_TIMEOUT_MS);
-    const vectorTimeoutMs = Math.min(timeoutMs, Number.isFinite(rawVectorTimeout) && rawVectorTimeout > 0
-      ? Math.floor(rawVectorTimeout) : 500);
+    const vectorTimeoutMs = Math.min(
+      timeoutMs,
+      Number.isFinite(rawVectorTimeout) && rawVectorTimeout > 0
+        ? Math.floor(rawVectorTimeout)
+        : 500,
+    );
     const [owned, hits] = await Promise.all([
-      withTimeBudget(() => sessionOwnedBy(ragSessionId, userId), { timeoutMs, signal }, () => false),
-      searchSessionChunksHybrid(ragSessionId, query, { limit: RAG_MAX_HITS, timeoutMs, vectorTimeoutMs, signal }),
+      withTimeBudget(
+        () => sessionOwnedBy(ragSessionId, userId),
+        { timeoutMs, signal },
+        () => false,
+      ),
+      searchSessionChunksHybrid(ragSessionId, query, {
+        limit: RAG_MAX_HITS,
+        timeoutMs,
+        vectorTimeoutMs,
+        signal,
+      }),
     ]);
     if (!owned || signal?.aborted) return null;
     if (!hits.length) return null;
@@ -140,7 +159,8 @@ export async function resolveMemoryContext(
     const database = db ?? getDb();
     let scopeCond = eq(memories.scope, 'global');
     if (projectId) {
-      const [project] = await database.select({ memoryMode: projects.memoryMode })
+      const [project] = await database
+        .select({ memoryMode: projects.memoryMode })
         .from(projects)
         .where(and(eq(projects.id, projectId), eq(projects.userId, userId)))
         .limit(1);
@@ -150,14 +170,15 @@ export async function resolveMemoryContext(
       if (!project) {
         scopeCond = eq(memories.scope, 'global');
       } else if (project.memoryMode === 'project-only') {
-        scopeCond = and(eq(memories.scope, 'project'), eq(memories.projectId, projectId))
-          ?? sql`false`;
+        scopeCond =
+          and(eq(memories.scope, 'project'), eq(memories.projectId, projectId)) ?? sql`false`;
       } else {
         /* Default: global rows plus rows tagged to THIS project only. */
-        scopeCond = or(
-          eq(memories.scope, 'global'),
-          and(eq(memories.scope, 'project'), eq(memories.projectId, projectId)),
-        ) ?? eq(memories.scope, 'global');
+        scopeCond =
+          or(
+            eq(memories.scope, 'global'),
+            and(eq(memories.scope, 'project'), eq(memories.projectId, projectId)),
+          ) ?? eq(memories.scope, 'global');
       }
     } else {
       scopeCond = eq(memories.scope, 'global');
@@ -190,14 +211,18 @@ export async function resolveMemoryContext(
 /** RN-6 — the server-owned learning-mode block for one tutor turn, with the
  * learner's focus (a concept, a mistake) attached as untrusted data. */
 export async function buildLearningModeTurn(
-  learningMode: typeof LEARNING_MODE_IDS[number],
+  learningMode: (typeof LEARNING_MODE_IDS)[number],
   focus: string | undefined,
 ): Promise<string | null> {
   const prompt = await getLearningModePrompt(learningMode);
   if (!prompt) return null;
   const focusText = typeof focus === 'string' ? focus.trim() : '';
-  return `[Learning mode: ${learningMode}; server-owned]\n${prompt}`
-    + (focusText ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>` : '');
+  return (
+    `[Learning mode: ${learningMode}; server-owned]\n${prompt}` +
+    (focusText
+      ? `\n\n<client_context_data scope="untrusted">\nLearning focus: ${focusText}\n</client_context_data>`
+      : '')
+  );
 }
 
 /** Conservative token estimate for the tool definitions sent beside the
@@ -212,4 +237,3 @@ export function estimateToolSchemaTokens(toolDefs: unknown): number {
     return 0;
   }
 }
-

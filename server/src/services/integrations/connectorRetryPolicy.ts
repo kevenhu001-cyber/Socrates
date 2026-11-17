@@ -26,8 +26,10 @@ const RETRYABLE_CONNECTOR_CODES = new Set([
 export function isRetryableConnectorStatus(value: unknown): boolean {
   const status = Number(value);
   if (!Number.isInteger(status)) return false;
-  return RETRYABLE_HTTP_STATUSES.has(status)
-    || (status >= 500 && status <= 599 && !NON_RETRYABLE_SERVER_STATUSES.has(status));
+  return (
+    RETRYABLE_HTTP_STATUSES.has(status) ||
+    (status >= 500 && status <= 599 && !NON_RETRYABLE_SERVER_STATUSES.has(status))
+  );
 }
 
 /**
@@ -51,17 +53,24 @@ export function isRetryableConnectorFailure(error: unknown): boolean {
 
   const status = record.status ?? record.statusCode;
   const numericStatus = Number(status);
-  if (status !== undefined && status !== null && Number.isInteger(numericStatus) && numericStatus >= 100 && numericStatus <= 599) {
+  if (
+    status !== undefined &&
+    status !== null &&
+    Number.isInteger(numericStatus) &&
+    numericStatus >= 100 &&
+    numericStatus <= 599
+  ) {
     return isRetryableConnectorStatus(numericStatus);
   }
 
   if ([record.name, record.cause?.name].some((name) => name === 'TimeoutError')) {
     return true;
   }
-  return [record.code, record.cause?.code].some((code) => (
-    typeof code === 'string'
-    && (RETRYABLE_NETWORK_CODES.has(code) || RETRYABLE_CONNECTOR_CODES.has(code))
-  ));
+  return [record.code, record.cause?.code].some(
+    (code) =>
+      typeof code === 'string' &&
+      (RETRYABLE_NETWORK_CODES.has(code) || RETRYABLE_CONNECTOR_CODES.has(code)),
+  );
 }
 
 /** Preserve an upstream HTTP status on errors caught by connector tools. */

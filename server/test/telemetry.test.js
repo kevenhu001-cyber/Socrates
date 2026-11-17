@@ -53,16 +53,22 @@ describe('telemetry: disabled by default', () => {
     delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
     const { withSpan } = await telemetry();
     const out = await withSpan('noop.test', { a: 1 }, async () => 'ran');
-    assert.equal(out, 'ran',
+    assert.equal(
+      out,
+      'ran',
       'call sites must not need to branch on whether tracing is on — the OTel ' +
-      'API ships a no-op tracer precisely so they do not');
+        'API ships a no-op tracer precisely so they do not',
+    );
   });
 
   test('withSpan rethrows rather than swallowing errors', async () => {
     delete process.env.OTEL_EXPORTER_OTLP_ENDPOINT;
     const { withSpan } = await telemetry();
     await assert.rejects(
-      () => withSpan('noop.throw', {}, async () => { throw new Error('boom'); }),
+      () =>
+        withSpan('noop.throw', {}, async () => {
+          throw new Error('boom');
+        }),
       /boom/,
       'a tracing wrapper must never change control flow',
     );

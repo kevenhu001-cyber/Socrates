@@ -50,38 +50,51 @@
 
 import { interfaceIcon } from './interfaceIcons';
 
-const OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const OPEN =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 
 function icon(body: string): string {
   return OPEN + body + '</svg>';
 }
 
 export const STROKE_ICONS: Record<string, string> = {
-  command: icon("<path d=\"M12 19h8\"/><path d=\"m4 17 6-6-6-6\"/>"),
+  command: icon('<path d="M12 19h8"/><path d="m4 17 6-6-6-6"/>'),
   fileChange: interfaceIcon('edit'),
   read: interfaceIcon('read'),
-  spec: icon("<path d=\"M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6\"/><path d=\"M14 2v5a1 1 0 0 0 1 1h5\"/><path d=\"m14 20 2 2 4-4\"/>"),
+  spec: icon(
+    '<path d="M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="m14 20 2 2 4-4"/>',
+  ),
   search: interfaceIcon('search'),
   fetch: interfaceIcon('globe'),
   code: interfaceIcon('code'),
   visual: interfaceIcon('analyze'),
-  plan: icon("<path d=\"M13 5h8\"/><path d=\"M13 12h8\"/><path d=\"M13 19h8\"/><path d=\"m3 17 2 2 4-4\"/><path d=\"m3 7 2 2 4-4\"/>"),
+  plan: icon(
+    '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>',
+  ),
   agent: interfaceIcon('agent'),
   library: interfaceIcon('library'),
   repo: interfaceIcon('branch'),
-  mcp: icon("<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/>"),
+  mcp: icon(
+    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  ),
   memory: interfaceIcon('bookmark'),
   site: interfaceIcon('site'),
-  tool: icon("<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z\"/>"),
-  runGroup: icon("<path d=\"M3 5h.01\"/><path d=\"M3 12h.01\"/><path d=\"M3 19h.01\"/><path d=\"M8 5h13\"/><path d=\"M8 12h13\"/><path d=\"M8 19h13\"/>"),
+  tool: icon(
+    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z"/>',
+  ),
+  runGroup: icon(
+    '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
+  ),
   image: interfaceIcon('image'),
   check: interfaceIcon('check'),
-  stop: icon("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/>"),
-  alert: icon("<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" x2=\"12\" y1=\"8\" y2=\"12\"/><line x1=\"12\" x2=\"12.01\" y1=\"16\" y2=\"16\"/>"),
+  stop: icon('<rect width="18" height="18" x="3" y="3" rx="2"/>'),
+  alert: icon(
+    '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+  ),
   /* The process marker. Deliberately a dotted outline rather than a filled
      or spark glyph: the pill sits above the answer, so it has to read as
      "there was work here" without competing with the prose below it. */
-  process: icon("<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 8v4\"/><path d=\"M12 16h.01\"/>"),
+  process: icon('<circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/>'),
   chevronDown: interfaceIcon('chevronDown'),
   chevronUp: interfaceIcon('chevronUp'),
   chevronRight: interfaceIcon('chevronRight'),
@@ -100,32 +113,51 @@ export function agentStepIcon(kind: string): string {
 }
 
 const CONNECTOR_NAMES = new Set([
-  'oc_github', 'oc_gmail', 'oc_googlecalendar', 'oc_todoist', 'oc_gitlab', 'oc_qq_mail',
-  'github_identity', 'gmail_search', 'google_calendar_list_events', 'todoist_list_tasks',
-  'gitlab_identity', 'qq_mail_search',
+  'oc_github',
+  'oc_gmail',
+  'oc_googlecalendar',
+  'oc_todoist',
+  'oc_gitlab',
+  'oc_qq_mail',
+  'github_identity',
+  'gmail_search',
+  'google_calendar_list_events',
+  'todoist_list_tasks',
+  'gitlab_identity',
+  'qq_mail_search',
 ]);
 
 const TOOL_ICONS = new Map<string, string>([
-  ['web_search', STROKE_ICONS.search], ['arxiv_search', STROKE_ICONS.search],
-  ['zotero_search', STROKE_ICONS.search], ['notion_search_pages', STROKE_ICONS.search],
-  ['web_fetch', STROKE_ICONS.fetch], ['WebFetch', STROKE_ICONS.fetch],
-  ['code_interpreter', STROKE_ICONS.code], ['Code', STROKE_ICONS.code],
-  ['create_document', STROKE_ICONS.plan], ['workspace_agent', STROKE_ICONS.agent],
-  ['initialize_workspace', STROKE_ICONS.agent], ['github_list_repos', STROKE_ICONS.repo],
-  ['gitee_list_repos', STROKE_ICONS.repo], ['Read', STROKE_ICONS.read],
-  ['Glob', STROKE_ICONS.read], ['Grep', STROKE_ICONS.read],
-  ['read_attachment', STROKE_ICONS.read], ['Write', STROKE_ICONS.fileChange],
-  ['Edit', STROKE_ICONS.fileChange], ['Bash', STROKE_ICONS.command],
-  ['save_memory', STROKE_ICONS.memory], ['create_site', STROKE_ICONS.site],
-  ['image', STROKE_ICONS.image], ['read_image', STROKE_ICONS.image],
+  ['web_search', STROKE_ICONS.search],
+  ['arxiv_search', STROKE_ICONS.search],
+  ['zotero_search', STROKE_ICONS.search],
+  ['notion_search_pages', STROKE_ICONS.search],
+  ['web_fetch', STROKE_ICONS.fetch],
+  ['WebFetch', STROKE_ICONS.fetch],
+  ['code_interpreter', STROKE_ICONS.code],
+  ['Code', STROKE_ICONS.code],
+  ['create_document', STROKE_ICONS.plan],
+  ['workspace_agent', STROKE_ICONS.agent],
+  ['initialize_workspace', STROKE_ICONS.agent],
+  ['github_list_repos', STROKE_ICONS.repo],
+  ['gitee_list_repos', STROKE_ICONS.repo],
+  ['Read', STROKE_ICONS.read],
+  ['Glob', STROKE_ICONS.read],
+  ['Grep', STROKE_ICONS.read],
+  ['read_attachment', STROKE_ICONS.read],
+  ['Write', STROKE_ICONS.fileChange],
+  ['Edit', STROKE_ICONS.fileChange],
+  ['Bash', STROKE_ICONS.command],
+  ['save_memory', STROKE_ICONS.memory],
+  ['create_site', STROKE_ICONS.site],
+  ['image', STROKE_ICONS.image],
+  ['read_image', STROKE_ICONS.image],
 ]);
 
 export function toolIcon(name: string): string {
   const icon = TOOL_ICONS.get(name);
   if (icon) return icon;
-  return CONNECTOR_NAMES.has(name) || name.startsWith('oc_')
-    ? STROKE_ICONS.mcp
-    : STROKE_ICONS.tool;
+  return CONNECTOR_NAMES.has(name) || name.startsWith('oc_') ? STROKE_ICONS.mcp : STROKE_ICONS.tool;
 }
 
 /**
@@ -141,19 +173,33 @@ export function toolIcon(name: string): string {
  */
 export function categoryIcon(category: string): string {
   switch (category) {
-    case 'search': return STROKE_ICONS.search;
-    case 'fetch': return STROKE_ICONS.fetch;
-    case 'code': return STROKE_ICONS.code;
-    case 'visual': return STROKE_ICONS.visual;
-    case 'plan': return STROKE_ICONS.plan;
-    case 'spec': return STROKE_ICONS.spec;
-    case 'agent': return STROKE_ICONS.agent;
-    case 'read': return STROKE_ICONS.read;
-    case 'write': return STROKE_ICONS.fileChange;
-    case 'memory': return STROKE_ICONS.memory;
-    case 'site': return STROKE_ICONS.site;
-    case 'connector': return STROKE_ICONS.mcp;
-    case 'image': return STROKE_ICONS.image;
-    default: return STROKE_ICONS.runGroup;
+    case 'search':
+      return STROKE_ICONS.search;
+    case 'fetch':
+      return STROKE_ICONS.fetch;
+    case 'code':
+      return STROKE_ICONS.code;
+    case 'visual':
+      return STROKE_ICONS.visual;
+    case 'plan':
+      return STROKE_ICONS.plan;
+    case 'spec':
+      return STROKE_ICONS.spec;
+    case 'agent':
+      return STROKE_ICONS.agent;
+    case 'read':
+      return STROKE_ICONS.read;
+    case 'write':
+      return STROKE_ICONS.fileChange;
+    case 'memory':
+      return STROKE_ICONS.memory;
+    case 'site':
+      return STROKE_ICONS.site;
+    case 'connector':
+      return STROKE_ICONS.mcp;
+    case 'image':
+      return STROKE_ICONS.image;
+    default:
+      return STROKE_ICONS.runGroup;
   }
 }

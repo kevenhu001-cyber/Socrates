@@ -44,7 +44,16 @@ export interface MistakeBookProps {
 
 const plainText = (text: string): ReactNode => text;
 
-export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMistakeStrings, onFilter, onRedo, onNextQuestion, pendingNextId, renderText = plainText }: MistakeBookProps) {
+export function MistakeBook({
+  mistakes,
+  filter: rawFilter,
+  strings = defaultMistakeStrings,
+  onFilter,
+  onRedo,
+  onNextQuestion,
+  pendingNextId,
+  renderText = plainText,
+}: MistakeBookProps) {
   const filter = normalizeMistakeFilter(rawFilter);
   const rows = mistakes.map(mistakeView);
   const visible = filterMistakeViews(rows, filter);
@@ -54,48 +63,121 @@ export function MistakeBook({ mistakes, filter: rawFilter, strings = defaultMist
   const { colors } = useUiTheme();
   return (
     <View style={{ gap: S[100] }} {...dataSet({ mistakeBook: '1' })}>
-      <View role="radiogroup" aria-label={strings.filterLabel} style={{ flexDirection: 'row', alignSelf: 'flex-start', gap: 2, padding: 3, borderRadius: R.pill, backgroundColor: colors.fill }} {...dataSet({ mistakeFilter: filter })}>
+      <View
+        role="radiogroup"
+        aria-label={strings.filterLabel}
+        style={{
+          flexDirection: 'row',
+          alignSelf: 'flex-start',
+          gap: 2,
+          padding: 3,
+          borderRadius: R.pill,
+          backgroundColor: colors.fill,
+        }}
+        {...dataSet({ mistakeFilter: filter })}
+      >
         {(['all', 'unresolved', 'resolved'] as const).map((value) => (
-          <FilterPill key={value} value={value} label={strings.filter[value]} selected={filter === value} onPress={() => onFilter(value)} />
+          <FilterPill
+            key={value}
+            value={value}
+            label={strings.filter[value]}
+            selected={filter === value}
+            onPress={() => onFilter(value)}
+          />
         ))}
       </View>
-      <UiText variant="labelSm" tone="secondary" role="heading" aria-level={3} style={{ marginTop: S[50] }}>{strings.title}</UiText>
+      <UiText
+        variant="labelSm"
+        tone="secondary"
+        role="heading"
+        aria-level={3}
+        style={{ marginTop: S[50] }}
+      >
+        {strings.title}
+      </UiText>
       {empty ? (
-        <View {...dataSet({ mistakeEmpty: empty })} style={{ paddingVertical: S[300], paddingHorizontal: S[200], gap: S[50], borderRadius: R.card, backgroundColor: sheets(colors).subtle, boxShadow: insetRing(colors.hairline) }}>
+        <View
+          {...dataSet({ mistakeEmpty: empty })}
+          style={{
+            paddingVertical: S[300],
+            paddingHorizontal: S[200],
+            gap: S[50],
+            borderRadius: R.card,
+            backgroundColor: sheets(colors).subtle,
+            boxShadow: insetRing(colors.hairline),
+          }}
+        >
           <UiText variant="bodySm" tone="secondary" align="center">
-            {empty === 'empty' ? strings.empty : empty === 'filterResolved' ? strings.filterEmptyResolved : strings.filterEmptyOther}
+            {empty === 'empty'
+              ? strings.empty
+              : empty === 'filterResolved'
+                ? strings.filterEmptyResolved
+                : strings.filterEmptyOther}
           </UiText>
-          {empty === 'empty' ? <UiText variant="labelSm" tone="tertiary" align="center" style={{ fontWeight: '400' }}>{strings.emptyHint}</UiText> : null}
-        </View>
-      ) : groups.map((group) => (
-        <View key={group.topic || '__none'} role="group" aria-label={group.topic || strings.untitledTopic} style={{ gap: S[75] }} {...dataSet({ mistakeGroup: group.topic || '-' })}>
-          {groups.length > 1 ? (
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: S[50], paddingTop: S[50] }}>
-              <UiText variant="labelSm" tone="tertiary">{group.topic || strings.untitledTopic}</UiText>
-              <UiText variant="labelSm" tone="tertiary" style={{ fontVariant: ['tabular-nums'] }}>{String(group.items.length)}</UiText>
-            </View>
+          {empty === 'empty' ? (
+            <UiText variant="labelSm" tone="tertiary" align="center" style={{ fontWeight: '400' }}>
+              {strings.emptyHint}
+            </UiText>
           ) : null}
-          {group.items.map((row) => (
-            <MistakeCard
-              key={row.id}
-              row={row}
-              strings={strings}
-              expanded={open[row.id] === true}
-              onToggle={() => setOpen((current) => ({ ...current, [row.id]: !current[row.id] }))}
-              onRedo={() => onRedo(row.id)}
-              onNextQuestion={onNextQuestion ? () => onNextQuestion(row.id) : undefined}
-              nextPending={pendingNextId === row.id}
-              renderText={renderText}
-            />
-          ))}
         </View>
-      ))}
+      ) : (
+        groups.map((group) => (
+          <View
+            key={group.topic || '__none'}
+            role="group"
+            aria-label={group.topic || strings.untitledTopic}
+            style={{ gap: S[75] }}
+            {...dataSet({ mistakeGroup: group.topic || '-' })}
+          >
+            {groups.length > 1 ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: S[50],
+                  paddingTop: S[50],
+                }}
+              >
+                <UiText variant="labelSm" tone="tertiary">
+                  {group.topic || strings.untitledTopic}
+                </UiText>
+                <UiText variant="labelSm" tone="tertiary" style={{ fontVariant: ['tabular-nums'] }}>
+                  {String(group.items.length)}
+                </UiText>
+              </View>
+            ) : null}
+            {group.items.map((row) => (
+              <MistakeCard
+                key={row.id}
+                row={row}
+                strings={strings}
+                expanded={open[row.id] === true}
+                onToggle={() => setOpen((current) => ({ ...current, [row.id]: !current[row.id] }))}
+                onRedo={() => onRedo(row.id)}
+                onNextQuestion={onNextQuestion ? () => onNextQuestion(row.id) : undefined}
+                nextPending={pendingNextId === row.id}
+                renderText={renderText}
+              />
+            ))}
+          </View>
+        ))
+      )}
     </View>
   );
 }
 
 /** Site `.ui-seg` segment: quiet text on the grey track, a white lifted capsule when chosen. */
-function FilterPill({ value, label, selected, onPress }: { value: string; label: string; selected: boolean; onPress: () => void }) {
+function FilterPill({
+  value,
+  label,
+  selected,
+  onPress,
+}: {
+  value: string;
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
@@ -117,13 +199,27 @@ function FilterPill({ value, label, selected, onPress }: { value: string; label:
         ...transition('background-color, box-shadow', reduced),
       }}
     >
-      <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>{label}</UiText>
+      <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>
+        {label}
+      </UiText>
     </Pressable>
   );
 }
 
 /** One line of the analysis on a tinted sheet; `strong` is the keyed answer / right way (ink ring). */
-function AnswerLine({ label, value, strong, data, renderText = plainText }: { label: string; value: string; strong?: boolean; data: Record<string, string>; renderText?: (text: string, part: string) => ReactNode }) {
+function AnswerLine({
+  label,
+  value,
+  strong,
+  data,
+  renderText = plainText,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+  data: Record<string, string>;
+  renderText?: (text: string, part: string) => ReactNode;
+}) {
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   return (
@@ -138,8 +234,12 @@ function AnswerLine({ label, value, strong, data, renderText = plainText }: { la
         boxShadow: insetRing(strong ? colors.ink : colors.hairline, strong ? 1.5 : 1),
       }}
     >
-      <UiText variant="labelSm" tone="tertiary">{label}</UiText>
-      <UiText variant="bodySm" tone={strong ? 'ink' : 'secondary'}>{renderText(value, 'mistake-answer')}</UiText>
+      <UiText variant="labelSm" tone="tertiary">
+        {label}
+      </UiText>
+      <UiText variant="bodySm" tone={strong ? 'ink' : 'secondary'}>
+        {renderText(value, 'mistake-answer')}
+      </UiText>
     </View>
   );
 }
@@ -153,8 +253,25 @@ function OptionMark({ letter, tag }: { letter: string; tag?: string | null }) {
   const { colors } = useUiTheme();
   const right = tag === 'correct';
   return (
-    <View aria-hidden style={{ width: 22, height: 22, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: right ? colors.ink : colors.card, boxShadow: right ? undefined : insetRing(colors.hairlineStrong, 1) }}>
-      <UiText variant="labelSm" tone={right ? 'onInk' : 'tertiary'} style={{ fontVariant: ['tabular-nums'], lineHeight: 22 }}>{letter}</UiText>
+    <View
+      aria-hidden
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: R.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: right ? colors.ink : colors.card,
+        boxShadow: right ? undefined : insetRing(colors.hairlineStrong, 1),
+      }}
+    >
+      <UiText
+        variant="labelSm"
+        tone={right ? 'onInk' : 'tertiary'}
+        style={{ fontVariant: ['tabular-nums'], lineHeight: 22 }}
+      >
+        {letter}
+      </UiText>
     </View>
   );
 }
@@ -165,19 +282,45 @@ function OptionMark({ letter, tag }: { letter: string; tag?: string | null }) {
  * the analysis sits on two sheets (where it went wrong / the right way,
  * the latter ringed in ink). Actions live in a hairline-ruled footer.
  */
-function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion, nextPending, renderText }: { row: MistakeView; strings: MistakeStrings; expanded: boolean; onToggle: () => void; onRedo: () => void; onNextQuestion?: () => void; nextPending?: boolean; renderText: (text: string, part: string) => ReactNode }) {
+function MistakeCard({
+  row,
+  strings,
+  expanded,
+  onToggle,
+  onRedo,
+  onNextQuestion,
+  nextPending,
+  renderText,
+}: {
+  row: MistakeView;
+  strings: MistakeStrings;
+  expanded: boolean;
+  onToggle: () => void;
+  onRedo: () => void;
+  onNextQuestion?: () => void;
+  nextPending?: boolean;
+  renderText: (text: string, part: string) => ReactNode;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   const detailId = `mistake-detail-${row.id}`;
-  const meta = [strings.typeLabel(row.type), row.topic, strings.time(row.timestamp)].filter(Boolean);
+  const meta = [strings.typeLabel(row.type), row.topic, strings.time(row.timestamp)].filter(
+    Boolean,
+  );
   return (
     <View
       role="article"
       aria-label={row.question}
       {...dataSet({ mistakeId: row.id, mistakeResolved: row.resolved ? '1' : undefined })}
-      style={{ borderRadius: R.card, backgroundColor: colors.card, boxShadow: shadow(colors, hovered ? 'overlay' : 'raised'), overflow: 'hidden', ...transition('box-shadow', reduced, 200) }}
+      style={{
+        borderRadius: R.card,
+        backgroundColor: colors.card,
+        boxShadow: shadow(colors, hovered ? 'overlay' : 'raised'),
+        overflow: 'hidden',
+        ...transition('box-shadow', reduced, 200),
+      }}
     >
       <Pressable
         role="button"
@@ -197,34 +340,106 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
           {meta[0] ? (
-            <View {...dataSet({ mistakeType: row.type })} style={{ height: 22, justifyContent: 'center', paddingHorizontal: S[75], borderRadius: R.pill, backgroundColor: colors.fill }}>
-              <UiText variant="labelSm" tone="secondary" numberOfLines={1} style={{ fontWeight: '400' }}>{meta[0]}</UiText>
+            <View
+              {...dataSet({ mistakeType: row.type })}
+              style={{
+                height: 22,
+                justifyContent: 'center',
+                paddingHorizontal: S[75],
+                borderRadius: R.pill,
+                backgroundColor: colors.fill,
+              }}
+            >
+              <UiText
+                variant="labelSm"
+                tone="secondary"
+                numberOfLines={1}
+                style={{ fontWeight: '400' }}
+              >
+                {meta[0]}
+              </UiText>
             </View>
           ) : null}
-          <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ flex: 1, minWidth: 0, fontWeight: '400' }}>
+          <UiText
+            variant="labelSm"
+            tone="tertiary"
+            numberOfLines={1}
+            style={{ flex: 1, minWidth: 0, fontWeight: '400' }}
+          >
             {meta.slice(1).join(' · ')}
           </UiText>
           {row.resolved ? (
-            <View {...dataSet({ mistakeResolvedTag: '1' })} style={{ height: 22, justifyContent: 'center', paddingHorizontal: S[75], borderRadius: R.pill, backgroundColor: colors.ink }}>
-              <UiText variant="labelSm" tone="onInk" numberOfLines={1}>{strings.conquered}</UiText>
+            <View
+              {...dataSet({ mistakeResolvedTag: '1' })}
+              style={{
+                height: 22,
+                justifyContent: 'center',
+                paddingHorizontal: S[75],
+                borderRadius: R.pill,
+                backgroundColor: colors.ink,
+              }}
+            >
+              <UiText variant="labelSm" tone="onInk" numberOfLines={1}>
+                {strings.conquered}
+              </UiText>
             </View>
           ) : null}
           <Chevron open={expanded} size={6} tone={hovered ? 'ink' : 'tertiary'} />
         </View>
-        <UiText variant="label" numberOfLines={expanded ? undefined : 2} {...dataSet({ mistakeQ: '1' })}>{renderText(row.question, 'mistake-q')}</UiText>
+        <UiText
+          variant="label"
+          numberOfLines={expanded ? undefined : 2}
+          {...dataSet({ mistakeQ: '1' })}
+        >
+          {renderText(row.question, 'mistake-q')}
+        </UiText>
       </Pressable>
       {expanded ? (
-        <View nativeID={detailId} {...dataSet({ mistakeDetail: row.id })} style={{ paddingHorizontal: S[200], paddingBottom: S[200], gap: S[75] }}>
+        <View
+          nativeID={detailId}
+          {...dataSet({ mistakeDetail: row.id })}
+          style={{ paddingHorizontal: S[200], paddingBottom: S[200], gap: S[75] }}
+        >
           {row.options.length ? (
-            <View role="list" aria-label={strings.options} style={{ gap: S[50], padding: S[100], borderRadius: R.row, backgroundColor: subtle, marginBottom: S[50] }}>
+            <View
+              role="list"
+              aria-label={strings.options}
+              style={{
+                gap: S[50],
+                padding: S[100],
+                borderRadius: R.row,
+                backgroundColor: subtle,
+                marginBottom: S[50],
+              }}
+            >
               {row.options.map((option, index) => (
-                <View key={`${option.letter}-${index}`} role="listitem" {...dataSet({ mistakeOpt: option.letter, mistakeTag: option.tag ?? undefined })} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S[75] }}>
+                <View
+                  key={`${option.letter}-${index}`}
+                  role="listitem"
+                  {...dataSet({ mistakeOpt: option.letter, mistakeTag: option.tag ?? undefined })}
+                  style={{ flexDirection: 'row', alignItems: 'flex-start', gap: S[75] }}
+                >
                   <OptionMark letter={option.letter} tag={option.tag} />
-                  <UiText variant="bodySm" tone={option.tag === 'correct' ? 'ink' : option.tag === 'wrong' ? 'secondary' : 'tertiary'} style={{ flex: 1, textDecorationLine: option.tag === 'wrong' ? 'line-through' : 'none' }}>
+                  <UiText
+                    variant="bodySm"
+                    tone={
+                      option.tag === 'correct'
+                        ? 'ink'
+                        : option.tag === 'wrong'
+                          ? 'secondary'
+                          : 'tertiary'
+                    }
+                    style={{
+                      flex: 1,
+                      textDecorationLine: option.tag === 'wrong' ? 'line-through' : 'none',
+                    }}
+                  >
                     {renderText(option.text, 'mistake-option')}
                   </UiText>
                   {option.tag === 'correct' || option.tag === 'wrong' ? (
-                    <View style={{ paddingTop: 1 }}><VerdictGlyph verdict={option.tag === 'correct' ? 'correct' : 'incorrect'} /></View>
+                    <View style={{ paddingTop: 1 }}>
+                      <VerdictGlyph verdict={option.tag === 'correct' ? 'correct' : 'incorrect'} />
+                    </View>
                   ) : null}
                 </View>
               ))}
@@ -234,24 +449,89 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
             <>
               {/* RN-6: the AI analysis takes the two headline lines; the plain
                   answers stay underneath when there are no options to mark. */}
-              {!row.options.length ? <AnswerLine label={strings.answerGiven} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeGiven: row.id }} renderText={renderText} /> : null}
-              {!row.options.length && row.correctAnswer ? <AnswerLine label={strings.answerKeyed} value={row.correctAnswer} data={{ mistakeKeyed: row.id }} renderText={renderText} /> : null}
-              {row.whyWrong ? <AnswerLine label={strings.yourAnswer} value={row.whyWrong} data={{ mistakeCause: row.id, mistakeAi: '1' }} renderText={renderText} /> : null}
-              {row.rightWay ? <AnswerLine label={strings.correctAnswer} value={row.rightWay} strong data={{ mistakeRight: row.id, mistakeAi: '1' }} renderText={renderText} /> : null}
+              {!row.options.length ? (
+                <AnswerLine
+                  label={strings.answerGiven}
+                  value={row.yourAnswer ?? strings.noAnswer}
+                  data={{ mistakeGiven: row.id }}
+                  renderText={renderText}
+                />
+              ) : null}
+              {!row.options.length && row.correctAnswer ? (
+                <AnswerLine
+                  label={strings.answerKeyed}
+                  value={row.correctAnswer}
+                  data={{ mistakeKeyed: row.id }}
+                  renderText={renderText}
+                />
+              ) : null}
+              {row.whyWrong ? (
+                <AnswerLine
+                  label={strings.yourAnswer}
+                  value={row.whyWrong}
+                  data={{ mistakeCause: row.id, mistakeAi: '1' }}
+                  renderText={renderText}
+                />
+              ) : null}
+              {row.rightWay ? (
+                <AnswerLine
+                  label={strings.correctAnswer}
+                  value={row.rightWay}
+                  strong
+                  data={{ mistakeRight: row.id, mistakeAi: '1' }}
+                  renderText={renderText}
+                />
+              ) : null}
             </>
           ) : (
             <>
-              <AnswerLine label={strings.yourAnswer} value={row.yourAnswer ?? strings.noAnswer} data={{ mistakeCause: row.id }} renderText={renderText} />
-              {row.correctAnswer ? <AnswerLine label={strings.correctAnswer} value={row.correctAnswer} strong data={{ mistakeRight: row.id }} renderText={renderText} /> : null}
+              <AnswerLine
+                label={strings.yourAnswer}
+                value={row.yourAnswer ?? strings.noAnswer}
+                data={{ mistakeCause: row.id }}
+                renderText={renderText}
+              />
+              {row.correctAnswer ? (
+                <AnswerLine
+                  label={strings.correctAnswer}
+                  value={row.correctAnswer}
+                  strong
+                  data={{ mistakeRight: row.id }}
+                  renderText={renderText}
+                />
+              ) : null}
             </>
           )}
         </View>
       ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: 52, paddingHorizontal: S[200], paddingVertical: S[75] + 2, borderTopWidth: 1, borderTopColor: colors.hairline }}>
-        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400', flexShrink: 1 }} {...dataSet({ mistakeRedoCount: row.redoCount || undefined })}>
-          {row.redoCount ? (row.redoCount === 1 ? strings.redoneOne : fill(strings.redoneMany, { n: row.redoCount })) : ''}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: S[75],
+          minHeight: 52,
+          paddingHorizontal: S[200],
+          paddingVertical: S[75] + 2,
+          borderTopWidth: 1,
+          borderTopColor: colors.hairline,
+        }}
+      >
+        <UiText
+          variant="labelSm"
+          tone="tertiary"
+          style={{ fontWeight: '400', flexShrink: 1 }}
+          {...dataSet({ mistakeRedoCount: row.redoCount || undefined })}
+        >
+          {row.redoCount
+            ? row.redoCount === 1
+              ? strings.redoneOne
+              : fill(strings.redoneMany, { n: row.redoCount })
+            : ''}
         </UiText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: S[75] }}>
+        <View
+          style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: S[75] }}
+        >
           {onNextQuestion ? (
             <PillAction
               size="sm"
@@ -261,7 +541,13 @@ function MistakeCard({ row, strings, expanded, onToggle, onRedo, onNextQuestion,
               data={{ mistakeNext: row.id, mistakeNextBusy: nextPending ? '1' : undefined }}
             />
           ) : null}
-          <PillAction size="sm" tone="solid" label={strings.redo} onPress={onRedo} data={{ redo: row.id }} />
+          <PillAction
+            size="sm"
+            tone="solid"
+            label={strings.redo}
+            onPress={onRedo}
+            data={{ redo: row.id }}
+          />
         </View>
       </View>
     </View>

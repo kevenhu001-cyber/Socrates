@@ -75,7 +75,9 @@ export function ocInventoryEntry(id: unknown): OcInventoryRef | null {
   if (!raw.startsWith(OC_ID_PREFIX)) return null;
   const service = raw.slice(OC_ID_PREFIX.length).toLowerCase();
   if (!service) return null;
-  const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.status === 'ready' && item.ocService === service);
+  const entry = OPEN_CONNECTOR_APP_INVENTORY.find(
+    (item) => item.status === 'ready' && item.ocService === service,
+  );
   return entry ? { entry, service } : null;
 }
 
@@ -87,26 +89,35 @@ export function ocAuthType(meta: OcProviderMeta): OcAuthType {
   return 'no_auth';
 }
 
-export function ocCredentialInput(meta: OcProviderMeta, authType: OcAuthType): OcCatalogItem['credentialInput'] {
+export function ocCredentialInput(
+  meta: OcProviderMeta,
+  authType: OcAuthType,
+): OcCatalogItem['credentialInput'] {
   if (authType === 'api_key') {
     const config = meta.auth.find((item) => item.type === 'api_key');
-    return { fields: [{
-      key: 'apiKey',
-      label: config?.label || 'API Key',
-      type: 'password',
-      required: true,
-      help: config?.description || config?.placeholder || undefined,
-    }] };
+    return {
+      fields: [
+        {
+          key: 'apiKey',
+          label: config?.label || 'API Key',
+          type: 'password',
+          required: true,
+          help: config?.description || config?.placeholder || undefined,
+        },
+      ],
+    };
   }
   if (authType === 'custom_credential') {
     const config = meta.auth.find((item) => item.type === 'custom_credential');
-    return { fields: (config?.fields || []).map((field) => ({
-      key: field.key,
-      label: field.label || field.key,
-      type: field.secret ? 'password' : (field.inputType === 'email' ? 'email' : 'text'),
-      required: field.required !== false,
-      help: field.description || field.placeholder || undefined,
-    })) };
+    return {
+      fields: (config?.fields || []).map((field) => ({
+        key: field.key,
+        label: field.label || field.key,
+        type: field.secret ? 'password' : field.inputType === 'email' ? 'email' : 'text',
+        required: field.required !== false,
+        help: field.description || field.placeholder || undefined,
+      })),
+    };
   }
   return undefined;
 }
@@ -120,20 +131,36 @@ export interface OcOAuthAppForm {
   extraFields: OcOAuthAppField[];
 }
 
-export function ocOAuthAppForm(auth: {
-  tokenEndpointAuthMethod?: string;
-  clientConfigFields?: Array<{
-    key: string; label: string; inputType?: string; required?: boolean; secret?: boolean;
-    placeholder?: string; description?: string; location?: string;
-  }>;
-} | null | undefined): OcOAuthAppForm {
+export function ocOAuthAppForm(
+  auth:
+    | {
+        tokenEndpointAuthMethod?: string;
+        clientConfigFields?: Array<{
+          key: string;
+          label: string;
+          inputType?: string;
+          required?: boolean;
+          secret?: boolean;
+          placeholder?: string;
+          description?: string;
+          location?: string;
+        }>;
+      }
+    | null
+    | undefined,
+): OcOAuthAppForm {
   const fields = Array.isArray(auth?.clientConfigFields) ? auth.clientConfigFields : [];
   return {
     clientSecretRequired: auth?.tokenEndpointAuthMethod !== 'none',
     extraFields: fields.map((field) => ({
       key: field.key,
       label: field.label,
-      type: field.secret || field.location === 'secretExtra' ? 'password' : (field.inputType === 'email' ? 'email' : 'text'),
+      type:
+        field.secret || field.location === 'secretExtra'
+          ? 'password'
+          : field.inputType === 'email'
+            ? 'email'
+            : 'text',
       required: field.required !== false,
       help: field.description || field.placeholder || undefined,
       secret: Boolean(field.secret || field.location === 'secretExtra'),
@@ -182,10 +209,13 @@ export function ocCatalogItem(
     service: entry.ocService as string,
     name: entry.displayName,
     description: `Connect ${entry.displayName} to use its ${actionCount} actions in chat. (via OpenConnector)`,
-    capabilities: Array.isArray(meta.categories) && meta.categories.length > 0 ? meta.categories : ['Actions'],
+    capabilities:
+      Array.isArray(meta.categories) && meta.categories.length > 0 ? meta.categories : ['Actions'],
     authType,
     available: true,
-    ...(ocCredentialInput(meta, authType) ? { credentialInput: ocCredentialInput(meta, authType) } : {}),
+    ...(ocCredentialInput(meta, authType)
+      ? { credentialInput: ocCredentialInput(meta, authType) }
+      : {}),
   };
 }
 

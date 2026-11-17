@@ -3,11 +3,16 @@
  * anything else is rejected at issuance time, so a scope stored in the DB
  * can always be checked verbatim here. */
 export const ALL_SCOPES = [
-  'chat:read', 'chat:write',
-  'memory:read', 'memory:write',
-  'sessions:read', 'sessions:write',
-  'files:read', 'files:write',
-  'projects:read', 'projects:write',
+  'chat:read',
+  'chat:write',
+  'memory:read',
+  'memory:write',
+  'sessions:read',
+  'sessions:write',
+  'files:read',
+  'files:write',
+  'projects:read',
+  'projects:write',
 ] as const;
 
 export type Scope = (typeof ALL_SCOPES)[number];
@@ -53,4 +58,3 @@ export function parseScopeParam(value: unknown): string[] | null {
   if (typeof value !== 'string' || !value.trim()) return [];
   return parseScopes(value.trim().split(/\s+/));
 }
-

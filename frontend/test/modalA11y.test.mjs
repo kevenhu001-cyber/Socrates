@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM('<!doctype html><body><main id="appShell"></main><div id="legacyModal"><button>First</button><button>Last</button></div><div id="managedModal"><button>Managed first</button><button>Managed last</button></div></body>');
+const dom = new JSDOM(
+  '<!doctype html><body><main id="appShell"></main><div id="legacyModal"><button>First</button><button>Last</button></div><div id="managedModal"><button>Managed first</button><button>Managed last</button></div></body>',
+);
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 // The helper only needs to know which controls participate in layout.
@@ -17,7 +19,11 @@ test.afterEach(() => {
 function tabFromLast(id) {
   const [first, last] = document.getElementById(id).querySelectorAll('button');
   last.focus();
-  const event = new dom.window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+  const event = new dom.window.KeyboardEvent('keydown', {
+    key: 'Tab',
+    bubbles: true,
+    cancelable: true,
+  });
   last.dispatchEvent(event);
   return { event, first, last };
 }

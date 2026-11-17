@@ -11,7 +11,10 @@ import { executeOpenConnectorTool } from '../../../../services/integrations/open
 import { getOpenConnectorChatTool } from '../../../../services/integrations/openConnectorChatToolCatalog.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
-import { normalizeToolResultRetryability, recordToolResultAndBoundRetryability } from '../toolResultPolicy.js';
+import {
+  normalizeToolResultRetryability,
+  recordToolResultAndBoundRetryability,
+} from '../toolResultPolicy.js';
 
 export const executeOpenConnector: ToolExecutor = async (
   args,
@@ -22,15 +25,25 @@ export const executeOpenConnector: ToolExecutor = async (
   const toolName = call.function?.name || '';
   const spec = getOpenConnectorChatTool(toolName);
   const connection = spec
-    ? (projectConnectorConnectionsByProvider?.[`oc_${spec.service}`] as { status?: string; connectionName?: string | null } | null) || null
+    ? (projectConnectorConnectionsByProvider?.[`oc_${spec.service}`] as {
+        status?: string;
+        connectionName?: string | null;
+      } | null) || null
     : null;
-  const rawResult = await executeOpenConnectorTool(toolName, args, req.userId!, connection) as ToolResult;
+  const rawResult = (await executeOpenConnectorTool(
+    toolName,
+    args,
+    req.userId!,
+    connection,
+  )) as ToolResult;
   const result = toolPolicy
     ? recordToolResultAndBoundRetryability(toolName, rawResult, toolPolicy)
     : normalizeToolResultRetryability(rawResult);
   const ok = result.status === 'completed';
   emitter.event('tool_result', {
-    id: call.id, ok, status: result.status,
+    id: call.id,
+    ok,
+    status: result.status,
     output: result.output || '',
     error: result.error || null,
     errorCode: result.errorCode || null,

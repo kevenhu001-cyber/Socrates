@@ -18,21 +18,41 @@ function request(path, { browser = true, headers = {}, body, ip } = {}) {
   const url = new URL(path, f.url);
   const payload = JSON.stringify(body ?? {});
   return new Promise((resolve, reject) => {
-    const req = http.request(url, {
-      method: 'POST',
-      headers: {
-        Host: 'app.topodrive.top', 'X-Forwarded-Proto': 'https',
-        'X-Forwarded-For': ip || `198.51.100.${++client}`,
-        'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload),
-        ...(browser ? { Origin: 'https://app.topodrive.top', Cookie: `sid=${f.owner.sid}; csrf=${f.owner.csrf}`, 'X-CSRF-Token': f.owner.csrf } : {}),
-        ...headers,
+    const req = http.request(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          Host: 'app.topodrive.top',
+          'X-Forwarded-Proto': 'https',
+          'X-Forwarded-For': ip || `198.51.100.${++client}`,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payload),
+          ...(browser
+            ? {
+                Origin: 'https://app.topodrive.top',
+                Cookie: `sid=${f.owner.sid}; csrf=${f.owner.csrf}`,
+                'X-CSRF-Token': f.owner.csrf,
+              }
+            : {}),
+          ...headers,
+        },
       },
-    }, (res) => {
-      let text = '';
-      res.setEncoding('utf8');
-      res.on('data', (part) => { text += part; });
-      res.on('end', () => resolve({ status: res.statusCode, headers: new Headers(res.headers), body: text ? JSON.parse(text) : null }));
-    });
+      (res) => {
+        let text = '';
+        res.setEncoding('utf8');
+        res.on('data', (part) => {
+          text += part;
+        });
+        res.on('end', () =>
+          resolve({
+            status: res.statusCode,
+            headers: new Headers(res.headers),
+            body: text ? JSON.parse(text) : null,
+          }),
+        );
+      },
+    );
     req.on('error', reject);
     req.end(payload);
   });
@@ -60,7 +80,11 @@ async function issue(prefix = '/api/v2') {
   return code;
 }
 function exchange(code, codeVerifier = verifier, extra = {}) {
-  return request('/api/v2/auth/mobile/browser/exchange', { browser: false, body: { code, codeVerifier }, ...extra });
+  return request('/api/v2/auth/mobile/browser/exchange', {
+    browser: false,
+    body: { code, codeVerifier },
+    ...extra,
+  });
 }
 
 test('authorize requires real sid, fixed same-origin request and a complete CSRF pair', async () => {
@@ -75,7 +99,10 @@ test('authorize requires real sid, fixed same-origin request and a complete CSRF
     { headers: { Cookie: `sid=${'0'.repeat(64)}; csrf=${f.owner.csrf}` } },
     { headers: { Authorization: `Bearer ma.${'a'.repeat(32)}.${'b'.repeat(64)}` } },
   ]) {
-    const response = await request(endpoint, { ...options, body: { state, codeChallenge: challenge } });
+    const response = await request(endpoint, {
+      ...options,
+      body: { state, codeChallenge: challenge },
+    });
     assert.ok([401, 403].includes(response.status), `expected rejection, got ${response.status}`);
     privacy(response);
   }
@@ -87,7 +114,10 @@ test('authorize requires real sid, fixed same-origin request and a complete CSRF
 test('only the hash is stored; wrong verifier does not consume; exchange is cookie-free and one-use', async () => {
   const code = await issue();
   const digest = createHash('sha256').update(code).digest('hex');
-  const rows = await f.db.select().from(authSessions).where(eq(authSessions.token, `nh.${challenge}.${digest}`));
+  const rows = await f.db
+    .select()
+    .from(authSessions)
+    .where(eq(authSessions.token, `nh.${challenge}.${digest}`));
   assert.equal(rows.length, 1);
   assert.equal(rows[0].token.includes(code), false);
   const wrong = await exchange(code, 'x'.repeat(43));
@@ -98,7 +128,10 @@ test('only the hash is stored; wrong verifier does not consume; exchange is cook
   privacy(pair);
   assert.match(pair.body.accessToken, /^ma\.[a-f0-9]{32}\.[a-f0-9]{64}$/);
   assert.match(pair.body.refreshToken, /^mr\.[a-f0-9]{32}\.[a-f0-9]{64}$/);
-  const persisted = await f.db.select().from(authSessions).where(eq(authSessions.token, pair.body.accessToken));
+  const persisted = await f.db
+    .select()
+    .from(authSessions)
+    .where(eq(authSessions.token, pair.body.accessToken));
   assert.equal(persisted[0].userId, f.owner.id);
   assert.equal((await exchange(code)).status, 400);
 });
@@ -114,7 +147,9 @@ test('expired/malformed codes and verifiers cannot mint credentials', async () =
   const code = randomBytes(32).toString('hex');
   const digest = createHash('sha256').update(code).digest('hex');
   const token = `nh.${challenge}.${digest}`;
-  await f.db.insert(authSessions).values({ token, userId: f.owner.id, expiresAt: new Date(Date.now() - 1000) });
+  await f.db
+    .insert(authSessions)
+    .values({ token, userId: f.owner.id, expiresAt: new Date(Date.now() - 1000) });
   assert.equal((await exchange(code)).status, 400);
   assert.equal((await exchange('bad')).status, 400);
   assert.equal((await exchange(code, 'short')).status, 400);
@@ -125,7 +160,8 @@ test('exchange ignores stale browser csrf cookies, and rate-limited failures rem
   const code = await issue();
   assert.equal((await exchange(code, verifier, { headers: { Cookie: 'csrf=stale' } })).status, 200);
   let limited;
-  for (let i = 0; i < 11; i++) limited = await exchange('0'.repeat(64), verifier, { ip: '203.0.113.99' });
+  for (let i = 0; i < 11; i++)
+    limited = await exchange('0'.repeat(64), verifier, { ip: '203.0.113.99' });
   assert.equal(limited.status, 429);
   privacy(limited);
 });

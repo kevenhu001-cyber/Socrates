@@ -36,7 +36,16 @@ export interface ComposerFrameProps {
   controls: Omit<ComposerControlsProps, 'compact'>;
 }
 
-export function ComposerFrame({ focused, compact = false, shadows, top, topVisible = false, body, hidden, controls }: ComposerFrameProps) {
+export function ComposerFrame({
+  focused,
+  compact = false,
+  shadows,
+  top,
+  topVisible = false,
+  body,
+  hidden,
+  controls,
+}: ComposerFrameProps) {
   const { colors } = useUiTheme();
   const [hovered, setHovered] = useState(false);
   const shadow = shadows ?? uiShadow.light;
@@ -45,22 +54,41 @@ export function ComposerFrame({ focused, compact = false, shadows, top, topVisib
       {...dataSet({ composerFrame: '', focused: focused ? 'true' : 'false' })}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      style={{
-        width: '100%',
-        /* Phones: the reference box's corner measures 26px (circle fit). */
-        borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
-        backgroundColor: colors.card,
-        boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
-        transitionProperty: 'box-shadow',
-        transitionDuration: `${uiMotion.slow - 100}ms`,
-        transitionTimingFunction: uiMotion.easeOut,
-        paddingTop: compact ? uiStep[75] : uiStep[200],
-        paddingBottom: uiStep[75],
-        paddingHorizontal: uiStep[75],
-      } as object}
+      style={
+        {
+          width: '100%',
+          /* Phones: the reference box's corner measures 26px (circle fit). */
+          borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
+          backgroundColor: colors.card,
+          boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
+          transitionProperty: 'box-shadow',
+          transitionDuration: `${uiMotion.slow - 100}ms`,
+          transitionTimingFunction: uiMotion.easeOut,
+          paddingTop: compact ? uiStep[75] : uiStep[200],
+          paddingBottom: uiStep[75],
+          paddingHorizontal: uiStep[75],
+        } as object
+      }
     >
-      {top ? <View {...dataSet({ composerSlot: 'top' })} style={{ paddingHorizontal: compact ? uiStep[75] : uiStep[100], marginBottom: topVisible ? uiStep[75] : 0 }}>{top}</View> : null}
-      <View {...dataSet({ composerSlot: 'body' })} style={{ paddingHorizontal: compact ? uiStep[75] : uiStep[100], minHeight: 26, marginBottom: uiStep[75] }}>
+      {top ? (
+        <View
+          {...dataSet({ composerSlot: 'top' })}
+          style={{
+            paddingHorizontal: compact ? uiStep[75] : uiStep[100],
+            marginBottom: topVisible ? uiStep[75] : 0,
+          }}
+        >
+          {top}
+        </View>
+      ) : null}
+      <View
+        {...dataSet({ composerSlot: 'body' })}
+        style={{
+          paddingHorizontal: compact ? uiStep[75] : uiStep[100],
+          minHeight: 26,
+          marginBottom: uiStep[75],
+        }}
+      >
         {body}
       </View>
       <View

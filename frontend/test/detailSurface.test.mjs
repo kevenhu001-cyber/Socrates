@@ -6,14 +6,26 @@ import { openDetailSurface, closeDetailSurface } from '../src/ui/detailSurface.t
 import { activateMainView } from '../src/ui/mainViewController.ts';
 
 function fixture(width = 1440) {
-  const dom = new JSDOM('<html><body><div id="appShell"><button id="trigger">Open</button><aside id="sidebar"></aside><div id="topicSetup"></div><div id="sitesPanel" class="hidden"></div></div></body></html>');
+  const dom = new JSDOM(
+    '<html><body><div id="appShell"><button id="trigger">Open</button><aside id="sidebar"></aside><div id="topicSetup"></div><div id="sitesPanel" class="hidden"></div></div></body></html>',
+  );
   Object.defineProperty(dom.window, 'innerWidth', { value: width, configurable: true });
   const doc = dom.window.document;
   globalThis.window = dom.window;
   globalThis.document = doc;
   doc.getElementById('sidebar').getBoundingClientRect = () => ({ width: 260 });
   doc.getElementById('trigger').focus();
-  return { dom, doc, options: (owner, onClose) => ({ owner, title: owner, closeLabel: 'Close', content: createElement('div', null, owner), onClose }) };
+  return {
+    dom,
+    doc,
+    options: (owner, onClose) => ({
+      owner,
+      title: owner,
+      closeLabel: 'Close',
+      content: createElement('div', null, owner),
+      onClose,
+    }),
+  };
 }
 
 async function waitForSurface(doc) {
@@ -27,7 +39,10 @@ async function waitForSurface(doc) {
 test('replacement reuses one shell and stale cleanup cannot close the new owner', async () => {
   const { doc, options } = fixture();
   let closed = 0;
-  openDetailSurface(options('thinking', () => closed++), doc);
+  openDetailSurface(
+    options('thinking', () => closed++),
+    doc,
+  );
   openDetailSurface(options('artifact'), doc);
   await waitForSurface(doc);
   const shell = doc.querySelector('.detail-surface');
@@ -73,7 +88,10 @@ test('navigation closes the detail and a missing page leaves the current page in
 test('closing a pending lazy open prevents it from mounting later', async () => {
   const { doc, options } = fixture();
   let closed = 0;
-  openDetailSurface(options('artifact', () => closed++), doc);
+  openDetailSurface(
+    options('artifact', () => closed++),
+    doc,
+  );
   closeDetailSurface('artifact', doc);
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(doc.querySelector('.detail-surface'), null);

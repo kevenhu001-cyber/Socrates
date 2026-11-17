@@ -6,7 +6,7 @@ import {
   canonicalToolExample,
   canonicalToolExampleJson,
   describeToolSchema,
-} from '../src/services/tools/toolErrorFeedback.js';
+} from '../src/services/tools/toolCorrectionMessage.js';
 import { DOCUMENT_TOOL, executeDocument } from '../src/services/core/planning.js';
 import { INTELLIGENT_UI_TOOL, validateIntelligentUi } from '../src/services/intelligentUi.js';
 import { WEB_SEARCH_TOOL } from '../src/services/webSearch.ts';
@@ -16,12 +16,17 @@ import { repairToolArguments } from '../src/services/tools/toolCallSafety.js';
 /* The whole point of shipping an example is that a model can copy it
    verbatim and succeed. Assert that against each tool's real executor. */
 test('canonical examples pass the executors that validate them', () => {
-  const document = executeDocument(canonicalToolExample('create_document', DOCUMENT_TOOL.function.parameters));
+  const document = executeDocument(
+    canonicalToolExample('create_document', DOCUMENT_TOOL.function.parameters),
+  );
   assert.equal(document.status, 'completed');
 });
 
 test('the canonical render_intelligent_ui example is a minimal text node', () => {
-  const example = canonicalToolExample('render_intelligent_ui', INTELLIGENT_UI_TOOL.function.parameters);
+  const example = canonicalToolExample(
+    'render_intelligent_ui',
+    INTELLIGENT_UI_TOOL.function.parameters,
+  );
   assert.ok(example);
   assert.equal(example.nodes[0].type, 'text');
   const result = validateIntelligentUi(example);
@@ -43,47 +48,90 @@ test('canonical examples satisfy their own schemas without repair', () => {
     ['create_document', DOCUMENT_TOOL.function.parameters],
     ['web_search', WEB_SEARCH_TOOL.function.parameters],
     ['web_fetch', WEB_FETCH_TOOL.function.parameters],
-    ['initialize_workspace', {
-      type: 'object',
-      properties: {
-        max_memory_mb: { type: 'integer', minimum: 64, maximum: 4096 },
-        max_disk_mb: { type: 'integer', minimum: 16, maximum: 8192 },
-        reset: { type: 'boolean' },
+    [
+      'initialize_workspace',
+      {
+        type: 'object',
+        properties: {
+          max_memory_mb: { type: 'integer', minimum: 64, maximum: 4096 },
+          max_disk_mb: { type: 'integer', minimum: 16, maximum: 8192 },
+          reset: { type: 'boolean' },
+        },
+        additionalProperties: false,
       },
-      additionalProperties: false,
-    }],
-    ['create_site', {
-      type: 'object',
-      required: ['title', 'source'],
-      properties: {
-        title: { type: 'string', minLength: 1, maxLength: 120 },
-        source: { type: 'string', minLength: 15 },
-        visibility: { type: 'string', enum: ['private', 'unlisted', 'public'] },
+    ],
+    [
+      'create_site',
+      {
+        type: 'object',
+        required: ['title', 'source'],
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 120 },
+          source: { type: 'string', minLength: 15 },
+          visibility: { type: 'string', enum: ['private', 'unlisted', 'public'] },
+        },
+        additionalProperties: false,
       },
-      additionalProperties: false,
-    }],
-    ['patch_intelligent_ui', {
-      type: 'object',
-      required: ['surfaceId', 'revision', 'operations'],
-      properties: {
-        surfaceId: { type: 'string', minLength: 1 },
-        revision: { type: 'integer', minimum: 0 },
-        operations: { type: 'array', minItems: 1, items: { type: 'object', required: ['op'], properties: { op: { type: 'string', enum: ['add', 'patch', 'remove'] }, node: { type: 'object' } } } },
+    ],
+    [
+      'patch_intelligent_ui',
+      {
+        type: 'object',
+        required: ['surfaceId', 'revision', 'operations'],
+        properties: {
+          surfaceId: { type: 'string', minLength: 1 },
+          revision: { type: 'integer', minimum: 0 },
+          operations: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              required: ['op'],
+              properties: {
+                op: { type: 'string', enum: ['add', 'patch', 'remove'] },
+                node: { type: 'object' },
+              },
+            },
+          },
+        },
+        additionalProperties: false,
       },
-      additionalProperties: false,
-    }],
-    ['read_attachment', {
-      type: 'object',
-      required: ['fileId'],
-      properties: { fileId: { type: 'string' }, offset: { type: 'number', minimum: 0 }, limit: { type: 'number', minimum: 1, maximum: 30000 } },
-      additionalProperties: false,
-    }],
-    ['cite_sources', {
-      type: 'object',
-      required: ['claims'],
-      properties: { claims: { type: 'array', minItems: 1, items: { type: 'object', required: ['quote', 'sourceIds'], properties: { quote: { type: 'string' }, sourceIds: { type: 'array', minItems: 1, items: { type: 'string' } } } } } },
-      additionalProperties: false,
-    }],
+    ],
+    [
+      'read_attachment',
+      {
+        type: 'object',
+        required: ['fileId'],
+        properties: {
+          fileId: { type: 'string' },
+          offset: { type: 'number', minimum: 0 },
+          limit: { type: 'number', minimum: 1, maximum: 30000 },
+        },
+        additionalProperties: false,
+      },
+    ],
+    [
+      'cite_sources',
+      {
+        type: 'object',
+        required: ['claims'],
+        properties: {
+          claims: {
+            type: 'array',
+            minItems: 1,
+            items: {
+              type: 'object',
+              required: ['quote', 'sourceIds'],
+              properties: {
+                quote: { type: 'string' },
+                sourceIds: { type: 'array', minItems: 1, items: { type: 'string' } },
+              },
+            },
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
   ];
   for (const [name, schema] of cases) {
     const json = canonicalToolExampleJson(name, schema);
@@ -181,7 +229,20 @@ test('tool correction feedback can replace a generic example with the rejected v
     fieldErrors: 'payload.values: must match yCategories',
     retryable: true,
     hint: 'Use a matrix with one value per category pair.',
-    exampleOverride: { version: 1, template: 'heatmap', title: 'Activity', accessibilitySummary: 'A two by two heatmap.', payload: { xCategories: ['Mon', 'Tue'], yCategories: ['AM', 'PM'], values: [[2, 4], [3, 1]] } },
+    exampleOverride: {
+      version: 1,
+      template: 'heatmap',
+      title: 'Activity',
+      accessibilitySummary: 'A two by two heatmap.',
+      payload: {
+        xCategories: ['Mon', 'Tue'],
+        yCategories: ['AM', 'PM'],
+        values: [
+          [2, 4],
+          [3, 1],
+        ],
+      },
+    },
   });
   assert.match(feedback.modelMessage, /Use a matrix with one value per category pair/);
   assert.match(feedback.modelMessage, /"template":"heatmap"/);
@@ -195,7 +256,10 @@ test('buildToolErrorFeedback lists callable tools for an unknown tool', () => {
     retryable: false,
     availableTools: ['web_search', 'code_interpreter'],
   });
-  assert.match(feedback.modelMessage, /Callable tools for this turn: `web_search`, `code_interpreter`/);
+  assert.match(
+    feedback.modelMessage,
+    /Callable tools for this turn: `web_search`, `code_interpreter`/,
+  );
   assert.doesNotMatch(feedback.modelMessage, /Expected arguments/);
 });
 

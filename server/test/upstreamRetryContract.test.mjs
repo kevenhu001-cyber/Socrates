@@ -21,8 +21,16 @@ import { UPSTREAM_RETRY_BUDGET_MS } from '../src/lib/upstreamRetryBudget.ts';
  */
 
 test('the attempt counts are the documented contract', () => {
-  assert.equal(RATE_LIMIT_ATTEMPTS, 5, 'a rate-limited request gets the initial attempt plus four retries');
-  assert.equal(TRANSIENT_ATTEMPTS, 3, 'a transient upstream failure gets the initial attempt plus two retries');
+  assert.equal(
+    RATE_LIMIT_ATTEMPTS,
+    5,
+    'a rate-limited request gets the initial attempt plus four retries',
+  );
+  assert.equal(
+    TRANSIENT_ATTEMPTS,
+    3,
+    'a transient upstream failure gets the initial attempt plus two retries',
+  );
 });
 
 test('a rate limit is allowed more attempts than a transient failure', () => {

@@ -1,4 +1,4 @@
-type FeatureRuntime = typeof import("./readAloud.impl.ts");
+type FeatureRuntime = typeof import('./readAloud.impl.ts');
 
 /* ui/readAloud.ts — lazy compatibility facade.
  *
@@ -31,16 +31,28 @@ export function stopSpeaking() {
   /* No implementation means no voice could have started. If a first toggle
      is still loading, let it settle and immediately cancel before playback. */
   if (_implPromise) {
-    void _implPromise.then(function (module: FeatureRuntime) { module.stopSpeaking(); }).catch(() => undefined);
+    void _implPromise
+      .then(function (module: FeatureRuntime) {
+        module.stopSpeaking();
+      })
+      .catch(() => undefined);
   }
 }
 
-export function toggleReadAloud(btn: HTMLElement | null, text: unknown, messageId?: string | number) {
+export function toggleReadAloud(
+  btn: HTMLElement | null,
+  text: unknown,
+  messageId?: string | number,
+) {
   if (_impl) {
     _impl.toggleReadAloud(btn, text, messageId);
     return;
   }
   void loadReadAloudImpl()
-    .then(function (module: FeatureRuntime) { module.toggleReadAloud(btn, text, messageId); })
-    .catch(function () { /* loader logs */ });
+    .then(function (module: FeatureRuntime) {
+      module.toggleReadAloud(btn, text, messageId);
+    })
+    .catch(function () {
+      /* loader logs */
+    });
 }

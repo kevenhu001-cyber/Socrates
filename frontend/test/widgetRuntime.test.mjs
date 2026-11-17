@@ -1,7 +1,10 @@
 import { beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  configureWidgetRuntime, handleQuizPick, revealPracticeAnswer, submitPracticeAnswer,
+  configureWidgetRuntime,
+  handleQuizPick,
+  revealPracticeAnswer,
+  submitPracticeAnswer,
 } from '../src/render/widgetRuntime.ts';
 
 /*
@@ -29,7 +32,7 @@ beforeEach(() => {
   configureWidgetRuntime({
     formatMsg: (text) => String(text),
     t: (key) => translations[key] || key,
-    stateStore: { read: () => undefined },
+    teachingProgress: undefined,
     handleQuizPick: undefined,
     recordMistake: undefined,
     removeMistakeForQuizSlot: undefined,
@@ -39,57 +42,94 @@ beforeEach(() => {
   });
 });
 
-const QUIZ = () => ({ q: '2 + 2?', options: [{ letter: 'A', text: '4' }, { letter: 'B', text: '5' }], correct: 'A', slotId: 'quiz-slot' });
-const pick = (letter, parsed = QUIZ()) => handleQuizPick({ letter, text: parsed.options.find((o) => o.letter === letter)?.text || '' }, parsed);
-const PRACTICE = (correct = '42') => ({ problem: '6 × 7?', hint: 'Multiply.', correct, slotId: 'practice-slot' });
+const QUIZ = () => ({
+  q: '2 + 2?',
+  options: [
+    { letter: 'A', text: '4' },
+    { letter: 'B', text: '5' },
+  ],
+  correct: 'A',
+  slotId: 'quiz-slot',
+});
+const pick = (letter, parsed = QUIZ()) =>
+  handleQuizPick(
+    { letter, text: parsed.options.find((o) => o.letter === letter)?.text || '' },
+    parsed,
+  );
+const PRACTICE = (correct = '42') => ({
+  problem: '6 × 7?',
+  hint: 'Multiply.',
+  correct,
+  slotId: 'practice-slot',
+});
 
-function teachingStore(stage, attempts, dispatches) {
+function teachingProgress(stage, attempts, dispatches) {
   return {
-    read: (key) => ({ teachingStage: stage, practiceAttempts: attempts })[key],
-    dispatch: (action) => dispatches.push(action),
+    getState: () => ({ teachingStage: stage, practiceAttempts: attempts }),
+    patch: (patch) => dispatches.push(patch),
   };
 }
 
 test('absent optional services still grade quiz and practice without side effects', () => {
-  assert.deepEqual(pick('A'), { feedbackText: 'Correct: A', feedbackClass: 'inline-quiz-feedback ok', verdict: 'correct' });
+  assert.deepEqual(pick('A'), {
+    feedbackText: 'Correct: A',
+    feedbackClass: 'inline-quiz-feedback ok',
+    verdict: 'correct',
+  });
   assert.equal(submitPracticeAnswer(PRACTICE(), '42').state, 'ok');
 });
 
 test('wrong quiz choice records the slot, increments attempts and persists', () => {
-  const mistakes = [], dispatches = [], persisted = [];
+  const mistakes = [],
+    dispatches = [],
+    persisted = [];
   configureWidgetRuntime({
     recordMistake: (entry) => mistakes.push(entry),
-    stateStore: teachingStore('exercise', 2, dispatches),
+    teachingProgress: teachingProgress('exercise', 2, dispatches),
     saveCurrentSession: () => persisted.push('session'),
   });
   const feedback = pick('B');
   assert.equal(feedback.feedbackText, 'Wrong: A');
   assert.equal(feedback.verdict, 'incorrect');
-  assert.deepEqual(mistakes, [{
-    type: 'quiz', q: '2 + 2?', options: [{ letter: 'A', text: '4' }, { letter: 'B', text: '5' }],
-    correct: 'A', userAnswer: 'B', quizSlotId: 'quiz-slot',
-  }]);
-  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 3 }]);
+  assert.deepEqual(mistakes, [
+    {
+      type: 'quiz',
+      q: '2 + 2?',
+      options: [
+        { letter: 'A', text: '4' },
+        { letter: 'B', text: '5' },
+      ],
+      correct: 'A',
+      userAnswer: 'B',
+      quizSlotId: 'quiz-slot',
+    },
+  ]);
+  assert.deepEqual(dispatches, [{ practiceAttempts: 3 }]);
   assert.deepEqual(persisted, ['session']);
 });
 
 test('correct exercise choice removes its mistake and advances to check', () => {
-  const removed = [], dispatches = [];
-  configureWidgetRuntime({ removeMistakeForQuizSlot: (id) => removed.push(id), stateStore: teachingStore('exercise', 4, dispatches) });
+  const removed = [],
+    dispatches = [];
+  configureWidgetRuntime({
+    removeMistakeForQuizSlot: (id) => removed.push(id),
+    teachingProgress: teachingProgress('exercise', 4, dispatches),
+  });
   assert.equal(pick('A').feedbackText, 'Correct: A');
   assert.deepEqual(removed, ['quiz-slot']);
-  assert.deepEqual(dispatches, [{ type: 'state/batch', patch: { teachingStage: 'check', practiceAttempts: 0 } }]);
+  assert.deepEqual(dispatches, [{ teachingStage: 'check', practiceAttempts: 0 }]);
 });
 
 test('check-stage correct choice resets attempts', () => {
   const dispatches = [];
-  configureWidgetRuntime({ stateStore: teachingStore('check', 3, dispatches) });
+  configureWidgetRuntime({ teachingProgress: teachingProgress('check', 3, dispatches) });
   pick('A');
-  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
+  assert.deepEqual(dispatches, [{ practiceAttempts: 0 }]);
 });
 
 test('quiz submission persists locally even with an obsolete follow-up policy', () => {
-  const submitted = [], persisted = [];
+  const submitted = [],
+    persisted = [];
   configureWidgetRuntime({
     shouldRequestTutorAfterQuiz: () => true,
     submitChatMessage: (...args) => submitted.push(args),
@@ -122,7 +162,17 @@ test('quiz without an answer records the selection without inventing a correct a
 test('multi-answer quiz grades the whole set and records the joined pick', () => {
   const mistakes = [];
   configureWidgetRuntime({ recordMistake: (entry) => mistakes.push(entry) });
-  const parsed = { q: 'Odd?', options: [{ letter: 'A', text: '1' }, { letter: 'B', text: '2' }, { letter: 'C', text: '3' }], correct: 'AC', multi: true, slotId: 'm' };
+  const parsed = {
+    q: 'Odd?',
+    options: [
+      { letter: 'A', text: '1' },
+      { letter: 'B', text: '2' },
+      { letter: 'C', text: '3' },
+    ],
+    correct: 'AC',
+    multi: true,
+    slotId: 'm',
+  };
   assert.equal(handleQuizPick({ letter: 'CA', text: '3; 1' }, parsed).verdict, 'correct');
   const wrong = handleQuizPick({ letter: 'A', text: '1' }, parsed);
   assert.equal(wrong.feedbackText, 'Wrong: A, C');
@@ -131,55 +181,78 @@ test('multi-answer quiz grades the whole set and records the joined pick', () =>
 });
 
 test('session persistence failure is reported without losing grading feedback', (context) => {
-  const persisted = [], diagnostics = [];
+  const persisted = [],
+    diagnostics = [];
   context.mock.method(console, 'warn', (...args) => diagnostics.push(args));
-  configureWidgetRuntime({ saveCurrentSession: () => { persisted.push('session'); throw new Error('Session failed'); } });
+  configureWidgetRuntime({
+    saveCurrentSession: () => {
+      persisted.push('session');
+      throw new Error('Session failed');
+    },
+  });
   assert.equal(pick('A').feedbackText, 'Correct: A');
   assert.deepEqual(persisted, ['session']);
-  assert.deepEqual(diagnostics.map((entry) => entry[1]), ['widgets.quiz.saveCurrentSession']);
+  assert.deepEqual(
+    diagnostics.map((entry) => entry[1]),
+    ['widgets.quiz.saveCurrentSession'],
+  );
 });
 
 test('a runtime reconfiguration during recording affects only later answers', () => {
   const dispatches = [];
   configureWidgetRuntime({
-    stateStore: teachingStore('exercise', 2, dispatches),
-    recordMistake: () => configureWidgetRuntime({ stateStore: teachingStore('check', 99, dispatches) }),
+    teachingProgress: teachingProgress('exercise', 2, dispatches),
+    recordMistake: () =>
+      configureWidgetRuntime({ teachingProgress: teachingProgress('check', 99, dispatches) }),
   });
   pick('B');
-  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 3 }]);
+  assert.deepEqual(dispatches, [{ practiceAttempts: 3 }]);
 });
 
 test('practice refuses empty answers without submitting', () => {
   const submitted = [];
   configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args) });
-  assert.deepEqual(submitPracticeAnswer(PRACTICE(), '   '), { state: 'bad', text: 'tutor.practiceEmpty' });
+  assert.deepEqual(submitPracticeAnswer(PRACTICE(), '   '), {
+    state: 'bad',
+    text: 'tutor.practiceEmpty',
+  });
   assert.deepEqual(submitted, []);
 });
 
 test('correct practice answer is normalized, sent once, and clears attempts', () => {
-  const submitted = [], dispatches = [];
-  configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args), stateStore: teachingStore('exercise', 3, dispatches) });
+  const submitted = [],
+    dispatches = [];
+  configureWidgetRuntime({
+    submitChatMessage: (...args) => submitted.push(args),
+    teachingProgress: teachingProgress('exercise', 3, dispatches),
+  });
   const feedback = submitPracticeAnswer(PRACTICE('The Answer'), ' the answer! ');
   assert.deepEqual(feedback, { state: 'ok', text: 'tutor.practiceSelfCorrect' });
   assert.deepEqual(submitted, [['My answer: the answer!', { origin: 'practice' }]]);
-  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
+  assert.deepEqual(dispatches, [{ practiceAttempts: 0 }]);
 });
 
 test('equivalent fraction and decimal answers self-check as correct', () => {
-  const submitted = [], dispatches = [];
-  configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args), stateStore: teachingStore('exercise', 3, dispatches) });
+  const submitted = [],
+    dispatches = [];
+  configureWidgetRuntime({
+    submitChatMessage: (...args) => submitted.push(args),
+    teachingProgress: teachingProgress('exercise', 3, dispatches),
+  });
   const feedback = submitPracticeAnswer(PRACTICE('0.5'), '1/2');
   assert.deepEqual(feedback, { state: 'ok', text: 'tutor.practiceSelfCorrect' });
   assert.deepEqual(submitted, [['My answer: 1/2', { origin: 'practice' }]]);
-  assert.deepEqual(dispatches, [{ type: 'state/set', key: 'practiceAttempts', value: 0 }]);
+  assert.deepEqual(dispatches, [{ practiceAttempts: 0 }]);
 });
 
 test('unsupported algebra is sent for review rather than recorded as a mistake', () => {
-  const submitted = [], mistakes = [], dispatches = [];
+  const submitted = [],
+    mistakes = [],
+    dispatches = [];
   configureWidgetRuntime({
     submitChatMessage: (...args) => submitted.push(args),
     recordMistake: (entry) => mistakes.push(entry),
-    stateStore: teachingStore('exercise', 2, dispatches),
+    teachingProgress: teachingProgress('exercise', 2, dispatches),
   });
   const feedback = submitPracticeAnswer(PRACTICE('x=2'), 'x^2=4');
   assert.deepEqual(feedback, { state: 'recorded', text: 'tutor.practiceSent' });
@@ -192,7 +265,17 @@ test('wrong practice answer records the mounted slot', () => {
   const mistakes = [];
   configureWidgetRuntime({ recordMistake: (entry) => mistakes.push(entry) });
   assert.equal(submitPracticeAnswer(PRACTICE(), '41').state, 'bad');
-  assert.deepEqual(mistakes, [{ type: 'practice', q: '6 × 7?', options: [], correct: '42', userAnswer: '41', judgedAnswer: '42', practiceSlotId: 'practice-slot' }]);
+  assert.deepEqual(mistakes, [
+    {
+      type: 'practice',
+      q: '6 × 7?',
+      options: [],
+      correct: '42',
+      userAnswer: '41',
+      judgedAnswer: '42',
+      practiceSlotId: 'practice-slot',
+    },
+  ]);
 });
 
 test('practice reveal shows the key as markdown and sends nothing', () => {
@@ -205,20 +288,28 @@ test('practice reveal shows the key as markdown and sends nothing', () => {
 test('practice without an answer key sends the response for tutor grading', () => {
   const submitted = [];
   configureWidgetRuntime({ submitChatMessage: (...args) => submitted.push(args) });
-  assert.deepEqual(submitPracticeAnswer(PRACTICE(''), 'My explanation'), { state: 'recorded', text: 'tutor.practiceSent' });
+  assert.deepEqual(submitPracticeAnswer(PRACTICE(''), 'My explanation'), {
+    state: 'recorded',
+    text: 'tutor.practiceSent',
+  });
   assert.deepEqual(submitted, [['My answer: My explanation', { origin: 'practice' }]]);
 });
 
-test('an ungraded quiz never increases failed attempts or changes teaching stage',()=>{
- const dispatches=[],mistakes=[];
- configureWidgetRuntime({stateStore:teachingStore('exercise',2,dispatches),recordMistake:entry=>mistakes.push(entry)});
- assert.equal(pick('B',{...QUIZ(),correct:null}).verdict,'recorded');
- assert.deepEqual(dispatches,[]);assert.deepEqual(mistakes,[]);
+test('an ungraded quiz never increases failed attempts or changes teaching stage', () => {
+  const dispatches = [],
+    mistakes = [];
+  configureWidgetRuntime({
+    teachingProgress: teachingProgress('exercise', 2, dispatches),
+    recordMistake: (entry) => mistakes.push(entry),
+  });
+  assert.equal(pick('B', { ...QUIZ(), correct: null }).verdict, 'recorded');
+  assert.deepEqual(dispatches, []);
+  assert.deepEqual(mistakes, []);
 });
 
-test('early learning configuration is available before the legacy card bundle mounts',async()=>{
- const {configureWidgetRuntimeEarly}=await import('../src/render/widgetScheduler.ts');
- const {widgetRuntime}=await import('../src/render/widgetRuntime.ts');
- configureWidgetRuntimeEarly({formatMsg:value=>`<p>${value}</p>`});
- assert.equal(widgetRuntime().formatMsg('formula'),'<p>formula</p>');
+test('early learning configuration is available before the legacy card bundle mounts', async () => {
+  const { configureWidgetRuntimeEarly } = await import('../src/render/widgetScheduler.ts');
+  const { widgetRuntime } = await import('../src/render/widgetRuntime.ts');
+  configureWidgetRuntimeEarly({ formatMsg: (value) => `<p>${value}</p>` });
+  assert.equal(widgetRuntime().formatMsg('formula'), '<p>formula</p>');
 });

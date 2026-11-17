@@ -3,7 +3,7 @@
  * store, and browser-local history. */
 import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turn/ui.ts';
 import { apiFetch } from '../util/api/index.ts';
@@ -61,7 +61,7 @@ export interface PersistedToolCall {
 }
 
 /** The transcript shape the React-owned message list consumes. */
-export interface RestoredMessage {
+export type RestoredMessage = {
   clientId: string;
   serverId: string | null;
   role: string | undefined;
@@ -77,7 +77,7 @@ export interface RestoredMessage {
   attachments: unknown[];
   toolCalls: unknown[];
   actions: null;
-}
+};
 
 /** The session payload these helpers read; both server and local rows fit. */
 export interface RestorableSession {
@@ -87,13 +87,12 @@ export interface RestorableSession {
   messages?: PersistedMessage[];
 }
 
-
 interface ChatTurnWindow extends Window {
   askChatTurn?: (text: string, parts: unknown) => unknown;
 }
 
 function restoredClientId(message: PersistedMessage): string {
-  return message.clientId || message.id || ('loaded-' + generateId());
+  return message.clientId || message.id || 'loaded-' + generateId();
 }
 
 function restoredHtml(message: PersistedMessage): string {
@@ -104,7 +103,9 @@ function restoredHtml(message: PersistedMessage): string {
   return html;
 }
 
-function restoredReasoning(message: PersistedMessage): Pick<RestoredMessage, 'reasoningContent' | 'reasoningDurationSec'> {
+function restoredReasoning(
+  message: PersistedMessage,
+): Pick<RestoredMessage, 'reasoningContent' | 'reasoningDurationSec'> {
   return {
     reasoningContent: message.reasoningContent || message.reasoning_content || null,
     reasoningDurationSec: message.reasoningDurationSec || message.reasoning_duration_sec || null,
@@ -123,11 +124,13 @@ function restoredToolIdentity(call: PersistedToolCall): Record<string, unknown> 
 
 function restoredToolArtifacts(value: unknown): unknown[] {
   if (!Array.isArray(value)) return [];
-  return value.map((artifact: { id?: unknown; mimeType?: string | null; name?: string | null }) => ({
-    id: String(artifact.id || ''),
-    mimeType: artifact.mimeType || null,
-    name: artifact.name || null,
-  }));
+  return value.map(
+    (artifact: { id?: unknown; mimeType?: string | null; name?: string | null }) => ({
+      id: String(artifact.id || ''),
+      mimeType: artifact.mimeType || null,
+      name: artifact.name || null,
+    }),
+  );
 }
 
 function restoredToolVisualFields(call: PersistedToolCall): Record<string, unknown> {
@@ -135,7 +138,9 @@ function restoredToolVisualFields(call: PersistedToolCall): Record<string, unkno
     /* Preserve the split offset and versioned visualization spec so
        inline tool layout survives a reload. */
     textOffset: typeof call.textOffset === 'number' ? call.textOffset : undefined,
-    visualizations: Array.isArray(call.visualizations) ? call.visualizations.slice(0, 8) : undefined,
+    visualizations: Array.isArray(call.visualizations)
+      ? call.visualizations.slice(0, 8)
+      : undefined,
     /* Keep the normalized output list when present. The renderer
        validates entries and can fall back to legacy output fields. */
     outputs: Array.isArray(call.outputs) ? call.outputs : undefined,
@@ -166,7 +171,9 @@ function restoredToolCall(call: PersistedToolCall): Record<string, unknown> {
   };
 }
 
-function restoredCollections(message: PersistedMessage): Pick<RestoredMessage, 'attachments' | 'toolCalls'> {
+function restoredCollections(
+  message: PersistedMessage,
+): Pick<RestoredMessage, 'attachments' | 'toolCalls'> {
   return {
     attachments: Array.isArray(message.attachments) ? message.attachments : [],
     toolCalls: Array.isArray(message.toolCalls) ? message.toolCalls.map(restoredToolCall) : [],
@@ -181,7 +188,9 @@ function _t(key: string): string {
     }
     const value = t(key);
     if (value && value !== key) return value;
-  } catch (error) { reportSwallow(error, 'session/historyRestore._t'); }
+  } catch (error) {
+    reportSwallow(error, 'session/historyRestore._t');
+  }
   return key;
 }
 
@@ -221,7 +230,10 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
 
 /* The server save can lag behind a refresh. Restore assistant messages that
    were already mirrored locally but have not reached the session response. */
-export function restoreLocalAssistantFallback(session: RestorableSession, olderServerRows = 0): void {
+export function restoreLocalAssistantFallback(
+  session: RestorableSession,
+  olderServerRows = 0,
+): void {
   try {
     const localRecord = loadLocalMemory(session.id);
     const serverMessages = Array.isArray(session.messages) ? session.messages : [];
@@ -229,25 +241,35 @@ export function restoreLocalAssistantFallback(session: RestorableSession, olderS
        server holds beyond them too, or every long session would look like
        its local mirror had unsaved extras. */
     const serverCount = serverMessages.length + Math.max(0, olderServerRows);
-    if (!localRecord || !Array.isArray(localRecord.messages) || localRecord.messages.length <= serverCount) return;
+    if (
+      !localRecord ||
+      !Array.isArray(localRecord.messages) ||
+      localRecord.messages.length <= serverCount
+    )
+      return;
     const extras = localRecord.messages.slice(serverCount);
     for (let i = 0; i < extras.length; i++) {
       const message = extras[i];
       if (!message || !message.content || message.role !== 'assistant') continue;
-      stateStore.dispatch({ type: 'session/append-message', payload: {
-        clientId: 'local-recovered-' + generateId(),
-        role: 'assistant',
-        rawText: message.content,
-        html: buildAssistantHtml(message.content),
-        type: 'assistant',
-        reasoningContent: null,
-        attachments: [],
-        toolCalls: [],
-        actions: null,
-      } });
+      dispatchSession({
+        type: 'session/append-message',
+        payload: {
+          clientId: 'local-recovered-' + generateId(),
+          role: 'assistant',
+          rawText: message.content,
+          html: buildAssistantHtml(message.content),
+          type: 'assistant',
+          reasoningContent: null,
+          attachments: [],
+          toolCalls: [],
+          actions: null,
+        },
+      });
     }
     publishReactChatRuntime({ type: 'state-synced', reason: 'local-recovered-react' });
-  } catch (error) { reportSwallow(error, 'session/historyRestore.restoreLocalAssistantFallback'); }
+  } catch (error) {
+    reportSwallow(error, 'session/historyRestore.restoreLocalAssistantFallback');
+  }
 }
 
 /* Show server-persisted partial output after a refresh and register its retry
@@ -256,34 +278,55 @@ export function restoreInterruptedResponse(session: RestorableSession): void {
   if (!session.streamingText) return;
   const partialText = session.streamingText || '(partial content)';
   let partialRendered: string;
-  try { partialRendered = formatMsg(partialText); }
-  catch { partialRendered = '<p>' + esc(partialText) + '</p>'; }
-  const partialHtml = '<div class="msg-content">' + partialRendered + '</div>' +
+  try {
+    partialRendered = formatMsg(partialText);
+  } catch {
+    partialRendered = '<p>' + esc(partialText) + '</p>';
+  }
+  const partialHtml =
+    '<div class="msg-content">' +
+    partialRendered +
+    '</div>' +
     '<div class="msg-error" style="margin-top:8px">' +
-      '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>' +
+    '<span class="msg-error-text">(response interrupted — tap Retry to continue)</span>' +
     '</div>';
   const partialClientId = 'stream-recovered-' + Date.now();
-  stateStore.dispatch({ type: 'session/append-message', payload: {
-    role: 'assistant',
-    clientId: partialClientId,
-    rawText: partialText,
-    html: partialHtml,
-    type: 'assistant',
-    _liveStatus: { phase: 'error', label: '(response interrupted — tap Retry to continue)', retryable: true, retryMode: 'restored' },
-  } });
+  dispatchSession({
+    type: 'session/append-message',
+    payload: {
+      role: 'assistant',
+      clientId: partialClientId,
+      rawText: partialText,
+      html: partialHtml,
+      type: 'assistant',
+      _liveStatus: {
+        phase: 'error',
+        label: '(response interrupted — tap Retry to continue)',
+        retryable: true,
+        retryMode: 'restored',
+      },
+    },
+  });
   registerRecoveredTurnRetry(partialClientId, function (): void {
-    const currentMessages = stateStore.read('messages') as PersistedMessage[];
-    const partialIdx = currentMessages.findIndex((message) => message?.clientId === partialClientId);
-    if (partialIdx >= 0) stateStore.dispatch({
-      type: 'session/remove-message-at', index: partialIdx, clientId: partialClientId,
-    });
+    const currentMessages = sessionStore.getState().messages as PersistedMessage[];
+    const partialIdx = currentMessages.findIndex(
+      (message) => message?.clientId === partialClientId,
+    );
+    if (partialIdx >= 0)
+      dispatchSession({
+        type: 'session/remove-message-at',
+        index: partialIdx,
+        clientId: partialClientId,
+      });
     apiFetch('/api/sessions/' + encodeURIComponent(session.id), {
       method: 'PATCH',
       body: { streamingText: null, streamingReasoning: null },
-    }).catch(function () { /* empty-catch: intentional — clearing the partial marker is best-effort */ });
+    }).catch(function () {
+      /* empty-catch: intentional — clearing the partial marker is best-effort */
+    });
     let lastUserEntry: PersistedMessage | null = null;
     let lastUserMessage: string | null = null;
-    const messages = stateStore.read('messages') as PersistedMessage[];
+    const messages = sessionStore.getState().messages as PersistedMessage[];
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i] && messages[i].role === 'user') {
         lastUserEntry = messages[i];
@@ -296,7 +339,14 @@ export function restoreInterruptedResponse(session: RestorableSession): void {
       /* askChatTurn slices this user turn out of history; carry multimodal
          parts explicitly so retry preserves its attachments. */
       let lastUserParts: unknown;
-      try { lastUserParts = buildUserContentParts(lastUserMessage, lastUserEntry && lastUserEntry.attachments); } catch { lastUserParts = null; }
+      try {
+        lastUserParts = buildUserContentParts(
+          lastUserMessage,
+          lastUserEntry && lastUserEntry.attachments,
+        );
+      } catch {
+        lastUserParts = null;
+      }
       quietTurn(win.askChatTurn(lastUserMessage, lastUserParts));
     } else {
       showToast(_t('toast.noRetryTarget'));
@@ -306,30 +356,48 @@ export function restoreInterruptedResponse(session: RestorableSession): void {
   apiFetch('/api/sessions/' + encodeURIComponent(session.id), {
     method: 'PATCH',
     body: { streamingText: null, streamingReasoning: null },
-  }).catch(function () { /* empty-catch: intentional — clearing the partial marker is best-effort */ });
+  }).catch(function () {
+    /* empty-catch: intentional — clearing the partial marker is best-effort */
+  });
 }
 
 /* Build the local fast-path history from server rows only when no local copy
    exists, and defer the work until the browser is idle. */
-export function mirrorSessionHistory(session: RestorableSession, isCurrent: () => boolean = () => stateStore.read('currentSessionId') === session.id, signal?: AbortSignal): void {
+export function mirrorSessionHistory(
+  session: RestorableSession,
+  isCurrent: () => boolean = () => sessionStore.getState().currentSessionId === session.id,
+  signal?: AbortSignal,
+): void {
   const sync = function (): void {
     if (!isCurrent() || loadLocalMemory(session.id)) return;
     try {
-      const record = { topic: session.topic || '', ts: Date.now(), messages: [] as Array<{ role: string | undefined; content: string }> };
+      const record = {
+        topic: session.topic || '',
+        ts: Date.now(),
+        messages: [] as Array<{ role: string | undefined; content: string }>,
+      };
       (session.messages || []).slice(-LOCAL_MEMORY_MAX).forEach(function (message) {
         let text = '';
         if (message.rawText) {
           text = message.rawText;
         } else if (message.html) {
-          text = message.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          text = message.html
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
         }
-        text = text.replace(/^Thinking\.\.\.\s*/i, '').replace(/^Thinking\s*/i, '').trim();
+        text = text
+          .replace(/^Thinking\.\.\.\s*/i, '')
+          .replace(/^Thinking\s*/i, '')
+          .trim();
         if (!text) return;
         record.messages.push({ role: message.role, content: text });
       });
       let bytes = record.messages.reduce((total, message) => total + message.content.length, 0);
-      while (bytes > 1_000_000 && record.messages.length) bytes -= record.messages.shift()!.content.length;
-      if (isCurrent() && record.messages.length) batchSetItem(_memKey(session.id), JSON.stringify(record));
+      while (bytes > 1_000_000 && record.messages.length)
+        bytes -= record.messages.shift()!.content.length;
+      if (isCurrent() && record.messages.length)
+        batchSetItem(_memKey(session.id), JSON.stringify(record));
     } catch (error) {
       /* mirror failed */
       reportSwallow(error, 'session/historyRestore.mirrorSessionHistory');

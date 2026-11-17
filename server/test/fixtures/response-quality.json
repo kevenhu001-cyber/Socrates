@@ -81,10 +81,7 @@
         }
       ],
       "tools": [],
-      "criteria": [
-        "准确回答巴黎",
-        "保持一句话，不附加学习卡、提问或长篇背景"
-      ]
+      "criteria": ["准确回答巴黎", "保持一句话，不附加学习卡、提问或长篇背景"]
     },
     {
       "id": "explicit-checklist",
@@ -96,10 +93,7 @@
         }
       ],
       "tools": [],
-      "criteria": [
-        "遵循编号列表要求",
-        "步骤正确且可操作，不以段落偏好拒绝列表"
-      ]
+      "criteria": ["遵循编号列表要求", "步骤正确且可操作，不以段落偏好拒绝列表"]
     },
     {
       "id": "structured-json",
@@ -111,10 +105,7 @@
         }
       ],
       "tools": [],
-      "criteria": [
-        "仅输出合法 JSON，不加讲解",
-        "保留 URL、ASCII JSON 分隔符和小数点"
-      ]
+      "criteria": ["仅输出合法 JSON，不加讲解", "保留 URL、ASCII JSON 分隔符和小数点"]
     },
     {
       "id": "exact-quotation",
@@ -126,10 +117,7 @@
         }
       ],
       "tools": [],
-      "criteria": [
-        "原样保留冒号、破折号和句点",
-        "不对引文强制进行中文标点替换"
-      ]
+      "criteria": ["原样保留冒号、破折号和句点", "不对引文强制进行中文标点替换"]
     },
     {
       "id": "english-prose",
@@ -156,9 +144,7 @@
           "content": "出一道检验条件概率理解的选择题。"
         }
       ],
-      "tools": [
-        "render_intelligent_ui"
-      ],
+      "tools": ["render_intelligent_ui"],
       "criteria": [
         "使用可用的原生 learning quiz 节点，至少两个选项",
         "correct 对应选项，每项有具体 explanation",
@@ -194,9 +180,7 @@
           "content": "帮我回忆刚才学过的导数核心知识。"
         }
       ],
-      "tools": [
-        "render_intelligent_ui"
-      ],
+      "tools": ["render_intelligent_ui"],
       "criteria": [
         "按 recall 模式给出三到五张 front/back 闪卡",
         "不被客户端 exercise 阶段强制改为一道选择题",

@@ -12,7 +12,10 @@ let db, userId;
 before(async () => {
   if (!enabled) return;
   db = initDb(process.env.DATABASE_URL);
-  const [user] = await db.insert(users).values({ email: `audit-store-${randomUUID()}@test.invalid`, passwordHash: 'test-only' }).returning();
+  const [user] = await db
+    .insert(users)
+    .values({ email: `audit-store-${randomUUID()}@test.invalid`, passwordHash: 'test-only' })
+    .returning();
   userId = user.id;
 });
 after(async () => {
@@ -25,9 +28,19 @@ test('HTTP compatibility export points to the service recorder', () => {
   assert.equal(compatibilityRecordAudit, recordAudit);
 });
 
-test('service recorder persists execution audit details without an HTTP request', { skip: !enabled }, async () => {
-  await recordAudit(userId, 'code_execution', { executionId: 'test-execution', status: 'completed' });
-  const rows = await db.select().from(auditEvents).where(and(eq(auditEvents.userId, userId), eq(auditEvents.action, 'code_execution')));
-  assert.equal(rows.length, 1);
-  assert.deepEqual(rows[0].detail, { executionId: 'test-execution', status: 'completed' });
-});
+test(
+  'service recorder persists execution audit details without an HTTP request',
+  { skip: !enabled },
+  async () => {
+    await recordAudit(userId, 'code_execution', {
+      executionId: 'test-execution',
+      status: 'completed',
+    });
+    const rows = await db
+      .select()
+      .from(auditEvents)
+      .where(and(eq(auditEvents.userId, userId), eq(auditEvents.action, 'code_execution')));
+    assert.equal(rows.length, 1);
+    assert.deepEqual(rows[0].detail, { executionId: 'test-execution', status: 'completed' });
+  },
+);

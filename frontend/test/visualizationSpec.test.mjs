@@ -1,9 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  asVisualizationSpec,
-} from '../src/render/visualizationSpec.ts';
+import { asVisualizationSpec } from '../src/render/visualizationSpec.ts';
 
 /* The v1 spec is model output. These cases pin the contract the renderers
    rely on: a non-empty template and an object payload, with everything

@@ -28,7 +28,11 @@ function functionRows(spec: VizSpec, translate: Translate): unknown[][] {
   const functions = (spec.payload || {}).functions || [];
   if (!functions.length) return [];
   return [
-    [translate('viz.table.function', 'Function'), translate('viz.table.expression', 'Expression'), translate('viz.table.domain', 'Domain')],
+    [
+      translate('viz.table.function', 'Function'),
+      translate('viz.table.expression', 'Expression'),
+      translate('viz.table.domain', 'Domain'),
+    ],
     ...functions.map((fn): unknown[] => [
       fn.label || fn.expression,
       fn.expression,
@@ -52,7 +56,10 @@ function radarRows(spec: VizSpec, translate: Translate): unknown[][] {
   const payload = spec.payload || {};
   const series = payload.series || [];
   return [
-    [translate('viz.table.indicator', 'Indicator'), ...series.map((entry) => entry.name || translate('viz.table.series', 'Series'))],
+    [
+      translate('viz.table.indicator', 'Indicator'),
+      ...series.map((entry) => entry.name || translate('viz.table.series', 'Series')),
+    ],
     ...(payload.indicators || []).map((indicator, index): unknown[] => [
       indicator.name,
       ...series.map((entry) => entry.data[index]),
@@ -63,7 +70,11 @@ function radarRows(spec: VizSpec, translate: Translate): unknown[][] {
 function geometryRows(spec: VizSpec, translate: Translate): unknown[][] {
   const payload = spec.payload || {};
   return [
-    [translate('viz.table.shape', 'Shape'), translate('viz.table.label', 'Label'), translate('viz.table.coordinates', 'Coordinates')],
+    [
+      translate('viz.table.shape', 'Shape'),
+      translate('viz.table.label', 'Label'),
+      translate('viz.table.coordinates', 'Coordinates'),
+    ],
     ...(payload.shapes || []).map((shape): unknown[] => [
       shape.type,
       shape.label || '',
@@ -77,8 +88,16 @@ function itemRows(spec: VizSpec, translate: Translate): unknown[][] {
   const items = payload.items || payload.nodes || [];
   if (!items.length) return [];
   return [
-    [translate('viz.table.item', 'Item'), translate('viz.table.value', 'Value'), translate('viz.table.detail', 'Detail')],
-    ...items.map((item): unknown[] => [item.label, item.value != null ? item.value : '', item.detail || '']),
+    [
+      translate('viz.table.item', 'Item'),
+      translate('viz.table.value', 'Value'),
+      translate('viz.table.detail', 'Detail'),
+    ],
+    ...items.map((item): unknown[] => [
+      item.label,
+      item.value != null ? item.value : '',
+      item.detail || '',
+    ]),
   ];
 }
 
@@ -87,13 +106,22 @@ function seriesRows(spec: VizSpec): unknown[][] {
   const series = payload.series;
   if (!series) return [];
   const rows: unknown[][] = [['Category', ...series.map((entry) => entry.name || 'Series')]];
-  const max = Math.max.apply(null, series.map((entry) => entry.data.length));
+  const max = Math.max.apply(
+    null,
+    series.map((entry) => entry.data.length),
+  );
   for (let index = 0; index < max; index++) {
     rows.push([
-      payload.categories && payload.categories[index] != null ? payload.categories[index] : index + 1,
+      payload.categories && payload.categories[index] != null
+        ? payload.categories[index]
+        : index + 1,
       ...series.map((entry) => {
         const value = entry.data[index];
-        return Array.isArray(value) ? value.join(', ') : (value && typeof value === 'object' ? JSON.stringify(value) : value);
+        return Array.isArray(value)
+          ? value.join(', ')
+          : value && typeof value === 'object'
+            ? JSON.stringify(value)
+            : value;
       }),
     ]);
   }
@@ -109,12 +137,41 @@ function dataRows(spec: VizSpec, translate: Translate): unknown[][] {
   return payload.series ? seriesRows(spec) : itemRows(spec, translate);
 }
 
-export function renderVisualizationTable(spec: VizSpec, escapeHtml: EscapeHtml, translate: Translate): string {
+export function renderVisualizationTable(
+  spec: VizSpec,
+  escapeHtml: EscapeHtml,
+  translate: Translate,
+): string {
   const rows = dataRows(spec, translate);
   if (!rows.length) return '';
-  const header = rows[0], body = rows.slice(1, 121);
+  const header = rows[0],
+    body = rows.slice(1, 121);
   const cellHtml = (cell: unknown) => renderInlineMathHtml(String(cell ?? '')) ?? escapeHtml(cell);
-  return '<div class="ds-table-wrap visualization-table-wrap" tabindex="0" role="region" aria-label="' + escapeHtml(spec.title || translate('viz.action.viewTable', 'Data table')) + '"><table class="ds-table visualization-table"><thead><tr>' + header.map(function (cell) { return '<th scope="col">' + cellHtml(cell) + '</th>'; }).join('') + '</tr></thead><tbody>' + body.map(function (row) { return '<tr>' + row.map(function (cell) { return '<td>' + cellHtml(cell) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  return (
+    '<div class="ds-table-wrap visualization-table-wrap" tabindex="0" role="region" aria-label="' +
+    escapeHtml(spec.title || translate('viz.action.viewTable', 'Data table')) +
+    '"><table class="ds-table visualization-table"><thead><tr>' +
+    header
+      .map(function (cell) {
+        return '<th scope="col">' + cellHtml(cell) + '</th>';
+      })
+      .join('') +
+    '</tr></thead><tbody>' +
+    body
+      .map(function (row) {
+        return (
+          '<tr>' +
+          row
+            .map(function (cell) {
+              return '<td>' + cellHtml(cell) + '</td>';
+            })
+            .join('') +
+          '</tr>'
+        );
+      })
+      .join('') +
+    '</tbody></table></div>'
+  );
 }
 
 export function renderStructureVisualization(
@@ -133,7 +190,9 @@ export function renderStructureVisualization(
   const positions: Record<string, Point> = {};
   if (isHierarchy) {
     const children = new Map<string, string[]>();
-    nodes.forEach(function (node, index) { children.set(nodeIdOf(node, index), []); });
+    nodes.forEach(function (node, index) {
+      children.set(nodeIdOf(node, index), []);
+    });
     const childIds = new Set<string>();
     edges.forEach(function (edge) {
       if (children.has(edge.from) && children.has(edge.to)) {
@@ -143,13 +202,25 @@ export function renderStructureVisualization(
     });
     const levels: string[][] = [];
     let current = nodes
-      .filter(function (node, index) { return !childIds.has(nodeIdOf(node, index)); })
-      .map(function (node, index) { return nodeIdOf(node, index); });
+      .filter(function (node, index) {
+        return !childIds.has(nodeIdOf(node, index));
+      })
+      .map(function (node, index) {
+        return nodeIdOf(node, index);
+      });
     const visited = new Set<string>();
     while (current.length) {
       levels.push(current);
-      current.forEach(function (id) { visited.add(id); });
-      current = current.flatMap(function (id) { return children.get(id) || []; }).filter(function (id) { return !visited.has(id); });
+      current.forEach(function (id) {
+        visited.add(id);
+      });
+      current = current
+        .flatMap(function (id) {
+          return children.get(id) || [];
+        })
+        .filter(function (id) {
+          return !visited.has(id);
+        });
     }
     nodes.forEach(function (node, index) {
       const id = nodeIdOf(node, index);
@@ -161,11 +232,16 @@ export function renderStructureVisualization(
     height = Math.max(260, 105 + levels.length * 112);
     levels.forEach(function (level, depth) {
       level.forEach(function (id, index) {
-        positions[id] = { x: (index + 1) * width / (level.length + 1), y: 62 + depth * 112 };
+        positions[id] = { x: ((index + 1) * width) / (level.length + 1), y: 62 + depth * 112 };
       });
     });
   } else {
-    nodes.forEach(function (node, index) { positions[nodeIdOf(node, index)] = { x: 110 + (index % 3) * 270, y: 70 + Math.floor(index / 3) * 100 }; });
+    nodes.forEach(function (node, index) {
+      positions[nodeIdOf(node, index)] = {
+        x: 110 + (index % 3) * 270,
+        y: 70 + Math.floor(index / 3) * 100,
+      };
+    });
   }
   /* P_viz-per-instance-marker — every rendered structure diagram
      used to define `<marker id="visual-arrow">` at the SVG root.
@@ -178,25 +254,121 @@ export function renderStructureVisualization(
      correctly when exported as a standalone SVG (XMLSerializer) where
      the page's CSS classes are unavailable. text-anchor/dominant-baseline
      center labels inside nodes regardless of external styles. */
-  let svg = '<svg class="visualization-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + escapeHtml(spec.accessibilitySummary) + '" style="font-family:' + fontFamily + '"><defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+  let svg =
+    '<svg class="visualization-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' +
+    width +
+    ' ' +
+    height +
+    '" role="img" aria-label="' +
+    escapeHtml(spec.accessibilitySummary) +
+    '" style="font-family:' +
+    fontFamily +
+    '"><defs><marker id="' +
+    markerId +
+    '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
   edges.forEach(function (edge) {
-    const a = positions[edge.from], b = positions[edge.to];
+    const a = positions[edge.from],
+      b = positions[edge.to];
     if (!a || !b) return;
-    const startX = isHierarchy ? a.x : a.x + 75, endX = isHierarchy ? b.x : b.x - 75;
+    const startX = isHierarchy ? a.x : a.x + 75,
+      endX = isHierarchy ? b.x : b.x - 75;
     const d = isHierarchy
-      ? 'M' + startX + ' ' + (a.y + 28) + ' C' + startX + ' ' + ((a.y + b.y) / 2) + ', ' + endX + ' ' + ((a.y + b.y) / 2) + ', ' + endX + ' ' + (b.y - 28)
-      : 'M' + startX + ' ' + a.y + ' C' + (a.x + 130) + ' ' + a.y + ', ' + (b.x - 130) + ' ' + b.y + ', ' + endX + ' ' + b.y;
-    svg += '<path class="visualization-edge" fill="none" stroke="currentColor" stroke-width="1.4" d="' + d + '" marker-end="url(#' + markerId + ')"/><text class="visualization-edge-label" text-anchor="middle" dominant-baseline="middle" x="' + ((a.x + b.x) / 2) + '" y="' + ((a.y + b.y) / 2 - 8) + '">' + escapeHtml(edge.label || '') + '</text>';
+      ? 'M' +
+        startX +
+        ' ' +
+        (a.y + 28) +
+        ' C' +
+        startX +
+        ' ' +
+        (a.y + b.y) / 2 +
+        ', ' +
+        endX +
+        ' ' +
+        (a.y + b.y) / 2 +
+        ', ' +
+        endX +
+        ' ' +
+        (b.y - 28)
+      : 'M' +
+        startX +
+        ' ' +
+        a.y +
+        ' C' +
+        (a.x + 130) +
+        ' ' +
+        a.y +
+        ', ' +
+        (b.x - 130) +
+        ' ' +
+        b.y +
+        ', ' +
+        endX +
+        ' ' +
+        b.y;
+    svg +=
+      '<path class="visualization-edge" fill="none" stroke="currentColor" stroke-width="1.4" d="' +
+      d +
+      '" marker-end="url(#' +
+      markerId +
+      ')"/><text class="visualization-edge-label" text-anchor="middle" dominant-baseline="middle" x="' +
+      (a.x + b.x) / 2 +
+      '" y="' +
+      ((a.y + b.y) / 2 - 8) +
+      '">' +
+      escapeHtml(edge.label || '') +
+      '</text>';
   });
   nodes.forEach(function (node, index) {
     const point = positions[nodeIdOf(node, index)];
-    svg += '<g class="visualization-node"><title>' + escapeHtml([node.label, node.detail].filter(Boolean).join(' — ')) + '</title><rect x="' + (point.x - 78) + '" y="' + (point.y - 28) + '" width="156" height="56" rx="10" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.4"/><text text-anchor="middle" dominant-baseline="middle" x="' + point.x + '" y="' + (point.y - 4) + '">' + escapeHtml(truncateLabel(node.label, 22)) + '</text>' + (node.detail ? '<text class="visualization-node-detail" text-anchor="middle" dominant-baseline="middle" x="' + point.x + '" y="' + (point.y + 15) + '">' + escapeHtml(truncateLabel(node.detail, 28)) + '</text>' : '') + '</g>';
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml([node.label, node.detail].filter(Boolean).join(' — ')) +
+      '</title><rect x="' +
+      (point.x - 78) +
+      '" y="' +
+      (point.y - 28) +
+      '" width="156" height="56" rx="10" fill="currentColor" fill-opacity="0.06" stroke="currentColor" stroke-opacity="0.22" stroke-width="1.4"/><text text-anchor="middle" dominant-baseline="middle" x="' +
+      point.x +
+      '" y="' +
+      (point.y - 4) +
+      '">' +
+      escapeHtml(truncateLabel(node.label, 22)) +
+      '</text>' +
+      (node.detail
+        ? '<text class="visualization-node-detail" text-anchor="middle" dominant-baseline="middle" x="' +
+          point.x +
+          '" y="' +
+          (point.y + 15) +
+          '">' +
+          escapeHtml(truncateLabel(node.detail, 28)) +
+          '</text>'
+        : '') +
+      '</g>';
   });
   return svg + '</svg>';
 }
 
-function svgStart(spec: VizSpec, width: number, height: number, escapeHtml: EscapeHtml, fontFamily: string, className: string): string {
-  return '<svg class="visualization-diagram ' + className + '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + escapeHtml(spec.accessibilitySummary) + '" style="font-family:' + fontFamily + '">';
+function svgStart(
+  spec: VizSpec,
+  width: number,
+  height: number,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  className: string,
+): string {
+  return (
+    '<svg class="visualization-diagram ' +
+    className +
+    '" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' +
+    width +
+    ' ' +
+    height +
+    '" role="img" aria-label="' +
+    escapeHtml(spec.accessibilitySummary) +
+    '" style="font-family:' +
+    fontFamily +
+    '">'
+  );
 }
 
 /** The desktop layout width every semantic diagram is drawn at. */
@@ -211,7 +383,8 @@ export const SEMANTIC_NARROW_WIDTH = 560;
  */
 export function semanticLayoutWidth(stageWidth: number | null | undefined): number {
   const value = Number(stageWidth);
-  if (!Number.isFinite(value) || value <= 0 || value >= SEMANTIC_NARROW_WIDTH) return SEMANTIC_LAYOUT_WIDTH;
+  if (!Number.isFinite(value) || value <= 0 || value >= SEMANTIC_NARROW_WIDTH)
+    return SEMANTIC_LAYOUT_WIDTH;
   return Math.max(280, Math.round(value));
 }
 
@@ -220,60 +393,156 @@ export function semanticLayoutWidth(stageWidth: number | null | undefined): numb
 const START = ' style="text-anchor:start"';
 
 /** Narrow timeline: a vertical rail, one row per event, labels at full size. */
-function renderNarrowTimeline(spec: VizSpec, items: VizItem[], width: number, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
-  const rowH = 58, top = 26, railX = 18, textX = 38;
+function renderNarrowTimeline(
+  spec: VizSpec,
+  items: VizItem[],
+  width: number,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+): string {
+  const rowH = 58,
+    top = 26,
+    railX = 18,
+    textX = 38;
   const height = Math.max(1, items.length) * rowH + top;
   const chars = Math.max(6, Math.floor((width - textX - 8) / 13));
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-timeline');
-  if (items.length > 1) svg += '<path class="visualization-edge" d="M' + railX + ' ' + top + ' V' + (top + (items.length - 1) * rowH) + '"/>';
+  if (items.length > 1)
+    svg +=
+      '<path class="visualization-edge" d="M' +
+      railX +
+      ' ' +
+      top +
+      ' V' +
+      (top + (items.length - 1) * rowH) +
+      '"/>';
   items.forEach(function (item, index) {
     const y = top + index * rowH;
     const title = [item.value, item.label, item.detail].filter(Boolean).join(' — ');
-    svg += '<g class="visualization-node"><title>' + escapeHtml(title) + '</title><circle cx="' + railX + '" cy="' + y + '" r="6" fill="currentColor"/>'
-      + '<text' + START + ' dominant-baseline="middle" x="' + textX + '" y="' + y + '">' + escapeHtml(truncateLabel(item.label, chars)) + '</text>';
-    if (item.value != null) svg += '<text class="visualization-node-detail"' + START + ' dominant-baseline="middle" x="' + textX + '" y="' + (y + 19) + '">' + escapeHtml(truncateLabel(item.value, chars + 4)) + '</text>';
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml(title) +
+      '</title><circle cx="' +
+      railX +
+      '" cy="' +
+      y +
+      '" r="6" fill="currentColor"/>' +
+      '<text' +
+      START +
+      ' dominant-baseline="middle" x="' +
+      textX +
+      '" y="' +
+      y +
+      '">' +
+      escapeHtml(truncateLabel(item.label, chars)) +
+      '</text>';
+    if (item.value != null)
+      svg +=
+        '<text class="visualization-node-detail"' +
+        START +
+        ' dominant-baseline="middle" x="' +
+        textX +
+        '" y="' +
+        (y + 19) +
+        '">' +
+        escapeHtml(truncateLabel(item.value, chars + 4)) +
+        '</text>';
     svg += '</g>';
   });
   return svg + '</svg>';
 }
 
-export function renderTimelineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
+export function renderTimelineVisualization(
+  spec: VizSpec,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+  layoutWidth = SEMANTIC_LAYOUT_WIDTH,
+): string {
   const items: VizItem[] = spec.payload.items || [];
-  if (layoutWidth < SEMANTIC_NARROW_WIDTH) return renderNarrowTimeline(spec, items, layoutWidth, escapeHtml, fontFamily, truncateLabel);
-  const width = 760, height = 260, axisY = 130;
-  const left = 48, right = width - 48, gap = items.length > 1 ? (right - left) / (items.length - 1) : 0;
+  if (layoutWidth < SEMANTIC_NARROW_WIDTH)
+    return renderNarrowTimeline(spec, items, layoutWidth, escapeHtml, fontFamily, truncateLabel);
+  const width = 760,
+    height = 260,
+    axisY = 130;
+  const left = 48,
+    right = width - 48,
+    gap = items.length > 1 ? (right - left) / (items.length - 1) : 0;
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-timeline');
   svg += '<path class="visualization-edge" d="M' + left + ' ' + axisY + ' H' + right + '"/>';
   items.forEach(function (item, index) {
     const x = items.length === 1 ? width / 2 : left + index * gap;
-    const top = index % 2 === 0, markerY = top ? axisY - 23 : axisY + 23;
+    const top = index % 2 === 0,
+      markerY = top ? axisY - 23 : axisY + 23;
     const textY = top ? 48 : 204;
     const title = [item.value, item.label, item.detail].filter(Boolean).join(' — ');
-    svg += '<g class="visualization-node"><title>' + escapeHtml(title) + '</title><circle cx="' + x + '" cy="' + markerY + '" r="7" fill="currentColor"/><path class="visualization-edge" d="M' + x + ' ' + markerY + ' V' + axisY + '"/><text text-anchor="middle" x="' + x + '" y="' + textY + '">' + escapeHtml(truncateLabel(item.label, items.length > 6 ? 14 : 22)) + '</text>';
-    if (item.value != null) svg += '<text class="visualization-node-detail" text-anchor="middle" x="' + x + '" y="' + (textY + 18) + '">' + escapeHtml(truncateLabel(item.value, 18)) + '</text>';
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml(title) +
+      '</title><circle cx="' +
+      x +
+      '" cy="' +
+      markerY +
+      '" r="7" fill="currentColor"/><path class="visualization-edge" d="M' +
+      x +
+      ' ' +
+      markerY +
+      ' V' +
+      axisY +
+      '"/><text text-anchor="middle" x="' +
+      x +
+      '" y="' +
+      textY +
+      '">' +
+      escapeHtml(truncateLabel(item.label, items.length > 6 ? 14 : 22)) +
+      '</text>';
+    if (item.value != null)
+      svg +=
+        '<text class="visualization-node-detail" text-anchor="middle" x="' +
+        x +
+        '" y="' +
+        (textY + 18) +
+        '">' +
+        escapeHtml(truncateLabel(item.value, 18)) +
+        '</text>';
     svg += '</g>';
   });
   return svg + '</svg>';
 }
 
-export function renderProcessVisualization(spec: VizSpec, markerId: string, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
+export function renderProcessVisualization(
+  spec: VizSpec,
+  markerId: string,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+  layoutWidth = SEMANTIC_LAYOUT_WIDTH,
+): string {
   const items: VizItem[] = spec.payload.items || [];
   const width = layoutWidth;
   /* Every step box is 152 wide: a narrow stage holds as many columns as fit
      at full size instead of shrinking four of them. */
   const fit = Math.max(1, Math.floor(width / 168));
   const columns = Math.max(1, Math.min(fit, 4, Math.ceil(Math.sqrt(items.length * 1.5))));
-  const rows = Math.ceil(items.length / columns), cellW = width / columns, cellH = 112, height = rows * cellH + 24;
+  const rows = Math.ceil(items.length / columns),
+    cellW = width / columns,
+    cellH = 112,
+    height = rows * cellH + 24;
   const positions: Point[] = items.map(function (_, index) {
     const row = Math.floor(index / columns);
     let col = index % columns;
     if (row % 2 === 1) col = columns - col - 1;
     return { x: col * cellW + cellW / 2, y: row * cellH + 60 };
   });
-  let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-process')
-    + '<defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+  let svg =
+    svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-process') +
+    '<defs><marker id="' +
+    markerId +
+    '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
   items.slice(0, -1).forEach(function (_, index) {
-    const from = positions[index], to = positions[index + 1];
+    const from = positions[index],
+      to = positions[index + 1];
     const sameRow = Math.floor(index / columns) === Math.floor((index + 1) / columns);
     const x1 = sameRow ? from.x + (to.x > from.x ? 76 : -76) : from.x;
     const y1 = sameRow ? from.y : from.y + 30;
@@ -281,56 +550,192 @@ export function renderProcessVisualization(spec: VizSpec, markerId: string, esca
     const y2 = sameRow ? to.y : to.y - 30;
     const path = sameRow
       ? 'M' + x1 + ' ' + y1 + ' L' + x2 + ' ' + y2
-      : 'M' + x1 + ' ' + y1 + ' C' + (x1 + 36) + ' ' + ((y1 + y2) / 2) + ', ' + (x2 - 36) + ' ' + ((y1 + y2) / 2) + ', ' + x2 + ' ' + y2;
-    svg += '<path class="visualization-edge" d="' + path + '" marker-end="url(#' + markerId + ')"/>';
+      : 'M' +
+        x1 +
+        ' ' +
+        y1 +
+        ' C' +
+        (x1 + 36) +
+        ' ' +
+        (y1 + y2) / 2 +
+        ', ' +
+        (x2 - 36) +
+        ' ' +
+        (y1 + y2) / 2 +
+        ', ' +
+        x2 +
+        ' ' +
+        y2;
+    svg +=
+      '<path class="visualization-edge" d="' + path + '" marker-end="url(#' + markerId + ')"/>';
   });
   items.forEach(function (item, index) {
-    const point = positions[index], title = [item.label, item.detail].filter(Boolean).join(' — ');
-    svg += '<g class="visualization-node"><title>' + escapeHtml(title) + '</title><rect x="' + (point.x - 76) + '" y="' + (point.y - 29) + '" width="152" height="58" rx="11" fill="currentColor" fill-opacity=".06" stroke="currentColor" stroke-opacity=".24"/><circle cx="' + (point.x - 60) + '" cy="' + (point.y - 14) + '" r="10" fill="currentColor"/><text style="fill:white" font-size="10" x="' + (point.x - 60) + '" y="' + (point.y - 10) + '" text-anchor="middle">' + (index + 1) + '</text><text dominant-baseline="middle" x="' + (point.x + 4) + '" y="' + (point.y - 5) + '">' + escapeHtml(truncateLabel(item.label, 18)) + '</text>' + (item.detail ? '<text class="visualization-node-detail" text-anchor="middle" x="' + point.x + '" y="' + (point.y + 18) + '">' + escapeHtml(truncateLabel(item.detail, 22)) + '</text>' : '') + '</g>';
+    const point = positions[index],
+      title = [item.label, item.detail].filter(Boolean).join(' — ');
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml(title) +
+      '</title><rect x="' +
+      (point.x - 76) +
+      '" y="' +
+      (point.y - 29) +
+      '" width="152" height="58" rx="11" fill="currentColor" fill-opacity=".06" stroke="currentColor" stroke-opacity=".24"/><circle cx="' +
+      (point.x - 60) +
+      '" cy="' +
+      (point.y - 14) +
+      '" r="10" fill="currentColor"/><text style="fill:white" font-size="10" x="' +
+      (point.x - 60) +
+      '" y="' +
+      (point.y - 10) +
+      '" text-anchor="middle">' +
+      (index + 1) +
+      '</text><text dominant-baseline="middle" x="' +
+      (point.x + 4) +
+      '" y="' +
+      (point.y - 5) +
+      '">' +
+      escapeHtml(truncateLabel(item.label, 18)) +
+      '</text>' +
+      (item.detail
+        ? '<text class="visualization-node-detail" text-anchor="middle" x="' +
+          point.x +
+          '" y="' +
+          (point.y + 18) +
+          '">' +
+          escapeHtml(truncateLabel(item.detail, 22)) +
+          '</text>'
+        : '') +
+      '</g>';
   });
   return svg + '</svg>';
 }
 
-export function renderComparisonVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+export function renderComparisonVisualization(
+  spec: VizSpec,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+): string {
   const items: VizItem[] = spec.payload.items || [];
-  const width = 760, columns = Math.min(4, items.length), rows = Math.ceil(items.length / columns);
-  const cellW = width / columns, cellH = 154, height = rows * cellH + 12;
+  const width = 760,
+    columns = Math.min(4, items.length),
+    rows = Math.ceil(items.length / columns);
+  const cellW = width / columns,
+    cellH = 154,
+    height = rows * cellH + 12;
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-comparison');
   items.forEach(function (item, index) {
-    const x = index % columns * cellW + 8, y = Math.floor(index / columns) * cellH + 8;
+    const x = (index % columns) * cellW + 8,
+      y = Math.floor(index / columns) * cellH + 8;
     const title = [item.label, item.value, item.detail].filter(Boolean).join(' — ');
-    svg += '<g class="visualization-node"><title>' + escapeHtml(title) + '</title><rect x="' + x + '" y="' + y + '" width="' + (cellW - 16) + '" height="138" rx="12" fill="currentColor" fill-opacity=".045" stroke="currentColor" stroke-opacity=".2"/><text text-anchor="middle" x="' + (x + (cellW - 16) / 2) + '" y="' + (y + 31) + '">' + escapeHtml(truncateLabel(item.label, columns > 2 ? 16 : 24)) + '</text>' + (item.value != null ? '<text text-anchor="middle" x="' + (x + (cellW - 16) / 2) + '" y="' + (y + 68) + '" font-size="16" font-weight="700" fill="currentColor">' + escapeHtml(truncateLabel(item.value, 20)) + '</text>' : '') + (item.detail ? '<text class="visualization-node-detail" text-anchor="middle" x="' + (x + (cellW - 16) / 2) + '" y="' + (y + 103) + '">' + escapeHtml(truncateLabel(item.detail, columns > 2 ? 22 : 34)) + '</text>' : '') + '</g>';
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml(title) +
+      '</title><rect x="' +
+      x +
+      '" y="' +
+      y +
+      '" width="' +
+      (cellW - 16) +
+      '" height="138" rx="12" fill="currentColor" fill-opacity=".045" stroke="currentColor" stroke-opacity=".2"/><text text-anchor="middle" x="' +
+      (x + (cellW - 16) / 2) +
+      '" y="' +
+      (y + 31) +
+      '">' +
+      escapeHtml(truncateLabel(item.label, columns > 2 ? 16 : 24)) +
+      '</text>' +
+      (item.value != null
+        ? '<text text-anchor="middle" x="' +
+          (x + (cellW - 16) / 2) +
+          '" y="' +
+          (y + 68) +
+          '" font-size="16" font-weight="700" fill="currentColor">' +
+          escapeHtml(truncateLabel(item.value, 20)) +
+          '</text>'
+        : '') +
+      (item.detail
+        ? '<text class="visualization-node-detail" text-anchor="middle" x="' +
+          (x + (cellW - 16) / 2) +
+          '" y="' +
+          (y + 103) +
+          '">' +
+          escapeHtml(truncateLabel(item.detail, columns > 2 ? 22 : 34)) +
+          '</text>'
+        : '') +
+      '</g>';
   });
   return svg + '</svg>';
 }
 
-export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel, layoutWidth = SEMANTIC_LAYOUT_WIDTH): string {
-  const items: VizItem[] = (spec.payload.items || []).slice().sort(function (a, b) { return Number(a.value) - Number(b.value); });
-  const values = items.map(function (item) { return Number(item.value); });
-  let min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+export function renderNumberLineVisualization(
+  spec: VizSpec,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+  layoutWidth = SEMANTIC_LAYOUT_WIDTH,
+): string {
+  const items: VizItem[] = (spec.payload.items || []).slice().sort(function (a, b) {
+    return Number(a.value) - Number(b.value);
+  });
+  const values = items.map(function (item) {
+    return Number(item.value);
+  });
+  let min = Math.min.apply(null, values),
+    max = Math.max.apply(null, values);
   const spread = max - min || 2;
-  min -= spread * .12; max += spread * .12;
+  min -= spread * 0.12;
+  max += spread * 0.12;
   const narrow = layoutWidth < SEMANTIC_NARROW_WIDTH;
-  const width = layoutWidth, height = 260, left = narrow ? 28 : 52, right = width - left, axisY = 128;
+  const width = layoutWidth,
+    height = 260,
+    left = narrow ? 28 : 52,
+    right = width - left,
+    axisY = 128;
   /* Labels in one lane keep this much room; a narrow axis packs them tighter. */
   const spacing = narrow ? 72 : 112;
-  const xAt = function (value: number): number { return left + (value - min) / (max - min) * (right - left); };
-  let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-number-line') + '<path class="visualization-edge" d="M' + left + ' ' + axisY + ' H' + right + '"/>';
-  interface LaneEntry { item: VizItem; pointX: number; labelX: number }
+  const xAt = function (value: number): number {
+    return left + ((value - min) / (max - min)) * (right - left);
+  };
+  let svg =
+    svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-number-line') +
+    '<path class="visualization-edge" d="M' +
+    left +
+    ' ' +
+    axisY +
+    ' H' +
+    right +
+    '"/>';
+  interface LaneEntry {
+    item: VizItem;
+    pointX: number;
+    labelX: number;
+  }
   const laneItems: LaneEntry[][] = [[], [], [], []];
-  items.forEach(function (item, index) { laneItems[index % 4].push({ item: item, pointX: xAt(Number(item.value)), labelX: xAt(Number(item.value)) }); });
+  items.forEach(function (item, index) {
+    laneItems[index % 4].push({
+      item: item,
+      pointX: xAt(Number(item.value)),
+      labelX: xAt(Number(item.value)),
+    });
+  });
   laneItems.forEach(function (lane) {
-    lane.sort(function (a, b) { return a.labelX - b.labelX; });
-    for (let i = 1; i < lane.length; i++) lane[i].labelX = Math.max(lane[i].labelX, lane[i - 1].labelX + spacing);
+    lane.sort(function (a, b) {
+      return a.labelX - b.labelX;
+    });
+    for (let i = 1; i < lane.length; i++)
+      lane[i].labelX = Math.max(lane[i].labelX, lane[i - 1].labelX + spacing);
     for (let j = lane.length - 1; j >= 0; j--) {
       const maxX = right - 20 - (lane.length - 1 - j) * spacing;
       lane[j].labelX = Math.min(lane[j].labelX, maxX);
     }
-    for (let k = 1; k < lane.length; k++) lane[k].labelX = Math.max(lane[k].labelX, lane[k - 1].labelX + spacing);
+    for (let k = 1; k < lane.length; k++)
+      lane[k].labelX = Math.max(lane[k].labelX, lane[k - 1].labelX + spacing);
   });
   const layout = new Map<VizItem, { pointX: number; labelX: number; lane: number }>();
   laneItems.forEach(function (lane, laneIndex) {
-    lane.forEach(function (entry) { layout.set(entry.item, { pointX: entry.pointX, labelX: entry.labelX, lane: laneIndex }); });
+    lane.forEach(function (entry) {
+      layout.set(entry.item, { pointX: entry.pointX, labelX: entry.labelX, lane: laneIndex });
+    });
   });
   items.forEach(function (item) {
     const point = layout.get(item);
@@ -338,7 +743,40 @@ export function renderNumberLineVisualization(spec: VizSpec, escapeHtml: EscapeH
     const top = point.lane < 2;
     const labelY = [42, 78, 184, 220][point.lane];
     const lineY = top ? labelY + 26 : labelY - 12;
-    svg += '<g class="visualization-node"><title>' + escapeHtml(item.label + ': ' + item.value) + '</title><path d="M' + point.pointX + ' ' + (axisY - 8) + ' V' + (axisY + 8) + '" stroke="currentColor" stroke-width="2"/><circle cx="' + point.pointX + '" cy="' + axisY + '" r="5" fill="currentColor"/><text text-anchor="middle" x="' + point.labelX + '" y="' + labelY + '">' + escapeHtml(truncateLabel(item.label, narrow ? 8 : 14)) + '</text><text class="visualization-node-detail" text-anchor="middle" x="' + point.labelX + '" y="' + (top ? labelY + 18 : labelY + 17) + '">' + escapeHtml(Number(Number(item.value).toPrecision(5)).toString()) + '</text><path class="visualization-edge" d="M' + point.pointX + ' ' + (top ? axisY - 8 : axisY + 8) + ' L' + point.labelX + ' ' + lineY + '"/></g>';
+    svg +=
+      '<g class="visualization-node"><title>' +
+      escapeHtml(item.label + ': ' + item.value) +
+      '</title><path d="M' +
+      point.pointX +
+      ' ' +
+      (axisY - 8) +
+      ' V' +
+      (axisY + 8) +
+      '" stroke="currentColor" stroke-width="2"/><circle cx="' +
+      point.pointX +
+      '" cy="' +
+      axisY +
+      '" r="5" fill="currentColor"/><text text-anchor="middle" x="' +
+      point.labelX +
+      '" y="' +
+      labelY +
+      '">' +
+      escapeHtml(truncateLabel(item.label, narrow ? 8 : 14)) +
+      '</text><text class="visualization-node-detail" text-anchor="middle" x="' +
+      point.labelX +
+      '" y="' +
+      (top ? labelY + 18 : labelY + 17) +
+      '">' +
+      escapeHtml(Number(Number(item.value).toPrecision(5)).toString()) +
+      '</text><path class="visualization-edge" d="M' +
+      point.pointX +
+      ' ' +
+      (top ? axisY - 8 : axisY + 8) +
+      ' L' +
+      point.labelX +
+      ' ' +
+      lineY +
+      '"/></g>';
   });
   return svg + '</svg>';
 }
@@ -347,7 +785,10 @@ type CoordinateProjector = (coordinate: number) => number;
 
 function polygonCentroid(points: number[][]): Point {
   if (!points.length) return { x: 0, y: 0 };
-  const totals = points.reduce((sum, point) => ({ x: sum.x + point[0], y: sum.y + point[1] }), { x: 0, y: 0 });
+  const totals = points.reduce((sum, point) => ({ x: sum.x + point[0], y: sum.y + point[1] }), {
+    x: 0,
+    y: 0,
+  });
   return { x: totals.x / points.length, y: totals.y / points.length };
 }
 
@@ -362,9 +803,13 @@ function geometryLabelPosition(
   const to = shape.to || [];
   const center = shape.center || [];
   if (shape.type === 'point') return { x: projectX(at[0]), y: projectY(at[1]) - 12 };
-  if (shape.type === 'circle') return { x: projectX(center[0]), y: projectY(center[1]) - (shape.radius || 0) * scale - 8 };
+  if (shape.type === 'circle')
+    return { x: projectX(center[0]), y: projectY(center[1]) - (shape.radius || 0) * scale - 8 };
   if (shape.type === 'segment') {
-    return { x: (projectX(from[0]) + projectX(to[0])) / 2, y: (projectY(from[1]) + projectY(to[1])) / 2 - 8 };
+    return {
+      x: (projectX(from[0]) + projectX(to[0])) / 2,
+      y: (projectY(from[1]) + projectY(to[1])) / 2 - 8,
+    };
   }
   const centroid = polygonCentroid(shape.points || []);
   return { x: projectX(centroid.x), y: projectY(centroid.y) - 8 };
@@ -386,44 +831,123 @@ function renderGeometryShape(
   const radius = shape.radius || 0;
   const labelPosition = geometryLabelPosition(shape, projectX, projectY, scale);
   const label = shape.label
-    ? '<text class="visualization-node-detail" text-anchor="middle" x="' + labelPosition.x + '" y="' + labelPosition.y + '">' + escapeHtml(truncateLabel(shape.label, 20)) + '</text>'
+    ? '<text class="visualization-node-detail" text-anchor="middle" x="' +
+      labelPosition.x +
+      '" y="' +
+      labelPosition.y +
+      '">' +
+      escapeHtml(truncateLabel(shape.label, 20)) +
+      '</text>'
     : '';
   if (shape.type === 'point') {
-    return '<g class="visualization-node"><circle cx="' + projectX(at[0]) + '" cy="' + projectY(at[1]) + '" r="5" fill="currentColor"/>' + label + '</g>';
+    return (
+      '<g class="visualization-node"><circle cx="' +
+      projectX(at[0]) +
+      '" cy="' +
+      projectY(at[1]) +
+      '" r="5" fill="currentColor"/>' +
+      label +
+      '</g>'
+    );
   }
   if (shape.type === 'segment') {
-    return '<g class="visualization-node"><path class="visualization-edge" d="M' + projectX(from[0]) + ' ' + projectY(from[1]) + ' L' + projectX(to[0]) + ' ' + projectY(to[1]) + '" stroke-width="2"/>' + label + '</g>';
+    return (
+      '<g class="visualization-node"><path class="visualization-edge" d="M' +
+      projectX(from[0]) +
+      ' ' +
+      projectY(from[1]) +
+      ' L' +
+      projectX(to[0]) +
+      ' ' +
+      projectY(to[1]) +
+      '" stroke-width="2"/>' +
+      label +
+      '</g>'
+    );
   }
   if (shape.type === 'circle') {
-    return '<g class="visualization-node"><circle cx="' + projectX(center[0]) + '" cy="' + projectY(center[1]) + '" r="' + (radius * scale) + '" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
+    return (
+      '<g class="visualization-node"><circle cx="' +
+      projectX(center[0]) +
+      '" cy="' +
+      projectY(center[1]) +
+      '" r="' +
+      radius * scale +
+      '" fill="currentColor" fill-opacity=".05" stroke="currentColor" stroke-width="2"/>' +
+      label +
+      '</g>'
+    );
   }
-  return '<g class="visualization-node"><polygon points="' + points.map((point) => projectX(point[0]) + ',' + projectY(point[1])).join(' ') + '" fill="currentColor" fill-opacity=".07" stroke="currentColor" stroke-width="2"/>' + label + '</g>';
+  return (
+    '<g class="visualization-node"><polygon points="' +
+    points.map((point) => projectX(point[0]) + ',' + projectY(point[1])).join(' ') +
+    '" fill="currentColor" fill-opacity=".07" stroke="currentColor" stroke-width="2"/>' +
+    label +
+    '</g>'
+  );
 }
 
-export function renderGeometryVisualization(spec: VizSpec, escapeHtml: EscapeHtml, fontFamily: string, truncateLabel: TruncateLabel): string {
+export function renderGeometryVisualization(
+  spec: VizSpec,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+): string {
   const shapes: VizShape[] = spec.payload.shapes || [];
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  function include(x: number, y: number): void { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  function include(x: number, y: number): void {
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  }
   shapes.forEach(function (shape) {
-    const at = shape.at || [], from = shape.from || [], to = shape.to || [];
-    const center = shape.center || [], points = shape.points || [];
+    const at = shape.at || [],
+      from = shape.from || [],
+      to = shape.to || [];
+    const center = shape.center || [],
+      points = shape.points || [];
     const radius = shape.radius || 0;
     if (shape.type === 'point') include(at[0], at[1]);
-    else if (shape.type === 'segment') { include(from[0], from[1]); include(to[0], to[1]); }
-    else if (shape.type === 'circle') { include(center[0] - radius, center[1] - radius); include(center[0] + radius, center[1] + radius); }
-    else points.forEach(function (point) { include(point[0], point[1]); });
+    else if (shape.type === 'segment') {
+      include(from[0], from[1]);
+      include(to[0], to[1]);
+    } else if (shape.type === 'circle') {
+      include(center[0] - radius, center[1] - radius);
+      include(center[0] + radius, center[1] + radius);
+    } else
+      points.forEach(function (point) {
+        include(point[0], point[1]);
+      });
   });
-  const width = 760, height = 360, plotW = width - 90, plotH = height - 70;
-  const spanX = maxX - minX || 2, spanY = maxY - minY || 2;
+  const width = 760,
+    height = 360,
+    plotW = width - 90,
+    plotH = height - 70;
+  const spanX = maxX - minX || 2,
+    spanY = maxY - minY || 2;
   const scale = Math.min(plotW / spanX, plotH / spanY);
-  const centerX = (minX + maxX) / 2, centerY = (minY + maxY) / 2;
-  const px = function (x: number): number { return width / 2 + (x - centerX) * scale; };
-  const py = function (y: number): number { return height / 2 - (y - centerY) * scale; };
+  const centerX = (minX + maxX) / 2,
+    centerY = (minY + maxY) / 2;
+  const px = function (x: number): number {
+    return width / 2 + (x - centerX) * scale;
+  };
+  const py = function (y: number): number {
+    return height / 2 - (y - centerY) * scale;
+  };
   let svg = svgStart(spec, width, height, escapeHtml, fontFamily, 'visualization-geometry');
-  const zeroX = px(0), zeroY = py(0);
-  if (zeroY >= 24 && zeroY <= height - 24) svg += '<path class="visualization-edge" d="M36 ' + zeroY + ' H' + (width - 26) + '"/>';
-  if (zeroX >= 36 && zeroX <= width - 26) svg += '<path class="visualization-edge" d="M' + zeroX + ' ' + (height - 28) + ' V24"/>';
-  shapes.forEach((shape) => { svg += renderGeometryShape(shape, px, py, scale, escapeHtml, truncateLabel); });
+  const zeroX = px(0),
+    zeroY = py(0);
+  if (zeroY >= 24 && zeroY <= height - 24)
+    svg += '<path class="visualization-edge" d="M36 ' + zeroY + ' H' + (width - 26) + '"/>';
+  if (zeroX >= 36 && zeroX <= width - 26)
+    svg += '<path class="visualization-edge" d="M' + zeroX + ' ' + (height - 28) + ' V24"/>';
+  shapes.forEach((shape) => {
+    svg += renderGeometryShape(shape, px, py, scale, escapeHtml, truncateLabel);
+  });
   return svg + '</svg>';
 }
 
@@ -435,11 +959,24 @@ export function renderSemanticVisualization(
   truncateLabel: TruncateLabel,
   layoutWidth = SEMANTIC_LAYOUT_WIDTH,
 ): string | null {
-  if (spec.template === 'timeline') return renderTimelineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
-  if (spec.template === 'process') return renderProcessVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel, layoutWidth);
-  if (spec.template === 'comparison') return renderComparisonVisualization(spec, escapeHtml, fontFamily, truncateLabel);
-  if (spec.template === 'number_line') return renderNumberLineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
-  if (spec.template === 'geometry') return renderGeometryVisualization(spec, escapeHtml, fontFamily, truncateLabel);
-  if (spec.template === 'tree' || spec.template === 'mindmap') return renderStructureVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel);
+  if (spec.template === 'timeline')
+    return renderTimelineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
+  if (spec.template === 'process')
+    return renderProcessVisualization(
+      spec,
+      markerId,
+      escapeHtml,
+      fontFamily,
+      truncateLabel,
+      layoutWidth,
+    );
+  if (spec.template === 'comparison')
+    return renderComparisonVisualization(spec, escapeHtml, fontFamily, truncateLabel);
+  if (spec.template === 'number_line')
+    return renderNumberLineVisualization(spec, escapeHtml, fontFamily, truncateLabel, layoutWidth);
+  if (spec.template === 'geometry')
+    return renderGeometryVisualization(spec, escapeHtml, fontFamily, truncateLabel);
+  if (spec.template === 'tree' || spec.template === 'mindmap')
+    return renderStructureVisualization(spec, markerId, escapeHtml, fontFamily, truncateLabel);
   return null;
 }

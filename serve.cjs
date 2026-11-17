@@ -9,20 +9,20 @@ const PORT = parseInt(process.argv[2] || process.env.PORT || '5173', 10);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.css':  'text/css; charset=utf-8',
-  '.js':   'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.svg':  'image/svg+xml',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.gif':  'image/gif',
+  '.gif': 'image/gif',
   '.webp': 'image/webp',
-  '.ico':  'image/x-icon',
+  '.ico': 'image/x-icon',
   '.woff': 'font/woff',
-  '.woff2':'font/woff2',
-  '.ttf':  'font/ttf',
-  '.txt':  'text/plain; charset=utf-8'
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 const server = http.createServer((req, res) => {
@@ -30,7 +30,11 @@ const server = http.createServer((req, res) => {
   if (urlPath === '/' || urlPath === '') urlPath = '/index.html';
   else if (urlPath.endsWith('/')) urlPath += 'index.html';
   const filePath = path.normalize(path.join(ROOT, urlPath));
-  if (!filePath.startsWith(ROOT)) { res.writeHead(403); res.end('forbidden'); return; }
+  if (!filePath.startsWith(ROOT)) {
+    res.writeHead(403);
+    res.end('forbidden');
+    return;
+  }
 
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
@@ -62,7 +66,7 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(p).toLowerCase();
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
-      'Cache-Control': 'no-cache'
+      'Cache-Control': 'no-cache',
     });
     fs.createReadStream(p).pipe(res);
   }

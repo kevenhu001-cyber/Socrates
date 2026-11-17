@@ -4,7 +4,7 @@ This domain implements the fundamental infrastructure services for the Socrates 
 
 ## Key Modules
 
-- `llm.ts`: External chat completion API proxy, streaming SSE pipeline, TCP/DNS dispatcher, and retry engine.
+- `llm/`: External chat completion API proxy, streaming SSE pipeline, TCP/DNS dispatcher, and retry engine (`complete.ts`, `stream.ts`, `dispatcher.ts`, `retry.ts`, `protocol.ts`, `toolArgs.ts`, `types.ts`, `values.ts`).
 - `llmProtocol.ts`: Provider request shaping — thinking encoding, effort mapping, token-cap naming, and capability validation.
 - `audit.ts`: HTTP-independent execution audit event persistence.
 - `durableIdempotency.ts`: Atomic DB-only writes and restart-safe replay receipts.

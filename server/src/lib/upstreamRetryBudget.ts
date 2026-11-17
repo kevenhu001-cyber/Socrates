@@ -8,7 +8,8 @@ export function createUpstreamRetryBudget(now: () => number = () => performance.
   return {
     reserve(delayMs: number): boolean {
       const spentMs = Math.max(reservedMs, now() - startedAt);
-      if (!Number.isFinite(delayMs) || delayMs < 0 || spentMs + delayMs > UPSTREAM_RETRY_BUDGET_MS) return false;
+      if (!Number.isFinite(delayMs) || delayMs < 0 || spentMs + delayMs > UPSTREAM_RETRY_BUDGET_MS)
+        return false;
       reservedMs = spentMs + delayMs;
       return true;
     },

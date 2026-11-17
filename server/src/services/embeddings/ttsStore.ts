@@ -27,7 +27,9 @@ import { ttsResults, messages, sessions } from '../../db/schema/index.js';
    to /api/tts. Re-computed in PATCH /api/messages to drop stale rows
    on edit. Trimming matches the route: `text.trim().slice(0, 20_000)`. */
 export function ttsTextHash(text: string): string {
-  return createHash('sha256').update(String(text || '').trim()).digest('hex');
+  return createHash('sha256')
+    .update(String(text || '').trim())
+    .digest('hex');
 }
 
 export interface TtsStoredRow {
@@ -63,17 +65,19 @@ export async function lookupTtsResult(
   lang: string,
   textHash: string,
 ): Promise<TtsStoredRow | null> {
-  if (!await verifyOwnership(messageId, userId)) return null;
+  if (!(await verifyOwnership(messageId, userId))) return null;
   const db = getDb();
   const [row] = await db
     .select()
     .from(ttsResults)
-    .where(and(
-      eq(ttsResults.messageId, messageId),
-      eq(ttsResults.voice, voice),
-      eq(ttsResults.format, format),
-      eq(ttsResults.lang, lang),
-    ))
+    .where(
+      and(
+        eq(ttsResults.messageId, messageId),
+        eq(ttsResults.voice, voice),
+        eq(ttsResults.format, format),
+        eq(ttsResults.lang, lang),
+      ),
+    )
     .limit(1);
   if (!row) return null;
   if (row.textHash !== textHash) return null;
@@ -99,32 +103,30 @@ export async function saveTtsResult(
   audio: Buffer,
   contentType: string,
 ): Promise<void> {
-  if (!await verifyOwnership(messageId, userId)) return;
+  if (!(await verifyOwnership(messageId, userId))) return;
   const db = getDb();
-  await db.insert(ttsResults).values({
-    messageId,
-    voice,
-    format,
-    lang,
-    textHash,
-    audio,
-    contentType,
-    byteSize: audio.length,
-  }).onConflictDoUpdate({
-    target: [
-      ttsResults.messageId,
-      ttsResults.voice,
-      ttsResults.format,
-      ttsResults.lang,
-    ],
-    set: {
+  await db
+    .insert(ttsResults)
+    .values({
+      messageId,
+      voice,
+      format,
+      lang,
       textHash,
       audio,
       contentType,
       byteSize: audio.length,
-      createdAt: new Date(),
-    },
-  });
+    })
+    .onConflictDoUpdate({
+      target: [ttsResults.messageId, ttsResults.voice, ttsResults.format, ttsResults.lang],
+      set: {
+        textHash,
+        audio,
+        contentType,
+        byteSize: audio.length,
+        createdAt: new Date(),
+      },
+    });
 }
 
 /* Drop every cached row for the given message whose `text_hash` no
@@ -138,9 +140,7 @@ export async function invalidateForMessage(
   currentTextHash: string,
 ): Promise<void> {
   const db = getDb();
-  await db.delete(ttsResults)
-    .where(and(
-      eq(ttsResults.messageId, messageId),
-      ne(ttsResults.textHash, currentTextHash),
-    ));
+  await db
+    .delete(ttsResults)
+    .where(and(eq(ttsResults.messageId, messageId), ne(ttsResults.textHash, currentTextHash)));
 }

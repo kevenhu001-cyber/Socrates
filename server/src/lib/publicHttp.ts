@@ -17,16 +17,16 @@ export function isPrivateIp(addr: string): boolean {
     if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
     if (parts[0] === 192 && parts[1] === 168) return true;
     if (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) return true; // CGNAT
-    if (parts[0] === 0) return true;                                       // 0.0.0.0/8
-    if (parts[0] >= 224) return true;                                      // multicast / reserved
+    if (parts[0] === 0) return true; // 0.0.0.0/8
+    if (parts[0] >= 224) return true; // multicast / reserved
   } else if (net.isIP(addr) === 6) {
     const lower = addr.toLowerCase();
     if (lower === '::1' || lower === '::') return true;
-    if (lower.startsWith('fc') || lower.startsWith('fd')) return true;     // ULA
-    if (lower.startsWith('fe80')) return true;                             // link-local
-    if (lower.startsWith('2002:')) return true;                            // 6to4 (2002::/16)
-    if (lower.startsWith('64:ff9b:')) return true;                         // NAT64
-    if (lower.startsWith('100:')) return true;                             // discard-only (100::/64)
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // ULA
+    if (lower.startsWith('fe80')) return true; // link-local
+    if (lower.startsWith('2002:')) return true; // 6to4 (2002::/16)
+    if (lower.startsWith('64:ff9b:')) return true; // NAT64
+    if (lower.startsWith('100:')) return true; // discard-only (100::/64)
   }
   return false;
 }
@@ -69,7 +69,10 @@ export function createPinnedAgent(addresses: { address: string; family: number }
     _opts: unknown,
     cb: (err: Error | null, addresses: Array<{ address: string; family: number }>) => void,
   ) => {
-    cb(null, addresses.map((a) => ({ address: a.address, family: a.family })));
+    cb(
+      null,
+      addresses.map((a) => ({ address: a.address, family: a.family })),
+    );
   };
   // TLS still validates against the request hostname (undici sets the
   // SNI/servername from the URL); only the resolved IP is pinned.

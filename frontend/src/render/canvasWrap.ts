@@ -6,8 +6,9 @@
  */
 
 function escAttr(value: string): string {
-  return String(value == null ? '' : value).replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c,
+  return String(value == null ? '' : value).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] || c,
   );
 }
 
@@ -28,8 +29,12 @@ export function wrapForCanvas(
   if (mode !== 'canvas') return html;
   return (
     '<div class="canvas-block" data-output-mode="canvas" ' +
-    'data-canvas-extension="' + escAttr(extensionKey) + '" ' +
-    'data-canvas-id="' + escAttr(canvasId) + '">' +
+    'data-canvas-extension="' +
+    escAttr(extensionKey) +
+    '" ' +
+    'data-canvas-id="' +
+    escAttr(canvasId) +
+    '">' +
     html +
     '</div>'
   );

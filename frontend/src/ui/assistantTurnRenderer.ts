@@ -10,7 +10,9 @@ let renderer: AssistantTurnRenderer | null = null;
  * until installation, without a runtime import of the React component tree. */
 export function registerAssistantTurnRenderer(next: AssistantTurnRenderer): () => void {
   renderer = next;
-  return () => { if (renderer === next) renderer = null; };
+  return () => {
+    if (renderer === next) renderer = null;
+  };
 }
 
 export function renderSharedAssistantTurn(host: HTMLElement, message: ChatMessage): boolean {

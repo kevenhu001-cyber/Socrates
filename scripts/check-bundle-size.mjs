@@ -53,7 +53,13 @@ const UPDATE = process.argv.includes('--update');
 function listByExtension(ext) {
   try {
     return readdirSync(DIST_ASSETS, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith(ext) && !entry.name.endsWith('.gz') && !entry.name.endsWith('.br'))
+      .filter(
+        (entry) =>
+          entry.isFile() &&
+          entry.name.endsWith(ext) &&
+          !entry.name.endsWith('.gz') &&
+          !entry.name.endsWith('.br'),
+      )
       .map((entry) => entry.name);
   } catch (error) {
     if (error?.code === 'ENOENT') return [];
@@ -110,7 +116,9 @@ function measure() {
 const measurement = measure();
 
 if (!measurement) {
-  console.log('bundle size: frontend/dist/assets is empty — skipping (run the frontend build first).');
+  console.log(
+    'bundle size: frontend/dist/assets is empty — skipping (run the frontend build first).',
+  );
   process.exit(0);
 }
 
@@ -131,7 +139,9 @@ if (!budget) {
     note: 'Ceiling for the built SPA bundle. Raise with --update in the same commit as an intentional growth.',
     generatedBy: 'check-bundle-size.mjs --update',
   });
-  console.log('bundle size: no budget found — wrote scripts/bundle-size.baseline.json from the current build.');
+  console.log(
+    'bundle size: no budget found — wrote scripts/bundle-size.baseline.json from the current build.',
+  );
   process.exit(0);
 }
 
@@ -169,14 +179,16 @@ if (over.length > 0) {
   for (const [key, label] of over) {
     console.error(`  ${key} (${label}): ${measurement[key]} bytes > budget ${budget[key]} bytes`);
   }
-  console.error('Reduce the payload, or run `node scripts/check-bundle-size.mjs --update` in the same commit as an intentional growth.');
+  console.error(
+    'Reduce the payload, or run `node scripts/check-bundle-size.mjs --update` in the same commit as an intentional growth.',
+  );
   process.exitCode = 1;
 } else {
   const pct = (value, cap) => `${Math.round((value / cap) * 100)}%`;
   console.log(
     `bundle size check passed (entry ${measurement.entryJsBytes}/${budget.entryJsBytes} B ` +
-    `(${pct(measurement.entryJsBytes, budget.entryJsBytes)}), ` +
-    `total JS ${measurement.totalJsBytes}/${budget.totalJsBytes} B, ` +
-    `CSS ${measurement.totalCssBytes}/${budget.totalCssBytes} B).`,
+      `(${pct(measurement.entryJsBytes, budget.entryJsBytes)}), ` +
+      `total JS ${measurement.totalJsBytes}/${budget.totalJsBytes} B, ` +
+      `CSS ${measurement.totalCssBytes}/${budget.totalCssBytes} B).`,
   );
 }

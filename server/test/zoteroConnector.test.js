@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { deriveEncryptionKey, encrypt } from '../src/lib/crypto.js';
-import { listZoteroItems, ZoteroConnectorError } from '../src/services/integrations/zoteroConnector.js';
+import {
+  listZoteroItems,
+  ZoteroConnectorError,
+} from '../src/services/integrations/zoteroConnector.js';
 
 const originalFetch = globalThis.fetch;
 const originalSessionSecret = process.env.SESSION_SECRET;
@@ -15,7 +18,10 @@ test('Zotero retries transient HTTP errors, not malformed successful responses',
   process.env.SESSION_SECRET = 'zotero-test-secret';
   const connection = {
     externalAccountId: '12345',
-    accessTokenCiphertext: encrypt('read-only-test-token', deriveEncryptionKey(process.env.SESSION_SECRET)),
+    accessTokenCiphertext: encrypt(
+      'read-only-test-token',
+      deriveEncryptionKey(process.env.SESSION_SECRET),
+    ),
   };
 
   globalThis.fetch = async () => new Response('not json', { status: 200 });

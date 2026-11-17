@@ -5,15 +5,15 @@
  * its transcript and its chain. So a mistake from elsewhere first opens the
  * session it came from, then runs the same action there.
  */
-import { stateStore } from '../state/store.ts';
+import { kbBridge, sessionBridge } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
 import { findArchivedMistake } from './mistakeArchive.ts';
 import type { MistakeStateEntry } from '../state/kb.ts';
 
 function openBook(): MistakeStateEntry[] {
-  const value = stateStore.read('mistakes');
-  return Array.isArray(value) ? value as MistakeStateEntry[] : [];
+  const value = kbBridge.getSnapshot().mistakes;
+  return Array.isArray(value) ? (value as MistakeStateEntry[]) : [];
 }
 
 /**
@@ -26,22 +26,26 @@ export async function resolveMistakeInOpenSession(id: string): Promise<string | 
   if (openBook().some((entry) => entry.id === id)) return id;
   const archived = findArchivedMistake(id);
   if (!archived) return null;
-  if (stateStore.read('currentSessionId') !== archived.sessionId) {
+  if (sessionBridge.getSnapshot().currentSessionId !== archived.sessionId) {
     const { loadSession } = await import('../session/loader.ts');
     await loadSession(archived.sessionId);
-    if (stateStore.read('currentSessionId') !== archived.sessionId) return null;
+    if (sessionBridge.getSnapshot().currentSessionId !== archived.sessionId) return null;
   }
   const book = openBook();
   const byId = book.find((entry) => entry.id === id);
   if (byId) return byId.id;
   const question = archived.q.trim();
-  const byText = question ? book.find((entry) => entry.q.trim() === question && !entry.resolved) : null;
+  const byText = question
+    ? book.find((entry) => entry.q.trim() === question && !entry.resolved)
+    : null;
   return byText ? byText.id : null;
 }
 
 export function redoAnyMistake(id: string): void {
   void resolveMistakeInOpenSession(id)
-    .then((localId) => { if (localId) requestMistakeRedo(localId); })
+    .then((localId) => {
+      if (localId) requestMistakeRedo(localId);
+    })
     .catch((error) => reportSwallow(error, 'tutor/mistakeCrossSession.redo'));
 }
 

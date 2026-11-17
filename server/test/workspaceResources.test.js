@@ -60,5 +60,7 @@ test('deep workspace trees cannot hide bytes beyond the former depth limit', () 
     mkdirSync(deep, { recursive: true });
     writeFileSync(path.join(deep, 'data'), 'x'.repeat(4096));
     assert.equal(workspaceDiskUsageBytes(dir), 4096);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

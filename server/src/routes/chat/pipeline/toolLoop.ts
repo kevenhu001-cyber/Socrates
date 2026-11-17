@@ -7,7 +7,12 @@
  * reasoning, runtime and usage when the loop unwinds.
  */
 import type { TurnRuntime } from '@socrates/contracts';
-import { estimateTokens, normalizeProviderUsage, recordUsage, resolveUsage } from '../../../services/core/usageTracker.js';
+import {
+  estimateTokens,
+  normalizeProviderUsage,
+  recordUsage,
+  resolveUsage,
+} from '../../../services/core/usageTracker.js';
 import { setChatTurnStatus } from '../../../services/core/chatTurns.js';
 import { streamChatCompletion } from '../../../services/core/llm/stream.js';
 import { annotateSpan, withSpan } from '../../../lib/telemetry.js';
@@ -26,18 +31,25 @@ import {
 } from '../../../services/tools/toolCallSafety.js';
 import { toolArgumentPolicy } from '../../../services/tools/toolArgumentPolicy.js';
 import { hashToolArguments } from '../../../services/tools/toolTurnPolicy.js';
-import { dispatchToolCalls } from '../../../services/tools/toolDispatch.js';
+import { dispatchToolCalls } from '../../../services/tools/toolScheduler.js';
 import {
   appendNativeToolContract,
   appendToolRoutingHints,
   prependCodeInterpreterPrompt,
 } from '../prepare/prompts.js';
 import { SseEmitter } from './sseEmitter.js';
-import { createToolRunner } from './toolExecutors.js';
+import { createToolRunner } from './toolRunner.js';
 import type { StreamToolContext } from './toolContext.js';
 import type { createTurnEventController } from '../../../services/turnEvents.js';
 import type { createTurnActivityController } from '../../../services/turnActivity.js';
-import type { ChatStreamPipelineContext, PreparedCall, StreamMessage, ToolCall, ToolCallDelta, ToolResult } from './types.js';
+import type {
+  ChatStreamPipelineContext,
+  PreparedCall,
+  StreamMessage,
+  ToolCall,
+  ToolCallDelta,
+  ToolResult,
+} from './types.js';
 import type { ExecutedToolCall, ToolLoopState } from './turnState.js';
 
 export interface ToolLoopInput {
@@ -69,10 +81,30 @@ export interface ToolLoopInput {
 
 export async function runToolLoop(input: ToolLoopInput): Promise<void> {
   const {
-    req, emitter, timing, watchdog, abortController, turnId, sessionIdFromQuery,
-    projectIdFromBody, provider, finalMessages, safeExtraBody, mode, temperature,
-    maxTokens, reasoning_effort, responseSpeed, toolCtxPromise, turnEvents,
-    activity, state, promptTokens, reportTtfb, checkpointTurn, clearTurnTimer,
+    req,
+    emitter,
+    timing,
+    watchdog,
+    abortController,
+    turnId,
+    sessionIdFromQuery,
+    projectIdFromBody,
+    provider,
+    finalMessages,
+    safeExtraBody,
+    mode,
+    temperature,
+    maxTokens,
+    reasoning_effort,
+    responseSpeed,
+    toolCtxPromise,
+    turnEvents,
+    activity,
+    state,
+    promptTokens,
+    reportTtfb,
+    checkpointTurn,
+    clearTurnTimer,
   } = input;
 
   let fullText = state.fullText;
@@ -117,14 +149,27 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
     const toolCtx = await toolCtxPromise;
     timing.mark('tools_ready');
     const {
-      toolPolicy, toolRegistry, toolDefs, toolNames, initialToolNames, schemaForTool, toolExamples,
-      FUZZY_SAFE, connectorConnectionsByProvider, projectConnectorConnectionsByProvider,
-      connectorCatalog, connectorActivation,
+      toolPolicy,
+      toolRegistry,
+      toolDefs,
+      toolNames,
+      initialToolNames,
+      schemaForTool,
+      toolExamples,
+      FUZZY_SAFE,
+      connectorConnectionsByProvider,
+      projectConnectorConnectionsByProvider,
+      connectorCatalog,
+      connectorActivation,
     } = toolCtx;
     const MAX_TOOL_ITERATIONS = toolCtx.MAX_TOOL_ITERATIONS;
-    const executionResults = new Map<string, import("./types.js").ToolResult>();
+    const executionResults = new Map<string, import('./types.js').ToolResult>();
     const runToolCall = createToolRunner({
-      publicRuntime: { registerSources: turnEvents.registerSources, patchUi: turnEvents.patchUi, citeSources: (args) => turnEvents.citeSources(args, fullText) },
+      publicRuntime: {
+        registerSources: turnEvents.registerSources,
+        patchUi: turnEvents.patchUi,
+        citeSources: (args) => turnEvents.citeSources(args, fullText),
+      },
       req,
       sessionIdFromQuery,
       projectIdFromBody,
@@ -153,9 +198,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
        model to continue exactly where it stopped — bounded so a pathological
        loop cannot run forever. */
     const rawMaxLengthContinues = Number(process.env.CHAT_LENGTH_CONTINUE_MAX);
-    const MAX_LENGTH_CONTINUES = Number.isFinite(rawMaxLengthContinues) && rawMaxLengthContinues >= 0
-      ? Math.min(5, Math.floor(rawMaxLengthContinues))
-      : 2;
+    const MAX_LENGTH_CONTINUES =
+      Number.isFinite(rawMaxLengthContinues) && rawMaxLengthContinues >= 0
+        ? Math.min(5, Math.floor(rawMaxLengthContinues))
+        : 2;
     let lengthContinues = 0;
 
     for (let iter = 0; iter <= MAX_TOOL_ITERATIONS; iter++) {
@@ -168,12 +214,21 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
          activates them. The activation set is per-turn and grows only after
          the model has read that tool's exact schema. */
       const activeToolNames = toolsAllowed
-        ? toolPolicy.enabledToolNames([...initialToolNames, ...connectorActivation.active()]).slice().sort()
+        ? toolPolicy
+            .enabledToolNames([...initialToolNames, ...connectorActivation.active()])
+            .slice()
+            .sort()
         : [];
       const activeToolDefs = toolsAllowed
-        ? toolDefs.filter((tool) => activeToolNames.includes(
-          (tool as { function?: { name?: string } }).function?.name || '',
-        )).sort((a, b) => String(a.function?.name || '').localeCompare(String(b.function?.name || ''), 'en'))
+        ? toolDefs
+            .filter((tool) =>
+              activeToolNames.includes(
+                (tool as { function?: { name?: string } }).function?.name || '',
+              ),
+            )
+            .sort((a, b) =>
+              String(a.function?.name || '').localeCompare(String(b.function?.name || ''), 'en'),
+            )
         : [];
       /* The model-facing contract must describe the same capability set as
        * this request. In the final, tools-disabled hop the upstream gets no
@@ -215,97 +270,102 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       /* P_turn-watchdog — a new upstream hop is progress too: the turn is
        * alive, it just has not produced bytes yet. */
       watchdog.touch();
-      await withSpan('llm.stream', {
-        'llm.model': provider.model,
-        'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,
-        'socrates.tool_iteration': iter,
-      }, async () => await streamChatCompletion(
+      await withSpan(
+        'llm.stream',
         {
-          apiBase: provider.url,
-          apiKey: provider.keyPlaintext,
-          model: provider.model,
-          userId: req.userId,
-          /* P_provider-capability-override — the operator's own statement
-           * about their endpoint wins over the registry's host heuristic. */
-          instantEncoding: provider.instantEncoding ?? null,
-          messages: requestMessages,
-          maxTokens,
-          temperature,
-          signal: abortController.signal,
-          reasoning_effort,
-          response_speed: responseSpeed,
-          extra_body: safeExtraBody,
-          onPreferenceFallback: (detail) => {
-            if (speedFallbackEmitted) return;
-            speedFallbackEmitted = true;
-            emitter.event('preference_fallback', detail);
-          },
-          ...(toolsAllowed && activeToolDefs.length > 0
-            ? {
-              tools: activeToolDefs,
-              /* Let the model select workspace_agent from the user's
+          'llm.model': provider.model,
+          'llm.tools_offered': toolsAllowed ? activeToolDefs.length : 0,
+          'socrates.tool_iteration': iter,
+        },
+        async () =>
+          await streamChatCompletion(
+            {
+              apiBase: provider.url,
+              apiKey: provider.keyPlaintext,
+              model: provider.model,
+              userId: req.userId,
+              /* P_provider-capability-override — the operator's own statement
+               * about their endpoint wins over the registry's host heuristic. */
+              instantEncoding: provider.instantEncoding ?? null,
+              messages: requestMessages,
+              maxTokens,
+              temperature,
+              signal: abortController.signal,
+              reasoning_effort,
+              response_speed: responseSpeed,
+              extra_body: safeExtraBody,
+              onPreferenceFallback: (detail) => {
+                if (speedFallbackEmitted) return;
+                speedFallbackEmitted = true;
+                emitter.event('preference_fallback', detail);
+              },
+              ...(toolsAllowed && activeToolDefs.length > 0
+                ? {
+                    tools: activeToolDefs,
+                    /* Let the model select workspace_agent from the user's
                  intent. There is no client-side Agent switch or forced
                  first hop: ordinary questions stay native, while project
                  and file work can enter the Codex runtime automatically. */
-              tool_choice: 'auto',
-            }
-            : {}),
-        } as Parameters<typeof streamChatCompletion>[0],
-        // onChunk
-        (chunk: string) => {
-          turnEvents.generation();
-          watchdog.touch();
-          fullText += chunk;
-          state.fullText = fullText;
-          iterContent += chunk;
-          completionTokens = estimateTokens(fullText);
-          reportTtfb('content');
-          emitter.content(chunk);
-        },
-        // onDone — capture finish_reason so the loop can dispatch, and the
-        // provider's `usage` object when it sent one. The tool loop can run
-        // several upstream calls per turn, so usage accumulates across
-        // iterations rather than being overwritten by the last one.
-        ({ finishReason, usage }: { finishReason: string | null; usage?: unknown }) => {
-          iterFinishReason = finishReason;
-          addProviderUsage(usage);
-        },
-        // onError
-        (err: Error) => {
-          upstreamErr = err;
-          emitter.fatal(err);
-        },
-        // onReasoning — emit reasoning_content as SSE delta so the
-        // client renders the thinking pill. Also accumulate so
-        // streaming_text captures it on disconnect.
-        (reasoning: string) => {
-          activity.thinking();
-          turnEvents.reasoning();
-          watchdog.touch();
-          fullReasoning += reasoning;
-          state.fullReasoning = fullReasoning;
-          iterReasoning += reasoning;
-          reportTtfb('reasoning');
-          emitter.reasoning(reasoning);
-        },
-        // onToolUse — accumulate tool calls for this iteration. Flush
-        // happens after the stream ends so the client sees a complete
-        // tool_use event even if multiple tool_calls arrive split.
-        (tc: ToolCall) => {
-          toolCallsThisTurn.push(tc);
-        },
-        // P_tool_stream — forward partial tool_call deltas as
-        // `event: tool_call_delta` SSE frames. The chat route uses
-        // this to let the frontend render the in-progress JSON
-        // (typically the Python source for code_interpreter, or the
-        // query string for web_search) live, instead of waiting for
-        // finish_reason='tool_calls'. The frontend correlates the
-        // delta to the eventual tool_use frame via the tool_call id.
-        (delta: ToolCallDelta) => {
-          emitter.toolCallDelta(delta);
-          turnEvents.toolArguments(delta, fullText.length);
-        },
-      ));
+                    tool_choice: 'auto',
+                  }
+                : {}),
+            } as Parameters<typeof streamChatCompletion>[0],
+            // onChunk
+            (chunk: string) => {
+              turnEvents.generation();
+              watchdog.touch();
+              fullText += chunk;
+              state.fullText = fullText;
+              iterContent += chunk;
+              completionTokens = estimateTokens(fullText);
+              reportTtfb('content');
+              emitter.content(chunk);
+            },
+            // onDone — capture finish_reason so the loop can dispatch, and the
+            // provider's `usage` object when it sent one. The tool loop can run
+            // several upstream calls per turn, so usage accumulates across
+            // iterations rather than being overwritten by the last one.
+            ({ finishReason, usage }: { finishReason: string | null; usage?: unknown }) => {
+              iterFinishReason = finishReason;
+              addProviderUsage(usage);
+            },
+            // onError
+            (err: Error) => {
+              upstreamErr = err;
+              emitter.fatal(err);
+            },
+            // onReasoning — emit reasoning_content as SSE delta so the
+            // client renders the thinking pill. Also accumulate so
+            // streaming_text captures it on disconnect.
+            (reasoning: string) => {
+              activity.thinking();
+              turnEvents.reasoning();
+              watchdog.touch();
+              fullReasoning += reasoning;
+              state.fullReasoning = fullReasoning;
+              iterReasoning += reasoning;
+              reportTtfb('reasoning');
+              emitter.reasoning(reasoning);
+            },
+            // onToolUse — accumulate tool calls for this iteration. Flush
+            // happens after the stream ends so the client sees a complete
+            // tool_use event even if multiple tool_calls arrive split.
+            (tc: ToolCall) => {
+              toolCallsThisTurn.push(tc);
+            },
+            // P_tool_stream — forward partial tool_call deltas as
+            // `event: tool_call_delta` SSE frames. The chat route uses
+            // this to let the frontend render the in-progress JSON
+            // (typically the Python source for code_interpreter, or the
+            // query string for web_search) live, instead of waiting for
+            // finish_reason='tool_calls'. The frontend correlates the
+            // delta to the eventual tool_use frame via the tool_call id.
+            (delta: ToolCallDelta) => {
+              emitter.toolCallDelta(delta);
+              turnEvents.toolArguments(delta, fullText.length);
+            },
+          ),
+      );
 
       /* Recorded after the call so a slow turn can be attributed without
          correlating logs: whether the provider reported real token counts is
@@ -320,7 +380,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
 
       if (upstreamErr) {
         // Error path already wrote [DONE] and ended the response.
-        if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+        if (
+          req.userId &&
+          (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)
+        ) {
           const settled = resolveUsage(accumulatedProviderUsage(), {
             promptTokens,
             completionTokens: estimateTokens(fullText),
@@ -364,10 +427,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       // CHAT_LENGTH_CONTINUE_MAX (default 2).
       if (boundedToolCalls.length === 0) {
         if (
-          iterFinishReason === 'length'
-          && iterContent
-          && lengthContinues < MAX_LENGTH_CONTINUES
-          && !abortController.signal.aborted
+          iterFinishReason === 'length' &&
+          iterContent &&
+          lengthContinues < MAX_LENGTH_CONTINUES &&
+          !abortController.signal.aborted
         ) {
           lengthContinues += 1;
           const continueAssistant: StreamMessage = { role: 'assistant', content: iterContent };
@@ -380,7 +443,8 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             continueAssistant,
             {
               role: 'user',
-              content: '[System note: your previous reply was cut off at the output token limit. Continue exactly where you stopped — do not restart, repeat earlier text, or add a preamble.]',
+              content:
+                '[System note: your previous reply was cut off at the output token limit. Continue exactly where you stopped — do not restart, repeat earlier text, or add a preamble.]',
             },
           ]);
           continue;
@@ -404,13 +468,17 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
        * becomes a structured rejection carrying the tool's schema and a
        * copy-ready example. */
       /* Count the calls the per-iteration cap just dropped so the next
-         * contract appendix can tell the model they never ran. */
+       * contract appendix can tell the model they never ran. */
       const droppedCalls = Math.max(0, toolCallsThisTurn.length - boundedToolCalls.length);
       lastDroppedCalls = droppedCalls;
       if (droppedCalls > 0) {
-        console.warn('[chat/stream] dropped tool calls over per-iteration cap', JSON.stringify({
-          dropped: droppedCalls, cap: toolPolicy.maxCallsPerIteration,
-        }));
+        console.warn(
+          '[chat/stream] dropped tool calls over per-iteration cap',
+          JSON.stringify({
+            dropped: droppedCalls,
+            cap: toolPolicy.maxCallsPerIteration,
+          }),
+        );
       }
 
       const prepared: PreparedCall[] = boundedToolCalls.map((call) => {
@@ -433,9 +501,14 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
            being routed by the raw model-supplied string. */
         if (resolved.name && call.function) call.function.name = resolved.name;
         if (resolved.name && resolved.match !== 'exact') {
-          console.info('[tool-resolve]', JSON.stringify({
-            requested: requestedName, resolved: resolved.name, match: resolved.match,
-          }));
+          console.info(
+            '[tool-resolve]',
+            JSON.stringify({
+              requested: requestedName,
+              resolved: resolved.name,
+              match: resolved.match,
+            }),
+          );
         }
         const registryEntry = resolved.name ? toolRegistry.get(resolved.name) : null;
         const schema = resolved.name ? schemaForTool(resolved.name) : null;
@@ -445,16 +518,19 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
            tool-specific validator run it here instead of the generic schema
            pass. */
         const argumentPolicy = toolArgumentPolicy(resolved.name);
-        const repaired = repairToolArguments(
-          call.function?.arguments,
-          schema || undefined,
-          { dropUnknown: argumentPolicy.dropUnknown, toolName: resolved.name || undefined },
-        );
+        const repaired = repairToolArguments(call.function?.arguments, schema || undefined, {
+          dropUnknown: argumentPolicy.dropUnknown,
+          toolName: resolved.name || undefined,
+        });
         if (repaired.ok && repaired.repairs.length > 0) {
           /* Log the repair kinds only — never the argument values. */
-          console.info('[tool-repair]', JSON.stringify({
-            name: toolName, repairs: repaired.repairs.slice(0, 12),
-          }));
+          console.info(
+            '[tool-repair]',
+            JSON.stringify({
+              name: toolName,
+              repairs: repaired.repairs.slice(0, 12),
+            }),
+          );
         }
         const args = (repaired.ok ? repaired.value : {}) as Record<string, unknown>;
         /* Persist the repaired arguments back onto the call so the
@@ -474,7 +550,10 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
             retryable: false,
             hint: `\`${resolved.name}\` was withdrawn for the rest of this turn (${toolPolicy.disabledReason(resolved.name)}).`,
           };
-        } else if (connectorCatalog.byTool.has(resolved.name) && !connectorActivation.has(resolved.name)) {
+        } else if (
+          connectorCatalog.byTool.has(resolved.name) &&
+          !connectorActivation.has(resolved.name)
+        ) {
           /* A guessed connector name is not enough: the model must read the
              exact spec first, which also activates the tool for the next hop. */
           rejection = {
@@ -489,11 +568,15 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           rejection = {
             code: repaired.error,
             retryable: toolPolicy.remainingRetries(resolved.name) > 1,
-            ...(repaired.error === TOOL_ARGUMENT_ERRORS.tooLarge ? {
-              hint: `The arguments hit the ${Math.floor(MAX_TOOL_ARGUMENT_CHARS / 1024)} KB transport limit and were cut off, so they could not be parsed. Send a smaller payload — split the work across several calls.`,
-            } : looksTruncatedToolArguments(call.function?.arguments) ? {
-              hint: truncatedArgumentsHint(resolved.name),
-            } : {}),
+            ...(repaired.error === TOOL_ARGUMENT_ERRORS.tooLarge
+              ? {
+                  hint: `The arguments hit the ${Math.floor(MAX_TOOL_ARGUMENT_CHARS / 1024)} KB transport limit and were cut off, so they could not be parsed. Send a smaller payload — split the work across several calls.`,
+                }
+              : looksTruncatedToolArguments(call.function?.arguments)
+                ? {
+                    hint: truncatedArgumentsHint(resolved.name),
+                  }
+                : {}),
           };
         } else {
           /* Repair coerced the shape; now enforce the declared contract
@@ -501,7 +584,12 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
            * correction package instead of a wasted execution. The policy
            * decides whether the generic schema validator or a tool-specific
            * validator owns this check; `none` means the executor validates. */
-          const validation: { ok: boolean; fieldErrors: string[]; errorCode?: string; userMessage?: string } =
+          const validation: {
+            ok: boolean;
+            fieldErrors: string[];
+            errorCode?: string;
+            userMessage?: string;
+          } =
             argumentPolicy.validation === 'schema'
               ? validateToolArguments(args, schema)
               : argumentPolicy.validation === 'tool' && argumentPolicy.validate
@@ -515,7 +603,9 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
               fieldErrors: validation.fieldErrors.join('; '),
               /* The tool-specific card copy describes a correction attempt, so
                  only use it while another attempt is actually allowed. */
-              ...(retryable && validation.userMessage ? { userMessage: validation.userMessage } : {}),
+              ...(retryable && validation.userMessage
+                ? { userMessage: validation.userMessage }
+                : {}),
             };
           } else if (toolPolicy.isDuplicate(resolved.name, hashToolArguments(args))) {
             rejection = {
@@ -533,11 +623,14 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
 
       // Emit tool_use event for the client to render cards.
       for (const entry of prepared) activity.tool(entry.call.id, entry.toolName);
-      emitter.event('tool_use', prepared.map((entry) => ({
-        id: entry.call.id,
-        name: entry.toolName,
-        input: entry.args,
-      })));
+      emitter.event(
+        'tool_use',
+        prepared.map((entry) => ({
+          id: entry.call.id,
+          name: entry.toolName,
+          input: entry.args,
+        })),
+      );
 
       // Echo the assistant's tool_calls back as a role:'assistant'
       // message — required by the OpenAI protocol so the next hop
@@ -593,9 +686,9 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
       activity.synthesizing();
       for (let i = 0; i < prepared.length; i++) {
         const prepCall = prepared[i];
-        const toolMsg = toolMessages.find((message) => (
-          'tool_call_id' in message && message.tool_call_id === prepCall.call.id
-        ));
+        const toolMsg = toolMessages.find(
+          (message) => 'tool_call_id' in message && message.tool_call_id === prepCall.call.id,
+        );
         const execution = executionResults.get(prepCall.call.id);
         executedToolCalls.push({
           id: prepCall.call.id,
@@ -604,7 +697,9 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
           output: toolMsg?.content || null,
           status: execution?.status,
           errorCode: execution?.errorCode,
-          isError: execution ? execution.status !== 'completed' && execution.status !== 'awaiting_approval' : !prepCall.registryEntry || prepCall.rejection != null,
+          isError: execution
+            ? execution.status !== 'completed' && execution.status !== 'awaiting_approval'
+            : !prepCall.registryEntry || prepCall.rejection != null,
         });
       }
 
@@ -619,7 +714,6 @@ export async function runToolLoop(input: ToolLoopInput): Promise<void> {
         });
       }
     }
-
   } finally {
     Object.assign(state, {
       fullText,

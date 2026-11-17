@@ -8,9 +8,8 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { createStreamRetryViewport, shouldRetryInterruptedStream } = await import(
-  '../src/chat/streamRetry.ts'
-);
+const { createStreamRetryViewport, shouldRetryInterruptedStream } =
+  await import('../src/chat/streamRetry.ts');
 
 function makeList() {
   const list = dom.window.document.createElement('div');
@@ -26,11 +25,21 @@ function makeList() {
 
 test('retry decision stays heartbeat-only before semantic output', () => {
   assert.equal(
-    shouldRetryInterruptedStream({ isHeartbeat: true, semanticActivity: false, attempt: 1, maxAttempts: 2 }),
+    shouldRetryInterruptedStream({
+      isHeartbeat: true,
+      semanticActivity: false,
+      attempt: 1,
+      maxAttempts: 2,
+    }),
     true,
   );
   assert.equal(
-    shouldRetryInterruptedStream({ isHeartbeat: true, semanticActivity: true, attempt: 1, maxAttempts: 2 }),
+    shouldRetryInterruptedStream({
+      isHeartbeat: true,
+      semanticActivity: true,
+      attempt: 1,
+      maxAttempts: 2,
+    }),
     false,
   );
 });
@@ -111,19 +120,19 @@ test('captureViewport ignores an expired stable snapshot', () => {
 });
 
 test('prepareViewport removes the failed row and message slot', async () => {
-  const { stateStore } = await import('../src/state/store.ts');
+  const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
   const store = createStreamRetryViewport();
   const { list, row } = makeList();
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/append-message',
     payload: { clientId: 'c1', role: 'assistant', rawText: 'x' },
   });
   try {
     store.prepareViewport(list, 7, 'c1');
     assert.equal(row.parentNode, null);
-    const remaining = stateStore
-      .read('messages')
-      .filter((message) => message && message.clientId === 'c1');
+    const remaining = sessionStore
+      .getState()
+      .messages.filter((message) => message && message.clientId === 'c1');
     assert.equal(remaining.length, 0);
   } finally {
     list.remove();
@@ -131,18 +140,21 @@ test('prepareViewport removes the failed row and message slot', async () => {
 });
 
 test('prepareViewport leaves React-owned DOM removal to the message-list commit', async () => {
-  const { stateStore } = await import('../src/state/store.ts');
+  const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
   const store = createStreamRetryViewport();
   const { list, row } = makeList();
   row.setAttribute('data-react-owned', '1');
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/append-message',
     payload: { clientId: 'c1', role: 'assistant', rawText: 'failed reply' },
   });
   try {
     store.prepareViewport(list, 0, 'c1');
     assert.equal(row.parentNode, list, 'React must still find its child when it commits');
-    assert.equal(stateStore.read('messages').some((message) => message.clientId === 'c1'), false);
+    assert.equal(
+      sessionStore.getState().messages.some((message) => message.clientId === 'c1'),
+      false,
+    );
     assert.ok(store.consumeViewport(), 'replacement keeps the captured position');
   } finally {
     list.remove();

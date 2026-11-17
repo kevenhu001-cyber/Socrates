@@ -3,7 +3,13 @@
  * mounts these through react-native-web (frontend/src/react/tool-run);
  * other React Native hosts can reuse them as-is.
  */
-export { ThinkingSurface, ThinkingTimeline, ActivityStep, type ThinkingSurfaceProps, type ActivityStepProps } from './ThinkingSurface';
+export {
+  ThinkingSurface,
+  ThinkingTimeline,
+  ActivityStep,
+  type ThinkingSurfaceProps,
+  type ActivityStepProps,
+} from './ThinkingSurface';
 export {
   ToolApprovalCard,
   ToolErrorNotice,
@@ -11,7 +17,14 @@ export {
   type ApprovalDecisionView,
   type ToolApprovalCardProps,
 } from './ToolCards';
-export { DetailSection, CodeBlock, SourceList, ImageOutput, PlainDetail, SHEET_BREAKPOINT } from './ToolDetailSheet';
+export {
+  DetailSection,
+  CodeBlock,
+  SourceList,
+  ImageOutput,
+  PlainDetail,
+  SHEET_BREAKPOINT,
+} from './ToolDetailSheet';
 export { Chevron, Spinner } from './parts';
 export * from './thinkingModel';
 export * from './toolCardModel';

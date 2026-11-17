@@ -19,8 +19,8 @@ function normalizedStatus(status: string | undefined): 'internalized' | 'fuzzy' 
 
 function statusLabel(status: string | undefined): string {
   const normalized = normalizedStatus(status);
-  const fallback = normalized === 'internalized' ? '自评较熟悉'
-    : normalized === 'fuzzy' ? '尚有疑问' : '未评估';
+  const fallback =
+    normalized === 'internalized' ? '自评较熟悉' : normalized === 'fuzzy' ? '尚有疑问' : '未评估';
   return i18n(`tutor.status${normalized[0]!.toUpperCase()}${normalized.slice(1)}`, fallback);
 }
 
@@ -59,7 +59,11 @@ function knowledgeStrings(): KnowledgeStrings {
     captionConcepts: i18n('kb.captionConcepts', d.captionConcepts),
     updating: i18n('kb.updating', d.updating),
     updateFailed: i18n('kb.updateFailed', d.updateFailed),
-    status: { internalized: statusLabel('internalized'), fuzzy: statusLabel('fuzzy'), blank: statusLabel('blank') },
+    status: {
+      internalized: statusLabel('internalized'),
+      fuzzy: statusLabel('fuzzy'),
+      blank: statusLabel('blank'),
+    },
     section: {
       internalized: i18n('tutor.kbSectionInternalized', '自评较熟悉'),
       fuzzy: i18n('tutor.kbSectionFuzzy', '尚有疑问'),
@@ -119,10 +123,14 @@ export function KnowledgeMapPanel() {
         updatedLabel={new Date().toISOString().slice(0, 10)}
         strings={knowledgeStrings()}
         onSnapshot={saveKnowledgeBoundarySnapshot}
-        onGo={(index) => { void jumpToKnowledgeNode(index); }}
+        onGo={(index) => {
+          void jumpToKnowledgeNode(index);
+        }}
         onConfidence={(index, value) => patchKnowledgeNode(index, { confidence_score: value })}
         onNote={(index, value) => updateKnowledgeNodeNote(index, value)}
-        onPractice={(index) => { void practiceKnowledgeNode(index); }}
+        onPractice={(index) => {
+          void practiceKnowledgeNode(index);
+        }}
         conceptStatus={conceptStatus}
       />
     </WebUiTheme>
@@ -144,7 +152,8 @@ export function TeachingPlanPanel() {
   const currentCount = totalCount ? Math.min(totalCount, Math.max(1, currentIndex + 1)) : 0;
   const percent = totalCount ? Math.round((currentCount / totalCount) * 100) : 0;
   const progressText = i18n('tutor.planProgress', 'Topic {current} of {total}')
-    .replace('{current}', String(currentCount)).replace('{total}', String(totalCount));
+    .replace('{current}', String(currentCount))
+    .replace('{total}', String(totalCount));
   return (
     <div className="teaching-plan">
       <div className="teaching-plan-title">{i18n('tutor.planTitle', '教学计划')}</div>
@@ -152,24 +161,38 @@ export function TeachingPlanPanel() {
         <div className="teaching-plan-progress-bar">
           <div className="teaching-plan-progress-fill" style={{ width: `${percent}%` }} />
         </div>
-        <div className="teaching-plan-progress-text" aria-label={progressText}>{progressText}</div>
+        <div className="teaching-plan-progress-text" aria-label={progressText}>
+          {progressText}
+        </div>
       </div>
       {plan.subtopics.map((subtopic, index) => {
         const isCurrent = index === currentIndex && subtopic.status !== 'internalized';
         const isDone = subtopic.status === 'internalized';
         const normalized = normalizedStatus(subtopic.status);
         return (
-          <div className={`teaching-plan-subtopic${isCurrent ? ' current' : ''}${isDone ? ' done' : ''}`} key={`${index}-${subtopic.name}`}>
-            <span className="teaching-plan-marker">{isDone ? i18n('tutor.done', '[done]') : isCurrent ? '›' : '·'}</span>
+          <div
+            className={`teaching-plan-subtopic${isCurrent ? ' current' : ''}${isDone ? ' done' : ''}`}
+            key={`${index}-${subtopic.name}`}
+          >
+            <span className="teaching-plan-marker">
+              {isDone ? i18n('tutor.done', '[done]') : isCurrent ? '›' : '·'}
+            </span>
             <span className="teaching-plan-name">{subtopic.name}</span>
-            <span className={`teaching-plan-status status-${normalized}`}>{statusLabel(subtopic.status)}</span>
+            <span className={`teaching-plan-status status-${normalized}`}>
+              {statusLabel(subtopic.status)}
+            </span>
             {isCurrent ? (
               <>
                 <span className="teaching-plan-stage">{stageLabel(stage)}</span>
                 <span
                   className="teaching-plan-depth"
-                  title={i18n('tutor.depthHint', 'Reach 3 in-depth answers to advance to the next sub-topic')}
-                >{Math.min(substantiveCount || 0, 3)}/3</span>
+                  title={i18n(
+                    'tutor.depthHint',
+                    'Reach 3 in-depth answers to advance to the next sub-topic',
+                  )}
+                >
+                  {Math.min(substantiveCount || 0, 3)}/3
+                </span>
               </>
             ) : null}
           </div>

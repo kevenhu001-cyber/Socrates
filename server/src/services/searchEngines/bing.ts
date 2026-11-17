@@ -49,7 +49,11 @@ function cleanFragment(html: string): string {
 
 /** Hostname of a URL, or '' when it does not parse. */
 function hostOf(url: string): string {
-  try { return new URL(url).hostname.toLowerCase(); } catch { return ''; }
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -70,7 +74,7 @@ function extractDate(snippet: string): string | null {
   if (!snippet) return null;
   // Match dates like "2024年1月5日", "Jan 5, 2024", "2024-01-05", "2 days ago"
   const cjk = snippet.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-  if (cjk) return `${cjk[1]}-${cjk[2].padStart(2,'0')}-${cjk[3].padStart(2,'0')}`;
+  if (cjk) return `${cjk[1]}-${cjk[2].padStart(2, '0')}-${cjk[3].padStart(2, '0')}`;
   const en = snippet.match(/\b(\d{4}[-/]\d{1,2}[-/]\d{1,2})\b/);
   if (en) return en[1];
   return null;
@@ -138,7 +142,11 @@ function parseBingWebHtml(html: string): SearchResult[] {
  * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'bing'}>>}
  */
-export async function searchBing(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {
+export async function searchBing(
+  query: string,
+  limit = 10,
+  signal: AbortSignal | null = null,
+): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
 
   const bingHost = process.env.WEB_SEARCH_HOST || 'cn.bing.com';
@@ -146,7 +154,9 @@ export async function searchBing(query: string, limit = 10, signal: AbortSignal 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   const fetchSignal = signal
-    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([controller.signal, signal]) : signal)
+    ? typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([controller.signal, signal])
+      : signal
     : controller.signal;
 
   try {
@@ -155,7 +165,7 @@ export async function searchBing(query: string, limit = 10, signal: AbortSignal 
       signal: fetchSignal,
       headers: {
         'User-Agent': randomUA(),
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       },
       redirect: 'follow',
@@ -172,7 +182,10 @@ export async function searchBing(query: string, limit = 10, signal: AbortSignal 
     if (e && (e as Error).name === 'AbortError') {
       console.warn('[searchBing] Request timed out');
     } else {
-      console.warn('[searchBing] Request failed:', e && (e as Error).message ? (e as Error).message : e);
+      console.warn(
+        '[searchBing] Request failed:',
+        e && (e as Error).message ? (e as Error).message : e,
+      );
     }
     return unavailable(e && (e as Error).name === 'AbortError' ? 'timeout' : 'error');
   }

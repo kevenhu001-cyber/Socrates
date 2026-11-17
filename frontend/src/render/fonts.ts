@@ -19,9 +19,12 @@ export function whenFontsReady(family?: string): Promise<void> {
       const force: Promise<unknown> = fonts.load(`12px "${family}"`);
       ready = Promise.all([ready, force]).then(() => undefined);
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: render/fonts.ts:22');
+      reportEmptyCatch(_, 'empty catch: render/fonts.ts');
       /* family unknown to the platform — fall through */
     }
   }
-  return ready.then(() => undefined, () => undefined);
+  return ready.then(
+    () => undefined,
+    () => undefined,
+  );
 }

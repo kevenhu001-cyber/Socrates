@@ -11,9 +11,18 @@ import {
 
 test('patches an existing row with the save response scalars', () => {
   const sessions = [{ id: 'A', title: 'old', topic: 't', total_q: 1, tags: ['x'] }];
-  const next = patchSessionRow(sessions, {
-    id: 'A', title: 'new', totalQ: 9, mode: 'chat', kind: 'chat', updatedAt: 1700,
-  }, null);
+  const next = patchSessionRow(
+    sessions,
+    {
+      id: 'A',
+      title: 'new',
+      totalQ: 9,
+      mode: 'chat',
+      kind: 'chat',
+      updatedAt: 1700,
+    },
+    null,
+  );
   assert.equal(next[0].title, 'new');
   assert.equal(next[0].total_q, 9);
   assert.equal(next[0].mode, 'chat');
@@ -51,11 +60,24 @@ test('a real 0 lands, but a null archivedAt means "unchanged"', () => {
 
 test('inserts a row for a session the server just created', () => {
   const saved = {
-    id: 'NEW', topic: 'photosynthesis', title: 'Photosynthesis', mode: 'chat',
-    kind: 'chat', projectId: 'P1', pinned: false, totalQ: 0,
-    createdAt: 10, updatedAt: 20,
+    id: 'NEW',
+    topic: 'photosynthesis',
+    title: 'Photosynthesis',
+    mode: 'chat',
+    kind: 'chat',
+    projectId: 'P1',
+    pinned: false,
+    totalQ: 0,
+    createdAt: 10,
+    updatedAt: 20,
   };
-  const payload = { topic: 'photosynthesis', title: 'Photosynthesis', domain: 'bio', mode: 'chat', projectId: 'P1' };
+  const payload = {
+    topic: 'photosynthesis',
+    title: 'Photosynthesis',
+    domain: 'bio',
+    mode: 'chat',
+    projectId: 'P1',
+  };
   const next = patchSessionRow([{ id: 'OLD' }], saved, payload);
   assert.equal(next.length, 2);
   assert.equal(next[0].id, 'NEW');
@@ -64,7 +86,10 @@ test('inserts a row for a session the server just created', () => {
      would read undefined. */
   assert.equal(next[0].domain, 'bio');
   assert.equal(next[0].updated_at, 20);
-  assert.deepEqual(next.map((r) => r.id), ['NEW', 'OLD']);
+  assert.deepEqual(
+    next.map((r) => r.id),
+    ['NEW', 'OLD'],
+  );
 });
 
 test('declines to invent a row when there is no payload to build it from', () => {
@@ -75,7 +100,12 @@ test('declines to invent a row when there is no payload to build it from', () =>
 
 test('re-files a client-drafted row under the server-minted UUID', () => {
   const sessions = [{ id: 'draft-1', title: 'hello', tags: ['keep'] }];
-  const next = patchSessionRow(sessions, { id: 'real-uuid', title: 'hello', totalQ: 3 }, null, 'draft-1');
+  const next = patchSessionRow(
+    sessions,
+    { id: 'real-uuid', title: 'hello', totalQ: 3 },
+    null,
+    'draft-1',
+  );
   assert.equal(next.length, 1);
   assert.equal(next[0].id, 'real-uuid');
   assert.equal(next[0].total_q, 3);
@@ -83,7 +113,10 @@ test('re-files a client-drafted row under the server-minted UUID', () => {
 });
 
 test('rekeying does not duplicate a row when the real id is already listed', () => {
-  const sessions = [{ id: 'draft-1', title: 'stale' }, { id: 'real-uuid', title: 'fresh' }];
+  const sessions = [
+    { id: 'draft-1', title: 'stale' },
+    { id: 'real-uuid', title: 'fresh' },
+  ];
   const next = patchSessionRow(sessions, { id: 'real-uuid', title: 'fresh' }, null, 'draft-1');
   assert.equal(next.filter((r) => r.id === 'real-uuid').length, 1);
   /* The draft row is renamed onto the real id, so two rows now share it —
@@ -110,7 +143,9 @@ function fakeClock() {
       timers.push({ id, at: clock + ms, fn });
       return id;
     },
-    clearTimer: (h) => { timers = timers.filter((t) => t.id !== h); },
+    clearTimer: (h) => {
+      timers = timers.filter((t) => t.id !== h);
+    },
     advance(ms) {
       clock += ms;
       const due = timers.filter((t) => t.at <= clock).sort((a, b) => a.at - b.at);
@@ -134,8 +169,13 @@ test('a save burst collapses into a single list fetch', async () => {
   const clock = fakeClock();
   let calls = 0;
   const rec = createReconciler({
-    refresh: () => { calls += 1; return Promise.resolve([]); },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      calls += 1;
+      return Promise.resolve([]);
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   for (let i = 0; i < 5; i += 1) rec.schedule();
   assert.equal(clock.pending(), 1, 'five requests, one pending timer');
@@ -148,8 +188,13 @@ test('the first save-triggered reconcile waits a full window', () => {
   const clock = fakeClock();
   let calls = 0;
   const rec = createReconciler({
-    refresh: () => { calls += 1; return Promise.resolve([]); },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      calls += 1;
+      return Promise.resolve([]);
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   rec.schedule();
   clock.advance(RECONCILE_MIN_INTERVAL_MS - 1);
@@ -162,8 +207,13 @@ test('back-to-back windows stay one fetch per window', async () => {
   const clock = fakeClock();
   let calls = 0;
   const rec = createReconciler({
-    refresh: () => { calls += 1; return Promise.resolve([]); },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      calls += 1;
+      return Promise.resolve([]);
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   rec.schedule();
   clock.advance(RECONCILE_MIN_INTERVAL_MS);
@@ -181,8 +231,13 @@ test('flush runs now and drops the pending window', async () => {
   const clock = fakeClock();
   let calls = 0;
   const rec = createReconciler({
-    refresh: () => { calls += 1; return Promise.resolve([]); },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      calls += 1;
+      return Promise.resolve([]);
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   rec.schedule();
   assert.equal(clock.pending(), 1);
@@ -198,8 +253,12 @@ test('a rejected refresh still renders and does not reject', async () => {
   let done = 0;
   const rec = createReconciler({
     refresh: () => Promise.reject(new Error('offline')),
-    onDone: () => { done += 1; },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    onDone: () => {
+      done += 1;
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   await rec.flush();
   assert.equal(done, 1, 'the list keeps its shape; fetchFailed drives the retry UI');
@@ -209,9 +268,15 @@ test('a synchronous throw from refresh is contained', async () => {
   const clock = fakeClock();
   let done = 0;
   const rec = createReconciler({
-    refresh: () => { throw new Error('boom'); },
-    onDone: () => { done += 1; },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      throw new Error('boom');
+    },
+    onDone: () => {
+      done += 1;
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   await rec.flush();
   assert.equal(done, 1);
@@ -221,10 +286,17 @@ test('a flush during an in-flight refresh queues exactly one follow-up', async (
   const clock = fakeClock();
   let calls = 0;
   let release;
-  const gate = new Promise((r) => { release = r; });
+  const gate = new Promise((r) => {
+    release = r;
+  });
   const rec = createReconciler({
-    refresh: () => { calls += 1; return calls === 1 ? gate : Promise.resolve([]); },
-    now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+    refresh: () => {
+      calls += 1;
+      return calls === 1 ? gate : Promise.resolve([]);
+    },
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
   });
   const first = rec.flush();
   /* Two more flushes arrive while the first fetch is still open. They must not

@@ -28,21 +28,22 @@ router.get('/', async (req, res, next) => {
     else if (period === 'month') since = new Date(now.getTime() - 30 * 86400000);
     else since = new Date(0);
 
-    const [result] = await db.select({
-      totalTokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
-      messageCount: sql`COUNT(*)::int`,
-    }).from(usageEvents)
-      .where(and(
-        eq(usageEvents.userId, req.userId!),
-        gte(usageEvents.createdAt, since),
-      ));
+    const [result] = await db
+      .select({
+        totalTokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+        messageCount: sql`COUNT(*)::int`,
+      })
+      .from(usageEvents)
+      .where(and(eq(usageEvents.userId, req.userId!), gte(usageEvents.createdAt, since)));
 
     return res.json({
       period,
       totalTokens: result.totalTokens || 0,
       messageCount: result.messageCount || 0,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/usage/limits — returns plan limits + Beagle monthly usage */
@@ -59,9 +60,11 @@ router.get('/limits', async (req, res, next) => {
     const beagleLimit = getBeagleQuota(tierKey);
     const db = getDb();
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const [row] = await db.select({
-      used: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
-    }).from(usageEvents)
+    const [row] = await db
+      .select({
+        used: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+      })
+      .from(usageEvents)
       .where(and(eq(usageEvents.userId, req.userId!), gte(usageEvents.createdAt, monthStart)));
     const beagleUsed = (row?.used as number) || 0;
     return res.json({
@@ -70,7 +73,9 @@ router.get('/limits', async (req, res, next) => {
       beagleLimit,
       beagleUsed,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/usage/daily — daily token counts for heatmap (last 365 days)
@@ -96,21 +101,27 @@ router.get('/daily', async (req, res, next) => {
 
     const dayExpr = sql`to_char(${usageEvents.createdAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`;
 
-    const rows = await db.select({
-      day: dayExpr,
-      tokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
-      messages: sql`COUNT(*)::int`,
-    }).from(usageEvents)
-      .where(and(
-        eq(usageEvents.userId, req.userId!),
-        eq(usageEvents.source, 'chat'),
-        gte(usageEvents.createdAt, since),
-      ))
+    const rows = await db
+      .select({
+        day: dayExpr,
+        tokens: sql`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+        messages: sql`COUNT(*)::int`,
+      })
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.userId, req.userId!),
+          eq(usageEvents.source, 'chat'),
+          gte(usageEvents.createdAt, since),
+        ),
+      )
       .groupBy(dayExpr)
       .orderBy(dayExpr);
 
     return res.json({ days: parseInt(days as string, 10), entries: rows });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

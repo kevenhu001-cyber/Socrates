@@ -111,13 +111,20 @@ async function probe(component: string) {
   }
 }
 
-async function recordTransition(component: string, from: string | null, to: string, detail: unknown) {
-  await getDb().insert(statusMonitorEvents).values({
-    component,
-    fromState: from ?? null,
-    toState: to,
-    detail: detail && typeof detail === 'object' ? detail : {},
-  });
+async function recordTransition(
+  component: string,
+  from: string | null,
+  to: string,
+  detail: unknown,
+) {
+  await getDb()
+    .insert(statusMonitorEvents)
+    .values({
+      component,
+      fromState: from ?? null,
+      toState: to,
+      detail: detail && typeof detail === 'object' ? detail : {},
+    });
 }
 
 /* ─── Lightweight in-memory request metrics ───────────────────────
@@ -170,7 +177,8 @@ export function getRequestMetrics() {
 async function seedFromDb() {
   const db = getDb();
   for (const component of COMPONENTS) {
-    const [row] = await db.select()
+    const [row] = await db
+      .select()
       .from(statusMonitorEvents)
       .where(sql`${statusMonitorEvents.component} = ${component}`)
       .orderBy(sql`${statusMonitorEvents.createdAt} DESC`)
@@ -210,7 +218,9 @@ async function tick() {
 
 async function notifySubscribers(component: string, from: string, to: string) {
   var db = getDb();
-  var rows = await db.select().from(statusSubscribers)
+  var rows = await db
+    .select()
+    .from(statusSubscribers)
     .where(sql`${statusSubscribers.confirmedAt} IS NOT NULL`);
   if (!rows.length) return;
   for (var i = 0; i < rows.length; i++) {
@@ -221,7 +231,9 @@ async function notifySubscribers(component: string, from: string, to: string) {
         to: to,
         statusUrl: STATUS_BASE_URL + '/',
       });
-    } catch (_) { /* individual send failure is non-fatal */ }
+    } catch (_) {
+      /* individual send failure is non-fatal */
+    }
   }
 }
 
@@ -239,7 +251,9 @@ export async function startStatusMonitor() {
   // Prime the table with current states on boot.
   await tick().catch(() => {});
   timer = setInterval(() => tick().catch(() => {}), PROBE_INTERVAL_MS);
-  console.log(`[status-monitor] started (${COMPONENTS.length} components, every ${PROBE_INTERVAL_MS / 1000}s)`);
+  console.log(
+    `[status-monitor] started (${COMPONENTS.length} components, every ${PROBE_INTERVAL_MS / 1000}s)`,
+  );
 }
 
 export function stopStatusMonitor() {

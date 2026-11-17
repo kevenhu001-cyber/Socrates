@@ -3,7 +3,7 @@
 import { keepSessionTitle } from '../chat/sessionTitle.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { serverCache } from './serverCache.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
 import { detailCache } from './detailCache.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 
@@ -14,15 +14,20 @@ export interface SessionMetadataPatch {
   [key: string]: unknown;
 }
 
-export async function updateSessionMetadata(id: string, patch: SessionMetadataPatch): Promise<void> {
+export async function updateSessionMetadata(
+  id: string,
+  patch: SessionMetadataPatch,
+): Promise<void> {
   await apiFetch('/api/sessions/' + encodeURIComponent(id), { method: 'PATCH', body: patch });
   if ('title' in patch) keepSessionTitle(id);
   const row = serverCache.sessions.find((item) => item.id === id);
   if (row) Object.assign(row, patch);
   detailCache.invalidate(id);
-  if (stateStore.read('currentSessionId') === id) {
-    if ('title' in patch) stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: patch.title });
-    if ('projectId' in patch) stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: patch.projectId });
+  if (sessionStore.getState().currentSessionId === id) {
+    if ('title' in patch)
+      dispatchSession({ type: 'session/set', key: 'sessionTitle', value: patch.title });
+    if ('projectId' in patch)
+      dispatchSession({ type: 'session/set', key: 'currentProjectId', value: patch.projectId });
   }
   renderRecents();
 }

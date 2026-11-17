@@ -96,10 +96,15 @@ class KeyboardLiftController implements KeyboardLift {
     options: KeyboardLiftOptions,
   ) {
     this.trackedInputs = resolveTrackedInputs(options);
-    this.viewport = window.visualViewport as (ViewportLike & EventTarget & { width?: number }) | null;
+    this.viewport = window.visualViewport as
+      (ViewportLike & EventTarget & { width?: number }) | null;
     this.anchor = new TranscriptAnchor({
       listFor: () => {
-        try { return document.getElementById('msgList'); } catch { return null; }
+        try {
+          return document.getElementById('msgList');
+        } catch {
+          return null;
+        }
       },
       viewportOffset: () => this.viewportPan(),
       stillActive: () => this.sessionActive || this.phaseValue === 'closing',
@@ -109,8 +114,11 @@ class KeyboardLiftController implements KeyboardLift {
     this.setPhase('closed');
     this.setIntent(false);
     this.setMode('unknown');
-    try { delete this.root.dataset.keyboardMotion; }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMotion'); /* cleanup */ }
+    try {
+      delete this.root.dataset.keyboardMotion;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearMotion'); /* cleanup */
+    }
   }
 
   get phase(): KeyboardPhase {
@@ -123,7 +131,9 @@ class KeyboardLiftController implements KeyboardLift {
 
   onInset(cb: (layoutInset: number) => void): () => void {
     this.insetListeners.add(cb);
-    return () => { this.insetListeners.delete(cb); };
+    return () => {
+      this.insetListeners.delete(cb);
+    };
   }
 
   private readonly onPointerDown = (): void => {
@@ -183,18 +193,27 @@ class KeyboardLiftController implements KeyboardLift {
   private setPhase(next: KeyboardPhase): void {
     if (this.phaseValue === next && this.root.dataset.keyboardPhase === next) return;
     this.phaseValue = next;
-    try { this.root.dataset.keyboardPhase = next; }
-    catch (error) { reportSwallow(error, 'keyboard.setPhase'); /* detached */ }
+    try {
+      this.root.dataset.keyboardPhase = next;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.setPhase'); /* detached */
+    }
   }
 
   private setIntent(open: boolean): void {
-    try { this.root.dataset.keyboardOpen = open ? 'true' : 'false'; }
-    catch (error) { reportSwallow(error, 'keyboard.setIntent'); /* detached */ }
+    try {
+      this.root.dataset.keyboardOpen = open ? 'true' : 'false';
+    } catch (error) {
+      reportSwallow(error, 'keyboard.setIntent'); /* detached */
+    }
   }
 
   private setMode(next: KeyboardMode): void {
-    try { this.root.dataset.keyboardMode = next; }
-    catch (error) { reportSwallow(error, 'keyboard.setMode'); /* detached */ }
+    try {
+      this.root.dataset.keyboardMode = next;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.setMode'); /* detached */
+    }
   }
 
   private publishInset(value: number): void {
@@ -203,7 +222,11 @@ class KeyboardLiftController implements KeyboardLift {
     this.appliedInset = next;
     this.root.style.setProperty('--keyboard-inset', next + 'px');
     for (const cb of this.insetListeners) {
-      try { cb(next); } catch (error) { reportSwallow(error, 'keyboard.publishInset'); /* isolated */ }
+      try {
+        cb(next);
+      } catch (error) {
+        reportSwallow(error, 'keyboard.publishInset'); /* isolated */
+      }
     }
     if (this.anchor.active) this.anchor.correct();
   }
@@ -215,15 +238,20 @@ class KeyboardLiftController implements KeyboardLift {
         const bottom = Number(element.getBoundingClientRect().bottom);
         if (Number.isFinite(bottom) && bottom > 0) return bottom;
       }
-    } catch (error) { reportSwallow(error, 'keyboard.shellBottom.measure'); /* detached */ }
+    } catch (error) {
+      reportSwallow(error, 'keyboard.shellBottom.measure'); /* detached */
+    }
     return Math.max(0, Number(window.innerHeight) || 0);
   }
 
   private viewportPan(): number {
-    const visualTop = this.viewport && Number.isFinite(Number(this.viewport.offsetTop))
-      ? Math.max(0, Number(this.viewport.offsetTop)) : 0;
+    const visualTop =
+      this.viewport && Number.isFinite(Number(this.viewport.offsetTop))
+        ? Math.max(0, Number(this.viewport.offsetTop))
+        : 0;
     const documentTop = Number.isFinite(Number(window.scrollY))
-      ? Math.max(0, Number(window.scrollY)) : 0;
+      ? Math.max(0, Number(window.scrollY))
+      : 0;
     return visualTop + documentTop;
   }
 
@@ -245,25 +273,44 @@ class KeyboardLiftController implements KeyboardLift {
       const scale = Number(this.viewport.scale);
       if (Number.isFinite(scale) && Math.abs(scale - 1) > 0.05) return null;
       const offsetTop = Number.isFinite(Number(this.viewport.offsetTop))
-        ? Math.max(0, Number(this.viewport.offsetTop)) : 0;
+        ? Math.max(0, Number(this.viewport.offsetTop))
+        : 0;
       return this.resolveMeasuredCoverage(getKeyboardInset(shell, height, offsetTop), shell);
     }
 
     /* Legacy WebViews expose no VisualViewport; native resize is the fallback. */
     const innerHeight = Number(window.innerHeight);
     if (!Number.isFinite(innerHeight) || innerHeight <= 0) return 0;
-    return this.resolveMeasuredCoverage(getKeyboardInset(shell, Math.max(0, innerHeight), 0), shell);
+    return this.resolveMeasuredCoverage(
+      getKeyboardInset(shell, Math.max(0, innerHeight), 0),
+      shell,
+    );
   }
 
   private clearTimers(): void {
-    if (this.blurTimer) { clearTimeout(this.blurTimer); this.blurTimer = 0; }
-    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = 0; }
-    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
+    if (this.blurTimer) {
+      clearTimeout(this.blurTimer);
+      this.blurTimer = 0;
+    }
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = 0;
+    }
+    if (this.finishTimer) {
+      clearTimeout(this.finishTimer);
+      this.finishTimer = 0;
+    }
   }
 
   private clearNativeTimers(): void {
-    if (this.nativeOpenTimer) { clearTimeout(this.nativeOpenTimer); this.nativeOpenTimer = 0; }
-    if (this.nativeHideTimer) { clearTimeout(this.nativeHideTimer); this.nativeHideTimer = 0; }
+    if (this.nativeOpenTimer) {
+      clearTimeout(this.nativeOpenTimer);
+      this.nativeOpenTimer = 0;
+    }
+    if (this.nativeHideTimer) {
+      clearTimeout(this.nativeHideTimer);
+      this.nativeHideTimer = 0;
+    }
   }
 
   private startSession(): void {
@@ -288,7 +335,9 @@ class KeyboardLiftController implements KeyboardLift {
       if (window.scrollY !== 0 || window.scrollX !== 0) {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       }
-    } catch (error) { reportSwallow(error, 'keyboard.finishSession.snapHome'); /* detached */ }
+    } catch (error) {
+      reportSwallow(error, 'keyboard.finishSession.snapHome'); /* detached */
+    }
   }
 
   private scheduleFinish(): void {
@@ -328,17 +377,22 @@ class KeyboardLiftController implements KeyboardLift {
 
   private applyOpenGeometry(target: number): void {
     this.cancelCloseConfirm();
-    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
+    if (this.finishTimer) {
+      clearTimeout(this.finishTimer);
+      this.finishTimer = 0;
+    }
     if (this.phaseValue === 'closing') this.setPhase('opening');
     this.publishInset(target);
     this.setMode('overlay');
-    if (Math.abs(target - (this.appliedInset > 0 ? this.appliedInset : 0)) <= 1) this.setPhase('open');
+    if (Math.abs(target - (this.appliedInset > 0 ? this.appliedInset : 0)) <= 1)
+      this.setPhase('open');
   }
 
   private applyClosingGeometry(target: number): void {
     if (target > RESTORE_SLOP_PX) return;
     if (this.phaseValue === 'open' || this.phaseValue === 'opening') this.scheduleCloseConfirm();
-    else if (this.phaseValue === 'closing' && !this.closeTimer && !this.finishTimer) this.scheduleCloseConfirm();
+    else if (this.phaseValue === 'closing' && !this.closeTimer && !this.finishTimer)
+      this.scheduleCloseConfirm();
   }
 
   private settleClosedGeometry(): void {
@@ -362,10 +416,22 @@ class KeyboardLiftController implements KeyboardLift {
   }
 
   private showNativeKeyboard(keyboardHeight?: number): void {
-    if (this.blurTimer) { clearTimeout(this.blurTimer); this.blurTimer = 0; }
-    if (this.closeTimer) { clearTimeout(this.closeTimer); this.closeTimer = 0; }
-    if (this.finishTimer) { clearTimeout(this.finishTimer); this.finishTimer = 0; }
-    if (this.nativeHideTimer) { clearTimeout(this.nativeHideTimer); this.nativeHideTimer = 0; }
+    if (this.blurTimer) {
+      clearTimeout(this.blurTimer);
+      this.blurTimer = 0;
+    }
+    if (this.closeTimer) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = 0;
+    }
+    if (this.finishTimer) {
+      clearTimeout(this.finishTimer);
+      this.finishTimer = 0;
+    }
+    if (this.nativeHideTimer) {
+      clearTimeout(this.nativeHideTimer);
+      this.nativeHideTimer = 0;
+    }
     const hint = Number(keyboardHeight);
     this.nativeHint = Number.isFinite(hint) && hint > 0 ? hint : null;
     this.startSession();
@@ -423,25 +489,44 @@ class KeyboardLiftController implements KeyboardLift {
     document.removeEventListener('focusin', this.onFocusIn);
     document.removeEventListener('focusout', this.onFocusOut);
     document.removeEventListener('visibilitychange', this.onGeometryEvent);
-    try { this.root.style.removeProperty('--keyboard-inset'); }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearInset'); /* detached */ }
-    try { delete this.root.dataset.keyboardOpen; }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearOpen'); /* detached */ }
-    try { delete this.root.dataset.keyboardPhase; }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearPhase'); /* detached */ }
-    try { delete this.root.dataset.keyboardMode; }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMode'); /* detached */ }
-    try { delete this.root.dataset.keyboardMotion; }
-    catch (error) { reportSwallow(error, 'keyboard.onGeometryEvent.clearMotionFlag'); /* detached */ }
+    try {
+      this.root.style.removeProperty('--keyboard-inset');
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearInset'); /* detached */
+    }
+    try {
+      delete this.root.dataset.keyboardOpen;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearOpen'); /* detached */
+    }
+    try {
+      delete this.root.dataset.keyboardPhase;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearPhase'); /* detached */
+    }
+    try {
+      delete this.root.dataset.keyboardMode;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearMode'); /* detached */
+    }
+    try {
+      delete this.root.dataset.keyboardMotion;
+    } catch (error) {
+      reportSwallow(error, 'keyboard.onGeometryEvent.clearMotionFlag'); /* detached */
+    }
     if (active === this) active = null;
   }
 }
 
 export function initKeyboardLift(options: KeyboardLiftOptions = {}): KeyboardLift {
-  const root = options.root === undefined
-    ? (typeof document !== 'undefined' ? document.documentElement : null)
-    : options.root;
-  if (!root || typeof window === 'undefined' || typeof document === 'undefined') return unavailableLift();
+  const root =
+    options.root === undefined
+      ? typeof document !== 'undefined'
+        ? document.documentElement
+        : null
+      : options.root;
+  if (!root || typeof window === 'undefined' || typeof document === 'undefined')
+    return unavailableLift();
   const controller = new KeyboardLiftController(root, options.container || null, options);
   active = controller;
   return controller;

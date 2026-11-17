@@ -13,7 +13,9 @@ import {
 
 test('auth state updates React-owned tab, field, error, visibility, and request status', () => {
   let notifications = 0;
-  const unsubscribe = subscribeAuthUi(() => { notifications += 1; });
+  const unsubscribe = subscribeAuthUi(() => {
+    notifications += 1;
+  });
 
   setAuthTab('register');
   setAuthField('authRegisterEmail', 'learner@example.test');

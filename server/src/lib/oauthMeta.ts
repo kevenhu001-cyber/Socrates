@@ -10,7 +10,8 @@ export const OAUTH_PUBLIC_ORIGIN = process.env.OAUTH_PUBLIC_ORIGIN || 'https://a
 /* RFC 9728 protected-resource metadata URL — advertised inside every
  * WWW-Authenticate challenge so an agent learns the full auth chain from a
  * single 401 (WorkOS auth-md spec: resource_metadata parameter). */
-export const OAUTH_PROTECTED_RESOURCE_METADATA_URL = 'https://topodrive.top/.well-known/oauth-protected-resource';
+export const OAUTH_PROTECTED_RESOURCE_METADATA_URL =
+  'https://topodrive.top/.well-known/oauth-protected-resource';
 export const AUTH_MD_URL = 'https://topodrive.top/auth.md';
 
 export const OAUTH_ISSUER = `${OAUTH_PUBLIC_ORIGIN}/api/oauth`;
@@ -58,10 +59,7 @@ export function buildAuthorizationServerMetadata(): Record<string, unknown> {
         credential_types_supported: ['oauth_client_credentials'],
       },
       identity_assertion: {
-        assertion_types_supported: [
-          'verified_email',
-          'urn:ietf:params:oauth:token-type:id-jag',
-        ],
+        assertion_types_supported: ['verified_email', 'urn:ietf:params:oauth:token-type:id-jag'],
         credential_types_supported: ['jwt_vc', 'id_token'],
         _note:
           'Reserved for future use. Anonymous (oauth_client_credentials) is the only identity type currently issued. When identity_assertion ships, agents will be able to present a verified_email assertion or an id-jag to upgrade their anonymous registration.',

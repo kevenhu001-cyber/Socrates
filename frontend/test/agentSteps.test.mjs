@@ -30,7 +30,10 @@ test('elapsed label uses the reference hour/minute/second shape and supplied loc
   assert.equal(formatElapsed(2_000), '用时 2s');
   assert.equal(formatElapsed(62_000), '用时 1m 2s');
   assert.equal(formatElapsed((1 * 3600 + 39 * 60 + 2) * 1000), '用时 1h 39m 2s');
-  assert.equal(formatElapsed(2_000, (key) => key === 'agent.elapsed' ? 'Elapsed' : key), 'Elapsed 2s');
+  assert.equal(
+    formatElapsed(2_000, (key) => (key === 'agent.elapsed' ? 'Elapsed' : key)),
+    'Elapsed 2s',
+  );
 });
 
 test('step labels follow projected kind and translated labels', () => {
@@ -39,7 +42,12 @@ test('step labels follow projected kind and translated labels', () => {
   assert.equal(agentStepLabel(step({ kind: 'file_change', status: 'done' })), '编辑了文件');
   assert.equal(agentStepLabel(step({ kind: 'search', status: 'running' })), '搜索了网页');
   assert.equal(agentStepLabel(step({ kind: 'mcp', status: 'done' })), '调用了 MCP 工具');
-  assert.equal(agentStepLabel(step({ kind: 'read' }), (key) => key === 'agent.stepRead' ? 'Read files' : key), 'Read files');
+  assert.equal(
+    agentStepLabel(step({ kind: 'read' }), (key) =>
+      key === 'agent.stepRead' ? 'Read files' : key,
+    ),
+    'Read files',
+  );
 });
 
 test('completed commands move into the label and failure/diff metadata stays concise', () => {

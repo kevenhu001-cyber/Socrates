@@ -16,7 +16,9 @@ import { ALL_SCOPES } from '../lib/authScopes.js';
 async function main() {
   const [ownerEmail, clientId, name, redirectUri, scopesArg] = process.argv.slice(2);
   if (!ownerEmail || !clientId || !name || !redirectUri) {
-    console.error('Usage: npx tsx src/scripts/seedOAuthClient.ts <ownerEmail> <clientId> <name> <redirectUri> [scopes]');
+    console.error(
+      'Usage: npx tsx src/scripts/seedOAuthClient.ts <ownerEmail> <clientId> <name> <redirectUri> [scopes]',
+    );
     process.exit(1);
   }
   if (!/^cli_[a-z0-9_-]{3,64}$/.test(clientId)) {
@@ -34,14 +36,21 @@ async function main() {
   void redirectUris;
 
   const scopes = scopesArg
-    ? scopesArg.split(',').map((s) => s.trim()).filter(Boolean)
+    ? scopesArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
     : [...ALL_SCOPES];
 
   initDb(process.env.DATABASE_URL!);
   const { getDb } = await import('../db/index.js');
   const db = getDb();
 
-  const [owner] = await db.select().from(users).where(eq(users.email, ownerEmail.toLowerCase())).limit(1);
+  const [owner] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, ownerEmail.toLowerCase()))
+    .limit(1);
   if (!owner) {
     console.error(`No user found with email ${ownerEmail}`);
     process.exit(1);
@@ -55,14 +64,20 @@ async function main() {
     ownerUserId: owner.id,
   });
 
-  console.log(JSON.stringify({
-    clientId,
-    clientSecret,
-    name,
-    redirectUris: [redirectUri],
-    allowedScopes: scopes,
-    note: 'Store clientSecret now — it is not recoverable.',
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        clientId,
+        clientSecret,
+        name,
+        redirectUris: [redirectUri],
+        allowedScopes: scopes,
+        note: 'Store clientSecret now — it is not recoverable.',
+      },
+      null,
+      2,
+    ),
+  );
   await closeDb();
 }
 

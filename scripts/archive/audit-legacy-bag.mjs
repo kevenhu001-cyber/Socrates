@@ -1,15 +1,15 @@
 // scripts/archive/audit-legacy-bag.mjs
 // v4: handles `const nsVar = getLegacyActions().ns; nsVar.field(...)` pattern.
 
-import { readFile } from "node:fs/promises";
-import { readdir, stat } from "node:fs/promises";
-import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
+import { readFile } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
+import { join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 
-const ROOT = dirname(fileURLToPath(import.meta.url)) + "/..";
-const ASSEMBLY_FILE = "frontend/src/main.ts";
-const REACT_ROOT = "frontend/src/react";
+const ROOT = dirname(fileURLToPath(import.meta.url)) + '/..';
+const ASSEMBLY_FILE = 'frontend/src/main.ts';
+const REACT_ROOT = 'frontend/src/react';
 
 const accessed = new Map();
 
@@ -33,17 +33,23 @@ function add(key, rel) {
 }
 
 for (const f of files) {
-  const rel = relative(ROOT, f).replaceAll("\\", "/");
-  const text = await readFile(f, "utf8");
+  const rel = relative(ROOT, f).replaceAll('\\', '/');
+  const text = await readFile(f, 'utf8');
 
   // Pattern 1: getLegacyActions().ns.field
-  const directRe = new RegExp(`getLegacyActions\\(\\)\\s*${seg}([a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`, "g");
+  const directRe = new RegExp(
+    `getLegacyActions\\(\\)\\s*${seg}([a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`,
+    'g',
+  );
   let m;
   while ((m = directRe.exec(text)) !== null) add(`${m[1]}.${m[2]}`, rel);
 
   // Pattern 2: const legacy = getLegacyActions(); legacy.ns.field
   // Pattern 2b: const nsVar = getLegacyActions().ns; nsVar.field
-  const assignedRe = new RegExp(`(?:const|let|var)\\s+([a-zA-Z_$][\\w$]*)\\s*=\\s*(?:getLegacyActions\\(\\)|[a-zA-Z_$][\\w$]*)\\s*(?:${seg}([a-zA-Z_$][\\w$]*))?`, "g");
+  const assignedRe = new RegExp(
+    `(?:const|let|var)\\s+([a-zA-Z_$][\\w$]*)\\s*=\\s*(?:getLegacyActions\\(\\)|[a-zA-Z_$][\\w$]*)\\s*(?:${seg}([a-zA-Z_$][\\w$]*))?`,
+    'g',
+  );
   const aliases = new Map(); // local var name -> "ns" (or null if assigned full legacy)
   let am;
   while ((am = assignedRe.exec(text)) !== null) {
@@ -56,23 +62,32 @@ for (const f of files) {
   for (const [n, ns] of aliases) {
     if (ns) {
       // nsVar.field — record ns.field
-      const re = new RegExp(`\\b${n}\\s*${seg}([a-zA-Z_$][\\w$]*)`, "g");
+      const re = new RegExp(`\\b${n}\\s*${seg}([a-zA-Z_$][\\w$]*)`, 'g');
       let cm;
       while ((cm = re.exec(text)) !== null) add(`${ns}.${cm[1]}`, rel);
     } else {
       // legacy.ns.field
-      const re = new RegExp(`\\b${n}\\s*${seg}([a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`, "g");
+      const re = new RegExp(
+        `\\b${n}\\s*${seg}([a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`,
+        'g',
+      );
       let cm;
       while ((cm = re.exec(text)) !== null) add(`${cm[1]}.${cm[2]}`, rel);
     }
   }
 
   // Pattern 3: const { field } = getLegacyActions().ns or { field } = legacy
-  const destructureRe = new RegExp(`(?:const|let|var)\\s*\\{([^}]+)\\}\\s*=\\s*(?:getLegacyActions\\(\\)|[a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`, "g");
+  const destructureRe = new RegExp(
+    `(?:const|let|var)\\s*\\{([^}]+)\\}\\s*=\\s*(?:getLegacyActions\\(\\)|[a-zA-Z_$][\\w$]*)\\s*${seg}([a-zA-Z_$][\\w$]*)`,
+    'g',
+  );
   let dm;
   while ((dm = destructureRe.exec(text)) !== null) {
     const ns = dm[2];
-    const fields = dm[1].split(",").map((s) => s.trim().split(/[:=]/)[0].trim()).filter(Boolean);
+    const fields = dm[1]
+      .split(',')
+      .map((s) => s.trim().split(/[:=]/)[0].trim())
+      .filter(Boolean);
     for (const fld of fields) add(`${ns}.${fld}`, rel);
   }
 
@@ -83,11 +98,14 @@ for (const f of files) {
   //            then messages.editUserMessage is matched by Pattern 2
 }
 
-const mainText = await readFile(join(ROOT, ASSEMBLY_FILE), "utf8");
-const startIdx = mainText.indexOf("window.__socratesLegacy = {");
-if (startIdx < 0) { console.error("assembly not found"); process.exit(1); }
+const mainText = await readFile(join(ROOT, ASSEMBLY_FILE), 'utf8');
+const startIdx = mainText.indexOf('window.__socratesLegacy = {');
+if (startIdx < 0) {
+  console.error('assembly not found');
+  process.exit(1);
+}
 const assemblyText = mainText.slice(startIdx);
-const lines = assemblyText.split("\n");
+const lines = assemblyText.split('\n');
 const definedNamespaces = new Map();
 let currentNs = null;
 for (const line of lines) {
@@ -103,7 +121,7 @@ for (const line of lines) {
   }
 }
 
-console.log("=== __socratesLegacy entry audit (v4) ===\n");
+console.log('=== __socratesLegacy entry audit (v4) ===\n');
 const total = [...definedNamespaces.values()].reduce((s, set) => s + set.size, 0);
 console.log(`Assembly: ${definedNamespaces.size} namespaces, ${total} fields\n`);
 
@@ -123,11 +141,11 @@ for (const [ns, fields] of [...definedNamespaces.entries()].sort()) {
 console.log(`Used : ${used.length}`);
 console.log(`Dead : ${dead.length}\n`);
 if (dead.length) {
-  console.log("=== DEAD fields ===");
+  console.log('=== DEAD fields ===');
   for (const d of dead) console.log(`  ${d.key}`);
-  console.log("");
+  console.log('');
 }
-console.log("=== USED fields ===");
+console.log('=== USED fields ===');
 for (const u of used) {
   console.log(`  ${u.key.padEnd(40)} readers=${u.readers.length}`);
 }

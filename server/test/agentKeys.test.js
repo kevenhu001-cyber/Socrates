@@ -32,11 +32,14 @@ before(async () => {
     initDb(process.env.DATABASE_URL);
     dbAvailable = true;
     const email = `${TEST_EMAIL_PREFIX}${crypto.randomUUID()}@invalid.test`;
-    const [row] = await getDb().insert(users).values({
-      email,
-      passwordHash: 'test-only-not-a-real-hash',
-      verifiedAt: new Date(),
-    }).returning();
+    const [row] = await getDb()
+      .insert(users)
+      .values({
+        email,
+        passwordHash: 'test-only-not-a-real-hash',
+        verifiedAt: new Date(),
+      })
+      .returning();
     testUser = row;
   } catch {
     dbAvailable = false;
@@ -46,7 +49,9 @@ before(async () => {
 after(async () => {
   try {
     if (testUser) await getDb().delete(users).where(eq(users.id, testUser.id));
-  } catch { /* best-effort cleanup */ }
+  } catch {
+    /* best-effort cleanup */
+  }
   if (dbAvailable) await closeDb();
 });
 
@@ -56,20 +61,24 @@ describe('agent key grammar & hashing', () => {
     assert.match(sha256Hex('abc'), /^[a-f0-9]{64}$/);
   });
 
-  test('issued credentials match the documented bearer grammar', { skip: !dbAvailable }, async () => {
-    const issued = await createAgentKey({
-      ownerUserId: testUser.id,
-      label: 'grammar-check',
-      scopes: ['chat:read'],
-    });
-    assert.equal(AGENT_KEY_RE.test(`Bearer ${issued.credential}`), true, issued.credential);
-    // keyId: ak_ + exactly 20 lowercase RFC-4648 base32 chars
-    const keyId = issued.keyId;
-    assert.match(keyId, /^ak_[a-z2-7]{20}$/);
-    // secret: 43 base64url chars (32 bytes)
-    const secret = issued.credential.slice(keyId.length + 1);
-    assert.match(secret, /^[A-Za-z0-9_-]{43}$/);
-  });
+  test(
+    'issued credentials match the documented bearer grammar',
+    { skip: !dbAvailable },
+    async () => {
+      const issued = await createAgentKey({
+        ownerUserId: testUser.id,
+        label: 'grammar-check',
+        scopes: ['chat:read'],
+      });
+      assert.equal(AGENT_KEY_RE.test(`Bearer ${issued.credential}`), true, issued.credential);
+      // keyId: ak_ + exactly 20 lowercase RFC-4648 base32 chars
+      const keyId = issued.keyId;
+      assert.match(keyId, /^ak_[a-z2-7]{20}$/);
+      // secret: 43 base64url chars (32 bytes)
+      const secret = issued.credential.slice(keyId.length + 1);
+      assert.match(secret, /^[A-Za-z0-9_-]{43}$/);
+    },
+  );
 });
 
 describe('verifyAgentKey round trip', { skip: !dbAvailable }, () => {
@@ -98,11 +107,25 @@ describe('verifyAgentKey round trip', { skip: !dbAvailable }, () => {
 
   test('rejects revoked and expired keys', async () => {
     const db = getDb();
-    const revoked = await createAgentKey({ ownerUserId: testUser.id, label: 'revoked', scopes: ['chat:read'] });
-    const expired = await createAgentKey({ ownerUserId: testUser.id, label: 'expired', scopes: ['chat:read'] });
+    const revoked = await createAgentKey({
+      ownerUserId: testUser.id,
+      label: 'revoked',
+      scopes: ['chat:read'],
+    });
+    const expired = await createAgentKey({
+      ownerUserId: testUser.id,
+      label: 'expired',
+      scopes: ['chat:read'],
+    });
 
-    await db.update(agentApiKeys).set({ revokedAt: new Date() }).where(eq(agentApiKeys.id, revoked.id));
-    await db.update(agentApiKeys).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(agentApiKeys.id, expired.id));
+    await db
+      .update(agentApiKeys)
+      .set({ revokedAt: new Date() })
+      .where(eq(agentApiKeys.id, revoked.id));
+    await db
+      .update(agentApiKeys)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(agentApiKeys.id, expired.id));
 
     assert.equal(await verifyAgentKey(revoked.credential), null);
     assert.equal(await verifyAgentKey(expired.credential), null);

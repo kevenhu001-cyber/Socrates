@@ -14,7 +14,8 @@ export interface CopyRef {
   fallback: string;
 }
 
-const SEARCH = /^(?:web_search|WebSearch|arxiv_search|zotero_search|notion_search_pages|gmail_search|qq_mail_search|search)$/;
+const SEARCH =
+  /^(?:web_search|WebSearch|arxiv_search|zotero_search|notion_search_pages|gmail_search|qq_mail_search|search)$/;
 
 const VERBS: ReadonlyArray<[RegExp, CopyRef]> = [
   [SEARCH, { key: 'tool.verb.search', fallback: 'Search the web' }],
@@ -27,11 +28,20 @@ const VERBS: ReadonlyArray<[RegExp, CopyRef]> = [
   [/^(?:image|read_image)$/, { key: 'tool.verb.image', fallback: 'View image' }],
   [/^Write$/, { key: 'tool.verb.write', fallback: 'Create file' }],
   [/^Edit$/, { key: 'tool.verb.edit', fallback: 'Edit file' }],
-  [/^(?:render_intelligent_ui|patch_intelligent_ui)$/, { key: 'tool.verb.visual', fallback: 'Create visual' }],
+  [
+    /^(?:render_intelligent_ui|patch_intelligent_ui)$/,
+    { key: 'tool.verb.visual', fallback: 'Create visual' },
+  ],
   [/^cite_sources$/, { key: 'tool.verb.cite', fallback: 'Check references' }],
-  [/^(?:workspace_agent|initialize_workspace)$/, { key: 'tool.verb.workspace', fallback: 'Work in workspace' }],
+  [
+    /^(?:workspace_agent|initialize_workspace)$/,
+    { key: 'tool.verb.workspace', fallback: 'Work in workspace' },
+  ],
   [/^create_site$/, { key: 'tool.verb.site', fallback: 'Publish site' }],
-  [/^(?:oc_|github_|gmail_|google_calendar_|todoist_|gitlab_|qq_mail_|gitee_|notion_)/, { key: 'tool.verb.connector', fallback: 'Use connected app' }],
+  [
+    /^(?:oc_|github_|gmail_|google_calendar_|todoist_|gitlab_|qq_mail_|gitee_|notion_)/,
+    { key: 'tool.verb.connector', fallback: 'Use connected app' },
+  ],
 ];
 
 export function toolVerbOf(name: string): CopyRef {
@@ -59,7 +69,9 @@ function field(input: unknown, ...keys: string[]): string {
 }
 
 export function clipText(text: string, max = 48): string {
-  const flat = String(text || '').replace(/\s+/g, ' ').trim();
+  const flat = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return flat.length > max ? flat.slice(0, max - 1) + '…' : flat;
 }
 
@@ -99,7 +111,13 @@ export function formatDurationMs(ms: number | null | undefined): string {
   return `${minutes}m ${String(total % 60).padStart(2, '0')}s`;
 }
 
-const STATUS_RANK: Record<ToolCardStatus, number> = { awaiting: 5, running: 4, error: 3, stopped: 2, done: 1 };
+const STATUS_RANK: Record<ToolCardStatus, number> = {
+  awaiting: 5,
+  running: 4,
+  error: 3,
+  stopped: 2,
+  done: 1,
+};
 
 /** One status for a run of calls: a pending decision outranks work in
  * flight, which outranks a failure, which outranks completion. */
@@ -135,7 +153,9 @@ export function faviconUrlOf(url: string): string | null {
 /** First letter of the host, for the monogram shown until (or instead of)
  * the favicon. */
 export function monogramOf(host: string): string {
-  const first = String(host || '').replace(/^www\./i, '').charAt(0);
+  const first = String(host || '')
+    .replace(/^www\./i, '')
+    .charAt(0);
   return /[a-z0-9]/i.test(first) ? first.toUpperCase() : '?';
 }
 
@@ -148,7 +168,9 @@ export interface SourceCardView {
   monogram: string;
 }
 
-export function sourceCardsOf(items: ReadonlyArray<{ title?: string; url?: string; host?: string }>): SourceCardView[] {
+export function sourceCardsOf(
+  items: ReadonlyArray<{ title?: string; url?: string; host?: string }>,
+): SourceCardView[] {
   return items.map((item, index) => {
     const url = /^https?:\/\//i.test(String(item.url || '')) ? String(item.url) : null;
     const host = item.host || (url ? hostOf(url) : '');

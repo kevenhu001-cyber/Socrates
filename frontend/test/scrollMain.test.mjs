@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { scrollMainToBottom, scheduleScrollMainToBottom } from '../src/ui/scroll.ts';
-import { stateStore } from '../src/state/store.ts';
+import { dispatchUi } from '../src/store/index.ts';
 
 function makeList() {
   return {
@@ -28,7 +28,7 @@ function withDocument(list, fn) {
 }
 
 function setScrolledAway(value) {
-  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value });
+  dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: value });
 }
 
 test('scrollMainToBottom stays put when the reader scrolled away', () => {

@@ -1,8 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  createSettledSplitter,
-} from '../src/render/streaming.ts';
+import { createSettledSplitter } from '../src/render/streaming.ts';
 import { formatMsgProgressive as renderProgressive } from '../src/render/markdown.ts';
 
 /* createSettledSplitter keeps the settled region as a grow-only list of

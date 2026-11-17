@@ -71,7 +71,9 @@ export function examQuestionFromRaw(raw: unknown, index: number): ExamQuestion |
     prompt,
     options: optionsOf(raw.opts),
     answer: text(raw.answer),
-    answers: Array.isArray(raw.answers) ? raw.answers.map((entry) => text(entry)).filter(Boolean) : [],
+    answers: Array.isArray(raw.answers)
+      ? raw.answers.map((entry) => text(entry)).filter(Boolean)
+      : [],
     explanation: text(raw.explanation),
   };
 }
@@ -103,24 +105,38 @@ export function examAnswersOf(data: ExamData | null | undefined): ExamAnswers {
 }
 
 function isAnswered(question: ExamQuestion, value: ExamAnswerValue | undefined): boolean {
-  if (question.type === 'multiple-choice') return typeof value === 'number' || (typeof value === 'string' && value.trim() !== '');
+  if (question.type === 'multiple-choice')
+    return typeof value === 'number' || (typeof value === 'string' && value.trim() !== '');
   return typeof value === 'string' ? value.trim() !== '' : value !== undefined;
 }
 
-export function examProgress(questions: ExamQuestion[], answers: ExamAnswers): { answered: number; total: number } {
-  return { answered: questions.filter((question) => isAnswered(question, answers[question.index])).length, total: questions.length };
+export function examProgress(
+  questions: ExamQuestion[],
+  answers: ExamAnswers,
+): { answered: number; total: number } {
+  return {
+    answered: questions.filter((question) => isAnswered(question, answers[question.index])).length,
+    total: questions.length,
+  };
 }
 
 /** Original indices of unanswered questions (submit gate). */
 export function missingExamAnswers(questions: ExamQuestion[], answers: ExamAnswers): number[] {
-  return questions.filter((question) => !isAnswered(question, answers[question.index])).map((question) => question.index);
+  return questions
+    .filter((question) => !isAnswered(question, answers[question.index]))
+    .map((question) => question.index);
 }
 
-function selectedOptionIndex(question: ExamQuestion, value: ExamAnswerValue | undefined): number | null {
+function selectedOptionIndex(
+  question: ExamQuestion,
+  value: ExamAnswerValue | undefined,
+): number | null {
   if (typeof value === 'number' && Number.isInteger(value)) return value;
   if (typeof value === 'string' && /^\d+$/.test(value.trim())) return Number(value.trim());
   if (typeof value === 'string' && question.options.length) {
-    const index = question.options.findIndex((option) => option.letter.toLowerCase() === value.trim().toLowerCase());
+    const index = question.options.findIndex(
+      (option) => option.letter.toLowerCase() === value.trim().toLowerCase(),
+    );
     return index >= 0 ? index : null;
   }
   return null;
@@ -135,13 +151,24 @@ export function gradeExam(questions: ExamQuestion[], answers: ExamAnswers): Exam
     let right = false;
     if (question.type === 'multiple-choice') {
       const selected = selectedOptionIndex(question, value);
-      right = selected !== null && question.options[selected] !== undefined && question.options[selected].letter === question.answer;
+      right =
+        selected !== null &&
+        question.options[selected] !== undefined &&
+        question.options[selected].letter === question.answer;
     } else if (question.type === 'fill-blank') {
-      const user = String(value ?? '').trim().toLowerCase();
+      const user = String(value ?? '')
+        .trim()
+        .toLowerCase();
       right = question.answers.some((accepted) => user === accepted.trim().toLowerCase());
     } else {
-      const user = String(value ?? '').trim().toLowerCase();
-      const keywords = question.answer.trim().toLowerCase().split(/[,\s]+/).filter((keyword) => keyword.length > 3);
+      const user = String(value ?? '')
+        .trim()
+        .toLowerCase();
+      const keywords = question.answer
+        .trim()
+        .toLowerCase()
+        .split(/[,\s]+/)
+        .filter((keyword) => keyword.length > 3);
       right = keywords.length === 0 || keywords.some((keyword) => user.includes(keyword));
     }
     results[question.index] = right;
@@ -152,7 +179,10 @@ export function gradeExam(questions: ExamQuestion[], answers: ExamAnswers): Exam
 }
 
 /** Fill/short answer as a trimmed string; MCQ as the selected option index. */
-export function examAnswerValue(question: ExamQuestion, value: ExamAnswerValue | undefined): ExamAnswerValue | undefined {
+export function examAnswerValue(
+  question: ExamQuestion,
+  value: ExamAnswerValue | undefined,
+): ExamAnswerValue | undefined {
   if (value === undefined) return undefined;
   if (question.type === 'multiple-choice') return selectedOptionIndex(question, value) ?? undefined;
   return typeof value === 'string' ? value : String(value);
@@ -160,7 +190,9 @@ export function examAnswerValue(question: ExamQuestion, value: ExamAnswerValue |
 
 /** Indices of answered questions, in question order (nav pills). */
 export function examAnsweredIndices(questions: ExamQuestion[], answers: ExamAnswers): number[] {
-  return questions.filter((question) => isAnswered(question, answers[question.index])).map((question) => question.index);
+  return questions
+    .filter((question) => isAnswered(question, answers[question.index]))
+    .map((question) => question.index);
 }
 
 /* ── results ────────────────────────────────────────────────────────────── */
@@ -205,12 +237,17 @@ function resultTypeLabel(type: ExamQuestionType, copy: ExamCopy): string {
 
 /** Results page data: graded rows plus the labels the host already translated.
  * Mirrors the web baseline's `buildExamResultsSnapshot`. */
-export function examResults(questions: ExamQuestion[], answers: ExamAnswers, copy: ExamCopy): ExamResults {
+export function examResults(
+  questions: ExamQuestion[],
+  answers: ExamAnswers,
+  copy: ExamCopy,
+): ExamResults {
   const grade = gradeExam(questions, answers);
   const rows: ExamResultQuestion[] = questions.map((question) => {
     const value = answers[question.index];
     const isCorrect = grade.results[question.index] === true;
-    const selected = question.type === 'multiple-choice' ? selectedOptionIndex(question, value) : null;
+    const selected =
+      question.type === 'multiple-choice' ? selectedOptionIndex(question, value) : null;
     return {
       type: question.type,
       typeLabel: resultTypeLabel(question.type, copy),
@@ -225,8 +262,12 @@ export function examResults(questions: ExamQuestion[], answers: ExamAnswers, cop
       })),
       isCorrect,
       statusLabel: isCorrect ? copy('Correct', '正确') : copy('Incorrect', '错误'),
-      expectedLabel: question.type === 'fill-blank' ? copy('Correct answer', '正确答案') : copy('Expected', '期望答案'),
-      expectedAnswer: question.type === 'fill-blank' ? question.answers.join(', ') : question.answer,
+      expectedLabel:
+        question.type === 'fill-blank'
+          ? copy('Correct answer', '正确答案')
+          : copy('Expected', '期望答案'),
+      expectedAnswer:
+        question.type === 'fill-blank' ? question.answers.join(', ') : question.answer,
       explanationLabel: copy('Explanation', '解释'),
       explanationText: question.explanation.trim(),
     };
@@ -243,7 +284,7 @@ export function examResults(questions: ExamQuestion[], answers: ExamAnswers, cop
 /* ── setup draft ────────────────────────────────────────────────────────── */
 
 export const EXAM_DIFFICULTIES = ['beginner', 'intermediate', 'hard', 'expert'] as const;
-export type ExamDifficulty = typeof EXAM_DIFFICULTIES[number];
+export type ExamDifficulty = (typeof EXAM_DIFFICULTIES)[number];
 
 export interface ExamQuestionTypeSelection {
   mc: boolean;
@@ -292,7 +333,11 @@ export function examTypesOf(selection: ExamQuestionTypeSelection | undefined): E
 
 /* ── generation ─────────────────────────────────────────────────────────── */
 
-export const EXAM_QUESTION_TYPES: ExamQuestionType[] = ['multiple-choice', 'fill-blank', 'short-answer'];
+export const EXAM_QUESTION_TYPES: ExamQuestionType[] = [
+  'multiple-choice',
+  'fill-blank',
+  'short-answer',
+];
 
 /** Canonical prompt language for a topic, matching the web baseline. */
 export function detectExamLanguage(topic: string): string {
@@ -312,7 +357,9 @@ export function detectExamLanguage(topic: string): string {
 
 /** Enabled question types in canonical cycle order; empty input = all. */
 export function examPromptTypes(types: ExamQuestionType[] | undefined): ExamQuestionType[] {
-  const enabled = EXAM_QUESTION_TYPES.filter((type) => (types && types.length ? types.includes(type) : true));
+  const enabled = EXAM_QUESTION_TYPES.filter((type) =>
+    types && types.length ? types.includes(type) : true,
+  );
   return enabled.length ? enabled : [...EXAM_QUESTION_TYPES];
 }
 
@@ -329,24 +376,27 @@ export interface ExamGenerationInput {
 
 /** The per-question system prompt, ported verbatim from the web baseline. */
 export function examGenerationPrompt(input: ExamGenerationInput): string {
-  const previous = input.previousPrompts && input.previousPrompts.length
-    ? `Already generated:\n${input.previousPrompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}`
-    : 'This is the first question.';
-  return `Generate ONE exam question as a JSON object.\n`
-    + `Topic: ${input.topic}.\n`
-    + `Difficulty: ${input.difficulty}.\n`
-    + `Question type: ${input.type}.\n`
-    + `Language: ${input.lang}.\n`
-    + `This is question ${input.index + 1} of ${input.count}.\n`
-    + `CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in ${input.lang}.\n`
-    + `Return ONLY the JSON — no markdown, no preamble, no commentary.\n`
-    + `The question object must have: q (string), type ("${input.type}").\n`
-    + `For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n`
-    + `For fill-blank add answers:[string] (acceptable fills).\n`
-    + `For short-answer add answer (key facts).\n`
-    + `Always add explanation (string). Use Markdown + $LaTeX$ in q text.\n\n`
-    + (input.instructions ? `Specifics: ${input.instructions}\n` : '')
-    + `Previously generated questions (DO NOT repeat the same topic angle):\n${previous}`;
+  const previous =
+    input.previousPrompts && input.previousPrompts.length
+      ? `Already generated:\n${input.previousPrompts.map((prompt, index) => `${index + 1}. ${prompt}`).join('\n')}`
+      : 'This is the first question.';
+  return (
+    `Generate ONE exam question as a JSON object.\n` +
+    `Topic: ${input.topic}.\n` +
+    `Difficulty: ${input.difficulty}.\n` +
+    `Question type: ${input.type}.\n` +
+    `Language: ${input.lang}.\n` +
+    `This is question ${input.index + 1} of ${input.count}.\n` +
+    `CRITICAL: EVERY field (q, opts[*].text, answer, answers[*], explanation) MUST be written in ${input.lang}.\n` +
+    `Return ONLY the JSON — no markdown, no preamble, no commentary.\n` +
+    `The question object must have: q (string), type ("${input.type}").\n` +
+    `For multiple-choice add opts:[{letter,text}] (4 options A-D) and answer (correct letter).\n` +
+    `For fill-blank add answers:[string] (acceptable fills).\n` +
+    `For short-answer add answer (key facts).\n` +
+    `Always add explanation (string). Use Markdown + $LaTeX$ in q text.\n\n` +
+    (input.instructions ? `Specifics: ${input.instructions}\n` : '') +
+    `Previously generated questions (DO NOT repeat the same topic angle):\n${previous}`
+  );
 }
 
 function cleanResponse(text: string): string {
@@ -378,13 +428,16 @@ export function parseExamQuestionResponse(response: string, index: number): Exam
           prompt,
           options: optionsOf(parsed.opts as JsonValue),
           answer: text(parsed.answer),
-          answers: Array.isArray(parsed.answers) ? (parsed.answers as JsonValue[]).map((entry) => text(entry)).filter(Boolean) : [],
+          answers: Array.isArray(parsed.answers)
+            ? (parsed.answers as JsonValue[]).map((entry) => text(entry)).filter(Boolean)
+            : [],
           explanation: text(parsed.explanation),
         };
       }
-    } catch { /* try the next brace start */ }
+    } catch {
+      /* try the next brace start */
+    }
     cursor = start + 1;
   }
   return null;
 }
-

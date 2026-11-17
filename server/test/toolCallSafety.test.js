@@ -69,10 +69,15 @@ test('normalizeToolCalls bounds the batch and makes IDs unique', () => {
 });
 
 test('normalizeToolCalls preserves object arguments from compatible providers', () => {
-  const [normalized] = normalizeToolCalls([{
-    id: 'object-args',
-    function: { name: 'web_search', arguments: { query: 'safe' } },
-  }], { iteration: 0, maxCalls: 1 });
+  const [normalized] = normalizeToolCalls(
+    [
+      {
+        id: 'object-args',
+        function: { name: 'web_search', arguments: { query: 'safe' } },
+      },
+    ],
+    { iteration: 0, maxCalls: 1 },
+  );
   assert.equal(normalized.function.arguments, '{"query":"safe"}');
 });
 
@@ -83,13 +88,24 @@ test('repairToolArguments leaves already-valid arguments untouched', () => {
   const repaired = repairToolArguments(valid, SEARCH_SCHEMA);
   assert.equal(repaired.ok, true);
   assert.deepEqual(repaired.value, {
-    query: 'safe', count: 5, sites: ['a.example'], freshness: 'week',
+    query: 'safe',
+    count: 5,
+    sites: ['a.example'],
+    freshness: 'week',
   });
   assert.deepEqual(repaired.repairs, []);
 });
 
 test('repairToolArguments unwraps a single-key argument wrapper', () => {
-  for (const key of ['input', 'arguments', 'args', 'parameters', 'params', 'tool_input', 'payload']) {
+  for (const key of [
+    'input',
+    'arguments',
+    'args',
+    'parameters',
+    'params',
+    'tool_input',
+    'payload',
+  ]) {
     const repaired = repairToolArguments(`{"${key}":{"query":"safe"}}`, SEARCH_SCHEMA);
     assert.equal(repaired.ok, true, `${key} should unwrap`);
     assert.deepEqual(repaired.value, { query: 'safe' });
@@ -123,7 +139,11 @@ test('repairToolArguments tolerates single quotes and Python literals', () => {
 
   const pythonish = repairToolArguments("{'query': 'safe', 'sites': None, 'strict': True}", {
     type: 'object',
-    properties: { query: { type: 'string' }, sites: { type: 'array', items: { type: 'string' } }, strict: { type: 'boolean' } },
+    properties: {
+      query: { type: 'string' },
+      sites: { type: 'array', items: { type: 'string' } },
+      strict: { type: 'boolean' },
+    },
     required: ['query'],
   });
   assert.equal(pythonish.ok, true);
@@ -164,7 +184,8 @@ test('repairToolArguments coerces scalars and delimited strings to arrays', () =
     ['a.example'],
   );
   assert.deepEqual(
-    repairToolArguments('{"query":"safe","sites":"a.example, b.example"}', SEARCH_SCHEMA).value.sites,
+    repairToolArguments('{"query":"safe","sites":"a.example, b.example"}', SEARCH_SCHEMA).value
+      .sites,
     ['a.example', 'b.example'],
   );
   assert.deepEqual(
@@ -185,7 +206,8 @@ test('repairToolArguments drops unknown keys only when additionalProperties is f
   assert.ok(strict.repairs.includes('dropped_unknown:nonsense'));
 
   const open = repairToolArguments('{"query":"safe","nonsense":1}', {
-    type: 'object', properties: { query: { type: 'string' } },
+    type: 'object',
+    properties: { query: { type: 'string' } },
   });
   assert.deepEqual(open.value, { query: 'safe', nonsense: 1 });
 });
@@ -196,7 +218,18 @@ test('repairToolArguments repairs nested object and array item properties', () =
     properties: {
       payload: {
         type: 'object',
-        properties: { series: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, data: { type: 'array', items: { type: 'number' } } } } } },
+        properties: {
+          series: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                data: { type: 'array', items: { type: 'number' } },
+              },
+            },
+          },
+        },
       },
     },
   };
@@ -227,17 +260,30 @@ test('repairToolArguments works without a schema', () => {
 /* ── resolveToolName ─────────────────────────────────────────────── */
 
 const REGISTRY_NAMES = [
-  'code_interpreter', 'workspace_agent', 'render_intelligent_ui',
-  'web_search', 'web_fetch', 'create_document',
+  'code_interpreter',
+  'workspace_agent',
+  'render_intelligent_ui',
+  'web_search',
+  'web_fetch',
+  'create_document',
 ];
 
 test('resolveToolName matches an exact registry name first', () => {
   const resolved = resolveToolName('web_search', REGISTRY_NAMES);
-  assert.deepEqual({ name: resolved.name, match: resolved.match }, { name: 'web_search', match: 'exact' });
+  assert.deepEqual(
+    { name: resolved.name, match: resolved.match },
+    { name: 'web_search', match: 'exact' },
+  );
 });
 
 test('resolveToolName strips provider namespace prefixes and separators', () => {
-  for (const requested of ['functions.web_search', 'tool:web_search', 'Web Search', 'web-search', 'default_api.web_search']) {
+  for (const requested of [
+    'functions.web_search',
+    'tool:web_search',
+    'Web Search',
+    'web-search',
+    'default_api.web_search',
+  ]) {
     const resolved = resolveToolName(requested, REGISTRY_NAMES);
     assert.equal(resolved.name, 'web_search', `${requested} should normalize`);
     assert.equal(resolved.match, 'normalized');
@@ -265,7 +311,15 @@ test('resolveToolName never aliases generic shell names onto workspace_agent', (
   /* bash/shell/terminal are the names a model hallucinates when it wants a
      direct shell; routing that guess to a real host-side agent turns a
      benign typo into an execution. They must surface as unknown_tool. */
-  for (const requested of ['bash', 'shell', 'terminal', 'run_command', 'execute_command', 'agent', 'workspace']) {
+  for (const requested of [
+    'bash',
+    'shell',
+    'terminal',
+    'run_command',
+    'execute_command',
+    'agent',
+    'workspace',
+  ]) {
     const resolved = resolveToolName(requested, REGISTRY_NAMES, { allowFuzzy: true });
     assert.equal(resolved.name, null, `${requested} must not resolve`);
     assert.equal(resolved.match, 'none');
@@ -284,7 +338,10 @@ test('resolveToolName uses edit distance only when fuzzy matching is allowed', (
   assert.equal(fuzzy.name, 'web_search');
   assert.equal(fuzzy.match, 'fuzzy');
   // Far-off names stay unresolved even with fuzzy matching on.
-  assert.equal(resolveToolName('delete_everything', REGISTRY_NAMES, { allowFuzzy: true }).name, null);
+  assert.equal(
+    resolveToolName('delete_everything', REGISTRY_NAMES, { allowFuzzy: true }).name,
+    null,
+  );
 });
 
 test('resolveToolName records the requested name for diagnostics', () => {
@@ -311,10 +368,15 @@ test('sanitizeToolCallForProtocol canonicalizes valid arguments and quarantines 
 });
 
 test('normalizeToolCalls gives nameless calls a valid protocol function name', () => {
-  const [normalized] = normalizeToolCalls([{
-    id: 'nameless',
-    function: { arguments: '{}' },
-  }], { iteration: 0, maxCalls: 1 });
+  const [normalized] = normalizeToolCalls(
+    [
+      {
+        id: 'nameless',
+        function: { arguments: '{}' },
+      },
+    ],
+    { iteration: 0, maxCalls: 1 },
+  );
   assert.equal(normalized.function.name, 'unknown_tool');
 });
 

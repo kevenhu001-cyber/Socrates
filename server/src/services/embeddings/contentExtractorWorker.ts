@@ -55,19 +55,35 @@ interface ExtractRequest {
 }
 
 function isExtractRequest(value: unknown): value is ExtractRequest {
-  return value !== null
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && 'id' in value && typeof value.id === 'string'
-    && 'type' in value && value.type === 'extract'
-    && 'html' in value && typeof value.html === 'string'
-    && 'url' in value && typeof value.url === 'string';
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'type' in value &&
+    value.type === 'extract' &&
+    'html' in value &&
+    typeof value.html === 'string' &&
+    'url' in value &&
+    typeof value.url === 'string'
+  );
 }
 
 const NOISE_SELECTORS = [
-  'script', 'style', 'noscript', 'svg', 'iframe',
-  'nav', 'header', 'footer', 'aside', 'form',
-  '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]',
+  'script',
+  'style',
+  'noscript',
+  'svg',
+  'iframe',
+  'nav',
+  'header',
+  'footer',
+  'aside',
+  'form',
+  '[role="navigation"]',
+  '[role="banner"]',
+  '[role="contentinfo"]',
   '[aria-hidden="true"]',
 ];
 
@@ -78,7 +94,10 @@ function cleanText(s: string) {
     .replace(/[ \t]+/g, ' ')
     .replace(/ ?\n ?/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
-    .replace(/\s*(Read more|Continue reading|Continue reading…|More info|Read full article)[\s\S]*$/i, '')
+    .replace(
+      /\s*(Read more|Continue reading|Continue reading…|More info|Read full article)[\s\S]*$/i,
+      '',
+    )
     .trim();
 }
 
@@ -86,9 +105,12 @@ function stripJunk(doc: DomDocument) {
   for (const sel of NOISE_SELECTORS) {
     try {
       doc.querySelectorAll(sel).forEach((el) => el.remove());
-    } catch { /* selector may be unsupported in some jsdom versions — skip */ }
+    } catch {
+      /* selector may be unsupported in some jsdom versions — skip */
+    }
   }
-  doc.querySelectorAll('[id*="ad-" i], [class*="ad-" i], [class*="advert" i], [id*="-banner" i]')
+  doc
+    .querySelectorAll('[id*="ad-" i], [class*="ad-" i], [class*="advert" i], [id*="-banner" i]')
     .forEach((el) => el.remove());
 }
 
@@ -102,8 +124,8 @@ function shape(article: ReadabilityArticle, doc: DomDocument, method: string, ma
   try {
     const meta = doc.querySelector(
       'meta[property="article:published_time"], meta[property="og:article:published_time"], ' +
-      'meta[name="pubdate"], meta[name="publishdate"], meta[name="date"], ' +
-      'meta[itemprop="datePublished"]'
+        'meta[name="pubdate"], meta[name="publishdate"], meta[name="date"], ' +
+        'meta[itemprop="datePublished"]',
     );
     const publishedAt = meta?.getAttribute('content');
     if (publishedAt) {
@@ -128,7 +150,9 @@ function shape(article: ReadabilityArticle, doc: DomDocument, method: string, ma
         }
       }
     }
-  } catch { /* date is best-effort */ }
+  } catch {
+    /* date is best-effort */
+  }
 
   return {
     title: (article.title || '').trim(),
@@ -153,7 +177,10 @@ function extractByTextDensity(doc: DomDocument, url: string, maxChars: number) {
     const links = el.querySelectorAll('a').length;
     const textLen = text.length;
     const score = textLen - links * 50;
-    if (score > bestScore) { bestScore = score; best = el; }
+    if (score > bestScore) {
+      bestScore = score;
+      best = el;
+    }
   }
   if (!best) return null;
 
@@ -178,7 +205,9 @@ function extractByTextDensity(doc: DomDocument, url: string, maxChars: number) {
   const excerptSrc = content.replace(/\s+/g, ' ').trim();
   const excerpt = excerptSrc.length > 320 ? excerptSrc.slice(0, 317) + '…' : excerptSrc;
   let siteName: string | null = null;
-  try { siteName = new URL(url).hostname; } catch {}
+  try {
+    siteName = new URL(url).hostname;
+  } catch {}
   return {
     title: title.trim(),
     byline: null,
@@ -201,12 +230,19 @@ function extract(html: string, url: string, maxChars: number) {
       virtualConsole: new VirtualConsole(),
       runScripts: 'outside-only',
     }).window.document as DomDocument;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
   stripJunk(doc);
   let article: ReadabilityArticle | null = null;
   try {
-    article = new Readability(doc as never, { debug: false, charThreshold: HARD_MIN_CHARS }).parse();
-  } catch { article = null; }
+    article = new Readability(doc as never, {
+      debug: false,
+      charThreshold: HARD_MIN_CHARS,
+    }).parse();
+  } catch {
+    article = null;
+  }
   if (article && article.textContent && article.textContent.trim().length >= HARD_MIN_CHARS) {
     return shape(article, doc, 'readability', maxChars);
   }
@@ -217,12 +253,17 @@ parentPort!.on('message', (value: unknown) => {
   if (!isExtractRequest(value)) return;
   const msg = value;
   try {
-    const maxChars = typeof msg.maxChars === 'number' && Number.isSafeInteger(msg.maxChars)
-      ? Math.min(1_000_000, Math.max(HARD_MAX_CHARS, msg.maxChars))
-      : HARD_MAX_CHARS;
+    const maxChars =
+      typeof msg.maxChars === 'number' && Number.isSafeInteger(msg.maxChars)
+        ? Math.min(1_000_000, Math.max(HARD_MAX_CHARS, msg.maxChars))
+        : HARD_MAX_CHARS;
     const payload = extract(msg.html, msg.url, maxChars);
     parentPort!.postMessage({ id: msg.id, type: 'result', payload });
   } catch (e) {
-    parentPort!.postMessage({ id: msg.id, type: 'error', message: String(e && (e as Error).message || e) });
+    parentPort!.postMessage({
+      id: msg.id,
+      type: 'error',
+      message: String((e && (e as Error).message) || e),
+    });
   }
 });

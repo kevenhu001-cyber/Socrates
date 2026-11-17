@@ -11,9 +11,16 @@ import { codeInterpreter } from '../../services/codeInterpreter/index.js';
 import { removeSessionWorkspacesForUser } from '../../services/tools/agentRuntime.js';
 import { getDb } from '../../db/index.js';
 import {
-  sessions, messages, mistakes, artifacts, artifactVersions,
-  agentRuns, usageEvents, files,
-  sessionTags, tags as tagsTable,
+  sessions,
+  messages,
+  mistakes,
+  artifacts,
+  artifactVersions,
+  agentRuns,
+  usageEvents,
+  files,
+  sessionTags,
+  tags as tagsTable,
 } from '../../db/schema/index.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { resourceScope } from '../../middleware/scopes.js';
@@ -22,7 +29,7 @@ import { durableJsonWrite } from '../../middleware/durableIdempotency.js';
 import { NotFound, BadRequest } from '../../lib/errors.js';
 import { sanitizeStoredHtml } from '../../lib/sanitize.js';
 import { isUuid } from '../../lib/validate.js';
-import { sanitizeLogValue } from '../../lib/log.js';
+import { sanitizeLogValue } from '../../lib/logRedaction.js';
 import { saveSession } from './save.js';
 
 const router = Router();
@@ -47,24 +54,25 @@ router.get('/', async (req, res, next) => {
      * No list consumer reads those — loadSession() fetches the detail
      * endpoint (GET /:id) before using them — so return only the
      * lightweight columns the Recents list / Cmd-K / chips render. */
-    const rows = await db.select({
-      id: sessions.id,
-      title: sessions.title,
-      topic: sessions.topic,
-      mode: sessions.mode,
-      phase: sessions.phase,
-      kind: sessions.kind,
-      domain: sessions.domain,
-      projectId: sessions.projectId,
-      pinned: sessions.pinned,
-      archivedAt: sessions.archivedAt,
-      preview: sessions.preview,
-      totalQ: sessions.totalQ,
-      currentNode: sessions.currentNode,
-      branchedFrom: sessions.branchedFrom,
-      updatedAt: sessions.updatedAt,
-      createdAt: sessions.createdAt,
-    })
+    const rows = await db
+      .select({
+        id: sessions.id,
+        title: sessions.title,
+        topic: sessions.topic,
+        mode: sessions.mode,
+        phase: sessions.phase,
+        kind: sessions.kind,
+        domain: sessions.domain,
+        projectId: sessions.projectId,
+        pinned: sessions.pinned,
+        archivedAt: sessions.archivedAt,
+        preview: sessions.preview,
+        totalQ: sessions.totalQ,
+        currentNode: sessions.currentNode,
+        branchedFrom: sessions.branchedFrom,
+        updatedAt: sessions.updatedAt,
+        createdAt: sessions.createdAt,
+      })
       .from(sessions)
       .where(and(...conditions))
       .orderBy(desc(sessions.updatedAt))
@@ -82,31 +90,30 @@ router.get('/', async (req, res, next) => {
      * empty while the Inbox counter still showed the session count. */
     const tagsBySession = new Map();
     if (sessionList.length > 0) {
-      const sessionIds = sessionList.map(s => s.id);
-      const tagRows = await db.select({
-        sessionId: sessionTags.sessionId,
-        name: tagsTable.name,
-      })
+      const sessionIds = sessionList.map((s) => s.id);
+      const tagRows = await db
+        .select({
+          sessionId: sessionTags.sessionId,
+          name: tagsTable.name,
+        })
         .from(sessionTags)
         .innerJoin(tagsTable, eq(tagsTable.id, sessionTags.tagId))
-        .where(and(
-          eq(tagsTable.userId, req.userId!),
-          inArray(sessionTags.sessionId, sessionIds),
-        ));
+        .where(and(eq(tagsTable.userId, req.userId!), inArray(sessionTags.sessionId, sessionIds)));
       for (const r of tagRows) {
         if (!tagsBySession.has(r.sessionId)) tagsBySession.set(r.sessionId, []);
         tagsBySession.get(r.sessionId).push(r.name);
       }
     }
-    const sessionListWithTags = sessionList.map(s => ({
+    const sessionListWithTags = sessionList.map((s) => ({
       ...s,
       tags: tagsBySession.get(s.id) || [],
     }));
 
     return res.json({ sessions: sessionListWithTags, nextCursor });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
-
 
 /* ─── Create / upsert session ─── */
 router.post('/', writeLimiter, saveSession);
@@ -150,16 +157,19 @@ async function sessionMessagePage(
 ) {
   const conditions = [eq(messages.sessionId, sessionId)];
   if (before && beforeId) {
-    conditions.push(sql`(${messages.createdAt}, ${messages.id}) < (${before}::timestamptz, ${beforeId}::uuid)`);
+    conditions.push(
+      sql`(${messages.createdAt}, ${messages.id}) < (${before}::timestamptz, ${beforeId}::uuid)`,
+    );
   }
-  const rows = await db.select({
-    ...messageDetailColumns,
-    /* created_at keeps microseconds; a JS Date (and toISOString) keeps only
+  const rows = await db
+    .select({
+      ...messageDetailColumns,
+      /* created_at keeps microseconds; a JS Date (and toISOString) keeps only
        milliseconds. A millisecond cursor would skip every older row that
        shares the oldest row's millisecond, so the cursor carries the exact
        stored instant as an ISO string with six fractional digits. */
-    cursorAt: sql<string>`to_char(${messages.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
-  })
+      cursorAt: sql<string>`to_char(${messages.createdAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`,
+    })
     .from(messages)
     .where(and(...conditions))
     .orderBy(desc(messages.createdAt), desc(messages.id))
@@ -170,9 +180,7 @@ async function sessionMessagePage(
   return {
     messages: page.map(({ cursorAt: _cursorAt, ...row }) => row),
     hasMore,
-    cursor: hasMore && oldest
-      ? { createdAt: oldest.cursorAt, id: oldest.id }
-      : null,
+    cursor: hasMore && oldest ? { createdAt: oldest.cursorAt, id: oldest.id } : null,
   };
 }
 
@@ -185,7 +193,9 @@ router.get('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    const [session] = await db.select().from(sessions)
+    const [session] = await db
+      .select()
+      .from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
       .limit(1);
     if (!session) throw new NotFound('Session not found');
@@ -205,7 +215,11 @@ router.get('/:id', async (req, res, next) => {
       return res.json({
         ...session,
         messages: page.messages,
-        messagesPage: { hasMore: page.hasMore, cursor: page.cursor, total: Number(total?.value ?? page.messages.length) },
+        messagesPage: {
+          hasMore: page.hasMore,
+          cursor: page.cursor,
+          total: Number(total?.value ?? page.messages.length),
+        },
       });
     }
 
@@ -220,13 +234,16 @@ router.get('/:id', async (req, res, next) => {
      * consumers are unaffected. Session-level heavy columns (kbNodes,
      * mistakes, teachingPlan, boundariesHistory) ARE consumed by the loader and
      * stay. */
-    const msgs = await db.select(messageDetailColumns)
+    const msgs = await db
+      .select(messageDetailColumns)
       .from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt);
 
     return res.json({ ...session, messages: msgs });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Session message page (cursor pagination) ───
@@ -252,21 +269,28 @@ router.get('/:id/messages', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    const [session] = await db.select({ id: sessions.id })
+    const [session] = await db
+      .select({ id: sessions.id })
       .from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
       .limit(1);
     if (!session) throw new NotFound('Session not found');
 
     const limit = clampPageLimit(req.query.limit);
-    const before = typeof req.query.before === 'string' && req.query.before ? req.query.before : null;
-    const beforeId = typeof req.query.beforeId === 'string' && req.query.beforeId ? req.query.beforeId : null;
-    if (Boolean(before) !== Boolean(beforeId)) throw new BadRequest('before and beforeId must be given together');
-    if (before && Number.isNaN(Date.parse(before))) throw new BadRequest('Invalid before timestamp');
+    const before =
+      typeof req.query.before === 'string' && req.query.before ? req.query.before : null;
+    const beforeId =
+      typeof req.query.beforeId === 'string' && req.query.beforeId ? req.query.beforeId : null;
+    if (Boolean(before) !== Boolean(beforeId))
+      throw new BadRequest('before and beforeId must be given together');
+    if (before && Number.isNaN(Date.parse(before)))
+      throw new BadRequest('Invalid before timestamp');
     if (beforeId && !isUuid(beforeId)) throw new BadRequest('Invalid beforeId');
 
     return res.json(await sessionMessagePage(db, session.id, limit, before, beforeId));
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Update session (partial) ─── */
@@ -274,12 +298,38 @@ router.patch('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    const [existing] = await db.select().from(sessions)
+    const [existing] = await db
+      .select()
+      .from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
       .limit(1);
     if (!existing) throw new NotFound('Session not found');
 
-    const allowed = ['title', 'topic', 'mode', 'phase', 'kind', 'examData', 'domain', 'pinned', 'projectId', 'kbNodes', 'mistakes', 'totalQ', 'currentNode', 'streamingText', 'streamingReasoning', 'teachingStage', 'currentExampleIdx', 'practiceAttempts', 'practicePhase', 'teachingPlan', 'boundariesHistory', 'mistakeFilter', 'branchedFrom'];
+    const allowed = [
+      'title',
+      'topic',
+      'mode',
+      'phase',
+      'kind',
+      'examData',
+      'domain',
+      'pinned',
+      'projectId',
+      'kbNodes',
+      'mistakes',
+      'totalQ',
+      'currentNode',
+      'streamingText',
+      'streamingReasoning',
+      'teachingStage',
+      'currentExampleIdx',
+      'practiceAttempts',
+      'practicePhase',
+      'teachingPlan',
+      'boundariesHistory',
+      'mistakeFilter',
+      'branchedFrom',
+    ];
     const patch: Record<string, unknown> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
@@ -288,18 +338,34 @@ router.patch('/:id', async (req, res, next) => {
       const assistantId = req.body.assistantId;
       if (assistantId !== null) {
         if (!isUuid(assistantId)) throw new BadRequest('Invalid assistantId');
-        const [ownedAssistant] = await db.select({ id: artifacts.id }).from(artifacts)
-          .where(and(eq(artifacts.id, assistantId), eq(artifacts.userId, req.userId!), eq(artifacts.type, 'assistant'))).limit(1);
-        if (!ownedAssistant) throw new BadRequest('assistantId does not reference one of your assistants');
+        const [ownedAssistant] = await db
+          .select({ id: artifacts.id })
+          .from(artifacts)
+          .where(
+            and(
+              eq(artifacts.id, assistantId),
+              eq(artifacts.userId, req.userId!),
+              eq(artifacts.type, 'assistant'),
+            ),
+          )
+          .limit(1);
+        if (!ownedAssistant)
+          throw new BadRequest('assistantId does not reference one of your assistants');
       }
       patch.assistantId = assistantId;
     }
     patch.updatedAt = new Date();
 
     await db.update(sessions).set(patch).where(eq(sessions.id, req.params.id));
-    const [updated] = await db.select().from(sessions).where(eq(sessions.id, req.params.id)).limit(1);
+    const [updated] = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, req.params.id))
+      .limit(1);
     return res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Delete / purge session ─── */
@@ -329,20 +395,21 @@ router.delete('/:id', async (req, res, next) => {
        * (which blocked on our row-level lock during the delete) would
        * re-check after our commit, find no row, and generate a fresh
        * UUID — creating a duplicate session. */
-      const [session] = await tx.select({ id: sessions.id })
+      const [session] = await tx
+        .select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
         .for('update')
         .limit(1);
       if (!session) throw new NotFound('Session not found');
 
-      const sessionArtifacts = await tx.select({ id: artifacts.id })
+      const sessionArtifacts = await tx
+        .select({ id: artifacts.id })
         .from(artifacts)
         .where(eq(artifacts.sessionId, req.params.id));
       if (sessionArtifacts.length > 0) {
-        const artIds = sessionArtifacts.map(a => a.id);
-        await tx.delete(artifactVersions)
-          .where(inArray(artifactVersions.artifactId, artIds));
+        const artIds = sessionArtifacts.map((a) => a.id);
+        await tx.delete(artifactVersions).where(inArray(artifactVersions.artifactId, artIds));
       }
       await tx.delete(artifacts).where(eq(artifacts.sessionId, req.params.id));
 
@@ -350,14 +417,16 @@ router.delete('/:id', async (req, res, next) => {
       await tx.delete(agentRuns).where(eq(agentRuns.sessionId, req.params.id));
       await tx.delete(usageEvents).where(eq(usageEvents.sessionId, req.params.id));
 
-      const sessionFiles = await tx.select({ storagePath: files.storagePath })
+      const sessionFiles = await tx
+        .select({ storagePath: files.storagePath })
         .from(files)
         .where(eq(files.sessionId, req.params.id));
-      deletedFilePaths = sessionFiles.map(f => f.storagePath);
+      deletedFilePaths = sessionFiles.map((f) => f.storagePath);
       await tx.delete(files).where(eq(files.sessionId, req.params.id));
 
       await tx.delete(messages).where(eq(messages.sessionId, req.params.id));
-      await tx.delete(sessions)
+      await tx
+        .delete(sessions)
         .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)));
     });
 
@@ -371,11 +440,15 @@ router.delete('/:id', async (req, res, next) => {
        would catch that case anyway. */
     await codeInterpreter.reapSessionScratch(req.params.id, req.userId!).catch(() => {});
     await removeSessionWorkspacesForUser(req.userId!, [req.params.id]).catch((err) => {
-      console.warn(`[sessions] workspace cleanup deferred for ${sanitizeLogValue(req.params.id, 64)}: ${sanitizeLogValue((err as Error).message, 300)}`);
+      console.warn(
+        `[sessions] workspace cleanup deferred for ${sanitizeLogValue(req.params.id, 64)}: ${sanitizeLogValue((err as Error).message, 300)}`,
+      );
     });
 
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Bulk delete: clear every non-archived session for the caller ─── */
@@ -386,19 +459,20 @@ router.delete('/', async (req, res, next) => {
     let allDeletedIds: string[] = [];
 
     const deleted = await db.transaction(async (tx) => {
-      const rows = await tx.select({ id: sessions.id })
+      const rows = await tx
+        .select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.userId, req.userId!), isNull(sessions.archivedAt)));
-      const ids = rows.map(r => r.id);
+      const ids = rows.map((r) => r.id);
       if (ids.length === 0) return 0;
 
-      const bulkArtifacts = await tx.select({ id: artifacts.id })
+      const bulkArtifacts = await tx
+        .select({ id: artifacts.id })
         .from(artifacts)
         .where(inArray(artifacts.sessionId, ids));
       if (bulkArtifacts.length > 0) {
-        const artIds = bulkArtifacts.map(a => a.id);
-        await tx.delete(artifactVersions)
-          .where(inArray(artifactVersions.artifactId, artIds));
+        const artIds = bulkArtifacts.map((a) => a.id);
+        await tx.delete(artifactVersions).where(inArray(artifactVersions.artifactId, artIds));
       }
       await tx.delete(artifacts).where(inArray(artifacts.sessionId, ids));
 
@@ -406,14 +480,16 @@ router.delete('/', async (req, res, next) => {
       await tx.delete(agentRuns).where(inArray(agentRuns.sessionId, ids));
       await tx.delete(usageEvents).where(inArray(usageEvents.sessionId, ids));
 
-      const bulkFiles = await tx.select({ storagePath: files.storagePath })
+      const bulkFiles = await tx
+        .select({ storagePath: files.storagePath })
         .from(files)
         .where(inArray(files.sessionId, ids));
-      allDeletedPaths = bulkFiles.map(f => f.storagePath);
+      allDeletedPaths = bulkFiles.map((f) => f.storagePath);
       await tx.delete(files).where(inArray(files.sessionId, ids));
 
       await tx.delete(messages).where(inArray(messages.sessionId, ids));
-      await tx.delete(sessions)
+      await tx
+        .delete(sessions)
         .where(and(eq(sessions.userId, req.userId!), isNull(sessions.archivedAt)));
       allDeletedIds = ids;
       return ids.length;
@@ -426,30 +502,46 @@ router.delete('/', async (req, res, next) => {
     /* P_session-scoped-scratch — reap every cleared session's
        scratch dir. Parallel: each fs.rm is independent. */
     await Promise.all(
-      allDeletedIds.map(id => codeInterpreter.reapSessionScratch(id, req.userId!).catch(() => {}))
+      allDeletedIds.map((id) =>
+        codeInterpreter.reapSessionScratch(id, req.userId!).catch(() => {}),
+      ),
     );
     await removeSessionWorkspacesForUser(req.userId!, allDeletedIds).catch((err) => {
       console.warn(`[sessions] bulk workspace cleanup deferred: ${(err as Error).message}`);
     });
 
     return res.json({ ok: true, deleted });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Archive ─── */
 router.post('/:id/archive', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
-    return await durableJsonWrite(req, res, `session.archive.v1:${req.params.id.toLowerCase()}`, async (tx) => {
-      const [session] = await tx.select().from(sessions)
-        .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
-        .for('update').limit(1);
-      if (!session) throw new NotFound('Session not found');
-      await tx.update(sessions).set({ archivedAt: new Date(), updatedAt: new Date() })
-        .where(eq(sessions.id, req.params.id));
-      return { status: 200, body: { ok: true } };
-    });
-  } catch (err) { next(err); }
+    return await durableJsonWrite(
+      req,
+      res,
+      `session.archive.v1:${req.params.id.toLowerCase()}`,
+      async (tx) => {
+        const [session] = await tx
+          .select()
+          .from(sessions)
+          .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
+          .for('update')
+          .limit(1);
+        if (!session) throw new NotFound('Session not found');
+        await tx
+          .update(sessions)
+          .set({ archivedAt: new Date(), updatedAt: new Date() })
+          .where(eq(sessions.id, req.params.id));
+        return { status: 200, body: { ok: true } };
+      },
+    );
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Unarchive ─── */
@@ -457,14 +549,20 @@ router.delete('/:id/archive', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('Session not found');
     const db = getDb();
-    const [session] = await db.select().from(sessions)
+    const [session] = await db
+      .select()
+      .from(sessions)
       .where(and(eq(sessions.id, req.params.id), eq(sessions.userId, req.userId!)))
       .limit(1);
     if (!session) throw new NotFound('Session not found');
-    await db.update(sessions).set({ archivedAt: null, updatedAt: new Date() })
+    await db
+      .update(sessions)
+      .set({ archivedAt: null, updatedAt: new Date() })
       .where(eq(sessions.id, req.params.id));
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

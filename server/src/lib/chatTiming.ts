@@ -9,7 +9,9 @@ export function createChatTiming(now: () => number = () => performance.now()) {
       return true;
     },
     snapshot(): Record<string, number> {
-      return Object.fromEntries(Object.entries(milestones).map(([name, ms]) => [name, Math.round(ms)]));
+      return Object.fromEntries(
+        Object.entries(milestones).map(([name, ms]) => [name, Math.round(ms)]),
+      );
     },
   };
 }

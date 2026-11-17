@@ -1,4 +1,4 @@
-type FeatureRuntime = typeof import("./promptTemplates.impl.ts");
+type FeatureRuntime = typeof import('./promptTemplates.impl.ts');
 
 /* Lightweight facade for the Skills / prompt-templates surface.
  *
@@ -13,7 +13,10 @@ function loadPromptTemplatesImpl() {
   if (_impl) return Promise.resolve(_impl);
   if (!_implPromise) {
     _implPromise = import('./promptTemplates.impl.ts')
-      .then(function (module) { _impl = module; return module; })
+      .then(function (module) {
+        _impl = module;
+        return module;
+      })
       .catch(function (error) {
         _implPromise = null;
         console.error('[prompt-templates] failed to load feature runtime', error);
@@ -23,38 +26,66 @@ function loadPromptTemplatesImpl() {
   return _implPromise;
 }
 
-function runPromptTemplatesAction(action: { (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; }) {
-  void loadPromptTemplatesImpl().then(action).catch(function () { /* loader logs */ });
+function runPromptTemplatesAction(action: {
+  (module: FeatureRuntime): void;
+  (module: FeatureRuntime): void;
+  (module: FeatureRuntime): void;
+  (module: FeatureRuntime): void;
+  (module: FeatureRuntime): void;
+}) {
+  void loadPromptTemplatesImpl()
+    .then(action)
+    .catch(function () {
+      /* loader logs */
+    });
 }
 
 function openPromptTemplatesModal() {
-  runPromptTemplatesAction(function (module: FeatureRuntime) { module.openPromptTemplatesModal(); });
+  runPromptTemplatesAction(function (module: FeatureRuntime) {
+    module.openPromptTemplatesModal();
+  });
 }
 
 function closePromptTemplatesModal() {
   if (_impl) _impl.closePromptTemplatesModal();
-  else if (_implPromise) void _implPromise.then(function (module: FeatureRuntime) { module.closePromptTemplatesModal(); }).catch(() => undefined);
+  else if (_implPromise)
+    void _implPromise
+      .then(function (module: FeatureRuntime) {
+        module.closePromptTemplatesModal();
+      })
+      .catch(() => undefined);
 }
 
 function renderPromptTemplatesModal() {
-  runPromptTemplatesAction(function (module: FeatureRuntime) { module.renderPromptTemplatesModal(); });
+  runPromptTemplatesAction(function (module: FeatureRuntime) {
+    module.renderPromptTemplatesModal();
+  });
 }
 
 function onPromptRowDelete(id: string) {
-  runPromptTemplatesAction(function (module: FeatureRuntime) { module.onPromptRowDelete(id); });
+  runPromptTemplatesAction(function (module: FeatureRuntime) {
+    module.onPromptRowDelete(id);
+  });
 }
 
-function openPromptTemplateEditor(id?: string|undefined) {
-  runPromptTemplatesAction(function (module: FeatureRuntime) { module.openPromptTemplateEditor(id); });
+function openPromptTemplateEditor(id?: string | undefined) {
+  runPromptTemplatesAction(function (module: FeatureRuntime) {
+    module.openPromptTemplateEditor(id);
+  });
 }
 
 function onPromptTemplateEditorSave(id: string) {
-  runPromptTemplatesAction(function (module: FeatureRuntime) { module.onPromptTemplateEditorSave(id); });
+  runPromptTemplatesAction(function (module: FeatureRuntime) {
+    module.onPromptTemplateEditorSave(id);
+  });
 }
 
 export {
   loadPromptTemplatesImpl,
-  openPromptTemplatesModal, closePromptTemplatesModal, renderPromptTemplatesModal,
-  onPromptRowDelete, openPromptTemplateEditor,
+  openPromptTemplatesModal,
+  closePromptTemplatesModal,
+  renderPromptTemplatesModal,
+  onPromptRowDelete,
+  openPromptTemplateEditor,
   onPromptTemplateEditorSave,
 };

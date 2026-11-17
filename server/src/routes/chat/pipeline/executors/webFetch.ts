@@ -8,9 +8,9 @@
  *     spending one tool iteration per page.
  */
 
-import {fetchBatch} from '../../../../services/util/fetchBatch.js';
-import type {ToolExecutionResult, ToolExecutor, ToolExecutorContext} from './types.js';
-import type {ToolCall, ToolResult} from '../types.js';
+import { fetchBatch } from '../../../../services/util/fetchBatch.js';
+import type { ToolExecutionResult, ToolExecutor, ToolExecutorContext } from './types.js';
+import type { ToolCall, ToolResult } from '../types.js';
 
 const MAX_PAGE_CHARS = 30_000;
 const DEFAULT_PAGE_CHARS = 20_000;
@@ -18,7 +18,17 @@ const SOURCE_MAX_BYTES = 1_000_000;
 const PAGE_CACHE_TTL_MS = 15 * 60_000;
 const PAGE_CACHE_ENTRIES = 64;
 const MAX_BATCH_URLS = 4;
-type FetchedPage = { ok?: boolean; url?: string; title?: string; content?: string; pageDate?: string; truncated?: boolean; reason?: string; code?: string; pageCount?: number };
+type FetchedPage = {
+  ok?: boolean;
+  url?: string;
+  title?: string;
+  content?: string;
+  pageDate?: string;
+  truncated?: boolean;
+  reason?: string;
+  code?: string;
+  pageCount?: number;
+};
 const pageCache = new Map<string, { page: FetchedPage; fetchedAt: number }>();
 
 function cachePage(url: string, page: FetchedPage) {
@@ -40,31 +50,54 @@ function cachedPage(url: string): FetchedPage | undefined {
   return cached.page;
 }
 
-function failEmit(ctx: ToolExecutorContext, call: ToolCall, errorCode: string, retryable: boolean, detail?: string, userMessage?: string): ToolExecutionResult {
+function failEmit(
+  ctx: ToolExecutorContext,
+  call: ToolCall,
+  errorCode: string,
+  retryable: boolean,
+  detail?: string,
+  userMessage?: string,
+): ToolExecutionResult {
   const result: ToolResult = { status: 'failed', error: errorCode, errorCode, retryable, detail };
   ctx.emitter.event('tool_result', {
-    id: call.id, ok: false, status: 'failed', output: '',
-    error: errorCode, errorCode, retryable,
-    userMessage, detail,
+    id: call.id,
+    ok: false,
+    status: 'failed',
+    output: '',
+    error: errorCode,
+    errorCode,
+    retryable,
+    userMessage,
+    detail,
   });
   return { result };
 }
 
 /** Model-facing body for one fetched page (shared by both modes). */
-function formatPageBlock(page: FetchedPage, requestedUrl: string, offset: number, maxChars: number): { block: string; end: number; hasMore: boolean } {
+function formatPageBlock(
+  page: FetchedPage,
+  requestedUrl: string,
+  offset: number,
+  maxChars: number,
+): { block: string; end: number; hasMore: boolean } {
   const rawContent = String(page.content || '');
   const end = Math.min(rawContent.length, offset + maxChars);
   const hasMore = end < rawContent.length;
   const sourceTruncated = Boolean(page.truncated);
   const body = rawContent.slice(offset, end);
-  const header = `[title: ${page.title || '(untitled)'}]\n[url: ${page.url || requestedUrl}]`
-    + (page.pageDate ? `\n[date: ${page.pageDate}]` : '')
-    + (page.pageCount ? `\n[pdf_pages: ${page.pageCount}]` : '')
-    + `\n[range: ${offset}-${end} of ${rawContent.length} available chars]`
-    + `\n[has_more: ${hasMore ? 'yes' : 'no'}]`
-    + (hasMore ? `\n[next_offset: ${end}]` : '')
-    + (hasMore || sourceTruncated ? `\n[truncated: showing ${offset}-${end} of ${rawContent.length} available chars]` : '')
-    + (sourceTruncated ? '\n[source_truncated: yes — text beyond the fetch limit is unavailable]' : '');
+  const header =
+    `[title: ${page.title || '(untitled)'}]\n[url: ${page.url || requestedUrl}]` +
+    (page.pageDate ? `\n[date: ${page.pageDate}]` : '') +
+    (page.pageCount ? `\n[pdf_pages: ${page.pageCount}]` : '') +
+    `\n[range: ${offset}-${end} of ${rawContent.length} available chars]` +
+    `\n[has_more: ${hasMore ? 'yes' : 'no'}]` +
+    (hasMore ? `\n[next_offset: ${end}]` : '') +
+    (hasMore || sourceTruncated
+      ? `\n[truncated: showing ${offset}-${end} of ${rawContent.length} available chars]`
+      : '') +
+    (sourceTruncated
+      ? '\n[source_truncated: yes — text beyond the fetch limit is unavailable]'
+      : '');
   return { block: `${header}\n\n${body || '(no extractable text)'}`, end, hasMore };
 }
 
@@ -75,25 +108,52 @@ export const executeWebFetch: ToolExecutor = async (
 ): Promise<ToolExecutionResult> => {
   const { emitter } = ctx;
 
-  const rawList: unknown[] = Array.isArray(args.urls) && args.urls.length
-    ? args.urls
-    : (args.url != null ? [args.url] : (args.link != null ? [args.link] : (args.href != null ? [args.href] : [])));
+  const rawList: unknown[] =
+    Array.isArray(args.urls) && args.urls.length
+      ? args.urls
+      : args.url != null
+        ? [args.url]
+        : args.link != null
+          ? [args.link]
+          : args.href != null
+            ? [args.href]
+            : [];
   const urls = rawList
     .map((u) => String(u || '').trim())
     .filter((u) => u.length > 0)
     .slice(0, MAX_BATCH_URLS);
   if (!urls.length) {
-    return failEmit(ctx, call, 'missing_url', false, 'Provide one absolute http(s) URL via `url`, or up to 4 via `urls`.', '缺少要抓取的网址。');
+    return failEmit(
+      ctx,
+      call,
+      'missing_url',
+      false,
+      'Provide one absolute http(s) URL via `url`, or up to 4 via `urls`.',
+      '缺少要抓取的网址。',
+    );
   }
 
   const offset = Number(args.offset ?? 0);
   const maxChars = Number(args.max_chars ?? DEFAULT_PAGE_CHARS);
-  if (!Number.isSafeInteger(offset) || offset < 0 || offset > SOURCE_MAX_BYTES || !Number.isSafeInteger(maxChars) || maxChars < 1 || maxChars > MAX_PAGE_CHARS) {
+  if (
+    !Number.isSafeInteger(offset) ||
+    offset < 0 ||
+    offset > SOURCE_MAX_BYTES ||
+    !Number.isSafeInteger(maxChars) ||
+    maxChars < 1 ||
+    maxChars > MAX_PAGE_CHARS
+  ) {
     return failEmit(ctx, call, 'invalid_paging_arguments', false);
   }
   const batch = urls.length > 1;
   if (batch && offset > 0) {
-    return failEmit(ctx, call, 'invalid_paging_arguments', false, 'offset paging requires a single `url`; batch fetches always start each page at 0.');
+    return failEmit(
+      ctx,
+      call,
+      'invalid_paging_arguments',
+      false,
+      'offset paging requires a single `url`; batch fetches always start each page at 0.',
+    );
   }
 
   emitter.event('tool_progress', { id: call.id, phase: 'fetching', elapsedMs: 0 });
@@ -106,13 +166,19 @@ export const executeWebFetch: ToolExecutor = async (
   const pages = new Map<string, FetchedPage | undefined>();
   const missing: string[] = [];
   for (const url of urls) {
-    const hit = (batch || offset > 0) ? cachedPage(url) : undefined;
+    const hit = batch || offset > 0 ? cachedPage(url) : undefined;
     if (hit) pages.set(url, hit);
     else missing.push(url);
   }
 
   if (offset > 0 && !batch && missing.length) {
-    return failEmit(ctx, call, 'page_cache_miss', false, 'The earlier page snapshot is unavailable. Fetch this URL again with offset 0 before continuing.');
+    return failEmit(
+      ctx,
+      call,
+      'page_cache_miss',
+      false,
+      'The earlier page snapshot is unavailable. Fetch this URL again with offset 0 before continuing.',
+    );
   }
 
   if (missing.length) {
@@ -132,19 +198,40 @@ export const executeWebFetch: ToolExecutor = async (
     if (page && page.ok) {
       const rawContent = String(page.content || '');
       if (offset > 0 && offset >= rawContent.length) {
-        return failEmit(ctx, call, 'offset_out_of_range', false, `Available text has ${rawContent.length} characters. Restart at offset 0 if you need a fresh page.`);
+        return failEmit(
+          ctx,
+          call,
+          'offset_out_of_range',
+          false,
+          `Available text has ${rawContent.length} characters. Restart at offset 0 if you need a fresh page.`,
+        );
       }
       const { block, end, hasMore } = formatPageBlock(page, targetUrl, offset, maxChars);
       const sourceTruncated = Boolean(page.truncated);
-      const source = ctx.publicRuntime?.registerSources([{ url: page.url || targetUrl, title: page.title, snippet: rawContent.slice(offset, Math.min(end, offset + 600)) }])[0];
+      const source = ctx.publicRuntime?.registerSources([
+        {
+          url: page.url || targetUrl,
+          title: page.title,
+          snippet: rawContent.slice(offset, Math.min(end, offset + 600)),
+        },
+      ])[0];
       const citedBlock = source ? `Source ID: ${source.id}\n${block}` : block;
       const result: ToolResult = { status: 'completed', output: citedBlock, retryable: false };
       emitter.event('tool_result', {
-        id: call.id, ok: true, status: 'completed', output: citedBlock,
-        url: page.url || targetUrl, title: page.title || '',
-        offset, totalChars: rawContent.length, returnedChars: end - offset,
-        hasMore, nextOffset: hasMore ? end : undefined, sourceTruncated,
-        truncated: hasMore || sourceTruncated, retryable: false,
+        id: call.id,
+        ok: true,
+        status: 'completed',
+        output: citedBlock,
+        url: page.url || targetUrl,
+        title: page.title || '',
+        offset,
+        totalChars: rawContent.length,
+        returnedChars: end - offset,
+        hasMore,
+        nextOffset: hasMore ? end : undefined,
+        sourceTruncated,
+        truncated: hasMore || sourceTruncated,
+        retryable: false,
         ...(page.pageCount ? { pageCount: page.pageCount } : {}),
       });
       return { result };
@@ -166,9 +253,21 @@ export const executeWebFetch: ToolExecutor = async (
     if (page && page.ok) {
       anyOk = true;
       const { block } = formatPageBlock(page, url, 0, maxChars);
-      const source = ctx.publicRuntime?.registerSources([{ url: page.url || url, title: page.title, snippet: String(page.content || '').slice(0, 600) }])[0];
+      const source = ctx.publicRuntime?.registerSources([
+        {
+          url: page.url || url,
+          title: page.title,
+          snippet: String(page.content || '').slice(0, 600),
+        },
+      ])[0];
       blocks.push(prefix + (source ? `Source ID: ${source.id}\n` : '') + block);
-      summary.push({ url: page.url || url, title: page.title || '', ok: true, chars: String(page.content || '').length, ...(page.pageCount ? { pageCount: page.pageCount } : {}) });
+      summary.push({
+        url: page.url || url,
+        title: page.title || '',
+        ok: true,
+        chars: String(page.content || '').length,
+        ...(page.pageCount ? { pageCount: page.pageCount } : {}),
+      });
     } else {
       const reason = (page && page.reason) || 'fetch_failed';
       const code = (page && page.code) || 'web_fetch_failed';
@@ -179,14 +278,25 @@ export const executeWebFetch: ToolExecutor = async (
 
   if (!anyOk) {
     const first = summary[0] || {};
-    return failEmit(ctx, call, String(first.error || 'web_fetch_failed'), true, String(first.reason || 'fetch_failed'), '无法抓取这些网页。');
+    return failEmit(
+      ctx,
+      call,
+      String(first.error || 'web_fetch_failed'),
+      true,
+      String(first.reason || 'fetch_failed'),
+      '无法抓取这些网页。',
+    );
   }
 
   const output = blocks.join('\n\n---\n\n');
   const result: ToolResult = { status: 'completed', output, retryable: false };
   emitter.event('tool_result', {
-    id: call.id, ok: true, status: 'completed', output,
-    pages: summary, retryable: false,
+    id: call.id,
+    ok: true,
+    status: 'completed',
+    output,
+    pages: summary,
+    retryable: false,
     truncated: summary.some((p) => p.ok === false),
   });
   return { result };

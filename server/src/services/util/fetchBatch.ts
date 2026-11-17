@@ -1,6 +1,10 @@
 import { createPinnedAgent, resolveAndPin } from '../../lib/publicHttp.js';
-import {extractArticle} from '../embeddings/contentExtractor.js';
-import {fetchWithRust, rustExtractionEnabled, type RustFetchResponse} from '../rustFetchWorker.js';
+import { extractArticle } from '../embeddings/contentExtractor.js';
+import {
+  fetchWithRust,
+  rustExtractionEnabled,
+  type RustFetchResponse,
+} from '../rustFetchWorker.js';
 import * as urlCache from '../../lib/urlCache.js';
 
 interface ExtractedArticle {
@@ -50,15 +54,34 @@ interface ExtractedArticle {
  * fetchBatch shape. Keeping extraction and URL-cache ownership in Node makes
  * the Rust cutover reversible and preserves the existing Readability output.
  */
-async function materializeRustResponse(url: string, cached: urlCache.CacheEntry | null, raw: RustFetchResponse, maxChars: number) {
+async function materializeRustResponse(
+  url: string,
+  cached: urlCache.CacheEntry | null,
+  raw: RustFetchResponse,
+  maxChars: number,
+) {
   if (!raw.ok) {
-    return { ok: false, url, code: raw.code || (raw.status ? 'http_status' : 'fetch_failed'), reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed') };
+    return {
+      ok: false,
+      url,
+      code: raw.code || (raw.status ? 'http_status' : 'fetch_failed'),
+      reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed'),
+    };
   }
 
   if (raw.status === 304) {
-    if (!cached) return { ok: false, url, code: 'cache_miss', reason: 'HTTP 304 without a cached response' };
+    if (!cached)
+      return { ok: false, url, code: 'cache_miss', reason: 'HTTP 304 without a cached response' };
     let extracted: ExtractedArticle | null = null;
-    try { extracted = (await extractArticle(cached.html, raw.finalUrl || url, maxChars > 200_000 ? { maxChars } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
+    try {
+      extracted = (await extractArticle(
+        cached.html,
+        raw.finalUrl || url,
+        maxChars > 200_000 ? { maxChars } : {},
+      )) as unknown as ExtractedArticle;
+    } catch {
+      extracted = null;
+    }
     if (extracted) {
       return {
         ok: true,
@@ -126,7 +149,15 @@ async function materializeRustResponse(url: string, cached: urlCache.CacheEntry 
     };
   }
   let extracted: ExtractedArticle | null = null;
-  try { extracted = (await extractArticle(text, extractionUrl, maxChars > 200_000 ? { maxChars } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
+  try {
+    extracted = (await extractArticle(
+      text,
+      extractionUrl,
+      maxChars > 200_000 ? { maxChars } : {},
+    )) as unknown as ExtractedArticle;
+  } catch {
+    extracted = null;
+  }
   if (extracted) {
     return {
       ok: true,
@@ -167,7 +198,10 @@ async function readBoundedBuffer(response: Response, maxBytes: number) {
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) { finished = true; break; }
+      if (done) {
+        finished = true;
+        break;
+      }
       const remaining = maxBytes - bytes;
       if (value.byteLength > remaining) {
         chunks.push(value.subarray(0, Math.max(0, remaining)));
@@ -191,7 +225,9 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount
   try {
     const mod = await import('pdf-parse');
     const pdfParse = (mod as { default?: unknown }).default || mod;
-    const result = await (pdfParse as (b: Uint8Array) => Promise<{ text?: string; numpages?: number }>)(new Uint8Array(buffer));
+    const result = await (
+      pdfParse as (b: Uint8Array) => Promise<{ text?: string; numpages?: number }>
+    )(new Uint8Array(buffer));
     return { text: String(result?.text || ''), pageCount: Number(result?.numpages || 0) };
   } catch {
     return null;
@@ -209,7 +245,10 @@ async function readBoundedText(response: Response, maxBytes: number) {
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) { finished = true; break; }
+      if (done) {
+        finished = true;
+        break;
+      }
       const remaining = maxBytes - bytes;
       if (value.byteLength > remaining) {
         text += decoder.decode(value.subarray(0, remaining), { stream: true });
@@ -231,7 +270,15 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
   if (!Array.isArray(urls)) throw new Error('urls must be an array');
   const maxUrls = 10;
   const requestedMaxBytes = options.maxBytes;
-  const maxSize = Math.min(1_000_000, Math.max(200_000, typeof requestedMaxBytes === 'number' && Number.isFinite(requestedMaxBytes) ? Math.floor(requestedMaxBytes) : 200_000)); // 200 KB by default, 1 MB for tool reads
+  const maxSize = Math.min(
+    1_000_000,
+    Math.max(
+      200_000,
+      typeof requestedMaxBytes === 'number' && Number.isFinite(requestedMaxBytes)
+        ? Math.floor(requestedMaxBytes)
+        : 200_000,
+    ),
+  ); // 200 KB by default, 1 MB for tool reads
   const timeout = 10_000; // 10s per page
 
   const results = await Promise.allSettled(
@@ -249,8 +296,14 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
 
       // Phase 2: build conditional-GET headers from the URL cache.
       const cached = urlCache.get(url);
-      const reusableCache = cached && cached.bytes <= maxSize && !(cached.truncated && cached.bytes < maxSize) ? cached : null;
-      const headers: Record<string, string> = { 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36' };
+      const reusableCache =
+        cached && cached.bytes <= maxSize && !(cached.truncated && cached.bytes < maxSize)
+          ? cached
+          : null;
+      const headers: Record<string, string> = {
+        'User-Agent':
+          'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      };
       if (reusableCache) {
         if (reusableCache.etag) headers['If-None-Match'] = reusableCache.etag;
         if (reusableCache.lastModified) headers['If-Modified-Since'] = reusableCache.lastModified;
@@ -310,12 +363,22 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
           if (response.status >= 300 && response.status < 400) {
             const location = response.headers.get('location');
             if (!location) {
-              return { ok: false, url, code: 'redirect_missing_location', reason: 'Redirect with no Location header' };
+              return {
+                ok: false,
+                url,
+                code: 'redirect_missing_location',
+                reason: 'Redirect with no Location header',
+              };
             }
             const nextUrl = new URL(location, currentUrl).href;
             const nextParsed = new URL(nextUrl);
             if (nextParsed.protocol !== 'http:' && nextParsed.protocol !== 'https:') {
-              return { ok: false, url, code: 'redirect_invalid_scheme', reason: 'Blocked: redirect to non-http(s) URL' };
+              return {
+                ok: false,
+                url,
+                code: 'redirect_invalid_scheme',
+                reason: 'Blocked: redirect to non-http(s) URL',
+              };
             }
             // Re-resolve if the hostname changed.
             if (nextParsed.hostname !== currentParsed.hostname) {
@@ -325,7 +388,12 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
                 dispatcher = createPinnedAgent(nextRecords);
                 previous.close().catch(() => {});
               } catch (err) {
-                return { ok: false, url, code: 'redirect_dns_failure', reason: `Blocked: redirect to ${nextParsed.hostname} — ${(err as Error).message}` };
+                return {
+                  ok: false,
+                  url,
+                  code: 'redirect_dns_failure',
+                  reason: `Blocked: redirect to ${nextParsed.hostname} — ${(err as Error).message}`,
+                };
               }
             }
             currentUrl = nextUrl;
@@ -341,7 +409,15 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
           // Phase 2: 304 Not Modified — rebuild from cached entry.
           if (response.status === 304 && reusableCache) {
             let extracted: ExtractedArticle | null = null;
-            try { extracted = (await extractArticle(reusableCache.html, url, maxSize > 200_000 ? { maxChars: maxSize } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
+            try {
+              extracted = (await extractArticle(
+                reusableCache.html,
+                url,
+                maxSize > 200_000 ? { maxChars: maxSize } : {},
+              )) as unknown as ExtractedArticle;
+            } catch {
+              extracted = null;
+            }
             if (extracted) {
               return {
                 ok: true,
@@ -399,12 +475,22 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
               ok: false,
               url,
               code: 'pdf_parse_failed',
-              reason: 'Could not extract text from this PDF (it may be scanned images, encrypted, or corrupt).',
+              reason:
+                'Could not extract text from this PDF (it may be scanned images, encrypted, or corrupt).',
             };
           }
 
-          if (!contentType.includes('text') && !contentType.includes('json') && !contentType.includes('html')) {
-            return { ok: false, url, code: 'unsupported_content_type', reason: `Unsupported content type: ${contentType}` };
+          if (
+            !contentType.includes('text') &&
+            !contentType.includes('json') &&
+            !contentType.includes('html')
+          ) {
+            return {
+              ok: false,
+              url,
+              code: 'unsupported_content_type',
+              reason: `Unsupported content type: ${contentType}`,
+            };
           }
 
           const { text, truncated } = await readBoundedText(response, maxSize);
@@ -437,7 +523,15 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
           // event loop (the 2026-07-04 incident). 5s timeout via the
           // extractor pool — null on timeout/failure, caller falls back.
           let extracted: ExtractedArticle | null = null;
-          try { extracted = (await extractArticle(text, url, maxSize > 200_000 ? { maxChars: maxSize } : {})) as unknown as ExtractedArticle; } catch { extracted = null; }
+          try {
+            extracted = (await extractArticle(
+              text,
+              url,
+              maxSize > 200_000 ? { maxChars: maxSize } : {},
+            )) as unknown as ExtractedArticle;
+          } catch {
+            extracted = null;
+          }
 
           if (extracted) {
             return {
@@ -471,13 +565,18 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
         clearTimeout(timer);
         dispatcher.close().catch(() => {});
       }
-    })
+    }),
   );
 
   return {
     results: results.map((r, i) => {
       if (r.status === 'fulfilled') return r.value;
-      return { ok: false, url: urls[i], code: 'fetch_failed', reason: r.reason?.message || 'Fetch failed' };
+      return {
+        ok: false,
+        url: urls[i],
+        code: 'fetch_failed',
+        reason: r.reason?.message || 'Fetch failed',
+      };
     }),
   };
 }
@@ -512,23 +611,38 @@ export const WEB_FETCH_TOOL = {
       'Each page returns at most max_chars of extracted text starting at offset (defaults: 20000 and 0; in batch mode offset is unsupported and each page starts at 0). Start at offset 0; then use next_offset with the same single url to continue when has_more is yes. Ranges are zero-based with an exclusive end and total available characters are reported. If the cached page snapshot expires, restart from offset 0. The source is read up to 1 MB of raw text; source_truncated means content beyond that limit is unavailable, even when has_more is no. Summarize in natural prose; do not paste raw page text back to the user.',
     parameters: {
       type: 'object',
-      description: 'Provide exactly one of `url` or `urls`. `offset` and `max_chars` apply only to a single `url`; batch mode starts every page at offset 0.',
+      description:
+        'Provide exactly one of `url` or `urls`. `offset` and `max_chars` apply only to a single `url`; batch mode starts every page at offset 0.',
       properties: {
         url: {
           type: 'string',
-          description: 'The absolute http(s) URL of the page to fetch, including the scheme (for example https://example.com/article). Use this alone, or `urls` — not both.',
+          description:
+            'The absolute http(s) URL of the page to fetch, including the scheme (for example https://example.com/article). Use this alone, or `urls` — not both.',
           minLength: 8,
           maxLength: 2000,
         },
         urls: {
           type: 'array',
-          description: 'Batch mode: 1-4 absolute http(s) URLs fetched in parallel in one call. Each page is returned from its start (offset is unsupported in batch mode); reopen a single url with offset to page further.',
+          description:
+            'Batch mode: 1-4 absolute http(s) URLs fetched in parallel in one call. Each page is returned from its start (offset is unsupported in batch mode); reopen a single url with offset to page further.',
           items: { type: 'string', minLength: 8, maxLength: 2000 },
           minItems: 1,
           maxItems: 4,
         },
-        offset: { type: 'integer', minimum: 0, maximum: 1000000, description: 'Character offset in the available extracted text; use next_offset to continue. Single-URL calls only.' },
-        max_chars: { type: 'integer', minimum: 1, maximum: 30000, description: 'Maximum number of characters returned per page in this call (default 20000).' },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          maximum: 1000000,
+          description:
+            'Character offset in the available extracted text; use next_offset to continue. Single-URL calls only.',
+        },
+        max_chars: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 30000,
+          description:
+            'Maximum number of characters returned per page in this call (default 20000).',
+        },
       },
       required: [],
       additionalProperties: false,

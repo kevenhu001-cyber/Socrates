@@ -6,4 +6,3 @@
 export function normalizeChineseProse(text: string): string {
   return String(text ?? '');
 }
-

@@ -142,7 +142,8 @@ async function publishRaw(topic: string, json: string, forceLocal: boolean) {
       // brief PG hiccup doesn't strand the SSE consumer. PG-down is
       // a degraded mode; a single failed NOTIFY is too.
       logger.child({ module: 'pubsub', op: 'publish' }).warn('publish_pg_failed_using_local', {
-        topic, error: (err as Error).message,
+        topic,
+        error: (err as Error).message,
       });
       _localEmitter.emit('local', topic, json);
       return;
@@ -150,10 +151,10 @@ async function publishRaw(topic: string, json: string, forceLocal: boolean) {
   }
   // Fallback: invoke local handlers directly.
   if (!_localEmitter.listenerCount('__degraded__')) {
-    logger.child({ module: 'pubsub' }).warn(
-      'publish_using_local_fallback',
-      { topic, reason: forceLocal ? 'local_forced' : (pgListenerReady ? 'no_client' : 'pg_not_ready') }
-    );
+    logger.child({ module: 'pubsub' }).warn('publish_using_local_fallback', {
+      topic,
+      reason: forceLocal ? 'local_forced' : pgListenerReady ? 'no_client' : 'pg_not_ready',
+    });
   }
   _localEmitter.emit('local', topic, json);
 }
@@ -168,7 +169,9 @@ async function publishRaw(topic: string, json: string, forceLocal: boolean) {
  */
 export async function subscribe(topic: string, handler: (payload: unknown) => void) {
   if (!isValidTopic(topic)) {
-    throw new Error(`pubsub.subscribe: invalid topic "${topic}" (must start with one of: ${ALLOWED_TOPIC_PREFIXES.join(', ')})`);
+    throw new Error(
+      `pubsub.subscribe: invalid topic "${topic}" (must start with one of: ${ALLOWED_TOPIC_PREFIXES.join(', ')})`,
+    );
   }
   if (typeof handler !== 'function') {
     throw new Error('pubsub.subscribe: handler must be a function');
@@ -192,7 +195,8 @@ export async function subscribe(topic: string, handler: (payload: unknown) => vo
   // we wait); once PG is ready we'll attach the LISTEN.
   await ensureListener().catch((err: unknown) => {
     logger.child({ module: 'pubsub', op: 'subscribe' }).warn('ensure_listener_failed', {
-      topic, error: err instanceof Error ? err.message : String(err),
+      topic,
+      error: err instanceof Error ? err.message : String(err),
     });
   });
 
@@ -242,7 +246,6 @@ export function _resetForTests() {
   listenedTopics.clear();
   _localEmitter.removeAllListeners('local');
 }
-
 
 export function getStatus() {
   return {
@@ -322,7 +325,8 @@ async function doConnect() {
   } catch (err) {
     pgClient = null;
     logger.child({ module: 'pubsub', op: 'connect' }).warn('pg_connect_failed', {
-      error: (err as Error).message, attempt: reconnectAttempt,
+      error: (err as Error).message,
+      attempt: reconnectAttempt,
     });
     scheduleReconnect();
     throw err;
@@ -333,7 +337,9 @@ async function doConnect() {
   if (shuttingDown) {
     const orphan = pgClient;
     pgClient = null;
-    await orphan.end().catch(() => { /* already going away */ });
+    await orphan.end().catch(() => {
+      /* already going away */
+    });
     return;
   }
 
@@ -361,7 +367,8 @@ async function safeListen(topic: string) {
     listenedTopics.add(topic);
   } catch (err) {
     logger.child({ module: 'pubsub', op: 'listen' }).warn('listen_failed', {
-      topic, error: (err as Error).message,
+      topic,
+      error: (err as Error).message,
     });
   }
 }
@@ -375,16 +382,20 @@ function onNotification(msg: { channel: string; payload?: string | null }) {
     payload = msg.payload ? JSON.parse(msg.payload) : {};
   } catch (err) {
     logger.child({ module: 'pubsub', op: 'dispatch' }).warn('payload_parse_failed', {
-      channel: enc, error: (err as Error).message,
+      channel: enc,
+      error: (err as Error).message,
     });
     return;
   }
   const set = handlers.get(enc);
   if (!set || set.size === 0) return;
   for (const h of set) {
-    try { h(payload); } catch (err) {
+    try {
+      h(payload);
+    } catch (err) {
       logger.child({ module: 'pubsub', op: 'dispatch' }).warn('handler_threw', {
-        channel: enc, error: (err as Error).message,
+        channel: enc,
+        error: (err as Error).message,
       });
     }
   }
@@ -408,7 +419,9 @@ function scheduleReconnect() {
   reconnectAttempt += 1;
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
-    ensureListener().catch(() => { /* log already emitted */ });
+    ensureListener().catch(() => {
+      /* log already emitted */
+    });
   }, delay);
   if (typeof reconnectTimer.unref === 'function') reconnectTimer.unref();
 }
@@ -425,9 +438,17 @@ _localEmitter.on('local', (topic, json) => {
   const set = handlers.get(encodeChannel(topic));
   if (!set || set.size === 0) return;
   let payload;
-  try { payload = JSON.parse(json); } catch (_) { return; }
+  try {
+    payload = JSON.parse(json);
+  } catch (_) {
+    return;
+  }
   for (const h of set) {
-    try { h(payload); } catch (err) { console.error('[pubsub] handler error:', (err as Error).message); }
+    try {
+      h(payload);
+    } catch (err) {
+      console.error('[pubsub] handler error:', (err as Error).message);
+    }
   }
 });
 
@@ -435,4 +456,6 @@ _localEmitter.on('local', (topic, json) => {
    immediate connection — the first subscribe() triggers it. We do
    kick it off at import time so a healthy deploy has the listener
    warm by the time the first SSE client connects. */
-ensureListener().catch(() => { /* logged in doConnect */ });
+ensureListener().catch(() => {
+  /* logged in doConnect */
+});

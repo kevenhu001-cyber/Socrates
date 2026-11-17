@@ -21,11 +21,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 
-import {
-  timeoutMiddleware,
-  errorHandler,
-  notFoundHandler,
-} from '../src/middleware/error.js';
+import { timeoutMiddleware, errorHandler, notFoundHandler } from '../src/middleware/error.js';
 import { ApiError, BadRequest, TooManyRequests } from '../src/lib/errors.js';
 
 /* ── Helpers ──────────────────────────────────────────────────── */
@@ -53,7 +49,10 @@ function fakeRes() {
     _status: null,
     _body: null,
     headers: {},
-    status(code) { this._status = code; return this; },
+    status(code) {
+      this._status = code;
+      return this;
+    },
     json(payload) {
       /* Express defaults to 200 when no explicit status was set
          via .status() before .json() — mirror that here so tests
@@ -65,11 +64,25 @@ function fakeRes() {
       e.emit('finish');
       return this;
     },
-    setHeader(k, v) { this.headers[k] = v; },
-    getHeader(k) { return this.headers[k]; },
-    destroy(err) { this.destroyed = true; if (err) e.emit('error', err); e.emit('close'); },
-    on(name, fn) { e.on(name, fn); return this; },
-    once(name, fn) { e.once(name, fn); return this; },
+    setHeader(k, v) {
+      this.headers[k] = v;
+    },
+    getHeader(k) {
+      return this.headers[k];
+    },
+    destroy(err) {
+      this.destroyed = true;
+      if (err) e.emit('error', err);
+      e.emit('close');
+    },
+    on(name, fn) {
+      e.on(name, fn);
+      return this;
+    },
+    once(name, fn) {
+      e.once(name, fn);
+      return this;
+    },
   };
 }
 
@@ -318,7 +331,7 @@ describe('errorHandler', () => {
 describe('notFoundHandler', () => {
   test('returns a 404 with a structured payload', () => {
     const res = fakeRes();
-    notFoundHandler({ /* no req */ }, res);
+    notFoundHandler({/* no req */}, res);
     assert.equal(res._status, 404);
     assert.equal(res._body.code, 'NOT_FOUND');
     assert.match(res._body.message, /Endpoint not found/);

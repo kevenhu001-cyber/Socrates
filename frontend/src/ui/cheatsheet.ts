@@ -13,7 +13,10 @@ export function closeCheatsheet(): void {
   installCheatsheetBridge().publish({ open: false });
 }
 
-export function buildCheatsheetSection(_title: string, _rows: Array<[string, string[]]>): Promise<string> {
+export function buildCheatsheetSection(
+  _title: string,
+  _rows: Array<[string, string[]]>,
+): Promise<string> {
   return Promise.resolve('');
 }
 

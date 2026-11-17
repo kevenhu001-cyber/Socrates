@@ -1,6 +1,6 @@
-import type { ComponentProps } from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import type { ComponentProps } from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from 'cn';
 
 /* R1 restyle: every shadcn button is a capsule (primary = ink, secondary =
  * light grey, ghost = hover wash). Surfaces that need another corner pass
@@ -10,58 +10,60 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        surface: "",
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        surface: '',
+        default: 'bg-primary text-primary-foreground hover:bg-primary/80',
         outline:
-          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          'border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground',
         ghost:
-          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground',
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40",
-        link: "text-primary underline-offset-4 hover:underline",
+          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40',
+        link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        surface: "",
-        touch: "h-(--ui-control-touch) gap-2 px-3",
+        surface: '',
+        touch: 'h-(--ui-control-touch) gap-2 px-3',
         default:
-          "h-(--ui-control-desktop) gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+          'h-(--ui-control-desktop) gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
         xs: "h-6 gap-1 rounded-(--ui-radius-pill) px-2 text-xs in-data-[slot=button-group]:rounded-(--ui-radius-pill) has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-(--ui-control-sm) gap-1 rounded-(--ui-radius-pill) px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-(--ui-radius-pill) has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-(--ui-control-md) gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
-        "icon-xs":
+        lg: 'h-(--ui-control-md) gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2',
+        icon: 'size-8',
+        'icon-xs':
           "size-6 rounded-(--ui-radius-pill) in-data-[slot=button-group]:rounded-(--ui-radius-pill) [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-(--ui-control-sm) rounded-(--ui-radius-pill) in-data-[slot=button-group]:rounded-(--ui-radius-pill)",
-        "icon-lg": "size-9",
+        'icon-sm':
+          'size-(--ui-control-sm) rounded-(--ui-radius-pill) in-data-[slot=button-group]:rounded-(--ui-radius-pill)',
+        'icon-lg': 'size-9',
       },
     },
     defaultVariants: {
-      variant: "default",
-      size: "default",
+      variant: 'default',
+      size: 'default',
     },
-  }
-)
+  },
+);
 
 function Button({
   className,
-  variant = "default",
-  size = "default",
-  type = "button",
+  variant = 'default',
+  size = 'default',
+  type = 'button',
   ...props
-}: ComponentProps<"button"> & VariantProps<typeof buttonVariants>) {
+}: ComponentProps<'button'> & VariantProps<typeof buttonVariants>) {
   return (
     <button
       type={type}
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={variant === "surface" ? cn(className) : cn(buttonVariants({ variant, size, className }))}
+      className={
+        variant === 'surface' ? cn(className) : cn(buttonVariants({ variant, size, className }))
+      }
       {...props}
     />
-  )
+  );
 }
 
-export { Button, buttonVariants }
+export { Button, buttonVariants };

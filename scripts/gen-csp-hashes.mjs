@@ -151,8 +151,8 @@ const hashes = [...html.matchAll(INLINE_SCRIPT)].map((m) => cspHash(m[1]));
 if (hashes.length === 0 && !update) {
   console.error(
     '[csp] no inline <script> blocks found in frontend/index.html.\n' +
-    '      That is either a win (nothing left to hash) or a broken regex.\n' +
-    '      Run with --update to accept an empty list.',
+      '      That is either a win (nothing left to hash) or a broken regex.\n' +
+      '      Run with --update to accept an empty list.',
   );
   process.exit(1);
 }
@@ -190,9 +190,10 @@ function renderNginx() {
        * viz iframe — the exact failure this policy was changed to avoid. The
        * hashes stay generated and drift-checked for the day the parent policy
        * can drop 'unsafe-inline' (see the note on DIRECTIVES). */
-      const values = name === 'script-src' && !sources.includes(SCRIPT_SRC_INLINE)
-        ? [...sources, ...hashes]
-        : sources;
+      const values =
+        name === 'script-src' && !sources.includes(SCRIPT_SRC_INLINE)
+          ? [...sources, ...hashes]
+          : sources;
       return `${name} ${values.join(' ')}`;
     })
     .join('; ');
@@ -207,7 +208,7 @@ function renderNginx() {
     '#',
     '# Why this file is needed: production serves the bundle from',
     '# /var/www/app.topodrive.top via nginx, so the helmet CSP that',
-    "# server/src/app.ts sets never reaches the SPA document — it only",
+    '# server/src/app.ts sets never reaches the SPA document — it only',
     '# covers api.topodrive.top and hosts where Express serves the bundle',
     '# directly. Until 2026-09-25 that meant the shipped SPA had no CSP at',
     '# all, which README\'s security section described as "recommended for',
@@ -247,7 +248,10 @@ if (update) {
 
 const drifted = [];
 for (const { path, label, body } of artifacts) {
-  if (!existsSync(path)) { drifted.push(`${label} (missing)`); continue; }
+  if (!existsSync(path)) {
+    drifted.push(`${label} (missing)`);
+    continue;
+  }
   /* Compare with line endings normalised. A Windows checkout can hold the
      same bytes as LF-with-CR, which made this gate report DRIFT for an
      artifact that was byte-for-byte in sync — a false merge-gate failure
@@ -258,12 +262,15 @@ for (const { path, label, body } of artifacts) {
 if (drifted.length > 0) {
   console.error(
     '[csp] DRIFT: generated CSP artifacts are stale:\n' +
-    drifted.map((d) => `        - ${d}`).join('\n') + '\n' +
-    '      Serving the SPA could refuse its own inline scripts.\n' +
-    '      Fix with: node scripts/gen-csp-hashes.mjs --update',
+      drifted.map((d) => `        - ${d}`).join('\n') +
+      '\n' +
+      '      Serving the SPA could refuse its own inline scripts.\n' +
+      '      Fix with: node scripts/gen-csp-hashes.mjs --update',
   );
   console.error(`      expected hashes: ${hashes.join(', ') || '(none)'}`);
   process.exit(1);
 }
 
-console.log(`[csp] in sync (${hashes.length} inline script hash(es), ${artifacts.length} artifacts)`);
+console.log(
+  `[csp] in sync (${hashes.length} inline script hash(es), ${artifacts.length} artifacts)`,
+);

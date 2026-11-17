@@ -5,10 +5,13 @@
  * With SESSION_COMPRESS_DISABLE=1 the summarizer is bypassed, so these
  * cases exercise the pure budget/tail logic only.
  */
-import {describe, test} from 'node:test';
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {compressSessionMessages, __resetCompressMemo} from '../src/services/embeddings/sessionCompressor.js';
+import {
+  compressSessionMessages,
+  __resetCompressMemo,
+} from '../src/services/embeddings/sessionCompressor.js';
 
 function makeMessages(n) {
   const out = [];
@@ -16,7 +19,9 @@ function makeMessages(n) {
     out.push({
       role: i % 2 === 0 ? 'user' : 'assistant',
       // Long bodies so the token budget actually trips on 30 messages.
-      rawText: `${i % 2 === 0 ? 'User' : 'Assistant'} message number ${i} ` + 'lorem ipsum dolor sit amet '.repeat(60),
+      rawText:
+        `${i % 2 === 0 ? 'User' : 'Assistant'} message number ${i} ` +
+        'lorem ipsum dolor sit amet '.repeat(60),
       clientId: `c-${i}`,
     });
   }
@@ -28,16 +33,31 @@ test('compression preserves complete user/assistant/tool groups and reasoning', 
   try {
     const interaction = [
       { role: 'user', content: 'run tool' },
-      { role: 'assistant', content: '', reasoning_content: 'r'.repeat(8000), tool_calls: [{ id: 'c1', type: 'function', function: { name: 'lookup', arguments: '{}' } }] },
+      {
+        role: 'assistant',
+        content: '',
+        reasoning_content: 'r'.repeat(8000),
+        tool_calls: [{ id: 'c1', type: 'function', function: { name: 'lookup', arguments: '{}' } }],
+      },
       { role: 'tool', content: 'tool output', tool_call_id: 'c1' },
       { role: 'assistant', content: 'answer', reasoning_content: 'final reasoning' },
     ];
-    const input = [{ role: 'user', content: 'old' }, { role: 'assistant', content: 'previous' }, ...interaction];
+    const input = [
+      { role: 'user', content: 'old' },
+      { role: 'assistant', content: 'previous' },
+      ...interaction,
+    ];
     const result = await compressSessionMessages(input, { keepTurns: 2, triggerTokens: 500 });
     assert.equal(result.didCompress, true, 'reasoning must count towards the trigger');
-    assert.deepEqual(result.messages.slice(1), interaction, 'tail may expand to keep the entire tool interaction');
+    assert.deepEqual(
+      result.messages.slice(1),
+      interaction,
+      'tail may expand to keep the entire tool interaction',
+    );
     assert.equal(result.droppedTurns, 2);
-  } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+  } finally {
+    delete process.env.SESSION_COMPRESS_DISABLE;
+  }
 });
 
 describe('sessionCompressor: short histories pass through', () => {
@@ -54,22 +74,36 @@ describe('sessionCompressor: over-budget histories compress', () => {
   test('a short history still compresses when its text exceeds the budget', async () => {
     process.env.SESSION_COMPRESS_DISABLE = '1';
     try {
-      const input = Array.from({ length: 8 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: '中文'.repeat(100) }));
+      const input = Array.from({ length: 8 }, (_, i) => ({
+        role: i % 2 ? 'assistant' : 'user',
+        content: '中文'.repeat(100),
+      }));
       const result = await compressSessionMessages(input, { triggerTokens: 1000 });
-      assert.equal(result.didCompress, true, 'the 24-message keep window must not bypass token budgeting');
+      assert.equal(
+        result.didCompress,
+        true,
+        'the 24-message keep window must not bypass token budgeting',
+      );
       assert.deepEqual(result.messages.slice(1), input.slice(-2));
       assert.equal(result.droppedTurns, 6);
-    } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+    } finally {
+      delete process.env.SESSION_COMPRESS_DISABLE;
+    }
   });
   test('Chinese history crosses the context budget before the English billing heuristic', async () => {
     process.env.SESSION_COMPRESS_DISABLE = '1';
     try {
-      const input = Array.from({ length: 30 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: '中文'.repeat(50) }));
+      const input = Array.from({ length: 30 }, (_, i) => ({
+        role: i % 2 ? 'assistant' : 'user',
+        content: '中文'.repeat(50),
+      }));
       const result = await compressSessionMessages(input, { triggerTokens: 1000, keepTurns: 4 });
       assert.equal(result.didCompress, true);
       assert.equal(result.droppedTurns, 26);
       assert.deepEqual(result.messages.slice(1), input.slice(-4));
-    } finally { delete process.env.SESSION_COMPRESS_DISABLE; }
+    } finally {
+      delete process.env.SESSION_COMPRESS_DISABLE;
+    }
   });
   test('tail-only path keeps the most recent turns verbatim', async () => {
     process.env.SESSION_COMPRESS_DISABLE = '1';
@@ -83,7 +117,10 @@ describe('sessionCompressor: over-budget histories compress', () => {
       /* tail-only prepends a visible drop marker, so messages =
          marker + kept tail; droppedTurns counts the dropped head. */
       assert.equal(result.messages[0].type, 'summary');
-      assert.match(result.messages[0].rawText, /removed to fit the context window|no summary was available/i);
+      assert.match(
+        result.messages[0].rawText,
+        /removed to fit the context window|no summary was available/i,
+      );
       assert.equal(result.droppedTurns, input.length - (result.messages.length - 1));
       // Tail preserved in order: last message identical.
       assert.equal(result.messages[result.messages.length - 1].clientId, 'c-29');
@@ -98,7 +135,21 @@ describe('sessionCompressor: over-budget histories compress', () => {
     process.env.SESSION_COMPRESS_TOKENS = '500';
     try {
       const input = makeMessages(30).map((m, i) =>
-        i < 29 ? m : { ...m, attachments: [{ id: 'a', kind: 'image', name: 'x.png', mime: 'image/png', size: 10, dataUrl: 'data:…long…' }] },
+        i < 29
+          ? m
+          : {
+              ...m,
+              attachments: [
+                {
+                  id: 'a',
+                  kind: 'image',
+                  name: 'x.png',
+                  mime: 'image/png',
+                  size: 10,
+                  dataUrl: 'data:…long…',
+                },
+              ],
+            },
       );
       const result = await compressSessionMessages(input);
       const kept = result.messages[result.messages.length - 1];
@@ -133,7 +184,8 @@ describe('sessionCompressor: summary stability and memo safety', () => {
       assert.equal(b.messages[0].type, 'summary');
       /* Previously `summary-${Date.now()}` — a distinct identity per call. */
       assert.equal(
-        a.messages[0].clientId, b.messages[0].clientId,
+        a.messages[0].clientId,
+        b.messages[0].clientId,
         'repeated compression reuses one summary identity',
       );
     } finally {
@@ -168,6 +220,9 @@ describe('sessionCompressor: summary stability and memo safety', () => {
     __resetCompressMemo();
     const result = await compressSessionMessages(makeMessages(3));
     assert.equal(result.didCompress, false);
-    assert.equal(result.messages.some((m) => m.type === 'summary'), false);
+    assert.equal(
+      result.messages.some((m) => m.type === 'summary'),
+      false,
+    );
   });
 });

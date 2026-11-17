@@ -16,9 +16,18 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT = `${ROOT}frontend/src/styles/foundations/tokens.generated.css`;
 const CHECK = process.argv.includes('--check');
 
-const { uiColors, uiColorVar, uiFont, uiType, uiRadius, uiSpace, uiShadow, uiMotion, uiStep, uiControl } = await import(
-  new URL('../packages/theme/src/ui.ts', import.meta.url).href
-);
+const {
+  uiColors,
+  uiColorVar,
+  uiFont,
+  uiType,
+  uiRadius,
+  uiSpace,
+  uiShadow,
+  uiMotion,
+  uiStep,
+  uiControl,
+} = await import(new URL('../packages/theme/src/ui.ts', import.meta.url).href);
 
 const kebab = (name) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 const px = (n) => (n === 0 ? '0' : `${n}px`);
@@ -44,7 +53,8 @@ for (const [name, value] of Object.entries(uiRadius)) {
 }
 for (const [name, value] of Object.entries(uiSpace)) root.push([`--ui-gap-${name}`, px(value)]);
 for (const [name, value] of Object.entries(uiStep)) root.push([`--ui-step-${name}`, px(value)]);
-for (const [name, value] of Object.entries(uiControl)) root.push([`--ui-ctl-${name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}`, px(value)]);
+for (const [name, value] of Object.entries(uiControl))
+  root.push([`--ui-ctl-${name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}`, px(value)]);
 root.push(['--ui-motion-fast', `${uiMotion.fast}ms`]);
 root.push(['--ui-motion-medium', `${uiMotion.medium}ms`]);
 root.push(['--ui-motion-slow', `${uiMotion.slow}ms`]);
@@ -53,7 +63,8 @@ root.push(['--ui-motion-ease-out', uiMotion.easeOut]);
 
 function modeEntries(mode) {
   const entries = Object.entries(uiColors[mode]).map(([role, value]) => [uiColorVar[role], value]);
-  for (const [name, value] of Object.entries(uiShadow[mode])) entries.push([`--ui-elevation-${name.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase())}`, value]);
+  for (const [name, value] of Object.entries(uiShadow[mode]))
+    entries.push([`--ui-elevation-${name.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}`, value]);
   return entries;
 }
 
@@ -75,7 +86,9 @@ const css = [
 if (CHECK) {
   const current = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
   if (current !== css) {
-    console.error('[gen-ui-tokens] tokens.generated.css is stale — run: node --experimental-strip-types scripts/gen-ui-tokens.mjs');
+    console.error(
+      '[gen-ui-tokens] tokens.generated.css is stale — run: node --experimental-strip-types scripts/gen-ui-tokens.mjs',
+    );
     process.exit(1);
   }
   console.log('[gen-ui-tokens] OK — generated CSS matches packages/theme.');

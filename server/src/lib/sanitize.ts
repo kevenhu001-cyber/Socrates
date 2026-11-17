@@ -68,12 +68,14 @@ export function sanitizeExtraBody(raw: unknown) {
     if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
       out[k] = v;
     } else if (Array.isArray(v)) {
-      if (v.every((x) => typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean')) {
+      if (
+        v.every((x) => typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean')
+      ) {
         out[k] = v;
       }
     } else if (v && typeof v === 'object') {
-      const allPrim = Object.values(v).every((x) =>
-        typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean'
+      const allPrim = Object.values(v).every(
+        (x) => typeof x === 'string' || typeof x === 'number' || typeof x === 'boolean',
       );
       if (allPrim) out[k] = v;
     }
@@ -114,7 +116,7 @@ export function sanitizeStoredHtml(html: unknown) {
     ADD_TAGS: ['theorem', 'proof', 'key-point', 'derivation'],
     // Allow data: URLs ONLY on <img>; everything else must be http/https.
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-    KEEP_CONTENT: true,   // drop the tag but keep inner text
+    KEEP_CONTENT: true, // drop the tag but keep inner text
     USE_PROFILES: { html: true },
   });
 }
@@ -132,7 +134,12 @@ export function sanitizePlainText(text: unknown) {
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
-  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
 };
 
 /**
@@ -152,7 +159,11 @@ export function decodeHtmlEntities(input: unknown): string {
       const hex = body[1] === 'x' || body[1] === 'X';
       const codePoint = hex ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
       if (!Number.isFinite(codePoint) || codePoint <= 0 || codePoint > 0x10ffff) return match;
-      try { return String.fromCodePoint(codePoint); } catch { return match; }
+      try {
+        return String.fromCodePoint(codePoint);
+      } catch {
+        return match;
+      }
     }
     const named = NAMED_ENTITIES[body.toLowerCase()];
     return named === undefined ? match : named;

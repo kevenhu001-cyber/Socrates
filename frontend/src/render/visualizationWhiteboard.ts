@@ -3,7 +3,10 @@
    marks it external, and the web build loads it only on demand. */
 import type { Editor, TLNoteShape, TLShapePartial } from 'tldraw';
 
-interface WhiteboardSeed { label?: string; detail?: string }
+interface WhiteboardSeed {
+  label?: string;
+  detail?: string;
+}
 interface WhiteboardSpec {
   title?: string;
   payload: { nodes?: WhiteboardSeed[]; items?: WhiteboardSeed[] };
@@ -24,7 +27,10 @@ function loadTldraw() {
 let tldrawPromise: ReturnType<typeof loadTldraw> | null = null;
 
 export async function mountWhiteboard(spec: WhiteboardSpec, stage: HTMLElement) {
-  tldrawPromise ||= loadTldraw().catch((error: unknown) => { tldrawPromise = null; throw error; });
+  tldrawPromise ||= loadTldraw().catch((error: unknown) => {
+    tldrawPromise = null;
+    throw error;
+  });
   const [React, rootRuntime, tldraw, assets] = await tldrawPromise;
   const seeds = spec.payload.nodes?.length ? spec.payload.nodes : spec.payload.items || [];
   const onMount = (editor: Editor) => {
@@ -33,18 +39,31 @@ export async function mountWhiteboard(spec: WhiteboardSpec, stage: HTMLElement) 
       type: 'note',
       x: 40 + (index % 3) * 230,
       y: 40 + Math.floor(index / 3) * 150,
-      props: { richText: tldraw.toRichText(item.label || item.detail || `Idea ${index + 1}`), color: NOTE_COLORS[index % 4] },
+      props: {
+        richText: tldraw.toRichText(item.label || item.detail || `Idea ${index + 1}`),
+        color: NOTE_COLORS[index % 4],
+      },
     }));
     if (shapes.length) {
       editor.createShapes(shapes);
       editor.zoomToFit({ animation: { duration: 240 } });
     }
   };
-  const root = rootRuntime.mountOwnedRoot(stage, 'whiteboard', React.createElement(tldraw.Tldraw, {
-    // Each card owns an independent board. Titles are presentation text and
-    // cannot identify a persistent store (all Chinese titles collapsed to '-').
-    assetUrls: assets.getAssetUrlsByImport(),
-    onMount,
-  }));
-  return { handled: true, chart: null, cleanup() { root.destroy(); } };
+  const root = rootRuntime.mountOwnedRoot(
+    stage,
+    'whiteboard',
+    React.createElement(tldraw.Tldraw, {
+      // Each card owns an independent board. Titles are presentation text and
+      // cannot identify a persistent store (all Chinese titles collapsed to '-').
+      assetUrls: assets.getAssetUrlsByImport(),
+      onMount,
+    }),
+  );
+  return {
+    handled: true,
+    chart: null,
+    cleanup() {
+      root.destroy();
+    },
+  };
 }

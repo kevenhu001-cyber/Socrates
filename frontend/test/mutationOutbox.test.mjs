@@ -41,8 +41,12 @@ function installMocks() {
   globalThis.document = dom.window.document;
   globalThis.localStorage = {
     getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => { store.set(k, String(v)); },
-    removeItem: (k) => { store.delete(k); },
+    setItem: (k, v) => {
+      store.set(k, String(v));
+    },
+    removeItem: (k) => {
+      store.delete(k);
+    },
   };
   /* jsdom's navigator.onLine is read-only; defineProperty is the only
      way to make the module's connectivity check see a live network. */
@@ -228,7 +232,12 @@ test('bad queue entries are discarded on read', () => {
   try {
     globalThis.localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify([{ id: 'ok', type: 'delete' }, { type: 'delete' }, { id: 'x', type: 'nope' }, null]),
+      JSON.stringify([
+        { id: 'ok', type: 'delete' },
+        { type: 'delete' },
+        { id: 'x', type: 'nope' },
+        null,
+      ]),
     );
     const kept = readQueueForTest();
     assert.equal(kept.length, 1);

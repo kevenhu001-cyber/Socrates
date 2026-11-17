@@ -13,15 +13,18 @@
 @import './foundations/tokens.generated.css';
 
 /* Shared RN action role follows the active web theme's canonical accent. */
-html[data-mode] { --ui-action: var(--ui-accent-action); --ui-connector-tile: var(--ui-bg-surface); }
+html[data-mode] {
+  --ui-action: var(--ui-accent-action);
+  --ui-connector-tile: var(--ui-bg-surface);
+}
 
-html[data-theme="socrates"][data-mode],
-html[data-theme="socrates"][data-mode]:lang(zh) {
+html[data-theme='socrates'][data-mode],
+html[data-theme='socrates'][data-mode]:lang(zh) {
   --font-sans: var(--ui-font-ui);
   --cg-font: var(--font-sans);
   --font-display: var(--font-sans);
   --font-serif: var(--font-sans);
-  --font-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-mono: 'Geist Mono', 'Noto Sans SC', ui-monospace, 'SFMono-Regular', Consolas, monospace;
   --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 88%, var(--ui-text-secondary));
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 90%, transparent);
   --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 94%, transparent);
@@ -33,7 +36,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --lobe-border-radius-lg: var(--ui-radius-lg);
 }
 
-[data-mode="dark"] {
+[data-mode='dark'] {
   color-scheme: dark;
 
   /* shadcn semantic roles. Product and retained HTML controls share these
@@ -206,8 +209,12 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-selected);
   --ui-shadow-control: 0 1px 2px rgb(0 0 0 / 24%), 0 0 0 1px rgb(255 255 255 / 6%);
-  --ui-shadow-popover: 0 0 0 1px rgb(255 255 255 / 8%), inset 0 1px 0 0 rgb(255 255 255 / 6%), 0 12px 32px -4px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 25%);
-  --ui-shadow-dialog: 0 0 0 1px rgb(255 255 255 / 10%), inset 0 1px 0 0 rgb(255 255 255 / 8%), 0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 30%);
+  --ui-shadow-popover:
+    0 0 0 1px rgb(255 255 255 / 8%), inset 0 1px 0 0 rgb(255 255 255 / 6%),
+    0 12px 32px -4px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 25%);
+  --ui-shadow-dialog:
+    0 0 0 1px rgb(255 255 255 / 10%), inset 0 1px 0 0 rgb(255 255 255 / 8%),
+    0 24px 64px -8px rgb(0 0 0 / 60%), 0 8px 24px -4px rgb(0 0 0 / 30%);
   --ui-composer-border: rgb(255 255 255 / 15%);
   --ui-composer-shadow: inset 0 1px 0 0 rgb(255 255 255 / 8%), inset 0 0 1px rgb(255 255 255 / 15%);
   --ui-bubble-shadow: none;
@@ -231,7 +238,7 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --chat-overlay: var(--ui-backdrop);
 }
 
-[data-mode="light"] {
+[data-mode='light'] {
   color-scheme: light;
 
   /* Phone reference (light home, measured): the canvas is a one-percent
@@ -400,8 +407,10 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
   --ui-shadow-control: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%);
-  --ui-shadow-popover: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%);
-  --ui-shadow-dialog: 0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%);
+  --ui-shadow-popover:
+    0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%);
+  --ui-shadow-dialog:
+    0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%);
   /* The composer is a hairline capsule on a near-white page, so its resting
      edge is the default rule. --ui-border-strong is held back for the
      focus-within state: with both states on the same border the capsule
@@ -446,8 +455,8 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
 
 /* Lobe UI v6 CSS-variable bridge. The Lobe namespace deliberately aliases
  * Socrates semantic roles rather than defining a second independent palette. */
-[data-mode="dark"],
-[data-mode="light"] {
+[data-mode='dark'],
+[data-mode='light'] {
   --lobe-color-bg-layout: var(--ui-bg-page);
   --lobe-color-bg-container: var(--ui-bg-raised);
   --lobe-color-bg-container-secondary: var(--ui-bg-sunken);
@@ -545,17 +554,33 @@ html[data-theme="socrates"][data-mode]:lang(zh) {
   --conversation-text-secondary: var(--conversation-text-muted);
 }
 
-.library-file-image { --ui-file-color: var(--ui-file-image); }
-.library-file-html { --ui-file-color: var(--ui-file-html); }
-.library-file-doc { --ui-file-color: var(--ui-file-doc); }
-.library-file-code { --ui-file-color: var(--ui-file-code); }
-.library-file-table { --ui-file-color: var(--ui-file-table); }
-.library-file-video { --ui-file-color: var(--ui-file-video); }
-.library-file-audio { --ui-file-color: var(--ui-file-audio); }
-.library-file-file { --ui-file-color: var(--ui-file-file); }
+.library-file-image {
+  --ui-file-color: var(--ui-file-image);
+}
+.library-file-html {
+  --ui-file-color: var(--ui-file-html);
+}
+.library-file-doc {
+  --ui-file-color: var(--ui-file-doc);
+}
+.library-file-code {
+  --ui-file-color: var(--ui-file-code);
+}
+.library-file-table {
+  --ui-file-color: var(--ui-file-table);
+}
+.library-file-video {
+  --ui-file-color: var(--ui-file-video);
+}
+.library-file-audio {
+  --ui-file-color: var(--ui-file-audio);
+}
+.library-file-file {
+  --ui-file-color: var(--ui-file-file);
+}
 
-html[data-theme="socrates"][data-mode="dark"],
-html[data-theme="socrates"][data-mode="light"] {
+html[data-theme='socrates'][data-mode='dark'],
+html[data-theme='socrates'][data-mode='light'] {
   --cg-page: var(--ui-bg-page);
   --cg-rail: var(--ui-bg-sidebar);
   --cg-surface: var(--ui-bg-surface);
@@ -581,7 +606,7 @@ html[data-theme="socrates"][data-mode="light"] {
   --conversation-user: var(--ui-bg-bubble);
 }
 
-html[data-theme="socrates"][data-mode="dark"] {
+html[data-theme='socrates'][data-mode='dark'] {
   /* Reference user bubble (phone, measured): #223d72 under white copy
      (≈ 11:1). Assistant turns stay bare. */
   --conversation-user: rgb(34 61 114);
@@ -605,10 +630,10 @@ html[data-theme="socrates"][data-mode="dark"] {
    * roles use. They stay HSL triplets because the frozen legacy tree
    * composes them with `hsl(...)`; the values track the ladder exactly so
    * a legacy surface never drifts onto a tone the palette does not own. */
-  --bg-000: 0 0% 0%;      /* L1 — page (geist background-200, pure black) */
-  --bg-100: 0 0% 10.2%;   /* L2 — rail (geist gray-100) */
-  --bg-200: 0 0% 12.16%;  /* L3 — panel (geist gray-200) */
-  --bg-300: 0 0% 16.08%;  /* L4 — elevated (geist gray-300) */
+  --bg-000: 0 0% 0%; /* L1 — page (geist background-200, pure black) */
+  --bg-100: 0 0% 10.2%; /* L2 — rail (geist gray-100) */
+  --bg-200: 0 0% 12.16%; /* L3 — panel (geist gray-200) */
+  --bg-300: 0 0% 16.08%; /* L4 — elevated (geist gray-300) */
   --text-000: 0 0% 100%;
   --text-100: 0 0% 90%;
   --text-200: 0 0% 71%;
@@ -623,7 +648,7 @@ html[data-theme="socrates"][data-mode="dark"] {
   --border-500: 0 0% 33%;
 }
 
-html[data-theme="socrates"][data-mode="light"] {
+html[data-theme='socrates'][data-mode='light'] {
   /* Light twin of the blue user bubble: a pale action tint on the paper, the
      primary ink on top. */
   --conversation-user: color-mix(in srgb, var(--ui-accent-action) 12%, var(--ui-bg-page));
@@ -645,10 +670,10 @@ html[data-theme="socrates"][data-mode="light"] {
    * rung each channel carries is declared in
    * `scripts/surface-ladder.baseline.json`; the values below are the rungs
    * that mapping points at, so the canvas move left them untouched. */
-  --bg-000: 0 0% 100%;     /* the paper (elevated) */
-  --bg-100: 0 0% 98.82%;   /* the canvas (page) — #fcfcfc, a tint under the paper */
-  --bg-200: 0 0% 98.04%;  /* the rail (geist background-200) */
-  --bg-300: 0 0% 94.9%;   /* the panel: controls, chips, wells (geist gray-100) */
+  --bg-000: 0 0% 100%; /* the paper (elevated) */
+  --bg-100: 0 0% 98.82%; /* the canvas (page) — #fcfcfc, a tint under the paper */
+  --bg-200: 0 0% 98.04%; /* the rail (geist background-200) */
+  --bg-300: 0 0% 94.9%; /* the panel: controls, chips, wells (geist gray-100) */
   --text-000: 0 0% 0%;
   --text-100: 0 0% 12%;
   --text-200: 0 0% 40%;
@@ -666,13 +691,13 @@ html[data-theme="socrates"][data-mode="light"] {
 /* -------------------------------------------------------------------------
  * Philosophy Theme ("Classic Socratic" — warm parchment & scholarly ink)
  * ----------------------------------------------------------------------- */
-html[data-theme="philosophy"][data-mode],
-html[data-theme="philosophy"][data-mode]:lang(zh) {
+html[data-theme='philosophy'][data-mode],
+html[data-theme='philosophy'][data-mode]:lang(zh) {
   --font-sans: var(--ui-font-ui);
   --cg-font: var(--font-sans);
-  --font-display: "Newsreader", "Charis SIL", "Noto Sans SC", "Georgia", serif;
+  --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
   --font-serif: var(--font-display);
-  --font-mono: "Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-mono: 'Geist Mono', 'Noto Sans SC', ui-monospace, 'SFMono-Regular', Consolas, monospace;
   --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 90%, var(--ui-text-secondary));
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 92%, transparent);
   --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 95%, transparent);
@@ -683,15 +708,15 @@ html[data-theme="philosophy"][data-mode]:lang(zh) {
   --lobe-border-radius-lg: var(--ui-radius-lg);
 }
 
-html[data-theme="philosophy"] .greeting,
-html[data-theme="philosophy"] .topic-title,
-html[data-theme="philosophy"] .auth-brand span,
-html[data-theme="philosophy"] .sidebar-logo span {
+html[data-theme='philosophy'] .greeting,
+html[data-theme='philosophy'] .topic-title,
+html[data-theme='philosophy'] .auth-brand span,
+html[data-theme='philosophy'] .sidebar-logo span {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
 }
 
-html[data-theme="philosophy"][data-mode="light"] {
+html[data-theme='philosophy'][data-mode='light'] {
   --background: rgb(247 244 238);
   --foreground: rgb(28 26 23);
   --card: rgb(252 251 249);
@@ -779,7 +804,7 @@ html[data-theme="philosophy"][data-mode="light"] {
   --border-500: 36 15% 60%;
 }
 
-html[data-theme="philosophy"][data-mode="dark"] {
+html[data-theme='philosophy'][data-mode='dark'] {
   --background: rgb(18 17 16);
   --foreground: rgb(242 237 228);
   --card: rgb(32 30 27);
@@ -850,7 +875,7 @@ html[data-theme="philosophy"][data-mode="dark"] {
   --conversation-user: var(--ui-bg-bubble);
 
   --bg-000: 30 7% 7.1%;
-  --bg-100: 30 8% 9.0%;
+  --bg-100: 30 8% 9%;
   --bg-200: 30 8% 11.8%;
   --bg-300: 30 8% 14.9%;
   --text-000: 38 35% 98%;

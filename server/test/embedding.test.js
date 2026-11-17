@@ -16,7 +16,11 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { embedTexts, isAllowedEmbeddingUrl, requestEmbeddingBatch } from '../src/services/embeddings/embedding.js';
+import {
+  embedTexts,
+  isAllowedEmbeddingUrl,
+  requestEmbeddingBatch,
+} from '../src/services/embeddings/embedding.js';
 
 test('cancelled embeddings return without provider lookup or network work', async () => {
   const controller = new AbortController();
@@ -24,14 +28,21 @@ test('cancelled embeddings return without provider lookup or network work', asyn
   assert.equal(await embedTexts(['query'], { signal: controller.signal }), null);
 });
 
-const transportConfig = { url: 'https://embedding.example.test/v1', model: 'test-model', keyPlaintext: 'test-key', dimensions: 2 };
+const transportConfig = {
+  url: 'https://embedding.example.test/v1',
+  model: 'test-model',
+  keyPlaintext: 'test-key',
+  dimensions: 2,
+};
 
 test('embedding transport passes cancellation to a pending fetch', async (t) => {
   const controller = new AbortController();
   let requestSignal;
   t.mock.method(globalThis, 'fetch', async (_url, options) => {
     requestSignal = options.signal;
-    return new Promise((_resolve, reject) => requestSignal.addEventListener('abort', () => reject(requestSignal.reason), { once: true }));
+    return new Promise((_resolve, reject) =>
+      requestSignal.addEventListener('abort', () => reject(requestSignal.reason), { once: true }),
+    );
   });
   const pending = requestEmbeddingBatch(transportConfig, ['query'], { signal: controller.signal });
   await Promise.resolve();
@@ -57,7 +68,11 @@ test('embedding cancellation also bounds a stalled response body', async (t) => 
 test('embedding transport preserves request shape and validates returned dimensions', async (t) => {
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     assert.equal(url, 'https://embedding.example.test/v1/embeddings');
-    assert.deepEqual(JSON.parse(options.body), { model: 'test-model', input: ['query'], dimensions: 2 });
+    assert.deepEqual(JSON.parse(options.body), {
+      model: 'test-model',
+      input: ['query'],
+      dimensions: 2,
+    });
     return { ok: true, json: async () => ({ data: [{ embedding: [0.2, 0.8] }] }) };
   });
   assert.deepEqual(await requestEmbeddingBatch(transportConfig, ['query']), [[0.2, 0.8]]);

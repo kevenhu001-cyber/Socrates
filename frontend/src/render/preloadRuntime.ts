@@ -20,6 +20,7 @@
  * loader retries on demand) and reduced-data users are skipped.
  */
 import { ensureEcharts } from '../vendor/lazy.ts';
+import { sessionStore } from '../store/index.ts';
 
 let installed = false;
 
@@ -41,21 +42,21 @@ function warmChartsOnToolUse(event: Event): void {
   if (chartsWarmed) return;
   const detail = (event as CustomEvent<{ type?: string; messageId?: string }>).detail;
   if (!detail || detail.type !== 'tool-run-updated') return;
-  const store = (window as Window & {
-    stateStore?: { read(key: string): unknown };
-  }).stateStore;
-  const messages = store?.read('messages') as Array<{
-    clientId?: string;
-    toolCalls?: Array<{ name?: string }>;
-  }> | undefined;
-  if (!Array.isArray(messages)) return;
+  const { messages } = sessionStore.getState();
   const message = detail.messageId
     ? messages.find((entry) => entry.clientId === detail.messageId)
     : messages[messages.length - 1];
-  const calls = message?.toolCalls || [];
-  if (!calls.some((call) => call.name === 'render_intelligent_ui' || call.name === 'render_visualization')) return;
+  const calls = Array.isArray(message?.toolCalls) ? message.toolCalls : [];
+  if (
+    !calls.some(
+      (call) => call.name === 'render_intelligent_ui' || call.name === 'render_visualization',
+    )
+  )
+    return;
   chartsWarmed = true;
-  void ensureEcharts().catch(() => { /* the card retries on demand */ });
+  void ensureEcharts().catch(() => {
+    /* the card retries on demand */
+  });
 }
 
 /** Idempotent; call once the app shell is interactive. */

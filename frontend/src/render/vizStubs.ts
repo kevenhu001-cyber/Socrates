@@ -18,10 +18,14 @@ let _vizId = 0;
 export let _pendingMermaid: { id: string; code: string; validated?: boolean }[] = [];
 export let _pendingViz: { id: string }[] = [];
 
-export const VIZ_ICON_RENDER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
-export const VIZ_ICON_RELOAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
-export const VIZ_ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
-export const VIZ_ICON_SOURCE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><path d="m14 5-4 14"/></svg>';
+export const VIZ_ICON_RENDER =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
+export const VIZ_ICON_RELOAD =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+export const VIZ_ICON_EXPAND =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><path d="M9 21 3 21 3 15"/><path d="M21 3 14 10"/><path d="M3 21 10 14"/></svg>';
+export const VIZ_ICON_SOURCE =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 9-3 3 3 3"/><path d="m16 9 3 3-3 3"/><path d="m14 5-4 14"/></svg>';
 
 /* VIZ_THEME_RESET — applied INSIDE the iframe so the user's canvas
    inherits the page's design tokens (text color, accent, monospace
@@ -32,20 +36,19 @@ export const VIZ_THEME_RESET =
      now bundled with the parent app, so it uses the platform font stack
      instead of blocking on fonts.googleapis.com. */
   '<style>' +
-    '*,*::before,*::after{box-sizing:border-box}' +
-    'html,body{margin:0;padding:0}' +
-    'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55;color:var(--text-100,#171717);background:transparent}' +
-    'html[data-mode=dark] body,[data-mode=dark] body{color:var(--text-100,#ededed);background:transparent}' +
-    'a{color:var(--accent-000,#3b82f6)}' +
-    'svg{max-width:100%;height:auto;display:block}' +
-    'pre{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}' +
-    'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
+  '*,*::before,*::after{box-sizing:border-box}' +
+  'html,body{margin:0;padding:0}' +
+  'body{font-family:"Noto Sans SC","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;font-size:14px;line-height:1.55;color:var(--text-100,#171717);background:transparent}' +
+  'html[data-mode=dark] body,[data-mode=dark] body{color:var(--text-100,#ededed);background:transparent}' +
+  'a{color:var(--accent-000,#3b82f6)}' +
+  'svg{max-width:100%;height:auto;display:block}' +
+  'pre{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em;background:rgba(120,120,140,0.08);border-radius:8px;padding:8px 10px;overflow:auto}' +
+  'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
   '</style>';
 
 import { esc, escAttr } from './text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { stateStore } from '../state/store.ts';
-
+import { sessionBridge } from '../store/index.ts';
 
 /* Runtime snippet that runs at the END of every iframe body. It
    1. Posts {type:'viz-ready'} when the body has parsed + all
@@ -66,11 +69,14 @@ import { stateStore } from '../state/store.ts';
    on the floor (entry lookup on "" failed silently). */
 function vizRuntime(vizId: string) {
   const idJson = JSON.stringify(vizId);
-  return '<script>' +
+  return (
+    '<script>' +
     '(function(){' +
-      'var VIZ_ID=' + idJson + ';' +
-      'function docH(){return Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)}' +
-      /* errNow() reports the card's failure state — either a runtime
+    'var VIZ_ID=' +
+    idJson +
+    ';' +
+    'function docH(){return Math.max(document.body.scrollHeight,document.documentElement.scrollHeight||0)}' +
+    /* errNow() reports the card's failure state — either a runtime
          error caught by our listeners (_err) or a synchronous script
          error recorded by guardUserScripts' try/catch wrapper
          (window.__vizErr), which fires before this snippet even runs.
@@ -78,47 +84,48 @@ function vizRuntime(vizId: string) {
          parent's listener is not attached yet (the viz runtime chunk
          loads lazily), so postReady and the ping ack re-check the
          recorded state instead of blindly claiming readiness. */
-      'function errNow(){return _err||window.__vizErr||null}' +
-      /* NOTE — the catch(e){} bodies below are part of the IFRAME source
+    'function errNow(){return _err||window.__vizErr||null}' +
+    /* NOTE — the catch(e){} bodies below are part of the IFRAME source
          string, not parent-frame code. They run inside the sandboxed srcdoc
          document, where `reportSwallow` does not exist: injecting it would
          raise a ReferenceError and break the card outright. Their own error
          channel is the guardUserScripts wrapper (window.__vizErr) plus
          postError(), which posts to the parent. Instrumenting them needs a
          local shim inside the srcdoc, not this module's helper. */
-      'function postReady(){' +
-        'var er=errNow();if(er!==null){postError(er);return}' +
-        'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:docH()},"*")}catch(e){}' +
-      '}' +
-      'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
-      /* P_viz-ping-ack — the parent pings us when its max-wait expires
+    'function postReady(){' +
+    'var er=errNow();if(er!==null){postError(er);return}' +
+    'try{window.parent.postMessage({type:"viz-ready",vizId:VIZ_ID,h:docH()},"*")}catch(e){}' +
+    '}' +
+    'function postError(msg){try{window.parent.postMessage({type:"viz-error",vizId:VIZ_ID,message:String(msg||"").slice(0,300)},"*")}catch(e){}}' +
+    /* P_viz-ping-ack — the parent pings us when its max-wait expires
          without a viz-ready (the ready post can race the parent's
          listener attachment). We answer with a fresh viz-ready so the
          parent reuses one code path. vizId check keeps cards from
          answering each other's pings. */
-      'var _err=null;' +
-      'window.addEventListener("message",function(e){var d=e&&e.data;if(d&&d.type==="viz-ping"&&d.vizId===VIZ_ID){var er=errNow();if(er!==null)postError(er);else postReady()}});' +
-      /* P_viz-resize — height is only reported at ready time, but the
+    'var _err=null;' +
+    'window.addEventListener("message",function(e){var d=e&&e.data;if(d&&d.type==="viz-ping"&&d.vizId===VIZ_ID){var er=errNow();if(er!==null)postError(er);else postReady()}});' +
+    /* P_viz-resize — height is only reported at ready time, but the
          body keeps growing afterwards (late images, animations, async
          layout) and gets clipped by the fixed height. Observe the body
          and post throttled deltas so the parent can grow the iframe. */
-      'var _lastH=0;' +
-      'function postH(){var h=docH();if(Math.abs(h-_lastH)>=4){_lastH=h;try{window.parent.postMessage({type:"viz-resize",vizId:VIZ_ID,h:h},"*")}catch(e){}}}' +
-      'if(typeof ResizeObserver!=="undefined"){try{new ResizeObserver(function(){postH()}).observe(document.body)}catch(e){}}else{setInterval(postH,800)}' +
-      'window.addEventListener("error",function(e){_err=(e&&e.message)||"runtime error";postError(_err)});' +
-      'window.addEventListener("unhandledrejection",function(e){_err=(e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection";postError(_err)});' +
-      'function ready(){' +
-        'var fonts=(document.fonts&&document.fonts.ready)||null;' +
-        'var fontsPromise=fonts?fonts.then(function(){return null},function(){return null}):Promise.resolve(null);' +
-        'Promise.resolve(fontsPromise).then(setTimeout.bind(null,postReady,0));' +
-      '}' +
-      'if(document.readyState==="complete"||document.readyState==="interactive"){' +
-        'ready()' +
-      '}else{' +
-        'document.addEventListener("DOMContentLoaded",ready)' +
-      '}' +
+    'var _lastH=0;' +
+    'function postH(){var h=docH();if(Math.abs(h-_lastH)>=4){_lastH=h;try{window.parent.postMessage({type:"viz-resize",vizId:VIZ_ID,h:h},"*")}catch(e){}}}' +
+    'if(typeof ResizeObserver!=="undefined"){try{new ResizeObserver(function(){postH()}).observe(document.body)}catch(e){}}else{setInterval(postH,800)}' +
+    'window.addEventListener("error",function(e){_err=(e&&e.message)||"runtime error";postError(_err)});' +
+    'window.addEventListener("unhandledrejection",function(e){_err=(e&&e.reason&&(e.reason.message||e.reason))||"unhandled rejection";postError(_err)});' +
+    'function ready(){' +
+    'var fonts=(document.fonts&&document.fonts.ready)||null;' +
+    'var fontsPromise=fonts?fonts.then(function(){return null},function(){return null}):Promise.resolve(null);' +
+    'Promise.resolve(fontsPromise).then(setTimeout.bind(null,postReady,0));' +
+    '}' +
+    'if(document.readyState==="complete"||document.readyState==="interactive"){' +
+    'ready()' +
+    '}else{' +
+    'document.addEventListener("DOMContentLoaded",ready)' +
+    '}' +
     '})();' +
-  '</script>';
+    '</script>'
+  );
 }
 
 /* Session-level view preference for the Preview/Code toggle. Once a
@@ -127,21 +134,37 @@ function vizRuntime(vizId: string) {
    call). Persisted so the choice survives reloads. */
 let _vizViewPref: 'preview' | 'code' | undefined;
 
-function vizActions(cardId: unknown, showSource?: boolean|undefined, viewToggle?: boolean|undefined) {
-  return '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' + escAttr(cardId) +
-    '" data-viz-show-source="' + (showSource ? 'true' : 'false') +
-    '" data-viz-view-toggle="' + (viewToggle ? 'true' : 'false') + '"></div>';
+function vizActions(
+  cardId: unknown,
+  showSource?: boolean | undefined,
+  viewToggle?: boolean | undefined,
+) {
+  return (
+    '<div class="viz-actions" data-viz-actions-root data-viz-card-id="' +
+    escAttr(cardId) +
+    '" data-viz-show-source="' +
+    (showSource ? 'true' : 'false') +
+    '" data-viz-view-toggle="' +
+    (viewToggle ? 'true' : 'false') +
+    '"></div>'
+  );
 }
 
 export function vizErrorHtml(message: string, source: unknown) {
   const msg = esc(message || '');
   const src = esc(source || '');
-  return '<div class="viz-error">' +
+  return (
+    '<div class="viz-error">' +
     '<span class="viz-error-icon">!</span>' +
-    '<span class="viz-error-msg">' + msg + '</span>' +
+    '<span class="viz-error-msg">' +
+    msg +
+    '</span>' +
     '<div class="viz-error-action-host" data-viz-error-actions-root></div>' +
-    '<pre class="viz-error-source" hidden>' + src + '</pre>' +
-  '</div>';
+    '<pre class="viz-error-source" hidden>' +
+    src +
+    '</pre>' +
+    '</div>'
+  );
 }
 
 function vizLoadingHtml() {
@@ -149,15 +172,19 @@ function vizLoadingHtml() {
 }
 
 function getMermaidGlobal() {
-  return typeof window !== 'undefined' ? (window as unknown as { mermaid?: { parse?: (code: string, opts?: unknown) => boolean } }).mermaid : undefined;
+  return typeof window !== 'undefined'
+    ? (window as unknown as { mermaid?: { parse?: (code: string, opts?: unknown) => boolean } })
+        .mermaid
+    : undefined;
 }
 
 export function validMermaid(code: string) {
   try {
     const m = getMermaidGlobal();
-    return typeof m?.parse === "function" ? m.parse(code, { suppressErrors: true }) : true;
+    return typeof m?.parse === 'function' ? m.parse(code, { suppressErrors: true }) : true;
+  } catch (_) {
+    return false;
   }
-  catch (_) { return false; }
 }
 
 /* P_mermaid-parse-cache — during streaming the same stableId is re-rendered
@@ -181,7 +208,7 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
      in the drain, which is where they were parsed before. */
   let validated = false;
   const mermaidGlobal = getMermaidGlobal();
-  if (typeof mermaidGlobal !== "undefined") {
+  if (typeof mermaidGlobal !== 'undefined') {
     validated = true;
     if (!(stableId && _mermaidChecked[stableId] === 'ok')) {
       const ok = validMermaid(code);
@@ -194,11 +221,17 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
         _mermaidCheckedCount++;
       }
       if (!ok) {
-        const errorId = opts.stableId || 'mermaid-card-' + (++_vizId);
+        const errorId = opts.stableId || 'mermaid-card-' + ++_vizId;
         queueVizActions(errorId);
-        return '<div class="viz" id="' + escAttr(errorId) + '" data-viz-state="error">' +
+        return (
+          '<div class="viz" id="' +
+          escAttr(errorId) +
+          '" data-viz-state="error">' +
           vizActions(errorId) +
-          '<div class="viz-body">' + vizErrorHtml('Diagram syntax error', code) + '</div></div>';
+          '<div class="viz-body">' +
+          vizErrorHtml('Diagram syntax error', code) +
+          '</div></div>'
+        );
       }
     }
   }
@@ -207,18 +240,28 @@ export function renderMermaid(code: string, opts: { stableId?: string }) {
      streaming renderer (formatMsgProgressive) allocates a new
      viz-card-N every tick, blowing away the previous iframe and
      orphaning the postMessage handshake. */
-  const id = opts.stableId || "mermaid-card-" + (++_vizId);
+  const id = opts.stableId || 'mermaid-card-' + ++_vizId;
   /* Same id ⇒ same code (the stable id is a content hash), so a repeat
      push only duplicates queue work. */
-  if (!_pendingMermaid.some(function (item) { return item.id === id; })) {
+  if (
+    !_pendingMermaid.some(function (item) {
+      return item.id === id;
+    })
+  ) {
     _pendingMermaid.push({ id: id, code: code, validated: validated });
   }
   queueVizActions(id);
-  if (typeof mermaidGlobal === "undefined") ensureMermaid();
-  return '<div class="viz" id="' + id + '" data-viz-state="loading">' +
+  if (typeof mermaidGlobal === 'undefined') ensureMermaid();
+  return (
+    '<div class="viz" id="' +
+    id +
+    '" data-viz-state="loading">' +
     vizActions(id) +
-    '<div class="viz-body">' + vizLoadingHtml() + '</div>' +
-  '</div>';
+    '<div class="viz-body">' +
+    vizLoadingHtml() +
+    '</div>' +
+    '</div>'
+  );
 }
 
 /* Encode a doc for use as the value of the iframe's `srcdoc` and
@@ -248,12 +291,19 @@ export function renderVizLoading(opts: { streaming?: boolean; stableId?: string 
      in-place across rAF ticks instead of being torn down and
      re-created. */
   const streaming = opts.streaming;
-  const id = opts.stableId || ("viz-card-" + (++_vizId));
+  const id = opts.stableId || 'viz-card-' + ++_vizId;
   const body = streaming ? '' : vizLoadingHtml();
-  return '<div class="viz" id="' + id + '" data-viz-state="loading"' +
-    (streaming ? ' data-streaming="1"' : '') + '>' +
-    '<div class="viz-body">' + body + '</div>' +
-  '</div>';
+  return (
+    '<div class="viz" id="' +
+    id +
+    '" data-viz-state="loading"' +
+    (streaming ? ' data-streaming="1"' : '') +
+    '>' +
+    '<div class="viz-body">' +
+    body +
+    '</div>' +
+    '</div>'
+  );
 }
 
 export function guardUserScripts(html: string, vizId: string) {
@@ -266,15 +316,23 @@ export function guardUserScripts(html: string, vizId: string) {
      until the 5s max-timer fired. The wrapper is self-contained —
      no external globals — so it works under sandbox="allow-scripts". */
   const idJson = JSON.stringify(vizId);
-  return String(html || '').replace(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi, function (_, attrs, code) {
-    const safe = '(function(){' +
-      'try{' + code + '}catch(e){' +
-      'window.__vizErr=String((e&&e.message)||e).slice(0,300);' +
-      'try{window.parent.postMessage({type:"viz-error",vizId:' + idJson + ',message:window.__vizErr},"*")}catch(_){}' +
-      '}' +
-    '}).call(this);';
-    return '<script' + (attrs || '') + '>' + safe + '</script>';
-  });
+  return String(html || '').replace(
+    /<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi,
+    function (_, attrs, code) {
+      const safe =
+        '(function(){' +
+        'try{' +
+        code +
+        '}catch(e){' +
+        'window.__vizErr=String((e&&e.message)||e).slice(0,300);' +
+        'try{window.parent.postMessage({type:"viz-error",vizId:' +
+        idJson +
+        ',message:window.__vizErr},"*")}catch(_){}' +
+        '}' +
+        '}).call(this);';
+      return '<script' + (attrs || '') + '>' + safe + '</script>';
+    },
+  );
 }
 
 export function renderViz(htmlStr: string, opts: { stableId?: string }) {
@@ -285,8 +343,8 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
      a stable id. Reuse that id so the same <div class="viz"> is
      updated in-place (innerHTML swap), which keeps the layout
      stable and avoids the iframe tearing down + re-mounting. */
-  const id = opts.stableId || "viz-card-" + (++_vizId);
-  const title = (stateStore.read("topic") || "Canvas").toString().slice(0, 40);
+  const id = opts.stableId || 'viz-card-' + ++_vizId;
+  const title = (sessionBridge.getSnapshot().topic || 'Canvas').toString().slice(0, 40);
   // P_svg-no-xml-pi — strip the `<?xml version="1.0"?>` processing
   // instruction if the user pasted a standalone SVG document. Inside
   // an HTML <body>, the HTML5 tokenizer turns `<?...?>` into a bogus
@@ -301,31 +359,63 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
   // <head>, and the vizRuntime(id) snippet (which posts viz-ready)
   // is appended at the end of <body> so it runs AFTER all of the
   // user's inline <script>s.
-  const currentMode = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-mode') || 'light') : 'light';
-  const doc = '<!DOCTYPE html><html data-mode="' + escAttr(currentMode) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  const currentMode =
+    typeof document !== 'undefined'
+      ? document.documentElement.getAttribute('data-mode') || 'light'
+      : 'light';
+  const doc =
+    '<!DOCTYPE html><html data-mode="' +
+    escAttr(currentMode) +
+    '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
-    '<script>window.__vizId=' + JSON.stringify(id) + ';' +
+    '<script>window.__vizId=' +
+    JSON.stringify(id) +
+    ';' +
     'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change")document.documentElement.setAttribute("data-mode",e.data.mode);});' +
     '</script>' +
-    '</head><body>' + guardUserScripts(cleaned, id) + vizRuntime(id) + '</body></html>';
+    '</head><body>' +
+    guardUserScripts(cleaned, id) +
+    vizRuntime(id) +
+    '</body></html>';
   const srcdoc = encodeSrcdoc(doc);
   const bodyHtml =
     /* Code pane — shown when the card's data-viz-view="code". Lives
        inside .viz-body so error banners stay visible in both views. */
-    '<pre class="viz-code-pane"><code class="language-html">' + esc(cleaned) + '</code></pre>' +
+    '<pre class="viz-code-pane"><code class="language-html">' +
+    esc(cleaned) +
+    '</code></pre>' +
     vizLoadingHtml() +
-    '<iframe data-source="' + encodeSrcdoc(cleaned) + '" data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
+    '<iframe data-source="' +
+    encodeSrcdoc(cleaned) +
+    '" data-srcdoc="' +
+    srcdoc +
+    '" srcdoc="' +
+    srcdoc +
     '" sandbox="allow-scripts" title="Canvas" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:160px">' +
     '</iframe>';
-  if (!_pendingViz.some(function (item) { return item.id === id; })) {
+  if (
+    !_pendingViz.some(function (item) {
+      return item.id === id;
+    })
+  ) {
     _pendingViz.push({ id: id });
   }
   queueVizActions(id);
-  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-viz-view="' + vizViewPref() + '" data-title="' + esc(title) + '">' +
+  return (
+    '<div class="viz" id="' +
+    id +
+    '" data-viz-state="loading" data-viz-view="' +
+    vizViewPref() +
+    '" data-title="' +
+    esc(title) +
+    '">' +
     vizActions(id, true, true) +
-    '<div class="viz-body">' + bodyHtml + '</div>' +
-  '</div>';
+    '<div class="viz-body">' +
+    bodyHtml +
+    '</div>' +
+    '</div>'
+  );
 }
 
 /* Parse a ```plot``` spec. Accepted forms:
@@ -339,18 +429,34 @@ function parsePlotSpec(spec: string) {
   let color = '#3a6df0';
   let width = 1.6;
   const colorM = src.match(/\scolor\s*=\s*([a-zA-Z#][a-zA-Z0-9#(),.%\- ]*)/i);
-  if (colorM) { color = colorM[1].trim(); src = src.replace(colorM[0], ''); }
+  if (colorM) {
+    color = colorM[1].trim();
+    src = src.replace(colorM[0], '');
+  }
   const widthM = src.match(/\swidth\s*=\s*([0-9]*\.?[0-9]+)/i);
-  if (widthM) { width = parseFloat(widthM[1]) || width; src = src.replace(widthM[0], ''); }
-  let xMin = -10, xMax = 10;
-  const rangeM = src.match(/\sfrom\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)\s+to\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)/i);
+  if (widthM) {
+    width = parseFloat(widthM[1]) || width;
+    src = src.replace(widthM[0], '');
+  }
+  let xMin = -10,
+    xMax = 10;
+  const rangeM = src.match(
+    /\sfrom\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)\s+to\s+(-?[0-9.]+(?:\s*\*\s*pi)?|pi|-pi|e|-e)/i,
+  );
   if (rangeM) {
     xMin = parsePlotRangeNumber(rangeM[1]);
     xMax = parsePlotRangeNumber(rangeM[2]);
     src = src.replace(rangeM[0], '');
   }
   const expr = src.trim();
-  return { expr: expr, xMin: xMin, xMax: xMax, color: color, width: width, error: expr ? null : 'missing expression' };
+  return {
+    expr: expr,
+    xMin: xMin,
+    xMax: xMax,
+    color: color,
+    width: width,
+    error: expr ? null : 'missing expression',
+  };
 }
 
 function parsePlotRangeNumber(tok: string) {
@@ -369,8 +475,8 @@ function parsePlotRangeNumber(tok: string) {
 export function renderPlot(spec: string, opts: { stableId?: string }) {
   opts = opts || {};
   /* P_viz-stable-id — see renderViz for rationale. */
-  const id = opts.stableId || "viz-card-" + (++_vizId);
-  const title = "Plot";
+  const id = opts.stableId || 'viz-card-' + ++_vizId;
+  const title = 'Plot';
   const parsed = parsePlotSpec(spec);
   // Serialize the plot spec. We do NOT inject this into the iframe
   // HTML via a separate <script> that runs AFTER the canvas script
@@ -385,89 +491,90 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     xMax: parsed.xMax,
     color: parsed.color,
     width: parsed.width,
-    error: parsed.error || null
+    error: parsed.error || null,
   });
-  const innerHtml = '<canvas id="cv" style="display:block;width:100%;height:340px;background:transparent"></canvas>' +
+  const innerHtml =
+    '<canvas id="cv" style="display:block;width:100%;height:340px;background:transparent"></canvas>' +
     '<script>(function(){' +
-      // Read the payload from the global set by the parent-of-this
-      // <script> at the top of <body>. Fall back to a parse-error
-      // message if the payload is missing (parent forgot to set
-      // it, or the iframe was reloaded without re-running the
-      // setup script).
-      'var p=window.__plot;' +
-      'var cv=document.getElementById("cv");' +
-      'if(!cv){return;}' +
-      'if(!p){var c0=cv.getContext("2d");c0.fillStyle="#a04040";c0.font="13px sans-serif";c0.fillText("Plot payload missing",16,24);return;}' +
-      'var dpr=window.devicePixelRatio||1;' +
-      'function fit(){var w=cv.clientWidth||600;var h=cv.clientHeight||340;cv.width=Math.max(1,Math.floor(w*dpr));cv.height=Math.max(1,Math.floor(h*dpr));}' +
-      'fit();' +
-      'window.addEventListener("resize",function(){fit();draw();});' +
-      'function compile(src){' +
-        'var s=src.replace(/\\s+/g,"");var i=0;' +
-        'function peek(){return s[i];}' +
-        'function eat(c){if(s[i]===c){i++;return true;}return false;}' +
-        'function err(m){throw new Error(m);}' +
-        'function bin(a,b,op){if(op==="+")return function(x){return a(x)+b(x)};if(op==="-")return function(x){return a(x)-b(x)};if(op==="*")return function(x){return a(x)*b(x)};if(op==="/")return function(x){return a(x)/b(x)};return function(x){return Math.pow(a(x),b(x))}}' +
-        'function expr(){var v=term();while(peek()==="+"||peek()==="-"){var op=s[i++];v=bin(v,term(),op);}return v;}' +
-        'function term(){var v=power();while(peek()==="*"||peek()==="/"){var op=s[i++];v=bin(v,power(),op);}return v;}' +
-        'function power(){var v=atom();if(eat("^")){v=bin(v,power(),"^");}return v;}' +
-        'function atom(){' +
-          'var c=peek();' +
-          'if(c==="("){i++;var v=expr();if(!eat(")"))err("missing )");return v;}' +
-          'if(c==="-"){i++;var n=atom();return function(x){return -n(x)}}' +
-          'if(c==="+"){i++;return atom();}' +
-          'var n=s.slice(i).match(/^[0-9]*\\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);if(n){i+=n[0].length;var q=parseFloat(n[0]);return function(){return q};}' +
-          'var id=s.slice(i).match(/^[A-Za-z][A-Za-z0-9]*/);if(id){var nm=id[0];i+=nm.length;' +
-            'if(nm==="x")return function(x){return x};if(nm==="pi")return function(){return Math.PI};if(nm==="e")return function(){return Math.E};' +
-            'var F={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,exp:Math.exp,log:Math.log,ln:Math.log,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};' +
-            'if(F[nm]){if(!eat("("))err("expected (");var a=expr();if(!eat(")"))err("missing )");return function(x){return F[nm](a(x))};}' +
-            'err("unknown: "+nm);}' +
-          'err("unexpected "+c);}' +
-        'return expr();' +
-      '}' +
-      'var tree=null;' +
-      'try{tree=compile(p.expr||"");}catch(err2){' +
-        'var c0=cv.getContext("2d");c0.fillStyle="#a04040";c0.font="13px sans-serif";c0.fillText("Parse error: "+err2.message,16,24);' +
-        'return;' +
-      '}' +
-      'function draw(){' +
-        'var ctx=cv.getContext("2d");var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);' +
-        'if(p.error){ctx.fillStyle="#a04040";ctx.font="13px sans-serif";ctx.fillText("Plot error: "+p.error,16,24);return;}' +
-        'var N=400;var xs=new Array(N);var ys=new Array(N);' +
-        'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=tree(xv);ys[k]=isFinite(yv)?yv:NaN;}' +
-        'var yMin=Infinity,yMax=-Infinity;' +
-        'for(var k2=0;k2<N;k2++){if(isFinite(ys[k2])){if(ys[k2]<yMin)yMin=ys[k2];if(ys[k2]>yMax)yMax=ys[k2];}}' +
-        'if(!isFinite(yMin)){yMin=-1;yMax=1;}' +
-        'var pad=(yMax-yMin)*0.1||1;yMin-=pad;yMax+=pad;' +
-        'var left=Math.floor(40*dpr),right=Math.floor(w-30*dpr),top=Math.floor(20*dpr),bottom=Math.floor(h-30*dpr);' +
-        'var W=right-left,H=bottom-top;' +
-        'function X(xv){return left+(xv-p.xMin)/(p.xMax-p.xMin)*W;}' +
-        'function Y(yv){return bottom-(yv-yMin)/(yMax-yMin)*H;}' +
-        'var isDark=(document.documentElement.getAttribute("data-mode")==="dark");' +
-        'var axisColor=isDark?"#a1a1a1":"#68748a";' +
-        'var gridColor=isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)";' +
-        'var lineColor=p.color&&p.color!=="#3a6df0"?p.color:(isDark?"#3b82f6":"#2563eb");' +
-        'ctx.strokeStyle=gridColor;ctx.lineWidth=1;ctx.beginPath();' +
-        'if(yMin<0&&yMax>0){ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));}' +
-        'if(p.xMin<0&&p.xMax>0){ctx.moveTo(X(0),top);ctx.lineTo(X(0),bottom);}' +
-        'ctx.stroke();' +
-        'ctx.strokeStyle=axisColor;ctx.lineWidth=1;ctx.beginPath();' +
-        'ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();' +
-        'if(yMin<0&&yMax>0){ctx.strokeStyle=axisColor;ctx.beginPath();ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));ctx.stroke();}' +
-        'if(p.xMin<0&&p.xMax>0){ctx.strokeStyle=axisColor;ctx.beginPath();ctx.moveTo(X(0),top);ctx.lineTo(X(0),bottom);ctx.stroke();}' +
-        'ctx.fillStyle=axisColor;ctx.font=Math.floor(10*dpr)+"px sans-serif";' +
-        'ctx.textAlign="right";ctx.textBaseline="middle";' +
-        'var yTicks=5;for(var t=0;t<=yTicks;t++){var yv=yMin+(yMax-yMin)*t/yTicks;ctx.fillText(yv.toFixed(2),left-6*dpr,Y(yv));}' +
-        'ctx.textAlign="center";ctx.textBaseline="top";' +
-        'var xTicks=6;for(var t2=0;t2<=xTicks;t2++){var xv=p.xMin+(p.xMax-p.xMin)*t2/xTicks;ctx.fillText(xv.toFixed(2),X(xv),bottom+4*dpr);}' +
-        'ctx.strokeStyle=lineColor;ctx.lineWidth=p.width*dpr;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();' +
-        'var started=false;' +
-        'for(var k3=0;k3<N;k3++){if(!isFinite(ys[k3])){started=false;continue;}var px=X(xs[k3]),py=Y(ys[k3]);if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}}' +
-        'ctx.stroke();' +
-        'ctx.fillStyle=axisColor;ctx.font="italic "+Math.floor(11*dpr)+"px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText("f(x) = "+p.expr,left,Math.floor(6*dpr));' +
-      '}' +
-      'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change"){document.documentElement.setAttribute("data-mode",e.data.mode);draw();}});' +
-      'draw();' +
+    // Read the payload from the global set by the parent-of-this
+    // <script> at the top of <body>. Fall back to a parse-error
+    // message if the payload is missing (parent forgot to set
+    // it, or the iframe was reloaded without re-running the
+    // setup script).
+    'var p=window.__plot;' +
+    'var cv=document.getElementById("cv");' +
+    'if(!cv){return;}' +
+    'if(!p){var c0=cv.getContext("2d");c0.fillStyle="#a04040";c0.font="13px sans-serif";c0.fillText("Plot payload missing",16,24);return;}' +
+    'var dpr=window.devicePixelRatio||1;' +
+    'function fit(){var w=cv.clientWidth||600;var h=cv.clientHeight||340;cv.width=Math.max(1,Math.floor(w*dpr));cv.height=Math.max(1,Math.floor(h*dpr));}' +
+    'fit();' +
+    'window.addEventListener("resize",function(){fit();draw();});' +
+    'function compile(src){' +
+    'var s=src.replace(/\\s+/g,"");var i=0;' +
+    'function peek(){return s[i];}' +
+    'function eat(c){if(s[i]===c){i++;return true;}return false;}' +
+    'function err(m){throw new Error(m);}' +
+    'function bin(a,b,op){if(op==="+")return function(x){return a(x)+b(x)};if(op==="-")return function(x){return a(x)-b(x)};if(op==="*")return function(x){return a(x)*b(x)};if(op==="/")return function(x){return a(x)/b(x)};return function(x){return Math.pow(a(x),b(x))}}' +
+    'function expr(){var v=term();while(peek()==="+"||peek()==="-"){var op=s[i++];v=bin(v,term(),op);}return v;}' +
+    'function term(){var v=power();while(peek()==="*"||peek()==="/"){var op=s[i++];v=bin(v,power(),op);}return v;}' +
+    'function power(){var v=atom();if(eat("^")){v=bin(v,power(),"^");}return v;}' +
+    'function atom(){' +
+    'var c=peek();' +
+    'if(c==="("){i++;var v=expr();if(!eat(")"))err("missing )");return v;}' +
+    'if(c==="-"){i++;var n=atom();return function(x){return -n(x)}}' +
+    'if(c==="+"){i++;return atom();}' +
+    'var n=s.slice(i).match(/^[0-9]*\\.?[0-9]+(?:[eE][-+]?[0-9]+)?/);if(n){i+=n[0].length;var q=parseFloat(n[0]);return function(){return q};}' +
+    'var id=s.slice(i).match(/^[A-Za-z][A-Za-z0-9]*/);if(id){var nm=id[0];i+=nm.length;' +
+    'if(nm==="x")return function(x){return x};if(nm==="pi")return function(){return Math.PI};if(nm==="e")return function(){return Math.E};' +
+    'var F={sin:Math.sin,cos:Math.cos,tan:Math.tan,asin:Math.asin,acos:Math.acos,atan:Math.atan,exp:Math.exp,log:Math.log,ln:Math.log,sqrt:Math.sqrt,abs:Math.abs,floor:Math.floor,ceil:Math.ceil,round:Math.round,sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};' +
+    'if(F[nm]){if(!eat("("))err("expected (");var a=expr();if(!eat(")"))err("missing )");return function(x){return F[nm](a(x))};}' +
+    'err("unknown: "+nm);}' +
+    'err("unexpected "+c);}' +
+    'return expr();' +
+    '}' +
+    'var tree=null;' +
+    'try{tree=compile(p.expr||"");}catch(err2){' +
+    'var c0=cv.getContext("2d");c0.fillStyle="#a04040";c0.font="13px sans-serif";c0.fillText("Parse error: "+err2.message,16,24);' +
+    'return;' +
+    '}' +
+    'function draw(){' +
+    'var ctx=cv.getContext("2d");var w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);' +
+    'if(p.error){ctx.fillStyle="#a04040";ctx.font="13px sans-serif";ctx.fillText("Plot error: "+p.error,16,24);return;}' +
+    'var N=400;var xs=new Array(N);var ys=new Array(N);' +
+    'for(var k=0;k<N;k++){var xv=p.xMin+(p.xMax-p.xMin)*k/(N-1);xs[k]=xv;var yv=tree(xv);ys[k]=isFinite(yv)?yv:NaN;}' +
+    'var yMin=Infinity,yMax=-Infinity;' +
+    'for(var k2=0;k2<N;k2++){if(isFinite(ys[k2])){if(ys[k2]<yMin)yMin=ys[k2];if(ys[k2]>yMax)yMax=ys[k2];}}' +
+    'if(!isFinite(yMin)){yMin=-1;yMax=1;}' +
+    'var pad=(yMax-yMin)*0.1||1;yMin-=pad;yMax+=pad;' +
+    'var left=Math.floor(40*dpr),right=Math.floor(w-30*dpr),top=Math.floor(20*dpr),bottom=Math.floor(h-30*dpr);' +
+    'var W=right-left,H=bottom-top;' +
+    'function X(xv){return left+(xv-p.xMin)/(p.xMax-p.xMin)*W;}' +
+    'function Y(yv){return bottom-(yv-yMin)/(yMax-yMin)*H;}' +
+    'var isDark=(document.documentElement.getAttribute("data-mode")==="dark");' +
+    'var axisColor=isDark?"#a1a1a1":"#68748a";' +
+    'var gridColor=isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)";' +
+    'var lineColor=p.color&&p.color!=="#3a6df0"?p.color:(isDark?"#3b82f6":"#2563eb");' +
+    'ctx.strokeStyle=gridColor;ctx.lineWidth=1;ctx.beginPath();' +
+    'if(yMin<0&&yMax>0){ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));}' +
+    'if(p.xMin<0&&p.xMax>0){ctx.moveTo(X(0),top);ctx.lineTo(X(0),bottom);}' +
+    'ctx.stroke();' +
+    'ctx.strokeStyle=axisColor;ctx.lineWidth=1;ctx.beginPath();' +
+    'ctx.moveTo(left,top);ctx.lineTo(left,bottom);ctx.lineTo(right,bottom);ctx.stroke();' +
+    'if(yMin<0&&yMax>0){ctx.strokeStyle=axisColor;ctx.beginPath();ctx.moveTo(left,Y(0));ctx.lineTo(right,Y(0));ctx.stroke();}' +
+    'if(p.xMin<0&&p.xMax>0){ctx.strokeStyle=axisColor;ctx.beginPath();ctx.moveTo(X(0),top);ctx.lineTo(X(0),bottom);ctx.stroke();}' +
+    'ctx.fillStyle=axisColor;ctx.font=Math.floor(10*dpr)+"px sans-serif";' +
+    'ctx.textAlign="right";ctx.textBaseline="middle";' +
+    'var yTicks=5;for(var t=0;t<=yTicks;t++){var yv=yMin+(yMax-yMin)*t/yTicks;ctx.fillText(yv.toFixed(2),left-6*dpr,Y(yv));}' +
+    'ctx.textAlign="center";ctx.textBaseline="top";' +
+    'var xTicks=6;for(var t2=0;t2<=xTicks;t2++){var xv=p.xMin+(p.xMax-p.xMin)*t2/xTicks;ctx.fillText(xv.toFixed(2),X(xv),bottom+4*dpr);}' +
+    'ctx.strokeStyle=lineColor;ctx.lineWidth=p.width*dpr;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();' +
+    'var started=false;' +
+    'for(var k3=0;k3<N;k3++){if(!isFinite(ys[k3])){started=false;continue;}var px=X(xs[k3]),py=Y(ys[k3]);if(!started){ctx.moveTo(px,py);started=true;}else{ctx.lineTo(px,py);}}' +
+    'ctx.stroke();' +
+    'ctx.fillStyle=axisColor;ctx.font="italic "+Math.floor(11*dpr)+"px sans-serif";ctx.textAlign="left";ctx.textBaseline="top";ctx.fillText("f(x) = "+p.expr,left,Math.floor(6*dpr));' +
+    '}' +
+    'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change"){document.documentElement.setAttribute("data-mode",e.data.mode);draw();}});' +
+    'draw();' +
     '})();</script>';
   // CRITICAL: set window.__plot BEFORE the canvas init script runs.
   // The previous version placed the setAttribute call AFTER the
@@ -475,26 +582,57 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
   // to draw. We use a <script> at the TOP of <body> that runs
   // synchronously before any subsequent <script>.
   const setupScript = '<script>window.__plot=' + payloadJson + ';</script>';
-  const currentMode = typeof document !== 'undefined' ? (document.documentElement.getAttribute('data-mode') || 'light') : 'light';
-  const doc = '<!DOCTYPE html><html data-mode="' + escAttr(currentMode) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+  const currentMode =
+    typeof document !== 'undefined'
+      ? document.documentElement.getAttribute('data-mode') || 'light'
+      : 'light';
+  const doc =
+    '<!DOCTYPE html><html data-mode="' +
+    escAttr(currentMode) +
+    '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     VIZ_THEME_RESET +
-    '<script>window.__vizId=' + JSON.stringify(id) + ';</script>' +
-    '</head><body>' + setupScript + innerHtml + vizRuntime(id) + '</body></html>';
+    '<script>window.__vizId=' +
+    JSON.stringify(id) +
+    ';</script>' +
+    '</head><body>' +
+    setupScript +
+    innerHtml +
+    vizRuntime(id) +
+    '</body></html>';
   const srcdoc = encodeSrcdoc(doc);
   const bodyHtml =
     vizLoadingHtml() +
-    '<iframe data-source="' + encodeSrcdoc(String(spec || '')) + '" data-srcdoc="' + srcdoc + '" srcdoc="' + srcdoc +
-    '" sandbox="allow-scripts" title="Plot of ' + esc(parsed.expr) + '" ' +
+    '<iframe data-source="' +
+    encodeSrcdoc(String(spec || '')) +
+    '" data-srcdoc="' +
+    srcdoc +
+    '" srcdoc="' +
+    srcdoc +
+    '" sandbox="allow-scripts" title="Plot of ' +
+    esc(parsed.expr) +
+    '" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:340px">' +
     '</iframe>';
-  if (!_pendingViz.some(function (item) { return item.id === id; })) {
+  if (
+    !_pendingViz.some(function (item) {
+      return item.id === id;
+    })
+  ) {
     _pendingViz.push({ id: id });
   }
   queueVizActions(id);
-  return '<div class="viz" id="' + id + '" data-viz-state="loading" data-title="' + esc(title) + '">' +
+  return (
+    '<div class="viz" id="' +
+    id +
+    '" data-viz-state="loading" data-title="' +
+    esc(title) +
+    '">' +
     vizActions(id, true) +
-    '<div class="viz-body">' + bodyHtml + '</div>' +
-  '</div>';
+    '<div class="viz-body">' +
+    bodyHtml +
+    '</div>' +
+    '</div>'
+  );
 }
 
 export let _pendingActions: { id: string }[] = [];
@@ -506,8 +644,12 @@ export function queueVizActions(id: string) {
 /* ── Queue + shared-state accessors (the lazy half imports these) ── */
 
 export function dropPendingVizId(id: string) {
-  _pendingViz = _pendingViz.filter(function (item) { return item.id !== id; });
-  _pendingMermaid = _pendingMermaid.filter(function (item) { return item.id !== id; });
+  _pendingViz = _pendingViz.filter(function (item) {
+    return item.id !== id;
+  });
+  _pendingMermaid = _pendingMermaid.filter(function (item) {
+    return item.id !== id;
+  });
 }
 
 export function takePendingViz() {
@@ -538,8 +680,14 @@ export function vizViewPref(): 'preview' | 'code' {
   if (_vizViewPref === undefined) {
     _vizViewPref = 'preview';
     try {
-      if (typeof localStorage !== 'undefined' && localStorage.getItem('socrates-viz-view') === 'code') _vizViewPref = 'code';
-    } catch (e) { reportSwallow(e, 'vizStubs.readViewPref', 'expected'); }
+      if (
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem('socrates-viz-view') === 'code'
+      )
+        _vizViewPref = 'code';
+    } catch (e) {
+      reportSwallow(e, 'vizStubs.readViewPref', 'expected');
+    }
   }
   return _vizViewPref;
 }
@@ -549,7 +697,11 @@ export function setVizViewPref(view: 'preview' | 'code') {
 }
 
 export function pendingVizCounts() {
-  return { mermaid: _pendingMermaid.length, viz: _pendingViz.length, actions: _pendingActions.length };
+  return {
+    mermaid: _pendingMermaid.length,
+    viz: _pendingViz.length,
+    actions: _pendingActions.length,
+  };
 }
 
 /* ── Lazy viz runtime (./viz.js) ──────────────────────────────────
@@ -561,16 +713,28 @@ export function pendingVizCounts() {
  * keep appending to the queues above; the .then drain below flushes
  * everything once the module lands, so nothing gets stranded.
  */
-let _vizRuntime: typeof import("./viz.ts") | null = null;
-let _vizRuntimeImport: Promise<typeof import("./viz.ts")> | null = null;
+let _vizRuntime: typeof import('./viz.ts') | null = null;
+let _vizRuntimeImport: Promise<typeof import('./viz.ts')> | null = null;
 
 export function loadVizRuntime() {
   if (!_vizRuntimeImport) {
     _vizRuntimeImport = import('./viz.ts').then(function (m) {
       _vizRuntime = m;
-      try { m.processPendingViz(); } catch (e) { reportSwallow(e, 'vizStubs.drainViz'); /* drain errors are non-fatal */ }
-      try { m.processPendingMermaid(); } catch (e) { reportSwallow(e, 'vizStubs.drainMermaid'); /* drain errors are non-fatal */ }
-      try { m.processPendingVizActions(); } catch (e) { reportSwallow(e, 'vizStubs.drainActions'); /* drain errors are non-fatal */ }
+      try {
+        m.processPendingViz();
+      } catch (e) {
+        reportSwallow(e, 'vizStubs.drainViz'); /* drain errors are non-fatal */
+      }
+      try {
+        m.processPendingMermaid();
+      } catch (e) {
+        reportSwallow(e, 'vizStubs.drainMermaid'); /* drain errors are non-fatal */
+      }
+      try {
+        m.processPendingVizActions();
+      } catch (e) {
+        reportSwallow(e, 'vizStubs.drainActions'); /* drain errors are non-fatal */
+      }
       return m;
     });
     _vizRuntimeImport.catch(function (err) {
@@ -603,7 +767,9 @@ export function schedulePendingMermaid() {
   const m = _vizRuntime;
   if (m) return m.schedulePendingMermaid();
   if (_pendingMermaid.length) {
-    loadVizRuntime().then(function (r) { r.schedulePendingMermaid(); });
+    loadVizRuntime().then(function (r) {
+      r.schedulePendingMermaid();
+    });
   }
 }
 
@@ -613,7 +779,9 @@ export function reclaimVizCards(root: Element) {
   /* Only worth pulling the runtime down when a card actually exists in
      the DOM — reclaim re-adopts .viz elements after innerHTML rewrites. */
   if (root && typeof root.querySelector === 'function' && root.querySelector('.viz')) {
-    loadVizRuntime().then(function (r) { r.reclaimVizCards(root); });
+    loadVizRuntime().then(function (r) {
+      r.reclaimVizCards(root);
+    });
   }
 }
 
@@ -621,27 +789,39 @@ type VizRuntimeModule = typeof import('./viz.ts');
 export function parkVizCardForTest(card: Parameters<VizRuntimeModule['parkVizCardForTest']>[0]) {
   const m = _vizRuntime;
   if (m) return m.parkVizCardForTest(card);
-  return loadVizRuntime().then(function (r) { return r.parkVizCardForTest(card); });
+  return loadVizRuntime().then(function (r) {
+    return r.parkVizCardForTest(card);
+  });
 }
 
-export function unparkVizCardForTest(card: Parameters<VizRuntimeModule['unparkVizCardForTest']>[0]) {
+export function unparkVizCardForTest(
+  card: Parameters<VizRuntimeModule['unparkVizCardForTest']>[0],
+) {
   const m = _vizRuntime;
   if (m) return m.unparkVizCardForTest(card);
-  return loadVizRuntime().then(function (r) { return r.unparkVizCardForTest(card); });
+  return loadVizRuntime().then(function (r) {
+    return r.unparkVizCardForTest(card);
+  });
 }
 
 export function renderVizError(htmlStr: unknown, errorMsg: unknown) {
   const m = _vizRuntime;
   if (m) return m.renderVizError(htmlStr, errorMsg);
-  return loadVizRuntime().then(function (r) { return r.renderVizError(htmlStr, errorMsg); });
+  return loadVizRuntime().then(function (r) {
+    return r.renderVizError(htmlStr, errorMsg);
+  });
 }
 
 export function openVizModal(srcdoc: string | null | undefined, title?: string) {
-  loadVizRuntime().then(function (r) { r.openVizModal(srcdoc, title); });
+  loadVizRuntime().then(function (r) {
+    r.openVizModal(srcdoc, title);
+  });
 }
 
 export function openVizModalRaw(html: string | null | undefined, title?: string) {
-  loadVizRuntime().then(function (r) { r.openVizModalRaw(html, title); });
+  loadVizRuntime().then(function (r) {
+    r.openVizModalRaw(html, title);
+  });
 }
 
 /* ── Lazy visualization mounts (./visualization.js) ───────────────
@@ -675,21 +855,31 @@ export function mountVisualization(
   opts: Parameters<VisualizationModule['mountVisualization']>[2],
 ) {
   if (_visModule) return _visModule.mountVisualization(spec, host, opts);
-  return loadVisualization().then(function (m) { return m.mountVisualization(spec, host, opts); });
+  return loadVisualization().then(function (m) {
+    return m.mountVisualization(spec, host, opts);
+  });
 }
 
-export function disposeVisualizations(host: Parameters<VisualizationModule['disposeVisualizations']>[0]) {
+export function disposeVisualizations(
+  host: Parameters<VisualizationModule['disposeVisualizations']>[0],
+) {
   if (_visModule) {
     _visModule.disposeVisualizations(host);
   } else if (_visImport) {
-    _visImport.then(function (m) { m.disposeVisualizations(host); });
+    _visImport.then(function (m) {
+      m.disposeVisualizations(host);
+    });
   }
 }
 
-export function disposeVisualization(card: Parameters<VisualizationModule['disposeVisualization']>[0]) {
+export function disposeVisualization(
+  card: Parameters<VisualizationModule['disposeVisualization']>[0],
+) {
   if (_visModule) {
     _visModule.disposeVisualization(card);
   } else if (_visImport) {
-    _visImport.then(function (m) { m.disposeVisualization(card); });
+    _visImport.then(function (m) {
+      m.disposeVisualization(card);
+    });
   }
 }

@@ -5,4 +5,3 @@ export type PublicTurnActivity =
   | { type: 'synthesizing' }
   | { type: 'public_reasoning_summary'; text: string }
   | { type: 'done'; durationMs?: number };
-

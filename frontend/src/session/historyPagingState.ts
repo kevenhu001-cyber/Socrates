@@ -110,14 +110,19 @@ export function getHistoryPagingSnapshot(): HistoryPagingSnapshot {
 
 export function subscribeHistoryPaging(listener: Listener): () => void {
   listeners.add(listener);
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /** Replace fields of the snapshot; listeners run only on a real change. */
 export function patchHistoryPaging(patch: Partial<HistoryPagingSnapshot>): void {
   let changed = false;
   for (const key of Object.keys(patch) as Array<keyof HistoryPagingSnapshot>) {
-    if (patch[key] !== undefined && patch[key] !== snapshot[key]) { changed = true; break; }
+    if (patch[key] !== undefined && patch[key] !== snapshot[key]) {
+      changed = true;
+      break;
+    }
   }
   if (!changed) return;
   snapshot = Object.freeze({ ...snapshot, ...patch });
@@ -140,7 +145,9 @@ let beforeOlderRows: (() => void) | null = null;
     mount window steady across a prepend; returns an unregister function. */
 export function registerBeforeOlderRows(hook: () => void): () => void {
   beforeOlderRows = hook;
-  return () => { if (beforeOlderRows === hook) beforeOlderRows = null; };
+  return () => {
+    if (beforeOlderRows === hook) beforeOlderRows = null;
+  };
 }
 
 /** Run by the loader synchronously, right before older rows publish. */
@@ -166,7 +173,11 @@ export function requestOlderHistory(request: OlderHistoryRequest = {}): Promise<
 export async function requestAllOlderHistory(): Promise<number> {
   const sessionId = snapshot.sessionId;
   let added = 0;
-  for (let guard = 0; guard < 1000 && loader && snapshot.hasMore && snapshot.sessionId === sessionId; guard++) {
+  for (
+    let guard = 0;
+    guard < 1000 && loader && snapshot.hasMore && snapshot.sessionId === sessionId;
+    guard++
+  ) {
     const rows = await loader({ limit: 200 });
     if (rows <= 0 && (snapshot.failed || snapshot.sessionId !== sessionId)) break;
     added += rows;

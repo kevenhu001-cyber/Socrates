@@ -27,7 +27,7 @@ import { setLearningMode } from './learningModeState.ts';
 import { focusComposer, type ComposerSurface } from '../composer/controller.ts';
 import { setSidebarPanelView } from '../sidebar/sidebar.store.ts';
 import { getAppMode } from '../config/providers.ts';
-import { stateStore } from '../state/store.ts';
+import { kbBridge, sessionBridge } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 export { getLearningMode, setLearningMode, subscribeLearningMode } from './learningModeState.ts';
@@ -51,16 +51,23 @@ async function ensureTutorMode(): Promise<boolean> {
 
 /** A tutor session with a lesson in progress (not the landing page, not mid-diagnostic). */
 function inLesson(): boolean {
-  return !!stateStore.read('currentSessionId') && stateStore.read('phase') === 'chat'
-    && Array.isArray(stateStore.read('kbNodes')) && stateStore.read('kbNodes').length > 0;
+  return (
+    !!sessionBridge.getSnapshot().currentSessionId &&
+    sessionBridge.getSnapshot().phase === 'chat' &&
+    Array.isArray(kbBridge.getSnapshot().kbNodes) &&
+    kbBridge.getSnapshot().kbNodes.length > 0
+  );
 }
 
 /**
  * Select a mode and run its entry action. `surface` is where the control
  * sits: `home` (landing composer) or `session` (conversation composer).
  */
-export async function chooseLearningMode(id: LearningModeId, surface: 'home' | 'session'): Promise<void> {
-  if (!await ensureTutorMode()) return;
+export async function chooseLearningMode(
+  id: LearningModeId,
+  surface: 'home' | 'session',
+): Promise<void> {
+  if (!(await ensureTutorMode())) return;
   setLearningMode(id);
   const action = learningModeAction(id, surface);
   const composer: ComposerSurface = surface === 'home' ? 'topic' : 'chat';

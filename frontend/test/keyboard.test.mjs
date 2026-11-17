@@ -59,22 +59,22 @@ test('getKeyboardInset clamps to zero when visual viewport matches layout', () =
 test('measureKeyboard reports travel and inset from one viewport read', () => {
   /* Overlay mode (iOS Safari, Chrome/Edge Android 108+): the shell stays
      at full height while the visual viewport shrinks under the keyboard. */
-  assert.deepEqual(
-    measureKeyboard(844, { height: 510, offsetTop: 0 }, 844),
-    { travel: 334, inset: 334 },
-  );
+  assert.deepEqual(measureKeyboard(844, { height: 510, offsetTop: 0 }, 844), {
+    travel: 334,
+    inset: 334,
+  });
   /* Panned viewport: the pan reduces layout-space coverage but not the
      screen-space travel. */
-  assert.deepEqual(
-    measureKeyboard(844, { height: 560, offsetTop: 24 }, 844),
-    { travel: 284, inset: 260 },
-  );
+  assert.deepEqual(measureKeyboard(844, { height: 560, offsetTop: 24 }, 844), {
+    travel: 284,
+    inset: 260,
+  });
   /* Resize mode (Firefox Android, Capacitor resize:"native"): the shell
      already shrank — the keyboard covers nothing more. */
-  assert.deepEqual(
-    measureKeyboard(510, { height: 510, offsetTop: 0 }, 510),
-    { travel: 0, inset: 0 },
-  );
+  assert.deepEqual(measureKeyboard(510, { height: 510, offsetTop: 0 }, 510), {
+    travel: 0,
+    inset: 0,
+  });
   /* Legacy WebView without VisualViewport: a stuck-100vh shell paired
      with a shrunken innerHeight still yields the true keyboard height… */
   assert.deepEqual(measureKeyboard(844, null, 510), { travel: 334, inset: 334 });
@@ -125,8 +125,12 @@ test('isTrackedInputFocused ignores empty input list', () => {
 
 test('isTrackedInputFocused survives detached/custom-element throws', () => {
   const evil = {
-    contains: () => { throw new Error('detached'); },
-    matches: () => { throw new Error('detached'); },
+    contains: () => {
+      throw new Error('detached');
+    },
+    matches: () => {
+      throw new Error('detached');
+    },
   };
   const active = {};
   assert.equal(isTrackedInputFocused([evil], active), false);

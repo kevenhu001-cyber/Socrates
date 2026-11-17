@@ -25,7 +25,7 @@ import fsSync from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { loadPyodide, type PyodideInterface, type TypedArray } from 'pyodide';
-import { sanitizeLogValue } from '../lib/log.js';
+import { sanitizeLogValue } from '../lib/logRedaction.js';
 
 let pyodide: PyodideInterface | null = null;
 let bootError: Error | null = null;
@@ -52,13 +52,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isRunCodeRequest(value: unknown): value is RunCodeRequest {
-  return isRecord(value)
-    && value.type === 'run'
-    && typeof value.id === 'string'
-    && typeof value.code === 'string'
-    && typeof value.scratchDir === 'string'
-    && typeof value.maxOutputBytes === 'number'
-    && (value.interruptBuffer === undefined || value.interruptBuffer instanceof SharedArrayBuffer);
+  return (
+    isRecord(value) &&
+    value.type === 'run' &&
+    typeof value.id === 'string' &&
+    typeof value.code === 'string' &&
+    typeof value.scratchDir === 'string' &&
+    typeof value.maxOutputBytes === 'number' &&
+    (value.interruptBuffer === undefined || value.interruptBuffer instanceof SharedArrayBuffer)
+  );
 }
 
 /**
@@ -88,10 +90,15 @@ const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
    silently and burned the 8s download timeout on every worker boot,
    which then ate into the first call's 30s user-code budget and
    surfaced as a spurious "代码执行超时" error. */
-const CJK_FONT_HOST_DIR = process.env.EXEC_CJK_FONT_DIR
-  || path.join(process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : os.tmpdir(), 'socrates-cjk-fonts');
+const CJK_FONT_HOST_DIR =
+  process.env.EXEC_CJK_FONT_DIR ||
+  path.join(
+    process.env.NODE_ENV === 'production' ? '/var/lib/socrates' : os.tmpdir(),
+    'socrates-cjk-fonts',
+  );
 const CJK_FONT_FILENAME = 'NotoSansSC-Regular.otf';
-const CJK_FONT_URL = 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
+const CJK_FONT_URL =
+  'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf';
 /* Exact Git object metadata for the font at the pinned URL. */
 const CJK_FONT_EXPECTED_BYTES = 8_331_336;
 const CJK_FONT_GIT_BLOB_SHA1 = 'fc0fda9394367c16c1af7555a2ae4d5e2e6a6f02';
@@ -105,12 +112,16 @@ function _cjkFontPath(): string {
 }
 
 function _isCjkFontPayload(bytes: Buffer): boolean {
-  if (bytes.length !== CJK_FONT_EXPECTED_BYTES
-    || bytes.length < CJK_FONT_MIN_BYTES
-    || bytes.length > CJK_FONT_MAX_BYTES
-    || (bytes.toString('ascii', 0, 4) !== 'OTTO'
-      && !bytes.subarray(0, 4).equals(Buffer.from([0, 1, 0, 0])))) return false;
-  const gitObject = crypto.createHash('sha1')
+  if (
+    bytes.length !== CJK_FONT_EXPECTED_BYTES ||
+    bytes.length < CJK_FONT_MIN_BYTES ||
+    bytes.length > CJK_FONT_MAX_BYTES ||
+    (bytes.toString('ascii', 0, 4) !== 'OTTO' &&
+      !bytes.subarray(0, 4).equals(Buffer.from([0, 1, 0, 0])))
+  )
+    return false;
+  const gitObject = crypto
+    .createHash('sha1')
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
     .digest('hex');
@@ -152,19 +163,28 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
     await fs.chmod(CJK_FONT_HOST_DIR, 0o700);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    console.warn(`[pyodide] CJK font cache directory unavailable: ${sanitizeLogValue(detail, 160)}`);
+    console.warn(
+      `[pyodide] CJK font cache directory unavailable: ${sanitizeLogValue(detail, 160)}`,
+    );
     return null;
   }
   try {
     const st = await fs.lstat(target);
-    if (st.isFile() && !st.isSymbolicLink() && st.size >= CJK_FONT_MIN_BYTES && st.size <= CJK_FONT_MAX_BYTES) {
+    if (
+      st.isFile() &&
+      !st.isSymbolicLink() &&
+      st.size >= CJK_FONT_MIN_BYTES &&
+      st.size <= CJK_FONT_MAX_BYTES
+    ) {
       const cached = await fs.readFile(target);
       if (_isCjkFontPayload(cached)) {
         await fs.chmod(target, 0o600);
         return target;
       }
     }
-  } catch (_) { /* not cached yet */ }
+  } catch (_) {
+    /* not cached yet */
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CJK_FONT_BOOT_TIMEOUT_MS);
   try {
@@ -174,8 +194,11 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
       return null;
     }
     const contentLength = Number(resp.headers.get('content-length'));
-    if (Number.isFinite(contentLength) && contentLength > 0
-      && (contentLength < CJK_FONT_MIN_BYTES || contentLength > CJK_FONT_MAX_BYTES)) {
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > 0 &&
+      (contentLength < CJK_FONT_MIN_BYTES || contentLength > CJK_FONT_MAX_BYTES)
+    ) {
       await resp.body.cancel();
       console.warn('[pyodide] CJK font download size is outside the accepted range');
       return null;
@@ -198,10 +221,12 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
     } finally {
       await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
     }
-    console.log(`[pyodide] Cached CJK font (${(buf.length / 1024 / 1024).toFixed(1)} MB) at ${target}`);
+    console.log(
+      `[pyodide] Cached CJK font (${(buf.length / 1024 / 1024).toFixed(1)} MB) at ${target}`,
+    );
     return target;
   } catch (err) {
-    console.warn(`[pyodide] CJK font download failed: ${err && (err as Error).message || err}`);
+    console.warn(`[pyodide] CJK font download failed: ${(err && (err as Error).message) || err}`);
     return null;
   } finally {
     clearTimeout(timer);
@@ -213,7 +238,11 @@ function _registerCjkFontInPyodide(fontPath: string): string | null {
   try {
     const bytes = fsSync.readFileSync(fontPath);
     const memfsPath = '/usr/share/fonts/_socrates_cjk.otf';
-    try { pyodide.FS.mkdirTree('/usr/share/fonts'); } catch (_) { /* dir exists */ }
+    try {
+      pyodide.FS.mkdirTree('/usr/share/fonts');
+    } catch (_) {
+      /* dir exists */
+    }
     pyodide.FS.writeFile(memfsPath, new Uint8Array(bytes));
     const family = pyodide.runPython(`
 import matplotlib
@@ -266,7 +295,9 @@ except Exception as _e:
     }
     return null;
   } catch (err) {
-    console.warn(`[pyodide] CJK font registration threw: ${err && (err as Error).message || err}`);
+    console.warn(
+      `[pyodide] CJK font registration threw: ${(err && (err as Error).message) || err}`,
+    );
     return null;
   }
 }
@@ -278,7 +309,7 @@ function _ensureCjkFontRegistered(): Promise<string | null> {
       if (!fontPath) return null;
       return _registerCjkFontInPyodide(fontPath);
     })().catch((err) => {
-      console.warn(`[pyodide] CJK font setup failed: ${err && (err as Error).message || err}`);
+      console.warn(`[pyodide] CJK font setup failed: ${(err && (err as Error).message) || err}`);
       return null;
     });
   }
@@ -311,10 +342,18 @@ async function bootPyodide() {
       // threw: …')` already uses) so the diagnostic text stays visible
       // alongside the rest of the worker's journal.
       stdout: (msg: string) => {
-        try { console.log(`[pyodide-boot] ${msg}`); } catch (_) { /* worker torn down */ }
+        try {
+          console.log(`[pyodide-boot] ${msg}`);
+        } catch (_) {
+          /* worker torn down */
+        }
       },
       stderr: (msg: string) => {
-        try { console.warn(`[pyodide-boot] ${msg}`); } catch (_) { /* worker torn down */ }
+        try {
+          console.warn(`[pyodide-boot] ${msg}`);
+        } catch (_) {
+          /* worker torn down */
+        }
       },
     });
 
@@ -326,7 +365,7 @@ async function bootPyodide() {
       try {
         await pyodide.loadPackage([pkg]);
       } catch (e) {
-        console.error(`[pyodide] preload ${pkg} failed: ${e && (e as PyRunError).message || e}`);
+        console.error(`[pyodide] preload ${pkg} failed: ${(e && (e as PyRunError).message) || e}`);
       }
     }
 
@@ -481,7 +520,11 @@ def _socrates_make_flush(orig_flush):
     parentPort!.postMessage({ id: 'boot', type: 'ready', version: pyodide.version });
   } catch (err) {
     bootError = err as Error;
-    parentPort!.postMessage({ id: 'boot', type: 'error', error: String(err && (err as PyRunError).message || err) });
+    parentPort!.postMessage({
+      id: 'boot',
+      type: 'error',
+      error: String((err && (err as PyRunError).message) || err),
+    });
   }
 }
 
@@ -489,18 +532,33 @@ def _socrates_make_flush(orig_flush):
  * Execute one piece of user-supplied Python inside the warmed Pyodide
  * instance. Returns a structured result.
  */
-async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, interruptBuffer, signal }: RunCodeRequest) {
+async function runCode({
+  id,
+  executionId,
+  code,
+  scratchDir,
+  maxOutputBytes,
+  interruptBuffer,
+  signal,
+}: RunCodeRequest) {
   const startedAt = Date.now();
   if (!pyodide) {
     return {
-      id, type: 'result',
+      id,
+      type: 'result',
       status: 'failed',
-      errorMessage: bootError ? ('boot_error: ' + String(bootError.message)) : 'pyodide_not_ready',
-      stdout: '', stderr: '', exitCode: 1, durationMs: Math.max(1, Date.now() - startedAt), artifacts: [],
+      errorMessage: bootError ? 'boot_error: ' + String(bootError.message) : 'pyodide_not_ready',
+      stdout: '',
+      stderr: '',
+      exitCode: 1,
+      durationMs: Math.max(1, Date.now() - startedAt),
+      artifacts: [],
     };
   }
 
-  pyodide.runPython(`_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`);
+  pyodide.runPython(
+    `_stdout_cap.set_limit(${maxOutputBytes}); _stderr_cap.set_limit(${maxOutputBytes}); sys.stdout = _stdout_cap; sys.stderr = _stderr_cap`,
+  );
 
   /* P_progress — install the delta hooks so the parent receives
      incremental stdout/stderr. The stream emits on line boundaries
@@ -511,10 +569,16 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   const makeHook = (stream: string) => (_label: unknown, chunk: unknown) => {
     try {
       parentPort!.postMessage({
-        id, type: stream, stream, chunk: String(chunk || ''),
-        executionId, elapsedMs: Date.now() - startedAt,
+        id,
+        type: stream,
+        stream,
+        chunk: String(chunk || ''),
+        executionId,
+        elapsedMs: Date.now() - startedAt,
       });
-    } catch (_) { /* parent closed */ }
+    } catch (_) {
+      /* parent closed */
+    }
   };
   pyodide.globals.set('_socrates_out_hook_js', makeHook('stdout'));
   pyodide.globals.set('_socrates_err_hook_js', makeHook('stderr'));
@@ -530,8 +594,16 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   // the user's `open('foo.png')` lands in the scratch dir on the host FS.
   const artifactsDir = path.join(scratchDir, 'artifacts');
   await fs.mkdir(artifactsDir, { recursive: true }).catch(() => {});
-  try { pyodide.FS.mkdirTree('/artifacts'); } catch (err) { /* directory already exists */ }
-  try { pyodide.FS.unmount('/artifacts'); } catch (err) { /* not mounted yet */ }
+  try {
+    pyodide.FS.mkdirTree('/artifacts');
+  } catch (err) {
+    /* directory already exists */
+  }
+  try {
+    pyodide.FS.unmount('/artifacts');
+  } catch (err) {
+    /* not mounted yet */
+  }
   pyodide.FS.mount(pyodide.FS.filesystems.NODEFS, { root: artifactsDir }, '/artifacts');
   pyodide.runPython(`import os; os.chdir('/artifacts')`);
 
@@ -545,41 +617,54 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   try {
     const existing = await fs.readdir(artifactsDir).catch(() => []);
     if (existing.length > 0) {
-      const stats = await Promise.all(existing.map(async (n) => {
-        try {
-          const s = await fs.stat(path.join(artifactsDir, n));
-          return { name: n, size: s.size, mtimeMs: s.mtimeMs, isFile: s.isFile() };
-        } catch (_) { return { name: n, size: 0, mtimeMs: 0, isFile: true }; }
-      }));
-      const files = stats
-        .filter(e => e.isFile)
-        .sort((a, b) => b.mtimeMs - a.mtimeMs);
+      const stats = await Promise.all(
+        existing.map(async (n) => {
+          try {
+            const s = await fs.stat(path.join(artifactsDir, n));
+            return { name: n, size: s.size, mtimeMs: s.mtimeMs, isFile: s.isFile() };
+          } catch (_) {
+            return { name: n, size: 0, mtimeMs: 0, isFile: true };
+          }
+        }),
+      );
+      const files = stats.filter((e) => e.isFile).sort((a, b) => b.mtimeMs - a.mtimeMs);
       const head = files.slice(0, 20);
       const more = files.length > 20 ? `\\n  …(+${files.length - 20} more)` : '';
       const totalBytes = files.reduce((s, f) => s + f.size, 0);
       const nowMs = Date.now();
-      const lines = head.map(f => {
-        const ageS = Math.max(0, Math.round((nowMs - f.mtimeMs) / 1000));
-        const sizeKB = f.size < 1024 ? `${f.size}B` : f.size < 1024 * 1024
-          ? `${(f.size / 1024).toFixed(1)}KB`
-          : `${(f.size / 1024 / 1024).toFixed(2)}MB`;
-        const ageLabel = ageS < 60 ? `${ageS}s ago` : ageS < 3600
-          ? `${Math.round(ageS / 60)}m ago`
-          : `${Math.round(ageS / 3600)}h ago`;
-        return `  ${f.name}  (${sizeKB}, ${ageLabel})`;
-      }).join('\\n');
-      const totalKB = totalBytes < 1024 * 1024
-        ? `${(totalBytes / 1024).toFixed(1)}KB`
-        : `${(totalBytes / 1024 / 1024).toFixed(2)}MB`;
+      const lines = head
+        .map((f) => {
+          const ageS = Math.max(0, Math.round((nowMs - f.mtimeMs) / 1000));
+          const sizeKB =
+            f.size < 1024
+              ? `${f.size}B`
+              : f.size < 1024 * 1024
+                ? `${(f.size / 1024).toFixed(1)}KB`
+                : `${(f.size / 1024 / 1024).toFixed(2)}MB`;
+          const ageLabel =
+            ageS < 60
+              ? `${ageS}s ago`
+              : ageS < 3600
+                ? `${Math.round(ageS / 60)}m ago`
+                : `${Math.round(ageS / 3600)}h ago`;
+          return `  ${f.name}  (${sizeKB}, ${ageLabel})`;
+        })
+        .join('\\n');
+      const totalKB =
+        totalBytes < 1024 * 1024
+          ? `${(totalBytes / 1024).toFixed(1)}KB`
+          : `${(totalBytes / 1024 / 1024).toFixed(2)}MB`;
       pyodide.runPython(
-        `print("[scratch] cwd=/artifacts — ${files.length} file${files.length === 1 ? '' : 's'}, ${totalKB} total, newest first:\\n${lines}${more}", flush=True)`
+        `print("[scratch] cwd=/artifacts — ${files.length} file${files.length === 1 ? '' : 's'}, ${totalKB} total, newest first:\\n${lines}${more}", flush=True)`,
       );
     } else {
       pyodide.runPython(
-        `print("[scratch] cwd=/artifacts is empty. Files you write here persist across every code call in this conversation.", flush=True)`
+        `print("[scratch] cwd=/artifacts is empty. Files you write here persist across every code call in this conversation.", flush=True)`,
       );
     }
-  } catch (_) { /* non-fatal */ }
+  } catch (_) {
+    /* non-fatal */
+  }
 
   /* P_auto-import-resolution — scan the user's imports and install
      every matching package from the Pyodide distribution (scipy,
@@ -599,11 +684,16 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       messageCallback: (msg: string) => {
         try {
           parentPort!.postMessage({
-            id, type: 'stdout', stream: 'stdout',
+            id,
+            type: 'stdout',
+            stream: 'stdout',
             chunk: `[pyodide] ${msg}\n`,
-            executionId, elapsedMs: Date.now() - startedAt,
+            executionId,
+            elapsedMs: Date.now() - startedAt,
           });
-        } catch (_) { /* parent closed */ }
+        } catch (_) {
+          /* parent closed */
+        }
       },
     });
     const loadedNames = loadedPackages.map((pkg) => pkg.name);
@@ -611,14 +701,18 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       const note = `[pyodide] auto-installed: ${loadedNames.join(', ')}`;
       pyodide.runPython(`print(${JSON.stringify(note)}, flush=True)`);
     }
-  } catch (_) { /* offline fetch / unparseable source — exec reports the real error */ }
+  } catch (_) {
+    /* offline fetch / unparseable source — exec reports the real error */
+  }
 
   let status = 'completed';
   let exitCode = 0;
   let errorMessage: string | null = null;
-  let pendingPyType: string | null = null;       // for the errorMessage finalized after stderr read
+  let pendingPyType: string | null = null; // for the errorMessage finalized after stderr read
   let cancelled = false;
-  const onAbort = () => { cancelled = true; };
+  const onAbort = () => {
+    cancelled = true;
+  };
   if (signal) {
     if (signal.aborted) cancelled = true;
     else signal.addEventListener('abort', onAbort, { once: true });
@@ -673,9 +767,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // JS-side timeout classification (and the parent's
     // user-raised-KeyboardInterrupt guard) intact.
     const oneLine = code
-      .replace(/\\/g, '\\\\')   // backslash → double-backslash
-      .replace(/"/g, '\\"')     // double-quote → backslash-quote
-      .replace(/\r?\n/g, '\\n');    // physical newline → \n escape
+      .replace(/\\/g, '\\\\') // backslash → double-backslash
+      .replace(/"/g, '\\"') // double-quote → backslash-quote
+      .replace(/\r?\n/g, '\\n'); // physical newline → \n escape
     const wrapped = [
       '_socrates_user_code = "' + oneLine + '"',
       '_socrates_user_failed = False',
@@ -701,7 +795,7 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       '    _socrates_frames = [f for f in (traceback.extract_tb(_socrates_e.__traceback__) if _socrates_e.__traceback__ is not None else []) if f.filename == "<socrates>"]',
       '    if (not _socrates_frames) and isinstance(_socrates_e, SyntaxError) and getattr(_socrates_e, "lineno", None):',
       '        print("Traceback (most recent call last):", file=sys.stderr)',
-      '        print(\'  File "<socrates>", line \' + str(_socrates_e.lineno) + \', in <module>\', file=sys.stderr)',
+      "        print('  File \"<socrates>\", line ' + str(_socrates_e.lineno) + ', in <module>', file=sys.stderr)",
       '        _socrates_src = (_socrates_e.text or "").strip()',
       '        if not _socrates_src:',
       '            _socrates_lines = _socrates_user_code.splitlines()',
@@ -734,8 +828,10 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
       // SystemExit is handled inside Python; only interrupts or an
       // unexpected bridge/runtime error should escape the wrapper.
       pyodideThrew = true;
-      const errType = String(err && ((err as PyRunError).type || (err as PyRunError).constructor?.name) || '');
-      const errMsg = String(err && (err as PyRunError).message || err);
+      const errType = String(
+        (err && ((err as PyRunError).type || (err as PyRunError).constructor?.name)) || '',
+      );
+      const errMsg = String((err && (err as PyRunError).message) || err);
       if (errType === 'KeyboardInterrupt' || /KeyboardInterrupt/.test(errMsg)) {
         /* The wrapper deliberately re-raises KeyboardInterrupt so a
            SIGINT-buffer interrupt (parent timeout or caller cancel)
@@ -750,7 +846,11 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     // error, the JS-side status/errorMessage haven't been set yet.
     // Finalise them now from the marker that was just printed.
     const userFailed = (() => {
-      try { return pyodide.runPython('_socrates_user_failed'); } catch (_) { return true; }
+      try {
+        return pyodide.runPython('_socrates_user_failed');
+      } catch (_) {
+        return true;
+      }
     })();
     const sysExitCode = pyodide.runPython('_socrates_exit_code') ?? null;
     if (userFailed) {
@@ -781,8 +881,8 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     }
   } catch (err) {
     const name = err && ((err as PyRunError).constructor?.name || '');
-    const pyType: string = ((err as PyRunError | undefined)?.type) || '';
-    const traceback = String(err && (err as PyRunError).message || err);
+    const pyType: string = (err as PyRunError | undefined)?.type || '';
+    const traceback = String((err && (err as PyRunError).message) || err);
     if (traceback.includes('output_limit_exceeded')) {
       status = 'failed';
       errorMessage = 'output_limit_exceeded';
@@ -802,7 +902,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     }
   } finally {
     if (signal) signal.removeEventListener('abort', onAbort);
-    try { pyodide.FS.unmount('/artifacts'); } catch (_) {}
+    try {
+      pyodide.FS.unmount('/artifacts');
+    } catch (_) {}
   }
 
   const durationMs = Date.now() - startedAt;
@@ -813,7 +915,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
   try {
     stdoutText = pyodide.runPython('_stdout_cap.getvalue()') || '';
     stderrText = pyodide.runPython('_stderr_cap.getvalue()') || '';
-  } catch (_) { /* shim may have raised mid-write */ }
+  } catch (_) {
+    /* shim may have raised mid-write */
+  }
 
   // If we deferred the errorMessage in the catch block above, parse it now
   // from the captured stderr (where the Python wrapper wrote it before
@@ -822,7 +926,9 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
     const beginIdx = stderrText.indexOf('---SOCRATES-ERROR-BEGIN---');
     const endIdx = stderrText.indexOf('---SOCRATES-ERROR-END---');
     if (beginIdx !== -1 && endIdx !== -1 && endIdx > beginIdx) {
-      const between = stderrText.slice(beginIdx + '---SOCRATES-ERROR-BEGIN---'.length, endIdx).trim();
+      const between = stderrText
+        .slice(beginIdx + '---SOCRATES-ERROR-BEGIN---'.length, endIdx)
+        .trim();
       errorMessage = between || (pendingPyType ? pendingPyType : 'unknown_python_error');
     } else {
       errorMessage = pendingPyType ? pendingPyType : 'unknown_python_error';
@@ -838,12 +944,21 @@ async function runCode({ id, executionId, code, scratchDir, maxOutputBytes, inte
      as 'rejected' and keep it out of the daily execution quota.
      Runtime failures (NameError, TypeError…) still count — they
      burned real worker work. */
-  const errorCode = (status === 'failed' && errorMessage
-    && /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage))
-    ? 'syntax_error' : undefined;
+  const errorCode =
+    status === 'failed' &&
+    errorMessage &&
+    /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage)
+      ? 'syntax_error'
+      : undefined;
 
   // Walk the artifacts dir and report what we produced.
-  let artifacts: Array<{ name: string; relPath: string; size: number; mtimeMs: number; absPath: string }> = [];
+  let artifacts: Array<{
+    name: string;
+    relPath: string;
+    size: number;
+    mtimeMs: number;
+    absPath: string;
+  }> = [];
   try {
     const entries = await fs.readdir(artifactsDir, { withFileTypes: true });
     for (const entry of entries) {
@@ -885,21 +1000,21 @@ parentPort!.on('message', async (value: unknown) => {
   if (!isRunCodeRequest(value)) return;
   const msg = value;
   try {
-      const result = await runCode(msg);
-      parentPort!.postMessage(result);
-    } catch (err) {
-      parentPort!.postMessage({
-        id: msg.id,
-        type: 'result',
-        executionId: msg.executionId,
-        status: 'failed',
-        exitCode: 1,
-        durationMs: 1,
-        stdout: '',
-        stderr: '',
-        errorMessage: 'worker_error: ' + String(err && (err as PyRunError).message || err),
-        artifacts: [],
-      });
+    const result = await runCode(msg);
+    parentPort!.postMessage(result);
+  } catch (err) {
+    parentPort!.postMessage({
+      id: msg.id,
+      type: 'result',
+      executionId: msg.executionId,
+      status: 'failed',
+      exitCode: 1,
+      durationMs: 1,
+      stdout: '',
+      stderr: '',
+      errorMessage: 'worker_error: ' + String((err && (err as PyRunError).message) || err),
+      artifacts: [],
+    });
   }
 });
 

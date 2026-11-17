@@ -1,14 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { mutationsCanMoveReadingBlock, readingBlocksOf } from '../src/react/message-list/aboveViewportResize.ts';
+import {
+  mutationsCanMoveReadingBlock,
+  readingBlocksOf,
+} from '../src/react/message-list/aboveViewportResize.ts';
 
 test('reading anchor ignores streamed DOM below it but keeps earlier and in-block corrections', () => {
-  const dom = new JSDOM('<main><p id="before">Earlier</p><p id="anchor">Reading <b>here</b></p><p id="tail">Tail</p></main>');
+  const dom = new JSDOM(
+    '<main><p id="before">Earlier</p><p id="anchor">Reading <b>here</b></p><p id="tail">Tail</p></main>',
+  );
   const doc = dom.window.document;
   const anchor = doc.getElementById('anchor');
   const observer = new dom.window.MutationObserver(() => {});
-  observer.observe(doc.querySelector('main'), { subtree: true, childList: true, characterData: true, attributes: true });
+  observer.observe(doc.querySelector('main'), {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+  });
   const affected = () => mutationsCanMoveReadingBlock(anchor, observer.takeRecords());
   try {
     doc.getElementById('tail').firstChild.data += ' grows';
@@ -30,12 +40,16 @@ test('reading anchor ignores streamed DOM below it but keeps earlier and in-bloc
   }
 });
 
-
 test('reading anchors use settled paragraphs rather than the complete live answer', () => {
-  const dom = new JSDOM('<div class="msg"><div class="msg-body"><div class="assistant-turn"><div class="tool-run-prose">First</div><div class="tool-run-prose">Second</div></div></div></div>');
+  const dom = new JSDOM(
+    '<div class="msg"><div class="msg-body"><div class="assistant-turn"><div class="tool-run-prose">First</div><div class="tool-run-prose">Second</div></div></div></div>',
+  );
   try {
     const row = dom.window.document.querySelector('.msg');
-    assert.deepEqual([...readingBlocksOf(row)].map(block => block.textContent), ['First', 'Second']);
+    assert.deepEqual(
+      [...readingBlocksOf(row)].map((block) => block.textContent),
+      ['First', 'Second'],
+    );
     row.querySelector('.msg-body').innerHTML = '<p>User text</p>';
     assert.equal(readingBlocksOf(row)[0].textContent, 'User text');
   } finally {

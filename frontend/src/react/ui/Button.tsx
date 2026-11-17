@@ -30,9 +30,13 @@ export type ButtonSize = 'sm' | 'md' | 'touch' | 'desktop';
  * `shared`  the `.btn` grammar from styles/polish/buttons.css.
  * `ghost`   the `.btn .btn-ghost` grammar.
  */
-export type ButtonVariant = 'plain' | 'shared' | 'ghost' | 'default' | 'secondary' | 'outline' | 'destructive' | 'link';
+export type ButtonVariant =
+  'plain' | 'shared' | 'ghost' | 'default' | 'secondary' | 'outline' | 'destructive' | 'link';
 
-interface ButtonOwnProps extends Omit<ComponentPropsWithRef<'button'>, 'className' | 'children' | 'ref'> {
+interface ButtonOwnProps extends Omit<
+  ComponentPropsWithRef<'button'>,
+  'className' | 'children' | 'ref'
+> {
   /** Classes appended after the primitive's own — the surface's own look. */
   className?: string;
   children?: ReactNode;
@@ -48,10 +52,11 @@ interface ButtonOwnProps extends Omit<ComponentPropsWithRef<'button'>, 'classNam
  * declared as one union: a button that keeps its own class keeps its own
  * geometry, and a button that takes the shared base also gets the ladder.
  */
-export type ButtonProps = ButtonOwnProps & (
-  | { variant?: 'plain'; size?: never }
-  | { variant: Exclude<ButtonVariant, 'plain'>; size?: ButtonSize }
-);
+export type ButtonProps = ButtonOwnProps &
+  (
+    | { variant?: 'plain'; size?: never }
+    | { variant: Exclude<ButtonVariant, 'plain'>; size?: ButtonSize }
+  );
 
 /** The shared base of each variant. */
 const VARIANT_BASE: Partial<Record<ButtonVariant, string>> = {
@@ -75,8 +80,14 @@ const TEXT_SIZE_STYLE: Partial<Record<ButtonSize, CSSProperties>> = {
 
 const SHADCN_SIZE = { sm: 'sm', md: 'lg', touch: 'touch', desktop: 'default' } as const;
 const SHADCN_VARIANT = {
-  plain: 'surface', shared: 'outline', ghost: 'ghost', default: 'default',
-  secondary: 'secondary', outline: 'outline', destructive: 'destructive', link: 'link',
+  plain: 'surface',
+  shared: 'outline',
+  ghost: 'ghost',
+  default: 'default',
+  secondary: 'secondary',
+  outline: 'outline',
+  destructive: 'destructive',
+  link: 'link',
 } as const;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -96,11 +107,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 ) {
   const shared = variant !== 'plain';
   const rung = size ?? 'md';
-  const classes = cn(
-    VARIANT_BASE[variant],
-    shared ? (TEXT_SIZE_CLASS[rung] ?? '') : '',
-    className,
-  );
+  const classes = cn(VARIANT_BASE[variant], shared ? (TEXT_SIZE_CLASS[rung] ?? '') : '', className);
   const sizeStyle = shared ? TEXT_SIZE_STYLE[rung] : undefined;
   const mergedStyle = sizeStyle || style ? { ...sizeStyle, ...style } : undefined;
 

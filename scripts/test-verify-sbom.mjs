@@ -11,10 +11,14 @@ const names = ['frontend.cdx.json', 'server.cdx.json', 'apps-socrates.cdx.json']
 
 function fixture() {
   const dir = mkdtempSync(join(tmpdir(), 'socrates-sbom-test-'));
-  for (const name of names) writeFileSync(join(dir, name), JSON.stringify({
-    metadata: { component: { name: 'fixture' } },
-    components: [{ name: 'dependency' }],
-  }));
+  for (const name of names)
+    writeFileSync(
+      join(dir, name),
+      JSON.stringify({
+        metadata: { component: { name: 'fixture' } },
+        components: [{ name: 'dependency' }],
+      }),
+    );
   return dir;
 }
 function run(dir) {
@@ -27,7 +31,9 @@ test('verifier accepts all expected non-empty dependency graphs', () => {
     const result = run(dir);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /frontend\.cdx\.json: 1 components/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('verifier rejects missing, empty, malformed, and structurally empty SBOMs', () => {
@@ -35,7 +41,10 @@ test('verifier rejects missing, empty, malformed, and structurally empty SBOMs',
   try {
     rmSync(join(dir, names[0]));
     writeFileSync(join(dir, names[1]), '');
-    writeFileSync(join(dir, names[2]), JSON.stringify({ metadata: { component: {} }, components: [] }));
+    writeFileSync(
+      join(dir, names[2]),
+      JSON.stringify({ metadata: { component: {} }, components: [] }),
+    );
     const result = run(dir);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing/);
@@ -43,7 +52,9 @@ test('verifier rejects missing, empty, malformed, and structurally empty SBOMs',
     assert.match(result.stderr, /no components/);
     writeFileSync(join(dir, names[0]), '{broken');
     assert.match(run(dir).stderr, /invalid JSON/);
-  } finally { rmSync(dir, { recursive: true, force: true }); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('security workflow invokes this verifier from repository root', () => {

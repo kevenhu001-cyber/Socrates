@@ -21,10 +21,10 @@ export function toggleSidebarView(view: string) {
 
 function isInteractiveControl(target: Element): boolean {
   return Boolean(
-    target.closest('#sidebar')
-    || target.closest('.toggle-sidebar')
-    || target.closest('#sessionContextMenu')
-    || target.closest('input, textarea, select, button, a, [role=button], [role=option]')
+    target.closest('#sidebar') ||
+    target.closest('.toggle-sidebar') ||
+    target.closest('#sessionContextMenu') ||
+    target.closest('input, textarea, select, button, a, [role=button], [role=option]'),
   );
 }
 
@@ -39,17 +39,24 @@ export function initSidebarChrome() {
        desktop rail: 769–1024px used to open with a 278px sidebar, leaving a
        509px conversation column. Default them to the 52px rail so the
        content keeps the width, and keep honouring an explicit preference. */
-    const wantsCollapsed = sbPref === '0' || (sbPref === null && (typeof window !== 'undefined' ? window.innerWidth : 1024) < 1025);
+    const wantsCollapsed =
+      sbPref === '0' ||
+      (sbPref === null && (typeof window !== 'undefined' ? window.innerWidth : 1024) < 1025);
     /* Store-first hydration: the projection writes the collapsed class and
        syncs the zustand store from the same value, so boot cannot leave the
        two truths disagreeing. */
     projectSidebarOpen(!wantsCollapsed);
-  } catch (error) { reportSwallow(error, 'ui/sidebarChrome.ts:111', 'expected'); }
+  } catch (error) {
+    reportSwallow(error, 'ui/sidebarChrome.ts:111', 'expected');
+  }
 
   document.addEventListener('click', function (e) {
     const sbEl = sidebar ?? document.getElementById('sidebar');
-    if (!sbEl || sbEl.classList.contains('collapsed') || sbEl.classList.contains('ctx-menu-block')) return;
-    const target = (e.target as Element)?.closest ? (e.target as Element) : (e.target as Node)?.parentElement as Element | null;
+    if (!sbEl || sbEl.classList.contains('collapsed') || sbEl.classList.contains('ctx-menu-block'))
+      return;
+    const target = (e.target as Element)?.closest
+      ? (e.target as Element)
+      : ((e.target as Node)?.parentElement as Element | null);
     if (!target?.closest || isInteractiveControl(target)) return;
     if (isMobileViewport()) toggleSidebar();
   });
@@ -59,5 +66,10 @@ export function initSidebarChrome() {
      this listener is intentionally a no-op for non-backdrop targets and
      simply guarded against double-firing. */
   const sbBackdrop = document.getElementById('sidebarBackdrop');
-  if (sbBackdrop) sbBackdrop.addEventListener('click', function (e) { e.stopPropagation(); const sbEl = sidebar ?? document.getElementById('sidebar'); if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar(); });
+  if (sbBackdrop)
+    sbBackdrop.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const sbEl = sidebar ?? document.getElementById('sidebar');
+      if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar();
+    });
 }

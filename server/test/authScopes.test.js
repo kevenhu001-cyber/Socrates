@@ -5,7 +5,13 @@ import * as middleware from '../src/middleware/scopes.js';
 import { buildAuthorizationServerMetadata } from '../src/lib/oauthMeta.js';
 
 test('HTTP compatibility exports share the neutral permission contract', () => {
-  for (const name of ['ALL_SCOPES', 'ALL_SCOPES_SET', 'SCOPE_DESCRIPTIONS', 'parseScopes', 'parseScopeParam']) {
+  for (const name of [
+    'ALL_SCOPES',
+    'ALL_SCOPES_SET',
+    'SCOPE_DESCRIPTIONS',
+    'parseScopes',
+    'parseScopeParam',
+  ]) {
     assert.equal(middleware[name], contract[name], name);
   }
 });

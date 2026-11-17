@@ -7,7 +7,10 @@ import { installVisualizationMath } from './visualizationMath.ts';
 
 /** The vendored Mermaid global, injected by the lazy loader. */
 declare const mermaid: {
-  render(id: string, code: string): Promise<{ svg: string; bindFunctions?: (element: Element) => void }>;
+  render(
+    id: string,
+    code: string,
+  ): Promise<{ svg: string; bindFunctions?: (element: Element) => void }>;
 };
 
 /** Queue entry produced by the markdown scanner (see vizStubs). */
@@ -23,17 +26,25 @@ export function configureVizMermaidQueue(handlers: {
   rememberLiveVizCard?: (id: string, el: Element) => void;
   processPendingVizActions?: (root?: ParentNode) => void;
 }): void {
-  if (handlers && typeof handlers.rememberLiveVizCard === 'function') _rememberLiveVizCard = handlers.rememberLiveVizCard;
-  if (handlers && typeof handlers.processPendingVizActions === 'function') _processPendingVizActions = handlers.processPendingVizActions;
+  if (handlers && typeof handlers.rememberLiveVizCard === 'function')
+    _rememberLiveVizCard = handlers.rememberLiveVizCard;
+  if (handlers && typeof handlers.processPendingVizActions === 'function')
+    _processPendingVizActions = handlers.processPendingVizActions;
 }
 
 /* Viewport-gate test hooks (P_mermaid-viewport-gate). The gate is plain
    rect math, so it is unit-testable without a layout engine by driving the
    rect directly; see test/mermaidViewportGate.test.mjs. */
-export function mermaidCardIsNearViewportForTest(el: Element): boolean { return _mermaidCardIsNearViewport(el); }
+export function mermaidCardIsNearViewportForTest(el: Element): boolean {
+  return _mermaidCardIsNearViewport(el);
+}
 export function resetMermaidGateForTest(): void {
   if (_mermaidGateObserver) {
-    try { _mermaidGateObserver.disconnect(); } catch (e) { reportSwallow(e, 'viz.resetMermaidGateForTest.disconnect'); /* ignore */ }
+    try {
+      _mermaidGateObserver.disconnect();
+    } catch (e) {
+      reportSwallow(e, 'viz.resetMermaidGateForTest.disconnect'); /* ignore */
+    }
   }
   _mermaidGateObserver = null;
   _mermaidGateSeen = Object.create(null);
@@ -43,13 +54,15 @@ export function resetMermaidGateForTest(): void {
   _pendingMermaid.length = 0;
 }
 
-
 /* Track in-flight mermaid renders per id so a streaming re-render
    of the same id (rAF tick while a previous `mermaid.render` is
    still pending) doesn't race the first promise's `.then`. The
    previous implementation stomped the second render's output with
    the first `.then` callback, or vice versa. */
-const _mermaidInFlight: Record<string, Promise<{ svg: string; bindFunctions?: (element: Element) => void }> | undefined> = Object.create(null);
+const _mermaidInFlight: Record<
+  string,
+  Promise<{ svg: string; bindFunctions?: (element: Element) => void }> | undefined
+> = Object.create(null);
 
 function renderMermaidFallback(item: MermaidItem): void {
   const el = document.getElementById(item.id);
@@ -125,25 +138,35 @@ function armMermaidIdleDrain(): void {
     if (_mermaidIdleTimer && typeof timer.unref === 'function') {
       timer.unref();
     }
-  } catch (e) { reportSwallow(e, 'viz.armMermaidIdleDrain.unref'); /* ignore */ }
+  } catch (e) {
+    reportSwallow(e, 'viz.armMermaidIdleDrain.unref'); /* ignore */
+  }
 }
 
 let _mermaidGateObserver: IntersectionObserver | null = null;
 let _mermaidGateSeen: Record<string, 1> = Object.create(null);
 
 function _ensureMermaidGateObserver(): IntersectionObserver | null {
-  if (_mermaidGateObserver || typeof IntersectionObserver !== 'function') return _mermaidGateObserver;
-  _mermaidGateObserver = new IntersectionObserver(function (entries) {
-    for (let i = 0; i < entries.length; i++) {
-      const el = entries[i].target;
-      if (!entries[i].isIntersecting) continue;
-      try { _mermaidGateObserver?.unobserve(el); } catch (e) { reportSwallow(e, 'viz._ensureMermaidGateObserver.unobserve'); }
-      delete _mermaidGateSeen[el.id];
-      /* The item stayed in _pendingMermaid the whole time; all this needs
+  if (_mermaidGateObserver || typeof IntersectionObserver !== 'function')
+    return _mermaidGateObserver;
+  _mermaidGateObserver = new IntersectionObserver(
+    function (entries) {
+      for (let i = 0; i < entries.length; i++) {
+        const el = entries[i].target;
+        if (!entries[i].isIntersecting) continue;
+        try {
+          _mermaidGateObserver?.unobserve(el);
+        } catch (e) {
+          reportSwallow(e, 'viz._ensureMermaidGateObserver.unobserve');
+        }
+        delete _mermaidGateSeen[el.id];
+        /* The item stayed in _pendingMermaid the whole time; all this needs
          to do is hand control back to the normal drain. */
-      schedulePendingMermaid();
-    }
-  }, { rootMargin: MERMAID_VIEWPORT_MARGIN_PX + 'px 0px ' + MERMAID_VIEWPORT_MARGIN_PX + 'px 0px' });
+        schedulePendingMermaid();
+      }
+    },
+    { rootMargin: MERMAID_VIEWPORT_MARGIN_PX + 'px 0px ' + MERMAID_VIEWPORT_MARGIN_PX + 'px 0px' },
+  );
   return _mermaidGateObserver;
 }
 
@@ -155,15 +178,25 @@ function _mermaidCardIsNearViewport(el: Element): boolean {
     /* A hidden tab makes every card report offscreen; render rather than
        hold an entire backlog until the user returns. */
     if (document.visibilityState === 'hidden') return true;
-  } catch (e) { reportSwallow(e, 'viz._mermaidCardIsNearViewport.visibilityState'); /* ignore */ }
+  } catch (e) {
+    reportSwallow(e, 'viz._mermaidCardIsNearViewport.visibilityState'); /* ignore */
+  }
   let rect: DOMRect;
-  try { rect = el.getBoundingClientRect(); } catch { return true; }
+  try {
+    rect = el.getBoundingClientRect();
+  } catch {
+    return true;
+  }
   /* An unlaid-out element (display:none ancestor, freshly detached) has a
      zero rect. Treat it as visible: the observer will not report it again,
      so holding it would strand the diagram permanently. */
   if (!rect || (!rect.width && !rect.height)) return true;
   const vh = window.innerHeight || 0;
-  if (vh > 0 && rect.top < vh + MERMAID_VIEWPORT_MARGIN_PX && rect.bottom > -MERMAID_VIEWPORT_MARGIN_PX) {
+  if (
+    vh > 0 &&
+    rect.top < vh + MERMAID_VIEWPORT_MARGIN_PX &&
+    rect.bottom > -MERMAID_VIEWPORT_MARGIN_PX
+  ) {
     return true;
   }
   return false;
@@ -173,7 +206,11 @@ function _holdMermaidUntilVisible(item: MermaidItem, el: Element): boolean {
   const obs = _ensureMermaidGateObserver();
   if (!obs || _mermaidGateSeen[el.id]) return false;
   _mermaidGateSeen[el.id] = 1;
-  try { obs.observe(el); } catch { return false; }
+  try {
+    obs.observe(el);
+  } catch {
+    return false;
+  }
   return true;
 }
 
@@ -184,7 +221,11 @@ function findMermaidCard(id: string): { el: HTMLElement; body: HTMLElement } | n
   return body ? { el, body } : null;
 }
 
-function renderMermaidError(item: MermaidItem, message: string, source: string): HTMLElement | null {
+function renderMermaidError(
+  item: MermaidItem,
+  message: string,
+  source: string,
+): HTMLElement | null {
   const card = findMermaidCard(item.id);
   if (!card) return null;
   card.body.innerHTML = vizErrorHtml(message, source);
@@ -204,7 +245,10 @@ function renderMermaidResult(
   _rememberLiveVizCard?.(item.id, card.el);
   if (result.bindFunctions) result.bindFunctions(card.body);
   const svg = card.body.querySelector('svg') as SVGElement | null;
-  if (svg) { svg.style.maxWidth = '100%'; svg.style.height = 'auto'; }
+  if (svg) {
+    svg.style.maxWidth = '100%';
+    svg.style.height = 'auto';
+  }
   installVisualizationMath(card.body);
 }
 
@@ -250,7 +294,11 @@ function holdOffscreenMermaidItem(item: MermaidItem): boolean {
   return Boolean(el && !_mermaidCardIsNearViewport(el) && _holdMermaidUntilVisible(item, el));
 }
 
-function drainNextMermaidItem(counts: { rendered: number; held: number; missing: number }): boolean {
+function drainNextMermaidItem(counts: {
+  rendered: number;
+  held: number;
+  missing: number;
+}): boolean {
   const item = _pendingMermaid[0] as MermaidItem;
   if (!document.getElementById(item.id)) {
     _pendingMermaid.shift();
@@ -270,13 +318,15 @@ function drainNextMermaidItem(counts: { rendered: number; held: number; missing:
 }
 
 export function processPendingMermaid(): void {
-  if (typeof mermaid === "undefined") {
-    ensureMermaid().then(function () {
-      processPendingMermaid();
-    }).catch(function () {
-      const pending = takePendingMermaid() as MermaidItem[];
-      pending.forEach(renderMermaidFallback);
-    });
+  if (typeof mermaid === 'undefined') {
+    ensureMermaid()
+      .then(function () {
+        processPendingMermaid();
+      })
+      .catch(function () {
+        const pending = takePendingMermaid() as MermaidItem[];
+        pending.forEach(renderMermaidFallback);
+      });
     return;
   }
   const frameStart = Date.now();
@@ -295,9 +345,14 @@ export function processPendingMermaid(): void {
      would spin rAF forever, rendering nothing. The idle drain below is
      the safety net for a card the observer will never wake (e.g. its
      element was replaced by a message re-render under the same id). */
-  if (_pendingMermaid.length && (counts.rendered > 0 || (!counts.held && !counts.missing))) schedulePendingMermaid();
+  if (_pendingMermaid.length && (counts.rendered > 0 || (!counts.held && !counts.missing)))
+    schedulePendingMermaid();
   if (counts.held) armMermaidIdleDrain();
-  try { _processPendingVizActions?.(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid.drainActions'); }
+  try {
+    _processPendingVizActions?.();
+  } catch (e) {
+    reportSwallow(e, 'viz.processPendingMermaid.drainActions');
+  }
 }
 
 /* P_mermaid-coalesce — processPendingMermaid() works off the global
@@ -316,11 +371,20 @@ let _mermaidDrainScheduled = false;
 export function schedulePendingMermaid(): void {
   if (_mermaidDrainScheduled) return;
   _mermaidDrainScheduled = true;
-  const next: (cb: () => void) => void = typeof requestAnimationFrame === 'function'
-    ? function (cb) { requestAnimationFrame(cb); }
-    : function (cb) { setTimeout(cb, 16); };
+  const next: (cb: () => void) => void =
+    typeof requestAnimationFrame === 'function'
+      ? function (cb) {
+          requestAnimationFrame(cb);
+        }
+      : function (cb) {
+          setTimeout(cb, 16);
+        };
   next(function () {
     _mermaidDrainScheduled = false;
-    try { processPendingMermaid(); } catch (e) { reportSwallow(e, 'viz.processPendingMermaid'); }
+    try {
+      processPendingMermaid();
+    } catch (e) {
+      reportSwallow(e, 'viz.processPendingMermaid');
+    }
   });
 }

@@ -50,7 +50,11 @@ function isCompleteJsonObject(text: string): boolean {
 function incomingToText(incoming: unknown): { text: string; wasObject: boolean } {
   if (typeof incoming === 'string') return { text: incoming, wasObject: false };
   if (incoming && typeof incoming === 'object') {
-    try { return { text: JSON.stringify(incoming), wasObject: true }; } catch { return { text: '', wasObject: true }; }
+    try {
+      return { text: JSON.stringify(incoming), wasObject: true };
+    } catch {
+      return { text: '', wasObject: true };
+    }
   }
   return { text: incoming == null ? '' : String(incoming), wasObject: false };
 }

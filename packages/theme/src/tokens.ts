@@ -207,11 +207,11 @@ export const darkPalette: ThemePalette = {
      * surface ramp: background-200 (pure #000, the reference canvas) →
      * gray-100 → gray-200 → gray-300. The canvas → rail gap is wider than
      * the other two steps; the ladder guard's blackCanvas policy allows it. */
-    page: '0 0% 0%',        // #000000  L1 — pure black (reference canvas)
-    raised: '0 0% 12.16%',  // #1f1f1f  L3 — cards on the canvas
+    page: '0 0% 0%', // #000000  L1 — pure black (reference canvas)
+    raised: '0 0% 12.16%', // #1f1f1f  L3 — cards on the canvas
     overlay: '0 0% 16.08%', // #292929  L4 — floating bars, menus
-    hover: '0 0% 21.18%',   // #363636  selected/hover tint (off-ladder)
-    sunken: '0 0% 0%',      // #000000  L1 — inset wells ride the canvas
+    hover: '0 0% 21.18%', // #363636  selected/hover tint (off-ladder)
+    sunken: '0 0% 0%', // #000000  L1 — inset wells ride the canvas
   },
   text: {
     primary: '0 0% 92.94%',
@@ -244,11 +244,11 @@ export const lightPalette: ThemePalette = {
      * share; those are lifted by a hairline and a soft shadow.
      * The pale greys below carry the rail (background-200) and the inset
      * wells (gray-100): background-100 → background-200 → gray-100. */
-    page: '0 0% 98.82%',    // #fcfcfc  the canvas: a 1% tint under the paper
-    raised: '0 0% 100%',    // #ffffff  cards on the canvas
-    overlay: '0 0% 100%',   // #ffffff  floating bars, menus
-    hover: '0 0% 87.84%',   // #e0e0e0  selected/hover tint (off-ladder)
-    sunken: '0 0% 94.9%',   // #f2f2f2  inset wells
+    page: '0 0% 98.82%', // #fcfcfc  the canvas: a 1% tint under the paper
+    raised: '0 0% 100%', // #ffffff  cards on the canvas
+    overlay: '0 0% 100%', // #ffffff  floating bars, menus
+    hover: '0 0% 87.84%', // #e0e0e0  selected/hover tint (off-ladder)
+    sunken: '0 0% 94.9%', // #f2f2f2  inset wells
   },
   text: {
     primary: '0 0% 9.02%',

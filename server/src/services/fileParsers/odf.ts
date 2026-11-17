@@ -112,7 +112,12 @@ function deepTexts(node: unknown, out: string[]): void {
   }
   for (const t of blockTexts(node)) out.push(t);
   for (const child of orderedChildren(node)) {
-    if (child['#name'] === 'text:p' || child['#name'] === 'text:h' || child['#name'] === 'text:list') continue;
+    if (
+      child['#name'] === 'text:p' ||
+      child['#name'] === 'text:h' ||
+      child['#name'] === 'text:list'
+    )
+      continue;
     deepTexts(child, out);
   }
 }
@@ -190,7 +195,8 @@ export async function extractOdt(filepath: string) {
 }
 
 /* Same dialect as xlsx.ts / legacyXls.ts: one markdown table per sheet. */
-const SHEET_HEADER = (name: string, rows: number) => `## Sheet: ${name || 'Untitled'} (${rows} rows)\n`;
+const SHEET_HEADER = (name: string, rows: number) =>
+  `## Sheet: ${name || 'Untitled'} (${rows} rows)\n`;
 /* Trailing empty cells are often stored as one cell repeated thousands of
    times (to the sheet edge); cap the expansion. */
 const MAX_COLUMNS = 100;
@@ -211,14 +217,21 @@ export async function extractOds(filepath: string) {
       const cells: string[] = [];
       for (const cell of asArray<OdfNode>(row['table:table-cell'])) {
         // Covered cells (merge continuations) carry no text — skip.
-        const repeat = Math.max(1, parseInt(attr(cell, 'table:number-columns-repeated') || '1', 10) || 1);
+        const repeat = Math.max(
+          1,
+          parseInt(attr(cell, 'table:number-columns-repeated') || '1', 10) || 1,
+        );
         const t = blockTexts(cell).join(' ');
         for (let i = 0; i < repeat && cells.length < MAX_COLUMNS; i++) cells.push(t);
       }
       if (cells.some((c) => c.trim().length > 0)) grid.push(cells);
     }
-    let sheet = SHEET_HEADER(attr(table, 'table:name'), grid.length) + (markdownTable(grid) || '(empty sheet)') + '\n';
-    if (grid.length >= MAX_ROWS_PER_SHEET) sheet += `[sheet truncated at ${MAX_ROWS_PER_SHEET} rows]\n`;
+    let sheet =
+      SHEET_HEADER(attr(table, 'table:name'), grid.length) +
+      (markdownTable(grid) || '(empty sheet)') +
+      '\n';
+    if (grid.length >= MAX_ROWS_PER_SHEET)
+      sheet += `[sheet truncated at ${MAX_ROWS_PER_SHEET} rows]\n`;
     if (!push(sheet)) break;
   }
   return { text: text(), truncated: done(), meta: { sheetCount, format: 'markdown-tables' } };

@@ -27,7 +27,11 @@ function chatGptNode(id, parent, role, text, children = [], createTime = null) {
     parent,
     children,
     message: role
-      ? { author: { role }, content: { content_type: 'text', parts: [text] }, create_time: createTime }
+      ? {
+          author: { role },
+          content: { content_type: 'text', parts: [text] },
+          create_time: createTime,
+        }
       : null,
   };
 }
@@ -64,8 +68,14 @@ describe('normalizeImportPayload — chatgpt conversations.json', () => {
     assert.equal(sessions.length, 1);
     const s = sessions[0];
     assert.equal(s.title, 'Physics chat');
-    assert.deepEqual(s.messages.map((m) => m.role), ['user', 'assistant']);
-    assert.deepEqual(s.messages.map((m) => m.content), ['What is entropy?', 'A measure of disorder.']);
+    assert.deepEqual(
+      s.messages.map((m) => m.role),
+      ['user', 'assistant'],
+    );
+    assert.deepEqual(
+      s.messages.map((m) => m.content),
+      ['What is entropy?', 'A measure of disorder.'],
+    );
     assert.equal(s.messages[0].createdAt?.getTime(), 1700000100 * 1000);
   });
 
@@ -81,7 +91,10 @@ describe('normalizeImportPayload — chatgpt conversations.json', () => {
     };
     const { sessions } = normalizeImportPayload('chatgpt', [conv]);
     assert.equal(sessions.length, 1);
-    assert.deepEqual(sessions[0].messages.map((m) => m.role), ['user', 'assistant']);
+    assert.deepEqual(
+      sessions[0].messages.map((m) => m.role),
+      ['user', 'assistant'],
+    );
   });
 
   test('drops conversations with no importable text', () => {
@@ -107,10 +120,14 @@ describe('normalizeImportPayload — socrates export / nested sessions', () => {
   test('nested {sessions:[{messages:[…]}]}', () => {
     const { sessions } = normalizeImportPayload('socrates', {
       sessions: [
-        { title: 'T1', mode: 'tutor', messages: [
-          { role: 'user', content: 'q' },
-          { role: 'assistant', content: 'a' },
-        ] },
+        {
+          title: 'T1',
+          mode: 'tutor',
+          messages: [
+            { role: 'user', content: 'q' },
+            { role: 'assistant', content: 'a' },
+          ],
+        },
       ],
     });
     assert.equal(sessions.length, 1);
@@ -151,14 +168,22 @@ describe('normalizeImportPayload — socrates export / nested sessions', () => {
   });
 
   test('caps messages per session and chars per message', () => {
-    const big = Array.from({ length: MAX_MESSAGES_PER_SESSION + 10 }, (_, i) => ({ role: 'user', content: `m${i}` }));
+    const big = Array.from({ length: MAX_MESSAGES_PER_SESSION + 10 }, (_, i) => ({
+      role: 'user',
+      content: `m${i}`,
+    }));
     const { sessions } = normalizeImportPayload('socrates', {
       sessions: [{ title: 'fat', messages: big }],
     });
     assert.equal(sessions[0].messages.length, MAX_MESSAGES_PER_SESSION);
 
     const { sessions: s2 } = normalizeImportPayload('socrates', {
-      sessions: [{ title: 'long', messages: [{ role: 'user', content: 'x'.repeat(MAX_MESSAGE_CHARS + 100) }] }],
+      sessions: [
+        {
+          title: 'long',
+          messages: [{ role: 'user', content: 'x'.repeat(MAX_MESSAGE_CHARS + 100) }],
+        },
+      ],
     });
     assert.equal(s2[0].messages[0].content.length, MAX_MESSAGE_CHARS);
   });
@@ -166,6 +191,9 @@ describe('normalizeImportPayload — socrates export / nested sessions', () => {
 
 describe('normalizeImportPayload — unsupported sources', () => {
   test('throws UnsupportedImportSource so the route can record not_implemented', () => {
-    assert.throws(() => normalizeImportPayload('claude', { sessions: [] }), UnsupportedImportSource);
+    assert.throws(
+      () => normalizeImportPayload('claude', { sessions: [] }),
+      UnsupportedImportSource,
+    );
   });
 });

@@ -6,7 +6,7 @@
  */
 
 import { learnerStorageKeys } from '../tutor/learnerStorage.ts';
-import { resetState, stateStore } from '../state/store.ts';
+import { dispatchSession, resetDomains } from '../store/index.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
 import { publishSidebarChrome, closeProfile } from './profile.ts';
@@ -17,21 +17,47 @@ import { renderRecents } from './recentsView.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 
 export function confirmClearCache(): void {
-  showConfirm(t('confirm.clearConversations.title'), t('confirm.clearConversations.msg'), false).then((yes) => {
-    if (yes !== true) return;
-    try { localStorage.removeItem('socrates-sessions-v2'); } catch { /* empty-catch: intentional — localStorage wipe best effort */ }
-    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
-    try { renderRecents(); } catch { /* empty-catch: intentional — recents view may not be mounted */ }
-    try { resetApp(); } catch { /* empty-catch: intentional — resetApp during cache wipe is best effort */ }
-    location.reload();
-  }).catch(() => { /* noop */ });
+  showConfirm(t('confirm.clearConversations.title'), t('confirm.clearConversations.msg'), false)
+    .then((yes) => {
+      if (yes !== true) return;
+      try {
+        localStorage.removeItem('socrates-sessions-v2');
+      } catch {
+        /* empty-catch: intentional — localStorage wipe best effort */
+      }
+      dispatchSession({ type: 'session/set', key: 'currentSessionId', value: null });
+      try {
+        renderRecents();
+      } catch {
+        /* empty-catch: intentional — recents view may not be mounted */
+      }
+      try {
+        resetApp();
+      } catch {
+        /* empty-catch: intentional — resetApp during cache wipe is best effort */
+      }
+      location.reload();
+    })
+    .catch(() => {
+      /* noop */
+    });
 }
 
 export function confirmClearSettings(): void {
-  showConfirm(t('confirm.clearApiSettings.title'), t('confirm.clearApiSettings.msg'), false).then((yes) => {
-    if (yes !== true) return;
-    clearProviderConfig().then(() => { closeProfile(); }).catch(() => { /* empty-catch: intentional — clear provider config is best effort */ });
-  }).catch(() => { /* noop */ });
+  showConfirm(t('confirm.clearApiSettings.title'), t('confirm.clearApiSettings.msg'), false)
+    .then((yes) => {
+      if (yes !== true) return;
+      clearProviderConfig()
+        .then(() => {
+          closeProfile();
+        })
+        .catch(() => {
+          /* empty-catch: intentional — clear provider config is best effort */
+        });
+    })
+    .catch(() => {
+      /* noop */
+    });
 }
 
 function clearDeletedAccountStorage(): void {
@@ -44,7 +70,11 @@ function clearDeletedAccountStorage(): void {
     ...learnerStorageKeys(),
   ];
   for (const key of keys) {
-    try { localStorage.removeItem(key); } catch { /* empty-catch: intentional — wipe best effort */ }
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* empty-catch: intentional — wipe best effort */
+    }
   }
 }
 
@@ -55,8 +85,12 @@ async function deleteAccountOnServer(): Promise<void> {
 function resetAfterAccountDeletion(): void {
   setCurrentUser(null);
   clearDeletedAccountStorage();
-  resetState();
-  try { resetApp(); } catch { /* empty-catch: intentional — resetApp during account deletion is best effort */ }
+  resetDomains();
+  try {
+    resetApp();
+  } catch {
+    /* empty-catch: intentional — resetApp during account deletion is best effort */
+  }
   showGate();
   publishSidebarChrome();
   closeProfile();
@@ -78,8 +112,10 @@ async function performAccountDeletion(): Promise<void> {
 }
 
 export function confirmDeleteAccount(): void {
-  showConfirm(t('confirm.deleteAccount.title'), t('confirm.deleteAccount.msg'), true).then((yes) => {
-    if (!yes) return;
-    void performAccountDeletion();
-  });
+  showConfirm(t('confirm.deleteAccount.title'), t('confirm.deleteAccount.msg'), true).then(
+    (yes) => {
+      if (!yes) return;
+      void performAccountDeletion();
+    },
+  );
 }

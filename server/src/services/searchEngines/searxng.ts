@@ -12,7 +12,7 @@
  * This is the fallback when MiniMax search returns no results.
  */
 
-const REQUEST_TIMEOUT = 6_000;  // tight cap so a slow SearXNG can't drag the whole tool loop down
+const REQUEST_TIMEOUT = 6_000; // tight cap so a slow SearXNG can't drag the whole tool loop down
 const SEARXNG_BASE = process.env.SEARXNG_BASE_URL || 'http://127.0.0.1:8888';
 
 interface SearchResult {
@@ -46,12 +46,17 @@ function unavailable(reason: string): SearchResult[] {
  * Extract an approximate date from a searXNG result's publishedDate field
  * or from the snippet text.
  */
-function extractDate(publishedDate: string | undefined, snippet: string | undefined): string | null {
+function extractDate(
+  publishedDate: string | undefined,
+  snippet: string | undefined,
+): string | null {
   if (publishedDate) {
     try {
       const d = new Date(publishedDate);
       if (!isNaN(d as unknown as number)) return d.toISOString().slice(0, 10);
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
   if (!snippet) return null;
   const m = snippet.match(/\b(\d{4}[-/]\d{1,2}[-/]\d{1,2})\b/);
@@ -66,7 +71,11 @@ function extractDate(publishedDate: string | undefined, snippet: string | undefi
  * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'searxng'}>>}
  */
-export async function searchSearxng(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {
+export async function searchSearxng(
+  query: string,
+  limit = 10,
+  signal: AbortSignal | null = null,
+): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
 
   const url = `${SEARXNG_BASE}/search?q=${encodeURIComponent(query)}&format=json&pageno=1`;
@@ -74,14 +83,16 @@ export async function searchSearxng(query: string, limit = 10, signal: AbortSign
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   // Combine internal timeout with the external total-timeout signal
   const fetchSignal = signal
-    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([controller.signal, signal]) : signal)
+    ? typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([controller.signal, signal])
+      : signal
     : controller.signal;
 
   try {
     const r = await fetch(url, {
       method: 'GET',
       signal: fetchSignal,
-      headers: { 'Accept': 'application/json' },
+      headers: { Accept: 'application/json' },
     });
     clearTimeout(timer);
     if (!r.ok) return unavailable(`http_${r.status}`);
@@ -90,20 +101,26 @@ export async function searchSearxng(query: string, limit = 10, signal: AbortSign
     const results = data?.results;
     if (!Array.isArray(results) || results.length === 0) return [];
 
-    return results.slice(0, limit).map((item): SearchResult => ({
-      title: item.title || '',
-      url: item.url || '',
-      snippet: item.content || '',
-      date: extractDate(item.publishedDate, item.content),
-      authority: item.engine === 'wikipedia' || item.engine === 'arxiv' ? 'high' : 'normal',
-      source: 'searxng',
-    })).filter((r) => r.url && r.title);
+    return results
+      .slice(0, limit)
+      .map((item): SearchResult => ({
+        title: item.title || '',
+        url: item.url || '',
+        snippet: item.content || '',
+        date: extractDate(item.publishedDate, item.content),
+        authority: item.engine === 'wikipedia' || item.engine === 'arxiv' ? 'high' : 'normal',
+        source: 'searxng',
+      }))
+      .filter((r) => r.url && r.title);
   } catch (e) {
     clearTimeout(timer);
     if (e && (e as Error).name === 'AbortError') {
       console.warn('[searchSearxng] Request timed out');
     } else {
-      console.warn('[searchSearxng] Request failed:', e && (e as Error).message ? (e as Error).message : e);
+      console.warn(
+        '[searchSearxng] Request failed:',
+        e && (e as Error).message ? (e as Error).message : e,
+      );
     }
     return unavailable(e && (e as Error).name === 'AbortError' ? 'timeout' : 'error');
   }

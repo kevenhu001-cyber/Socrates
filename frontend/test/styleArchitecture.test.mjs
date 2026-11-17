@@ -7,8 +7,9 @@ const read = (path) => readFile(new URL(path, root), 'utf8');
 
 test('the app exposes the split stylesheet bundle in cascade order', async () => {
   const html = await read('index.html');
-  const links = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"/g)]
-    .map((match) => match[1]);
+  const links = [...html.matchAll(/<link\s+rel="stylesheet"\s+href="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
   // P_perf-css-split — the 955 KB single entry is delivered as ordered
   // slices (critical-* render-blocking, below-fold leaves via
   // media=print swap). Order reproduces styles/index.css file-for-file
@@ -44,12 +45,25 @@ test('the stylesheet entry does not reconnect historical parity layers', async (
     'lobe-overrides.css',
   ]) {
     assert.equal(css.includes(legacy), false, `${legacy} must stay disconnected`);
-    await assert.rejects(access(new URL(`src/styles/${legacy}`, root)), `${legacy} must stay deleted`);
+    await assert.rejects(
+      access(new URL(`src/styles/${legacy}`, root)),
+      `${legacy} must stay deleted`,
+    );
   }
 });
 
 test('migrated workspace panels are single React-owned page hosts', async () => {
-  const [html, workspacePage, pageMounts, navJs, navService, navAdapters, mainJs, destinations, libraryUploadInput] = await Promise.all([
+  const [
+    html,
+    workspacePage,
+    pageMounts,
+    navJs,
+    navService,
+    navAdapters,
+    mainJs,
+    destinations,
+    libraryUploadInput,
+  ] = await Promise.all([
     read('index.html'),
     read('src/react/pages/workspace/WorkspacePage.tsx'),
     read('src/react/lib/boot/pageMounts.ts'),
@@ -60,13 +74,40 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
     read('src/sidebar/navigation.destinations.ts'),
     read('src/react/pages/workspace/LibraryUploadInput.tsx'),
   ]);
-  assert.equal(html.includes('id="libraryList"'), false, 'legacy inner Library host must stay removed');
-  assert.equal(html.includes('id="spacesList"'), false, 'legacy inner Projects host must stay removed');
-  assert.equal(html.includes('id="pluginsList"'), false, 'legacy inner Plugins host must stay removed');
-  assert.equal(html.includes('id="scheduledList"'), false, 'legacy inner Scheduled host must stay removed');
-  assert.equal(html.includes('id="adminPanelBody"'), false, 'legacy inner Admin host must stay removed');
-  assert.match(html, /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<div id="libraryUploadReactRoot"><\/div>/);
-  assert.equal(html.includes('id="libraryUploadInput"'), false, 'React owns the Library upload input');
+  assert.equal(
+    html.includes('id="libraryList"'),
+    false,
+    'legacy inner Library host must stay removed',
+  );
+  assert.equal(
+    html.includes('id="spacesList"'),
+    false,
+    'legacy inner Projects host must stay removed',
+  );
+  assert.equal(
+    html.includes('id="pluginsList"'),
+    false,
+    'legacy inner Plugins host must stay removed',
+  );
+  assert.equal(
+    html.includes('id="scheduledList"'),
+    false,
+    'legacy inner Scheduled host must stay removed',
+  );
+  assert.equal(
+    html.includes('id="adminPanelBody"'),
+    false,
+    'legacy inner Admin host must stay removed',
+  );
+  assert.match(
+    html,
+    /<div class="library-panel main-page hidden" id="libraryPanel"><\/div>\s*<div id="libraryUploadReactRoot"><\/div>/,
+  );
+  assert.equal(
+    html.includes('id="libraryUploadInput"'),
+    false,
+    'React owns the Library upload input',
+  );
   assert.match(libraryUploadInput, /id="libraryUploadInput"/);
   assert.match(html, /<div class="spaces-panel main-page hidden" id="spacesPanel"><\/div>/);
   assert.match(html, /<div class="plugins-panel main-page hidden" id="pluginsPanel"><\/div>/);
@@ -75,14 +116,19 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
   /* The chat surface has a single owner: #chatPage wraps the transcript
      (#msgList) and the composer column (#chatView), with DOM order
      matching the visual order (transcript first). */
-  assert.match(html, /<div class="chat-page hidden" id="chatPage">\s*<div class="msg-list" id="msgList"><\/div>\s*<div class="chat-view chat-view-lifted hidden" id="chatView">/);
+  assert.match(
+    html,
+    /<div class="chat-page hidden" id="chatPage">\s*<div class="msg-list" id="msgList"><\/div>\s*<div class="chat-view chat-view-lifted hidden" id="chatView">/,
+  );
   /* ADR 0022: navigation.destinations.ts is the single source of truth for
      the route→host mapping. The workspace page must read its panel host from
      that table, and the old inline duplication must not come back. */
   assert.match(workspacePage, /from ['"][^'"]*navigation\.destinations['"]/);
   assert.match(workspacePage, /DESTINATIONS\[page\]\.host/);
   assert.equal(
-    /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/.test(workspacePage),
+    /page === 'library' \? 'libraryPanel' : page === 'projects' \? 'spacesPanel' : 'pluginsPanel'/.test(
+      workspacePage,
+    ),
     false,
     'inline panel-host ternary must stay removed in favour of the shared destinations table',
   );
@@ -94,22 +140,46 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
      compatibility globals must not come back. */
   assert.match(pageMounts, /from ['"][^'"]*navigation\.destinations['"]/);
   assert.match(pageMounts, /loadPage\(DESTINATIONS\[page\]\.host/);
-  for (const inlineHost of ["library: 'libraryPanel'", "projects: 'spacesPanel'", "plugins: 'pluginsPanel'"]) {
-    assert.equal(pageMounts.includes(inlineHost), false, `inline host map ${inlineHost} must stay removed in favour of the shared destinations table`);
+  for (const inlineHost of [
+    "library: 'libraryPanel'",
+    "projects: 'spacesPanel'",
+    "plugins: 'pluginsPanel'",
+  ]) {
+    assert.equal(
+      pageMounts.includes(inlineHost),
+      false,
+      `inline host map ${inlineHost} must stay removed in favour of the shared destinations table`,
+    );
   }
   assert.match(navJs, /from ["']\.\/navigation\.service\.ts["']/);
   assert.match(navAdapters, /from ["']\.\.\/react\/lib\/boot\/pageMounts\.ts["']/);
   assert.match(navService, /adapters\[destination\]\?\.\(\)/);
-  for (const global of ['__socratesMountWorkspace', '__socratesMountScheduled', '__socratesMountAdmin', '__socratesNavRenderScheduled']) {
+  for (const global of [
+    '__socratesMountWorkspace',
+    '__socratesMountScheduled',
+    '__socratesMountAdmin',
+    '__socratesNavRenderScheduled',
+  ]) {
     assert.equal(navJs.includes(global), false, `${global} compat global must stay removed`);
     assert.equal(navAdapters.includes(global), false, `${global} compat global must stay removed`);
     assert.equal(pageMounts.includes(global), false, `${global} compat global must stay removed`);
   }
   /* The fallback-shell compatibility layer went away with the last static
      workspace shell — it must not be reintroduced. */
-  assert.equal(mainJs.includes('workspace-reference-ui'), false, 'workspace-reference-ui import must stay removed');
-  assert.equal(workspacePage.includes('data-live-directory'), false, 'data-live-directory compat attribute must stay removed');
-  await assert.rejects(access(new URL('src/ui/workspace-reference-ui.js', root)), 'workspace-reference-ui.js must stay deleted');
+  assert.equal(
+    mainJs.includes('workspace-reference-ui'),
+    false,
+    'workspace-reference-ui import must stay removed',
+  );
+  assert.equal(
+    workspacePage.includes('data-live-directory'),
+    false,
+    'data-live-directory compat attribute must stay removed',
+  );
+  await assert.rejects(
+    access(new URL('src/ui/workspace-reference-ui.js', root)),
+    'workspace-reference-ui.js must stay deleted',
+  );
 });
 
 test('new owner modules use the ui token namespace', async () => {

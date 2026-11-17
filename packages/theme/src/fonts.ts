@@ -48,7 +48,11 @@ export function fontFamily(weight: FontWeight = 'regular', language: 'en' | 'zh'
 
 /** Resolve a font style for the target renderer. On Web, CSS weight matching
  * selects among the same static font files as the SPA's @font-face rules. */
-export function fontStyle(weight: FontWeight = 'regular', language: 'en' | 'zh' = 'en', web = false): { fontFamily: string; fontWeight?: '400' | '500' | '600' | '700' } {
+export function fontStyle(
+  weight: FontWeight = 'regular',
+  language: 'en' | 'zh' = 'en',
+  web = false,
+): { fontFamily: string; fontWeight?: '400' | '500' | '600' | '700' } {
   return web
     ? { fontFamily: WEB_FONT_FAMILY, fontWeight: WEB_FONT_WEIGHT[weight] }
     : { fontFamily: fontFamily(weight, language) };

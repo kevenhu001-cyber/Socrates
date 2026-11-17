@@ -103,29 +103,71 @@
   "summarize": [
     {
       "runs": ["succeeded", "succeeded", "failed", "running", "queued", "cancelled", "timed_out"],
-      "expected": { "total": 7, "succeeded": 2, "failed": 1, "cancelled": 1, "timed_out": 1, "active": 2 }
+      "expected": {
+        "total": 7,
+        "succeeded": 2,
+        "failed": 1,
+        "cancelled": 1,
+        "timed_out": 1,
+        "active": 2
+      }
     },
     {
       "runs": [],
-      "expected": { "total": 0, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 }
+      "expected": {
+        "total": 0,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "timed_out": 0,
+        "active": 0
+      }
     },
     {
       "runs": ["running", "preparing", "queued"],
-      "expected": { "total": 3, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 3 }
+      "expected": {
+        "total": 3,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "timed_out": 0,
+        "active": 3
+      }
     },
     {
       "runs": [null, "succeeded", null],
-      "expected": { "total": 3, "succeeded": 1, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 },
+      "expected": {
+        "total": 3,
+        "succeeded": 1,
+        "failed": 0,
+        "cancelled": 0,
+        "timed_out": 0,
+        "active": 0
+      },
       "why": "`total` counts SLOTS, not classified runs: both implementations use runs.length / runs.len(). A null slot is a run the caller has not populated yet, so it belongs in the total but in no bucket — the buckets therefore need not sum to total."
     },
     {
       "runs": ["", "succeeded"],
-      "expected": { "total": 2, "succeeded": 1, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 0 },
+      "expected": {
+        "total": 2,
+        "succeeded": 1,
+        "failed": 0,
+        "cancelled": 0,
+        "timed_out": 0,
+        "active": 0
+      },
       "why": "an empty phase is treated like a null slot: counted in total, classified into nothing. Notably it is NOT counted as active, unlike an unrecognised non-empty phase."
     },
     {
       "runs": ["unknown_phase"],
-      "expected": { "total": 1, "succeeded": 0, "failed": 0, "cancelled": 0, "timed_out": 0, "active": 1 },
+      "expected": {
+        "total": 1,
+        "succeeded": 0,
+        "failed": 0,
+        "cancelled": 0,
+        "timed_out": 0,
+        "active": 1
+      },
       "why": "an unrecognised phase counts as active: assuming it finished would let a stuck run disappear from the UI"
     }
   ]

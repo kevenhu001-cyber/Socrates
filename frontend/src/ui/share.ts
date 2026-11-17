@@ -1,11 +1,9 @@
-type FeatureRuntime = typeof import("./share.impl.ts");
-
+type FeatureRuntime = typeof import('./share.impl.ts');
 
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
-import { stateStore } from '../state/store.ts';
-
+import { sessionBridge, uiBridge } from '../store/index.ts';
 
 /* ui/share.ts — lightweight share facade.
  *
@@ -36,8 +34,12 @@ function loadShareImpl() {
   return _shareImplPromise;
 }
 
-function runShareAction(action: { (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; (module: FeatureRuntime): void; }) {
-  void loadShareImpl().then(action).catch(function () { /* loadShareImpl logs */ });
+function runShareAction(action: (module: FeatureRuntime) => void): void {
+  void loadShareImpl()
+    .then(action)
+    .catch(function () {
+      /* loadShareImpl logs */
+    });
 }
 
 /* This is part of session/auth chrome and runs frequently, so keep it fully
@@ -45,31 +47,44 @@ function runShareAction(action: { (module: FeatureRuntime): void; (module: Featu
 function toggleShareBtn() {
   const btn = document.getElementById('shareBtn');
   if (!btn) return;
-  const store = stateStore;
-  const show = !!(getCurrentUser() && store
-    && (store.read('currentSessionId') || store.read('_examInView')));
+  const show = !!(
+    getCurrentUser() &&
+    (sessionBridge.getSnapshot().currentSessionId || uiBridge.getSnapshot()._examInView)
+  );
   btn.classList.toggle('hidden', !show);
   const findBtn = document.getElementById('findBtn');
   if (findBtn) findBtn.classList.toggle('hidden', !show);
   if (!show) {
-    try { closeFindInSession(); } catch (error) { reportSwallow(error, 'ui/share.ts:47'); }
+    try {
+      closeFindInSession();
+    } catch (error) {
+      reportSwallow(error, 'ui/share.ts:47');
+    }
   }
 }
 
 function openShareModal(sessionId?: string) {
-  runShareAction(function (module: FeatureRuntime) { module.openShareModal(sessionId); });
+  runShareAction(function (module: FeatureRuntime) {
+    module.openShareModal(sessionId);
+  });
 }
 
 function closeShareModal() {
   if (_shareImpl) {
     _shareImpl.closeShareModal();
   } else if (_shareImplPromise) {
-    void _shareImplPromise.then(function (module: FeatureRuntime) { module.closeShareModal(); }).catch(() => undefined);
+    void _shareImplPromise
+      .then(function (module: FeatureRuntime) {
+        module.closeShareModal();
+      })
+      .catch(() => undefined);
   }
 }
 
 function selectShareVis(vis: 'public' | 'private') {
-  runShareAction(function (module: FeatureRuntime) { module.selectShareVis(vis); });
+  runShareAction(function (module: FeatureRuntime) {
+    module.selectShareVis(vis);
+  });
 }
 
 function renderShareModal() {
@@ -77,11 +92,15 @@ function renderShareModal() {
 }
 
 function createShareLink() {
-  runShareAction(function (module: FeatureRuntime) { void module.createShareLink(); });
+  runShareAction(function (module: FeatureRuntime) {
+    void module.createShareLink();
+  });
 }
 
 function revokeShareLink() {
-  runShareAction(function (module: FeatureRuntime) { void module.revokeShareLink(); });
+  runShareAction(function (module: FeatureRuntime) {
+    void module.revokeShareLink();
+  });
 }
 
 /* If sharing was never opened there is no feature-local token to clear. This
@@ -91,7 +110,11 @@ function resetShareToken() {
   if (_shareImpl) {
     _shareImpl.resetShareToken();
   } else if (_shareImplPromise) {
-    void _shareImplPromise.then(function (module: FeatureRuntime) { module.resetShareToken(); }).catch(() => undefined);
+    void _shareImplPromise
+      .then(function (module: FeatureRuntime) {
+        module.resetShareToken();
+      })
+      .catch(() => undefined);
   }
 }
 
@@ -99,11 +122,15 @@ function resetShareToken() {
    route naturally waits for the feature chunk before rendering the read-only
    transcript. */
 function loadSharedSession(token: string) {
-  return loadShareImpl().then(function (module: FeatureRuntime) { return module.loadSharedSession(token); });
+  return loadShareImpl().then(function (module: FeatureRuntime) {
+    return module.loadSharedSession(token);
+  });
 }
 
 function loadSharedExamSession(session: Parameters<FeatureRuntime['loadSharedExamSession']>[0]) {
-  return loadShareImpl().then(function (module: FeatureRuntime) { return module.loadSharedExamSession(session); });
+  return loadShareImpl().then(function (module: FeatureRuntime) {
+    return module.loadSharedExamSession(session);
+  });
 }
 
 /* Historical named exports are retained for compatibility. They were not used
@@ -116,8 +143,16 @@ const _shareUrl = '';
 export {
   loadShareImpl,
   toggleShareBtn,
-  openShareModal, closeShareModal, selectShareVis, renderShareModal,
-  createShareLink, revokeShareLink, resetShareToken,
-  loadSharedSession, loadSharedExamSession,
-  _shareVisibility, _shareToken, _shareUrl,
+  openShareModal,
+  closeShareModal,
+  selectShareVis,
+  renderShareModal,
+  createShareLink,
+  revokeShareLink,
+  resetShareToken,
+  loadSharedSession,
+  loadSharedExamSession,
+  _shareVisibility,
+  _shareToken,
+  _shareUrl,
 };

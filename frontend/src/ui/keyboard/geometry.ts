@@ -58,10 +58,10 @@ export function getKeyboardInset(
   visualOffsetTop = 0,
 ): number {
   if (
-    !Number.isFinite(layoutBottom)
-    || !Number.isFinite(visualHeight)
-    || layoutBottom <= 0
-    || visualHeight <= 0
+    !Number.isFinite(layoutBottom) ||
+    !Number.isFinite(visualHeight) ||
+    layoutBottom <= 0 ||
+    visualHeight <= 0
   ) {
     return 0;
   }
@@ -141,19 +141,18 @@ export function isTrackedInputFocused(
   trackedInputs: readonly unknown[],
   activeElement?: unknown,
 ): boolean {
-  const active = activeElement ?? (
-    typeof document !== 'undefined' ? document.activeElement : null
-  );
+  const active = activeElement ?? (typeof document !== 'undefined' ? document.activeElement : null);
   const inputs = Array.isArray(trackedInputs) ? trackedInputs : [];
   for (const el of inputs) {
     const node = el as HTMLElement | null;
     if (!node) continue;
     if (active === node) return true;
     try {
-      if (active && typeof node.contains === 'function' && node.contains(active as Node)) return true;
+      if (active && typeof node.contains === 'function' && node.contains(active as Node))
+        return true;
       if (typeof node.matches === 'function' && node.matches(':focus-within')) return true;
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: ui/keyboard/geometry.ts:153');
+      reportEmptyCatch(error, 'empty catch: ui/keyboard/geometry.ts');
       /* detached/custom elements can throw */
     }
   }
@@ -166,10 +165,7 @@ export function isTrackedInputFocused(
  * pointerdown/touchstart pre-arm, which must freeze the shell before the
  * browser performs the default focus action.
  */
-export function isEditableWithin(
-  eventTarget: unknown,
-  trackedInputs: readonly unknown[],
-): boolean {
+export function isEditableWithin(eventTarget: unknown, trackedInputs: readonly unknown[]): boolean {
   let target = eventTarget as HTMLElement | null;
   try {
     if (target && target.nodeType !== 1) target = target.parentElement;

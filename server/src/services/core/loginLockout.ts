@@ -28,9 +28,9 @@ import { eq, sql, and, isNull, or, lt } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { loginFailures } from '../../db/schema/index.js';
 
-const WINDOW_MS = 15 * 60 * 1000;       // 15 minutes
-const LOCKOUT_MS = 15 * 60 * 1000;      // 15 minutes
-const THRESHOLD = 5;                    // failed attempts to trigger lockout (user-login default)
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+const THRESHOLD = 5; // failed attempts to trigger lockout (user-login default)
 
 /* Admin console threshold — a stricter budget than the user-login
    default (3 instead of 5). The admin password is the only thing
@@ -50,13 +50,17 @@ async function pruneExpired() {
     const db = getDb();
     const cutoff = new Date(Date.now() - WINDOW_MS);
     // delete rows where window expired AND no active lockout
-    await db.delete(loginFailures).where(
-      and(
-        lt(loginFailures.firstAt, cutoff),
-        or(isNull(loginFailures.lockedUntil), lt(loginFailures.lockedUntil, new Date())),
-      ),
-    );
-  } catch (_) { /* prune failures are non-fatal */ }
+    await db
+      .delete(loginFailures)
+      .where(
+        and(
+          lt(loginFailures.firstAt, cutoff),
+          or(isNull(loginFailures.lockedUntil), lt(loginFailures.lockedUntil, new Date())),
+        ),
+      );
+  } catch (_) {
+    /* prune failures are non-fatal */
+  }
 }
 
 /**
@@ -75,14 +79,13 @@ export async function checkLockout(email: string, _threshold: number = THRESHOLD
   await pruneExpired();
   const db = getDb();
   const key = email.toLowerCase();
-  const [rec] = await db.select().from(loginFailures)
-    .where(eq(loginFailures.email, key)).limit(1);
+  const [rec] = await db.select().from(loginFailures).where(eq(loginFailures.email, key)).limit(1);
   if (!rec) return;
   if (rec.lockedUntil && rec.lockedUntil > new Date()) {
     const remainingMs = rec.lockedUntil.getTime() - Date.now();
     const remainingMin = Math.ceil(remainingMs / 60000);
     throw new TooManyRequests(
-      `Too many failed login attempts. Try again in ${remainingMin} minute(s).`
+      `Too many failed login attempts. Try again in ${remainingMin} minute(s).`,
     );
   }
 }
@@ -113,7 +116,8 @@ export async function recordFailure(email: string, threshold: number = THRESHOLD
   const now = new Date();
   const lockedUntil = new Date(now.getTime() + LOCKOUT_MS);
 
-  await db.insert(loginFailures)
+  await db
+    .insert(loginFailures)
     .values({
       email: key,
       count: 1,
@@ -163,5 +167,7 @@ export async function recordSuccess(email: string) {
   try {
     const db = getDb();
     await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase()));
-  } catch (_) { /* non-fatal */ }
+  } catch (_) {
+    /* non-fatal */
+  }
 }

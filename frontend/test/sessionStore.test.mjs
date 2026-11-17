@@ -13,14 +13,15 @@ test('visible sessions sort pinned rows first without mutating the source list',
 
   const visible = getVisibleSessions(sessions, 100);
 
-  assert.deepEqual(visible.map((session) => session.id), [
-    'pinned-new', 'pinned-old', 'recent', 'older',
-  ]);
-  assert.deepEqual(sessions.map((session) => session.id), [
-    'recent', 'pinned-old', 'older', 'pinned-new',
-  ]);
+  assert.deepEqual(
+    visible.map((session) => session.id),
+    ['pinned-new', 'pinned-old', 'recent', 'older'],
+  );
+  assert.deepEqual(
+    sessions.map((session) => session.id),
+    ['recent', 'pinned-old', 'older', 'pinned-new'],
+  );
 });
-
 
 test('new chat clears every registered workspace route without reloading', async () => {
   const { DESTINATIONS } = await import('../src/sidebar/navigation.destinations.ts');
@@ -30,12 +31,18 @@ test('new chat clears every registered workspace route without reloading', async
     for (const { path } of Object.values(DESTINATIONS)) {
       globalThis.location = { pathname: path };
       let target;
-      globalThis.history = { replaceState(_state, _title, url) { target = url; } };
+      globalThis.history = {
+        replaceState(_state, _title, url) {
+          target = url;
+        },
+      };
       clearSessionRouteInURL();
       assert.equal(target, '/', path);
     }
   } finally {
-    if (oldLocation === undefined) delete globalThis.location; else globalThis.location = oldLocation;
-    if (oldHistory === undefined) delete globalThis.history; else globalThis.history = oldHistory;
+    if (oldLocation === undefined) delete globalThis.location;
+    else globalThis.location = oldLocation;
+    if (oldHistory === undefined) delete globalThis.history;
+    else globalThis.history = oldHistory;
   }
 });

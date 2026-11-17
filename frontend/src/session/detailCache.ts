@@ -26,8 +26,8 @@ import { apiFetch } from '../util/api/index.ts';
 import { normalizeDetailPage, sessionDetailPath } from './historyPagingState.ts';
 
 const MAX_ENTRIES = 8;
-const MAX_ENTRY_BYTES = 3_000_000;   // 3 MB serialized cap per session
-const MAX_AGE_MS = 600_000;          // 10 min: after this a hit is treated as a miss
+const MAX_ENTRY_BYTES = 3_000_000; // 3 MB serialized cap per session
+const MAX_AGE_MS = 600_000; // 10 min: after this a hit is treated as a miss
 
 /** A message row inside a cached detail response. */
 export interface CachedMessage {
@@ -82,22 +82,31 @@ function attachmentBytes(attachments: CachedMessage['attachments']): number {
   let total = 0;
   for (const attachment of attachments) {
     const item = attachment as { dataUrl?: string | null; text?: string | null } | null | undefined;
-    if (item) total += 128 + (item.dataUrl ? item.dataUrl.length : 0) + (item.text ? item.text.length : 0);
+    if (item)
+      total += 128 + (item.dataUrl ? item.dataUrl.length : 0) + (item.text ? item.text.length : 0);
   }
   return total;
 }
 
 function toolCallBytes(toolCalls: CachedMessage['toolCalls']): number {
   if (!Array.isArray(toolCalls)) return 0;
-  try { return JSON.stringify(toolCalls).length; } catch { return Infinity; }
+  try {
+    return JSON.stringify(toolCalls).length;
+  } catch {
+    return Infinity;
+  }
 }
 
 function messageBytes(message: CachedMessage | null | undefined): number {
   if (!message) return 0;
-  return 256 + (message.html ? message.html.length : 0) + (message.rawText ? message.rawText.length : 0)
-    + (message.reasoningContent ? message.reasoningContent.length : 0)
-    + attachmentBytes(message.attachments)
-    + toolCallBytes(message.toolCalls);
+  return (
+    256 +
+    (message.html ? message.html.length : 0) +
+    (message.rawText ? message.rawText.length : 0) +
+    (message.reasoningContent ? message.reasoningContent.length : 0) +
+    attachmentBytes(message.attachments) +
+    toolCallBytes(message.toolCalls)
+  );
 }
 
 function serializedBytes(response: CachedDetailResponse): number {
@@ -122,8 +131,13 @@ export function signature(s: CachedDetailResponse | null | undefined): string {
     htmlLen += (m.html || '').length;
   }
   return [
-    s.title || '', s.topic || '', s.phase || '', s.kind || '',
-    msgs.length, htmlLen, ids,
+    s.title || '',
+    s.topic || '',
+    s.phase || '',
+    s.kind || '',
+    msgs.length,
+    htmlLen,
+    ids,
     s.streamingText ? '1' : '0',
   ].join('#');
 }
@@ -132,17 +146,21 @@ export function signature(s: CachedDetailResponse | null | undefined): string {
 export function lookup(id: string): CacheEntry | null {
   const e = _entries.get(id);
   if (!e) return null;
-  if (Date.now() - e.at > MAX_AGE_MS) { _entries.delete(id); return null; }
-  _entries.delete(id); _entries.set(id, e);
+  if (Date.now() - e.at > MAX_AGE_MS) {
+    _entries.delete(id);
+    return null;
+  }
+  _entries.delete(id);
+  _entries.set(id, e);
   return e;
 }
 
 /** Remember a freshly-fetched response for `id` (subject to the size caps). */
 export function store(id: string, response: CachedDetailResponse, sig?: string | null): void {
   if (!id || !response || typeof response !== 'object') return;
-  if (response.kind === 'exam') return;   // exam renders via a different path
+  if (response.kind === 'exam') return; // exam renders via a different path
   const bytes = serializedBytes(response);
-  if (bytes > MAX_ENTRY_BYTES) return;    // too big to be worth cloning later
+  if (bytes > MAX_ENTRY_BYTES) return; // too big to be worth cloning later
   _entries.delete(id);
   _entries.set(id, { response, sig: sig != null ? sig : signature(response), at: Date.now() });
   while (_entries.size > MAX_ENTRIES) {
@@ -161,7 +179,10 @@ export function invalidate(id: string | null | undefined): void {
       if (prefetchQueue[index].id === id) prefetchQueue.splice(index, 1)[0].resolve(null);
     }
     for (const task of activePrefetches) {
-      if (task.id === id) { task.controller.abort(); task.resolve(null); }
+      if (task.id === id) {
+        task.controller.abort();
+        task.resolve(null);
+      }
     }
   }
 }
@@ -183,7 +204,8 @@ const warmupIds = new Set<string>();
 
 function cancelWarmup(): void {
   if (warmupHandle !== null) {
-    if (warmupUsesIdle && typeof cancelIdleCallback === 'function') cancelIdleCallback(warmupHandle as number);
+    if (warmupUsesIdle && typeof cancelIdleCallback === 'function')
+      cancelIdleCallback(warmupHandle as number);
     else clearTimeout(warmupHandle);
   }
   warmupHandle = null;
@@ -194,13 +216,17 @@ function pumpPrefetches(): void {
   while (activePrefetches.size < MAX_PREFETCHES && prefetchQueue.length) {
     const task = prefetchQueue.shift()!;
     activePrefetches.add(task);
-    void apiFetch<CachedDetailResponse>(sessionDetailPath(task.id), { signal: task.controller.signal })
+    void apiFetch<CachedDetailResponse>(sessionDetailPath(task.id), {
+      signal: task.controller.signal,
+    })
       .then((response) => {
         normalizeDetailPage(response);
         if (task.generation !== generation || task.controller.signal.aborted) return null;
         if (response && typeof response === 'object') store(task.id, response);
         return response;
-      }).catch(() => null).then((response) => {
+      })
+      .catch(() => null)
+      .then((response) => {
         task.resolve(response);
         activePrefetches.delete(task);
         if (_inflightPrefetches.get(task.id) === task.promise) _inflightPrefetches.delete(task.id);
@@ -216,7 +242,9 @@ export function prefetch(id: string | null | undefined): Promise<CachedDetailRes
   const inflight = _inflightPrefetches.get(id);
   if (inflight) return inflight;
   let resolve!: PrefetchTask['resolve'];
-  const promise = new Promise<CachedDetailResponse | null>((done) => { resolve = done; });
+  const promise = new Promise<CachedDetailResponse | null>((done) => {
+    resolve = done;
+  });
   _inflightPrefetches.set(id, promise);
   // Hovering a long list must not retain an unbounded backlog of details.
   if (prefetchQueue.length >= MAX_ENTRIES) {
@@ -244,10 +272,14 @@ export function idleWarmup(sessionIds: ReadonlyArray<string | null | undefined>)
     warmupHandle = null;
     const ids = [...warmupIds].slice(0, 3);
     warmupIds.clear();
-    ids.forEach((id) => { void prefetch(id); });
+    ids.forEach((id) => {
+      void prefetch(id);
+    });
   };
   warmupUsesIdle = typeof requestIdleCallback === 'function';
-  warmupHandle = warmupUsesIdle ? requestIdleCallback(step, { timeout: 3000 }) : setTimeout(step, 300);
+  warmupHandle = warmupUsesIdle
+    ? requestIdleCallback(step, { timeout: 3000 })
+    : setTimeout(step, 300);
 }
 
 /** Account boundary: cancel work AND prevent late responses repopulating cache. */
@@ -269,11 +301,33 @@ export function clear(): void {
    response. Kept as a list so the merge is explicit and testable rather than
    a blind Object.assign over the response. */
 const SCALAR_KEYS = [
-  'id', 'title', 'topic', 'mode', 'kind', 'phase', 'totalQ', 'projectId',
-  'pinned', 'archivedAt', 'examData', 'kbNodes', 'mistakes', 'teachingPlan',
-  'boundariesHistory', 'mistakeFilter', 'branchedFrom', 'currentNode',
-  'teachingStage', 'currentExampleIdx', 'practiceAttempts', 'practicePhase',
-  'streamingText', 'streamingReasoning', 'createdAt', 'updatedAt', 'userId',
+  'id',
+  'title',
+  'topic',
+  'mode',
+  'kind',
+  'phase',
+  'totalQ',
+  'projectId',
+  'pinned',
+  'archivedAt',
+  'examData',
+  'kbNodes',
+  'mistakes',
+  'teachingPlan',
+  'boundariesHistory',
+  'mistakeFilter',
+  'branchedFrom',
+  'currentNode',
+  'teachingStage',
+  'currentExampleIdx',
+  'practiceAttempts',
+  'practicePhase',
+  'streamingText',
+  'streamingReasoning',
+  'createdAt',
+  'updatedAt',
+  'userId',
   /* R7 phase 2 — the cached tail page's paging metadata. A save never
      carries it, so the cached value survives the fold. */
   'messagesPage',
@@ -313,7 +367,7 @@ function mergeSavedMessage(
   if (!row) return;
   const byClientId = row.clientId ? indexByClient[row.clientId] : undefined;
   const byRowId = row.id ? indexByClient[row.id] : undefined;
-  const match = byClientId != null ? byClientId : (byRowId != null ? byRowId : -1);
+  const match = byClientId != null ? byClientId : byRowId != null ? byRowId : -1;
   if (match >= 0) {
     /* Keep the server's row id — the cache is keyed by it, and the
        client's copy may not know it yet. */
@@ -384,19 +438,21 @@ export function foldSave(
 
 /** True when a live entry was fetched too recently to be worth re-checking. */
 export function isFresh(entry: CacheEntry | null | undefined): boolean {
-  return !!entry && (Date.now() - entry.at) < REVALIDATE_AFTER_MS;
+  return !!entry && Date.now() - entry.at < REVALIDATE_AFTER_MS;
 }
 
 export function has(id: string): boolean {
   const e = _entries.get(id);
-  return !!e && (Date.now() - e.at <= MAX_AGE_MS);
+  return !!e && Date.now() - e.at <= MAX_AGE_MS;
 }
 
 /* Test seams. */
 export function _reset(): void {
   clear();
 }
-export function _size(): number { return _entries.size; }
+export function _size(): number {
+  return _entries.size;
+}
 export const limits = { MAX_ENTRIES, MAX_ENTRY_BYTES, MAX_AGE_MS, REVALIDATE_AFTER_MS };
 
 export const detailCache = {

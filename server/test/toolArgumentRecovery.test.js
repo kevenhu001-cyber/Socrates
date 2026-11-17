@@ -34,20 +34,23 @@ import { DOCUMENT_TOOL, executeDocument } from '../src/services/core/planning.js
 import { CREATE_SITE_TOOL } from '../src/services/siteCreation.js';
 import { INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
 import { PATCH_INTELLIGENT_UI_TOOL } from '../src/services/turnRuntimeTools.js';
-import { buildToolErrorFeedback } from '../src/services/tools/toolErrorFeedback.js';
-import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from '../src/services/integrations/projectConnectorTools.js';
-
+import { buildToolErrorFeedback } from '../src/services/tools/toolCorrectionMessage.js';
+import {
+  PROJECT_CONNECTOR_TOOLS,
+  PROJECT_CONNECTOR_TOOL_NAMES,
+} from '../src/services/integrations/projectConnectorTools.js';
 
 /** What the pipeline does with one streamed argument string. */
 function prepareArguments(toolName, raw, schema) {
   const policy = toolArgumentPolicy(toolName);
   const repaired = repairToolArguments(raw, schema, { dropUnknown: policy.dropUnknown, toolName });
   if (!repaired.ok) return { ok: false, code: repaired.error, args: null };
-  const validation = policy.validation === 'schema'
-    ? validateToolArguments(repaired.value, schema)
-    : policy.validation === 'tool' && policy.validate
-      ? policy.validate(repaired.value)
-      : { ok: true, fieldErrors: [] };
+  const validation =
+    policy.validation === 'schema'
+      ? validateToolArguments(repaired.value, schema)
+      : policy.validation === 'tool' && policy.validate
+        ? policy.validate(repaired.value)
+        : { ok: true, fieldErrors: [] };
   if (!validation.ok) {
     return {
       ok: false,
@@ -63,9 +66,15 @@ function prepareArguments(toolName, raw, schema) {
 
 test('parseToolArguments recovers a complete object with junk around it', () => {
   /* Stray text behind the object (a fragment stream that over-ran) … */
-  assert.deepEqual(parseToolArguments('{"query":"safe"}"junk'), { ok: true, value: { query: 'safe' } });
+  assert.deepEqual(parseToolArguments('{"query":"safe"}"junk'), {
+    ok: true,
+    value: { query: 'safe' },
+  });
   /* … and a `{}` placeholder in front of it. */
-  assert.deepEqual(parseToolArguments('{}{"query":"safe"}'), { ok: true, value: { query: 'safe' } });
+  assert.deepEqual(parseToolArguments('{}{"query":"safe"}'), {
+    ok: true,
+    value: { query: 'safe' },
+  });
   /* An empty object on its own is still a valid (empty) argument set. */
   assert.deepEqual(parseToolArguments('{}'), { ok: true, value: {} });
 });
@@ -117,7 +126,11 @@ test('executor-supported aliases are normalized before schema pruning', () => {
     additionalProperties: false,
   };
   for (const alias of ['q', 'search_query', 'keyword']) {
-    const prepared = prepareArguments('web_search', JSON.stringify({ [alias]: 'reliable query' }), querySchema);
+    const prepared = prepareArguments(
+      'web_search',
+      JSON.stringify({ [alias]: 'reliable query' }),
+      querySchema,
+    );
     assert.equal(prepared.ok, true);
     assert.deepEqual(prepared.args, { query: 'reliable query' });
   }
@@ -175,11 +188,18 @@ test('empty arguments are accepted only for tools with no required fields', () =
 
 test('document validation runs before execution and preserves the selected content', () => {
   const schema = DOCUMENT_TOOL.function.parameters;
-  const args = { kind: 'plan', content: { title: 'Review', steps: [{title:'Read'}] } };
+  const args = { kind: 'plan', content: { title: 'Review', steps: [{ title: 'Read' }] } };
   const prepared = prepareArguments('create_document', JSON.stringify(args), schema);
   assert.equal(prepared.ok, true);
   assert.equal(executeDocument(prepared.args).status, 'completed');
-  assert.equal(prepareArguments('create_document', JSON.stringify({kind:'spec', content:{title:'x', requirements:[]}}), schema).code, 'plan_spec_invalid');
+  assert.equal(
+    prepareArguments(
+      'create_document',
+      JSON.stringify({ kind: 'spec', content: { title: 'x', requirements: [] } }),
+      schema,
+    ).code,
+    'plan_spec_invalid',
+  );
 });
 
 test('a tool-specific rejection keeps its own user message', () => {
@@ -201,7 +221,11 @@ test('tools without their own normalizer are still pre-validated', () => {
     properties: { query: { type: 'string', minLength: 1 } },
     additionalProperties: false,
   };
-  const prepared = prepareArguments('web_search', '{"unexpected":"missing the required name"}', schema);
+  const prepared = prepareArguments(
+    'web_search',
+    '{"unexpected":"missing the required name"}',
+    schema,
+  );
   assert.equal(prepared.ok, false);
   assert.equal(prepared.code, TOOL_ARGUMENT_ERRORS.schema);
   assert.match(prepared.fieldErrors.join('; '), /query: missing required field/);
@@ -211,7 +235,10 @@ test('tools without their own normalizer are still pre-validated', () => {
 
 test('no tool advertises a field larger than the transport cap allows', () => {
   assert.ok(MAX_TOOL_STRING_FIELD_CHARS < MAX_TOOL_ARGUMENT_CHARS);
-  assert.equal(CREATE_SITE_TOOL.function.parameters.properties.source.maxLength, MAX_TOOL_STRING_FIELD_CHARS);
+  assert.equal(
+    CREATE_SITE_TOOL.function.parameters.properties.source.maxLength,
+    MAX_TOOL_STRING_FIELD_CHARS,
+  );
   /* The visualization extension payload is validated by zod, so assert the
      behaviour rather than the schema literal. */
   const atLimit = {
@@ -236,17 +263,34 @@ test('each argument error code carries its own user and model copy', () => {
   const schema = { type: 'object', required: ['query'], properties: { query: { type: 'string' } } };
   const seen = new Set();
   for (const code of Object.values(TOOL_ARGUMENT_ERRORS)) {
-    const feedback = buildToolErrorFeedback({ toolName: 'web_search', schema, errorCode: code, retryable: true });
+    const feedback = buildToolErrorFeedback({
+      toolName: 'web_search',
+      schema,
+      errorCode: code,
+      retryable: true,
+    });
     assert.ok(feedback.userMessage, `${code} needs a user message`);
-    assert.equal(seen.has(feedback.userMessage), false, `${code} must not reuse another code's copy`);
+    assert.equal(
+      seen.has(feedback.userMessage),
+      false,
+      `${code} must not reuse another code's copy`,
+    );
     seen.add(feedback.userMessage);
     assert.match(feedback.modelMessage, new RegExp(code));
   }
   /* The size failure tells the model to shrink the call; the schema
      failure tells it to fix fields. */
-  const tooLarge = buildToolErrorFeedback({ toolName: 'create_site', errorCode: TOOL_ARGUMENT_ERRORS.tooLarge, retryable: true });
+  const tooLarge = buildToolErrorFeedback({
+    toolName: 'create_site',
+    errorCode: TOOL_ARGUMENT_ERRORS.tooLarge,
+    retryable: true,
+  });
   assert.match(tooLarge.modelMessage, /smaller payload/i);
-  const parseFailed = buildToolErrorFeedback({ toolName: 'web_search', errorCode: TOOL_ARGUMENT_ERRORS.parse, retryable: true });
+  const parseFailed = buildToolErrorFeedback({
+    toolName: 'web_search',
+    errorCode: TOOL_ARGUMENT_ERRORS.parse,
+    retryable: true,
+  });
   assert.match(parseFailed.modelMessage, /single JSON object/i);
 });
 
@@ -259,27 +303,43 @@ test('XML-style item collections and quoted numbers are repaired before validati
      needs the render tool's own normalizer to rebuild the array. */
   const raw = JSON.stringify({
     version: '1',
-    nodes: [{
-      id: 'nr',
-      type: 'demonstration',
-      title: 'Newton rings',
-      program: {
-        version: '1',
-        parameters: { item: [{ id: 'lam', label: 'λ', value: '550', min: '380', max: '750', step: '10' }] },
-        definitions: { ringI: 'lam * x' },
-        views: { item: [
-          { kind: 'controls' },
-          { kind: 'plot', x: { item: ['-0.003', '0.003'] }, y: { item: ['0', '1.05'] },
-            curves: { item: [{ expression: 'ringI', label: 'I(r)' }] } },
-        ] },
+    nodes: [
+      {
+        id: 'nr',
+        type: 'demonstration',
+        title: 'Newton rings',
+        program: {
+          version: '1',
+          parameters: {
+            item: [{ id: 'lam', label: 'λ', value: '550', min: '380', max: '750', step: '10' }],
+          },
+          definitions: { ringI: 'lam * x' },
+          views: {
+            item: [
+              { kind: 'controls' },
+              {
+                kind: 'plot',
+                x: { item: ['-0.003', '0.003'] },
+                y: { item: ['0', '1.05'] },
+                curves: { item: [{ expression: 'ringI', label: 'I(r)' }] },
+              },
+            ],
+          },
+        },
       },
-    }],
+    ],
   });
-  const prepared = prepareArguments('render_intelligent_ui', raw, INTELLIGENT_UI_TOOL.function.parameters);
+  const prepared = prepareArguments(
+    'render_intelligent_ui',
+    raw,
+    INTELLIGENT_UI_TOOL.function.parameters,
+  );
   assert.equal(prepared.ok, true);
   const program = prepared.args.nodes[0].program;
   assert.equal(program.version, 1);
-  assert.deepEqual(program.parameters, [{ id: 'lam', label: 'λ', value: 550, min: 380, max: 750, step: 10 }]);
+  assert.deepEqual(program.parameters, [
+    { id: 'lam', label: 'λ', value: 550, min: 380, max: 750, step: 10 },
+  ]);
   assert.equal(program.views.length, 2);
   assert.deepEqual(program.views[1].x, [-0.003, 0.003]);
   assert.equal(program.views[1].curves.length, 1);
@@ -292,10 +352,20 @@ test('a valid demonstration program survives argument repair unchanged', () => {
     version: 1,
     parameters: [{ id: 'a', label: 'A', value: 1, min: 0, max: 2, step: 0.1 }],
     definitions: { f: 'a*x' },
-    views: [{ kind: 'controls' }, { kind: 'plot', x: [0, 1], y: [0, 2], curves: [{ expression: 'f', label: 'a*x' }] }],
+    views: [
+      { kind: 'controls' },
+      { kind: 'plot', x: [0, 1], y: [0, 2], curves: [{ expression: 'f', label: 'a*x' }] },
+    ],
   };
-  const args = { version: 1, nodes: [{ id: 'demo', type: 'demonstration', title: 'Demo', program }] };
-  const prepared = prepareArguments('render_intelligent_ui', JSON.stringify(args), INTELLIGENT_UI_TOOL.function.parameters);
+  const args = {
+    version: 1,
+    nodes: [{ id: 'demo', type: 'demonstration', title: 'Demo', program }],
+  };
+  const prepared = prepareArguments(
+    'render_intelligent_ui',
+    JSON.stringify(args),
+    INTELLIGENT_UI_TOOL.function.parameters,
+  );
   assert.equal(prepared.ok, true);
   assert.deepEqual(prepared.repairs, []);
   assert.deepEqual(prepared.args.nodes[0].program, program);
@@ -305,12 +375,19 @@ test('patch operations normalize an XML-style demonstration program', () => {
   const raw = JSON.stringify({
     surfaceId: 'ui-call',
     revision: 0,
-    operations: [{
-      op: 'patch', nodeId: 'demo',
-      props: { program: { version: '1', views: { item: [{ kind: 'controls' }] } } },
-    }],
+    operations: [
+      {
+        op: 'patch',
+        nodeId: 'demo',
+        props: { program: { version: '1', views: { item: [{ kind: 'controls' }] } } },
+      },
+    ],
   });
-  const prepared = prepareArguments('patch_intelligent_ui', raw, PATCH_INTELLIGENT_UI_TOOL.function.parameters);
+  const prepared = prepareArguments(
+    'patch_intelligent_ui',
+    raw,
+    PATCH_INTELLIGENT_UI_TOOL.function.parameters,
+  );
   assert.equal(prepared.ok, true);
   const program = prepared.args.operations[0].props.program;
   assert.equal(program.version, 1);

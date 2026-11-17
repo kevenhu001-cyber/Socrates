@@ -80,9 +80,19 @@ function ChainNode({ label, tone, live }: { label: string; tone: NodeTone; live?
     return (
       <View
         aria-hidden
-        style={{ width: NODE_W, height: NODE_H, borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, boxShadow: insetRing(live ? colors.ink : colors.hairlineStrong) }}
+        style={{
+          width: NODE_W,
+          height: NODE_H,
+          borderRadius: R.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.card,
+          boxShadow: insetRing(live ? colors.ink : colors.hairlineStrong),
+        }}
       >
-        <UiText variant="labelSm" tone={live ? 'ink' : 'tertiary'}>→</UiText>
+        <UiText variant="labelSm" tone={live ? 'ink' : 'tertiary'}>
+          →
+        </UiText>
       </View>
     );
   }
@@ -98,15 +108,40 @@ function ChainNode({ label, tone, live }: { label: string; tone: NodeTone; live?
         backgroundColor: tone === 'current' ? colors.ink : colors.fill,
       }}
     >
-      <UiText variant="labelSm" tone={tone === 'current' ? 'onInk' : 'tertiary'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
+      <UiText
+        variant="labelSm"
+        tone={tone === 'current' ? 'onInk' : 'tertiary'}
+        style={{ fontVariant: ['tabular-nums'] }}
+      >
+        {label}
+      </UiText>
     </View>
   );
 }
 
 /** Left rail: a node with the spine running above and/or below it. */
-function Rail({ label, tone, lineAbove, lineBelow, nodeTop, live }: { label: string; tone: NodeTone; lineAbove: boolean; lineBelow: boolean; nodeTop: number; live?: boolean }) {
+function Rail({
+  label,
+  tone,
+  lineAbove,
+  lineBelow,
+  nodeTop,
+  live,
+}: {
+  label: string;
+  tone: NodeTone;
+  lineAbove: boolean;
+  lineBelow: boolean;
+  nodeTop: number;
+  live?: boolean;
+}) {
   const { colors } = useUiTheme();
-  const line = { position: 'absolute' as const, left: RAIL / 2 - 0.5, width: 1, backgroundColor: colors.hairlineStrong };
+  const line = {
+    position: 'absolute' as const,
+    left: RAIL / 2 - 0.5,
+    width: 1,
+    backgroundColor: colors.hairlineStrong,
+  };
   return (
     <View style={{ width: RAIL, alignSelf: 'stretch', marginRight: S[100] }}>
       {lineAbove ? <View style={[line, { top: 0, height: nodeTop }]} /> : null}
@@ -128,9 +163,18 @@ function OwnTag({ label }: { label: string }) {
   return (
     <View
       testID="question-chain-own-tag"
-      style={{ flexShrink: 0, height: 20, justifyContent: 'center', paddingHorizontal: S[75], borderRadius: R.pill, boxShadow: insetRing(colors.hairlineStrong) }}
+      style={{
+        flexShrink: 0,
+        height: 20,
+        justifyContent: 'center',
+        paddingHorizontal: S[75],
+        borderRadius: R.pill,
+        boxShadow: insetRing(colors.hairlineStrong),
+      }}
     >
-      <UiText variant="labelSm" tone="tertiary" numberOfLines={1}>{label}</UiText>
+      <UiText variant="labelSm" tone="tertiary" numberOfLines={1}>
+        {label}
+      </UiText>
     </View>
   );
 }
@@ -158,7 +202,11 @@ function useJoinMotion(stepCount: number) {
       return undefined;
     }
     value.setValue(0);
-    const animation = Animated.timing(value, { toValue: 1, duration: uiMotion.enter, useNativeDriver: nativeDriver });
+    const animation = Animated.timing(value, {
+      toValue: 1,
+      duration: uiMotion.enter,
+      useNativeDriver: nativeDriver,
+    });
     animation.start();
     return () => animation.stop();
   }, [stepCount, reduced, value]);
@@ -169,7 +217,19 @@ function useJoinMotion(stepCount: number) {
 }
 
 /** A question to follow: the site's answer bubble (white, 18px radius, shadow-1) with a quiet arrow. */
-function CandidateRow({ candidate, last, busy, onSelect, renderText }: { candidate: ChainCandidate; last: boolean; busy?: boolean; onSelect: (candidate: ChainCandidate) => void; renderText: (text: string, part: string) => ReactNode }) {
+function CandidateRow({
+  candidate,
+  last,
+  busy,
+  onSelect,
+  renderText,
+}: {
+  candidate: ChainCandidate;
+  last: boolean;
+  busy?: boolean;
+  onSelect: (candidate: ChainCandidate) => void;
+  renderText: (text: string, part: string) => ReactNode;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
@@ -206,7 +266,9 @@ function CandidateRow({ candidate, last, busy, onSelect, renderText }: { candida
               transform: [{ scale }],
             }}
           >
-            <UiText variant="bodySm" style={{ flexShrink: 1 }}>{renderText(candidate.text, 'chain-next')}</UiText>
+            <UiText variant="bodySm" style={{ flexShrink: 1 }}>
+              {renderText(candidate.text, 'chain-next')}
+            </UiText>
           </Animated.View>
         </Pressable>
       </View>
@@ -216,12 +278,21 @@ function CandidateRow({ candidate, last, busy, onSelect, renderText }: { candida
 
 const plainText = (text: string): ReactNode => text;
 
-export function QuestionChain({ steps, candidates, strings, onSelect, busy, renderText = plainText, testID = 'question-chain' }: QuestionChainProps) {
+export function QuestionChain({
+  steps,
+  candidates,
+  strings,
+  onSelect,
+  busy,
+  renderText = plainText,
+  testID = 'question-chain',
+}: QuestionChainProps) {
   const { colors } = useUiTheme();
   const [expanded, setExpanded] = useState(false);
   const view = chainView(steps, expanded);
   const join = useJoinMotion(steps.length);
-  const fromMistakes = candidates.length > 0 && candidates.every((candidate) => candidate.kind === 'mistake');
+  const fromMistakes =
+    candidates.length > 0 && candidates.every((candidate) => candidate.kind === 'mistake');
   const hasCandidates = candidates.length > 0;
   const walkedCount = view.walked.length + view.hiddenCount;
 
@@ -233,11 +304,29 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
       testID={testID}
       role="group"
       aria-label={strings.title}
-      style={{ gap: S[100], paddingHorizontal: S[200], paddingTop: S[100], paddingBottom: S[200], borderRadius: R.sheet, backgroundColor: subtle, boxShadow: insetRing(colors.hairline) }}
+      style={{
+        gap: S[100],
+        paddingHorizontal: S[200],
+        paddingTop: S[100],
+        paddingBottom: S[200],
+        borderRadius: R.sheet,
+        backgroundColor: subtle,
+        boxShadow: insetRing(colors.hairline),
+      }}
       {...dataSet({ steps: steps.length })}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: S[100], minHeight: 32 }}>
-        <UiText variant="labelSm" tone="secondary">{strings.title}</UiText>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: S[100],
+          minHeight: 32,
+        }}
+      >
+        <UiText variant="labelSm" tone="secondary">
+          {strings.title}
+        </UiText>
         {walkedCount > 2 ? (
           <PillAction
             size="sm"
@@ -252,14 +341,32 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
 
       <View>
         {view.walked.map((step, position) => (
-          <View key={step.id} testID={`question-chain-walked-${step.index}`} style={{ flexDirection: 'row' }} {...dataSet({ origin: step.origin })}>
-            <Rail label={chainNodeLabel(step.index)} tone="walked" lineAbove={position > 0} lineBelow nodeTop={1} />
+          <View
+            key={step.id}
+            testID={`question-chain-walked-${step.index}`}
+            style={{ flexDirection: 'row' }}
+            {...dataSet({ origin: step.origin })}
+          >
+            <Rail
+              label={chainNodeLabel(step.index)}
+              tone="walked"
+              lineAbove={position > 0}
+              lineBelow
+              nodeTop={1}
+            />
             <View style={{ flex: 1, minWidth: 0, paddingBottom: S[100], paddingTop: 1 }}>
               <StepLine step={step} own={strings.own}>
-                <UiText variant="bodySm" tone="tertiary" numberOfLines={1}>{step.text}</UiText>
+                <UiText variant="bodySm" tone="tertiary" numberOfLines={1}>
+                  {step.text}
+                </UiText>
               </StepLine>
               {position === 0 && view.hiddenCount > 0 ? (
-                <UiText testID="question-chain-folded" variant="labelSm" tone="tertiary" style={{ marginTop: S[100] }}>
+                <UiText
+                  testID="question-chain-folded"
+                  variant="labelSm"
+                  tone="tertiary"
+                  style={{ marginTop: S[100] }}
+                >
                   {strings.folded.replace('{n}', String(view.hiddenCount))}
                 </UiText>
               ) : null}
@@ -268,7 +375,11 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
         ))}
 
         {view.current ? (
-          <Animated.View testID="question-chain-current" style={[{ flexDirection: 'row' }, join]} {...dataSet({ origin: view.current.origin })}>
+          <Animated.View
+            testID="question-chain-current"
+            style={[{ flexDirection: 'row' }, join]}
+            {...dataSet({ origin: view.current.origin })}
+          >
             <Rail
               label={chainNodeLabel(view.current.index)}
               tone="current"
@@ -276,7 +387,15 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
               lineBelow={hasCandidates}
               nodeTop={1}
             />
-            <View style={{ flex: 1, minWidth: 0, paddingBottom: hasCandidates ? S[200] : 0, paddingTop: 1, gap: 2 }}>
+            <View
+              style={{
+                flex: 1,
+                minWidth: 0,
+                paddingBottom: hasCandidates ? S[200] : 0,
+                paddingTop: 1,
+                gap: 2,
+              }}
+            >
               <StepLine step={view.current} own={strings.own}>
                 <UiText
                   variant="label"
@@ -317,5 +436,16 @@ export function QuestionChain({ steps, candidates, strings, onSelect, busy, rend
 
 function ChainSpine() {
   const { colors } = useUiTheme();
-  return <View style={{ position: 'absolute', left: RAIL / 2 - 0.5, top: 0, bottom: 0, width: 1, backgroundColor: colors.hairlineStrong }} />;
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: RAIL / 2 - 0.5,
+        top: 0,
+        bottom: 0,
+        width: 1,
+        backgroundColor: colors.hairlineStrong,
+      }}
+    />
+  );
 }

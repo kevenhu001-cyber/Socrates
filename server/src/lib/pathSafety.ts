@@ -30,7 +30,11 @@ export function isInsideRoot(root: string, candidate: string): boolean {
  * Relative candidates are resolved against the root (so callers can pass
  * either a bare entry name or an absolute path that is still contained).
  */
-export function resolveInsideRoot(root: string, candidate: string, message = 'path_outside_root'): string {
+export function resolveInsideRoot(
+  root: string,
+  candidate: string,
+  message = 'path_outside_root',
+): string {
   if (!isInsideRoot(root, candidate)) throw new ApiError(400, 'INVALID_PATH', message);
   return path.resolve(path.resolve(root), String(candidate ?? ''));
 }

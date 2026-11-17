@@ -1,17 +1,48 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { completedActivitySummary, normalizeSummary, generateTurnSummary, TURN_SUMMARY_SYSTEM_PROMPT } from '../src/services/turnSummary.js';
+import {
+  completedActivitySummary,
+  normalizeSummary,
+  generateTurnSummary,
+  TURN_SUMMARY_SYSTEM_PROMPT,
+} from '../src/services/turnSummary.js';
 
 test('completed activity skips ordinary answers and reports observed reasoning only', () => {
-  assert.equal(completedActivitySummary({ question: 'Hello', toolCalls: [], hasReasoning: false }), null);
-  assert.equal(completedActivitySummary({ question: 'Compare these', toolCalls: [], hasReasoning: true }), 'Analysis complete');
-  assert.equal(completedActivitySummary({ question: '比较这些资料', toolCalls: [], hasReasoning: true }), '已完成分析');
+  assert.equal(
+    completedActivitySummary({ question: 'Hello', toolCalls: [], hasReasoning: false }),
+    null,
+  );
+  assert.equal(
+    completedActivitySummary({ question: 'Compare these', toolCalls: [], hasReasoning: true }),
+    'Analysis complete',
+  );
+  assert.equal(
+    completedActivitySummary({ question: '比较这些资料', toolCalls: [], hasReasoning: true }),
+    '已完成分析',
+  );
 });
 
 test('completed activity includes failed operations instead of claiming success', () => {
-  assert.equal(completedActivitySummary({ question: 'Search', toolCalls: [{}, { isError: true }], hasReasoning: false }), 'Ran 2 tool actions; 1 failed');
-  assert.equal(completedActivitySummary({ question: '查资料', toolCalls: [{ isError: true }], hasReasoning: true }), '执行了 1 项工具操作，1 项失败');
-  assert.equal(completedActivitySummary({ question: 'Read this', toolCalls: [{}], hasReasoning: false }), 'Ran 1 tool action');
+  assert.equal(
+    completedActivitySummary({
+      question: 'Search',
+      toolCalls: [{}, { isError: true }],
+      hasReasoning: false,
+    }),
+    'Ran 2 tool actions; 1 failed',
+  );
+  assert.equal(
+    completedActivitySummary({
+      question: '查资料',
+      toolCalls: [{ isError: true }],
+      hasReasoning: true,
+    }),
+    '执行了 1 项工具操作，1 项失败',
+  );
+  assert.equal(
+    completedActivitySummary({ question: 'Read this', toolCalls: [{}], hasReasoning: false }),
+    'Ran 1 tool action',
+  );
 });
 
 test('normalizeSummary strips the wrappers models reach for', () => {
@@ -51,7 +82,11 @@ test('normalizeSummary rejects empty input', () => {
 
 test('generateTurnSummary returns the model line', async () => {
   const out = await generateTurnSummary(
-    { question: '报销流程', answer: '差旅报销需要提交…'.repeat(20), toolCalls: [{ name: 'web_search' }] },
+    {
+      question: '报销流程',
+      answer: '差旅报销需要提交…'.repeat(20),
+      toolCalls: [{ name: 'web_search' }],
+    },
     { complete: async () => '查找了 3 个来源并汇总' },
   );
   assert.equal(out, '查找了 3 个来源并汇总');
@@ -60,8 +95,17 @@ test('generateTurnSummary returns the model line', async () => {
 test('generateTurnSummary names the tool outcome in the prompt', async () => {
   let seen = '';
   await generateTurnSummary(
-    { question: 'Q', answer: 'A'.repeat(80), toolCalls: [{ name: 'web_search' }, { name: 'code_interpreter', isError: true }] },
-    { complete: async (p) => { seen = p; return 'ok'; } },
+    {
+      question: 'Q',
+      answer: 'A'.repeat(80),
+      toolCalls: [{ name: 'web_search' }, { name: 'code_interpreter', isError: true }],
+    },
+    {
+      complete: async (p) => {
+        seen = p;
+        return 'ok';
+      },
+    },
   );
   assert.match(seen, /web_search/);
   assert.match(seen, /code_interpreter\(失败\)/);
@@ -70,8 +114,18 @@ test('generateTurnSummary names the tool outcome in the prompt', async () => {
 test('generateTurnSummary includes reasoning in prompt when provided', async () => {
   let seen = '';
   await generateTurnSummary(
-    { question: '物理题', answer: 'A'.repeat(80), toolCalls: [], reasoning: '拆解运动条件和数据分析，计算初速度' },
-    { complete: async (p) => { seen = p; return 'ok'; } },
+    {
+      question: '物理题',
+      answer: 'A'.repeat(80),
+      toolCalls: [],
+      reasoning: '拆解运动条件和数据分析，计算初速度',
+    },
+    {
+      complete: async (p) => {
+        seen = p;
+        return 'ok';
+      },
+    },
   );
   assert.match(seen, /思考与推导要点：拆解运动条件和数据分析/);
 });
@@ -80,7 +134,12 @@ test('generateTurnSummary skips turns with nothing to summarise', async () => {
   let called = false;
   const out = await generateTurnSummary(
     { question: 'Q', answer: '', toolCalls: [] },
-    { complete: async () => { called = true; return 'x'; } },
+    {
+      complete: async () => {
+        called = true;
+        return 'x';
+      },
+    },
   );
   assert.equal(out, null);
   assert.equal(called, false, 'must not spend a call on an empty turn');
@@ -89,7 +148,11 @@ test('generateTurnSummary skips turns with nothing to summarise', async () => {
 test('generateTurnSummary tolerates a failing provider', async () => {
   const out = await generateTurnSummary(
     { question: 'Q', answer: 'A'.repeat(80), toolCalls: [] },
-    { complete: async () => { throw new Error('upstream 500'); } },
+    {
+      complete: async () => {
+        throw new Error('upstream 500');
+      },
+    },
   );
   assert.equal(out, null);
 });
@@ -104,17 +167,25 @@ test('generateTurnSummary hands its deadline down as a real signal', async () =>
     { question: 'Q', answer: 'A'.repeat(80), toolCalls: [] },
     {
       timeoutMs: 20,
-      complete: (_prompt, signal) => new Promise((_resolve, reject) => {
-        /* The production deadline is intentionally unref'ed. Keep this
+      complete: (_prompt, signal) =>
+        new Promise((_resolve, reject) => {
+          /* The production deadline is intentionally unref'ed. Keep this
            provider fixture alive like a real socket/request so Node 22 does
            not exit the isolated test worker before the abort is observable. */
-        const keepAlive = setTimeout(() => reject(new Error('summary request did not abort')), 1_000);
-        seen = signal;
-        signal.addEventListener('abort', () => {
-          clearTimeout(keepAlive);
-          reject(new Error('aborted'));
-        }, { once: true });
-      }),
+          const keepAlive = setTimeout(
+            () => reject(new Error('summary request did not abort')),
+            1_000,
+          );
+          seen = signal;
+          signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(keepAlive);
+              reject(new Error('aborted'));
+            },
+            { once: true },
+          );
+        }),
     },
   );
   assert.equal(out, null, 'a timed-out summary degrades to null');

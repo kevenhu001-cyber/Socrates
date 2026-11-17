@@ -17,7 +17,10 @@ import {
   isMobileRefreshToken,
   mobileTokenPairId,
 } from '../src/services/core/auth.js';
-import authRouter, { MOBILE_AUTH_ROUTE_PATHS, redirectMobileWebSession } from '../src/routes/auth.js';
+import authRouter, {
+  MOBILE_AUTH_ROUTE_PATHS,
+  redirectMobileWebSession,
+} from '../src/routes/auth.js';
 import { requestCredential, requireMobileBearer } from '../src/middleware/auth.js';
 import { listen, httpRequest } from './_http.js';
 
@@ -64,7 +67,12 @@ describe('mobile auth token contract', () => {
      * parsed the pair wrong. Fail here if they drift again. */
     const spec = JSON.parse(readFileSync(new URL('../openapi.json', import.meta.url), 'utf8'));
     const schema = spec.components.schemas.MobileBearerPair;
-    assert.deepEqual([...schema.required].sort(), ['accessToken', 'expiresAt', 'refreshExpiresAt', 'refreshToken']);
+    assert.deepEqual([...schema.required].sort(), [
+      'accessToken',
+      'expiresAt',
+      'refreshExpiresAt',
+      'refreshToken',
+    ]);
     const pair = buildMobileTokenPair();
     for (const key of schema.required) {
       assert.equal(typeof pair[key], 'string', `${key} must be present on the built pair`);
@@ -82,51 +90,102 @@ describe('mobile auth token contract', () => {
 
   test('uses a valid mobile bearer ahead of a stale browser cookie', () => {
     const tokens = buildMobileTokenPair();
-    assert.deepEqual(requestCredential(request({ authorization: `Bearer ${tokens.accessToken}`, sid: 'a'.repeat(64) })), {
-      token: tokens.accessToken,
-      source: 'bearer',
-    });
+    assert.deepEqual(
+      requestCredential(
+        request({ authorization: `Bearer ${tokens.accessToken}`, sid: 'a'.repeat(64) }),
+      ),
+      {
+        token: tokens.accessToken,
+        source: 'bearer',
+      },
+    );
   });
 
-  test('does not fall back to a cookie when an Authorization header is malformed or a refresh token', () => {    const tokens = buildMobileTokenPair();
-    assert.equal(requestCredential(request({ authorization: `Bearer ${tokens.refreshToken}`, sid: 'a'.repeat(64) })), null);
-    assert.equal(requestCredential(request({ authorization: 'Basic abc', sid: 'a'.repeat(64) })), null);
-    assert.equal(requestCredential(request({ authorization: `Bearer ${tokens.accessToken} trailing`, sid: 'a'.repeat(64) })), null);
+  test('does not fall back to a cookie when an Authorization header is malformed or a refresh token', () => {
+    const tokens = buildMobileTokenPair();
+    assert.equal(
+      requestCredential(
+        request({ authorization: `Bearer ${tokens.refreshToken}`, sid: 'a'.repeat(64) }),
+      ),
+      null,
+    );
+    assert.equal(
+      requestCredential(request({ authorization: 'Basic abc', sid: 'a'.repeat(64) })),
+      null,
+    );
+    assert.equal(
+      requestCredential(
+        request({ authorization: `Bearer ${tokens.accessToken} trailing`, sid: 'a'.repeat(64) }),
+      ),
+      null,
+    );
   });
 
   test('still accepts only the legacy 64-hex browser sid from a cookie', () => {
-    assert.deepEqual(requestCredential(request({ sid: 'a'.repeat(64) })), { token: 'a'.repeat(64), source: 'cookie' });
+    assert.deepEqual(requestCredential(request({ sid: 'a'.repeat(64) })), {
+      token: 'a'.repeat(64),
+      source: 'cookie',
+    });
     assert.equal(requestCredential(request({ sid: 'not-a-session' })), null);
   });
 
   test('keeps the mobile WebView target allowlist exact', () => {
-    for (const target of ['projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings', 'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam']) {
+    for (const target of [
+      'projects',
+      'scheduled',
+      'plugins',
+      'knowledge',
+      'mistakes',
+      'skills',
+      'api-settings',
+      'profile',
+      'usage',
+      'storage',
+      'display',
+      'shortcuts',
+      'library',
+      'exam',
+    ]) {
       assert.equal(isEmbeddedMobileTarget(target), true, target);
     }
-    for (const target of ['', 'project', 'settings', 'https://evil.example/', '../../projects', null, {}]) {
+    for (const target of [
+      '',
+      'project',
+      'settings',
+      'https://evil.example/',
+      '../../projects',
+      null,
+      {},
+    ]) {
       assert.equal(isEmbeddedMobileTarget(target), false, String(target));
     }
   });
 
   test('keeps every React Native auth endpoint mounted in the public contract', () => {
-    assert.deepEqual([...MOBILE_AUTH_ROUTE_PATHS], [
-      '/mobile/login',
-      '/mobile/refresh',
-      '/mobile/login-with-code',
-      '/mobile/verify',
-      '/mobile/logout',
-      '/mobile/web-session',
-      '/mobile/web-session/consume',
-      '/mobile/oauth/exchange',
-      '/mobile/browser/authorize',
-      '/mobile/browser/exchange',
-    ]);
+    assert.deepEqual(
+      [...MOBILE_AUTH_ROUTE_PATHS],
+      [
+        '/mobile/login',
+        '/mobile/refresh',
+        '/mobile/login-with-code',
+        '/mobile/verify',
+        '/mobile/logout',
+        '/mobile/web-session',
+        '/mobile/web-session/consume',
+        '/mobile/oauth/exchange',
+        '/mobile/browser/authorize',
+        '/mobile/browser/exchange',
+      ],
+    );
   });
 
   test('keeps the WebView-session issuer Bearer-only', () => {
     const middleware = routeMiddleware('/mobile/web-session');
     assert.ok(middleware.includes(requireMobileBearer));
-    assert.equal(middleware.some((handler) => handler.name === 'requireAuth'), false);
+    assert.equal(
+      middleware.some((handler) => handler.name === 'requireAuth'),
+      false,
+    );
   });
 
   test('marks the one-time WebView redirect response as non-cacheable', async () => {
@@ -135,8 +194,14 @@ describe('mobile auth token contract', () => {
     const res = {
       clearCookie() {},
       cookie() {},
-      set(name, value) { headers[name] = value; return this; },
-      redirect(_status, location) { redirectedTo = location; return this; },
+      set(name, value) {
+        headers[name] = value;
+        return this;
+      },
+      redirect(_status, location) {
+        redirectedTo = location;
+        return this;
+      },
     };
     redirectMobileWebSession(
       { protocol: 'https', get: () => 'app.topodrive.top', headers: { host: 'app.topodrive.top' } },

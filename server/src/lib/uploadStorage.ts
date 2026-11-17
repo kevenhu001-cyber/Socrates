@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 
 /** Private, stable storage for user uploads and generated image attachments. */
-export const UPLOAD_DIR = process.env.UPLOAD_DIR
-  || (process.env.NODE_ENV === 'production'
+export const UPLOAD_DIR =
+  process.env.UPLOAD_DIR ||
+  (process.env.NODE_ENV === 'production'
     ? '/var/lib/socrates/uploads'
     : path.join(os.homedir(), '.socrates', 'uploads'));
 

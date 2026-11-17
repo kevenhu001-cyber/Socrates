@@ -21,7 +21,7 @@ import { decideKeyboardAnchorAction, KEYBOARD_PIN_SLACK } from '../scrollDecisio
 import { smoothScrollToBottom } from '../scroll.ts';
 import { writeScrollTop } from '../scrollCoordinator.ts';
 import { getLastScrollIntentAt, suppressScrollPositionIntent } from '../scrollPill.ts';
-import { stateStore } from '../../state/store.ts';
+import { uiBridge } from '../../store/index.ts';
 
 /* Sub-4px offsetTop deltas are DPR rounding noise, not a real pan — feeding
  * them into scrollTop jitters the transcript ±2px every frame for the whole
@@ -73,7 +73,10 @@ export class TranscriptAnchor {
 
   /** Drop the anchor immediately (session ended or user owns the scroll). */
   end(): void {
-    if (this.refreshTimer) { clearTimeout(this.refreshTimer); this.refreshTimer = 0; }
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = 0;
+    }
     this.drop();
   }
 
@@ -103,7 +106,7 @@ export class TranscriptAnchor {
       { scrollTop: anchor.scrollTop, pinned: anchor.pinned },
       {
         maxScrollTop: list.scrollHeight - list.clientHeight,
-        scrolledAway: Boolean(stateStore.read('_userScrolledAway')),
+        scrolledAway: Boolean(uiBridge.getSnapshot()._userScrolledAway),
         userIntentAfterCapture: getLastScrollIntentAt() > anchor.intentAt,
         panDelta,
         viewportOwnerHeld,
@@ -149,7 +152,7 @@ export class TranscriptAnchor {
   private capture(): AnchorSnapshot | null {
     const list = this.listFor();
     if (!list || typeof list.getBoundingClientRect !== 'function') return null;
-    const scrolledAway = Boolean(stateStore.read('_userScrolledAway'));
+    const scrolledAway = Boolean(uiBridge.getSnapshot()._userScrolledAway);
     const distance = list.scrollHeight - list.scrollTop - list.clientHeight;
     return {
       list,

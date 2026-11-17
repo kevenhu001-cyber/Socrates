@@ -84,8 +84,10 @@ function publishStateChange(
   onStateChange?: (state: PlaybackState) => void,
 ): PlaybackState {
   if (next === previous) return previous;
-  try { onStateChange?.(next); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:86');
+  try {
+    onStateChange?.(next);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts');
     /* listener threw */
   }
   return next;
@@ -122,16 +124,27 @@ function flushVisibleText(
 
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   const now = options.now || (() => performance.now());
-  const raf = options.raf || ((cb: () => void) => { requestAnimationFrame(cb); });
+  const raf =
+    options.raf ||
+    ((cb: () => void) => {
+      requestAnimationFrame(cb);
+    });
   const onFrame = options.onFrame;
   const onDone = options.onDone;
   const onStateChange = options.onStateChange;
-  const isHidden = options.isHidden || (() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
-  const delay = options.delay || ((cb: () => void, ms: number) => {
-    const timer = setTimeout(cb, ms);
-    return () => clearTimeout(timer);
-  });
-  const starveAfterMs = Math.max(0, options.config?.starveAfterMs ?? DEFAULT_PLAYBACK_CONFIG.starveAfterMs);
+  const isHidden =
+    options.isHidden ||
+    (() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
+  const delay =
+    options.delay ||
+    ((cb: () => void, ms: number) => {
+      const timer = setTimeout(cb, ms);
+      return () => clearTimeout(timer);
+    });
+  const starveAfterMs = Math.max(
+    0,
+    options.config?.starveAfterMs ?? DEFAULT_PLAYBACK_CONFIG.starveAfterMs,
+  );
   let cancelIdle: (() => void) | null = null;
 
   let full = '';
@@ -142,13 +155,16 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let lastState: PlaybackState = 'idle';
   let firstPaint = true;
   const subscribeVisibility = options.onVisibilityChange || subscribeDocumentVisibility;
-  const handleVisibility = () => handleVisibilityChange(
-    () => { cancelIdle = disposeCallback(cancelIdle); },
-    isHidden,
-    paintHidden,
-    () => clock.isDone(),
-    schedule,
-  );
+  const handleVisibility = () =>
+    handleVisibilityChange(
+      () => {
+        cancelIdle = disposeCallback(cancelIdle);
+      },
+      isHidden,
+      paintHidden,
+      () => clock.isDone(),
+      schedule,
+    );
   let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility) ?? null;
   function paintHidden(): void {
     // A queued foreground frame may survive the tab switch. Invalidate it
@@ -178,7 +194,11 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
         unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
         if (!doneFired) {
           doneFired = true;
-          try { onDone?.(); } catch (_) { reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:177'); /* listener threw */ }
+          try {
+            onDone?.();
+          } catch (_) {
+            reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
+          }
         }
         return; // clock is terminal; stop the loop
       }
@@ -205,7 +225,8 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     push(delta: string): void {
       if (!delta) return;
       // Tool handoffs can cancel a scheduled render and resume this player.
-      if (!unsubscribeVisibility) unsubscribeVisibility = subscribeVisibility(handleVisibility) ?? null;
+      if (!unsubscribeVisibility)
+        unsubscribeVisibility = subscribeVisibility(handleVisibility) ?? null;
       cancelIdle = disposeCallback(cancelIdle);
       // Idle time must not become playback credit for a new network burst.
       if (clock.playedLen() === clock.totalLen()) clock.tick(now());
@@ -233,7 +254,11 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       lastState = publishStateChange(lastState, 'done', onStateChange);
       if (!doneFired) {
         doneFired = true;
-        try { onDone?.(); } catch (_) { reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts:232'); /* listener threw */ }
+        try {
+          onDone?.();
+        } catch (_) {
+          reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
+        }
       }
     },
     getState(): PlaybackState {

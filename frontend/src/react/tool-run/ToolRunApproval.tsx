@@ -21,9 +21,19 @@ export interface ToolRunApprovalProps {
   readOnly?: boolean;
 }
 
-const DECISIONS: ReadonlyArray<{ decision: ApprovalDecision; key: string; fallback: string; variant: ApprovalDecisionView['variant'] }> = [
+const DECISIONS: ReadonlyArray<{
+  decision: ApprovalDecision;
+  key: string;
+  fallback: string;
+  variant: ApprovalDecisionView['variant'];
+}> = [
   { decision: 'accept', key: 'tool.approveOnce', fallback: 'Allow once', variant: 'primary' },
-  { decision: 'acceptForSession', key: 'tool.approveRun', fallback: 'Allow this run', variant: 'secondary' },
+  {
+    decision: 'acceptForSession',
+    key: 'tool.approveRun',
+    fallback: 'Allow this run',
+    variant: 'secondary',
+  },
   { decision: 'decline', key: 'tool.decline', fallback: 'Decline', variant: 'secondary' },
   { decision: 'stop', key: 'tool.stopRun', fallback: 'Stop run', variant: 'ghost' },
 ];
@@ -38,9 +48,9 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
          buttons), so the panel already shows what went wrong. */
     }
   };
-  const decisions = DECISIONS
-    .filter((spec) => view.decisions.includes(spec.decision))
-    .map((spec) => ({ id: spec.decision, label: i18n(spec.key, spec.fallback), variant: spec.variant }));
+  const decisions = DECISIONS.filter((spec) => view.decisions.includes(spec.decision)).map(
+    (spec) => ({ id: spec.decision, label: i18n(spec.key, spec.fallback), variant: spec.variant }),
+  );
 
   return (
     <div
@@ -61,7 +71,9 @@ export function ToolRunApproval({ view, messageId, toolCallId, readOnly }: ToolR
           status={view.status}
           decisions={decisions}
           showControls={!readOnly && !view.disabled && view.state === 'pending'}
-          onDecide={(id) => { void decide(id as ApprovalDecision); }}
+          onDecide={(id) => {
+            void decide(id as ApprovalDecision);
+          }}
         />
       </WebUiTheme>
     </div>

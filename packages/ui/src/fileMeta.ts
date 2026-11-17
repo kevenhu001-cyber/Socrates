@@ -7,7 +7,11 @@ export function storedFileIdFromRawUrl(value: string): string | null {
   if (!text) return null;
   let path = text;
   if (!text.startsWith('/')) {
-    try { path = new URL(text).pathname; } catch { return null; }
+    try {
+      path = new URL(text).pathname;
+    } catch {
+      return null;
+    }
   }
   const match = /^\/api\/(?:v2\/)?files\/([0-9a-fA-F-]{36})\/raw\/?$/.exec(path.split(/[?#]/)[0]);
   return match ? match[1].toLowerCase() : null;
@@ -29,7 +33,10 @@ export function formatFileSize(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let value = bytes;
   let index = 0;
-  while (value >= 1024 && index < units.length - 1) { value /= 1024; index += 1; }
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
   const rounded = index === 0 || value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
   return `${rounded} ${units[index]}`;
 }
@@ -39,7 +46,10 @@ export function fileKindLabel(name: string, mime?: string): string {
   const dot = String(name || '').lastIndexOf('.');
   const ext = dot > 0 ? String(name).slice(dot + 1) : '';
   if (ext.length >= 1 && ext.length <= 5) return ext.toUpperCase();
-  const type = String(mime || '').split('/').pop() || '';
+  const type =
+    String(mime || '')
+      .split('/')
+      .pop() || '';
   return type ? type.toUpperCase() : 'FILE';
 }
 

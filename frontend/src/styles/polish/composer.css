@@ -9,16 +9,19 @@
    of the app renders Plus Jakarta Sans via --cg-font; the bundled face is
    also what the localization specs assert. */
 @media (min-width: 769px) {
-:root:not(#_composer-a):not(#_composer-b):not(#_composer-c) #appShell #topicSetup .topic-title.greeting {
-  font-family: var(--cg-font);
-  /* Brand typography has one live owner; the old restore pins are retired. */
-  margin: 0 auto 36px;
-  /* R1 restyle: the marketing site sets every heading in Geist medium with
+  :root:not(#_composer-a):not(#_composer-b):not(#_composer-c)
+    #appShell
+    #topicSetup
+    .topic-title.greeting {
+    font-family: var(--cg-font);
+    /* Brand typography has one live owner; the old restore pins are retired. */
+    margin: 0 auto 36px;
+    /* R1 restyle: the marketing site sets every heading in Geist medium with
      slightly tightened tracking; the landing line follows it at 28px. */
-  font-weight: var(--ui-font-weight-medium);
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-}
+    font-weight: var(--ui-font-weight-medium);
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+  }
 }
 
 /* Greeting stays one line in every locale. The pool strings are short, but
@@ -26,11 +29,11 @@
    nowrap + ellipsis is the hard guarantee. No competing rule sets these
    properties, so plain declarations are enough. */
 @media (min-width: 769px) {
-:root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup .topic-title.greeting {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  :root:not(#_composer-a):not(#_composer-b) #appShell #topicSetup .topic-title.greeting {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 /* Lift the landing hero off geometric center: the reference composition
@@ -73,7 +76,7 @@ body #composerToolsMenu.composer-tools-menu.hidden {
   opacity: 0;
   transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
 }
-body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
+body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
   --_ct-dir: 2px;
   transform-origin: bottom left;
 }
@@ -84,7 +87,9 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  body #composerToolsMenu.composer-tools-menu { transition: none; }
+  body #composerToolsMenu.composer-tools-menu {
+    transition: none;
+  }
 }
 /* The tools card's rows, glyphs, group labels and footer now belong to
    `components/menu.css` alone (ADR 0024: one owner per surface). The 34px /
@@ -120,7 +125,9 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   scrollbar-width: thin;
   cursor: default;
 }
-#appShell #composerAttachmentChips.hidden { display: none; }
+#appShell #composerAttachmentChips.hidden {
+  display: none;
+}
 
 #appShell #composerAttachmentChips .attachment-chip {
   position: relative;
@@ -263,8 +270,14 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
     background-color var(--ui-duration-fast) ease,
     color var(--ui-duration-fast) ease;
 }
-#appShell #composerAttachmentChips .attachment-chip-remove svg { width: 12px; height: 12px; }
-#appShell #composerAttachmentChips .attachment-chip:is(:hover, :focus-within) .attachment-chip-remove {
+#appShell #composerAttachmentChips .attachment-chip-remove svg {
+  width: 12px;
+  height: 12px;
+}
+#appShell
+  #composerAttachmentChips
+  .attachment-chip:is(:hover, :focus-within)
+  .attachment-chip-remove {
   opacity: 1;
 }
 #appShell #composerAttachmentChips .attachment-chip-remove:hover {
@@ -311,8 +324,13 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   left: 14px;
   transform: translateY(-50%);
 }
-#appShell #composerAttachmentChips .attachment-chip-retry svg { width: 18px; height: 18px; }
-#appShell #composerAttachmentChips .attachment-chip-retry:hover { background: var(--ui-bg-hover); }
+#appShell #composerAttachmentChips .attachment-chip-retry svg {
+  width: 18px;
+  height: 18px;
+}
+#appShell #composerAttachmentChips .attachment-chip-retry:hover {
+  background: var(--ui-bg-hover);
+}
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-retry {
   position: absolute;
   inset: 0;
@@ -342,7 +360,10 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
   transform: translate(-50%, -50%);
   color: var(--destructive);
 }
-#appShell #composerAttachmentChips .attachment-chip-error-badge svg { width: 16px; height: 16px; }
+#appShell #composerAttachmentChips .attachment-chip-error-badge svg {
+  width: 16px;
+  height: 16px;
+}
 #appShell #composerAttachmentChips .attachment-chip.is-image .attachment-chip-error-badge {
   top: auto;
   right: 5px;
@@ -399,24 +420,40 @@ body #composerToolsMenu.composer-tools-menu[data-menu-side="above"] {
 }
 
 @keyframes attachment-chip-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes attachment-card-in {
-  from { opacity: 0; transform: translateY(4px) scale(0.985); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 @keyframes attachment-processing-sweep {
-  from { background-position: -40% 0; }
-  to { background-position: 140% 0; }
+  from {
+    background-position: -40% 0;
+  }
+  to {
+    background-position: 140% 0;
+  }
 }
 
 /* Touch layouts cannot hover, so the remove control must be visible. */
 @media (hover: none) {
-  #appShell #composerAttachmentChips .attachment-chip-remove { opacity: 1; }
+  #appShell #composerAttachmentChips .attachment-chip-remove {
+    opacity: 1;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  #appShell #composerAttachmentChips .attachment-chip { animation: none; }
+  #appShell #composerAttachmentChips .attachment-chip {
+    animation: none;
+  }
 }
 
 /* Reference phone sheet is a flat action list — group labels stay in the

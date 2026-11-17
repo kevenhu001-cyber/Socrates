@@ -22,7 +22,16 @@ import {
   type QuizOptionMark,
   type QuizVerdict,
 } from './model';
-import { ActionRow, PillAction, Rich, ScaffoldCard, Section, Tag, VerdictGlyph, dataSet } from './parts';
+import {
+  ActionRow,
+  PillAction,
+  Rich,
+  ScaffoldCard,
+  Section,
+  Tag,
+  VerdictGlyph,
+  dataSet,
+} from './parts';
 
 export interface QuizResult {
   verdict: QuizVerdict;
@@ -55,7 +64,13 @@ function isPromise<T>(value: T | Promise<T>): value is Promise<T> {
  * feedback line ("the correct answer is option B") can point at it, and the
  * verdict sits at the row end as a ✓ / ✕ glyph.
  */
-function OptionRow({ option, mark, multi, disabled, onPress }: {
+function OptionRow({
+  option,
+  mark,
+  multi,
+  disabled,
+  onPress,
+}: {
   option: QuizOption;
   mark: QuizOptionMark;
   multi: boolean;
@@ -74,7 +89,8 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
       ? insetRing(colors.ink, 1)
       : insetRing(live ? colors.hairlineStrong : colors.hairline, 1);
   const tileInk = mark === 'selected' || mark === 'correct';
-  const verdict = mark === 'correct' || mark === 'missed' ? 'correct' : mark === 'incorrect' ? 'incorrect' : null;
+  const verdict =
+    mark === 'correct' || mark === 'missed' ? 'correct' : mark === 'incorrect' ? 'incorrect' : null;
   const checked = mark === 'selected' || mark === 'correct' || mark === 'incorrect';
   return (
     <Pressable
@@ -115,21 +131,60 @@ function OptionRow({ option, mark, multi, disabled, onPress }: {
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: tileInk ? colors.ink : colors.card,
-            boxShadow: tileInk ? undefined : insetRing(mark === 'missed' ? colors.ink : colors.hairlineStrong, mark === 'missed' ? 1.5 : 1),
+            boxShadow: tileInk
+              ? undefined
+              : insetRing(
+                  mark === 'missed' ? colors.ink : colors.hairlineStrong,
+                  mark === 'missed' ? 1.5 : 1,
+                ),
           }}
         >
-          <UiText variant="labelSm" tone={tileInk ? 'onInk' : (mark === 'incorrect' ? 'tertiary' : 'secondary')} style={{ fontVariant: ['tabular-nums'] }}>{option.letter}</UiText>
+          <UiText
+            variant="labelSm"
+            tone={tileInk ? 'onInk' : mark === 'incorrect' ? 'tertiary' : 'secondary'}
+            style={{ fontVariant: ['tabular-nums'] }}
+          >
+            {option.letter}
+          </UiText>
         </View>
-        <Rich source={option.text} part="quiz-option" style={{ flex: 1, paddingTop: 1, opacity: mark === 'incorrect' ? 0.7 : 1 }} />
-        {verdict ? <View style={{ paddingTop: 2 }}><VerdictGlyph verdict={verdict} /></View> : null}
+        <Rich
+          source={option.text}
+          part="quiz-option"
+          style={{ flex: 1, paddingTop: 1, opacity: mark === 'incorrect' ? 0.7 : 1 }}
+        />
+        {verdict ? (
+          <View style={{ paddingTop: 2 }}>
+            <VerdictGlyph verdict={verdict} />
+          </View>
+        ) : null}
       </Animated.View>
     </Pressable>
   );
 }
 
-export function QuizCard({ question, options, answerKey, multi = false, explanation, onSubmit, initialAnswer, testID }: QuizCardProps) {
+export function QuizCard({
+  question,
+  options,
+  answerKey,
+  multi = false,
+  explanation,
+  onSubmit,
+  initialAnswer,
+  testID,
+}: QuizCardProps) {
   const { strings, readOnly } = useLearnHost();
-  const [state, dispatch] = useReducer(quizReducer, initialAnswer ? { ...initialQuizState, selected: initialAnswer.letters, phase: 'answered', verdict: initialAnswer.result.verdict, feedback: initialAnswer.result.feedback } : initialQuizState);
+  const [state, dispatch] = useReducer(
+    quizReducer,
+    initialAnswer
+      ? {
+          ...initialQuizState,
+          selected: initialAnswer.letters,
+          phase: 'answered',
+          verdict: initialAnswer.result.verdict,
+          feedback: initialAnswer.result.feedback,
+        }
+      : initialQuizState,
+  );
   const answered = state.phase === 'answered';
   const locked = readOnly || state.phase !== 'choosing';
 
@@ -139,7 +194,12 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
     dispatch({ type: 'submit' });
     const local = (): QuizResult => {
       const verdict = gradeQuiz(letters, answerKey);
-      const feedback = verdict === 'correct' ? strings.quizCorrect : verdict === 'incorrect' ? strings.quizIncorrect : '';
+      const feedback =
+        verdict === 'correct'
+          ? strings.quizCorrect
+          : verdict === 'incorrect'
+            ? strings.quizIncorrect
+            : '';
       return { verdict, feedback };
     };
     let outcome: QuizResult | Promise<QuizResult>;
@@ -151,7 +211,8 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
     }
     if (isPromise(outcome)) {
       outcome.then(
-        (result) => dispatch({ type: 'resolve', verdict: result.verdict, feedback: result.feedback }),
+        (result) =>
+          dispatch({ type: 'resolve', verdict: result.verdict, feedback: result.feedback }),
         () => dispatch({ type: 'fail' }),
       );
       return;
@@ -160,18 +221,27 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
   };
 
   const keyText = answerKey.length
-    ? options.filter((option) => answerKey.includes(option.letter)).map((option) => `${option.letter}. ${option.text}`).join('；')
+    ? options
+        .filter((option) => answerKey.includes(option.letter))
+        .map((option) => `${option.letter}. ${option.text}`)
+        .join('；')
     : '';
   let explanationBody: ReactNode = null;
-  if (answered && state.verdict !== 'incorrect' && explanation) explanationBody = <Rich source={explanation} part="quiz-explanation" />;
-
+  if (answered && state.verdict !== 'incorrect' && explanation)
+    explanationBody = <Rich source={explanation} part="quiz-explanation" />;
 
   return (
     <ScaffoldCard
       kind="quiz"
       label={strings.label.quiz}
       testID={testID}
-      trailing={multi ? <Tag label={strings.quizMulti} /> : (readOnly ? <Tag label={strings.readOnly} /> : undefined)}
+      trailing={
+        multi ? (
+          <Tag label={strings.quizMulti} />
+        ) : readOnly ? (
+          <Tag label={strings.readOnly} />
+        ) : undefined
+      }
     >
       <Rich source={question} part="quiz-q" />
       <View role={multi ? 'group' : 'radiogroup'} aria-label={question} style={{ gap: S[75] }}>
@@ -184,18 +254,42 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
               disabled={locked}
               onPress={() => dispatch({ type: 'toggle', letter: option.letter, multi })}
             />
-            {answered && state.verdict === 'incorrect'
-              && (state.selected.includes(option.letter) || answerKey.includes(option.letter)) ? (
-                <View testID={`quiz-option-explanation-${option.letter}`} style={{ paddingHorizontal: S[200], paddingVertical: S[100] }}>
-                  <UiText variant="labelSm" tone="secondary">{answerKey.includes(option.letter) ? fillTemplate(strings.quizAnswerIs, { answer: option.letter }) : strings.quizIncorrect}</UiText>
-                  <Rich source={option.explanation || explanation || fillTemplate(strings.quizAnswerIs, { answer: keyText })} part="quiz-option-explanation" />
-                </View>
-              ) : null}
+            {answered &&
+            state.verdict === 'incorrect' &&
+            (state.selected.includes(option.letter) || answerKey.includes(option.letter)) ? (
+              <View
+                testID={`quiz-option-explanation-${option.letter}`}
+                style={{ paddingHorizontal: S[200], paddingVertical: S[100] }}
+              >
+                <UiText variant="labelSm" tone="secondary">
+                  {answerKey.includes(option.letter)
+                    ? fillTemplate(strings.quizAnswerIs, { answer: option.letter })
+                    : strings.quizIncorrect}
+                </UiText>
+                <Rich
+                  source={
+                    option.explanation ||
+                    explanation ||
+                    fillTemplate(strings.quizAnswerIs, { answer: keyText })
+                  }
+                  part="quiz-option-explanation"
+                />
+              </View>
+            ) : null}
           </View>
         ))}
       </View>
       {readOnly ? null : (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: S[75], minHeight: H.action }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: S[75],
+            minHeight: H.action,
+          }}
+        >
           <View
             testID="quiz-feedback"
             role="status"
@@ -203,14 +297,27 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
             {...dataSet({ verdict: state.verdict ?? '' })}
             style={{ flexDirection: 'row', alignItems: 'center', gap: S[75], flexShrink: 1 }}
           >
-            {answered && state.verdict !== 'recorded' && answerKey.length ? <VerdictGlyph verdict={state.verdict === 'correct' ? 'correct' : 'incorrect'} /> : null}
+            {answered && state.verdict !== 'recorded' && answerKey.length ? (
+              <VerdictGlyph verdict={state.verdict === 'correct' ? 'correct' : 'incorrect'} />
+            ) : null}
             {answered && state.feedback ? (
-              <UiText variant="labelSm" tone={state.verdict === 'correct' ? 'ink' : 'secondary'} style={{ flexShrink: 1 }}>{state.feedback}</UiText>
+              <UiText
+                variant="labelSm"
+                tone={state.verdict === 'correct' ? 'ink' : 'secondary'}
+                style={{ flexShrink: 1 }}
+              >
+                {state.feedback}
+              </UiText>
             ) : null}
           </View>
           <ActionRow>
             {answered && state.verdict === 'incorrect' ? (
-              <PillAction label={strings.quizRetry} tone="soft" testID="quiz-retry" onPress={() => dispatch({ type: 'retry' })} />
+              <PillAction
+                label={strings.quizRetry}
+                tone="soft"
+                testID="quiz-retry"
+                onPress={() => dispatch({ type: 'retry' })}
+              />
             ) : null}
             {!answered ? (
               <PillAction
@@ -225,7 +332,9 @@ export function QuizCard({ question, options, answerKey, multi = false, explanat
         </View>
       )}
       {explanationBody ? (
-        <Section label={strings.quizExplanation} testID="quiz-explanation">{explanationBody}</Section>
+        <Section label={strings.quizExplanation} testID="quiz-explanation">
+          {explanationBody}
+        </Section>
       ) : null}
     </ScaffoldCard>
   );

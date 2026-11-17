@@ -35,8 +35,8 @@ const SENSITIVE_KEYS = new Set([
   'authorization',
   'cookie',
   'set-cookie',
-  'sid',          // session cookie value (rare in extra, defensive)
-  'csrf',         // csrf token
+  'sid', // session cookie value (rare in extra, defensive)
+  'csrf', // csrf token
   'password',
   'passwordhash',
   'password_hash',
@@ -54,7 +54,7 @@ const SENSITIVE_KEYS = new Set([
   'refresh_token',
   'idtoken',
   'id_token',
-  'email',        // PII — callers should mask before passing
+  'email', // PII — callers should mask before passing
   'phone',
   'phonenumber',
 ]);
@@ -76,7 +76,9 @@ function redactExtra(extra: Record<string, unknown>): Record<string, unknown> {
 
 const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 
-const envLevel = (process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')).toLowerCase();
+const envLevel = (
+  process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug')
+).toLowerCase();
 const threshold = LEVELS[envLevel as keyof typeof LEVELS] || LEVELS.info;
 
 /* Pick the underlying stream method — console.log writes to stdout
@@ -130,8 +132,8 @@ function makeLogger(bindings: Record<string, unknown> = {}) {
   }
   return {
     debug: (msg: string, extra?: Record<string, unknown>) => log('debug', msg, extra),
-    info:  (msg: string, extra?: Record<string, unknown>) => log('info',  msg, extra),
-    warn:  (msg: string, extra?: Record<string, unknown>) => log('warn',  msg, extra),
+    info: (msg: string, extra?: Record<string, unknown>) => log('info', msg, extra),
+    warn: (msg: string, extra?: Record<string, unknown>) => log('warn', msg, extra),
     error: (msg: string, extra?: Record<string, unknown>) => log('error', msg, extra),
     child(extraBindings: Record<string, unknown>) {
       return makeLogger({ ...bindings, ...extraBindings });

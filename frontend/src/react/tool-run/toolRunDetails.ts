@@ -9,7 +9,7 @@ import {
   toolRunLabel,
   translate,
 } from '../../ui/toolPresentationModel.ts';
-import {durationOf, toolRunStateOf} from '../../ui/toolPresentationState.ts';
+import { durationOf, toolRunStateOf } from '../../ui/toolPresentationState.ts';
 import type {
   ApprovalDecision,
   ApprovalView,
@@ -30,13 +30,17 @@ const DETAIL_TAIL_LINES = 5;
 const MAX_SOURCES = 12;
 const MAX_SOURCE_HOSTS = 8;
 const DEFAULT_APPROVAL_DECISIONS: ApprovalDecision[] = [
-  'accept', 'acceptForSession', 'decline', 'stop',
+  'accept',
+  'acceptForSession',
+  'decline',
+  'stop',
 ];
 
 function normalizeApprovalDecision(value: unknown): ApprovalDecision | null {
   const decision = String(value || '').trim();
   if (decision === 'accept') return 'accept';
-  if (decision === 'acceptForSession' || decision === 'accept_for_session') return 'acceptForSession';
+  if (decision === 'acceptForSession' || decision === 'accept_for_session')
+    return 'acceptForSession';
   if (decision === 'decline' || decision === 'reject') return 'decline';
   if (decision === 'stop' || decision === 'interrupt' || decision === 'cancel') return 'stop';
   return null;
@@ -57,17 +61,23 @@ function approvalDecisionsOf(raw: unknown): ApprovalDecision[] {
 }
 
 function normalizeApprovalState(value: unknown): string {
-  const state = String(value || '').trim().toLowerCase();
+  const state = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!state || state === 'pending') return 'pending';
-  if (new Set(['accept', 'accepted', 'accepted_for_session', 'acceptforsession']).has(state)) return 'accepted';
+  if (new Set(['accept', 'accepted', 'accepted_for_session', 'acceptforsession']).has(state))
+    return 'accepted';
   if (new Set(['decline', 'declined', 'rejected']).has(state)) return 'declined';
-  if (new Set(['stop', 'stopped', 'cancelled', 'canceled', 'interrupted']).has(state)) return 'stopped';
+  if (new Set(['stop', 'stopped', 'cancelled', 'canceled', 'interrupted']).has(state))
+    return 'stopped';
   return state;
 }
 
 function approvalTitleOf(kind: string): string {
-  if (kind === 'commandExecution') return translate('tool.codexCommandApproval', 'The agent wants to run a command');
-  if (kind === 'fileChange') return translate('tool.codexFileApproval', 'The agent wants to change files');
+  if (kind === 'commandExecution')
+    return translate('tool.codexCommandApproval', 'The agent wants to run a command');
+  if (kind === 'fileChange')
+    return translate('tool.codexFileApproval', 'The agent wants to change files');
   return translate('tool.codexApproval', 'The agent needs your approval');
 }
 
@@ -79,7 +89,10 @@ function approvalStatusTextOf(state: string, uiText: string): string {
   return translate('tool.awaitingApproval', 'Waiting for your decision');
 }
 
-function approvalFactsOf(approval: ApprovalRecord, kind: string): Array<{ label: string; value: string }> {
+function approvalFactsOf(
+  approval: ApprovalRecord,
+  kind: string,
+): Array<{ label: string; value: string }> {
   const facts: Array<{ label: string; value: string }> = [];
   const action = approvalActionText(approval.command || approval.changes, kind);
   if (action) facts.push({ label: translate('tool.action', 'Action'), value: action });
@@ -92,7 +105,8 @@ function approvalFactsOf(approval: ApprovalRecord, kind: string): Array<{ label:
       value: approvalActionText(approval.changes, translate('tool.details', 'Details')),
     });
   }
-  if (approval.reason) facts.push({ label: translate('tool.reason', 'Reason'), value: String(approval.reason) });
+  if (approval.reason)
+    facts.push({ label: translate('tool.reason', 'Reason'), value: String(approval.reason) });
   facts.push({
     label: translate('tool.destination', 'Destination'),
     value: String(approval.cwd || '[workspace]'),
@@ -143,7 +157,11 @@ export function truncateLines(
 export function rawDetailText(value: unknown): string {
   if (value == null || value === '') return '';
   if (typeof value === 'string') return value;
-  try { return JSON.stringify(value, null, 2); } catch (_) { return String(value); }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (_) {
+    return String(value);
+  }
 }
 
 /** Flattened, bounded text for a detail block. */
@@ -191,7 +209,7 @@ function sourceHost(url: string): string {
   try {
     if (/^https?:\/\//i.test(url)) return new URL(url).hostname.replace(/^www\./i, '');
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:192');
+    reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts');
     /* unparseable url keeps an empty host */
   }
   return '';
@@ -244,7 +262,12 @@ function isEchoOutput(output: string): boolean {
      the row label already carries the count when we have it, and the payload
      itself is never literally "3 results". Restricted to count-shaped lines
      so a real first line ("3 passed", "4 files changed") is never dropped. */
-  if (/^\d[\d,.]*\s+(results?|hits?|matches|sources?|findings|records|items|rows|pages|files|docs?)\s*[.!]?$/i.test(text)) return true;
+  if (
+    /^\d[\d,.]*\s+(results?|hits?|matches|sources?|findings|records|items|rows|pages|files|docs?)\s*[.!]?$/i.test(
+      text,
+    )
+  )
+    return true;
   if (/^(ok|done|success|completed|successf(ul|ully))\.?$/i.test(text)) return true;
   return false;
 }
@@ -253,14 +276,27 @@ function appendFailedDetails(view: ToolRunView, call: ToolCallRecord, output: st
   const errorMessage = [call.userMessage, call.error].filter(Boolean).join('\n');
   const errorText = errorMessage || output || clippedText(call.detail).text;
   if (errorText) {
-    view.sections.push({ kind: 'error', title: translate('tool.errorDetails', 'Error details'), text: errorText });
+    view.sections.push({
+      kind: 'error',
+      title: translate('tool.errorDetails', 'Error details'),
+      text: errorText,
+    });
   }
   if (call.stderr) {
     const stderr = clippedText(call.stderr);
-    view.sections.push({ kind: 'error', title: 'stderr', text: stderr.text, fullText: stderr.fullText });
+    view.sections.push({
+      kind: 'error',
+      title: 'stderr',
+      text: stderr.text,
+      fullText: stderr.fullText,
+    });
   }
   if (call.errorCode) {
-    view.tech.push({ kind: 'fact', title: translate('tool.errorCode', 'Error code'), text: String(call.errorCode) });
+    view.tech.push({
+      kind: 'fact',
+      title: translate('tool.errorCode', 'Error code'),
+      text: String(call.errorCode),
+    });
   }
   if (typeof call.retryable === 'boolean') {
     view.tech.push({
@@ -289,7 +325,11 @@ function appendSettledDetails(
   output: ReturnType<typeof clippedText>,
 ): void {
   if (sources.length) {
-    view.sections.push({ kind: 'sources', title: translate('tool.sources', 'Sources'), items: sources });
+    view.sections.push({
+      kind: 'sources',
+      title: translate('tool.sources', 'Sources'),
+      items: sources,
+    });
   }
   if (output.text && !isEchoOutput(output.text)) {
     view.sections.push({
@@ -301,7 +341,12 @@ function appendSettledDetails(
   }
   if (call.stderr) {
     const stderr = clippedText(call.stderr);
-    view.sections.push({ kind: 'error', title: 'stderr', text: stderr.text, fullText: stderr.fullText });
+    view.sections.push({
+      kind: 'error',
+      title: 'stderr',
+      text: stderr.text,
+      fullText: stderr.fullText,
+    });
   }
 }
 
@@ -319,7 +364,8 @@ function appendArgumentsAndLiveDetails(
   }
   if (state !== 'running' && failed && call.detail != null) {
     const detail = detailText(call.detail).trim();
-    if (detail) view.tech.push({ kind: 'fact', title: translate('tool.details', 'Details'), text: detail });
+    if (detail)
+      view.tech.push({ kind: 'fact', title: translate('tool.details', 'Details'), text: detail });
   }
   if (state === 'running') {
     const preview = livePreviewOf(call);
@@ -391,7 +437,9 @@ export function approvalViewOf(call: ToolCallRecord): ApprovalView | null {
   const kind = String(approval.kind || '');
   const title = approvalTitleOf(kind);
   const status = String(approval.status || 'pending');
-  const state = normalizeApprovalState(approval.ui && approval.ui.state ? approval.ui.state : status);
+  const state = normalizeApprovalState(
+    approval.ui && approval.ui.state ? approval.ui.state : status,
+  );
   const uiText = approval.ui && approval.ui.text ? approval.ui.text : '';
   const decisions = approvalDecisionsOf(approval.availableDecisions);
   return {
@@ -419,7 +467,7 @@ function extractFieldFromJson(argsJson: string, ...keys: string[]): string {
         }
       }
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:417');
+      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts');
       /* keep trying */
     }
   }
@@ -432,7 +480,9 @@ export function extractQueryPreview(argsJson: string): string {
 
 export function extractAttachmentPreview(argsJson: string, input?: unknown): string {
   const rec = (input && typeof input === 'object' ? input : {}) as Record<string, unknown>;
-  const file = String(rec.fileName || rec.filename || rec.name || rec.file_name || '') || extractFieldFromJson(argsJson, 'fileName', 'filename', 'name', 'file_name');
+  const file =
+    String(rec.fileName || rec.filename || rec.name || rec.file_name || '') ||
+    extractFieldFromJson(argsJson, 'fileName', 'filename', 'name', 'file_name');
   const q = String(rec.question || '') || extractFieldFromJson(argsJson, 'question');
   if (file) {
     return q ? `附件: ${clip(file, 40)}\n分析目标: ${clip(q, 80)}` : `附件: ${clip(file, 60)}`;
@@ -475,7 +525,7 @@ export function extractCodePreview(argsJson: string): string {
       const code = parsed && (parsed.code ?? parsed.script ?? parsed.source);
       if (typeof code === 'string' && code.trim()) return code;
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts:508');
+      reportEmptyCatch(_, 'empty catch: react/tool-run/toolRunDetails.ts');
       /* keep trying */
     }
   }

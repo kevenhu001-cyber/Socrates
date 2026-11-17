@@ -3,7 +3,7 @@ import { normalizeLearningUiNode } from './learningUi.js';
 import { validateIntelligentUi } from './intelligentUiValidation.js';
 import { serializedDocumentBlocks, serializedUiBlocks } from './serializedUi';
 
-export const INTELLIGENCE_UI_FENCE = 'socrates-ui';
+export const INTELLIGENT_UI_FENCE = 'socrates-ui';
 
 const MAX_NODES = 80;
 const MAX_ID_LENGTH = 80;
@@ -13,7 +13,7 @@ const BLOCK_START = /^```(socrates-ui|sui|openui)[ \t]*\r?$/gm;
 const BLOCK_END = /^```[ \t]*\r?$/gm;
 const FORBIDDEN_PATH_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 
-export type IntelligenceUiNodeType =
+export type IntelligentUiNodeType =
   | 'panel'
   | 'stack'
   | 'grid'
@@ -37,7 +37,7 @@ export type IntelligenceUiNodeType =
   | 'visualization'
   | 'openui';
 
-const NODE_TYPES = new Set<IntelligenceUiNodeType>([
+const NODE_TYPES = new Set<IntelligentUiNodeType>([
   'panel',
   'stack',
   'grid',
@@ -62,27 +62,33 @@ const NODE_TYPES = new Set<IntelligenceUiNodeType>([
   'openui',
 ]);
 
-export type IntelligenceUiState = Record<string, unknown>;
+export type IntelligentUiState = Record<string, unknown>;
 
-export type IntelligenceUiTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
-export type IntelligenceUiTrend = 'up' | 'down' | 'flat';
+export type IntelligentUiTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
+export type IntelligentUiTrend = 'up' | 'down' | 'flat';
 
-const NODE_TONES: ReadonlySet<string> = new Set(['neutral', 'info', 'success', 'warning', 'danger']);
+const NODE_TONES: ReadonlySet<string> = new Set([
+  'neutral',
+  'info',
+  'success',
+  'warning',
+  'danger',
+]);
 const NODE_TRENDS: ReadonlySet<string> = new Set(['up', 'down', 'flat']);
 
 /**
  * Semantic emphasis for callouts and progress bars. Model output is untrusted,
  * so unknown tones fall back to neutral instead of leaking a raw attribute.
  */
-export function normalizeIntelligenceUiTone(value: unknown): IntelligenceUiTone {
+export function normalizeIntelligentUiTone(value: unknown): IntelligentUiTone {
   const tone = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return NODE_TONES.has(tone) ? tone as IntelligenceUiTone : 'neutral';
+  return NODE_TONES.has(tone) ? (tone as IntelligentUiTone) : 'neutral';
 }
 
 /** Metric direction; omitted trends are inferred from the rendered delta. */
-export function normalizeIntelligenceUiTrend(value: unknown): IntelligenceUiTrend | null {
+export function normalizeIntelligentUiTrend(value: unknown): IntelligentUiTrend | null {
   const trend = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return NODE_TRENDS.has(trend) ? trend as IntelligenceUiTrend : null;
+  return NODE_TRENDS.has(trend) ? (trend as IntelligentUiTrend) : null;
 }
 
 /**
@@ -90,11 +96,11 @@ export function normalizeIntelligenceUiTrend(value: unknown): IntelligenceUiTren
  * values stay `unknown`: every one is model-provided and resolved through the
  * declarative expression layer before use.
  */
-export interface IntelligenceUiNode {
+export interface IntelligentUiNode {
   id: string;
-  type: IntelligenceUiNodeType;
+  type: IntelligentUiNodeType;
   parent?: string;
-  state?: IntelligenceUiState;
+  state?: IntelligentUiState;
   source?: unknown;
   title?: unknown;
   subtitle?: unknown;
@@ -135,7 +141,7 @@ export interface IntelligenceUiNode {
   [key: string]: unknown;
 }
 
-export interface IntelligenceUiBlockSegment {
+export interface IntelligentUiBlockSegment {
   kind: 'ui';
   format?: 'openui';
   source: string;
@@ -144,17 +150,17 @@ export interface IntelligenceUiBlockSegment {
   open: boolean;
 }
 
-export interface IntelligenceUiTextSegment {
+export interface IntelligentUiTextSegment {
   kind: 'text';
   text: string;
   start: number;
   end: number;
 }
 
-export type IntelligenceUiSegment = IntelligenceUiBlockSegment | IntelligenceUiTextSegment;
+export type IntelligentUiSegment = IntelligentUiBlockSegment | IntelligentUiTextSegment;
 
-export interface IntelligenceUiValueContext {
-  state: IntelligenceUiState;
+export interface IntelligentUiValueContext {
+  state: IntelligentUiState;
   tools?: ReadonlyArray<unknown>;
 }
 
@@ -162,24 +168,27 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-export function isSafeIntelligenceUiStateKey(value: string): boolean {
-  return Boolean(value)
-    && value.length <= MAX_ID_LENGTH
-    && SAFE_ID.test(value)
-    && !FORBIDDEN_PATH_KEYS.has(value);
+export function isSafeIntelligentUiStateKey(value: string): boolean {
+  return (
+    Boolean(value) &&
+    value.length <= MAX_ID_LENGTH &&
+    SAFE_ID.test(value) &&
+    !FORBIDDEN_PATH_KEYS.has(value)
+  );
 }
 
 /**
  * Accept only absolute HTTP(S) image URLs. Credentials, data/blob/javascript
  * schemes, and overlong model-provided URLs are rejected before reaching DOM.
  */
-export function normalizeIntelligenceUiImageUrl(value: unknown): string | null {
+export function normalizeIntelligentUiImageUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const raw = value.trim();
   if (!raw || raw.length > MAX_EXTERNAL_URL_LENGTH) return null;
   try {
     const url = new URL(raw);
-    if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password) return null;
+    if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password)
+      return null;
     return url.href;
   } catch {
     return null;
@@ -187,7 +196,7 @@ export function normalizeIntelligenceUiImageUrl(value: unknown): string | null {
 }
 
 /** Stable numeric domain for native charts, always including a zero baseline. */
-export function intelligenceUiChartDomain(values: ReadonlyArray<unknown>): [number, number] {
+export function intelligentUiChartDomain(values: ReadonlyArray<unknown>): [number, number] {
   let min = 0;
   let max = 0;
   let hasFinite = false;
@@ -202,15 +211,16 @@ export function intelligenceUiChartDomain(values: ReadonlyArray<unknown>): [numb
   return [min, max];
 }
 
-function normalizeNode(input: unknown): IntelligenceUiNode | null {
+function normalizeNode(input: unknown): IntelligentUiNode | null {
   const value = normalizeLearningUiNode(normalizeIntelligentUiControl(input));
   if (!isRecord(value)) return null;
   const id = typeof value.id === 'string' ? value.id.trim() : '';
-  const type = typeof value.type === 'string' ? value.type.trim() as IntelligenceUiNodeType : null;
-  if (!id || id.length > MAX_ID_LENGTH || !SAFE_ID.test(id) || !type || !NODE_TYPES.has(type)) return null;
+  const type = typeof value.type === 'string' ? (value.type.trim() as IntelligentUiNodeType) : null;
+  if (!id || id.length > MAX_ID_LENGTH || !SAFE_ID.test(id) || !type || !NODE_TYPES.has(type))
+    return null;
   const parent = typeof value.parent === 'string' ? value.parent.trim() : '';
   const state = isRecord(value.state) ? value.state : undefined;
-  const node: IntelligenceUiNode = {
+  const node: IntelligentUiNode = {
     ...value,
     id,
     type,
@@ -226,7 +236,8 @@ function normalizeNode(input: unknown): IntelligenceUiNode | null {
       node.payload = value.data;
     }
     if (typeof value.accessibilitySummary !== 'string') {
-      if (typeof value.accessibility_summary === 'string') node.accessibilitySummary = value.accessibility_summary;
+      if (typeof value.accessibility_summary === 'string')
+        node.accessibilitySummary = value.accessibility_summary;
       else if (typeof value.summary === 'string') node.accessibilitySummary = value.summary;
     }
   }
@@ -241,23 +252,27 @@ function normalizeNode(input: unknown): IntelligenceUiNode | null {
  * and the trailing half-written JSON object is simply deferred until the next
  * token batch. No eval, HTML, CSS, or arbitrary JavaScript is accepted.
  */
-export function parseIntelligenceUiRecords(source: string): IntelligenceUiNode[] {
+export function parseIntelligentUiRecords(source: string): IntelligentUiNode[] {
   // Canonical JSONL remains incremental. Complete JSON nodes/documents also
   // support pretty printing and recovered versioned tool output.
   try {
     const value: unknown = JSON.parse(source);
     if (isRecord(value) && value.version === 1 && Array.isArray(value.nodes)) {
-      const validation=validateIntelligentUi(value);
+      const validation = validateIntelligentUi(value);
       // A broken learning card from history keeps its own fallback and healthy siblings.
       // Unsafe/oversized documents still fail closed before any node is recovered.
-      if(validation.ok || validation.kind==='learning' || validation.kind==='control') {
-        return value.nodes.map(normalizeNode).filter((node): node is IntelligenceUiNode => node !== null);
+      if (validation.ok || validation.kind === 'learning' || validation.kind === 'control') {
+        return value.nodes
+          .map(normalizeNode)
+          .filter((node): node is IntelligentUiNode => node !== null);
       }
     }
     const node = normalizeNode(value);
     if (node) return [node];
-  } catch { /* JSONL or an incomplete streaming tail: parse complete lines below */ }
-  const nodes: IntelligenceUiNode[] = [];
+  } catch {
+    /* JSONL or an incomplete streaming tail: parse complete lines below */
+  }
+  const nodes: IntelligentUiNode[] = [];
   const seen = new Set<string>();
   const lines = String(source || '').split(/\r?\n/);
 
@@ -284,9 +299,9 @@ function nextFenceEnd(text: string, from: number): RegExpExecArray | null {
 }
 
 /** Split public prose from native Intelligent UI fences without touching tool offsets. */
-function splitFencedUiText(text: string): IntelligenceUiSegment[] {
+function splitFencedUiText(text: string): IntelligentUiSegment[] {
   const source = String(text || '');
-  const segments: IntelligenceUiSegment[] = [];
+  const segments: IntelligentUiSegment[] = [];
   let cursor = 0;
   BLOCK_START.lastIndex = 0;
 
@@ -296,21 +311,40 @@ function splitFencedUiText(text: string): IntelligenceUiSegment[] {
     const format = startMatch[1] === 'openui' ? { format: 'openui' as const } : {};
     const fenceStart = startMatch.index;
     if (fenceStart > cursor) {
-      segments.push({ kind: 'text', text: source.slice(cursor, fenceStart), start: cursor, end: fenceStart });
+      segments.push({
+        kind: 'text',
+        text: source.slice(cursor, fenceStart),
+        start: cursor,
+        end: fenceStart,
+      });
     }
 
     let bodyStart = BLOCK_START.lastIndex;
     if (source[bodyStart] === '\n') bodyStart += 1;
     const endMatch = nextFenceEnd(source, bodyStart);
     if (!endMatch) {
-      segments.push({ kind: 'ui', ...format, source: source.slice(bodyStart), start: fenceStart, end: source.length, open: true });
+      segments.push({
+        kind: 'ui',
+        ...format,
+        source: source.slice(bodyStart),
+        start: fenceStart,
+        end: source.length,
+        open: true,
+      });
       cursor = source.length;
       BLOCK_START.lastIndex = source.length;
       break;
     }
 
     const bodyEnd = endMatch.index;
-    segments.push({ kind: 'ui', ...format, source: source.slice(bodyStart, bodyEnd), start: fenceStart, end: BLOCK_END.lastIndex, open: false });
+    segments.push({
+      kind: 'ui',
+      ...format,
+      source: source.slice(bodyStart, bodyEnd),
+      start: fenceStart,
+      end: BLOCK_END.lastIndex,
+      open: false,
+    });
     cursor = BLOCK_END.lastIndex;
     if (source[cursor] === '\n') cursor += 1;
     BLOCK_START.lastIndex = cursor;
@@ -327,12 +361,17 @@ function splitFencedUiText(text: string): IntelligenceUiSegment[] {
 
 /** Recover serialized display calls alongside canonical fences. Keep raw offsets
  * for citations and interleaved tools, including prose following a recovered UI. */
-export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
+export function splitIntelligentUiText(text: string): IntelligentUiSegment[] {
   const source = String(text || '');
   const serialized = serializedUiBlocks(source);
-  const blocks = [...serialized, ...serializedDocumentBlocks(source).filter(block => !serialized.some(call => block.start < call.end && block.end > call.start))].sort((a,b) => a.start-b.start);
+  const blocks = [
+    ...serialized,
+    ...serializedDocumentBlocks(source).filter(
+      (block) => !serialized.some((call) => block.start < call.end && block.end > call.start),
+    ),
+  ].sort((a, b) => a.start - b.start);
   if (!blocks.length) return splitFencedUiText(source);
-  const segments: IntelligenceUiSegment[] = [];
+  const segments: IntelligentUiSegment[] = [];
   let cursor = 0;
   const appendProse = (end: number) => {
     if (end <= cursor) return;
@@ -349,21 +388,21 @@ export function splitIntelligenceUiText(text: string): IntelligenceUiSegment[] {
   return segments;
 }
 
-export function stripIntelligenceUiBlocks(text: string): string {
-  return splitIntelligenceUiText(text)
-    .filter((segment): segment is IntelligenceUiTextSegment => segment.kind === 'text')
+export function stripIntelligentUiBlocks(text: string): string {
+  return splitIntelligentUiText(text)
+    .filter((segment): segment is IntelligentUiTextSegment => segment.kind === 'text')
     .map((segment) => segment.text)
     .join('')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
-export function initialStateForNodes(nodes: ReadonlyArray<IntelligenceUiNode>): IntelligenceUiState {
-  const state: IntelligenceUiState = {};
+export function initialStateForNodes(nodes: ReadonlyArray<IntelligentUiNode>): IntelligentUiState {
+  const state: IntelligentUiState = {};
   for (const node of nodes) {
     if (!node.parent && node.state) {
       for (const [key, value] of Object.entries(node.state)) {
-        if (!(key in state) && isSafeIntelligenceUiStateKey(key)) state[key] = value;
+        if (!(key in state) && isSafeIntelligentUiStateKey(key)) state[key] = value;
       }
     }
   }
@@ -396,15 +435,19 @@ function toolValue(ref: Record<string, unknown>, tools: ReadonlyArray<unknown>):
   const records = tools.filter(isRecord);
   const selector = ref.tool;
   let tool: Record<string, unknown> | undefined;
-  if (typeof selector === 'number' && Number.isInteger(selector) && selector >= 0) tool = records[selector];
+  if (typeof selector === 'number' && Number.isInteger(selector) && selector >= 0)
+    tool = records[selector];
   if (typeof selector === 'string') tool = records.find((entry) => entry.id === selector);
   if (!tool) return undefined;
   return readPath(tool, typeof ref.path === 'string' ? ref.path : '');
 }
 
-function resolveArgs(value: Record<string, unknown>, context: IntelligenceUiValueContext): unknown[] {
+function resolveArgs(
+  value: Record<string, unknown>,
+  context: IntelligentUiValueContext,
+): unknown[] {
   const args = Array.isArray(value.args) ? value.args : [];
-  return args.map((arg) => resolveIntelligenceUiValue(arg, context));
+  return args.map((arg) => resolveIntelligentUiValue(arg, context));
 }
 
 function numericPair(args: unknown[]): [number, number] | null {
@@ -414,25 +457,32 @@ function numericPair(args: unknown[]): [number, number] | null {
 }
 
 /** Evaluate the small declarative expression language. Never executes model code. */
-export function resolveIntelligenceUiValue(value: unknown, context: IntelligenceUiValueContext): unknown {
+export function resolveIntelligentUiValue(
+  value: unknown,
+  context: IntelligentUiValueContext,
+): unknown {
   if (!isRecord(value)) {
-    if (Array.isArray(value)) return value.map((item) => resolveIntelligenceUiValue(item, context));
+    if (Array.isArray(value)) return value.map((item) => resolveIntelligentUiValue(item, context));
     return value;
   }
 
   if (typeof value.state === 'string' && Object.keys(value).length <= 2) {
-    return isSafeIntelligenceUiStateKey(value.state) ? context.state[value.state] : undefined;
+    return isSafeIntelligentUiStateKey(value.state) ? context.state[value.state] : undefined;
   }
-  if (('tool' in value) && context.tools) return toolValue(value, context.tools);
+  if ('tool' in value && context.tools) return toolValue(value, context.tools);
   if (typeof value.op !== 'string') return value;
 
   const args = resolveArgs(value, context);
   const pair = numericPair(args);
   switch (value.op) {
-    case 'add': return args.reduce<number>((sum, item) => sum + (finiteNumber(item) ?? 0), 0);
-    case 'sub': return pair ? pair[0] - pair[1] : undefined;
-    case 'mul': return args.reduce<number>((product, item) => product * (finiteNumber(item) ?? 1), 1);
-    case 'div': return pair && pair[1] !== 0 ? pair[0] / pair[1] : undefined;
+    case 'add':
+      return args.reduce<number>((sum, item) => sum + (finiteNumber(item) ?? 0), 0);
+    case 'sub':
+      return pair ? pair[0] - pair[1] : undefined;
+    case 'mul':
+      return args.reduce<number>((product, item) => product * (finiteNumber(item) ?? 1), 1);
+    case 'div':
+      return pair && pair[1] !== 0 ? pair[0] / pair[1] : undefined;
     case 'round': {
       const number = finiteNumber(args[0]);
       return number == null ? undefined : Math.round(number);
@@ -453,25 +503,38 @@ export function resolveIntelligenceUiValue(value: unknown, context: Intelligence
       const numbers = args.map(finiteNumber).filter((item): item is number => item != null);
       return numbers.length ? Math.max(...numbers) : undefined;
     }
-    case 'eq': return args[0] === args[1];
-    case 'neq': return args[0] !== args[1];
-    case 'gt': return pair ? pair[0] > pair[1] : false;
-    case 'gte': return pair ? pair[0] >= pair[1] : false;
-    case 'lt': return pair ? pair[0] < pair[1] : false;
-    case 'lte': return pair ? pair[0] <= pair[1] : false;
-    case 'and': return args.every(Boolean);
-    case 'or': return args.some(Boolean);
-    case 'not': return !args[0];
-    case 'if': return args[0] ? args[1] : args[2];
-    case 'concat': return args.map((item) => item == null ? '' : String(item)).join('');
-    default: return undefined;
+    case 'eq':
+      return args[0] === args[1];
+    case 'neq':
+      return args[0] !== args[1];
+    case 'gt':
+      return pair ? pair[0] > pair[1] : false;
+    case 'gte':
+      return pair ? pair[0] >= pair[1] : false;
+    case 'lt':
+      return pair ? pair[0] < pair[1] : false;
+    case 'lte':
+      return pair ? pair[0] <= pair[1] : false;
+    case 'and':
+      return args.every(Boolean);
+    case 'or':
+      return args.some(Boolean);
+    case 'not':
+      return !args[0];
+    case 'if':
+      return args[0] ? args[1] : args[2];
+    case 'concat':
+      return args.map((item) => (item == null ? '' : String(item))).join('');
+    default:
+      return undefined;
   }
 }
 
-export function displayIntelligenceUiValue(value: unknown): string {
+export function displayIntelligentUiValue(value: unknown): string {
   if (value == null) return '';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
+  if (typeof value === 'number')
+    return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
   if (typeof value === 'string') return value;
   return '';
 }

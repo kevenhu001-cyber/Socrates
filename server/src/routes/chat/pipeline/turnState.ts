@@ -54,7 +54,9 @@ export function addProviderUsage(state: TurnUsageState, raw: unknown): void {
 }
 
 /** Shaped like a provider usage object so `resolveUsage` can consume it. */
-export function accumulatedProviderUsage(state: TurnUsageState): { prompt_tokens: number; completion_tokens: number } | null {
+export function accumulatedProviderUsage(
+  state: TurnUsageState,
+): { prompt_tokens: number; completion_tokens: number } | null {
   if (!state.sawProviderUsage) return null;
   return { prompt_tokens: state.usagePromptTotal, completion_tokens: state.usageCompletionTotal };
 }

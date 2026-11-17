@@ -14,7 +14,8 @@ export async function copyText(text: string): Promise<boolean> {
       // Clipboard denial is recoverable; the caller shows 「复制失败」.
       return false;
     } finally {
-      if (focused instanceof window.HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
+      if (focused instanceof window.HTMLElement && focused.isConnected)
+        focused.focus({ preventScroll: true });
     }
   }
 }

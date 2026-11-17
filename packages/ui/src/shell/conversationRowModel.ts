@@ -46,7 +46,11 @@ export function conversationRowPaint(
 }
 
 /** Keyboard activation: Enter or Space on the row itself, never on a child control. */
-export function isRowActivationKey(key: string | undefined, onRowItself: boolean, renaming: boolean): boolean {
+export function isRowActivationKey(
+  key: string | undefined,
+  onRowItself: boolean,
+  renaming: boolean,
+): boolean {
   if (renaming || !onRowItself) return false;
   return key === 'Enter' || key === ' ';
 }

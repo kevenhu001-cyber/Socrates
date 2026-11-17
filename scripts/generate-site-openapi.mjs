@@ -8,17 +8,25 @@ import { parse } from 'yaml';
 
 export function projectPublicSchema(source) {
   const doc = structuredClone(source);
-  if (!doc || doc.openapi !== '3.1.0' || !doc.paths) throw new Error('Unexpected canonical OpenAPI document');
+  if (!doc || doc.openapi !== '3.1.0' || !doc.paths)
+    throw new Error('Unexpected canonical OpenAPI document');
   for (const [path, pathItem] of Object.entries(doc.paths)) {
     // Internal-only surfaces stay canonical but never enter the public artifact.
     const privatePath = pathItem?.['x-internal'] === true || path.split('/').includes('_internal');
     for (const [method, operation] of Object.entries(pathItem)) {
-      if (/^(get|post|put|patch|delete|head|options|trace)$/i.test(method) &&
-          (privatePath || operation?.['x-internal'] === true || operation?.tags?.includes('admin'))) {
+      if (
+        /^(get|post|put|patch|delete|head|options|trace)$/i.test(method) &&
+        (privatePath || operation?.['x-internal'] === true || operation?.tags?.includes('admin'))
+      ) {
         delete pathItem[method];
       }
     }
-    if (!Object.keys(pathItem).some((key) => /^(get|post|put|patch|delete|head|options|trace)$/i.test(key))) delete doc.paths[path];
+    if (
+      !Object.keys(pathItem).some((key) =>
+        /^(get|post|put|patch|delete|head|options|trace)$/i.test(key),
+      )
+    )
+      delete doc.paths[path];
   }
   doc.tags = (doc.tags ?? []).filter((tag) => tag.name !== 'admin');
   return doc;

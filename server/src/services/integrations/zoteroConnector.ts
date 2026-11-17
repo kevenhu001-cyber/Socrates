@@ -4,7 +4,9 @@ import { isRetryableConnectorFailure, isRetryableConnectorStatus } from './conne
 const ZOTERO_API = 'https://api.zotero.org';
 const ZOTERO_API_VERSION = '3';
 
-function encryptionKey() { return deriveEncryptionKey(sessionSecret()); }
+function encryptionKey() {
+  return deriveEncryptionKey(sessionSecret());
+}
 
 export class ZoteroConnectorError extends Error {
   code: string;
@@ -38,9 +40,16 @@ async function zoteroJson(path: string, apiKey: string): Promise<unknown> {
     );
   }
   let body: unknown = null;
-  try { body = await response.json(); } catch (_) { /* error is normalized below */ }
+  try {
+    body = await response.json();
+  } catch (_) {
+    /* error is normalized below */
+  }
   if (response.status === 401 || response.status === 403) {
-    throw new ZoteroConnectorError('ZOTERO_KEY_REJECTED', 'Zotero rejected this API Key or its library permission.');
+    throw new ZoteroConnectorError(
+      'ZOTERO_KEY_REJECTED',
+      'Zotero rejected this API Key or its library permission.',
+    );
   }
   if (!response.ok || body === null) {
     throw new ZoteroConnectorError(
@@ -57,7 +66,7 @@ export async function createZoteroConnection(apiKey: string) {
   if (!validApiKey(apiKey)) {
     throw new ZoteroConnectorError('ZOTERO_INVALID_KEY', 'Enter a valid Zotero API Key.');
   }
-  const keyInfo = await zoteroJson('/keys/current', apiKey) as {
+  const keyInfo = (await zoteroJson('/keys/current', apiKey)) as {
     userID?: string | number;
     username?: string;
     access?: { user?: { library?: boolean; write?: boolean } };
@@ -65,10 +74,16 @@ export async function createZoteroConnection(apiKey: string) {
   const userId = String(keyInfo.userID || '');
   const userAccess = keyInfo.access?.user || ({} as { library?: boolean; write?: boolean });
   if (!/^\d{1,20}$/.test(userId) || userAccess.library !== true) {
-    throw new ZoteroConnectorError('ZOTERO_LIBRARY_ACCESS_REQUIRED', 'This API Key needs read access to your personal Zotero library.');
+    throw new ZoteroConnectorError(
+      'ZOTERO_LIBRARY_ACCESS_REQUIRED',
+      'This API Key needs read access to your personal Zotero library.',
+    );
   }
   if (userAccess.write === true) {
-    throw new ZoteroConnectorError('ZOTERO_READ_ONLY_KEY_REQUIRED', 'For safety, create a separate read-only Zotero API Key for Socrates.');
+    throw new ZoteroConnectorError(
+      'ZOTERO_READ_ONLY_KEY_REQUIRED',
+      'For safety, create a separate read-only Zotero API Key for Socrates.',
+    );
   }
   return {
     externalAccountId: userId,
@@ -101,16 +116,28 @@ interface ZoteroItem {
 }
 
 /** Return a small, read-only window into the connected user's bibliography. */
-export async function listZoteroItems(connection: { externalAccountId?: string | null; accessTokenCiphertext: string }, query = '') {
+export async function listZoteroItems(
+  connection: { externalAccountId?: string | null; accessTokenCiphertext: string },
+  query = '',
+) {
   const userId = String(connection.externalAccountId || '');
-  if (!/^\d{1,20}$/.test(userId)) throw new ZoteroConnectorError('ZOTERO_RECONNECT_REQUIRED', 'Reconnect Zotero to continue.');
-  const params = new URLSearchParams({ format: 'json', limit: '100', sort: 'dateModified', direction: 'desc' });
+  if (!/^\d{1,20}$/.test(userId))
+    throw new ZoteroConnectorError('ZOTERO_RECONNECT_REQUIRED', 'Reconnect Zotero to continue.');
+  const params = new URLSearchParams({
+    format: 'json',
+    limit: '100',
+    sort: 'dateModified',
+    direction: 'desc',
+  });
   if (query) {
     params.set('q', query.slice(0, 200));
     params.set('qmode', 'titleCreatorYear');
   }
   const apiKey = decrypt(connection.accessTokenCiphertext, encryptionKey());
-  const items = await zoteroJson(`/users/${encodeURIComponent(userId)}/items/top?${params.toString()}`, apiKey);
+  const items = await zoteroJson(
+    `/users/${encodeURIComponent(userId)}/items/top?${params.toString()}`,
+    apiKey,
+  );
   return (Array.isArray(items) ? items : []).map((item: ZoteroItem) => {
     const data = item?.data || {};
     const key = String(item?.key || data.key || '');
@@ -119,7 +146,10 @@ export async function listZoteroItems(connection: { externalAccountId?: string |
       title: String(data.title || 'Untitled item').slice(0, 500),
       itemType: String(data.itemType || 'item').slice(0, 100),
       date: data.date ? String(data.date).slice(0, 100) : null,
-      creators: (Array.isArray(data.creators) ? data.creators : []).map(creatorName).filter(Boolean).slice(0, 8),
+      creators: (Array.isArray(data.creators) ? data.creators : [])
+        .map(creatorName)
+        .filter(Boolean)
+        .slice(0, 8),
       url: key ? `https://www.zotero.org/users/${userId}/items/${encodeURIComponent(key)}` : null,
     };
   });

@@ -19,9 +19,14 @@ test('new chunks fade at their original age and text/markup remain intact', () =
   root.innerHTML = '<p>原文 <strong>新增</strong> 😀继续</p>';
   reveal(root, '原文 **新增** 😀继续', 100);
   assert.equal(root.textContent, '原文 新增 😀继续');
-  assert.ok([...root.querySelectorAll('.stream-append-reveal')].some((el) => el.style.animationDelay === '-50ms'));
+  assert.ok(
+    [...root.querySelectorAll('.stream-append-reveal')].some(
+      (el) => el.style.animationDelay === '-50ms',
+    ),
+  );
   assert.equal(root.querySelector('.stream-append-reveal .stream-append-reveal'), null);
-  for (const span of root.querySelectorAll('.stream-append-reveal')) assert.ok(span.textContent.isWellFormed());
+  for (const span of root.querySelectorAll('.stream-append-reveal'))
+    assert.ok(span.textContent.isWellFormed());
   root.innerHTML = '<p>原文 <strong>新增</strong> 😀继续。</p>';
   reveal(root, '原文 **新增** 😀继续。', 500);
   assert.equal(root.querySelectorAll('.stream-append-reveal').length, 1);
@@ -35,7 +40,11 @@ test('Markdown block separator newlines do not suppress later reveals', () => {
   root.innerHTML = '<p>新的内容，<strong>柔和渐显</strong>。</p>\n';
   assert.ok(reveal(root, '新的内容，**柔和渐显**。', 50) > 0);
   assert.equal(root.textContent, '新的内容，柔和渐显。\n');
-  assert.ok([...root.querySelectorAll('.stream-append-reveal')].some((el) => el.style.animationDelay === '-50ms'));
+  assert.ok(
+    [...root.querySelectorAll('.stream-append-reveal')].some(
+      (el) => el.style.animationDelay === '-50ms',
+    ),
+  );
 });
 
 test('deep formatted tails have a fixed traversal/decoration budget', () => {
@@ -43,7 +52,10 @@ test('deep formatted tails have a fixed traversal/decoration budget', () => {
   root.innerHTML = '<p>' + '<strong>字</strong>'.repeat(2000) + '</p>';
   const original = dom.window.Element.prototype.matches;
   let inspections = 0;
-  dom.window.Element.prototype.matches = function (...args) { inspections++; return original.apply(this, args); };
+  dom.window.Element.prototype.matches = function (...args) {
+    inspections++;
+    return original.apply(this, args);
+  };
   const count = reveal(root, '字'.repeat(2000), 0);
   assert.ok(inspections <= 64);
   assert.ok(count <= 24);
@@ -52,7 +64,10 @@ test('deep formatted tails have a fixed traversal/decoration budget', () => {
 
 test('long tails inspect a bounded suffix and preserve code, math, and controls', () => {
   const { root, reveal } = fixture();
-  root.innerHTML = '<p>' + 'a'.repeat(100_000) + '</p><pre><code>result = 1</code></pre><button>Copy</button><span class="katex">formula</span>';
+  root.innerHTML =
+    '<p>' +
+    'a'.repeat(100_000) +
+    '</p><pre><code>result = 1</code></pre><button>Copy</button><span class="katex">formula</span>';
   const before = root.textContent;
   const pre = root.querySelector('pre').outerHTML;
   const math = root.querySelector('.katex').outerHTML;
@@ -60,7 +75,13 @@ test('long tails inspect a bounded suffix and preserve code, math, and controls'
   assert.equal(root.textContent, before);
   assert.equal(root.querySelector('pre').outerHTML, pre);
   assert.equal(root.querySelector('.katex').outerHTML, math);
-  assert.equal([...root.querySelectorAll('.stream-append-reveal')].reduce((n, el) => n + el.textContent.length, 0), 256);
+  assert.equal(
+    [...root.querySelectorAll('.stream-append-reveal')].reduce(
+      (n, el) => n + el.textContent.length,
+      0,
+    ),
+    256,
+  );
 });
 
 test('reduced motion skips decoration and history never accumulates', () => {
@@ -100,7 +121,9 @@ test('segments that arrive together are staggered 30ms apart', () => {
   reveal(root, '甲', 0);
   root.innerHTML = '<p>甲乙</p>';
   reveal(root, '甲乙', 5);
-  const delays = [...root.querySelectorAll('.stream-append-reveal')].map((el) => el.style.animationDelay);
+  const delays = [...root.querySelectorAll('.stream-append-reveal')].map(
+    (el) => el.style.animationDelay,
+  );
   /* The first segment resumes from its own age; the one that landed in the
      same tick is pushed a whole stagger later, so a burst reads as a wave
      travelling forward instead of one flat flash. */

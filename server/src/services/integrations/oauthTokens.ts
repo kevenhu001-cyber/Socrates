@@ -65,13 +65,20 @@ export type VerifiedOAuthToken = { user: User; scopes: string[] };
  * Resolve an `Authorization: Bearer at_…` credential against the stored
  * SHA-256 digest. Returns null for unknown, revoked, expired tokens.
  */
-export async function verifyOAuthAccessToken(bearerValue: string): Promise<VerifiedOAuthToken | null> {
+export async function verifyOAuthAccessToken(
+  bearerValue: string,
+): Promise<VerifiedOAuthToken | null> {
   if (!OAUTH_ACCESS_TOKEN_RE.test(`Bearer ${bearerValue}`)) return null;
   const db = getDb();
   const [row] = await db
     .select()
     .from(oauthAccessTokens)
-    .where(and(eq(oauthAccessTokens.tokenHash, sha256Hex(bearerValue)), isNull(oauthAccessTokens.revokedAt)))
+    .where(
+      and(
+        eq(oauthAccessTokens.tokenHash, sha256Hex(bearerValue)),
+        isNull(oauthAccessTokens.revokedAt),
+      ),
+    )
     .limit(1);
   if (!row || row.expiresAt < new Date()) return null;
 

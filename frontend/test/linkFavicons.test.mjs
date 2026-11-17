@@ -4,9 +4,12 @@ import { JSDOM } from 'jsdom';
 import { createLinkFavicon, decorateExternalLinks } from '../src/ui/linkFavicons.ts';
 
 test('external answer links receive the linked domain favicon first', () => {
-  const dom = new JSDOM('<div class="msg-body"><p><a href="https://www.anthropic.com/research">Anthropic</a></p></div>', {
-    url: 'https://socrates.test/',
-  });
+  const dom = new JSDOM(
+    '<div class="msg-body"><p><a href="https://www.anthropic.com/research">Anthropic</a></p></div>',
+    {
+      url: 'https://socrates.test/',
+    },
+  );
   globalThis.window = dom.window;
   globalThis.document = dom.window.document;
 

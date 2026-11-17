@@ -95,7 +95,9 @@ router.get('/', async (req, res, next) => {
     /* Coerce the hasKey projection to a boolean so the shape matches
        the embeddingConfig route. */
     return res.json({ ...row, hasKey: row.hasKey != null });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PUT / — update (or create) the built-in system model row. */
@@ -103,7 +105,9 @@ router.put('/', async (req, res, next) => {
   try {
     const parsed = configSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new BadRequest('Invalid config: ' + (parsed.error.issues[0]?.message || 'validation failed'));
+      throw new BadRequest(
+        'Invalid config: ' + (parsed.error.issues[0]?.message || 'validation failed'),
+      );
     }
     const { label, url, model, key, keyHint, isMultimodal } = parsed.data;
     /* An empty string for `key` means "clear the key" (deactivate
@@ -112,7 +116,9 @@ router.put('/', async (req, res, next) => {
        the SSRF guard. */
     const clearingKey = key === '';
     if (!clearingKey && typeof url === 'string' && !isAllowedProviderUrl(url)) {
-      throw new BadRequest('Provider URL must be a public https endpoint (no localhost / private / link-local).');
+      throw new BadRequest(
+        'Provider URL must be a public https endpoint (no localhost / private / link-local).',
+      );
     }
 
     const db = getDb();
@@ -130,17 +136,19 @@ router.put('/', async (req, res, next) => {
       values.keyHint = null;
     } else if (typeof key === 'string' && key.length > 0) {
       values.keyCiphertext = encrypt(key, encryptionKey());
-      values.keyHint = (keyHint || key.slice(0, 8));
+      values.keyHint = keyHint || key.slice(0, 8);
     }
 
-    const [existing] = await db.select({ id: apiKeys.id })
+    const [existing] = await db
+      .select({ id: apiKeys.id })
       .from(apiKeys)
       .where(eq(apiKeys.isBuiltIn, true))
       .orderBy(apiKeys.createdAt)
       .limit(1);
     let saved;
     if (existing) {
-      [saved] = await db.update(apiKeys)
+      [saved] = await db
+        .update(apiKeys)
         .set(values)
         .where(eq(apiKeys.id, existing.id))
         .returning(SAFE_PROJECTION);
@@ -152,11 +160,14 @@ router.put('/', async (req, res, next) => {
     }
     /* Exactly-one-active invariant: this row is the only built-in
        active row. */
-    await db.update(apiKeys)
+    await db
+      .update(apiKeys)
       .set({ isActive: false })
       .where(and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, saved.id)));
     return res.json(saved);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

@@ -4,8 +4,14 @@ import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useExamStore, useSessionStore, useUiStore } from '../../store/index.ts';
-import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-configuration/chatConfiguration.bridge';
-import { useActiveModelLabel, useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
+import {
+  openChatConfiguration,
+  useChatConfigurationSnapshot,
+} from '../chat-configuration/chatConfiguration.bridge';
+import {
+  useActiveModelLabel,
+  useStoredReasoningEffort,
+} from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
 import { startNewChat, toggleIncognito } from '../../app/lifecycle/index.ts';
@@ -17,7 +23,13 @@ import { useIncognito } from '../app-mode/useIncognito.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
-import { TopBarAction, TopBarModelSwitcher, TopBarModeSwitch, TopBarPracticeProgress, TopBarStageProgress } from '@socrates/ui/shell';
+import {
+  TopBarAction,
+  TopBarModelSwitcher,
+  TopBarModeSwitch,
+  TopBarPracticeProgress,
+  TopBarStageProgress,
+} from '@socrates/ui/shell';
 import { getActiveSocraticStage, stageName, SOCRATIC_STAGES } from '../../tutor/socraticStages.ts';
 import { useConversationActive } from './useConversationActive.ts';
 import { useTopbarState } from './topbarStore.ts';
@@ -65,7 +77,11 @@ function subscribeNarrow(listener: () => void): () => void {
 }
 /** Phones under 360px leave only ~76px beside the centred mode track. */
 function useNarrowPhone(): boolean {
-  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia('(max-width: 359px)').matches, () => false);
+  return useSyncExternalStore(
+    subscribeNarrow,
+    () => window.matchMedia('(max-width: 359px)').matches,
+    () => false,
+  );
 }
 
 function anchor(id: string): HTMLElement | null {
@@ -78,12 +94,29 @@ function SidebarToggle() {
   const isOpen = useSidebarStore((snapshot) => snapshot.isOpen);
   const isMobile = useMobileViewport();
   const labelKey = isMobile
-    ? (isOpen ? 'chrome.collapseSidebar' : 'chrome.expandSidebar')
-    : (isOpen ? 'chrome.closeSidebar' : 'chrome.openSidebar');
+    ? isOpen
+      ? 'chrome.collapseSidebar'
+      : 'chrome.expandSidebar'
+    : isOpen
+      ? 'chrome.closeSidebar'
+      : 'chrome.openSidebar';
   const titleKey = isMobile
-    ? (isOpen ? 'chrome.collapseSidebarKbd' : 'chrome.expandSidebarKbd')
-    : (isOpen ? 'chrome.closeSidebarKbd' : 'chrome.openSidebarKbd');
-  const label = t(labelKey, isMobile ? (isOpen ? 'Collapse sidebar' : 'Expand sidebar') : (isOpen ? 'Close sidebar' : 'Open sidebar'));
+    ? isOpen
+      ? 'chrome.collapseSidebarKbd'
+      : 'chrome.expandSidebarKbd'
+    : isOpen
+      ? 'chrome.closeSidebarKbd'
+      : 'chrome.openSidebarKbd';
+  const label = t(
+    labelKey,
+    isMobile
+      ? isOpen
+        ? 'Collapse sidebar'
+        : 'Expand sidebar'
+      : isOpen
+        ? 'Close sidebar'
+        : 'Open sidebar',
+  );
   const title = t(titleKey, `${label}${isMobile ? '' : ' (⌘B)'}`);
   return (
     <Button
@@ -100,9 +133,33 @@ function SidebarToggle() {
       onClick={() => toggleSidebar()}
     >
       {/* Reference phone glyph: a soft frame with a short rail stroke, drawn at 20px. */}
-      <svg className="glyph-panel" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.75" y="4.25" width="18.5" height="15.5" rx="4.5" /><path d="M8 9v6" /></svg>
+      <svg
+        className="glyph-panel"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <rect x="2.75" y="4.25" width="18.5" height="15.5" rx="4.5" />
+        <path d="M8 9v6" />
+      </svg>
       {/* Phone navigation uses the reference's quiet, two-line menu glyph. */}
-      <svg className="glyph-hamburger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"><path d="M4 8h16" /><path d="M4 15h11" /></svg>
+      <svg
+        className="glyph-hamburger"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        <path d="M4 8h16" />
+        <path d="M4 15h11" />
+      </svg>
       <span className="mobile-sidebar-status" aria-hidden="true" />
     </Button>
   );
@@ -116,7 +173,13 @@ function SidebarToggle() {
  * centred mode switch and session actions, so the composer effort pill stays
  * the model-settings path.
  */
-function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function ModelSwitcher({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const snapshot = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
@@ -141,24 +204,40 @@ function ModelSwitcher({ phone, conversationActive }: { phone: boolean; conversa
 }
 
 /** Practice progress belongs to a tutor conversation (it was a `tutor-only` chip). */
-function PracticeProgress({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function PracticeProgress({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const mode = useAppMode();
   const phase = useSessionStore((snapshot) => snapshot.practicePhase);
   const attempts = useSessionStore((snapshot) => snapshot.practiceAttempts);
   if (!phase || mode !== 'tutor' || phone || !conversationActive) return null;
-  const phaseLabel = phase === 'foundation'
-    ? i18n('tutor.practiceFoundation', '基础')
-    : i18n('tutor.practiceTransfer', '变式');
+  const phaseLabel =
+    phase === 'foundation'
+      ? i18n('tutor.practiceFoundation', '基础')
+      : i18n('tutor.practiceTransfer', '变式');
   return (
     <TopBarPracticeProgress
       phase={phaseLabel}
-      attempts={i18n('tutor.practiceAttempts', '{n} attempt(s)').replace('{n}', String(attempts || 0))}
+      attempts={i18n('tutor.practiceAttempts', '{n} attempt(s)').replace(
+        '{n}',
+        String(attempts || 0),
+      )}
     />
   );
 }
 
 /** Tutor stage, derived from the session (no DOM writes). Phones leave it to the conversation. */
-function StageProgress({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function StageProgress({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const mode = useAppMode();
   const teachingStage = useSessionStore((snapshot) => snapshot.teachingStage);
   if (mode !== 'tutor' || phone || !conversationActive) return null;
@@ -169,7 +248,9 @@ function StageProgress({ phone, conversationActive }: { phone: boolean; conversa
       stage={stageName(t(stage.labelKey, stage.defaultLabel))}
       step={stage.step}
       total={total}
-      progressLabel={t('tutor.mastery.progress', 'Step {n} of {total}').replace('{n}', String(stage.step)).replace('{total}', String(total))}
+      progressLabel={t('tutor.mastery.progress', 'Step {n} of {total}')
+        .replace('{n}', String(stage.step))
+        .replace('{total}', String(total))}
       title={t('tutor.mastery.title', 'Socratic Stage')}
     />
   );
@@ -188,7 +269,16 @@ function ExamTitle() {
       : mode === 'form' || mode === 'provider-required'
         ? i18n('exam.generate', 'Generate Exam')
         : topic || i18n('exam.generate', 'Generate Exam');
-  return <span className={`exam-title-bar${isInView ? '' : ' hidden'}`} id="examTitleBar" data-exam-only="true" data-locale-revision={localeRevision}>{label}</span>;
+  return (
+    <span
+      className={`exam-title-bar${isInView ? '' : ' hidden'}`}
+      id="examTitleBar"
+      data-exam-only="true"
+      data-locale-revision={localeRevision}
+    >
+      {label}
+    </span>
+  );
 }
 
 /**
@@ -196,13 +286,29 @@ function ExamTitle() {
  * title. The title is the session's own (its saved title, else its topic);
  * desktop keeps the model lockup in this slot instead.
  */
-function ConversationTitle({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function ConversationTitle({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const title = useSessionStore((snapshot) => snapshot.sessionTitle || snapshot.topic);
   if (!phone || !conversationActive || !title) return null;
-  return <span className="top-conversation-title" id="topConversationTitle" title={title}>{title}</span>;
+  return (
+    <span className="top-conversation-title" id="topConversationTitle" title={title}>
+      {title}
+    </span>
+  );
 }
 
-function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function TopBarLeft({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   return (
     <div className="top-bar-left">
       <SidebarToggle />
@@ -216,7 +322,9 @@ function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversatio
             /* Reference: the compose glyph is a size smaller than the drawer glyph. */
             iconSize={18}
             visible={phone && conversationActive}
-            onPress={() => { void startNewChat(); }}
+            onPress={() => {
+              void startNewChat();
+            }}
           />
         </span>
         {/* 新聊天页显示模型 chip；手机对话中隐藏它以给标题和会话操作留空间。
@@ -242,7 +350,13 @@ function TopBarLeft({ phone, conversationActive }: { phone: boolean; conversatio
  * confirmation first (app/lifecycle/mode.ts); the control is hidden while a
  * conversation runs. Arrow keys move between the two tabs.
  */
-function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversationActive: boolean }) {
+function ModeSwitch({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const mode = useAppMode();
   const reducedMotion = useReducedMotion();
   const narrow = useNarrowPhone();
@@ -252,13 +366,20 @@ function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversatio
     const index = options.findIndex((option) => option.contains(event.target as Node));
     if (index < 0) return;
     event.preventDefault();
-    const next = options[(index + (event.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length];
+    const next =
+      options[(index + (event.key === 'ArrowRight' ? 1 : options.length - 1)) % options.length];
     next?.focus();
     const targetMode = next?.dataset.mode;
     if (targetMode) void toggleAppMode(targetMode);
   };
   return (
-    <div className="top-mode-switch" data-active={mode} hidden={conversationActive} style={conversationActive ? { display: 'none' } : undefined} onKeyDown={onKeyDown}>
+    <div
+      className="top-mode-switch"
+      data-active={mode}
+      hidden={conversationActive}
+      style={conversationActive ? { display: 'none' } : undefined}
+      onKeyDown={onKeyDown}
+    >
       <WebUiTheme>
         <TopBarModeSwitch
           value={mode}
@@ -272,7 +393,9 @@ function ModeSwitch({ phone, conversationActive }: { phone: boolean; conversatio
           narrow={phone && narrow}
           reducedMotion={reducedMotion}
           thumbShadow={phone ? 'var(--ui-segment-thumb-shadow)' : 'var(--ui-elevation-raised)'}
-          onSelect={(next) => { void toggleAppMode(next); }}
+          onSelect={(next) => {
+            void toggleAppMode(next);
+          }}
         />
       </WebUiTheme>
     </div>
@@ -292,7 +415,9 @@ function IncognitoAction() {
       pressed={on}
       touch
       visible={false}
-      onPress={() => { void toggleIncognito(); }}
+      onPress={() => {
+        void toggleIncognito();
+      }}
     />
   );
 }
@@ -328,9 +453,34 @@ function TopBarRight({ phone }: { phone: boolean }) {
 
 function PluginWorkspaceTabs() {
   return (
-    <div className="top-mode-tabs plugin-workspace-tabs" id="pluginWorkspaceTabs" role="tablist" aria-label="Plugin workspace" data-i18n-aria="chrome.pluginWorkspace" hidden>
-      <Button variant="ghost" className={`plugin-workspace-tab active ${CHROME_BUTTON}`} id="pluginWorkspacePluginsTab" role="tab" aria-selected="true" data-i18n-key="plugins.pluginsTab">{t('plugins.pluginsTab', '插件')}</Button>
-      <Button variant="ghost" className={`plugin-workspace-tab ${CHROME_BUTTON}`} id="pluginWorkspaceSkillsTab" role="tab" aria-selected="false" data-i18n-key="plugins.skillsTab">{t('plugins.skillsTab', '技能')}</Button>
+    <div
+      className="top-mode-tabs plugin-workspace-tabs"
+      id="pluginWorkspaceTabs"
+      role="tablist"
+      aria-label="Plugin workspace"
+      data-i18n-aria="chrome.pluginWorkspace"
+      hidden
+    >
+      <Button
+        variant="ghost"
+        className={`plugin-workspace-tab active ${CHROME_BUTTON}`}
+        id="pluginWorkspacePluginsTab"
+        role="tab"
+        aria-selected="true"
+        data-i18n-key="plugins.pluginsTab"
+      >
+        {t('plugins.pluginsTab', '插件')}
+      </Button>
+      <Button
+        variant="ghost"
+        className={`plugin-workspace-tab ${CHROME_BUTTON}`}
+        id="pluginWorkspaceSkillsTab"
+        role="tab"
+        aria-selected="false"
+        data-i18n-key="plugins.skillsTab"
+      >
+        {t('plugins.skillsTab', '技能')}
+      </Button>
     </div>
   );
 }

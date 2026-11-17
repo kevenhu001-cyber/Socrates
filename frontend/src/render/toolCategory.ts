@@ -16,8 +16,12 @@
 /* Tools whose result is a list of web sources — they get the source-card
    detail panel and the Retry affordance. */
 export const SEARCH_TOOLS: ReadonlySet<string> = new Set([
-  'web_search', 'arxiv_search', 'zotero_search', 'notion_search_pages',
-  'github_list_repos', 'gitee_list_repos',
+  'web_search',
+  'arxiv_search',
+  'zotero_search',
+  'notion_search_pages',
+  'github_list_repos',
+  'gitee_list_repos',
 ]);
 
 export function isInlineSearchTool(name: string): boolean {
@@ -27,20 +31,35 @@ export function isInlineSearchTool(name: string): boolean {
 const READ_TOOLS = new Set(['Read', 'Glob', 'Grep', 'read_attachment']);
 const WRITE_TOOLS = new Set(['Write', 'Edit', 'Bash']);
 const CONNECTOR_TOOLS = new Set([
-  'oc_github', 'oc_gmail', 'oc_googlecalendar', 'oc_todoist', 'oc_gitlab', 'oc_qq_mail',
-  'github_identity', 'gmail_search', 'google_calendar_list_events', 'todoist_list_tasks',
-  'gitlab_identity', 'qq_mail_search',
+  'oc_github',
+  'oc_gmail',
+  'oc_googlecalendar',
+  'oc_todoist',
+  'oc_gitlab',
+  'oc_qq_mail',
+  'github_identity',
+  'gmail_search',
+  'google_calendar_list_events',
+  'todoist_list_tasks',
+  'gitlab_identity',
+  'qq_mail_search',
 ]);
 
 const TOOL_CATEGORIES = new Map<string, string>([
   ...Array.from(SEARCH_TOOLS, (name) => [name, 'search'] as const),
-  ['code_interpreter', 'code'], ['Code', 'code'],
-  ['web_fetch', 'fetch'], ['WebFetch', 'fetch'],
-  ['render_intelligent_ui', 'visual'], ['patch_intelligent_ui', 'visual'], ['create_document', 'plan'],
-  ['workspace_agent', 'agent'], ['initialize_workspace', 'agent'],
+  ['code_interpreter', 'code'],
+  ['Code', 'code'],
+  ['web_fetch', 'fetch'],
+  ['WebFetch', 'fetch'],
+  ['render_intelligent_ui', 'visual'],
+  ['patch_intelligent_ui', 'visual'],
+  ['create_document', 'plan'],
+  ['workspace_agent', 'agent'],
+  ['initialize_workspace', 'agent'],
   ...Array.from(READ_TOOLS, (name) => [name, 'read'] as const),
   ...Array.from(WRITE_TOOLS, (name) => [name, 'write'] as const),
-  ['save_memory', 'memory'], ['create_site', 'site'],
+  ['save_memory', 'memory'],
+  ['create_site', 'site'],
   ...Array.from(CONNECTOR_TOOLS, (name) => [name, 'connector'] as const),
 ]);
 

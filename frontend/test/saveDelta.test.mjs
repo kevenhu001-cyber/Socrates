@@ -103,22 +103,35 @@ test('a completed visualization result is dirty even when text and call count ar
   };
   const pending = msg('viz-message', 'Chart incoming.', {
     type: 'assistant',
-    toolCalls: [{ id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]}, output: null }],
+    toolCalls: [
+      {
+        id: 'viz-1',
+        name: 'render_intelligent_ui',
+        input: { version: 1, nodes: [{ ...spec, id: 'visual', type: 'visualization' }] },
+        output: null,
+      },
+    ],
   });
   seedSynced(synced, [pending], fp);
   const completed = msg('viz-message', 'Chart incoming.', {
     type: 'assistant',
-    toolCalls: [{
-      ...pending.toolCalls[0],
-      output: 'Visualization ready',
-      status: 'completed',
-      durationMs: 900,
-      visualizations: [{...spec,nodeId:'visual',index:0}],
-    }],
+    toolCalls: [
+      {
+        ...pending.toolCalls[0],
+        output: 'Visualization ready',
+        status: 'completed',
+        durationMs: 900,
+        visualizations: [{ ...spec, nodeId: 'visual', index: 0 }],
+      },
+    ],
   });
 
   const delta = messageDelta(synced, [completed], fp);
-  assert.equal(delta.length, 1, 'tool output/spec changes must be persisted without a prose change');
+  assert.equal(
+    delta.length,
+    1,
+    'tool output/spec changes must be persisted without a prose change',
+  );
   assert.equal(delta[0].toolCalls[0].visualizations[0].title, 'Market values');
 });
 
@@ -147,7 +160,13 @@ test('buildDeltaPayload keeps session scalars and replaces only messages', () =>
   const before = [msg('a', 'first')];
   seedSynced(synced, before, fp);
   const payload = buildDeltaPayload(
-    { id: 's1', title: 'Math', topic: 'math', kbNodes: [1, 2], messages: before.concat([msg('b', 'new')]) },
+    {
+      id: 's1',
+      title: 'Math',
+      topic: 'math',
+      kbNodes: [1, 2],
+      messages: before.concat([msg('b', 'new')]),
+    },
     synced,
     fp,
   );
@@ -177,7 +196,11 @@ test('watermarks are per session, not global', () => {
   const messages = [msg('a', 'first')];
   seedSynced(a, messages, fp);
   assert.equal(messageDelta(a, messages, fp).length, 0);
-  assert.equal(messageDelta(b, messages, fp).length, 1, 'a different session has not sent these yet');
+  assert.equal(
+    messageDelta(b, messages, fp).length,
+    1,
+    'a different session has not sent these yet',
+  );
 });
 
 test('the fingerprint memo tracks content, not just identity', () => {

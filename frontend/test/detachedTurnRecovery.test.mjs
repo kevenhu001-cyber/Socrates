@@ -8,7 +8,9 @@ function jsonResponse(value) {
     ok: true,
     status: 200,
     headers: { get: () => 'application/json' },
-    async text() { return JSON.stringify(value); },
+    async text() {
+      return JSON.stringify(value);
+    },
   };
 }
 
@@ -35,16 +37,20 @@ function eventStreamResponse(frames) {
 
 function eventFrame(sequence, event, data) {
   return `event: turn_event\ndata: ${JSON.stringify({
-    turnId: 'turn-1', sequence, event, data,
+    turnId: 'turn-1',
+    sequence,
+    event,
+    data,
   })}\n\n`;
 }
 
 test('completed detached turn only emits the text missing from the live stream', async () => {
   globalThis.document = { cookie: '' };
-  globalThis.fetch = async () => jsonResponse({
-    turn: { id: 'turn-1', status: 'completed', fullText: 'Known answer continues.' },
-    events: [],
-  });
+  globalThis.fetch = async () =>
+    jsonResponse({
+      turn: { id: 'turn-1', status: 'completed', fullText: 'Known answer continues.' },
+      events: [],
+    });
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
 
@@ -64,11 +70,13 @@ test('open detached turn replays typed events and completes after turn_done', as
   const calls = [];
   globalThis.fetch = async (url) => {
     if (String(url).includes('/events?')) {
-      return eventStreamResponse([
-        eventFrame(1, 'content', { delta: 'Recovered answer.' }),
-        eventFrame(2, 'tool_use', [{ id: 'tool-1', name: 'web_search' }]),
-        eventFrame(3, 'turn_done', {}),
-      ].join(''));
+      return eventStreamResponse(
+        [
+          eventFrame(1, 'content', { delta: 'Recovered answer.' }),
+          eventFrame(2, 'tool_use', [{ id: 'tool-1', name: 'web_search' }]),
+          eventFrame(3, 'turn_done', {}),
+        ].join(''),
+      );
     }
     return jsonResponse({
       turn: { id: 'turn-1', status: 'open', fullText: '' },
@@ -92,14 +100,27 @@ test('open detached turn replays typed events and completes after turn_done', as
 
 test('a completed reconnect replays public runtime events before returning the remaining prose', async () => {
   globalThis.document = { cookie: '' };
-  const runtimeEvent = { version: 1, turnId: 'turn-1', seq: 1, at: 100, type: 'generation', phase: 'streaming' };
-  globalThis.fetch = async () => jsonResponse({
-    turn: { id: 'turn-1', status: 'completed', fullText: 'Recovered.' },
-    events: [{ sequence: 10, event: 'turn_event', data: runtimeEvent }],
-  });
+  const runtimeEvent = {
+    version: 1,
+    turnId: 'turn-1',
+    seq: 1,
+    at: 100,
+    type: 'generation',
+    phase: 'streaming',
+  };
+  globalThis.fetch = async () =>
+    jsonResponse({
+      turn: { id: 'turn-1', status: 'completed', fullText: 'Recovered.' },
+      events: [{ sequence: 10, event: 'turn_event', data: runtimeEvent }],
+    });
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const events = [];
-  const result = await recoverDetachedTurn('turn-1', { currentFull: '', onDelta() {}, opts: { onTurnEvent: (event) => events.push(event) }, signal: new AbortController().signal });
+  const result = await recoverDetachedTurn('turn-1', {
+    currentFull: '',
+    onDelta() {},
+    opts: { onTurnEvent: (event) => events.push(event) },
+    signal: new AbortController().signal,
+  });
   assert.deepEqual(events, [runtimeEvent]);
   assert.equal(result.text, 'Recovered.');
 });
@@ -107,11 +128,27 @@ test('a completed reconnect replays public runtime events before returning the r
 test('completed recovery restores a checkpoint beyond the initial event-history page', async () => {
   globalThis.document = { cookie: '' };
   const { createTurnRuntime, reduceTurnEvent } = await import('@socrates/core');
-  const snapshot = reduceTurnEvent(createTurnRuntime('turn-1'), { version: 1, turnId: 'turn-1', seq: 800, at: 100, type: 'turn.done', phase: 'done' });
-  globalThis.fetch = async () => jsonResponse({ turn: { id: 'turn-1', status: 'completed', fullText: 'Done.', turnRuntime: snapshot }, events: [] });
+  const snapshot = reduceTurnEvent(createTurnRuntime('turn-1'), {
+    version: 1,
+    turnId: 'turn-1',
+    seq: 800,
+    at: 100,
+    type: 'turn.done',
+    phase: 'done',
+  });
+  globalThis.fetch = async () =>
+    jsonResponse({
+      turn: { id: 'turn-1', status: 'completed', fullText: 'Done.', turnRuntime: snapshot },
+      events: [],
+    });
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const snapshots = [];
-  await recoverDetachedTurn('turn-1', { currentFull: '', onDelta() {}, opts: { onTurnSnapshot: (value) => snapshots.push(value) }, signal: new AbortController().signal });
+  await recoverDetachedTurn('turn-1', {
+    currentFull: '',
+    onDelta() {},
+    opts: { onTurnSnapshot: (value) => snapshots.push(value) },
+    signal: new AbortController().signal,
+  });
   assert.deepEqual(snapshots, [snapshot]);
 });
 
@@ -119,21 +156,24 @@ test('reconnect suppresses already visible content and duplicate durable frames'
   globalThis.document = { cookie: '' };
   globalThis.fetch = async (url) => {
     if (String(url).includes('/events?')) {
-      return eventStreamResponse([
-        eventFrame(1, 'content', { delta: 'Known ' }),
-        eventFrame(2, 'content', { delta: 'answer continues' }),
-        eventFrame(2, 'content', { delta: 'answer continues' }),
-        eventFrame(3, 'content', { delta: '.' }),
-        eventFrame(4, 'turn_done', {}),
-        eventFrame(5, 'content', { delta: 'must not appear' }),
-      ].join(''));
+      return eventStreamResponse(
+        [
+          eventFrame(1, 'content', { delta: 'Known ' }),
+          eventFrame(2, 'content', { delta: 'answer continues' }),
+          eventFrame(2, 'content', { delta: 'answer continues' }),
+          eventFrame(3, 'content', { delta: '.' }),
+          eventFrame(4, 'turn_done', {}),
+          eventFrame(5, 'content', { delta: 'must not appear' }),
+        ].join(''),
+      );
     }
     return jsonResponse({ turn: { id: 'turn-1', status: 'open' }, events: [] });
   };
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
   const result = await recoverDetachedTurn('turn-1', {
-    currentFull: 'Known answer ', onDelta: (text) => emitted.push(text),
+    currentFull: 'Known answer ',
+    onDelta: (text) => emitted.push(text),
   });
   assert.deepEqual(emitted, ['continues', '.']);
   assert.equal(result.text, 'Known answer continues.');
@@ -151,7 +191,8 @@ test('stopping recovery aborts a pending snapshot request without publishing lat
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
   const emitted = [];
   const result = await recoverDetachedTurn('turn-1', {
-    signal: abort.signal, onDelta: (text) => emitted.push(text),
+    signal: abort.signal,
+    onDelta: (text) => emitted.push(text),
   });
   assert.equal(requestSignal.aborted, true);
   assert.equal(requestSignal.reason, 'session-switch');
@@ -164,7 +205,8 @@ test('active recovery starts subscribing after a single snapshot round trip', as
   const calls = [];
   globalThis.fetch = async (url) => {
     calls.push(String(url));
-    if (String(url).includes('/events?')) return eventStreamResponse(eventFrame(1, 'turn_done', {}));
+    if (String(url).includes('/events?'))
+      return eventStreamResponse(eventFrame(1, 'turn_done', {}));
     return jsonResponse({ turn: { status: 'open' }, events: [] });
   };
   const { recoverDetachedTurn } = await import('../src/chat/detachedTurnRecovery.ts');
@@ -181,15 +223,20 @@ test('a second connection resumes from the last sequence without repeating conte
     if (String(url).includes('/events?')) {
       urls.push(String(url));
       connections++;
-      if (connections === 1) return eventStreamResponse([
-        eventFrame(1, 'content', { delta: 'Known ' }),
-        eventFrame(2, 'tool_use', { calls: [{ id: 'search-1' }] }),
-      ].join(''));
-      return eventStreamResponse([
-        eventFrame(2, 'tool_use', { calls: [{ id: 'search-1' }] }),
-        eventFrame(3, 'content', { delta: 'answer.' }),
-        eventFrame(4, 'turn_done', {}),
-      ].join(''));
+      if (connections === 1)
+        return eventStreamResponse(
+          [
+            eventFrame(1, 'content', { delta: 'Known ' }),
+            eventFrame(2, 'tool_use', { calls: [{ id: 'search-1' }] }),
+          ].join(''),
+        );
+      return eventStreamResponse(
+        [
+          eventFrame(2, 'tool_use', { calls: [{ id: 'search-1' }] }),
+          eventFrame(3, 'content', { delta: 'answer.' }),
+          eventFrame(4, 'turn_done', {}),
+        ].join(''),
+      );
     }
     return jsonResponse({ turn: { status: 'open' }, events: [] });
   };
@@ -197,7 +244,8 @@ test('a second connection resumes from the last sequence without repeating conte
   const emitted = [];
   const tools = [];
   const result = await recoverDetachedTurn('turn-1', {
-    currentFull: 'Known ', onDelta: (text) => emitted.push(text),
+    currentFull: 'Known ',
+    onDelta: (text) => emitted.push(text),
     opts: { onToolUse: (calls) => tools.push(calls) },
   });
   assert.deepEqual(emitted, ['answer.']);

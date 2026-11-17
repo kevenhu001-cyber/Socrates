@@ -1,4 +1,3 @@
-
 /* ==========================================================================
    mobile-parity.css — ChatGPT-mobile layout parity layer.
 
@@ -16,7 +15,6 @@
   /* ─────────────────────────────────────────────────────────────
    * 1. Top bar — plain hamburger, centered segmented tabs.
    * ───────────────────────────────────────────────────────────── */
-
 
   #appShell#appShell #sidebarOpenBtn {
     border: 0 !important;
@@ -62,10 +60,10 @@
      middle of the black band. The focused attribute covers both the
      overlay and layout-resize keyboard modes. */
   :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-open="true"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="opening"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="open"] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase="closing"] #appShell#appShell #topicTitle.greeting {
+  :root[data-keyboard-open='true'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='opening'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='open'] #appShell#appShell #topicTitle.greeting,
+  :root[data-keyboard-phase='closing'] #appShell#appShell #topicTitle.greeting {
     visibility: hidden !important;
   }
 
@@ -97,8 +95,6 @@
 
   /* Send / voice — solid ink circle (inverted in dark mode). */
 
-
-
   /* ─────────────────────────────────────────────────────────────
    * 4. Conversation — dark user bubble, centered disclaimer.
    *
@@ -125,7 +121,7 @@
    * ───────────────────────────────────────────────────────────── */
 
   #appShell#appShell .sidebar-nav-btn.active,
-  #appShell#appShell .sidebar-nav-btn[aria-current="page"] {
+  #appShell#appShell .sidebar-nav-btn[aria-current='page'] {
     background: var(--cg-surface-hover) !important;
   }
 
@@ -160,7 +156,6 @@
   body #composerToolsMenu .composer-tools-desktop-items {
     display: none !important;
   }
-
 }
 
 /* --------------------------------------------------------------------------
@@ -169,26 +164,19 @@
    workbench rules loaded earlier in the bundle.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  [data-mode="dark"] #appShell,
-[data-mode="dark"] #appShell .main-content,
-[data-mode="dark"] #appShell .main-bg {
+  [data-mode='dark'] #appShell,
+  [data-mode='dark'] #appShell .main-content,
+  [data-mode='dark'] #appShell .main-bg {
     background: var(--ui-bg-page) !important;
   }
-  [data-mode="dark"] #appShell .top-bar {
+  [data-mode='dark'] #appShell .top-bar {
     background: var(--ui-bg-page) !important;
   }
-
-
-
-
-
-
 
   #appShell#appShell #sidebarOpenBtn svg {
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
   }
-
 
   body.workspace-active #appShell .main-page,
   body.workspace-active #appShell .scheduled-directory {
@@ -209,7 +197,7 @@
   }
 
   #appShell .project-icon,
-#appShell .task-row .workspace-row-icon {
+  #appShell .task-row .workspace-row-icon {
     width: 40px !important;
     min-width: 40px !important;
     height: 40px !important;
@@ -217,10 +205,9 @@
   }
 
   #appShell .project-row,
-#appShell .scheduled-recommendation,
-#appShell .task-row {
+  #appShell .scheduled-recommendation,
+  #appShell .task-row {
   }
-
 
   #appShell .scheduled-recommendation-add {
     width: 32px !important;
@@ -244,22 +231,20 @@
      keep the landing composer at its compact 104px reference height. */
 }
 
-[data-mode="light"] body #composerToolsMenu {
+[data-mode='light'] body #composerToolsMenu {
   background: var(--ui-bg-page) !important;
   border-color: rgb(0 0 0 / 12%) !important;
 }
 
-[data-mode="light"] body #composerToolsMenu .composer-tools-copy span,
-[data-mode="light"] body #composerToolsMenu .composer-tools-plugin-name {
+[data-mode='light'] body #composerToolsMenu .composer-tools-copy span,
+[data-mode='light'] body #composerToolsMenu .composer-tools-plugin-name {
   color: var(--cg-text) !important;
 }
-
 
 /* The legacy workbench layer has a more specific 108px multiline rule. Keep
    the screenshot-sized two-tier draft authoritative at the end of the phone
    cascade: 96px for the editor tier plus a 42px control tier. */
 @media (max-width: 768px) {
-
   /* Prevent iOS Safari auto-zoom and align all system/dialog inputs */
   #appShell .workspace-field input,
   #appShell .workspace-field textarea,
@@ -276,4 +261,3 @@
     display: none !important;
   }
 }
-

@@ -20,15 +20,28 @@ export const executeWebSearch: ToolExecutor = async (
   const { emitter, req } = ctx;
   let result: ToolResult;
 
-  const searchQuery = String(args.query || args.q || args.search_query || args.keyword || '').trim();
+  const searchQuery = String(
+    args.query || args.q || args.search_query || args.keyword || '',
+  ).trim();
   /* Schema declares minimum:1, but argument validation is best-effort —
      don't fan out an empty query across every engine. */
   if (!searchQuery) {
-    result = { status: 'failed', error: 'missing_query', errorCode: 'invalid_query', retryable: true };
+    result = {
+      status: 'failed',
+      error: 'missing_query',
+      errorCode: 'invalid_query',
+      retryable: true,
+    };
     emitter.event('tool_result', {
-      id: call.id, ok: false, status: 'failed', output: '',
-      error: 'missing_query', errorCode: 'invalid_query', retryable: true,
-      userMessage: '搜索关键词为空。', detail: 'Provide a non-empty `query` string.',
+      id: call.id,
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: 'missing_query',
+      errorCode: 'invalid_query',
+      retryable: true,
+      userMessage: '搜索关键词为空。',
+      detail: 'Provide a non-empty `query` string.',
     });
     return { result };
   }
@@ -43,7 +56,8 @@ export const executeWebSearch: ToolExecutor = async (
     try {
       searchResults = (await webSearch(searchQuery, searchCount, {
         userId: req.userId ?? undefined,
-        locale: ((req.headers['accept-language'] || '') as string).split(',')[0].trim() || undefined,
+        locale:
+          ((req.headers['accept-language'] || '') as string).split(',')[0].trim() || undefined,
       })) as SearchResult[];
       searchError = null;
       break;
@@ -58,19 +72,27 @@ export const executeWebSearch: ToolExecutor = async (
   }
 
   if (searchError) {
-    const detail = searchError.diagnostics || String(searchError && searchError.message || searchError);
+    const detail =
+      searchError.diagnostics || String((searchError && searchError.message) || searchError);
     result = {
       status: 'failed',
-      error: searchError.code || String(searchError && searchError.message || searchError),
+      error: searchError.code || String((searchError && searchError.message) || searchError),
       errorCode: searchError.code || 'web_search_failed',
       retryable: searchError.retryable !== false,
       userMessage: '暂时无法连接搜索服务，请稍后重试。',
       detail,
     };
     emitter.event('tool_result', {
-      id: call.id, ok: false, status: 'failed', output: '', results: [],
-      error: result.error, errorCode: result.errorCode,
-      retryable: result.retryable, userMessage: result.userMessage, detail,
+      id: call.id,
+      ok: false,
+      status: 'failed',
+      output: '',
+      results: [],
+      error: result.error,
+      errorCode: result.errorCode,
+      retryable: result.retryable,
+      userMessage: result.userMessage,
+      detail,
     });
     return { result };
   }
@@ -85,7 +107,11 @@ export const executeWebSearch: ToolExecutor = async (
       const date = r.date ? `    Date: ${String(r.date).slice(0, 30)}\n` : '';
       const source = r.source ? `    Source: ${r.source}\n` : '';
       let normalizedUrl = '';
-      try { normalizedUrl = new URL(url).href; } catch { /* Invalid search URLs never receive source IDs. */ }
+      try {
+        normalizedUrl = new URL(url).href;
+      } catch {
+        /* Invalid search URLs never receive source IDs. */
+      }
       const registered = sources.find((entry) => entry.url === normalizedUrl);
       return `[${idx}] ${title}${registered ? `\n    Source ID: ${registered.id}` : ''}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;
     });
@@ -93,7 +119,9 @@ export const executeWebSearch: ToolExecutor = async (
     const output = blocks.join('\n\n') + footer;
     result = { status: 'completed', output, results: searchResults, retryable: false };
     emitter.event('tool_result', {
-      id: call.id, ok: true, status: 'completed',
+      id: call.id,
+      ok: true,
+      status: 'completed',
       output,
       retryable: false,
       results: searchResults.map((r) => ({
@@ -110,12 +138,18 @@ export const executeWebSearch: ToolExecutor = async (
 
   result = {
     status: 'completed',
-    output: 'No search results found. Try a shorter, more specific query, or wait a few minutes if you just queried the same topic.',
-    results: [], retryable: false,
+    output:
+      'No search results found. Try a shorter, more specific query, or wait a few minutes if you just queried the same topic.',
+    results: [],
+    retryable: false,
   };
   emitter.event('tool_result', {
-    id: call.id, ok: true, status: 'completed',
-    output: result.output, results: [], retryable: false,
+    id: call.id,
+    ok: true,
+    status: 'completed',
+    output: result.output,
+    results: [],
+    retryable: false,
   });
   return { result };
 };

@@ -137,7 +137,9 @@ function clampConfig(config: Partial<PlaybackConfig> | undefined): PlaybackConfi
   c.arrivalSampleMinMs = Math.max(0, c.arrivalSampleMinMs);
   c.minSmoothedCps = Math.max(1, c.minSmoothedCps);
   c.maxSmoothedCps = Math.max(c.minSmoothedCps, c.maxSmoothedCps);
-  c.maxLagMs = Number.isFinite(c.maxLagMs) ? Math.max(0, c.maxLagMs) : DEFAULT_PLAYBACK_CONFIG.maxLagMs;
+  c.maxLagMs = Number.isFinite(c.maxLagMs)
+    ? Math.max(0, c.maxLagMs)
+    : DEFAULT_PLAYBACK_CONFIG.maxLagMs;
   return c;
 }
 
@@ -182,10 +184,7 @@ export function computeCps(
  * Create a playback clock. `startMs` seeds the internal timestamp so the first
  * tick measures a real delta rather than jumping from 0.
  */
-export function createPlaybackClock(
-  config?: Partial<PlaybackConfig>,
-  startMs = 0,
-): PlaybackClock {
+export function createPlaybackClock(config?: Partial<PlaybackConfig>, startMs = 0): PlaybackClock {
   const cfg = clampConfig(config);
   let total = 0;
   let played = 0;
@@ -223,9 +222,10 @@ export function createPlaybackClock(
     if (added <= 0 || cfg.arrivalEmaAlpha === 0) return;
     const instant = (added * 1000) / dt;
     if (!Number.isFinite(instant) || instant <= 0) return;
-    smoothedArrivalCps = smoothedArrivalCps == null
-      ? instant
-      : smoothedArrivalCps + cfg.arrivalEmaAlpha * (instant - smoothedArrivalCps);
+    smoothedArrivalCps =
+      smoothedArrivalCps == null
+        ? instant
+        : smoothedArrivalCps + cfg.arrivalEmaAlpha * (instant - smoothedArrivalCps);
   }
 
   function currentState(nowMs: number): PlaybackState {
@@ -285,7 +285,8 @@ export function createPlaybackClock(
            burst as an instantaneous jump. */
         carry = 0;
       }
-      while (arrivalHead < arrivals.length && arrivals[arrivalHead].total <= played) arrivalHead += 1;
+      while (arrivalHead < arrivals.length && arrivals[arrivalHead].total <= played)
+        arrivalHead += 1;
       if (arrivalHead === arrivals.length) {
         arrivals = [];
         arrivalHead = 0;
@@ -294,9 +295,7 @@ export function createPlaybackClock(
         arrivalHead = 0;
       }
       const state = currentState(nowMs);
-      const cps = pending() > 0
-        ? computeCps(total - before, cfg, draining, smoothedArrivalCps)
-        : 0;
+      const cps = pending() > 0 ? computeCps(total - before, cfg, draining, smoothedArrivalCps) : 0;
       return { playedLen: played, revealed: played - before, cps, state };
     },
     revealNow(nowMs: number): TickResult {

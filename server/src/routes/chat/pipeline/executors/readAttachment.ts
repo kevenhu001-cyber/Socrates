@@ -26,20 +26,34 @@ export const executeReadAttachment: ToolExecutor = async (
   const { emitter, req } = ctx;
   let result: ToolResult;
 
-  const fail = (code: string, retryable: boolean, detail: string, userMessage = '无法读取该附件。'): ToolExecutionResult => {
+  const fail = (
+    code: string,
+    retryable: boolean,
+    detail: string,
+    userMessage = '无法读取该附件。',
+  ): ToolExecutionResult => {
     result = { status: 'failed', error: code, errorCode: code, retryable };
     emitter.event('tool_result', {
-      id: call.id, ok: false, status: 'failed', output: '',
-      error: code, errorCode: code, retryable,
-      userMessage, detail,
+      id: call.id,
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: code,
+      errorCode: code,
+      retryable,
+      userMessage,
+      detail,
     });
     return { result };
   };
 
   const fileId = String(args.fileId || args.file_id || '').trim();
   if (!isUuid(fileId)) {
-    return fail('invalid_file_id', false,
-      'Pass the fileId uuid exactly as shown in the [Attached file: …] pointer.');
+    return fail(
+      'invalid_file_id',
+      false,
+      'Pass the fileId uuid exactly as shown in the [Attached file: …] pointer.',
+    );
   }
   if (!req.userId) {
     return fail('unauthenticated', false, 'No authenticated user on this request.');
@@ -61,19 +75,30 @@ export const executeReadAttachment: ToolExecutor = async (
     const output = formatAttachmentReadOutput(page);
     result = { status: 'completed', output, retryable: false };
     emitter.event('tool_result', {
-      id: call.id, ok: true, status: 'completed', output,
-      fileId: page.fileId, fileName: page.name, mimeType: page.mimeType,
-      offset: page.offset, returnedChars: page.returnedChars,
-      totalChars: page.totalChars, hasMore: page.hasMore,
+      id: call.id,
+      ok: true,
+      status: 'completed',
+      output,
+      fileId: page.fileId,
+      fileName: page.name,
+      mimeType: page.mimeType,
+      offset: page.offset,
+      returnedChars: page.returnedChars,
+      totalChars: page.totalChars,
+      hasMore: page.hasMore,
       retryable: false,
       userMessage: `已读取附件 ${page.name}`,
     });
   } catch (err) {
     if (err instanceof AttachmentReadError) {
-      const userMessage = err.code === 'file_not_found' ? '附件不存在或已被删除。'
-        : err.code === 'encrypted' ? '该附件已加密或设有密码，无法读取。'
-        : err.code === 'unsupported_type' ? '暂不支持读取该文件格式。'
-        : '无法读取该附件。';
+      const userMessage =
+        err.code === 'file_not_found'
+          ? '附件不存在或已被删除。'
+          : err.code === 'encrypted'
+            ? '该附件已加密或设有密码，无法读取。'
+            : err.code === 'unsupported_type'
+              ? '暂不支持读取该文件格式。'
+              : '无法读取该附件。';
       return fail(err.code, err.retryable, err.message, userMessage);
     }
     const message = (err as Error)?.message || String(err);

@@ -10,10 +10,15 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  hashPassword, comparePassword,
-  generateSessionToken, generateShareToken, generateShortToken,
+  hashPassword,
+  comparePassword,
+  generateSessionToken,
+  generateShareToken,
+  generateShortToken,
   generateLoginCode,
-  encrypt, decrypt, deriveEncryptionKey,
+  encrypt,
+  decrypt,
+  deriveEncryptionKey,
 } from '../src/lib/crypto.js';
 
 describe('crypto: session / share / verification token generators', () => {

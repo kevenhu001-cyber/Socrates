@@ -38,8 +38,15 @@ const CODE_INTERPRETER_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/code-inter
  * mode gets (the next-questions contract). Hot-reloaded like the others. */
 const LEARNING_MODES_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/learning-modes.md');
 
-export const LEARNING_MODE_IDS = ['think', 'recall', 'connect', 'diagnose', 'mistakes', 'practice'] as const;
-export type LearningModeId = typeof LEARNING_MODE_IDS[number];
+export const LEARNING_MODE_IDS = [
+  'think',
+  'recall',
+  'connect',
+  'diagnose',
+  'mistakes',
+  'practice',
+] as const;
+export type LearningModeId = (typeof LEARNING_MODE_IDS)[number];
 
 interface PromptFiles {
   stat(path: string): Promise<{ mtimeMs: number; size: number }>;
@@ -75,20 +82,34 @@ export function createPromptLoader(files: PromptFiles = fs, clock = () => new Da
         pending.set(filePath, work);
       }
       let raw: string | null;
-      try { raw = await work; }
-      finally { if (pending.get(filePath) === work) pending.delete(filePath); }
+      try {
+        raw = await work;
+      } finally {
+        if (pending.get(filePath) === work) pending.delete(filePath);
+      }
       if (raw === null || !interpolateDates) return raw;
       const now = clock();
-      return raw.replace(/\[current date\]/g, now.toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-      })).replace(/\[current year\]/g, String(now.getFullYear()));
+      return raw
+        .replace(
+          /\[current date\]/g,
+          now.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+        )
+        .replace(/\[current year\]/g, String(now.getFullYear()));
     },
-    clear() { cache.clear(); },
+    clear() {
+      cache.clear();
+    },
   };
 }
 
 const promptLoader = createPromptLoader();
-const loadPrompt = (filePath: string) => promptLoader.load(filePath, filePath === BEAGLE_PROMPT_PATH);
+const loadPrompt = (filePath: string) =>
+  promptLoader.load(filePath, filePath === BEAGLE_PROMPT_PATH);
 
 /* ─────────────────────────────────────────────────────────────────
    Public API
@@ -136,7 +157,10 @@ export async function getCodeInterpreterPrompt() {
 }
 
 /** Split the learning-modes file into its `## shared` and `## mode: id` sections. */
-export function parseLearningModeSections(raw: string): { shared: string; modes: Record<string, string> } {
+export function parseLearningModeSections(raw: string): {
+  shared: string;
+  modes: Record<string, string>;
+} {
   const modes: Record<string, string> = {};
   let shared = '';
   const parts = raw.split(/^## +/m).slice(1);

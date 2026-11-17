@@ -9,7 +9,9 @@ export function detectComposerAnimSupport(): boolean {
        track interpolation. Probe a second time with an explicitly
        `0fr`-shaped value as the parsed test. */
     return CSS.supports('grid-template-rows', '0fr');
-  } catch (_) { /* empty-catch: intentional — CSS.supports failure in older browsers */ return false; }
+  } catch (_) {
+    /* empty-catch: intentional — CSS.supports failure in older browsers */ return false;
+  }
 }
 
 export function applyComposerAnimClass(): void {

@@ -1,5 +1,12 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { Animated, Platform, Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Animated,
+  Platform,
+  Pressable,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from './theme';
 import { UiText } from './UiText';
@@ -20,11 +27,12 @@ export function usePressFeedback() {
      ring (focus-visible), so a click never leaves a black outline behind. */
   const pointer = useRef(false);
   const native = Platform.OS !== 'web';
-  const to = (value: number) => Animated.timing(scale, {
-    toValue: value,
-    duration: uiMotion.fast,
-    useNativeDriver: native,
-  }).start();
+  const to = (value: number) =>
+    Animated.timing(scale, {
+      toValue: value,
+      duration: uiMotion.fast,
+      useNativeDriver: native,
+    }).start();
   return {
     scale,
     hovered,
@@ -50,7 +58,9 @@ export function usePressFeedback() {
 /** Web: ask the focused node for `:focus-visible` (the browser's own
  * keyboard-vs-pointer heuristic). Native: focus without a press is keyboard. */
 function isKeyboardFocus(event: unknown, pressed: boolean): boolean {
-  const target = (event as { nativeEvent?: { target?: { matches?: (selector: string) => boolean } } } | null)?.nativeEvent?.target;
+  const target = (
+    event as { nativeEvent?: { target?: { matches?: (selector: string) => boolean } } } | null
+  )?.nativeEvent?.target;
   if (target && typeof target.matches === 'function') {
     try {
       return target.matches(':focus-visible');
@@ -76,15 +86,29 @@ export interface UiButtonProps extends Omit<PressableProps, 'children' | 'style'
  * Pill button. `primary` is the black capsule, `secondary` the pale grey
  * capsule, `ghost` a transparent capsule that fills on hover.
  */
-export function UiButton({ label, variant = 'primary', size = 'md', leading, selected, style, ...rest }: UiButtonProps) {
+export function UiButton({
+  label,
+  variant = 'primary',
+  size = 'md',
+  leading,
+  selected,
+  style,
+  ...rest
+}: UiButtonProps) {
   const { colors } = useUiTheme();
   const { scale, hovered, focused, handlers } = usePressFeedback();
   const inked = variant === 'primary' || selected === true;
   const background = inked
-    ? (hovered ? colors.inkHover : colors.ink)
+    ? hovered
+      ? colors.inkHover
+      : colors.ink
     : variant === 'secondary'
-      ? (hovered ? colors.fillHover : colors.fill)
-      : (hovered ? colors.fill : 'transparent');
+      ? hovered
+        ? colors.fillHover
+        : colors.fill
+      : hovered
+        ? colors.fill
+        : 'transparent';
   return (
     <Pressable
       accessibilityRole="button"
@@ -112,7 +136,11 @@ export function UiButton({ label, variant = 'primary', size = 'md', leading, sel
         }}
       >
         {leading}
-        <UiText variant={size === 'sm' ? 'labelSm' : 'label'} tone={inked ? 'onInk' : 'ink'} numberOfLines={1}>
+        <UiText
+          variant={size === 'sm' ? 'labelSm' : 'label'}
+          tone={inked ? 'onInk' : 'ink'}
+          numberOfLines={1}
+        >
           {label}
         </UiText>
       </Animated.View>

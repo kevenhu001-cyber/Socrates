@@ -3,10 +3,7 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import {
-  KEYBOARD_PIN_SLACK,
-  decideKeyboardAnchorAction,
-} from '../src/ui/scrollDecision.ts';
+import { KEYBOARD_PIN_SLACK, decideKeyboardAnchorAction } from '../src/ui/scrollDecision.ts';
 
 /*
  * The keyboard-transition anchor contract:

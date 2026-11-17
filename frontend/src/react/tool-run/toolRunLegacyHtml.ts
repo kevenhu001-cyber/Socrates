@@ -1,5 +1,5 @@
-import {sortableToolCalls} from './toolRunLayout.ts';
-import type {ToolCallRecord} from './toolRunModel.types.ts';
+import { sortableToolCalls } from './toolRunLayout.ts';
+import type { ToolCallRecord } from './toolRunModel.types.ts';
 
 /* ── back-compat for HTML baked before this renderer existed ────────────── */
 
@@ -29,7 +29,8 @@ const LEGACY_TOOL_SELECTORS = [
  */
 export function stripLegacyToolHtml(html: string): string {
   const source = String(html || '');
-  if (!source || !/tool-inline|tool-run-group|agent-tool-card|think-tools/.test(source)) return source;
+  if (!source || !/tool-inline|tool-run-group|agent-tool-card|think-tools/.test(source))
+    return source;
   return stripStoredMarkup(source, LEGACY_TOOL_SELECTORS);
 }
 
@@ -43,10 +44,7 @@ function stripStoredMarkup(source: string, selectors: readonly string[]): string
   const parser = (globalThis as unknown as { DOMParser?: typeof DOMParser }).DOMParser;
   if (typeof parser !== 'function') return source;
   try {
-    const doc = new parser().parseFromString(
-      `<body>${source}</body>`,
-      'text/html',
-    );
+    const doc = new parser().parseFromString(`<body>${source}</body>`, 'text/html');
     const body = doc.body;
     if (!body) return source;
     for (const selector of selectors) {

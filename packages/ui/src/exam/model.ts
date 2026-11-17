@@ -6,7 +6,12 @@
  */
 import type { ReactNode } from 'react';
 import type {
-  ExamAnswers, ExamDraft, ExamDraftPatch, ExamQuestion, ExamQuestionType, ExamResults,
+  ExamAnswers,
+  ExamDraft,
+  ExamDraftPatch,
+  ExamQuestion,
+  ExamQuestionType,
+  ExamResults,
 } from '../examModel';
 
 export type { ExamAnswers, ExamDraft, ExamDraftPatch, ExamQuestion, ExamQuestionType, ExamResults };
@@ -33,18 +38,18 @@ export type ExamScreen =
   | { kind: 'empty'; message: string; detail?: string }
   | { kind: 'error'; message: string; detail?: string }
   | {
-    kind: 'questions';
-    questions: ExamQuestion[];
-    answers: ExamAnswers;
-    current: number;
-    answered: number[];
-    readOnly: boolean;
-    /** Submit-gate message, already translated by the host. */
-  }
+      kind: 'questions';
+      questions: ExamQuestion[];
+      answers: ExamAnswers;
+      current: number;
+      answered: number[];
+      readOnly: boolean;
+      /** Submit-gate message, already translated by the host. */
+    }
   | { kind: 'results'; results: ExamResults };
 
 export type ExamCommand =
-  | 'generate' | 'cancel' | 'close' | 'form' | 'submit' | 'previous' | 'next' | 'jump';
+  'generate' | 'cancel' | 'close' | 'form' | 'submit' | 'previous' | 'next' | 'jump';
 
 export type ExamCommandHandler = (command: ExamCommand, index?: number) => void;
 

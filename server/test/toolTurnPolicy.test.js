@@ -24,11 +24,16 @@ test('two malformed calls no longer disable the toolset', () => {
 
 test('a third consecutive failure withdraws only the failing tool', () => {
   const policy = createToolTurnPolicy();
-  for (let i = 0; i < 3; i++) policy.recordResult('render_intelligent_ui', false, 'invalid_tool_arguments');
+  for (let i = 0; i < 3; i++)
+    policy.recordResult('render_intelligent_ui', false, 'invalid_tool_arguments');
   assert.deepEqual(policy.enabledToolNames(ALL_TOOLS), [
-    'web_search', 'code_interpreter', 'workspace_agent',
+    'web_search',
+    'code_interpreter',
+    'workspace_agent',
   ]);
-  assert.deepEqual(policy.disabledTools(), [{ name: 'render_intelligent_ui', reason: 'invalid_tool_arguments' }]);
+  assert.deepEqual(policy.disabledTools(), [
+    { name: 'render_intelligent_ui', reason: 'invalid_tool_arguments' },
+  ]);
   assert.equal(policy.disabledReason('render_intelligent_ui'), 'invalid_tool_arguments');
   assert.equal(policy.disabledReason('web_search'), null);
   assert.equal(policy.remainingRetries('render_intelligent_ui'), 0);
@@ -84,7 +89,10 @@ test('a failed call releases its duplicate slot so an identical retry can run', 
 });
 
 test('hashToolArguments ignores key order but not values', () => {
-  assert.equal(hashToolArguments({ a: 1, b: [2, { c: 3 }] }), hashToolArguments({ b: [2, { c: 3 }], a: 1 }));
+  assert.equal(
+    hashToolArguments({ a: 1, b: [2, { c: 3 }] }),
+    hashToolArguments({ b: [2, { c: 3 }], a: 1 }),
+  );
   assert.notEqual(hashToolArguments({ a: 1 }), hashToolArguments({ a: 2 }));
   assert.equal(typeof hashToolArguments(undefined), 'string');
 });
@@ -124,7 +132,11 @@ test('the wall-clock ceiling stops tools', () => {
 });
 
 test('snapshot reports the live budget for prompt generation', () => {
-  const policy = createToolTurnPolicy({ maxIterations: 5, maxTotalCalls: 9, perToolFailureLimit: 2 });
+  const policy = createToolTurnPolicy({
+    maxIterations: 5,
+    maxTotalCalls: 9,
+    perToolFailureLimit: 2,
+  });
   policy.noteIteration();
   policy.registerCall('web_search', 'a');
   policy.recordResult('web_search', false, 'invalid_tool_arguments');
@@ -150,7 +162,9 @@ test('environment variables tune the budget', () => {
     assert.equal(policy.maxIterations, 6);
     assert.equal(policy.maxCallsPerIteration, 3);
     policy.recordResult('web_search', false, 'invalid_tool_arguments');
-    assert.deepEqual(policy.disabledTools(), [{ name: 'web_search', reason: 'invalid_tool_arguments' }]);
+    assert.deepEqual(policy.disabledTools(), [
+      { name: 'web_search', reason: 'invalid_tool_arguments' },
+    ]);
   } finally {
     process.env = previous;
   }

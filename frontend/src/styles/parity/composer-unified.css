@@ -18,7 +18,9 @@
  */
 
 /* P_composer-single — parking slots for the moving shell. */
-#appShell .composer-slot { display: contents; }
+#appShell .composer-slot {
+  display: contents;
+}
 
 /* ── Host ──────────────────────────────────────────────────────────────── */
 #appShell .composer-shell {
@@ -35,18 +37,34 @@
   box-shadow: none;
   color: var(--foreground);
 }
-#appShell .composer-shell .composer-editor-root { display: block; min-width: 0; position: relative; }
+#appShell .composer-shell .composer-editor-root {
+  display: block;
+  min-width: 0;
+  position: relative;
+}
 #appShell .composer-shell .rich-composer {
   display: flex;
   flex-direction: column;
   gap: var(--ui-step-75);
   min-width: 0;
 }
-#appShell .composer-shell .composer-queue-banner { order: 0; }
+#appShell .composer-shell .composer-queue-banner {
+  order: 0;
+}
 #appShell .composer-shell .rich-composer > .tiptap,
-#appShell .composer-shell .rich-composer > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) { order: 1; min-width: 0; }
-#appShell .composer-shell .composer-plugin-chips { order: 2; }
-#appShell .composer-shell .rich-composer-toolbar { display: none; }
+#appShell
+  .composer-shell
+  .rich-composer
+  > :not(.composer-plugin-chips):not(.rich-composer-toolbar):not(.composer-queue-banner) {
+  order: 1;
+  min-width: 0;
+}
+#appShell .composer-shell .composer-plugin-chips {
+  order: 2;
+}
+#appShell .composer-shell .rich-composer-toolbar {
+  display: none;
+}
 
 /* ── Editor: site body-3 rhythm (16 / 26), quiet placeholder ───────────── */
 #appShell .composer-shell .rich-composer-editor {
@@ -68,7 +86,10 @@
   text-align: left;
   scrollbar-width: thin;
 }
-#appShell .composer-shell .rich-composer-editor[contenteditable="false"] { opacity: 0.65; cursor: not-allowed; }
+#appShell .composer-shell .rich-composer-editor[contenteditable='false'] {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
 #appShell .composer-shell :is(.rich-composer-editor, textarea, input):focus,
 #appShell .composer-shell :is(.rich-composer-editor, textarea, input):focus-visible {
   outline: none;
@@ -76,15 +97,38 @@
 }
 
 /* Draft content (Markdown shortcuts still produce rich blocks). */
-#appShell .composer-shell .rich-composer-editor p { margin: 0; }
-#appShell .composer-shell .rich-composer-editor p + p { margin-top: 0.45em; }
-#appShell .composer-shell .rich-composer-editor :is(h1, h2, h3) { margin: 0.2em 0; font-weight: var(--ui-font-weight-bold); line-height: 1.3; }
-#appShell .composer-shell .rich-composer-editor h1 { font-size: 1.35em; }
-#appShell .composer-shell .rich-composer-editor h2 { font-size: 1.2em; }
-#appShell .composer-shell .rich-composer-editor h3 { font-size: 1.08em; }
-#appShell .composer-shell .rich-composer-editor :is(ul, ol) { margin: 0.35em 0; padding-left: 1.45em; }
-#appShell .composer-shell .rich-composer-editor ul[data-type="taskList"] { list-style: none; padding-left: 0.25em; }
-#appShell .composer-shell .rich-composer-editor ul[data-type="taskList"] li { display: flex; gap: 7px; }
+#appShell .composer-shell .rich-composer-editor p {
+  margin: 0;
+}
+#appShell .composer-shell .rich-composer-editor p + p {
+  margin-top: 0.45em;
+}
+#appShell .composer-shell .rich-composer-editor :is(h1, h2, h3) {
+  margin: 0.2em 0;
+  font-weight: var(--ui-font-weight-bold);
+  line-height: 1.3;
+}
+#appShell .composer-shell .rich-composer-editor h1 {
+  font-size: 1.35em;
+}
+#appShell .composer-shell .rich-composer-editor h2 {
+  font-size: 1.2em;
+}
+#appShell .composer-shell .rich-composer-editor h3 {
+  font-size: 1.08em;
+}
+#appShell .composer-shell .rich-composer-editor :is(ul, ol) {
+  margin: 0.35em 0;
+  padding-left: 1.45em;
+}
+#appShell .composer-shell .rich-composer-editor ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0.25em;
+}
+#appShell .composer-shell .rich-composer-editor ul[data-type='taskList'] li {
+  display: flex;
+  gap: 7px;
+}
 #appShell .composer-shell .rich-composer-editor blockquote {
   margin: 0.35em 0;
   padding-left: 10px;
@@ -99,11 +143,17 @@
   font: var(--ui-font-weight-regular) 0.86em/1.5 var(--font-mono);
   white-space: pre-wrap;
 }
-#appShell .composer-shell .rich-composer-editor a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+#appShell .composer-shell .rich-composer-editor a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* Placeholder: the copy comes from --composer-placeholder, which React sets
    on .rich-composer so it survives runtime language switches. */
-#appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child { position: relative; }
+#appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child {
+  position: relative;
+}
 #appShell .composer-shell .rich-composer-editor p.is-editor-empty:first-child::before {
   content: var(--composer-placeholder);
   position: absolute;
@@ -128,26 +178,60 @@
   padding: 0;
   background: none;
 }
-#appShell .composer-shell .composer-plugin-chips:empty { display: none; }
+#appShell .composer-shell .composer-plugin-chips:empty {
+  display: none;
+}
 /* Chip internals: the badge and its remove button are shadcn `Badge` /
    `Button` (secondary + ghost) in `ComposerPluginChips.tsx`, so only the
    glyph plumbing and the phone overrides are left here. */
-#appShell .composer-shell .composer-plugin-chip-icon svg { display: block; width: 16px; height: 16px; }
-#appShell .composer-shell .composer-plugin-chip-fallback { background: var(--ui-bg-raised); font-size: 10px; }
-#appShell .composer-shell .composer-plugin-chip-remove svg { width: 14px; height: 14px; }
+#appShell .composer-shell .composer-plugin-chip-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+#appShell .composer-shell .composer-plugin-chip-fallback {
+  background: var(--ui-bg-raised);
+  font-size: 10px;
+}
+#appShell .composer-shell .composer-plugin-chip-remove svg {
+  width: 14px;
+  height: 14px;
+}
 
 /* Web-search chip: a shadcn secondary Button. The globe turns into × on
    hover = "click to remove"; that swap is the only thing left here. */
-#appShell .composer-tool-chip-icon { display: inline-grid; width: 20px; height: 20px; }
-#appShell .composer-tool-chip-icon svg { grid-area: 1 / 1; width: 20px; height: 20px; transition: opacity var(--ui-duration-hover) ease; }
-#appShell .composer-tool-chip-close { opacity: 0; }
+#appShell .composer-tool-chip-icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+}
+#appShell .composer-tool-chip-icon svg {
+  grid-area: 1 / 1;
+  width: 20px;
+  height: 20px;
+  transition: opacity var(--ui-duration-hover) ease;
+}
+#appShell .composer-tool-chip-close {
+  opacity: 0;
+}
 #appShell .composer-tool-chip:hover .composer-tool-chip-glyph,
-#appShell .composer-tool-chip:focus-visible .composer-tool-chip-glyph { opacity: 0; }
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-glyph {
+  opacity: 0;
+}
 #appShell .composer-tool-chip:hover .composer-tool-chip-close,
-#appShell .composer-tool-chip:focus-visible .composer-tool-chip-close { opacity: 1; }
+#appShell .composer-tool-chip:focus-visible .composer-tool-chip-close {
+  opacity: 1;
+}
 
 /* ── Control rail focus: the shared double ring (ink + paper gap) ─────── */
-#appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"], #effortTrigger):focus-visible {
+#appShell
+  .composer-shell
+  :is(
+    [data-composer-control='tools'],
+    [data-composer-control='mic'],
+    [data-composer-control='send'],
+    #effortTrigger
+  ):focus-visible {
   box-shadow: var(--ui-focus-shadow);
 }
 
@@ -156,7 +240,7 @@
    Both used to be hard cuts; the fill now eases and the glyph settles a
    touch smaller for the 220ms send beat (ui/sendGlyph.ts), so the swap
    reads as the same control changing state. */
-#appShell .composer-shell [data-composer-control="send"] {
+#appShell .composer-shell [data-composer-control='send'] {
   transition:
     background-color var(--ui-duration-fast) var(--ui-ease-out),
     opacity var(--ui-duration-fast) var(--ui-ease-out);
@@ -164,7 +248,10 @@
 #appShell .composer-shell #composerPrimaryBtnContent {
   transition: transform var(--ui-duration-fast) var(--ui-ease-out);
 }
-#appShell .composer-shell [data-composer-control="send"][data-sending="true"] #composerPrimaryBtnContent {
+#appShell
+  .composer-shell
+  [data-composer-control='send'][data-sending='true']
+  #composerPrimaryBtnContent {
   transform: scale(0.9);
 }
 
@@ -186,20 +273,48 @@
     --ui-elevation-field-hover: var(--ui-elevation-field);
     --ui-elevation-field-focus: var(--ui-elevation-field);
   }
-  [data-mode="light"] #appShell .composer-shell {
+  [data-mode='light'] #appShell .composer-shell {
     --ui-ink-secondary: var(--geist-gray-700);
     --ui-ink-tertiary: var(--geist-gray-700);
     --ui-elevation-field: 0 0 0 1px rgb(0 0 0 / 7%), 0 4px 24px rgb(0 0 0 / 5%);
   }
-  #appShell .composer-shell { width: 100%; max-width: none; }
+  #appShell .composer-shell {
+    width: 100%;
+    max-width: none;
+  }
   /* Reference phone question box: draft and placeholder at 16px. */
-  #appShell .composer-shell .rich-composer-editor { max-height: 220px; font-size: var(--ui-font-size-md); }
-  #appShell .composer-shell .composer-plugin-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar { display: none; }
-  #appShell .composer-shell :is(.composer-plugin-chip, .composer-tool-chip) { flex: 0 0 auto; }
-  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"]) { position: relative; }
-  #appShell .composer-shell :is([data-composer-control="tools"], [data-composer-control="mic"], [data-composer-control="send"])::before {
-    content: "";
+  #appShell .composer-shell .rich-composer-editor {
+    max-height: 220px;
+    font-size: var(--ui-font-size-md);
+  }
+  #appShell .composer-shell .composer-plugin-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #appShell .composer-shell .composer-plugin-chips::-webkit-scrollbar {
+    display: none;
+  }
+  #appShell .composer-shell :is(.composer-plugin-chip, .composer-tool-chip) {
+    flex: 0 0 auto;
+  }
+  #appShell
+    .composer-shell
+    :is(
+      [data-composer-control='tools'],
+      [data-composer-control='mic'],
+      [data-composer-control='send']
+    ) {
+    position: relative;
+  }
+  #appShell
+    .composer-shell
+    :is(
+      [data-composer-control='tools'],
+      [data-composer-control='mic'],
+      [data-composer-control='send']
+    )::before {
+    content: '';
     position: absolute;
     inset: -4px;
     pointer-events: auto;
@@ -219,29 +334,29 @@
   white-space: nowrap;
   user-select: none;
 }
-#appShell .composer-shell [data-composer-control="mic"] {
+#appShell .composer-shell [data-composer-control='mic'] {
   position: relative;
 }
-#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="recording"] {
+#appShell .composer-shell [data-composer-control='mic'][data-voice-phase='recording'] {
   background: var(--ui-action);
   color: var(--ui-on-action);
 }
-#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="recording"]::before {
-  content: "";
+#appShell .composer-shell [data-composer-control='mic'][data-voice-phase='recording']::before {
+  content: '';
   position: absolute;
   inset: -4px;
   border: 2px solid color-mix(in srgb, var(--ui-action) 38%, transparent);
   border-radius: 50%;
   pointer-events: none;
 }
-#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"] {
+#appShell .composer-shell [data-composer-control='mic'][data-voice-phase='transcribing'] {
   background: transparent;
 }
-#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"] svg {
+#appShell .composer-shell [data-composer-control='mic'][data-voice-phase='transcribing'] svg {
   opacity: 0;
 }
-#appShell .composer-shell [data-composer-control="mic"][data-voice-phase="transcribing"]::after {
-  content: "";
+#appShell .composer-shell [data-composer-control='mic'][data-voice-phase='transcribing']::after {
+  content: '';
   position: absolute;
   width: 14px;
   height: 14px;
@@ -252,7 +367,9 @@
   animation: composer-mic-spin 0.8s linear infinite;
 }
 @keyframes composer-mic-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Phone spectrum: the editor keeps its height, the bars take its place. */
@@ -277,7 +394,9 @@
   will-change: transform;
 }
 @media (max-width: 768px) {
-  #appShell .composer-shell.voice-recording-active .rich-composer-editor { visibility: hidden; }
+  #appShell .composer-shell.voice-recording-active .rich-composer-editor {
+    visibility: hidden;
+  }
 }
 
 /* Composer attachments: a strip of image tiles and document cards in the
@@ -294,7 +413,7 @@
   scroll-snap-type: x proximity;
   padding: 0;
 }
-#appShell .composer-shell [data-composer-slot="top"] > .attachment-chips {
+#appShell .composer-shell [data-composer-slot='top'] > .attachment-chips {
   padding: 0 0 2px;
 }
 
@@ -323,7 +442,10 @@
     transform var(--ui-duration-fast) var(--ui-ease-out);
 }
 @starting-style {
-  .composer-shell .attachment-chip { opacity: 0; transform: translateY(2px) scale(0.98); }
+  .composer-shell .attachment-chip {
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+  }
 }
 
 .composer-shell .attachment-chip:hover {
@@ -342,26 +464,26 @@
   background: var(--ui-bg-raised);
 }
 
-.composer-shell .attachment-chip-visual[data-kind="docx"],
-.composer-shell .attachment-chip-visual[data-kind="doc"],
-.composer-shell .attachment-chip-visual[data-kind="word"] {
+.composer-shell .attachment-chip-visual[data-kind='docx'],
+.composer-shell .attachment-chip-visual[data-kind='doc'],
+.composer-shell .attachment-chip-visual[data-kind='word'] {
   background: hsl(217 91% 60% / 0.1);
 }
-.composer-shell .attachment-chip-visual[data-kind="pdf"] {
+.composer-shell .attachment-chip-visual[data-kind='pdf'] {
   background: hsl(0 84% 60% / 0.1);
 }
-.composer-shell .attachment-chip-visual[data-kind="xlsx"],
-.composer-shell .attachment-chip-visual[data-kind="xls"],
-.composer-shell .attachment-chip-visual[data-kind="excel"],
-.composer-shell .attachment-chip-visual[data-kind="csv"] {
+.composer-shell .attachment-chip-visual[data-kind='xlsx'],
+.composer-shell .attachment-chip-visual[data-kind='xls'],
+.composer-shell .attachment-chip-visual[data-kind='excel'],
+.composer-shell .attachment-chip-visual[data-kind='csv'] {
   background: hsl(142 71% 45% / 0.1);
 }
-.composer-shell .attachment-chip-visual[data-kind="pptx"],
-.composer-shell .attachment-chip-visual[data-kind="ppt"],
-.composer-shell .attachment-chip-visual[data-kind="powerpoint"] {
+.composer-shell .attachment-chip-visual[data-kind='pptx'],
+.composer-shell .attachment-chip-visual[data-kind='ppt'],
+.composer-shell .attachment-chip-visual[data-kind='powerpoint'] {
   background: hsl(25 95% 53% / 0.1);
 }
-.composer-shell .attachment-chip-visual[data-kind="code"] {
+.composer-shell .attachment-chip-visual[data-kind='code'] {
   background: hsl(239 84% 67% / 0.1);
 }
 
@@ -445,7 +567,10 @@
   padding: 0;
   z-index: 3;
   opacity: 0.85;
-  transition: opacity var(--ui-duration-fast) ease, transform var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
+  transition:
+    opacity var(--ui-duration-fast) ease,
+    transform var(--ui-duration-fast) ease,
+    background-color var(--ui-duration-fast) ease;
 }
 .composer-shell .attachment-chip-remove:hover {
   background: var(--foreground);
@@ -503,8 +628,12 @@
   box-shadow: inset 0 0 0 1px var(--destructive);
 }
 @keyframes attachment-thumb-in {
-  from { opacity: 0.4; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .composer-shell .attachment-chip.is-image .attachment-chip-progress-fill {
   background: hsl(var(--always-white));
@@ -563,13 +692,18 @@
 /* ── Prompt Queue Banner (ChatGPT-style queued messages) ────────────────
    The banner is a shadcn card + Badge + ghost Buttons in
    `ComposerQueueBanner.tsx`; only its grid slot is the shell's business. */
-#appShell .composer-shell .composer-queue-banner { grid-area: queue; }
+#appShell .composer-shell .composer-queue-banner {
+  grid-area: queue;
+}
 
 /* RN-7 — one line weight for every outline glyph on this surface. The
    icons come from several sources (viewBox 16/20/24, stroke 1.6–2.2), so the
    width is set in screen pixels with a non-scaling stroke: every glyph draws
    the same 1.5px line whatever its viewBox or rendered size. */
-#appShell #composerInputWrap svg[stroke="currentColor"] :is(path, line, polyline, polygon, rect, circle, ellipse) {
+#appShell
+  #composerInputWrap
+  svg[stroke='currentColor']
+  :is(path, line, polyline, polygon, rect, circle, ellipse) {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
 }

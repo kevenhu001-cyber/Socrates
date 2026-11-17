@@ -20,7 +20,18 @@
  * hooks through react-native-web's compiled-style escape hatch.
  */
 import type { ReactNode } from 'react';
-import { Image, Pressable, StyleSheet, Text, View, type PressableStateCallbackType, type StyleProp, type ViewStyle, type ImageStyle, type TextStyle } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type PressableStateCallbackType,
+  type StyleProp,
+  type ViewStyle,
+  type ImageStyle,
+  type TextStyle,
+} from 'react-native';
 import { uiControl, uiMotion, uiRadius, uiStep } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -104,23 +115,41 @@ export interface SidebarBrandProps {
 }
 
 /** The mark and the wordmark. Decorative: the drawer is named by its nav landmark. */
-export function SidebarBrand({ name, logo, compact = false, hostStyle, logoStyle, nameStyle, caret = false, hideLogo = false }: SidebarBrandProps) {
+export function SidebarBrand({
+  name,
+  logo,
+  compact = false,
+  hostStyle,
+  logoStyle,
+  nameStyle,
+  caret = false,
+  hideLogo = false,
+}: SidebarBrandProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   const size = compact ? 24 : 20;
   return (
     <View aria-hidden style={[styles.brand, hostStyle]} {...dataSet({ part: 'sidebar-brand' })}>
-      {hideLogo ? null : <Image source={logo} accessibilityIgnoresInvertColors style={[{ width: size, height: size, borderRadius: uiRadius.xs }, logoStyle]} />}
+      {hideLogo ? null : (
+        <Image
+          source={logo}
+          accessibilityIgnoresInvertColors
+          style={[{ width: size, height: size, borderRadius: uiRadius.xs }, logoStyle]}
+        />
+      )}
       <Text
         numberOfLines={1}
         {...dataSet({ part: 'brand-name' })}
-        style={[{
-          fontFamily,
-          fontSize: Math.round(18 * typeScale * 10) / 10,
-          lineHeight: compact ? 28 : 20,
-          fontWeight: '600',
-          letterSpacing: compact ? -0.36 : -0.18,
-          color: colors.ink,
-        }, nameStyle]}
+        style={[
+          {
+            fontFamily,
+            fontSize: Math.round(18 * typeScale * 10) / 10,
+            lineHeight: compact ? 28 : 20,
+            fontWeight: '600',
+            letterSpacing: compact ? -0.36 : -0.18,
+            color: colors.ink,
+          },
+          nameStyle,
+        ]}
       >
         {name}
       </Text>
@@ -149,7 +178,18 @@ export interface SidebarIconActionProps {
   onPress: () => void;
 }
 
-export function SidebarIconAction({ id, icon, label, i18nKey, expanded, controls, visible = true, iconSize = 20, hostStyle, onPress }: SidebarIconActionProps) {
+export function SidebarIconAction({
+  id,
+  icon,
+  label,
+  i18nKey,
+  expanded,
+  controls,
+  visible = true,
+  iconSize = 20,
+  hostStyle,
+  onPress,
+}: SidebarIconActionProps) {
   const { colors } = useUiTheme();
   return (
     <Pressable
@@ -179,7 +219,13 @@ export function SidebarIconAction({ id, icon, label, i18nKey, expanded, controls
 }
 
 /** The trailing group of header actions. */
-export function SidebarHeaderActions({ children, hostStyle }: { children: ReactNode; hostStyle?: StyleProp<ViewStyle> }) {
+export function SidebarHeaderActions({
+  children,
+  hostStyle,
+}: {
+  children: ReactNode;
+  hostStyle?: StyleProp<ViewStyle>;
+}) {
   return <View style={[styles.actions, hostStyle]}>{children}</View>;
 }
 
@@ -207,7 +253,22 @@ export interface SidebarNavRowProps {
   onPress: () => void;
 }
 
-export function SidebarNavRow({ id, navKey, icon, label, i18nKey, badge, badgeI18nKey, active, menu, activeShadow, hostStyle, badgeStyle, labelStyle, onPress }: SidebarNavRowProps) {
+export function SidebarNavRow({
+  id,
+  navKey,
+  icon,
+  label,
+  i18nKey,
+  badge,
+  badgeI18nKey,
+  active,
+  menu,
+  activeShadow,
+  hostStyle,
+  badgeStyle,
+  labelStyle,
+  onPress,
+}: SidebarNavRowProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   return (
     <Pressable
@@ -226,13 +287,19 @@ export function SidebarNavRow({ id, navKey, icon, label, i18nKey, badge, badgeI1
         /* Resting rows set no paint of their own, so a host can still mark
            a row as the implied current place (new chat on the empty home). */
         active
-          ? { backgroundColor: colors.card, boxShadow: activeShadow ?? `0 0 0 1px ${colors.hairline}` }
+          ? {
+              backgroundColor: colors.card,
+              boxShadow: activeShadow ?? `0 0 0 1px ${colors.hairline}`,
+            }
           : pressed
             ? { backgroundColor: colors.fillPressed }
             : hovered || focused || menu?.expanded
               ? { backgroundColor: colors.fill }
               : null,
-        { transitionProperty: 'background-color', transitionDuration: `${uiMotion.fast}ms` } as object,
+        {
+          transitionProperty: 'background-color',
+          transitionDuration: `${uiMotion.fast}ms`,
+        } as object,
       ]}
     >
       <View aria-hidden style={styles.glyph} {...dataSet({ part: 'nav-glyph' })}>
@@ -252,7 +319,18 @@ export function SidebarNavRow({ id, navKey, icon, label, i18nKey, badge, badgeI1
             aria-hidden
             numberOfLines={1}
             {...dataSet({ i18nKey: badgeI18nKey })}
-            style={[styles.badge, { fontFamily, fontSize: Math.round(10 * typeScale * 10) / 10, lineHeight: 14, fontWeight: '600', color: colors.inkTertiary, borderColor: colors.hairlineStrong }, badgeStyle]}
+            style={[
+              styles.badge,
+              {
+                fontFamily,
+                fontSize: Math.round(10 * typeScale * 10) / 10,
+                lineHeight: 14,
+                fontWeight: '600',
+                color: colors.inkTertiary,
+                borderColor: colors.hairlineStrong,
+              },
+              badgeStyle,
+            ]}
           >
             {badge}
           </Text>

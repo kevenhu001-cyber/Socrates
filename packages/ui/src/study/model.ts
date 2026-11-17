@@ -132,7 +132,10 @@ export function separateBoxes(boxes: GraphNodeBox[], rounds = 60): GraphNodeBox[
  * learning-path edges) on a canvas sized for the node count, then a
  * de-overlap pass for the label pills, then normalised to start at the margin.
  */
-export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], activeIndex = -1): KnowledgeGraphModel {
+export function buildKnowledgeGraph(
+  nodes: readonly KnowledgeNodeInput[],
+  activeIndex = -1,
+): KnowledgeGraphModel {
   if (!nodes.length) return { nodes: [], edges: [], edgeKind: 'path', width: 0, height: 0 };
   const count = nodes.length;
   const canvasWidth = Math.max(240, Math.round(80 * Math.sqrt(count) + 50));
@@ -149,7 +152,10 @@ export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], active
       label,
       status: normalizeKnowledgeStatus(node.status),
       questions: typeof node.questions === 'number' && node.questions > 0 ? node.questions : 0,
-      confidence: typeof node.confidence_score === 'number' ? Math.max(0, Math.min(5, node.confidence_score)) : 0,
+      confidence:
+        typeof node.confidence_score === 'number'
+          ? Math.max(0, Math.min(5, node.confidence_score))
+          : 0,
       active: index === activeIndex,
       x: point.x - width / 2,
       y: point.y - GRAPH_NODE_HEIGHT / 2,
@@ -179,7 +185,16 @@ export function buildKnowledgeGraph(nodes: readonly KnowledgeNodeInput[], active
     const x2 = b.x + b.width / 2;
     const y2 = b.y + b.height / 2;
     const length = Math.hypot(x2 - x1, y2 - y1);
-    return { from, to, x1, y1, x2, y2, length, angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI };
+    return {
+      from,
+      to,
+      x1,
+      y1,
+      x2,
+      y2,
+      length,
+      angle: (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI,
+    };
   });
   return { nodes: boxes, edges, edgeKind: concept.length ? 'concept' : 'path', width, height };
 }
@@ -196,9 +211,15 @@ export function clampZoom(value: number): number {
 
 /** Scale that fits the whole canvas into the viewport, never enlarging past 1
  * and never shrinking labels below `floor` (large maps pan instead). */
-export function fitZoom(canvas: { width: number; height: number }, viewport: { width: number; height: number }, floor = GRAPH_FIT_MIN): number {
+export function fitZoom(
+  canvas: { width: number; height: number },
+  viewport: { width: number; height: number },
+  floor = GRAPH_FIT_MIN,
+): number {
   if (!canvas.width || !canvas.height || !viewport.width || !viewport.height) return 1;
-  return clampZoom(Math.max(floor, Math.min(1, viewport.width / canvas.width, viewport.height / canvas.height)));
+  return clampZoom(
+    Math.max(floor, Math.min(1, viewport.width / canvas.width, viewport.height / canvas.height)),
+  );
 }
 
 export interface KnowledgeRelation {
@@ -213,13 +234,26 @@ export interface KnowledgeRelation {
  * Neighbours on the learning path. The graph's edges are the sequential
  * learning order, so that order is the honest answer to "why connected".
  */
-export function knowledgeRelations(nodes: readonly KnowledgeNodeInput[], index: number): KnowledgeRelation[] {
+export function knowledgeRelations(
+  nodes: readonly KnowledgeNodeInput[],
+  index: number,
+): KnowledgeRelation[] {
   const out: KnowledgeRelation[] = [];
   if (index > 0 && nodes[index - 1]) {
-    out.push({ index: index - 1, name: knowledgeNodeName(nodes[index - 1]!, index - 1), status: normalizeKnowledgeStatus(nodes[index - 1]!.status), role: 'before' });
+    out.push({
+      index: index - 1,
+      name: knowledgeNodeName(nodes[index - 1]!, index - 1),
+      status: normalizeKnowledgeStatus(nodes[index - 1]!.status),
+      role: 'before',
+    });
   }
   if (index >= 0 && index < nodes.length - 1 && nodes[index + 1]) {
-    out.push({ index: index + 1, name: knowledgeNodeName(nodes[index + 1]!, index + 1), status: normalizeKnowledgeStatus(nodes[index + 1]!.status), role: 'after' });
+    out.push({
+      index: index + 1,
+      name: knowledgeNodeName(nodes[index + 1]!, index + 1),
+      status: normalizeKnowledgeStatus(nodes[index + 1]!.status),
+      role: 'after',
+    });
   }
   return out;
 }
@@ -262,17 +296,32 @@ export function conceptEdgePairs(nodes: readonly KnowledgeNodeInput[]): Array<[n
  * each. Empty for sessions that have no concept links; the detail then
  * falls back to `knowledgeRelations` (the learning path).
  */
-export function conceptRelations(nodes: readonly KnowledgeNodeInput[], index: number): ConceptRelation[] {
+export function conceptRelations(
+  nodes: readonly KnowledgeNodeInput[],
+  index: number,
+): ConceptRelation[] {
   const out: ConceptRelation[] = [];
   const seen = new Set<number>();
-  const push = (other: number, direction: 'out' | 'in', link: { relation?: string; why?: string }) => {
+  const push = (
+    other: number,
+    direction: 'out' | 'in',
+    link: { relation?: string; why?: string },
+  ) => {
     if (other < 0 || other === index || seen.has(other) || !link.why || !nodes[other]) return;
     seen.add(other);
-    out.push({ index: other, name: knowledgeNodeName(nodes[other]!, other), status: normalizeKnowledgeStatus(nodes[other]!.status), direction, relation: link.relation || null, why: link.why });
+    out.push({
+      index: other,
+      name: knowledgeNodeName(nodes[other]!, other),
+      status: normalizeKnowledgeStatus(nodes[other]!.status),
+      direction,
+      relation: link.relation || null,
+      why: link.why,
+    });
   };
   const self = nodes[index];
   if (!self) return out;
-  for (const link of Array.isArray(self.links) ? self.links : []) push(linkTargetIndex(nodes, link?.target), 'out', link ?? {});
+  for (const link of Array.isArray(self.links) ? self.links : [])
+    push(linkTargetIndex(nodes, link?.target), 'out', link ?? {});
   nodes.forEach((node, other) => {
     for (const link of Array.isArray(node.links) ? node.links : []) {
       if (linkTargetIndex(nodes, link?.target) === index) push(other, 'in', link ?? {});
@@ -290,15 +339,22 @@ export interface KnowledgeSection {
 export function knowledgeSections(nodes: readonly KnowledgeNodeInput[]): KnowledgeSection[] {
   const order: KnowledgeStatus[] = ['internalized', 'fuzzy', 'blank'];
   return order.flatMap((status) => {
-    const entries = nodes.flatMap((node, index) => normalizeKnowledgeStatus(node.status) === status
-      ? [{ index, node, name: knowledgeNodeName(node, index) }] : []);
+    const entries = nodes.flatMap((node, index) =>
+      normalizeKnowledgeStatus(node.status) === status
+        ? [{ index, node, name: knowledgeNodeName(node, index) }]
+        : [],
+    );
     return entries.length ? [{ status, entries }] : [];
   });
 }
 
-export function knowledgeCounts(nodes: readonly KnowledgeNodeInput[]): Record<KnowledgeStatus, number> {
+export function knowledgeCounts(
+  nodes: readonly KnowledgeNodeInput[],
+): Record<KnowledgeStatus, number> {
   const counts = { internalized: 0, fuzzy: 0, blank: 0 };
-  nodes.forEach((node) => { counts[normalizeKnowledgeStatus(node.status)] += 1; });
+  nodes.forEach((node) => {
+    counts[normalizeKnowledgeStatus(node.status)] += 1;
+  });
   return counts;
 }
 
@@ -316,8 +372,13 @@ export function formatSnapshotDate(item: BoundarySnapshotInput): string {
 }
 
 /** Newest eight snapshots, newest first (legacy panel contract). */
-export function snapshotHistory(history: readonly BoundarySnapshotInput[]): Array<{ date: string; summary: string }> {
-  return history.slice(-8).reverse().map((item) => ({ date: formatSnapshotDate(item), summary: String(item.summary || '') }));
+export function snapshotHistory(
+  history: readonly BoundarySnapshotInput[],
+): Array<{ date: string; summary: string }> {
+  return history
+    .slice(-8)
+    .reverse()
+    .map((item) => ({ date: formatSnapshotDate(item), summary: String(item.summary || '') }));
 }
 
 /** Toggling the same confidence step clears it (legacy detail contract). */
@@ -354,7 +415,11 @@ export function diagnosticReport(nodes: readonly DiagnosticResultNode[]): Diagno
   const ranked = [
     ...withOrder.filter((node) => node.status !== 'fuzzy'),
     ...withOrder.filter((node) => node.status === 'fuzzy'),
-  ].map((node, rank) => ({ ...node, status: node.status === 'fuzzy' ? 'fuzzy' as const : 'blank' as const, rank: rank + 1 }));
+  ].map((node, rank) => ({
+    ...node,
+    status: node.status === 'fuzzy' ? ('fuzzy' as const) : ('blank' as const),
+    rank: rank + 1,
+  }));
   return {
     total,
     familiar,
@@ -362,7 +427,10 @@ export function diagnosticReport(nodes: readonly DiagnosticResultNode[]): Diagno
     coverage: total ? Math.round((familiar / total) * 100) : 0,
     ranked,
     startsWith: nodes[0]?.name ?? null,
-    focus: ranked.filter((node) => node.status === 'blank').slice(0, 3).map((node) => node.name),
+    focus: ranked
+      .filter((node) => node.status === 'blank')
+      .slice(0, 3)
+      .map((node) => node.name),
   };
 }
 
@@ -412,7 +480,8 @@ export interface MistakeView {
 
 export function mistakeOptionsOf(row: MistakeRowInput): Array<{ letter: string; text: string }> {
   return (Array.isArray(row.options) ? row.options : []).map((option, index) => {
-    if (typeof option === 'string') return { letter: String.fromCharCode(65 + index), text: option };
+    if (typeof option === 'string')
+      return { letter: String.fromCharCode(65 + index), text: option };
     return {
       letter: typeof option?.letter === 'string' ? option.letter : String.fromCharCode(65 + index),
       text: typeof option?.text === 'string' ? option.text : '',
@@ -420,7 +489,10 @@ export function mistakeOptionsOf(row: MistakeRowInput): Array<{ letter: string; 
   });
 }
 
-function answerText(options: Array<{ letter: string; text: string }>, value: string | null | undefined): string | null {
+function answerText(
+  options: Array<{ letter: string; text: string }>,
+  value: string | null | undefined,
+): string | null {
   if (!value) return null;
   const option = options.find((entry) => entry.letter === value);
   return option ? (option.text ? `${option.letter} · ${option.text}` : option.letter) : value;
@@ -438,11 +510,17 @@ export function mistakeView(row: MistakeRowInput): MistakeView {
     topic: row.topic || '',
     question: row.q || '',
     resolved: row.resolved === true || row.isResolved === true,
-    redoCount: typeof row.redoCount === 'number' && row.redoCount > 0 ? Math.floor(row.redoCount) : 0,
+    redoCount:
+      typeof row.redoCount === 'number' && row.redoCount > 0 ? Math.floor(row.redoCount) : 0,
     timestamp: typeof row.timestamp === 'number' ? row.timestamp : 0,
     options: options.map((option) => ({
       ...option,
-      tag: option.letter === row.correct ? 'correct' : option.letter === row.userAnswer ? 'wrong' : null,
+      tag:
+        option.letter === row.correct
+          ? 'correct'
+          : option.letter === row.userAnswer
+            ? 'wrong'
+            : null,
     })),
     yourAnswer: answerText(options, row.userAnswer),
     correctAnswer: answerText(options, row.correct ?? row.judgedAnswer ?? null),
@@ -466,7 +544,9 @@ export function groupMistakesByTopic(rows: readonly MistakeView[]): MistakeGroup
     if (list) list.push(row);
     else groups.set(key, [row]);
   }
-  const named = [...groups.entries()].filter(([topic]) => topic).map(([topic, items]) => ({ topic, items }));
+  const named = [...groups.entries()]
+    .filter(([topic]) => topic)
+    .map(([topic, items]) => ({ topic, items }));
   const loose = groups.get('');
   return loose ? [...named, { topic: '', items: loose }] : named;
 }
@@ -477,14 +557,21 @@ export function normalizeMistakeFilter(value: string | null | undefined): Mistak
   return value === 'unresolved' || value === 'resolved' ? value : 'all';
 }
 
-export function filterMistakeViews(rows: readonly MistakeView[], filter: MistakeFilterValue): MistakeView[] {
+export function filterMistakeViews(
+  rows: readonly MistakeView[],
+  filter: MistakeFilterValue,
+): MistakeView[] {
   if (filter === 'unresolved') return rows.filter((row) => !row.resolved);
   if (filter === 'resolved') return rows.filter((row) => row.resolved);
   return rows.slice();
 }
 
 /** Which empty line to show, or null when rows are visible (legacy contract). */
-export function mistakeEmptyKind(total: number, visible: number, filter: MistakeFilterValue): 'empty' | 'filterResolved' | 'filterOther' | null {
+export function mistakeEmptyKind(
+  total: number,
+  visible: number,
+  filter: MistakeFilterValue,
+): 'empty' | 'filterResolved' | 'filterOther' | null {
   if (!total) return 'empty';
   if (visible) return null;
   return filter === 'resolved' ? 'filterResolved' : 'filterOther';
@@ -500,7 +587,9 @@ export interface SessionMistakesInput<T extends MistakeRowInput = MistakeRowInpu
   mistakes: readonly T[];
 }
 
-export type SessionMistake<T extends MistakeRowInput = MistakeRowInput> = T & { sessionId: string | null };
+export type SessionMistake<T extends MistakeRowInput = MistakeRowInput> = T & {
+  sessionId: string | null;
+};
 
 /**
  * The mistake book across every session: the open session's own entries

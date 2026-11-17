@@ -19,26 +19,38 @@ export function withTimeBudget<T>(
       settled = true;
       cleanup();
       controller.abort(options.signal?.reason ?? new Error('Time budget exceeded'));
-      try { resolve(fallback()); } catch (error) { reject(error); }
+      try {
+        resolve(fallback());
+      } catch (error) {
+        reject(error);
+      }
     };
-    if (options.signal?.aborted) { cancel(); return; }
+    if (options.signal?.aborted) {
+      cancel();
+      return;
+    }
     options.signal?.addEventListener('abort', cancel, { once: true });
     if (options.timeoutMs !== undefined) timer = setTimeout(cancel, Math.max(0, options.timeoutMs));
     // Observe late settlements too: cancelled work may ignore the signal.
-    Promise.resolve().then(() => {
-      if (controller.signal.aborted) return fallback();
-      return work(controller.signal);
-    }).then((value) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(value);
-    }, (error) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      controller.abort(error);
-      reject(error);
-    });
+    Promise.resolve()
+      .then(() => {
+        if (controller.signal.aborted) return fallback();
+        return work(controller.signal);
+      })
+      .then(
+        (value) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve(value);
+        },
+        (error) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          controller.abort(error);
+          reject(error);
+        },
+      );
   });
 }

@@ -16,12 +16,6 @@
       "@socrates/theme": ["packages/theme/src/index.ts"]
     }
   },
-  "include": [
-    "packages/contracts/src/**/*",
-    "packages/core/src/**/*",
-    "packages/theme/src/**/*"
-  ],
-  "exclude": [
-    "packages/**/*.test.ts"
-  ]
+  "include": ["packages/contracts/src/**/*", "packages/core/src/**/*", "packages/theme/src/**/*"],
+  "exclude": ["packages/**/*.test.ts"]
 }

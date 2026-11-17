@@ -34,19 +34,24 @@ const BASE_OPTS = {
 };
 
 const realFetch = globalThis.fetch;
-afterEach(() => { globalThis.fetch = realFetch; });
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 /** Serve a fixed list of SSE frames as a streaming response. */
 function mockStream(frames, { capture } = {}) {
   globalThis.fetch = async (_url, init) => {
     if (capture) capture.body = JSON.parse(init.body);
     const body = frames.join('');
-    return new Response(new ReadableStream({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode(body));
-        controller.close();
-      },
-    }), { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(body));
+          controller.close();
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+    );
   };
 }
 
@@ -59,20 +64,22 @@ describe('normalizeProviderUsage: shapes', () => {
   });
 
   test('Anthropic-style input_tokens / output_tokens', () => {
-    assert.deepEqual(
-      normalizeProviderUsage({ input_tokens: 10, output_tokens: 7 }),
-      { promptTokens: 10, completionTokens: 7, totalTokens: 17 },
-    );
+    assert.deepEqual(normalizeProviderUsage({ input_tokens: 10, output_tokens: 7 }), {
+      promptTokens: 10,
+      completionTokens: 7,
+      totalTokens: 17,
+    });
   });
 
   test('Gemini-style promptTokenCount / candidatesTokenCount', () => {
-    assert.deepEqual(
-      normalizeProviderUsage({ promptTokenCount: 3, candidatesTokenCount: 4 }),
-      { promptTokens: 3, completionTokens: 4, totalTokens: 7 },
-    );
+    assert.deepEqual(normalizeProviderUsage({ promptTokenCount: 3, candidatesTokenCount: 4 }), {
+      promptTokens: 3,
+      completionTokens: 4,
+      totalTokens: 7,
+    });
   });
 
-  test("a provider total larger than prompt+completion wins (cached / reasoning tokens are billed)", () => {
+  test('a provider total larger than prompt+completion wins (cached / reasoning tokens are billed)', () => {
     const u = normalizeProviderUsage({ prompt_tokens: 10, completion_tokens: 5, total_tokens: 40 });
     assert.equal(u.totalTokens, 40);
   });
@@ -83,10 +90,11 @@ describe('normalizeProviderUsage: shapes', () => {
   });
 
   test('only one side reported still counts', () => {
-    assert.deepEqual(
-      normalizeProviderUsage({ completion_tokens: 9 }),
-      { promptTokens: 0, completionTokens: 9, totalTokens: 9 },
-    );
+    assert.deepEqual(normalizeProviderUsage({ completion_tokens: 9 }), {
+      promptTokens: 0,
+      completionTokens: 9,
+      totalTokens: 9,
+    });
   });
 });
 
@@ -105,23 +113,29 @@ describe('normalizeProviderUsage: hostile input degrades to null', () => {
     ['all zeroes', { prompt_tokens: 0, completion_tokens: 0 }],
   ]) {
     test(label, () => {
-      assert.equal(normalizeProviderUsage(value), null,
-        'malformed upstream usage must fall back, never poison the billing table');
+      assert.equal(
+        normalizeProviderUsage(value),
+        null,
+        'malformed upstream usage must fall back, never poison the billing table',
+      );
     });
   }
 
   test('fractional counts are rounded, not rejected', () => {
-    assert.deepEqual(
-      normalizeProviderUsage({ prompt_tokens: 10.4, completion_tokens: 0.6 }),
-      { promptTokens: 10, completionTokens: 1, totalTokens: 11 },
-    );
+    assert.deepEqual(normalizeProviderUsage({ prompt_tokens: 10.4, completion_tokens: 0.6 }), {
+      promptTokens: 10,
+      completionTokens: 1,
+      totalTokens: 11,
+    });
   });
 });
 
 describe('resolveUsage: provenance', () => {
   test('provider numbers win and are tagged provider', () => {
-    const r = resolveUsage({ prompt_tokens: 100, completion_tokens: 20 },
-      { promptTokens: 999, completionTokens: 999 });
+    const r = resolveUsage(
+      { prompt_tokens: 100, completion_tokens: 20 },
+      { promptTokens: 999, completionTokens: 999 },
+    );
     assert.deepEqual(r, { promptTokens: 100, completionTokens: 20, usageSource: 'provider' });
   });
 
@@ -145,7 +159,10 @@ describe('resolveUsage: provenance', () => {
 
   test('partial provider usage on aborted turn overrides zero-text fallback', () => {
     // If provider reported usage before an error or abort, provider tokens win.
-    const r = resolveUsage({ prompt_tokens: 30, completion_tokens: 5 }, { promptTokens: 42, completionTokens: 0 });
+    const r = resolveUsage(
+      { prompt_tokens: 30, completion_tokens: 5 },
+      { promptTokens: 42, completionTokens: 0 },
+    );
     assert.deepEqual(r, { promptTokens: 30, completionTokens: 5, usageSource: 'provider' });
   });
 });
@@ -153,10 +170,20 @@ describe('resolveUsage: provenance', () => {
 describe('streamChatCompletion: asks for usage', () => {
   test('streaming requests set stream_options.include_usage', async () => {
     const capture = {};
-    mockStream(['data: {"choices":[{"delta":{"content":"hi"}}]}\n\n', 'data: [DONE]\n\n'], { capture });
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
-    assert.deepEqual(capture.body.stream_options, { include_usage: true },
-      'without this the upstream never reports usage for a stream');
+    mockStream(['data: {"choices":[{"delta":{"content":"hi"}}]}\n\n', 'data: [DONE]\n\n'], {
+      capture,
+    });
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      () => {},
+      () => {},
+    );
+    assert.deepEqual(
+      capture.body.stream_options,
+      { include_usage: true },
+      'without this the upstream never reports usage for a stream',
+    );
   });
 });
 
@@ -174,7 +201,16 @@ describe('streamChatCompletion: the usage frame is no longer dropped', () => {
     ]);
     let text = '';
     let done = null;
-    await streamChatCompletion({ ...BASE_OPTS }, (c) => { text += c; }, (info) => { done = info; }, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      (c) => {
+        text += c;
+      },
+      (info) => {
+        done = info;
+      },
+      () => {},
+    );
     assert.equal(text, 'hello');
     assert.ok(done, 'onDone must fire');
     assert.equal(done.finishReason, 'stop');
@@ -192,7 +228,14 @@ describe('streamChatCompletion: the usage frame is no longer dropped', () => {
       'data: {"choices":[],"usage":{"prompt_tokens":5,"completion_tokens":1}}',
     ]);
     let done = null;
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, (info) => { done = info; }, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      (info) => {
+        done = info;
+      },
+      () => {},
+    );
     const u = normalizeProviderUsage(done.usage);
     assert.ok(u, 'tail-frame usage must survive');
     assert.equal(u.totalTokens, 6);
@@ -205,16 +248,33 @@ describe('streamChatCompletion: the usage frame is no longer dropped', () => {
       'data: [DONE]\n\n',
     ]);
     let done = null;
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, (info) => { done = info; }, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      (info) => {
+        done = info;
+      },
+      () => {},
+    );
     assert.equal(done.finishReason, 'length');
   });
 
   test('a stream with no usage frame reports none, so the caller estimates', async () => {
     mockStream(['data: {"choices":[{"delta":{"content":"z"}}]}\n\n', 'data: [DONE]\n\n']);
     let done = null;
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, (info) => { done = info; }, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      (info) => {
+        done = info;
+      },
+      () => {},
+    );
     assert.equal(normalizeProviderUsage(done.usage), null);
-    assert.equal(resolveUsage(done.usage, { promptTokens: 1, completionTokens: 1 }).usageSource, 'estimate');
+    assert.equal(
+      resolveUsage(done.usage, { promptTokens: 1, completionTokens: 1 }).usageSource,
+      'estimate',
+    );
   });
 });
 
@@ -226,12 +286,29 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
       if (bodies.length === 1) {
         return new Response('{"error":"unknown field stream_options"}', { status: 400 });
       }
-      return new Response(new ReadableStream({
-        start(c) { c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n')); c.close(); },
-      }), { status: 200 });
+      return new Response(
+        new ReadableStream({
+          start(c) {
+            c.enqueue(
+              new TextEncoder().encode(
+                'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n',
+              ),
+            );
+            c.close();
+          },
+        }),
+        { status: 200 },
+      );
     };
     let text = '';
-    await streamChatCompletion({ ...BASE_OPTS }, (c) => { text += c; }, () => {}, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      (c) => {
+        text += c;
+      },
+      () => {},
+      () => {},
+    );
     assert.equal(text, 'ok', 'the answer must still stream');
     assert.equal(bodies.length, 2, 'exactly one retry');
     assert.ok('stream_options' in bodies[0], 'first attempt asks for usage');
@@ -246,12 +323,23 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
     globalThis.fetch = async (_url, init) => {
       bodies.push(JSON.parse(init.body));
       if (bodies.length === 1) return new Response('unknown field stream_options', { status: 400 });
-      return new Response(new ReadableStream({
-        start(c) { c.enqueue(new TextEncoder().encode('data: [DONE]\n\n')); c.close(); },
-      }), { status: 200 });
+      return new Response(
+        new ReadableStream({
+          start(c) {
+            c.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+            c.close();
+          },
+        }),
+        { status: 200 },
+      );
     };
     const tools = [{ type: 'function', function: { name: 'f', parameters: {} } }];
-    await streamChatCompletion({ ...BASE_OPTS, tools }, () => {}, () => {}, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS, tools },
+      () => {},
+      () => {},
+      () => {},
+    );
     assert.equal(bodies.length, 2, 'exactly one retry, same as before usage accounting');
     assert.ok('stream_options' in bodies[0], 'first attempt asks for usage');
     assert.ok(!('stream_options' in bodies[1]), 'retry drops stream_options');
@@ -266,12 +354,29 @@ describe('streamChatCompletion: stream_options compatibility fallback', () => {
     globalThis.fetch = async (_url, init) => {
       bodies.push(JSON.parse(init.body));
       if (bodies.length === 1) return new Response('unknown field stream_options', { status: 400 });
-      return new Response(new ReadableStream({
-        start(c) { c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n')); c.close(); },
-      }), { status: 200 });
+      return new Response(
+        new ReadableStream({
+          start(c) {
+            c.enqueue(
+              new TextEncoder().encode(
+                'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n',
+              ),
+            );
+            c.close();
+          },
+        }),
+        { status: 200 },
+      );
     };
     let text = '';
-    await streamChatCompletion({ ...BASE_OPTS }, (c) => { text += c; }, () => {}, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      (c) => {
+        text += c;
+      },
+      () => {},
+      () => {},
+    );
     assert.equal(text, 'ok', 'the answer must still stream');
     assert.equal(bodies.length, 2);
     assert.ok(!('stream_options' in bodies[1]));

@@ -189,7 +189,12 @@ class AnalyticSpring implements Spring {
    */
   private reanchor(now: number): void {
     const elapsed = (now - this.anchorTime) / 1000;
-    const { x, v } = solve(this.dyn, this.currentPosition - this.currentTarget, this.currentVelocity, elapsed);
+    const { x, v } = solve(
+      this.dyn,
+      this.currentPosition - this.currentTarget,
+      this.currentVelocity,
+      elapsed,
+    );
     this.currentPosition = this.currentTarget + x;
     this.currentVelocity = v;
     this.anchorTime = now;
@@ -209,14 +214,20 @@ class AnalyticSpring implements Spring {
   valueAt(now: number): number {
     const elapsed = (now - this.anchorTime) / 1000;
     if (elapsed <= 0) return this.currentPosition;
-    const { x } = solve(this.dyn, this.currentPosition - this.currentTarget, this.currentVelocity, elapsed);
+    const { x } = solve(
+      this.dyn,
+      this.currentPosition - this.currentTarget,
+      this.currentVelocity,
+      elapsed,
+    );
     return this.currentTarget + x;
   }
 
   velocityAt(now: number): number {
     const elapsed = (now - this.anchorTime) / 1000;
     if (elapsed <= 0) return this.currentVelocity;
-    return solve(this.dyn, this.currentPosition - this.currentTarget, this.currentVelocity, elapsed).v;
+    return solve(this.dyn, this.currentPosition - this.currentTarget, this.currentVelocity, elapsed)
+      .v;
   }
 
   settled(now: number): boolean {
@@ -225,7 +236,12 @@ class AnalyticSpring implements Spring {
      * the displacement is checked here too: a spring that has just been
      * retargeted is standing still but it is nowhere near its target, and
      * that is not the same thing as being at rest. */
-    const { x, v } = solve(this.dyn, this.currentPosition - this.currentTarget, this.currentVelocity, elapsed);
+    const { x, v } = solve(
+      this.dyn,
+      this.currentPosition - this.currentTarget,
+      this.currentVelocity,
+      elapsed,
+    );
     return Math.abs(x) <= this.restDelta && Math.abs(v) <= this.restVelocity;
   }
 }

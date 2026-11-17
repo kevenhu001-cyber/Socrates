@@ -31,11 +31,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { getActiveApiKey } from '../services/core/apiKey.js';
 import { ttsCache, ttsCacheKey } from '../services/embeddings/ttsCache.js';
-import {
-  lookupTtsResult,
-  saveTtsResult,
-  ttsTextHash,
-} from '../services/embeddings/ttsStore.js';
+import { lookupTtsResult, saveTtsResult, ttsTextHash } from '../services/embeddings/ttsStore.js';
 
 const router = Router();
 
@@ -78,13 +74,17 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
     }
 
     const baseUrl = (provider.url || '').replace(/\/+$/, '');
-    const lang = String(req.body?.lang || (req.headers['accept-language'] || 'en')).slice(0, 2).toLowerCase();
-    const voice = typeof req.body?.voice === 'string' && req.body.voice
-      ? req.body.voice
-      : (VOICE_BY_LANG[lang] || 'alloy');
-    const format = req.body?.format === 'mp3' || req.body?.format === 'opus' || req.body?.format === 'wav'
-      ? req.body.format
-      : 'mp3';
+    const lang = String(req.body?.lang || req.headers['accept-language'] || 'en')
+      .slice(0, 2)
+      .toLowerCase();
+    const voice =
+      typeof req.body?.voice === 'string' && req.body.voice
+        ? req.body.voice
+        : VOICE_BY_LANG[lang] || 'alloy';
+    const format =
+      req.body?.format === 'mp3' || req.body?.format === 'opus' || req.body?.format === 'wav'
+        ? req.body.format
+        : 'mp3';
     const messageId = readMessageId(req.body?.messageId);
     const textHash = ttsTextHash(input);
 
@@ -109,7 +109,12 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
     if (messageId) {
       try {
         const persisted = await lookupTtsResult(
-          messageId, req.userId!, voice, format, lang, textHash,
+          messageId,
+          req.userId!,
+          voice,
+          format,
+          lang,
+          textHash,
         );
         if (persisted) {
           ttsCache.set(cacheKey, persisted.audio, persisted.contentType);
@@ -132,7 +137,7 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${provider.keyPlaintext}`,
+        Authorization: `Bearer ${provider.keyPlaintext}`,
         'Accept-Encoding': 'identity',
       },
       body: JSON.stringify({
@@ -147,7 +152,10 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
     if (!upstream.ok || !upstream.body) {
       const detail = await upstream.text().catch(() => '');
       if (upstream.status === 429) {
-        res.status(429).json({ error: 'tts_rate_limited', message: 'Voice service is busy; try again shortly.' });
+        res.status(429).json({
+          error: 'tts_rate_limited',
+          message: 'Voice service is busy; try again shortly.',
+        });
         return;
       }
       console.warn(`[tts] upstream ${upstream.status}: ${detail.slice(0, 200)}`);
@@ -184,7 +192,14 @@ router.post('/', requireAuth, chatLimiter, async (req, res) => {
     if (messageId) {
       try {
         await saveTtsResult(
-          messageId, req.userId!, voice, format, lang, textHash, audio, contentType,
+          messageId,
+          req.userId!,
+          voice,
+          format,
+          lang,
+          textHash,
+          audio,
+          contentType,
         );
       } catch (err) {
         console.warn('[tts] db persist failed:', (err as Error).message);

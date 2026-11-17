@@ -9,16 +9,28 @@ export function throwIfAborted(signal?: AbortSignal | null): void {
 
 export function abortableDelay(ms: number, signal?: AbortSignal | null): Promise<void> {
   return new Promise((resolve, reject) => {
-    try { throwIfAborted(signal); } catch (error) { reject(error); return; }
+    try {
+      throwIfAborted(signal);
+    } catch (error) {
+      reject(error);
+      return;
+    }
     const cleanup = () => {
       clearTimeout(timer);
       signal?.removeEventListener('abort', onAbort);
     };
     const onAbort = () => {
       cleanup();
-      try { throwIfAborted(signal); } catch (error) { reject(error); }
+      try {
+        throwIfAborted(signal);
+      } catch (error) {
+        reject(error);
+      }
     };
-    const timer = setTimeout(() => { cleanup(); resolve(); }, ms);
+    const timer = setTimeout(() => {
+      cleanup();
+      resolve();
+    }, ms);
     signal?.addEventListener('abort', onAbort, { once: true });
   });
 }

@@ -1,7 +1,5 @@
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-
-
 /* ui/composerShape.ts — JS-owned composer shape flags (replaces :has hot path).
  *
  * The two-row composer layouts used to be keyed off
@@ -25,8 +23,11 @@ function findComposerShells(scope: Document | Element) {
     return [scope];
   }
   if (typeof scope.querySelectorAll !== 'function') return [];
-  try { return Array.from(scope.querySelectorAll('.composer-shell')); }
-  catch (_) { return []; /* selector unsupported */ }
+  try {
+    return Array.from(scope.querySelectorAll('.composer-shell'));
+  } catch (_) {
+    return []; /* selector unsupported */
+  }
 }
 
 function visibleAttachmentChips(shell: Element) {
@@ -46,7 +47,7 @@ function readComposerShape(shell: Element) {
     hasFiles = visibleAttachmentChips(shell);
     hasQueue = !!shell.querySelector('.composer-queue-banner');
   } catch (_) {
-    reportSwallow(_, 'empty catch: ui/composerShape.ts:47');
+    reportSwallow(_, 'empty catch: ui/composerShape.ts');
     /* detached node */
   }
   return { hasPlugins: hasPlugins, hasFiles: hasFiles, hasQueue: hasQueue };
@@ -79,7 +80,8 @@ let _installed = false;
 
 export function installComposerShapeMirror() {
   if (_installed) return () => undefined;
-  if (typeof document === 'undefined' || typeof MutationObserver !== 'function') return () => undefined;
+  if (typeof document === 'undefined' || typeof MutationObserver !== 'function')
+    return () => undefined;
   _installed = true;
   let pending = false;
   function schedule() {
@@ -137,12 +139,19 @@ export function installComposerShapeMirror() {
         bodyWatch = null;
       }
     });
-    bodyWatch.observe(document.body || document.documentElement, { childList: true, subtree: true });
+    bodyWatch.observe(document.body || document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
   }
   // Initial paint: stamp flags before first frame so no :has fallback flash.
   syncComposerShellFlags(document);
   return function () {
-    try { observer.disconnect(); } catch (error) { reportSwallow(error, 'ui/composerShape.ts:109', 'expected'); }
+    try {
+      observer.disconnect();
+    } catch (error) {
+      reportSwallow(error, 'ui/composerShape.ts:109', 'expected');
+    }
     if (bodyWatch) bodyWatch.disconnect();
     _installed = false;
   };

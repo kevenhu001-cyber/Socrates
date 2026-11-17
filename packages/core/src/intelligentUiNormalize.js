@@ -69,7 +69,8 @@ export function normalizeIntelligentUiNode(raw) {
       node.payload = node.data;
     }
     if (typeof node.accessibilitySummary !== 'string') {
-      if (typeof node.accessibility_summary === 'string') node.accessibilitySummary = node.accessibility_summary;
+      if (typeof node.accessibility_summary === 'string')
+        node.accessibilitySummary = node.accessibility_summary;
       else if (typeof node.summary === 'string') node.accessibilitySummary = node.summary;
     }
   }

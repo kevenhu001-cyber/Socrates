@@ -27,7 +27,7 @@
  */
 
 import { getStreamRenderInterval } from '../render/streaming.ts';
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { reconcileMessageSnapshots } from './chatRuntimeSnapshot.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type {
@@ -117,14 +117,12 @@ function readChatState(): {
   phase: string;
   messages: ChatMessage[];
 } {
-  const messagesCandidate = stateStore.read('messages');
+  const messagesCandidate = sessionBridge.getSnapshot().messages;
 
   return {
-    currentSessionId: asString(stateStore.read('currentSessionId')),
-    phase: asString(stateStore.read('phase')) ?? 'topic',
-    messages: Array.isArray(messagesCandidate)
-      ? (messagesCandidate as ChatMessage[])
-      : [],
+    currentSessionId: asString(sessionBridge.getSnapshot().currentSessionId),
+    phase: asString(sessionBridge.getSnapshot().phase) ?? 'topic',
+    messages: Array.isArray(messagesCandidate) ? (messagesCandidate as ChatMessage[]) : [],
   };
 }
 
@@ -142,25 +140,23 @@ function streamFromMessages(messages: ChatMessage[]): ChatStreamSnapshot {
   return Object.freeze({
     messageId: asString(activeMessage.clientId ?? activeMessage.id),
     status: 'streaming',
-    textLength: typeof activeMessage.rawText === 'string'
-      ? activeMessage.rawText.length
-      : 0,
+    textLength: typeof activeMessage.rawText === 'string' ? activeMessage.rawText.length : 0,
   });
 }
 
-function streamFromEvent(
-  event: ChatRuntimeEvent,
-  messages: ChatMessage[],
-): ChatStreamSnapshot {
+function streamFromEvent(event: ChatRuntimeEvent, messages: ChatMessage[]): ChatStreamSnapshot {
   /* A superseded turn can finish after the replacement has started. Its
      terminal event still matters to the message row, but must not release
      the Stop state owned by the newer stream. */
-  const isStaleTerminal = event.type === 'stream-finished'
-    || event.type === 'stream-aborted'
-    || event.type === 'stream-failed';
-  if (isStaleTerminal
-    && snapshot.stream.status === 'streaming'
-    && snapshot.stream.messageId !== event.messageId) {
+  const isStaleTerminal =
+    event.type === 'stream-finished' ||
+    event.type === 'stream-aborted' ||
+    event.type === 'stream-failed';
+  if (
+    isStaleTerminal &&
+    snapshot.stream.status === 'streaming' &&
+    snapshot.stream.messageId !== event.messageId
+  ) {
     return snapshot.stream;
   }
 
@@ -221,11 +217,7 @@ function commit(
   changedMessageIds: ReadonlySet<string> | null = changedMessageIdsForEvent(event),
 ): void {
   const legacy = readChatState();
-  const messages = reconcileMessageSnapshots(
-    snapshot.messages,
-    legacy.messages,
-    changedMessageIds,
-  );
+  const messages = reconcileMessageSnapshots(snapshot.messages, legacy.messages, changedMessageIds);
   const last = messages.length > 0 ? messages[messages.length - 1] : undefined;
   const stream = streamFromEvent(event, legacy.messages);
 
@@ -374,10 +366,7 @@ function scheduleDeltaFlush(event: Extract<ChatRuntimeEvent, { type: 'stream-del
     return;
   }
   if (pendingDeltaTimer !== null) return;
-  const wait = Math.max(
-    1,
-    lastDeltaCommitAt + getStreamRenderInterval(event.textLength) - nowMs(),
-  );
+  const wait = Math.max(1, lastDeltaCommitAt + getStreamRenderInterval(event.textLength) - nowMs());
   pendingDeltaTimer = setTimeout(() => {
     pendingDeltaTimer = null;
     scheduleFrame();

@@ -99,5 +99,7 @@ if (failures.length) {
   console.error('\nFix the link, or move the claim out of the entry docs.');
   process.exitCode = 1;
 } else {
-  console.log(`doc path check passed (${checked} relative links across ${DOCS.length} entry documents).`);
+  console.log(
+    `doc path check passed (${checked} relative links across ${DOCS.length} entry documents).`,
+  );
 }

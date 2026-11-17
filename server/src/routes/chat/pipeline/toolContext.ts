@@ -12,8 +12,8 @@ import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
 import { connectorConnections, projectConnectorConnections } from '../../../db/schema/index.js';
 import { codeInterpreter } from '../../../services/codeInterpreter/index.js';
-import { createToolRegistry } from '../../../services/tools/toolRegistry.js';
-import { canonicalToolExampleJson } from '../../../services/tools/toolErrorFeedback.js';
+import { createToolRegistry } from '../../../services/tools/toolCapabilityCatalog.js';
+import { canonicalToolExampleJson } from '../../../services/tools/toolCorrectionMessage.js';
 import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';
 import {
   buildConnectorCatalog,
@@ -71,20 +71,40 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
        upstream token; issue them together. A failure in one still leaves the
        other's connectors available, as before. */
     const [personal, project] = await Promise.allSettled([
-      db.select().from(connectorConnections)
-        .where(and(eq(connectorConnections.userId, userId), eq(connectorConnections.status, 'connected'))),
-      db.select().from(projectConnectorConnections)
-        .where(and(eq(projectConnectorConnections.userId, userId), eq(projectConnectorConnections.status, 'connected'))),
+      db
+        .select()
+        .from(connectorConnections)
+        .where(
+          and(
+            eq(connectorConnections.userId, userId),
+            eq(connectorConnections.status, 'connected'),
+          ),
+        ),
+      db
+        .select()
+        .from(projectConnectorConnections)
+        .where(
+          and(
+            eq(projectConnectorConnections.userId, userId),
+            eq(projectConnectorConnections.status, 'connected'),
+          ),
+        ),
     ]);
     if (personal.status === 'fulfilled') {
       for (const row of personal.value) connectorConnectionsByProvider[row.provider] = row;
     } else {
-      console.error('[chat/stream] failed to load connector connections:', (personal.reason as Error)?.message);
+      console.error(
+        '[chat/stream] failed to load connector connections:',
+        (personal.reason as Error)?.message,
+      );
     }
     if (project.status === 'fulfilled') {
       for (const row of project.value) projectConnectorConnectionsByProvider[row.provider] = row;
     } else {
-      console.error('[chat/stream] failed to load project connector connections:', (project.reason as Error)?.message);
+      console.error(
+        '[chat/stream] failed to load project connector connections:',
+        (project.reason as Error)?.message,
+      );
     }
   } catch (err) {
     console.error('[chat/stream] failed to load connector connections:', (err as Error).message);
@@ -93,7 +113,10 @@ async function loadConnectorSnapshots(userId?: string): Promise<{
   return { connectorConnectionsByProvider, projectConnectorConnectionsByProvider };
 }
 
-export async function createStreamToolContext(req: Request & { userId?: string }, mode: string): Promise<StreamToolContext> {
+export async function createStreamToolContext(
+  req: Request & { userId?: string },
+  mode: string,
+): Promise<StreamToolContext> {
   const toolPolicy = createToolTurnPolicy();
   const codeInterpreterToolDef = codeInterpreter.getToolDefinition();
 

@@ -45,7 +45,11 @@ const attachmentSchema = z.object({
   text: z.string().max(500_000).optional(),
   truncated: z.boolean().optional(),
   error: z.string().max(300).optional(),
-  size: z.number().int().nonnegative().max(50 * 1024 * 1024),
+  size: z
+    .number()
+    .int()
+    .nonnegative()
+    .max(50 * 1024 * 1024),
 });
 const attachmentsSchema = z.array(attachmentSchema).max(20);
 
@@ -54,12 +58,16 @@ async function checkBeagleLimit(userId: string | null, tier?: string | null) {
   const quota = getBeagleQuota(tier);
   const db = getDb();
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const [row] = await db.select({
-    used: sql<number>`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
-  }).from(usageEvents)
+  const [row] = await db
+    .select({
+      used: sql<number>`COALESCE(SUM(${usageEvents.totalTokens}), 0)::int`,
+    })
+    .from(usageEvents)
     .where(and(eq(usageEvents.userId, userId), gte(usageEvents.createdAt, monthStart)));
   if ((row?.used || 0) >= quota) {
-    return new TooManyRequests(`Monthly Beagle limit (${quota.toLocaleString()}) reached. Add your own API key.`);
+    return new TooManyRequests(
+      `Monthly Beagle limit (${quota.toLocaleString()}) reached. Add your own API key.`,
+    );
   }
   return null;
 }
@@ -91,13 +99,17 @@ async function findOwnedMessage(
     [msg] = await db.select().from(messages).where(eq(messages.id, id)).limit(1);
   } else {
     if (!isUuid(sessionId)) throw new BadRequest('Invalid message id');
-    [msg] = await db.select().from(messages)
+    [msg] = await db
+      .select()
+      .from(messages)
       .where(and(eq(messages.sessionId, sessionId), eq(messages.clientId, id)))
       .limit(1);
   }
   if (!msg) throw new NotFound('Message not found');
 
-  const [sess] = await db.select().from(sessions)
+  const [sess] = await db
+    .select()
+    .from(sessions)
     .where(and(eq(sessions.id, msg.sessionId), eq(sessions.userId, userId)))
     .limit(1);
   if (!sess) throw new NotFound('Message not found');
@@ -165,7 +177,9 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     if (Array.isArray(attachments)) {
       const parsed = attachmentsSchema.safeParse(attachments);
       if (!parsed.success) {
-        throw new BadRequest('Invalid attachments: ' + (parsed.error.issues[0]?.message || 'validation failed'));
+        throw new BadRequest(
+          'Invalid attachments: ' + (parsed.error.issues[0]?.message || 'validation failed'),
+        );
       }
       updateSet.attachments = parsed.data;
     }
@@ -182,7 +196,8 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
        * tool — rather than only assistant replies. Otherwise a mid-thread
        * edit appears correct until reload, when stale later user turns
        * re-enter the history and fork the conversation behind the UI. */
-      const ordered = await db.select({ id: messages.id })
+      const ordered = await db
+        .select({ id: messages.id })
         .from(messages)
         .where(eq(messages.sessionId, msg.sessionId))
         .orderBy(asc(messages.createdAt), asc(messages.id));
@@ -203,11 +218,10 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     }
 
     /* ─── Regenerate: delete the old assistant reply, then stream a new one ─── */
-    const olderReplies = await db.select().from(messages)
-      .where(and(
-        eq(messages.sessionId, msg.sessionId),
-        eq(messages.role, 'assistant'),
-      ))
+    const olderReplies = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.sessionId, msg.sessionId), eq(messages.role, 'assistant')))
       .orderBy(asc(messages.createdAt));
     for (const r of olderReplies) {
       if (r.createdAt >= msg.createdAt) {
@@ -216,30 +230,38 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
     }
 
     // Build the conversation context (up to the edited message)
-    const history = await db.select().from(messages)
+    const history = await db
+      .select()
+      .from(messages)
       .where(eq(messages.sessionId, msg.sessionId))
       .orderBy(asc(messages.createdAt));
 
     const llmMessages = history
-      .filter(m => m.role === 'user' || m.role === 'assistant')
-      .map(m => ({ role: m.role, content: m.content || '' }));
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role, content: m.content || '' }));
 
     const provider = await getActiveApiKey(req.userId);
     if (!provider) {
-      return res.status(503).json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
+      return res
+        .status(503)
+        .json({ code: 'NO_PROVIDER', message: 'No active LLM provider configured' });
     }
     if (!provider.keyPlaintext) {
-      return res.status(503).json({ code: 'KEY_DECRYPT_FAILED', message: 'API key decryption failed. Please re-enter your API key in Settings.' });
+      return res.status(503).json({
+        code: 'KEY_DECRYPT_FAILED',
+        message: 'API key decryption failed. Please re-enter your API key in Settings.',
+      });
     }
     if (provider.isBuiltIn) {
       const limitErr = await checkBeagleLimit(req.userId, req.user?.tier);
-      if (limitErr) return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
+      if (limitErr)
+        return res.status(429).json({ code: 'MONTHLY_LIMIT', message: limitErr.message });
     }
 
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
 
@@ -273,7 +295,11 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
       } as unknown as Parameters<typeof streamChatCompletion>[0],
       (chunk: string) => {
         fullText += chunk;
-        try { res.write(`data: ${JSON.stringify({ delta: chunk })}\n\n`); } catch { /* client gone */ }
+        try {
+          res.write(`data: ${JSON.stringify({ delta: chunk })}\n\n`);
+        } catch {
+          /* client gone */
+        }
       },
       async () => {
         try {
@@ -282,12 +308,15 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
           // confuse downstream markdown rendering.
           const safeContent = sanitizeStoredHtml(fullText);
           const safeRaw = sanitizePlainText(fullText);
-          const [inserted] = await db.insert(messages).values({
-            sessionId: msg.sessionId,
-            role: 'assistant',
-            content: safeContent,
-            rawText: safeRaw,
-          }).returning();
+          const [inserted] = await db
+            .insert(messages)
+            .values({
+              sessionId: msg.sessionId,
+              role: 'assistant',
+              content: safeContent,
+              rawText: safeRaw,
+            })
+            .returning();
           /* P_session-chunks — re-index the freshly-stored assistant
              message so the next BM25 search across the session finds
              it. The same text was just sanitized for the messages
@@ -297,22 +326,38 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
           try {
             await indexMessageChunks(inserted.id, msg.sessionId, safeRaw);
           } catch (idxErr) {
-            console.warn(`[messages] chunk index failed for ${inserted.id}: ${(idxErr as Error).message}`);
+            console.warn(
+              `[messages] chunk index failed for ${inserted.id}: ${(idxErr as Error).message}`,
+            );
           }
           try {
             res.write(`data: ${JSON.stringify({ done: true, messageId: inserted.id })}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
-          } catch { /* client gone */ }
+          } catch {
+            /* client gone */
+          }
         } catch (err) {
-          try { res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`); res.end(); } catch { /* ignore */ }
+          try {
+            res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
+            res.end();
+          } catch {
+            /* ignore */
+          }
         }
       },
       (err: Error) => {
-        try { res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`); res.end(); } catch { /* ignore */ }
+        try {
+          res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
+          res.end();
+        } catch {
+          /* ignore */
+        }
       },
     );
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/messages/:id */
@@ -323,31 +368,39 @@ router.delete('/:id', async (req, res, next) => {
 
     await db.delete(messages).where(eq(messages.id, msg.id));
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PUT /api/messages/:id/feedback */
 router.put('/:id/feedback', async (req, res, next) => {
   try {
     const { rating, reason, categories } = req.body;
-    if (!['up', 'down', 'none'].includes(rating)) throw new BadRequest('rating must be up/down/none');
+    if (!['up', 'down', 'none'].includes(rating))
+      throw new BadRequest('rating must be up/down/none');
     const db = getDb();
     /* Verify the message exists AND belongs to the caller's session before
        inserting feedback. This also resolves clientId-based SPA actions. */
     const { msg } = await findOwnedMessage(db, req.params.id, req.userId!, req.query.sessionId);
 
-    await db.insert(feedback).values({
-      messageId: msg.id,
-      rating,
-      reason: reason || null,
-      categories: categories || null,
-    }).onConflictDoUpdate({
-      target: feedback.messageId,
-      set: { rating, reason: reason || null, categories: categories || null },
-    });
+    await db
+      .insert(feedback)
+      .values({
+        messageId: msg.id,
+        rating,
+        reason: reason || null,
+        categories: categories || null,
+      })
+      .onConflictDoUpdate({
+        target: feedback.messageId,
+        set: { rating, reason: reason || null, categories: categories || null },
+      });
 
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

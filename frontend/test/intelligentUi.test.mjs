@@ -3,14 +3,14 @@ import test from 'node:test';
 
 import {
   initialStateForNodes,
-  intelligenceUiChartDomain,
-  normalizeIntelligenceUiImageUrl,
-  normalizeIntelligenceUiTone,
-  normalizeIntelligenceUiTrend,
-  parseIntelligenceUiRecords,
-  resolveIntelligenceUiValue,
-  splitIntelligenceUiText,
-  stripIntelligenceUiBlocks,
+  intelligentUiChartDomain,
+  normalizeIntelligentUiImageUrl,
+  normalizeIntelligentUiTone,
+  normalizeIntelligentUiTrend,
+  parseIntelligentUiRecords,
+  resolveIntelligentUiValue,
+  splitIntelligentUiText,
+  stripIntelligentUiBlocks,
 } from '@socrates/core';
 
 test('splits prose around a settled intelligent UI fence', () => {
@@ -25,8 +25,11 @@ test('splits prose around a settled intelligent UI fence', () => {
     'After.',
   ].join('\n');
 
-  const segments = splitIntelligenceUiText(text);
-  assert.deepEqual(segments.map((segment) => segment.kind), ['text', 'ui', 'text']);
+  const segments = splitIntelligentUiText(text);
+  assert.deepEqual(
+    segments.map((segment) => segment.kind),
+    ['text', 'ui', 'text'],
+  );
   assert.equal(segments[1].open, false);
   assert.match(segments[1].source, /"metric"/);
   assert.match(segments[0].text, /Before/);
@@ -42,14 +45,17 @@ test('an open streaming fence renders complete JSONL records and defers the part
     '{"id":"partial","type":"metric",',
   ].join('\n');
 
-  const segments = splitIntelligenceUiText(text);
+  const segments = splitIntelligentUiText(text);
   const ui = segments.find((segment) => segment.kind === 'ui');
   assert.ok(ui);
   assert.equal(ui.open, true);
 
-  const nodes = parseIntelligenceUiRecords(ui.source);
+  const nodes = parseIntelligentUiRecords(ui.source);
   assert.equal(nodes.length, 2);
-  assert.deepEqual(nodes.map((node) => node.id), ['panel', 'slider']);
+  assert.deepEqual(
+    nodes.map((node) => node.id),
+    ['panel', 'slider'],
+  );
   assert.deepEqual(initialStateForNodes(nodes), { users: 5 });
 });
 
@@ -61,7 +67,10 @@ test('rejects unknown node types, unsafe ids, and duplicate ids', () => {
     '{"id":"script","type":"script"}',
   ].join('\n');
 
-  assert.deepEqual(parseIntelligenceUiRecords(source).map((node) => node.id), ['ok']);
+  assert.deepEqual(
+    parseIntelligentUiRecords(source).map((node) => node.id),
+    ['ok'],
+  );
 });
 
 test('accepts registered native node types and rejects unknown elements', () => {
@@ -75,36 +84,38 @@ test('accepts registered native node types and rejects unknown elements', () => 
   ].join('\n');
 
   assert.deepEqual(
-    parseIntelligenceUiRecords(source).map((node) => node.type),
+    parseIntelligentUiRecords(source).map((node) => node.type),
     ['chart', 'tabs', 'entity', 'image-gallery', 'toggle'],
   );
 });
 
 test('tone and trend hints normalize to the supported vocabulary', () => {
-  assert.equal(normalizeIntelligenceUiTone('warning'), 'warning');
-  assert.equal(normalizeIntelligenceUiTone(' DANGER '), 'danger');
-  assert.equal(normalizeIntelligenceUiTone('urgent'), 'neutral');
-  assert.equal(normalizeIntelligenceUiTone(undefined), 'neutral');
-  assert.equal(normalizeIntelligenceUiTrend('up'), 'up');
-  assert.equal(normalizeIntelligenceUiTrend('sideways'), null);
+  assert.equal(normalizeIntelligentUiTone('warning'), 'warning');
+  assert.equal(normalizeIntelligentUiTone(' DANGER '), 'danger');
+  assert.equal(normalizeIntelligentUiTone('urgent'), 'neutral');
+  assert.equal(normalizeIntelligentUiTone(undefined), 'neutral');
+  assert.equal(normalizeIntelligentUiTrend('up'), 'up');
+  assert.equal(normalizeIntelligentUiTrend('sideways'), null);
 });
 
 test('evaluates local state expressions without executing code', () => {
   const context = { state: { users: 5, price: 20 } };
-  const value = resolveIntelligenceUiValue({
-    op: 'mul',
-    args: [{ state: 'users' }, { state: 'price' }],
-  }, context);
+  const value = resolveIntelligentUiValue(
+    {
+      op: 'mul',
+      args: [{ state: 'users' }, { state: 'price' }],
+    },
+    context,
+  );
   assert.equal(value, 100);
 
-  const conditional = resolveIntelligenceUiValue({
-    op: 'if',
-    args: [
-      { op: 'gte', args: [{ state: 'users' }, 5] },
-      'team',
-      'solo',
-    ],
-  }, context);
+  const conditional = resolveIntelligentUiValue(
+    {
+      op: 'if',
+      args: [{ op: 'gte', args: [{ state: 'users' }, 5] }, 'team', 'solo'],
+    },
+    context,
+  );
   assert.equal(conditional, 'team');
 });
 
@@ -115,41 +126,35 @@ test('can bind values from an existing tool record by index or id', () => {
   ];
   const context = { state: {}, tools };
 
+  assert.equal(resolveIntelligentUiValue({ tool: 0, path: 'results.0.title' }, context), 'A');
+  assert.equal(resolveIntelligentUiValue({ tool: 'calc-1', path: 'output.total' }, context), 42);
   assert.equal(
-    resolveIntelligenceUiValue({ tool: 0, path: 'results.0.title' }, context),
-    'A',
-  );
-  assert.equal(
-    resolveIntelligenceUiValue({ tool: 'calc-1', path: 'output.total' }, context),
-    42,
-  );
-  assert.equal(
-    resolveIntelligenceUiValue({ tool: 'calc-1', path: '__proto__.polluted' }, context),
+    resolveIntelligentUiValue({ tool: 'calc-1', path: '__proto__.polluted' }, context),
     undefined,
   );
 });
 
 test('image URLs are restricted to absolute credential-free HTTP(S)', () => {
   assert.equal(
-    normalizeIntelligenceUiImageUrl('https://example.com/reference.png'),
+    normalizeIntelligentUiImageUrl('https://example.com/reference.png'),
     'https://example.com/reference.png',
   );
   assert.equal(
-    normalizeIntelligenceUiImageUrl('http://example.com/reference.png'),
+    normalizeIntelligentUiImageUrl('http://example.com/reference.png'),
     'http://example.com/reference.png',
   );
-  assert.equal(normalizeIntelligenceUiImageUrl('/relative.png'), null);
-  assert.equal(normalizeIntelligenceUiImageUrl('data:image/png;base64,AAAA'), null);
-  assert.equal(normalizeIntelligenceUiImageUrl('javascript:alert(1)'), null);
-  assert.equal(normalizeIntelligenceUiImageUrl('https://user:pass@example.com/private.png'), null);
+  assert.equal(normalizeIntelligentUiImageUrl('/relative.png'), null);
+  assert.equal(normalizeIntelligentUiImageUrl('data:image/png;base64,AAAA'), null);
+  assert.equal(normalizeIntelligentUiImageUrl('javascript:alert(1)'), null);
+  assert.equal(normalizeIntelligentUiImageUrl('https://user:pass@example.com/private.png'), null);
 });
 
 test('chart domains include a zero baseline and remain finite for degenerate input', () => {
-  assert.deepEqual(intelligenceUiChartDomain([4, 8]), [0, 8]);
-  assert.deepEqual(intelligenceUiChartDomain([-3, -1]), [-3, 0]);
-  assert.deepEqual(intelligenceUiChartDomain([-4, 12]), [-4, 12]);
-  assert.deepEqual(intelligenceUiChartDomain([0, 0]), [0, 1]);
-  assert.deepEqual(intelligenceUiChartDomain(['not-a-number']), [0, 1]);
+  assert.deepEqual(intelligentUiChartDomain([4, 8]), [0, 8]);
+  assert.deepEqual(intelligentUiChartDomain([-3, -1]), [-3, 0]);
+  assert.deepEqual(intelligentUiChartDomain([-4, 12]), [-4, 12]);
+  assert.deepEqual(intelligentUiChartDomain([0, 0]), [0, 1]);
+  assert.deepEqual(intelligentUiChartDomain(['not-a-number']), [0, 1]);
 });
 
 test('copy and TTS helpers can remove UI source while preserving prose', () => {
@@ -163,7 +168,7 @@ test('copy and TTS helpers can remove UI source while preserving prose', () => {
     'Then continue.',
   ].join('\n');
 
-  const stripped = stripIntelligenceUiBlocks(text);
+  const stripped = stripIntelligentUiBlocks(text);
   assert.doesNotMatch(stripped, /socrates-ui|"type":"panel"/);
   assert.match(stripped, /Use this result/);
   assert.match(stripped, /Then continue/);
@@ -171,42 +176,71 @@ test('copy and TTS helpers can remove UI source while preserving prose', () => {
 
 test('OpenUI fences split prose and strip source from copy and speech output', () => {
   const source = 'Before.\n```openui\nroot = Col([Text("Hello")])\n```\nAfter.';
-  const segments = splitIntelligenceUiText(source);
-  assert.deepEqual(segments.map((segment) => segment.kind), ['text', 'ui', 'text']);
+  const segments = splitIntelligentUiText(source);
+  assert.deepEqual(
+    segments.map((segment) => segment.kind),
+    ['text', 'ui', 'text'],
+  );
   assert.equal(segments[1].format, 'openui');
   assert.equal(segments[1].open, false);
   assert.match(segments[1].source, /root = Col/);
-  assert.equal(stripIntelligenceUiBlocks(source), 'Before.\nAfter.');
-  const live = splitIntelligenceUiText('```openui\nroot = Col([heading])\nheading = Title("Hi');
+  assert.equal(stripIntelligentUiBlocks(source), 'Before.\nAfter.');
+  const live = splitIntelligentUiText('```openui\nroot = Col([heading])\nheading = Title("Hi');
   assert.equal(live[0].open, true);
   assert.equal(live[0].format, 'openui');
   assert.match(live[0].source, /heading = Title/);
 });
 
-
-test('recovers a validated bare or JSON-fenced document with pretty-printed nodes and original offsets',()=>{
- const document={version:1,nodes:[{id:'demo',type:'demonstration',program:{version:1,views:[{kind:'plot',x:[-5,5],y:[0,1.05],curves:[{expression:'sinc(pi*x)^2'}]}]}}]};
- for(const raw of [JSON.stringify(document),JSON.stringify(document,null,2),'```json\n'+JSON.stringify(document,null,2)+'\n```','```socrates-ui\n'+JSON.stringify(document,null,2)+'\n```']){
-  const text='演示如下：\n'+raw+'\n继续说明。';
-  const segments=splitIntelligenceUiText(text);
-  const ui=segments.find(segment=>segment.kind==='ui');
-  assert.ok(ui,raw);
-  assert.equal(ui.open,false);
-  assert.equal(parseIntelligenceUiRecords(ui.source)[0].type,'demonstration');
-  assert.equal(text.slice(ui.start,ui.end),raw);
-  assert.match(stripIntelligenceUiBlocks(text),/继续说明/);
-  assert.doesNotMatch(stripIntelligenceUiBlocks(text),/"nodes"/);
- }
+test('recovers a validated bare or JSON-fenced document with pretty-printed nodes and original offsets', () => {
+  const document = {
+    version: 1,
+    nodes: [
+      {
+        id: 'demo',
+        type: 'demonstration',
+        program: {
+          version: 1,
+          views: [
+            { kind: 'plot', x: [-5, 5], y: [0, 1.05], curves: [{ expression: 'sinc(pi*x)^2' }] },
+          ],
+        },
+      },
+    ],
+  };
+  for (const raw of [
+    JSON.stringify(document),
+    JSON.stringify(document, null, 2),
+    '```json\n' + JSON.stringify(document, null, 2) + '\n```',
+    '```socrates-ui\n' + JSON.stringify(document, null, 2) + '\n```',
+  ]) {
+    const text = '演示如下：\n' + raw + '\n继续说明。';
+    const segments = splitIntelligentUiText(text);
+    const ui = segments.find((segment) => segment.kind === 'ui');
+    assert.ok(ui, raw);
+    assert.equal(ui.open, false);
+    assert.equal(parseIntelligentUiRecords(ui.source)[0].type, 'demonstration');
+    assert.equal(text.slice(ui.start, ui.end), raw);
+    assert.match(stripIntelligentUiBlocks(text), /继续说明/);
+    assert.doesNotMatch(stripIntelligentUiBlocks(text), /"nodes"/);
+  }
 });
 
-test('incomplete bare documents reserve a skeleton; ordinary JSON and quoted code stay literal',()=>{
- const partial='演示：\n{"version":1,"nodes":[{"id":"demo","type":"demonstration","program":';
- const ui=splitIntelligenceUiText(partial).find(segment=>segment.kind==='ui');
- assert.equal(ui.open,true);
- assert.deepEqual(parseIntelligenceUiRecords(ui.source),[]);
- for(const text of ['{"foo":42}','`{"version":1,"nodes":[]}`','```python\n{"version":1,"nodes":[]}\n```','{"version":1,"nodes":[{"id":"bad","type":"script"}]}']){
-  assert.equal(splitIntelligenceUiText(text).some(segment=>segment.kind==='ui'),false);
- }
+test('incomplete bare documents reserve a skeleton; ordinary JSON and quoted code stay literal', () => {
+  const partial = '演示：\n{"version":1,"nodes":[{"id":"demo","type":"demonstration","program":';
+  const ui = splitIntelligentUiText(partial).find((segment) => segment.kind === 'ui');
+  assert.equal(ui.open, true);
+  assert.deepEqual(parseIntelligentUiRecords(ui.source), []);
+  for (const text of [
+    '{"foo":42}',
+    '`{"version":1,"nodes":[]}`',
+    '```python\n{"version":1,"nodes":[]}\n```',
+    '{"version":1,"nodes":[{"id":"bad","type":"script"}]}',
+  ]) {
+    assert.equal(
+      splitIntelligentUiText(text).some((segment) => segment.kind === 'ui'),
+      false,
+    );
+  }
 });
 
 test('frontend normalization handles string numeric attributes and choice options', async () => {
@@ -216,7 +250,12 @@ test('frontend normalization handles string numeric attributes and choice option
     nodes: [
       { id: 's1', type: 'slider', bind: 'speed', min: '0', max: '100', step: '5', value: '50' },
       { id: 'c1', type: 'choice', bind: 'mode', options: ['Fast', 'Slow'] },
-      { id: 'b1', type: 'button', label: 'Go', action: { type: 'set', target: 'speed', value: 100 } },
+      {
+        id: 'b1',
+        type: 'button',
+        label: 'Go',
+        action: { type: 'set', target: 'speed', value: 100 },
+      },
       { id: 't1', type: 'table', columns: ['A', 'B'] },
     ],
   };
@@ -237,4 +276,3 @@ test('frontend normalization handles string numeric attributes and choice option
   const validation = validateIntelligentUi(normalized);
   assert.equal(validation.ok, true, validation.error);
 });
-

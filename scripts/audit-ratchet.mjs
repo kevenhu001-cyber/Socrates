@@ -34,7 +34,9 @@ if (!existsSync(`${cwd}/package.json`)) {
 function runAudit() {
   try {
     return execFileSync('npm', ['audit', '--json'], {
-      cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+      cwd,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
     });
   } catch (err) {
     if (typeof err.stdout === 'string' && err.stdout.trim()) return err.stdout;
@@ -53,7 +55,9 @@ const found = Object.entries(report.vulnerabilities ?? {})
   }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
-const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : { projects: {} };
+const baseline = existsSync(BASELINE)
+  ? JSON.parse(readFileSync(BASELINE, 'utf8'))
+  : { projects: {} };
 const accepted = baseline.projects?.[project]?.accepted ?? [];
 const acceptedNames = new Set(accepted.map((a) => a.name));
 
@@ -63,15 +67,20 @@ if (update) {
   baseline.projects[project] = {
     accepted: found.map((f) => ({
       ...f,
-      reason: previous.get(f.name)?.reason
-        ?? 'TODO: document why this is accepted, the real exposure, and what unblocks the fix',
+      reason:
+        previous.get(f.name)?.reason ??
+        'TODO: document why this is accepted, the real exposure, and what unblocks the fix',
     })),
   };
   writeFileSync(BASELINE, `${JSON.stringify(baseline, null, 2)}\n`, 'utf8');
-  console.log(`[audit] ${project}: recorded ${found.length} accepted high/critical advisor${found.length === 1 ? 'y' : 'ies'}`);
+  console.log(
+    `[audit] ${project}: recorded ${found.length} accepted high/critical advisor${found.length === 1 ? 'y' : 'ies'}`,
+  );
   for (const f of found) console.log(`  ${f.severity} ${f.name} (${f.range})`);
   if (found.some((f) => !previous.has(f.name))) {
-    console.log('\n[audit] new entries were written with a TODO reason — fill them in before committing.');
+    console.log(
+      '\n[audit] new entries were written with a TODO reason — fill them in before committing.',
+    );
   }
   process.exit(0);
 }
@@ -88,18 +97,28 @@ for (const f of found.filter((x) => acceptedNames.has(x.name))) {
 let failed = false;
 if (newlyBroken.length > 0) {
   failed = true;
-  console.error(`\n[audit] ${project}: ${newlyBroken.length} NEW high/critical advisor${newlyBroken.length === 1 ? 'y' : 'ies'}:`);
+  console.error(
+    `\n[audit] ${project}: ${newlyBroken.length} NEW high/critical advisor${newlyBroken.length === 1 ? 'y' : 'ies'}:`,
+  );
   for (const f of newlyBroken) {
-    console.error(`  ${f.severity} ${f.name} (${f.range})${f.direct ? ' [direct dependency]' : ''}`);
+    console.error(
+      `  ${f.severity} ${f.name} (${f.range})${f.direct ? ' [direct dependency]' : ''}`,
+    );
   }
-  console.error(`\n  Fix it, or record a reviewed exception with:\n      node scripts/audit-ratchet.mjs ${project} --update`);
+  console.error(
+    `\n  Fix it, or record a reviewed exception with:\n      node scripts/audit-ratchet.mjs ${project} --update`,
+  );
 }
 
 if (stale.length > 0) {
   failed = true;
-  console.error(`\n[audit] ${project}: ${stale.length} baseline entr${stale.length === 1 ? 'y' : 'ies'} no longer reproduce${stale.length === 1 ? 's' : ''}:`);
+  console.error(
+    `\n[audit] ${project}: ${stale.length} baseline entr${stale.length === 1 ? 'y' : 'ies'} no longer reproduce${stale.length === 1 ? 's' : ''}:`,
+  );
   for (const a of stale) console.error(`  ${a.name}`);
-  console.error(`\n  The ratchet only tightens. Shrink the baseline:\n      node scripts/audit-ratchet.mjs ${project} --update`);
+  console.error(
+    `\n  The ratchet only tightens. Shrink the baseline:\n      node scripts/audit-ratchet.mjs ${project} --update`,
+  );
 }
 
 if (failed) process.exit(1);

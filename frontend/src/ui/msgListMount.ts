@@ -20,10 +20,13 @@ export function isMsgListMounted(): boolean {
 
 /** The disposer is scoped to this claim, so old cleanup cannot clear a new one. */
 export function claimReactMessageList(host: HTMLElement, release: () => void): () => void {
-  if (sharedHosts.has(host)) throw new Error('A read-only shared transcript cannot be claimed by the live renderer.');
+  if (sharedHosts.has(host))
+    throw new Error('A read-only shared transcript cannot be claimed by the live renderer.');
   const claim = { host, release };
   current = claim;
-  return () => { if (current === claim) current = null; };
+  return () => {
+    if (current === claim) current = null;
+  };
 }
 
 export function isSharedMessageList(host: HTMLElement): boolean {

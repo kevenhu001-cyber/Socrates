@@ -56,7 +56,10 @@ function buildSystemPrompt(count: number): string {
  * @param {AbortSignal} [opts.signal]
  * @returns {Promise<string[]>} 1-(variantCount+1) deduped queries; the original is always first.
  */
-export async function expandQuery(query: string, opts: { userId?: string | null; signal?: AbortSignal; variantCount?: number } = {}): Promise<string[]> {
+export async function expandQuery(
+  query: string,
+  opts: { userId?: string | null; signal?: AbortSignal; variantCount?: number } = {},
+): Promise<string[]> {
   if (!query || !String(query).trim()) return [query];
   const q = String(query).trim();
 
@@ -106,7 +109,12 @@ export async function expandQuery(query: string, opts: { userId?: string | null;
     _cache.set(q, dedup);
     return dedup;
   } catch (e) {
-    if (e && (e as Error).name !== 'AbortError' && (e as Error).message && (e as Error).message.indexOf('silence-timeout') < 0) {
+    if (
+      e &&
+      (e as Error).name !== 'AbortError' &&
+      (e as Error).message &&
+      (e as Error).message.indexOf('silence-timeout') < 0
+    ) {
       console.warn('[queryExpander] LLM call failed:', (e as Error).message || e);
     }
     return [q];
@@ -125,9 +133,7 @@ function parseVariants(content: unknown): string[] {
   const s = String(content);
 
   // Strip code fences
-  let cleaned = s
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '');
+  let cleaned = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
 
   // Try to find the first JSON array
   const m = cleaned.match(/\[[\s\S]*?\]/);
@@ -135,11 +141,11 @@ function parseVariants(content: unknown): string[] {
     try {
       const arr = JSON.parse(m[0]);
       if (Array.isArray(arr)) {
-        return arr
-          .filter((x) => typeof x === 'string' && x.trim().length > 0)
-          .map((x) => x.trim());
+        return arr.filter((x) => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim());
       }
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   // Last resort: pull quoted strings from the response
@@ -157,4 +163,6 @@ function parseVariants(content: unknown): string[] {
 /**
  * Exposed for tests / diagnostics. Not used at runtime.
  */
-export function _clearCache() { _cache.clear(); }
+export function _clearCache() {
+  _cache.clear();
+}

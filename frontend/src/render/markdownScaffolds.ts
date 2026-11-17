@@ -151,12 +151,22 @@ export function streamScaffoldFallbackText(content: string): string {
 
 /** Quiet capsule that holds a control's place until the card mounts. */
 function skeletonPill(kind: 'solid' | 'soft' | 'quiet' = 'quiet', width = 96): string {
-  return '<span class="sc-live-pill sc-live-pill--' + kind + ' skeleton-shimmer" style="width:' + width + 'px"></span>';
+  return (
+    '<span class="sc-live-pill sc-live-pill--' +
+    kind +
+    ' skeleton-shimmer" style="width:' +
+    width +
+    'px"></span>'
+  );
 }
 
 /** A field that has not started yet: one shimmering line in its place. */
 function skeletonLine(part: string): string {
-  return '<div class="sc-live-skeleton skeleton-shimmer" data-part="' + escAttr(part) + '" aria-hidden="true"></div>';
+  return (
+    '<div class="sc-live-skeleton skeleton-shimmer" data-part="' +
+    escAttr(part) +
+    '" aria-hidden="true"></div>'
+  );
 }
 
 /** Screen-reader copy for a card that is still being written. */
@@ -165,25 +175,51 @@ function generatingLabel(): string {
 }
 
 function actionsRow(left: string, right: string): string {
-  return '<div class="sc-live-actions" aria-hidden="true"><span class="sc-live-actions-start">' + left
-    + '</span><span class="sc-live-actions-end">' + right + '</span></div>';
+  return (
+    '<div class="sc-live-actions" aria-hidden="true"><span class="sc-live-actions-start">' +
+    left +
+    '</span><span class="sc-live-actions-end">' +
+    right +
+    '</span></div>'
+  );
 }
 
 function streamCard(tag: string, body: string, trailing = ''): string {
   /* aria-busy marks the whole card as still being written; the hidden line
      says so in words. No live-region role: the preview is repainted on every
      token, and a status region would be re-announced each time. */
-  return '<div class="sc-live" data-scaffold-live="' + escAttr(tag) + '" aria-busy="true">'
-    + '<span class="visually-hidden">' + escHTML(generatingLabel()) + '</span>'
-    + '<div class="sc-live-head"><span class="sc-live-label">' + escHTML(streamLabel(tag)) + '</span>' + trailing + '</div>'
-    + '<div class="sc-live-body">' + body + '</div></div>';
+  return (
+    '<div class="sc-live" data-scaffold-live="' +
+    escAttr(tag) +
+    '" aria-busy="true">' +
+    '<span class="visually-hidden">' +
+    escHTML(generatingLabel()) +
+    '</span>' +
+    '<div class="sc-live-head"><span class="sc-live-label">' +
+    escHTML(streamLabel(tag)) +
+    '</span>' +
+    trailing +
+    '</div>' +
+    '<div class="sc-live-body">' +
+    body +
+    '</div></div>'
+  );
 }
 
 type StreamMarkdownRenderer = (value: string, part: string) => string;
 /** `open` is true while the block's closing tag has not arrived yet. */
-type StreamPreviewRenderer = (inner: string, markdown: StreamMarkdownRenderer, attrs: string, open: boolean) => string;
+type StreamPreviewRenderer = (
+  inner: string,
+  markdown: StreamMarkdownRenderer,
+  attrs: string,
+  open: boolean,
+) => string;
 
-function renderStreamMarkdown(value: string, part: string, formatMarkdown: (value: string) => string): string {
+function renderStreamMarkdown(
+  value: string,
+  part: string,
+  formatMarkdown: (value: string) => string,
+): string {
   const text = String(value || '').trim();
   if (!text) return skeletonLine(part);
   let html: string;
@@ -202,7 +238,10 @@ function renderKeyPointPreview(inner: string, markdown: StreamMarkdownRenderer):
 function renderDefinitionPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const term = streamField(inner, 'term');
   const body = streamBodyField(inner, 'body');
-  return streamCard('definition', markdown(term, 'definition-term') + (term || body ? markdown(body, 'definition-body') : ''));
+  return streamCard(
+    'definition',
+    markdown(term, 'definition-term') + (term || body ? markdown(body, 'definition-body') : ''),
+  );
 }
 
 function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): string {
@@ -210,31 +249,40 @@ function renderExamplePreview(inner: string, markdown: StreamMarkdownRenderer): 
   const problem = streamBodyField(inner, 'problem');
   const solution = streamField(inner, 'solution');
   const hint = streamField(inner, 'hint');
-  return streamCard('example',
-    (title && title !== 'Example' ? markdown(title, 'example-title') : '')
-    + markdown(problem, 'example-problem')
-    + (hint ? actionsRow(skeletonPill('quiet', 104), '') : '')
-    + (solution ? actionsRow(skeletonPill('quiet', 112), '') : ''));
+  return streamCard(
+    'example',
+    (title && title !== 'Example' ? markdown(title, 'example-title') : '') +
+      markdown(problem, 'example-problem') +
+      (hint ? actionsRow(skeletonPill('quiet', 104), '') : '') +
+      (solution ? actionsRow(skeletonPill('quiet', 112), '') : ''),
+  );
 }
 
 function renderPracticePreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
   const problem = streamBodyField(inner, 'problem');
   const hint = streamField(inner, 'hint');
-  return streamCard('practice',
-    (title && title !== 'Practice' ? markdown(title, 'practice-title') : '')
-    + markdown(problem, 'practice-problem')
-    + (hint ? actionsRow(skeletonPill('quiet', 104), '') : '')
-    + '<div class="sc-live-input" aria-hidden="true"></div>'
-    + actionsRow('', skeletonPill('solid', 72)));
+  return streamCard(
+    'practice',
+    (title && title !== 'Practice' ? markdown(title, 'practice-title') : '') +
+      markdown(problem, 'practice-problem') +
+      (hint ? actionsRow(skeletonPill('quiet', 104), '') : '') +
+      '<div class="sc-live-input" aria-hidden="true"></div>' +
+      actionsRow('', skeletonPill('solid', 72)),
+  );
 }
 
 function renderFlashcardPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const front = streamField(inner, 'front');
-  return streamCard('flashcard',
-    '<div class="sc-live-face"><span class="sc-live-face-label">' + escHTML(streamLabel('flashcard-front')) + '</span>'
-    + markdown(front, 'flashcard-front') + '</div>'
-    + actionsRow('', skeletonPill('soft', 88)));
+  return streamCard(
+    'flashcard',
+    '<div class="sc-live-face"><span class="sc-live-face-label">' +
+      escHTML(streamLabel('flashcard-front')) +
+      '</span>' +
+      markdown(front, 'flashcard-front') +
+      '</div>' +
+      actionsRow('', skeletonPill('soft', 88)),
+  );
 }
 
 /* A proof nested in a theorem, closed or still streaming. */
@@ -249,33 +297,59 @@ function renderTheoremPreview(inner: string, markdown: StreamMarkdownRenderer): 
   const hasProof = statementInner.length !== inner.length;
   const title = streamField(statementInner, 'title');
   const statement = streamBodyField(statementInner, 'statement');
-  return streamCard('theorem',
-    (title ? markdown(title, 'theorem-title') : '')
-    + markdown(statement, 'theorem-statement')
-    + (hasProof ? actionsRow(skeletonPill('quiet', 104), '') : ''));
+  return streamCard(
+    'theorem',
+    (title ? markdown(title, 'theorem-title') : '') +
+      markdown(statement, 'theorem-statement') +
+      (hasProof ? actionsRow(skeletonPill('quiet', 104), '') : ''),
+  );
 }
 
 function renderProofPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
   const body = streamBodyField(inner, 'body');
-  return streamCard('proof', (title ? markdown(title, 'proof-title') : '') + markdown(body, 'proof-body'), skeletonPill('quiet', 72));
+  return streamCard(
+    'proof',
+    (title ? markdown(title, 'proof-title') : '') + markdown(body, 'proof-body'),
+    skeletonPill('quiet', 72),
+  );
 }
 
-function stepRows(steps: string[], markdown: StreamMarkdownRenderer, part: string, numbers?: string[]): string {
-  return '<div class="sc-live-steps">' + steps.map((step, index) => (
-    '<div class="sc-live-step"><span class="sc-live-step-n">' + escHTML(numbers?.[index] || String(index + 1)) + '</span>'
-    + '<div class="sc-live-step-body">' + markdown(step, part) + '</div></div>'
-  )).join('') + '</div>';
+function stepRows(
+  steps: string[],
+  markdown: StreamMarkdownRenderer,
+  part: string,
+  numbers?: string[],
+): string {
+  return (
+    '<div class="sc-live-steps">' +
+    steps
+      .map(
+        (step, index) =>
+          '<div class="sc-live-step"><span class="sc-live-step-n">' +
+          escHTML(numbers?.[index] || String(index + 1)) +
+          '</span>' +
+          '<div class="sc-live-step-body">' +
+          markdown(step, part) +
+          '</div></div>',
+      )
+      .join('') +
+    '</div>'
+  );
 }
 
 function renderDerivationPreview(inner: string, markdown: StreamMarkdownRenderer): string {
   const title = streamField(inner, 'title');
   const body = streamBodyField(inner, 'body');
   const steps = splitDerivationSteps(body).map(derivationStepSource);
-  return streamCard('derivation',
-    (title ? markdown(title, 'derivation-title') : '')
-    + (steps.length ? stepRows(steps, markdown, 'derivation-step') : markdown('', 'derivation-step')),
-    steps.length > 1 ? skeletonPill('quiet', 80) : '');
+  return streamCard(
+    'derivation',
+    (title ? markdown(title, 'derivation-title') : '') +
+      (steps.length
+        ? stepRows(steps, markdown, 'derivation-step')
+        : markdown('', 'derivation-step')),
+    steps.length > 1 ? skeletonPill('quiet', 80) : '',
+  );
 }
 
 function renderStepPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string): string {
@@ -295,31 +369,48 @@ const QUIZ_OPTION_SLOTS = 4;
 function pendingQuizOptions(count: number): string {
   let rows = '';
   for (let index = 0; index < count; index++) {
-    rows += '<div class="sc-live-option sc-live-option--pending" aria-hidden="true">'
-      + '<span class="sc-live-letter sc-live-letter--pending"></span>'
-      + skeletonLine('quiz-option') + '</div>';
+    rows +=
+      '<div class="sc-live-option sc-live-option--pending" aria-hidden="true">' +
+      '<span class="sc-live-letter sc-live-letter--pending"></span>' +
+      skeletonLine('quiz-option') +
+      '</div>';
   }
   return rows;
 }
 
-function renderQuizPreview(inner: string, markdown: StreamMarkdownRenderer, attrs: string, open: boolean): string {
+function renderQuizPreview(
+  inner: string,
+  markdown: StreamMarkdownRenderer,
+  attrs: string,
+  open: boolean,
+): string {
   const question = streamBodyField(inner, 'q');
   const options = fieldMatches(inner, 'o', true).flatMap((match) => {
     const letter = match.attrs.match(/\bletter\s*=\s*["']([A-Ha-h])["']/i)?.[1];
     return letter
-      ? ['<div class="sc-live-option" aria-hidden="true">'
-        + '<span class="sc-live-letter">' + escHTML(letter.toUpperCase()) + '</span>'
-        + markdown(stripTags(decodeEntities(match.inner.trim())), 'quiz-option') + '</div>']
+      ? [
+          '<div class="sc-live-option" aria-hidden="true">' +
+            '<span class="sc-live-letter">' +
+            escHTML(letter.toUpperCase()) +
+            '</span>' +
+            markdown(stripTags(decodeEntities(match.inner.trim())), 'quiz-option') +
+            '</div>',
+        ]
       : [];
   });
-  const multi = /\b(?:multi|multiple)\b/i.test(attrs)
-    || fieldsOf(inner, 'correct').some((answer) => parseAnswerKey(answer).length > 1);
+  const multi =
+    /\b(?:multi|multiple)\b/i.test(attrs) ||
+    fieldsOf(inner, 'correct').some((answer) => parseAnswerKey(answer).length > 1);
   const pending = open ? pendingQuizOptions(Math.max(0, QUIZ_OPTION_SLOTS - options.length)) : '';
-  return streamCard('quiz',
-    markdown(question, 'quiz-q')
-    + (options.length || pending ? '<div class="sc-live-options">' + options.join('') + pending + '</div>' : '')
-    + actionsRow('', skeletonPill('solid', 88)),
-    multi ? skeletonPill('quiet', 64) : '');
+  return streamCard(
+    'quiz',
+    markdown(question, 'quiz-q') +
+      (options.length || pending
+        ? '<div class="sc-live-options">' + options.join('') + pending + '</div>'
+        : '') +
+      actionsRow('', skeletonPill('solid', 88)),
+    multi ? skeletonPill('quiet', 64) : '',
+  );
 }
 
 function renderGenericScaffoldPreview(tag: string, inner: string): string {
@@ -354,7 +445,8 @@ export function renderStreamScaffoldPreview(
   if (!STREAM_SCAFFOLD_TAGS.has(tag)) return null;
   const renderer = STREAM_PREVIEW_RENDERERS[tag];
   if (!renderer) return renderGenericScaffoldPreview(tag, inner);
-  const markdown: StreamMarkdownRenderer = (value, part) => renderStreamMarkdown(value, part, formatMarkdown);
+  const markdown: StreamMarkdownRenderer = (value, part) =>
+    renderStreamMarkdown(value, part, formatMarkdown);
   return renderer(inner, markdown, attrs, open);
 }
 

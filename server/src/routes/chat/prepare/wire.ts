@@ -5,7 +5,11 @@
  * adapter receives. Prompt/context assembly lives in the sibling modules.
  */
 import { z } from 'zod';
-import { ProviderContentPartSchema, ProviderMessageSchema, type ProviderMessage } from '../../../lib/providerMessageSchema.js';
+import {
+  ProviderContentPartSchema,
+  ProviderMessageSchema,
+  type ProviderMessage,
+} from '../../../lib/providerMessageSchema.js';
 import { isMultimodalProvider } from '../../../lib/multimodal.js';
 import { LEARNING_MODE_IDS } from '../../../lib/prompts.js';
 import { sanitizeExtraBody } from '../../../lib/sanitize.js';
@@ -19,45 +23,47 @@ import type { Provider } from './types.js';
 // message payload from spiking OpenAI costs / proxy timeouts).
 // Supports both plain text (string) and multimodal content parts (array)
 // for vision/image attachments.
-export const ChatPayloadSchema = z.object({
-  messages: z.array(ProviderMessageSchema).min(1).max(100),
-  temperature: z.number().min(0).max(2).optional(),
-  max_tokens: z.number().int().positive().max(32000).optional(),
-  mode: z.enum(['tutor', 'chat']).optional().default('chat'),
-  /* RN-6 — the learning mode picked in Tutor mode. The client sends only
+export const ChatPayloadSchema = z
+  .object({
+    messages: z.array(ProviderMessageSchema).min(1).max(100),
+    temperature: z.number().min(0).max(2).optional(),
+    max_tokens: z.number().int().positive().max(32000).optional(),
+    mode: z.enum(['tutor', 'chat']).optional().default('chat'),
+    /* RN-6 — the learning mode picked in Tutor mode. The client sends only
      the id; the behavior is the server-owned prompts/learning-modes.md
      section, injected for this turn. `learningFocus` is the short subject
      some modes act on (a concept for practice, a mistake for mistakes); it
      is learner data and travels as untrusted context. Ignored in chat mode. */
-  learningMode: z.enum(LEARNING_MODE_IDS).optional(),
-  learningFocus: z.string().max(2000).optional(),
-  /* P_dead-field-system-context — `systemContext` used to be accepted
+    learningMode: z.enum(LEARNING_MODE_IDS).optional(),
+    learningFocus: z.string().max(2000).optional(),
+    /* P_dead-field-system-context — `systemContext` used to be accepted
      here and read by nobody: the client sent it, the server dropped it.
      The schema is .passthrough(), so a stale client that still sends the
      field is unaffected; the dead declaration is gone. */
-  /* P_rag-context — optional session id. When present, the last user
+    /* P_rag-context — optional session id. When present, the last user
      message is used as the retrieval query against the session's
      chunk index and the top hits are injected as an untrusted
      context block into the system prompt. Ownership is verified
      server-side (services/embeddings/chunkIndex.ts#sessionOwnedBy) before any
      retrieval, so a forged sessionId yields an empty injection
      rather than another user's history. */
-  ragSessionId: z.string().max(64).optional(),
-  assistantId: z.string().uuid().optional(),
-  sessionId: z.string().uuid().optional(),
-  /* P_deepseek-mode — DeepSeek SDK flags that flip chain-of-
+    ragSessionId: z.string().max(64).optional(),
+    assistantId: z.string().uuid().optional(),
+    sessionId: z.string().uuid().optional(),
+    /* P_deepseek-mode — DeepSeek SDK flags that flip chain-of-
      thought on. The frontend sends these when the active model
      looks like a DeepSeek-family reasoning model. We forward
      them to llm.js as-is; non-DeepSeek upstreams silently ignore
      the unknown fields. */
-  reasoning_effort: z.enum(['none', 'low', 'medium', 'high']).optional(),
-  response_speed: z.enum(['standard', 'fast']).optional().default('standard'),
-  /* Backward-compatible input for older clients. Agent routing is now always
+    reasoning_effort: z.enum(['none', 'low', 'medium', 'high']).optional(),
+    response_speed: z.enum(['standard', 'fast']).optional().default('standard'),
+    /* Backward-compatible input for older clients. Agent routing is now always
      decided from the user's intent by the model; this field is accepted but
      ignored so stale clients cannot force a worker run. */
-  agentMode: z.boolean().optional(),
-  extra_body: z.record(z.string(), z.unknown()).optional(),
-}).passthrough();
+    agentMode: z.boolean().optional(),
+    extra_body: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
 
 /** A single chat message; content is either plain text or multimodal parts. */
 
@@ -92,7 +98,10 @@ export { sanitizeExtraBody };
  * This is a defence-in-depth fallback. The frontend is supposed to
  * pre-decide whether to send `image_url` parts based on the active
  * provider, but we don't trust the client and re-check here. */
-export function transformContentForModel(content: string | ContentPart[], multimodal: boolean): string | ContentPart[] {
+export function transformContentForModel(
+  content: string | ContentPart[],
+  multimodal: boolean,
+): string | ContentPart[] {
   if (!Array.isArray(content)) return content;
   if (multimodal) {
     /* Normalise `image_url` parts before forwarding: providers disagree
@@ -104,7 +113,7 @@ export function transformContentForModel(content: string | ContentPart[], multim
     return content.map((part) =>
       part && part.type === 'image_url' && part.image_url && typeof part.image_url.url === 'string'
         ? { ...part, image_url: { url: part.image_url.url } }
-        : part
+        : part,
     );
   }
   const out: ContentPart[] = [];
@@ -131,15 +140,21 @@ export function transformContentForModel(content: string | ContentPart[], multim
   // upstream doesn't see an empty content array (which some providers
   // also reject).
   if (out.length === 0) {
-    out.push({ type: 'text', text: '[User attached content that cannot be processed by the current model.]' });
+    out.push({
+      type: 'text',
+      text: '[User attached content that cannot be processed by the current model.]',
+    });
   }
   return out;
 }
 
 /** Return true when any message contains an image_url content part. */
 export function containsImageUrlParts(messages: ProviderMessage[]): boolean {
-  return messages.some((message) => Array.isArray(message?.content)
-    && message.content.some((part) => part && part.type === 'image_url'));
+  return messages.some(
+    (message) =>
+      Array.isArray(message?.content) &&
+      message.content.some((part) => part && part.type === 'image_url'),
+  );
 }
 
 /* Apply the multimodal transform to every user/assistant turn in
@@ -149,11 +164,13 @@ export function containsImageUrlParts(messages: ProviderMessage[]): boolean {
  * system-image parts. The provider object is the decrypted shape
  * returned by services/core/apiKey.js#decryptProvider; it carries the
  * user-controlled `isMultimodal` boolean. */
-export function transformMessagesForModel(messages: ProviderMessage[], provider: Provider): ProviderMessage[] {
+export function transformMessagesForModel(
+  messages: ProviderMessage[],
+  provider: Provider,
+): ProviderMessage[] {
   const multimodal = isMultimodalProvider(provider);
   return messages.map((m) => {
     if (!m || typeof m !== 'object') return m;
     return { ...m, content: transformContentForModel(m.content, multimodal) };
   });
 }
-

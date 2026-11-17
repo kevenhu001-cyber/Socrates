@@ -49,7 +49,11 @@ function unavailable(reason: string): SearchResult[] {
  * @param {AbortSignal|null} [signal]  External timeout signal.
  * @returns {Promise<Array<{title,url,snippet,date,authority,source}>>}
  */
-export async function searchMmx(query: string, limit = 10, signal?: AbortSignal | null): Promise<SearchResult[]> {
+export async function searchMmx(
+  query: string,
+  limit = 10,
+  signal?: AbortSignal | null,
+): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
   /* Skip the spawn entirely when the CLI is not installed — an ENOENT
      per query used to waste a child-process attempt and log a warning
@@ -78,13 +82,17 @@ export async function searchMmx(query: string, limit = 10, signal?: AbortSignal 
 
   const baseResp = data?.base_resp || data?.baseResp;
   if (baseResp && String(baseResp.status_code) !== '0') {
-    console.warn(`[searchMmx] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`);
+    console.warn(
+      `[searchMmx] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`,
+    );
     return unavailable('upstream_error');
   }
 
   const organic = Array.isArray(data?.organic)
     ? data.organic
-    : (Array.isArray(data?.results) ? data.results : null);
+    : Array.isArray(data?.results)
+      ? data.results
+      : null;
 
   // Type guard — a malformed response from the CLI must not crash the
   // merge step downstream. The webSearch.js consumer flattens this
@@ -92,12 +100,15 @@ export async function searchMmx(query: string, limit = 10, signal?: AbortSignal 
   // TypeError deep in the pipeline rather than here.
   if (!Array.isArray(organic)) return [];
 
-  return organic.slice(0, Math.max(1, Math.min(10, limit))).map((item): SearchResult => ({
-    title: item.title || '',
-    url: item.link || item.url || '',
-    snippet: item.snippet || item.summary || item.content || '',
-    date: item.date || null,
-    authority: 'normal',
-    source: 'minimax-cli',
-  })).filter((r) => r.url && r.title);
+  return organic
+    .slice(0, Math.max(1, Math.min(10, limit)))
+    .map((item): SearchResult => ({
+      title: item.title || '',
+      url: item.link || item.url || '',
+      snippet: item.snippet || item.summary || item.content || '',
+      date: item.date || null,
+      authority: 'normal',
+      source: 'minimax-cli',
+    }))
+    .filter((r) => r.url && r.title);
 }

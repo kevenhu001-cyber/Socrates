@@ -9,12 +9,13 @@ const RUNS = 200;
 
 /* A decision over the full space: independent heartbeat/semantic flags plus
    attempt / maxAttempts counters spanning below, at, and above the ceiling. */
-const decision = () => fc.record({
-  isHeartbeat: fc.boolean(),
-  semanticActivity: fc.boolean(),
-  attempt: fc.integer({ min: 0, max: 40 }),
-  maxAttempts: fc.integer({ min: 0, max: 40 }),
-});
+const decision = () =>
+  fc.record({
+    isHeartbeat: fc.boolean(),
+    semanticActivity: fc.boolean(),
+    attempt: fc.integer({ min: 0, max: 40 }),
+    maxAttempts: fc.integer({ min: 0, max: 40 }),
+  });
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 7: Heartbeat interruptions replay
@@ -25,9 +26,7 @@ test('Feature: chat-experience-revamp, Property 7: Heartbeat interruptions repla
     fc.property(decision(), (d) => {
       // The controller replays exactly when the interruption is a heartbeat,
       // no semantic activity has reached the UI, and we are below the ceiling.
-      const expected = d.isHeartbeat
-        && !d.semanticActivity
-        && d.attempt < d.maxAttempts;
+      const expected = d.isHeartbeat && !d.semanticActivity && d.attempt < d.maxAttempts;
 
       assert.equal(shouldRetryInterruptedStream(d), expected);
     }),

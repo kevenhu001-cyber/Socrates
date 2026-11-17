@@ -113,8 +113,12 @@ describe('streamChatCompletion: happy path', () => {
     await streamChatCompletion(
       { ...BASE_OPTS },
       (c) => chunks.push(c),
-      (d) => { donePayload = d; },
-      (e) => { error = e; },
+      (d) => {
+        donePayload = d;
+      },
+      (e) => {
+        error = e;
+      },
     );
 
     assert.equal(error, null, 'no error expected');
@@ -134,25 +138,44 @@ describe('streamChatCompletion: happy path', () => {
 
   test('uses a provider-compatible max_tokens default when not provided', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      () => {},
+      () => {},
+    );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.max_tokens, 8192);
   });
 
   test('uses caller-provided maxTokens instead of default', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
-    await streamChatCompletion({ ...BASE_OPTS, maxTokens: 512 }, () => {}, () => {}, () => {});
+    await streamChatCompletion(
+      { ...BASE_OPTS, maxTokens: 512 },
+      () => {},
+      () => {},
+      () => {},
+    );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.max_tokens, 512);
   });
 
   test('forwards reasoning_effort and extra_body when provided', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
     await streamChatCompletion(
       {
@@ -161,7 +184,9 @@ describe('streamChatCompletion: happy path', () => {
         reasoning_effort: 'high',
         extra_body: { thinking: { type: 'enabled' } },
       },
-      () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
     );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.reasoning_effort, 'high');
@@ -170,11 +195,16 @@ describe('streamChatCompletion: happy path', () => {
 
   test('an undeclared model is never sent a reasoning effort it may reject', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'x' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
     await streamChatCompletion(
       { ...BASE_OPTS, reasoning_effort: 'high' },
-      () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
     );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     /* The capability registry does not know this model, so it does not
@@ -185,11 +215,16 @@ describe('streamChatCompletion: happy path', () => {
 
   test('fast response speed requests priority service tier', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'fast' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'fast' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
     await streamChatCompletion(
       { ...BASE_OPTS, response_speed: 'fast' },
-      () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
     );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.service_tier, 'priority');
@@ -199,7 +234,10 @@ describe('streamChatCompletion: happy path', () => {
     globalThis.fetch = mock.fn(async (_url, init) => {
       const body = JSON.parse(init.body);
       if (body.service_tier) return makeJsonResponse({ error: 'service_tier unsupported' }, 400);
-      return makeSseResponse([{ choices: [{ delta: { content: 'standard' }, finish_reason: 'stop' }] }, sseDone()]);
+      return makeSseResponse([
+        { choices: [{ delta: { content: 'standard' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]);
     });
     const fallbacks = [];
     await streamChatCompletion(
@@ -212,7 +250,9 @@ describe('streamChatCompletion: happy path', () => {
         tools: [{ type: 'function', function: { name: 'web_search' } }],
         onPreferenceFallback: (detail) => fallbacks.push(detail),
       },
-      () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
     );
     assert.equal(globalThis.fetch.mock.calls.length, 2);
     const fallbackBody = JSON.parse(globalThis.fetch.mock.calls[1].arguments[1].body);
@@ -220,7 +260,9 @@ describe('streamChatCompletion: happy path', () => {
     assert.equal(fallbackBody.reasoning_effort, 'high');
     assert.equal(fallbackBody.reasoning_split, true);
     assert.equal(fallbackBody.tools[0].function.name, 'web_search');
-    assert.deepEqual(fallbacks, [{ preference: 'response_speed', requested: 'fast', applied: 'standard' }]);
+    assert.deepEqual(fallbacks, [
+      { preference: 'response_speed', requested: 'fast', applied: 'standard' },
+    ]);
   });
 
   test('falls back once without tools when a provider rejects native tools with 400', async () => {
@@ -228,7 +270,7 @@ describe('streamChatCompletion: happy path', () => {
       const body = JSON.parse(init.body);
       if (body.tools) return makeJsonResponse({ error: 'tools unsupported' }, 400);
       return makeSseResponse([
-        { choices: [{ delta: { content: 'fallback', }, finish_reason: 'stop' }] },
+        { choices: [{ delta: { content: 'fallback' }, finish_reason: 'stop' }] },
         sseDone(),
       ]);
     });
@@ -236,7 +278,11 @@ describe('streamChatCompletion: happy path', () => {
     let error = null;
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      (c) => chunks.push(c), () => {}, (e) => { error = e; },
+      (c) => chunks.push(c),
+      () => {},
+      (e) => {
+        error = e;
+      },
     );
     assert.equal(error, null);
     assert.deepEqual(chunks, ['fallback']);
@@ -248,15 +294,27 @@ describe('streamChatCompletion: happy path', () => {
 
   test('normalizes null assistant tool content for compatibility gateways', async () => {
     globalThis.fetch = mock.fn(async () =>
-      makeSseResponse([{ choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] }, sseDone()]),
+      makeSseResponse([
+        { choices: [{ delta: { content: 'ok' }, finish_reason: 'stop' }] },
+        sseDone(),
+      ]),
     );
-    await streamChatCompletion({
-      ...BASE_OPTS,
-      messages: [
-        { role: 'assistant', content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'x', arguments: '{}' } }] },
-        { role: 'tool', content: '{}', tool_call_id: 'c1' },
-      ],
-    }, () => {}, () => {}, () => {});
+    await streamChatCompletion(
+      {
+        ...BASE_OPTS,
+        messages: [
+          {
+            role: 'assistant',
+            content: null,
+            tool_calls: [{ id: 'c1', type: 'function', function: { name: 'x', arguments: '{}' } }],
+          },
+          { role: 'tool', content: '{}', tool_call_id: 'c1' },
+        ],
+      },
+      () => {},
+      () => {},
+      () => {},
+    );
     const sentBody = JSON.parse(globalThis.fetch.mock.calls[0].arguments[1].body);
     assert.equal(sentBody.messages[0].content, '');
   });
@@ -297,15 +355,35 @@ describe('streamChatCompletion: tool_calls', () => {
   test('accumulates indexed tool_call deltas and dispatches onToolUse when finish_reason=tool_calls', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0,
-          id: 'call_1',
-          function: { name: 'get_weather', arguments: ARG_PART_A },
-        }] } }] },
-        { choices: [{ delta: { tool_calls: [{
-          index: 0,
-          function: { arguments: ARG_PART_B },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_1',
+                    function: { name: 'get_weather', arguments: ARG_PART_A },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { arguments: ARG_PART_B },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
         sseDone(),
       ]),
@@ -314,7 +392,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const deltas = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'get_weather' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
       (tc) => deltas.push(tc),
     );
@@ -333,13 +414,35 @@ describe('streamChatCompletion: tool_calls', () => {
   test('dispatches object arguments and split names for compatible providers', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, id: 'call_obj',
-          function: { name: 'web_', arguments: { query: 'latest' } },
-        }] } }] },
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, function: { name: 'search', arguments: { query: 'latest' } },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_obj',
+                    function: { name: 'web_', arguments: { query: 'latest' } },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    function: { name: 'search', arguments: { query: 'latest' } },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'function_call' }] },
         sseDone(),
       ]),
@@ -347,7 +450,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 1);
@@ -367,7 +473,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 1);
@@ -378,7 +487,15 @@ describe('streamChatCompletion: tool_calls', () => {
   test('assigns a stable id to a legacy function_call that omits tool ids', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { function_call: { name: 'render_visualization', arguments: '{"version":1}' } } }] },
+        {
+          choices: [
+            {
+              delta: {
+                function_call: { name: 'render_visualization', arguments: '{"version":1}' },
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'function_call' }] },
         sseDone(),
       ]),
@@ -387,7 +504,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const deltas = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'render_visualization' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
       (delta) => deltas.push(delta),
     );
@@ -396,7 +516,11 @@ describe('streamChatCompletion: tool_calls', () => {
     assert.ok(tools[0].id, 'tool_use needs a server-generated id when the provider omits one');
     const finalDelta = deltas.at(-1);
     assert.equal(finalDelta.final, true);
-    assert.equal(finalDelta.id, tools[0].id, 'the final arguments delta must correlate with tool_use');
+    assert.equal(
+      finalDelta.id,
+      tools[0].id,
+      'the final arguments delta must correlate with tool_use',
+    );
     assert.equal(finalDelta.arguments, tools[0].function.arguments);
   });
 
@@ -405,12 +529,34 @@ describe('streamChatCompletion: tool_calls', () => {
        second call overwrote the first and one of the two vanished. */
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          id: 'call_a', function: { name: 'web_search', arguments: '{"query":"a"}' },
-        }] } }] },
-        { choices: [{ delta: { tool_calls: [{
-          id: 'call_b', function: { name: 'web_fetch', arguments: '{"url":"https://example.com"}' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    id: 'call_a',
+                    function: { name: 'web_search', arguments: '{"query":"a"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    id: 'call_b',
+                    function: { name: 'web_fetch', arguments: '{"url":"https://example.com"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
         sseDone(),
       ]),
@@ -418,11 +564,17 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 2);
-    assert.deepEqual(tools.map((tc) => tc.id), ['call_a', 'call_b']);
+    assert.deepEqual(
+      tools.map((tc) => tc.id),
+      ['call_a', 'call_b'],
+    );
     assert.equal(tools[0].function.arguments, '{"query":"a"}');
     assert.equal(tools[1].function.arguments, '{"url":"https://example.com"}');
     /* Only the protocol shape is handed out — no accumulator internals. */
@@ -432,9 +584,20 @@ describe('streamChatCompletion: tool_calls', () => {
   test('continues an id-only call across deltas that carry neither id nor index', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          id: 'call_a', function: { name: 'web_search', arguments: '{"query":' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    id: 'call_a',
+                    function: { name: 'web_search', arguments: '{"query":' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: { tool_calls: [{ function: { arguments: '"deep' } }] } }] },
         { choices: [{ delta: { tool_calls: [{ function: { arguments: ' work"}' } }] } }] },
         { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
@@ -444,7 +607,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 1);
@@ -459,10 +625,21 @@ describe('streamChatCompletion: tool_calls', () => {
        is dispatched rather than dropped. */
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, id: 'call_x',
-          function: { name: 'noop', arguments: '{}' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_x',
+                    function: { name: 'noop', arguments: '{}' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'stop' }] },
         sseDone(),
       ]),
@@ -470,7 +647,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'noop' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 1, 'a complete tool call survives a "stop" finish');
@@ -483,10 +663,21 @@ describe('streamChatCompletion: tool_calls', () => {
        closed in prose — the speculative call is dropped. */
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, id: 'call_y',
-          function: { arguments: '{"query":"half' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_y',
+                    function: { arguments: '{"query":"half' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'stop' }] },
         sseDone(),
       ]),
@@ -494,7 +685,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'noop' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 0, 'no onToolUse for an incomplete call on a "stop" finish');
@@ -503,10 +697,21 @@ describe('streamChatCompletion: tool_calls', () => {
   test('dispatches onToolUse when finish_reason is "length" — truncated calls still reach the correction path', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, id: 'call_len',
-          function: { name: 'web_search', arguments: '{"q":"trunc' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_len',
+                    function: { name: 'web_search', arguments: '{"q":"trunc' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'length' }] },
         sseDone(),
       ]),
@@ -514,7 +719,10 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     /* Before the fix these calls were silently dropped and the turn
@@ -527,17 +735,31 @@ describe('streamChatCompletion: tool_calls', () => {
   test('dispatches onToolUse when the stream ends without any finish_reason', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [{
-          index: 0, id: 'call_nofin',
-          function: { name: 'web_search', arguments: '{"q":"x"}' },
-        }] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  {
+                    index: 0,
+                    id: 'call_nofin',
+                    function: { name: 'web_search', arguments: '{"q":"x"}' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
         sseDone(),
       ]),
     );
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     assert.equal(tools.length, 1);
@@ -547,10 +769,18 @@ describe('streamChatCompletion: tool_calls', () => {
   test('keeps parallel tool_calls separate when the provider omits `index`', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeSseResponse([
-        { choices: [{ delta: { tool_calls: [
-          { id: 'call_a', function: { name: 'web_search', arguments: '{"q":"a"}' } },
-          { id: 'call_b', function: { name: 'web_fetch', arguments: '{"url":"u"}' } },
-        ] } }] },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  { id: 'call_a', function: { name: 'web_search', arguments: '{"q":"a"}' } },
+                  { id: 'call_b', function: { name: 'web_fetch', arguments: '{"url":"u"}' } },
+                ],
+              },
+            },
+          ],
+        },
         { choices: [{ delta: {}, finish_reason: 'tool_calls' }] },
         sseDone(),
       ]),
@@ -558,13 +788,19 @@ describe('streamChatCompletion: tool_calls', () => {
     const tools = [];
     await streamChatCompletion(
       { ...BASE_OPTS, tools: [{ type: 'function', function: { name: 'web_search' } }] },
-      () => {}, () => {}, () => {}, () => {},
+      () => {},
+      () => {},
+      () => {},
+      () => {},
       (tc) => tools.push(tc),
     );
     /* Without the array-position fallback both entries used to merge
        into accumulator slot 0 and the second call was lost. */
     assert.equal(tools.length, 2);
-    assert.deepEqual(tools.map((t) => t.id), ['call_a', 'call_b']);
+    assert.deepEqual(
+      tools.map((t) => t.id),
+      ['call_a', 'call_b'],
+    );
   });
 });
 
@@ -595,13 +831,19 @@ describe('streamChatCompletion: long reasoning waits', () => {
         { ...BASE_OPTS, signal: callerSignal },
         (chunk) => chunks.push(chunk),
         () => {},
-        (err) => { error = err; },
+        (err) => {
+          error = err;
+        },
         (delta) => reasoning.push(delta),
       );
       assert.equal(error, null);
       assert.deepEqual(reasoning, ['private reasoning']);
       assert.deepEqual(chunks, ['answer']);
-      assert.strictEqual(requestSignal, callerSignal, 'only caller cancellation should reach fetch');
+      assert.strictEqual(
+        requestSignal,
+        callerSignal,
+        'only caller cancellation should reach fetch',
+      );
       assert.deepEqual(scheduledTimers, [], 'the LLM stream must not arm an autonomous timeout');
     } finally {
       globalThis.setTimeout = originalSetTimeout;
@@ -641,7 +883,8 @@ describe('tool-call compatibility helpers', () => {
   });
 
   test('keeps a fragment that repeats the accumulated tail', () => {
-    const fold = (fragments) => fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
+    const fold = (fragments) =>
+      fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
     /* Regression: the closing braces of a nested object arrive as separate
        deltas, and the old "prev.endsWith(next)" rule dropped the second one,
        truncating the JSON of every call with a nested payload. */
@@ -655,7 +898,8 @@ describe('tool-call compatibility helpers', () => {
   });
 
   test('drops a `{}` placeholder instead of locking the accumulator', () => {
-    const fold = (fragments) => fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
+    const fold = (fragments) =>
+      fragments.reduce((acc, part) => mergeToolArgumentDelta(acc, part), '');
     /* A gateway that sends `{}` before the real fragments used to freeze
        the accumulator: `{}` parses, so every later fragment was discarded
        and the call ran with empty arguments. */
@@ -663,23 +907,31 @@ describe('tool-call compatibility helpers', () => {
   });
 
   test('locks the stream mode once per call', () => {
-    const snapshot = ['{"q":"x"}', '{"q":"xy"}', '{"q":"xy","n":1}']
-      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    const snapshot = ['{"q":"x"}', '{"q":"xy"}', '{"q":"xy","n":1}'].reduce(
+      (stream, delta) => appendToolArgumentDelta(stream, delta),
+      createToolArgumentStream(),
+    );
     assert.equal(snapshot.mode, 'snapshot');
     assert.equal(snapshot.text, '{"q":"xy","n":1}');
 
-    const fragment = ['{"q":', '"xy"', '}']
-      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    const fragment = ['{"q":', '"xy"', '}'].reduce(
+      (stream, delta) => appendToolArgumentDelta(stream, delta),
+      createToolArgumentStream(),
+    );
     assert.equal(fragment.mode, 'fragment');
     assert.equal(fragment.text, '{"q":"xy"}');
 
     /* A `{}` placeholder must not decide the mode: the provider that sent
        it may go on to stream either snapshots or fragments. */
-    const afterPlaceholderSnapshot = ['{}', '{"a":1}', '{"a":1,"b":2}']
-      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    const afterPlaceholderSnapshot = ['{}', '{"a":1}', '{"a":1,"b":2}'].reduce(
+      (stream, delta) => appendToolArgumentDelta(stream, delta),
+      createToolArgumentStream(),
+    );
     assert.equal(afterPlaceholderSnapshot.text, '{"a":1,"b":2}');
-    const afterPlaceholderFragment = ['{}', '{"a":', '1}']
-      .reduce((stream, delta) => appendToolArgumentDelta(stream, delta), createToolArgumentStream());
+    const afterPlaceholderFragment = ['{}', '{"a":', '1}'].reduce(
+      (stream, delta) => appendToolArgumentDelta(stream, delta),
+      createToolArgumentStream(),
+    );
     assert.equal(afterPlaceholderFragment.text, '{"a":1}');
   });
 
@@ -694,19 +946,24 @@ describe('streamChatCompletion: error & edge cases', () => {
     /* Retry-After keeps this fast: it is the only delay input the backoff
        trusts verbatim, so the retries still all run, just without sleeping
        through a real rate-limit window. */
-    globalThis.fetch = mock.fn(async () =>
-      new Response(JSON.stringify({ error: 'rate_limited' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
-      }),
+    globalThis.fetch = mock.fn(
+      async () =>
+        new Response(JSON.stringify({ error: 'rate_limited' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+        }),
     );
     let error = null;
     let done = null;
     await streamChatCompletion(
       { ...BASE_OPTS },
       () => {},
-      (d) => { done = d; },
-      (e) => { error = e; },
+      (d) => {
+        done = d;
+      },
+      (e) => {
+        error = e;
+      },
     );
     assert.ok(error instanceof Error);
     assert.match(error.message, /LLM API error 429/);
@@ -714,18 +971,33 @@ describe('streamChatCompletion: error & edge cases', () => {
   });
 
   test('forwards upstream 5xx as onError', async () => {
-    globalThis.fetch = mock.fn(async () =>
-      new Response('upstream dead', { status: 502, headers: { 'Retry-After': '0.001' } }),
+    globalThis.fetch = mock.fn(
+      async () =>
+        new Response('upstream dead', { status: 502, headers: { 'Retry-After': '0.001' } }),
     );
     let error = null;
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, (e) => { error = e; });
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      () => {},
+      (e) => {
+        error = e;
+      },
+    );
     assert.match(error.message, /LLM API error 502/);
   });
 
   test('calls onError when upstream returns an empty body', async () => {
     globalThis.fetch = mock.fn(async () => makeEmptyResponse(200));
     let error = null;
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, (e) => { error = e; });
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      () => {},
+      (e) => {
+        error = e;
+      },
+    );
     assert.match(error.message, /empty body/);
   });
 
@@ -753,7 +1025,9 @@ describe('streamChatCompletion: error & edge cases', () => {
       { ...BASE_OPTS },
       (c) => chunks.push(c),
       () => {},
-      (e) => { error = e; },
+      (e) => {
+        error = e;
+      },
     );
     assert.equal(error, null, 'a transient 429 must not end the turn');
     assert.equal(chunks.join(''), 'recovered');
@@ -762,25 +1036,41 @@ describe('streamChatCompletion: error & edge cases', () => {
 
   test('a 429 gets a longer attempt budget than a transient 5xx', async () => {
     const countFor = async (status) => {
-      globalThis.fetch = mock.fn(async () =>
-        new Response('nope', { status, headers: { 'Retry-After': '0.001' } }));
-      await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
+      globalThis.fetch = mock.fn(
+        async () => new Response('nope', { status, headers: { 'Retry-After': '0.001' } }),
+      );
+      await streamChatCompletion(
+        { ...BASE_OPTS },
+        () => {},
+        () => {},
+        () => {},
+      );
       return globalThis.fetch.mock.callCount();
     };
     const rateLimited = await countFor(429);
     const transient = await countFor(503);
-    assert.ok(rateLimited > transient,
+    assert.ok(
+      rateLimited > transient,
       `429 (${rateLimited}) must outlast 503 (${transient}) — otherwise the retry ` +
-      'dies inside the same RPM window it was meant to outlast');
+        'dies inside the same RPM window it was meant to outlast',
+    );
     assert.equal(rateLimited, 5);
     assert.equal(transient, 3);
   });
 
   test('a non-retryable status is attempted exactly once', async () => {
     globalThis.fetch = mock.fn(async () => makeJsonResponse({ error: 'bad key' }, 401));
-    await streamChatCompletion({ ...BASE_OPTS }, () => {}, () => {}, () => {});
-    assert.equal(globalThis.fetch.mock.callCount(), 1,
-      'retrying a 401 only burns the budget and delays the real error');
+    await streamChatCompletion(
+      { ...BASE_OPTS },
+      () => {},
+      () => {},
+      () => {},
+    );
+    assert.equal(
+      globalThis.fetch.mock.callCount(),
+      1,
+      'retrying a 401 only burns the budget and delays the real error',
+    );
   });
 
   test('skips malformed JSON frames without throwing', async () => {
@@ -799,7 +1089,9 @@ describe('streamChatCompletion: error & edge cases', () => {
       { ...BASE_OPTS },
       (c) => chunks.push(c),
       () => {},
-      (e) => { error = e; },
+      (e) => {
+        error = e;
+      },
     );
     assert.equal(error, null);
     assert.deepEqual(chunks, ['still works']);
@@ -810,17 +1102,28 @@ describe('streamChatCompletion: error & edge cases', () => {
     globalThis.fetch = mock.fn(async (_url, init) => {
       const stream = new ReadableStream({
         async start(controller) {
-          controller.enqueue(encoder.encode(sseChunk({ choices: [{ delta: { content: 'partial' } }] })));
+          controller.enqueue(
+            encoder.encode(sseChunk({ choices: [{ delta: { content: 'partial' } }] })),
+          );
           await new Promise((resolve) => {
             const sig = init && init.signal;
-            if (!sig) { resolve(); return; }
-            if (sig.aborted) { resolve(); return; }
+            if (!sig) {
+              resolve();
+              return;
+            }
+            if (sig.aborted) {
+              resolve();
+              return;
+            }
             sig.addEventListener('abort', resolve, { once: true });
           });
           controller.close();
         },
       });
-      return new Response(stream, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+      return new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      });
     });
 
     const ac = new AbortController();
@@ -830,8 +1133,12 @@ describe('streamChatCompletion: error & edge cases', () => {
     const p = streamChatCompletion(
       { ...BASE_OPTS, signal: ac.signal },
       (c) => chunks.push(c),
-      (d) => { done = d; },
-      (e) => { error = e; },
+      (d) => {
+        done = d;
+      },
+      (e) => {
+        error = e;
+      },
     );
     await new Promise((r) => setTimeout(r, 5));
     ac.abort();
@@ -879,16 +1186,14 @@ describe('callChatCompletion', () => {
   });
 
   test('surfaces a 429 once the budget is spent', async () => {
-    globalThis.fetch = mock.fn(async () =>
-      new Response(JSON.stringify({ error: 'rate_limited' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
-      }),
+    globalThis.fetch = mock.fn(
+      async () =>
+        new Response(JSON.stringify({ error: 'rate_limited' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': '0.001' },
+        }),
     );
-    await assert.rejects(
-      () => callChatCompletion({ ...BASE_OPTS }),
-      /LLM API error 429/,
-    );
+    await assert.rejects(() => callChatCompletion({ ...BASE_OPTS }), /LLM API error 429/);
     assert.equal(globalThis.fetch.mock.callCount(), 5);
   });
 
@@ -906,10 +1211,16 @@ describe('callChatCompletion', () => {
   test('returns tool_calls when present', async () => {
     globalThis.fetch = mock.fn(async () =>
       makeJsonResponse({
-        choices: [{ message: {
-          content: '',
-          tool_calls: [{ id: 'c1', type: 'function', function: { name: 'foo', arguments: '{}' } }],
-        } }],
+        choices: [
+          {
+            message: {
+              content: '',
+              tool_calls: [
+                { id: 'c1', type: 'function', function: { name: 'foo', arguments: '{}' } },
+              ],
+            },
+          },
+        ],
       }),
     );
     const result = await callChatCompletion({ ...BASE_OPTS });
@@ -918,10 +1229,14 @@ describe('callChatCompletion', () => {
   });
 
   test('throws ApiError carrying the upstream status on 4xx/5xx', async () => {
-    globalThis.fetch = mock.fn(async () =>
-      /* Retry-After collapses the backoff so the test exercises the real
+    globalThis.fetch = mock.fn(
+      async () =>
+        /* Retry-After collapses the backoff so the test exercises the real
          retry path without sleeping out a production rate-limit window. */
-      new Response('{"error":"quota exceeded"}', { status: 429, headers: { 'Retry-After': '0.001' } }),
+        new Response('{"error":"quota exceeded"}', {
+          status: 429,
+          headers: { 'Retry-After': '0.001' },
+        }),
     );
     let err = null;
     try {
@@ -946,8 +1261,14 @@ async function runLengthPipeline(reasons) {
   const res = new EventEmitter();
   res.writeHead = () => res;
   res.flushHeaders = () => {};
-  res.write = (frame) => { frames.push(frame); return true; };
-  res.end = () => { res.writableEnded = true; res.emit('finish'); };
+  res.write = (frame) => {
+    frames.push(frame);
+    return true;
+  };
+  res.end = () => {
+    res.writableEnded = true;
+    res.emit('finish');
+  };
   globalThis.fetch = mock.fn(async (_url, opts) => {
     const body = JSON.parse(opts.body);
     requests.push(body);
@@ -962,13 +1283,26 @@ async function runLengthPipeline(reasons) {
   });
   try {
     await runChatStreamPipeline({
-      req, res,
-      prep: { payload: {
-        messages: [{ role: 'system', content: 'Base' }, { role: 'user', content: 'Question' }],
-        provider: { url: BASE_OPTS.apiBase, keyPlaintext: BASE_OPTS.apiKey, model: BASE_OPTS.model },
-        mode: 'chat', maxTokens: 256,
-      } },
-      sessionIdFromQuery: null, projectIdFromBody: null, turnId: null,
+      req,
+      res,
+      prep: {
+        payload: {
+          messages: [
+            { role: 'system', content: 'Base' },
+            { role: 'user', content: 'Question' },
+          ],
+          provider: {
+            url: BASE_OPTS.apiBase,
+            keyPlaintext: BASE_OPTS.apiKey,
+            model: BASE_OPTS.model,
+          },
+          mode: 'chat',
+          maxTokens: 256,
+        },
+      },
+      sessionIdFromQuery: null,
+      projectIdFromBody: null,
+      turnId: null,
     });
     return { requests, frames };
   } finally {
@@ -983,7 +1317,11 @@ describe('runChatStreamPipeline: length continuation', () => {
     assert.equal(requests.length, 2);
     assert.equal(requests[1].messages.at(-2).content, 'part-1');
     assert.equal(requests[1].messages.at(-2).reasoning_content, 'reason-1');
-    assert.equal(requests[1].messages.at(-2).reasoning_details, undefined, 'do not invent a second reasoning representation');
+    assert.equal(
+      requests[1].messages.at(-2).reasoning_details,
+      undefined,
+      'do not invent a second reasoning representation',
+    );
     assert.match(requests[1].messages.at(-1).content, /Continue exactly where you stopped/);
     const streamed = frames.filter((frame) => frame.includes('"content":"part-')).join('');
     assert.match(streamed, /part-1/);
@@ -999,7 +1337,6 @@ describe('runChatStreamPipeline: length continuation', () => {
   });
 });
 
-
 describe('Instant mode survives compatibility retries', () => {
   for (const control of [
     { reasoning_effort: 'none' },
@@ -1012,21 +1349,33 @@ describe('Instant mode survives compatibility retries', () => {
       const errors = [];
       globalThis.fetch = async (_url, init) => {
         attempts.push(JSON.parse(init.body));
-        return makeJsonResponse({ error: attempts.length === 1 ? 'service_tier unsupported' : 'optional field unsupported' }, 400);
+        return makeJsonResponse(
+          {
+            error:
+              attempts.length === 1 ? 'service_tier unsupported' : 'optional field unsupported',
+          },
+          400,
+        );
       };
-      await streamChatCompletion({ ...BASE_OPTS, ...control, response_speed: 'fast' }, () => {}, () => {}, error => errors.push(error));
+      await streamChatCompletion(
+        { ...BASE_OPTS, ...control, response_speed: 'fast' },
+        () => {},
+        () => {},
+        (error) => errors.push(error),
+      );
       assert.ok(errors.length > 0, 'unsupported Instant must remain an error');
       assert.ok(attempts.length >= 2, 'exercise compatibility fallback');
       for (const body of attempts) {
         if (control.reasoning_effort) assert.equal(body.reasoning_effort, 'none');
         if (control.extra_body?.thinking) assert.deepEqual(body.thinking, { type: 'disabled' });
-        if (control.extra_body?.enable_thinking === false) assert.equal(body.enable_thinking, false);
-        if (control.extra_body?.chat_template_kwargs) assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
+        if (control.extra_body?.enable_thinking === false)
+          assert.equal(body.enable_thinking, false);
+        if (control.extra_body?.chat_template_kwargs)
+          assert.deepEqual(body.chat_template_kwargs, { enable_thinking: false });
       }
     });
   }
 });
-
 
 describe('Instant translates the real upstream model', () => {
   for (const [model, apiBase, controls] of [
@@ -1044,9 +1393,19 @@ describe('Instant translates the real upstream model', () => {
         attempts.push(JSON.parse(init.body));
         return attempts.length === 1
           ? makeJsonResponse({ error: 'priority unsupported' }, 400)
-          : makeSseResponse([{ choices: [{ delta: { content: 'Direct answer' }, finish_reason: 'stop' }] }, sseDone()]);
+          : makeSseResponse([
+              { choices: [{ delta: { content: 'Direct answer' }, finish_reason: 'stop' }] },
+              sseDone(),
+            ]);
       };
-      await streamChatCompletion({ ...BASE_OPTS, apiBase, model, reasoning_effort: 'none', response_speed: 'fast' }, () => {}, () => {}, error => { throw error; });
+      await streamChatCompletion(
+        { ...BASE_OPTS, apiBase, model, reasoning_effort: 'none', response_speed: 'fast' },
+        () => {},
+        () => {},
+        (error) => {
+          throw error;
+        },
+      );
       for (const body of attempts) {
         for (const [key, value] of Object.entries(controls)) assert.deepEqual(body[key], value);
         if (!controls.reasoning_effort) assert.equal(body.reasoning_effort, undefined);
@@ -1055,20 +1414,40 @@ describe('Instant translates the real upstream model', () => {
   }
 });
 
-
 test('Instant wins conflicting thinking options on every MiniMax fallback', async () => {
   const bodies = [];
   globalThis.fetch = async (_url, init) => {
     bodies.push(JSON.parse(init.body));
     return makeJsonResponse({ error: 'thinking disabled is not supported' }, 400);
   };
-  await streamChatCompletion({ ...BASE_OPTS, model: 'MiniMax-M3', reasoning_effort: 'none', extra_body: { thinking: { type: 'enabled' } } }, () => {}, () => {}, () => {});
-  assert.equal(bodies.length, 1, 'a deterministic thinking rejection must not cause compatibility replays');
+  await streamChatCompletion(
+    {
+      ...BASE_OPTS,
+      model: 'MiniMax-M3',
+      reasoning_effort: 'none',
+      extra_body: { thinking: { type: 'enabled' } },
+    },
+    () => {},
+    () => {},
+    () => {},
+  );
+  assert.equal(
+    bodies.length,
+    1,
+    'a deterministic thinking rejection must not cause compatibility replays',
+  );
   for (const body of bodies) assert.deepEqual(body.thinking, { type: 'disabled' });
 });
 
 test('repeated opening snapshot does not discard subsequent JSON fragments', () => {
-  const stream = ['{', '{', '"nodes":', '[{"payload":{"functions":[{"expression":"x^2"}]}}]', '}']
-    .reduce((state, delta) => appendToolArgumentDelta(state, delta), createToolArgumentStream());
-  assert.deepEqual(JSON.parse(stream.text), { nodes: [{ payload: { functions: [{ expression: 'x^2' }] } }] });
+  const stream = [
+    '{',
+    '{',
+    '"nodes":',
+    '[{"payload":{"functions":[{"expression":"x^2"}]}}]',
+    '}',
+  ].reduce((state, delta) => appendToolArgumentDelta(state, delta), createToolArgumentStream());
+  assert.deepEqual(JSON.parse(stream.text), {
+    nodes: [{ payload: { functions: [{ expression: 'x^2' }] } }],
+  });
 });

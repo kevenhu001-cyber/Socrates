@@ -3,27 +3,54 @@
  * widgets.ts so the behaviour stays unit-testable without a renderer. */
 import { esc } from './text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { evaluatePracticeAnswer, formatAnswerKey, parseAnswerKey, type ParsedQuiz, type ParsedPractice } from '@socrates/ui/learn-model';
+import type { SessionSnapshot } from '../store/index.ts';
+import {
+  evaluatePracticeAnswer,
+  formatAnswerKey,
+  parseAnswerKey,
+  type ParsedQuiz,
+  type ParsedPractice,
+} from '@socrates/ui/learn-model';
+
+type TeachingProgress = Pick<SessionSnapshot, 'teachingStage' | 'practiceAttempts'>;
 
 export interface WidgetRuntime {
-  formatMsg: typeof import('./markdown.ts')['formatMsg'];
+  formatMsg: (typeof import('./markdown.ts'))['formatMsg'];
   t: (key: string) => string;
   esc: typeof esc;
-  stateStore: typeof import('../state/store.ts')['stateStore'];
-  shouldRequestTutorAfterQuiz: typeof import('../tutor/policy.ts')['shouldRequestTutorAfterQuiz'];
-  submitChatMessage?: typeof import('../chat/sendPipeline.ts')['submitChatMessage'];
+  teachingProgress?: {
+    getState(): TeachingProgress;
+    patch(patch: Partial<TeachingProgress>): void;
+  };
+  shouldRequestTutorAfterQuiz: (typeof import('../tutor/policy.ts'))['shouldRequestTutorAfterQuiz'];
+  submitChatMessage?: (typeof import('../chat/sendPipeline.ts'))['submitChatMessage'];
   recordMistake?: (entry: Record<string, unknown>) => void;
   removeMistakeForQuizSlot?: (slotId: string) => void;
-  handleQuizPick?: (picked: PickedQuizOption, parsed: QuizMountData) => QuizPickFeedback | Promise<QuizPickFeedback>;
-  saveCurrentSession?: typeof import('../session/persistence.ts')['saveCurrentSession'];
+  handleQuizPick?: (
+    picked: PickedQuizOption,
+    parsed: QuizMountData,
+  ) => QuizPickFeedback | Promise<QuizPickFeedback>;
+  saveCurrentSession?: (typeof import('../session/persistence.ts'))['saveCurrentSession'];
 }
 
 export type QuizMountData = ParsedQuiz;
-export type PracticeMountData = Pick<ParsedPractice, 'problem'> & Partial<ParsedPractice> & { slotId?: string | null; correct?: string };
-export interface ParsedStep { n: number; body: string }
-export interface TheoremMountData { title: string; statement: string; proofTitle?: string; proofBody?: string }
+export type PracticeMountData = Pick<ParsedPractice, 'problem'> &
+  Partial<ParsedPractice> & { slotId?: string | null; correct?: string };
+export interface ParsedStep {
+  n: number;
+  body: string;
+}
+export interface TheoremMountData {
+  title: string;
+  statement: string;
+  proofTitle?: string;
+  proofBody?: string;
+}
 /** `letter` is one letter, or the sorted letters ("AC") of a multi-answer pick. */
-export interface PickedQuizOption { letter: string; text: string }
+export interface PickedQuizOption {
+  letter: string;
+  text: string;
+}
 export interface QuizPickFeedback {
   feedbackText: string;
   /** Historical class string (`inline-quiz-feedback ok|bad`). */
@@ -35,7 +62,6 @@ let runtime: WidgetRuntime = {
   formatMsg: (value) => String(value ?? ''),
   t: (key) => key,
   esc,
-  stateStore: { read: () => undefined } as unknown as WidgetRuntime['stateStore'],
   shouldRequestTutorAfterQuiz: (..._args: unknown[]) => false,
 };
 
@@ -47,30 +73,45 @@ export function widgetRuntime(): WidgetRuntime {
   return runtime;
 }
 
-function recordQuizOutcome(parsed: QuizMountData, picked: PickedQuizOption, isRight: boolean, services: WidgetRuntime) {
+function recordQuizOutcome(
+  parsed: QuizMountData,
+  picked: PickedQuizOption,
+  isRight: boolean,
+  services: WidgetRuntime,
+) {
   if (parsed.correct && !isRight) {
-    services.recordMistake?.({ type: 'quiz', q: parsed.q, options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })), correct: parsed.correct, userAnswer: picked.letter, quizSlotId: parsed.slotId || null });
+    services.recordMistake?.({
+      type: 'quiz',
+      q: parsed.q,
+      options: parsed.options.map((option) => ({ letter: option.letter, text: option.text })),
+      correct: parsed.correct,
+      userAnswer: picked.letter,
+      quizSlotId: parsed.slotId || null,
+    });
   } else if (isRight && parsed.slotId) {
     services.removeMistakeForQuizSlot?.(parsed.slotId);
   }
 }
 
-function updateQuizStage(stateStore: WidgetRuntime['stateStore'], isRight: boolean) {
-  const stage = stateStore.read('teachingStage');
-  if (stage === 'exercise') {
-    stateStore.dispatch?.(isRight
-      ? { type: 'state/batch', patch: { teachingStage: 'check', practiceAttempts: 0 } }
-      : { type: 'state/set', key: 'practiceAttempts', value: (stateStore.read('practiceAttempts') || 0) + 1 });
-  } else if (stage === 'check') {
-    stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: isRight ? 0 : (stateStore.read('practiceAttempts') || 0) + 1 });
-  }
+function updateQuizStage(progress: WidgetRuntime['teachingProgress'], isRight: boolean) {
+  if (!progress) return;
+  const { teachingStage, practiceAttempts } = progress.getState();
+  if (teachingStage !== 'exercise' && teachingStage !== 'check') return;
+  progress.patch(
+    isRight && teachingStage === 'exercise'
+      ? { teachingStage: 'check', practiceAttempts: 0 }
+      : { practiceAttempts: isRight ? 0 : (practiceAttempts || 0) + 1 },
+  );
 }
 
 function persistQuizOutcome(services: WidgetRuntime) {
   // The React knowledge panel subscribes to the KB store; only persistence
   // remains an explicit side effect here.
-  try { services.saveCurrentSession?.(); }
-  catch (error) { reportSwallow(error, 'widgets.quiz.saveCurrentSession'); }
+  try {
+    services.saveCurrentSession?.();
+  } catch (error) {
+    reportSwallow(error, 'widgets.quiz.saveCurrentSession');
+  }
 }
 
 /** Grade one quiz submission and run its side effects (mistake book, stage, local persistence). */
@@ -82,21 +123,30 @@ export function handleQuizPick(picked: PickedQuizOption, parsed: QuizMountData):
   const isRight = Boolean(correct) && parseAnswerKey(picked.letter).join('') === correct;
   const feedbackText = correct
     ? services.t(isRight ? 'tutor.quizCorrect' : 'tutor.quizWrong').replace('{answer}', shown)
-    : services.t('tutor.quizRecorded').replace('{letter}', formatAnswerKey(parseAnswerKey(picked.letter)) || picked.letter);
+    : services
+        .t('tutor.quizRecorded')
+        .replace('{letter}', formatAnswerKey(parseAnswerKey(picked.letter)) || picked.letter);
   const feedbackClass = `inline-quiz-feedback${correct ? (isRight ? ' ok' : ' bad') : ''}`;
   const verdict = correct ? (isRight ? 'correct' : 'incorrect') : 'recorded';
   recordQuizOutcome(parsed, picked, isRight, services);
-  if (key.length) updateQuizStage(services.stateStore, isRight);
+  if (key.length) updateQuizStage(services.teachingProgress, isRight);
   persistQuizOutcome(services);
   return { feedbackText, feedbackClass, verdict };
 }
 
 export type PracticeFeedbackState = '' | 'bad' | 'recorded' | 'ok';
-export interface PracticeFeedback { state: PracticeFeedbackState; text: string; rich?: string }
+export interface PracticeFeedback {
+  state: PracticeFeedbackState;
+  text: string;
+  rich?: string;
+}
 
 /** @deprecated Use the shared tri-state evaluator; normalization alone cannot grade math safely. */
 export function normalizePracticeAnswer(value: string) {
-  return value.toLowerCase().replace(/[\s.,;:!?()[\]'"]+/g, '').trim();
+  return value
+    .toLowerCase()
+    .replace(/[\s.,;:!?()[\]'"]+/g, '')
+    .trim();
 }
 
 /**
@@ -106,7 +156,7 @@ export function normalizePracticeAnswer(value: string) {
  * local mistakes just because their notation differs from the answer key.
  */
 export function submitPracticeAnswer(parsed: PracticeMountData, answer: string): PracticeFeedback {
-  const { t, submitChatMessage, stateStore, recordMistake } = runtime;
+  const { t, submitChatMessage, teachingProgress, recordMistake } = runtime;
   const submitted = String(answer || '').trim();
   if (!submitted) return { state: 'bad', text: t('tutor.practiceEmpty') };
   submitChatMessage?.(t('tutor.practicePrefix') + submitted, { origin: 'practice' });
@@ -114,11 +164,19 @@ export function submitPracticeAnswer(parsed: PracticeMountData, answer: string):
   if (!correct) return { state: 'recorded', text: t('tutor.practiceSent') };
   const assessment = evaluatePracticeAnswer(submitted, correct);
   if (assessment === 'correct') {
-    stateStore.dispatch?.({ type: 'state/set', key: 'practiceAttempts', value: 0 });
+    teachingProgress?.patch({ practiceAttempts: 0 });
     return { state: 'ok', text: t('tutor.practiceSelfCorrect') };
   }
   if (assessment === 'incorrect') {
-    recordMistake?.({ type: 'practice', q: parsed.problem, options: [], correct, userAnswer: submitted, judgedAnswer: correct, practiceSlotId: parsed.slotId || null });
+    recordMistake?.({
+      type: 'practice',
+      q: parsed.problem,
+      options: [],
+      correct,
+      userAnswer: submitted,
+      judgedAnswer: correct,
+      practiceSlotId: parsed.slotId || null,
+    });
     return { state: 'bad', text: `${t('tutor.practiceSelfWrong')} ${correct}` };
   }
   /* An unsupported algebraic form is not proof of a wrong answer. It has

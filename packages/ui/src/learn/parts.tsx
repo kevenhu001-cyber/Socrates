@@ -5,7 +5,14 @@
  * and nothing here draws a dot.
  */
 import { type ReactNode } from 'react';
-import { Animated, Pressable, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Animated,
+  Pressable,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -16,7 +23,8 @@ import { useLearnHost } from './host';
 /** react-native-web turns `dataSet` into `data-*` attributes; native ignores it. */
 export function dataSet(values: Record<string, string | number | undefined>): object {
   const clean: Record<string, string> = {};
-  for (const [key, value] of Object.entries(values)) if (value !== undefined) clean[key] = String(value);
+  for (const [key, value] of Object.entries(values))
+    if (value !== undefined) clean[key] = String(value);
   return { dataSet: clean };
 }
 
@@ -35,7 +43,14 @@ export function useCardPad(): number {
  *
  * A framed reference separates structured teaching material from surrounding prose.
  */
-export function ScaffoldCard({ kind, label, trailing, children, testID, accessibilityLabel }: {
+export function ScaffoldCard({
+  kind,
+  label,
+  trailing,
+  children,
+  testID,
+  accessibilityLabel,
+}: {
   kind: string;
   label: string;
   trailing?: ReactNode;
@@ -70,16 +85,28 @@ export function ScaffoldCard({ kind, label, trailing, children, testID, accessib
           paddingVertical: S[50],
         }}
       >
-        <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>{label}</UiText>
+        <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>
+          {label}
+        </UiText>
         {trailing ?? null}
       </View>
-      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[100] }}>{children}</View>
+      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[100] }}>
+        {children}
+      </View>
     </View>
   );
 }
 
 /** Site `.ui-tag`: a 24px capsule, pale fill, quiet caption. `line` is the white variant. */
-export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'fill' | 'line' | 'ink'; testID?: string }) {
+export function Tag({
+  label,
+  tone = 'fill',
+  testID,
+}: {
+  label: string;
+  tone?: 'fill' | 'line' | 'ink';
+  testID?: string;
+}) {
   const { colors } = useUiTheme();
   return (
     <View
@@ -94,7 +121,14 @@ export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'f
         backgroundColor: tone === 'ink' ? colors.ink : tone === 'line' ? colors.card : colors.fill,
       }}
     >
-      <UiText variant="labelSm" tone={tone === 'ink' ? 'onInk' : 'secondary'} numberOfLines={1} style={{ fontWeight: '400' }}>{label}</UiText>
+      <UiText
+        variant="labelSm"
+        tone={tone === 'ink' ? 'onInk' : 'secondary'}
+        numberOfLines={1}
+        style={{ fontWeight: '400' }}
+      >
+        {label}
+      </UiText>
     </View>
   );
 }
@@ -104,7 +138,14 @@ export function Tag({ label, tone = 'fill', testID }: { label: string; tone?: 'f
  * card. The tint separates it from the reply; it carries no ring of its
  * own, so nothing inside the card reads as a nested box.
  */
-export function Sheet({ children, label, testID, live, style, emphasis }: {
+export function Sheet({
+  children,
+  label,
+  testID,
+  live,
+  style,
+  emphasis,
+}: {
   children: ReactNode;
   label?: string;
   testID?: string;
@@ -119,12 +160,15 @@ export function Sheet({ children, label, testID, live, style, emphasis }: {
     <View
       testID={testID}
       aria-live={live ? 'polite' : undefined}
-      style={[{
-        gap: S[75],
-        padding: S[200],
-        borderRadius: R.row,
-        backgroundColor: emphasis ? colors.card : subtle,
-      }, style]}
+      style={[
+        {
+          gap: S[75],
+          padding: S[200],
+          borderRadius: R.row,
+          backgroundColor: emphasis ? colors.card : subtle,
+        },
+        style,
+      ]}
     >
       {label ? <SectionLabel>{label}</SectionLabel> : null}
       {children}
@@ -133,7 +177,15 @@ export function Sheet({ children, label, testID, live, style, emphasis }: {
 }
 
 /** One markdown field, rendered by the host. */
-export function Rich({ source, part, style }: { source: string; part: string; style?: StyleProp<ViewStyle> }) {
+export function Rich({
+  source,
+  part,
+  style,
+}: {
+  source: string;
+  part: string;
+  style?: StyleProp<ViewStyle>;
+}) {
   const { renderRich } = useLearnHost();
   if (!source) return null;
   return <View style={[{ minWidth: 0 }, style]}>{renderRich(source, part)}</View>;
@@ -141,18 +193,36 @@ export function Rich({ source, part, style }: { source: string; part: string; st
 
 /** Quiet eyebrow above a sub-section ("Hint 1", "Explanation"). */
 export function SectionLabel({ children }: { children: string }) {
-  return <UiText variant="labelSm" tone="tertiary">{children}</UiText>;
+  return (
+    <UiText variant="labelSm" tone="tertiary">
+      {children}
+    </UiText>
+  );
 }
 
 /**
  * Sub-section inside a card (hints, solutions, explanation): a tinted
  * `.rc-face` sheet that fades in once when it opens.
  */
-export function Section({ label, children, testID, live, emphasis }: { label?: string; children: ReactNode; testID?: string; live?: boolean; emphasis?: boolean }) {
+export function Section({
+  label,
+  children,
+  testID,
+  live,
+  emphasis,
+}: {
+  label?: string;
+  children: ReactNode;
+  testID?: string;
+  live?: boolean;
+  emphasis?: boolean;
+}) {
   const reveal = useReveal(true, 4);
   return (
     <Animated.View style={reveal}>
-      <Sheet label={label} testID={testID} live={live} emphasis={emphasis}>{children}</Sheet>
+      <Sheet label={label} testID={testID} live={live} emphasis={emphasis}>
+        {children}
+      </Sheet>
     </Animated.View>
   );
 }
@@ -166,7 +236,21 @@ export function Section({ label, children, testID, live, emphasis }: { label?: s
  * `chevron` shows a disclosure chevron and wires `aria-expanded`.
  * `size="sm"` is the 32px variant for dense rows (card heads, tool rows).
  */
-export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded, chevron, selected, testID, accessibilityLabel, controls, data, size = 'md', leading }: {
+export function PillAction({
+  label,
+  onPress,
+  tone = 'quiet',
+  disabled,
+  expanded,
+  chevron,
+  selected,
+  testID,
+  accessibilityLabel,
+  controls,
+  data,
+  size = 'md',
+  leading,
+}: {
   label: string;
   onPress?: () => void;
   tone?: 'quiet' | 'soft' | 'solid';
@@ -186,14 +270,24 @@ export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded,
   const { scale, hovered, focused, handlers } = usePressFeedback();
   const live = hovered && !disabled;
   const { subtle } = sheets(colors);
-  const background = tone === 'solid'
-    ? (live ? colors.inkHover : colors.ink)
-    : tone === 'soft'
-      ? (live ? colors.fillHover : colors.fill)
-      : (live ? subtle : colors.card);
-  const ring = tone === 'quiet'
-    ? insetRing(selected ? colors.ink : colors.hairlineStrong, selected ? 1.5 : 1)
-    : (tone === 'soft' && selected ? insetRing(colors.ink, 1.5) : undefined);
+  const background =
+    tone === 'solid'
+      ? live
+        ? colors.inkHover
+        : colors.ink
+      : tone === 'soft'
+        ? live
+          ? colors.fillHover
+          : colors.fill
+        : live
+          ? subtle
+          : colors.card;
+  const ring =
+    tone === 'quiet'
+      ? insetRing(selected ? colors.ink : colors.hairlineStrong, selected ? 1.5 : 1)
+      : tone === 'soft' && selected
+        ? insetRing(colors.ink, 1.5)
+        : undefined;
   const pad = size === 'sm' ? S[100] : S[200];
   return (
     <Pressable
@@ -228,15 +322,35 @@ export function PillAction({ label, onPress, tone = 'quiet', disabled, expanded,
         }}
       >
         {leading ?? null}
-        <UiText variant="labelSm" tone={tone === 'solid' ? 'onInk' : 'ink'} numberOfLines={1}>{label}</UiText>
-        {chevron ? <Chevron open={Boolean(expanded)} size={6} tone={tone === 'solid' ? 'ink' : 'secondary'} /> : null}
+        <UiText variant="labelSm" tone={tone === 'solid' ? 'onInk' : 'ink'} numberOfLines={1}>
+          {label}
+        </UiText>
+        {chevron ? (
+          <Chevron
+            open={Boolean(expanded)}
+            size={6}
+            tone={tone === 'solid' ? 'ink' : 'secondary'}
+          />
+        ) : null}
       </Animated.View>
     </Pressable>
   );
 }
 
 export function ActionRow({ children, end }: { children: ReactNode; end?: boolean }) {
-  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: end ? 'flex-end' : 'flex-start', gap: S[75] }}>{children}</View>;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: end ? 'flex-end' : 'flex-start',
+        gap: S[75],
+      }}
+    >
+      {children}
+    </View>
+  );
 }
 
 /**
@@ -244,7 +358,13 @@ export function ActionRow({ children, end }: { children: ReactNode; end?: boolea
  * tick for right, a ringed disc with a grey cross for wrong. It carries a
  * glyph, so it reads as a mark, not as a dot.
  */
-export function VerdictGlyph({ verdict, size = 20 }: { verdict: 'correct' | 'incorrect'; size?: number }) {
+export function VerdictGlyph({
+  verdict,
+  size = 20,
+}: {
+  verdict: 'correct' | 'incorrect';
+  size?: number;
+}) {
   const { colors } = useUiTheme();
   const right = verdict === 'correct';
   return (
@@ -260,7 +380,13 @@ export function VerdictGlyph({ verdict, size = 20 }: { verdict: 'correct' | 'inc
         boxShadow: right ? undefined : insetRing(colors.hairlineStrong, 1.5),
       }}
     >
-      <UiText variant="labelSm" tone={right ? 'onInk' : 'secondary'} style={{ fontSize: 11, lineHeight: size }}>{right ? '✓' : '✕'}</UiText>
+      <UiText
+        variant="labelSm"
+        tone={right ? 'onInk' : 'secondary'}
+        style={{ fontSize: 11, lineHeight: size }}
+      >
+        {right ? '✓' : '✕'}
+      </UiText>
     </View>
   );
 }

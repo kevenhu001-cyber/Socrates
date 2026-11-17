@@ -6,7 +6,7 @@
  * own actions via react/message-list/useMessageActions.ts.
  */
 
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
@@ -22,11 +22,8 @@ import { reportSwallow } from '../util/reportSwallow.ts';
  */
 export function messageApiPath(messageId: string, suffix?: string): string {
   let path = '/api/messages/' + encodeURIComponent(messageId) + (suffix || '');
-  const sid = stateStore.read('currentSessionId') as string | null | undefined;
-  if (
-    sid &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(sid))
-  ) {
+  const sid = sessionStore.getState().currentSessionId as string | null | undefined;
+  if (sid && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(sid))) {
     path += '?sessionId=' + encodeURIComponent(sid);
   }
   return path;
@@ -36,11 +33,7 @@ export function messageApiPath(messageId: string, suffix?: string): string {
  * Fire a PUT /api/messages/<id>/feedback event. Backend may ignore
  * unknown events. Telemetry failures are non-fatal by design.
  */
-export function fireFeedback(
-  messageId: string,
-  rating: string,
-  categories?: unknown,
-): void {
+export function fireFeedback(messageId: string, rating: string, categories?: unknown): void {
   try {
     if (!messageId) return;
     apiFetch(messageApiPath(messageId, '/feedback'), {
@@ -51,23 +44,22 @@ export function fireFeedback(
       console.debug('[msg-feedback] not sent');
     });
   } catch (e) {
-      /* A synchronous throw (no fetch in this environment) is equally non-fatal. */
-      reportSwallow(e, 'ui/messageActions.fireFeedback');
-    }
+    /* A synchronous throw (no fetch in this environment) is equally non-fatal. */
+    reportSwallow(e, 'ui/messageActions.fireFeedback');
+  }
 }
 
 /** Send feedback and acknowledge the action. */
-export function sendFeedback(
-  messageId: string,
-  rating: string,
-): void {
+export function sendFeedback(messageId: string, rating: string): void {
   fireFeedback(messageId, rating, null);
-  showToast(rating === 'up'
-    ? i18n('message.feedbackThanks', 'Thanks for the feedback')
-    : i18n('message.feedbackNoted', "Got it — we'll improve"));
+  showToast(
+    rating === 'up'
+      ? i18n('message.feedbackThanks', 'Thanks for the feedback')
+      : i18n('message.feedbackNoted', "Got it — we'll improve"),
+  );
 }
 
-/** Message entry as stored in stateStore.read("messages"). */
+/** Message entry as stored in the session message list. */
 export interface MessageEntry {
   clientId?: string;
   id?: string;
@@ -100,7 +92,7 @@ export interface ToolCallEntry {
 
 /** Index of a message by client or server id, or -1 when absent. */
 export function findMessageIndex(messageId: string): number {
-  return stateStore.read('messages').findIndex(function (m) {
+  return sessionStore.getState().messages.findIndex(function (m) {
     return m.clientId === messageId || m.id === messageId;
   });
 }
@@ -121,11 +113,11 @@ export function rollbackMessagesAfter(userMessageId: string): MessageEntry[] {
      backwards is safe, but collecting the list up front keeps the
      DOM removal straightforward. */
   const toDrop: MessageEntry[] = [];
-  const messages = stateStore.read('messages') as MessageEntry[];
+  const messages = sessionStore.getState().messages as MessageEntry[];
   for (let i = startIdx + 1; i < messages.length; i++) {
     toDrop.push(messages[i]);
   }
-  stateStore.dispatch({ type: 'session/truncate-messages-after', index: startIdx });
+  dispatchSession({ type: 'session/truncate-messages-after', index: startIdx });
   toDrop.forEach(function (m) {
     if (!m || !m.clientId) return;
     const div = document.querySelector('[data-client-id="' + m.clientId + '"]');
@@ -143,7 +135,7 @@ export function rollbackMessagesAfter(userMessageId: string): MessageEntry[] {
 export function deleteUserMessage(messageId: string): void {
   const idx = findMessageIndex(messageId);
   if (idx < 0) return;
-  stateStore.dispatch({ type: 'session/remove-message-at', index: idx, clientId: messageId });
+  dispatchSession({ type: 'session/remove-message-at', index: idx, clientId: messageId });
   const div = document.querySelector('[data-client-id="' + messageId + '"]');
   if (div && !div.hasAttribute('data-react-owned')) div.remove();
   publishReactChatRuntime({ type: 'state-synced', reason: 'message-deleted' });
@@ -154,7 +146,11 @@ export function deleteUserMessage(messageId: string): void {
       /* P0.1 A4 — the row is gone locally but still on the server, and
          the whole-session save only upserts, so a reload would bring the
          deleted message straight back. Queue it for replay instead. */
-      queueMessageOp(stateStore.read('currentSessionId') as string | null, messageId, 'delete');
+      queueMessageOp(
+        sessionStore.getState().currentSessionId as string | null,
+        messageId,
+        'delete',
+      );
       console.log('[msg-delete] not synced — queued for replay');
     }
   });
@@ -179,6 +175,8 @@ export function reseatSavedArtifact(container: Element, node: Element): void {
         return;
       }
     }
-  } catch (e) {reportSwallow(e, 'ui/messageActions.reseatSavedArtifact'); }
+  } catch (e) {
+    reportSwallow(e, 'ui/messageActions.reseatSavedArtifact');
+  }
   container.appendChild(node);
 }

@@ -1,6 +1,10 @@
 /** Let the transcript commit and paint before account/session-local maintenance.
  * The load's abort signal owns both scheduling and cancellation. */
-export function afterSessionPaint(signal: AbortSignal, isCurrent: () => boolean, work: () => void): void {
+export function afterSessionPaint(
+  signal: AbortSignal,
+  isCurrent: () => boolean,
+  work: () => void,
+): void {
   if (signal.aborted) return;
   let frame = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;

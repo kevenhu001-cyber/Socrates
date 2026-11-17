@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +19,10 @@ function createFixture(currentPaths, baselinePaths = ['src/old-a.js', 'src/old-b
   mkdirSync(scripts, { recursive: true });
   mkdirSync(src, { recursive: true });
   writeFileSync(script, readFileSync(sourceScript));
-  writeFileSync(baseline, `${JSON.stringify({ count: baselinePaths.length, files: baselinePaths }, null, 2)}\n`);
+  writeFileSync(
+    baseline,
+    `${JSON.stringify({ count: baselinePaths.length, files: baselinePaths }, null, 2)}\n`,
+  );
 
   for (const path of currentPaths) {
     const file = join(frontend, path);

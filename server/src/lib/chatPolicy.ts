@@ -1,7 +1,11 @@
 import type { User } from '../types/http.js';
 import type { ProviderMessage } from './providerMessageSchema.js';
 
-export function appendServerPolicy(messages: ProviderMessage[], marker: string, prompt: string | null): ProviderMessage[] {
+export function appendServerPolicy(
+  messages: ProviderMessage[],
+  marker: string,
+  prompt: string | null,
+): ProviderMessage[] {
   if (!prompt) return messages;
   const first = messages[0];
   if (first && first.role === 'system' && typeof first.content === 'string') {
@@ -87,7 +91,11 @@ Do not end a reply with a question or an offer to help unless the answer genuine
 
 export const FINAL_OUTPUT_CONSTRAINTS_MARKER = '[Server policy: final-output-constraints]';
 export function appendFinalOutputConstraints(messages: ProviderMessage[]): ProviderMessage[] {
-  const result = appendServerPolicy(messages, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS);
+  const result = appendServerPolicy(
+    messages,
+    FINAL_OUTPUT_CONSTRAINTS_MARKER,
+    FINAL_OUTPUT_CONSTRAINTS,
+  );
   const first = result[0];
   if (!first || first.role !== 'system' || typeof first.content !== 'string') return result;
   const content = insertResponseTypography(first.content);
@@ -110,14 +118,17 @@ export function insertResponseTypography(systemPrompt: string): string {
   // Refresh only server-owned formatting blocks in an old snapshot. Persona,
   // memories, identity and initialization context remain byte-for-byte intact.
   const finalAt = systemPrompt.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
-  systemPrompt = finalAt !== -1
-    ? `${systemPrompt.slice(0, finalAt)}${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`
-    : `${systemPrompt}\n\n${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`;
+  systemPrompt =
+    finalAt !== -1
+      ? `${systemPrompt.slice(0, finalAt)}${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`
+      : `${systemPrompt}\n\n${FINAL_OUTPUT_CONSTRAINTS_MARKER}\n${FINAL_OUTPUT_CONSTRAINTS}`;
   const block = `${RESPONSE_TYPOGRAPHY_MARKER}\n${RESPONSE_TYPOGRAPHY}`;
   const existingAt = systemPrompt.indexOf(RESPONSE_TYPOGRAPHY_MARKER);
   if (existingAt !== -1) {
     const after = existingAt + RESPONSE_TYPOGRAPHY_MARKER.length;
-    const boundary = systemPrompt.slice(after).search(/\n\n(?=\[Server policy:|<!-- @beagle-system-prompt -->)/);
+    const boundary = systemPrompt
+      .slice(after)
+      .search(/\n\n(?=\[Server policy:|<!-- @beagle-system-prompt -->)/);
     const end = boundary === -1 ? systemPrompt.length : after + boundary;
     return `${systemPrompt.slice(0, existingAt)}${block}${systemPrompt.slice(end)}`;
   }
@@ -156,7 +167,10 @@ const CLIENT_CONTEXT_BLOCK_CLOSE = '</client_context_data>';
 /** The blank line that separates two blocks of an assembled system prompt. */
 const BLANK_LINE = '\n\n';
 
-interface BlockSpan { start: number; end: number }
+interface BlockSpan {
+  start: number;
+  end: number;
+}
 
 /** Locate a scoped block inside an assembled prompt. The span covers the
  *  block itself, without the blank line in front of it. */
@@ -193,19 +207,20 @@ function findServerPolicyRegion(systemPrompt: string): { start: number; end: num
 }
 
 /* The block boundaries that end a server-owned appendix. */
-const SERVER_BLOCK_BOUNDARIES = [
-  '\n\n[Server policy:',
-  '\n\n<!-- @beagle-system-prompt -->',
-];
+const SERVER_BLOCK_BOUNDARIES = ['\n\n[Server policy:', '\n\n<!-- @beagle-system-prompt -->'];
 
 /** The span that holds the client blocks of an assembled prompt: the
  *  application block, the context block, and the blank line that
  *  separates them from the policy in front of them. */
 function findClientBlockSpan(text: string): BlockSpan | null {
-  const application = findBlock(text, CLIENT_APPLICATION_BLOCK_OPEN, CLIENT_APPLICATION_BLOCK_CLOSE);
+  const application = findBlock(
+    text,
+    CLIENT_APPLICATION_BLOCK_OPEN,
+    CLIENT_APPLICATION_BLOCK_CLOSE,
+  );
   const context = findBlock(text, CLIENT_CONTEXT_BLOCK_OPEN, CLIENT_CONTEXT_BLOCK_CLOSE);
   const first = application ?? context;
-  const last = application && context ? context : application ?? context;
+  const last = application && context ? context : (application ?? context);
   if (!first || !last) return null;
   let start = first.start;
   /* Absorb the blank line in front of the first block, so the refreshed
@@ -236,7 +251,10 @@ export const HIGH_EFFORT_OUTPUT_RULE = `## Reasoning effort
 
 This turn runs at high reasoning effort. Spend it on finding the decisive point and checking it carefully. Show only the evidence, calculation, or derivation needed to verify the answer, and follow the user's requested depth.`;
 
-function refreshReasoningEffortRule(systemPrompt: string, effort: string | null | undefined): string {
+function refreshReasoningEffortRule(
+  systemPrompt: string,
+  effort: string | null | undefined,
+): string {
   const wanted = effort === 'high' ? `${REASONING_EFFORT_MARKER}\n${HIGH_EFFORT_OUTPUT_RULE}` : '';
   let base = systemPrompt;
   const existing = systemPrompt.indexOf(REASONING_EFFORT_MARKER);
@@ -251,7 +269,10 @@ function refreshReasoningEffortRule(systemPrompt: string, effort: string | null 
        search already keeps the blank line in front of the next block, so
        leaving this one behind would stack two blank lines there. */
     let start = existing;
-    if (start >= BLANK_LINE.length && systemPrompt.startsWith(BLANK_LINE, start - BLANK_LINE.length)) {
+    if (
+      start >= BLANK_LINE.length &&
+      systemPrompt.startsWith(BLANK_LINE, start - BLANK_LINE.length)
+    ) {
       start -= BLANK_LINE.length;
     }
     base = `${systemPrompt.slice(0, start)}${systemPrompt.slice(end)}`;
@@ -280,7 +301,10 @@ export interface ServerPromptRefresh {
  * are replaced with the ones classified from this turn's request, and the
  * reasoning-effort rule follows the effort the turn actually runs at.
  */
-export function refreshServerPrompt(systemPrompt: string, refresh: ServerPromptRefresh = {}): string {
+export function refreshServerPrompt(
+  systemPrompt: string,
+  refresh: ServerPromptRefresh = {},
+): string {
   const region = findServerPolicyRegion(systemPrompt);
   if (!region) return systemPrompt;
   const head = systemPrompt.slice(0, region.start);
@@ -309,7 +333,10 @@ export const BEAGLE_IDENTITY_MARKER = '<!-- @beagle-system-prompt -->';
  * Insert a provider-identity block into an assembled system prompt, keeping
  * current response defaults after identity and legacy style guidance.
  */
-export function insertProviderIdentity(systemPrompt: string, identity: string | null | undefined): string {
+export function insertProviderIdentity(
+  systemPrompt: string,
+  identity: string | null | undefined,
+): string {
   if (!identity) return systemPrompt;
   if (systemPrompt.includes(BEAGLE_IDENTITY_MARKER)) return systemPrompt;
   const block = `${BEAGLE_IDENTITY_MARKER}\n${identity}`;
@@ -319,7 +346,6 @@ export function insertProviderIdentity(systemPrompt: string, identity: string | 
   const tail = systemPrompt.slice(markerAt);
   return `${head}\n\n${block}\n\n${tail}`;
 }
-
 
 /* ─────────────────────────────────────────────────────────────────
    User-context injection (prompt-injection defence)
@@ -369,19 +395,29 @@ function sanitizePromptScalar(raw: unknown, max = 120): string {
    free/paid/guest plan when they ask about feature limits. If a
    specific surface needs the email or plan, it can fetch them
    through a dedicated route rather than have every chat carry them. */
-export function injectUserContext(messages: ProviderMessage[], user: User | null, options: { sessionSnapshot?: boolean } = {}): ProviderMessage[] {
+export function injectUserContext(
+  messages: ProviderMessage[],
+  user: User | null,
+  options: { sessionSnapshot?: boolean } = {},
+): ProviderMessage[] {
   if (!user) return messages;
 
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
   const timeStr = now.toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   const dateLabel = options.sessionSnapshot ? 'Session context initialized on' : 'Current date';
-  const timeLabel = options.sessionSnapshot ? 'Initialization time (not a live clock)' : 'Current time';
+  const timeLabel = options.sessionSnapshot
+    ? 'Initialization time (not a live clock)'
+    : 'Current time';
   let userCtx = `[System context (auto-injected)]\n${dateLabel}: ${dateStr}\n${timeLabel}: ${timeStr}`;
 
   if (user.displayName) userCtx += `\nUser display name: ${sanitizePromptScalar(user.displayName)}`;
@@ -396,11 +432,13 @@ export function injectUserContext(messages: ProviderMessage[], user: User | null
     const cloned = messages.slice();
     // A session snapshot keeps the shared policy prefix ahead of per-user
     // data. Standalone callers retain their existing real-time ordering.
-    cloned[0] = { ...first, content: options.sessionSnapshot
-      ? first.content + '\n\n' + userCtx
-      : userCtx + '\n\n' + first.content };
+    cloned[0] = {
+      ...first,
+      content: options.sessionSnapshot
+        ? first.content + '\n\n' + userCtx
+        : userCtx + '\n\n' + first.content,
+    };
     return cloned;
   }
   return [{ role: 'system', content: userCtx }, ...messages];
 }
-

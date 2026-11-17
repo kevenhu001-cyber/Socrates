@@ -15,10 +15,20 @@ export interface ReviewDueEntryProps {
   testID?: string;
 }
 
-export function ReviewDueEntry({ label, onPress, testID = 'review-due-entry' }: ReviewDueEntryProps) {
+export function ReviewDueEntry({
+  label,
+  onPress,
+  testID = 'review-due-entry',
+}: ReviewDueEntryProps) {
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'center', paddingTop: S[100] }}>
-      <PillAction size="sm" label={label} onPress={onPress} testID={testID} data={{ reviewEntry: '1' }} />
+      <PillAction
+        size="sm"
+        label={label}
+        onPress={onPress}
+        testID={testID}
+        data={{ reviewEntry: '1' }}
+      />
     </View>
   );
 }

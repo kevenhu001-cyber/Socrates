@@ -21,11 +21,14 @@ test('a clean landing state resets without confirmation', () => {
 
 test('exam work always requires confirmation', () => {
   assert.equal(shouldConfirmReset({ ...emptySession, examWasOpen: true }), true);
-  assert.equal(shouldConfirmReset({
-    ...emptySession,
-    examTopic: 'Algebra',
-    examQuestions: [{ id: 'q1' }],
-  }), true);
+  assert.equal(
+    shouldConfirmReset({
+      ...emptySession,
+      examTopic: 'Algebra',
+      examQuestions: [{ id: 'q1' }],
+    }),
+    true,
+  );
   assert.equal(shouldConfirmReset({ ...emptySession, examSubmitted: true }), true);
 });
 
@@ -33,7 +36,10 @@ test('an active chat confirms by default but may skip after an explicit user con
   const active = { ...emptySession, topic: 'Geometry' };
   assert.equal(shouldConfirmReset(active), true);
   assert.equal(shouldConfirmReset({ ...active, confirmActiveSession: false }), false);
-  assert.equal(shouldConfirmReset({ ...active, confirmActiveSession: false, chatStreaming: true }), true);
+  assert.equal(
+    shouldConfirmReset({ ...active, confirmActiveSession: false, chatStreaming: true }),
+    true,
+  );
 });
 
 test('knowledge and message state count as an active session', () => {

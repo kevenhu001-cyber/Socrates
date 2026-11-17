@@ -8,7 +8,9 @@ import { deriveTurnPresentationState } from '../src/ui/turnActivityModel.ts';
 const frame = 'event: turn_activity\ndata: {"type":"thinking"}\n\n';
 test('public activity is delivered without counting a startup indicator as model output', () => {
   const events = [];
-  const processor = createStreamFrameProcessor({ opts: { onTurnActivity: (activity) => events.push(activity) } });
+  const processor = createStreamFrameProcessor({
+    opts: { onTurnActivity: (activity) => events.push(activity) },
+  });
   processor.processFrame(frame);
   assert.deepEqual(events, [{ type: 'thinking' }]);
   assert.equal(processor.semanticActivity, false);
@@ -26,11 +28,14 @@ test('shared SSE consumers receive activity and safely ignore it without a handl
 // the retired activity types (public_reasoning_summary, synthesizing) disappear
 // on first prose — see observedStatus() in src/ui/turnActivityModel.ts.
 test('thinking cue survives answer prose because the turn may still be working', () => {
-  const live = deriveTurnPresentationState({
-    type: 'streaming',
-    rawText: 'The answer is ready.',
-    _activity: { type: 'thinking' },
-  }, { live: true });
+  const live = deriveTurnPresentationState(
+    {
+      type: 'streaming',
+      rawText: 'The answer is ready.',
+      _activity: { type: 'thinking' },
+    },
+    { live: true },
+  );
   assert.equal(live.status?.phase, 'thinking');
   assert.equal(live.status?.elapsedSec, undefined);
 });
@@ -47,30 +52,43 @@ test('thinking cue is dropped once the turn has settled', () => {
 
 test('retired activity types hide as soon as answer prose starts', () => {
   for (const type of ['public_reasoning_summary', 'synthesizing']) {
-    const live = deriveTurnPresentationState({
-      type: 'streaming',
-      rawText: 'The answer is ready.',
-      _activity: { type },
-    }, { live: true });
+    const live = deriveTurnPresentationState(
+      {
+        type: 'streaming',
+        rawText: 'The answer is ready.',
+        _activity: { type },
+      },
+      { live: true },
+    );
     assert.equal(live.status, undefined, `${type} should retire on prose`);
   }
 });
 
 test('think-only raw text keeps the activity line visible', () => {
-  const live = deriveTurnPresentationState({
-    type: 'streaming',
-    rawText: '<think>private provider reasoning</think>',
-    _activity: { type: 'thinking' },
-  }, { live: true });
+  const live = deriveTurnPresentationState(
+    {
+      type: 'streaming',
+      rawText: '<think>private provider reasoning</think>',
+      _activity: { type: 'thinking' },
+    },
+    { live: true },
+  );
   assert.equal(live.status?.phase, 'thinking');
 });
 
 test('the tool row copy is derived from the call for every tool shape', () => {
   for (const [name, input] of [
-    ['web_search', { query: 'React Context' }], ['Read', { path: 'src/App.tsx' }],
-    ['code_interpreter', {}], ['oc_github_get_job_logs', {}], ['render_intelligent_ui', {}],
+    ['web_search', { query: 'React Context' }],
+    ['Read', { path: 'src/App.tsx' }],
+    ['code_interpreter', {}],
+    ['oc_github_get_job_logs', {}],
+    ['render_intelligent_ui', {}],
   ]) {
-    const result = { status: 'completed', output: '8 passed', results: [{ url: 'https://example.com/source' }] };
+    const result = {
+      status: 'completed',
+      output: '8 passed',
+      results: [{ url: 'https://example.com/source' }],
+    };
     const running = toolRunLabel({ name, input }, 'running').text;
     const done = toolRunLabel({ name, input, ...result }, 'done').text;
     const failed = toolRunLabel({ name, input, ...result, isError: true }, 'error').text;
@@ -81,7 +99,14 @@ test('the tool row copy is derived from the call for every tool shape', () => {
 });
 
 test('both SSE routers deliver the versioned turn event without converting it to prose', () => {
-  const event = { version: 1, turnId: 'turn-1', seq: 1, at: 100, type: 'generation', phase: 'streaming' };
+  const event = {
+    version: 1,
+    turnId: 'turn-1',
+    seq: 1,
+    at: 100,
+    type: 'generation',
+    phase: 'streaming',
+  };
   const frame = `event: turn_event\ndata: ${JSON.stringify(event)}\n\n`;
   for (const shared of [false, true]) {
     const events = [];

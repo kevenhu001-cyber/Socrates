@@ -21,20 +21,35 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import {
-  isStableMarkdownPrefix,
-  splitStreamingMarkdown,
-} from '../src/render/streaming.ts';
+import { isStableMarkdownPrefix, splitStreamingMarkdown } from '../src/render/streaming.ts';
 
 const RUNS = 200;
 
 /* The teaching-scaffold tags isStableMarkdownPrefix tracks with its balance
    stack. Kept in sync with the source's scaffoldTags set. */
 const SCAFFOLD_TAGS = [
-  'quiz', 'example', 'practice', 'definition', 'step', 'flashcard',
-  'proof', 'theorem', 'key-point', 'derivation', 'q', 'o', 'title',
-  'problem', 'solution', 'hint', 'front', 'back', 'statement', 'body',
-  'term', 'correct',
+  'quiz',
+  'example',
+  'practice',
+  'definition',
+  'step',
+  'flashcard',
+  'proof',
+  'theorem',
+  'key-point',
+  'derivation',
+  'q',
+  'o',
+  'title',
+  'problem',
+  'solution',
+  'hint',
+  'front',
+  'back',
+  'statement',
+  'body',
+  'term',
+  'correct',
 ];
 
 /* splitStreamingMarkdown consumes the two-character `\n\n` separator between a
@@ -53,25 +68,22 @@ const plainProse = () => fc.stringMatching(/^[A-Za-z0-9 ,.\n中文你好世界]*
    break is placed before the open construct so splitStreamingMarkdown has a
    candidate cut whose prefix is stable but whose promotion would strand the
    open construct — the situation Property 10 forbids. */
-const unbalancedFence = () => fc.tuple(plainProse(), plainProse()).map(
-  ([lead, code]) => `${lead}\n\nleading text\n\n\`\`\`js\n${code}`,
-);
+const unbalancedFence = () =>
+  fc
+    .tuple(plainProse(), plainProse())
+    .map(([lead, code]) => `${lead}\n\nleading text\n\n\`\`\`js\n${code}`);
 
-const unbalancedMath = () => fc.tuple(plainProse(), plainProse()).map(
-  ([lead, math]) => `${lead}\n\nleading text\n\n$$\n${math}`,
-);
+const unbalancedMath = () =>
+  fc
+    .tuple(plainProse(), plainProse())
+    .map(([lead, math]) => `${lead}\n\nleading text\n\n$$\n${math}`);
 
-const unbalancedScaffold = () => fc.tuple(
-  plainProse(),
-  fc.constantFrom(...SCAFFOLD_TAGS),
-  plainProse(),
-).map(([lead, tag, body]) => `${lead}\n\nleading text\n\n<${tag}>${body}`);
+const unbalancedScaffold = () =>
+  fc
+    .tuple(plainProse(), fc.constantFrom(...SCAFFOLD_TAGS), plainProse())
+    .map(([lead, tag, body]) => `${lead}\n\nleading text\n\n<${tag}>${body}`);
 
-const anyUnbalanced = () => fc.oneof(
-  unbalancedFence(),
-  unbalancedMath(),
-  unbalancedScaffold(),
-);
+const anyUnbalanced = () => fc.oneof(unbalancedFence(), unbalancedMath(), unbalancedScaffold());
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 10: Incomplete markdown stays in
@@ -127,15 +139,17 @@ test('Feature: chat-experience-revamp, Property 10: splitStreamingMarkdown is lo
     fc.string(),
     // Text rich in the boundary/construct characters the splitter reasons
     // about, so the round-trip is exercised on the interesting inputs too.
-    fc.array(
-      fc.oneof(
-        fc.constantFrom('\n\n', '```', '$$', '\\[', '\\]', '<think>', '</think>'),
-        fc.constantFrom(...SCAFFOLD_TAGS.map((t) => `<${t}>`)),
-        fc.constantFrom(...SCAFFOLD_TAGS.map((t) => `</${t}>`)),
-        fc.string(),
-      ),
-      { minLength: 0, maxLength: 20 },
-    ).map((parts) => parts.join('')),
+    fc
+      .array(
+        fc.oneof(
+          fc.constantFrom('\n\n', '```', '$$', '\\[', '\\]', '<think>', '</think>'),
+          fc.constantFrom(...SCAFFOLD_TAGS.map((t) => `<${t}>`)),
+          fc.constantFrom(...SCAFFOLD_TAGS.map((t) => `</${t}>`)),
+          fc.string(),
+        ),
+        { minLength: 0, maxLength: 20 },
+      )
+      .map((parts) => parts.join('')),
   );
 
   fc.assert(

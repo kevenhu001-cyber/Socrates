@@ -81,7 +81,6 @@ test('submitChatMessage enqueues when streaming is active', async () => {
   clearPromptQueue();
 });
 
-
 test('promptQueue publishes stable immutable snapshots for React external-store consumers', () => {
   clearPromptQueue();
   const empty = getQueuedPrompts();

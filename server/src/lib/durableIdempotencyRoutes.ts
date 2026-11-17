@@ -12,4 +12,3 @@ export function usesDurableIdempotency(method: string, path: string): boolean {
   if (m === 'PATCH') return ['/users/me', '/users/me/preferences'].includes(normalized);
   return false;
 }
-

@@ -44,7 +44,10 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const POOL_SIZE = Math.max(1, parseInt(process.env.CONTENT_EXTRACT_POOL_SIZE || '2', 10));
-const EXTRACT_TIMEOUT_MS = Math.max(500, parseInt(process.env.CONTENT_EXTRACT_TIMEOUT_MS || '5000', 10));
+const EXTRACT_TIMEOUT_MS = Math.max(
+  500,
+  parseInt(process.env.CONTENT_EXTRACT_TIMEOUT_MS || '5000', 10),
+);
 
 export interface ExtractedArticle {
   title: string;
@@ -168,9 +171,8 @@ class WorkerSlot {
       if (this._inflightReject) {
         const r = this._inflightReject;
         this._inflightReject = null;
-        const workerError = err instanceof Error
-          ? err
-          : new Error(`content_extractor_worker_error: ${String(err)}`);
+        const workerError =
+          err instanceof Error ? err : new Error(`content_extractor_worker_error: ${String(err)}`);
         r(workerError);
       }
       if (this._nextRelease) {
@@ -185,7 +187,9 @@ class WorkerSlot {
     if (this.busy || this.terminated || !this.worker) return false;
     this.busy = true;
     let resolveNext!: () => void;
-    this._claimChain = new Promise<void>((resolve) => { resolveNext = resolve; });
+    this._claimChain = new Promise<void>((resolve) => {
+      resolveNext = resolve;
+    });
     this._nextRelease = resolveNext;
     return true;
   }
@@ -224,7 +228,9 @@ class WorkerSlot {
     this.busy = false;
     let termination: Promise<number> | null = null;
     if (this.worker) {
-      try { termination = this.worker.terminate(); } catch {}
+      try {
+        termination = this.worker.terminate();
+      } catch {}
     }
     if (this._inflightReject) {
       const r = this._inflightReject;
@@ -275,14 +281,16 @@ class ExtractorPool {
     }
   }
   async terminate() {
-    await Promise.all(this.slots.map(async (slot) => {
-      const termination = slot.terminate();
-      if (termination) {
-        try {
-          await termination;
-        } catch {}
-      }
-    }));
+    await Promise.all(
+      this.slots.map(async (slot) => {
+        const termination = slot.terminate();
+        if (termination) {
+          try {
+            await termination;
+          } catch {}
+        }
+      }),
+    );
   }
 }
 
@@ -290,12 +298,18 @@ let pool: ExtractorPool | null = null;
 function getPool() {
   if (!pool) {
     pool = new ExtractorPool({ size: POOL_SIZE });
-    console.log(`[content-extractor] pool ready (${POOL_SIZE} workers, ${EXTRACT_TIMEOUT_MS}ms timeout)`);
+    console.log(
+      `[content-extractor] pool ready (${POOL_SIZE} workers, ${EXTRACT_TIMEOUT_MS}ms timeout)`,
+    );
   }
   return pool;
 }
 
-async function runOne(html: string, url: string, maxChars?: number): Promise<ExtractedArticle | null> {
+async function runOne(
+  html: string,
+  url: string,
+  maxChars?: number,
+): Promise<ExtractedArticle | null> {
   const p = getPool();
   p._reapDeadSlots();
   const slot = await p.acquireSlot();
@@ -349,7 +363,11 @@ async function runOne(html: string, url: string, maxChars?: number): Promise<Ext
  * input HTML is too small to be useful. Safe to call from any code
  * path — never throws and never blocks the main event loop.
  */
-export async function extractArticle(html: string, url: string, options: { maxChars?: number } = {}): Promise<ExtractedArticle | null> {
+export async function extractArticle(
+  html: string,
+  url: string,
+  options: { maxChars?: number } = {},
+): Promise<ExtractedArticle | null> {
   if (!html || !url) return null;
   try {
     return await runOne(html, url, options.maxChars);
@@ -379,7 +397,11 @@ export function extractArticleSync(html: string, url: string) {
   try {
     const { Readability } = require('@mozilla/readability');
     const { JSDOM, VirtualConsole } = require('jsdom');
-    const dom = new JSDOM(html, { url, virtualConsole: new VirtualConsole(), runScripts: 'outside-only' });
+    const dom = new JSDOM(html, {
+      url,
+      virtualConsole: new VirtualConsole(),
+      runScripts: 'outside-only',
+    });
     const doc = dom.window.document;
     article = new Readability(doc, { debug: false, charThreshold: 250 }).parse();
     if (article && article.textContent && article.textContent.trim().length >= 250) {

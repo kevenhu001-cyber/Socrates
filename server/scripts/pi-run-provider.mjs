@@ -18,13 +18,15 @@ export default function registerRunProvider(pi) {
     baseUrl,
     apiKey,
     api: 'openai-completions',
-    models: [{
-      id: modelId,
-      name: modelId,
-      reasoning: false,
-      input: ['text'],
-      contextWindow: 128000,
-      maxTokens: 16384,
-    }],
+    models: [
+      {
+        id: modelId,
+        name: modelId,
+        reasoning: false,
+        input: ['text'],
+        contextWindow: 128000,
+        maxTokens: 16384,
+      },
+    ],
   });
 }

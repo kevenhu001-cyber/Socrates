@@ -38,7 +38,14 @@ function call(over) {
 
 test('splits rawText at each persisted textOffset and keeps prose order', () => {
   const layout = buildTurnLayout(RAW, [
-    call({ id: 'b', name: 'web_fetch', input: { url: 'https://arxiv.org/abs/1' }, textOffset: 40, output: 'ok', durationMs: 3 }),
+    call({
+      id: 'b',
+      name: 'web_fetch',
+      input: { url: 'https://arxiv.org/abs/1' },
+      textOffset: 40,
+      output: 'ok',
+      durationMs: 3,
+    }),
     call({ id: 'a', textOffset: 18, output: 'ok', durationMs: 3 }),
   ]);
   // Deliberately out of offset order: the renderer sorts before splicing.
@@ -58,7 +65,10 @@ test('calls with no prose between them fold into a single run', () => {
     call({ id: 'b', textOffset: 13, output: 'ok', durationMs: 3 }),
     call({ id: 'c', textOffset: 13, output: 'ok', durationMs: 3 }),
   ]);
-  assert.deepEqual(layout.map((s) => s.kind), ['text', 'group']);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['text', 'group'],
+  );
   assert.equal(layout[1].members.length, 3);
 });
 
@@ -98,15 +108,23 @@ test('real prose between two calls keeps them in separate runs', () => {
     call({ id: 'a', textOffset: 0, output: 'ok', durationMs: 3 }),
     call({ id: 'b', textOffset: RAW.length, output: 'ok', durationMs: 3 }),
   ]);
-  assert.deepEqual(layout.map((s) => s.kind), ['group', 'text', 'group']);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['group', 'text', 'group'],
+  );
   assert.equal(layout[0].members[0].id, 'a');
   assert.equal(layout[1].text, RAW, 'the prose sits between the two rows');
   assert.equal(layout[2].members[0].id, 'b');
 });
 
 test('a call at offset 0 still gets its row instead of an empty lead segment', () => {
-  const layout = buildTurnLayout(RAW, [call({ id: 'a', textOffset: 0, output: 'ok', durationMs: 3 })]);
-  assert.deepEqual(layout.map((s) => s.kind), ['group', 'text']);
+  const layout = buildTurnLayout(RAW, [
+    call({ id: 'a', textOffset: 0, output: 'ok', durationMs: 3 }),
+  ]);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['group', 'text'],
+  );
 });
 
 test('moves a mid-paragraph tool boundary past its paragraph', () => {
@@ -114,7 +132,10 @@ test('moves a mid-paragraph tool boundary past its paragraph', () => {
   const layout = buildTurnLayout(text, [
     call({ id: 'search', textOffset: '我先查一下'.length, output: 'ok', durationMs: 3 }),
   ]);
-  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.deepEqual(
+    layout.map((segment) => segment.kind),
+    ['text', 'group', 'text'],
+  );
   assert.equal(layout[0].text, '我先查一下相关资料。这是第一段。\n\n');
   assert.equal(layout[1].members[0].id, 'search');
   assert.equal(layout[2].text, '后续说明。');
@@ -127,7 +148,10 @@ test('keeps consecutive calls together after normalizing the paragraph boundary'
     call({ id: 'search', textOffset: offset, output: 'ok', durationMs: 3 }),
     call({ id: 'fetch', name: 'web_fetch', textOffset: offset, output: 'ok', durationMs: 3 }),
   ]);
-  assert.deepEqual(layout.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.deepEqual(
+    layout.map((segment) => segment.kind),
+    ['text', 'group', 'text'],
+  );
   assert.equal(layout[1].members.length, 2);
 });
 
@@ -141,13 +165,28 @@ test('defers a tool row behind a live unfinished paragraph (P_tool-order-defer)'
      the paragraph or jump when punctuation arrives — a finished
      sentence alone is NOT enough. */
   const deferred = buildTurnLayout(text, calls, { inlineThink: true, deferOpenParagraph: true });
-  assert.deepEqual(deferred.map((segment) => segment.kind), ['text']);
+  assert.deepEqual(
+    deferred.map((segment) => segment.kind),
+    ['text'],
+  );
   assert.equal(deferred[0].text, text);
-  const sentenceDone = buildTurnLayout(text + '。后续没写完', calls, { inlineThink: true, deferOpenParagraph: true });
-  assert.deepEqual(sentenceDone.map((segment) => segment.kind), ['text']);
+  const sentenceDone = buildTurnLayout(text + '。后续没写完', calls, {
+    inlineThink: true,
+    deferOpenParagraph: true,
+  });
+  assert.deepEqual(
+    sentenceDone.map((segment) => segment.kind),
+    ['text'],
+  );
   /* Paragraph completed: the row mounts exactly once, behind it. */
-  const done = buildTurnLayout(text + '。这是第一段。\n\n新段落。', calls, { inlineThink: true, deferOpenParagraph: true });
-  assert.deepEqual(done.map((segment) => segment.kind), ['text', 'group', 'text']);
+  const done = buildTurnLayout(text + '。这是第一段。\n\n新段落。', calls, {
+    inlineThink: true,
+    deferOpenParagraph: true,
+  });
+  assert.deepEqual(
+    done.map((segment) => segment.kind),
+    ['text', 'group', 'text'],
+  );
   assert.equal(done[0].text, text + '。这是第一段。\n\n');
   assert.equal(done[2].text, '新段落。');
 });
@@ -171,14 +210,20 @@ test('extracts thinking spans, including one the stream never closed', () => {
   assert.equal(ranges[0].text, 'hidden one');
   assert.equal(ranges[1].text, 'hidden two');
   const layout = buildTurnLayout(text, []);
-  assert.deepEqual(layout.map((s) => s.kind), ['text', 'think', 'text', 'think']);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['text', 'think', 'text', 'think'],
+  );
   assert.equal(layout[1].text, 'hidden one');
   assert.equal(layout[3].text, 'hidden two');
 });
 
 test('an empty thinking span yields no think segment', () => {
   const layout = buildTurnLayout('prose\n\n<think>   </think>\nafter', []);
-  assert.deepEqual(layout.map((s) => s.kind), ['text', 'text']);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['text', 'text'],
+  );
 });
 
 test('live layout can omit private thinking spans from visible prose', () => {
@@ -186,11 +231,14 @@ test('live layout can omit private thinking spans from visible prose', () => {
     inlineThink: false,
     deferOpenParagraph: true,
   });
-  assert.deepEqual(layout.filter((segment) => segment.kind === 'text').map((segment) => segment.text), [
-    'before ',
-    ' after',
-  ]);
-  assert.equal(layout.some((segment) => segment.kind === 'think' && segment.text === 'private chain'), true);
+  assert.deepEqual(
+    layout.filter((segment) => segment.kind === 'text').map((segment) => segment.text),
+    ['before ', ' after'],
+  );
+  assert.equal(
+    layout.some((segment) => segment.kind === 'think' && segment.text === 'private chain'),
+    true,
+  );
 });
 
 test('thinking between two calls still separates their runs', () => {
@@ -206,7 +254,10 @@ test('thinking between two calls still separates their runs', () => {
 test('derives one state from either the live run phase or the persisted flags', () => {
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'running' } }), 'running');
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'preparing' } }), 'running');
-  assert.equal(toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'succeeded' }, output: 'ok' }), 'done');
+  assert.equal(
+    toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'succeeded' }, output: 'ok' }),
+    'done',
+  );
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'failed' } }), 'error');
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', _run: { phase: 'cancelled' } }), 'stopped');
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read', isError: true }), 'error');
@@ -219,16 +270,23 @@ test('derives one state from either the live run phase or the persisted flags', 
   assert.equal(toolRunStateOf({ id: 'x', name: 'web_search', results: [{ title: 'a' }] }), 'done');
   // A call with nothing but its arguments is the one that really never resolved.
   assert.equal(toolRunStateOf({ id: 'x', name: 'Read' }), 'running');
-  assert.equal(toolRunStateOf({ id: 'x', name: 'Read', input: { file_path: 'a.py' }, textOffset: 3 }), 'running');
+  assert.equal(
+    toolRunStateOf({ id: 'x', name: 'Read', input: { file_path: 'a.py' }, textOffset: 3 }),
+    'running',
+  );
 });
 
 test('approval views normalize provider decisions and structured file changes', () => {
   const view = approvalViewOf({
-    id: 'approval-call', name: 'workspace_agent',
+    id: 'approval-call',
+    name: 'workspace_agent',
     approval: {
-      runId: 'run-1', approvalId: 'approval-1', kind: 'fileChange',
+      runId: 'run-1',
+      approvalId: 'approval-1',
+      kind: 'fileChange',
       changes: { files: [{ path: 'src/app.ts', operation: 'edit' }] },
-      availableDecisions: ['accept', 'interrupt', 'accept'], status: 'pending',
+      availableDecisions: ['accept', 'interrupt', 'accept'],
+      status: 'pending',
     },
   });
   assert.ok(view);
@@ -240,7 +298,8 @@ test('approval views normalize provider decisions and structured file changes', 
 
 test('approval views collapse terminal provider statuses into stable UI states', () => {
   const view = approvalViewOf({
-    id: 'approval-call', name: 'workspace_agent',
+    id: 'approval-call',
+    name: 'workspace_agent',
     approval: { runId: 'run-1', approvalId: 'approval-1', status: 'accepted_for_session' },
   });
   assert.equal(view.state, 'accepted');
@@ -251,11 +310,29 @@ test('approval views collapse terminal provider statuses into stable UI states',
 /* ── labels ──────────────────────────────────────────────────────────── */
 
 test('labels carry the object so two calls never render identically', () => {
-  const readA = toolRunView({ id: '1', name: 'Read', input: { file_path: 'src/attention/moe.py' }, output: 'x', durationMs: 40 });
-  const readB = toolRunView({ id: '2', name: 'Read', input: { file_path: 'src/attention/routing.py' }, output: 'x', durationMs: 40 });
+  const readA = toolRunView({
+    id: '1',
+    name: 'Read',
+    input: { file_path: 'src/attention/moe.py' },
+    output: 'x',
+    durationMs: 40,
+  });
+  const readB = toolRunView({
+    id: '2',
+    name: 'Read',
+    input: { file_path: 'src/attention/routing.py' },
+    output: 'x',
+    durationMs: 40,
+  });
   assert.equal(readA.label, 'Read moe.py');
   assert.equal(readB.label, 'Read routing.py');
-  const fetch = toolRunView({ id: '3', name: 'web_fetch', input: { url: 'https://arxiv.org/abs/2501.00001' }, output: 'x', durationMs: 1 });
+  const fetch = toolRunView({
+    id: '3',
+    name: 'web_fetch',
+    input: { url: 'https://arxiv.org/abs/2501.00001' },
+    output: 'x',
+    durationMs: 1,
+  });
   assert.equal(fetch.label, 'Read arxiv.org');
 });
 
@@ -277,7 +354,10 @@ test('search rows name the query and put the source count in meta', () => {
     id: 's',
     name: 'web_search',
     input: { query: 'transformer architecture improvements 2025' },
-    results: [{ title: 'A', url: 'https://arxiv.org/abs/1' }, { title: 'B', url: 'https://arxiv.org/abs/2' }],
+    results: [
+      { title: 'A', url: 'https://arxiv.org/abs/1' },
+      { title: 'B', url: 'https://arxiv.org/abs/2' },
+    ],
     output: '2 results',
     durationMs: 1840,
   });
@@ -286,7 +366,12 @@ test('search rows name the query and put the source count in meta', () => {
 });
 
 test('running rows use the same object as the settled label', () => {
-  const view = toolRunView({ id: 'r', name: 'Read', input: { file_path: 'src/attention/moe.py' }, _run: { phase: 'running' } });
+  const view = toolRunView({
+    id: 'r',
+    name: 'Read',
+    input: { file_path: 'src/attention/moe.py' },
+    _run: { phase: 'running' },
+  });
   assert.equal(view.state, 'running');
   assert.equal(view.label, 'Reading moe.py…');
 });
@@ -299,16 +384,36 @@ test('a long query keeps its action object for natural wrapping', () => {
 
 test('failed rows name what failed and expose a retry only for search', () => {
   const search = toolRunView({
-    id: 's', name: 'web_search', input: { query: 'kitten' }, isError: true,
-    error: 'boom', errorCode: 'search_timeout', retryable: true,
+    id: 's',
+    name: 'web_search',
+    input: { query: 'kitten' },
+    isError: true,
+    error: 'boom',
+    errorCode: 'search_timeout',
+    retryable: true,
   });
   assert.equal(search.state, 'error');
-  assert.deepEqual(search.retry, { toolId: 's', tool: 'web_search', query: 'kitten', errorCode: 'search_timeout' });
-  const fetch = toolRunView({ id: 'f', name: 'web_fetch', input: { url: 'https://x.dev' }, isError: true, error: 'boom' });
+  assert.deepEqual(search.retry, {
+    toolId: 's',
+    tool: 'web_search',
+    query: 'kitten',
+    errorCode: 'search_timeout',
+  });
+  const fetch = toolRunView({
+    id: 'f',
+    name: 'web_fetch',
+    input: { url: 'https://x.dev' },
+    isError: true,
+    error: 'boom',
+  });
   assert.equal(fetch.retry, undefined);
   assert.equal(fetch.label, 'Failed: x.dev');
   const noRetry = toolRunView({
-    id: 's2', name: 'web_search', input: { query: 'q' }, isError: true, retryable: false,
+    id: 's2',
+    name: 'web_search',
+    input: { query: 'q' },
+    isError: true,
+    retryable: false,
   });
   assert.equal(noRetry.retry, undefined);
 });
@@ -325,66 +430,118 @@ test('group label names the files touched and reports the action count', () => {
 });
 
 test('a mixed group reports one clause per kind of work instead of naming part of it', () => {
-  const label = toolRunGroupLabel([
-    { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
-    { id: '2', name: 'Bash', input: { command: 'pytest' } },
-  ], 'done');
+  const label = toolRunGroupLabel(
+    [
+      { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
+      { id: '2', name: 'Bash', input: { command: 'pytest' } },
+    ],
+    'done',
+  );
   assert.equal(label.text, 'Ran a command, edited a file');
   assert.deepEqual(label.meta, ['2 actions']);
 });
 
 test('mixed clauses count each bucket and keep a stable reading order', () => {
-  const label = toolRunGroupLabel([
-    { id: '1', name: 'Bash', input: { command: 'pytest' } },
-    { id: '2', name: 'Bash', input: { command: 'npm run build' } },
-    { id: '3', name: 'Read', input: { file_path: 'a/moe.py' } },
-    { id: '4', name: 'Grep', input: { pattern: 'moe' } },
-    { id: '5', name: 'Write', input: { file_path: 'a/new.py' } },
-  ], 'done');
+  const label = toolRunGroupLabel(
+    [
+      { id: '1', name: 'Bash', input: { command: 'pytest' } },
+      { id: '2', name: 'Bash', input: { command: 'npm run build' } },
+      { id: '3', name: 'Read', input: { file_path: 'a/moe.py' } },
+      { id: '4', name: 'Grep', input: { pattern: 'moe' } },
+      { id: '5', name: 'Write', input: { file_path: 'a/new.py' } },
+    ],
+    'done',
+  );
   assert.equal(label.text, 'Ran 2 commands, read 2 files, created a file');
   assert.deepEqual(label.meta, ['5 actions']);
 });
 
 test('a run holding an unclassified call keeps the generic header rather than under-reporting', () => {
-  const label = toolRunGroupLabel([
-    { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
-    { id: '2', name: 'workspace_agent', input: { task: 'refactor' } },
-  ], 'done');
+  const label = toolRunGroupLabel(
+    [
+      { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' } },
+      { id: '2', name: 'workspace_agent', input: { task: 'refactor' } },
+    ],
+    'done',
+  );
   assert.equal(label.text, 'Explored');
   assert.deepEqual(label.meta, ['2 actions']);
 });
 
 test('a single-bucket run is left to the homogeneous branches, not summarised as one clause', () => {
-  const label = toolRunGroupLabel([
-    { id: '1', name: 'Bash', input: { command: 'pytest' } },
-    { id: '2', name: 'Bash', input: { command: 'npm run build' } },
-  ], 'done');
+  const label = toolRunGroupLabel(
+    [
+      { id: '1', name: 'Bash', input: { command: 'pytest' } },
+      { id: '2', name: 'Bash', input: { command: 'npm run build' } },
+    ],
+    'done',
+  );
   assert.equal(label.text, 'Explored');
 });
 
 /* ── detail panel: results first, arguments behind the toggle ────────── */
 
 test('arguments and error codes land in tech, never in the default sections', () => {
-  const ok = toolRunView({ id: '1', name: 'web_search', input: { query: 'q' }, results: [{ title: 'T', url: 'https://a.dev' }], output: 'body text', durationMs: 5 });
-  assert.deepEqual(ok.sections.map((s) => s.kind), ['sources', 'output']);
-  assert.deepEqual(ok.tech.map((s) => s.kind), ['args']);
+  const ok = toolRunView({
+    id: '1',
+    name: 'web_search',
+    input: { query: 'q' },
+    results: [{ title: 'T', url: 'https://a.dev' }],
+    output: 'body text',
+    durationMs: 5,
+  });
+  assert.deepEqual(
+    ok.sections.map((s) => s.kind),
+    ['sources', 'output'],
+  );
+  assert.deepEqual(
+    ok.tech.map((s) => s.kind),
+    ['args'],
+  );
 
   const failed = toolRunView({
-    id: '2', name: 'web_search', input: { query: 'q' }, isError: true, error: 'boom',
-    errorCode: 'search_timeout', retryable: true,
+    id: '2',
+    name: 'web_search',
+    input: { query: 'q' },
+    isError: true,
+    error: 'boom',
+    errorCode: 'search_timeout',
+    retryable: true,
   });
-  assert.deepEqual(failed.sections.map((s) => s.kind), ['error']);
+  assert.deepEqual(
+    failed.sections.map((s) => s.kind),
+    ['error'],
+  );
   // Diagnostic facts first, the argument dump last, in both branches.
-  assert.deepEqual(failed.tech.map((t) => t.title), ['Error code', 'Retryable', 'Arguments']);
+  assert.deepEqual(
+    failed.tech.map((t) => t.title),
+    ['Error code', 'Retryable', 'Arguments'],
+  );
   assert.equal(failed.tech.find((t) => t.retryable)?.retryable, '1');
 });
 
 test('result echoes that repeat the row label are dropped', () => {
   const results = [1, 2, 3].map((i) => ({ title: 'T' + i, url: 'https://a.dev/' + i }));
-  const withCount = toolRunView({ id: '1', name: 'web_search', input: { query: 'q' }, results, output: '3 results', durationMs: 5 });
-  assert.deepEqual(withCount.sections.map((s) => s.kind), ['sources']);
+  const withCount = toolRunView({
+    id: '1',
+    name: 'web_search',
+    input: { query: 'q' },
+    results,
+    output: '3 results',
+    durationMs: 5,
+  });
+  assert.deepEqual(
+    withCount.sections.map((s) => s.kind),
+    ['sources'],
+  );
   for (const echo of ['ok', 'Done', 'success', 'OK', '1 hit.']) {
-    const view = toolRunView({ id: '1', name: 'Read', input: { file_path: 'a.py' }, output: echo, durationMs: 5 });
+    const view = toolRunView({
+      id: '1',
+      name: 'Read',
+      input: { file_path: 'a.py' },
+      output: echo,
+      durationMs: 5,
+    });
     assert.deepEqual(view.sections, [], `expected "${echo}" to be dropped`);
   }
 });
@@ -409,7 +566,11 @@ test('source cards preserve available publication dates and search engines', () 
     { title: 'Beta', url: 'https://b.dev/y', date: null, source: null },
   ]);
   assert.deepEqual(sources[0], {
-    title: 'Alpha', url: 'https://a.dev/x', host: 'a.dev', date: '2026-07-15', source: 'bing',
+    title: 'Alpha',
+    url: 'https://a.dev/x',
+    host: 'a.dev',
+    date: '2026-07-15',
+    source: 'bing',
   });
   assert.equal(sources[1].date, undefined);
   assert.equal(sources[1].source, undefined);
@@ -423,7 +584,10 @@ test('group sources dedupe across members and cap higher than a single row', () 
       id: 'g' + g,
       name: 'web_search',
       input: { query: 'q' + g },
-      results: Array.from({ length: 9 }, (_, i) => ({ title: 'T' + i, url: `https://s${g}.dev/${i}` })),
+      results: Array.from({ length: 9 }, (_, i) => ({
+        title: 'T' + i,
+        url: `https://s${g}.dev/${i}`,
+      })),
       output: 'ok',
       durationMs: 5,
     })),
@@ -439,20 +603,21 @@ test('the aggregate lists merged sources only when more than one member contribu
   /* One search that returned everything the run found has no "merge" to show:
      repeating its list above the row is the stacked-duplication the two-tier
      detail was meant to remove. */
-  const groupWithContributors = (contributors) => groupViewOf({
-    kind: 'group',
-    category: 'search',
-    members: [0, 1].map((g) => ({
-      id: 'g' + g,
-      name: 'web_search',
-      input: { query: 'q' + g },
-      results: g < contributors ? [{ title: 'T' + g, url: `https://s${g}.dev/` }] : [],
-      output: g < contributors ? '1 results' : 'No web results found',
-      durationMs: 5,
-    })),
-    running: [],
-    state: 'done',
-  });
+  const groupWithContributors = (contributors) =>
+    groupViewOf({
+      kind: 'group',
+      category: 'search',
+      members: [0, 1].map((g) => ({
+        id: 'g' + g,
+        name: 'web_search',
+        input: { query: 'q' + g },
+        results: g < contributors ? [{ title: 'T' + g, url: `https://s${g}.dev/` }] : [],
+        output: g < contributors ? '1 results' : 'No web results found',
+        durationMs: 5,
+      })),
+      running: [],
+      state: 'done',
+    });
   assert.equal(
     groupWithContributors(1).sections.some((s) => s.kind === 'sources'),
     false,
@@ -474,16 +639,28 @@ test('oversized output is truncated head+tail with an omitted-line marker', () =
 });
 
 test('running rows expose a live command/code preview instead of a hidden details body', () => {
-  const bash = toolRunView({ id: 'b', name: 'Bash', input: { command: 'ls -la' }, _run: { phase: 'running' } });
+  const bash = toolRunView({
+    id: 'b',
+    name: 'Bash',
+    input: { command: 'ls -la' },
+    _run: { phase: 'running' },
+  });
   assert.equal(bash.state, 'running');
   assert.equal(bash.livePreview, 'ls -la');
   const code = toolRunView({
-    id: 'c', name: 'code_interpreter', input: {},
+    id: 'c',
+    name: 'code_interpreter',
+    input: {},
     argumentsText: '{"code": "import statistics\\nprint(st.mean(x))',
     _run: { phase: 'running' },
   });
   assert.match(code.livePreview, /import statistics/);
-  const read = toolRunView({ id: 'r', name: 'Read', input: { file_path: 'a.py' }, _run: { phase: 'running' } });
+  const read = toolRunView({
+    id: 'r',
+    name: 'Read',
+    input: { file_path: 'a.py' },
+    _run: { phase: 'running' },
+  });
   assert.equal(read.livePreview, undefined, 'a read row has nothing to preview');
 });
 
@@ -494,14 +671,26 @@ test('extractCodePreview survives partial JSON and falls back to nothing when un
 });
 
 test('file summary only appears for a genuine multi-file write run', () => {
-  const single = toolRunView({ id: '1', name: 'Edit', input: { file_path: 'a/moe.py' }, output: 'ok', durationMs: 2 });
+  const single = toolRunView({
+    id: '1',
+    name: 'Edit',
+    input: { file_path: 'a/moe.py' },
+    output: 'ok',
+    durationMs: 2,
+  });
   assert.equal(single.fileSummary, undefined);
   const group = groupViewOf({
     kind: 'group',
     category: 'write',
     members: [
       { id: '1', name: 'Edit', input: { file_path: 'a/moe.py' }, output: 'ok', durationMs: 2 },
-      { id: '2', name: 'Write', input: { file_path: 'a/router_v2.py' }, output: 'ok', durationMs: 2 },
+      {
+        id: '2',
+        name: 'Write',
+        input: { file_path: 'a/router_v2.py' },
+        output: 'ok',
+        durationMs: 2,
+      },
     ],
     running: [],
     state: 'done',
@@ -514,9 +703,29 @@ test('file summary only appears for a genuine multi-file write run', () => {
 
 test('a running call is reported separately from the settled members', () => {
   const group = buildTurnLayout('work\n\n', [
-    call({ id: '1', name: 'Read', input: { file_path: 'a.py' }, textOffset: 5, output: 'ok', durationMs: 3 }),
-    call({ id: '2', name: 'Read', input: { file_path: 'b.py' }, textOffset: 5, output: 'ok', durationMs: 3 }),
-    call({ id: '3', name: 'Read', input: { file_path: 'c.py' }, textOffset: 5, _run: { phase: 'running' } }),
+    call({
+      id: '1',
+      name: 'Read',
+      input: { file_path: 'a.py' },
+      textOffset: 5,
+      output: 'ok',
+      durationMs: 3,
+    }),
+    call({
+      id: '2',
+      name: 'Read',
+      input: { file_path: 'b.py' },
+      textOffset: 5,
+      output: 'ok',
+      durationMs: 3,
+    }),
+    call({
+      id: '3',
+      name: 'Read',
+      input: { file_path: 'c.py' },
+      textOffset: 5,
+      _run: { phase: 'running' },
+    }),
   ]).find((s) => s.kind === 'group');
   assert.equal(group.kind, 'group');
   assert.equal(group.members.length, 2);
@@ -533,7 +742,10 @@ test('a group hands every call to the output renderer, settled or in flight', ()
     call({ id: 'settled', textOffset: 5, output: 'ok', durationMs: 3 }),
     call({ id: 'live', name: 'render_intelligent_ui', textOffset: 5, _run: { phase: 'running' } }),
   ]).find((s) => s.kind === 'group');
-  assert.deepEqual(groupOutputCalls(group).map((c) => c.id), ['settled', 'live']);
+  assert.deepEqual(
+    groupOutputCalls(group).map((c) => c.id),
+    ['settled', 'live'],
+  );
   assert.deepEqual(groupOutputCalls(group), group.members.concat(group.running));
 });
 
@@ -555,8 +767,16 @@ test('visualization specs compare by content, so a settle does not remount the c
 });
 
 test('a single settled call renders as a bare row, not a collapsed header', () => {
-  const group = buildTurnLayout('work\n\n', [call({ id: '1', name: 'Read', input: { file_path: 'a.py' }, textOffset: 5, output: 'ok', durationMs: 3 })])
-    .find((s) => s.kind === 'group');
+  const group = buildTurnLayout('work\n\n', [
+    call({
+      id: '1',
+      name: 'Read',
+      input: { file_path: 'a.py' },
+      textOffset: 5,
+      output: 'ok',
+      durationMs: 3,
+    }),
+  ]).find((s) => s.kind === 'group');
   const view = groupViewOf(group);
   assert.equal(view.showsHeader, false);
   assert.equal(view.members.length, 1);
@@ -568,7 +788,14 @@ test('a group surfaces a member failure in its own sections and meta', () => {
     category: 'search',
     members: [
       { id: '1', name: 'web_search', input: { query: 'a' }, output: 'ok', durationMs: 5 },
-      { id: '2', name: 'web_search', input: { query: 'b' }, isError: true, error: 'engine down', durationMs: 5 },
+      {
+        id: '2',
+        name: 'web_search',
+        input: { query: 'b' },
+        isError: true,
+        error: 'engine down',
+        durationMs: 5,
+      },
     ],
     running: [],
     state: 'error',
@@ -630,7 +857,10 @@ test('stripLegacyToolHtml short-circuits html that has no tool rows', () => {
   const saved = globalThis.DOMParser;
   delete globalThis.DOMParser;
   try {
-    assert.equal(stripLegacyToolHtml('<p>ordinary <strong>markdown</strong></p>'), '<p>ordinary <strong>markdown</strong></p>');
+    assert.equal(
+      stripLegacyToolHtml('<p>ordinary <strong>markdown</strong></p>'),
+      '<p>ordinary <strong>markdown</strong></p>',
+    );
   } finally {
     globalThis.DOMParser = saved;
   }
@@ -704,15 +934,14 @@ test('code_interpreter distinguishes drafting from executing and analyzing', () 
   assert.match(analyzingLabel.text, /Analyzing data|正在数据分析/);
 });
 
-
-
 test('declarative terminal status strips duplicate stored Retry controls but preserves prose', async () => {
   const { JSDOM } = await import('jsdom');
   const { stripLegacyTerminalHtml } = await import('../src/react/tool-run/toolRunLegacyHtml.ts');
   const previous = globalThis.DOMParser;
   globalThis.DOMParser = new JSDOM('').window.DOMParser;
   try {
-    const html = '<p>Partial reply</p><div class="msg-error"><span>Failed</span><button class="msg-retry-btn">Retry</button></div>';
+    const html =
+      '<p>Partial reply</p><div class="msg-error"><span>Failed</span><button class="msg-retry-btn">Retry</button></div>';
     assert.equal(stripLegacyTerminalHtml(html), '<p>Partial reply</p>');
     assert.equal(stripLegacyTerminalHtml('<p>Partial reply</p>'), '<p>Partial reply</p>');
   } finally {
@@ -726,17 +955,41 @@ test('declarative terminal status strips duplicate stored Retry controls but pre
 test('group outputs keep each call once, in order', () => {
   const calls = [
     { id: 'first-running', name: 'Read', input: { path: 'first.ts' }, textOffset: 0 },
-    { id: 'second-done', name: 'Read', input: { path: 'second.ts' }, status: 'completed', textOffset: 0 },
+    {
+      id: 'second-done',
+      name: 'Read',
+      input: { path: 'second.ts' },
+      status: 'completed',
+      textOffset: 0,
+    },
   ];
   const segment = buildTurnLayout('Answer.', calls)[0];
-  assert.deepEqual(groupOutputCalls(segment).map((c) => c.id), ['first-running', 'second-done']);
+  assert.deepEqual(
+    groupOutputCalls(segment).map((c) => c.id),
+    ['first-running', 'second-done'],
+  );
 });
 
 test('connector actions use service marks and descriptive workflow labels', () => {
-  assert.equal(connectorToolIdOf('oc_mcdonalds_cn_get_menu', ['mcdonalds', 'mcdonalds_cn']), 'mcdonalds_cn');
-  assert.equal(connectorToolIdOf('google_calendar_list_events', ['googlecalendar']), 'googlecalendar');
+  assert.equal(
+    connectorToolIdOf('oc_mcdonalds_cn_get_menu', ['mcdonalds', 'mcdonalds_cn']),
+    'mcdonalds_cn',
+  );
+  assert.equal(
+    connectorToolIdOf('google_calendar_list_events', ['googlecalendar']),
+    'googlecalendar',
+  );
   assert.equal(connectorToolIdOf('unknown_tool', ['github']), '');
-  assert.deepEqual(connectorActivityOf('oc_github', { action: 'github.get_job_logs' }), { service: 'GitHub', action: 'get_job_logs' });
-  assert.equal(toolRunLabel({ name: 'oc_github_list_workflow_run_jobs' }, 'running').text, 'Check GitHub Actions workflow steps');
-  assert.equal(toolRunLabel({ name: 'oc_github_get_job_logs' }, 'done').text, 'Read GitHub Actions workflow logs');
+  assert.deepEqual(connectorActivityOf('oc_github', { action: 'github.get_job_logs' }), {
+    service: 'GitHub',
+    action: 'get_job_logs',
+  });
+  assert.equal(
+    toolRunLabel({ name: 'oc_github_list_workflow_run_jobs' }, 'running').text,
+    'Check GitHub Actions workflow steps',
+  );
+  assert.equal(
+    toolRunLabel({ name: 'oc_github_get_job_logs' }, 'done').text,
+    'Read GitHub Actions workflow logs',
+  );
 });

@@ -10,16 +10,20 @@ export function clearLegacyMsgListChildren() {
   const list = document.getElementById('msgList');
   if (!list) return;
   restoreLiveMessageList(list);
-  try { disposeVisualizations(list); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts:10', 'expected');
+  try {
+    disposeVisualizations(list);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts', 'expected');
     /* best effort cleanup */
   }
 
   const children = Array.from(list.children);
   for (const node of children) {
     if (node.hasAttribute('data-react-owned')) continue;
-    try { list.removeChild(node); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts:15');
+    try {
+      list.removeChild(node);
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: ui/messageListDom.ts');
       /* node was already removed */
     }
   }

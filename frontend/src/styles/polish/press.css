@@ -21,7 +21,7 @@
  * geometry and a slightly quieter dim.
  */
 
-:where(button, [role="button"], [role="tab"], [role="menuitem"], [role="option"]) {
+:where(button, [role='button'], [role='tab'], [role='menuitem'], [role='option']) {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -46,42 +46,43 @@
    branch outranks the shell's own `#appShell .row.active` / `:hover`
    backgrounds, so the currently selected row still visibly presses. */
 :is(
-  [role="menuitem"],
-  [role="option"],
-  .press-tint,
-  .recent-item,
-  .composer-tools-item,
-  .tool-run-summary,
-  .sidebar-nav-btn,
-  .sidebar-more-item,
-  .user-row,
-  .kb-node,
-  .home-quick-action,
-  .thinking-status-clickable
-):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed),
-#appShell :is(
-  [role="menuitem"],
-  [role="option"],
-  .press-tint,
-  .recent-item,
-  .composer-tools-item,
-  .tool-run-summary,
-  .sidebar-nav-btn,
-  .sidebar-more-item,
-  .user-row,
-  .kb-node,
-  .home-quick-action,
-  .thinking-status-clickable
-):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
+    [role='menuitem'],
+    [role='option'],
+    .press-tint,
+    .recent-item,
+    .composer-tools-item,
+    .tool-run-summary,
+    .sidebar-nav-btn,
+    .sidebar-more-item,
+    .user-row,
+    .kb-node,
+    .home-quick-action,
+    .thinking-status-clickable
+  ):not(:disabled, [aria-disabled='true']):is(:active, .is-pressed),
+#appShell
+  :is(
+    [role='menuitem'],
+    [role='option'],
+    .press-tint,
+    .recent-item,
+    .composer-tools-item,
+    .tool-run-summary,
+    .sidebar-nav-btn,
+    .sidebar-more-item,
+    .user-row,
+    .kb-node,
+    .home-quick-action,
+    .thinking-status-clickable
+  ):not(:disabled, [aria-disabled='true']):is(:active, .is-pressed) {
   background-color: var(--ui-press-tint);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :is(button, [role="button"], [role="tab"]):not(
+  :is(button, [role='button'], [role='tab']):not(
     :disabled,
-    [aria-disabled="true"],
-    [role="menuitem"],
-    [role="option"],
+    [aria-disabled='true'],
+    [role='menuitem'],
+    [role='option'],
     .press-tint,
     .recent-item,
     .composer-tools-item,
@@ -96,55 +97,59 @@
     scale: 1;
     /* A press must not replace the button's hover colors with an opacity-only
        transition. Keep the same paint channels through press and release. */
-    transition: opacity var(--ui-duration-fast) var(--ui-ease-out),
-                background-color var(--ui-duration-hover) var(--ui-ease-out),
-                border-color var(--ui-duration-hover) var(--ui-ease-out),
-                color var(--ui-duration-hover) var(--ui-ease-out),
-                box-shadow var(--ui-duration-hover) var(--ui-ease-out);
+    transition:
+      opacity var(--ui-duration-fast) var(--ui-ease-out),
+      background-color var(--ui-duration-hover) var(--ui-ease-out),
+      border-color var(--ui-duration-hover) var(--ui-ease-out),
+      color var(--ui-duration-hover) var(--ui-ease-out),
+      box-shadow var(--ui-duration-hover) var(--ui-ease-out);
   }
 
-  :is(button, [role="button"], [role="tab"]):not(
-    :disabled,
-    [aria-disabled="true"],
-    [role="menuitem"],
-    [role="option"],
-    .press-tint,
-    .recent-item,
-    .composer-tools-item,
-    .tool-run-summary,
-    .sidebar-nav-btn,
-    .sidebar-more-item,
-    .user-row,
-    .kb-node,
-    .home-quick-action,
-    .thinking-status-clickable
-  ):is(:active, .is-pressed) {
+  :is(button, [role='button'], [role='tab']):not(
+      :disabled,
+      [aria-disabled='true'],
+      [role='menuitem'],
+      [role='option'],
+      .press-tint,
+      .recent-item,
+      .composer-tools-item,
+      .tool-run-summary,
+      .sidebar-nav-btn,
+      .sidebar-more-item,
+      .user-row,
+      .kb-node,
+      .home-quick-action,
+      .thinking-status-clickable
+    ):is(:active, .is-pressed) {
     scale: 1;
     opacity: var(--press-opacity, var(--ui-press-opacity));
   }
 
-  :is(button, [role="button"], [role="tab"]):not(
-    :disabled,
-    [aria-disabled="true"],
-    [role="menuitem"],
-    [role="option"],
-    .press-tint,
-    .recent-item,
-    .composer-tools-item,
-    .tool-run-summary,
-    .sidebar-nav-btn,
-    .sidebar-more-item,
-    .user-row,
-    .kb-node,
-    .home-quick-action,
-    .thinking-status-clickable
-  ).is-press-release {
+  :is(button, [role='button'], [role='tab']):not(
+      :disabled,
+      [aria-disabled='true'],
+      [role='menuitem'],
+      [role='option'],
+      .press-tint,
+      .recent-item,
+      .composer-tools-item,
+      .tool-run-summary,
+      .sidebar-nav-btn,
+      .sidebar-more-item,
+      .user-row,
+      .kb-node,
+      .home-quick-action,
+      .thinking-status-clickable
+    ).is-press-release {
     scale: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(button, [role="button"], [role="tab"]):not(:disabled, [aria-disabled="true"]):is(:active, .is-pressed) {
+  :is(button, [role='button'], [role='tab']):not(:disabled, [aria-disabled='true']):is(
+      :active,
+      .is-pressed
+    ) {
     scale: 1;
     opacity: var(--ui-press-opacity);
   }

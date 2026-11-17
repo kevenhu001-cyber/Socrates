@@ -11,7 +11,8 @@ const lnSpec = {
   version: 1,
   template: 'function',
   title: 'y = ln(x)',
-  accessibilitySummary: 'The natural logarithm is defined for x greater than zero and passes through (1, 0).',
+  accessibilitySummary:
+    'The natural logarithm is defined for x greater than zero and passes through (1, 0).',
   payload: { functions: [{ expression: 'ln(x)', label: 'ln(x)' }], xLabel: 'x', yLabel: 'y' },
 };
 
@@ -42,18 +43,26 @@ test('visual spec repairs common model field aliases without mutating input', ()
 
 test('visual spec repairs common function and graph aliases', () => {
   const fn = validateVisualizationSpec({
-    version: 1, template: 'function', title: 'Curve',
-    accessibilitySummary: 'A curve.', payload: { formula: 'sin(x)' },
+    version: 1,
+    template: 'function',
+    title: 'Curve',
+    accessibilitySummary: 'A curve.',
+    payload: { formula: 'sin(x)' },
   });
   assert.equal(fn.ok, true);
   assert.equal(fn.spec.payload.functions[0].expression, 'sin(x)');
 
   const graph = validateVisualizationSpec({
     spec: {
-      version: 1, template: 'flowchart', title: 'Flow',
+      version: 1,
+      template: 'flowchart',
+      title: 'Flow',
       accessibilitySummary: 'A flow.',
       payload: {
-        nodes: [{ id: 'a', name: 'Start' }, { id: 'b', text: 'End' }],
+        nodes: [
+          { id: 'a', name: 'Start' },
+          { id: 'b', text: 'End' },
+        ],
         edges: [{ source: 'a', target: 'b' }],
       },
     },
@@ -83,13 +92,21 @@ test('visual tool returns structured field errors instead of a Python fallback',
   assert.equal(result.status, 'failed');
   assert.equal(result.errorCode, 'visual_spec_invalid');
   assert.ok(Array.isArray(result.detail));
-  assert.deepEqual(result.diagnostics, { stage: 'payload_shape', template: 'function', issuePaths: ['payload.functions.0.expression'] });
+  assert.deepEqual(result.diagnostics, {
+    stage: 'payload_shape',
+    template: 'function',
+    issuePaths: ['payload.functions.0.expression'],
+  });
 });
 
 test('every documented template example passes the same validator that executes tool calls', () => {
   for (const template of Object.keys(VISUALIZATION_TEMPLATE_CONTRACTS)) {
     const result = validateVisualizationSpec(visualizationTemplateExample(template));
-    assert.equal(result.ok, true, `${template} example rejected at ${result.stage}: ${JSON.stringify(result.issues)}`);
+    assert.equal(
+      result.ok,
+      true,
+      `${template} example rejected at ${result.stage}: ${JSON.stringify(result.issues)}`,
+    );
   }
 });
 
@@ -97,20 +114,27 @@ test('semantic diagnostics preserve the rejected template for a targeted correct
   /* A reversed domain is now repaired by the shared normalizer (swapped,
      with a warning); an expression with no finite values in its domain is
      still a semantic failure that must name its template. */
-  const result = executeVisualization({ ...lnSpec, payload: { functions: [{ expression: 'sqrt(x)', domain: [-5, -1] }] } });
+  const result = executeVisualization({
+    ...lnSpec,
+    payload: { functions: [{ expression: 'sqrt(x)', domain: [-5, -1] }] },
+  });
   assert.equal(result.status, 'failed');
   assert.equal(result.diagnostics.stage, 'semantic');
   assert.equal(result.diagnostics.template, 'function');
   assert.deepEqual(result.diagnostics.issuePaths, ['payload.functions.0.expression']);
   assert.equal(visualizationTemplateExample(result.diagnostics.template).template, 'function');
-  const swapped = validateVisualizationSpec({ ...lnSpec, payload: { functions: [{ expression: 'x', domain: [5, 1] }] } });
+  const swapped = validateVisualizationSpec({
+    ...lnSpec,
+    payload: { functions: [{ expression: 'x', domain: [5, 1] }] },
+  });
   assert.equal(swapped.ok, true);
   assert.deepEqual(swapped.spec.payload.functions[0].domain, [1, 5]);
   assert.ok(swapped.warnings.some((line) => /reversed function domain/.test(line)));
 });
 
 test('static SVG illustrations accept standalone XML documents', () => {
-  const source = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800"/></svg>';
+  const source =
+    '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800"/></svg>';
   const result = validateVisualizationSpec({
     version: 1,
     template: 'svg_illustration',
@@ -124,11 +148,32 @@ test('static SVG illustrations accept standalone XML documents', () => {
 });
 
 test('visual spec caps graph nodes and extension source', () => {
-  const graph = { version: 1, template: 'flowchart', title: 'Flow', accessibilitySummary: 'A flow.', payload: { nodes: Array.from({ length: 201 }, (_, i) => ({ id: String(i), label: String(i) })), edges: [] } };
+  const graph = {
+    version: 1,
+    template: 'flowchart',
+    title: 'Flow',
+    accessibilitySummary: 'A flow.',
+    payload: {
+      nodes: Array.from({ length: 201 }, (_, i) => ({ id: String(i), label: String(i) })),
+      edges: [],
+    },
+  };
   assert.equal(validateVisualizationSpec(graph).ok, false);
-  const extension = { version: 1, template: 'svg_illustration', title: 'Illustration', accessibilitySummary: 'A simple visual.', payload: { source: 'x'.repeat(100001) } };
+  const extension = {
+    version: 1,
+    template: 'svg_illustration',
+    title: 'Illustration',
+    accessibilitySummary: 'A simple visual.',
+    payload: { source: 'x'.repeat(100001) },
+  };
   assert.equal(validateVisualizationSpec(extension).ok, false);
-  const unsafeExtension = { version: 1, template: 'interactive_simulation', title: 'Unsafe', accessibilitySummary: 'Unsafe extension.', payload: { source: '<script>fetch("https://example.com")</script>' } };
+  const unsafeExtension = {
+    version: 1,
+    template: 'interactive_simulation',
+    title: 'Unsafe',
+    accessibilitySummary: 'Unsafe extension.',
+    payload: { source: '<script>fetch("https://example.com")</script>' },
+  };
   assert.equal(validateVisualizationSpec(unsafeExtension).ok, false);
 });
 
@@ -139,14 +184,21 @@ test('visual spec caps graph nodes and extension source', () => {
    for both. */
 test('interactive_simulation accepts inline scripts; svg_illustration does not', () => {
   const sim = {
-    version: 1, template: 'interactive_simulation', title: 'Pendulum',
+    version: 1,
+    template: 'interactive_simulation',
+    title: 'Pendulum',
     accessibilitySummary: 'A pendulum the reader can swing.',
-    payload: { source: '<div><canvas id="c"></canvas><button onclick="reset()">Reset</button><script>function reset(){document.getElementById("c").getContext("2d").clearRect(0,0,9,9)}</script></div>' },
+    payload: {
+      source:
+        '<div><canvas id="c"></canvas><button onclick="reset()">Reset</button><script>function reset(){document.getElementById("c").getContext("2d").clearRect(0,0,9,9)}</script></div>',
+    },
   };
   assert.equal(validateVisualizationSpec(sim).ok, true);
 
   const svgWithScript = {
-    version: 1, template: 'svg_illustration', title: 'Art',
+    version: 1,
+    template: 'svg_illustration',
+    title: 'Art',
     accessibilitySummary: 'A static illustration.',
     payload: { source: '<svg><script>alert(1)</script></svg>' },
   };
@@ -154,7 +206,12 @@ test('interactive_simulation accepts inline scripts; svg_illustration does not',
 });
 
 test('interactive_simulation still rejects nested frames, network APIs and dangerous schemes', () => {
-  const base = { version: 1, template: 'interactive_simulation', title: 'Sim', accessibilitySummary: 'A sim.' };
+  const base = {
+    version: 1,
+    template: 'interactive_simulation',
+    title: 'Sim',
+    accessibilitySummary: 'A sim.',
+  };
   const cases = [
     '<div><iframe src="https://example.com"></iframe></div>',
     '<script>const ws = new WebSocket("wss://x")</script>',
@@ -168,7 +225,12 @@ test('interactive_simulation still rejects nested frames, network APIs and dange
 });
 
 test('extension content rejects external asset URLs that its CSP cannot load', () => {
-  const base = { version: 1, template: 'svg_illustration', title: 'Remote image', accessibilitySummary: 'Inline-only SVG.' };
+  const base = {
+    version: 1,
+    template: 'svg_illustration',
+    title: 'Remote image',
+    accessibilitySummary: 'Inline-only SVG.',
+  };
   const cases = [
     '<svg><image href="https://example.com/image.png"/></svg>',
     '<svg><style>.shape{fill:url(https://example.com/paint.svg#x)}</style></svg>',
@@ -186,13 +248,36 @@ test('extension content rejects external asset URLs that its CSP cannot load', (
   assert.equal(inline.ok, true);
 });
 
-
 test('specialized mature-renderer templates validate semantic payloads', () => {
   const specs = [
-    { version: 1, template: 'paper_chart', title: 'Paper', accessibilitySummary: 'A publication chart.', payload: { categories: ['A'], series: [{ name: 'Result', data: [1] }] } },
-    { version: 1, template: 'math_construction', title: 'Circle', accessibilitySummary: 'An editable circle construction.', payload: { commands: ['A=(0,0)', 'Circle(A,4)'] } },
-    { version: 1, template: 'geometry_3d', title: 'Solid', accessibilitySummary: 'A rotatable sphere.', payload: { objects: [{ type: 'sphere', position: [0, 1, 0], size: [1, 1, 1] }] } },
-    { version: 1, template: 'whiteboard', title: 'Ideas', accessibilitySummary: 'An editable idea board.', payload: { items: [{ label: 'Start here' }] } },
+    {
+      version: 1,
+      template: 'paper_chart',
+      title: 'Paper',
+      accessibilitySummary: 'A publication chart.',
+      payload: { categories: ['A'], series: [{ name: 'Result', data: [1] }] },
+    },
+    {
+      version: 1,
+      template: 'math_construction',
+      title: 'Circle',
+      accessibilitySummary: 'An editable circle construction.',
+      payload: { commands: ['A=(0,0)', 'Circle(A,4)'] },
+    },
+    {
+      version: 1,
+      template: 'geometry_3d',
+      title: 'Solid',
+      accessibilitySummary: 'A rotatable sphere.',
+      payload: { objects: [{ type: 'sphere', position: [0, 1, 0], size: [1, 1, 1] }] },
+    },
+    {
+      version: 1,
+      template: 'whiteboard',
+      title: 'Ideas',
+      accessibilitySummary: 'An editable idea board.',
+      payload: { items: [{ label: 'Start here' }] },
+    },
   ];
   specs.forEach((spec) => assert.equal(validateVisualizationSpec(spec).ok, true, spec.template));
 });

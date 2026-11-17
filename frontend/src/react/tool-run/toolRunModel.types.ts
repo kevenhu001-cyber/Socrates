@@ -1,5 +1,5 @@
-import type {AgentPlanData, AgentStepData} from '../../ui/agentSteps.ts';
-import type {ToolCallLike} from '../../ui/toolPresentationModel.ts';
+import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
+import type { ToolCallLike } from '../../ui/toolPresentationModel.ts';
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 
@@ -70,16 +70,16 @@ export type TurnSegment =
   | { kind: 'think'; start: number; end: number; text: string }
   | { kind: 'tool'; call: ToolCallRecord }
   | {
-    kind: 'group';
-    category: string;
-    /** Original call order, retained while parallel calls settle out of order. */
-    calls?: ToolCallRecord[];
-    /** Settled calls, used for state and result summaries. */
-    members: ToolCallRecord[];
-    /** Calls whose execution is still in progress. */
-    running: ToolCallRecord[];
-    state: ToolRunState;
-  };
+      kind: 'group';
+      category: string;
+      /** Original call order, retained while parallel calls settle out of order. */
+      calls?: ToolCallRecord[];
+      /** Settled calls, used for state and result summaries. */
+      members: ToolCallRecord[];
+      /** Calls whose execution is still in progress. */
+      running: ToolCallRecord[];
+      state: ToolRunState;
+    };
 
 /** The kind of text a tool produced. */
 export type ToolTextStream = 'stdout' | 'stderr' | 'result';
@@ -120,7 +120,7 @@ export type ToolOutput = VisualizationOutput | ArtifactOutput | TextOutput;
 
 /** The persisted + live shape of a message.toolCalls[] entry. */
 export interface ToolCallRecord extends ToolCallLike {
-  uiSurface?: import("@socrates/contracts").TurnUiSurface;
+  uiSurface?: import('@socrates/contracts').TurnUiSurface;
   id: string;
   name: string;
   textOffset?: number;

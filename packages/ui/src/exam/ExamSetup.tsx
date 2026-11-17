@@ -4,11 +4,26 @@ import { EXAM_DIFFICULTIES, type ExamDraft, type ExamDraftPatch } from '../examM
 import { dataSet } from '../learn/parts';
 import { S } from '../look';
 import { UiText } from '../primitives/UiText';
-import { ExamLabel, ExamSection, ExamSegmented, ExamSelect, ExamStepper, ExamTextArea, ExamTextField, ExamTypeCards } from './controls';
+import {
+  ExamLabel,
+  ExamSection,
+  ExamSegmented,
+  ExamSelect,
+  ExamStepper,
+  ExamTextArea,
+  ExamTextField,
+  ExamTypeCards,
+} from './controls';
 import type { ExamIds } from './model';
 import type { ExamStrings } from './strings';
 
-export function ExamSetup({ draft, providers, strings, ids, onDraftChange }: {
+export function ExamSetup({
+  draft,
+  providers,
+  strings,
+  ids,
+  onDraftChange,
+}: {
   draft: ExamDraft;
   providers: readonly { id: string; label: string }[];
   strings: ExamStrings;
@@ -16,15 +31,22 @@ export function ExamSetup({ draft, providers, strings, ids, onDraftChange }: {
   onDraftChange(patch: ExamDraftPatch): void;
 }) {
   const t = strings.setup;
-  const difficulties = EXAM_DIFFICULTIES.map((id) => ({ id: id as string, label: t.difficulties[id] ?? id }));
+  const difficulties = EXAM_DIFFICULTIES.map((id) => ({
+    id: id as string,
+    label: t.difficulties[id] ?? id,
+  }));
   const typeCards = (['mc', 'fb', 'sa'] as const).map((id) => ({ id, ...t.typeCards[id] }));
 
   return (
     <View style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[300] }}>
       <View {...dataSet({ examHero: 1 })} style={{ gap: S[75] }}>
-        <UiText variant="eyebrow" tone="tertiary">{t.eyebrow}</UiText>
+        <UiText variant="eyebrow" tone="tertiary">
+          {t.eyebrow}
+        </UiText>
         <UiText variant="title">{t.heroTitle}</UiText>
-        <UiText variant="body" tone="secondary">{t.heroDescription}</UiText>
+        <UiText variant="body" tone="secondary">
+          {t.heroDescription}
+        </UiText>
       </View>
 
       <ExamSection index="01" title={t.topic} help={t.topicHelp}>
@@ -49,7 +71,9 @@ export function ExamSetup({ draft, providers, strings, ids, onDraftChange }: {
             emptyLabel={t.noModels}
             onChange={(model) => onDraftChange({ model })}
           />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: S[200] }}>
+          <View
+            style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: S[200] }}
+          >
             <View style={{ flexGrow: 1, minWidth: 220 }}>
               <ExamSegmented
                 label={t.difficulty}

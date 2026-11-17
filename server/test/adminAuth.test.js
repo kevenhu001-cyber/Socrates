@@ -157,8 +157,10 @@ describe('adminAuth — session token (layer 4)', () => {
 
   test('token carries the admin purpose segment (domain separation)', () => {
     const token = issueAdminSessionToken();
-    assert.ok(token.startsWith('admin-session:v1.'),
-      'expected the domain-separation purpose segment first');
+    assert.ok(
+      token.startsWith('admin-session:v1.'),
+      'expected the domain-separation purpose segment first',
+    );
   });
 
   test('a token from a different purpose is rejected (cross-family replay)', () => {

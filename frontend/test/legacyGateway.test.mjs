@@ -9,12 +9,8 @@ globalThis.window = {
   extensiveThinkingOn: false,
 };
 
-const {
-  getActiveTemplateExtensionKey,
-  isDeepResearchOn,
-  isExtensiveThinkingOn,
-  isWebSearchOn,
-} = await import('../src/react/legacy/gateway.ts');
+const { getActiveTemplateExtensionKey, isDeepResearchOn, isExtensiveThinkingOn, isWebSearchOn } =
+  await import('../src/react/legacy/gateway.ts');
 
 test('typed legacy accessors read active composer mode and toggle flags', () => {
   window._activeTemplate = { extensionKey: 'write' };

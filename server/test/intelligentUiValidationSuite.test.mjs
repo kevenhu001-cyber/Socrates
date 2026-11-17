@@ -1,17 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  normalizeIntelligentUiArgs,
-  validateIntelligentUi,
-} from '@socrates/core';
+import { normalizeIntelligentUiArgs, validateIntelligentUi } from '@socrates/core';
 import {
   inferIntelligentUiExample,
   INTELLIGENT_UI_EXAMPLES,
 } from '../src/services/intelligentUiExamples.js';
-import {
-  toolReliabilityTracker,
-} from '../src/services/tools/toolReliabilityMetrics.js';
 
 test('Reliability Suite: Learning components validate and normalize across variants', () => {
   // 1. Single Choice Quiz
@@ -218,7 +212,11 @@ test('Reliability Suite: Visualization components validate correctly', () => {
         title: 'Height vs Weight',
         accessibilitySummary: 'Height vs Weight scatter plot',
         payload: {
-          data: [[160, 55], [170, 68], [180, 75]],
+          data: [
+            [160, 55],
+            [170, 68],
+            [180, 75],
+          ],
         },
       },
     ],
@@ -257,7 +255,11 @@ test('Reliability Suite: Visualization components validate correctly', () => {
         payload: {
           xCategories: ['Morning', 'Afternoon', 'Evening'],
           yCategories: ['Mon', 'Tue', 'Wed'],
-          data: [[0, 0, 5], [0, 1, 10], [1, 0, 8]],
+          data: [
+            [0, 0, 5],
+            [0, 1, 10],
+            [1, 0, 8],
+          ],
         },
       },
     ],
@@ -270,9 +272,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const badSlider = {
     type: 'interactive',
     version: 1,
-    nodes: [
-      { id: 's1', type: 'slider', min: 0, max: 10, step: 1 },
-    ],
+    nodes: [{ id: 's1', type: 'slider', min: 0, max: 10, step: 1 }],
   };
   const vBadSlider = validateIntelligentUi(badSlider);
   assert.equal(vBadSlider.ok, false);
@@ -282,9 +282,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const validSlider = normalizeIntelligentUiArgs({
     type: 'interactive',
     version: '1',
-    nodes: [
-      { id: 's1', type: 'slider', bind: 'x', min: '0', max: '100', step: '5', value: '25' },
-    ],
+    nodes: [{ id: 's1', type: 'slider', bind: 'x', min: '0', max: '100', step: '5', value: '25' }],
   });
   const vValidSlider = validateIntelligentUi(validSlider);
   assert.equal(vValidSlider.ok, true, 'Normalized slider must pass validation');
@@ -297,9 +295,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const choiceDoc = normalizeIntelligentUiArgs({
     type: 'interactive',
     version: 1,
-    nodes: [
-      { id: 'c1', type: 'choice', bind: 'sel', options: ['Option Alpha', 'Option Beta'] },
-    ],
+    nodes: [{ id: 'c1', type: 'choice', bind: 'sel', options: ['Option Alpha', 'Option Beta'] }],
   });
   assert.deepEqual(choiceDoc.nodes[0].options, [
     { label: 'Option Alpha', value: 'Option Alpha' },
@@ -311,9 +307,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const toggleDoc = normalizeIntelligentUiArgs({
     type: 'interactive',
     version: 1,
-    nodes: [
-      { id: 't1', type: 'toggle', bind: 'enabled', label: 'Enable physics', value: true },
-    ],
+    nodes: [{ id: 't1', type: 'toggle', bind: 'enabled', label: 'Enable physics', value: true }],
   });
   assert.equal(validateIntelligentUi(toggleDoc).ok, true);
 
@@ -331,9 +325,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const badButtonDoc = {
     type: 'interactive',
     version: 1,
-    nodes: [
-      { id: 'b1', type: 'button', label: 'Broken Button' },
-    ],
+    nodes: [{ id: 'b1', type: 'button', label: 'Broken Button' }],
   };
   const vBadButton = validateIntelligentUi(badButtonDoc);
   assert.equal(vBadButton.ok, false);
@@ -343,9 +335,7 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
   const tableDoc = normalizeIntelligentUiArgs({
     type: 'interactive',
     version: 1,
-    nodes: [
-      { id: 'tbl1', type: 'table', columns: [{ key: 'name', label: 'Name' }] },
-    ],
+    nodes: [{ id: 'tbl1', type: 'table', columns: [{ key: 'name', label: 'Name' }] }],
   });
   assert.deepEqual(tableDoc.nodes[0].rows, []);
   assert.equal(validateIntelligentUi(tableDoc).ok, true);
@@ -372,88 +362,36 @@ test('Reliability Suite: Interactive controls validate and normalize correctly',
 });
 
 test('Reliability Suite: Infer intelligent UI examples matches specific minimal templates', () => {
-  assert.deepEqual(inferIntelligentUiExample({ template: 'quiz' }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['learning.quiz']] });
-  assert.deepEqual(inferIntelligentUiExample({ template: 'practice' }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['learning.practice']] });
-  assert.deepEqual(inferIntelligentUiExample({ template: 'bar' }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['visualization.bar']] });
-  assert.deepEqual(inferIntelligentUiExample({ template: 'line' }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['visualization.line']] });
-  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'slider' }] }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['interactive.slider']] });
-  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'button' }] }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['interactive.button']] });
-  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'table' }] }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['table']] });
-  assert.deepEqual(inferIntelligentUiExample({ type: 'demonstration' }), { version: 1, nodes: [INTELLIGENT_UI_EXAMPLES['demonstration']] });
-});
-
-test('Reliability Suite: Tool reliability metrics accounting works accurately', () => {
-  toolReliabilityTracker.reset();
-
-  // Turn 1: tool validation failure, then recovery
-  toolReliabilityTracker.recordValidation({
-    toolName: 'intelligent_ui',
-    componentType: 'interactive',
-    attemptNumber: 1,
-    success: false,
-    failureStage: 'control',
-    errorCode: 'arguments_schema_failed',
+  assert.deepEqual(inferIntelligentUiExample({ template: 'quiz' }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['learning.quiz']],
   });
-  toolReliabilityTracker.recordValidation({
-    toolName: 'intelligent_ui',
-    componentType: 'interactive',
-    attemptNumber: 2,
-    success: true,
+  assert.deepEqual(inferIntelligentUiExample({ template: 'practice' }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['learning.practice']],
   });
-  toolReliabilityTracker.recordExecution({
-    toolName: 'intelligent_ui',
-    componentType: 'interactive',
-    success: true,
-    durationMs: 15,
+  assert.deepEqual(inferIntelligentUiExample({ template: 'bar' }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['visualization.bar']],
   });
-  toolReliabilityTracker.recordRender({
-    toolName: 'intelligent_ui',
-    componentType: 'interactive',
-    success: true,
+  assert.deepEqual(inferIntelligentUiExample({ template: 'line' }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['visualization.line']],
   });
-  toolReliabilityTracker.recordInteraction({
-    toolName: 'intelligent_ui',
-    componentType: 'interactive',
-    actionType: 'slider',
-    success: true,
+  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'slider' }] }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['interactive.slider']],
   });
-
-  // Turn 2: chart tool succeeds first attempt
-  toolReliabilityTracker.recordValidation({
-    toolName: 'visualization',
-    componentType: 'chart',
-    attemptNumber: 1,
-    success: true,
+  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'button' }] }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['interactive.button']],
   });
-  toolReliabilityTracker.recordExecution({
-    toolName: 'visualization',
-    componentType: 'chart',
-    success: true,
-    durationMs: 10,
+  assert.deepEqual(inferIntelligentUiExample({ nodes: [{ type: 'table' }] }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['table']],
   });
-  toolReliabilityTracker.recordRender({
-    toolName: 'visualization',
-    componentType: 'chart',
-    success: true,
+  assert.deepEqual(inferIntelligentUiExample({ type: 'demonstration' }), {
+    version: 1,
+    nodes: [INTELLIGENT_UI_EXAMPLES['demonstration']],
   });
-
-  // Turn 3: truncated call
-  toolReliabilityTracker.recordValidation({
-    toolName: 'intelligent_ui',
-    attemptNumber: 1,
-    success: false,
-    failureStage: 'openui_truncated',
-    errorCode: 'arguments_truncated',
-  });
-
-  const summary = toolReliabilityTracker.getSummary();
-  assert.equal(summary.total_validation_attempts, 4);
-  assert.equal(summary.total_validation_successes, 2);
-  assert.equal(summary.first_attempt_validation_success_rate, 0.333); // 1 out of 3 first attempts succeeded
-  assert.equal(summary.tool_execution_success_rate, 1);
-  assert.equal(summary.component_render_success_rate, 1);
-  assert.equal(summary.interaction_success_rate, 1);
-  assert.equal(summary.tool_schema_rejection_count, 1);
-  assert.equal(summary.tool_arguments_truncated_count, 1);
-  assert.equal(summary.average_attempts_per_success, 1.5); // (2 + 1) / 2 = 1.5
 });

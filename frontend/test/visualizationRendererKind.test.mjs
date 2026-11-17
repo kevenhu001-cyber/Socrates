@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chartPrefersCanvas, visualizationRendererKind } from '../src/render/visualizationRendererKind.ts';
+import {
+  chartPrefersCanvas,
+  visualizationRendererKind,
+} from '../src/render/visualizationRendererKind.ts';
 
 test('every template maps to the engine whose stage height the skeleton reserves', () => {
   assert.equal(visualizationRendererKind('bar'), 'echarts');
@@ -16,7 +19,9 @@ test('every template maps to the engine whose stage height the skeleton reserves
 });
 
 test('charts stay vector unless the data is large', () => {
-  const grid = (rows, cols) => ({ values: Array.from({ length: rows }, () => Array(cols).fill(1)) });
+  const grid = (rows, cols) => ({
+    values: Array.from({ length: rows }, () => Array(cols).fill(1)),
+  });
   assert.equal(chartPrefersCanvas('heatmap', grid(3, 5)), false);
   assert.equal(chartPrefersCanvas('heatmap', grid(50, 50)), false);
   assert.equal(chartPrefersCanvas('heatmap', grid(51, 50)), true);

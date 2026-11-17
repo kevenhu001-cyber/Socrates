@@ -11,7 +11,10 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
    * accepted by both strict and permissive gateways. */
   return messages.map((message) => {
     let normalized = message;
-    if ((message.role === 'assistant' && Array.isArray(message.tool_calls)) || message.role === 'tool') {
+    if (
+      (message.role === 'assistant' && Array.isArray(message.tool_calls)) ||
+      message.role === 'tool'
+    ) {
       normalized = { ...message, content: message.content == null ? '' : message.content };
     }
     // Preserve provider-returned reasoning verbatim. Current MiniMax and
@@ -22,7 +25,17 @@ function normalizeProviderMessages(messages: ChatCompletionRequestOptions['messa
 }
 
 export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: boolean) {
-  const { model, messages, maxTokens, temperature = stream ? 0.7 : 0.3, reasoning_effort, response_speed, extra_body, tools, tool_choice } = opts;
+  const {
+    model,
+    messages,
+    maxTokens,
+    temperature = stream ? 0.7 : 0.3,
+    reasoning_effort,
+    response_speed,
+    extra_body,
+    tools,
+    tool_choice,
+  } = opts;
   const base: Record<string, unknown> = {
     model,
     messages: normalizeProviderMessages(messages),
@@ -66,8 +79,17 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
    * presenting a raw provider 400 to the user. This is deliberately a
    * request-local fallback, so a temporary incompatibility cannot disable
    * tools for every later conversation. */
-  const variants: Array<{ body: Record<string, unknown>; reason: string; speedApplied: 'standard' | 'fast' }> = [
-    { body: withTools, reason: 'initial', speedApplied: response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard' },
+  const variants: Array<{
+    body: Record<string, unknown>;
+    reason: string;
+    speedApplied: 'standard' | 'fast';
+  }> = [
+    {
+      body: withTools,
+      reason: 'initial',
+      speedApplied:
+        response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard',
+    },
   ];
   let compatibilityBase = withTools;
 
@@ -85,49 +107,84 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
   if (response_speed === 'fast' && capability.supportsServiceTier) {
     const { service_tier: _serviceTier, ...withoutPriority } = compatibilityBase;
     compatibilityBase = dropStreamOptions(withoutPriority);
-    variants.push({ body: compatibilityBase, reason: 'provider-400-without-priority', speedApplied: 'standard' });
+    variants.push({
+      body: compatibilityBase,
+      reason: 'provider-400-without-priority',
+      speedApplied: 'standard',
+    });
   }
   if (stream) {
-    variants.push({ body: dropStreamOptions(withTools), reason: 'provider-400-with-stream-options', speedApplied: response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard' });
+    variants.push({
+      body: dropStreamOptions(withTools),
+      reason: 'provider-400-with-stream-options',
+      speedApplied:
+        response_speed === 'fast' && capability.supportsServiceTier ? 'fast' : 'standard',
+    });
   }
   if (hasTools) {
     const { tools: _tools, tool_choice: _toolChoice, ...withoutTools } = compatibilityBase;
     // A tools-specific fallback must not contaminate reasoning/usage fallbacks.
-    variants.push({ body: dropStreamOptions(withoutTools), reason: 'provider-400-with-tools', speedApplied: 'standard' });
+    variants.push({
+      body: dropStreamOptions(withoutTools),
+      reason: 'provider-400-with-tools',
+      speedApplied: 'standard',
+    });
   }
   /* Optional reasoning fields are another common source of 400s on generic
    * gateways. Only try this stricter form after the previous compatibility
    * variant, never on a successful request. */
   if (reasoning_effort || extra_body) {
     const { reasoning_effort: _effort, ...withoutReasoning } = compatibilityBase;
-    const withoutOptional = dropStreamOptions({ ...withoutReasoning, ...(base.reasoning_effort === 'none' ? { reasoning_effort: 'none' } : {}) });
+    const withoutOptional = dropStreamOptions({
+      ...withoutReasoning,
+      ...(base.reasoning_effort === 'none' ? { reasoning_effort: 'none' } : {}),
+    });
     for (const key of Object.keys(extra_body || {})) {
       /* Instant is an explicit output mode, not an optional hint. A provider
          that rejects it must fail rather than silently resume thinking. The
          same holds for the keys the server itself set from the capability
          registry. */
       if (protectedKeySet.has(key)) continue;
-      if (key === 'chat_template_kwargs' && (withoutOptional.chat_template_kwargs as { enable_thinking?: boolean } | undefined)?.enable_thinking === false) continue;
+      if (
+        key === 'chat_template_kwargs' &&
+        (withoutOptional.chat_template_kwargs as { enable_thinking?: boolean } | undefined)
+          ?.enable_thinking === false
+      )
+        continue;
       if (key === 'enable_thinking' && withoutOptional.enable_thinking === false) continue;
-      if (key === 'thinking' && (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled') continue;
+      if (
+        key === 'thinking' &&
+        (withoutOptional.thinking as { type?: string } | undefined)?.type === 'disabled'
+      )
+        continue;
       delete withoutOptional[key];
     }
     /* A model whose effort the server chose itself (not the caller) keeps
        it: dropping it would silently move the model to the provider's own
        default, which is a stronger — and more expensive — mode. */
     if (capability.defaultEffort) withoutOptional.reasoning_effort = base.reasoning_effort;
-    variants.push({ body: withoutOptional, reason: 'provider-400-with-optional-fields', speedApplied: 'standard' });
+    variants.push({
+      body: withoutOptional,
+      reason: 'provider-400-with-optional-fields',
+      speedApplied: 'standard',
+    });
   }
   return variants;
 }
 
 /** Select a diagnosed fallback, not the next speculative body. Never
  * reintroduce previously rejected fields. Each step strictly loses a field. */
-export function nextCompatibilityVariant(variants: ReturnType<typeof requestBodyVariants>, currentIndex: number, errorBody: string): number {
+export function nextCompatibilityVariant(
+  variants: ReturnType<typeof requestBodyVariants>,
+  currentIndex: number,
+  errorBody: string,
+): number {
   const current = variants[currentIndex].body;
   for (let index = 1; index < variants.length; index++) {
     if (!permitsCompatibilityFallback(errorBody, variants[index].reason)) continue;
-    const candidate = Object.fromEntries(Object.entries(variants[index].body).filter(([key]) => key in current));
+    const candidate = Object.fromEntries(
+      Object.entries(variants[index].body).filter(([key]) => key in current),
+    );
     if (!Object.keys(current).some((key) => !(key in candidate))) continue;
     variants[index] = { ...variants[index], body: candidate };
     return index;

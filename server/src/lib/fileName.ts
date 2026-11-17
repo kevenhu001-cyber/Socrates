@@ -25,7 +25,8 @@ const UTF8_FATAL = new TextDecoder('utf-8', { fatal: true });
 
 /* C0/C1 controls plus bidi embedding/override/isolate marks — the latter
    let a name like `invoice\u202Efdp.exe` render as `invoiceexe.pdf`. */
-const UNSAFE_NAME_CHARS = /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
+const UNSAFE_NAME_CHARS =
+  /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
 
 /**
  * Undo latin1-decoded UTF-8 ("æ\u0095°å\u00ad¦" → "数学").
@@ -62,7 +63,12 @@ function truncateKeepingExtension(name: string, max: number): string {
   const extChars = Array.from(ext);
   if (ext && extChars.length < 32 && extChars.length < max) {
     const stem = chars.slice(0, chars.length - extChars.length);
-    return stem.slice(0, max - extChars.length).join('').trimEnd() + ext;
+    return (
+      stem
+        .slice(0, max - extChars.length)
+        .join('')
+        .trimEnd() + ext
+    );
   }
   return chars.slice(0, max).join('');
 }
@@ -74,7 +80,10 @@ function truncateKeepingExtension(name: string, max: number): string {
  * `overLength`: 'truncate' (uploads — a long Chinese title should still
  * keep its name) or 'reject' (renames — the user can fix it).
  */
-export function normalizeFileName(raw: unknown, overLength: 'truncate' | 'reject' = 'truncate'): string | null {
+export function normalizeFileName(
+  raw: unknown,
+  overLength: 'truncate' | 'reject' = 'truncate',
+): string | null {
   if (typeof raw !== 'string') return null;
   let name = repairLatin1Mojibake(raw).normalize('NFC');
   /* Display names are never a path: drop any directory part, POSIX or
@@ -103,7 +112,10 @@ export function safeStorageExtension(name: string): string {
 }
 
 function encodeRfc5987(value: string): string {
-  return encodeURIComponent(value).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return encodeURIComponent(value).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
 }
 
 /**

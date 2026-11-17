@@ -24,12 +24,16 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
 
     // SSR / non-DOM execution: the state mutation still runs exactly once.
     setDocument(undefined);
-    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => {
+      updates += 1;
+    });
     assert.equal(updates, 1);
 
     // Browsers without the API use the same synchronous fallback.
     setDocument({});
-    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => {
+      updates += 1;
+    });
     assert.equal(updates, 2);
 
     // Supported browsers delegate the mutation to startViewTransition.
@@ -41,7 +45,9 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
         return { skipTransition() {} };
       },
     });
-    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => {
+      updates += 1;
+    });
     assert.equal(starts, 1);
     assert.equal(updates, 3);
     assert.equal(hasViewTransitions(), true);
@@ -53,15 +59,25 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
         throw new Error('transition already active');
       },
     });
-    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => {
+      updates += 1;
+    });
     assert.equal(updates, 4);
 
     // A throwing mutation must not run twice in synchronous adapters.
-    setDocument({ startViewTransition(update) { update(); } });
-    assert.throws(() => withViewTransition(() => {
-      updates += 1;
-      throw new Error('mutation failed');
-    }), /mutation failed/);
+    setDocument({
+      startViewTransition(update) {
+        update();
+      },
+    });
+    assert.throws(
+      () =>
+        withViewTransition(() => {
+          updates += 1;
+          throw new Error('mutation failed');
+        }),
+      /mutation failed/,
+    );
     assert.equal(updates, 5);
 
     // Repeated navigation skips the old snapshot, but never drops updates.
@@ -69,11 +85,19 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
     setDocument({
       startViewTransition(update) {
         update();
-        return { skipTransition() { skips += 1; } };
+        return {
+          skipTransition() {
+            skips += 1;
+          },
+        };
       },
     });
-    withViewTransition(() => { updates += 1; });
-    withViewTransition(() => { updates += 1; });
+    withViewTransition(() => {
+      updates += 1;
+    });
+    withViewTransition(() => {
+      updates += 1;
+    });
     assert.equal(skips, 1);
     assert.equal(updates, 7);
 
@@ -81,7 +105,9 @@ test('page view-transition wrapper preserves immediate fallback and supported pa
     const previousWindow = globalThis.window;
     try {
       globalThis.window = { matchMedia: () => ({ matches: true }) };
-      withViewTransition(() => { updates += 1; });
+      withViewTransition(() => {
+        updates += 1;
+      });
       assert.equal(skips, 2);
       assert.equal(updates, 8);
     } finally {

@@ -90,7 +90,9 @@ export function createTurnWatchdog(options: TurnWatchdogOptions): TurnWatchdog {
   const startedAt = now();
   let lastProgressAt = startedAt;
 
-  const touch = () => { lastProgressAt = now(); };
+  const touch = () => {
+    lastProgressAt = now();
+  };
 
   const idleMs = (at: number = now()) => Math.max(0, at - lastProgressAt);
   const elapsedMs = (at: number = now()) => Math.max(0, at - startedAt);
@@ -113,9 +115,10 @@ export function createTurnWatchdog(options: TurnWatchdogOptions): TurnWatchdog {
  */
 export function watchdogError(expiry: WatchdogExpiry, locale: ErrorLocale = 'en'): ApiError {
   const code = expiry === 'idle' ? 'TURN_IDLE_TIMEOUT' : 'TURN_MAX_DURATION';
-  const english = expiry === 'idle'
-    ? 'The model stopped making progress and the turn was cancelled.'
-    : 'The turn exceeded its maximum duration and was cancelled.';
+  const english =
+    expiry === 'idle'
+      ? 'The model stopped making progress and the turn was cancelled.'
+      : 'The turn exceeded its maximum duration and was cancelled.';
   const message = localizeErrorCode(code, locale, english);
   /* `retryable: true` — the user can retry; the turn did not fail for a
    * reason that would make a replay pointless. */

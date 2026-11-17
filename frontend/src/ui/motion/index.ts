@@ -1,4 +1,10 @@
-interface MotionOptions { velocity?: number; minDuration?: number; maxDuration?: number; snapDistance?: number; easing?: string }
+interface MotionOptions {
+  velocity?: number;
+  minDuration?: number;
+  maxDuration?: number;
+  snapDistance?: number;
+  easing?: string;
+}
 /*
  * Velocity-based motion planner.
  *
@@ -77,7 +83,12 @@ export function planMotion(distance: unknown, opts?: MotionOptions) {
  * Same `globalThis` fallback as scroll.js so the Node test stub works. */
 export function prefersReducedMotion() {
   try {
-    const host = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null);
+    const host =
+      typeof window !== 'undefined'
+        ? window
+        : typeof globalThis !== 'undefined'
+          ? globalThis
+          : null;
     if (!host || typeof host.matchMedia !== 'function') return false;
     return host.matchMedia('(prefers-reduced-motion: reduce)').matches;
   } catch (_) {
@@ -120,9 +131,10 @@ export function planSendGlide(distance: number, viewportHeight?: number) {
   if (d <= MOTION_SNAP_DISTANCE_PX || prefersReducedMotion()) {
     return { duration: 0, ease: easeOutHouse, distance: d, snap: true, long: false };
   }
-  const vh = typeof viewportHeight === 'number' && isFinite(viewportHeight) && viewportHeight > 0
-    ? viewportHeight
-    : 800;
+  const vh =
+    typeof viewportHeight === 'number' && isFinite(viewportHeight) && viewportHeight > 0
+      ? viewportHeight
+      : 800;
   const screens = d / vh;
   const raw = SEND_GLIDE_BASE_MS + SEND_GLIDE_PER_DOUBLING_MS * Math.log2(1 + screens);
   const duration = Math.round(Math.max(SEND_GLIDE_MIN_MS, Math.min(SEND_GLIDE_MAX_MS, raw)));
@@ -209,7 +221,13 @@ export function easeInOutCubic(t: number) {
  * `smoothTime` is the approximate convergence constant in seconds;
  * `dt` is the frame delta in seconds. Returns the new {value, velocity};
  * the caller feeds `velocity` straight back into the next step. */
-export function smoothDampStep(current: number, target: number, velocity: number, smoothTime: number, dt: number) {
+export function smoothDampStep(
+  current: number,
+  target: number,
+  velocity: number,
+  smoothTime: number,
+  dt: number,
+) {
   if (!(smoothTime > 0) || !(dt > 0)) return { value: target, velocity: 0 };
   const omega = 2 / smoothTime;
   const x = omega * dt;
@@ -220,7 +238,7 @@ export function smoothDampStep(current: number, target: number, velocity: number
   const next = target + (change + temp) * exp;
   /* Overshoot guard: a step that crosses the target lands exactly on
      it — an arrival, not a bounce. */
-  if ((target - current > 0) === (next > target)) {
+  if (target - current > 0 === next > target) {
     return { value: target, velocity: 0 };
   }
   return { value: next, velocity: nextVelocity };

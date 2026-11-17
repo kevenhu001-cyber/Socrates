@@ -1,12 +1,13 @@
 /* Evidence is owned by the assistant turn; all colors inherit theme tokens. */
-.turn-evidence a[href^="#socrates-citation-"] {
+.turn-evidence a[href^='#socrates-citation-'] {
   display: inline-flex;
   align-items: center;
   padding: 0 var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
   color: var(--muted-foreground);
   background: var(--accent);
-  font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / var(--ui-line-height-normal) var(--font-sans);
+  font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / var(--ui-line-height-normal)
+    var(--font-sans);
   text-decoration: none;
   vertical-align: baseline;
 }
@@ -25,7 +26,9 @@
   box-shadow: var(--ui-shadow-popover);
   font-size: var(--ui-font-size-sm);
 }
-.turn-source-preview > div + div { margin-top: var(--ui-space-md); }
+.turn-source-preview > div + div {
+  margin-top: var(--ui-space-md);
+}
 .turn-source-preview a {
   display: inline-flex;
   align-items: center;
@@ -48,7 +51,10 @@
   color: var(--ui-text-tertiary);
 }
 .turn-source-preview p,
-.turn-sources p { margin: var(--ui-space-xs) 0; color: var(--muted-foreground); }
+.turn-sources p {
+  margin: var(--ui-space-xs) 0;
+  color: var(--muted-foreground);
+}
 .turn-sources {
   display: inline-flex;
   align-items: center;
@@ -64,7 +70,10 @@
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
   overflow-wrap: anywhere;
-  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 .turn-sources:hover {
   border-color: var(--border);
@@ -76,12 +85,20 @@
   color: var(--foreground);
   background: var(--accent);
 }
-.turn-sources-icon { flex: 0 0 auto; opacity: .78; }
+.turn-sources-icon {
+  flex: 0 0 auto;
+  opacity: 0.78;
+}
 /* 「来源」与数量之间只留间距，不用「·」分隔。 */
-.turn-sources-count { margin-inline-start: var(--ui-space-xs); font-variant-numeric: tabular-nums; }
+.turn-sources-count {
+  margin-inline-start: var(--ui-space-xs);
+  font-variant-numeric: tabular-nums;
+}
 .turn-sources-chevron {
   flex: 0 0 auto;
   margin-inline-start: var(--ui-space-xs);
   transition: transform 160ms ease;
 }
-.turn-sources.is-active .turn-sources-chevron { transform: rotate(180deg); }
+.turn-sources.is-active .turn-sources-chevron {
+  transform: rotate(180deg);
+}

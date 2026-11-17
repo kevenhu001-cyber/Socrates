@@ -10,7 +10,8 @@
   width: 100%;
   margin: var(--ui-space-md) 0;
   color: var(--foreground);
-  font: var(--ui-font-weight-regular) var(--prose-size, var(--ui-text-body)) / var(--ui-line-height-normal) var(--font-sans);
+  font: var(--ui-font-weight-regular) var(--prose-size, var(--ui-text-body)) /
+    var(--ui-line-height-normal) var(--font-sans);
   container-type: inline-size;
 }
 .msg.assistant .msg-body.is-declarative .intui-panel {
@@ -34,15 +35,19 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-panel-title {
   font-size: inherit;
-  letter-spacing: -.015em;
+  letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-panel-description, .intui-callout-text, .intui-text) {
+.msg.assistant
+  .msg-body.is-declarative
+  :is(.intui-panel-description, .intui-callout-text, .intui-text) {
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
-.msg.assistant .msg-body.is-declarative .intui-text { margin: 0; }
+.msg.assistant .msg-body.is-declarative .intui-text {
+  margin: 0;
+}
 .msg.assistant .msg-body.is-declarative :is(.intui-panel-body, .intui-stack) {
   display: grid;
   gap: var(--ui-space-md);
@@ -76,7 +81,7 @@
   font-size: inherit;
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: -.015em;
+  letter-spacing: -0.015em;
   line-height: var(--ui-line-height-tight);
 }
 .msg.assistant .msg-body.is-declarative .intui-metric-delta {
@@ -93,11 +98,11 @@
   font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend="up"] {
+.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend='up'] {
   background: var(--ui-fill);
   color: var(--ui-ink);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend="down"] {
+.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend='down'] {
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
   color: var(--destructive);
 }
@@ -112,16 +117,27 @@
   background: color-mix(in srgb, var(--intui-tone) 6%, transparent);
   color: var(--muted-foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="info"] { --intui-tone: var(--ui-info); }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="success"] { --intui-tone: var(--ui-success); }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="warning"] { --intui-tone: var(--ui-warning); }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="danger"] { --intui-tone: var(--destructive); }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone="neutral"] {
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='info'] {
+  --intui-tone: var(--ui-info);
+}
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='success'] {
+  --intui-tone: var(--ui-success);
+}
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='warning'] {
+  --intui-tone: var(--ui-warning);
+}
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='danger'] {
+  --intui-tone: var(--destructive);
+}
+.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='neutral'] {
   border-color: transparent;
   border-inline-start-color: var(--ui-border-strong);
   background: var(--background);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout:not([data-tone="neutral"]) .intui-callout-title {
+.msg.assistant
+  .msg-body.is-declarative
+  .intui-callout:not([data-tone='neutral'])
+  .intui-callout-title {
   color: var(--intui-tone);
 }
 .msg.assistant .msg-body.is-declarative .intui-divider {
@@ -147,7 +163,9 @@
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-sm);
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-control-head output, .intui-progress-head > :last-child) {
+.msg.assistant
+  .msg-body.is-declarative
+  :is(.intui-control-head output, .intui-progress-head > :last-child) {
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
   font-weight: var(--ui-font-weight-medium);
@@ -158,16 +176,37 @@
   align-items: center;
   column-gap: var(--ui-space-sm);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head { display: contents; }
-.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head > span { grid-column: 1; grid-row: 1; overflow-wrap: anywhere; }
-.msg.assistant .msg-body.is-declarative .intui-slider output { grid-column: 3; grid-row: 1; text-align: end; }
-.msg.assistant .msg-body.is-declarative .intui-slider input[type="range"] { grid-column: 2; grid-row: 1; min-width: 0; }
-@container (max-width: 320px) {
-  .msg.assistant .msg-body.is-declarative .intui-slider { grid-template-columns: minmax(0, 1fr) auto; }
-  .msg.assistant .msg-body.is-declarative .intui-slider output { grid-column: 2; }
-  .msg.assistant .msg-body.is-declarative .intui-slider input[type="range"] { grid-column: 1 / -1; grid-row: 2; }
+.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head {
+  display: contents;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input[type="range"] {
+.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head > span {
+  grid-column: 1;
+  grid-row: 1;
+  overflow-wrap: anywhere;
+}
+.msg.assistant .msg-body.is-declarative .intui-slider output {
+  grid-column: 3;
+  grid-row: 1;
+  text-align: end;
+}
+.msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+@container (max-width: 320px) {
+  .msg.assistant .msg-body.is-declarative .intui-slider {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .msg.assistant .msg-body.is-declarative .intui-slider output {
+    grid-column: 2;
+  }
+  .msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+.msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
   appearance: none;
   width: 100%;
   height: var(--ui-control-touch);
@@ -204,16 +243,34 @@
   border-radius: var(--ui-radius-pill);
   background: var(--foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible { outline: 0; }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 var(--ui-space-xxs) var(--ui-bg-raised), 0 0 0 var(--ui-space-xs) var(--ui-text-tertiary); }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 var(--ui-space-xxs) var(--ui-bg-raised), 0 0 0 var(--ui-space-xs) var(--ui-text-tertiary); }
+.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible {
+  outline: 0;
+}
+.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 var(--ui-space-xxs) var(--ui-bg-raised),
+    0 0 0 var(--ui-space-xs) var(--ui-text-tertiary);
+}
+.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-moz-range-thumb {
+  box-shadow:
+    0 0 0 var(--ui-space-xxs) var(--ui-bg-raised),
+    0 0 0 var(--ui-space-xs) var(--ui-text-tertiary);
+}
 .msg.assistant .msg-body.is-declarative .intui-progress {
   --intui-tone: var(--primary);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="info"] { --intui-tone: var(--ui-info); }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="success"] { --intui-tone: var(--ui-success); }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="warning"] { --intui-tone: var(--ui-warning); }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone="danger"] { --intui-tone: var(--destructive); }
+.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='info'] {
+  --intui-tone: var(--ui-info);
+}
+.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='success'] {
+  --intui-tone: var(--ui-success);
+}
+.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='warning'] {
+  --intui-tone: var(--ui-warning);
+}
+.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='danger'] {
+  --intui-tone: var(--destructive);
+}
 .msg.assistant .msg-body.is-declarative .intui-progress-track {
   position: relative;
   width: 100%;
@@ -263,7 +320,7 @@
 }
 .msg.assistant .msg-body.is-declarative .intui-button:disabled {
   cursor: default;
-  opacity: .5;
+  opacity: 0.5;
 }
 .msg.assistant .msg-body.is-declarative .intui-panel-actions {
   display: flex;
@@ -275,7 +332,11 @@
   border-top: 0;
 }
 /* A result has one visually primary action, even if multiple hints arrive. */
-.msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-button.is-primary ~ .intui-button.is-primary {
+.msg.assistant
+  .msg-body.is-declarative
+  .intui-panel-actions
+  .intui-button.is-primary
+  ~ .intui-button.is-primary {
   border-color: var(--border);
   background: transparent;
   color: var(--foreground);
@@ -311,7 +372,9 @@
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle [data-slot="switch"] { flex: none; }
+.msg.assistant .msg-body.is-declarative .intui-toggle [data-slot='switch'] {
+  flex: none;
+}
 /* ── Unified Design System Table Contract: .ds-table-wrap & .ds-table ── */
 .ds-table-wrap {
   position: relative;
@@ -369,9 +432,13 @@
   max-width: min(30vw, 320px);
 }
 .ds-table-wrap > table.ds-table :is(th, td):first-child,
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):first-child { padding-left: 0; }
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):first-child {
+  padding-left: 0;
+}
 .ds-table-wrap > table.ds-table :is(th, td):last-child,
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):last-child { padding-right: 0; }
+.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):last-child {
+  padding-right: 0;
+}
 .ds-table-wrap > table.ds-table th,
 .msg.assistant .msg-body.is-declarative .intui-table th {
   background: transparent;
@@ -389,7 +456,9 @@
   background: var(--ui-bg-hover-ghost);
 }
 .ds-table-wrap > table.ds-table tbody tr:last-child td,
-.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td { border-bottom: 0; }
+.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
 .msg.assistant .msg-body.is-declarative .intui-table-wrap {
   max-width: 100%;
   overflow-x: auto;
@@ -407,8 +476,13 @@
   animation: intui-stream-breathe var(--ui-duration-pulse-slow) ease-in-out infinite;
 }
 @keyframes intui-stream-breathe {
-  0%, 100% { opacity: .35; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .intui .intui-chart {
@@ -452,7 +526,7 @@
 }
 .intui .intui-chart-bar {
   fill: var(--chart-1);
-  opacity: .9;
+  opacity: 0.9;
 }
 .intui .intui-chart-line {
   fill: none;
@@ -483,7 +557,9 @@
   border-bottom: 1px solid var(--ui-border-subtle);
   scrollbar-width: none;
 }
-.intui .intui-tab-list::-webkit-scrollbar { display: none; }
+.intui .intui-tab-list::-webkit-scrollbar {
+  display: none;
+}
 .intui .intui-tab-list button {
   position: relative;
   flex: 0 0 auto;
@@ -494,7 +570,9 @@
   color: var(--ui-text-tertiary);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
   cursor: pointer;
-  transition: color var(--ui-duration-hover) ease, opacity var(--ui-duration-hover) ease;
+  transition:
+    color var(--ui-duration-hover) ease,
+    opacity var(--ui-duration-hover) ease;
 }
 .intui .intui-tab-list button::after {
   content: '';
@@ -547,7 +625,9 @@
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-relaxed);
 }
-.intui .intui-entity-description { margin: 0; }
+.intui .intui-entity-description {
+  margin: 0;
+}
 .intui .intui-entity-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
@@ -633,7 +713,7 @@
   }
   .msg.assistant .msg-body.is-declarative .intui-stream-dot {
     animation: none;
-    opacity: .65;
+    opacity: 0.65;
   }
 }
 
@@ -669,12 +749,15 @@
 #appShell #msgList .msg-body .intui-surface-title {
   margin: 0;
   color: var(--foreground);
-  font: var(--ui-font-weight-semibold) var(--ui-font-size-md) / var(--ui-line-height-normal) var(--font-sans);
+  font: var(--ui-font-weight-semibold) var(--ui-font-size-md) / var(--ui-line-height-normal)
+    var(--font-sans);
   letter-spacing: normal;
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
-.intui-surface-description { margin-top: var(--ui-space-xs); }
+.intui-surface-description {
+  margin-top: var(--ui-space-xs);
+}
 .intui-surface-menu {
   min-width: 10rem;
   padding: var(--ui-space-xs);
@@ -684,7 +767,7 @@
   color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
-.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"]) {
+.intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -700,8 +783,13 @@
   font-size: var(--ui-font-size-sm);
   cursor: pointer;
 }
-.intui-surface-menu :is([role="menuitemradio"], [role="menuitem"])[data-highlighted] { background: var(--accent); }
-.intui-surface-menu [aria-disabled="true"] { color: var(--ui-text-disabled); cursor: default; }
+.intui-surface-menu :is([role='menuitemradio'], [role='menuitem'])[data-highlighted] {
+  background: var(--accent);
+}
+.intui-surface-menu [aria-disabled='true'] {
+  color: var(--ui-text-disabled);
+  cursor: default;
+}
 .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
   display: inline-flex;
   align-items: center;
@@ -715,9 +803,21 @@
   color: var(--muted-foreground);
   cursor: pointer;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-more:hover { background: var(--accent); color: var(--foreground); }
-.intui-surface-document { display: grid; align-content: start; gap: var(--ui-space-md); min-width: 0; padding: var(--ui-space-sm) 0; container-type: inline-size; }
-.intui-surface-document > * { min-width: 0; }
+.msg.assistant .msg-body.is-declarative .intui-panel-more:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.intui-surface-document {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  padding: var(--ui-space-sm) 0;
+  container-type: inline-size;
+}
+.intui-surface-document > * {
+  min-width: 0;
+}
 .intui-surface-document > .intui-panel,
 .msg.assistant .msg-body .intui-surface-document > .intui-panel {
   padding: 0;
@@ -727,12 +827,26 @@
 }
 
 @media (max-width: 768px) {
-  .intui-surface-shell { --intui-action-size: var(--ui-control-touch); }
-  .intui-surface-header { padding-inline: 0; }
-  .intui-surface-document { padding: var(--ui-space-xs) 0; }
-  .intui-surface-menu :is([role="menuitemradio"], [role="menuitem"]) { min-height: var(--ui-control-touch); }
-  .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more { min-height: var(--ui-control-touch); }
-  .msg.assistant .msg-body.is-declarative :is(.intui-button, .intui-choice-options button, .intui-slider input[type="range"]) { min-height: var(--ui-control-touch); }
+  .intui-surface-shell {
+    --intui-action-size: var(--ui-control-touch);
+  }
+  .intui-surface-header {
+    padding-inline: 0;
+  }
+  .intui-surface-document {
+    padding: var(--ui-space-xs) 0;
+  }
+  .intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
+    min-height: var(--ui-control-touch);
+  }
+  .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
+    min-height: var(--ui-control-touch);
+  }
+  .msg.assistant
+    .msg-body.is-declarative
+    :is(.intui-button, .intui-choice-options button, .intui-slider input[type='range']) {
+    min-height: var(--ui-control-touch);
+  }
 }
 
 /* One footprint for an interactive block that has nothing of its own to draw
@@ -749,11 +863,14 @@
 .intui-block-skeleton-line {
   display: block;
   width: 72%;
-  height: .75rem;
+  height: 0.75rem;
   border-radius: var(--ui-radius-xs);
   background-color: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
-.intui-block-skeleton-line[data-width="title"] { width: 40%; height: 1rem; }
+.intui-block-skeleton-line[data-width='title'] {
+  width: 40%;
+  height: 1rem;
+}
 
 /* A quiet, inline scientific demonstration. Expressions own the content;
    the app owns type, spacing, controls, legends and theme contrast. */
@@ -770,63 +887,253 @@
   padding-block: var(--ui-gap-2);
   color: var(--ui-ink);
 }
-.demo-heading { font-weight: var(--ui-font-weight-medium); font-size: var(--ui-type-body-size); }
-.demo-views { display: grid; gap: var(--ui-gap-4); min-width: 0; }
-.demonstration figure { margin: 0; min-width: 0; }
-.demonstration figcaption { margin-bottom: var(--ui-gap-2); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
-.demo-field canvas { display: block; width: 100%; border-radius: var(--ui-round-lg); }
-.demo-plot > svg { display: block; width: 100%; overflow: visible; }
-.demo-axis { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
-.demo-axis line { stroke: var(--ui-hairline-strong); stroke-width: .7; }
-.demo-axis text, .demo-axis-label { fill: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
-.demo-marker-label { fill: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
-.demo-legend { display: flex; flex-wrap: wrap; gap: var(--ui-gap-3); margin: var(--ui-gap-2) 0 0; color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
-.demo-legend > span { display: inline-flex; align-items: center; gap: var(--ui-gap-2); }
-.demo-legend svg { flex: none; width: 22px; height: 8px; }
-.demo-controls { display: grid; gap: var(--ui-gap-2); }
-.demo-control { display: grid; grid-template-columns: minmax(52px, 1fr) minmax(80px, 5fr) minmax(56px, 1fr); align-items: center; gap: var(--ui-gap-3); min-height: var(--ui-control-md); }
-.demo-control > label { font-weight: var(--ui-font-weight-regular); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-size); overflow-wrap: anywhere; }
-.demo-control > output { text-align: end; font-size: var(--ui-type-label-size); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.demo-control > output span { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
-.demonstration input[type="range"] { appearance: none; width: 100%; min-width: 0; height: var(--ui-control-md); margin: 0; background: transparent; cursor: pointer; }
-.demonstration input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: var(--ui-fill-pressed); border-radius: var(--ui-round-pill); }
-.demonstration input[type="range"]::-moz-range-track { height: 4px; background: var(--ui-fill-pressed); border-radius: var(--ui-round-pill); }
-.demonstration input[type="range"]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; margin-top: -7px; background: var(--ui-card); border: 1px solid var(--ui-hairline-strong); border-radius: var(--ui-round-pill); box-shadow: none; }
-.demonstration input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; background: var(--ui-card); border: 1px solid var(--ui-hairline-strong); border-radius: var(--ui-round-pill); }
-.demonstration input[type="range"]:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); border-radius: var(--ui-round-pill); }
-.demo-advanced summary { color: var(--ui-ink-tertiary); cursor: pointer; font-size: var(--ui-type-label-sm-size); }
-.demo-advanced summary:focus-visible, .demo-error summary:focus-visible, .demo-note summary:focus-visible { outline: none; box-shadow: var(--ui-focus-shadow); }
+.demo-heading {
+  font-weight: var(--ui-font-weight-medium);
+  font-size: var(--ui-type-body-size);
+}
+.demo-views {
+  display: grid;
+  gap: var(--ui-gap-4);
+  min-width: 0;
+}
+.demonstration figure {
+  margin: 0;
+  min-width: 0;
+}
+.demonstration figcaption {
+  margin-bottom: var(--ui-gap-2);
+  color: var(--ui-ink-secondary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-field canvas {
+  display: block;
+  width: 100%;
+  border-radius: var(--ui-round-lg);
+}
+.demo-plot > svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+.demo-axis {
+  color: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-axis line {
+  stroke: var(--ui-hairline-strong);
+  stroke-width: 0.7;
+}
+.demo-axis text,
+.demo-axis-label {
+  fill: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-marker-label {
+  fill: var(--ui-ink-secondary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-3);
+  margin: var(--ui-gap-2) 0 0;
+  color: var(--ui-ink-secondary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-gap-2);
+}
+.demo-legend svg {
+  flex: none;
+  width: 22px;
+  height: 8px;
+}
+.demo-controls {
+  display: grid;
+  gap: var(--ui-gap-2);
+}
+.demo-control {
+  display: grid;
+  grid-template-columns: minmax(52px, 1fr) minmax(80px, 5fr) minmax(56px, 1fr);
+  align-items: center;
+  gap: var(--ui-gap-3);
+  min-height: var(--ui-control-md);
+}
+.demo-control > label {
+  font-weight: var(--ui-font-weight-regular);
+  color: var(--ui-ink-secondary);
+  font-size: var(--ui-type-label-size);
+  overflow-wrap: anywhere;
+}
+.demo-control > output {
+  text-align: end;
+  font-size: var(--ui-type-label-size);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.demo-control > output span {
+  color: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demonstration input[type='range'] {
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-control-md);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.demonstration input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--ui-fill-pressed);
+  border-radius: var(--ui-round-pill);
+}
+.demonstration input[type='range']::-moz-range-track {
+  height: 4px;
+  background: var(--ui-fill-pressed);
+  border-radius: var(--ui-round-pill);
+}
+.demonstration input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-hairline-strong);
+  border-radius: var(--ui-round-pill);
+  box-shadow: none;
+}
+.demonstration input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--ui-card);
+  border: 1px solid var(--ui-hairline-strong);
+  border-radius: var(--ui-round-pill);
+}
+.demonstration input[type='range']:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+  border-radius: var(--ui-round-pill);
+}
+.demo-advanced summary {
+  color: var(--ui-ink-tertiary);
+  cursor: pointer;
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-advanced summary:focus-visible,
+.demo-error summary:focus-visible,
+.demo-note summary:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
 /* A located calculation note: one short line, details on demand. */
-.demo-issue p { margin: 0; }
-.demo-issue details { margin-top: var(--ui-gap-1); color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); overflow-wrap: anywhere; }
-.demo-issue summary { cursor: pointer; }
-.demo-note { margin-top: var(--ui-gap-2); color: var(--ui-ink-secondary); font-size: var(--ui-type-label-sm-size); }
-.demo-presets { display: flex; flex-wrap: wrap; gap: var(--ui-gap-2); }
-.demo-presets > button { flex: 1; }
-.demo-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(115px, 1fr)); gap: var(--ui-gap-4); margin: 0; padding-top: var(--ui-gap-2); }
-.demo-metrics dt { color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); }
-.demo-metrics dd { margin: var(--ui-gap-1) 0 0; font-size: var(--ui-type-title-sm-size); font-weight: var(--ui-font-weight-medium); font-variant-numeric: tabular-nums; }
-.demo-metrics dd > span { font-size: var(--ui-type-label-sm-size); font-weight: var(--ui-font-weight-regular); color: var(--ui-ink-secondary); }
-.demo-time { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--ui-gap-3); color: var(--ui-ink-tertiary); font-size: var(--ui-type-label-sm-size); font-variant-numeric: tabular-nums; }
+.demo-issue p {
+  margin: 0;
+}
+.demo-issue details {
+  margin-top: var(--ui-gap-1);
+  color: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+  overflow-wrap: anywhere;
+}
+.demo-issue summary {
+  cursor: pointer;
+}
+.demo-note {
+  margin-top: var(--ui-gap-2);
+  color: var(--ui-ink-secondary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-gap-2);
+}
+.demo-presets > button {
+  flex: 1;
+}
+.demo-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+  gap: var(--ui-gap-4);
+  margin: 0;
+  padding-top: var(--ui-gap-2);
+}
+.demo-metrics dt {
+  color: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+}
+.demo-metrics dd {
+  margin: var(--ui-gap-1) 0 0;
+  font-size: var(--ui-type-title-sm-size);
+  font-weight: var(--ui-font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+.demo-metrics dd > span {
+  font-size: var(--ui-type-label-sm-size);
+  font-weight: var(--ui-font-weight-regular);
+  color: var(--ui-ink-secondary);
+}
+.demo-time {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-gap-3);
+  color: var(--ui-ink-tertiary);
+  font-size: var(--ui-type-label-sm-size);
+  font-variant-numeric: tabular-nums;
+}
 /* Older convenience scenes use the same compact control grammar. */
 
-.demo-field { padding-inline: 7.3077% 2.3077%; }
-.demo-field canvas { aspect-ratio: auto; }
+.demo-field {
+  padding-inline: 7.3077% 2.3077%;
+}
+.demo-field canvas {
+  aspect-ratio: auto;
+}
 
 /* An embedded visual belongs to the surface that holds it, and the card's
    own shadcn toolbar joins the tool's style. The app shell owns the card's border
    and background by id, so the rule that removes a second frame inside a
    card has to reach that id too; a visual that is the whole surface keeps
    its own frame. */
-:is(.intui, .intui-openui) [data-openui-visualization] .visualization-card { margin: 0; font-family: var(--font-sans); }
-#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-card { border: 0; box-shadow: none; background: transparent; }
-:is(.intui, .intui-openui) [data-openui-visualization] .visualization-header { padding: var(--ui-space-xs) 0; border-bottom: 0; }
+:is(.intui, .intui-openui) [data-openui-visualization] .visualization-card {
+  margin: 0;
+  font-family: var(--font-sans);
+}
+#appShell :is(.intui, .intui-openui) [data-openui-visualization] .visualization-card {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+:is(.intui, .intui-openui) [data-openui-visualization] .visualization-header {
+  padding: var(--ui-space-xs) 0;
+  border-bottom: 0;
+}
 /* The shell's card header pads 14px in by id; inside an answer the chart
    title and caption share the prose column's left edge instead. */
-#appShell :is(.intui, .intui-openui) [data-openui-visualization] :is(.visualization-header, .visualization-caption) { padding-inline: 0; }
+#appShell
+  :is(.intui, .intui-openui)
+  [data-openui-visualization]
+  :is(.visualization-header, .visualization-caption) {
+  padding-inline: 0;
+}
 
 /* Preserve Markdown alignment; generated tables default to reading direction. */
-.ds-table :is(th, td):not([align]) { text-align: start; }
+.ds-table :is(th, td):not([align]) {
+  text-align: start;
+}
 /* Long formulas scroll within their cell instead of painting across adjacent data. */
-.ds-table :is(th, td) .katex { display: inline-block; vertical-align: middle; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
-.intui .katex :is(.mord, .mbin, .mrel) { color: inherit; }
+.ds-table :is(th, td) .katex {
+  display: inline-block;
+  vertical-align: middle;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.intui .katex :is(.mord, .mbin, .mrel) {
+  color: inherit;
+}

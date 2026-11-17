@@ -8,7 +8,9 @@ test('linked-page preparation can be preempted, while normal streaming stays que
   assert.equal(shouldQueueChatSend(), true, 'a normal active stream queues a follow-up');
 
   let aborted = false;
-  const preparationAbort = () => { aborted = true; };
+  const preparationAbort = () => {
+    aborted = true;
+  };
   turnState.activePagePreparationAbort = preparationAbort;
   assert.equal(shouldQueueChatSend(), false, 'page preparation allows a new send to supersede it');
 
@@ -16,7 +18,8 @@ test('linked-page preparation can be preempted, while normal streaming stays que
   // the registered owner; a newer preparation must not be erased by old cleanup.
   const newerPreparationAbort = () => {};
   turnState.activePagePreparationAbort = newerPreparationAbort;
-  if (turnState.activePagePreparationAbort === preparationAbort) turnState.activePagePreparationAbort = null;
+  if (turnState.activePagePreparationAbort === preparationAbort)
+    turnState.activePagePreparationAbort = null;
   assert.equal(turnState.activePagePreparationAbort, newerPreparationAbort);
   preparationAbort();
   assert.equal(aborted, true);

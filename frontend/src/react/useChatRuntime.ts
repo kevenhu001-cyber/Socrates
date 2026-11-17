@@ -17,17 +17,11 @@ export function useChatRuntimeSnapshot(): ChatRuntimeSnapshot {
  * derived primitive keeps delta publications from re-rendering the root.
  */
 export function useIsChatStreaming(): boolean {
-  return useBridgeSelector(
-    chatRuntimeImmutableBridge,
-    (snapshot) => snapshot.isStreaming,
-  );
+  return useBridgeSelector(chatRuntimeImmutableBridge, (snapshot) => snapshot.isStreaming);
 }
 
 export function useChatStreamStatus(): ChatStreamStatus {
-  return useBridgeSelector(
-    chatRuntimeImmutableBridge,
-    (snapshot) => snapshot.stream.status,
-  );
+  return useBridgeSelector(chatRuntimeImmutableBridge, (snapshot) => snapshot.stream.status);
 }
 
 export { getChatRuntimeSnapshot, subscribeToChatRuntime };

@@ -69,13 +69,18 @@ function fnv1a(s: string): number {
 function toolCallsFingerprint(value: unknown): string {
   const calls = Array.isArray(value) ? value : [];
   let serialized: string;
-  try { serialized = JSON.stringify(calls); } catch { serialized = String(calls); }
+  try {
+    serialized = JSON.stringify(calls);
+  } catch {
+    serialized = String(calls);
+  }
   return serialized.length + ':' + fnv1a(serialized).toString(36);
 }
 
 function sameToolCalls(previous: unknown, current: unknown): boolean {
   if (previous === current) return true;
-  if (!Array.isArray(previous) || !Array.isArray(current) || previous.length !== current.length) return false;
+  if (!Array.isArray(previous) || !Array.isArray(current) || previous.length !== current.length)
+    return false;
   for (let i = 0; i < previous.length; i++) if (previous[i] !== current[i]) return false;
   return true;
 }
@@ -88,8 +93,14 @@ function matchesFingerprintEntry(
   tools: number,
   calls: unknown[] | null,
 ): entry is CacheEntry {
-  return !!entry && entry.raw === raw && entry.type === type && entry.htmlLen === htmlLen
-    && entry.tools === tools && sameToolCalls(entry.calls, calls);
+  return (
+    !!entry &&
+    entry.raw === raw &&
+    entry.type === type &&
+    entry.htmlLen === htmlLen &&
+    entry.tools === tools &&
+    sameToolCalls(entry.calls, calls)
+  );
 }
 
 export function messageFingerprint(m: MessageLike | null | undefined): string {
@@ -97,15 +108,31 @@ export function messageFingerprint(m: MessageLike | null | undefined): string {
   const clientId = m.clientId || m.id || '';
   const raw = m.rawText || '';
   const calls = Array.isArray(m.toolCalls) ? m.toolCalls : [];
-  return clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
-    + ':' + (m.html || '').length + ':' + (m.type || '')
-    + ':' + calls.length + ':' + toolCallsFingerprint(calls);
+  return (
+    clientId +
+    ':' +
+    raw.length +
+    ':' +
+    fnv1a(raw).toString(36) +
+    ':' +
+    (m.html || '').length +
+    ':' +
+    (m.type || '') +
+    ':' +
+    calls.length +
+    ':' +
+    toolCallsFingerprint(calls)
+  );
 }
 
 /** Fingerprint an arbitrary tutor-state value (teachingPlan, boundariesHistory). */
 export function stateFingerprint(v: unknown): string {
   let s: string;
-  try { s = JSON.stringify(v == null ? null : v); } catch { s = String(v == null ? '' : v); }
+  try {
+    s = JSON.stringify(v == null ? null : v);
+  } catch {
+    s = String(v == null ? '' : v);
+  }
   return s.length + ':' + fnv1a(s).toString(36);
 }
 
@@ -142,8 +169,20 @@ export function createFingerprintCache(cap?: number): FingerprintCache {
         return hit.fp;
       }
       const toolsSig = toolCallsFingerprint(calls);
-      const fp = clientId + ':' + raw.length + ':' + fnv1a(raw).toString(36)
-        + ':' + htmlLen + ':' + type + ':' + tools + ':' + toolsSig;
+      const fp =
+        clientId +
+        ':' +
+        raw.length +
+        ':' +
+        fnv1a(raw).toString(36) +
+        ':' +
+        htmlLen +
+        ':' +
+        type +
+        ':' +
+        tools +
+        ':' +
+        toolsSig;
       if (cache.size > max) cache.clear();
       cache.set(clientId, { raw, type, htmlLen, tools, calls, fp });
       return fp;
@@ -157,7 +196,11 @@ export function createFingerprintCache(cap?: number): FingerprintCache {
  * re-upload. Rows without a stable id are skipped — they can never be
  * matched and are always sent.
  */
-export function seedSynced(synced: Map<string, string>, messages: unknown, fingerprints: FingerprintCache): void {
+export function seedSynced(
+  synced: Map<string, string>,
+  messages: unknown,
+  fingerprints: FingerprintCache,
+): void {
   synced.clear();
   if (!Array.isArray(messages)) return;
   for (let i = 0; i < messages.length; i++) {
@@ -181,7 +224,11 @@ export function messageDelta(
     const m = all[i];
     /* No stable id means the row cannot be matched against the
        watermark, so it is sent every time. Correctness over size. */
-    if (!m || !(m.clientId || m.id) || synced.get(m.clientId || m.id || '') !== fingerprints.of(m)) {
+    if (
+      !m ||
+      !(m.clientId || m.id) ||
+      synced.get(m.clientId || m.id || '') !== fingerprints.of(m)
+    ) {
       delta.push(m);
     }
   }

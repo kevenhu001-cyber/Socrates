@@ -18,7 +18,7 @@
  */
 
 import { appMode } from '../config/providers.ts';
-import { stateStore } from '../state/store.ts';
+import { uiBridge } from '../store/index.ts';
 import { wrapForCanvas } from './canvasWrap.ts';
 import { decodeEntities, esc, stripCitationMarkers, stripTags } from './text.ts';
 import { formatMsg } from './markdown.ts';
@@ -56,7 +56,8 @@ function t(key: string): string {
 }
 
 /* A "Sources:" marker opening a line, Chinese variants included. */
-const SOURCES_MARKER_RE = /(^|\n)[ \t]*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)[ \t]*[:：]/gi;
+const SOURCES_MARKER_RE =
+  /(^|\n)[ \t]*(?:Sources?|参考来源|来源|参考资料|参考文献|引用|参考)[ \t]*[:：]/gi;
 /* One entry of a citation list: a URL, a markdown link, a bare domain on a
    common TLD, or a [n] / 【n】 reference. */
 const CITATION_ENTRY_RE =
@@ -88,20 +89,29 @@ export function stripTrailingSources(text: string): string {
 
 function recordInlineMistakes(text: string, widgets: ScaffoldWidgets): string {
   const practices = widgets.practicePH;
-  return text.replace(/<mistake\b([^>]*)>([\s\S]*?)<\/mistake>/gi, (_raw: string, attrs: string, inner: string) => {
-    const type = attrs.match(/type="([^"]+)"/i)?.[1] || 'practice';
-    const correct = attrs.match(/correct="([^"]+)"/i)?.[1] || '';
-    if (type === 'practice' && correct) {
-      // An empty tag may refer to the first practice in this answer, but
-      // never create a mistake record without a usable question.
-      const question = stripTags(decodeEntities(inner)).trim() || practices[0]?.parsed.problem || '';
-      if (question) deps?.recordMistake({
-        type: 'practice', q: question, options: [], correct,
-        userAnswer: null, judgedAnswer: correct,
-      });
-    }
-    return '';
-  });
+  return text.replace(
+    /<mistake\b([^>]*)>([\s\S]*?)<\/mistake>/gi,
+    (_raw: string, attrs: string, inner: string) => {
+      const type = attrs.match(/type="([^"]+)"/i)?.[1] || 'practice';
+      const correct = attrs.match(/correct="([^"]+)"/i)?.[1] || '';
+      if (type === 'practice' && correct) {
+        // An empty tag may refer to the first practice in this answer, but
+        // never create a mistake record without a usable question.
+        const question =
+          stripTags(decodeEntities(inner)).trim() || practices[0]?.parsed.problem || '';
+        if (question)
+          deps?.recordMistake({
+            type: 'practice',
+            q: question,
+            options: [],
+            correct,
+            userAnswer: null,
+            judgedAnswer: correct,
+          });
+      }
+      return '';
+    },
+  );
 }
 
 /** Build final message HTML and schedule mounts for its widget slots. */
@@ -140,12 +150,21 @@ export function buildAssistantHtml(rawText: unknown): string {
      KaTeX on interaction — and KaTeX arriving repaints the message, which
      remounts the card and drops its state (a turned flashcard flips back).
      Ask for KaTeX now so that one repaint lands before anyone interacts. */
-  const scaffoldCount = scaffoldPH.quizPH.length + scaffoldPH.examplePH.length + scaffoldPH.practicePH.length
-    + scaffoldPH.definitionPH.length + scaffoldPH.stepPH.length + scaffoldPH.flashcardPH.length
-    + scaffoldPH.derivationPH.length + scaffoldPH.proofPH.length + scaffoldPH.theoremPH.length
-    + scaffoldPH.keyPointPH.length;
+  const scaffoldCount =
+    scaffoldPH.quizPH.length +
+    scaffoldPH.examplePH.length +
+    scaffoldPH.practicePH.length +
+    scaffoldPH.definitionPH.length +
+    scaffoldPH.stepPH.length +
+    scaffoldPH.flashcardPH.length +
+    scaffoldPH.derivationPH.length +
+    scaffoldPH.proofPH.length +
+    scaffoldPH.theoremPH.length +
+    scaffoldPH.keyPointPH.length;
   if (scaffoldCount && /\$|\\\(|\\\[/.test(String(rawText || ''))) {
-    void ensureKatex().catch(() => { /* text stays readable; a later render can retry */ });
+    void ensureKatex().catch(() => {
+      /* text stays readable; a later render can retry */
+    });
   }
 
   /* Widget mounting is deferred until the rendered HTML is in the DOM. */
@@ -154,7 +173,7 @@ export function buildAssistantHtml(rawText: unknown): string {
      finalized HTML in a <div class="canvas-block"> so React can mount an
      editable surface from data-canvas-id. The id is read from the message
      entry that finish() seeded just before calling renderAssistantHTML
-     (stateStore.read("messages")[idx].canvasId); that keeps DOM and state in lock-step
+     (the session message's canvasId); that keeps DOM and state in lock-step
      across re-renders. */
   const w = window as unknown as {
     _activeTemplate?: { outputMode?: string; extensionKey?: string } | null;
@@ -164,12 +183,12 @@ export function buildAssistantHtml(rawText: unknown): string {
     const extKey = activeTpl.extensionKey || 'canvas';
     let cid = 'canvas-' + Math.random().toString(36).slice(2, 10);
     /* If finish() pre-allocated a canvasId, use that one instead so the
-       React <CanvasBlock> reads the same id from stateStore.read("messages")[idx]. */
+       React <CanvasBlock> reads the same id from the session snapshot. */
     try {
-      const seed = (stateStore.read('_canvasPendingId') as string | null) || null;
+      const seed = (uiBridge.getSnapshot()._canvasPendingId as string | null) || null;
       if (seed) cid = seed;
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: render/assistantHtml.ts:245', 'expected');
+      reportEmptyCatch(error, 'empty catch: render/assistantHtml.ts', 'expected');
       /* Canvas seed is best effort; fall back to the fresh id. */
     }
     html = wrapForCanvas(html, 'canvas', extKey, cid);

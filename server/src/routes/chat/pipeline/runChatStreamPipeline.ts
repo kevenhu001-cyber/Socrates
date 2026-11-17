@@ -46,33 +46,56 @@ import {
 export async function runChatStreamPipeline(ctx: ChatStreamPipelineContext): Promise<void> {
   if (ctx.turnId && !ctx.executionClaimed) {
     return withChatTurnExecution(ctx.req.userId!, ctx.turnId, (signal) =>
-      runChatStreamPipeline({ ...ctx, executionSignal: signal, executionClaimed: true }));
+      runChatStreamPipeline({ ...ctx, executionSignal: signal, executionClaimed: true }),
+    );
   }
   let cleanup = () => {};
-  try { await executeChatStreamPipeline(ctx, (release) => { cleanup = release; }); }
-  finally { cleanup(); }
+  try {
+    await executeChatStreamPipeline(ctx, (release) => {
+      cleanup = release;
+    });
+  } finally {
+    cleanup();
+  }
 }
 
-async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registerCleanup?: (release: () => void) => void): Promise<void> {
+async function executeChatStreamPipeline(
+  ctx: ChatStreamPipelineContext,
+  registerCleanup?: (release: () => void) => void,
+): Promise<void> {
   const { req, res, prep, sessionIdFromQuery, projectIdFromBody, turnId } = ctx;
   // The route starts timing before auth/preparation. Reasoning and answer
   // text have separate first-output milestones; SSE padding counts as neither.
   const timing = ctx.timing ?? createChatTiming();
   const reportTtfb = (kind: 'content' | 'reasoning') => {
     if (!timing.mark(`first_${kind}`)) return;
-    console.log('[chat-latency]', JSON.stringify({ turnId: turnId || null, kind, milestonesMs: timing.snapshot() }));
+    console.log(
+      '[chat-latency]',
+      JSON.stringify({ turnId: turnId || null, kind, milestonesMs: timing.snapshot() }),
+    );
   };
-  const { messages: finalMessages, provider, safeExtraBody, mode, temperature, maxTokens, reasoning_effort, responseSpeed } = prep.payload;
+  const {
+    messages: finalMessages,
+    provider,
+    safeExtraBody,
+    mode,
+    temperature,
+    maxTokens,
+    reasoning_effort,
+    responseSpeed,
+  } = prep.payload;
   /* P_prep-parallel — prefer the tool context the route shell started
      alongside ownership/turn/prep; direct pipeline callers (tests) that
      did not supply one fall back to creating it here, giving up only
      the overlap. Either way it is awaited before the first hop, and a
      rejection propagates identically. */
-  const toolCtxPromise = ctx.toolCtxPromise ?? (() => {
-    const p = createStreamToolContext(req, mode);
-    p.catch(() => {});
-    return p;
-  })();
+  const toolCtxPromise =
+    ctx.toolCtxPromise ??
+    (() => {
+      const p = createStreamToolContext(req, mode);
+      p.catch(() => {});
+      return p;
+    })();
 
   startSseStream({ res, app: req.app, ssePrimed: ctx.ssePrimed });
 
@@ -88,7 +111,12 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   const abortController = new AbortController();
   if (ctx.executionSignal) {
     if (ctx.executionSignal.aborted) abortController.abort(ctx.executionSignal.reason);
-    else ctx.executionSignal.addEventListener('abort', () => abortController.abort(ctx.executionSignal!.reason), { once: true });
+    else
+      ctx.executionSignal.addEventListener(
+        'abort',
+        () => abortController.abort(ctx.executionSignal!.reason),
+        { once: true },
+      );
   }
   /* P_turn-watchdog — the SSE route is exempt from the request timeout
      (a reasoning model may think for minutes), which also meant a turn
@@ -100,7 +128,7 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
      is producing something is never cut off. */
   const watchdog = createTurnWatchdog(turnWatchdogLimits());
   const errorLocale = resolveErrorLocale(req.headers);
-  let streamCompleted = false;  // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
+  let streamCompleted = false; // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
   /* M1 async — when a turn is bound, socket close detaches the SSE feed
    * instead of cancelling the run: the upstream LLM keeps going, frames
    * keep landing in chat_turn_events, and the client re-attaches with
@@ -125,7 +153,12 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     if (!turnId) return;
     const db = getDb();
     db.update(chatTurns)
-      .set({ fullText: toolState.fullText || null, fullReasoning: toolState.fullReasoning || null, turnRuntime: toolState.turnRuntime, updatedAt: new Date() })
+      .set({
+        fullText: toolState.fullText || null,
+        fullReasoning: toolState.fullReasoning || null,
+        turnRuntime: toolState.turnRuntime,
+        updatedAt: new Date(),
+      })
       .where(eq(chatTurns.id, turnId))
       .catch(() => {});
   };
@@ -146,7 +179,9 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
       if (row && row.status === 'interrupted') {
         abortController.abort('turn_interrupted');
       }
-    } catch { /* a failed poll must not kill the stream */ }
+    } catch {
+      /* a failed poll must not kill the stream */
+    }
   };
   const clearTurnTimer = () => {
     if (turnCheckpointTimer) {
@@ -201,11 +236,17 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
           streamingReasoning: toolState.fullReasoning || null,
         })
         .where(and(eq(sessions.id, sessionIdFromQuery), eq(sessions.userId, req.userId!)))
-        .catch((err) => console.error('[chat/stream] save streaming text on close failed:', err.message));
+        .catch((err) =>
+          console.error('[chat/stream] save streaming text on close failed:', err.message),
+        );
     }
   });
 
-  const emitter = new SseEmitter(res, () => abortController.signal.aborted || sseDetached, errorLocale);
+  const emitter = new SseEmitter(
+    res,
+    () => abortController.signal.aborted || sseDetached,
+    errorLocale,
+  );
   /* M1 async — mirror lifecycle frames into the bound turn. Content and
    * reasoning deltas are persisted per-chunk (they are the resume
    * baseline); tool_use/tool_result/agent frames mark boundaries;
@@ -274,9 +315,8 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   for (let i = rawUserMsgs.length - 1; i >= 0; i--) {
     if (rawUserMsgs[i].role === 'user') {
       const rawText = rawUserMsgs[i].rawText;
-      userPrompt = typeof rawText === 'string' && rawText
-        ? rawText
-        : contentText(rawUserMsgs[i].content);
+      userPrompt =
+        typeof rawText === 'string' && rawText ? rawText : contentText(rawUserMsgs[i].content);
       break;
     }
   }
@@ -293,7 +333,10 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
   });
   const emitFatal = emitter.fatal.bind(emitter);
   emitter.fatal = (error) => {
-    turnEvents.done(abortController.signal.aborted ? 'stopped' : 'failed', Date.now() - activityStartedAt);
+    turnEvents.done(
+      abortController.signal.aborted ? 'stopped' : 'failed',
+      Date.now() - activityStartedAt,
+    );
     /* P_turn-watchdog — when the watchdog aborted the turn, the upstream
        surfaces a bare AbortError. Replace it with the explicit timeout so
        the client sees WHY the turn ended and can decide to retry. */
@@ -308,19 +351,28 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
      * something, so the idle budget must not fire while it works. */
     if (name === 'tool_use' || name === 'tool_result') watchdog.touch();
     if (name === 'tool_use') {
-      for (const call of (Array.isArray(data) ? data : [data]) as Array<{ id: string; name: string; input: unknown }>) {
+      for (const call of (Array.isArray(data) ? data : [data]) as Array<{
+        id: string;
+        name: string;
+        input: unknown;
+      }>) {
         if (call?.name === 'render_intelligent_ui') uiInputs.set(call.id, call.input);
       }
     }
     if (name === 'tool_result' && data && typeof data === 'object') {
       const result = data as { id: string; ok?: boolean; status?: string };
       if (result.status !== 'awaiting_approval') {
-        turnEvents.toolResult(result.id, result.ok !== false && !['failed', 'error', 'stopped', 'cancelled'].includes(result.status || ''), uiInputs.get(result.id), toolState.fullText.length);
+        turnEvents.toolResult(
+          result.id,
+          result.ok !== false &&
+            !['failed', 'error', 'stopped', 'cancelled'].includes(result.status || ''),
+          uiInputs.get(result.id),
+          toolState.fullText.length,
+        );
       }
     }
   };
   activity.thinking();
-
 
   await runToolLoop({
     req,
@@ -349,10 +401,10 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     clearTurnTimer,
   });
 
-  const { fullText, fullReasoning, executedToolCalls, completionTokens, sawProviderUsage } = toolState;
+  const { fullText, fullReasoning, executedToolCalls, completionTokens, sawProviderUsage } =
+    toolState;
   let turnRuntime = toolState.turnRuntime;
   const accumulatedProviderUsage = () => readAccumulatedProviderUsage(toolState);
-
 
   await finalizeTurn({
     req,
@@ -374,8 +426,9 @@ async function executeChatStreamPipeline(ctx: ChatStreamPipelineContext, registe
     accumulatedProviderUsage: () => readAccumulatedProviderUsage(toolState),
     clearTurnTimer,
     checkpointTurn,
-    onStreamCompleted: () => { streamCompleted = true; },
+    onStreamCompleted: () => {
+      streamCompleted = true;
+    },
     activityStartedAt,
   });
-
 }

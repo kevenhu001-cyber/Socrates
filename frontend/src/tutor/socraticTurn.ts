@@ -1,5 +1,4 @@
-type FeatureRuntime = typeof import("./socraticTurn.impl.ts");
-
+type FeatureRuntime = typeof import('./socraticTurn.impl.ts');
 
 /* tutor/socraticTurn.ts — stable async facade for the Tutor execution layer.
  * Keep Tutor-only prompt/history/streaming code out of the ordinary Chat
@@ -19,32 +18,40 @@ function loadRuntime() {
   return runtimeImport;
 }
 
-export async function generateSocraticQuestion(...args: Parameters<FeatureRuntime["generateSocraticQuestion"]>) {
+export async function generateSocraticQuestion(
+  ...args: Parameters<FeatureRuntime['generateSocraticQuestion']>
+) {
   const runtime = await loadRuntime();
   return runtime.generateSocraticQuestion(...args);
 }
 
-export async function generateSocraticQuestionStream(...args: Parameters<FeatureRuntime["generateSocraticQuestionStream"]>) {
+export async function generateSocraticQuestionStream(
+  ...args: Parameters<FeatureRuntime['generateSocraticQuestionStream']>
+) {
   const runtime = await loadRuntime();
   return runtime.generateSocraticQuestionStream(...args);
 }
 
-export async function getExplanation(...args: Parameters<FeatureRuntime["getExplanation"]>) {
+export async function getExplanation(...args: Parameters<FeatureRuntime['getExplanation']>) {
   const runtime = await loadRuntime();
   return runtime.getExplanation(...args);
 }
 
-export async function generateFollowUpStream(...args: Parameters<FeatureRuntime["generateFollowUpStream"]>) {
+export async function generateFollowUpStream(
+  ...args: Parameters<FeatureRuntime['generateFollowUpStream']>
+) {
   const runtime = await loadRuntime();
   return runtime.generateFollowUpStream(...args);
 }
 
-export async function askNextQuestion(...args: Parameters<FeatureRuntime["askNextQuestion"]>) {
+export async function askNextQuestion(...args: Parameters<FeatureRuntime['askNextQuestion']>) {
   const runtime = await loadRuntime();
   return runtime.askNextQuestion(...args);
 }
 
-export async function runLearningModeTurn(...args: Parameters<FeatureRuntime["runLearningModeTurn"]>) {
+export async function runLearningModeTurn(
+  ...args: Parameters<FeatureRuntime['runLearningModeTurn']>
+) {
   const runtime = await loadRuntime();
   return runtime.runLearningModeTurn(...args);
 }

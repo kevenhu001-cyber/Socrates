@@ -5,7 +5,7 @@
    PDF canvases) stays readable in every theme, the way the PDF canvas
    itself is already constant white. */
 
-.detail-surface[data-detail-owner="doc-preview"] {
+.detail-surface[data-detail-owner='doc-preview'] {
   width: min(860px, 100vw);
 }
 
@@ -156,10 +156,22 @@
   margin-top: 0;
 }
 
-.docx-body h1 { font-size: var(--ui-font-size-lg); font-weight: var(--ui-font-weight-semibold); }
-.docx-body h2 { font-size: var(--ui-font-size-md); font-weight: var(--ui-font-weight-semibold); }
-.docx-body h3 { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-semibold); }
-.docx-body h4 { font-size: var(--ui-font-size-sm); font-weight: var(--ui-font-weight-medium); }
+.docx-body h1 {
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.docx-body h2 {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.docx-body h3 {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.docx-body h4 {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
 
 .docx-body p {
   margin: 0 0 var(--ui-space-sm);
@@ -284,7 +296,7 @@
   transition: background-color var(--ui-duration-fast, 150ms) var(--ui-ease-out);
 }
 
-.xlsx-tab[aria-selected="true"] {
+.xlsx-tab[aria-selected='true'] {
   background: var(--muted);
   border-color: var(--border);
   color: var(--foreground);

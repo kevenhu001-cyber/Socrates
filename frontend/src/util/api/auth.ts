@@ -23,8 +23,9 @@ export function authExpiryIsSuppressed(): boolean {
 export function notifyUnauthorized(source: string, method: string, path: string): void {
   try {
     if (onUnauthorized) onUnauthorized(source + ':' + method + ' ' + path);
+  } catch (error) {
+    reportSwallow(error, 'util/api.notifyUnauthorized');
   }
-  catch (error) { reportSwallow(error, 'util/api.notifyUnauthorized'); }
 }
 
 /** Refresh CSRF state and yield once before the caller replays its request. */
@@ -34,7 +35,10 @@ export async function refreshCsrfToken(
 ): Promise<void> {
   const options: RequestInit = { credentials: 'include' };
   if (signal) options.signal = signal;
-  try { await fetch('/api/v2/auth/csrf-token', options); }
-  catch (error) { reportSwallow(error, source + '.csrfRefresh'); }
+  try {
+    await fetch('/api/v2/auth/csrf-token', options);
+  } catch (error) {
+    reportSwallow(error, source + '.csrfRefresh');
+  }
   await new Promise((resolve) => setTimeout(resolve, 0));
 }

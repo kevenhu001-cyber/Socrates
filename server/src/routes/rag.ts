@@ -26,10 +26,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
-import {
-  searchSessionChunksHybrid,
-  sessionOwnedBy,
-} from '../services/embeddings/chunkIndex.js';
+import { searchSessionChunksHybrid, sessionOwnedBy } from '../services/embeddings/chunkIndex.js';
 import { BadRequest, NotFound } from '../lib/errors.js';
 import { isUuid } from '../lib/validate.js';
 
@@ -51,7 +48,9 @@ router.post('/search', requireAuth, async (req, res, next) => {
   try {
     const parsed = searchSchema.safeParse(req.body);
     if (!parsed.success) {
-      throw new BadRequest('Invalid search body: ' + (parsed.error.issues[0]?.message || 'validation failed'));
+      throw new BadRequest(
+        'Invalid search body: ' + (parsed.error.issues[0]?.message || 'validation failed'),
+      );
     }
     const { sessionId, query, limit, minScore } = parsed.data;
     if (!(await sessionOwnedBy(sessionId, req.userId!))) {
@@ -66,7 +65,9 @@ router.post('/search', requireAuth, async (req, res, next) => {
         score: h.score,
       })),
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

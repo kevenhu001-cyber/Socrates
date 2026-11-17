@@ -29,13 +29,18 @@ export function createProseCache(maxChars: number, maxEntries: number) {
       entries.set(key, { html, chars: weight });
       chars += weight;
     },
-    clear(): void { entries.clear(); chars = 0; },
+    clear(): void {
+      entries.clear();
+      chars = 0;
+    },
     stats: () => ({ chars, entries: entries.size }),
   };
 }
 
 export const sharedFinalProseCache = createProseCache(8_000_000, 256);
-export function clearSharedProseCache(): void { sharedFinalProseCache.clear(); }
+export function clearSharedProseCache(): void {
+  sharedFinalProseCache.clear();
+}
 
 /** Hold exactly the current settled prefix, independent of the lookup LRU.
  * Append-only updates paint only new blocks. Comparing retained text handles
@@ -47,9 +52,15 @@ export function createSettledProseCache() {
   return (blocks: readonly string[], paint: (text: string) => ProseHtml): ProseHtml[] => {
     let common = 0;
     if (paint === previousPaint) {
-      while (common < blocks.length && common < previousText.length && blocks[common] === previousText[common]) common++;
+      while (
+        common < blocks.length &&
+        common < previousText.length &&
+        blocks[common] === previousText[common]
+      )
+        common++;
     }
-    if (common === blocks.length && common === previousText.length && paint === previousPaint) return previousHtml;
+    if (common === blocks.length && common === previousText.length && paint === previousPaint)
+      return previousHtml;
     const html = previousHtml.slice(0, common);
     for (let index = common; index < blocks.length; index++) html.push(paint(blocks[index]));
     previousText = blocks.slice();

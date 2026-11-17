@@ -85,10 +85,13 @@ export async function dispatchToolCalls<TCall, TResult>(
     // in the same turn from running.
     const tail = laneTails.get(laneKey);
     const task = tail ? tail.then(() => runBounded(call)) : runBounded(call);
-    laneTails.set(laneKey, task.then(
-      () => undefined,
-      () => undefined,
-    ));
+    laneTails.set(
+      laneKey,
+      task.then(
+        () => undefined,
+        () => undefined,
+      ),
+    );
     return task;
   });
 

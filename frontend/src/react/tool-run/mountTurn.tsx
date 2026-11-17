@@ -6,7 +6,9 @@ import { restoredToolCalls, sortableToolCalls } from './toolRunLayout.js';
 import type { ChatMessage } from '../types/domain';
 
 const roots = createRootGroup('assistant-turn');
-const AssistantTurn = lazy(() => import('./AssistantTurn').then((module) => ({ default: module.AssistantTurn })));
+const AssistantTurn = lazy(() =>
+  import('./AssistantTurn').then((module) => ({ default: module.AssistantTurn })),
+);
 
 export interface MountAssistantTurnOptions {
   /** Share / replay: hides Retry and approval. Default true here. */
@@ -41,13 +43,14 @@ export function mountAssistantTurn(
   }
   // Keep public prose available while the tool renderer loads or fails.
   const fallback = <div className="msg-text">{rawText}</div>;
-  roots.render(container, (
+  roots.render(
+    container,
     <ErrorBoundary fallback={fallback}>
       <Suspense fallback={fallback}>
         <AssistantTurn message={message} readOnly={options.readOnly !== false} />
       </Suspense>
-    </ErrorBoundary>
-  ));
+    </ErrorBoundary>,
+  );
   return true;
 }
 

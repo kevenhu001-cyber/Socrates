@@ -87,7 +87,20 @@ export interface ComposerControlsProps {
   compact?: boolean;
 }
 
-function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPressed, haspopup, voicePhase, filled, disabled, children, onPress }: {
+function RoundControl({
+  id,
+  control,
+  label,
+  i18nKey,
+  expanded,
+  pressed: ariaPressed,
+  haspopup,
+  voicePhase,
+  filled,
+  disabled,
+  children,
+  onPress,
+}: {
   id: string;
   control: string;
   label: string;
@@ -122,11 +135,17 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
         alignItems: 'center',
         justifyContent: 'center',
         opacity: disabled ? 0.45 : 1,
-        backgroundColor: disabled ? 'transparent'
-          : filled ? colors.action
-            : pressed ? colors.fillPressed
-              : active ? colors.fillHover
-                : hovered ? colors.fill : 'transparent',
+        backgroundColor: disabled
+          ? 'transparent'
+          : filled
+            ? colors.action
+            : pressed
+              ? colors.fillPressed
+              : active
+                ? colors.fillHover
+                : hovered
+                  ? colors.fill
+                  : 'transparent',
       })}
     >
       {children}
@@ -134,7 +153,13 @@ function RoundControl({ id, control, label, i18nKey, expanded, pressed: ariaPres
   );
 }
 
-export function ComposerControls({ tools, effort, mic, primary, compact = false }: ComposerControlsProps) {
+export function ComposerControls({
+  tools,
+  effort,
+  mic,
+  primary,
+  compact = false,
+}: ComposerControlsProps) {
   const { colors } = useUiTheme();
   const stop = primary.mode === 'stop';
   const enabled = stop || primary.ready;
@@ -155,7 +180,11 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
       <View style={{ flex: 1, minWidth: 0 }} {...dataSet({ composerSpacer: '' })} />
 
       <View
-        {...dataSet({ composerControl: 'effort', effort: effort.level, visible: effort.visible ? 'true' : 'false' })}
+        {...dataSet({
+          composerControl: 'effort',
+          effort: effort.level,
+          visible: effort.visible ? 'true' : 'false',
+        })}
         style={{ display: effort.visible ? 'flex' : 'none', flexDirection: 'row' }}
       >
         <Pressable
@@ -174,11 +203,18 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
             paddingLeft: compact ? 10 : 12,
             paddingRight: 10,
             borderRadius: uiRadius.pill,
-            backgroundColor: pressed ? colors.fillPressed
-              : hovered || effort.expanded ? colors.fillHover : 'transparent',
+            backgroundColor: pressed
+              ? colors.fillPressed
+              : hovered || effort.expanded
+                ? colors.fillHover
+                : 'transparent',
           })}
         >
-          {compact ? null : <UiText variant="bodySm" numberOfLines={1}>{effort.caption}</UiText>}
+          {compact ? null : (
+            <UiText variant="bodySm" numberOfLines={1}>
+              {effort.caption}
+            </UiText>
+          )}
           {effort.value ? (
             <UiText
               variant={compact ? 'body' : 'bodySm'}
@@ -221,13 +257,15 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         <UiIcon
           name="mic"
           size={20}
-          color={mic.phase === 'recording'
-            ? colors.onAction
-            : mic.disabled
-              ? colors.inkTertiary
-              : mic.listening
-                ? colors.ink
-                : colors.inkSecondary}
+          color={
+            mic.phase === 'recording'
+              ? colors.onAction
+              : mic.disabled
+                ? colors.inkTertiary
+                : mic.listening
+                  ? colors.ink
+                  : colors.inkSecondary
+          }
         />
       </RoundControl>
 
@@ -238,7 +276,12 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
         aria-disabled={!enabled}
         disabled={!enabled}
         onPress={primary.onPress}
-        {...dataSet({ composerControl: 'send', stop: stop ? '1' : '0', ready: primary.ready ? 'true' : 'false', sending: primary.sending ? 'true' : 'false' })}
+        {...dataSet({
+          composerControl: 'send',
+          stop: stop ? '1' : '0',
+          ready: primary.ready ? 'true' : 'false',
+          sending: primary.sending ? 'true' : 'false',
+        })}
         style={({ pressed }: PressState) => ({
           width: COMPOSER_CONTROL_SIZE,
           height: COMPOSER_CONTROL_SIZE,
@@ -248,15 +291,17 @@ export function ComposerControls({ tools, effort, mic, primary, compact = false 
           /* Site send disc: a quiet grey disc while there is nothing to
              send, the action disc once there is (and while it means Stop).
              Phones keep the action colour at half strength when empty. */
-          backgroundColor: enabled || compact
-            ? colors.action
-            : colors.fill,
+          backgroundColor: enabled || compact ? colors.action : colors.fill,
           opacity: enabled || !compact ? 1 : 0.5,
           transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
         })}
       >
         <View nativeID="composerPrimaryBtnContent">
-          <UiIcon name={stop ? 'stop' : 'arrow-up'} size={18} color={enabled || compact ? colors.onAction : colors.inkTertiary} />
+          <UiIcon
+            name={stop ? 'stop' : 'arrow-up'}
+            size={18}
+            color={enabled || compact ? colors.onAction : colors.inkTertiary}
+          />
         </View>
       </Pressable>
     </>

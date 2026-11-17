@@ -8,7 +8,10 @@ import { useUiTheme } from '../primitives/theme';
 import { ExamAnswerDisplay, ExamChoiceRow } from './controls';
 import type { RenderExamText } from './model';
 
-export function ExamResults({ results, renderText }: {
+export function ExamResults({
+  results,
+  renderText,
+}: {
   results: ExamResultsData;
   renderText: RenderExamText;
 }) {
@@ -22,7 +25,10 @@ export function ExamResults({ results, renderText }: {
   };
 
   return (
-    <View {...dataSet({ examResults: 1 })} style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[200] }}>
+    <View
+      {...dataSet({ examResults: 1 })}
+      style={{ width: '100%', maxWidth: 720, alignSelf: 'center', gap: S[200] }}
+    >
       <View
         {...dataSet({ examScore: 1 })}
         style={{
@@ -35,20 +41,34 @@ export function ExamResults({ results, renderText }: {
         }}
       >
         <UiText variant="display">{String(results.correct)}</UiText>
-        <UiText variant="titleSm" tone="tertiary">/ {results.total}</UiText>
+        <UiText variant="titleSm" tone="tertiary">
+          / {results.total}
+        </UiText>
         <View style={{ flex: 1 }} />
-        <UiText variant="bodySm" tone="secondary">{results.percent}% {results.correctLabel}</UiText>
+        <UiText variant="bodySm" tone="secondary">
+          {results.percent}% {results.correctLabel}
+        </UiText>
       </View>
 
       {results.questions.map((question, index) => (
-        <View key={`${index}-${question.type}`} {...dataSet({ examResultCard: index })} style={card}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: S[75] }}>
+        <View
+          key={`${index}-${question.type}`}
+          {...dataSet({ examResultCard: index })}
+          style={card}
+        >
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: S[75] }}
+          >
             <UiText variant="labelSm" tone="secondary" {...dataSet({ examQNum: 1 })}>
               {question.questionLabel} {index + 1}
             </UiText>
             <VerdictGlyph verdict={question.isCorrect ? 'correct' : 'incorrect'} size={16} />
-            <UiText variant="labelSm" tone="secondary">{question.statusLabel}</UiText>
-            <UiText variant="labelSm" tone="tertiary" {...dataSet({ examQType: 1 })}>{question.typeLabel}</UiText>
+            <UiText variant="labelSm" tone="secondary">
+              {question.statusLabel}
+            </UiText>
+            <UiText variant="labelSm" tone="tertiary" {...dataSet({ examQType: 1 })}>
+              {question.typeLabel}
+            </UiText>
           </View>
 
           <View {...dataSet({ examQText: 1 })}>{renderText(question.questionText, 'exam-q')}</View>
@@ -75,14 +95,18 @@ export function ExamResults({ results, renderText }: {
 
           {!question.isCorrect && question.expectedAnswer && question.type !== 'multiple-choice' ? (
             <View style={{ gap: 2 }}>
-              <UiText variant="labelSm" tone="tertiary">{question.expectedLabel}</UiText>
+              <UiText variant="labelSm" tone="tertiary">
+                {question.expectedLabel}
+              </UiText>
               <View>{renderText(question.expectedAnswer, 'exam-expected')}</View>
             </View>
           ) : null}
 
           {question.explanationText ? (
             <View style={{ gap: 2 }}>
-              <UiText variant="labelSm" tone="tertiary">{question.explanationLabel}</UiText>
+              <UiText variant="labelSm" tone="tertiary">
+                {question.explanationLabel}
+              </UiText>
               <View>{renderText(question.explanationText, 'exam-explain')}</View>
             </View>
           ) : null}

@@ -6,13 +6,20 @@ const { profileState, publishProfileState } = await import('../src/ui/profileSta
 test('profile publisher shares account and preference state with React subscribers', () => {
   profileState.__resetForTests();
   let notifications = 0;
-  const unsubscribe = profileState.subscribe(() => { notifications += 1; });
+  const unsubscribe = profileState.subscribe(() => {
+    notifications += 1;
+  });
 
   publishProfileState({
     user: {
-      initials: 'AT', displayName: 'Ada Turing', email: 'ada@example.test',
-      joinedAt: 'October 30, 2026', verifiedAt: null, userId: 'user-1',
-      tier: 'descartes', subEnd: null,
+      initials: 'AT',
+      displayName: 'Ada Turing',
+      email: 'ada@example.test',
+      joinedAt: 'October 30, 2026',
+      verifiedAt: null,
+      userId: 'user-1',
+      tier: 'descartes',
+      subEnd: null,
     },
     webSearchOn: true,
     currentLang: 'zh',

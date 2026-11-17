@@ -1,6 +1,17 @@
 import type { PublicTurnActivity } from './turnActivity.js';
 import type { TurnEvent, TurnRuntime } from './turnEvent.js';
-export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode, TurnUiEdit, TurnSource, TurnCitation, TurnClaim } from './turnEvent.js';
+export type {
+  TurnEvent,
+  TurnEventPayload,
+  TurnRuntime,
+  TurnActivityEntry,
+  TurnUiSurface,
+  TurnUiNode,
+  TurnUiEdit,
+  TurnSource,
+  TurnCitation,
+  TurnClaim,
+} from './turnEvent.js';
 export type { PublicTurnActivity } from './turnActivity.js';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
@@ -45,7 +56,8 @@ export interface ToolApproval {
   status?: string;
 }
 
-export type ComposerCommand = 'attach' | 'write' | 'explore' | 'analyze' | 'exam' | 'skills' | 'prompt-templates';
+export type ComposerCommand =
+  'attach' | 'write' | 'explore' | 'analyze' | 'exam' | 'skills' | 'prompt-templates';
 
 export interface PromptTemplate {
   id: string;
@@ -57,7 +69,8 @@ export interface PromptTemplate {
   updatedAt?: string;
 }
 
-export type ArtifactKind = 'html' | 'markdown' | 'chart' | 'mermaid' | 'tldraw' | 'three' | 'code' | string;
+export type ArtifactKind =
+  'html' | 'markdown' | 'chart' | 'mermaid' | 'tldraw' | 'three' | 'code' | string;
 
 export interface User {
   id: string;
@@ -371,7 +384,16 @@ export interface ResearchJobEvent {
   id: string;
   jobId: string;
   sequence: number;
-  stage: 'queued' | 'planning' | 'searching' | 'reading' | 'synthesizing' | 'recovering' | 'completed' | 'failed' | 'cancelled';
+  stage:
+    | 'queued'
+    | 'planning'
+    | 'searching'
+    | 'reading'
+    | 'synthesizing'
+    | 'recovering'
+    | 'completed'
+    | 'failed'
+    | 'cancelled';
   status: ResearchStatus;
   createdAt: string;
 }

@@ -4,30 +4,50 @@ export const TURN_INSTRUCTIONS_MARKER = '[Current turn instructions]';
 
 /** Tutor stage/quiz state is not a session-wide persona. New clients mark it
  * explicitly; old tutor clients' unmarked system blocks retain turn scope. */
-export function splitPromptContext(messages: ProviderMessage[], mode: 'chat' | 'tutor'): {
-  initialization: ProviderMessage[]; conversation: ProviderMessage[]; turnInstructions: string[];
+export function splitPromptContext(
+  messages: ProviderMessage[],
+  mode: 'chat' | 'tutor',
+): {
+  initialization: ProviderMessage[];
+  conversation: ProviderMessage[];
+  turnInstructions: string[];
 } {
-  const initialization: ProviderMessage[] = [], conversation: ProviderMessage[] = [];
+  const initialization: ProviderMessage[] = [],
+    conversation: ProviderMessage[] = [];
   const turnInstructions: string[] = [];
   for (const message of messages) {
-    if (message.role !== 'system') { conversation.push(message); continue; }
+    if (message.role !== 'system') {
+      conversation.push(message);
+      continue;
+    }
     const text = typeof message.content === 'string' ? message.content.trimStart() : '';
     // Rolling summaries must survive even after the session prompt is frozen.
     if (/^\[(?:Conversation summary|Context summary)/.test(text)) {
-      conversation.push({ role: 'user', content: `<client_context_data scope="untrusted">\n${text}\n</client_context_data>` });
+      conversation.push({
+        role: 'user',
+        content: `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+      });
       continue;
     }
     const explicitTurn = text.startsWith(TURN_INSTRUCTIONS_MARKER);
     if (text.startsWith('[Web research]')) {
-      turnInstructions.push(`<client_context_data scope="untrusted">\n${text}\n</client_context_data>`);
-    } else if (explicitTurn || (mode === 'tutor' && text.startsWith('[Assistant mode instructions]'))) {
+      turnInstructions.push(
+        `<client_context_data scope="untrusted">\n${text}\n</client_context_data>`,
+      );
+    } else if (
+      explicitTurn ||
+      (mode === 'tutor' && text.startsWith('[Assistant mode instructions]'))
+    ) {
       // Old tutor clients combine a stable role and changing lesson context.
       // Freeze the role; only the lesson state belongs to the current turn.
       const boundary = text.indexOf('The current lesson context follows.');
       if (!explicitTurn && boundary >= 0) {
         initialization.push({ ...message, content: text.slice(0, boundary).trimEnd() });
         turnInstructions.push(text.slice(boundary));
-      } else turnInstructions.push(explicitTurn ? text.slice(TURN_INSTRUCTIONS_MARKER.length).trim() : text);
+      } else
+        turnInstructions.push(
+          explicitTurn ? text.slice(TURN_INSTRUCTIONS_MARKER.length).trim() : text,
+        );
     } else initialization.push(message);
   }
   return { initialization, conversation, turnInstructions };
@@ -45,13 +65,24 @@ export const STYLE_REMINDER = `[Server style defaults for this reply: override a
 /** Variable recall and teaching state live at the current user-turn tail,
  * never rewrite the frozen system prefix or split an assistant/tool group.
  * The server policy's untrusted-data rule still governs retrieved evidence. */
-export function appendTurnContext(messages: ProviderMessage[], instructions: string[], recall: string | null, serverTurn: string | null = null): ProviderMessage[] {
+export function appendTurnContext(
+  messages: ProviderMessage[],
+  instructions: string[],
+  recall: string | null,
+  serverTurn: string | null = null,
+): ProviderMessage[] {
   const blocks = [
     /* Server-owned turn behavior (RN-6 learning modes) leads, so the
        client-supplied lesson context below is read as subordinate to it. */
     ...(serverTurn ? [serverTurn] : []),
-    ...(instructions.length ? [`[Current turn instructions: client-supplied; subject to server policy]\n${instructions.join('\n\n')}`] : []),
-    ...(recall ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`] : []),
+    ...(instructions.length
+      ? [
+          `[Current turn instructions: client-supplied; subject to server policy]\n${instructions.join('\n\n')}`,
+        ]
+      : []),
+    ...(recall
+      ? [`<client_context_data scope="untrusted">\n${recall}\n</client_context_data>`]
+      : []),
     /* The style card goes last: closest to generation, highest recency. */
     STYLE_REMINDER,
   ];

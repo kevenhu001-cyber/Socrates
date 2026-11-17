@@ -7,8 +7,11 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 let noteSaveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function saveCurrentSessionSafely(): void {
-  try { saveCurrentSession(); }
-  catch (error) { reportSwallow(error, 'ui/knowledgePanelCommands.saveCurrentSession'); }
+  try {
+    saveCurrentSession();
+  } catch (error) {
+    reportSwallow(error, 'ui/knowledgePanelCommands.saveCurrentSession');
+  }
 }
 
 function scheduleCurrentSessionSave(): void {
@@ -40,8 +43,8 @@ export function saveKnowledgeBoundarySnapshot(): void {
   const { kbNodes, boundariesHistory } = kbStore.getState();
   const counts = { internalized: 0, fuzzy: 0, blank: 0 };
   kbNodes.forEach((node) => {
-    const status = node.status === 'internalized' ? 'internalized'
-      : node.status === 'fuzzy' ? 'fuzzy' : 'blank';
+    const status =
+      node.status === 'internalized' ? 'internalized' : node.status === 'fuzzy' ? 'fuzzy' : 'blank';
     counts[status] += 1;
   });
 

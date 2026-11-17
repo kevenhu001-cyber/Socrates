@@ -69,11 +69,15 @@ export function toolInputPreview(name: string, input: JsonValue | undefined): st
       return field(record, 'url');
     case 'create_document': {
       const content = record.content;
-      return content && typeof content === 'object' && !Array.isArray(content) ? field(content, 'title') : '';
+      return content && typeof content === 'object' && !Array.isArray(content)
+        ? field(content, 'title')
+        : '';
     }
     case 'code_interpreter': {
       const code = field(record, 'code');
-      return [field(record, 'language') || 'python', (code.split('\n')[0] || '').slice(0, 80)].filter(Boolean).join(' · ');
+      return [field(record, 'language') || 'python', (code.split('\n')[0] || '').slice(0, 80)]
+        .filter(Boolean)
+        .join(' · ');
     }
     case 'workspace_agent':
       return field(record, 'task');
@@ -87,7 +91,8 @@ export function toolInputPreview(name: string, input: JsonValue | undefined): st
 export function toolState(tool: ToolCall): ToolState {
   if (tool.isError === true) return 'failed';
   const phase = String(tool.progressPhase || '').toLowerCase();
-  if (['failed', 'error', 'cancelled', 'stopped', 'aborted', 'timeout'].includes(phase)) return 'failed';
+  if (['failed', 'error', 'cancelled', 'stopped', 'aborted', 'timeout'].includes(phase))
+    return 'failed';
   if (phase && !['completed', 'succeeded', 'done', 'success'].includes(phase)) return 'running';
   return tool.output != null || phase ? 'completed' : 'running';
 }
@@ -103,7 +108,11 @@ export function toolDurationLabel(durationMs: number | null | undefined): string
 
 function hostOf(url: string | null): string {
   if (!url) return '';
-  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
 }
 
 /** Normalized search/fetch result rows; entries without a url or title are
@@ -149,9 +158,12 @@ export function toolArtifacts(tool: ToolCall): ToolArtifactRef[] {
   if (!Array.isArray(tool.artifacts)) return [];
   const out: ToolArtifactRef[] = [];
   for (const raw of tool.artifacts) {
-    const record: Record<string, JsonValue> | null = typeof raw === 'string'
-      ? { id: raw }
-      : (raw && typeof raw === 'object' ? raw as Record<string, JsonValue> : null);
+    const record: Record<string, JsonValue> | null =
+      typeof raw === 'string'
+        ? { id: raw }
+        : raw && typeof raw === 'object'
+          ? (raw as Record<string, JsonValue>)
+          : null;
     if (!record) continue;
     const id = field(record, 'id');
     if (!id) continue;
@@ -179,5 +191,9 @@ export function toolFailureText(tool: ToolCall): string {
 export function toolInputText(tool: ToolCall): string {
   if (tool.argumentsText) return tool.argumentsText;
   if (tool.input === undefined || tool.input === null) return '';
-  try { return JSON.stringify(tool.input, null, 2); } catch { return ''; }
+  try {
+    return JSON.stringify(tool.input, null, 2);
+  } catch {
+    return '';
+  }
 }

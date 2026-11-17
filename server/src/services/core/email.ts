@@ -1,5 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
-import { sanitizeLogValue } from '../../lib/log.js';
+import { sanitizeLogValue } from '../../lib/logRedaction.js';
 
 // NOTE: must start as `undefined` (not null) — the memoization guard
 // below is `transporter !== undefined`, so initialising to null would
@@ -20,7 +20,9 @@ function getTransporter() {
     // Surface a startup-time error instead; developers must configure
     // real SMTP. In dev, allow the fallback but mask the body.
     if (process.env.NODE_ENV === 'production') {
-      console.error('[email] FATAL: SMTP not configured in production. Set SMTP_HOST/SMTP_USER/SMTP_PASS and restart.');
+      console.error(
+        '[email] FATAL: SMTP not configured in production. Set SMTP_HOST/SMTP_USER/SMTP_PASS and restart.',
+      );
       transporter = false;
       return false;
     }
@@ -43,7 +45,12 @@ function getTransporter() {
  * Send an email. Production requires SMTP — fails fast if missing.
  * Dev mode logs a masked preview (first 40 chars of subject, body truncated).
  */
-export async function sendEmail({ to, subject, text, html }: {
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
   to: string;
   subject: string;
   text?: string;
@@ -56,8 +63,10 @@ export async function sendEmail({ to, subject, text, html }: {
     }
     // Dev-only masked log; never print the full body or token.
     const subjMask = (subject || '').slice(0, 40);
-    const bodyMask = ((text || html || '').replace(/\s+/g, ' ').slice(0, 80) + '…');
-    console.log(`[email:dev] masked preview — to: ${sanitizeLogValue(to, 200)}, subj: ${sanitizeLogValue(subjMask, 40)}, body: ${sanitizeLogValue(bodyMask, 80)}`);
+    const bodyMask = (text || html || '').replace(/\s+/g, ' ').slice(0, 80) + '…';
+    console.log(
+      `[email:dev] masked preview — to: ${sanitizeLogValue(to, 200)}, subj: ${sanitizeLogValue(subjMask, 40)}, body: ${sanitizeLogValue(bodyMask, 80)}`,
+    );
     return;
   }
   try {
@@ -376,11 +385,11 @@ export async function sendDuplicateRegistrationEmail(email: string) {
       'The address is already on file, so no account was created.',
       "If this was you trying to sign back in, use the sign-in screen or request a password reset. If it wasn't you, you can safely ignore this email — your account is still secure.",
     ]),
-      html: shell({
-        preheader: 'A registration was attempted with your email address.',
-        title: 'New registration attempt on your Socrates account',
-        body,
-      }),
+    html: shell({
+      preheader: 'A registration was attempted with your email address.',
+      title: 'New registration attempt on your Socrates account',
+      body,
+    }),
   });
 }
 
@@ -438,9 +447,9 @@ export async function sendStatusSubscriptionEmail(email: string, confirmUrl: str
  * is the short label beside the state dot. Colors mirror the status
  * page dots (--down / --warn / --ok). */
 const INCIDENT_STATES: Record<string, { headline: string; badge: string; color: string }> = {
-  down: { headline: 'is down',       badge: 'Service disruption',   color: '#ef4444' },
-  warn: { headline: 'is degraded',   badge: 'Degraded performance', color: '#f59e0b' },
-  ok:   { headline: 'has recovered', badge: 'Back to operational',  color: '#22c55e' },
+  down: { headline: 'is down', badge: 'Service disruption', color: '#ef4444' },
+  warn: { headline: 'is degraded', badge: 'Degraded performance', color: '#f59e0b' },
+  ok: { headline: 'has recovered', badge: 'Back to operational', color: '#22c55e' },
 };
 const STATE_NOUNS: Record<string, string> = { ok: 'operational', warn: 'degraded', down: 'down' };
 
@@ -451,22 +460,29 @@ const STATE_NOUNS: Record<string, string> = { ok: 'operational', warn: 'degraded
  * disruptions, degradations, and recoveries — matching what the
  * subscription confirmation email promises.
  */
-export async function sendStatusIncidentEmail(email: string, opts: {
-  component: string;
-  from: string | null;
-  to: string;
-  statusUrl: string;
-}) {
-  const meta = INCIDENT_STATES[opts.to]
-    || { headline: `changed to ${opts.to}`, badge: 'Status update', color: '#999999' };
+export async function sendStatusIncidentEmail(
+  email: string,
+  opts: {
+    component: string;
+    from: string | null;
+    to: string;
+    statusUrl: string;
+  },
+) {
+  const meta = INCIDENT_STATES[opts.to] || {
+    headline: `changed to ${opts.to}`,
+    badge: 'Status update',
+    color: '#999999',
+  };
   const component = escapeHtml(opts.component);
   const fromNoun = (opts.from && STATE_NOUNS[opts.from]) || opts.from || 'unknown';
   const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
   const host = opts.statusUrl.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 
-  const lead = opts.to === 'ok'
-    ? `${component} is operational again as of ${stamp} (previously ${escapeHtml(fromNoun)}). The full incident timeline is on the status page.`
-    : `${component} was flagged ${escapeHtml(STATE_NOUNS[opts.to] || opts.to)} at ${stamp} (previously ${escapeHtml(fromNoun)}). We're tracking it — live updates are on the status page.`;
+  const lead =
+    opts.to === 'ok'
+      ? `${component} is operational again as of ${stamp} (previously ${escapeHtml(fromNoun)}). The full incident timeline is on the status page.`
+      : `${component} was flagged ${escapeHtml(STATE_NOUNS[opts.to] || opts.to)} at ${stamp} (previously ${escapeHtml(fromNoun)}). We're tracking it — live updates are on the status page.`;
 
   const body = `
     <h1 style="margin:0 0 12px;font-family:'Inter',-apple-system,sans-serif;font-size:26px;font-weight:600;color:#080808;line-height:1.25;letter-spacing:-0.02em">
@@ -507,7 +523,12 @@ export async function sendStatusIncidentEmail(email: string, opts: {
  * discipline but carries the Topodrive Status wordmark and links back
  * to the status page rather than the app. Palette matches the
  * Socrates shell exactly. */
-function statusShell({ preheader, title, wordmark, body }: {
+function statusShell({
+  preheader,
+  title,
+  wordmark,
+  body,
+}: {
   preheader?: string;
   title: string;
   wordmark: string;

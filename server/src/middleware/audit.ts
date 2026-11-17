@@ -19,7 +19,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { getDb } from '../db/index.js';
 import { auditEvents } from '../db/schema/index.js';
-import { safeUrl, sanitizeLogValue } from '../lib/log.js';
+import { safeUrl, sanitizeLogValue } from '../lib/logRedaction.js';
 
 /**
  * Create an audit-logging middleware for a specific action.
@@ -55,7 +55,7 @@ export function audit(
         const email = detail.email ? sanitizeLogValue(detail.email, 200) : '-';
         console.warn(
           `[audit] ${action}_failed status=${res.statusCode} ip=${sanitizeLogValue(req.ip, 64)} ` +
-          `email=${email} path=${sanitizeLogValue(path, 400)} ua="${ua}"`
+            `email=${email} path=${sanitizeLogValue(path, 400)} ua="${ua}"`,
         );
         return;
       }
@@ -68,15 +68,17 @@ export function audit(
         // Strip tokens from the recorded URL — share / password-reset
         // tokens end up in `req.originalUrl` and would otherwise
         // give anyone with DB access a long-lived credential.
-        db.insert(auditEvents).values({
-          userId: req.userId,
-          action,
-          detail: { ...detail, method: req.method, path: safeUrl(req.originalUrl) },
-          ip: req.ip ?? null,
-          userAgent: (req.headers['user-agent'] || '').slice(0, 500),
-        }).catch((err) => {
-          console.warn('[audit] insert failed:', err.message);
-        });
+        db.insert(auditEvents)
+          .values({
+            userId: req.userId,
+            action,
+            detail: { ...detail, method: req.method, path: safeUrl(req.originalUrl) },
+            ip: req.ip ?? null,
+            userAgent: (req.headers['user-agent'] || '').slice(0, 500),
+          })
+          .catch((err) => {
+            console.warn('[audit] insert failed:', err.message);
+          });
       } catch (err) {
         console.warn('[audit] setup failed:', (err as Error).message);
       }

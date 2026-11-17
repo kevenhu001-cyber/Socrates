@@ -1,4 +1,4 @@
-import type { VendorGlobals } from "../types/vendorRuntime.ts";
+import type { VendorGlobals } from '../types/vendorRuntime.ts';
 
 /* P_perf-self-host — heavy renderers (mermaid / echarts / plotly) are
    committed as verbatim UMD files under src/vendor-files/ and injected
@@ -27,7 +27,11 @@ const katexReadyListeners = new Set<() => void>();
 let katexCssLoaded = false;
 let katexCssAttempts = 0;
 
-function loadScriptOnce<K extends keyof VendorGlobals>(key: string, url: string, globalName: K): Promise<VendorGlobals[K]> {
+function loadScriptOnce<K extends keyof VendorGlobals>(
+  key: string,
+  url: string,
+  globalName: K,
+): Promise<VendorGlobals[K]> {
   if (w && w[globalName]) return Promise.resolve(w[globalName]);
   if (inflight.has(key)) return inflight.get(key) as Promise<VendorGlobals[K]>;
   const promise = new Promise<VendorGlobals[K]>((resolve, reject) => {
@@ -77,7 +81,9 @@ function loadScriptOnce<K extends keyof VendorGlobals>(key: string, url: string,
   /* A rejected loader must not poison the cache for the rest of the page
      session. Drop the entry so a later call can retry (and, for KaTeX,
      the pending onKatexReady listeners fire once a retry succeeds). */
-  promise.catch(() => { if (inflight.get(key) === promise) inflight.delete(key); });
+  promise.catch(() => {
+    if (inflight.get(key) === promise) inflight.delete(key);
+  });
   inflight.set(key, promise);
   return promise;
 }
@@ -109,7 +115,9 @@ export function ensureFuse() {
       if (w) w.Fuse = Fuse;
       return Fuse;
     });
-    promise.catch(() => { if (inflight.get('fuse') === promise) inflight.delete('fuse'); });
+    promise.catch(() => {
+      if (inflight.get('fuse') === promise) inflight.delete('fuse');
+    });
     inflight.set('fuse', promise);
   }
   return inflight.get('fuse') as Promise<VendorGlobals['Fuse']>;
@@ -122,13 +130,21 @@ export function ensureKatex() {
       ensureKatexCss();
       const pending = Array.from(katexReadyListeners);
       katexReadyListeners.clear();
-      pending.forEach((cb) => { try { cb(); } catch (_) { /* empty-catch: intentional — subscriber callback errors must not break caller */ } });
+      pending.forEach((cb) => {
+        try {
+          cb();
+        } catch (_) {
+          /* empty-catch: intentional — subscriber callback errors must not break caller */
+        }
+      });
       return katex;
     });
     /* A rejected loader must not poison the cache for the rest of the page
        session. Drop the entry so a later call can retry (and the pending
        onKatexReady listeners fire once a retry succeeds). */
-    promise.catch(() => { if (inflight.get('katex') === promise) inflight.delete('katex'); });
+    promise.catch(() => {
+      if (inflight.get('katex') === promise) inflight.delete('katex');
+    });
     inflight.set('katex', promise);
   }
   return inflight.get('katex') as Promise<VendorGlobals['katex']>;
@@ -159,9 +175,17 @@ function ensureKatexCss() {
 
 export function onKatexReady(callback: () => void) {
   if (w && w.katex) {
-    try { callback(); } catch (_) { /* empty-catch: intentional — subscriber callback errors must not break caller */ }
-    return () => { /* noop */ };
+    try {
+      callback();
+    } catch (_) {
+      /* empty-catch: intentional — subscriber callback errors must not break caller */
+    }
+    return () => {
+      /* noop */
+    };
   }
   katexReadyListeners.add(callback);
-  return () => { katexReadyListeners.delete(callback); };
+  return () => {
+    katexReadyListeners.delete(callback);
+  };
 }

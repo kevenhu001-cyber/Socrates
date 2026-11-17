@@ -24,7 +24,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 export const MMX_CONFLICTING_ENV_PREFIXES = [
-  /^MINIMAX/i,                              // legacy server HTTP key/BASE_URL
+  /^MINIMAX/i, // legacy server HTTP key/BASE_URL
 ];
 
 const DEFAULT_EXTRA_PATHS = [
@@ -42,7 +42,10 @@ const DEFAULT_TIMEOUT_MS = 8_000;
  */
 export function buildSpawnEnv(extra: Record<string, string> = {}) {
   const sep = process.platform === 'win32' ? ';' : ':';
-  const env: Record<string, string> = { ...process.env, ...extra, MMX_QUIET: '1' } as Record<string, string>;
+  const env: Record<string, string> = { ...process.env, ...extra, MMX_QUIET: '1' } as Record<
+    string,
+    string
+  >;
   for (const k of Object.keys(env)) {
     if (MMX_CONFLICTING_ENV_PREFIXES.some((rx) => rx.test(k))) delete env[k];
   }
@@ -62,9 +65,7 @@ let mmxAvailable: boolean | null = null;
 export function isMmxCliAvailable(): boolean {
   if (mmxAvailable !== null) return mmxAvailable;
   const sep = process.platform === 'win32' ? ';' : ':';
-  const names = process.platform === 'win32'
-    ? ['mmx.cmd', 'mmx.exe', 'mmx']
-    : ['mmx'];
+  const names = process.platform === 'win32' ? ['mmx.cmd', 'mmx.exe', 'mmx'] : ['mmx'];
   const dirs = (buildSpawnEnv().PATH || '').split(sep);
   for (const dir of dirs) {
     if (!dir) continue;
@@ -73,11 +74,15 @@ export function isMmxCliAvailable(): boolean {
         fs.accessSync(path.join(dir, name), fs.constants.X_OK);
         mmxAvailable = true;
         return true;
-      } catch { /* not in this directory */ }
+      } catch {
+        /* not in this directory */
+      }
     }
   }
   mmxAvailable = false;
-  console.warn('[spawnMmx] mmx CLI not found on PATH — mmx-backed search/vision is disabled until it is installed and the server restarted');
+  console.warn(
+    '[spawnMmx] mmx CLI not found on PATH — mmx-backed search/vision is disabled until it is installed and the server restarted',
+  );
   return false;
 }
 
@@ -112,14 +117,25 @@ export function runMmx(
 
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (d) => { stdout += d.toString('utf8'); });
-    proc.stderr.on('data', (d) => { stderr += d.toString('utf8'); });
+    proc.stdout.on('data', (d) => {
+      stdout += d.toString('utf8');
+    });
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString('utf8');
+    });
 
     const timer = setTimeout(() => {
-      try { proc.kill('SIGTERM'); } catch (err) { /* process already exited */ }
+      try {
+        proc.kill('SIGTERM');
+      } catch (err) {
+        /* process already exited */
+      }
     }, timeoutMs);
 
-    proc.on('error', (e) => { clearTimeout(timer); reject(e); });
+    proc.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
     proc.on('close', (code) => {
       clearTimeout(timer);
       if (code !== 0) {

@@ -16,14 +16,35 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
       <View
         role="status"
         aria-live="polite"
-        style={{ flex: 1, width: '100%', maxWidth: 560, alignSelf: 'center', justifyContent: 'center', alignItems: 'center', gap: S[100], paddingVertical: S[500] }}
+        style={{
+          flex: 1,
+          width: '100%',
+          maxWidth: 560,
+          alignSelf: 'center',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: S[100],
+          paddingVertical: S[500],
+        }}
       >
         <UiText variant="titleSm">{screen.message}</UiText>
-        <View style={{ width: '100%', height: 3, borderRadius: R.pill, backgroundColor: colors.subtle, overflow: 'hidden' }}>
+        <View
+          style={{
+            width: '100%',
+            height: 3,
+            borderRadius: R.pill,
+            backgroundColor: colors.subtle,
+            overflow: 'hidden',
+          }}
+        >
           <View style={{ width: `${percent}%`, height: '100%', backgroundColor: colors.ink }} />
         </View>
-        <UiText variant="bodySm" tone="secondary">{screen.step}</UiText>
-        <UiText variant="bodySm" tone="tertiary">{screen.subtitle}</UiText>
+        <UiText variant="bodySm" tone="secondary">
+          {screen.step}
+        </UiText>
+        <UiText variant="bodySm" tone="tertiary">
+          {screen.subtitle}
+        </UiText>
       </View>
     );
   }
@@ -44,7 +65,11 @@ export function ExamStatus({ screen }: { screen: StatusScreen }) {
       }}
     >
       <UiText variant="titleSm">{screen.message}</UiText>
-      {screen.detail ? <UiText variant="bodySm" tone="secondary">{screen.detail}</UiText> : null}
+      {screen.detail ? (
+        <UiText variant="bodySm" tone="secondary">
+          {screen.detail}
+        </UiText>
+      ) : null}
     </View>
   );
 }

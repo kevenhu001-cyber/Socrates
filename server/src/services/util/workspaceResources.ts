@@ -23,7 +23,12 @@ export const WORKSPACE_LIMIT_BOUNDS = {
   maxDiskMb: 8192,
 } as const;
 
-function resolveDefault(raw: string | undefined, fallback: number, min: number, max: number): number {
+function resolveDefault(
+  raw: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
   const value = Number(raw);
   if (!Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, Math.trunc(value)));
@@ -50,15 +55,23 @@ export interface WorkspaceLimits {
 }
 
 /** Clamp model-supplied limits into the supported range. */
-export function normalizeWorkspaceLimits(raw: { maxMemoryMb?: unknown; maxDiskMb?: unknown } = {}): WorkspaceLimits {
+export function normalizeWorkspaceLimits(
+  raw: { maxMemoryMb?: unknown; maxDiskMb?: unknown } = {},
+): WorkspaceLimits {
   const memory = Number(raw.maxMemoryMb);
   const disk = Number(raw.maxDiskMb);
   return {
     maxMemoryMb: Number.isFinite(memory)
-      ? Math.min(WORKSPACE_LIMIT_BOUNDS.maxMemoryMb, Math.max(WORKSPACE_LIMIT_BOUNDS.minMemoryMb, Math.trunc(memory)))
+      ? Math.min(
+          WORKSPACE_LIMIT_BOUNDS.maxMemoryMb,
+          Math.max(WORKSPACE_LIMIT_BOUNDS.minMemoryMb, Math.trunc(memory)),
+        )
       : WORKSPACE_LIMIT_DEFAULTS.maxMemoryMb,
     maxDiskMb: Number.isFinite(disk)
-      ? Math.min(WORKSPACE_LIMIT_BOUNDS.maxDiskMb, Math.max(WORKSPACE_LIMIT_BOUNDS.minDiskMb, Math.trunc(disk)))
+      ? Math.min(
+          WORKSPACE_LIMIT_BOUNDS.maxDiskMb,
+          Math.max(WORKSPACE_LIMIT_BOUNDS.minDiskMb, Math.trunc(disk)),
+        )
       : WORKSPACE_LIMIT_DEFAULTS.maxDiskMb,
   };
 }
@@ -126,9 +139,16 @@ export function workspaceResourceSnapshot(dir: string, policy: unknown): Workspa
 }
 
 /** Pre-run storage gate: refuse to start an agent turn over the cap. */
-export function assertWorkspaceDiskWithinLimit(dir: string, policy: unknown): { ok: boolean; usageBytes: number; maxBytes: number } {
+export function assertWorkspaceDiskWithinLimit(
+  dir: string,
+  policy: unknown,
+): { ok: boolean; usageBytes: number; maxBytes: number } {
   const snapshot = workspaceResourceSnapshot(dir, policy);
-  return { ok: !snapshot.overDisk, usageBytes: snapshot.diskBytes, maxBytes: snapshot.diskLimitBytes };
+  return {
+    ok: !snapshot.overDisk,
+    usageBytes: snapshot.diskBytes,
+    maxBytes: snapshot.diskLimitBytes,
+  };
 }
 
 export { MB as WORKSPACE_MEGABYTE };

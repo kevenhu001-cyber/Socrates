@@ -8,32 +8,38 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { fireFeedback, messageApiPath, sendFeedback } = await import(
-  '../src/ui/messageActions.ts'
-);
-const { stateStore } = await import('../src/state/store.ts');
+const { fireFeedback, messageApiPath, sendFeedback } = await import('../src/ui/messageActions.ts');
+const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
 
 test('messageApiPath leaves client ids unscoped without a uuid session', () => {
-  const previousSession = stateStore.read('currentSessionId');
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'local-1' });
+  const previousSession = sessionStore.getState().currentSessionId;
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: 'local-1' });
   try {
     assert.equal(messageApiPath('msg-1', '/feedback'), '/api/messages/msg-1/feedback');
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: previousSession ?? null });
+    dispatchSession({
+      type: 'session/set',
+      key: 'currentSessionId',
+      value: previousSession ?? null,
+    });
   }
 });
 
 test('messageApiPath scopes client ids to a uuid session', () => {
-  const previousSession = stateStore.read('currentSessionId');
+  const previousSession = sessionStore.getState().currentSessionId;
   const uuid = '12345678-1234-1234-1234-1234567890ab';
-  stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: uuid });
+  dispatchSession({ type: 'session/set', key: 'currentSessionId', value: uuid });
   try {
     assert.equal(
       messageApiPath('msg-1'),
       '/api/messages/msg-1?sessionId=' + encodeURIComponent(uuid),
     );
   } finally {
-    stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: previousSession ?? null });
+    dispatchSession({
+      type: 'session/set',
+      key: 'currentSessionId',
+      value: previousSession ?? null,
+    });
   }
 });
 

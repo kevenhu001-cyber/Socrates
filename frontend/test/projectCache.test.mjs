@@ -11,11 +11,7 @@ const {
 
 test('project cache normalizes typed data and ignores invalid records', () => {
   assert.equal(hasCachedProjects(), false);
-  setCachedProjects([
-    { id: 'project-1', name: 'Algebra' },
-    { id: 'project-2', name: 12 },
-    null,
-  ]);
+  setCachedProjects([{ id: 'project-1', name: 'Algebra' }, { id: 'project-2', name: 12 }, null]);
 
   assert.deepEqual(getCachedProjects(), [{ id: 'project-1', name: 'Algebra' }]);
   assert.equal(hasCachedProjects(), true);
@@ -24,15 +20,21 @@ test('project cache normalizes typed data and ignores invalid records', () => {
 test('project cache notifies subscribers and shares an in-flight initial request', async () => {
   setCachedProjects(undefined);
   let notifications = 0;
-  const unsubscribe = subscribeToProjectCache(() => { notifications += 1; });
+  const unsubscribe = subscribeToProjectCache(() => {
+    notifications += 1;
+  });
   let finishRequest;
   let requestCount = 0;
   let signalRequestStarted;
-  const requestStarted = new Promise((resolve) => { signalRequestStarted = resolve; });
+  const requestStarted = new Promise((resolve) => {
+    signalRequestStarted = resolve;
+  });
   const fetcher = () => {
     requestCount += 1;
     signalRequestStarted();
-    return new Promise((resolve) => { finishRequest = resolve; });
+    return new Promise((resolve) => {
+      finishRequest = resolve;
+    });
   };
 
   const first = loadCachedProjects(fetcher);
@@ -50,7 +52,12 @@ test('project cache notifies subscribers and shares an in-flight initial request
 test('a response started before a local project write cannot overwrite the newer cache', async () => {
   setCachedProjects(undefined);
   let finishRequest;
-  const request = loadCachedProjects(() => new Promise((resolve) => { finishRequest = resolve; }));
+  const request = loadCachedProjects(
+    () =>
+      new Promise((resolve) => {
+        finishRequest = resolve;
+      }),
+  );
   await new Promise((resolve) => setImmediate(resolve));
   setCachedProjects([{ id: 'project-local', name: 'Created locally' }]);
 

@@ -8,15 +8,21 @@ export function normalizePublicTurnActivity(value: unknown): PublicTurnActivity 
   if (!value || typeof value !== 'object') return null;
   const activity = value as Record<string, unknown>;
   switch (activity.type) {
-    case 'thinking': case 'synthesizing': return { type: activity.type };
+    case 'thinking':
+    case 'synthesizing':
+      return { type: activity.type };
     case 'tool':
       return typeof activity.toolCallId === 'string' && typeof activity.toolName === 'string'
-        ? { type: 'tool', toolCallId: activity.toolCallId, toolName: activity.toolName } : null;
+        ? { type: 'tool', toolCallId: activity.toolCallId, toolName: activity.toolName }
+        : null;
     case 'public_reasoning_summary':
       return typeof activity.text === 'string' && activity.text.trim()
-        ? { type: 'public_reasoning_summary', text: activity.text.trim().slice(0, 500) } : null;
-    case 'done': return { type: 'done', durationMs: validDuration(activity.durationMs) };
-    default: return null;
+        ? { type: 'public_reasoning_summary', text: activity.text.trim().slice(0, 500) }
+        : null;
+    case 'done':
+      return { type: 'done', durationMs: validDuration(activity.durationMs) };
+    default:
+      return null;
   }
 }
 
@@ -38,10 +44,7 @@ interface PresentationOptions {
  */
 function hasVisibleAnswerText(message: ChatMessage): boolean {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
-  return rawText
-    .replace(/<think\b[^>]*>[\s\S]*?(?:<\/think>|$)/gi, '')
-    .trim()
-    .length > 0;
+  return rawText.replace(/<think\b[^>]*>[\s\S]*?(?:<\/think>|$)/gi, '').trim().length > 0;
 }
 
 /** A startup activity signal is not evidence that the provider is reasoning. */
@@ -57,36 +60,56 @@ function observedThinkingStatus(message: ChatMessage): LiveTurnStatus {
   const phase = hasVisibleAnswerText(message) || reasoningHasStarted ? 'thinking' : 'waiting';
   return {
     phase,
-    label: phase === 'thinking'
-      ? translate('think.thinking', 'Thinking…')
-      : translate('think.waitingForResponse', 'Waiting for the response.'),
+    label:
+      phase === 'thinking'
+        ? translate('think.thinking', 'Thinking…')
+        : translate('think.waitingForResponse', 'Waiting for the response.'),
     elapsedSec: legacy?.phase === phase ? legacy.elapsedSec : undefined,
   };
 }
 
-function observedToolStatus(message: ChatMessage, activity: Extract<PublicTurnActivity, { type: 'tool' }>): LiveTurnStatus | undefined {
+function observedToolStatus(
+  message: ChatMessage,
+  activity: Extract<PublicTurnActivity, { type: 'tool' }>,
+): LiveTurnStatus | undefined {
   const call = message.toolCalls?.find((entry) => entry.id === activity.toolCallId);
   if (call && !['running', 'awaiting'].includes(toolRunStateOf(call))) return undefined;
   const legacy = message._liveStatus;
-  const label = legacy?.phase === 'tool-running'
-    ? legacy.label
-    : toolRunLabel({ name: activity.toolName }, 'running').text;
+  const label =
+    legacy?.phase === 'tool-running'
+      ? legacy.label
+      : toolRunLabel({ name: activity.toolName }, 'running').text;
   return { phase: 'tool-running', toolName: activity.toolName, label };
 }
 
-function observedStatus(message: ChatMessage, activity: PublicTurnActivity): LiveTurnStatus | undefined {
+function observedStatus(
+  message: ChatMessage,
+  activity: PublicTurnActivity,
+): LiveTurnStatus | undefined {
   switch (activity.type) {
-    case 'thinking': return observedThinkingStatus(message);
+    case 'thinking':
+      return observedThinkingStatus(message);
     case 'public_reasoning_summary':
-      return hasVisibleAnswerText(message) ? undefined : { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
+      return hasVisibleAnswerText(message)
+        ? undefined
+        : { phase: 'thinking', label: translate('think.thinking', 'Thinking…') };
     case 'synthesizing':
-      return hasVisibleAnswerText(message) ? undefined : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
-    case 'tool': return observedToolStatus(message, activity);
-    case 'done': return undefined;
+      return hasVisibleAnswerText(message)
+        ? undefined
+        : { phase: 'synthesizing', label: translate('think.synthesizing', 'Preparing the answer') };
+    case 'tool':
+      return observedToolStatus(message, activity);
+    case 'done':
+      return undefined;
   }
 }
 
-function selectedStatus(message: ChatMessage, activity: PublicTurnActivity | null, live: boolean, options: PresentationOptions): LiveTurnStatus | undefined {
+function selectedStatus(
+  message: ChatMessage,
+  activity: PublicTurnActivity | null,
+  live: boolean,
+  options: PresentationOptions,
+): LiveTurnStatus | undefined {
   const legacy = message._liveStatus || undefined;
   if (legacy?.phase === 'error' || legacy?.phase === 'stopped') return legacy;
   if (live && legacy?.phase === 'retrying') return legacy;
@@ -95,10 +118,16 @@ function selectedStatus(message: ChatMessage, activity: PublicTurnActivity | nul
   return legacy?.phase === 'tool-running' && options.hasSettledTool ? undefined : legacy;
 }
 
-function reasoningSummaryState(activities: NonNullable<ChatMessage['turnRuntime']>['activities'], activity: PublicTurnActivity | null) {
-  const reasoningSummaries = activities.filter((entry) => entry.kind === 'reasoning_summary' && entry.text?.trim());
-  const publicSummary = reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim()
-    || (activity?.type === 'public_reasoning_summary' ? activity.text : '');
+function reasoningSummaryState(
+  activities: NonNullable<ChatMessage['turnRuntime']>['activities'],
+  activity: PublicTurnActivity | null,
+) {
+  const reasoningSummaries = activities.filter(
+    (entry) => entry.kind === 'reasoning_summary' && entry.text?.trim(),
+  );
+  const publicSummary =
+    reasoningSummaries[reasoningSummaries.length - 1]?.text?.trim() ||
+    (activity?.type === 'public_reasoning_summary' ? activity.text : '');
   return { reasoningSummaries, publicSummary };
 }
 
@@ -107,7 +136,10 @@ function reasoningDurationSeconds(
   fallback: number | null | undefined,
 ): number | undefined {
   const ranges = activities
-    .filter((entry) => ['reasoning', 'reasoning_summary'].includes(entry.kind) && entry.endedAt !== undefined)
+    .filter(
+      (entry) =>
+        ['reasoning', 'reasoning_summary'].includes(entry.kind) && entry.endedAt !== undefined,
+    )
     .map((entry) => [entry.startedAt, entry.endedAt!] as const)
     .sort((a, b) => a[0] - b[0]);
   let durationMs = 0;
@@ -116,10 +148,18 @@ function reasoningDurationSeconds(
     durationMs += Math.max(0, finish - Math.max(end, start));
     end = Math.max(end, finish);
   }
-  return durationMs > 0 ? durationMs / 1000 : typeof fallback === 'number' && fallback > 0 ? fallback : undefined;
+  return durationMs > 0
+    ? durationMs / 1000
+    : typeof fallback === 'number' && fallback > 0
+      ? fallback
+      : undefined;
 }
 
-function activityStatusFor(status: LiveTurnStatus | undefined, live: boolean, options: PresentationOptions): LiveTurnStatus | undefined {
+function activityStatusFor(
+  status: LiveTurnStatus | undefined,
+  live: boolean,
+  options: PresentationOptions,
+): LiveTurnStatus | undefined {
   if (status?.phase === 'error' || status?.phase === 'stopped') return undefined;
   if (status) return status;
   if (!live || !options.activeTool) return undefined;
@@ -130,7 +170,10 @@ function activityStatusFor(status: LiveTurnStatus | undefined, live: boolean, op
   };
 }
 
-function activityLabelFor(status: LiveTurnStatus | undefined, intentSummary: string): string | undefined {
+function activityLabelFor(
+  status: LiveTurnStatus | undefined,
+  intentSummary: string,
+): string | undefined {
   return status?.phase === 'waiting' && intentSummary ? intentSummary : status?.label;
 }
 
@@ -138,7 +181,10 @@ function activityLabelFor(status: LiveTurnStatus | undefined, intentSummary: str
  * A mounted running tool owns activity; a deferred tool retains its status.
  * Transport completion is distinct from playback completion: a done event
  * cannot mount actions while the final text is still draining. */
-export function deriveTurnPresentationState(message: ChatMessage, options: PresentationOptions = {}) {
+export function deriveTurnPresentationState(
+  message: ChatMessage,
+  options: PresentationOptions = {},
+) {
   const live = options.live ?? (message.type === 'streaming' && message._streamSettled !== true);
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);

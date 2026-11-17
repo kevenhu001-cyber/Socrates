@@ -94,16 +94,15 @@ export interface ToolTurnPolicy {
 }
 
 export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolTurnPolicy {
-  const maxIterations = options.maxIterations
-    ?? envInt('CHAT_MAX_TOOL_ITERATIONS', 12, 1, 40);
-  const maxCallsPerIteration = options.maxCallsPerIteration
-    ?? envInt('CHAT_MAX_TOOL_CALLS_PER_TURN', 8, 1, 16);
-  const maxTotalCalls = options.maxTotalCalls
-    ?? envInt('CHAT_MAX_TOOL_CALLS_TOTAL', 24, 1, 200);
-  const perToolFailureLimit = options.perToolFailureLimit
-    ?? envInt('CHAT_TOOL_FAILURE_LIMIT', DEFAULT_PER_TOOL_FAILURE_LIMIT, 1, 10);
-  const wallClockMs = options.wallClockMs
-    ?? envInt('CHAT_TOOL_WALL_CLOCK_MS', 15 * 60_000, 30_000, 60 * 60_000);
+  const maxIterations = options.maxIterations ?? envInt('CHAT_MAX_TOOL_ITERATIONS', 12, 1, 40);
+  const maxCallsPerIteration =
+    options.maxCallsPerIteration ?? envInt('CHAT_MAX_TOOL_CALLS_PER_TURN', 8, 1, 16);
+  const maxTotalCalls = options.maxTotalCalls ?? envInt('CHAT_MAX_TOOL_CALLS_TOTAL', 24, 1, 200);
+  const perToolFailureLimit =
+    options.perToolFailureLimit ??
+    envInt('CHAT_TOOL_FAILURE_LIMIT', DEFAULT_PER_TOOL_FAILURE_LIMIT, 1, 10);
+  const wallClockMs =
+    options.wallClockMs ?? envInt('CHAT_TOOL_WALL_CLOCK_MS', 15 * 60_000, 30_000, 60 * 60_000);
   const backoffBaseMs = envInt('CHAT_TOOL_BACKOFF_BASE_MS', 1_500, 0, 60_000);
   const backoffMaxMs = envInt('CHAT_TOOL_BACKOFF_MAX_MS', 15_000, 1_000, 120_000);
   const now = options.now || (() => Date.now());
@@ -133,15 +132,21 @@ export function createToolTurnPolicy(options: ToolTurnPolicyOptions = {}): ToolT
   };
 
   return {
-    get maxIterations() { return maxIterations; },
-    get maxCallsPerIteration() { return maxCallsPerIteration; },
+    get maxIterations() {
+      return maxIterations;
+    },
+    get maxCallsPerIteration() {
+      return maxCallsPerIteration;
+    },
 
     toolsAllowed(iteration: number) {
       if (iteration >= maxIterations) return false;
       return budgetExhausted() === null;
     },
 
-    noteIteration() { iterationsUsed += 1; },
+    noteIteration() {
+      iterationsUsed += 1;
+    },
 
     enabledToolNames(all: readonly string[]) {
       return all.filter((name) => !disabled.has(name));

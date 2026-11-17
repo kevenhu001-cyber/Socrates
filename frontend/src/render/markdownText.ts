@@ -1,6 +1,6 @@
 /* Plain-text helpers used by message-editing flows. */
 import { _looksLikeInlineMath } from './markdownMath.ts';
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { stripHtmlTags } from '../util/stripHtml.ts';
 
 /* ── Plain-text helpers (used by message-editing flows) ──────────── */
@@ -34,7 +34,10 @@ export function stripMarkdown(s: string | null | undefined): string {
    Used by the `↑` (empty input) shortcut to pop the previous prompt
    back into the input for editing. */
 export function findLastUserMessage(): string | null {
-  const list = (stateStore.read('messages') || []) as Array<{ role?: string; rawText?: string }>;
+  const list = (sessionBridge.getSnapshot().messages || []) as Array<{
+    role?: string;
+    rawText?: string;
+  }>;
   for (let i = list.length - 1; i >= 0; i--) {
     if (list[i].role === 'user' && list[i].rawText) return stripMarkdown(list[i].rawText);
   }

@@ -17,7 +17,7 @@ export const CREATE_SITE_TOOL = {
     name: 'create_site',
     description:
       '## What this tool does\n' +
-      'Creates a site artifact from a complete standalone HTML document and publishes it, returning the public/unlisted share URL. The site appears in the user\'s Sites directory and can be opened via the returned URL.\n\n' +
+      "Creates a site artifact from a complete standalone HTML document and publishes it, returning the public/unlisted share URL. The site appears in the user's Sites directory and can be opened via the returned URL.\n\n" +
       '## When to call\n' +
       '- The user asks you to create, build, or publish a web page or small site.\n' +
       '- The site-creation extension is active and the brief is clear enough to build.\n\n' +
@@ -33,7 +33,8 @@ export const CREATE_SITE_TOOL = {
       properties: {
         title: {
           type: 'string',
-          description: 'Short site title shown in the Sites directory and browser tab (max 120 chars).',
+          description:
+            'Short site title shown in the Sites directory and browser tab (max 120 chars).',
           minLength: 1,
           maxLength: 120,
         },
@@ -50,7 +51,8 @@ export const CREATE_SITE_TOOL = {
         visibility: {
           type: 'string',
           enum: ['private', 'unlisted', 'public'],
-          description: 'Publish visibility. "unlisted" (default) gives a share link without directory listing; "public" lists it; "private" saves without a share URL.',
+          description:
+            'Publish visibility. "unlisted" (default) gives a share link without directory listing; "public" lists it; "private" saves without a share URL.',
         },
       },
       required: ['title', 'source'],
@@ -81,29 +83,42 @@ export interface CreatedSite {
  * the document must actually contain <html>. Publishing assigns a share
  * token unless visibility is "private".
  */
-export async function createAndPublishSite(userId: string, input: CreateSiteInput): Promise<CreatedSite> {
+export async function createAndPublishSite(
+  userId: string,
+  input: CreateSiteInput,
+): Promise<CreatedSite> {
   const title = typeof input.title === 'string' ? input.title.trim().slice(0, 120) : '';
   let source = typeof input.source === 'string' ? input.source.trim() : '';
-  source = source.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/, '').trim().slice(0, 200_000);
-  const visibility = input.visibility === 'public' || input.visibility === 'private' ? input.visibility : 'unlisted';
+  source = source
+    .replace(/^```(?:html)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim()
+    .slice(0, 200_000);
+  const visibility =
+    input.visibility === 'public' || input.visibility === 'private' ? input.visibility : 'unlisted';
 
   if (!title) throw Object.assign(new Error('title is required'), { code: 'SITE_TITLE_REQUIRED' });
   if (!source.toLowerCase().includes('<html')) {
-    throw Object.assign(new Error('source must be a complete HTML document'), { code: 'SITE_SOURCE_INVALID' });
+    throw Object.assign(new Error('source must be a complete HTML document'), {
+      code: 'SITE_SOURCE_INVALID',
+    });
   }
 
   const shareToken = visibility === 'private' ? null : crypto.randomBytes(24).toString('base64url');
-  const [row] = await getDb().insert(artifacts).values({
-    userId,
-    type: 'site',
-    title,
-    source,
-    language: 'html',
-    sessionId: input.sessionId || null,
-    projectId: input.projectId || null,
-    visibility,
-    shareToken,
-  }).returning();
+  const [row] = await getDb()
+    .insert(artifacts)
+    .values({
+      userId,
+      type: 'site',
+      title,
+      source,
+      language: 'html',
+      sessionId: input.sessionId || null,
+      projectId: input.projectId || null,
+      visibility,
+      shareToken,
+    })
+    .returning();
 
   return {
     id: row.id,

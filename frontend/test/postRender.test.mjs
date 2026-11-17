@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM('<!doctype html><html><body><div class="msg-body"><pre><code>&lt;main&gt;hello&lt;/main&gt;</code></pre></div></body></html>');
+const dom = new JSDOM(
+  '<!doctype html><html><body><div class="msg-body"><pre><code>&lt;main&gt;hello&lt;/main&gt;</code></pre></div></body></html>',
+);
 globalThis.document = dom.window.document;
 globalThis.window = dom.window;
 
@@ -17,7 +19,11 @@ test('code block headers infer markup and remain idempotent', () => {
   assert.equal(header.nextElementSibling, pre);
   assert.equal(header.querySelector('.code-block-header-lang').textContent, 'html');
   assert.ok(header.querySelector('[data-code-block-actions-root]'));
-  assert.equal(header.querySelector('button'), null, 'interactive controls are mounted by the React action island');
+  assert.equal(
+    header.querySelector('button'),
+    null,
+    'interactive controls are mounted by the React action island',
+  );
 
   wireCodeBlockHeaders(body);
   assert.equal(body.querySelectorAll('.code-block-header').length, 1);
@@ -26,7 +32,8 @@ test('code block headers infer markup and remain idempotent', () => {
 test('tool and visualization artifacts do not receive code headers', () => {
   const body = document.createElement('div');
   body.className = 'msg-body';
-  body.innerHTML = '<div class="exec-artifact"><pre><code>const x = 1;</code></pre></div>' +
+  body.innerHTML =
+    '<div class="exec-artifact"><pre><code>const x = 1;</code></pre></div>' +
     '<div class="viz"><pre><code>const y = 2;</code></pre></div>';
   wireCodeBlockHeaders(body);
   assert.equal(body.querySelectorAll('.code-block-header').length, 0);

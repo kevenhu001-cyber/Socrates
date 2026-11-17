@@ -37,19 +37,29 @@ export function openTagEditor(id: string, event?: TagEditorEventLike | null): vo
     event.stopPropagation();
     event.preventDefault();
   }
-  const forwarded = event ? {
-    stopPropagation: function () { /* already handled synchronously */ },
-    preventDefault: function () { /* already handled synchronously */ },
-    currentTarget,
-  } : null;
+  const forwarded = event
+    ? {
+        stopPropagation: function () {
+          /* already handled synchronously */
+        },
+        preventDefault: function () {
+          /* already handled synchronously */
+        },
+        currentTarget,
+      }
+    : null;
 
   if (runtime) {
     runtime.openTagEditor(id, forwarded);
     return;
   }
   void loadOrganizeRuntime()
-    .then(function (module) { module.openTagEditor(id, forwarded); })
-    .catch(function () { /* loader already reports the error */ });
+    .then(function (module) {
+      module.openTagEditor(id, forwarded);
+    })
+    .catch(function () {
+      /* loader already reports the error */
+    });
 }
 
 export function closeTagEditor(): void {
@@ -60,8 +70,13 @@ export function closeTagEditor(): void {
   /* Do not download organize merely to close a popover that cannot exist.
      If an open is already in flight, queue close behind the same import. */
   if (runtimePromise) {
-    void runtimePromise.then(function (module) { module.closeTagEditor(); })
-      .catch(function () { /* loader already reports the error */ });
+    void runtimePromise
+      .then(function (module) {
+        module.closeTagEditor();
+      })
+      .catch(function () {
+        /* loader already reports the error */
+      });
   }
 }
 
@@ -71,8 +86,12 @@ export function cycleActiveProject(): void {
     return;
   }
   void loadOrganizeRuntime()
-    .then(function (module) { module.cycleActiveProject(); })
-    .catch(function () { /* loader already reports the error */ });
+    .then(function (module) {
+      module.cycleActiveProject();
+    })
+    .catch(function () {
+      /* loader already reports the error */
+    });
 }
 
 export { onSessionDragStart, onSessionDragEnd, loadOrganizeRuntime };

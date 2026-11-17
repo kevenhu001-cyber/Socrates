@@ -11,7 +11,16 @@
  * Sheets are told apart by a 1px hairline ring plus a soft lift, never by a
  * colour; nothing here draws a dot.
  */
-import { uiColors, uiControl, uiFocus, uiMotion, uiRadius, uiShadow, uiStep, type UiColors } from '@socrates/theme';
+import {
+  uiColors,
+  uiControl,
+  uiFocus,
+  uiMotion,
+  uiRadius,
+  uiShadow,
+  uiStep,
+  type UiColors,
+} from '@socrates/theme';
 
 /** Site radius scale (`uiRadius`, site `--radius-lg/xl/2xl/3xl`). */
 export const R = {
@@ -98,7 +107,11 @@ export function sheets(colors: UiColors) {
 }
 
 /** Focus ring shared by every control here (site `:focus-visible`, 2px ink, offset 2). */
-export function focusRing(colors: UiColors, focused: boolean, offset: number = uiFocus.offset): object {
+export function focusRing(
+  colors: UiColors,
+  focused: boolean,
+  offset: number = uiFocus.offset,
+): object {
   return {
     outlineStyle: focused ? 'solid' : undefined,
     outlineWidth: focused ? uiFocus.width : 0,
@@ -109,5 +122,7 @@ export function focusRing(colors: UiColors, focused: boolean, offset: number = u
 
 /** Web-only CSS transition (RN Web passes it through; native ignores it). */
 export function transition(props: string, reduced: boolean, ms: number = uiMotion.fast): object {
-  return reduced ? {} : { transitionProperty: props, transitionDuration: `${ms}ms`, transitionTimingFunction: EASE };
+  return reduced
+    ? {}
+    : { transitionProperty: props, transitionDuration: `${ms}ms`, transitionTimingFunction: EASE };
 }

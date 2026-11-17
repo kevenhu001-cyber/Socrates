@@ -12,22 +12,22 @@ import { executeIntelligentUi } from './intelligentUi.js';
  * dispatcher knowing about them.
  */
 
-import type {ToolExecutor} from './types.js';
-import {executeWorkspaceAgent} from './workspaceAgent.js';
-import {executeInitializeWorkspace} from './workspaceInit.js';
-import {executeCodeInterpreter} from './codeInterpreter.js';
-import {executeWebSearch} from './webSearch.js';
-import {executeWebFetch} from './webFetch.js';
-import {executeReadAttachment} from './readAttachment.js';
-import {executeSaveMemory} from './saveMemory.js';
-import {executeDocumentTool} from './document.js';
-import {executeCreateSite} from './createSite.js';
-import {executePersonalConnector, executeProjectConnector,} from './connectors.js';
-import {executeOpenConnector} from './openConnector.js';
-import {executeGetConnectorSpec, executeSearchConnectors} from './connectorDiscovery.js';
-import {CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/connectorTools.js';
-import {PROJECT_CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/projectConnectorTools.js';
-import {getOpenConnectorChatTool} from '../../../../services/integrations/openConnectorChatToolCatalog.js';
+import type { ToolExecutor } from './types.js';
+import { executeWorkspaceAgent } from './workspaceAgent.js';
+import { executeInitializeWorkspace } from './workspaceInit.js';
+import { executeCodeInterpreter } from './codeInterpreter.js';
+import { executeWebSearch } from './webSearch.js';
+import { executeWebFetch } from './webFetch.js';
+import { executeReadAttachment } from './readAttachment.js';
+import { executeSaveMemory } from './saveMemory.js';
+import { executeDocumentTool } from './document.js';
+import { executeCreateSite } from './createSite.js';
+import { executePersonalConnector, executeProjectConnector } from './connectors.js';
+import { executeOpenConnector } from './openConnector.js';
+import { executeGetConnectorSpec, executeSearchConnectors } from './connectorDiscovery.js';
+import { CONNECTOR_TOOL_NAMES } from '../../../../services/integrations/connectorTools.js';
+import { PROJECT_CONNECTOR_TOOL_NAMES } from '../../../../services/integrations/projectConnectorTools.js';
+import { getOpenConnectorChatTool } from '../../../../services/integrations/openConnectorChatToolCatalog.js';
 
 export interface ToolExecutorRegistry {
   /** Exact-name executor map. */
@@ -62,7 +62,10 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
       executor: executeProjectConnector,
     },
     {
-      includes: (name) => Object.values(CONNECTOR_TOOL_NAMES).includes(name as (typeof CONNECTOR_TOOL_NAMES)[keyof typeof CONNECTOR_TOOL_NAMES]),
+      includes: (name) =>
+        Object.values(CONNECTOR_TOOL_NAMES).includes(
+          name as (typeof CONNECTOR_TOOL_NAMES)[keyof typeof CONNECTOR_TOOL_NAMES],
+        ),
       executor: executePersonalConnector,
     },
   ];

@@ -5,8 +5,17 @@ import fs from 'node:fs/promises';
 import { getDb } from '../db/index.js';
 import { codeInterpreter } from '../services/codeInterpreter/index.js';
 import {
-  projects, sessions, messages, memories, artifacts, artifactVersions,
-  mistakes, agentRuns, usageEvents, files, executions,
+  projects,
+  sessions,
+  messages,
+  memories,
+  artifacts,
+  artifactVersions,
+  mistakes,
+  agentRuns,
+  usageEvents,
+  files,
+  executions,
 } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
@@ -18,7 +27,10 @@ router.use(requireAuth, resourceScope('projects'));
 
 type ProjectMemoryMode = 'default' | 'project-only';
 
-function parseProjectMemoryMode(value: unknown, fallback: ProjectMemoryMode = 'default'): ProjectMemoryMode {
+function parseProjectMemoryMode(
+  value: unknown,
+  fallback: ProjectMemoryMode = 'default',
+): ProjectMemoryMode {
   if (value === undefined) return fallback;
   if (value === 'default' || value === 'project-only') return value;
   throw new BadRequest('memoryMode must be "default" or "project-only"');
@@ -28,11 +40,15 @@ function parseProjectMemoryMode(value: unknown, fallback: ProjectMemoryMode = 'd
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const rows = await db.select().from(projects)
+    const rows = await db
+      .select()
+      .from(projects)
       .where(eq(projects.userId, req.userId!))
       .orderBy(projects.createdAt);
     return res.json({ projects: rows });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* POST /api/projects — create */
@@ -42,20 +58,32 @@ router.post('/', async (req, res, next) => {
     if (!name) throw new BadRequest('name is required');
     const memoryMode = parseProjectMemoryMode(req.body.memoryMode);
     return await durableJsonWrite(req, res, 'projects.create.v1', async (tx) => {
-      const [project] = await tx.insert(projects).values({
-        userId: req.userId!,
-        name, description, color, icon, systemPrompt, memoryMode,
-      }).returning();
+      const [project] = await tx
+        .insert(projects)
+        .values({
+          userId: req.userId!,
+          name,
+          description,
+          color,
+          icon,
+          systemPrompt,
+          memoryMode,
+        })
+        .returning();
       return { status: 201, body: project };
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PATCH /api/projects/:id — update */
 router.patch('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [existing] = await db.select().from(projects)
+    const [existing] = await db
+      .select()
+      .from(projects)
       .where(and(eq(projects.id, req.params.id), eq(projects.userId, req.userId!)))
       .limit(1);
     if (!existing) throw new NotFound('Project not found');
@@ -63,13 +91,20 @@ router.patch('/:id', async (req, res, next) => {
     for (const key of ['name', 'description', 'color', 'icon', 'systemPrompt']) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
     }
-    if (req.body.memoryMode !== undefined) patch.memoryMode = parseProjectMemoryMode(req.body.memoryMode);
+    if (req.body.memoryMode !== undefined)
+      patch.memoryMode = parseProjectMemoryMode(req.body.memoryMode);
     if (Object.keys(patch).length) {
       await db.update(projects).set(patch).where(eq(projects.id, req.params.id));
     }
-    const [updated] = await db.select().from(projects).where(eq(projects.id, req.params.id)).limit(1);
+    const [updated] = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, req.params.id))
+      .limit(1);
     return res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/projects/:id
@@ -88,14 +123,16 @@ router.delete('/:id', async (req, res, next) => {
     const deletedSessionIds: string[] = [];
 
     await db.transaction(async (tx) => {
-      const [project] = await tx.select({ id: projects.id })
+      const [project] = await tx
+        .select({ id: projects.id })
         .from(projects)
         .where(and(eq(projects.id, projectId), eq(projects.userId, req.userId!)))
         .for('update')
         .limit(1);
       if (!project) throw new NotFound('Project not found');
 
-      const projectSessionRows = await tx.select({ id: sessions.id })
+      const projectSessionRows = await tx
+        .select({ id: sessions.id })
         .from(sessions)
         .where(and(eq(sessions.projectId, projectId), eq(sessions.userId, req.userId!)))
         .for('update');
@@ -104,82 +141,133 @@ router.delete('/:id', async (req, res, next) => {
       /* Runs can be scheduled directly against a project without having a
        * conversation session yet. Remove those durable runs too; their event,
        * approval and job rows cascade from agent_runs. */
-      const projectRunRows = await tx.select({ id: agentRuns.id })
+      const projectRunRows = await tx
+        .select({ id: agentRuns.id })
         .from(agentRuns)
         .where(and(eq(agentRuns.userId, req.userId!), eq(agentRuns.projectId, projectId)));
       if (projectRunRows.length > 0) {
-        await tx.delete(agentRuns).where(inArray(agentRuns.id, projectRunRows.map((row) => row.id)));
+        await tx.delete(agentRuns).where(
+          inArray(
+            agentRuns.id,
+            projectRunRows.map((row) => row.id),
+          ),
+        );
       }
 
       const executionIds: string[] = [];
       if (deletedSessionIds.length > 0) {
-        const executionRows = await tx.select({ id: executions.id })
+        const executionRows = await tx
+          .select({ id: executions.id })
           .from(executions)
-          .where(and(eq(executions.userId, req.userId!), inArray(executions.sessionId, deletedSessionIds)));
+          .where(
+            and(
+              eq(executions.userId, req.userId!),
+              inArray(executions.sessionId, deletedSessionIds),
+            ),
+          );
         executionIds.push(...executionRows.map((row) => row.id));
       }
 
-      const projectArtifactRows = await tx.select({ id: artifacts.id })
+      const projectArtifactRows = await tx
+        .select({ id: artifacts.id })
         .from(artifacts)
         .where(and(eq(artifacts.userId, req.userId!), eq(artifacts.projectId, projectId)));
-      const sessionArtifactRows = deletedSessionIds.length > 0
-        ? await tx.select({ id: artifacts.id })
-          .from(artifacts)
-          .where(and(eq(artifacts.userId, req.userId!), inArray(artifacts.sessionId, deletedSessionIds)))
-        : [];
-      const artifactIds = [...new Set([
-        ...projectArtifactRows.map((row) => row.id),
-        ...sessionArtifactRows.map((row) => row.id),
-      ])];
+      const sessionArtifactRows =
+        deletedSessionIds.length > 0
+          ? await tx
+              .select({ id: artifacts.id })
+              .from(artifacts)
+              .where(
+                and(
+                  eq(artifacts.userId, req.userId!),
+                  inArray(artifacts.sessionId, deletedSessionIds),
+                ),
+              )
+          : [];
+      const artifactIds = [
+        ...new Set([
+          ...projectArtifactRows.map((row) => row.id),
+          ...sessionArtifactRows.map((row) => row.id),
+        ]),
+      ];
       if (artifactIds.length > 0) {
         await tx.delete(artifactVersions).where(inArray(artifactVersions.artifactId, artifactIds));
         await tx.delete(artifacts).where(inArray(artifacts.id, artifactIds));
       }
 
-      await tx.delete(memories).where(and(
-        eq(memories.userId, req.userId!),
-        eq(memories.projectId, projectId),
-      ));
+      await tx
+        .delete(memories)
+        .where(and(eq(memories.userId, req.userId!), eq(memories.projectId, projectId)));
 
       const fileScopes = [];
-      if (deletedSessionIds.length > 0) fileScopes.push(inArray(files.sessionId, deletedSessionIds));
+      if (deletedSessionIds.length > 0)
+        fileScopes.push(inArray(files.sessionId, deletedSessionIds));
       if (executionIds.length > 0) fileScopes.push(inArray(files.executionId, executionIds));
       if (fileScopes.length > 0) {
-        const projectFiles = await tx.select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
+        const projectFiles = await tx
+          .select({ storagePath: files.storagePath, thumbnailPath: files.thumbnailPath })
           .from(files)
           .where(and(eq(files.userId, req.userId!), or(...fileScopes)));
-        deletedFilePaths.push(...projectFiles.flatMap((file) => [file.storagePath, file.thumbnailPath].filter((filePath): filePath is string => !!filePath)));
+        deletedFilePaths.push(
+          ...projectFiles.flatMap((file) =>
+            [file.storagePath, file.thumbnailPath].filter(
+              (filePath): filePath is string => !!filePath,
+            ),
+          ),
+        );
         await tx.delete(files).where(and(eq(files.userId, req.userId!), or(...fileScopes)));
       }
 
       if (executionIds.length > 0) {
-        await tx.delete(executions).where(and(
-          eq(executions.userId, req.userId!),
-          inArray(executions.id, executionIds),
-        ));
+        await tx
+          .delete(executions)
+          .where(and(eq(executions.userId, req.userId!), inArray(executions.id, executionIds)));
       }
       if (deletedSessionIds.length > 0) {
-        await tx.delete(mistakes).where(and(eq(mistakes.userId, req.userId!), inArray(mistakes.sessionId, deletedSessionIds)));
-        await tx.delete(agentRuns).where(and(eq(agentRuns.userId, req.userId!), inArray(agentRuns.sessionId, deletedSessionIds)));
-        await tx.delete(usageEvents).where(and(eq(usageEvents.userId, req.userId!), inArray(usageEvents.sessionId, deletedSessionIds)));
+        await tx
+          .delete(mistakes)
+          .where(
+            and(eq(mistakes.userId, req.userId!), inArray(mistakes.sessionId, deletedSessionIds)),
+          );
+        await tx
+          .delete(agentRuns)
+          .where(
+            and(eq(agentRuns.userId, req.userId!), inArray(agentRuns.sessionId, deletedSessionIds)),
+          );
+        await tx
+          .delete(usageEvents)
+          .where(
+            and(
+              eq(usageEvents.userId, req.userId!),
+              inArray(usageEvents.sessionId, deletedSessionIds),
+            ),
+          );
         await tx.delete(messages).where(inArray(messages.sessionId, deletedSessionIds));
-        await tx.delete(sessions).where(and(
-          eq(sessions.userId, req.userId!),
-          inArray(sessions.id, deletedSessionIds),
-        ));
+        await tx
+          .delete(sessions)
+          .where(and(eq(sessions.userId, req.userId!), inArray(sessions.id, deletedSessionIds)));
       }
 
-      await tx.delete(projects)
+      await tx
+        .delete(projects)
         .where(and(eq(projects.id, projectId), eq(projects.userId, req.userId!)));
     });
 
-    await Promise.all([...new Set(deletedFilePaths)].map((storagePath) => fs.unlink(storagePath).catch(() => {})));
-    await Promise.all(deletedSessionIds.map((sessionId) => codeInterpreter.reapSessionScratch(sessionId, req.userId!).catch(() => {})));
+    await Promise.all(
+      [...new Set(deletedFilePaths)].map((storagePath) => fs.unlink(storagePath).catch(() => {})),
+    );
+    await Promise.all(
+      deletedSessionIds.map((sessionId) =>
+        codeInterpreter.reapSessionScratch(sessionId, req.userId!).catch(() => {}),
+      ),
+    );
     /* Workspace keys are namespaced as `project:<id>` in the runtime. Use
        the same key here so deletion removes the actual server-owned tree. */
     removeProjectWorkspace(req.userId!, `project:${projectId}`);
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

@@ -10,7 +10,10 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_TIER,
-  getTierPlan, getBeagleQuota, getSessionLimit, getApiKeyLimit,
+  getTierPlan,
+  getBeagleQuota,
+  getSessionLimit,
+  getApiKeyLimit,
 } from '../src/lib/tiers.js';
 
 describe('tiers: known tiers', () => {

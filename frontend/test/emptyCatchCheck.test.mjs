@@ -14,8 +14,15 @@ test('empty catch parser counts real JS, TS and JSX catches exactly once', () =>
     try {} catch (e) { console.warn(e); }
   `;
   assert.equal(collectEmptyCatchSites(source).offenders.length, 2);
-  assert.equal(collectEmptyCatchSites('const x: number = 1; try {} catch {}', 'a.ts').offenders.length, 1);
-  assert.equal(collectEmptyCatchSites('const x = <div>catch {"{}"}</div>; try {} catch {}', 'a.tsx').offenders.length, 1);
+  assert.equal(
+    collectEmptyCatchSites('const x: number = 1; try {} catch {}', 'a.ts').offenders.length,
+    1,
+  );
+  assert.equal(
+    collectEmptyCatchSites('const x = <div>catch {"{}"}</div>; try {} catch {}', 'a.tsx').offenders
+      .length,
+    1,
+  );
 });
 
 test('reasoned exemptions work inside, before and after the catch', () => {
@@ -37,10 +44,13 @@ test('missing reasons and unrelated markers never exempt a catch', () => {
     'try {} catch {}\n // empty-catch: intentional — belongs elsewhere',
     'const marker = "empty-catch: intentional — string"; try {} catch {}',
     'try {} catch {} const marker = 1; /* empty-catch: intentional — unrelated */',
-  ]) assert.equal(collectEmptyCatchSites(source).offenders.length, 1, source);
-  assert.equal(collectEmptyCatchSites(
-    'try {} catch {} /* empty-catch: intentional — first */ try {} catch {}',
-  ).offenders.length, 1);
+  ])
+    assert.equal(collectEmptyCatchSites(source).offenders.length, 1, source);
+  assert.equal(
+    collectEmptyCatchSites('try {} catch {} /* empty-catch: intentional — first */ try {} catch {}')
+      .offenders.length,
+    1,
+  );
 });
 
 test('syntax errors fail closed rather than producing a passing count', () => {

@@ -34,7 +34,9 @@ function buildApp() {
   app.post('/write', (req, res) => res.json({ ok: true }));
   app.get('/read', (req, res) => res.json({ ok: true }));
   app.get('/api/auth/csrf-token', (req, res) => res.json({ ok: true }));
-  app.post('/api/auth/mobile/refresh', (req, res) => res.json({ refreshToken: req.body.refreshToken }));
+  app.post('/api/auth/mobile/refresh', (req, res) =>
+    res.json({ refreshToken: req.body.refreshToken }),
+  );
   app.post('/api/admin-auth/login', (req, res) => res.json({ ok: true }));
   app.post('/api/admin-auth/logout', (req, res) => res.json({ ok: true }));
   app.use(errorHandler);
@@ -43,8 +45,12 @@ function buildApp() {
 
 describe('csrf: safe methods', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('GET passes through with no cookies', async () => {
     const r = await httpRequest(server.url + '/read');
@@ -54,8 +60,12 @@ describe('csrf: safe methods', () => {
 
 describe('csrf: unsafe methods without an authenticated session', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('POST with no sid cookie and no csrf pair passes through', async () => {
     // Unauthenticated requests: let the route's own auth middleware
@@ -138,8 +148,12 @@ describe('csrf: unsafe methods with an authenticated session', () => {
 
 describe('csrf: csrf-token endpoint is exempt', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('GET /api/auth/csrf-token does not require a csrf header', async () => {
     const r = await httpRequest(server.url + '/api/auth/csrf-token');
@@ -149,8 +163,12 @@ describe('csrf: csrf-token endpoint is exempt', () => {
 
 describe('csrf: mobile credential exchanges', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('POST refresh accepts its explicit refresh credential despite stale browser CSRF cookies', async () => {
     const r = await httpRequest(server.url + '/api/auth/mobile/refresh', {
@@ -164,8 +182,12 @@ describe('csrf: mobile credential exchanges', () => {
 
 describe('csrf: admin-auth login/logout use an explicit body credential', () => {
   let server;
-  before(async () => { server = await listen(buildApp()); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp());
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('POST login passes with a stale browser csrf cookie and no header', async () => {
     // Regression: an operator whose browser carries a `csrf` cookie
@@ -195,8 +217,12 @@ describe('csrf: setCsrfCookie sets a readable cookie and clearCsrfCookie removes
   test('csrf cookie is readable by JS (httpOnly: false)', () => {
     const cookies = {};
     const res = {
-      cookie(name, value, opts) { cookies[name] = { value, opts }; },
-      clearCookie(name, opts) { cookies[name] = { value: '', opts: { ...opts, maxAge: -1 } }; },
+      cookie(name, value, opts) {
+        cookies[name] = { value, opts };
+      },
+      clearCookie(name, opts) {
+        cookies[name] = { value: '', opts: { ...opts, maxAge: -1 } };
+      },
     };
     const req = { headers: { host: 'localhost:3000' } };
     setCsrfCookie(res, req);

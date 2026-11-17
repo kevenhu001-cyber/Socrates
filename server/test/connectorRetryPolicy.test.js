@@ -30,7 +30,15 @@ test('connector retry policy only retries known transient failures', () => {
   assert.equal(isRetryableConnectorFailure({ status: 0, code: 'client_wait_timeout' }), false);
   assert.equal(isRetryableConnectorFailure({ name: 'TimeoutError' }), true);
   assert.equal(isRetryableConnectorFailure({ name: 'AbortError' }), false);
-  assert.equal(isRetryableConnectorFailure({ name: 'AbortError', status: 503, code: 'ECONNRESET', retryable: true }), false);
+  assert.equal(
+    isRetryableConnectorFailure({
+      name: 'AbortError',
+      status: 503,
+      code: 'ECONNRESET',
+      retryable: true,
+    }),
+    false,
+  );
 });
 
 test('unknown connector exceptions do not invite blind retries', () => {

@@ -18,7 +18,12 @@ import { generateSessionToken, sessionSecret } from '../lib/crypto.js';
    introducing a separate env var. */
 function signOAuthState(payload: unknown) {
   const nonce = randomBytes(16).toString('hex');
-  const full = { ...(typeof payload === 'object' && payload !== null ? payload as Record<string, unknown> : {}), nonce };
+  const full = {
+    ...(typeof payload === 'object' && payload !== null
+      ? (payload as Record<string, unknown>)
+      : {}),
+    nonce,
+  };
   const encoded = Buffer.from(JSON.stringify(full)).toString('base64url');
   const sig = createHmac('sha256', sessionSecret()).update(encoded).digest('base64url');
   return `${encoded}.${sig}`;
@@ -37,7 +42,9 @@ function verifyOAuthState(state: unknown): OAuthState | null {
   if (!valid) return null;
   try {
     return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 const router = Router();
@@ -113,11 +120,20 @@ router.get('/csrf-token', setCsrfToken);
 const HANDOFF_ORIGIN = 'https://app.topodrive.top';
 const HANDOFF_TTL_MS = 5 * 60 * 1000;
 function noHandoffCache(res: Response) {
-  res.set({ 'Cache-Control': 'no-store, no-cache, must-revalidate', Pragma: 'no-cache', 'Referrer-Policy': 'no-referrer' });
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    Pragma: 'no-cache',
+    'Referrer-Policy': 'no-referrer',
+  });
 }
-function validHex64(value: unknown): value is string { return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value); }
+function validHex64(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+}
 function exactOrigin(req: Request) {
-  return req.get('origin') === `${req.protocol}://${req.get('host')}` && req.get('origin') === HANDOFF_ORIGIN;
+  return (
+    req.get('origin') === `${req.protocol}://${req.get('host')}` &&
+    req.get('origin') === HANDOFF_ORIGIN
+  );
 }
 function strictBrowserCsrf(req: Request) {
   const header = req.get('x-csrf-token');
@@ -131,32 +147,68 @@ router.post('/mobile/browser/authorize', authLimiter, async (req, res, next) => 
   noHandoffCache(res);
   try {
     const sid = req.cookies?.sid;
-    if (!exactOrigin(req) || !strictBrowserCsrf(req) || typeof sid !== 'string' || !/^[a-f0-9]{64}$/.test(sid) || req.headers.authorization !== undefined) return res.status(403).json({ error: 'handoff_unavailable' });
+    if (
+      !exactOrigin(req) ||
+      !strictBrowserCsrf(req) ||
+      typeof sid !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(sid) ||
+      req.headers.authorization !== undefined
+    )
+      return res.status(403).json({ error: 'handoff_unavailable' });
     const { state, codeChallenge } = req.body ?? {};
-    if (!validHex64(state) || typeof codeChallenge !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(codeChallenge)) return res.status(400).json({ error: 'handoff_unavailable' });
+    if (
+      !validHex64(state) ||
+      typeof codeChallenge !== 'string' ||
+      !/^[A-Za-z0-9_-]{43}$/.test(codeChallenge)
+    )
+      return res.status(400).json({ error: 'handoff_unavailable' });
     const db = getDb();
-    const [session] = await db.select({ userId: authSessions.userId }).from(authSessions).where(and(eq(authSessions.token, sid), gt(authSessions.expiresAt, new Date()))).limit(1);
+    const [session] = await db
+      .select({ userId: authSessions.userId })
+      .from(authSessions)
+      .where(and(eq(authSessions.token, sid), gt(authSessions.expiresAt, new Date())))
+      .limit(1);
     if (!session) return res.status(401).json({ error: 'handoff_unavailable' });
     const code = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + HANDOFF_TTL_MS);
     const hash = createHash('sha256').update(code).digest('hex');
-    await db.insert(authSessions).values({ token: `nh.${codeChallenge}.${hash}`, userId: session.userId, expiresAt });
+    await db
+      .insert(authSessions)
+      .values({ token: `nh.${codeChallenge}.${hash}`, userId: session.userId, expiresAt });
     const url = `${HANDOFF_ORIGIN}/auth/android/callback#code=${code}&state=${state}`;
     return res.json({ url, expiresAt: expiresAt.toISOString() });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 router.post('/mobile/browser/exchange', authLimiter, async (req, res, next) => {
   noHandoffCache(res);
   try {
     const { code, codeVerifier } = req.body ?? {};
     const verifierPattern = /^[A-Za-z0-9._~-]{43,128}$/;
-    if (typeof code !== 'string' || !/^[a-f0-9]{64}$/.test(code) || typeof codeVerifier !== 'string' || !verifierPattern.test(codeVerifier)) return res.status(400).json({ error: 'invalid_handoff' });
-    const challenge = Buffer.from(createHash('sha256').update(codeVerifier, 'ascii').digest('base64url'));
+    if (
+      typeof code !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(code) ||
+      typeof codeVerifier !== 'string' ||
+      !verifierPattern.test(codeVerifier)
+    )
+      return res.status(400).json({ error: 'invalid_handoff' });
+    const challenge = Buffer.from(
+      createHash('sha256').update(codeVerifier, 'ascii').digest('base64url'),
+    );
     const expectedChallenge = challenge.toString('ascii');
     const digest = createHash('sha256').update(code).digest('hex');
     const db = getDb();
-    const [consumed] = await db.transaction(async tx => {
-      const rows = await tx.delete(authSessions).where(and(eq(authSessions.token, sql`'nh.' || ${expectedChallenge} || '.' || ${digest}`), gt(authSessions.expiresAt, new Date()))).returning({ userId: authSessions.userId });
+    const [consumed] = await db.transaction(async (tx) => {
+      const rows = await tx
+        .delete(authSessions)
+        .where(
+          and(
+            eq(authSessions.token, sql`'nh.' || ${expectedChallenge} || '.' || ${digest}`),
+            gt(authSessions.expiresAt, new Date()),
+          ),
+        )
+        .returning({ userId: authSessions.userId });
       if (!rows.length) return [];
       const pair = buildMobileTokenPair();
       await tx.insert(authSessions).values([
@@ -166,8 +218,15 @@ router.post('/mobile/browser/exchange', authLimiter, async (req, res, next) => {
       return [{ userId: rows[0].userId, pair }];
     });
     if (!consumed) return res.status(400).json({ error: 'invalid_handoff' });
-    return res.json({ accessToken: consumed.pair.accessToken, refreshToken: consumed.pair.refreshToken, expiresAt: consumed.pair.expiresAt, refreshExpiresAt: consumed.pair.refreshExpiresAt });
-  } catch (err) { next(err); }
+    return res.json({
+      accessToken: consumed.pair.accessToken,
+      refreshToken: consumed.pair.refreshToken,
+      expiresAt: consumed.pair.expiresAt,
+      refreshExpiresAt: consumed.pair.refreshExpiresAt,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/register', authLimiter, audit('register'), async (req, res, next) => {
@@ -175,7 +234,9 @@ router.post('/register', authLimiter, audit('register'), async (req, res, next) 
     const { email, password } = req.body;
     const result = await authService.register(email, password);
     return res.json(result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Resend verification email (no password required) ─── */
@@ -184,23 +245,32 @@ router.post('/resend-verification', authLimiter, async (req, res, next) => {
     const { email } = req.body;
     const result = await authService.resendVerification(email);
     return res.json(result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Login ─── */
-router.post('/login', authLimiter, audit('login', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  try {
-    const { email, password } = req.body;
-    const result = await authService.login(email, password);
-    // Clear any stale cookie variants first to avoid duplicate-cookie conflicts
-    clearSidCookie(res, req);
-    res.cookie('sid', result.sid, getSessionCookieOptions(req));
-    // Seed the CSRF cookie so the first state-changing request after login
-    // doesn't fail with "CSRF token required".
-    setCsrfCookie(res, req);
-    return res.json({ user: result.user });
-  } catch (err) { next(err); }
-});
+router.post(
+  '/login',
+  authLimiter,
+  audit('login', (req) => ({ email: req.body?.email })),
+  async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+      const result = await authService.login(email, password);
+      // Clear any stale cookie variants first to avoid duplicate-cookie conflicts
+      clearSidCookie(res, req);
+      res.cookie('sid', result.sid, getSessionCookieOptions(req));
+      // Seed the CSRF cookie so the first state-changing request after login
+      // doesn't fail with "CSRF token required".
+      setCsrfCookie(res, req);
+      return res.json({ user: result.user });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 /* ─── Mobile bearer-token contract ─────────────────────────────
  *
@@ -209,14 +279,21 @@ router.post('/login', authLimiter, audit('login', (req) => ({ email: req.body?.e
  * These routes intentionally sit beside the cookie flow rather than changing
  * it: browser clients retain their CSRF-protected sid session unchanged.
  */
-router.post('/mobile/login', authLimiter, audit('login:mobile', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  try {
-    const { email, password } = req.body || {};
-    const result = await authService.loginMobile(email, password);
-    const tokens = await authService.createMobileTokenPair(result.user.id);
-    return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
-});
+router.post(
+  '/mobile/login',
+  authLimiter,
+  audit('login:mobile', (req) => ({ email: req.body?.email })),
+  async (req, res, next) => {
+    try {
+      const { email, password } = req.body || {};
+      const result = await authService.loginMobile(email, password);
+      const tokens = await authService.createMobileTokenPair(result.user.id);
+      return res.json({ user: result.user, ...tokens });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 /* Exported only for the no-DB route-shape contract test.  Keeping the list
  * close to route registration makes accidental mobile API removal visible in
@@ -238,31 +315,44 @@ router.post('/mobile/refresh', authLimiter, async (req, res, next) => {
   try {
     const tokens = await authService.refreshMobileTokenPair(req.body?.refreshToken);
     return res.json(tokens);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post('/mobile/login-with-code', codeLoginLimiter, audit('login:mobile-code', (req) => ({ email: req.body?.email })), async (req, res, next) => {
-  try {
-    const { email, code } = req.body || {};
-    const result = await authService.loginWithCodeMobile(email, code);
-    const tokens = await authService.createMobileTokenPair(result.user.id);
-    return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
-});
+router.post(
+  '/mobile/login-with-code',
+  codeLoginLimiter,
+  audit('login:mobile-code', (req) => ({ email: req.body?.email })),
+  async (req, res, next) => {
+    try {
+      const { email, code } = req.body || {};
+      const result = await authService.loginWithCodeMobile(email, code);
+      const tokens = await authService.createMobileTokenPair(result.user.id);
+      return res.json({ user: result.user, ...tokens });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 router.get('/mobile/verify', authLimiter, async (req, res, next) => {
   try {
     const result = await authService.verifyEmailMobile(req.query.token as string);
     const tokens = await authService.createMobileTokenPair(result.user.id);
     return res.json({ user: result.user, ...tokens });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/mobile/logout', authLimiter, async (req, res, next) => {
   try {
     await authService.logoutMobile(req.body?.refreshToken);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/mobile/web-session', requireMobileBearer, async (req, res, next) => {
@@ -272,7 +362,9 @@ router.post('/mobile/web-session', requireMobileBearer, async (req, res, next) =
     const url = new URL('/api/auth/mobile/web-session/consume', origin);
     url.searchParams.set('token', webSession.token);
     return res.json({ url: url.toString(), expiresAt: webSession.expiresAt.toISOString() });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* This is the only endpoint that puts a one-time capability in a URL. It
@@ -284,14 +376,18 @@ router.get('/mobile/web-session/consume', async (req, res, next) => {
     const { userId, target } = await authService.consumeMobileWebSession(req.query.token);
     const sid = await authService.createBrowserSession(userId);
     return redirectMobileWebSession(req, res, sid, target);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.post('/mobile/oauth/exchange', authLimiter, async (req, res, next) => {
   try {
     const tokens = await authService.exchangeMobileOAuthToken(req.body?.exchangeToken);
     return res.json(tokens);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Me (authenticated) ─── */
@@ -313,10 +409,14 @@ router.get('/me', requireAuth, async (req, res, next) => {
         const candidate = decodeURIComponent(rawTimeZone).trim();
         new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format();
         timeZone = candidate;
-      } catch { /* malformed or unsupported zone — browser fallback wins */ }
+      } catch {
+        /* malformed or unsupported zone — browser fallback wins */
+      }
     }
     return res.json({ user: { ...user, timeZone } });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Logout ─── */
@@ -328,7 +428,9 @@ router.post('/logout', audit('logout'), async (req, res, next) => {
     clearSidCookie(res, req);
     clearCsrfCookie(res, req);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Verify email ─── */
@@ -342,7 +444,9 @@ router.get('/verify', async (req, res, next) => {
       setCsrfCookie(res, req);
     }
     return res.json(result);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Send login code ─── */
@@ -351,7 +455,9 @@ router.post('/send-code', authLimiter, async (req, res, next) => {
     const { email } = req.body;
     await authService.sendCode(email);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Login with code ─── */
@@ -363,7 +469,9 @@ router.post('/login-with-code', codeLoginLimiter, async (req, res, next) => {
     res.cookie('sid', result.sid, getSessionCookieOptions(req));
     setCsrfCookie(res, req);
     return res.json({ user: result.user });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Forgot password ─── */
@@ -372,7 +480,9 @@ router.post('/forgot-password', authLimiter, async (req, res, next) => {
     const { email } = req.body;
     await authService.forgotPassword(email);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Reset info ─── */
@@ -381,7 +491,9 @@ router.get('/reset-info', async (req, res, next) => {
     const { token } = req.query;
     const info = await authService.getResetInfo(token as string);
     return res.json(info);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Reset password ─── */
@@ -390,7 +502,9 @@ router.post('/reset-password', resetLimiter, async (req, res, next) => {
     const { token, password } = req.body;
     await authService.resetPassword(token, password);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Change password (authenticated) ─── */
@@ -405,7 +519,9 @@ router.post('/password', requireAuth, authLimiter, async (req, res, next) => {
     const currentCredential = requestCredential(req)?.token;
     await authService.changePassword(req.userId!, oldPassword, newPassword, currentCredential);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Delete account ─── */
@@ -415,7 +531,9 @@ router.delete('/account', requireAuth, authLimiter, async (req, res, next) => {
     clearSidCookie(res, req);
     clearCsrfCookie(res, req);
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── OAuth GitHub start ─── */
@@ -453,9 +571,8 @@ function safeReturnTo(input: unknown) {
   // but keep the original for redirect.
   const [pathOnly] = input.split('?');
   const [pathNoHash] = pathOnly.split('#');
-  const norm = pathNoHash.length > 1 && pathNoHash.endsWith('/')
-    ? pathNoHash.slice(0, -1)
-    : pathNoHash;
+  const norm =
+    pathNoHash.length > 1 && pathNoHash.endsWith('/') ? pathNoHash.slice(0, -1) : pathNoHash;
   // Allow exact match for '/' (home) and prefix match for the rest.
   for (const allowed of RETURN_TO_ALLOWLIST) {
     if (norm === allowed) return input;
@@ -498,7 +615,9 @@ router.get('/oauth/github/mobile/start', (req, res) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const redirectUri = safeMobileRedirectUri(req.query.redirect_uri);
   if (!clientId || !redirectUri) {
-    return res.status(400).json({ code: 'BAD_REQUEST', message: 'GitHub mobile OAuth is not configured' });
+    return res
+      .status(400)
+      .json({ code: 'BAD_REQUEST', message: 'GitHub mobile OAuth is not configured' });
   }
   const cbUrl = process.env.GITHUB_CALLBACK_URL || '';
   const state = signOAuthState({ mobileRedirectUri: redirectUri });
@@ -523,25 +642,33 @@ router.get('/oauth/github/callback', async (req, res, next) => {
 
   if (error) return res.redirect(oauthErrorRedirect(mobileRedirectUri, String(error)));
   if (!code) {
-    if (mobileRedirectUri) return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'missing_code'));
+    if (mobileRedirectUri)
+      return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'missing_code'));
     return res.status(400).json({ code: 'BAD_REQUEST', message: 'Missing code' });
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
-    if (mobileRedirectUri) return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'not_configured'));
-    return res.status(501).json({ code: 'NOT_CONFIGURED', message: 'GitHub OAuth is not configured' });
+    if (mobileRedirectUri)
+      return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'not_configured'));
+    return res
+      .status(501)
+      .json({ code: 'NOT_CONFIGURED', message: 'GitHub OAuth is not configured' });
   }
 
   try {
     // 1) Exchange code for access_token
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code: String(code) }),
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code: String(code),
+      }),
     });
-    const tokenJson = await tokenRes.json() as { access_token?: string };
+    const tokenJson = (await tokenRes.json()) as { access_token?: string };
     const accessToken = tokenJson.access_token;
     if (!accessToken) {
       return res.redirect(oauthErrorRedirect(mobileRedirectUri, 'no_access_token'));
@@ -549,17 +676,21 @@ router.get('/oauth/github/callback', async (req, res, next) => {
 
     // 2) Fetch the user's profile
     const userRes = await fetch('https://api.github.com/user', {
-      headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'Socrates/1.0' },
+      headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'Socrates/1.0' },
     });
-    const ghUser = await userRes.json() as { email?: string | null; name?: string | null; login?: string | null };
+    const ghUser = (await userRes.json()) as {
+      email?: string | null;
+      name?: string | null;
+      login?: string | null;
+    };
     let email = ghUser.email;
     if (!email) {
       // 3) Fall back to the primary verified email
       const emailsRes = await fetch('https://api.github.com/user/emails', {
-        headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'Socrates/1.0' },
+        headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'Socrates/1.0' },
       });
       const emails = await emailsRes.json();
-      const primary = Array.isArray(emails) ? emails.find(e => e.primary && e.verified) : null;
+      const primary = Array.isArray(emails) ? emails.find((e) => e.primary && e.verified) : null;
       email = primary?.email;
     }
     if (!email) {
@@ -574,15 +705,18 @@ router.get('/oauth/github/callback', async (req, res, next) => {
     const db = getDb();
     let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
     if (!user) {
-      const randomPassHash = await (await import('../lib/crypto.js')).hashPassword(
-        randomBytes(32).toString('hex')
-      );
-      [user] = await db.insert(users).values({
-        email: normalizedEmail,
-        passwordHash: randomPassHash,
-        displayName: ghUser.name || ghUser.login || null,
-        verifiedAt: new Date(),
-      }).returning();
+      const randomPassHash = await (
+        await import('../lib/crypto.js')
+      ).hashPassword(randomBytes(32).toString('hex'));
+      [user] = await db
+        .insert(users)
+        .values({
+          email: normalizedEmail,
+          passwordHash: randomPassHash,
+          displayName: ghUser.name || ghUser.login || null,
+          verifiedAt: new Date(),
+        })
+        .returning();
     }
 
     if (mobileRedirectUri) {

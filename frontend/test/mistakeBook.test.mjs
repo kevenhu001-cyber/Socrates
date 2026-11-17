@@ -14,27 +14,24 @@ function createHarness() {
     mistakes: [],
     mistakeFilter: 'all',
   };
-  const stateStore = {
-    read(key) { return state[key]; },
-    dispatch(action) {
-      // Minimal shim for the M3 flat-namespace facade. The MistakeBook
-      // only ever writes `mistakes`, so we can mirror that onto `state`.
-      if (!action || typeof action !== 'object') return null;
-      if (action.type === 'state/set' && action.key === 'mistakes') {
-        state.mistakes = action.value;
-        return action.value;
-      }
-      return null;
-    },
-  };
   const runtime = createMistakeBook({
-    stateStore,
+    state: {
+      getSession: () => state,
+      getKnowledge: () => state,
+      setMistakes: (value) => {
+        state.mistakes = value;
+      },
+    },
     apiFetch(path, request) {
       calls.push({ path, request });
       return Promise.resolve();
     },
-    saveCurrentSession() { saved.push(true); },
-    appendAssistantMessage(rawText) { appended.push(rawText); },
+    saveCurrentSession() {
+      saved.push(true);
+    },
+    appendAssistantMessage(rawText) {
+      appended.push(rawText);
+    },
   });
   return { runtime, state, calls, saved, appended };
 }
@@ -45,7 +42,10 @@ test('MistakeBook records a quiz error, persists it, and clears it by slot', () 
   runtime.recordMistake({
     type: 'quiz',
     q: 'Solve x + 2 = 5',
-    options: [{ letter: 'A', text: '2' }, { letter: 'B', text: '3' }],
+    options: [
+      { letter: 'A', text: '2' },
+      { letter: 'B', text: '3' },
+    ],
     correct: 'B',
     userAnswer: 'A',
     quizSlotId: 'quiz-1',
@@ -76,46 +76,74 @@ test('MistakeBook records a quiz error, persists it, and clears it by slot', () 
 
 test('MistakeBook practice redo appends a widget message and increments its count', () => {
   const { runtime, appended, saved, state } = createHarness();
-  state.mistakes = [{
-    id: 'practice-1', type: 'practice', q: 'Explain your reasoning <carefully>', correct: 'Because & therefore',
-    options: [], redoCount: 0,
-  }];
+  state.mistakes = [
+    {
+      id: 'practice-1',
+      type: 'practice',
+      q: 'Explain your reasoning <carefully>',
+      correct: 'Because & therefore',
+      options: [],
+      redoCount: 0,
+    },
+  ];
 
   runtime.redoMistake('practice-1');
 
   assert.equal(state.mistakes[0].redoCount, 1);
   assert.equal(appended.length, 1);
-  assert.match(appended[0], /^_.*_\n\n<practice data-practice-id="redo-practice-[\w-]+" correct="Because &amp; therefore"><problem>Explain your reasoning &lt;carefully&gt;<\/problem><\/practice>$/);
+  assert.match(
+    appended[0],
+    /^_.*_\n\n<practice data-practice-id="redo-practice-[\w-]+" correct="Because &amp; therefore"><problem>Explain your reasoning &lt;carefully&gt;<\/problem><\/practice>$/,
+  );
   assert.equal(saved.length, 1);
 });
 
 test('MistakeBook quiz redo appends a stable slot and persists it once', () => {
   const { runtime, appended, saved, state } = createHarness();
-  state.mistakes = [{
-    id: 'quiz-1', type: 'quiz', q: '2 + 2? <tip>', correct: 'A',
-    options: [{ letter: 'A', text: '4 & 1' }, { letter: 'B', text: '5' }], redoCount: 0,
-    quizSlotId: 'original-slot',
-  }];
+  state.mistakes = [
+    {
+      id: 'quiz-1',
+      type: 'quiz',
+      q: '2 + 2? <tip>',
+      correct: 'A',
+      options: [
+        { letter: 'A', text: '4 & 1' },
+        { letter: 'B', text: '5' },
+      ],
+      redoCount: 0,
+      quizSlotId: 'original-slot',
+    },
+  ];
 
   runtime.redoMistake('quiz-1');
 
   assert.equal(state.mistakes[0].redoCount, 1);
   assert.match(state.mistakes[0].quizSlotId, /^redo-quiz-[\w-]+$/);
   assert.equal(appended.length, 1);
-  assert.match(appended[0], new RegExp(`<quiz data-quiz-id="${state.mistakes[0].quizSlotId}"><q>2 \\+ 2\\? &lt;tip&gt;<\\/q><o letter="A">4 &amp; 1<\\/o><o letter="B">5<\\/o><correct>A<\\/correct><\\/quiz>`));
+  assert.match(
+    appended[0],
+    new RegExp(
+      `<quiz data-quiz-id="${state.mistakes[0].quizSlotId}"><q>2 \\+ 2\\? &lt;tip&gt;<\\/q><o letter="A">4 &amp; 1<\\/o><o letter="B">5<\\/o><correct>A<\\/correct><\\/quiz>`,
+    ),
+  );
   assert.equal(saved.length, 1);
 });
 
 test('RN-14 retrying a quiz and missing again refreshes the entry instead of adding a duplicate', () => {
   const { runtime, state, calls, saved } = createHarness();
-  const miss = (userAnswer, quizSlotId = 'quiz-retry') => runtime.recordMistake({
-    type: 'quiz',
-    q: 'Solve x + 2 = 5',
-    options: [{ letter: 'A', text: '2' }, { letter: 'B', text: '3' }, { letter: 'C', text: '7' }],
-    correct: 'B',
-    userAnswer,
-    quizSlotId,
-  });
+  const miss = (userAnswer, quizSlotId = 'quiz-retry') =>
+    runtime.recordMistake({
+      type: 'quiz',
+      q: 'Solve x + 2 = 5',
+      options: [
+        { letter: 'A', text: '2' },
+        { letter: 'B', text: '3' },
+        { letter: 'C', text: '7' },
+      ],
+      correct: 'B',
+      userAnswer,
+      quizSlotId,
+    });
 
   miss('A');
   const first = state.mistakes[0];
@@ -125,7 +153,11 @@ test('RN-14 retrying a quiz and missing again refreshes the entry instead of add
   miss('C');
   assert.equal(state.mistakes.length, 1);
   assert.equal(state.mistakes[0].userAnswer, 'C', 'the latest wrong answer is kept');
-  assert.equal(calls.filter((call) => call.path === '/api/mistakes').length, 1, 'mirrored to the server once');
+  assert.equal(
+    calls.filter((call) => call.path === '/api/mistakes').length,
+    1,
+    'mirrored to the server once',
+  );
   assert.equal(saved.length, 3);
 
   /* A different quiz (another slot) is a different mistake. */
@@ -139,7 +171,17 @@ test('RN-14 a resolved entry does not absorb a new miss on the same question', a
     { id: 'a', type: 'practice', q: '∫x dx', quizSlotId: null, resolved: true },
     { id: 'b', type: 'practice', q: '∫x dx', quizSlotId: null },
   ];
-  assert.equal(findSameMistake(entries, { type: 'practice', q: ' ∫x dx ', quizSlotId: null })?.id, 'b');
-  assert.equal(findSameMistake(entries, { type: 'quiz', q: '∫x dx', quizSlotId: null }), null, 'kinds do not mix');
-  assert.equal(findSameMistake(entries.slice(0, 1), { type: 'practice', q: '∫x dx', quizSlotId: null }), null);
+  assert.equal(
+    findSameMistake(entries, { type: 'practice', q: ' ∫x dx ', quizSlotId: null })?.id,
+    'b',
+  );
+  assert.equal(
+    findSameMistake(entries, { type: 'quiz', q: '∫x dx', quizSlotId: null }),
+    null,
+    'kinds do not mix',
+  );
+  assert.equal(
+    findSameMistake(entries.slice(0, 1), { type: 'practice', q: '∫x dx', quizSlotId: null }),
+    null,
+  );
 });

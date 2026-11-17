@@ -12,19 +12,22 @@ export function registerDiagnosticActions(actions: {
   if (actions.cancel !== undefined) {
     _cancelDiagnostic = actions.cancel;
     if (typeof window !== 'undefined' && actions.cancel) {
-      (window as unknown as { cancelDiagnostic?: DiagnosticHandler }).cancelDiagnostic = actions.cancel;
+      (window as unknown as { cancelDiagnostic?: DiagnosticHandler }).cancelDiagnostic =
+        actions.cancel;
     }
   }
   if (actions.retry !== undefined) {
     _retryDiagnostic = actions.retry;
     if (typeof window !== 'undefined' && actions.retry) {
-      (window as unknown as { retryDiagnostic?: DiagnosticHandler }).retryDiagnostic = actions.retry;
+      (window as unknown as { retryDiagnostic?: DiagnosticHandler }).retryDiagnostic =
+        actions.retry;
     }
   }
   if (actions.builtin !== undefined) {
     _useBuiltinDiagnostic = actions.builtin;
     if (typeof window !== 'undefined' && actions.builtin) {
-      (window as unknown as { useBuiltinDiagnostic?: DiagnosticHandler }).useBuiltinDiagnostic = actions.builtin;
+      (window as unknown as { useBuiltinDiagnostic?: DiagnosticHandler }).useBuiltinDiagnostic =
+        actions.builtin;
     }
   }
 }
@@ -57,7 +60,8 @@ export function useBuiltinDiagnosticAction(): void {
     return;
   }
   if (typeof window !== 'undefined') {
-    const fn = (window as unknown as { useBuiltinDiagnostic?: DiagnosticHandler }).useBuiltinDiagnostic;
+    const fn = (window as unknown as { useBuiltinDiagnostic?: DiagnosticHandler })
+      .useBuiltinDiagnostic;
     if (typeof fn === 'function') fn();
   }
 }

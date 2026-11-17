@@ -62,7 +62,8 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
   initialize_workspace: { max_memory_mb: 512, max_disk_mb: 1024, reset: false },
   create_site: {
     title: 'Course notes',
-    source: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Course notes</title></head><body><h1>Course notes</h1></body></html>',
+    source:
+      '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Course notes</title></head><body><h1>Course notes</h1></body></html>',
     visibility: 'unlisted',
   },
   patch_intelligent_ui: {
@@ -72,14 +73,16 @@ const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
   },
   read_attachment: { fileId: '00000000-0000-4000-8000-000000000000', offset: 0, limit: 12000 },
   cite_sources: { claims: [{ quote: 'Exact sentence from the answer.', sourceIds: ['source-1'] }] },
-  render_intelligent_ui: {version:1,nodes:[{id:'summary',type:'text',text:'Summary'}]},
+  render_intelligent_ui: { version: 1, nodes: [{ id: 'summary', type: 'text', text: 'Summary' }] },
   arxiv_search: { query: 'diffusion models sampling' },
   zotero_search: { query: 'attention is all you need' },
   notion_search_pages: { query: 'meeting notes' },
   github_list_repos: { query: 'socrates' },
   gitee_list_repos: { query: 'socrates' },
-  create_document: { kind: 'plan', content: { title: 'Study plan', steps: [{ title: 'Review concepts', status: 'todo' }] } },
-
+  create_document: {
+    kind: 'plan',
+    content: { title: 'Study plan', steps: [{ title: 'Review concepts', status: 'todo' }] },
+  },
 };
 
 /** The canonical example for a tool, generated from its schema if needed. */
@@ -150,26 +153,34 @@ function exampleValueFor(key: string, schema: JsonSchemaNode, depth: number): un
   if (Array.isArray(schema.enum) && schema.enum.length) return schema.enum[0];
   const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
   switch (type) {
-    case 'string': return placeholderString(key, schema);
-    case 'number': return boundedNumber(schema);
-    case 'integer': return boundedInteger(schema);
-    case 'boolean': return true;
+    case 'string':
+      return placeholderString(key, schema);
+    case 'number':
+      return boundedNumber(schema);
+    case 'integer':
+      return boundedInteger(schema);
+    case 'boolean':
+      return true;
     case 'array': {
       const item = exampleValueFor(key, schema.items || { type: 'string' }, depth + 1);
-      const minItems = typeof schema.minItems === 'number' ? Math.max(1, Math.min(3, schema.minItems)) : 1;
+      const minItems =
+        typeof schema.minItems === 'number' ? Math.max(1, Math.min(3, schema.minItems)) : 1;
       return Array.from({ length: minItems }, () => item);
     }
     case 'object': {
       const nested: Record<string, unknown> = {};
       const properties = schema.properties || {};
-      const required = Array.isArray(schema.required) ? schema.required : Object.keys(properties).slice(0, 2);
+      const required = Array.isArray(schema.required)
+        ? schema.required
+        : Object.keys(properties).slice(0, 2);
       for (const nestedKey of required) {
         const nestedSchema = properties[nestedKey];
         if (nestedSchema) nested[nestedKey] = exampleValueFor(nestedKey, nestedSchema, depth + 1);
       }
       return nested;
     }
-    default: return placeholderString(key, schema);
+    default:
+      return placeholderString(key, schema);
   }
 }
 
@@ -216,7 +227,8 @@ const USER_MESSAGES: Record<string, string> = {
   invalid_tool_arguments: '工具参数格式无效，已把正确格式示例反馈给模型。',
   /* The three replacements — one per actual cause, so the card says what
      went wrong instead of blaming "格式" for all of them. */
-  arguments_parse_failed: '工具参数没能完整解析（传输中被截断或不是单个 JSON 对象），已请模型重发。',
+  arguments_parse_failed:
+    '工具参数没能完整解析（传输中被截断或不是单个 JSON 对象），已请模型重发。',
   arguments_schema_failed: '工具参数缺少必填字段或类型不符，已附上字段说明请模型修正。',
   arguments_too_large: '工具参数超出单次调用上限，已请模型拆分成多次调用。',
   duplicate_tool_call: '模型重复了同一个工具调用，本次已跳过执行。',
@@ -229,11 +241,13 @@ const USER_MESSAGES: Record<string, string> = {
 
 /** Extra model-facing line per code — what to actually change. */
 const MODEL_HINTS: Record<string, string> = {
-  arguments_parse_failed: 'The arguments did not parse as a single JSON object. Re-emit them as one complete JSON object — no Markdown fence, no `input`/`arguments` wrapper, no prose around it, and no second object.',
-  arguments_schema_failed: 'The JSON parsed, but it does not satisfy the schema below. Fix the listed fields and keep every required one.',
-  arguments_too_large: 'The arguments were too large for one call and got cut off. Send a smaller payload and split the work across several calls.',
+  arguments_parse_failed:
+    'The arguments did not parse as a single JSON object. Re-emit them as one complete JSON object — no Markdown fence, no `input`/`arguments` wrapper, no prose around it, and no second object.',
+  arguments_schema_failed:
+    'The JSON parsed, but it does not satisfy the schema below. Fix the listed fields and keep every required one.',
+  arguments_too_large:
+    'The arguments were too large for one call and got cut off. Send a smaller payload and split the work across several calls.',
 };
-
 
 /**
  * Build the correction package for one rejected tool call.
@@ -243,11 +257,17 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
   const fieldErrors = normalizeFieldErrors(input.fieldErrors);
   let example = canonicalToolExampleJson(toolName, schema);
   if (input.exampleOverride) {
-    try { example = JSON.stringify(input.exampleOverride); } catch { /* keep the canonical fallback */ }
+    try {
+      example = JSON.stringify(input.exampleOverride);
+    } catch {
+      /* keep the canonical fallback */
+    }
   }
   const schemaText = describeToolSchema(schema);
 
-  const lines: string[] = [`[error] ${errorCode}: the call to \`${toolName}\` was rejected before execution.`];
+  const lines: string[] = [
+    `[error] ${errorCode}: the call to \`${toolName}\` was rejected before execution.`,
+  ];
   if (fieldErrors) lines.push(`[fields] ${fieldErrors}`);
   /* A per-code instruction, so "wrong shape" / "too big" / "not JSON" read
      as three different problems with three different fixes. */
@@ -257,9 +277,11 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
 
   if (errorCode === 'unknown_tool' || errorCode === 'tool_not_available') {
     const available = (input.availableTools || []).filter(Boolean);
-    lines.push(available.length
-      ? `Callable tools for this turn: ${available.map((name) => `\`${name}\``).join(', ')}. Pick one of those exact names, or answer in prose.`
-      : 'No native tools are callable for this turn. Answer in prose.');
+    lines.push(
+      available.length
+        ? `Callable tools for this turn: ${available.map((name) => `\`${name}\``).join(', ')}. Pick one of those exact names, or answer in prose.`
+        : 'No native tools are callable for this turn. Answer in prose.',
+    );
   } else {
     if (schemaText) lines.push('', `Expected arguments for \`${toolName}\`:`, schemaText);
     if (example) {
@@ -271,17 +293,21 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
     }
   }
 
-  lines.push('', retryable
-    ? 'Send one corrected call with materially different arguments, or continue in prose if the tool is not needed.'
-    : 'Do not repeat this call. Continue in prose instead.');
+  lines.push(
+    '',
+    retryable
+      ? 'Send one corrected call with materially different arguments, or continue in prose if the tool is not needed.'
+      : 'Do not repeat this call. Continue in prose instead.',
+  );
   lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
 
   const detailParts = [fieldErrors, example ? `example: ${example}` : ''].filter(Boolean);
   return {
     modelMessage: lines.join('\n'),
     detail: detailParts.join(' | ').slice(0, MAX_DETAIL_CHARS) || errorCode,
-    userMessage: input.userMessageOverride
-      || USER_MESSAGES[errorCode]
-      || (retryable ? '工具调用被拒绝，已请模型按正确格式重试。' : '工具调用被拒绝，本轮不再重试。'),
+    userMessage:
+      input.userMessageOverride ||
+      USER_MESSAGES[errorCode] ||
+      (retryable ? '工具调用被拒绝，已请模型按正确格式重试。' : '工具调用被拒绝，本轮不再重试。'),
   };
 }

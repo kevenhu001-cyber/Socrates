@@ -38,11 +38,13 @@
  * that leaves the forced-colours fallback there in charge of the outline.
  */
 
-:root:not(#_focus-a):not(#_focus-b) #appShell :is(
-  .workspace-search-field input,
-  .plugin-directory-search input,
-  .intui-slider input[type="range"]
-):focus-visible {
+:root:not(#_focus-a):not(#_focus-b)
+  #appShell
+  :is(
+    .workspace-search-field input,
+    .plugin-directory-search input,
+    .intui-slider input[type='range']
+  ):focus-visible {
   outline: none !important;
   box-shadow: none;
 }
@@ -52,11 +54,13 @@
    outline. Without a counterpart, these fields would have no focus cue at
    all in high-contrast mode. */
 @media (forced-colors: active) {
-  :root:not(#_focus-a):not(#_focus-b) #appShell :is(
-    .workspace-search-field input,
-    .plugin-directory-search input,
-    .intui-slider input[type="range"]
-  ):focus-visible {
+  :root:not(#_focus-a):not(#_focus-b)
+    #appShell
+    :is(
+      .workspace-search-field input,
+      .plugin-directory-search input,
+      .intui-slider input[type='range']
+    ):focus-visible {
     outline: 2px solid Highlight !important;
   }
 }

@@ -72,11 +72,13 @@ function randomSuffix(): string {
 }
 
 function fallback(inner: string, t: ScaffoldDeps['t'], esc: ScaffoldDeps['esc']): string {
-  return '<div class="inline-block-fallback"><div class="inline-block-fallback-label">'
-    + t('tutor.fallbackWarn')
-    + '</div><pre class="inline-block-fallback-content">'
-    + esc(inner)
-    + '</pre></div>';
+  return (
+    '<div class="inline-block-fallback"><div class="inline-block-fallback-label">' +
+    t('tutor.fallbackWarn') +
+    '</div><pre class="inline-block-fallback-content">' +
+    esc(inner) +
+    '</pre></div>'
+  );
 }
 
 /** The placeholder element a mounted card replaces. */
@@ -90,13 +92,19 @@ function addPlaceholder(widgets: ScaffoldWidgets, block: ScaffoldBlock, id: stri
   const parsed = block.parsed;
   switch (block.kind) {
     case 'quiz':
-      widgets.quizPH.push({ id, parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as QuizMountData });
+      widgets.quizPH.push({
+        id,
+        parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as QuizMountData,
+      });
       break;
     case 'example':
       widgets.examplePH.push({ id, parsed: parsed as ParsedExample });
       break;
     case 'practice':
-      widgets.practicePH.push({ id, parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as PracticeMountData });
+      widgets.practicePH.push({
+        id,
+        parsed: { ...(parsed as { slotId?: string | null }), slotId: id } as PracticeMountData,
+      });
       break;
     case 'definition':
       widgets.definitionPH.push({ id, parsed: parsed as ParsedDefinition });

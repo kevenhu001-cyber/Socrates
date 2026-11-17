@@ -48,10 +48,7 @@ function priorityFor(owner: ScrollOwner | string): number {
 }
 
 /** Claim the right to animate or repeatedly correct a transcript. */
-export function beginScrollOwner(
-  list: HTMLElement | null,
-  owner: ScrollOwner,
-): number | null {
+export function beginScrollOwner(list: HTMLElement | null, owner: ScrollOwner): number | null {
   if (!list) return null;
   const current = claims.get(list);
   const priority = priorityFor(owner);

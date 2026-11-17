@@ -28,7 +28,10 @@ test('text without a formula stays plain', () => {
 test('inline $…$ is typeset and the prose around it is escaped', () => {
   installKatex();
   const html = renderInlineMathHtml('$f(x)=x^2$ 在 $x=1$ 处 <b>的</b>导数');
-  assert.equal(html, '<span class="katex">f(x)=x^2</span> 在 <span class="katex">x=1</span> 处 &lt;b&gt;的&lt;/b&gt;导数');
+  assert.equal(
+    html,
+    '<span class="katex">f(x)=x^2</span> 在 <span class="katex">x=1</span> 处 &lt;b&gt;的&lt;/b&gt;导数',
+  );
   assert.ok(calls.every((call) => call.opts.displayMode === false));
 });
 
@@ -48,7 +51,7 @@ test('a price is not a formula', () => {
    Nothing else becomes HTML. */
 test('bold, code and formulas mix on one line', () => {
   installKatex();
-  const html = renderInlineMathHtml('**注意** 用 `diff(f)` 求 $f(x)=x^2$ 的 **导数 $f\'(x)$**');
+  const html = renderInlineMathHtml("**注意** 用 `diff(f)` 求 $f(x)=x^2$ 的 **导数 $f'(x)$**");
   assert.equal(
     html,
     '<strong>注意</strong> 用 <code>diff(f)</code> 求 <span class="katex">f(x)=x^2</span> 的 <strong>导数 <span class="katex">f\'(x)</span></strong>',
@@ -57,22 +60,34 @@ test('bold, code and formulas mix on one line', () => {
 
 test('marks without a formula still render, and raw HTML stays escaped', () => {
   installKatex();
-  assert.equal(renderInlineMathHtml('**<b>粗</b>** 与 `<i>x</i>`'), '<strong>&lt;b&gt;粗&lt;/b&gt;</strong> 与 <code>&lt;i&gt;x&lt;/i&gt;</code>');
+  assert.equal(
+    renderInlineMathHtml('**<b>粗</b>** 与 `<i>x</i>`'),
+    '<strong>&lt;b&gt;粗&lt;/b&gt;</strong> 与 <code>&lt;i&gt;x&lt;/i&gt;</code>',
+  );
   assert.equal(calls.length, 0);
 });
 
 test('unclosed marks stay literal', () => {
   installKatex();
   assert.equal(renderInlineMathHtml('**没有闭合 和 `也没有'), null);
-  assert.equal(renderInlineMathHtml('**半个 `a` 与 $x$'), '**半个 <code>a</code> 与 <span class="katex">x</span>');
+  assert.equal(
+    renderInlineMathHtml('**半个 `a` 与 $x$'),
+    '**半个 <code>a</code> 与 <span class="katex">x</span>',
+  );
   assert.equal(renderInlineMathHtml('** 两边有空格 **'), null);
 });
 
 test('stars inside a formula are not bold', () => {
   installKatex();
   const html = renderInlineMathHtml('$a**b**c$ 与 $x^{*}$ **粗**');
-  assert.equal(html, '<span class="katex">a**b**c</span> 与 <span class="katex">x^{*}</span> <strong>粗</strong>');
-  assert.deepEqual(calls.map((call) => call.math), ['a**b**c', 'x^{*}']);
+  assert.equal(
+    html,
+    '<span class="katex">a**b**c</span> 与 <span class="katex">x^{*}</span> <strong>粗</strong>',
+  );
+  assert.deepEqual(
+    calls.map((call) => call.math),
+    ['a**b**c', 'x^{*}'],
+  );
 });
 
 test('code content is literal: no formula, no bold inside it', () => {
@@ -85,7 +100,6 @@ test('before KaTeX loads, marks paint and a formula keeps its escaped source', (
   assert.equal(renderInlineMathHtml('$a<b$ 只有公式'), null);
   assert.equal(renderInlineMathHtml('**粗** 和 $a**b<c$'), '<strong>粗</strong> 和 $a**b&lt;c$');
 });
-
 
 /* Explicit delimiters do not override content: a prose pair stays literal.
    73b49163 removed the acceptance gate so `$…$` always rendered, which

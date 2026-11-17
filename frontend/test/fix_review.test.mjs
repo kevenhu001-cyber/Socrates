@@ -4,9 +4,7 @@ import test from 'node:test';
 /*
  * Tests for the fixes flagged in the skeptical review:
  *   - A1: ui/keyboard/index.ts inset rAF loop now has a real cancel
- *   - A2: useAutoHeight rAF fallback has a real cancel (covered via
- *     the cap clamp behaviour, since the WAAPI path is browser-only)
- *   - A4: useAutoHeight clamps `natural` to the CSS max-height so we
+ *   - A4: the motion planner clamps `natural` to the CSS max-height so we
  *     do not animate past the cap
  *
  * We test the pure helpers and the planner since those are the
@@ -39,11 +37,13 @@ test('C: planMotion respects caller velocity when 0 is passed via ?? not ||', ()
      either skip or fall back; both are acceptable. The contract is
      that it does NOT silently use the default 1800 px/s. */
   const dur = plan.duration;
-  assert.ok(dur === 0 || !Number.isFinite(dur) || dur >= 0,
-    'velocity:0 must not silently fall back to the default');
+  assert.ok(
+    dur === 0 || !Number.isFinite(dur) || dur >= 0,
+    'velocity:0 must not silently fall back to the default',
+  );
 });
 
-test('A4 / useAutoHeight cap semantics: planner honours caller maxDuration for short distances', () => {
+test('A4 / planner cap semantics: honours caller maxDuration for short distances', () => {
   /* The clamp to max-height should reduce the perceived motion to a
      short snap when content is near the cap. The planner's
      behaviour with maxDuration overridden is the proxy test for
@@ -54,10 +54,15 @@ test('A4 / useAutoHeight cap semantics: planner honours caller maxDuration for s
      resolves to min), the planner must honour the caller-supplied
      floor — it must NOT silently restore the default. */
   const plan = planMotionForUser(40, { maxDuration: 80, minDuration: 10 });
-  assert.ok(plan.duration >= 10 && plan.duration <= 80,
-    `duration ${plan.duration} must lie in the [10, 80] caller-supplied band`);
-  assert.notEqual(plan.duration, 90,
-    'planner must not silently fall back to the default minDuration');
+  assert.ok(
+    plan.duration >= 10 && plan.duration <= 80,
+    `duration ${plan.duration} must lie in the [10, 80] caller-supplied band`,
+  );
+  assert.notEqual(
+    plan.duration,
+    90,
+    'planner must not silently fall back to the default minDuration',
+  );
 });
 
 test('A1 / A3 contract: planMotionForUser returns a Promise-resolvable plan', () => {
@@ -94,18 +99,35 @@ test('velocityScrollTo cancels an in-flight chain when called twice in a row (mo
     clientHeight: 600,
     dataset: {},
     animate() {
-      return { cancel() {}, onfinish: null, oncancel: null, then() { return this; } };
+      return {
+        cancel() {},
+        onfinish: null,
+        oncancel: null,
+        then() {
+          return this;
+        },
+      };
     },
-    scrollTo() { return undefined; },
+    scrollTo() {
+      return undefined;
+    },
   };
   const previousMatchMedia = globalThis.matchMedia;
-  globalThis.matchMedia = () => ({ matches: false, media: '', addEventListener() {}, removeEventListener() {} });
+  globalThis.matchMedia = () => ({
+    matches: false,
+    media: '',
+    addEventListener() {},
+    removeEventListener() {},
+  });
   /* Force snap path so we don't leak rAF activity past the test. */
   try {
     const ret = mod.velocityScrollTo(stub, 10, { smooth: false });
     await ret;
-    assert.equal(stub.dataset.autoScrolling, undefined,
-      'snap path must clear the auto-scrolling flag synchronously');
+    assert.equal(
+      stub.dataset.autoScrolling,
+      undefined,
+      'snap path must clear the auto-scrolling flag synchronously',
+    );
   } finally {
     globalThis.matchMedia = previousMatchMedia;
   }

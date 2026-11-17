@@ -48,11 +48,13 @@ function fail(msg) {
 }
 
 function normPath(p) {
-  return p
-    .replace(/\/+/g, '/')
-    .replace(/:([A-Za-z_][\w]*)/g, '{p}')
-    .replace(/\{[^}/]+\}/g, '{p}')
-    .replace(/\/+$/, '') || '/';
+  return (
+    p
+      .replace(/\/+/g, '/')
+      .replace(/:([A-Za-z_][\w]*)/g, '{p}')
+      .replace(/\{[^}/]+\}/g, '{p}')
+      .replace(/\/+$/, '') || '/'
+  );
 }
 
 /* ── 1. implemented routes ───────────────────────────────────────── */
@@ -61,7 +63,9 @@ const appSrc = readFileSync(APP_TS, 'utf8');
 // name → routes/<file> for every router import (default import name only;
 // named siblings like `, { githubWebhookHandler }` are handlers, not routers)
 const importToFile = new Map();
-for (const m of appSrc.matchAll(/import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'\.\/routes\/([^']+)\.js'/g)) {
+for (const m of appSrc.matchAll(
+  /import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'\.\/routes\/([^']+)\.js'/g,
+)) {
   importToFile.set(m[1], join(ROUTES_DIR, m[2]));
 }
 
@@ -114,7 +118,8 @@ function routesInFile(file) {
         const helperSrc = readFileSync(helper, 'utf8');
         if (/Router\(/.test(helperSrc)) continue;
         const helperRe = new RegExp(`\\b(?:${v}|router)\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g');
-        for (const m of helperSrc.matchAll(helperRe)) found.push({ method: m[1].toUpperCase(), sub: m[2] });
+        for (const m of helperSrc.matchAll(helperRe))
+          found.push({ method: m[1].toUpperCase(), sub: m[2] });
       }
     }
   }
@@ -151,11 +156,20 @@ const spec = new Set();
 let inPaths = false;
 let curPath = null;
 for (const line of specLines) {
-  if (/^paths:\s*$/.test(line)) { inPaths = true; continue; }
-  if (inPaths && /^\S/.test(line)) { inPaths = false; break; }
+  if (/^paths:\s*$/.test(line)) {
+    inPaths = true;
+    continue;
+  }
+  if (inPaths && /^\S/.test(line)) {
+    inPaths = false;
+    break;
+  }
   if (!inPaths) continue;
   const p = line.match(/^ {2}(\/\S*):\s*$/);
-  if (p) { curPath = p[1]; continue; }
+  if (p) {
+    curPath = p[1];
+    continue;
+  }
   const m = line.match(new RegExp(`^ {4}(${METHOD_RE}):`));
   if (m && curPath) spec.add(`${m[1].toUpperCase()} ${normPath(curPath)}`);
 }
@@ -168,23 +182,32 @@ const implementedNotInSpec = [...implemented].filter((r) => !spec.has(r)).sort()
 const specNotImplemented = [...spec].filter((r) => !implemented.has(r)).sort();
 
 if (UPDATE) {
-  writeFileSync(BASELINE, JSON.stringify({
-    _comment: [
-      'Route/spec drift accepted as of the recorded date. Consumed by',
-      'scripts/check-openapi-drift.mjs, run by the Repo sanity CI job.',
-      '',
-      'Contract (same shape as audit.baseline.json):',
-      '  - a divergence NOT listed here fails CI: new routes need spec entries,',
-      '    new spec entries need implementations.',
-      '  - a listed divergence that stops reproducing ALSO fails, so the list',
-      '    can only shrink.',
-      'Refresh with: node scripts/check-openapi-drift.mjs --update',
-    ],
-    recorded: new Date().toISOString().slice(0, 10),
-    implementedNotInSpec,
-    specNotImplemented,
-  }, null, 2) + '\n');
-  console.log(`baseline written: ${implementedNotInSpec.length} undocumented, ${specNotImplemented.length} unimplemented`);
+  writeFileSync(
+    BASELINE,
+    JSON.stringify(
+      {
+        _comment: [
+          'Route/spec drift accepted as of the recorded date. Consumed by',
+          'scripts/check-openapi-drift.mjs, run by the Repo sanity CI job.',
+          '',
+          'Contract (same shape as audit.baseline.json):',
+          '  - a divergence NOT listed here fails CI: new routes need spec entries,',
+          '    new spec entries need implementations.',
+          '  - a listed divergence that stops reproducing ALSO fails, so the list',
+          '    can only shrink.',
+          'Refresh with: node scripts/check-openapi-drift.mjs --update',
+        ],
+        recorded: new Date().toISOString().slice(0, 10),
+        implementedNotInSpec,
+        specNotImplemented,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  console.log(
+    `baseline written: ${implementedNotInSpec.length} undocumented, ${specNotImplemented.length} unimplemented`,
+  );
   process.exit(0);
 }
 
@@ -192,13 +215,17 @@ const baseline = existsSync(BASELINE)
   ? JSON.parse(readFileSync(BASELINE, 'utf8'))
   : { implementedNotInSpec: [], specNotImplemented: [] };
 
-const newUndocumented = implementedNotInSpec.filter((r) => !baseline.implementedNotInSpec.includes(r));
+const newUndocumented = implementedNotInSpec.filter(
+  (r) => !baseline.implementedNotInSpec.includes(r),
+);
 const newUnimplemented = specNotImplemented.filter((r) => !baseline.specNotImplemented.includes(r));
 const staleUndoc = baseline.implementedNotInSpec.filter((r) => !implementedNotInSpec.includes(r));
 const staleUnimp = baseline.specNotImplemented.filter((r) => !specNotImplemented.includes(r));
 
 console.log(`implemented routes: ${implemented.size} · spec entries: ${spec.size}`);
-console.log(`drift: ${implementedNotInSpec.length} undocumented · ${specNotImplemented.length} unimplemented (baseline: ${baseline.implementedNotInSpec.length} / ${baseline.specNotImplemented.length})`);
+console.log(
+  `drift: ${implementedNotInSpec.length} undocumented · ${specNotImplemented.length} unimplemented (baseline: ${baseline.implementedNotInSpec.length} / ${baseline.specNotImplemented.length})`,
+);
 
 let bad = false;
 if (newUndocumented.length) {
@@ -213,7 +240,9 @@ if (newUnimplemented.length) {
 }
 if (staleUndoc.length || staleUnimp.length) {
   bad = true;
-  console.error('\nBaseline entries that no longer reproduce (ratchet only shrinks — run --update):');
+  console.error(
+    '\nBaseline entries that no longer reproduce (ratchet only shrinks — run --update):',
+  );
   [...staleUndoc, ...staleUnimp].forEach((r) => console.error(`  ${r}`));
 }
 if (bad) process.exit(1);

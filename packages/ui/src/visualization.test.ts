@@ -17,7 +17,6 @@ test('v1 visualization specs are recognized and rejected when malformed', () => 
   assert.equal(isVisualizationSpec(null), false);
 });
 
-
 test('the island document renders an inline SVG chart and escapes the title', () => {
   const html = buildVisualizationDocument(spec, { artifactId: 'a1', mode: 'light' });
   assert.match(html, /<svg[^>]*viewBox="0 0 640 260"/);
@@ -31,7 +30,10 @@ test('the island document renders an inline SVG chart and escapes the title', ()
 
 test('interactive_simulation embeds its source and appends the bridge', () => {
   const source = '<html><body><script>1+1<\/script></body></html>';
-  const html = buildVisualizationDocument({ ...spec, template: 'interactive_simulation', payload: { source } }, { artifactId: 'sim', mode: 'dark' });
+  const html = buildVisualizationDocument(
+    { ...spec, template: 'interactive_simulation', payload: { source } },
+    { artifactId: 'sim', mode: 'dark' },
+  );
   assert.match(html, /<script>1\+1<\/script><script>\(function\(\)/);
   assert.match(html, /<\/script><\/body><\/html>$/);
 });

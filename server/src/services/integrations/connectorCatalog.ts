@@ -13,12 +13,7 @@
  * store is per-turn, so a later turn starts from the same small surface.
  */
 
-import {
-  GITEE_TOOL,
-  GITHUB_TOOL,
-  NOTION_TOOL,
-  ZOTERO_TOOL,
-} from './connectorTools.js';
+import { GITEE_TOOL, GITHUB_TOOL, NOTION_TOOL, ZOTERO_TOOL } from './connectorTools.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
 import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatToolCatalog.js';
 
@@ -77,7 +72,17 @@ const SERVICE_ALIASES: Record<string, string[]> = {
   qq_mail: ['qq mail', 'qq邮箱', '邮件', '邮箱'],
   outlook: ['outlook', 'microsoft mail', '邮件', '邮箱', '收件箱'],
   netease_mail: ['netease', '163 mail', '网易邮箱', '邮件', '邮箱'],
-  github: ['github', 'repo', 'repository', 'code', 'issue', 'pull request', '代码仓库', '仓库', '代码'],
+  github: [
+    'github',
+    'repo',
+    'repository',
+    'code',
+    'issue',
+    'pull request',
+    '代码仓库',
+    '仓库',
+    '代码',
+  ],
   gitlab: ['gitlab', 'repo', 'repository', 'issue', 'merge request', '代码仓库', '仓库'],
   notion: ['notion', 'note', 'notes', 'doc', 'docs', 'wiki', 'page', '笔记', '文档', '页面'],
   zotero: ['zotero', 'reference', 'paper', 'citation', 'bibliography', '文献', '参考文献', '论文'],
@@ -114,26 +119,24 @@ function aliasesFor(service: string): string[] {
 }
 
 function entryFromDefinition(
-  definition: { function: { name: string; description?: string; parameters?: Record<string, unknown> } },
+  definition: {
+    function: { name: string; description?: string; parameters?: Record<string, unknown> };
+  },
   service: string,
   family: ConnectorFamily,
   actionId: string,
 ): ConnectorCatalogEntry {
   const fn = definition.function;
   const parameters = (fn.parameters || {}) as Record<string, unknown>;
-  const properties = parameters.properties && typeof parameters.properties === 'object'
-    ? Object.keys(parameters.properties as Record<string, unknown>)
-    : [];
+  const properties =
+    parameters.properties && typeof parameters.properties === 'object'
+      ? Object.keys(parameters.properties as Record<string, unknown>)
+      : [];
   const description = String(fn.description || '');
   const aliases = aliasesFor(service);
-  const searchText = [
-    fn.name,
-    service,
-    actionId,
-    description,
-    ...properties,
-    ...aliases,
-  ].join(' ').toLowerCase();
+  const searchText = [fn.name, service, actionId, description, ...properties, ...aliases]
+    .join(' ')
+    .toLowerCase();
   return {
     tool: fn.name,
     service,
@@ -195,12 +198,16 @@ export function buildConnectorCatalog(input: {
 
   for (const tool of OPEN_CONNECTOR_CHAT_TOOLS) {
     if (!hasConnection(project, `oc_${tool.service}`)) continue;
-    entries.push(entryFromDefinition(
-      { function: { name: tool.tool, description: tool.description, parameters: tool.parameters } },
-      tool.service,
-      'open',
-      tool.actionId,
-    ));
+    entries.push(
+      entryFromDefinition(
+        {
+          function: { name: tool.tool, description: tool.description, parameters: tool.parameters },
+        },
+        tool.service,
+        'open',
+        tool.actionId,
+      ),
+    );
   }
 
   const byTool = new Map<string, ConnectorCatalogEntry>();
@@ -221,10 +228,48 @@ export function splitInitialToolNames(
 }
 
 const STOP_WORDS = new Set([
-  'the', 'a', 'an', 'to', 'for', 'of', 'in', 'on', 'at', 'by', 'with', 'from',
-  'my', 'me', 'please', 'can', 'could', 'would', 'you', 'i', 'we', 'want',
-  'need', 'this', 'that', 'these', 'those', 'is', 'are', 'was', 'were', 'be',
-  'do', 'does', 'did', 'what', 'which', 'who', 'how', 'about', 'and', 'or',
+  'the',
+  'a',
+  'an',
+  'to',
+  'for',
+  'of',
+  'in',
+  'on',
+  'at',
+  'by',
+  'with',
+  'from',
+  'my',
+  'me',
+  'please',
+  'can',
+  'could',
+  'would',
+  'you',
+  'i',
+  'we',
+  'want',
+  'need',
+  'this',
+  'that',
+  'these',
+  'those',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'do',
+  'does',
+  'did',
+  'what',
+  'which',
+  'who',
+  'how',
+  'about',
+  'and',
+  'or',
 ]);
 
 function tokenize(text: string): string[] {

@@ -130,7 +130,10 @@ export const uiColorVar: Readonly<Record<keyof UiColors, string>> = {
  */
 export const uiColorsCssVars: UiColors = Object.freeze(
   Object.fromEntries(
-    (Object.keys(uiColorVar) as (keyof UiColors)[]).map((role) => [role, `var(${uiColorVar[role]})`]),
+    (Object.keys(uiColorVar) as (keyof UiColors)[]).map((role) => [
+      role,
+      `var(${uiColorVar[role]})`,
+    ]),
   ) as unknown as UiColors,
 );
 
@@ -260,11 +263,16 @@ export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
   light: {
     ring: '0 0 0 1px rgb(0 0 0 / 8%)',
     raised: '0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 4px 12px -4px rgb(0 0 0 / 5%)',
-    overlay: '0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%)',
-    dialog: '0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%)',
-    field: '0 0 0 1px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 40px -12px rgb(0 0 0 / 14%)',
-    fieldHover: '0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
-    fieldFocus: '0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
+    overlay:
+      '0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%)',
+    dialog:
+      '0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%)',
+    field:
+      '0 0 0 1px rgb(0 0 0 / 8%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 40px -12px rgb(0 0 0 / 14%)',
+    fieldHover:
+      '0 0 0 1px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
+    fieldFocus:
+      '0 0 0 1px rgb(0 0 0 / 28%), 0 0 0 4px rgb(0 0 0 / 5%), 0 16px 48px -14px rgb(0 0 0 / 16%)',
   },
   dark: {
     ring: '0 0 0 1px rgb(255 255 255 / 10%)',
@@ -273,7 +281,8 @@ export const uiShadow: Readonly<Record<ThemeMode, UiShadowSet>> = {
     dialog: '0 0 0 1px rgb(255 255 255 / 10%), 0 24px 56px -20px rgb(0 0 0 / 60%)',
     field: '0 0 0 1px rgb(255 255 255 / 10%), 0 12px 40px -12px rgb(0 0 0 / 50%)',
     fieldHover: '0 0 0 1px rgb(255 255 255 / 16%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
-    fieldFocus: '0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
+    fieldFocus:
+      '0 0 0 1px rgb(255 255 255 / 32%), 0 0 0 4px rgb(255 255 255 / 6%), 0 16px 48px -14px rgb(0 0 0 / 55%)',
   },
 };
 

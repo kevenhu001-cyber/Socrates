@@ -7,7 +7,9 @@ export type { VisualizationTemplate } from './visualizationTemplates.js';
 
 /** One point limit for the direct tool, OpenUI programs and prompt text. */
 export declare const MAX_VISUALIZATION_POINTS: 5000;
-export declare const VISUALIZATION_ITEM_LIMITS: Readonly<Record<'timeline' | 'process' | 'number_line' | 'comparison', readonly [number, number]>>;
+export declare const VISUALIZATION_ITEM_LIMITS: Readonly<
+  Record<'timeline' | 'process' | 'number_line' | 'comparison', readonly [number, number]>
+>;
 
 /** A finite number, `null` for an explicit gap, or `undefined` when not numeric. */
 export declare function coerceNumber(value: unknown): number | null | undefined;
@@ -26,4 +28,6 @@ export interface NormalizedVisualization {
 export declare function normalizeVisualizationSpec(input: unknown): NormalizedVisualization;
 
 /** Header row plus data rows for the "view as table" fallback; [] when none. */
-export declare function visualizationTableRows(input: unknown): Array<Array<string | number | null>>;
+export declare function visualizationTableRows(
+  input: unknown,
+): Array<Array<string | number | null>>;

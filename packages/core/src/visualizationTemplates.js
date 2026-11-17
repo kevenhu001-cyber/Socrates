@@ -13,12 +13,52 @@
  */
 
 export const VISUALIZATION_TEMPLATES = [
-  'function', 'line', 'area', 'bar', 'scatter', 'pie', 'histogram', 'heatmap',
-  'radar', 'boxplot', 'flowchart', 'sequence', 'state', 'tree', 'mindmap',
-  'network', 'timeline', 'comparison', 'process', 'number_line', 'geometry',
-  'concept_map', 'svg_illustration', 'interactive_simulation',
-  'paper_chart', 'math_construction', 'geometry_3d', 'whiteboard',
+  'function',
+  'line',
+  'area',
+  'bar',
+  'scatter',
+  'pie',
+  'histogram',
+  'heatmap',
+  'radar',
+  'boxplot',
+  'flowchart',
+  'sequence',
+  'state',
+  'tree',
+  'mindmap',
+  'network',
+  'timeline',
+  'comparison',
+  'process',
+  'number_line',
+  'geometry',
+  'concept_map',
+  'svg_illustration',
+  'interactive_simulation',
+  'paper_chart',
+  'math_construction',
+  'geometry_3d',
+  'whiteboard',
 ];
 
-export const CATEGORY_TEMPLATES = ['line', 'area', 'bar', 'pie', 'histogram', 'radar', 'boxplot', 'paper_chart'];
-export const GRAPH_TEMPLATES = ['flowchart', 'sequence', 'state', 'tree', 'mindmap', 'network', 'concept_map'];
+export const CATEGORY_TEMPLATES = [
+  'line',
+  'area',
+  'bar',
+  'pie',
+  'histogram',
+  'radar',
+  'boxplot',
+  'paper_chart',
+];
+export const GRAPH_TEMPLATES = [
+  'flowchart',
+  'sequence',
+  'state',
+  'tree',
+  'mindmap',
+  'network',
+  'concept_map',
+];

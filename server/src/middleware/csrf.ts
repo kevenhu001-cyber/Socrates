@@ -21,12 +21,7 @@ const MOBILE_CREDENTIAL_PATHS = new Set([
  * (or not at all on the discovery surface we expose here), and they have
  * no business carrying an ambient sid cookie. Skip the double-submit
  * check so a stray csrf cookie cannot turn their POST into a 403. */
-const MCP_PATHS = new Set([
-  '/api/mcp',
-  '/api/mcp/',
-  '/api/mcp/docs',
-  '/api/mcp/docs/',
-]);
+const MCP_PATHS = new Set(['/api/mcp', '/api/mcp/', '/api/mcp/docs', '/api/mcp/docs/']);
 
 /* P_oauth-token-endpoints — RFC 6749 §4.1.3 token / §2.1 revoke requests
  * authenticate with client_secret (Basic or POST body) and carry no ambient
@@ -85,11 +80,11 @@ function timingSafeEqual(a: unknown, b: unknown): boolean {
 function getCsrfCookieOptions(req: Request): CookieOptions {
   const isProd = shouldUseSharedDomain(req);
   const base: CookieOptions = {
-    httpOnly: false,      // Must be readable by front-end JS
+    httpOnly: false, // Must be readable by front-end JS
     secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',  // 'none' allows cross-subdomain in production
+    sameSite: isProd ? 'none' : 'lax', // 'none' allows cross-subdomain in production
     path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000,  // 30 days — match session cookie lifetime
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days — match session cookie lifetime
   };
   if (isProd) {
     return { ...base, domain: SHARED_COOKIE_DOMAIN };
@@ -201,8 +196,15 @@ export function setCsrfToken(req: Request, res: Response) {
 export function csrfProtection(req: Request, res: Response, next: NextFunction) {
   // Apply privacy headers before global CSRF/rate-limit handling so failures
   // cannot cache or leak a handoff URL/code via referrers.
-  if (req.path === '/api/auth/mobile/browser/authorize' || req.path === '/api/auth/mobile/browser/exchange') {
-    res.set({ 'Cache-Control': 'no-store, no-cache, must-revalidate', Pragma: 'no-cache', 'Referrer-Policy': 'no-referrer' });
+  if (
+    req.path === '/api/auth/mobile/browser/authorize' ||
+    req.path === '/api/auth/mobile/browser/exchange'
+  ) {
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      Pragma: 'no-cache',
+      'Referrer-Policy': 'no-referrer',
+    });
   }
   // Skip for safe methods
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
@@ -263,8 +265,10 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
   // 403 lets us observe this in logs/metrics and avoids letting an
   // attacker ride on whichever token they happened to obtain.
   const which = headerToken ? 'header-only' : 'cookie-only';
-  return next(new Forbidden(
-    'CSRF_TOKEN_PARTIAL',
-    `Partial CSRF token pair (${which}); refusing as a likely forgery`,
-  ));
+  return next(
+    new Forbidden(
+      'CSRF_TOKEN_PARTIAL',
+      `Partial CSRF token pair (${which}); refusing as a likely forgery`,
+    ),
+  );
 }

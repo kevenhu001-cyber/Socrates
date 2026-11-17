@@ -1,10 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  takeBootSessionPrefetch,
-  readBootSessions,
-} from '../src/session/bootSessions.ts';
+import { takeBootSessionPrefetch, readBootSessions } from '../src/session/bootSessions.ts';
 
 const ROWS = [
   { id: 'A', title: 'Alpha', updated_at: 20 },

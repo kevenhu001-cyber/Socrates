@@ -27,20 +27,36 @@ function parseNextRunAt(value: unknown): Date | null {
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const rows = await db.select().from(scheduledTasks)
+    const rows = await db
+      .select()
+      .from(scheduledTasks)
       .where(eq(scheduledTasks.userId, req.userId!))
       .orderBy(desc(scheduledTasks.nextRunAt));
     return res.json({ tasks: rows });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* POST /api/scheduled-tasks — create */
 router.post('/', async (req, res, next) => {
   try {
-    const { title, prompt, sessionId, projectId, cronExpression, frequency, nextRunAt, agentKind, runPolicy, notificationConfig } = req.body;
+    const {
+      title,
+      prompt,
+      sessionId,
+      projectId,
+      cronExpression,
+      frequency,
+      nextRunAt,
+      agentKind,
+      runPolicy,
+      notificationConfig,
+    } = req.body;
     if (!title || !String(title).trim()) throw new BadRequest('title is required');
     const freq = frequency || 'once';
-    if (!FREQUENCIES.includes(freq)) throw new BadRequest('frequency must be one of: ' + FREQUENCIES.join(', '));
+    if (!FREQUENCIES.includes(freq))
+      throw new BadRequest('frequency must be one of: ' + FREQUENCIES.join(', '));
     /* Default the first run to "now" so a task created without an
        explicit time still executes on the next scheduler poll instead
        of sitting dormant forever with a NULL nextRunAt. */
@@ -51,85 +67,144 @@ router.post('/', async (req, res, next) => {
     }
     return await durableJsonWrite(req, res, 'scheduled-tasks.create.v1', async (tx) => {
       if (sessionId) {
-        const [session] = await tx.select({ id: sessions.id }).from(sessions)
-          .where(and(eq(sessions.id, String(sessionId)), eq(sessions.userId, req.userId!))).limit(1);
+        const [session] = await tx
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(and(eq(sessions.id, String(sessionId)), eq(sessions.userId, req.userId!)))
+          .limit(1);
         if (!session) throw new NotFound('Session not found');
       }
       if (projectId) {
-        const [project] = await tx.select({ id: projects.id }).from(projects)
-          .where(and(eq(projects.id, String(projectId)), eq(projects.userId, req.userId!))).limit(1);
+        const [project] = await tx
+          .select({ id: projects.id })
+          .from(projects)
+          .where(and(eq(projects.id, String(projectId)), eq(projects.userId, req.userId!)))
+          .limit(1);
         if (!project) throw new NotFound('Project not found');
       }
       /* Scheduled policy is server-owned. A client may request a small,
          declarative allowlist, but cannot set Codex's sandbox, cwd, provider,
          or approval policy. Unattended runs still pause on side effects. */
-      const safePolicy = runPolicy && typeof runPolicy === 'object' && !Array.isArray(runPolicy)
-        ? {
-            allowedActions: Array.isArray(runPolicy.allowedActions) ? runPolicy.allowedActions.slice(0, 30).map(String) : [],
-            maxDurationMs: Number.isFinite(Number(runPolicy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(runPolicy.maxDurationMs))) : null,
-          }
-        : {};
-      const safeNotifications = notificationConfig && typeof notificationConfig === 'object' && !Array.isArray(notificationConfig)
-        ? { enabled: notificationConfig.enabled !== false, channels: Array.isArray(notificationConfig.channels) ? notificationConfig.channels.slice(0, 5).map(String) : [] }
-        : { enabled: true, channels: [] };
-      const [task] = await tx.insert(scheduledTasks).values({
-        userId: req.userId!,
-        title: String(title).trim(),
-        prompt: prompt || '',
-        sessionId: sessionId || null,
-        projectId: projectId || null,
-        agentKind: normalizedAgentKind,
-        runPolicy: safePolicy,
-        notificationConfig: safeNotifications,
-        cronExpression: cronExpression || null,
-        frequency: freq,
-        status: 'active',
-        nextRunAt: firstRun,
-      }).returning();
+      const safePolicy =
+        runPolicy && typeof runPolicy === 'object' && !Array.isArray(runPolicy)
+          ? {
+              allowedActions: Array.isArray(runPolicy.allowedActions)
+                ? runPolicy.allowedActions.slice(0, 30).map(String)
+                : [],
+              maxDurationMs: Number.isFinite(Number(runPolicy.maxDurationMs))
+                ? Math.min(900_000, Math.max(60_000, Number(runPolicy.maxDurationMs)))
+                : null,
+            }
+          : {};
+      const safeNotifications =
+        notificationConfig &&
+        typeof notificationConfig === 'object' &&
+        !Array.isArray(notificationConfig)
+          ? {
+              enabled: notificationConfig.enabled !== false,
+              channels: Array.isArray(notificationConfig.channels)
+                ? notificationConfig.channels.slice(0, 5).map(String)
+                : [],
+            }
+          : { enabled: true, channels: [] };
+      const [task] = await tx
+        .insert(scheduledTasks)
+        .values({
+          userId: req.userId!,
+          title: String(title).trim(),
+          prompt: prompt || '',
+          sessionId: sessionId || null,
+          projectId: projectId || null,
+          agentKind: normalizedAgentKind,
+          runPolicy: safePolicy,
+          notificationConfig: safeNotifications,
+          cronExpression: cronExpression || null,
+          frequency: freq,
+          status: 'active',
+          nextRunAt: firstRun,
+        })
+        .returning();
       return { status: 201, body: task };
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PATCH /api/scheduled-tasks/:id — update */
 router.patch('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [existing] = await db.select().from(scheduledTasks)
+    const [existing] = await db
+      .select()
+      .from(scheduledTasks)
       .where(and(eq(scheduledTasks.id, req.params.id), eq(scheduledTasks.userId, req.userId!)))
       .limit(1);
     if (!existing) throw new NotFound('Scheduled task not found');
     const patch: Record<string, unknown> = {};
-    for (const key of ['title', 'prompt', 'sessionId', 'projectId', 'cronExpression', 'frequency', 'status', 'agentKind']) {
+    for (const key of [
+      'title',
+      'prompt',
+      'sessionId',
+      'projectId',
+      'cronExpression',
+      'frequency',
+      'status',
+      'agentKind',
+    ]) {
       if (req.body[key] !== undefined) patch[key] = req.body[key];
     }
-    if (patch.agentKind !== undefined && patch.agentKind !== 'native' && patch.agentKind !== 'codex') {
+    if (
+      patch.agentKind !== undefined &&
+      patch.agentKind !== 'native' &&
+      patch.agentKind !== 'codex'
+    ) {
       throw new BadRequest('agentKind must be native or codex');
     }
     if (patch.agentKind === 'codex' && !WORKSPACE_AGENT_BACKGROUND_ENABLED) {
       throw new BadRequest('Codex background runs are disabled');
     }
     if (patch.projectId) {
-      const [project] = await db.select({ id: projects.id }).from(projects)
-        .where(and(eq(projects.id, String(patch.projectId)), eq(projects.userId, req.userId!))).limit(1);
+      const [project] = await db
+        .select({ id: projects.id })
+        .from(projects)
+        .where(and(eq(projects.id, String(patch.projectId)), eq(projects.userId, req.userId!)))
+        .limit(1);
       if (!project) throw new NotFound('Project not found');
     }
     if (patch.sessionId) {
-      const [session] = await db.select({ id: sessions.id }).from(sessions)
-        .where(and(eq(sessions.id, String(patch.sessionId)), eq(sessions.userId, req.userId!))).limit(1);
+      const [session] = await db
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.id, String(patch.sessionId)), eq(sessions.userId, req.userId!)))
+        .limit(1);
       if (!session) throw new NotFound('Session not found');
     }
     if (req.body.runPolicy !== undefined) {
       const policy = req.body.runPolicy;
-      patch.runPolicy = policy && typeof policy === 'object' && !Array.isArray(policy)
-        ? { allowedActions: Array.isArray(policy.allowedActions) ? policy.allowedActions.slice(0, 30).map(String) : [], maxDurationMs: Number.isFinite(Number(policy.maxDurationMs)) ? Math.min(900_000, Math.max(60_000, Number(policy.maxDurationMs))) : null }
-        : {};
+      patch.runPolicy =
+        policy && typeof policy === 'object' && !Array.isArray(policy)
+          ? {
+              allowedActions: Array.isArray(policy.allowedActions)
+                ? policy.allowedActions.slice(0, 30).map(String)
+                : [],
+              maxDurationMs: Number.isFinite(Number(policy.maxDurationMs))
+                ? Math.min(900_000, Math.max(60_000, Number(policy.maxDurationMs)))
+                : null,
+            }
+          : {};
     }
     if (req.body.notificationConfig !== undefined) {
       const notifications = req.body.notificationConfig;
-      patch.notificationConfig = notifications && typeof notifications === 'object' && !Array.isArray(notifications)
-        ? { enabled: notifications.enabled !== false, channels: Array.isArray(notifications.channels) ? notifications.channels.slice(0, 5).map(String) : [] }
-        : { enabled: true, channels: [] };
+      patch.notificationConfig =
+        notifications && typeof notifications === 'object' && !Array.isArray(notifications)
+          ? {
+              enabled: notifications.enabled !== false,
+              channels: Array.isArray(notifications.channels)
+                ? notifications.channels.slice(0, 5).map(String)
+                : [],
+            }
+          : { enabled: true, channels: [] };
     }
     if (patch.frequency !== undefined && !FREQUENCIES.includes(String(patch.frequency))) {
       throw new BadRequest('frequency must be one of: ' + FREQUENCIES.join(', '));
@@ -149,9 +224,15 @@ router.patch('/:id', async (req, res, next) => {
     }
     patch.updatedAt = new Date();
     await db.update(scheduledTasks).set(patch).where(eq(scheduledTasks.id, req.params.id));
-    const [updated] = await db.select().from(scheduledTasks).where(eq(scheduledTasks.id, req.params.id)).limit(1);
+    const [updated] = await db
+      .select()
+      .from(scheduledTasks)
+      .where(eq(scheduledTasks.id, req.params.id))
+      .limit(1);
     return res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* POST /api/scheduled-tasks/:id/run — execute immediately.
@@ -161,24 +242,31 @@ router.patch('/:id', async (req, res, next) => {
 router.post('/:id/run', async (req, res, next) => {
   try {
     const db = getDb();
-    const [task] = await db.select().from(scheduledTasks)
+    const [task] = await db
+      .select()
+      .from(scheduledTasks)
       .where(and(eq(scheduledTasks.id, req.params.id), eq(scheduledTasks.userId, req.userId!)))
       .limit(1);
     if (!task) throw new NotFound('Scheduled task not found');
     const { runScheduledTaskNow } = await import('../services/core/scheduler.js');
     const updated = await runScheduledTaskNow(task, { reschedule: false });
     return res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/scheduled-tasks/:id */
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    await db.delete(scheduledTasks)
+    await db
+      .delete(scheduledTasks)
       .where(and(eq(scheduledTasks.id, req.params.id), eq(scheduledTasks.userId, req.userId!)));
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

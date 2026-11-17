@@ -1,5 +1,8 @@
 import type { OwnedRootHandle } from '../react/lib/boot/ownedRoot';
-interface ExplorationResult { enabled: boolean; count: number }
+interface ExplorationResult {
+  enabled: boolean;
+  count: number;
+}
 
 import { createElement } from 'react';
 import { flushSync } from 'react-dom';
@@ -25,8 +28,10 @@ export function clampTutorQuestionCount(value: unknown) {
 export function shouldAutoSearchTutor(text: unknown) {
   const query = String(text || '').trim();
   if (!query) return false;
-  return EXPLICIT_LOOKUP_PATTERNS.some((pattern) => pattern.test(query))
-    || CURRENTNESS_PATTERNS.some((pattern) => pattern.test(query));
+  return (
+    EXPLICIT_LOOKUP_PATTERNS.some((pattern) => pattern.test(query)) ||
+    CURRENTNESS_PATTERNS.some((pattern) => pattern.test(query))
+  );
 }
 
 /** Quiz feedback stays on the card; a pick never starts a model turn. */
@@ -68,9 +73,21 @@ export function buildFallbackDiagnosticQuestions(topic: string, count: unknown, 
         { letter: 'D', text: '这部分对我基本是空白。', level: 'blank' },
       ]
     : [
-        { letter: 'A', text: 'I can explain it accurately and give my own example.', level: 'internalized' },
-        { letter: 'B', text: 'I broadly understand it but get stuck when explaining or applying it.', level: 'fuzzy' },
-        { letter: 'C', text: 'I have seen it before but do not yet have a clear mental model.', level: 'fuzzy' },
+        {
+          letter: 'A',
+          text: 'I can explain it accurately and give my own example.',
+          level: 'internalized',
+        },
+        {
+          letter: 'B',
+          text: 'I broadly understand it but get stuck when explaining or applying it.',
+          level: 'fuzzy',
+        },
+        {
+          letter: 'C',
+          text: 'I have seen it before but do not yet have a clear mental model.',
+          level: 'fuzzy',
+        },
         { letter: 'D', text: 'This part is essentially new to me.', level: 'blank' },
       ];
   const stems = isZh ? zhStems : enStems;
@@ -84,7 +101,9 @@ export function buildFallbackDiagnosticQuestions(topic: string, count: unknown, 
 
 let activeTutorExplorationFinish: ((result: ExplorationResult | null) => void) | null = null;
 
-export function requestTutorExploration(options: { isZh?: boolean } = {}): Promise<ExplorationResult | null> {
+export function requestTutorExploration(
+  options: { isZh?: boolean } = {},
+): Promise<ExplorationResult | null> {
   const isZh = options.isZh === true;
   return new Promise((resolve) => {
     activeTutorExplorationFinish?.(null);
@@ -102,26 +121,32 @@ export function requestTutorExploration(options: { isZh?: boolean } = {}): Promi
       overlay.remove();
       resolve(result);
     };
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') finish(null); };
-    overlay.addEventListener('click', (event) => { if (event.target === overlay) finish(null); });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') finish(null);
+    };
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) finish(null);
+    });
     document.body.appendChild(overlay);
     activeTutorExplorationFinish = finish;
     document.addEventListener('keydown', onKeyDown);
 
-    import('../react/tutor/TutorExplorationDialog.tsx').then((dialog) => {
-      if (settled || !overlay.isConnected) return;
-      const content = createElement(dialog.TutorExplorationDialog, {
-        isZh,
-        onSkip: () => finish({ enabled: false, count: 0 }),
-        onStart: (count) => finish({ enabled: true, count: clampTutorQuestionCount(count) }),
+    import('../react/tutor/TutorExplorationDialog.tsx')
+      .then((dialog) => {
+        if (settled || !overlay.isConnected) return;
+        const content = createElement(dialog.TutorExplorationDialog, {
+          isZh,
+          onSkip: () => finish({ enabled: false, count: 0 }),
+          onStart: (count) => finish({ enabled: true, count: clampTutorQuestionCount(count) }),
+        });
+        const mounted = mountOwnedRoot(overlay, 'tutor-exploration-dialog', content);
+        root = mounted;
+        flushSync(() => mounted.render(content));
+      })
+      .catch((error) => {
+        reportSwallow(error, 'tutor/policy.ts:requestTutorExploration');
+        finish(null);
       });
-      const mounted = mountOwnedRoot(overlay, 'tutor-exploration-dialog', content);
-      root = mounted;
-      flushSync(() => mounted.render(content));
-    }).catch((error) => {
-      reportSwallow(error, 'tutor/policy.ts:requestTutorExploration');
-      finish(null);
-    });
   });
 }
 

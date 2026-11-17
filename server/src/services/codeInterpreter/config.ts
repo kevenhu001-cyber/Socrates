@@ -20,8 +20,11 @@ export const MAX_OUTPUT_BYTES = parseInt(process.env.EXEC_MAX_OUTPUT_BYTES || '6
 export const MAX_ARTIFACT_BYTES = parseInt(process.env.EXEC_MAX_ARTIFACT_BYTES || '10485760', 10);
 export const MAX_CODE_CHARS = parseInt(process.env.EXEC_MAX_CODE_CHARS || '200000', 10);
 export const ADVERTISED_MAX_CODE_CHARS = Math.min(MAX_CODE_CHARS, MAX_TOOL_STRING_FIELD_CHARS);
-export const SCRATCH_DIR = process.env.EXEC_SCRATCH_DIR
-  || (process.env.NODE_ENV === 'production' ? '/var/lib/socrates/exec' : path.join(os.tmpdir(), 'socrates-exec'));
+export const SCRATCH_DIR =
+  process.env.EXEC_SCRATCH_DIR ||
+  (process.env.NODE_ENV === 'production'
+    ? '/var/lib/socrates/exec'
+    : path.join(os.tmpdir(), 'socrates-exec'));
 
 export function sessionScratchPath(userId: string, sessionId: string) {
   return resolveInsideRoot(SCRATCH_DIR, path.join(userId, sessionId));

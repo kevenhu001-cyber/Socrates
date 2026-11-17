@@ -40,7 +40,9 @@ test('immutable bridge reduces every queued action and notifies once per frame',
     }),
   });
   let notifications = 0;
-  bridge.subscribe(() => { notifications += 1; });
+  bridge.subscribe(() => {
+    notifications += 1;
+  });
 
   bridge.dispatch({ amount: 1, label: 'first' });
   bridge.dispatch({ amount: 2, label: 'second' });
@@ -87,7 +89,9 @@ test('immutable bridge skips notifications and revision bumps for no-op reducers
     reducer: (state) => state,
   });
   let notifications = 0;
-  bridge.subscribe(() => { notifications += 1; });
+  bridge.subscribe(() => {
+    notifications += 1;
+  });
 
   bridge.dispatch(undefined);
   harness.runFrame();

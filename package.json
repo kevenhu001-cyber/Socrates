@@ -7,8 +7,12 @@
     "typecheck": "npm --prefix server run typecheck && npm --prefix frontend run typecheck",
     "typecheck:server": "npm --prefix server run typecheck",
     "typecheck:frontend": "npm --prefix frontend run typecheck",
-    "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries && npm run lint:docs && npm run lint:shims && npm run lint:action-pinning",
+    "lint": "npm --prefix frontend run lint && npm run lint:server-boundaries && npm run lint:docs && npm run lint:shims && npm run lint:markers && npm run lint:format && npm run lint:action-pinning",
     "lint:docs": "node scripts/check-doc-paths.mjs",
+    "lint:markers": "node scripts/check-milestone-markers.mjs",
+    "lint:format": "prettier --check .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint:explicit-any": "node scripts/check-explicit-any.mjs",
     "lint:shims": "node scripts/check-forwarding-shims.mjs",
     "lint:action-pinning": "node scripts/check-action-pinning.mjs",
@@ -32,6 +36,7 @@
     "playwright": "^1.61.1"
   },
   "devDependencies": {
+    "prettier": "^3.10.1",
     "yaml": "^2.9.1"
   }
 }

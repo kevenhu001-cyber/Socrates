@@ -12,11 +12,19 @@ import { stripHtmlTags } from '../util/stripHtml.ts';
 
 export function esc(s: unknown): string {
   if (s == null) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 export function escAttr(s: unknown): string {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 export function escHTML(s: unknown): string {
@@ -78,12 +86,17 @@ export function stripCitationMarkers(s: string): string {
      so "with [1]." becomes "with." not "with .". A following "(" or ":"
      cancels the strip so markdown links "[1](url)" and reference
      definitions "[1]: url" survive. */
-  t = t.replace(/[ \t]?((?:[[【]\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}[\]】])+)(?!\s*[(（:[])/g,
+  t = t.replace(
+    /[ \t]?((?:[[【]\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}[\]】])+)(?!\s*[(（:[])/g,
     (m, run: string) => {
       // Every group must pair the same bracket style; a stray "[1】" or
       // mixed "[1】【2]" run stays as-is.
-      const ok = /^(?:\[\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}\]|【\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}】)+$/.test(String(run));
+      const ok =
+        /^(?:\[\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}\]|【\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3}){0,3}】)+$/.test(
+          String(run),
+        );
       return ok ? '' : m;
-    });
+    },
+  );
   return t.replace(/\uE000SOCRATES_CITE_(\d+)\uE001/g, (_m, id: string) => stash[Number(id)]);
 }

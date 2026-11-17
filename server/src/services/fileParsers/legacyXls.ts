@@ -33,7 +33,10 @@ export async function extract(filepath: string) {
   } catch (e) {
     const em = e as Error;
     if (/password|encrypt/i.test(String(em?.message || ''))) {
-      throw parseError('ENCRYPTED', 'xls_encrypted: this XLS workbook is password-protected. Remove the password and upload it again.');
+      throw parseError(
+        'ENCRYPTED',
+        'xls_encrypted: this XLS workbook is password-protected. Remove the password and upload it again.',
+      );
     }
     throw parseError('PARSE_FAILED', 'xls_parse_failed: ' + (em.message || em));
   }
@@ -69,13 +72,15 @@ export async function extract(filepath: string) {
     }
     const kept = rows.slice(0, MAX_ROWS_PER_SHEET);
     const width = kept.reduce<number>((m, r) => Math.max(m, Array.isArray(r) ? r.length : 1), 0);
-    let body = kept.length ? (markdownTable(kept) || '(empty sheet)') : '(empty sheet)';
+    let body = kept.length ? markdownTable(kept) || '(empty sheet)' : '(empty sheet)';
     if (rows.length >= MAX_ROWS_PER_SHEET) {
       truncated = true;
       omitted.push(`sheet "${name}": rows after ${MAX_ROWS_PER_SHEET}`);
       body += `\n[sheet truncated at ${MAX_ROWS_PER_SHEET} rows]`;
     }
-    if (!push(`## Sheet: ${name || 'Untitled'} (${kept.length} rows × ${width} columns)\n${body}\n\n`)) {
+    if (
+      !push(`## Sheet: ${name || 'Untitled'} (${kept.length} rows × ${width} columns)\n${body}\n\n`)
+    ) {
       omitted.push(`output cap reached in sheet "${name}"`);
       break;
     }
@@ -84,7 +89,8 @@ export async function extract(filepath: string) {
     truncated = true;
     omitted.push(`${wb.SheetNames.length - MAX_SHEETS} more sheets`);
   }
-  if (truncated && omitted.length) parts.push(`\n[workbook truncated — omitted: ${omitted.join('; ')}]`);
+  if (truncated && omitted.length)
+    parts.push(`\n[workbook truncated — omitted: ${omitted.join('; ')}]`);
 
   const meta: Record<string, unknown> = {
     format: 'xls',

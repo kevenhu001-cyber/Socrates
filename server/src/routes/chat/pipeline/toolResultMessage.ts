@@ -1,5 +1,5 @@
 /**
- * toolFeedback — assemble the role:'tool' message content the model sees
+ * toolResultMessage — assemble the role:'tool' message content the model sees
  * after a tool execution. Extracted verbatim from the runToolCall tail in
  * the route handler so executors and feedback formatting can evolve
  * independently. The 60 KB hard cap note applies at the caller
@@ -14,27 +14,32 @@ import type { ToolResult } from './types.js';
 const CONNECTOR_TOOL_NAME_SET = new Set(Object.values(CONNECTOR_TOOL_NAMES));
 
 export function formatToolResultContent(toolName: string, result: ToolResult): string {
-  const retryable = result.retryable === true
-    && (!toolName.startsWith('oc_') || isOpenConnectorActionRetryable(toolName));
+  const retryable =
+    result.retryable === true &&
+    (!toolName.startsWith('oc_') || isOpenConnectorActionRetryable(toolName));
   if (toolName === 'code_interpreter') {
     const lines = [];
     lines.push(`[status: ${result.status || 'unknown'}]`);
     lines.push(`[exit_code: ${result.exitCode ?? 'n/a'}]`);
     lines.push(`[duration_ms: ${result.durationMs ?? 'n/a'}]`);
     const artifactList = (result.artifactFileIds || [])
-      .map(a => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}${a.id ? ` [id:${a.id}]` : ''}`)
+      .map((a) => `${a.name}${a.mimeType ? ` (${a.mimeType})` : ''}${a.id ? ` [id:${a.id}]` : ''}`)
       .join(', ');
     lines.push(`[artifacts: ${artifactList || 'none'}]`);
-    if ((result.artifactFileIds || []).some(a => /^image\//i.test(a.mimeType || ''))) {
+    if ((result.artifactFileIds || []).some((a) => /^image\//i.test(a.mimeType || ''))) {
       lines.push('');
-      lines.push('Image artifacts are NOT rendered automatically. The image is optional: include it only when it materially helps the answer, using exactly `![short description](/api/files/<fileId>/raw)` with an id above. Otherwise describe the result in prose.');
+      lines.push(
+        'Image artifacts are NOT rendered automatically. The image is optional: include it only when it materially helps the answer, using exactly `![short description](/api/files/<fileId>/raw)` with an id above. Otherwise describe the result in prose.',
+      );
     }
     if (result.status !== 'completed') {
       lines.push(`[error_code: ${result.errorCode || result.errorMessage || 'execution_failed'}]`);
       lines.push(`[retryable: ${retryable ? 'yes' : 'no'}]`);
       lines.push(`[error: ${result.errorMessage || result.error || result.status}]`);
       if (!retryable) {
-        lines.push('This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.');
+        lines.push(
+          'This call is not retryable. STOP retrying this exact code. Do not repeat the error text in your answer; the tool card already shows it. Continue with a corrected approach in prose, or state the limitation in one plain sentence.',
+        );
       }
       // P_exec-remediation-preamble — the structured header
       // tells the model WHAT failed; this preamble tells it
@@ -48,17 +53,39 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push('');
       lines.push('Likely fixes by error_code:');
       lines.push('- `code_too_large` → split into multiple smaller runs.');
-      lines.push('- `daily_execution_limit_reached` → tell the user the per-day cap; do not retry.');
-      lines.push('- `execution_timeout` → the work exceeded the time budget. Split into smaller runs, or pre-compute in numpy/pandas instead of Python loops.');
-      lines.push('- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.');
-      lines.push('- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.');
-      lines.push('- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_intelligent_ui with a Visualization component using the svg_illustration template instead.');
-      lines.push('- `SyntaxError: \'await\' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.');
-      lines.push('- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.');
-      lines.push('- `NameError` → the variable was from a previous call. Recompute it in this run.');
-      lines.push('- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).');
-      lines.push('- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.');
-      lines.push('- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run. Add `plt.close("all")` at the top of this run.');
+      lines.push(
+        '- `daily_execution_limit_reached` → tell the user the per-day cap; do not retry.',
+      );
+      lines.push(
+        '- `execution_timeout` → the work exceeded the time budget. Split into smaller runs, or pre-compute in numpy/pandas instead of Python loops.',
+      );
+      lines.push(
+        '- `output_limit_exceeded` → stdout/stderr hit the 64 KB cap. Save the data to a file, print a summary, describe the summary in prose.',
+      );
+      lines.push(
+        '- `code_interpreter_unavailable` / `skipped` → the runner is off; do not retry. Tell the user.',
+      );
+      lines.push(
+        '- `illustration_not_supported` → you tried to draw an SVG / illustration via code_interpreter. Call render_intelligent_ui with a Visualization component using the svg_illustration template instead.',
+      );
+      lines.push(
+        "- `SyntaxError: 'await' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.",
+      );
+      lines.push(
+        '- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.',
+      );
+      lines.push(
+        '- `NameError` → the variable was from a previous call. Recompute it in this run.',
+      );
+      lines.push(
+        '- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).',
+      );
+      lines.push(
+        '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.',
+      );
+      lines.push(
+        '- Empty PNG / "figure not found" → forgot `plt.close()` from the previous run. Add `plt.close("all")` at the top of this run.',
+      );
       lines.push('');
       lines.push('Do not repeat this error text in your answer; the tool card already shows it.');
     }
@@ -67,9 +94,10 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     if (result.stderr) {
       const stderrLines = String(result.stderr).split(/\r?\n/);
       const tail = stderrLines.slice(-20).join('\n');
-      const prefix = stderrLines.length > 20
-        ? `…(${stderrLines.length - 20} earlier stderr lines truncated)\n`
-        : '';
+      const prefix =
+        stderrLines.length > 20
+          ? `…(${stderrLines.length - 20} earlier stderr lines truncated)\n`
+          : '';
       lines.push('--- stderr (tail, last 20 lines) ---');
       lines.push(prefix + tail);
     }
@@ -81,8 +109,10 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     if (result.status === 'completed') {
       return `[status: completed]\n[${kind} card rendered]\n${result.output || ''}\nThe ${kind} card is now shown in the conversation. Refer to it briefly in prose; do not paste the whole ${kind} again. Reply in the user's language.`;
     }
-    return result.correction
-      || `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\nDo not repeat these field errors in your answer; the tool card already shows them.`;
+    return (
+      result.correction ||
+      `[status: failed]\n[error_code: ${result.errorCode || 'plan_spec_invalid'}]\n[retryable: ${result.retryable ? 'yes' : 'no'}]\n[field_errors: ${JSON.stringify(result.detail || [])}]\nDo not repeat these field errors in your answer; the tool card already shows them.`
+    );
   }
 
   if (toolName === 'workspace_agent') {
@@ -93,7 +123,7 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
 
   if (result.correction) {
     /* Schema + copy-ready example, already assembled by
-       toolErrorFeedback for this rejection. */
+       toolCorrectionMessage for this rejection. */
     return result.correction;
   }
 
@@ -114,13 +144,14 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
     return `[status: failed]\n[error_code: ${result.errorCode || 'web_fetch_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n${result.detail || result.error || ''}\nThe page could not be fetched (blocked, private IP, HTTP error, or timeout). Try a different URL, or fall back to web_search and rely on the snippets.`;
   }
 
-  if (result.status !== 'completed' && (
-    CONNECTOR_TOOL_NAME_SET.has(toolName)
-    || toolName.startsWith('oc_')
-    || toolName.startsWith('oomol_')
-  )) {
-    const nonIdempotentOpenConnectorAction = toolName.startsWith('oc_')
-      && !isOpenConnectorActionRetryable(toolName);
+  if (
+    result.status !== 'completed' &&
+    (CONNECTOR_TOOL_NAME_SET.has(toolName) ||
+      toolName.startsWith('oc_') ||
+      toolName.startsWith('oomol_'))
+  ) {
+    const nonIdempotentOpenConnectorAction =
+      toolName.startsWith('oc_') && !isOpenConnectorActionRetryable(toolName);
     const isImageSubmission = toolName === 'oc_jimeng_ai_submit_image_generation_4_6';
     const context = nonIdempotentOpenConnectorAction
       ? 'The action has an uncertain outcome. Do not claim it completed or that the provider did nothing.'
@@ -136,8 +167,9 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
   }
 
   if (result.status === 'completed') return result.output || result.stdout || '(no output)';
-  const detail = result.detail === undefined || result.detail === null
-    ? ''
-    : `\n[detail: ${String(result.detail).slice(0, 1200)}]`;
+  const detail =
+    result.detail === undefined || result.detail === null
+      ? ''
+      : `\n[detail: ${String(result.detail).slice(0, 1200)}]`;
   return `[status: ${result.status || 'failed'}]\n[error_code: ${result.errorCode || 'tool_failed'}]\n[retryable: ${retryable ? 'yes' : 'no'}]\n[error: ${result.errorMessage || result.error || result.status || 'Tool failed.'}]${detail}\nDo not repeat this error text in your answer; the tool card already shows it.`;
 }

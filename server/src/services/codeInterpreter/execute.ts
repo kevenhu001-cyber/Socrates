@@ -54,7 +54,9 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     /* P_progress — still emit a terminal so the chat route can
        clear its "queued" spinner even on the disabled path. */
     if (typeof opts.onProgress === 'function') {
-      try { opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' }); } catch (_) {}
+      try {
+        opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' });
+      } catch (_) {}
     }
     return {
       status: 'skipped',
@@ -86,15 +88,22 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
    * without an authenticated user (background job, test, etc). */
   if (!userId) {
     if (typeof onProgress === 'function') {
-      try { onProgress({ phase: 'skipped', reason: 'missing_user' }); } catch (_) {}
+      try {
+        onProgress({ phase: 'skipped', reason: 'missing_user' });
+      } catch (_) {}
     }
     return {
       status: 'failed',
       errorCode: 'missing_user',
-      errorMessage: 'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
-      stdout: '', stderr: '', exitCode: 1,
+      errorMessage:
+        'missing_user: code_interpreter requires an authenticated user (req.userId was not set on the call)',
+      stdout: '',
+      stderr: '',
+      exitCode: 1,
       durationMs: Math.max(1, Date.now() - requestStartedAt),
-      artifacts: [], artifactFileIds: [], artifactCount: 0,
+      artifacts: [],
+      artifactFileIds: [],
+      artifactCount: 0,
     };
   }
 
@@ -111,15 +120,21 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'invalid_session';
     if (typeof onProgress === 'function') {
-      try { onProgress({ phase: 'skipped', reason: 'invalid_session' }); } catch (_) {}
+      try {
+        onProgress({ phase: 'skipped', reason: 'invalid_session' });
+      } catch (_) {}
     }
     return {
       status: 'failed',
       errorCode: 'session_not_owned',
       errorMessage,
-      stdout: '', stderr: '', exitCode: 1,
+      stdout: '',
+      stderr: '',
+      exitCode: 1,
       durationMs: Math.max(1, Date.now() - requestStartedAt),
-      artifacts: [], artifactFileIds: [], artifactCount: 0,
+      artifacts: [],
+      artifactFileIds: [],
+      artifactCount: 0,
     };
   }
 
@@ -148,7 +163,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   try {
     pool = await getPool();
   } catch (err) {
-    const errorMessage = String(err && (err as Error).message || err);
+    const errorMessage = String((err && (err as Error).message) || err);
     return {
       status: 'failed',
       errorCode: 'pyodide_worker_boot_failed',
@@ -176,14 +191,17 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
 
   // Insert the running row up front so we have an ID for foreign keys
   // and so the row exists even if the worker crashes mid-run.
-  const [inserted] = await db.insert(executions).values({
-    userId,
-    sessionId: validatedSessionId,
-    language,
-    code,
-    status: 'running',
-    startedAt: new Date(),
-  }).returning();
+  const [inserted] = await db
+    .insert(executions)
+    .values({
+      userId,
+      sessionId: validatedSessionId,
+      language,
+      code,
+      status: 'running',
+      startedAt: new Date(),
+    })
+    .returning();
   const executionId = inserted.id;
 
   /* P_session-scoped-scratch — files written by an earlier execution
@@ -213,17 +231,19 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     });
   } catch (err) {
     const typed = err as Error & { code?: string; status?: string; durationMs?: number };
-    const msg = String(typed && typed.message || err);
+    const msg = String((typed && typed.message) || err);
     const status = typed.status || 'failed';
-    const errorCode = typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
+    const errorCode =
+      typed.code || (status === 'timeout' ? 'execution_timeout' : 'code_execution_failed');
     result = {
       status,
       errorCode,
-      errorMessage: status === 'timeout'
-        ? 'execution_timeout'
-        : status === 'cancelled'
-          ? 'cancelled_by_caller'
-          : msg,
+      errorMessage:
+        status === 'timeout'
+          ? 'execution_timeout'
+          : status === 'cancelled'
+            ? 'cancelled_by_caller'
+            : msg,
       stdout: '',
       stderr: '',
       exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
@@ -240,14 +260,16 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
       stderr: '',
       durationMs: result.durationMs,
       errorCode: result.errorCode,
-    }).catch(() => { /* logged in pubsub */ });
+    }).catch(() => {
+      /* logged in pubsub */
+    });
   }
 
   // Persist artifacts. Each file in result.artifacts is something the
   // user's Python wrote into the artifacts/ subdir.
   const artifactFileIds: Array<{ id?: string; name?: string; mimeType?: string | null }> = [];
   const droppedArtifacts: string[] = [];
-  for (const art of (result.artifacts || [])) {
+  for (const art of result.artifacts || []) {
     if (art.size > MAX_ARTIFACT_BYTES) {
       // Too big — drop it (still count as a failed artifact so the
       // user can see why their PNG didn't show).
@@ -265,11 +287,13 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
       });
       artifactFileIds.push({ id: fileId, name: art.name, mimeType });
     } catch (err) {
-      droppedArtifacts.push(`${art.name}: ${String(err && (err as Error).message || err)}`);
+      droppedArtifacts.push(`${art.name}: ${String((err && (err as Error).message) || err)}`);
     }
   }
   if (droppedArtifacts.length) {
-    console.log(`[code-interpreter] execution ${executionId} dropped ${droppedArtifacts.length} artifact(s): ${droppedArtifacts.join('; ')}`);
+    console.log(
+      `[code-interpreter] execution ${executionId} dropped ${droppedArtifacts.length} artifact(s): ${droppedArtifacts.join('; ')}`,
+    );
   }
 
   const finalStatus = result.status || 'failed';
@@ -285,15 +309,18 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   const persistedStatus = result.errorCode === 'syntax_error' ? 'rejected' : finalStatus;
 
   // Update the execution row.
-  await db.update(executions).set({
-    status: persistedStatus,
-    exitCode: result.exitCode ?? null,
-    durationMs: result.durationMs ?? null,
-    stdout: (result.stdout || '').slice(0, MAX_OUTPUT_BYTES),
-    stderr: (result.stderr || '').slice(0, MAX_OUTPUT_BYTES),
-    artifactCount: finalArtifactCount,
-    completedAt: new Date(),
-  }).where(eq(executions.id, executionId));
+  await db
+    .update(executions)
+    .set({
+      status: persistedStatus,
+      exitCode: result.exitCode ?? null,
+      durationMs: result.durationMs ?? null,
+      stdout: (result.stdout || '').slice(0, MAX_OUTPUT_BYTES),
+      stderr: (result.stderr || '').slice(0, MAX_OUTPUT_BYTES),
+      artifactCount: finalArtifactCount,
+      completedAt: new Date(),
+    })
+    .where(eq(executions.id, executionId));
 
   // Audit. Best-effort — never throw out of execute() on audit failure.
   recordAudit(userId, 'code_execution', {
@@ -325,8 +352,10 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     exitCode: result.exitCode,
     errorMessage: result.errorMessage || null,
     errorCode: result.errorCode,
-    artifactFileIds,                 // [{id, name, mimeType}] — was missing!
-  }).catch(() => { /* logged in pubsub */ });
+    artifactFileIds, // [{id, name, mimeType}] — was missing!
+  }).catch(() => {
+    /* logged in pubsub */
+  });
 
   return {
     executionId,
@@ -337,7 +366,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     durationMs: result.durationMs,
     errorCode: result.errorCode,
     errorMessage: result.errorMessage || null,
-    artifactFileIds,                 // [{id, name, mimeType}]
+    artifactFileIds, // [{id, name, mimeType}]
     artifactCount: finalArtifactCount,
   };
 }

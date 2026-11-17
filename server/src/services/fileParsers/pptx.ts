@@ -81,7 +81,11 @@ function collectTextRuns(node: unknown, out: string[]): void {
   }
 }
 
-interface Para { text: string; level: number; bullet: boolean | null }
+interface Para {
+  text: string;
+  level: number;
+  bullet: boolean | null;
+}
 
 function paragraphs(txBody: XNode | undefined): Para[] {
   const out: Para[] = [];
@@ -115,12 +119,21 @@ function placeholderType(sp: XNode): string | null {
 function tableMarkdown(tbl: XNode): string {
   const rows: string[][] = [];
   for (const tr of arr(tbl['a:tr'])) {
-    rows.push(arr(tr['a:tc']).map((tc) => paragraphs(first(tc, 'a:txBody')).map((p) => p.text).join(' ')));
+    rows.push(
+      arr(tr['a:tc']).map((tc) =>
+        paragraphs(first(tc, 'a:txBody'))
+          .map((p) => p.text)
+          .join(' '),
+      ),
+    );
   }
   return markdownTable(rows);
 }
 
-interface SlideContent { title: string; lines: string[] }
+interface SlideContent {
+  title: string;
+  lines: string[];
+}
 
 function walkShapes(tree: XNode | undefined, acc: SlideContent): void {
   if (!tree) return;
@@ -161,7 +174,7 @@ async function notesFor(zip: JSZip, slideN: number): Promise<string> {
   const rels = zip.files[relsName];
   if (!rels) return '';
   try {
-    const relXml = await parseStringPromise(await rels.async('string'), PARSE_OPTS) as XNode;
+    const relXml = (await parseStringPromise(await rels.async('string'), PARSE_OPTS)) as XNode;
     const list = arr(first(relXml, 'Relationships')?.['Relationship']);
     const rel = list.find((r) => /\/notesSlide$/.test(attr(r, 'Type') || ''));
     const target = attr(rel, 'Target');
@@ -171,7 +184,7 @@ async function notesFor(zip: JSZip, slideN: number): Promise<string> {
       : `ppt/${target.replace(/^\.\.\//, '')}`;
     const file = zip.files[notesPath];
     if (!file) return '';
-    const parsed = await parseStringPromise(await file.async('string'), PARSE_OPTS) as XNode;
+    const parsed = (await parseStringPromise(await file.async('string'), PARSE_OPTS)) as XNode;
     const tree = spTreeOf(parsed, 'p:notes');
     const lines: string[] = [];
     for (const sp of arr(tree?.['p:sp'])) {
@@ -225,22 +238,30 @@ export async function extract(filepath: string) {
     let chunk: string;
     try {
       const xml = await zip.files[slide.name].async('string');
-      const parsed = await parseStringPromise(xml, PARSE_OPTS) as XNode;
+      const parsed = (await parseStringPromise(xml, PARSE_OPTS)) as XNode;
       const acc: SlideContent = { title: '', lines: [] };
       walkShapes(spTreeOf(parsed, 'p:sld'), acc);
-      let body = acc.lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+      let body = acc.lines
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
       if (!body && !acc.title) {
         const runs: string[] = [];
         collectTextRuns(parsed, runs);
-        body = runs.map((s) => s.trim()).filter(Boolean).join('\n');
+        body = runs
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .join('\n');
       }
       const hidden = attr(first(parsed, 'p:sld'), 'show') === '0' ? ' (hidden)' : '';
       const notes = await notesFor(zip, slide.n);
       if (notes) notesCount++;
-      chunk = `## Slide ${position}${hidden}\n` +
+      chunk =
+        `## Slide ${position}${hidden}\n` +
         (acc.title ? `### ${acc.title}\n` : '') +
         (body || (acc.title ? '' : '(no text on this slide)')) +
-        (notes ? `\n\nNotes: ${notes}` : '') + '\n';
+        (notes ? `\n\nNotes: ${notes}` : '') +
+        '\n';
     } catch {
       /* Skip individual unreadable slides rather than failing the
          whole document — partial text is better than nothing. */
@@ -263,7 +284,9 @@ export async function extract(filepath: string) {
   if (notesCount) meta.slidesWithNotes = notesCount;
   if (truncated) {
     meta.omitted = `slides ${lastSlideShown + 1}–${slides.length}`;
-    parts.push(`\n[presentation truncated — showing slides 1–${lastSlideShown} of ${slides.length}]`);
+    parts.push(
+      `\n[presentation truncated — showing slides 1–${lastSlideShown} of ${slides.length}]`,
+    );
   }
   return {
     text: cleanExtractedText(parts.join('\n')),

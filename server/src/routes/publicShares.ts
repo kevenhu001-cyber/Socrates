@@ -45,7 +45,11 @@ export function checkShareAccess(
 router.get('/:token', async (req, res, next) => {
   try {
     const db = getDb();
-    const [share] = await db.select().from(shares).where(eq(shares.token, req.params.token)).limit(1);
+    const [share] = await db
+      .select()
+      .from(shares)
+      .where(eq(shares.token, req.params.token))
+      .limit(1);
     if (!share) {
       return res.status(404).json({ code: 'NOT_FOUND', message: 'Share not found' });
     }
@@ -55,7 +59,9 @@ router.get('/:token', async (req, res, next) => {
 
     // Archived sessions are private/trash; an old share token must
     // not bypass that and expose the content to its holder.
-    const [session] = await db.select().from(sessions)
+    const [session] = await db
+      .select()
+      .from(sessions)
       .where(and(eq(sessions.id, share.sessionId), isNull(sessions.archivedAt)))
       .limit(1);
     if (!session) {
@@ -88,19 +94,21 @@ router.get('/:token', async (req, res, next) => {
      * public through `content` before this change too. What stays out
      * of the projection is `attachments` — that is the column with
      * dataUrls and extracted file text. */
-    const msgs = await db.select({
-      id: messages.id,
-      sessionId: messages.sessionId,
-      role: messages.role,
-      content: messages.content,
-      rawText: messages.rawText,
-      model: messages.model,
-      tokenCount: messages.tokenCount,
-      reasoningContent: messages.reasoningContent,
-      parentId: messages.parentId,
-      createdAt: messages.createdAt,
-      toolCalls: messages.toolCalls,
-    }).from(messages)
+    const msgs = await db
+      .select({
+        id: messages.id,
+        sessionId: messages.sessionId,
+        role: messages.role,
+        content: messages.content,
+        rawText: messages.rawText,
+        model: messages.model,
+        tokenCount: messages.tokenCount,
+        reasoningContent: messages.reasoningContent,
+        parentId: messages.parentId,
+        createdAt: messages.createdAt,
+        toolCalls: messages.toolCalls,
+      })
+      .from(messages)
       .where(eq(messages.sessionId, session.id))
       .orderBy(messages.createdAt)
       .limit(200);
@@ -124,7 +132,9 @@ router.get('/:token', async (req, res, next) => {
       visibility: share.visibility,
       messages: msgs,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

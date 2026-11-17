@@ -8,16 +8,12 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const {
-  deleteUserMessage,
-  findMessageIndex,
-  reseatSavedArtifact,
-  rollbackMessagesAfter,
-} = await import('../src/ui/messageActions.ts');
-const { stateStore } = await import('../src/state/store.ts');
+const { deleteUserMessage, findMessageIndex, reseatSavedArtifact, rollbackMessagesAfter } =
+  await import('../src/ui/messageActions.ts');
+const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
 
 function appendMessage(clientId, role, rawText) {
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/append-message',
     payload: { clientId, role, rawText },
   });
@@ -49,10 +45,13 @@ test('rollbackMessagesAfter drops later turns but spares React rows', () => {
        prune can be replayed on reconnect. */
     const dropped = rollbackMessagesAfter('rb-u1');
     assert.equal(dropped.length, 2);
-    assert.deepEqual(dropped.map((m) => m.clientId), ['rb-a1', 'rb-u2']);
+    assert.deepEqual(
+      dropped.map((m) => m.clientId),
+      ['rb-a1', 'rb-u2'],
+    );
     assert.equal(legacyRow.parentNode, null);
     assert.notEqual(reactRow.parentNode, null);
-    const ids = stateStore.read('messages').map((m) => m && m.clientId);
+    const ids = sessionStore.getState().messages.map((m) => m && m.clientId);
     assert.ok(!ids.includes('rb-a1'));
     assert.ok(!ids.includes('rb-u2'));
   } finally {
@@ -66,10 +65,9 @@ test('deleteUserMessage removes the entry and its row', () => {
   const row = mountRow('del-u1', false);
   deleteUserMessage('del-u1');
   assert.equal(row.parentNode, null);
-  const ids = stateStore.read('messages').map((m) => m && m.clientId);
+  const ids = sessionStore.getState().messages.map((m) => m && m.clientId);
   assert.ok(!ids.includes('del-u1'));
 });
-
 
 test('reseatSavedArtifact anchors nodes after their inline row', () => {
   const container = dom.window.document.createElement('div');

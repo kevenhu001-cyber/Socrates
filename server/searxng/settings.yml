@@ -6,8 +6,8 @@ general:
   enable_metrics: false
 
 server:
-  secret_key: "socrates-searxng-internal-agent-key-2026"
-  bind_address: "0.0.0.0"
+  secret_key: 'socrates-searxng-internal-agent-key-2026'
+  bind_address: '0.0.0.0'
   port: 8080
   limiter: false
   image_proxy: false
@@ -17,7 +17,7 @@ search:
     - html
     - json
   safe_search: 0
-  autocomplete: ""
+  autocomplete: ''
   lang: auto
 
 ui:

@@ -35,6 +35,18 @@ export function recordToolResultAndBoundRetryability(
  * Validation failures need changed arguments; side effects need their own idempotency contract. */
 export function canRetryIdenticalToolCall(result: ToolResult, pure: boolean): boolean {
   const code = String(result.errorCode || result.error || '');
-  return pure && result.status === 'failed' && result.retryable === true
-    && !['invalid_tool_arguments', 'arguments_parse_failed', 'arguments_schema_failed', 'arguments_too_large', 'arguments_truncated', 'plan_spec_invalid', 'visual_spec_invalid'].includes(code);
+  return (
+    pure &&
+    result.status === 'failed' &&
+    result.retryable === true &&
+    ![
+      'invalid_tool_arguments',
+      'arguments_parse_failed',
+      'arguments_schema_failed',
+      'arguments_too_large',
+      'arguments_truncated',
+      'plan_spec_invalid',
+      'visual_spec_invalid',
+    ].includes(code)
+  );
 }

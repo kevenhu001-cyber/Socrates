@@ -6,7 +6,6 @@
 import { SERVER_SYSTEM_POLICY } from '../../../lib/chatPolicy.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
-
 /**
  * Establish one server-owned system boundary for every chat request.
  *
@@ -44,7 +43,9 @@ export interface ClientSystemClassification {
  * the custom instructions are turn state, and the client re-sends them on
  * every request.
  */
-export function classifyClientSystemMessages(messages: ProviderMessage[]): ClientSystemClassification {
+export function classifyClientSystemMessages(
+  messages: ProviderMessage[],
+): ClientSystemClassification {
   const application: string[] = [];
   const context: string[] = [];
   for (const message of messages) {
@@ -76,11 +77,12 @@ export function renderClientBlocks(classification: ClientSystemClassification): 
 /** Whether the client sent a system prefix this turn. A client that sends
  *  none keeps the persona frozen in the session snapshot. */
 export function hasClientSystemPrefix(messages: ProviderMessage[]): boolean {
-  return messages.some((message) => (
-    message?.role === 'system'
-    && typeof message.content === 'string'
-    && message.content.trim().length > 0
-  ));
+  return messages.some(
+    (message) =>
+      message?.role === 'system' &&
+      typeof message.content === 'string' &&
+      message.content.trim().length > 0,
+  );
 }
 
 export function enforceServerSystemBoundary(messages: ProviderMessage[]): ProviderMessage[] {
@@ -133,7 +135,10 @@ function classifyClientSystem(raw: string): Classified {
   const trimmed = raw.trim();
   if (!trimmed) return { kind: 'context', content: '' };
 
-  const lines = trimmed.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+  const lines = trimmed
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
   if (lines.length === 0) return { kind: 'context', content: '' };
 
   /* A block that opens with a markdown heading is a DATA block: the saved
@@ -144,16 +149,14 @@ function classifyClientSystem(raw: string): Classified {
      application directive. */
   const isDataBlock = /^#{1,6}\s/.test(lines[0]);
   const firstIsAppMarker =
-    !isDataBlock && (
-      lines[0].startsWith(CUSTOM_INSTRUCTION_PREFIX) ||
+    !isDataBlock &&
+    (lines[0].startsWith(CUSTOM_INSTRUCTION_PREFIX) ||
       lines[0].startsWith(MODE_INSTRUCTION_PREFIX) ||
-      TEMPLATE_MARKER_REGEX.test(lines[0])
-    );
+      TEMPLATE_MARKER_REGEX.test(lines[0]));
   /* The trailing shape of the template marker is accepted too. The client
      owns this content either way, so the classification only picks the tier
      its own directives land in; it never widens what a client may do. */
-  const lastIsTemplateMarker =
-    !isDataBlock && TEMPLATE_MARKER_REGEX.test(lines[lines.length - 1]);
+  const lastIsTemplateMarker = !isDataBlock && TEMPLATE_MARKER_REGEX.test(lines[lines.length - 1]);
   const directiveIdx = trimmed.indexOf(PROJECT_INSTRUCTION_PREFIX);
   const isActiveProjectBlock = /^##\s+Active project\b/i.test(lines[0]) && directiveIdx >= 0;
 
@@ -185,5 +188,3 @@ function classifyClientSystem(raw: string): Classified {
 /* ─────────────────────────────────────────────────────────────────
    Per-tier monthly Beagle token quota check
    ───────────────────────────────────────────────────────────────── */
-
-

@@ -5,10 +5,6 @@
  * `store/createDomainStore.ts` adds a read-only Zustand reader; this module
  * exposes the typed hooks and the transition types.
  *
- * Legacy DOM modules keep writing through the `state/store.ts` facade. The
- * bridges adapt both worlds onto the same snapshot stores, so reads stay
- * consistent regardless of which API wrote last.
- *
  * New React code should use these hooks:
  *
  *   import { useSessionStore } from '../store/index.ts';
@@ -49,7 +45,7 @@ import {
   type UiAction,
   type UiSnapshot,
 } from '../state/bridges.ts';
-import { notifyLegacyListeners } from '../state/store.ts';
+import { notifyLegacyListeners, notifyLegacyListenersDeferred } from './legacyListeners.ts';
 import type { RevisionedSnapshot } from './bridge.ts';
 
 export {
@@ -62,12 +58,7 @@ export {
 export { useBridge, useBridgeSelector } from './useBridge.ts';
 
 type DomainSnapshot =
-  | SessionSnapshot
-  | KbSnapshot
-  | SearchSnapshot
-  | CallSnapshot
-  | UiSnapshot
-  | ExamSnapshot;
+  SessionSnapshot | KbSnapshot | SearchSnapshot | CallSnapshot | UiSnapshot | ExamSnapshot;
 
 function defineDomainHook<Snapshot extends DomainSnapshot & RevisionedSnapshot, _Action>(
   store: DomainStoreReader<Snapshot>,
@@ -100,21 +91,37 @@ export const useExamStore = defineDomainHook<ExamSnapshot, ExamAction>(examStore
  * a change and read the result back in the same tick.
  *
  * The action is one of the typed unions from state/bridges.ts, so a typo in
- * an action type or a missing field is a compile error rather than a
- * silent no-op. The legacy facade's `stateStore.dispatch` takes a bare
- * string type and cannot offer that — which is why the stringly-typed
- * calls are the thing `check-state-ownership.mjs` freezes.
+ * an action type or a missing field is a compile error.
  *
- * Each commit flushes synchronously — the same thing the facade does — and
- * then wakes the legacy listeners, so a subscriber of
- * `stateStore.subscribe` (the research tracker, the scroll indicator) sees
- * exactly the change it would have seen through the facade.
+ * Each commit flushes synchronously, then wakes commit subscribers such as
+ * the research tracker.
  */
 export function dispatchSession(action: SessionAction): SessionSnapshot {
   sessionBridge.dispatch(action);
   sessionBridge.flush();
   notifyLegacyListeners();
   return sessionStore.getState();
+}
+
+/**
+ * Patch one message row and return it, mirroring the facade's
+ * `session/update-message` handler: a stale `clientId` yields `null`, and
+ * `deferNotify` wakes the legacy listeners on the next frame instead of
+ * synchronously. The streaming ownership guard depends on both behaviours.
+ */
+export function updateSessionMessage(
+  index: number,
+  clientId: string | undefined,
+  patch: Record<string, unknown>,
+  deferNotify = false,
+): SessionSnapshot['messages'][number] | null {
+  const before = sessionBridge.getSnapshot().messages[index];
+  sessionBridge.dispatch({ type: 'session/update-message', index, clientId, patch });
+  sessionBridge.flush();
+  if (deferNotify) notifyLegacyListenersDeferred();
+  else notifyLegacyListeners();
+  const after = sessionStore.getState().messages[index];
+  return clientId && (!before || before.clientId !== clientId) ? null : after || null;
 }
 
 export function dispatchUi(action: UiAction): UiSnapshot {
@@ -138,25 +145,94 @@ export function dispatchExam(action: ExamAction): ExamSnapshot {
   return examStore.getState();
 }
 
+export function dispatchSearch(action: SearchAction): SearchSnapshot {
+  searchBridge.dispatch(action);
+  searchBridge.flush();
+  notifyLegacyListeners();
+  return searchStore.getState();
+}
+
+export function dispatchCall(action: CallAction): CallSnapshot {
+  callBridge.dispatch(action);
+  callBridge.flush();
+  notifyLegacyListeners();
+  return callStore.getState();
+}
+
+/**
+ * Reset every domain store — the typed equivalent of the facade's
+ * `state/reset`. Each bridge resets first, then all flush, so a subscriber
+ * never observes a half-reset tree.
+ */
+export function resetDomains(): void {
+  sessionBridge.dispatch({ type: 'session/reset' });
+  kbBridge.dispatch({ type: 'kb/reset' });
+  searchBridge.dispatch({ type: 'search/reset' });
+  callBridge.dispatch({ type: 'call/reset' });
+  uiBridge.dispatch({ type: 'ui/reset' });
+  examBridge.dispatch({ type: 'exam/reset' });
+  for (const bridge of [sessionBridge, kbBridge, searchBridge, callBridge, uiBridge, examBridge]) {
+    bridge.flush();
+  }
+  notifyLegacyListeners();
+}
+
+type PatchOf<Snapshot> = Partial<Omit<Snapshot, 'revision'>>;
+
+/**
+ * Apply one patch per namespace in a single commit — the typed equivalent of
+ * the facade's `state/batch`. Each bridge flushes once and the legacy
+ * listeners wake once, so a multi-namespace write is still one notification.
+ */
+export function dispatchPatches(patches: {
+  session?: PatchOf<SessionSnapshot>;
+  kb?: PatchOf<KbSnapshot>;
+  search?: PatchOf<SearchSnapshot>;
+  call?: PatchOf<CallSnapshot>;
+  ui?: PatchOf<UiSnapshot>;
+  exam?: PatchOf<ExamSnapshot>;
+}): void {
+  if (patches.session) sessionBridge.dispatch({ type: 'session/patch', patch: patches.session });
+  if (patches.kb) kbBridge.dispatch({ type: 'kb/patch', patch: patches.kb });
+  if (patches.search) searchBridge.dispatch({ type: 'search/patch', patch: patches.search });
+  if (patches.call) callBridge.dispatch({ type: 'call/patch', patch: patches.call });
+  if (patches.ui) uiBridge.dispatch({ type: 'ui/patch', patch: patches.ui });
+  if (patches.exam) examBridge.dispatch({ type: 'exam/patch', patch: patches.exam });
+  for (const bridge of [sessionBridge, kbBridge, searchBridge, callBridge, uiBridge, examBridge]) {
+    bridge.flush();
+  }
+  notifyLegacyListeners();
+}
+
+/**
+ * Apply one typed action per namespace in a single commit — the typed
+ * equivalent of the facade's `state/batch-actions`.
+ */
+export function dispatchBatch(actions: {
+  session?: SessionAction;
+  kb?: KbAction;
+  search?: SearchAction;
+  call?: CallAction;
+  ui?: UiAction;
+  exam?: ExamAction;
+}): void {
+  if (actions.session) sessionBridge.dispatch(actions.session);
+  if (actions.kb) kbBridge.dispatch(actions.kb);
+  if (actions.search) searchBridge.dispatch(actions.search);
+  if (actions.call) callBridge.dispatch(actions.call);
+  if (actions.ui) uiBridge.dispatch(actions.ui);
+  if (actions.exam) examBridge.dispatch(actions.exam);
+  for (const bridge of [sessionBridge, kbBridge, searchBridge, callBridge, uiBridge, examBridge]) {
+    bridge.flush();
+  }
+  notifyLegacyListeners();
+}
+
 /** The zustand snapshot stores, for advanced subscribers outside React. */
-export {
-  callStore,
-  examStore,
-  kbStore,
-  searchStore,
-  sessionStore,
-  uiStore,
-};
+export { callStore, examStore, kbStore, searchStore, sessionStore, uiStore };
 
 /** Legacy ImmutableBridge facades (dispatch/flush semantics). */
-export {
-  callBridge,
-  examBridge,
-  kbBridge,
-  searchBridge,
-  sessionBridge,
-  uiBridge,
-};
+export { callBridge, examBridge, kbBridge, searchBridge, sessionBridge, uiBridge };
 
 export type {
   CallAction,

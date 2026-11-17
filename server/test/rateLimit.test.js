@@ -12,8 +12,13 @@ import express from 'express';
 import fsPromises from 'node:fs/promises';
 
 import {
-  authLimiter, chatLimiter, searchLimiter, writeLimiter, fetchLimiter,
-  oauthTokenLimiter, oauthRevokeLimiter,
+  authLimiter,
+  chatLimiter,
+  searchLimiter,
+  writeLimiter,
+  fetchLimiter,
+  oauthTokenLimiter,
+  oauthRevokeLimiter,
 } from '../src/middleware/rateLimit.js';
 import { errorHandler } from '../src/middleware/error.js';
 import { listen, httpRequest } from './_http.js';
@@ -28,8 +33,12 @@ function buildApp(limiter) {
 
 describe('rateLimit: authLimiter (10 / 15min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(authLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(authLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('allows 10 requests and rejects the 11th', async () => {
     for (let i = 0; i < 10; i++) {
@@ -44,8 +53,12 @@ describe('rateLimit: authLimiter (10 / 15min)', () => {
 
 describe('rateLimit: chatLimiter (240 / hour) — 241st call is rejected', () => {
   let server;
-  before(async () => { server = await listen(buildApp(chatLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(chatLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('all 240 are allowed; the 241st is 429', async () => {
     for (let i = 0; i < 240; i++) {
@@ -59,8 +72,12 @@ describe('rateLimit: chatLimiter (240 / hour) — 241st call is rejected', () =>
 
 describe('rateLimit: searchLimiter (20 / min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(searchLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(searchLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('20 allowed; 21st is 429', async () => {
     for (let i = 0; i < 20; i++) {
@@ -74,8 +91,12 @@ describe('rateLimit: searchLimiter (20 / min)', () => {
 
 describe('rateLimit: fetchLimiter (15 / min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(fetchLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(fetchLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('15 allowed; 16th is 429', async () => {
     for (let i = 0; i < 15; i++) {
@@ -89,8 +110,12 @@ describe('rateLimit: fetchLimiter (15 / min)', () => {
 
 describe('rateLimit: writeLimiter (120 / min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(writeLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(writeLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('120 allowed; 121st is 429', async () => {
     for (let i = 0; i < 120; i++) {
@@ -107,8 +132,12 @@ describe('rateLimit: writeLimiter (120 / min)', () => {
    both were reachable without any rate limit. */
 describe('rateLimit: oauthTokenLimiter (60 / 15min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(oauthTokenLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(oauthTokenLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('60 allowed; 61st is 429', async () => {
     for (let i = 0; i < 60; i++) {
@@ -122,8 +151,12 @@ describe('rateLimit: oauthTokenLimiter (60 / 15min)', () => {
 
 describe('rateLimit: oauthRevokeLimiter (60 / 15min)', () => {
   let server;
-  before(async () => { server = await listen(buildApp(oauthRevokeLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(oauthRevokeLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('60 allowed; 61st is 429', async () => {
     for (let i = 0; i < 60; i++) {
@@ -148,7 +181,14 @@ describe('rateLimit: default bucket ordering (app.ts)', () => {
     assert.equal(mounts.length, 1, 'the default limiter must be mounted exactly once on /api');
     const limiterAt = mounts[0].index;
 
-    const publicPaths = ['/api/health', '/api/hello', '/api/status', '/api/mobile', '/api/mcp', '/api/oauth'];
+    const publicPaths = [
+      '/api/health',
+      '/api/hello',
+      '/api/status',
+      '/api/mobile',
+      '/api/mcp',
+      '/api/oauth',
+    ];
     let checked = 0;
     for (const p of publicPaths) {
       const m = new RegExp(`app\\.(?:use|get|post)\\('${p}'`).exec(src);
@@ -165,8 +205,12 @@ describe('rateLimit: default bucket ordering (app.ts)', () => {
 
 describe('rateLimit: 429 response shape', () => {
   let server;
-  before(async () => { server = await listen(buildApp(authLimiter)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(authLimiter));
+  });
+  after(async () => {
+    await server.close();
+  });
 
   test('rejected requests carry the JSON error contract', async () => {
     for (let i = 0; i < 10; i++) {

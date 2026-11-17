@@ -4,8 +4,16 @@ import { resourceScope } from '../middleware/scopes.js';
 import { BadRequest } from '../lib/errors.js';
 import { writeSseHeaders, startSseKeepalive, trackSseConnection } from '../lib/sse.js';
 import {
-  createResearchJob, getResearchJob, getResearchResult, listResearchJobs, listResearchEvents,
-  controlResearchJob, refineResearchJob, publicResearchJob, ResearchId, ResearchCursor,
+  createResearchJob,
+  getResearchJob,
+  getResearchResult,
+  listResearchJobs,
+  listResearchEvents,
+  controlResearchJob,
+  refineResearchJob,
+  publicResearchJob,
+  ResearchId,
+  ResearchCursor,
 } from '../services/core/researchJobs.js';
 
 const router = Router();
@@ -17,41 +25,75 @@ router.param('id', (req, _res, next, id) => {
 });
 
 router.post('/', async (req, res, next) => {
-  try { res.status(202).json({ job: publicResearchJob(await createResearchJob(req.userId!, req.body)) }); }
-  catch (error) { next(error); }
+  try {
+    res
+      .status(202)
+      .json({ job: publicResearchJob(await createResearchJob(req.userId!, req.body)) });
+  } catch (error) {
+    next(error);
+  }
 });
 router.get('/', async (req, res, next) => {
   try {
     const sessionId = req.query.sessionId;
-    if (sessionId !== undefined && !ResearchId.safeParse(sessionId).success) throw new BadRequest('Invalid session id');
-    res.json({ jobs: (await listResearchJobs(req.userId!, sessionId as string | undefined)).map(publicResearchJob) });
-  } catch (error) { next(error); }
+    if (sessionId !== undefined && !ResearchId.safeParse(sessionId).success)
+      throw new BadRequest('Invalid session id');
+    res.json({
+      jobs: (await listResearchJobs(req.userId!, sessionId as string | undefined)).map(
+        publicResearchJob,
+      ),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 router.get('/:id', async (req, res, next) => {
-  try { res.json({ job: publicResearchJob(await getResearchJob(req.userId!, String(req.params.id))) }); }
-  catch (error) { next(error); }
+  try {
+    res.json({ job: publicResearchJob(await getResearchJob(req.userId!, String(req.params.id))) });
+  } catch (error) {
+    next(error);
+  }
 });
 router.get('/:id/result', async (req, res, next) => {
-  try { res.json({ message: await getResearchResult(req.userId!, String(req.params.id)) }); }
-  catch (error) { next(error); }
+  try {
+    res.json({ message: await getResearchResult(req.userId!, String(req.params.id)) });
+  } catch (error) {
+    next(error);
+  }
 });
 // Declared one route per action rather than looping over ['cancel','retry']:
 // the OpenAPI drift ratchet (scripts/check-openapi-drift.mjs) discovers routes
 // by matching literal path strings, so a template-literal path here would be
 // invisible to it and silently drop both endpoints from contract drift checks.
 router.post('/:id/cancel', async (req, res, next) => {
-  try { res.status(200).json({ job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), 'cancel')) }); }
-  catch (error) { next(error); }
+  try {
+    res.status(200).json({
+      job: publicResearchJob(
+        await controlResearchJob(req.userId!, String(req.params.id), 'cancel'),
+      ),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 router.post('/:id/retry', async (req, res, next) => {
-  try { res.status(202).json({ job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), 'retry')) }); }
-  catch (error) { next(error); }
+  try {
+    res.status(202).json({
+      job: publicResearchJob(await controlResearchJob(req.userId!, String(req.params.id), 'retry')),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 router.post('/:id/refine', async (req, res, next) => {
   try {
     const result = await refineResearchJob(req.userId!, String(req.params.id), req.body);
-    res.status(202).json({ job: publicResearchJob(result.job), previous: publicResearchJob(result.previous) });
-  } catch (error) { next(error); }
+    res
+      .status(202)
+      .json({ job: publicResearchJob(result.job), previous: publicResearchJob(result.previous) });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get('/:id/events', async (req, res, next) => {
@@ -74,8 +116,12 @@ router.get('/:id/events', async (req, res, next) => {
     if (!parsed.success) throw new BadRequest('Invalid research event cursor');
     let cursor = parsed.data;
     const job = await getResearchJob(req.userId!, String(req.params.id));
-    if (cursor > job.eventSequence) throw new BadRequest('Research event cursor is ahead of the job');
-    if (closed || !writeSseHeaders(res)) { finish(); return; }
+    if (cursor > job.eventSequence)
+      throw new BadRequest('Research event cursor is ahead of the job');
+    if (closed || !writeSseHeaders(res)) {
+      finish();
+      return;
+    }
     counted = true;
     trackSseConnection(req.app, 1);
     keepalive = startSseKeepalive(res);
@@ -86,21 +132,42 @@ router.get('/:id/events', async (req, res, next) => {
         for (const event of events) {
           if (closed) return;
           cursor = event.sequence;
-          if (!res.write(`id: ${cursor}\nevent: research_event\ndata: ${JSON.stringify(event)}\n\n`)) {
+          if (
+            !res.write(`id: ${cursor}\nevent: research_event\ndata: ${JSON.stringify(event)}\n\n`)
+          ) {
             // End slow streams instead of buffering unbounded history. The
             // client reconnects with its last received event ID.
-            res.end(); finish(); return;
+            res.end();
+            finish();
+            return;
           }
         }
         const latest = await getResearchJob(req.userId!, job.id);
-        if (['succeeded', 'failed', 'cancelled'].includes(latest.status) && cursor >= latest.eventSequence) {
-          res.end(); finish(); return;
+        if (
+          ['succeeded', 'failed', 'cancelled'].includes(latest.status) &&
+          cursor >= latest.eventSequence
+        ) {
+          res.end();
+          finish();
+          return;
         }
-        if (!closed) timer = setTimeout(() => { void pump(); }, events.length === 100 ? 0 : 1000);
-      } catch { res.end(); finish(); }
+        if (!closed)
+          timer = setTimeout(
+            () => {
+              void pump();
+            },
+            events.length === 100 ? 0 : 1000,
+          );
+      } catch {
+        res.end();
+        finish();
+      }
     };
     void pump();
-  } catch (error) { finish(); next(error); }
+  } catch (error) {
+    finish();
+    next(error);
+  }
 });
 
 export default router;

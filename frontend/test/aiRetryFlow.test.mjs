@@ -46,7 +46,9 @@ function installStreamEnvironment(responses) {
         ok: false,
         status: response.status,
         statusText: response.statusText || `HTTP ${response.status}`,
-        async text() { return JSON.stringify(body); },
+        async text() {
+          return JSON.stringify(body);
+        },
       };
     }
     return { ok: true, status: 200, body: streamBody(response.chunks || []) };
@@ -68,8 +70,16 @@ async function runStream(options = {}) {
 test('stream never replays an exhausted server-side provider retry budget', async () => {
   for (const response of [
     { status: 429, body: { message: 'model busy', code: 'LLM_UPSTREAM_ERROR', retryable: false } },
-    { chunks: ['event: error\ndata: {"message":"model busy","status":429,"code":"LLM_UPSTREAM_ERROR","retryable":false}\n\ndata: [DONE]\n\n'] },
-    { chunks: ['event: error\ndata: {"message":"select Low thinking","status":400,"code":"MODEL_MODE_UNSUPPORTED","retryable":false}\n\ndata: [DONE]\n\n'] },
+    {
+      chunks: [
+        'event: error\ndata: {"message":"model busy","status":429,"code":"LLM_UPSTREAM_ERROR","retryable":false}\n\ndata: [DONE]\n\n',
+      ],
+    },
+    {
+      chunks: [
+        'event: error\ndata: {"message":"select Low thinking","status":400,"code":"MODEL_MODE_UNSUPPORTED","retryable":false}\n\ndata: [DONE]\n\n',
+      ],
+    },
   ]) {
     const env = installStreamEnvironment([response]);
     await runStream();
@@ -78,7 +88,13 @@ test('stream never replays an exhausted server-side provider retry budget', asyn
 });
 
 test('HTTP and SSE cooldowns reach the error UI without a second request', async () => {
-  const body = { message: 'model busy', status: 429, code: 'LLM_UPSTREAM_ERROR', retryable: false, retryAfterMs: 30_001 };
+  const body = {
+    message: 'model busy',
+    status: 429,
+    code: 'LLM_UPSTREAM_ERROR',
+    retryable: false,
+    retryAfterMs: 30_001,
+  };
   for (const response of [
     { status: 429, body },
     { chunks: [`event: error\ndata: ${JSON.stringify(body)}\n\ndata: [DONE]\n\n`] },
@@ -86,9 +102,9 @@ test('HTTP and SSE cooldowns reach the error UI without a second request', async
     const env = installStreamEnvironment([response]);
     await runStream();
     assert.equal(env.calls(), 1);
-    const { stateStore } = await import('../src/state/store.ts');
+    const { callStore } = await import('../src/store/index.ts');
     // Cooldown copy follows the active locale (English or Chinese).
-    assert.match(stateStore.read('lastCallError'), /31\s*(?:s|秒)/);
+    assert.match(callStore.getState().lastCallError, /31\s*(?:s|秒)/);
   }
 });
 
@@ -103,7 +119,10 @@ test('stream retries a transient HTTP failure once before visible output', async
 
   assert.equal(result?.text, 'recovered');
   assert.equal(env.calls(), 2);
-  assert.deepEqual(notices.map((notice) => [notice.retryNumber, notice.delayMs]), [[1, 5000]]);
+  assert.deepEqual(
+    notices.map((notice) => [notice.retryNumber, notice.delayMs]),
+    [[1, 5000]],
+  );
 });
 
 test('stream retries a 200 empty response but never replays semantic output', async () => {
@@ -116,10 +135,12 @@ test('stream retries a 200 empty response but never replays semantic output', as
   assert.equal(env.calls(), 2);
 
   const semanticEnv = installStreamEnvironment([
-    { chunks: [
-      'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n',
-      'event: error\ndata: {"status":503,"message":"late failure"}\n\n',
-    ] },
+    {
+      chunks: [
+        'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n',
+        'event: error\ndata: {"status":503,"message":"late failure"}\n\n',
+      ],
+    },
     { chunks: ['data: {"choices":[{"delta":{"content":"duplicate"}}]}\n\n'] },
   ]);
   const failed = await runStream();
@@ -129,7 +150,11 @@ test('stream retries a 200 empty response but never replays semantic output', as
 
 test('stream does not retry terminal quota errors', async () => {
   const env = installStreamEnvironment([
-    { chunks: ['event: error\ndata: {"status":429,"code":"MONTHLY_LIMIT","message":"quota reached"}\n\n'] },
+    {
+      chunks: [
+        'event: error\ndata: {"status":429,"code":"MONTHLY_LIMIT","message":"quota reached"}\n\n',
+      ],
+    },
     { chunks: ['data: {"choices":[{"delta":{"content":"should not replay"}}]}\n\n'] },
   ]);
 
@@ -141,10 +166,12 @@ test('stream does not retry terminal quota errors', async () => {
 
 test('stream treats reasoning tokens as semantic output and does not retry', async () => {
   const env = installStreamEnvironment([
-    { chunks: [
-      'data: {"choices":[{"delta":{"reasoning_content":"thinking deeply..."}}]}\n\n',
-      'data: [DONE]\n\n',
-    ] },
+    {
+      chunks: [
+        'data: {"choices":[{"delta":{"reasoning_content":"thinking deeply..."}}]}\n\n',
+        'data: [DONE]\n\n',
+      ],
+    },
     { chunks: ['data: {"choices":[{"delta":{"content":"should never be called"}}]}\n\n'] },
   ]);
 
@@ -154,7 +181,9 @@ test('stream treats reasoning tokens as semantic output and does not retry', asy
     [{ role: 'user', content: 'reasoning question' }],
     256,
     () => {},
-    (t) => { thinkingReceived += t; },
+    (t) => {
+      thinkingReceived += t;
+    },
     { maxAttempts: 2, sleep: async () => {} },
   );
 
@@ -172,7 +201,11 @@ test('stream reconnects to detached turn when execution is already claimed', asy
         headers: { get: () => 'application/json' },
         async text() {
           return JSON.stringify({
-            turn: { id: 'turn-claimed-1', status: 'completed', fullText: 'recovered from claimed turn' },
+            turn: {
+              id: 'turn-claimed-1',
+              status: 'completed',
+              fullText: 'recovered from claimed turn',
+            },
             events: [],
           });
         },
@@ -211,7 +244,9 @@ test('stream retry renews clientTurn.id so attempt 2 does not collide with attem
         if (parsed.clientTurn?.id) {
           seenClientTurnIds.push(parsed.clientTurn.id);
         }
-      } catch { /* empty-catch: intentional — malformed test body */ }
+      } catch {
+        /* empty-catch: intentional — malformed test body */
+      }
     }
     if (seenClientTurnIds.length === 1) {
       return {
@@ -270,7 +305,7 @@ test('turn execution conflict sanitizes lastCallError when detached recovery fai
   });
 
   const { callAPIStream } = await import('../src/chat/stream.ts');
-  const { stateStore } = await import('../src/state/store.ts');
+  const { callStore } = await import('../src/store/index.ts');
   const result = await callAPIStream(
     [{ role: 'user', content: 'test claim fail' }],
     256,
@@ -280,7 +315,7 @@ test('turn execution conflict sanitizes lastCallError when detached recovery fai
   );
 
   assert.equal(result, null);
-  const lastError = stateStore.read('lastCallError');
+  const lastError = callStore.getState().lastCallError;
   assert.ok(lastError);
   assert.equal(lastError.includes('already been claimed'), false);
   assert.equal(lastError.includes('Turn execution conflict'), true);
@@ -302,7 +337,10 @@ test('a retried turn interrupts the superseded server turn instead of leaving it
         status: 200,
         headers: { get: () => 'application/json' },
         async text() {
-          return JSON.stringify({ turn: { id: 'turn-orphan-1', status: 'interrupted' }, idempotent: false });
+          return JSON.stringify({
+            turn: { id: 'turn-orphan-1', status: 'interrupted' },
+            idempotent: false,
+          });
         },
       };
     }
@@ -354,7 +392,12 @@ test('a retry that rebinds the same turn does not interrupt it', async () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        async text() { return JSON.stringify({ turn: { id: 'turn-same-1', status: 'interrupted' }, idempotent: false }); },
+        async text() {
+          return JSON.stringify({
+            turn: { id: 'turn-same-1', status: 'interrupted' },
+            idempotent: false,
+          });
+        },
       };
     }
     if (requested.filter((r) => r.includes('/chat/stream')).length === 1) {

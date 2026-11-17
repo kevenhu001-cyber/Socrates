@@ -44,7 +44,7 @@ interface MemoryLegacyWindow extends Window {
   clearAllMemories?: typeof clearAllMemories;
 }
 
-const MEMORY_KEY = "socrates-memory-store";
+const MEMORY_KEY = 'socrates-memory-store';
 const MEMORY_CAP = 50;
 
 /* In-memory cache. */
@@ -64,7 +64,7 @@ function loadMemories(): MemoryEntry[] {
       }
     }
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:64', 'expected');
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts', 'expected');
     /* ignore */
   }
   _memories = [];
@@ -79,7 +79,7 @@ function saveMemories(): void {
   try {
     localStorage.setItem(MEMORY_KEY, JSON.stringify(_memories || []));
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:76');
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts');
     /* localStorage full or private mode */
   }
 }
@@ -90,40 +90,52 @@ function saveMemories(): void {
    locally-added entries. */
 function loadFromServer(): void {
   try {
-    apiFetch<{ memories?: ServerMemoryRow[] }>("/api/memory", { method: "GET" })
+    apiFetch<{ memories?: ServerMemoryRow[] }>('/api/memory', { method: 'GET' })
       .then(function (res) {
         if (!res || !Array.isArray(res.memories)) return;
-        const serverRows = res.memories.map(function (m): MemoryEntry | null {
-          const rawText = String(m.value || m.text || "");
-          const divider = rawText.indexOf(':');
-          const parsedKey = divider > 0 ? rawText.slice(0, divider).trim() : "";
-          return m && {
-            id: m.id || _genId(),
-            key: m.key || parsedKey || (m.scope === "project" ? "project" : "fact"),
-            value: m.value || (divider > 0 ? rawText.slice(divider + 1).trim() : rawText),
-            createdAt: toTimestamp(m.createdAt),
-            updatedAt: toTimestamp(m.updatedAt || m.createdAt),
-          };
-        }).filter(function (m): m is MemoryEntry { return !!m && m.value !== ""; });
+        const serverRows = res.memories
+          .map(function (m): MemoryEntry | null {
+            const rawText = String(m.value || m.text || '');
+            const divider = rawText.indexOf(':');
+            const parsedKey = divider > 0 ? rawText.slice(0, divider).trim() : '';
+            return (
+              m && {
+                id: m.id || _genId(),
+                key: m.key || parsedKey || (m.scope === 'project' ? 'project' : 'fact'),
+                value: m.value || (divider > 0 ? rawText.slice(divider + 1).trim() : rawText),
+                createdAt: toTimestamp(m.createdAt),
+                updatedAt: toTimestamp(m.updatedAt || m.createdAt),
+              }
+            );
+          })
+          .filter(function (m): m is MemoryEntry {
+            return !!m && m.value !== '';
+          });
         if (!serverRows.length) return;
         const seen: Record<string, true> = {};
-        serverRows.forEach(function (m) { seen[m.id] = true; });
+        serverRows.forEach(function (m) {
+          seen[m.id] = true;
+        });
         const merged = serverRows.concat(
-          loadMemories().filter(function (m) { return m && !seen[m.id]; })
+          loadMemories().filter(function (m) {
+            return m && !seen[m.id];
+          }),
         );
         _memories = merged.slice(-MEMORY_CAP);
         saveMemories();
       })
-      .catch(function () { /* server fetch failed — use local */ });
+      .catch(function () {
+        /* server fetch failed — use local */
+      });
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts:109', 'expected');
+    reportEmptyCatch(error, 'empty catch: storage/memoryStore.ts', 'expected');
     /* ignore */
   }
 }
 
 /* Generate a short unique id for a memory entry. */
 function _genId(): string {
-  return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
 }
 
 function toTimestamp(value: number | string | undefined): number {
@@ -140,10 +152,12 @@ function toTimestamp(value: number | string | undefined): number {
    same key already exists, it is updated. Returns the entry. */
 function setMemory(key: unknown, value: unknown): MemoryEntry | null {
   const memories = loadMemories();
-  const keyStr = String(key || "").trim();
-  const valStr = String(value || "").trim();
+  const keyStr = String(key || '').trim();
+  const valStr = String(value || '').trim();
   if (!keyStr || !valStr) return null;
-  const existing = memories.find(function (m) { return m.key === keyStr; });
+  const existing = memories.find(function (m) {
+    return m.key === keyStr;
+  });
   const now = Date.now();
   if (existing) {
     existing.value = valStr;
@@ -151,7 +165,9 @@ function setMemory(key: unknown, value: unknown): MemoryEntry | null {
   } else {
     /* Evict oldest if at cap. */
     if (memories.length >= MEMORY_CAP) {
-      memories.sort(function (a, b) { return (a.updatedAt || 0) - (b.updatedAt || 0); });
+      memories.sort(function (a, b) {
+        return (a.updatedAt || 0) - (b.updatedAt || 0);
+      });
       memories.shift();
     }
     memories.push({ id: _genId(), key: keyStr, value: valStr, createdAt: now, updatedAt: now });
@@ -162,7 +178,9 @@ function setMemory(key: unknown, value: unknown): MemoryEntry | null {
 
 /* Replace a local-only id with the durable id returned by /api/memory. */
 function replaceMemoryId(localId: string, serverId: string): boolean {
-  const memory = loadMemories().find(function (entry) { return entry.id === localId; });
+  const memory = loadMemories().find(function (entry) {
+    return entry.id === localId;
+  });
   if (!memory) return false;
   memory.id = serverId;
   saveMemories();
@@ -172,7 +190,9 @@ function replaceMemoryId(localId: string, serverId: string): boolean {
 /* Remove a memory by id. Returns true if found and removed. */
 function removeMemory(id: string): boolean {
   const memories = loadMemories();
-  const idx = memories.findIndex(function (m) { return m.id === id; });
+  const idx = memories.findIndex(function (m) {
+    return m.id === id;
+  });
   if (idx < 0) return false;
   memories.splice(idx, 1);
   saveMemories();
@@ -182,7 +202,9 @@ function removeMemory(id: string): boolean {
 /* Remove a memory by key. Returns true if found and removed. */
 function removeMemoryByKey(key: string): boolean {
   const memories = loadMemories();
-  const idx = memories.findIndex(function (m) { return m.key === key; });
+  const idx = memories.findIndex(function (m) {
+    return m.key === key;
+  });
   if (idx < 0) return false;
   memories.splice(idx, 1);
   saveMemories();
@@ -204,11 +226,11 @@ function clearAllMemories(): void {
    If there are no memories, returns an empty string. */
 function injectMemoryContext(): string {
   const memories = loadMemories();
-  if (!memories.length) return "";
+  if (!memories.length) return '';
   const lines = memories.map(function (m) {
-    return "- " + m.key + ": " + m.value;
+    return '- ' + m.key + ': ' + m.value;
   });
-  return "\n\n## MEMORY (things I know about the user)\n" + lines.join("\n") + "\n";
+  return '\n\n## MEMORY (things I know about the user)\n' + lines.join('\n') + '\n';
 }
 
 /* Exported for legacy bridge consumers. */
@@ -225,7 +247,7 @@ const memoryStore = {
 };
 
 /* Attach to window for inline onclick access. */
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   const win = window as MemoryLegacyWindow;
   win.memoryStore = memoryStore;
   win.setMemory = setMemory;

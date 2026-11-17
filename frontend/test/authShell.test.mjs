@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { setGateVisible, showView, switchTab, setError, focusTab, getValue, isChecked, setValue, setText, setVisible, focusId, setButton } from '../src/auth/shell.ts';
+import {
+  setGateVisible,
+  showView,
+  switchTab,
+  setError,
+  focusTab,
+  getValue,
+  isChecked,
+  setValue,
+  setText,
+  setVisible,
+  focusId,
+  setButton,
+} from '../src/auth/shell.ts';
 
 function fakeEl() {
   const cls = new Set();
@@ -9,13 +22,22 @@ function fakeEl() {
     classList: {
       add: (c) => cls.add(c),
       remove: (c) => cls.delete(c),
-      toggle: (c, on) => { if (on) cls.add(c); else cls.delete(c); },
+      toggle: (c, on) => {
+        if (on) cls.add(c);
+        else cls.delete(c);
+      },
       contains: (c) => cls.has(c),
     },
     attrs: {},
-    getAttribute: function (k) { return this.attrs[k] ?? null; },
-    setAttribute: function (k, v) { this.attrs[k] = v; },
-    focus: function () { this.focused = true; },
+    getAttribute: function (k) {
+      return this.attrs[k] ?? null;
+    },
+    setAttribute: function (k, v) {
+      this.attrs[k] = v;
+    },
+    focus: function () {
+      this.focused = true;
+    },
     textContent: '',
     _cls: cls,
   };
@@ -84,7 +106,20 @@ test('setError writes message text', () => {
 
 test('form helpers read/write fields without throwing on missing nodes', () => {
   const cls = new Set();
-  const input = { value: '  a@b.c  ', checked: true, disabled: false, textContent: '', classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c), toggle: (c, on) => { if (on) cls.add(c); else cls.delete(c); } } };
+  const input = {
+    value: '  a@b.c  ',
+    checked: true,
+    disabled: false,
+    textContent: '',
+    classList: {
+      add: (c) => cls.add(c),
+      remove: (c) => cls.delete(c),
+      toggle: (c, on) => {
+        if (on) cls.add(c);
+        else cls.delete(c);
+      },
+    },
+  };
   const root = {
     getElementById: (id) => (id === 'email' || id === 'btn' || id === 'box' ? input : null),
     querySelectorAll: () => [],

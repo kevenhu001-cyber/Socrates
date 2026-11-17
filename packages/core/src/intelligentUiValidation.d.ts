@@ -4,6 +4,14 @@ export function validateIntelligentUi(value: unknown):
       ok: false;
       error: string;
       nodeId?: string | null;
-      kind?: 'control' | 'document' | 'node' | 'openui' | 'demonstration' | 'physics' | 'learning' | 'visualization';
+      kind?:
+        | 'control'
+        | 'document'
+        | 'node'
+        | 'openui'
+        | 'demonstration'
+        | 'physics'
+        | 'learning'
+        | 'visualization';
       issues?: Array<{ path: string; message: string }>;
     };

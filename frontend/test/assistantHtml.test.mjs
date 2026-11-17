@@ -13,9 +13,8 @@ globalThis.t = (key) => key;
    the browser); provide the npm copy the same way streaming.test.mjs does. */
 globalThis.marked = marked;
 
-const { buildAssistantHtml, configureAssistantHtml } = await import(
-  '../src/render/assistantHtml.ts'
-);
+const { buildAssistantHtml, configureAssistantHtml } =
+  await import('../src/render/assistantHtml.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
 
 test('plain markdown renders to html', () => {
@@ -93,7 +92,8 @@ test('chat mode keeps an answer that STARTS with a sources-like marker', () => {
 });
 
 test('first quiz becomes a slot, extra quizzes degrade to text', () => {
-  const quiz = '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
+  const quiz =
+    '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
   const html = buildAssistantHtml(`${quiz} mid ${quiz}`);
   const slots = html.match(/data-quiz-id="/g) || [];
   assert.equal(slots.length, 1);
@@ -121,14 +121,22 @@ test('scaffold-looking markup in Markdown code stays literal in the final answer
 });
 
 test('unparseable quiz renders the fallback card', () => {
-  const html = buildAssistantHtml('<quiz><q>No complete choices</q><o letter="A">Only one</o></quiz>');
+  const html = buildAssistantHtml(
+    '<quiz><q>No complete choices</q><o letter="A">Only one</o></quiz>',
+  );
   assert.match(html, /inline-block-fallback/);
   assert.doesNotMatch(html, /data-quiz-id/);
 });
 
 test('invalid questions do not consume the one interactive quiz or practice slot', () => {
-  const quiz = '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
-  const html = buildAssistantHtml('<quiz><q>Incomplete</q><o letter="A">Only one</o></quiz>' + quiz + quiz + '<practice><hint>No question</hint></practice><practice><problem>First</problem></practice><practice><problem>Later</problem></practice>');
+  const quiz =
+    '<quiz><q>Pick?</q><o letter="A">x</o><o letter="B">y</o><correct>A</correct></quiz>';
+  const html = buildAssistantHtml(
+    '<quiz><q>Incomplete</q><o letter="A">Only one</o></quiz>' +
+      quiz +
+      quiz +
+      '<practice><hint>No question</hint></practice><practice><problem>First</problem></practice><practice><problem>Later</problem></practice>',
+  );
   assert.equal((html.match(/data-quiz-id="/g) || []).length, 1);
   assert.equal((html.match(/data-practice-id="/g) || []).length, 1);
   assert.equal((html.match(/inline-block-fallback-label/g) || []).length, 2);
@@ -149,9 +157,20 @@ test('empty mistake tags use the first practice question and ignore unusable rec
   const seen = [];
   configureAssistantHtml({ recordMistake: (entry) => seen.push(entry) });
   try {
-    const html = buildAssistantHtml('<practice><problem>First question?</problem></practice><mistake correct="42"></mistake><mistake type="quiz" correct="A">Ignored</mistake><mistake>No answer</mistake>');
+    const html = buildAssistantHtml(
+      '<practice><problem>First question?</problem></practice><mistake correct="42"></mistake><mistake type="quiz" correct="A">Ignored</mistake><mistake>No answer</mistake>',
+    );
     assert.doesNotMatch(html, /<mistake|Ignored|No answer/);
-    assert.deepEqual(seen, [{ type: 'practice', q: 'First question?', options: [], correct: '42', userAnswer: null, judgedAnswer: '42' }]);
+    assert.deepEqual(seen, [
+      {
+        type: 'practice',
+        q: 'First question?',
+        options: [],
+        correct: '42',
+        userAnswer: null,
+        judgedAnswer: '42',
+      },
+    ]);
     buildAssistantHtml('<mistake correct="42"></mistake>');
     assert.equal(seen.length, 1);
   } finally {
@@ -165,9 +184,7 @@ test('example and practice blocks become slots', () => {
   );
   assert.match(html, /data-example-id="/);
 
-  const practice = buildAssistantHtml(
-    '<practice correct="42"><problem>What?</problem></practice>',
-  );
+  const practice = buildAssistantHtml('<practice correct="42"><problem>What?</problem></practice>');
   assert.match(practice, /data-practice-id="/);
 });
 
@@ -191,7 +208,9 @@ test('mistake blocks are stripped and recorded with the inner question', () => {
 });
 
 test('scaffold definition tags become slots via the pipeline', () => {
-  const html = buildAssistantHtml('<definition><term>Entropy</term><body>Disorder.</body></definition>');
+  const html = buildAssistantHtml(
+    '<definition><term>Entropy</term><body>Disorder.</body></definition>',
+  );
   assert.match(html, /data-definition-id="/);
 });
 
@@ -203,6 +222,10 @@ test('a proof nested in a theorem folds into the theorem slot instead of vanishi
   );
   assert.equal(out.theoremPH.length, 1);
   assert.equal(out.theoremPH[0].parsed.proofBody, 'Because.');
-  assert.equal(out.proofPH.length, 0, 'the hoisted proof no longer waits for a slot that was replaced');
+  assert.equal(
+    out.proofPH.length,
+    0,
+    'the hoisted proof no longer waits for a slot that was replaced',
+  );
   assert.doesNotMatch(out.text, /proof-slot/);
 });

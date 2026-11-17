@@ -2,7 +2,7 @@ import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { JSDOM } from 'jsdom';
-import { stateStore } from '../src/state/store.ts';
+import { dispatchSession, dispatchUi, sessionStore } from '../src/store/index.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
@@ -10,16 +10,11 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
 
-const {
-  configureTurnAnchor,
-  turnAnchorReserve,
-  turnRowFor,
-} = await import('../src/chat/turn/anchor/ownership.ts');
+const { configureTurnAnchor, turnAnchorReserve, turnRowFor } =
+  await import('../src/chat/turn/anchor/ownership.ts');
 const { releaseTurnViewportHold } = await import('../src/chat/turn/anchor/hold.ts');
-const {
-  scheduleActiveTurnToTop,
-  scheduleTurnToTopForMessage,
-} = await import('../src/chat/turn/anchor/schedule.ts');
+const { scheduleActiveTurnToTop, scheduleTurnToTopForMessage } =
+  await import('../src/chat/turn/anchor/schedule.ts');
 
 configureTurnAnchor({ isMsgListMounted: () => false });
 
@@ -119,11 +114,11 @@ test('scheduleTurnToTopForMessage waits for a React row to mount by client id', 
   const list = makeList();
   const queue = [];
   const restoreRaf = stubRaf(queue);
-  const previousMessages = stateStore.read('messages');
+  const previousMessages = sessionStore.getState().messages;
   try {
     makeUser(list);
-    stateStore.dispatch({
-      type: 'state/set',
+    dispatchSession({
+      type: 'session/set',
       key: 'messages',
       value: [
         { clientId: 'react-user', role: 'user', rawText: 'hello', html: null },
@@ -152,7 +147,7 @@ test('scheduleTurnToTopForMessage waits for a React row to mount by client id', 
   } finally {
     releaseTurnViewportHold();
     mock.timers.reset();
-    stateStore.dispatch({ type: 'state/set', key: 'messages', value: previousMessages });
+    dispatchSession({ type: 'session/set', key: 'messages', value: previousMessages });
     restoreRaf();
     list.remove();
   }
@@ -191,7 +186,10 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
   Object.defineProperty(list, 'scrollHeight', { get: () => scrollHeight, configurable: true });
   Object.defineProperty(list, 'scrollTop', {
     get: () => scrollTop,
-    set: (value) => { scrollTop = value; clampScroll(); },
+    set: (value) => {
+      scrollTop = value;
+      clampScroll();
+    },
     configurable: true,
   });
   list.getBoundingClientRect = () => ({ top: 0, bottom: clientHeight, height: clientHeight });
@@ -210,29 +208,46 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
   spent.style.minHeight = '534px';
   let spentHeight = 534;
   spent.getBoundingClientRect = () => ({
-    top: 200 - scrollTop, bottom: 200 - scrollTop + spentHeight, height: spentHeight,
+    top: 200 - scrollTop,
+    bottom: 200 - scrollTop + spentHeight,
+    height: spentHeight,
   });
 
   /* The new turn's answer: the row the hold owns. */
   const assistant = makeAssistant(list, 'current');
   assistant.getBoundingClientRect = () => ({
-    top: scrollTop + 900, bottom: scrollTop + 940, height: 40,
+    top: scrollTop + 900,
+    bottom: scrollTop + 940,
+    height: 40,
   });
 
-  const previousMessages = stateStore.read('messages');
+  const previousMessages = sessionStore.getState().messages;
   const observers = [];
   const previousResizeObserver = globalThis.ResizeObserver;
   globalThis.ResizeObserver = class {
-    constructor(callback) { this.callback = callback; this.observed = new Set(); observers.push(this); }
-    observe(element) { this.observed.add(element); }
-    unobserve(element) { this.observed.delete(element); }
-    disconnect() { this.observed.clear(); }
+    constructor(callback) {
+      this.callback = callback;
+      this.observed = new Set();
+      observers.push(this);
+    }
+    observe(element) {
+      this.observed.add(element);
+    }
+    unobserve(element) {
+      this.observed.delete(element);
+    }
+    disconnect() {
+      this.observed.clear();
+    }
   };
   /* A real ResizeObserver only fires for the elements it watches, so a
      layout change in an unwatched row must not reach the hold. */
   const resize = (element) => {
     for (const observer of observers) {
-      if (observer.observed.has(element)) { observer.callback(); return true; }
+      if (observer.observed.has(element)) {
+        observer.callback();
+        return true;
+      }
     }
     return false;
   };
@@ -248,13 +263,25 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
     }
   };
   try {
-    stateStore.dispatch({
-      type: 'state/set',
+    dispatchSession({
+      type: 'session/set',
       key: 'messages',
       value: [
         { clientId: 'user-1', role: 'user', rawText: 'hello', html: null },
-        { clientId: 'spent', role: 'assistant', rawText: 'old answer', html: null, _turnAnchorMinHeight: 534 },
-        { clientId: 'current', role: 'assistant', rawText: '', html: null, _turnAnchorMinHeight: 562 },
+        {
+          clientId: 'spent',
+          role: 'assistant',
+          rawText: 'old answer',
+          html: null,
+          _turnAnchorMinHeight: 534,
+        },
+        {
+          clientId: 'current',
+          role: 'assistant',
+          rawText: '',
+          html: null,
+          _turnAnchorMinHeight: 562,
+        },
       ],
     });
 
@@ -287,14 +314,18 @@ test('retiring a spent reserve keeps the prompt in its slot when the row settles
     assert.equal(scrollTop, 2460);
     assert.equal(prompt.getBoundingClientRect().top, 12);
     assert.equal(list.dataset.turnViewportOwner, 'turn');
-    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: true });
-    assert.equal(list.dataset.turnViewportOwner, undefined, 'reader intent releases ownership without a resize');
+    dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: true });
+    assert.equal(
+      list.dataset.turnViewportOwner,
+      undefined,
+      'reader intent releases ownership without a resize',
+    );
     assert.equal(resize(spent), false, 'reader intent disconnects the hold observer');
-    stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
   } finally {
     releaseTurnViewportHold();
     mock.timers.reset();
-    stateStore.dispatch({ type: 'state/set', key: 'messages', value: previousMessages });
+    dispatchSession({ type: 'session/set', key: 'messages', value: previousMessages });
     if (previousResizeObserver === undefined) delete globalThis.ResizeObserver;
     else globalThis.ResizeObserver = previousResizeObserver;
     restoreRaf();

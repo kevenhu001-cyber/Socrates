@@ -5,7 +5,10 @@ import { users, authSessions } from '../db/schema/index.js';
 import { authCacheGet, authCacheSet } from '../lib/authCache.js';
 import { isMobileAccessToken } from '../services/core/auth.js';
 import { verifyAgentKey, AGENT_KEY_RE } from '../services/core/agentKeys.js';
-import { verifyOAuthAccessToken, OAUTH_ACCESS_TOKEN_RE } from '../services/integrations/oauthTokens.js';
+import {
+  verifyOAuthAccessToken,
+  OAUTH_ACCESS_TOKEN_RE,
+} from '../services/integrations/oauthTokens.js';
 import { ALL_SCOPES_SET } from '../lib/authScopes.js';
 import { eq } from 'drizzle-orm';
 
@@ -15,9 +18,10 @@ import { eq } from 'drizzle-orm';
 const BROWSER_SESSION_RE = /^[a-f0-9]{64}$/;
 const BEARER_RE = /^Bearer ([^\s,]+)$/i;
 
-type RequestCredential =
-  | { token: string; source: 'bearer' | 'cookie' | 'agent_key' | 'oauth_token' }
-  | null;
+type RequestCredential = {
+  token: string;
+  source: 'bearer' | 'cookie' | 'agent_key' | 'oauth_token';
+} | null;
 
 /**
  * Select one accepted credential from a request.

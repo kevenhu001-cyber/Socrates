@@ -6,7 +6,11 @@
    Both imported by render/markdown.js. */
 
 import { _autoWrapBareBracketMath } from './latex.ts';
-import { fixEmphasisMarkers, fixHeadingMarkers, fixMarkdownTableSeparators } from './markdownRepair.ts';
+import {
+  fixEmphasisMarkers,
+  fixHeadingMarkers,
+  fixMarkdownTableSeparators,
+} from './markdownRepair.ts';
 import { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 export { recoverUnclosedDisplayMathBeforeHeading } from './markdownBoundary.ts';
 
@@ -92,8 +96,14 @@ function _insideMathSpan(s: string, index: number): boolean {
   let i = 0;
   while (i < index) {
     const c = s.charAt(i);
-    if (c === '\\') { i += 2; continue; }
-    if (c !== '$') { i = scanPlainChar(s, i, state); continue; }
+    if (c === '\\') {
+      i += 2;
+      continue;
+    }
+    if (c !== '$') {
+      i = scanPlainChar(s, i, state);
+      continue;
+    }
     let run = 0;
     while (s.charAt(i + run) === '$') run += 1;
     i = scanDollarRun(s, i, run, state);
@@ -139,7 +149,9 @@ export function preprocessMarkdown(t: string | null | undefined): string {
     });
   }
   function _protectInlineCode(s: string): string {
-    return s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
+    return s.replace(/`[^`\n]+`/g, function (m) {
+      return _stash(m);
+    });
   }
 
   s = _protectFences(s);
@@ -173,9 +185,14 @@ export function preprocessMarkdown(t: string | null | undefined): string {
      formula (`$\theta=1.22\lambda/D$`); wrapping it there would split the formula
      (`$\theta=$1.22\lambda$/D$`). Inline code and fences are stashed above, so a `$` here is
      real math. */
-  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, function (match: string, lead: string, value: string, unit: string, offset: number) {
-    return _insideMathSpan(s, offset + lead.length) ? match : lead + '$' + value + '\\' + unit + '$';
-  });
+  s = s.replace(
+    /(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g,
+    function (match: string, lead: string, value: string, unit: string, offset: number) {
+      return _insideMathSpan(s, offset + lead.length)
+        ? match
+        : lead + '$' + value + '\\' + unit + '$';
+    },
+  );
 
   /* Promote a "---" / "----" / "-----" line that is *directly* preceded
      by non-blank text into a clearly-bounded horizontal rule. Without
@@ -206,10 +223,13 @@ export function preprocessMarkdown(t: string | null | undefined): string {
      between markers has exactly one parse; the earlier
      `(?:[ \t]*>[ \t]*)+` let each gap fall on either side of a marker
      and backtracked exponentially on `>\t>\t>...`. */
-  s = s.replace(/(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
-    const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
-    return lead + '$$\n' + cleaned.trim() + '\n$$';
-  });
+  s = s.replace(
+    /(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g,
+    function (_, lead: string, inner: string) {
+      const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
+      return lead + '$$\n' + cleaned.trim() + '\n$$';
+    },
+  );
   s = s.replace(/^[ \t]*>[ \t]*(\$[^\n$]+\$)[ \t]*$/gm, '$1');
 
   const fenceMatch = s.match(/```/g);
@@ -241,7 +261,9 @@ export function preprocessMarkdown(t: string | null | undefined): string {
     return lines.join('\n');
   })();
 
-  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
+  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) {
+    return _ppStash[parseInt(id)];
+  });
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
   return s;
@@ -272,7 +294,9 @@ export function preprocessMarkdownForStreaming(
   s = s.replace(/```([\w-]*)\n?([\s\S]*?)```/g, function (_, lang: string, body: string) {
     return _stash('```' + lang + '\n' + body + '```');
   });
-  s = s.replace(/`[^`\n]+`/g, function (m) { return _stash(m); });
+  s = s.replace(/`[^`\n]+`/g, function (m) {
+    return _stash(m);
+  });
 
   s = fixHeadingMarkers(s);
   s = fixEmphasisMarkers(s);
@@ -290,14 +314,20 @@ export function preprocessMarkdownForStreaming(
      (a LaTeX sample line would otherwise read `$$…$$` until the fence
      closes). */
   const openFence = s.indexOf('```');
-  s = openFence === -1
-    ? promoteStandaloneInlineMath(s, complete)
-    : promoteStandaloneInlineMath(s.slice(0, openFence), false) + s.slice(openFence);
+  s =
+    openFence === -1
+      ? promoteStandaloneInlineMath(s, complete)
+      : promoteStandaloneInlineMath(s.slice(0, openFence), false) + s.slice(openFence);
 
   s = _autoWrapBareBracketMath(s);
-  s = s.replace(/(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g, function (match: string, lead: string, value: string, unit: string, offset: number) {
-    return _insideMathSpan(s, offset + lead.length) ? match : lead + '$' + value + '\\' + unit + '$';
-  });
+  s = s.replace(
+    /(^|[^$\w\\])(\d+(?:\.\d+)?)\s*\\(Omega|omega|mu|alpha|beta|gamma|Delta|theta|pi|lambda|sigma|tau|phi|psi)\b(?!\$)/g,
+    function (match: string, lead: string, value: string, unit: string, offset: number) {
+      return _insideMathSpan(s, offset + lead.length)
+        ? match
+        : lead + '$' + value + '\\' + unit + '$';
+    },
+  );
   /* Mirror the `---` horizontal-rule fix from preprocessMarkdown.
      Streaming buffers concatenate partial tokens, so a "first
      paragraph / `---` / next paragraph" sequence often shows up
@@ -307,10 +337,13 @@ export function preprocessMarkdownForStreaming(
   s = s.replace(/([^\n])\n(-{3,})\s*(?=\n|$)/g, '$1\n\n$2');
   /* Strip blockquote markers from lines that contain math (mirrors
      the same fix in preprocessMarkdown). */
-  s = s.replace(/(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g, function (_, lead: string, inner: string) {
-    const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
-    return lead + '$$\n' + cleaned.trim() + '\n$$';
-  });
+  s = s.replace(
+    /(^|\n)[ \t]*(?:>[ \t]*)+\$\$([\s\S]*?)\$\$/g,
+    function (_, lead: string, inner: string) {
+      const cleaned = inner.replace(/^[ \t]*>[ \t]?/gm, '');
+      return lead + '$$\n' + cleaned.trim() + '\n$$';
+    },
+  );
   s = s.replace(/^[ \t]*>[ \t]*(\$[^\n$]+\$)[ \t]*$/gm, '$1');
   s = s.replace(/(^|\n)\s*[•‣◦・·]\s+/g, '$1- ');
   s = fixMarkdownTableSeparators(s);
@@ -333,7 +366,9 @@ export function preprocessMarkdownForStreaming(
     return lines.join('\n');
   })();
 
-  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) { return _ppStash[parseInt(id)]; });
+  s = s.replace(/\uE000SOCRATES_PP_(\d+)\uE001/g, function (_, id: string) {
+    return _ppStash[parseInt(id)];
+  });
   s = s.replace(/\\\[([\s\S]+?)\\\]/g, '$$$$$1$$$$');
   s = s.replace(/\\\(([\s\S]+?)\\\)/g, '$$$1$$');
   return s;

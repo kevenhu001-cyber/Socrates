@@ -27,14 +27,16 @@ export const SAVE_MEMORY_TOOL = {
       properties: {
         text: {
           type: 'string',
-          description: 'One concise, self-contained sentence describing the durable fact (max 500 characters).',
+          description:
+            'One concise, self-contained sentence describing the durable fact (max 500 characters).',
           minLength: 1,
           maxLength: 500,
         },
         scope: {
           type: 'string',
           enum: ['global', 'project'],
-          description: '"global" applies across all sessions; "project" applies only to the currently active project (requires one to be open).',
+          description:
+            '"global" applies across all sessions; "project" applies only to the currently active project (requires one to be open).',
         },
       },
       required: ['text'],

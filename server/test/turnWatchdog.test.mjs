@@ -66,7 +66,10 @@ test('the limits come from the environment and default to ten minutes / one hour
   assert.equal(defaults.idleMs, DEFAULT_TURN_IDLE_TIMEOUT_MS);
   assert.equal(defaults.maxDurationMs, DEFAULT_TURN_MAX_DURATION_MS);
 
-  const custom = turnWatchdogLimits({ TURN_IDLE_TIMEOUT_MS: '5000', TURN_MAX_DURATION_MS: '60000' });
+  const custom = turnWatchdogLimits({
+    TURN_IDLE_TIMEOUT_MS: '5000',
+    TURN_MAX_DURATION_MS: '60000',
+  });
   assert.equal(custom.idleMs, 5000);
   assert.equal(custom.maxDurationMs, 60000);
 

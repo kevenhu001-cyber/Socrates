@@ -16,16 +16,27 @@ function makeDom() {
     createElement(tag) {
       return {
         tag,
-        remove() { this.removed = true; },
+        remove() {
+          this.removed = true;
+        },
         dataset: {},
-        set src(v) { this._src = v; },
-        get src() { return this._src; },
+        set src(v) {
+          this._src = v;
+        },
+        get src() {
+          return this._src;
+        },
       };
     },
     head: {
-      appendChild(node) { appended.push(node); return node; },
+      appendChild(node) {
+        appended.push(node);
+        return node;
+      },
     },
-    querySelector() { return null; },
+    querySelector() {
+      return null;
+    },
   };
 }
 
@@ -94,8 +105,8 @@ test('a transient failure retries and the retry succeeds', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const { ensureMermaid, win, dom } = await freshLoader();
   const pending = ensureMermaid();
-  dom.appended[0].onerror();           // first attempt fails
-  t.mock.timers.tick(800);             // 700ms * attempts
+  dom.appended[0].onerror(); // first attempt fails
+  t.mock.timers.tick(800); // 700ms * attempts
   const retry = dom.appended.at(-1);
   assert.equal(dom.appended.length, 2, 'a failed attempt must be retried');
   win.mermaid = 'RECOVERED';
@@ -111,7 +122,7 @@ test('an exhausted retry clears the cache so a later call can try again', async 
     dom.appended.at(-1).onerror();
     t.mock.timers.tick(wait);
   }
-  dom.appended.at(-1).onerror();       // third and final attempt
+  dom.appended.at(-1).onerror(); // third and final attempt
   await assert.rejects(pending, /failed to load mermaid/);
   // The poisoned entry must be gone, so the next call re-injects rather than
   // replaying the rejected promise forever.
@@ -123,7 +134,9 @@ test('onKatexReady fires immediately when katex is already loaded', async () => 
   const { onKatexReady, win } = await freshLoader();
   win.katex = { version: '0.16' };
   let called = 0;
-  const off = onKatexReady(() => { called += 1; });
+  const off = onKatexReady(() => {
+    called += 1;
+  });
   assert.equal(called, 1);
   off();
 });
@@ -133,7 +146,7 @@ test('pending katex listeners fire once the library loads', async () => {
   const order = [];
   onKatexReady(() => order.push('first'));
   const offSecond = onKatexReady(() => order.push('second'));
-  offSecond();                        // unsubscribe before load
+  offSecond(); // unsubscribe before load
   const pending = ensureKatex();
   win.katex = 'K';
   dom.appended[0].onload();
@@ -144,7 +157,9 @@ test('pending katex listeners fire once the library loads', async () => {
 test('a throwing katex listener does not break the others', async () => {
   const { ensureKatex, onKatexReady, win, dom } = await freshLoader();
   const order = [];
-  onKatexReady(() => { throw new Error('listener blew up'); });
+  onKatexReady(() => {
+    throw new Error('listener blew up');
+  });
   onKatexReady(() => order.push('survivor'));
   const pending = ensureKatex();
   win.katex = 'K';

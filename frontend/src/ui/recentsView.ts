@@ -9,7 +9,6 @@ import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { setSessionListSearchQuery } from './sessionListState.ts';
 
-
 let _renderRecentsPending = false;
 
 export function renderRecents() {
@@ -39,13 +38,17 @@ let __projectsFetchState = 'idle';
 export function refreshRecentsFilterData() {
   if (!hasCachedProjects() && __projectsFetchState === 'idle') {
     __projectsFetchState = 'pending';
-    loadCachedProjects(function () { return apiFetch('/api/projects'); }).then(function () {
-      __projectsFetchState = 'ready';
-      refreshRecentsFilterChipData();
-    }).catch(function () {
-      /* Keep failure settled; the user can refresh the page to retry. */
-      __projectsFetchState = 'failed';
-    });
+    loadCachedProjects(function () {
+      return apiFetch('/api/projects');
+    })
+      .then(function () {
+        __projectsFetchState = 'ready';
+        refreshRecentsFilterChipData();
+      })
+      .catch(function () {
+        /* Keep failure settled; the user can refresh the page to retry. */
+        __projectsFetchState = 'failed';
+      });
   }
   refreshRecentsFilterChipData();
 }

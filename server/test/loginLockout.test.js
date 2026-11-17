@@ -12,7 +12,8 @@ import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { loginFailures } from '../src/db/schema/index.js';
 import { recordFailure, checkLockout } from '../src/services/core/loginLockout.js';
 
-const TEST_EMAIL = 'lockout-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@example.test';
+const TEST_EMAIL =
+  'lockout-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '@example.test';
 
 let dbAvailable = false;
 before(async () => {
@@ -33,7 +34,9 @@ after(async () => {
   if (!dbAvailable) return;
   try {
     await getDb().delete(loginFailures).where(eq(loginFailures.email, TEST_EMAIL));
-  } catch (_) { /* best effort */ }
+  } catch (_) {
+    /* best effort */
+  }
   await closeDb();
 });
 
@@ -57,9 +60,17 @@ describe('loginLockout.recordFailure — atomic concurrent increment', () => {
   test('20 concurrent failures for the same email settle on count=THRESHOLD', async (t) => {
     if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 20 }, () => recordFailure(TEST_EMAIL)));
-    const [row] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
+    const [row] = await getDb()
+      .select()
+      .from(loginFailures)
+      .where(eq(loginFailures.email, TEST_EMAIL))
+      .limit(1);
     assert.ok(row, 'loginFailures row should exist after the first failure');
-    assert.equal(row.count, 5, 'atomic upsert must settle on the threshold, never lose or double an increment');
+    assert.equal(
+      row.count,
+      5,
+      'atomic upsert must settle on the threshold, never lose or double an increment',
+    );
     assert.ok(row.lockedUntil instanceof Date, 'crossing the threshold must set lockedUntil');
     assert.ok(row.lockedUntil.getTime() > Date.now(), 'lockedUntil must be in the future');
   });
@@ -67,7 +78,11 @@ describe('loginLockout.recordFailure — atomic concurrent increment', () => {
   test('threshold (5) triggers a lockedUntil > now()', async (t) => {
     if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 5 }, () => recordFailure(TEST_EMAIL)));
-    const [row] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
+    const [row] = await getDb()
+      .select()
+      .from(loginFailures)
+      .where(eq(loginFailures.email, TEST_EMAIL))
+      .limit(1);
     assert.ok(row.lockedUntil instanceof Date, 'lockedUntil must be a Date');
     assert.ok(row.lockedUntil.getTime() > Date.now(), 'lockedUntil must be in the future');
     await assert.rejects(checkLockout(TEST_EMAIL), (err) => err.code === 'TOO_MANY_REQUESTS');
@@ -76,11 +91,23 @@ describe('loginLockout.recordFailure — atomic concurrent increment', () => {
   test('further concurrent failures during an active lockout do not move the lockout clock', async (t) => {
     if (!dbAvailable) return t.skip('no database');
     await Promise.all(Array.from({ length: 5 }, () => recordFailure(TEST_EMAIL)));
-    const [first] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
+    const [first] = await getDb()
+      .select()
+      .from(loginFailures)
+      .where(eq(loginFailures.email, TEST_EMAIL))
+      .limit(1);
     await new Promise((r) => setTimeout(r, 1100));
     await Promise.all(Array.from({ length: 10 }, () => recordFailure(TEST_EMAIL)));
-    const [second] = await getDb().select().from(loginFailures).where(eq(loginFailures.email, TEST_EMAIL)).limit(1);
+    const [second] = await getDb()
+      .select()
+      .from(loginFailures)
+      .where(eq(loginFailures.email, TEST_EMAIL))
+      .limit(1);
     assert.equal(second.count, first.count, 'count must not grow while locked');
-    assert.equal(second.lockedUntil.getTime(), first.lockedUntil.getTime(), 'lockedUntil must not move');
+    assert.equal(
+      second.lockedUntil.getTime(),
+      first.lockedUntil.getTime(),
+      'lockedUntil must not move',
+    );
   });
 });

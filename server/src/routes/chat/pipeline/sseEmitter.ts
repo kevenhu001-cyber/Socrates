@@ -12,7 +12,9 @@ import { buildSseErrorFrame } from '../../../lib/sseErrorFrame.js';
 import type { ErrorLocale } from '../../../lib/errorMessages.js';
 
 function flush(response: Response): void {
-  try { (response as { flush?: () => void }).flush?.(); } catch {}
+  try {
+    (response as { flush?: () => void }).flush?.();
+  } catch {}
 }
 
 export class SseEmitter {
@@ -32,7 +34,9 @@ export class SseEmitter {
     try {
       this.response.write(payload);
       flush(this.response);
-    } catch { /* socket closed — abortController handles cleanup */ }
+    } catch {
+      /* socket closed — abortController handles cleanup */
+    }
   }
 
   /** Guarded write: silently drops frames once the client is gone. */
@@ -77,7 +81,9 @@ export class SseEmitter {
     try {
       this.response.write('data: [DONE]\n\n');
       this.response.end();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   /** Error frame + terminal DONE + end (upstream error path). */
@@ -87,11 +93,16 @@ export class SseEmitter {
     // provider-specific details. buildSseErrorFrame maps every failure to a
     // status-based message and keeps the machine-readable status/code/retryable
     // contract, so the browser does not replay a 400 or an exhausted 429.
-    const details = buildSseErrorFrame(error, { fallbackCode: 'LLM_UPSTREAM_ERROR', locale: this.locale });
+    const details = buildSseErrorFrame(error, {
+      fallbackCode: 'LLM_UPSTREAM_ERROR',
+      locale: this.locale,
+    });
     try {
       this.writeRaw(`event: error\ndata: ${JSON.stringify(details)}\n\n`);
       this.response.write('data: [DONE]\n\n');
       this.response.end();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }

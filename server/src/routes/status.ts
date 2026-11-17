@@ -2,7 +2,14 @@ import { Router } from 'express';
 import { sql, gte, and, eq } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
 import { statusMonitorEvents, statusSubscribers } from '../db/schema/index.js';
-import { COMPONENTS, startStatusMonitor, getLiveState, getRequestMetrics, HOST_REBOOTS, overlapMs } from '../services/util/statusMonitor.js';
+import {
+  COMPONENTS,
+  startStatusMonitor,
+  getLiveState,
+  getRequestMetrics,
+  HOST_REBOOTS,
+  overlapMs,
+} from '../services/util/statusMonitor.js';
 import { sendStatusSubscriptionEmail } from '../services/core/email.js';
 import { isEmail } from '../lib/validate.js';
 import crypto from 'node:crypto';
@@ -18,7 +25,10 @@ const STATUS_BASE_URL = process.env.STATUS_URL || 'https://status.topodrive.top'
 // Postgres. The live component states still update every 30s via the
 // monitor; this only caches the historical aggregation.
 const FEED_CACHE_TTL_MS = 60 * 1000;
-let feedCache: { at: number; promise: ReturnType<typeof buildStatusFeed> | null } = { at: 0, promise: null };
+let feedCache: { at: number; promise: ReturnType<typeof buildStatusFeed> | null } = {
+  at: 0,
+  promise: null,
+};
 
 async function getStatusFeed() {
   const now = Date.now();
@@ -26,7 +36,9 @@ async function getStatusFeed() {
   if (feedCache.promise && now - feedCache.at < FEED_CACHE_TTL_MS) {
     feed = await feedCache.promise;
   } else {
-    feed = await buildStatusFeed().finally(() => { feedCache.at = Date.now(); });
+    feed = await buildStatusFeed().finally(() => {
+      feedCache.at = Date.now();
+    });
     feedCache.promise = Promise.resolve(feed);
   }
   // Metrics (avg response / availability) are computed fresh on every
@@ -61,15 +73,18 @@ const TIMELINE_DAYS = 30;
 // state until the next transition (or now, if still in it).
 async function uptimeFor(component: string, startMs: number, endMs: number) {
   const db = getDb();
-  const rows = await db.select({
-    toState: statusMonitorEvents.toState,
-    createdAt: statusMonitorEvents.createdAt,
-  })
+  const rows = await db
+    .select({
+      toState: statusMonitorEvents.toState,
+      createdAt: statusMonitorEvents.createdAt,
+    })
     .from(statusMonitorEvents)
-    .where(and(
-      sql`${statusMonitorEvents.component} = ${component}`,
-      gte(statusMonitorEvents.createdAt, new Date(startMs - DAY_MS)),
-    ))
+    .where(
+      and(
+        sql`${statusMonitorEvents.component} = ${component}`,
+        gte(statusMonitorEvents.createdAt, new Date(startMs - DAY_MS)),
+      ),
+    )
     .orderBy(sql`${statusMonitorEvents.createdAt} ASC`);
 
   if (rows.length === 0) return 100;
@@ -81,12 +96,12 @@ async function uptimeFor(component: string, startMs: number, endMs: number) {
   for (const r of rows) {
     const t = r.createdAt.getTime();
     if (t > cursor) {
-      if (openState !== 'ok') downtimeMs += (t - cursor);
+      if (openState !== 'ok') downtimeMs += t - cursor;
       cursor = t;
     }
     openState = r.toState;
   }
-  if (openState !== 'ok') downtimeMs += (endMs - cursor);
+  if (openState !== 'ok') downtimeMs += endMs - cursor;
 
   // Host reboots take every component down for the reboot window.
   for (const rb of HOST_REBOOTS) {
@@ -105,11 +120,12 @@ async function uptimeFor(component: string, startMs: number, endMs: number) {
 // total time, not an HTTP status-code ratio.
 async function computeServiceAvailability(sinceMs: number, nowMs: number) {
   const db = getDb();
-  const rows = await db.select({
-    component: statusMonitorEvents.component,
-    toState: statusMonitorEvents.toState,
-    createdAt: statusMonitorEvents.createdAt,
-  })
+  const rows = await db
+    .select({
+      component: statusMonitorEvents.component,
+      toState: statusMonitorEvents.toState,
+      createdAt: statusMonitorEvents.createdAt,
+    })
     .from(statusMonitorEvents)
     .where(gte(statusMonitorEvents.createdAt, new Date(sinceMs - DAY_MS)))
     .orderBy(sql`${statusMonitorEvents.createdAt} ASC`);
@@ -122,10 +138,12 @@ async function computeServiceAvailability(sinceMs: number, nowMs: number) {
   const bad = [];
   for (const comp of Object.keys(byComp)) {
     const evs = byComp[comp];
-    let cursor = sinceMs, open = 'ok';
+    let cursor = sinceMs,
+      open = 'ok';
     for (const e of evs) {
       if (e.t > cursor && open !== 'ok') bad.push([cursor, Math.min(e.t, nowMs)]);
-      cursor = e.t; open = e.state;
+      cursor = e.t;
+      open = e.state;
     }
     if (open !== 'ok') bad.push([cursor, nowMs]);
   }
@@ -134,12 +152,17 @@ async function computeServiceAvailability(sinceMs: number, nowMs: number) {
 
   // Merge overlapping intervals and sum their lengths within the window.
   bad.sort((a, b) => a[0] - b[0]);
-  let downtime = 0, lastEnd = -Infinity;
+  let downtime = 0,
+    lastEnd = -Infinity;
   for (const [s, e] of bad) {
-    const ss = Math.max(s, sinceMs), ee = Math.min(e, nowMs);
+    const ss = Math.max(s, sinceMs),
+      ee = Math.min(e, nowMs);
     if (ee <= ss) continue;
     const ns = Math.max(ss, lastEnd);
-    if (ee > ns) { downtime += ee - ns; lastEnd = ee; }
+    if (ee > ns) {
+      downtime += ee - ns;
+      lastEnd = ee;
+    }
   }
   const availability = (1 - downtime / (nowMs - sinceMs)) * 100;
   return Math.max(0, Math.min(100, availability));
@@ -160,28 +183,36 @@ async function buildTimeline(sinceMs: number, nowMs: number) {
 
   const componentDays: Record<string, number[]> = {};
   for (const component of COMPONENTS) {
-    const rows = await db.select({
-      toState: statusMonitorEvents.toState,
-      createdAt: statusMonitorEvents.createdAt,
-    })
+    const rows = await db
+      .select({
+        toState: statusMonitorEvents.toState,
+        createdAt: statusMonitorEvents.createdAt,
+      })
       .from(statusMonitorEvents)
-      .where(and(
-        sql`${statusMonitorEvents.component} = ${component}`,
-        gte(statusMonitorEvents.createdAt, new Date(sinceMs - DAY_MS)),
-      ))
+      .where(
+        and(
+          sql`${statusMonitorEvents.component} = ${component}`,
+          gte(statusMonitorEvents.createdAt, new Date(sinceMs - DAY_MS)),
+        ),
+      )
       .orderBy(sql`${statusMonitorEvents.createdAt} ASC`);
 
     const series = dayStarts.map((ds, idx) => {
       const de = ds + DAY_MS;
       // window-scoped interval scan for this day
-      let downtime = 0, cursor = ds, open = 'ok';
+      let downtime = 0,
+        cursor = ds,
+        open = 'ok';
       for (const r of rows) {
         const t = r.createdAt.getTime();
         if (t >= de) break;
-        if (t > cursor) { if (open !== 'ok') downtime += (t - cursor); cursor = t; }
+        if (t > cursor) {
+          if (open !== 'ok') downtime += t - cursor;
+          cursor = t;
+        }
         open = r.toState;
       }
-      if (open !== 'ok') downtime += (de - cursor);
+      if (open !== 'ok') downtime += de - cursor;
       for (const rb of HOST_REBOOTS) {
         downtime += overlapMs(ds, de, rb.start, rb.end ?? nowMs);
       }
@@ -207,12 +238,13 @@ interface Incident {
 
 async function buildIncidents(sinceMs: number, nowMs: number) {
   const db = getDb();
-  const rows = await db.select({
-    id: statusMonitorEvents.id,
-    component: statusMonitorEvents.component,
-    toState: statusMonitorEvents.toState,
-    createdAt: statusMonitorEvents.createdAt,
-  })
+  const rows = await db
+    .select({
+      id: statusMonitorEvents.id,
+      component: statusMonitorEvents.component,
+      toState: statusMonitorEvents.toState,
+      createdAt: statusMonitorEvents.createdAt,
+    })
     .from(statusMonitorEvents)
     .where(gte(statusMonitorEvents.createdAt, new Date(sinceMs)))
     .orderBy(sql`${statusMonitorEvents.createdAt} ASC`);
@@ -221,11 +253,18 @@ async function buildIncidents(sinceMs: number, nowMs: number) {
   let cur: Incident | null = null;
   for (const r of rows) {
     if (r.toState === 'ok') {
-      if (cur) { cur.end = r.createdAt.getTime(); incidents.push(cur); cur = null; }
+      if (cur) {
+        cur.end = r.createdAt.getTime();
+        incidents.push(cur);
+        cur = null;
+      }
       continue;
     }
     if (!cur || cur.component !== r.component) {
-      if (cur) { cur.end = r.createdAt.getTime(); incidents.push(cur); }
+      if (cur) {
+        cur.end = r.createdAt.getTime();
+        incidents.push(cur);
+      }
       cur = {
         component: r.component,
         severity: r.toState,
@@ -235,10 +274,14 @@ async function buildIncidents(sinceMs: number, nowMs: number) {
         state: r.toState,
       };
     } else if (r.toState === 'down') {
-      cur.severity = 'down'; cur.state = 'down';
+      cur.severity = 'down';
+      cur.state = 'down';
     }
   }
-  if (cur) { cur.end = nowMs; incidents.push(cur); }
+  if (cur) {
+    cur.end = nowMs;
+    incidents.push(cur);
+  }
 
   // Fold host reboots into the incident history as service-wide outages.
   for (const rb of HOST_REBOOTS) {
@@ -294,14 +337,19 @@ async function buildStatusFeed() {
   const now = Date.now();
   const since = now - WINDOW_MS;
 
-  const components = await Promise.all(COMPONENTS.map(async (name) => ({
-    name,
-    state: getLiveState(name),
-    uptime: Math.round(await uptimeFor(name, since, now).catch(() => 100) * 100) / 100,
-  })));
+  const components = await Promise.all(
+    COMPONENTS.map(async (name) => ({
+      name,
+      state: getLiveState(name),
+      uptime: Math.round((await uptimeFor(name, since, now).catch(() => 100)) * 100) / 100,
+    })),
+  );
 
-  const overall = components.some(c => c.state === 'down') ? 'down'
-                : components.some(c => c.state === 'warn') ? 'warn' : 'ok';
+  const overall = components.some((c) => c.state === 'down')
+    ? 'down'
+    : components.some((c) => c.state === 'warn')
+      ? 'warn'
+      : 'ok';
 
   const [timeline, incidents] = await Promise.all([
     buildTimeline(now - TIMELINE_DAYS * DAY_MS, now).catch(() => ({ days: [], componentDays: {} })),
@@ -331,9 +379,20 @@ router.get('/', async (_req, res) => {
     // Live states are cheap and always available; fall back to them so
     // the page never hard-fails even if the historical aggregation does.
     const components = COMPONENTS.map((name) => ({ name, state: getLiveState(name), uptime: 100 }));
-    const overall = components.some(c => c.state === 'down') ? 'down'
-                  : components.some(c => c.state === 'warn') ? 'warn' : 'ok';
-    res.json({ updated: Date.now(), overall, components, metrics: [], timeline: { days: [], componentDays: {} }, incidents: [], source: 'backend-fallback' });
+    const overall = components.some((c) => c.state === 'down')
+      ? 'down'
+      : components.some((c) => c.state === 'warn')
+        ? 'warn'
+        : 'ok';
+    res.json({
+      updated: Date.now(),
+      overall,
+      components,
+      metrics: [],
+      timeline: { days: [], componentDays: {} },
+      incidents: [],
+      source: 'backend-fallback',
+    });
   }
 });
 
@@ -345,8 +404,11 @@ router.post('/subscribe', async (req, res, next) => {
       return res.status(400).json({ error: 'Valid email required' });
     }
     const db = getDb();
-    const [existing] = await db.select().from(statusSubscribers)
-      .where(eq(statusSubscribers.email, email.toLowerCase())).limit(1);
+    const [existing] = await db
+      .select()
+      .from(statusSubscribers)
+      .where(eq(statusSubscribers.email, email.toLowerCase()))
+      .limit(1);
     if (existing) {
       return res.json({ status: 'already_subscribed' });
     }
@@ -363,7 +425,9 @@ router.post('/subscribe', async (req, res, next) => {
       /* email delivery failure is not fatal — the subscriber row exists */
     }
     return res.status(201).json({ status: 'subscribed' });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/status/confirm — confirm subscription via token */
@@ -372,14 +436,25 @@ router.get('/confirm', async (req, res, next) => {
     const { token } = req.query;
     if (!token) return res.status(400).send('Missing token');
     const db = getDb();
-    const [sub] = await db.select().from(statusSubscribers)
-      .where(and(eq(statusSubscribers.token, token as string), sql`${statusSubscribers.confirmedAt} IS NULL`))
+    const [sub] = await db
+      .select()
+      .from(statusSubscribers)
+      .where(
+        and(
+          eq(statusSubscribers.token, token as string),
+          sql`${statusSubscribers.confirmedAt} IS NULL`,
+        ),
+      )
       .limit(1);
     if (!sub) return res.status(404).send('Invalid or already confirmed token');
-    await db.update(statusSubscribers).set({ confirmedAt: new Date() })
+    await db
+      .update(statusSubscribers)
+      .set({ confirmedAt: new Date() })
       .where(eq(statusSubscribers.id, sub.id));
     return res.redirect(`${STATUS_BASE_URL}/?confirmed=1`);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export { startStatusMonitor };

@@ -65,9 +65,11 @@ function unavailable(reason: string): SearchResult[] {
  *     → https://token.sensenova.cn/v1/coding_plan/search
  */
 function buildEndpoint() {
-  const base = (process.env.MINIMAX_SEARCH_BASE_URL
-             || process.env.MINIMAX_BASE_URL
-             || 'https://api.minimaxi.com/v1').replace(/\/+$/, '');
+  const base = (
+    process.env.MINIMAX_SEARCH_BASE_URL ||
+    process.env.MINIMAX_BASE_URL ||
+    'https://api.minimaxi.com/v1'
+  ).replace(/\/+$/, '');
   if (base.endsWith('/v1/coding_plan/search')) return base;
   if (base.endsWith('/v1/coding_plan')) return `${base}/search`;
   if (base.endsWith('/v1')) return `${base}/coding_plan/search`;
@@ -91,7 +93,11 @@ function getApiKey() {
  * @param {AbortSignal|null} [signal=null]  Aborts the upstream fetch
  * @returns {Promise<Array<{title:string, url:string, snippet:string, date:string|null, authority:string, source:'minimax'}>>}
  */
-export async function searchMinimax(query: string, limit = 10, signal: AbortSignal | null = null): Promise<SearchResult[]> {
+export async function searchMinimax(
+  query: string,
+  limit = 10,
+  signal: AbortSignal | null = null,
+): Promise<SearchResult[]> {
   if (!query || !String(query).trim()) return [];
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -104,7 +110,9 @@ export async function searchMinimax(query: string, limit = 10, signal: AbortSign
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
   // Combine internal timeout with the external total-timeout signal
   const fetchSignal = signal
-    ? (typeof AbortSignal.any === 'function' ? AbortSignal.any([controller.signal, signal]) : signal)
+    ? typeof AbortSignal.any === 'function'
+      ? AbortSignal.any([controller.signal, signal])
+      : signal
     : controller.signal;
 
   try {
@@ -113,7 +121,7 @@ export async function searchMinimax(query: string, limit = 10, signal: AbortSign
       signal: fetchSignal,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         'Accept-Encoding': 'identity',
       },
       body: JSON.stringify({ q: String(query).trim() }),
@@ -131,7 +139,9 @@ export async function searchMinimax(query: string, limit = 10, signal: AbortSign
     // The API returns base_resp with status_code: 0 on success
     const baseResp = data?.base_resp || data?.baseResp;
     if (baseResp && String(baseResp.status_code) !== '0') {
-      console.warn(`[searchMinimax] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`);
+      console.warn(
+        `[searchMinimax] API error (${baseResp.status_code}): ${baseResp.status_msg || 'unknown'}`,
+      );
       return unavailable('upstream_error');
     }
 
@@ -139,21 +149,27 @@ export async function searchMinimax(query: string, limit = 10, signal: AbortSign
     const organic = data?.organic || data?.results || data?.data?.organic || [];
     if (!Array.isArray(organic) || organic.length === 0) return [];
 
-    return organic.slice(0, Math.min(limit, 10)).map((item): SearchResult => ({
-      title: item.title || '',
-      url: item.link || item.url || '',
-      snippet: item.snippet || item.summary || item.content || '',
-      date: item.date || null,
-      authority: 'normal',
-      source: 'minimax',
-    })).filter((r) => r.url && r.title);
+    return organic
+      .slice(0, Math.min(limit, 10))
+      .map((item): SearchResult => ({
+        title: item.title || '',
+        url: item.link || item.url || '',
+        snippet: item.snippet || item.summary || item.content || '',
+        date: item.date || null,
+        authority: 'normal',
+        source: 'minimax',
+      }))
+      .filter((r) => r.url && r.title);
   } catch (e) {
     clearTimeout(timer);
     // AbortError is expected on timeout — log at debug level only
     if (e && (e as Error).name === 'AbortError') {
       console.warn('[searchMinimax] Request timed out');
     } else {
-      console.warn('[searchMinimax] Request failed:', e && (e as Error).message ? (e as Error).message : e);
+      console.warn(
+        '[searchMinimax] Request failed:',
+        e && (e as Error).message ? (e as Error).message : e,
+      );
     }
     return unavailable(e && (e as Error).name === 'AbortError' ? 'timeout' : 'error');
   }

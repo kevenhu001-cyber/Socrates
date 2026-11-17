@@ -30,7 +30,9 @@
 
 /* Prose wrappers preserve React block identity without adding layout boxes.
    This is part of the current turn surface, not a legacy tutor dependency. */
-.tool-run-prose { display: contents; }
+.tool-run-prose {
+  display: contents;
+}
 
 /* ── Glyph slot ────────────────────────────────────────────────────────
    Spinner and tool glyph share one fixed footprint, so a call settling

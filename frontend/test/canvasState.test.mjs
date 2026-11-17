@@ -4,27 +4,27 @@ import test from 'node:test';
 const published = [];
 globalThis.window = { dispatchEvent() {}, CustomEvent: class CustomEvent {} };
 
-const { stateStore } = await import('../src/state/store.ts');
+const { dispatchSession, resetDomains, sessionStore } = await import('../src/store/index.ts');
 const { chatRuntimeStore } = await import('../src/ui/chatRuntimeStore.ts');
 chatRuntimeStore.subscribe(() => published.push(chatRuntimeStore.getSnapshot().lastEvent));
 const { persistCanvasEdit } = await import('../src/react/canvas/canvasState.ts');
 
 test('canvas edits replace the matching message through the session action', () => {
   chatRuntimeStore.__resetForTests();
-  stateStore.dispatch({ type: 'state/reset' });
+  resetDomains();
   published.length = 0;
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [
       { clientId: 'canvas-message-1', role: 'assistant', canvasId: 'canvas-1', editedText: null },
       { clientId: 'canvas-message-2', role: 'assistant', canvasId: 'canvas-2', editedText: null },
     ],
   });
-  const before = stateStore.read('messages');
+  const before = sessionStore.getState().messages;
 
   assert.equal(persistCanvasEdit('canvas-2', '<p>Revised answer</p>'), true);
 
-  const after = stateStore.read('messages');
+  const after = sessionStore.getState().messages;
   assert.notStrictEqual(after, before);
   assert.strictEqual(after[0], before[0]);
   assert.notStrictEqual(after[1], before[1]);
@@ -35,7 +35,7 @@ test('canvas edits replace the matching message through the session action', () 
 test('canvas edits report missing messages without publishing a state refresh', () => {
   chatRuntimeStore.__resetForTests();
   published.length = 0;
-  stateStore.dispatch({ type: 'state/reset' });
+  resetDomains();
 
   assert.equal(persistCanvasEdit('missing-canvas', '<p>Orphan</p>'), false);
   assert.deepEqual(published, []);

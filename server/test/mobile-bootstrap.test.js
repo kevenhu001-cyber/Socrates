@@ -2,12 +2,18 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import mobileRouter, { buildMobileBootstrapConfig, normalizePublicAppUrl } from '../src/routes/mobile.js';
+import mobileRouter, {
+  buildMobileBootstrapConfig,
+  normalizePublicAppUrl,
+} from '../src/routes/mobile.js';
 import { httpRequest, listen } from './_http.js';
 
 describe('mobile bootstrap contract', () => {
   test('derives both API prefixes from one normalized web origin', () => {
-    assert.equal(normalizePublicAppUrl('https://staging.example.test/some/path'), 'https://staging.example.test');
+    assert.equal(
+      normalizePublicAppUrl('https://staging.example.test/some/path'),
+      'https://staging.example.test',
+    );
     assert.deepEqual(buildMobileBootstrapConfig('https://staging.example.test/'), {
       ok: true,
       contractVersion: 1,

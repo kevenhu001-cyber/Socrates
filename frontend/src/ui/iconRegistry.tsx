@@ -1,6 +1,10 @@
 /** React and legacy renderers share the same static interface glyphs. */
 import React, { type ReactNode } from 'react';
-import { getInterfaceIconShapes, interfaceIcon, type InterfaceIconName } from './icons/interfaceIcons';
+import {
+  getInterfaceIconShapes,
+  interfaceIcon,
+  type InterfaceIconName,
+} from './icons/interfaceIcons';
 
 const ALIASES = {
   'new-chat': 'newChat',
@@ -18,7 +22,8 @@ interface IconDescriptor {
 
 function resolve(name: Exclude<IconName, 'spinner'>): InterfaceIconName {
   return Object.prototype.hasOwnProperty.call(ALIASES, name)
-    ? ALIASES[name as keyof typeof ALIASES] : name as InterfaceIconName;
+    ? ALIASES[name as keyof typeof ALIASES]
+    : (name as InterfaceIconName);
 }
 
 // Build static React nodes once, without parsing or injecting SVG strings.
@@ -29,13 +34,16 @@ export function getIconDescriptor(name: IconName): IconDescriptor {
   if (!descriptor) {
     const shapes = getInterfaceIconShapes(resolve(name));
     if (!shapes.length) return { children: null };
-    descriptor = { children: shapes.map(([tag, attrs], key) => React.createElement(tag, { ...attrs, key })) };
+    descriptor = {
+      children: shapes.map(([tag, attrs], key) => React.createElement(tag, { ...attrs, key })),
+    };
     descriptors.set(name, descriptor);
   }
   return descriptor;
 }
 
 export function getIconHtml(name: IconName): string {
-  if (name === 'spinner') return '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
+  if (name === 'spinner')
+    return '<span class="thinking-ring thinking-ring-sm" aria-hidden="true"></span>';
   return interfaceIcon(resolve(name));
 }

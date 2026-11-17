@@ -9,7 +9,13 @@
  */
 import { markdownCodeRanges } from './learn/markdownCode.ts';
 
-const ENTITIES: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'", '&amp;': '&' };
+const ENTITIES: Record<string, string> = {
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&apos;': "'",
+  '&amp;': '&',
+};
 
 export function decodeEntities(value: string): string {
   return String(value).replace(/&(lt|gt|quot|apos|amp);/g, (m) => ENTITIES[m] || m);
@@ -57,7 +63,6 @@ export function escapeHtml(value: unknown): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
 
 /** Legacy short-form cards contain Markdown directly, with no field tags.
  * Do not reinterpret broken structured XML as prose; code examples remain

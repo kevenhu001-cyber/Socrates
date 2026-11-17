@@ -19,15 +19,25 @@ import {
 import { resolveMountedRows, INITIAL_ROWS } from '../src/react/message-list/progressiveMount.ts';
 import { foldSave, lookup, store, _reset } from '../src/session/detailCache.ts';
 
-const rows = (count, prefix = 'm') => Array.from({ length: count }, (_, index) => ({ id: `${prefix}-${index}`, rawText: `row ${index}` }));
-const cursor = { createdAt: '2026-01-01T00:00:00.123456Z', id: '11111111-1111-4111-8111-111111111111' };
+const rows = (count, prefix = 'm') =>
+  Array.from({ length: count }, (_, index) => ({
+    id: `${prefix}-${index}`,
+    rawText: `row ${index}`,
+  }));
+const cursor = {
+  createdAt: '2026-01-01T00:00:00.123456Z',
+  id: '11111111-1111-4111-8111-111111111111',
+};
 
 test('the detail URL asks for one tail page', () => {
   assert.equal(sessionDetailPath('a b'), `/api/sessions/a%20b?tail=${TAIL_PAGE_SIZE}`);
 });
 
 test('normalizeDetailPage derives the older-row count and treats a missing page as complete', () => {
-  const paged = normalizeDetailPage({ messages: rows(3), messagesPage: { hasMore: true, cursor, total: 10 } });
+  const paged = normalizeDetailPage({
+    messages: rows(3),
+    messagesPage: { hasMore: true, cursor, total: 10 },
+  });
   assert.deepEqual(paged.messagesPage, { hasMore: true, cursor, total: 10, older: 7 });
   assert.equal(olderRowCount(paged), 7);
 
@@ -39,7 +49,10 @@ test('normalizeDetailPage derives the older-row count and treats a missing page 
   assert.equal('messagesPage' in legacy, false);
   assert.equal(olderRowCount(legacy), 0);
 
-  const broken = normalizeDetailPage({ messages: rows(2), messagesPage: { hasMore: true, cursor: { id: 'x' }, total: 9 } });
+  const broken = normalizeDetailPage({
+    messages: rows(2),
+    messagesPage: { hasMore: true, cursor: { id: 'x' }, total: 9 },
+  });
   assert.equal(broken.messagesPage.hasMore, false);
   assert.equal(broken.messagesPage.cursor, null);
   assert.equal(olderRowCount(broken), 0);
@@ -50,7 +63,9 @@ test('paging state notifies only on real changes and gates loading', async () =>
   registerOlderHistoryLoader(null);
   resetHistoryPaging('s1', true);
   let calls = 0;
-  const off = subscribeHistoryPaging(() => { calls++; });
+  const off = subscribeHistoryPaging(() => {
+    calls++;
+  });
   patchHistoryPaging({ hasMore: true });
   assert.equal(calls, 0);
   patchHistoryPaging({ loading: true });
@@ -73,7 +88,10 @@ test('paging state notifies only on real changes and gates loading', async () =>
   assert.equal(getHistoryPagingSnapshot().pagedBack, true);
 
   resetHistoryPaging('s2', true);
-  registerOlderHistoryLoader(async () => { patchHistoryPaging({ failed: true }); return 0; });
+  registerOlderHistoryLoader(async () => {
+    patchHistoryPaging({ failed: true });
+    return 0;
+  });
   assert.equal(await requestAllOlderHistory(), 0, 'a failed page stops the walk');
   registerOlderHistoryLoader(null);
   resetHistoryPaging(null, false);
@@ -99,15 +117,28 @@ test('a prepend under a window pinned to its first row mounts nothing new', () =
   const older = rows(100, 'older');
   const next = older.concat(tail);
   // What the before-prepend hook does: pin the floor to the current first row.
-  const pinned = resolveMountedRows(next, { items: tail, floor: tail[0].id, ceiling: null, full: false });
+  const pinned = resolveMountedRows(next, {
+    items: tail,
+    floor: tail[0].id,
+    ceiling: null,
+    full: false,
+  });
   assert.equal(pinned.replaced, false);
   assert.equal(pinned.start, 100);
-  assert.deepEqual(pinned.mounted.map((row) => row.id), tail.map((row) => row.id));
+  assert.deepEqual(
+    pinned.mounted.map((row) => row.id),
+    tail.map((row) => row.id),
+  );
 });
 
 test('folding a save into a cached tail page keeps its paging metadata', () => {
   _reset();
-  const response = normalizeDetailPage({ id: 'S', kind: 'chat', messages: rows(2), messagesPage: { hasMore: true, cursor, total: 40 } });
+  const response = normalizeDetailPage({
+    id: 'S',
+    kind: 'chat',
+    messages: rows(2),
+    messagesPage: { hasMore: true, cursor, total: 40 },
+  });
   store('S', response);
   foldSave('S', { id: 'S', title: 'saved' }, [{ clientId: 'c-new', rawText: 'new' }]);
   const cached = lookup('S').response;

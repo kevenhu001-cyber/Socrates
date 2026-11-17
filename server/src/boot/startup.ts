@@ -81,13 +81,19 @@ function envFlag(name: string): boolean {
 function reconcileSessionWorkspaces(): void {
   (async () => {
     try {
-      const { ensureSessionWorkspacesOnStartup } = await import('../services/tools/agentRuntime.js');
+      const { ensureSessionWorkspacesOnStartup } =
+        await import('../services/tools/agentRuntime.js');
       const result = await ensureSessionWorkspacesOnStartup();
       if (result.checked > 0) {
-        console.log(`[agent-runtime] session workspace reconciliation checked ${result.checked}: ${result.created} new, ${result.failed} failed`);
+        console.log(
+          `[agent-runtime] session workspace reconciliation checked ${result.checked}: ${result.created} new, ${result.failed} failed`,
+        );
       }
     } catch (err) {
-      console.warn('[agent-runtime] session workspace reconciliation skipped:', (err as Error).message);
+      console.warn(
+        '[agent-runtime] session workspace reconciliation skipped:',
+        (err as Error).message,
+      );
     }
   })();
 }
@@ -122,7 +128,10 @@ function sweepStaleScratchDirs(): void {
       const ttlDays = parseInt(process.env.EXEC_SCRATCH_TTL_DAYS || '7', 10);
       const { codeInterpreter } = await import('../services/codeInterpreter/index.js');
       const r = await codeInterpreter._reapStaleSessionScratches(ttlDays);
-      if (r && r.removed > 0) console.log(`[code-interpreter] startup TTL sweep removed ${r.removed} stale session scratch dir(s)`);
+      if (r && r.removed > 0)
+        console.log(
+          `[code-interpreter] startup TTL sweep removed ${r.removed} stale session scratch dir(s)`,
+        );
     } catch (err) {
       console.warn('[code-interpreter] TTL sweep skipped:', (err as Error).message);
     }
@@ -150,7 +159,7 @@ function warmLlmProvider(): void {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${provider.keyPlaintext}`,
+            Authorization: `Bearer ${provider.keyPlaintext}`,
             'Accept-Encoding': 'identity',
           },
           body: JSON.stringify({
@@ -170,7 +179,9 @@ function warmLlmProvider(): void {
           console.warn(`[llm-warmup] Warmup returned ${resp.status}: ${text.slice(0, 100)}`);
         }
       } catch (err) {
-        console.warn(`[llm-warmup] Skipped (${(err as Error).message || err}) — first request may be slow`);
+        console.warn(
+          `[llm-warmup] Skipped (${(err as Error).message || err}) — first request may be slow`,
+        );
       }
     } catch (err) {
       console.warn(`[llm-warmup] Skipped (import error: ${(err as Error).message})`);
@@ -193,11 +204,13 @@ function startSchedulerDaemon(): void {
 }
 
 function startResearchDaemon(): void {
-  void import('../services/core/researchWorker.js').then(({ startResearchWorker }) => {
-    startResearchWorker();
-  }).catch((error: unknown) => {
-    console.warn('[research] not started:', error instanceof Error ? error.name : 'unknown');
-  });
+  void import('../services/core/researchWorker.js')
+    .then(({ startResearchWorker }) => {
+      startResearchWorker();
+    })
+    .catch((error: unknown) => {
+      console.warn('[research] not started:', error instanceof Error ? error.name : 'unknown');
+    });
 }
 
 /** Reconnect persisted Codex threads after a process restart.
@@ -208,7 +221,10 @@ function recoverAgentRuns(): void {
     try {
       const { recoverAgentRunsOnStartup } = await import('../services/tools/agentRuntime.js');
       const result = await recoverAgentRunsOnStartup();
-      if (result.checked > 0) console.log(`[agent-runtime] restart recovery checked ${result.checked}: ${result.recovered} reconnected, ${result.disconnected} disconnected`);
+      if (result.checked > 0)
+        console.log(
+          `[agent-runtime] restart recovery checked ${result.checked}: ${result.recovered} reconnected, ${result.disconnected} disconnected`,
+        );
     } catch (err) {
       console.warn('[agent-runtime] restart recovery skipped:', (err as Error).message);
     }
@@ -235,7 +251,8 @@ function startMonitor(): void {
  * quiet server stays quiet and deploy/restart cycles do not create upstream
  * traffic unrelated to an actual user request. */
 export function startBackgroundTasks(): void {
-  void import('../services/core/chatTurns.js').then(({ startChatTurnRecovery }) => startChatTurnRecovery())
+  void import('../services/core/chatTurns.js')
+    .then(({ startChatTurnRecovery }) => startChatTurnRecovery())
     .catch((err) => console.warn('[chat-turns] recovery not started:', (err as Error).message));
   reconcileSessionWorkspaces();
   warmPyodidePool();

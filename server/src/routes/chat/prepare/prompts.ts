@@ -14,7 +14,6 @@ import { and, eq } from 'drizzle-orm';
 import { NotFound } from '../../../lib/errors.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 
-
 export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
 
 /* P_prep-parallel — every context step below is split into a `resolve…`
@@ -25,42 +24,75 @@ export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
    one-after-another chain while the first token waits for the slowest step
    instead of the sum of all of them. The append… wrappers keep the original
    call shape for other callers and tests. */
-export interface PolicyBlock { marker: string; prompt: string | null }
+export interface PolicyBlock {
+  marker: string;
+  prompt: string | null;
+}
 
-export function applyPolicyBlock(messages: ProviderMessage[], block: PolicyBlock | null): ProviderMessage[] {
+export function applyPolicyBlock(
+  messages: ProviderMessage[],
+  block: PolicyBlock | null,
+): ProviderMessage[] {
   return block ? appendServerPolicy(messages, block.marker, block.prompt) : messages;
 }
 
 export async function appendAssistantInstructions(
-  messages: ProviderMessage[], assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+  messages: ProviderMessage[],
+  assistantId: string | undefined,
+  sessionId: string | undefined,
+  userId: string | undefined,
 ): Promise<ProviderMessage[]> {
-  return applyPolicyBlock(messages, await resolveAssistantInstructions(assistantId, sessionId, userId));
+  return applyPolicyBlock(
+    messages,
+    await resolveAssistantInstructions(assistantId, sessionId, userId),
+  );
 }
 
 export async function resolveAssistantInstructions(
-  assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+  assistantId: string | undefined,
+  sessionId: string | undefined,
+  userId: string | undefined,
 ): Promise<PolicyBlock | null> {
   if (!userId) return null;
   let selectedId = assistantId;
   if (!selectedId && sessionId) {
-    const [session] = await getDb().select({ assistantId: sessions.assistantId }).from(sessions)
-      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId))).limit(1);
+    const [session] = await getDb()
+      .select({ assistantId: sessions.assistantId })
+      .from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
+      .limit(1);
     selectedId = session?.assistantId || undefined;
   }
   if (!selectedId) return null;
-  const [assistant] = await getDb().select({ source: artifacts.source }).from(artifacts)
-    .where(and(eq(artifacts.id, selectedId), eq(artifacts.userId, userId), eq(artifacts.type, 'assistant'))).limit(1);
+  const [assistant] = await getDb()
+    .select({ source: artifacts.source })
+    .from(artifacts)
+    .where(
+      and(
+        eq(artifacts.id, selectedId),
+        eq(artifacts.userId, userId),
+        eq(artifacts.type, 'assistant'),
+      ),
+    )
+    .limit(1);
   if (!assistant) throw new NotFound('Assistant not found');
   try {
     const config = JSON.parse(assistant.source) as { instructions?: string };
-    return { marker: '[User-selected assistant]', prompt: String(config.instructions || '').slice(0, 12000) };
-  } catch { return null; }
+    return {
+      marker: '[User-selected assistant]',
+      prompt: String(config.instructions || '').slice(0, 12000),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /* Server-owned mode prompts are appended to the canonical first system
    message. Keeping one authoritative system message prevents client-supplied
    system blocks from interleaving with or outranking server tool policy. */
-export async function prependTeacherModePrompt(messages: ProviderMessage[]): Promise<ProviderMessage[]> {
+export async function prependTeacherModePrompt(
+  messages: ProviderMessage[],
+): Promise<ProviderMessage[]> {
   const prompt = await getTeacherModePrompt();
   return appendServerPolicy(messages, TEACHER_MODE_MARKER, prompt);
 }
@@ -69,7 +101,9 @@ export async function prependTeacherModePrompt(messages: ProviderMessage[]): Pro
  * compact server-owned routing/runtime appendix, but inject it only on a
  * request that actually contains code_interpreter in its native tool list. */
 const CODE_INTERPRETER_PROMPT_MARKER = '[Server policy: code-interpreter]';
-export async function prependCodeInterpreterPrompt<T extends { role: string; content?: unknown }>(messages: T[]): Promise<T[]> {
+export async function prependCodeInterpreterPrompt<T extends { role: string; content?: unknown }>(
+  messages: T[],
+): Promise<T[]> {
   const prompt = await getCodeInterpreterPrompt();
   if (!prompt) return messages;
   return appendAppendix(
@@ -78,7 +112,6 @@ export async function prependCodeInterpreterPrompt<T extends { role: string; con
     `${CODE_INTERPRETER_PROMPT_MARKER}\n${prompt}`,
   );
 }
-
 
 /* P_native-tool-contract — the provider's `tools` array is the executable
  * contract.  This small server-owned appendix is generated from the exact
@@ -119,7 +152,11 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
   toolNames: string[],
   options: NativeToolContractOptions = {},
 ): T[] {
-  const names = [...new Set(toolNames.filter((name): name is string => typeof name === 'string' && name.length > 0))];
+  const names = [
+    ...new Set(
+      toolNames.filter((name): name is string => typeof name === 'string' && name.length > 0),
+    ),
+  ];
   const availability = names.length > 0 ? names.map((name) => `\`${name}\``).join(', ') : 'none';
   const sections = [
     NATIVE_TOOL_CONTRACT_MARKER,
@@ -133,7 +170,9 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
       .map((name) => (examples[name] ? `- ${name}: ${examples[name]}` : ''))
       .filter(Boolean);
     if (lines.length > 0) {
-      sections.push(['A minimal correct argument object for each callable tool:', ...lines].join('\n'));
+      sections.push(
+        ['A minimal correct argument object for each callable tool:', ...lines].join('\n'),
+      );
     }
   }
 
@@ -142,27 +181,34 @@ export function appendNativeToolContract<T extends { role: string; content?: unk
     const budget: string[] = [];
     if (limits.maxIterations) {
       const used = Math.max(0, Number(limits.iterationsUsed || 0));
-      budget.push(`This turn allows up to ${limits.maxIterations} tool rounds (${used} used so far).`);
+      budget.push(
+        `This turn allows up to ${limits.maxIterations} tool rounds (${used} used so far).`,
+      );
     }
-    if (limits.maxCallsPerIteration) budget.push(`Emit at most ${limits.maxCallsPerIteration} tool calls per round.`);
+    if (limits.maxCallsPerIteration)
+      budget.push(`Emit at most ${limits.maxCallsPerIteration} tool calls per round.`);
     if (limits.perToolFailureLimit) {
-      budget.push(`A tool that fails ${limits.perToolFailureLimit} times in a row becomes unavailable for the rest of this turn, so make each corrected call materially different.`);
+      budget.push(
+        `A tool that fails ${limits.perToolFailureLimit} times in a row becomes unavailable for the rest of this turn, so make each corrected call materially different.`,
+      );
     }
     if (budget.length > 0) sections.push(budget.join(' '));
   }
 
   const disabled = (options.disabledTools || []).filter((entry) => entry && entry.name);
   if (disabled.length > 0) {
-    sections.push([
-      'Withdrawn for the rest of this turn after repeated failures; do not call these again:',
-      ...disabled.map((entry) => `- ${entry.name} (${entry.reason})`),
-    ].join('\n'));
+    sections.push(
+      [
+        'Withdrawn for the rest of this turn after repeated failures; do not call these again:',
+        ...disabled.map((entry) => `- ${entry.name} (${entry.reason})`),
+      ].join('\n'),
+    );
   }
 
   if (options.droppedCalls && options.droppedCalls > 0) {
     sections.push(
       `Your previous round emitted ${options.droppedCalls} tool call(s) over the per-round limit; ` +
-      'those calls were discarded and never ran. Re-issue only the calls that still matter, within the per-round limit.',
+        'those calls were discarded and never ran. Re-issue only the calls that still matter, within the per-round limit.',
     );
   }
 
@@ -201,7 +247,10 @@ When \`web_fetch\` is supplied, call it to read the content of specific URLs dis
 const CONNECTOR_DISCOVERY_ROUTING_HINT = `## Connected app connectors
 When the request needs data or actions from a connected app (email, calendar, GitHub, Notion, Zotero, Todoist, and similar), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call one before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
 
-export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
+export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(
+  messages: T[],
+  toolNames: string[],
+): T[] {
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
   const blocks: string[] = [];
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
@@ -209,7 +258,9 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
   if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
   if (nameSet.has('create_document')) {
-    blocks.push('## Structured documents\nUse create_document with {kind: \"plan\"|\"spec\", content: {...}}. For plan content send title, optional goal, and 1-30 ordered steps ({title, detail?, status?: todo|in_progress|done}). For spec content send title, optional summary, 1-40 requirements and optional acceptanceCriteria, constraints, outOfScope. Use the user’s language. Do not add input/arguments wrappers or repeat the resulting card in prose.');
+    blocks.push(
+      '## Structured documents\nUse create_document with {kind: \"plan\"|\"spec\", content: {...}}. For plan content send title, optional goal, and 1-30 ordered steps ({title, detail?, status?: todo|in_progress|done}). For spec content send title, optional summary, 1-40 requirements and optional acceptanceCriteria, constraints, outOfScope. Use the user’s language. Do not add input/arguments wrappers or repeat the resulting card in prose.',
+    );
   }
   if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
   if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);
@@ -223,7 +274,11 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
  * message just before the FINAL_OUTPUT_CONSTRAINTS marker (so the
  * final hard rule always remains the last block). Idempotent via
  * the supplied `marker` so repeat calls do not stack duplicates. */
-function appendAppendix<T extends { role: string; content?: unknown }>(messages: T[], marker: string, appendix: string): T[] {
+function appendAppendix<T extends { role: string; content?: unknown }>(
+  messages: T[],
+  marker: string,
+  appendix: string,
+): T[] {
   const first = messages[0];
   if (!first || first.role !== 'system' || typeof first.content !== 'string') return messages;
   if (first.content.includes(marker)) return messages;
@@ -232,10 +287,10 @@ function appendAppendix<T extends { role: string; content?: unknown }>(messages:
   const insertion = `${appendix}\n\n`;
   cloned[0] = {
     ...first,
-    content: finalRuleIndex >= 0
-      ? `${first.content.slice(0, finalRuleIndex)}${insertion}${first.content.slice(finalRuleIndex)}`
-      : `${first.content}\n\n${appendix}`,
+    content:
+      finalRuleIndex >= 0
+        ? `${first.content.slice(0, finalRuleIndex)}${insertion}${first.content.slice(finalRuleIndex)}`
+        : `${first.content}\n\n${appendix}`,
   } as T;
   return cloned;
 }
-

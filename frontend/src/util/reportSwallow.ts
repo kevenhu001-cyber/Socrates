@@ -2,7 +2,11 @@
  * Production telemetry is bounded, deduplicated and excludes original error content.
  * Development retains console diagnostics; neither sink is allowed to throw.
  */
-import { createClientErrorReporter, sendClientError, type FailureSeverity } from './clientErrorReporter.ts';
+import {
+  createClientErrorReporter,
+  sendClientError,
+  type FailureSeverity,
+} from './clientErrorReporter.ts';
 
 declare const __SOCRATES_BUILD_ID__: string;
 
@@ -13,12 +17,16 @@ const IS_DEV = (() => {
   // allocation. The cast stands in for `vite/client` types, which this
   // package does not pull in.
   try {
-    const env = (import.meta as unknown as {
-      env?: { DEV?: unknown; MODE?: unknown };
-    }).env;
-    if (env && typeof env.DEV === "boolean") return env.DEV;
-    if (env && typeof env.MODE === "string") return env.MODE !== "production";
-  } catch (_) { /* empty-catch: intentional — Vite metadata is optional outside a production build */ }
+    const env = (
+      import.meta as unknown as {
+        env?: { DEV?: unknown; MODE?: unknown };
+      }
+    ).env;
+    if (env && typeof env.DEV === 'boolean') return env.DEV;
+    if (env && typeof env.MODE === 'string') return env.MODE !== 'production';
+  } catch (_) {
+    /* empty-catch: intentional — Vite metadata is optional outside a production build */
+  }
   return true;
 })();
 
@@ -57,7 +65,9 @@ export function expectedSwallowCount(): number {
  * Neither sink is allowed to throw.
  */
 export function reportSwallow(
-  err: unknown, context: string, severity: FailureSeverity = 'recoverable',
+  err: unknown,
+  context: string,
+  severity: FailureSeverity = 'recoverable',
 ): void {
   try {
     if (!IS_DEV) {
@@ -69,11 +79,16 @@ export function reportSwallow(
     if (severity !== 'expected') {
       if (typeof console === 'undefined' || typeof console.warn !== 'function') return;
       let msg = '';
-      try { msg = String(err); }
-      catch (_) { msg = '<unstringifiable>'; }
+      try {
+        msg = String(err);
+      } catch (_) {
+        msg = '<unstringifiable>';
+      }
       console.warn('[swallow]', context, msg);
     } else {
       devExpectedCount += 1;
     }
-  } catch (_) { /* empty-catch: intentional — reportSwallow MUST never throw */ }
+  } catch (_) {
+    /* empty-catch: intentional — reportSwallow MUST never throw */
+  }
 }

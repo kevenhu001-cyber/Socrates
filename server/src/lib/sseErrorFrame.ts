@@ -34,9 +34,16 @@ export function buildSseErrorFrame(
   err: unknown,
   options: { fallbackCode?: string; locale?: ErrorLocale } = {},
 ): SseErrorFrame {
-  const failure = err as (Error & { status?: number; code?: string; retryable?: boolean; retryAfterMs?: number }) | null | undefined;
+  const failure = err as
+    | (Error & { status?: number; code?: string; retryable?: boolean; retryAfterMs?: number })
+    | null
+    | undefined;
   const status = typeof failure?.status === 'number' ? failure.status : undefined;
-  const code = failure?.code || (err instanceof ApiError ? err.code : undefined) || options.fallbackCode || 'INTERNAL';
+  const code =
+    failure?.code ||
+    (err instanceof ApiError ? err.code : undefined) ||
+    options.fallbackCode ||
+    'INTERNAL';
   const locale = options.locale ?? 'en';
 
   const curated = err instanceof ApiError;
@@ -61,7 +68,11 @@ export function buildSseErrorFrame(
     frame.retryable = status === undefined;
   }
   if (code === 'LLM_UPSTREAM_ERROR' && status !== undefined) frame.upstreamStatus = status;
-  if (typeof failure?.retryAfterMs === 'number' && Number.isFinite(failure.retryAfterMs) && failure.retryAfterMs >= 0) {
+  if (
+    typeof failure?.retryAfterMs === 'number' &&
+    Number.isFinite(failure.retryAfterMs) &&
+    failure.retryAfterMs >= 0
+  ) {
     frame.retryAfterMs = Math.round(failure.retryAfterMs);
   }
   // A curated ApiError without an explicit opinion keeps the client's

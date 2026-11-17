@@ -47,7 +47,23 @@ export interface LearningModeSwitchProps {
   testID?: string;
 }
 
-function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onArrow }: { option: LearningModeOption; selected: boolean; tabStop: boolean; compact: boolean; nodeRef: (node: View | null) => void; onPress: () => void; onArrow: (delta: 1 | -1) => void }) {
+function ModeOption({
+  option,
+  selected,
+  tabStop,
+  compact,
+  nodeRef,
+  onPress,
+  onArrow,
+}: {
+  option: LearningModeOption;
+  selected: boolean;
+  tabStop: boolean;
+  compact: boolean;
+  nodeRef: (node: View | null) => void;
+  onPress: () => void;
+  onArrow: (delta: 1 | -1) => void;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
@@ -63,10 +79,19 @@ function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onAr
       {...dataSet({ mode: option.id })}
       focusable={tabStop}
       {...{
-        onKeyDown: (event: { key?: string; nativeEvent?: { key?: string }; preventDefault?: () => void }) => {
+        onKeyDown: (event: {
+          key?: string;
+          nativeEvent?: { key?: string };
+          preventDefault?: () => void;
+        }) => {
           const key = event.key ?? event.nativeEvent?.key;
-          if (key === 'ArrowRight' || key === 'ArrowDown') { event.preventDefault?.(); onArrow(1); }
-          else if (key === 'ArrowLeft' || key === 'ArrowUp') { event.preventDefault?.(); onArrow(-1); }
+          if (key === 'ArrowRight' || key === 'ArrowDown') {
+            event.preventDefault?.();
+            onArrow(1);
+          } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
+            event.preventDefault?.();
+            onArrow(-1);
+          }
         },
       }}
     >
@@ -81,19 +106,35 @@ function ModeOption({ option, selected, tabStop, compact, nodeRef, onPress, onAr
           /* Site `.ui-seg`: the chosen segment is a white capsule lifted by
              a 6% ring on the grey track; the others are quiet text. */
           backgroundColor: selected ? colors.card : hovered ? colors.fillHover : 'transparent',
-          boxShadow: selected ? `0 0 0 1px ${colors.hairline}, 0 1px 2px rgb(0 0 0 / 4%)` : undefined,
+          boxShadow: selected
+            ? `0 0 0 1px ${colors.hairline}, 0 1px 2px rgb(0 0 0 / 4%)`
+            : undefined,
           ...focusRing(colors, focused),
           ...transition('background-color, box-shadow', reduced),
           transform: [{ scale }],
         }}
       >
-        <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>{option.label}</UiText>
+        <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>
+          {option.label}
+        </UiText>
       </Animated.View>
     </Pressable>
   );
 }
 
-function ModeTrack({ options, value, onChange, label, centered }: { options: readonly LearningModeOption[]; value: LearningModeId | null; onChange: (id: LearningModeId) => void; label: string; centered: boolean }) {
+function ModeTrack({
+  options,
+  value,
+  onChange,
+  label,
+  centered,
+}: {
+  options: readonly LearningModeOption[];
+  value: LearningModeId | null;
+  onChange: (id: LearningModeId) => void;
+  label: string;
+  centered: boolean;
+}) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const compact = width < LEARNING_MODE_COMPACT_WIDTH;
@@ -136,21 +177,42 @@ function ModeTrack({ options, value, onChange, label, centered }: { options: rea
   );
   if (!compact) return track;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: S[75] }}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingRight: S[75] }}
+    >
       {track}
     </ScrollView>
   );
 }
 
-export function LearningModeSwitch({ options, value, onChange, label, variant = 'row', triggerLabel = '{mode}', showHint = true, defaultOpen = false, testID = 'learning-mode-switch' }: LearningModeSwitchProps) {
+export function LearningModeSwitch({
+  options,
+  value,
+  onChange,
+  label,
+  variant = 'row',
+  triggerLabel = '{mode}',
+  showHint = true,
+  defaultOpen = false,
+  testID = 'learning-mode-switch',
+}: LearningModeSwitchProps) {
   const [open, setOpen] = useState(defaultOpen);
   const selected = options.find((option) => option.id === value) ?? null;
   const selectedLabel = selected?.triggerLabel ?? selected?.label;
-  const hint = showHint && selected ? (
-    <UiText testID="learning-mode-hint" variant="bodySm" tone="tertiary" align={variant === 'row' ? 'center' : 'left'} numberOfLines={2}>
-      {selected.hint}
-    </UiText>
-  ) : null;
+  const hint =
+    showHint && selected ? (
+      <UiText
+        testID="learning-mode-hint"
+        variant="bodySm"
+        tone="tertiary"
+        align={variant === 'row' ? 'center' : 'left'}
+        numberOfLines={2}
+      >
+        {selected.hint}
+      </UiText>
+    ) : null;
 
   if (variant === 'row') {
     return (
@@ -162,7 +224,11 @@ export function LearningModeSwitch({ options, value, onChange, label, variant = 
   }
 
   return (
-    <View testID={testID} style={{ gap: S[75], alignItems: 'flex-start' }} {...dataSet({ mode: value ?? 'none', open: open ? 'true' : 'false' })}>
+    <View
+      testID={testID}
+      style={{ gap: S[75], alignItems: 'flex-start' }}
+      {...dataSet({ mode: value ?? 'none', open: open ? 'true' : 'false' })}
+    >
       <PillAction
         size="sm"
         testID="learning-mode-trigger"

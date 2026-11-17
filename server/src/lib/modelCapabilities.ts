@@ -645,13 +645,21 @@ export function mapEffortLevel(capability: ModelCapability, level: string): stri
  * column). It wins over everything else, including the host heuristic:
  * the operator knows which endpoint they point at, the server does not.
  */
-export function instantEncodingFor(capability: ModelCapability, apiBase?: string, override?: string | null): InstantEncoding | undefined {
+export function instantEncodingFor(
+  capability: ModelCapability,
+  apiBase?: string,
+  override?: string | null,
+): InstantEncoding | undefined {
   if (capability.thinking !== 'supported') return undefined;
   if (isInstantEncoding(override)) return override;
   const scoped = capability.instantEncodingByHost;
   if (scoped && apiBase) {
     let host = '';
-    try { host = new URL(apiBase).hostname; } catch { /* URL validated at provider configuration */ }
+    try {
+      host = new URL(apiBase).hostname;
+    } catch {
+      /* URL validated at provider configuration */
+    }
     if (host && scoped.host.test(host)) return scoped.encoding;
   }
   return capability.instantEncoding;
@@ -682,8 +690,8 @@ export function assertThinkingModeSupported(
   effort: string | undefined,
   extra?: Record<string, unknown>,
 ): void {
-  const requestedDisabled = effort === 'none'
-    || (extra?.thinking as { type?: unknown } | undefined)?.type === 'disabled';
+  const requestedDisabled =
+    effort === 'none' || (extra?.thinking as { type?: unknown } | undefined)?.type === 'disabled';
   if (!requestedDisabled) return;
   if (capability.thinking === 'unsupported' || capability.thinking === 'ignored') {
     throw new ApiError(
@@ -735,9 +743,10 @@ export function summarizeModelCapabilities(model: string): ProviderCapabilitySum
     isReasoning: capability.thinking !== 'not_applicable',
     /* Instant is available when the model can switch thinking off, when it
      * never thinks (trivially satisfied), or when nothing is declared. */
-    supportsInstant: capability.thinking === 'supported'
-      || capability.thinking === 'not_applicable'
-      || capability.thinking === 'unknown',
+    supportsInstant:
+      capability.thinking === 'supported' ||
+      capability.thinking === 'not_applicable' ||
+      capability.thinking === 'unknown',
     /* Only a family that documents effort levels has them. */
     supportsEffort: capability.effort === 'supported',
   };
@@ -796,13 +805,22 @@ export interface ContextBudget {
  * rejects the request with a context-length 400 — a failure the
  * compatibility chain treats as terminal.
  */
-export function resolveContextBudget(model: string, opts: ContextBudgetOptions = {}): ContextBudget {
+export function resolveContextBudget(
+  model: string,
+  opts: ContextBudgetOptions = {},
+): ContextBudget {
   const capability = resolveModelCapability(model);
   const override = Number(opts.overrideTokens);
   if (Number.isFinite(override) && override > 0) {
-    return { budget: Math.floor(override), source: 'override', contextWindow: capability.contextWindow };
+    return {
+      budget: Math.floor(override),
+      source: 'override',
+      contextWindow: capability.contextWindow,
+    };
   }
-  const reserve = Number.isFinite(Number(opts.reserveTokens)) ? Math.max(0, Number(opts.reserveTokens)) : 0;
+  const reserve = Number.isFinite(Number(opts.reserveTokens))
+    ? Math.max(0, Number(opts.reserveTokens))
+    : 0;
   const toolReserve = Number.isFinite(Number(opts.toolSchemaTokens))
     ? Math.max(0, Number(opts.toolSchemaTokens))
     : 0;
@@ -810,16 +828,21 @@ export function resolveContextBudget(model: string, opts: ContextBudgetOptions =
    * window is shared between input and output, so a total window is not the
    * input limit — using it as one is exactly how a request ends up larger
    * than the model accepts. */
-  const inputLimit = capability.maxInputTokens
-    ?? (capability.contextWindow !== undefined
-      ? (capability.maxOutputTokens !== undefined
+  const inputLimit =
+    capability.maxInputTokens ??
+    (capability.contextWindow !== undefined
+      ? capability.maxOutputTokens !== undefined
         ? capability.contextWindow - capability.maxOutputTokens
-        : capability.contextWindow)
+        : capability.contextWindow
       : undefined);
   if (inputLimit !== undefined) {
     const usable = inputLimit - reserve - CONTEXT_SAFETY_MARGIN_TOKENS - toolReserve;
     if (usable > 0) {
-      return { budget: Math.floor(usable), source: 'model-window', contextWindow: capability.contextWindow };
+      return {
+        budget: Math.floor(usable),
+        source: 'model-window',
+        contextWindow: capability.contextWindow,
+      };
     }
     /* The fixed overhead alone exceeds the declared input window. Falling
      * back to the 100 K unknown-model floor here would guarantee a provider

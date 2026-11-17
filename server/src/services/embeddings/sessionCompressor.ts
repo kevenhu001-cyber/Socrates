@@ -27,12 +27,12 @@
  *    and operators that want zero LLM spend).
  */
 
-import {createHash} from 'node:crypto';
-import {resolveContextBudget} from '../../lib/modelCapabilities.js';
-import {callChatCompletion} from '../core/llm/complete.js';
-import {getActiveApiKey} from '../core/apiKey.js';
-import {estimateContextMessageTokens} from '../core/usageTracker.js';
-import {createSummaryMemo} from '../../lib/summaryMemo.js';
+import { createHash } from 'node:crypto';
+import { resolveContextBudget } from '../../lib/modelCapabilities.js';
+import { callChatCompletion } from '../core/llm/complete.js';
+import { getActiveApiKey } from '../core/apiKey.js';
+import { estimateContextMessageTokens } from '../core/usageTracker.js';
+import { createSummaryMemo } from '../../lib/summaryMemo.js';
 
 export interface CompressibleMessage {
   role?: unknown;
@@ -76,7 +76,9 @@ function stripHeavyPayloads(m: CompressibleMessage): CompressibleMessage {
     return m;
   }
   const copy: Record<string, unknown> = { ...(m as Record<string, unknown>) };
-  copy.attachments = ((m as Record<string, unknown>).attachments as Array<Record<string, unknown>>).map((a) => {
+  copy.attachments = (
+    (m as Record<string, unknown>).attachments as Array<Record<string, unknown>>
+  ).map((a) => {
     if (!a || typeof a !== 'object') return a;
     if (a.dataUrl == null) return a;
     return { ...a, dataUrl: null, truncated: true };
@@ -89,7 +91,7 @@ const SUMMARY_SYSTEM_PROMPT =
   'into a compact brief the assistant can use to continue seamlessly. ' +
   'Reply in the same language the conversation uses. ' +
   'Cover: (1) the topic and user goal, (2) key facts established, decisions made, and user preferences revealed, ' +
-  '(3) what was already taught/explained and the user\'s mastery signals, (4) open questions or unfinished work. ' +
+  "(3) what was already taught/explained and the user's mastery signals, (4) open questions or unfinished work. " +
   'Be dense but complete. No preamble, no markdown headings — plain paragraphs and short bullets only.';
 
 /* P_compress-memo — the model-input path (routes/chat/prepare/context.ts) can
@@ -134,8 +136,9 @@ export async function compressSessionMessages(
      trigger whenever it knows the target model; `opts.model` is the fallback
      for callers that do not. */
   const envTrigger = numEnv('SESSION_COMPRESS_TOKENS', 0);
-  const triggerTokens = opts.triggerTokens
-    ?? (envTrigger > 0 ? envTrigger : resolveContextBudget(opts.model ?? '').budget);
+  const triggerTokens =
+    opts.triggerTokens ??
+    (envTrigger > 0 ? envTrigger : resolveContextBudget(opts.model ?? '').budget);
   const none: CompressionResult = {
     didCompress: false,
     messages,
@@ -148,9 +151,15 @@ export async function compressSessionMessages(
 
   let messageTokens: number[];
   try {
-    messageTokens = messages.map((m) => estimateContextMessageTokens([
-      { ...m, role: typeof m.role === 'string' ? m.role : 'user', content: m.content || textOf(m) },
-    ]));
+    messageTokens = messages.map((m) =>
+      estimateContextMessageTokens([
+        {
+          ...m,
+          role: typeof m.role === 'string' ? m.role : 'user',
+          content: m.content || textOf(m),
+        },
+      ]),
+    );
   } catch {
     return none;
   }
@@ -221,16 +230,31 @@ export async function compressSessionMessages(
   } catch {
     provider = null;
   }
-  if (!provider || !provider.isBuiltIn || !provider.keyPlaintext || !provider.url || !provider.model) {
+  if (
+    !provider ||
+    !provider.isBuiltIn ||
+    !provider.keyPlaintext ||
+    !provider.url ||
+    !provider.model
+  ) {
     return tailOnly();
   }
 
   /* P_compress-memo — return the memoized summary for this exact head
      instead of paying for the LLM again. The tail is rebuilt below from
      the current input, so the caller still gets fresh recent turns. */
-  const digest = createHash('sha256').update(JSON.stringify([
-    opts.cacheScope ?? null, provider.id, provider.url, provider.model, head.length, headLines,
-  ])).digest('hex');
+  const digest = createHash('sha256')
+    .update(
+      JSON.stringify([
+        opts.cacheScope ?? null,
+        provider.id,
+        provider.url,
+        provider.model,
+        head.length,
+        headLines,
+      ]),
+    )
+    .digest('hex');
 
   const transcript = headLines.join('\n\n').slice(0, 60000);
   const { url: apiBase, keyPlaintext: apiKey, model } = provider;
@@ -245,13 +269,18 @@ export async function compressSessionMessages(
         model,
         messages: [
           { role: 'system', content: SUMMARY_SYSTEM_PROMPT },
-          { role: 'user', content: `Summarize this earlier conversation (about ${head.length} messages):\n\n${transcript}` },
+          {
+            role: 'user',
+            content: `Summarize this earlier conversation (about ${head.length} messages):\n\n${transcript}`,
+          },
         ],
         maxTokens: 800,
         temperature: 0.2,
         signal,
       });
-      return String(completion?.content || '').trim().slice(0, 8000);
+      return String(completion?.content || '')
+        .trim()
+        .slice(0, 8000);
     } catch (err) {
       console.warn('[compress] summarizer failed, keeping tail only:', (err as Error).message);
       return '';

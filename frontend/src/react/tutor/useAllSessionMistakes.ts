@@ -10,7 +10,12 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { mergeSessionMistakes, type SessionMistake } from '@socrates/ui/study-model';
 import { useKbStore } from '../../store/index.ts';
-import { getMistakeArchiveVersion, loadServerMistakes, otherSessionMistakes, subscribeMistakeArchive } from '../../tutor/mistakeArchive.ts';
+import {
+  getMistakeArchiveVersion,
+  loadServerMistakes,
+  otherSessionMistakes,
+  subscribeMistakeArchive,
+} from '../../tutor/mistakeArchive.ts';
 import { useCurrentSessionId, useSessions } from '../session-list/sessionList.store.ts';
 import { apiFetch } from '../../util/api/index.ts';
 import type { MistakeStateEntry } from '../../state/kb.ts';
@@ -24,7 +29,8 @@ export function useAllSessionMistakes(): SessionMistake<MistakeStateEntry>[] {
   useEffect(() => {
     /* The server mirror needs a signed-in user (a guest's 401 would trip the auth-expired flow). */
     if (!getCurrentUser()) return;
-    const labels = (): Record<string, string> => Object.fromEntries(sessions.map((row) => [row.id, row.title || '']));
+    const labels = (): Record<string, string> =>
+      Object.fromEntries(sessions.map((row) => [row.id, row.title || '']));
     void loadServerMistakes(() => apiFetch<{ items?: [] }>('/api/mistakes?limit=200'), labels);
   }, [sessions]);
   return useMemo(

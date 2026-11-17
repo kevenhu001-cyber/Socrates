@@ -15,7 +15,11 @@ import { eq } from 'drizzle-orm';
 
 import suggestionsRouter, { __test } from '../src/routes/suggestions.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
-import { authSessions as authSessionsTable, sessions as sessionsTable, users as usersTable } from '../src/db/schema/index.js';
+import {
+  authSessions as authSessionsTable,
+  sessions as sessionsTable,
+  users as usersTable,
+} from '../src/db/schema/index.js';
 import { listen, httpRequest } from './_http.js';
 
 const t = __test;
@@ -32,7 +36,9 @@ describe('suggestions parser', () => {
   });
 
   test('parses a prose-wrapped array', () => {
-    const arr = t.parseSuggestionsArray('Sure, here are three:\n["hello", "world", "again"]\nEnjoy!');
+    const arr = t.parseSuggestionsArray(
+      'Sure, here are three:\n["hello", "world", "again"]\nEnjoy!',
+    );
     assert.deepEqual(arr, ['hello', 'world', 'again']);
   });
 
@@ -54,12 +60,18 @@ describe('suggestions parser', () => {
 
 describe('suggestions shaper', () => {
   test('produces exactly three suggestions from a valid array', () => {
-    const out = t.shapeSuggestions(['Review my last PR', 'Help me draft an email', 'Plan tomorrow'], 'en');
+    const out = t.shapeSuggestions(
+      ['Review my last PR', 'Help me draft an email', 'Plan tomorrow'],
+      'en',
+    );
     assert.equal(out.length, 3);
     assert.equal(out[0].prompt, 'Review my last PR');
     assert.equal(out[2].prompt, 'Plan tomorrow');
     assert.ok(out[0].id.startsWith('ai-'));
-    assert.deepEqual(out.map((item) => item.icon), ['spark', 'history', 'target']);
+    assert.deepEqual(
+      out.map((item) => item.icon),
+      ['spark', 'history', 'target'],
+    );
   });
 
   test('rejects arrays that do not contain exactly three prompts', () => {
@@ -68,7 +80,10 @@ describe('suggestions shaper', () => {
   });
 
   test('rejects prompts containing placeholder brackets', () => {
-    assert.equal(t.shapeSuggestions(['Teach me [topic] in 5 minutes', 'two', 'three'], 'en').length, 0);
+    assert.equal(
+      t.shapeSuggestions(['Teach me [topic] in 5 minutes', 'two', 'three'], 'en').length,
+      0,
+    );
   });
 
   test('rejects overlong prompts instead of truncating them', () => {
@@ -81,7 +96,10 @@ describe('suggestions shaper', () => {
   });
 
   test('rejects duplicate prompts', () => {
-    assert.equal(t.shapeSuggestions(['same prompt', 'same prompt', 'third prompt'], 'en').length, 0);
+    assert.equal(
+      t.shapeSuggestions(['same prompt', 'same prompt', 'third prompt'], 'en').length,
+      0,
+    );
   });
 
   test('returns empty array for non-array input', () => {
@@ -93,13 +111,16 @@ describe('suggestions shaper', () => {
 
 describe('suggestions prompt context', () => {
   test('includes history, preferences, and memories in the model prompt', () => {
-    const messages = t.buildPromptMessages({
-      recentSessions: [{ title: 'Rust async runtime', topic: 'rust', mode: 'chat' }],
-      recentMessages: [{ role: 'user', content: 'I am comparing Tokio and async-std.' }],
-      customInstructions: 'Prefer concise examples.',
-      preferences: { language: 'zh' },
-      memories: ['The user is learning systems programming.'],
-    }, 'en');
+    const messages = t.buildPromptMessages(
+      {
+        recentSessions: [{ title: 'Rust async runtime', topic: 'rust', mode: 'chat' }],
+        recentMessages: [{ role: 'user', content: 'I am comparing Tokio and async-std.' }],
+        customInstructions: 'Prefer concise examples.',
+        preferences: { language: 'zh' },
+        memories: ['The user is learning systems programming.'],
+      },
+      'en',
+    );
     const combined = messages.map((message) => message.content).join('\n');
     assert.match(combined, /Rust async runtime/);
     assert.match(combined, /Tokio and async-std/);
@@ -123,13 +144,16 @@ describe('suggestions route (DB-backed)', () => {
     await initDb(process.env.DATABASE_URL);
     const db = getDb();
     const id = randomUUID();
-    const [u] = await db.insert(usersTable).values({
-      id,
-      email: id + '@socrates.test',
-      displayName: 'Suggestions Test',
-      tier: 'free',
-      passwordHash: 'x',
-    }).returning();
+    const [u] = await db
+      .insert(usersTable)
+      .values({
+        id,
+        email: id + '@socrates.test',
+        displayName: 'Suggestions Test',
+        tier: 'free',
+        passwordHash: 'x',
+      })
+      .returning();
     testUser = u;
     testSid = randomBytes(32).toString('hex');
     await db.insert(authSessionsTable).values({
@@ -151,14 +175,18 @@ describe('suggestions route (DB-backed)', () => {
         await db.delete(sessionsTable).where(eq(sessionsTable.userId, testUser.id));
         await db.delete(authSessionsTable).where(eq(authSessionsTable.userId, testUser.id));
         await db.delete(usersTable).where(eq(usersTable.id, testUser.id));
-      } catch (_) { /* ignore */ }
+      } catch (_) {
+        /* ignore */
+      }
     }
     if (process.env.DATABASE_URL) await closeDb();
   });
 
   test('returns an empty list for a user with no history', async () => {
     if (!process.env.DATABASE_URL || !server) return;
-    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
+    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', {
+      cookies: { sid: testSid },
+    });
     assert.equal(r.status, 200);
     assert.equal(r.body.suggestions.length, 0);
     assert.equal(r.body.source, 'empty-no-history');
@@ -181,7 +209,9 @@ describe('suggestions route (DB-backed)', () => {
       cookies: { sid: testSid },
     });
     assert.equal(inv.status, 200);
-    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', { cookies: { sid: testSid } });
+    const r = await httpRequest(server.url + '/api/suggestions/starters?lang=en', {
+      cookies: { sid: testSid },
+    });
     assert.equal(r.status, 200);
     assert.ok(r.body.suggestions.length === 0 || r.body.suggestions.length === 3);
     if (r.body.suggestions.length === 3) assert.equal(r.body.source, 'ai');

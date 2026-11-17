@@ -29,7 +29,10 @@ export interface ChainState {
   steps: readonly ChainStep[];
 }
 
-export const EMPTY_CHAIN: ChainState = Object.freeze({ sessionKey: null, steps: Object.freeze([]) as readonly ChainStep[] });
+export const EMPTY_CHAIN: ChainState = Object.freeze({
+  sessionKey: null,
+  steps: Object.freeze([]) as readonly ChainStep[],
+});
 
 /** Longest text a node keeps; the transcript holds the full question. */
 export const CHAIN_TEXT_LIMIT = 140;
@@ -41,7 +44,11 @@ export function normalizeChainText(text: string, limit = CHAIN_TEXT_LIMIT): stri
 }
 
 /** Bind the chain to `sessionKey`, starting it from `root` when the session changed or the chain is empty. */
-export function seedChain(state: ChainState, sessionKey: string | null, root: string | null | undefined): ChainState {
+export function seedChain(
+  state: ChainState,
+  sessionKey: string | null,
+  root: string | null | undefined,
+): ChainState {
   const text = root ? normalizeChainText(root) : '';
   if (state.sessionKey === sessionKey && state.steps.length > 0) return state;
   if (state.sessionKey !== sessionKey) {
@@ -56,7 +63,10 @@ export function appendChainStep(state: ChainState, text: string): ChainState {
   if (!clean) return state;
   const last = state.steps[state.steps.length - 1];
   if (last && last.text === clean) return state;
-  return { sessionKey: state.sessionKey, steps: [...state.steps, { id: `s${state.steps.length}`, text: clean }] };
+  return {
+    sessionKey: state.sessionKey,
+    steps: [...state.steps, { id: `s${state.steps.length}`, text: clean }],
+  };
 }
 
 /**
@@ -65,9 +75,11 @@ export function appendChainStep(state: ChainState, text: string): ChainState {
  * asks something joins the chain: a question mark (either width), a
  * leading interrogative, or a Chinese sentence-final question particle.
  */
-const ZH_LEADING = /^(为什么|为何|怎么|怎样|如何|什么|哪|是否|能否|可否|能不能|可不可以|是不是|有没有|会不会|要不要|该不该)/;
+const ZH_LEADING =
+  /^(为什么|为何|怎么|怎样|如何|什么|哪|是否|能否|可否|能不能|可不可以|是不是|有没有|会不会|要不要|该不该)/;
 const ZH_TRAILING = /[吗呢么][。.!！~～\s]*$/;
-const EN_LEADING = /^(why|how|what|when|where|which|who|whom|whose|is|are|was|were|can|could|does|do|did|should|would|will|shall|may|might|isn't|aren't|doesn't|don't|didn't)\b/i;
+const EN_LEADING =
+  /^(why|how|what|when|where|which|who|whom|whose|is|are|was|were|can|could|does|do|did|should|would|will|shall|may|might|isn't|aren't|doesn't|don't|didn't)\b/i;
 
 export function looksLikeQuestion(text: string): boolean {
   const flat = text.replace(/\s+/g, ' ').trim();
@@ -84,7 +96,10 @@ export function looksLikeQuestion(text: string): boolean {
 export function appendOwnQuestion(state: ChainState, text: string): ChainState {
   const clean = normalizeChainText(text);
   if (!clean || state.steps.some((step) => step.text === clean)) return state;
-  return { sessionKey: state.sessionKey, steps: [...state.steps, { id: `s${state.steps.length}`, text: clean, origin: 'own' }] };
+  return {
+    sessionKey: state.sessionKey,
+    steps: [...state.steps, { id: `s${state.steps.length}`, text: clean, origin: 'own' }],
+  };
 }
 
 export interface ChainView {
@@ -206,7 +221,10 @@ export function learningModeSpec(id: LearningModeId): LearningModeSpec {
   return LEARNING_MODES.find((mode) => mode.id === id) ?? LEARNING_MODES[0];
 }
 
-export function learningModeAction(id: LearningModeId, surface: 'home' | 'session'): LearningModeAction {
+export function learningModeAction(
+  id: LearningModeId,
+  surface: 'home' | 'session',
+): LearningModeAction {
   const spec = learningModeSpec(id);
   return surface === 'home' ? spec.homeAction : spec.sessionAction;
 }
@@ -228,14 +246,21 @@ export function mistakeCandidates(
     .slice()
     .sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
     .slice(0, limit)
-    .map((mistake) => ({ id: `mistake:${mistake.id}`, text: normalizeChainText(mistake.q), kind: 'mistake' as const }));
+    .map((mistake) => ({
+      id: `mistake:${mistake.id}`,
+      text: normalizeChainText(mistake.q),
+      kind: 'mistake' as const,
+    }));
 }
 
 /**
  * Prompts as next questions, minus any already on the chain. When every
  * prompt has been followed, they are all offered again rather than none.
  */
-export function askCandidates(prompts: readonly string[], walked: readonly ChainStep[] = []): ChainCandidate[] {
+export function askCandidates(
+  prompts: readonly string[],
+  walked: readonly ChainStep[] = [],
+): ChainCandidate[] {
   const onChain = new Set(walked.map((step) => step.text));
   const fresh = prompts.filter((prompt) => !onChain.has(normalizeChainText(prompt)));
   return dedupeAsk(fresh.length > 0 ? fresh : prompts);

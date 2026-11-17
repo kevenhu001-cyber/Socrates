@@ -1,7 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
 import { Forbidden, Unauthorized } from '../lib/errors.js';
 
-export { ALL_SCOPES, ALL_SCOPES_SET, SCOPE_DESCRIPTIONS, parseScopes, parseScopeParam } from '../lib/authScopes.js';
+export {
+  ALL_SCOPES,
+  ALL_SCOPES_SET,
+  SCOPE_DESCRIPTIONS,
+  parseScopes,
+  parseScopeParam,
+} from '../lib/authScopes.js';
 export type { Scope } from '../lib/authScopes.js';
 
 /**
@@ -15,14 +21,22 @@ export function requireScope(...required: string[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     const granted = req.authScopes;
     if (!granted) {
-      res.set('WWW-Authenticate', `Bearer realm="socrates", error="invalid_token", error_description="authentication required"`);
+      res.set(
+        'WWW-Authenticate',
+        `Bearer realm="socrates", error="invalid_token", error_description="authentication required"`,
+      );
       return next(new Unauthorized('Authentication required'));
     }
     const missing = required.filter((s) => !granted.has(s));
     if (missing.length > 0) {
       // RFC 6750 §3 — insufficient_scope travels with a WWW-Authenticate challenge.
-      res.set('WWW-Authenticate', `Bearer realm="socrates", error="insufficient_scope", scope="${missing.join(' ')}"`);
-      return next(new Forbidden('INSUFFICIENT_SCOPE', `Missing required scope(s): ${missing.join(' ')}`));
+      res.set(
+        'WWW-Authenticate',
+        `Bearer realm="socrates", error="insufficient_scope", scope="${missing.join(' ')}"`,
+      );
+      return next(
+        new Forbidden('INSUFFICIENT_SCOPE', `Missing required scope(s): ${missing.join(' ')}`),
+      );
     }
     next();
   };
@@ -38,9 +52,10 @@ export function requireScope(...required: string[]) {
 export function resourceScope(resource: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     const method = req.method.toUpperCase();
-    const needed = method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
-      ? `${resource}:read`
-      : `${resource}:write`;
+    const needed =
+      method === 'GET' || method === 'HEAD' || method === 'OPTIONS'
+        ? `${resource}:read`
+        : `${resource}:write`;
     return requireScope(needed)(req, res, next);
   };
 }

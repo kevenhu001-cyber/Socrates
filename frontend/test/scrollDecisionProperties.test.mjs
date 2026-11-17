@@ -3,11 +3,7 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import {
-  SCROLL_SLACK,
-  isPinnedToBottom,
-  shouldAutoScroll,
-} from '../src/ui/scrollDecision.ts';
+import { SCROLL_SLACK, isPinnedToBottom, shouldAutoScroll } from '../src/ui/scrollDecision.ts';
 
 const RUNS = 200;
 
@@ -21,13 +17,14 @@ test('SCROLL_SLACK matches the documented pin slack (64 px)', () => {
 /* Distances-from-bottom span the full geometry space the decision sees:
    negative (over-scrolled past bottom / rubber-band), the exact slack
    boundary, and far-away positive values, plus fractional pixels. */
-const distanceFromBottom = () => fc.oneof(
-  fc.integer({ min: -2000, max: 4000 }),
-  fc.double({ min: -2000, max: 4000, noNaN: true }),
-  // Cluster around the SCROLL_SLACK boundary so the iff is exercised at
-  // the exact edge, not just far from it.
-  fc.integer({ min: SCROLL_SLACK - 4, max: SCROLL_SLACK + 4 }),
-);
+const distanceFromBottom = () =>
+  fc.oneof(
+    fc.integer({ min: -2000, max: 4000 }),
+    fc.double({ min: -2000, max: 4000, noNaN: true }),
+    // Cluster around the SCROLL_SLACK boundary so the iff is exercised at
+    // the exact edge, not just far from it.
+    fc.integer({ min: SCROLL_SLACK - 4, max: SCROLL_SLACK + 4 }),
+  );
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 9: Auto-scroll happens exactly
@@ -85,16 +82,12 @@ test('Feature: chat-experience-revamp, Property 9: Auto-scroll happens exactly w
 // ---------------------------------------------------------------------------
 test('Feature: chat-experience-revamp, Property 9: Auto-scroll happens exactly when pinned and not scrolled away (pin predicate is the slack comparison)', () => {
   fc.assert(
-    fc.property(
-      distanceFromBottom(),
-      fc.integer({ min: 0, max: 1000 }),
-      (distance, slack) => {
-        // Default slack.
-        assert.equal(isPinnedToBottom(distance), distance <= SCROLL_SLACK);
-        // Custom slack.
-        assert.equal(isPinnedToBottom(distance, slack), distance <= slack);
-      },
-    ),
+    fc.property(distanceFromBottom(), fc.integer({ min: 0, max: 1000 }), (distance, slack) => {
+      // Default slack.
+      assert.equal(isPinnedToBottom(distance), distance <= SCROLL_SLACK);
+      // Custom slack.
+      assert.equal(isPinnedToBottom(distance, slack), distance <= slack);
+    }),
     { numRuns: RUNS },
   );
 });

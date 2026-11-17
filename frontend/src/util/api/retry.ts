@@ -13,11 +13,12 @@ interface RetryableError extends Error {
 }
 
 function isRetryable(error: RetryableError): boolean {
-  return !!error && (
-    error.status === 0
-    || error.status === 408
-    || error.status === 429
-    || (typeof error.status === 'number' && error.status >= 500 && error.status < 600)
+  return (
+    !!error &&
+    (error.status === 0 ||
+      error.status === 408 ||
+      error.status === 429 ||
+      (typeof error.status === 'number' && error.status >= 500 && error.status < 600))
   );
 }
 
@@ -50,7 +51,8 @@ export function createRetryApiFetch<T>(
       } catch (caught) {
         const error = caught as RetryableError;
         error.retried = attempt;
-        if (!isRetryable(error) || attempt >= retries || (userSignal && userSignal.aborted)) throw error;
+        if (!isRetryable(error) || attempt >= retries || (userSignal && userSignal.aborted))
+          throw error;
         attempt += 1;
         error.retried = attempt;
         await abortableDelay(retryDelay(backoffMs, attempt), userSignal);

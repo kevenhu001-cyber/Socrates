@@ -3,7 +3,9 @@ import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { DiagnosticCommandHandler, DiagnosticScreen } from './DiagnosticView';
 
-const DiagnosticView = lazy(() => import('./DiagnosticView').then((module) => ({ default: module.DiagnosticView })));
+const DiagnosticView = lazy(() =>
+  import('./DiagnosticView').then((module) => ({ default: module.DiagnosticView })),
+);
 
 const root = createRootSlot('diagnostic-view');
 let onCommand: DiagnosticCommandHandler = () => undefined;
@@ -22,8 +24,12 @@ export function renderDiagnostic(screen: DiagnosticScreen): void {
   const host = document.getElementById('diagnosticView');
   if (!host) return;
   host.classList.remove('hidden');
-  const loadingText = screen.kind === 'loading' ? screen.loadingText
-    : screen.kind === 'question' ? screen.numberLabel : screen.title;
+  const loadingText =
+    screen.kind === 'loading'
+      ? screen.loadingText
+      : screen.kind === 'question'
+        ? screen.numberLabel
+        : screen.title;
   const element = (
     <ErrorBoundary>
       <Suspense fallback={<div role="status">{loadingText}</div>}>

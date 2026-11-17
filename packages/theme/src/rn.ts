@@ -5,12 +5,12 @@
  * used by shared tokens. Socrates Universal projects its neutral palette into the native palette shape.
  */
 
-import {
-  type ThemePalette,
-  type ThemeMode,
-} from './tokens';
+import { type ThemePalette, type ThemeMode } from './tokens';
 
-export interface ThemePaletteHex extends Omit<ThemePalette, 'accent' | 'bg' | 'text' | 'border' | 'danger' | 'success' | 'muted' | 'onAccent'> {
+export interface ThemePaletteHex extends Omit<
+  ThemePalette,
+  'accent' | 'bg' | 'text' | 'border' | 'danger' | 'success' | 'muted' | 'onAccent'
+> {
   readonly accent: {
     readonly strong: string;
     readonly soft: string;

@@ -55,7 +55,8 @@ export function normalizeProviderUsage(raw: unknown): NormalizedUsage | null {
   const u = raw as Record<string, unknown>;
 
   const prompt = asCount(u.prompt_tokens) ?? asCount(u.input_tokens) ?? asCount(u.promptTokenCount);
-  const completion = asCount(u.completion_tokens) ?? asCount(u.output_tokens) ?? asCount(u.candidatesTokenCount);
+  const completion =
+    asCount(u.completion_tokens) ?? asCount(u.output_tokens) ?? asCount(u.candidatesTokenCount);
 
   if (prompt === null && completion === null) return null;
 
@@ -65,9 +66,10 @@ export function normalizeProviderUsage(raw: unknown): NormalizedUsage | null {
      cached or reasoning tokens it can exceed prompt+completion, and the
      billed figure is the one that matters. */
   const reportedTotal = asCount(u.total_tokens) ?? asCount(u.totalTokenCount);
-  const totalTokens = reportedTotal !== null && reportedTotal >= promptTokens + completionTokens
-    ? reportedTotal
-    : promptTokens + completionTokens;
+  const totalTokens =
+    reportedTotal !== null && reportedTotal >= promptTokens + completionTokens
+      ? reportedTotal
+      : promptTokens + completionTokens;
 
   if (totalTokens <= 0) return null;
   return { promptTokens, completionTokens, totalTokens };
@@ -116,9 +118,10 @@ function countMessageTokens(messages: unknown, countText: (text: unknown) => num
   if (!Array.isArray(messages)) return 0;
   let total = 0;
   for (const message of messages) {
-    const c = message && typeof message === 'object'
-      ? (message as { content?: unknown }).content
-      : undefined;
+    const c =
+      message && typeof message === 'object'
+        ? (message as { content?: unknown }).content
+        : undefined;
     if (typeof c === 'string') total += countText(c);
     else if (Array.isArray(c)) {
       for (const part of c) {
@@ -144,7 +147,8 @@ function countMessageTokens(messages: unknown, countText: (text: unknown) => num
       // and DeepSeek). Do not budget only visible prose, or a short-looking
       // conversation can silently exhaust the provider's context/TPM budget.
       if (typeof m.reasoning_content === 'string') total += countText(m.reasoning_content);
-      else if (Array.isArray(m.reasoning_details)) total += countText(JSON.stringify(m.reasoning_details));
+      else if (Array.isArray(m.reasoning_details))
+        total += countText(JSON.stringify(m.reasoning_details));
       if (Array.isArray(m.tool_calls)) total += countText(JSON.stringify(m.tool_calls));
     }
   }
@@ -210,34 +214,38 @@ export function recordUsage({
     const db = getDb();
     /* Fire-and-forget: don't await. If the DB is briefly slow we
        still keep streaming. */
-    db.insert(usageEvents).values({
-      userId,
-      model: model || null,
-      sessionId: sessionId || null,
-      promptTokens: promptTokens || 0,
-      completionTokens: completionTokens || 0,
-      totalTokens: total,
-      source,
-      usageSource,
-    }).catch(async (err: unknown) => {
-      const errStr = errorMessage(err);
-      if (sessionId && errStr.includes('usage_events_session_id_sessions_id_fk')) {
-        try {
-          await db.insert(usageEvents).values({
-            userId,
-            model: model || null,
-            sessionId: null,
-            promptTokens: promptTokens || 0,
-            completionTokens: completionTokens || 0,
-            totalTokens: total,
-            source,
-            usageSource,
-          });
-          return;
-        } catch { /* ignore fallback error */ }
-      }
-      console.warn('[usage] record failed:', errStr);
-    });
+    db.insert(usageEvents)
+      .values({
+        userId,
+        model: model || null,
+        sessionId: sessionId || null,
+        promptTokens: promptTokens || 0,
+        completionTokens: completionTokens || 0,
+        totalTokens: total,
+        source,
+        usageSource,
+      })
+      .catch(async (err: unknown) => {
+        const errStr = errorMessage(err);
+        if (sessionId && errStr.includes('usage_events_session_id_sessions_id_fk')) {
+          try {
+            await db.insert(usageEvents).values({
+              userId,
+              model: model || null,
+              sessionId: null,
+              promptTokens: promptTokens || 0,
+              completionTokens: completionTokens || 0,
+              totalTokens: total,
+              source,
+              usageSource,
+            });
+            return;
+          } catch {
+            /* ignore fallback error */
+          }
+        }
+        console.warn('[usage] record failed:', errStr);
+      });
   } catch (err) {
     console.warn('[usage] record failed:', errorMessage(err));
   }

@@ -78,17 +78,26 @@ export interface LinkedSignal {
 }
 
 /** Link a caller's signal to fetch and expose idempotent listener cleanup. */
-export function linkAbortSignal(signal: AbortSignal | null | undefined, source: string): LinkedSignal {
+export function linkAbortSignal(
+  signal: AbortSignal | null | undefined,
+  source: string,
+): LinkedSignal {
   const controller = new AbortController();
   let onAbort: (() => void) | null = null;
   if (signal) {
     if (signal.aborted) {
-      try { controller.abort(signal.reason); }
-      catch (error) { reportSwallow(error, source + '.abort'); }
+      try {
+        controller.abort(signal.reason);
+      } catch (error) {
+        reportSwallow(error, source + '.abort');
+      }
     } else {
       onAbort = () => {
-        try { controller.abort(signal.reason); }
-        catch (error) { reportSwallow(error, source + '.abort'); }
+        try {
+          controller.abort(signal.reason);
+        } catch (error) {
+          reportSwallow(error, source + '.abort');
+        }
       };
       signal.addEventListener('abort', onAbort, { once: true });
     }
@@ -98,8 +107,11 @@ export function linkAbortSignal(signal: AbortSignal | null | undefined, source: 
     controller,
     detach() {
       if (!signal || !onAbort) return;
-      try { signal.removeEventListener('abort', onAbort); }
-      catch (error) { reportSwallow(error, source + '.cleanup'); }
+      try {
+        signal.removeEventListener('abort', onAbort);
+      } catch (error) {
+        reportSwallow(error, source + '.cleanup');
+      }
       onAbort = null;
     },
   };

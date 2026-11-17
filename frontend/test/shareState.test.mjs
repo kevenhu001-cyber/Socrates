@@ -6,7 +6,9 @@ const { shareState, publishShareState } = await import('../src/ui/shareState.ts'
 test('share publisher shares visibility and link status with React subscribers', () => {
   shareState.__resetForTests();
   let notifications = 0;
-  const unsubscribe = shareState.subscribe(() => { notifications += 1; });
+  const unsubscribe = shareState.subscribe(() => {
+    notifications += 1;
+  });
 
   publishShareState({
     visibility: 'private',

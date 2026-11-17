@@ -37,11 +37,13 @@ test('rich composer serializes supported formatting to markdown', () => {
       },
       {
         type: 'taskList',
-        content: [{
-          type: 'taskItem',
-          attrs: { checked: true },
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Verified' }] }],
-        }],
+        content: [
+          {
+            type: 'taskItem',
+            attrs: { checked: true },
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Verified' }] }],
+          },
+        ],
       },
       {
         type: 'codeBlock',
@@ -60,13 +62,18 @@ test('rich composer serializes supported formatting to markdown', () => {
 test('selected workflow tokens stay visual and never enter the markdown payload', () => {
   const markdown = tiptapJSONToMarkdown({
     type: 'doc',
-    content: [{
-      type: 'paragraph',
-      content: [
-        { type: 'extensionToken', attrs: { key: 'research', title: 'Find sources', icon: '<svg />' } },
-        { type: 'text', text: 'Compare the evidence.' },
-      ],
-    }],
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            type: 'extensionToken',
+            attrs: { key: 'research', title: 'Find sources', icon: '<svg />' },
+          },
+          { type: 'text', text: 'Compare the evidence.' },
+        ],
+      },
+    ],
   });
 
   assert.equal(markdown, 'Compare the evidence\\.');
@@ -81,12 +88,22 @@ test('composer controller serves one live handle with per-surface drafts and tok
   let focused = false;
   const dispose = registerComposer('topic', {
     getMarkdown: () => value,
-    setMarkdown: (next) => { value = next; },
-    insertText: (next) => { value += next; },
-    clear: () => { value = ''; },
-    setExtensionToken: (next) => { token = next; },
+    setMarkdown: (next) => {
+      value = next;
+    },
+    insertText: (next) => {
+      value += next;
+    },
+    clear: () => {
+      value = '';
+    },
+    setExtensionToken: (next) => {
+      token = next;
+    },
     getExtensionToken: () => token,
-    focus: () => { focused = true; },
+    focus: () => {
+      focused = true;
+    },
     getSelection: () => ({ from: 2, to: 4 }),
     isVisible: () => true,
   });
@@ -138,10 +155,19 @@ test('replacement editors restore drafts while surface re-registration preserves
   let restores = 0;
   const handle = () => ({
     getMarkdown: () => value,
-    setMarkdown: (next) => { value = next; restores++; },
-    insertText: (next) => { value += next; },
-    clear: () => { value = ''; },
-    setExtensionToken: (next) => { token = next; },
+    setMarkdown: (next) => {
+      value = next;
+      restores++;
+    },
+    insertText: (next) => {
+      value += next;
+    },
+    clear: () => {
+      value = '';
+    },
+    setExtensionToken: (next) => {
+      token = next;
+    },
     getExtensionToken: () => token,
     focus: () => {},
     getSelection: () => ({ from: 0, to: 0 }),

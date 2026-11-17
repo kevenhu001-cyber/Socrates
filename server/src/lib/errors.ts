@@ -23,7 +23,13 @@ export class ApiError extends Error {
    *   client that replaying the request cannot help (a deterministic failure
    *   or a budget the server already spent), so it must not retry.
    */
-  constructor(status: number, code: string, message: string, detail?: unknown, retryable?: boolean) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    detail?: unknown,
+    retryable?: boolean,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;

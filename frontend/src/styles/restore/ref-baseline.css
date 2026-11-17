@@ -1,4 +1,3 @@
-
 /* ==========================================================================
    ref-baseline.css — ChatGPT reference baseline layer.
 
@@ -28,22 +27,20 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn:hover,
-#appShell .sidebar-nav-btn:focus-visible {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  outline: none;
-}
+  #appShell .sidebar-nav-btn:hover,
+  #appShell .sidebar-nav-btn:focus-visible {
+    color: var(--cg-text);
+    background: var(--cg-surface-hover);
+    outline: none;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-nav-btn.active,
-#appShell .sidebar-nav-btn[aria-current="page"] {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-}
+  #appShell .sidebar-nav-btn.active,
+  #appShell .sidebar-nav-btn[aria-current='page'] {
+    color: var(--cg-text);
+    background: var(--cg-surface-hover);
+  }
 }
 
 /* "New chat" keeps its primary-action pill on the home surface, matching the
@@ -51,19 +48,18 @@
    conversation, workspace page or exam is active, only that section's pill
    stays lit (React publishes .active / aria-current for those states). */
 @media (max-width: 768px) {
-#appShell #navNew.sidebar-nav-btn {
-  color: var(--cg-text);
-  background: transparent !important;
-}
+  #appShell #navNew.sidebar-nav-btn {
+    color: var(--cg-text);
+    background: transparent !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell
-  #navNew.sidebar-nav-btn {
-  background: var(--cg-surface-hover) !important;
-}
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell
+    #navNew.sidebar-nav-btn {
+    background: var(--cg-surface-hover) !important;
+  }
 }
 
 /* Reference section order: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / ….
@@ -71,54 +67,54 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    (index.html + SidebarNav.tsx BUTTONS) already follows the reference order,
    so re-pin it here. Later source order wins at equal specificity. */
 @media (max-width: 768px) {
-#appShell #navNew {
-  order: 1;
-}
-}
-@media (max-width: 768px) {
-#appShell #navLibrary {
-  order: 2;
-}
+  #appShell #navNew {
+    order: 1;
+  }
 }
 @media (max-width: 768px) {
-#appShell #navProjects {
-  order: 3;
-}
-}
-@media (max-width: 768px) {
-#appShell #navScheduled {
-  order: 4;
-}
+  #appShell #navLibrary {
+    order: 2;
+  }
 }
 @media (max-width: 768px) {
-#appShell #navPlugins {
-  order: 5;
-}
-}
-@media (max-width: 768px) {
-#appShell #navMore {
-  order: 6;
-}
+  #appShell #navProjects {
+    order: 3;
+  }
 }
 @media (max-width: 768px) {
-#appShell #navExam {
-  order: 7;
-}
+  #appShell #navScheduled {
+    order: 4;
+  }
 }
 @media (max-width: 768px) {
-#appShell #navSkills {
-  order: 8;
+  #appShell #navPlugins {
+    order: 5;
+  }
 }
+@media (max-width: 768px) {
+  #appShell #navMore {
+    order: 6;
+  }
+}
+@media (max-width: 768px) {
+  #appShell #navExam {
+    order: 7;
+  }
+}
+@media (max-width: 768px) {
+  #appShell #navSkills {
+    order: 8;
+  }
 }
 
 /* Sidebar nav is a flat list: no hairline divider between 项目 and 定时任务.
    styles.css adds a two-tier separator on [data-nav="scheduled"]; neutralize
    it here so all six rows share the same rhythm. */
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn[data-nav="scheduled"] {
-  margin-top: 0;
-  border-top: 0;
-}
+  #appShell .sidebar-nav-btn[data-nav='scheduled'] {
+    margin-top: 0;
+    border-top: 0;
+  }
 }
 
 /* Recents section header + history rows follow the reference's quiet list. */
@@ -138,23 +134,17 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    reference pins down (row rhythm + composer breathing room).
    -------------------------------------------------------------------------- */
 @media (min-width: 769px) {
-#appShell #topicSetup .topic-title.greeting {
-  font-weight: var(--ui-font-weight-regular);
-  letter-spacing: -0.01em;
-  /* text-wrap: balance keeps multi-line greeting headings from leaving a
+  #appShell #topicSetup .topic-title.greeting {
+    font-weight: var(--ui-font-weight-regular);
+    letter-spacing: -0.01em;
+    /* text-wrap: balance keeps multi-line greeting headings from leaving a
      short orphan on the second line. Chrome < 114 falls back to the
      default wrapping, which is acceptable — the heading still wraps
      cleanly because the container width is fixed. */
-  overflow-wrap: break-word;
-  text-wrap: balance;
+    overflow-wrap: break-word;
+    text-wrap: balance;
+  }
 }
-}
-
-
-
-
-
-
 
 /* --------------------------------------------------------------------------
    4. Light-mode paint repairs.
@@ -163,69 +153,61 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    of them is re-pointed at the theme tokens when [data-mode="light"].
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-[data-mode="light"] #appShell .sidebar-nav-btn {
-  color: var(--ui-text-primary) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell .sidebar-nav-btn:hover,
-[data-mode="light"] #appShell .sidebar-nav-btn:focus-visible {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-}
+  [data-mode='light'] #appShell .sidebar-nav-btn {
+    color: var(--ui-text-primary) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .sidebar-nav-btn.active,
-[data-mode="light"] #appShell .sidebar-nav-btn[aria-current="page"] {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface-hover) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell #navNew.sidebar-nav-btn {
-  color: var(--cg-text) !important;
-}
+  [data-mode='light'] #appShell .sidebar-nav-btn:hover,
+  [data-mode='light'] #appShell .sidebar-nav-btn:focus-visible {
+    color: var(--cg-text) !important;
+    background: var(--cg-surface-hover) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .recent-item-text {
-  color: var(--ui-text-primary) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell .recents-title {
-  color: var(--cg-text-muted) !important;
-}
+  [data-mode='light'] #appShell .sidebar-nav-btn.active,
+  [data-mode='light'] #appShell .sidebar-nav-btn[aria-current='page'] {
+    color: var(--cg-text) !important;
+    background: var(--cg-surface-hover) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .sidebar-footer {
-  border-top-color: var(--cg-border) !important;
-}
+  [data-mode='light'] #appShell #navNew.sidebar-nav-btn {
+    color: var(--cg-text) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .sidebar-footer .user-plan {
-  color: var(--cg-text-muted) !important;
+  [data-mode='light'] #appShell .recent-item-text {
+    color: var(--ui-text-primary) !important;
+  }
 }
+
+@media (max-width: 768px) {
+  [data-mode='light'] #appShell .recents-title {
+    color: var(--cg-text-muted) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-mode='light'] #appShell .sidebar-footer {
+    border-top-color: var(--cg-border) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  [data-mode='light'] #appShell .sidebar-footer .user-plan {
+    color: var(--cg-text-muted) !important;
+  }
 }
 
 @media (min-width: 769px) {
-
-[data-mode="light"] #appShell #topicSetup .topic-title.greeting {
-  color: var(--cg-text) !important;
-}
+  [data-mode='light'] #appShell #topicSetup .topic-title.greeting {
+    color: var(--cg-text) !important;
+  }
 }
 
 /* Reference send button: solid dark circle in light mode. The
@@ -241,14 +223,8 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    which reads as no edge at all against the white canvas. Restore a
    hairline plus a clearly stronger focus ring in light mode only. */
 
-
-
-
-
-
-
 /* Workspace pages: never force the near-black canvas in light mode. */
-[data-mode="light"] body.workspace-active #appShell .plugins-panel.main-page {
+[data-mode='light'] body.workspace-active #appShell .plugins-panel.main-page {
   background: transparent !important;
 }
 
@@ -259,11 +235,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    is re-pointed at the theme tokens here. Dark mode is untouched.
    -------------------------------------------------------------------------- */
 
-[data-mode="light"] #appShell .workspace-page-head h1 {
+[data-mode='light'] #appShell .workspace-page-head h1 {
   color: var(--cg-text) !important;
 }
 
-[data-mode="light"] #appShell .workspace-page-head p {
+[data-mode='light'] #appShell .workspace-page-head p {
   color: var(--cg-text-muted) !important;
 }
 
@@ -278,8 +254,6 @@ body.workspace-active #appShell .main-page {
   margin-inline: auto;
 }
 
-
-
 /* --------------------------------------------------------------------------
    7. Home suggestions — REMOVED
 
@@ -292,37 +266,33 @@ body.workspace-active #appShell .main-page {
    still reference them in design docs.
    -------------------------------------------------------------------------- */
 
-
 /* --------------------------------------------------------------------------
    8. Unified Composer & Top Mode Pills Refinement
    -------------------------------------------------------------------------- */
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .top-mode-tabs {
-  background: #f3f4f6 !important;
-  border: 1px solid rgba(0, 0, 0, 0.04) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle {
-  border-radius: 9999px !important;
-  padding: 5px 16px !important;
-  font-size: 14px !important;
-  font-weight: var(--ui-font-weight-medium) !important;
-  color: #6b7280 !important;
-}
+  [data-mode='light'] #appShell .top-mode-tabs {
+    background: #f3f4f6 !important;
+    border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell .top-mode-tabs .app-mode-toggle.active {
-  background: #ffffff !important;
-  color: #111827 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  [data-mode='light'] #appShell .top-mode-tabs .app-mode-toggle {
+    border-radius: 9999px !important;
+    padding: 5px 16px !important;
+    font-size: 14px !important;
+    font-weight: var(--ui-font-weight-medium) !important;
+    color: #6b7280 !important;
+  }
 }
+
+@media (max-width: 768px) {
+  [data-mode='light'] #appShell .top-mode-tabs .app-mode-toggle.active {
+    background: #ffffff !important;
+    color: #111827 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -384,7 +354,6 @@ body.workspace-active #appShell .main-page {
 
   /* Home: one optical group centred in the pane below the 44px top bar. */
 
-
   #appShell #topicSetup > .topic-title,
   #appShell #topicSetup > .topic-sub,
   #appShell #topicSetup > .mobile-starter-prompts,
@@ -392,7 +361,6 @@ body.workspace-active #appShell .main-page {
     top: 0;
     left: 0;
   }
-
 
   /* The two edge actions are one optical pair: equal circles on the same
      52px midline. The attach action uses a quiet raised surface while the
@@ -419,12 +387,18 @@ body.workspace-active #appShell .main-page {
   /* While the plugins panel is open, keep #mainContent's overflow visible so
      fixed page chrome is not clipped. #pluginsPanel itself is the React-owned
      scroll container. */
-  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent {
+  :where(:root[data-plugins-panel-open])
+    body.workspace-active:not(#_n):not(._n)
+    #appShell
+    #mainContent {
     overflow: visible !important;
   }
 
   /* P_has-invalidation — see ui/layoutStateMirror.js. */
-  :where(:root[data-plugins-panel-open]) body.workspace-active:not(#_n):not(._n) #appShell #mainContent {
+  :where(:root[data-plugins-panel-open])
+    body.workspace-active:not(#_n):not(._n)
+    #appShell
+    #mainContent {
     position: relative !important;
     z-index: 10 !important;
   }
@@ -501,7 +475,6 @@ body.workspace-active #appShell .main-page {
    removed 2026-10-10. */
 
 @media (min-width: 769px) {
-
   /* Sidebar search + Knowledge / Mistakes actions stay in normal flow
      directly above the Recents list (最近会话), not floating in the
      header. Keep the full-width filter input plus the two icon buttons
@@ -529,8 +502,6 @@ body.workspace-active #appShell .main-page {
   #appShell .plugin-directory-heading h2 {
     line-height: 36px !important;
   }
-
-
 
   #appShell #libraryPanel .workspace-page-head {
     margin-bottom: 44px !important;
@@ -583,14 +554,14 @@ body.workspace-active #appShell .main-page {
   /* Mobile header controls: the hardcoded dark-on-light palette only
      works on the black phone canvas. In light mode invert the circle
      buttons and give the icon-only actions a dark glyph. */
-  [data-mode="light"] #appShell #sidebarOpenBtn {
+  [data-mode='light'] #appShell #sidebarOpenBtn {
     border-color: rgb(0 0 0 / 10%) !important;
     background: hsl(0 0% 100% / 96%) !important;
     color: hsl(0 0% 14%) !important;
     box-shadow: 0 1px 3px rgb(0 0 0 / 8%) !important;
   }
 
-  [data-mode="light"] #appShell #sidebarOpenBtn:hover {
+  [data-mode='light'] #appShell #sidebarOpenBtn:hover {
     background: hsl(0 0% 93%) !important;
     color: hsl(0 0% 4%) !important;
   }
@@ -604,25 +575,24 @@ body.workspace-active #appShell .main-page {
    and this block sits last so it also wins ties. Hover keeps its wash.
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-#appShell#appShell .sidebar-nav-btn.active,
-#appShell#appShell .sidebar-nav-btn[aria-current="page"],
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell
-  #navNew.sidebar-nav-btn {
-  background: transparent !important;
-}
-#appShell#appShell .sidebar-nav-btn,
-#appShell#appShell #navNew.sidebar-nav-btn {
-  background: transparent !important;
-}
+  #appShell#appShell .sidebar-nav-btn.active,
+  #appShell#appShell .sidebar-nav-btn[aria-current='page'],
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell
+    #navNew.sidebar-nav-btn {
+    background: transparent !important;
+  }
+  #appShell#appShell .sidebar-nav-btn,
+  #appShell#appShell #navNew.sidebar-nav-btn {
+    background: transparent !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell#appShell .sidebar-nav-btn:hover,
-#appShell#appShell .sidebar-nav-btn:focus-visible {
-  background: var(--cg-surface-hover) !important;
-}
+  #appShell#appShell .sidebar-nav-btn:hover,
+  #appShell#appShell .sidebar-nav-btn:focus-visible {
+    background: var(--cg-surface-hover) !important;
+  }
 }
 
 /* #navNew carries an extra id in its transparent resting rule, so the
@@ -631,16 +601,16 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    row. The home-state selector needs the same body:not prefix as its
    transparent counterpart to win that tie too. */
 @media (max-width: 768px) {
-#appShell#appShell #navNew.sidebar-nav-btn:hover,
-#appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell
-  #navNew.sidebar-nav-btn:hover,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell
-  #navNew.sidebar-nav-btn:focus-visible {
-  background: var(--cg-surface-hover) !important;
-}
+  #appShell#appShell #navNew.sidebar-nav-btn:hover,
+  #appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell
+    #navNew.sidebar-nav-btn:hover,
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell
+    #navNew.sidebar-nav-btn:focus-visible {
+    background: var(--cg-surface-hover) !important;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -653,12 +623,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    and plugin-chip drafts keep their two-row expansion below.
    -------------------------------------------------------------------------- */
 @media (min-width: 769px) {
-
   /* Keep the active chat shell on the same content-column edge as the topic
      composer. The bar remains transparent; only its vertical padding is
      reserved for the safe area and keyboard inset. */
-  body[data-conversation-active="true"]:not(.exam-active):not(.workspace-active)
-    #appShell#appShell #chatInputBar {
+  body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
+    #appShell#appShell
+    #chatInputBar {
     padding-inline: 0 !important;
     background: transparent !important;
   }
@@ -696,36 +666,33 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    (grey rail, white canvas card), which a same-colour !important fill here
    would flatten. */
 @media (max-width: 768px) {
-#appShell .main-content,
-#appShell .main-bg {
-  background: var(--cg-page) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-#appShell .top-bar {
-  background: var(--cg-page) !important;
-}
+  #appShell .main-content,
+  #appShell .main-bg {
+    background: var(--cg-page) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle {
-  color: var(--cg-text-muted) !important;
-  border-radius: 999px !important;
-  font-family: var(--cg-font);
-  font-weight: var(--ui-font-weight-regular) !important;
-}
+  #appShell .top-bar {
+    background: var(--cg-page) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .top-mode-tabs .app-mode-toggle.active {
-  color: var(--cg-text) !important;
-  background: var(--cg-surface) !important;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 24%) !important;
+  #appShell .top-mode-tabs .app-mode-toggle {
+    color: var(--cg-text-muted) !important;
+    border-radius: 999px !important;
+    font-family: var(--cg-font);
+    font-weight: var(--ui-font-weight-regular) !important;
+  }
 }
+
+@media (max-width: 768px) {
+  #appShell .top-mode-tabs .app-mode-toggle.active {
+    color: var(--cg-text) !important;
+    background: var(--cg-surface) !important;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 24%) !important;
+  }
 }
 
 #appShell .workspace-search-field,
@@ -838,9 +805,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
 }
 
 @media (min-width: 769px) {
-
-
-
   /* .scheduled-directory dropped: it is not a chat-column surface and now
      shares the 1040px directory column with the plugin and site pages. */
   body.workspace-active #appShell .main-page:not(#sitesPanel) {
@@ -885,7 +849,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   }
 }
 
-[data-mode="light"] #appShell {
+[data-mode='light'] #appShell {
   --ref-menu: #fff;
   --ref-active: #e5e5e5;
   --ref-control: #f1f1ef;
@@ -893,10 +857,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   --ref-muted: #757575;
 }
 
-[data-mode="light"] #appShell .plugin-directory-row,
-[data-mode="light"] #appShell .project-row,
-[data-mode="light"] #appShell .scheduled-recommendation,
-[data-mode="light"] #appShell .task-row {
+[data-mode='light'] #appShell .plugin-directory-row,
+[data-mode='light'] #appShell .project-row,
+[data-mode='light'] #appShell .scheduled-recommendation,
+[data-mode='light'] #appShell .task-row {
   border-bottom-color: rgb(0 0 0 / 8%);
 }
 
@@ -934,7 +898,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   scrollbar-width: none;
 }
 
-#appShell .projects-filter-tabs::-webkit-scrollbar { display: none; }
+#appShell .projects-filter-tabs::-webkit-scrollbar {
+  display: none;
+}
 
 #appShell .projects-filter-tabs button {
   flex: 0 0 auto !important;
@@ -960,7 +926,7 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
   stroke-width: 1.8;
 }
 
-[data-mode="light"] #appShell .projects-filter-tabs {
+[data-mode='light'] #appShell .projects-filter-tabs {
   border-bottom-color: rgb(0 0 0 / 10%) !important;
 }
 
@@ -1011,5 +977,4 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
     margin: 0 !important;
     padding: 14px 0 72px !important;
   }
-
 }

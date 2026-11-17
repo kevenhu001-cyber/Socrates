@@ -6,7 +6,14 @@ import { marked } from 'marked';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+for (const key of [
+  'Element',
+  'Node',
+  'NodeFilter',
+  'DocumentFragment',
+  'HTMLElement',
+  'HTMLTemplateElement',
+]) {
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 

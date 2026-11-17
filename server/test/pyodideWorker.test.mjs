@@ -12,9 +12,15 @@ test('Python worker execution and streamed diagnostics', { timeout: 60_000 }, as
   // Core Python ships in the npm package. Optional wheels/fonts must not
   // make this regression suite depend on network access or a warm cache.
   const worker = new Worker(source, {
-    execArgv: ['--import', 'tsx', '--import', 'data:text/javascript,' + encodeURIComponent(
-      'globalThis.fetch = async () => { throw new Error("network disabled in worker test"); };',
-    )],
+    execArgv: [
+      '--import',
+      'tsx',
+      '--import',
+      'data:text/javascript,' +
+        encodeURIComponent(
+          'globalThis.fetch = async () => { throw new Error("network disabled in worker test"); };',
+        ),
+    ],
     env: { ...process.env, EXEC_CJK_FONT_DIR: path.join(scratchDir, 'fonts') },
   });
   t.after(async () => {
@@ -30,7 +36,10 @@ test('Python worker execution and streamed diagnostics', { timeout: 60_000 }, as
     const id = String(++nextId);
     const progress = [];
     const result = await new Promise((resolve, reject) => {
-      const onError = (error) => { cleanup(); reject(error); };
+      const onError = (error) => {
+        cleanup();
+        reject(error);
+      };
       const onMessage = (message) => {
         if (message.id !== id) return;
         if (message.type === 'result') {
@@ -51,25 +60,47 @@ test('Python worker execution and streamed diagnostics', { timeout: 60_000 }, as
     return { ...result, progress };
   }
 
-  await t.test('live output contains Python text, not stream labels, across reused runs', async () => {
-    for (const value of ['first output', 'second output']) {
-      const result = await run(`import sys\nprint(${JSON.stringify(value)})\nprint('diagnostic', file=sys.stderr)`);
-      assert.equal(result.status, 'completed');
-      assert.match(result.stdout, new RegExp(value));
-      assert.equal(result.stderr, 'diagnostic\n');
-      assert.equal(result.progress.filter(e => e.type === 'stdout').map(e => e.chunk).join(''), result.stdout);
-      assert.equal(result.progress.filter(e => e.type === 'stderr').map(e => e.chunk).join(''), result.stderr);
-    }
-  });
+  await t.test(
+    'live output contains Python text, not stream labels, across reused runs',
+    async () => {
+      for (const value of ['first output', 'second output']) {
+        const result = await run(
+          `import sys\nprint(${JSON.stringify(value)})\nprint('diagnostic', file=sys.stderr)`,
+        );
+        assert.equal(result.status, 'completed');
+        assert.match(result.stdout, new RegExp(value));
+        assert.equal(result.stderr, 'diagnostic\n');
+        assert.equal(
+          result.progress
+            .filter((e) => e.type === 'stdout')
+            .map((e) => e.chunk)
+            .join(''),
+          result.stdout,
+        );
+        assert.equal(
+          result.progress
+            .filter((e) => e.type === 'stderr')
+            .map((e) => e.chunk)
+            .join(''),
+          result.stderr,
+        );
+      }
+    },
+  );
 
-  await t.test('module-level future imports remain valid and tracebacks use original source lines', async () => {
-    const result = await run('from __future__ import annotations\nprint("future import works")\nraise ValueError("bad input")');
-    assert.equal(result.status, 'failed');
-    assert.equal(result.errorMessage, 'ValueError: bad input');
-    assert.match(result.stdout, /future import works/);
-    assert.match(result.stderr, /File "<socrates>", line 3/);
-    assert.match(result.stderr, /raise ValueError\("bad input"\)/);
-  });
+  await t.test(
+    'module-level future imports remain valid and tracebacks use original source lines',
+    async () => {
+      const result = await run(
+        'from __future__ import annotations\nprint("future import works")\nraise ValueError("bad input")',
+      );
+      assert.equal(result.status, 'failed');
+      assert.equal(result.errorMessage, 'ValueError: bad input');
+      assert.match(result.stdout, /future import works/);
+      assert.match(result.stderr, /File "<socrates>", line 3/);
+      assert.match(result.stderr, /raise ValueError\("bad input"\)/);
+    },
+  );
 
   await t.test('nonzero sys.exit is a failure, not a successful execution', async () => {
     const result = await run('import sys\nsys.exit(7)');
@@ -79,7 +110,9 @@ test('Python worker execution and streamed diagnostics', { timeout: 60_000 }, as
 
   await t.test('clean exits and string exit messages retain Python semantics', async () => {
     for (const statement of ['sys.exit()', 'sys.exit(0)', 'sys.exit(False)']) {
-      const result = await run(`import sys\nprint('before exit')\n${statement}\nprint('unreachable')`);
+      const result = await run(
+        `import sys\nprint('before exit')\n${statement}\nprint('unreachable')`,
+      );
       assert.equal(result.status, 'completed');
       assert.equal(result.exitCode, 0);
       assert.match(result.stdout, /before exit/);
@@ -91,14 +124,17 @@ test('Python worker execution and streamed diagnostics', { timeout: 60_000 }, as
     assert.equal(result.stderr, 'cannot continue\n');
   });
 
-  await t.test('syntax errors retain source positions and do not poison the next execution', async () => {
-    const failure = await run('answer = 1\nif True\n    print(answer)');
-    assert.equal(failure.status, 'failed');
-    assert.equal(failure.errorCode, 'syntax_error');
-    assert.match(failure.stderr, /line 2/);
-    const success = await run('print("worker recovered")');
-    assert.equal(success.status, 'completed');
-    assert.match(success.stdout, /worker recovered/);
-    assert.equal(success.stderr, '');
-  });
+  await t.test(
+    'syntax errors retain source positions and do not poison the next execution',
+    async () => {
+      const failure = await run('answer = 1\nif True\n    print(answer)');
+      assert.equal(failure.status, 'failed');
+      assert.equal(failure.errorCode, 'syntax_error');
+      assert.match(failure.stderr, /line 2/);
+      const success = await run('print("worker recovered")');
+      assert.equal(success.status, 'completed');
+      assert.match(success.stdout, /worker recovered/);
+      assert.equal(success.stderr, '');
+    },
+  );
 });

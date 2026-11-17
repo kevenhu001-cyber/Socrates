@@ -67,8 +67,9 @@ export const sessionListState = createImmutableBridge<SessionListSnapshot, Sessi
 
 export function publishSessionListState(update: SessionListUpdate): void {
   const currentRows = sessionListState.getSnapshot().sessions;
-  const sameRows = update.sessions.length === currentRows.length
-    && update.sessions.every((row, index) => row === currentRows[index]);
+  const sameRows =
+    update.sessions.length === currentRows.length &&
+    update.sessions.every((row, index) => row === currentRows[index]);
   const sessions = sameRows ? currentRows : Object.freeze([...update.sessions]);
   sessionListState.dispatch({ ...update, sessions });
 }

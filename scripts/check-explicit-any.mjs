@@ -8,7 +8,10 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const requireFrontend = createRequire(path.join(root, 'frontend', 'package.json'));
 const ts = requireFrontend('typescript');
-const baselinePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'explicit-any.baseline.json');
+const baselinePath = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  'explicit-any.baseline.json',
+);
 const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
 const packageRoots = ['frontend/src', 'server/src'];
 for (const entry of await readdir(path.join(root, 'packages'), { withFileTypes: true })) {
@@ -57,7 +60,9 @@ for (const filePath of files.sort()) {
 
 if (process.argv.includes('--update')) {
   if (findings.length > baseline.count) {
-    console.error(`Refusing to raise explicit-any baseline (${baseline.count} → ${findings.length}).`);
+    console.error(
+      `Refusing to raise explicit-any baseline (${baseline.count} → ${findings.length}).`,
+    );
     if (findings.length) console.error(findings.join('\n'));
     process.exit(1);
   }

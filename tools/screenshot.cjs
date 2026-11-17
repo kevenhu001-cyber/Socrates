@@ -7,21 +7,21 @@ const fs = require('fs');
 const { chromium } = require(path.join(__dirname, '..', 'node_modules', 'playwright'));
 
 const BASE = process.env.BASE || 'http://127.0.0.1:4173';
-const OUT  = path.join(__dirname, 'site-screenshots');
+const OUT = path.join(__dirname, 'site-screenshots');
 fs.mkdirSync(OUT, { recursive: true });
 
 const ROUTES = [
-  ['home',     '/index.html'],
-  ['product',  '/product.html'],
-  ['pricing',  '/pricing.html'],
-  ['guide',    '/guide.html'],
-  ['apikeys',  '/api-keys.html'],
-  ['account',  '/account.html'],
+  ['home', '/index.html'],
+  ['product', '/product.html'],
+  ['pricing', '/pricing.html'],
+  ['guide', '/guide.html'],
+  ['apikeys', '/api-keys.html'],
+  ['account', '/account.html'],
 ];
 
 const VIEWPORTS = [
   ['desktop', 1280, 800],
-  ['mobile',  390,  844],
+  ['mobile', 390, 844],
 ];
 
 (async () => {
@@ -29,7 +29,10 @@ const VIEWPORTS = [
   try {
     for (const [name, route] of ROUTES) {
       for (const [vname, w, h] of VIEWPORTS) {
-        const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
+        const ctx = await browser.newContext({
+          viewport: { width: w, height: h },
+          deviceScaleFactor: 1,
+        });
         const page = await ctx.newPage();
         const url = BASE + route;
         try {

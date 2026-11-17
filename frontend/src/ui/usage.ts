@@ -40,11 +40,13 @@ export function loadUsagePeriod(period: UsagePeriod): Promise<void> {
   return Promise.all([
     apiFetch<UsageDailyResponse>(`/api/usage/daily?days=${days}`),
     apiFetch<UsageLimits>('/api/usage/limits'),
-  ]).then(([data, limits]) => {
-    if (revision !== requestRevision) return;
-    publishUsageData(Array.isArray(data.entries) ? data.entries : [], limits, period);
-  }).catch(() => {
-    if (revision !== requestRevision) return;
-    publishUsageError(period, period === 'month' ? 'usage.failedGeneric' : 'usage.failed');
-  });
+  ])
+    .then(([data, limits]) => {
+      if (revision !== requestRevision) return;
+      publishUsageData(Array.isArray(data.entries) ? data.entries : [], limits, period);
+    })
+    .catch(() => {
+      if (revision !== requestRevision) return;
+      publishUsageError(period, period === 'month' ? 'usage.failedGeneric' : 'usage.failed');
+    });
 }

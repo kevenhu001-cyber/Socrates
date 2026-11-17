@@ -14,7 +14,9 @@ function harness(stepMs = 16) {
   let queued = null;
   let delayed = null;
   const now = () => nowMs;
-  const raf = (cb) => { queued = cb; };
+  const raf = (cb) => {
+    queued = cb;
+  };
   function frame() {
     const cb = queued;
     queued = null;
@@ -24,21 +26,34 @@ function harness(stepMs = 16) {
     for (let i = 0; i < frames; i++) {
       nowMs += stepMs;
       if (!queued && delayed && nowMs >= delayed.at) {
-        const cb = delayed.cb; delayed = null; cb();
+        const cb = delayed.cb;
+        delayed = null;
+        cb();
       }
       frame();
     }
   }
   return {
-    now, raf, run,
+    now,
+    raf,
+    run,
     delay(cb, ms) {
-      const item = { cb, at: nowMs + ms }; delayed = item;
-      return () => { if (delayed === item) delayed = null; };
+      const item = { cb, at: nowMs + ms };
+      delayed = item;
+      return () => {
+        if (delayed === item) delayed = null;
+      };
     },
-    advance(ms) { nowMs += ms; },
+    advance(ms) {
+      nowMs += ms;
+    },
     frame,
-    get hasQueued() { return queued !== null; },
-    get time() { return nowMs; },
+    get hasQueued() {
+      return queued !== null;
+    },
+    get time() {
+      return nowMs;
+    },
   };
 }
 
@@ -48,7 +63,8 @@ test('push does not paint synchronously; frames paint the visible prefix', () =>
   const player = createStreamPlayer({
     onFrame: (text, f) => frames.push({ text, ...f }),
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('Hello, world!');
   // No paint until a frame runs.
@@ -66,7 +82,8 @@ test('later bursts reveal gradually across frames', () => {
   const player = createStreamPlayer({
     onFrame: (text) => frames.push(text.length),
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('Opening.');
   h.run(1);
@@ -89,7 +106,10 @@ test('later bursts reveal gradually across frames', () => {
 test('the first batch is fully visible on the first frame without ending playback', () => {
   const h = harness();
   const frames = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
     onFrame: (text) => frames.push(text),
   });
   const first = '第一段正文。'.repeat(80);
@@ -110,9 +130,17 @@ test('hidden tabs catch up without animation frames and remove their listener at
   let visibilityChanged;
   let removed = 0;
   const frames = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
     isHidden: () => hidden,
-    onVisibilityChange(cb) { visibilityChanged = cb; return () => { removed++; }; },
+    onVisibilityChange(cb) {
+      visibilityChanged = cb;
+      return () => {
+        removed++;
+      };
+    },
     onFrame: (text) => frames.push(text),
   });
   player.push('开头');
@@ -140,9 +168,18 @@ test('a player resumed after a tool handoff restores its visibility subscription
   let visibilityChanged;
   let subscribed = 0;
   let removed = 0;
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
     isHidden: () => hidden,
-    onVisibilityChange(cb) { subscribed++; visibilityChanged = cb; return () => { removed++; }; },
+    onVisibilityChange(cb) {
+      subscribed++;
+      visibilityChanged = cb;
+      return () => {
+        removed++;
+      };
+    },
     onFrame() {},
   });
   player.push('第一段');
@@ -164,7 +201,8 @@ test('upstream stall drives a starved state change once buffer drains', () => {
     onFrame: () => {},
     onStateChange: (s) => states.push(s),
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
     config: { starveAfterMs: 100 },
   });
   player.push('short');
@@ -176,9 +214,12 @@ test('a new push after a stall revives the loop', () => {
   const h = harness();
   let lastText = '';
   const player = createStreamPlayer({
-    onFrame: (text) => { lastText = text; },
+    onFrame: (text) => {
+      lastText = text;
+    },
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
     config: { starveAfterMs: 100 },
   });
   player.push('AAAA');
@@ -196,10 +237,15 @@ test('beginDrain flushes the remaining buffer then fires onDone once', () => {
   let doneCount = 0;
   let lastText = '';
   const player = createStreamPlayer({
-    onFrame: (text) => { lastText = text; },
-    onDone: () => { doneCount += 1; },
+    onFrame: (text) => {
+      lastText = text;
+    },
+    onDone: () => {
+      doneCount += 1;
+    },
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('The quick brown fox');
   h.run(2); // partial playback
@@ -217,10 +263,15 @@ test('flushNow makes everything visible immediately and fires onDone', () => {
   let doneCount = 0;
   let lastText = '';
   const player = createStreamPlayer({
-    onFrame: (text) => { lastText = text; },
-    onDone: () => { doneCount += 1; },
+    onFrame: (text) => {
+      lastText = text;
+    },
+    onDone: () => {
+      doneCount += 1;
+    },
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('immediate content here');
   player.flushNow();
@@ -238,9 +289,13 @@ test('DONE flushes a large pending answer once and invalidates its queued frame'
   const frames = [];
   let done = 0;
   const player = createStreamPlayer({
-    now: h.now, raf: h.raf, delay: h.delay,
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
     onFrame: (visible) => frames.push(visible),
-    onDone: () => { done++; },
+    onDone: () => {
+      done++;
+    },
   });
   player.push(text);
   h.run(1);
@@ -258,7 +313,8 @@ test('dispose drops stale queued frames (no paint into a torn-down turn)', () =>
   const player = createStreamPlayer({
     onFrame: (text) => frames.push(text),
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('should not paint after dispose');
   // A frame is queued but not yet run.
@@ -273,7 +329,8 @@ test('playedLen never exceeds totalLen', () => {
   const player = createStreamPlayer({
     onFrame: () => {},
     now: h.now,
-    raf: h.raf, delay: h.delay,
+    raf: h.raf,
+    delay: h.delay,
   });
   player.push('a'.repeat(300));
   for (let i = 0; i < 500; i++) {
@@ -315,16 +372,28 @@ function playScript(events, untilMs = 15_000, frameMs = 16) {
 function fluctuatingScript() {
   const events = [];
   let total = 0;
-  for (let i = 0; i < 10; i += 1) { total += 2; events.push({ t: 600 * (i + 1), total }); }
-  for (let i = 0; i < 20; i += 1) { total += 30; events.push({ t: 6000 + 100 * (i + 1), total }); }
-  for (let i = 0; i < 10; i += 1) { total += 2; events.push({ t: 8100 + 600 * (i + 1), total }); }
+  for (let i = 0; i < 10; i += 1) {
+    total += 2;
+    events.push({ t: 600 * (i + 1), total });
+  }
+  for (let i = 0; i < 20; i += 1) {
+    total += 30;
+    events.push({ t: 6000 + 100 * (i + 1), total });
+  }
+  for (let i = 0; i < 10; i += 1) {
+    total += 2;
+    events.push({ t: 8100 + 600 * (i + 1), total });
+  }
   return { events, total };
 }
 
 test('a fluctuating upstream is revealed in full (no dropped characters)', () => {
   const { events, total } = fluctuatingScript();
   const rows = playScript(events);
-  assert.equal(rows.reduce((s, r) => s + r.revealed, 0), total);
+  assert.equal(
+    rows.reduce((s, r) => s + r.revealed, 0),
+    total,
+  );
 });
 
 test('the reveal rate ramps rather than snapping when upstream speeds up', () => {
@@ -338,7 +407,9 @@ test('the reveal rate ramps rather than snapping when upstream speeds up', () =>
   const distinct = new Set(transition.map((r) => Math.round(r.cps / 10))).size;
   assert.ok(distinct >= 3, `expected intermediate rates, saw ${distinct} distinct buckets`);
   /* No single frame may leap the full base→max range: that is the stutter. */
-  const maxJump = Math.max(...transition.slice(1).map((r, i) => Math.abs(r.cps - transition[i].cps)));
+  const maxJump = Math.max(
+    ...transition.slice(1).map((r, i) => Math.abs(r.cps - transition[i].cps)),
+  );
   assert.ok(
     maxJump < (DEFAULT_PLAYBACK_CONFIG.maxCps - DEFAULT_PLAYBACK_CONFIG.baseCps) * 0.5,
     `cps jumped ${maxJump.toFixed(0)} in one frame`,
@@ -361,14 +432,21 @@ test('alpha=0 restores the legacy buffer-depth cadence', () => {
   const { events } = fluctuatingScript();
   const rows = playScript(events, 5_000);
   const rates = new Set(rows.map((r) => Math.round(r.cps)));
-  assert.ok(rates.size <= 2, `depth-only cadence should be near-constant, saw ${rates.size} values`);
+  assert.ok(
+    rates.size <= 2,
+    `depth-only cadence should be near-constant, saw ${rates.size} values`,
+  );
 });
 
 test('empty buffers park animation frames and use one delayed starvation check', () => {
   const h = harness();
   const states = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
-    onFrame() {}, onStateChange: (state) => states.push(state),
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
+    onFrame() {},
+    onStateChange: (state) => states.push(state),
   });
   player.push('A');
   h.run(2);
@@ -381,7 +459,10 @@ test('empty buffers park animation frames and use one delayed starvation check',
 test('a burst after a long network stall starts smoothly without accumulated idle credit', () => {
   const h = harness();
   const frames = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
     onFrame: (text) => frames.push(text),
   });
   player.push('A');
@@ -397,8 +478,12 @@ test('a burst after a long network stall starts smoothly without accumulated idl
 test('dispose cancels the delayed idle wake', () => {
   const h = harness();
   const states = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay,
-    onFrame() {}, onStateChange: (state) => states.push(state),
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
+    onFrame() {},
+    onStateChange: (state) => states.push(state),
   });
   player.push('A');
   h.run(2);
@@ -429,8 +514,14 @@ test('default visibility subscription is removed on disposal and reinstalled for
       listeners.delete(listener);
     },
   };
-  const h = harness(), frames = [];
-  const player = createStreamPlayer({ now: h.now, raf: h.raf, delay: h.delay, onFrame: (text) => frames.push(text) });
+  const h = harness(),
+    frames = [];
+  const player = createStreamPlayer({
+    now: h.now,
+    raf: h.raf,
+    delay: h.delay,
+    onFrame: (text) => frames.push(text),
+  });
   assert.equal(listeners.size, 1);
   player.push('First');
   player.dispose();

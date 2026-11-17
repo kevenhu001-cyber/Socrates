@@ -10,11 +10,15 @@ test('a fence closed on its own line covers the whole line', () => {
 });
 
 test('a closing tag glued to the closing fence stays outside the code', () => {
-  const source = '<practice><problem>Run:\n```py\nprint(1)\n```</problem><solution>ok</solution></practice>';
+  const source =
+    '<practice><problem>Run:\n```py\nprint(1)\n```</problem><solution>ok</solution></practice>';
   const [range] = markdownCodeRanges(source);
   assert.equal(source.slice(range.start, range.end), '```py\nprint(1)\n```');
   const segments = splitScaffolds(source);
-  assert.deepEqual(segments.map((segment) => segment.kind), ['scaffold']);
+  assert.deepEqual(
+    segments.map((segment) => segment.kind),
+    ['scaffold'],
+  );
   const block = segments[0].kind === 'scaffold' ? segments[0].block : null;
   assert.equal(block?.kind, 'practice');
   assert.match(block?.kind === 'practice' ? block.parsed.problem : '', /```py\nprint\(1\)\n```$/);

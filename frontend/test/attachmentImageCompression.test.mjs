@@ -4,7 +4,9 @@ import test from 'node:test';
 import { compressImageFile, scaledImageDimensions } from '../src/attachments/imageCompression.ts';
 
 async function withGlobalOverrides(overrides, fn) {
-  const descriptors = new Map(Object.keys(overrides).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+  const descriptors = new Map(
+    Object.keys(overrides).map((key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)]),
+  );
   try {
     for (const [key, value] of Object.entries(overrides)) {
       Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
@@ -28,18 +30,29 @@ test('oversized decoded images are closed before canvas allocation', async () =>
   let closed = false;
   let canvasAllocated = false;
 
-  await withGlobalOverrides({
-    OffscreenCanvas: class {
-      constructor() { canvasAllocated = true; }
+  await withGlobalOverrides(
+    {
+      OffscreenCanvas: class {
+        constructor() {
+          canvasAllocated = true;
+        }
+      },
+      createImageBitmap: async () => ({
+        width: 7000,
+        height: 6000,
+        close() {
+          closed = true;
+        },
+      }),
+      document: undefined,
+      Image: undefined,
     },
-    createImageBitmap: async () => ({ width: 7000, height: 6000, close() { closed = true; } }),
-    document: undefined,
-    Image: undefined,
-  }, async () => {
-    assert.equal(await compressImageFile({ size: 10 }), null);
-    assert.equal(closed, true);
-    assert.equal(canvasAllocated, false);
-  });
+    async () => {
+      assert.equal(await compressImageFile({ size: 10 }), null);
+      assert.equal(closed, true);
+      assert.equal(canvasAllocated, false);
+    },
+  );
 });
 
 test('legacy image fallback uses JPEG when WebP returns a different format and releases its URL', async () => {
@@ -50,7 +63,9 @@ test('legacy image fallback uses JPEG when WebP returns a different format and r
     drawImage() {},
   };
   const canvas = {
-    getContext() { return context; },
+    getContext() {
+      return context;
+    },
     toDataURL(type) {
       formats.push(type);
       return type === 'image/webp' ? 'data:image/png;base64,AAAA' : 'data:image/jpeg;base64,AAAA';
@@ -67,18 +82,23 @@ test('legacy image fallback uses JPEG when WebP returns a different format and r
     }
   }
 
-  await withGlobalOverrides({
-    OffscreenCanvas: undefined,
-    createImageBitmap: undefined,
-    document: { createElement: () => canvas },
-    Image: MockImage,
-    URL: {
-      createObjectURL: () => 'blob:test-image',
-      revokeObjectURL: (value) => { revokedUrl = value; },
+  await withGlobalOverrides(
+    {
+      OffscreenCanvas: undefined,
+      createImageBitmap: undefined,
+      document: { createElement: () => canvas },
+      Image: MockImage,
+      URL: {
+        createObjectURL: () => 'blob:test-image',
+        revokeObjectURL: (value) => {
+          revokedUrl = value;
+        },
+      },
     },
-  }, async () => {
-    assert.equal(await compressImageFile({ size: 10 }), 'data:image/jpeg;base64,AAAA');
-  });
+    async () => {
+      assert.equal(await compressImageFile({ size: 10 }), 'data:image/jpeg;base64,AAAA');
+    },
+  );
 
   assert.deepEqual(formats, ['image/webp', 'image/jpeg']);
   assert.equal(revokedUrl, 'blob:test-image');

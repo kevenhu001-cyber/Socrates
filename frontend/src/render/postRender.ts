@@ -28,7 +28,9 @@ function createCodeBlockHeader(lang: string): HTMLElement {
 /** Add language labels and fullscreen controls to rendered code blocks. */
 export function wireCodeBlockHeaders(body: Element | null): void {
   if (!body) return;
-  const isDirectContainer = typeof body.matches === 'function' && body.matches('.msg-body, .think-content, .tool-run-prose');
+  const isDirectContainer =
+    typeof body.matches === 'function' &&
+    body.matches('.msg-body, .think-content, .tool-run-prose');
   const pres = isDirectContainer
     ? body.querySelectorAll('pre')
     : body.querySelectorAll('.msg-body pre,.think-content pre,.tool-run-prose pre');

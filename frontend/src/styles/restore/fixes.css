@@ -17,10 +17,9 @@
    destinations match the compact reference drawer. */
 
 @media (max-width: 768px) {
-
-#appShell #navMore.sidebar-nav-btn {
-  order: 7 !important;
-}
+  #appShell #navMore.sidebar-nav-btn {
+    order: 7 !important;
+  }
 }
 
 @media (max-width: 768px) {
@@ -44,10 +43,19 @@
     background: transparent !important;
     box-shadow: none !important;
   }
-  #appShell .scheduled-recommendations { display: grid !important; grid-template-columns: 1fr !important; }
-  #appShell .scheduled-recommendation { min-height: 72px !important; }
-  #appShell .scheduled-recommendation-add { visibility: visible; }
-  #appShell .scheduled-task-list .task-row { min-height: 70px; }
+  #appShell .scheduled-recommendations {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+  #appShell .scheduled-recommendation {
+    min-height: 72px !important;
+  }
+  #appShell .scheduled-recommendation-add {
+    visibility: visible;
+  }
+  #appShell .scheduled-task-list .task-row {
+    min-height: 70px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -59,9 +67,21 @@
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the
      Settings surfaces, so the trailing icon buttons hide outright. */
-  #appShell .sidebar-footer-actions { display: flex; align-items: center; gap: 0; }
-  #appShell .sidebar-footer-actions > .icon-btn { display: none !important; min-width: 36px !important; min-height: 36px !important; align-items: center !important; justify-content: center !important; }
-  #appShell #apiSettingsBtn { display: none !important; }
+  #appShell .sidebar-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  #appShell .sidebar-footer-actions > .icon-btn {
+    display: none !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #appShell #apiSettingsBtn {
+    display: none !important;
+  }
 }
 
 #composerToolsMenu .composer-tools-state-action {
@@ -89,7 +109,6 @@
      is retired — it covered the composer's own trigger and cut its last
      visible row in half. What stays is the row rhythm below. */
 
-
   /* The restored parity layer grows the phone top bar to 72px while no
      mobile rule re-centres the mode pill, so it inherited the modular
      top:12px and floated ~10px above the 44px header controls. Anchor it
@@ -98,7 +117,6 @@
     top: 50%;
     transform: translate(-50%, -50%) !important;
   }
-
 
   #composerToolsMenu .composer-tools-mobile-items .composer-tools-group-label {
     padding-top: 8px;
@@ -163,7 +181,7 @@
    declarations — it just stops painting. */
 #appShell#appShell#appShell button:focus-visible,
 #appShell#appShell#appShell a:focus-visible,
-#appShell#appShell#appShell [role="button"]:focus-visible,
+#appShell#appShell#appShell [role='button']:focus-visible,
 #appShell#appShell#appShell input:focus-visible,
 #appShell#appShell#appShell textarea:focus-visible,
 #appShell#appShell#appShell select:focus-visible {
@@ -177,7 +195,7 @@
 @media (forced-colors: active) {
   #appShell#appShell#appShell button:focus-visible,
   #appShell#appShell#appShell a:focus-visible,
-  #appShell#appShell#appShell [role="button"]:focus-visible,
+  #appShell#appShell#appShell [role='button']:focus-visible,
   #appShell#appShell#appShell input:focus-visible,
   #appShell#appShell#appShell textarea:focus-visible,
   #appShell#appShell#appShell select:focus-visible {
@@ -248,55 +266,55 @@
    on the light rail) that also answers hover. The body:not() prefix mirrors
    the home-state rule in ref-baseline.css so this wins that tie. */
 @media (max-width: 768px) {
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn {
-  background: rgb(255 255 255 / 10%) !important;
-}
-#appShell#appShell#appShell #navNew.sidebar-nav-btn {
-  background: rgb(255 255 255 / 10%) !important;
-}
-}
-
-@media (max-width: 768px) {
-
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn {
-  background: rgb(0 0 0 / 5%) !important;
-}
-
-[data-mode="light"] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-  background: rgb(0 0 0 / 5%) !important;
-}
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn {
+    background: rgb(255 255 255 / 10%) !important;
+  }
+  #appShell#appShell#appShell #navNew.sidebar-nav-btn {
+    background: rgb(255 255 255 / 10%) !important;
+  }
 }
 
 @media (max-width: 768px) {
+  [data-mode='light']
+    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn {
+    background: rgb(0 0 0 / 5%) !important;
+  }
 
-#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-#appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:hover,
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:focus-visible {
-  background: rgb(255 255 255 / 10%) !important;
-}
+  [data-mode='light'] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
+    background: rgb(0 0 0 / 5%) !important;
+  }
 }
 
 @media (max-width: 768px) {
-
-[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-[data-mode="light"] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:hover,
-[data-mode="light"] body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-active)
-  #appShell#appShell#appShell
-  #navNew.sidebar-nav-btn:focus-visible {
-  background: rgb(0 0 0 / 5%) !important;
+  #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
+  #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn:hover,
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn:focus-visible {
+    background: rgb(255 255 255 / 10%) !important;
+  }
 }
+
+@media (max-width: 768px) {
+  [data-mode='light'] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
+  [data-mode='light'] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
+  [data-mode='light']
+    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn:hover,
+  [data-mode='light']
+    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
+    #appShell#appShell#appShell
+    #navNew.sidebar-nav-btn:focus-visible {
+    background: rgb(0 0 0 / 5%) !important;
+  }
 }
 
 /* Light needs no override: --ui-text-muted is #737373 (≈9:1 on the white
@@ -322,7 +340,6 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
      min-height 52px, 12px page insets, drop shadow 0 4px 16px rgb(0 0 0 / 5%). */
 
   /* The reference keeps 12px of page inset on both sides of the capsule. */
-
 
   /* Control sizing applies in every state, including the multiline card.
      The selector carries the composer id as well: a two-id rule in
@@ -361,11 +378,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.exam-act
    data-keyboard-open to mask — a mid-gesture shift that could retarget a
    tap to #topicSetup and skip the tools/mic/send listeners. */
 @media (max-width: 768px) {
-
   /* The mobile landing quick-action column is live again (2026-10-04).
      mobile-parity.css owns its geometry; this file used to pin it to
      display:none with a triple-#appShell selector, which outranked that
      owner and left the row styled but invisible. Do not re-add the pin —
      the cards are real entry points, not decoration. */
-
 }

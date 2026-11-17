@@ -5,7 +5,14 @@ import { cn } from 'cn';
  * picker, and FormData contract. Text inputs use shadcn Input instead. */
 export const NativeControl = forwardRef<HTMLInputElement, ComponentPropsWithRef<'input'>>(
   function NativeControl({ className, type, ...props }, ref) {
-    return <input {...props} ref={ref} type={type} data-slot={`native-${type || 'input'}`}
-      className={cn('socrates-native-control', className)} />;
+    return (
+      <input
+        {...props}
+        ref={ref}
+        type={type}
+        data-slot={`native-${type || 'input'}`}
+        className={cn('socrates-native-control', className)}
+      />
+    );
   },
 );

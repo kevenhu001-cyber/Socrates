@@ -4,7 +4,10 @@
  * per network chunk. Fast models can deliver dozens of tiny deltas in a frame;
  * coalescing them keeps input, scrolling, and code-block painting responsive.
  */
-import { markdownCodeRanges, SCAFFOLD_TAGS as LEARNING_SCAFFOLD_TAGS } from '@socrates/ui/learn-split';
+import {
+  markdownCodeRanges,
+  SCAFFOLD_TAGS as LEARNING_SCAFFOLD_TAGS,
+} from '@socrates/ui/learn-split';
 
 /* Streaming-render cadence. Tuned against a measured paint-interval harness:
  * a continuous ~3.7k chars/s supply revealed settled blocks (cached) but the
@@ -15,8 +18,8 @@ import { markdownCodeRanges, SCAFFOLD_TAGS as LEARNING_SCAFFOLD_TAGS } from '@so
  * keep a guard band, so the floor is ~20 fps rather than a hard 8 fps. */
 export function getStreamRenderInterval(textLength: number | null | undefined): number {
   const len = Math.max(0, Number(textLength) || 0);
-  if (len < 32000) return 33;  /* ~30 fps */
-  return 50;                   /* very long answer: ~20 fps guard */
+  if (len < 32000) return 33; /* ~30 fps */
+  return 50; /* very long answer: ~20 fps guard */
 }
 
 /* PERF: counts non-overlapping occurrences without allocating. The previous
@@ -42,8 +45,19 @@ function countOccurrences(s: string, needle: string): number {
    this set was previously rebuilt on every streaming frame. */
 const STREAM_GUARDED_TAGS = new Set<string>([
   ...LEARNING_SCAFFOLD_TAGS,
-  'think', 'q', 'o', 'title', 'problem', 'solution', 'hint', 'front',
-  'back', 'statement', 'body', 'term', 'correct',
+  'think',
+  'q',
+  'o',
+  'title',
+  'problem',
+  'solution',
+  'hint',
+  'front',
+  'back',
+  'statement',
+  'body',
+  'term',
+  'correct',
 ]);
 
 function hasUnmatchedGuardedTags(source: string): boolean {
@@ -53,7 +67,8 @@ function hasUnmatchedGuardedTags(source: string): boolean {
   const tagRe = /<\/?([a-z][\w-]*)(?:\s[^>]*)?\/?>/gi;
   let match: RegExpExecArray | null;
   while ((match = tagRe.exec(source)) !== null) {
-    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index)
+      codeIndex += 1;
     const codeRange = codeRanges[codeIndex];
     if (codeRange && codeRange.start < tagRe.lastIndex && codeRange.end > match.index) continue;
     const tag = match[1].toLowerCase();
@@ -112,7 +127,9 @@ function _lineTableFor(full: string): { starts: number[]; ends: number[] } {
   for (let i = 0; i < full.length; i += 1) {
     if (full.charCodeAt(i) === 10) starts.push(i + 1);
   }
-  const ends: number[] = starts.map((s, i) => (i + 1 < starts.length ? starts[i + 1] - 1 : full.length));
+  const ends: number[] = starts.map((s, i) =>
+    i + 1 < starts.length ? starts[i + 1] - 1 : full.length,
+  );
   _lineTableCache = { text: full, starts, ends };
   return { starts, ends };
 }
@@ -356,8 +373,7 @@ export function createSettledSplitter(): { push: (text: string) => SettledSplit 
           /* A bare separator run — consume it without emitting a block. */
           tailStart = b + 2;
           search = tailStart;
-        } else if (isStableMarkdownPrefix(candidate)
-                   && !_isLooseListBoundary(text, tailStart, b)) {
+        } else if (isStableMarkdownPrefix(candidate) && !_isLooseListBoundary(text, tailStart, b)) {
           blocks.push(candidate);
           tailStart = b + 2;
           search = tailStart;

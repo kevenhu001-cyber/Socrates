@@ -7,7 +7,11 @@
 import type { Request } from 'express';
 
 /** A fully-streamed tool call as delivered by streamChatCompletion's onToolUse. */
-export type ToolCall = { id: string; type: 'function'; function: { name: string; arguments: string } };
+export type ToolCall = {
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
+};
 
 /** A partial tool_call delta delivered by streamChatCompletion's onToolCallDelta. */
 export type ToolCallDelta = {
@@ -58,7 +62,12 @@ export type SearchResult = {
 };
 
 /** The error shape thrown by the webSearch service. */
-export type WebSearchError = { code?: string; message?: string; diagnostics?: unknown; retryable?: boolean };
+export type WebSearchError = {
+  code?: string;
+  message?: string;
+  diagnostics?: unknown;
+  retryable?: boolean;
+};
 
 /**
  * Messages flowing through the tool-calling loop: the prepared request
@@ -72,9 +81,19 @@ export interface PreparedCall {
   call: ToolCall;
   /** Canonical registry name when resolved, else the requested name. */
   toolName: string;
-  registryEntry: ReturnType<ReturnType<typeof import('../../../services/tools/toolRegistry.js').createToolRegistry>['get']> | null;
+  registryEntry: ReturnType<
+    ReturnType<
+      typeof import('../../../services/tools/toolCapabilityCatalog.js').createToolRegistry
+    >['get']
+  > | null;
   args: Record<string, unknown>;
-  rejection: { code: string; retryable: boolean; hint?: string; fieldErrors?: string; userMessage?: string } | null;
+  rejection: {
+    code: string;
+    retryable: boolean;
+    hint?: string;
+    fieldErrors?: string;
+    userMessage?: string;
+  } | null;
 }
 
 /** Per-request pipeline context handed to every stage. */
@@ -82,7 +101,10 @@ export interface ChatStreamPipelineContext {
   req: Request & { userId?: string; user?: { tier?: string } | null };
   res: import('express').Response;
   /** The successful prepareChatRequest result. */
-  prep: Exclude<Awaited<ReturnType<typeof import('../prepare/request.js').prepareChatRequest>>, { ok: false }>;
+  prep: Exclude<
+    Awaited<ReturnType<typeof import('../prepare/request.js').prepareChatRequest>>,
+    { ok: false }
+  >;
   sessionIdFromQuery: string | null;
   projectIdFromBody: string | null;
   /**

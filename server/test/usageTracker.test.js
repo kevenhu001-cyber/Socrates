@@ -31,10 +31,29 @@ test('context planning and estimated usage count Unicode conservatively', () => 
   assert.equal(estimateContextTokens('中文对话'), 6);
   assert.equal(estimateContextTokens('🙂'), 2);
   assert.equal(estimateContextTokens('abcd中文'), 4);
-  assert.equal(estimateTokens('中文对话'), 6, 'estimated usage must not count Chinese as English prose');
-  const input = [{ role: 'assistant', content: '答案', reasoning_content: '推理'.repeat(100), tool_calls: [{ function: { name: 'lookup', arguments: '{"query":"中文"}' } }] }];
-  assert.ok(estimateContextMessageTokens(input) > 300, 'reasoning and tool arguments consume context too');
-  assert.equal(estimateContextMessageTokens([{ content: [{ type: 'text', text: '中文' }, { type: 'image_url' }] }]), 3 + IMAGE_TOKEN_ESTIMATE + 4);
+  assert.equal(
+    estimateTokens('中文对话'),
+    6,
+    'estimated usage must not count Chinese as English prose',
+  );
+  const input = [
+    {
+      role: 'assistant',
+      content: '答案',
+      reasoning_content: '推理'.repeat(100),
+      tool_calls: [{ function: { name: 'lookup', arguments: '{"query":"中文"}' } }],
+    },
+  ];
+  assert.ok(
+    estimateContextMessageTokens(input) > 300,
+    'reasoning and tool arguments consume context too',
+  );
+  assert.equal(
+    estimateContextMessageTokens([
+      { content: [{ type: 'text', text: '中文' }, { type: 'image_url' }] },
+    ]),
+    3 + IMAGE_TOKEN_ESTIMATE + 4,
+  );
 });
 
 /* ── estimateTokens ───────────────────────────────────────────── */
@@ -98,7 +117,7 @@ describe('estimateMessageTokens', () => {
 
   test('sums across multiple messages and applies per-message overhead each time', () => {
     const out = estimateMessageTokens([
-      { role: 'system', content: 'abcd' },   // 1 token content + 4 overhead
+      { role: 'system', content: 'abcd' }, // 1 token content + 4 overhead
       { role: 'user', content: 'abcdefgh' }, // 2 tokens content + 4 overhead
     ]);
     assert.equal(out, 1 + 4 + 2 + 4);
@@ -106,10 +125,13 @@ describe('estimateMessageTokens', () => {
 
   test('counts multimodal image_url parts at IMAGE_TOKEN_ESTIMATE each', () => {
     const out = estimateMessageTokens([
-      { role: 'user', content: [
-        { type: 'text', text: 'explain' },     // 2 tokens
-        { type: 'image_url', image_url: { url: 'data:…' } }, // 765 tokens
-      ] },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'explain' }, // 2 tokens
+          { type: 'image_url', image_url: { url: 'data:…' } }, // 765 tokens
+        ],
+      },
     ]);
     assert.equal(out, 2 + IMAGE_TOKEN_ESTIMATE + 4); // +4 for per-message overhead
   });
@@ -121,9 +143,7 @@ describe('estimateMessageTokens', () => {
        itself must NOT also be counted as IMAGE_TOKEN_ESTIMATE. */
     const placeholder = '[User attached an image. Your current model cannot view images. …]';
     const out = estimateMessageTokens([
-      { role: 'user', content: [
-        { type: 'text', text: placeholder },
-      ] },
+      { role: 'user', content: [{ type: 'text', text: placeholder }] },
     ]);
     const expected = estimateTokens(placeholder) + 4;
     assert.equal(out, expected);
@@ -136,11 +156,14 @@ describe('estimateMessageTokens', () => {
     /* Forward-compat: future content shapes (audio_url, etc.)
        should not throw and should not be double-counted. */
     const out = estimateMessageTokens([
-      { role: 'user', content: [
-        { type: 'text', text: 'x' },                    // 1 token
-        { type: 'audio_url', audio_url: { url: 'x' } }, // unknown, skipped
-        { type: 'unknown_future_type' },                 // unknown, skipped
-      ] },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'x' }, // 1 token
+          { type: 'audio_url', audio_url: { url: 'x' } }, // unknown, skipped
+          { type: 'unknown_future_type' }, // unknown, skipped
+        ],
+      },
     ]);
     assert.equal(out, 1 + 4);
   });
@@ -160,11 +183,11 @@ describe('estimateMessageTokens', () => {
        null message still costs 4 tokens. The content of null /
        non-object messages is skipped. */
     const out = estimateMessageTokens([
-      null,                                  // 4 overhead
-      undefined,                             // 4 overhead
-      'string-message',                      // 4 overhead
-      42,                                    // 4 overhead
-      { role: 'user', content: 'ok' },       // 1 token + 4 overhead
+      null, // 4 overhead
+      undefined, // 4 overhead
+      'string-message', // 4 overhead
+      42, // 4 overhead
+      { role: 'user', content: 'ok' }, // 1 token + 4 overhead
     ]);
     assert.equal(out, 1 + 5 * 4);
   });
@@ -190,7 +213,12 @@ describe('recordUsage', () => {
   });
 
   test('coerces null/undefined token counts to zero (no NaN in DB)', () => {
-    recordUsage({ userId: 'user-1', model: 'x', promptTokens: undefined, completionTokens: undefined });
+    recordUsage({
+      userId: 'user-1',
+      model: 'x',
+      promptTokens: undefined,
+      completionTokens: undefined,
+    });
     /* No exception → safe to call from request handlers with
        possibly-missing fields. */
     assert.ok(true);

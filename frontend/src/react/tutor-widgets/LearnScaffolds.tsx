@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { sessionBridge } from '../../store/index.ts';
 /**
  * RN-3 web adapters for the shared learning scaffolds (packages/ui/src/learn).
  * Every surface mounts through WebUiTheme (rnwGlobal first); content fields
@@ -6,7 +6,13 @@ import { stateStore } from '../../state/store.ts';
  * blocks, and grading / reporting stays in render/widgetRuntime.ts.
  */
 import { recordRecallRating } from '../../tutor/recallRatings.ts';
-import { daysUntilReview, flashcardUiState, recordReview, rememberFlashcardUiState, reviewCardFor } from '../../tutor/reviewDeck.ts';
+import {
+  daysUntilReview,
+  flashcardUiState,
+  recordReview,
+  rememberFlashcardUiState,
+  reviewCardFor,
+} from '../../tutor/reviewDeck.ts';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { hasMathDelimiters } from '../../render/markdownMath.ts';
 import { onKatexReady } from '../../vendor/lazy.ts';
@@ -42,7 +48,14 @@ import {
   type QuizMountData,
   type TheoremMountData,
 } from '../../render/widgetRuntime.ts';
-import type { ParsedDefinition, ParsedDerivation, ParsedExample, ParsedFlashcard, ParsedKeyPoint, ParsedProof } from '@socrates/ui/learn-model';
+import type {
+  ParsedDefinition,
+  ParsedDerivation,
+  ParsedExample,
+  ParsedFlashcard,
+  ParsedKeyPoint,
+  ParsedProof,
+} from '@socrates/ui/learn-model';
 
 /** The shell's i18n lookup for the few labels the shared cards do not own. */
 function tr(key: string, fallback: string): string {
@@ -72,7 +85,9 @@ function RichHtml({ source, part }: { source: string; part: string }) {
   return <div className="sc-rich" data-part={part} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-const renderRich = (source: string, part: string): ReactNode => <RichHtml source={source} part={part} />;
+const renderRich = (source: string, part: string): ReactNode => (
+  <RichHtml source={source} part={part} />
+);
 
 /** Theme + host context for one mounted scaffold. Re-renders on language change. */
 export function LearnMount({ readOnly, children }: { readOnly: boolean; children?: ReactNode }) {
@@ -93,22 +108,49 @@ export function QuizScaffold({ parsed }: { parsed: QuizMountData }) {
     return <PracticeScaffold parsed={{ title: '', problem: parsed.q, hint: '' }} />;
   }
   const answerKey = parseAnswerKey(parsed.correct);
-  const answerId = JSON.stringify([stateStore.read('currentSessionId'), parsed.q, parsed.options, answerKey]);
+  const answerId = JSON.stringify([
+    sessionBridge.getSnapshot().currentSessionId,
+    parsed.q,
+    parsed.options,
+    answerKey,
+  ]);
   const onSubmit = (letters: string[]): QuizResult | Promise<QuizResult> => {
     const pick = widgetRuntime().handleQuizPick;
     const chosen = parsed.options.filter((option) => letters.includes(option.letter));
-    const picked = { letter: letters.join(''), text: chosen.map((option) => option.text).join('; ') };
+    const picked = {
+      letter: letters.join(''),
+      text: chosen.map((option) => option.text).join('; '),
+    };
     if (!pick) {
       /* No runtime wired (tests, standalone): grade locally without side effects. */
       const right = answerKey.length > 0 && answerKey.join('') === picked.letter;
-      return { verdict: answerKey.length ? (right ? 'correct' : 'incorrect') : 'recorded', feedback: '' };
+      return {
+        verdict: answerKey.length ? (right ? 'correct' : 'incorrect') : 'recorded',
+        feedback: '',
+      };
     }
-    const toResult = (feedback: { feedbackText: string; feedbackClass: string; verdict?: QuizResult['verdict'] }): QuizResult => ({
-      verdict: feedback.verdict ?? (/\bok\b/.test(feedback.feedbackClass) ? 'correct' : /\bbad\b/.test(feedback.feedbackClass) ? 'incorrect' : 'recorded'),
+    const toResult = (feedback: {
+      feedbackText: string;
+      feedbackClass: string;
+      verdict?: QuizResult['verdict'];
+    }): QuizResult => ({
+      verdict:
+        feedback.verdict ??
+        (/\bok\b/.test(feedback.feedbackClass)
+          ? 'correct'
+          : /\bbad\b/.test(feedback.feedbackClass)
+            ? 'incorrect'
+            : 'recorded'),
       feedback: feedback.feedbackText,
     });
     const right = answerKey.join('') === picked.letter;
-    submittedQuizzes.set(answerId, { letters, result: { verdict: answerKey.length ? (right ? 'correct' : 'incorrect') : 'recorded', feedback: '' } });
+    submittedQuizzes.set(answerId, {
+      letters,
+      result: {
+        verdict: answerKey.length ? (right ? 'correct' : 'incorrect') : 'recorded',
+        feedback: '',
+      },
+    });
     if (submittedQuizzes.size > 100) submittedQuizzes.delete(submittedQuizzes.keys().next().value!);
     const outcome = pick(picked, parsed);
     return outcome instanceof Promise ? outcome.then(toResult) : toResult(outcome);
@@ -150,7 +192,9 @@ export function ExampleScaffold({ parsed }: { parsed: ParsedExample }) {
       hints={hintLevels(parsed)}
       solution={parsed.solution}
       initialSolutionOpen={Boolean(parsed._revealed)}
-      onSolutionToggle={(open) => { parsed._revealed = open; }}
+      onSolutionToggle={(open) => {
+        parsed._revealed = open;
+      }}
     />
   );
 }
@@ -169,15 +213,29 @@ export function FlashcardScaffold({ parsed }: { parsed: ParsedFlashcard }) {
   const back = parsed.back || '';
   /* RN-14: a re-render remounts this card; it resumes where it was. */
   const [initial] = useState(() => flashcardUiState(front));
-  const [note, setNote] = useState<string | null>(() => (initial?.rating ? reviewScheduleNote(reviewCardFor(front)) : null));
-  const onStateChange = useCallback((state: FlashcardState) => rememberFlashcardUiState(front, state), [front]);
+  const [note, setNote] = useState<string | null>(() =>
+    initial?.rating ? reviewScheduleNote(reviewCardFor(front)) : null,
+  );
+  const onStateChange = useCallback(
+    (state: FlashcardState) => rememberFlashcardUiState(front, state),
+    [front],
+  );
   const onRate = (rating: RecallRating) => {
     /* RN-6: the self-rating goes back to the tutor as next-turn context. */
     recordRecallRating(front, rating);
     /* RN-14: and schedules the card for spaced review. */
     setNote(reviewScheduleNote(recordReview(front, back, rating)));
   };
-  return <FlashcardCard front={front} back={back} onRate={onRate} initialState={initial} onStateChange={onStateChange} note={note} />;
+  return (
+    <FlashcardCard
+      front={front}
+      back={back}
+      onRate={onRate}
+      initialState={initial}
+      onStateChange={onStateChange}
+      note={note}
+    />
+  );
 }
 
 export function DefinitionScaffold({ parsed }: { parsed: ParsedDefinition }) {
@@ -189,7 +247,14 @@ export function KeyPointScaffold({ parsed }: { parsed: ParsedKeyPoint }) {
 }
 
 export function TheoremScaffold({ parsed }: { parsed: TheoremMountData }) {
-  return <TheoremCard title={parsed.title} statement={parsed.statement} proofTitle={parsed.proofTitle} proofBody={parsed.proofBody} />;
+  return (
+    <TheoremCard
+      title={parsed.title}
+      statement={parsed.statement}
+      proofTitle={parsed.proofTitle}
+      proofBody={parsed.proofBody}
+    />
+  );
 }
 
 export function ProofScaffold({ parsed }: { parsed: ParsedProof }) {
@@ -201,6 +266,9 @@ export function StepListScaffold({ steps }: { steps: ParsedStep[] }) {
 }
 
 export function DerivationScaffold({ parsed }: { parsed: ParsedDerivation }) {
-  const steps = splitDerivationSteps(parsed.body).map((body, index) => ({ n: index + 1, body: derivationStepSource(body) }));
+  const steps = splitDerivationSteps(parsed.body).map((body, index) => ({
+    n: index + 1,
+    body: derivationStepSource(body),
+  }));
   return <StepsCard kind="derivation" title={parsed.title} steps={steps} />;
 }

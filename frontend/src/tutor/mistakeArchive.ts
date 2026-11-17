@@ -66,11 +66,16 @@ function emptyArchive(): ArchiveShape {
 function readStored(key: string): ArchiveShape {
   try {
     const raw = localStorage.getItem(key);
-    const parsed = raw ? JSON.parse(raw) as Partial<ArchiveShape> : null;
+    const parsed = raw ? (JSON.parse(raw) as Partial<ArchiveShape>) : null;
     if (!parsed || typeof parsed.sessions !== 'object' || !parsed.sessions) return emptyArchive();
     const sessions: Record<string, ArchivedSession> = {};
     for (const [id, value] of Object.entries(parsed.sessions)) {
-      if (!value || typeof value !== 'object' || !Array.isArray((value as ArchivedSession).mistakes)) continue;
+      if (
+        !value ||
+        typeof value !== 'object' ||
+        !Array.isArray((value as ArchivedSession).mistakes)
+      )
+        continue;
       const entry = value as ArchivedSession;
       sessions[id] = {
         label: typeof entry.label === 'string' ? entry.label : '',
@@ -105,8 +110,11 @@ function notify(): void {
 
 function persist(next: ArchiveShape): void {
   archive = next;
-  try { localStorage.setItem(archiveKey, JSON.stringify(next)); }
-  catch (error) { reportSwallow(error, 'tutor/mistakeArchive.persist', 'expected'); }
+  try {
+    localStorage.setItem(archiveKey, JSON.stringify(next));
+  } catch (error) {
+    reportSwallow(error, 'tutor/mistakeArchive.persist', 'expected');
+  }
   notify();
 }
 
@@ -118,16 +126,26 @@ function sameMistakes(a: readonly MistakeStateEntry[], b: readonly MistakeStateE
  * Mirror one session's book. An empty book is kept too: it tells the
  * merge that this session's server rows are stale (all conquered).
  */
-export function archiveSessionMistakes(sessionId: string | null | undefined, label: string | null | undefined, mistakes: unknown): void {
+export function archiveSessionMistakes(
+  sessionId: string | null | undefined,
+  label: string | null | undefined,
+  mistakes: unknown,
+): void {
   if (!sessionId || typeof sessionId !== 'string') return;
   const list = (Array.isArray(mistakes) ? mistakes : [])
-    .filter((item): item is MistakeStateEntry => Boolean(item) && typeof (item as MistakeStateEntry).id === 'string')
+    .filter(
+      (item): item is MistakeStateEntry =>
+        Boolean(item) && typeof (item as MistakeStateEntry).id === 'string',
+    )
     .slice(0, PER_SESSION_LIMIT);
   const state = current();
   const before = state.sessions[sessionId];
   const nextLabel = typeof label === 'string' ? label.trim() : '';
   if (before && before.label === nextLabel && sameMistakes(before.mistakes, list)) return;
-  const sessions = { ...state.sessions, [sessionId]: { label: nextLabel, at: Date.now(), mistakes: list } };
+  const sessions = {
+    ...state.sessions,
+    [sessionId]: { label: nextLabel, at: Date.now(), mistakes: list },
+  };
   const ids = Object.keys(sessions);
   if (ids.length > SESSION_LIMIT) {
     ids.sort((a, b) => sessions[a].at - sessions[b].at);
@@ -156,7 +174,10 @@ function text(value: unknown): string | null {
 }
 
 /** Server mirror rows → per-session books. Rows without a session cannot be redone, so they are left out. Exported for tests. */
-export function serverRowsToSessions(items: readonly ServerMistakeRow[], labels: Record<string, string> = {}): SessionMistakesInput<MistakeStateEntry>[] {
+export function serverRowsToSessions(
+  items: readonly ServerMistakeRow[],
+  labels: Record<string, string> = {},
+): SessionMistakesInput<MistakeStateEntry>[] {
   const bySession = new Map<string, MistakeStateEntry[]>();
   for (const item of items) {
     const sessionId = text(item?.sessionId);
@@ -180,7 +201,11 @@ export function serverRowsToSessions(items: readonly ServerMistakeRow[], labels:
     if (list) list.push(entry);
     else bySession.set(sessionId, [entry]);
   }
-  return [...bySession.entries()].map(([sessionId, mistakes]) => ({ sessionId, label: labels[sessionId] || '', mistakes }));
+  return [...bySession.entries()].map(([sessionId, mistakes]) => ({
+    sessionId,
+    label: labels[sessionId] || '',
+    mistakes,
+  }));
 }
 
 /**
@@ -197,11 +222,18 @@ export function loadServerMistakes(
   serverInflight = fetchList()
     .then((response) => {
       serverLoaded = true;
-      serverRows = serverRowsToSessions(Array.isArray(response?.items) ? response.items : [], labels());
+      serverRows = serverRowsToSessions(
+        Array.isArray(response?.items) ? response.items : [],
+        labels(),
+      );
       if (serverRows.length) notify();
     })
-    .catch((error) => { reportSwallow(error, 'tutor/mistakeArchive.loadServer', 'expected'); })
-    .finally(() => { serverInflight = null; });
+    .catch((error) => {
+      reportSwallow(error, 'tutor/mistakeArchive.loadServer', 'expected');
+    })
+    .finally(() => {
+      serverInflight = null;
+    });
   return serverInflight;
 }
 
@@ -213,14 +245,19 @@ export function loadServerMistakes(
  */
 export function otherSessionMistakes(): SessionMistakesInput<MistakeStateEntry>[] {
   const state = current();
-  const archived = Object.entries(state.sessions)
-    .map(([sessionId, entry]) => ({ sessionId, label: entry.label, mistakes: entry.mistakes }));
+  const archived = Object.entries(state.sessions).map(([sessionId, entry]) => ({
+    sessionId,
+    label: entry.label,
+    mistakes: entry.mistakes,
+  }));
   const known = new Set(Object.keys(state.sessions));
   return [...archived, ...serverRows.filter((row) => !known.has(row.sessionId))];
 }
 
 /** The archived entry for `id` (any session), for redo / next-question across sessions. */
-export function findArchivedMistake(id: string): (MistakeStateEntry & { sessionId: string }) | null {
+export function findArchivedMistake(
+  id: string,
+): (MistakeStateEntry & { sessionId: string }) | null {
   for (const [sessionId, entry] of Object.entries(current().sessions)) {
     const found = entry.mistakes.find((item) => item.id === id);
     if (found) return { ...found, sessionId };

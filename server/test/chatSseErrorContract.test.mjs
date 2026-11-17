@@ -37,14 +37,27 @@ const sid = crypto.randomBytes(32).toString('hex');
 before(async () => {
   if (!enabled) return;
   db = initDb(process.env.DATABASE_URL);
-  const [user] = await db.insert(users).values({ email: `sse-error-contract-${crypto.randomUUID()}@test.invalid`, passwordHash: 'test-only', verifiedAt: new Date() }).returning();
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: `sse-error-contract-${crypto.randomUUID()}@test.invalid`,
+      passwordHash: 'test-only',
+      verifiedAt: new Date(),
+    })
+    .returning();
   userId = user.id;
-  await db.insert(authSessions).values({ token: sid, userId, expiresAt: new Date(Date.now() + 600000) });
+  await db
+    .insert(authSessions)
+    .values({ token: sid, userId, expiresAt: new Date(Date.now() + 600000) });
   // A plain text model: not marked multimodal, so an image attachment is a
   // deterministic rejection that happens AFTER the SSE prime.
   await db.insert(apiKeys).values({
-    userId, label: 'text-only', url: 'https://provider.invalid/v1', model: 'text-only-model',
-    keyCiphertext: encrypt('test-only', encryptionKey()), isActive: true,
+    userId,
+    label: 'text-only',
+    url: 'https://provider.invalid/v1',
+    model: 'text-only-model',
+    keyCiphertext: encrypt('test-only', encryptionKey()),
+    isActive: true,
   });
   const app = express();
   app.use(express.json());
@@ -64,34 +77,49 @@ after(async () => {
   await getLlmDispatcher().close();
 });
 
-test('a deterministic prelude rejection reaches the client with its real status and code', { skip: !enabled }, async () => {
-  const [session] = await db.insert(sessions).values({ userId, topic: 'error contract', mode: 'chat', phase: 'chat', kind: 'chat' }).returning();
-  const response = await fetch(`${server.url}/api/chat/stream?sessionId=${session.id}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: `sid=${sid}` },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,AA' } }] }],
-      clientTurn: { id: `sse-error-contract-${crypto.randomUUID()}` },
-    }),
-  });
-  const text = await response.text();
+test(
+  'a deterministic prelude rejection reaches the client with its real status and code',
+  { skip: !enabled },
+  async () => {
+    const [session] = await db
+      .insert(sessions)
+      .values({ userId, topic: 'error contract', mode: 'chat', phase: 'chat', kind: 'chat' })
+      .returning();
+    const response = await fetch(`${server.url}/api/chat/stream?sessionId=${session.id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: `sid=${sid}` },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'user',
+            content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,AA' } }],
+          },
+        ],
+        clientTurn: { id: `sse-error-contract-${crypto.randomUUID()}` },
+      }),
+    });
+    const text = await response.text();
 
-  // The failure must be reported as a structured SSE error frame...
-  assert.match(text, /event: error/);
-  // ...with the real status and machine-readable code...
-  assert.match(text, /"code":"MODEL_NOT_MULTIMODAL"/);
-  assert.match(text, /"status":400/);
-  // ...and an explicit "do not replay this" signal.
-  assert.match(text, /"retryable":false/);
-  // It must NOT be degraded into an opaque internal error.
-  assert.doesNotMatch(text, /Request preparation failed/);
-  assert.doesNotMatch(text, /"code":"INTERNAL"/);
-  // The JSON body must not have been written raw onto the SSE stream.
-  assert.doesNotMatch(text, /^\{"code":"MODEL_NOT_MULTIMODAL"/m);
-});
+    // The failure must be reported as a structured SSE error frame...
+    assert.match(text, /event: error/);
+    // ...with the real status and machine-readable code...
+    assert.match(text, /"code":"MODEL_NOT_MULTIMODAL"/);
+    assert.match(text, /"status":400/);
+    // ...and an explicit "do not replay this" signal.
+    assert.match(text, /"retryable":false/);
+    // It must NOT be degraded into an opaque internal error.
+    assert.doesNotMatch(text, /Request preparation failed/);
+    assert.doesNotMatch(text, /"code":"INTERNAL"/);
+    // The JSON body must not have been written raw onto the SSE stream.
+    assert.doesNotMatch(text, /^\{"code":"MODEL_NOT_MULTIMODAL"/m);
+  },
+);
 
 test('the error frame never forwards a raw upstream provider body', () => {
-  const upstream = new LlmProviderError(429, '{"base_resp":{"status_code":1002,"status_msg":"rate limit exceeded","quota_exceeded_error":"rpm exhausted"}}');
+  const upstream = new LlmProviderError(
+    429,
+    '{"base_resp":{"status_code":1002,"status_msg":"rate limit exceeded","quota_exceeded_error":"rpm exhausted"}}',
+  );
   const frame = buildSseErrorFrame(upstream);
   assert.equal(frame.status, 429);
   assert.equal(frame.code, 'LLM_UPSTREAM_ERROR');
@@ -101,7 +129,9 @@ test('the error frame never forwards a raw upstream provider body', () => {
 });
 
 test('the error frame keeps a curated server message and honours an explicit retry decision', () => {
-  const terminal = buildSseErrorFrame(new ApiError(429, 'MONTHLY_LIMIT', 'Monthly limit reached.', undefined, false));
+  const terminal = buildSseErrorFrame(
+    new ApiError(429, 'MONTHLY_LIMIT', 'Monthly limit reached.', undefined, false),
+  );
   assert.equal(terminal.status, 429);
   assert.equal(terminal.code, 'MONTHLY_LIMIT');
   assert.equal(terminal.retryable, false);
@@ -109,7 +139,9 @@ test('the error frame keeps a curated server message and honours an explicit ret
 
   // A curated error without an explicit decision keeps the client's
   // status-based default, so a genuinely transient 503 stays retryable.
-  const transient = buildSseErrorFrame(new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured'));
+  const transient = buildSseErrorFrame(
+    new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured'),
+  );
   assert.equal(transient.retryable, undefined);
   assert.equal(transient.status, 503);
 });

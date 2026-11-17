@@ -12,7 +12,9 @@ const router = Router({ mergeParams: true });
 
 /* Helper — verify the caller owns the session and return it. */
 async function getOwnedSession(db: Database, sessionId: string, userId: string) {
-  const [session] = await db.select().from(sessions)
+  const [session] = await db
+    .select()
+    .from(sessions)
     .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
     .limit(1);
   return session || null;
@@ -28,12 +30,15 @@ router.get('/', requireAuth, async (req, res, next) => {
     if (!(await getOwnedSession(db, req.params.id as string, req.userId!))) {
       return res.json({ token: null, visibility: 'private' });
     }
-    const [share] = await db.select()
+    const [share] = await db
+      .select()
       .from(shares)
       .where(eq(shares.sessionId, req.params.id as string))
       .limit(1);
     return res.json(share || { token: null, visibility: 'private' });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* POST /api/sessions/:id/share — create or update share link */
@@ -53,17 +58,22 @@ router.post('/', requireAuth, async (req, res, next) => {
 
     const token = generateShareToken();
 
-    await db.insert(shares).values({
-      token,
-      sessionId: req.params.id as string,
-      visibility,
-    }).onConflictDoUpdate({
-      target: shares.sessionId,
-      set: { token, visibility },
-    });
+    await db
+      .insert(shares)
+      .values({
+        token,
+        sessionId: req.params.id as string,
+        visibility,
+      })
+      .onConflictDoUpdate({
+        target: shares.sessionId,
+        set: { token, visibility },
+      });
 
     return res.status(201).json({ token, url: `/a/${token}`, visibility });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/sessions/:id/share — revoke share link */
@@ -75,10 +85,11 @@ router.delete('/', requireAuth, async (req, res, next) => {
     if (!(await getOwnedSession(db, req.params.id as string, req.userId!))) {
       throw new NotFound('Session not found');
     }
-    await db.delete(shares)
-      .where(eq(shares.sessionId, req.params.id as string));
+    await db.delete(shares).where(eq(shares.sessionId, req.params.id as string));
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

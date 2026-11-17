@@ -58,7 +58,10 @@ export interface CacheEntry {
 export function get(url: string) {
   if (!url) return null;
   const entry = _cache.get(url);
-  if (!entry) { _misses++; return null; }
+  if (!entry) {
+    _misses++;
+    return null;
+  }
   _hits++;
   // Refresh LRU position.
   _cache.delete(url);

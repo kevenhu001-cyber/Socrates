@@ -22,10 +22,15 @@ function fakeCollector() {
   const received = [];
   const server = http.createServer((req, res) => {
     let body = '';
-    req.on('data', (c) => { body += c; });
+    req.on('data', (c) => {
+      body += c;
+    });
     req.on('end', () => {
-      try { received.push({ url: req.url, json: JSON.parse(body) }); }
-      catch { received.push({ url: req.url, raw: body }); }
+      try {
+        received.push({ url: req.url, json: JSON.parse(body) });
+      } catch {
+        received.push({ url: req.url, raw: body });
+      }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end('{}');
     });
@@ -60,7 +65,7 @@ after(async () => {
 
 /** Force a flush so assertions do not race the batch processor. */
 async function flush() {
-  await mod.stopTracing();          // shutdown() force-flushes
+  await mod.stopTracing(); // shutdown() force-flushes
   await new Promise((r) => setTimeout(r, 150));
 }
 
@@ -70,32 +75,46 @@ describe('telemetry: export over OTLP/HTTP', () => {
   });
 
   test('a span reaches the collector with its attributes', async () => {
-    await mod.withSpan('llm.stream', {
-      'llm.model': 'test-model',
-      'socrates.tool_iteration': 0,
-    }, async () => {
-      // The chat pipeline adds the outcome after the upstream call returns.
-      mod.annotateSpan({ 'llm.finish_reason': 'stop', 'llm.usage_reported': true });
-    });
+    await mod.withSpan(
+      'llm.stream',
+      {
+        'llm.model': 'test-model',
+        'socrates.tool_iteration': 0,
+      },
+      async () => {
+        // The chat pipeline adds the outcome after the upstream call returns.
+        mod.annotateSpan({ 'llm.finish_reason': 'stop', 'llm.usage_reported': true });
+      },
+    );
 
-    await mod.withSpan('llm.stream', {}, async () => {
-      throw new Error('upstream exploded');
-    }).catch(() => {});
+    await mod
+      .withSpan('llm.stream', {}, async () => {
+        throw new Error('upstream exploded');
+      })
+      .catch(() => {});
 
     await flush();
 
-    assert.ok(collector.received.length > 0,
-      'no OTLP payload arrived — the exporter is not wired to the endpoint');
+    assert.ok(
+      collector.received.length > 0,
+      'no OTLP payload arrived — the exporter is not wired to the endpoint',
+    );
 
     const first = collector.received[0];
-    assert.match(first.url, /\/v1\/traces$/,
-      'the exporter must POST to the OTLP traces path, not the base URL');
+    assert.match(
+      first.url,
+      /\/v1\/traces$/,
+      'the exporter must POST to the OTLP traces path, not the base URL',
+    );
 
     const flat = JSON.stringify(collector.received);
     assert.match(flat, /llm\.stream/, 'span name must be exported');
-    assert.match(flat, /telemetry-export-test/,
+    assert.match(
+      flat,
+      /telemetry-export-test/,
       'service.name must come through from OTEL_SERVICE_NAME — without a resource ' +
-      'the spans are unattributable');
+        'the spans are unattributable',
+    );
     assert.match(flat, /test-model/, 'span attributes must be exported');
     assert.match(flat, /llm\.finish_reason/, 'annotateSpan attributes must be exported');
 

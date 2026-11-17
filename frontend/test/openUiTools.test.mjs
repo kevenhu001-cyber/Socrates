@@ -1,17 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { calculatorStep, initialCalculatorState } from '@socrates/core';
-import { programIssues } from '../src/react/intelligence-ui/openui/validateProgram.ts';
+import { programIssues } from '../src/react/intelligent-ui/openui/validateProgram.ts';
 const press = (...keys) => keys.reduce(calculatorStep, initialCalculatorState);
 test('calculator computes arithmetic, decimals, chained operators and repeated equals', () => {
   for (const [keys, result] of [
-    [['2', '+', '3', '='], '5'], [['9', '-', '4', '='], '5'],
-    [['6', '*', '7', '='], '42'], [['8', '/', '2', '='], '4'],
+    [['2', '+', '3', '='], '5'],
+    [['9', '-', '4', '='], '5'],
+    [['6', '*', '7', '='], '42'],
+    [['8', '/', '2', '='], '4'],
     [['0', '.', '1', '+', '0', '.', '2', '='], '0.3'],
-    [['2', '+', '3', '*', '4', '='], '20'], [['2', '+', '3', '=', '='], '8'],
-    [['9', '+', '-', '4', '='], '5'], [['9', 'Backspace', '7'], '7'],
-    [['8', '±', '/', '2', '='], '-4'], [['1', '.', '.', '5'], '1.5'],
-  ]) assert.equal(press(...keys).display, result, keys.join(' '));
+    [['2', '+', '3', '*', '4', '='], '20'],
+    [['2', '+', '3', '=', '='], '8'],
+    [['9', '+', '-', '4', '='], '5'],
+    [['9', 'Backspace', '7'], '7'],
+    [['8', '±', '/', '2', '='], '-4'],
+    [['1', '.', '.', '5'], '1.5'],
+  ])
+    assert.equal(press(...keys).display, result, keys.join(' '));
 });
 test('calculator handles zero division, recovery and clear', () => {
   const error = press('8', '/', '0', '=');
@@ -21,15 +27,30 @@ test('calculator handles zero division, recovery and clear', () => {
 });
 test('program validation rejects decorative buttons, missing state and unbound inputs', () => {
   for (const source of [
-    'not a program', 'root = Col([Button("=")])', 'root = Col([Input(2,"A")])',
-    'root = Col([Text($missing)])', 'root = Col([missing])', 'root = Col([Unknown("x")])',
+    'not a program',
+    'root = Col([Button("=")])',
+    'root = Col([Input(2,"A")])',
+    'root = Col([Text($missing)])',
+    'root = Col([missing])',
+    'root = Col([Unknown("x")])',
     'root = Col([Text("unfinished")',
-  ]) assert.ok(programIssues(source).length, source);
+  ])
+    assert.ok(programIssues(source).length, source);
   assert.deepEqual(programIssues('root = Col([Calculator("计算器")])'), []);
-  assert.deepEqual(programIssues('root = Col([Input($a,"A","number"), Text($a * 2), Button("Reset", @Reset($a))])\n$a = 2'), []);
+  assert.deepEqual(
+    programIssues(
+      'root = Col([Input($a,"A","number"), Text($a * 2), Button("Reset", @Reset($a))])\n$a = 2',
+    ),
+    [],
+  );
 });
 test('native visual payloads can read the same state as OpenUI controls', () => {
-  assert.deepEqual(programIssues('root = Col([Slider($n, 1, 8), Visualization("bar", "Value", {categories:["A"],series:[{data:[$n]}]}, "Value of n")])\n$n = 2'), []);
+  assert.deepEqual(
+    programIssues(
+      'root = Col([Slider($n, 1, 8), Visualization("bar", "Value", {categories:["A"],series:[{data:[$n]}]}, "Value of n")])\n$n = 2',
+    ),
+    [],
+  );
 });
 
 test('dataflow validation rejects disconnected inputs and writes across arbitrary tools', () => {
@@ -55,9 +76,12 @@ test('dataflow follows action dependencies and scoped form submission', () => {
 });
 
 test('the Visualization component tells the model its argument shape', async () => {
-  const { library } = await import('../src/react/intelligence-ui/openui/library.ts');
+  const { library } = await import('../src/react/intelligent-ui/openui/library.ts');
   const description = library.toJSONSchema()['$defs'].Visualization.description;
-  assert.match(description, /arguments are the template name, a short title, the template payload and an accessibility summary/);
+  assert.match(
+    description,
+    /arguments are the template name, a short title, the template payload and an accessibility summary/,
+  );
   assert.match(description, /Never pass a versioned visualization envelope/);
   assert.doesNotMatch(description, /using its exact template\/payload contract/);
 });
@@ -70,7 +94,8 @@ test('runtime diagnostics identify invalid calculations in arbitrary nested stat
 });
 
 test('arithmetic diagnostics catch invalid operations while respecting guards and disabled actions', async () => {
-  const { runtimeProgramIssues } = await import('../src/react/intelligence-ui/openui/validateProgram.ts');
+  const { runtimeProgramIssues } =
+    await import('../src/react/intelligent-ui/openui/validateProgram.ts');
   const source = 'root = Col([Input($n,"N","number"),Text(10 / $n)])\n$n = 2';
   assert.deepEqual(runtimeProgramIssues(source, { $n: 2 }), []);
   assert.match(runtimeProgramIssues(source, { $n: 0 }).join(), /zero/);
@@ -78,6 +103,16 @@ test('arithmetic diagnostics catch invalid operations while respecting guards an
   assert.deepEqual(programIssues(invalidDefault), []);
   assert.match(runtimeProgramIssues(invalidDefault, {}).join(), /zero/);
   assert.deepEqual(runtimeProgramIssues(invalidDefault, { $n: 2 }), []);
-  assert.deepEqual(programIssues('root = Col([Input($n,"N","number"),Text($n == 0 ? "Enter a nonzero number" : 10 / $n)])\n$n = 0'), []);
-  assert.deepEqual(programIssues('root = Col([Input($n,"N","number"),Button("Go",@Set($r,10 / $n),null,null,null,null,$n == 0),Text($r)])\n$n = 0\n$r = 0'), []);
+  assert.deepEqual(
+    programIssues(
+      'root = Col([Input($n,"N","number"),Text($n == 0 ? "Enter a nonzero number" : 10 / $n)])\n$n = 0',
+    ),
+    [],
+  );
+  assert.deepEqual(
+    programIssues(
+      'root = Col([Input($n,"N","number"),Button("Go",@Set($r,10 / $n),null,null,null,null,$n == 0),Text($r)])\n$n = 0\n$r = 0',
+    ),
+    [],
+  );
 });

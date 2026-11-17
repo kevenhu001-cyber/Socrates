@@ -11,7 +11,15 @@ export interface ArtifactControlProps {
   i18nAria?: string;
 }
 
-export function ArtifactControl({ kind, label, className, onClick, title, i18nTitle, i18nAria }: ArtifactControlProps) {
+export function ArtifactControl({
+  kind,
+  label,
+  className,
+  onClick,
+  title,
+  i18nTitle,
+  i18nAria,
+}: ArtifactControlProps) {
   if (kind === 'fullscreen') {
     return (
       <Button
@@ -25,7 +33,15 @@ export function ArtifactControl({ kind, label, className, onClick, title, i18nTi
         data-i18n-aria={i18nAria}
         onClick={onClick}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
         </svg>
       </Button>

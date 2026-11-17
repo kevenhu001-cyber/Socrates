@@ -13,7 +13,9 @@ export function generateId(): string {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
     }
-  } catch { /* empty-catch: intentional — insecure context; fall through to the manual generator */ }
+  } catch {
+    /* empty-catch: intentional — insecure context; fall through to the manual generator */
+  }
   /* `getRandomValues` still works outside a secure context (only
      `randomUUID` and `crypto.subtle` are gated), so it covers the case
      the fast path misses without falling back to Math.random — a
@@ -23,7 +25,9 @@ export function generateId(): string {
   try {
     crypto.getRandomValues(bytes);
     filled = true;
-  } catch { /* empty-catch: intentional — no Web Crypto at all; see below */ }
+  } catch {
+    /* empty-catch: intentional — no Web Crypto at all; see below */
+  }
   if (!filled) {
     /* Last resort. Uniqueness, not unpredictability, is what the column
        needs from here: a timestamp plus a monotonic counter cannot repeat
@@ -36,8 +40,17 @@ export function generateId(): string {
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-  return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16)
-    + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+  return (
+    hex.slice(0, 8) +
+    '-' +
+    hex.slice(8, 12) +
+    '-' +
+    hex.slice(12, 16) +
+    '-' +
+    hex.slice(16, 20) +
+    '-' +
+    hex.slice(20)
+  );
 }
 
 let _fallbackSeq = 0;

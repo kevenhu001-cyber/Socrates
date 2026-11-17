@@ -13,8 +13,19 @@
 import { and, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { Conflict, NotFound } from '../../lib/errors.js';
-import { claimScheduledTask, renewScheduledTaskLease, withScheduledTaskLease, type ScheduledLease } from './scheduledTaskLease.js';
-import { scheduledTasks, scheduledTaskLeases, sessions, messages, users } from '../../db/schema/index.js';
+import {
+  claimScheduledTask,
+  renewScheduledTaskLease,
+  withScheduledTaskLease,
+  type ScheduledLease,
+} from './scheduledTaskLease.js';
+import {
+  scheduledTasks,
+  scheduledTaskLeases,
+  sessions,
+  messages,
+  users,
+} from '../../db/schema/index.js';
 import { getActiveApiKey } from './apiKey.js';
 import { callChatCompletion } from './llm/complete.js';
 import {
@@ -51,7 +62,10 @@ const SCHEDULED_SYSTEM_PROMPT =
  * one run). Monthly clamps to the last day of the shorter month
  * (Jan 31 → Feb 28/29) instead of rolling over into March.
  */
-export function computeNextRunAt(frequency: string | null | undefined, from: Date = new Date()): Date | null {
+export function computeNextRunAt(
+  frequency: string | null | undefined,
+  from: Date = new Date(),
+): Date | null {
   const base = new Date(from.getTime());
   switch (frequency) {
     case 'hourly':
@@ -78,9 +92,20 @@ export function computeNextRunAt(frequency: string | null | undefined, from: Dat
  * Execute provider work outside transactions. Result persistence and
  * scheduling bookkeeping happen together in the fenced completion below.
  */
-interface ExecutionOutcome { runId?: string; awaitingApproval?: boolean; content?: string; promptText?: string; model?: string | null; sessionId?: string | null }
+interface ExecutionOutcome {
+  runId?: string;
+  awaitingApproval?: boolean;
+  content?: string;
+  promptText?: string;
+  model?: string | null;
+  sessionId?: string | null;
+}
 
-async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal: AbortSignal): Promise<ExecutionOutcome> {
+async function executeTask(
+  task: ScheduledTaskRow,
+  lease: ScheduledLease,
+  signal: AbortSignal,
+): Promise<ExecutionOutcome> {
   const db = getDb();
   const [owner] = await db.select().from(users).where(eq(users.id, task.userId)).limit(1);
   if (!owner) throw new NotFound('Task owner no longer exists');
@@ -92,20 +117,34 @@ async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal
    * same isolated directory as retries and later scheduled runs. Native
    * tasks can continue creating their result session after completion. */
   if (task.agentKind === 'codex') {
-    if (!WORKSPACE_AGENT_BACKGROUND_ENABLED) throw new Error('Workspace agent background runs are disabled');
+    if (!WORKSPACE_AGENT_BACKGROUND_ENABLED)
+      throw new Error('Workspace agent background runs are disabled');
     if (sessionId) {
-      const [existing] = await db.select({ id: sessions.id }).from(sessions)
+      const [existing] = await db
+        .select({ id: sessions.id })
+        .from(sessions)
         .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
         .limit(1);
       if (!existing) sessionId = null;
     }
     if (!sessionId) {
       sessionId = await withScheduledTaskLease(lease, async (tx) => {
-        const [session] = await tx.insert(sessions).values({
-          userId: task.userId, title: `⏰ ${task.title}`, topic: task.title,
-          mode: 'chat', phase: 'chat', kind: 'chat', projectId: task.projectId,
-        }).returning({ id: sessions.id });
-        await tx.update(scheduledTasks).set({ sessionId: session.id }).where(eq(scheduledTasks.id, task.id));
+        const [session] = await tx
+          .insert(sessions)
+          .values({
+            userId: task.userId,
+            title: `⏰ ${task.title}`,
+            topic: task.title,
+            mode: 'chat',
+            phase: 'chat',
+            kind: 'chat',
+            projectId: task.projectId,
+          })
+          .returning({ id: sessions.id });
+        await tx
+          .update(scheduledTasks)
+          .set({ sessionId: session.id })
+          .where(eq(scheduledTasks.id, task.id));
         return session.id;
       });
     }
@@ -125,27 +164,41 @@ async function executeTask(task: ScheduledTaskRow, lease: ScheduledLease, signal
     });
     agentRunId = created.run.id;
     await withScheduledTaskLease(lease, async (tx) => {
-      await tx.update(scheduledTasks).set({ lastRunId: agentRunId }).where(eq(scheduledTasks.id, task.id));
+      await tx
+        .update(scheduledTasks)
+        .set({ lastRunId: agentRunId })
+        .where(eq(scheduledTasks.id, task.id));
     });
-    const rawPolicy = task.runPolicy && typeof task.runPolicy === 'object' && !Array.isArray(task.runPolicy)
-      ? task.runPolicy as Record<string, unknown>
-      : {};
+    const rawPolicy =
+      task.runPolicy && typeof task.runPolicy === 'object' && !Array.isArray(task.runPolicy)
+        ? (task.runPolicy as Record<string, unknown>)
+        : {};
     const policyDuration = Number(rawPolicy.maxDurationMs);
     const controller = new AbortController();
-    const policyTimer = Number.isFinite(policyDuration) && policyDuration >= 60_000
-      ? setTimeout(() => controller.abort('scheduled_policy_timeout'), Math.min(policyDuration, 900_000))
-      : null;
+    const policyTimer =
+      Number.isFinite(policyDuration) && policyDuration >= 60_000
+        ? setTimeout(
+            () => controller.abort('scheduled_policy_timeout'),
+            Math.min(policyDuration, 900_000),
+          )
+        : null;
     policyTimer?.unref?.();
     let result;
     try {
-      result = await runAgentTurn(agentRunId, task.userId, undefined, AbortSignal.any([signal, controller.signal]));
+      result = await runAgentTurn(
+        agentRunId,
+        task.userId,
+        undefined,
+        AbortSignal.any([signal, controller.signal]),
+      );
     } finally {
       if (policyTimer) clearTimeout(policyTimer);
     }
     if (result.status === 'awaiting_approval') {
       return { runId: agentRunId, awaitingApproval: true, sessionId };
     }
-    if (result.status !== 'completed') throw new Error(result.error || `Agent run ${result.status}`);
+    if (result.status !== 'completed')
+      throw new Error(result.error || `Agent run ${result.status}`);
     content = (result.output || result.summary || '').trim();
     if (!content) throw new Error('The agent returned an empty response');
   }
@@ -214,9 +267,14 @@ export async function runScheduledTaskNow(
   const heartbeat = setInterval(() => {
     if (renewing) return;
     renewing = true;
-    void renewScheduledTaskLease(lease).then((owned) => {
-      if (!owned) controller.abort('scheduled_lease_lost');
-    }).catch(() => controller.abort('scheduled_lease_lost')).finally(() => { renewing = false; });
+    void renewScheduledTaskLease(lease)
+      .then((owned) => {
+        if (!owned) controller.abort('scheduled_lease_lost');
+      })
+      .catch(() => controller.abort('scheduled_lease_lost'))
+      .finally(() => {
+        renewing = false;
+      });
   }, 20_000);
   heartbeat.unref();
   const deadline = setTimeout(() => controller.abort('scheduled_execution_timeout'), 900_000);
@@ -230,7 +288,10 @@ export async function runScheduledTaskNow(
       failure = (err as Error).message;
       console.error(`[scheduler] task ${task.id} failed:`, failure);
     }
-    if (controller.signal.aborted && ['scheduled_lease_lost', 'scheduler_shutdown'].includes(controller.signal.reason)) {
+    if (
+      controller.signal.aborted &&
+      ['scheduled_lease_lost', 'scheduler_shutdown'].includes(controller.signal.reason)
+    ) {
       throw new Conflict('Scheduled execution stopped without owning a valid lease');
     }
     return await withScheduledTaskLease(lease, async (tx, current) => {
@@ -238,40 +299,98 @@ export async function runScheduledTaskNow(
       let sessionId = outcome.sessionId || current.sessionId;
       if (!failure && !outcome.awaitingApproval) {
         if (sessionId) {
-          const [existing] = await tx.select({ id: sessions.id }).from(sessions)
-            .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId))).limit(1);
+          const [existing] = await tx
+            .select({ id: sessions.id })
+            .from(sessions)
+            .where(and(eq(sessions.id, sessionId), eq(sessions.userId, task.userId)))
+            .limit(1);
           if (!existing) sessionId = null;
         }
         if (!sessionId) {
-          const [session] = await tx.insert(sessions).values({
-            userId: task.userId, title: `⏰ ${task.title}`, topic: task.title,
-            mode: 'chat', phase: 'chat', kind: 'chat', projectId: current.projectId,
-          }).returning({ id: sessions.id });
+          const [session] = await tx
+            .insert(sessions)
+            .values({
+              userId: task.userId,
+              title: `⏰ ${task.title}`,
+              topic: task.title,
+              mode: 'chat',
+              phase: 'chat',
+              kind: 'chat',
+              projectId: current.projectId,
+            })
+            .returning({ id: sessions.id });
           sessionId = session.id;
         }
-        await tx.insert(messages).values([
-          { sessionId, role: 'user', content: outcome.promptText!, rawText: outcome.promptText!, clientId: `sched-${lease.executionId}-user` },
-          { sessionId, role: 'assistant', content: outcome.content!, rawText: outcome.content!, type: 'assistant', model: outcome.model, agentRunId: outcome.runId || null, clientId: `sched-${lease.executionId}-assistant` },
-        ]).onConflictDoNothing({ target: [messages.sessionId, messages.clientId] });
-        await tx.update(sessions).set({ preview: outcome.content!.slice(0, 200), updatedAt: now }).where(eq(sessions.id, sessionId));
+        await tx
+          .insert(messages)
+          .values([
+            {
+              sessionId,
+              role: 'user',
+              content: outcome.promptText!,
+              rawText: outcome.promptText!,
+              clientId: `sched-${lease.executionId}-user`,
+            },
+            {
+              sessionId,
+              role: 'assistant',
+              content: outcome.content!,
+              rawText: outcome.content!,
+              type: 'assistant',
+              model: outcome.model,
+              agentRunId: outcome.runId || null,
+              clientId: `sched-${lease.executionId}-assistant`,
+            },
+          ])
+          .onConflictDoNothing({ target: [messages.sessionId, messages.clientId] });
+        await tx
+          .update(sessions)
+          .set({ preview: outcome.content!.slice(0, 200), updatedAt: now })
+          .where(eq(sessions.id, sessionId));
       }
-      const patch: Partial<Omit<typeof scheduledTasks.$inferInsert, 'runCount'>> & { runCount: ReturnType<typeof sql> } = {
-        lastRunAt: now, runCount: sql`${scheduledTasks.runCount} + 1`, updatedAt: now,
+      const patch: Partial<Omit<typeof scheduledTasks.$inferInsert, 'runCount'>> & {
+        runCount: ReturnType<typeof sql>;
+      } = {
+        lastRunAt: now,
+        runCount: sql`${scheduledTasks.runCount} + 1`,
+        updatedAt: now,
       };
       if (sessionId) patch.sessionId = sessionId;
       if (outcome.runId) patch.lastRunId = outcome.runId;
       if (outcome.awaitingApproval) {
-        patch.status = 'paused'; patch.nextRunAt = null;
-      } else if (current.status === task.status && current.nextRunAt?.getTime() === task.nextRunAt?.getTime()) {
+        patch.status = 'paused';
+        patch.nextRunAt = null;
+      } else if (
+        current.status === task.status &&
+        current.nextRunAt?.getTime() === task.nextRunAt?.getTime()
+      ) {
         // Preserve a user's pause/reschedule made while the provider was busy.
         const recurringNext = computeNextRunAt(current.frequency, now);
-        patch.status = current.status === 'paused' ? 'paused' : recurringNext ? 'active' : failure ? 'failed' : 'completed';
+        patch.status =
+          current.status === 'paused'
+            ? 'paused'
+            : recurringNext
+              ? 'active'
+              : failure
+                ? 'failed'
+                : 'completed';
         if (!recurringNext) patch.nextRunAt = null;
         else if (lease.kind === 'scheduled' || opts.reschedule) patch.nextRunAt = recurringNext;
       }
-      const [updated] = await tx.update(scheduledTasks).set(patch).where(eq(scheduledTasks.id, task.id)).returning();
-      await tx.update(scheduledTaskLeases).set({ state: failure ? 'failed' : 'completed', error: failure, updatedAt: now })
-        .where(and(eq(scheduledTaskLeases.taskId, task.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
+      const [updated] = await tx
+        .update(scheduledTasks)
+        .set(patch)
+        .where(eq(scheduledTasks.id, task.id))
+        .returning();
+      await tx
+        .update(scheduledTaskLeases)
+        .set({ state: failure ? 'failed' : 'completed', error: failure, updatedAt: now })
+        .where(
+          and(
+            eq(scheduledTaskLeases.taskId, task.id),
+            eq(scheduledTaskLeases.ownerToken, lease.ownerToken),
+          ),
+        );
       return updated;
     });
   } catch (error) {
@@ -293,14 +412,35 @@ export async function runScheduledTaskNow(
       );
     } else {
       await withScheduledTaskLease(lease, async (tx, current) => {
-        await tx.update(scheduledTasks).set({ status: 'paused', nextRunAt: null, updatedAt: new Date() }).where(eq(scheduledTasks.id, current.id));
-        await tx.update(scheduledTaskLeases).set({ state: 'failed', error: 'Result persistence failed; review before manually retrying.', updatedAt: new Date() })
-          .where(and(eq(scheduledTaskLeases.taskId, current.id), eq(scheduledTaskLeases.ownerToken, lease.ownerToken)));
-      }).catch((quarantineError) => console.warn('[scheduler] unable to fence failed completion:', (quarantineError as Error).message));
+        await tx
+          .update(scheduledTasks)
+          .set({ status: 'paused', nextRunAt: null, updatedAt: new Date() })
+          .where(eq(scheduledTasks.id, current.id));
+        await tx
+          .update(scheduledTaskLeases)
+          .set({
+            state: 'failed',
+            error: 'Result persistence failed; review before manually retrying.',
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(scheduledTaskLeases.taskId, current.id),
+              eq(scheduledTaskLeases.ownerToken, lease.ownerToken),
+            ),
+          );
+      }).catch((quarantineError) =>
+        console.warn(
+          '[scheduler] unable to fence failed completion:',
+          (quarantineError as Error).message,
+        ),
+      );
     }
     throw error;
   } finally {
-    clearInterval(heartbeat); clearTimeout(deadline); activeControllers.delete(controller);
+    clearInterval(heartbeat);
+    clearTimeout(deadline);
+    activeControllers.delete(controller);
   }
 }
 
@@ -313,21 +453,42 @@ export async function pollScheduledTasksOnce(): Promise<void> {
   polling = true;
   try {
     const db = getDb();
-    const rows = await db.select({ task: scheduledTasks }).from(scheduledTasks)
+    const rows = await db
+      .select({ task: scheduledTasks })
+      .from(scheduledTasks)
       .leftJoin(scheduledTaskLeases, eq(scheduledTaskLeases.taskId, scheduledTasks.id))
-      .where(and(
-        inArray(scheduledTasks.status, ['pending', 'active']),
-        or(
-          and(isNotNull(scheduledTasks.nextRunAt), lte(scheduledTasks.nextRunAt, sql`clock_timestamp()`)),
-          and(eq(scheduledTaskLeases.state, 'running'), lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`)),
+      .where(
+        and(
+          inArray(scheduledTasks.status, ['pending', 'active']),
+          or(
+            and(
+              isNotNull(scheduledTasks.nextRunAt),
+              lte(scheduledTasks.nextRunAt, sql`clock_timestamp()`),
+            ),
+            and(
+              eq(scheduledTaskLeases.state, 'running'),
+              lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`),
+            ),
+          ),
+          or(
+            isNull(scheduledTaskLeases.taskId),
+            ne(scheduledTaskLeases.state, 'running'),
+            lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`),
+          ),
         ),
-        or(isNull(scheduledTaskLeases.taskId), ne(scheduledTaskLeases.state, 'running'), lte(scheduledTaskLeases.expiresAt, sql`clock_timestamp()`)),
-      ))
-      .orderBy(scheduledTasks.nextRunAt).limit(MAX_TASKS_PER_POLL);
+      )
+      .orderBy(scheduledTasks.nextRunAt)
+      .limit(MAX_TASKS_PER_POLL);
     for (const { task } of rows) {
       if (stopping) break;
-      try { await runScheduledTaskNow(task, { automatic: true }); }
-      catch (err) { console.warn(`[scheduler] task ${task.id} claim/execution skipped:`, (err as Error).message); }
+      try {
+        await runScheduledTaskNow(task, { automatic: true });
+      } catch (err) {
+        console.warn(
+          `[scheduler] task ${task.id} claim/execution skipped:`,
+          (err as Error).message,
+        );
+      }
     }
   } catch (err) {
     console.error('[scheduler] poll failed:', (err as Error).message);
@@ -341,7 +502,9 @@ export function startScheduler(): void {
   if (pollTimer) return;
   if (process.env.SCHEDULER_ENABLED === '0' || process.env.SCHEDULER_ENABLED === 'false') return;
   stopping = false;
-  pollTimer = setInterval(() => { void pollScheduledTasksOnce(); }, POLL_INTERVAL_MS);
+  pollTimer = setInterval(() => {
+    void pollScheduledTasksOnce();
+  }, POLL_INTERVAL_MS);
   if (typeof pollTimer.unref === 'function') pollTimer.unref();
   // Catch up on tasks that came due while the server was down.
   void pollScheduledTasksOnce();

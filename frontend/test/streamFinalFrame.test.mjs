@@ -64,7 +64,9 @@ test('final SSE frame without trailing newline is still parsed', async () => {
   const result = await callAPIStream(
     [{ role: 'user', content: 'hi' }],
     256,
-    (_delta, acc) => { full = acc; },
+    (_delta, acc) => {
+      full = acc;
+    },
     null,
     { maxAttempts: 1 },
   );

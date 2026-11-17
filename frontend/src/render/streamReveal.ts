@@ -10,9 +10,18 @@ export const STREAM_REVEAL_MS = 180;
 export const REVEAL_STAGGER_MS = 30;
 /** Two arrivals closer together than this happened in the same tick. */
 const SAME_TICK_MS = 8;
-const OPAQUE = 'table,.ds-table-wrap,pre,code,button,script,style,svg,math,.katex,.viz,.mermaid,.code-block-header';
-interface Run { length: number; at: number; tier: number }
-interface Leaf { node: Text; start: number; end: number }
+const OPAQUE =
+  'table,.ds-table-wrap,pre,code,button,script,style,svg,math,.katex,.viz,.mermaid,.code-block-header';
+interface Run {
+  length: number;
+  at: number;
+  tier: number;
+}
+interface Leaf {
+  node: Text;
+  start: number;
+  end: number;
+}
 
 /**
  * The index a segment takes inside the group of segments that arrived in
@@ -59,12 +68,19 @@ function suffixOf(root: Element): { text: string; leaves: Leaf[] } {
   for (let visited = 0; node && visited < MAX_NODES && text.length < MAX_CHARS; visited++) {
     if (node.nodeType === 1) {
       const element = node as Element;
-      if (!element.matches(OPAQUE) && node.lastChild) { node = node.lastChild; continue; }
+      if (!element.matches(OPAQUE) && node.lastChild) {
+        node = node.lastChild;
+        continue;
+      }
     } else if (node.nodeType === 3) {
       const value = node.nodeValue || '';
       // marked adds formatting newlines between block elements. They move on
       // every append but are not revealed prose; keep them out of the suffix.
-      if (value.length <= 16 && !value.trim() && /^(DIV|UL|OL|TABLE|THEAD|TBODY|TR|BLOCKQUOTE)$/.test(node.parentElement?.tagName || '')) {
+      if (
+        value.length <= 16 &&
+        !value.trim() &&
+        /^(DIV|UL|OL|TABLE|THEAD|TBODY|TR|BLOCKQUOTE)$/.test(node.parentElement?.tagName || '')
+      ) {
         node = previous(node, root);
         continue;
       }
@@ -84,7 +100,12 @@ interface AppendMeasure {
   resetRuns: boolean;
 }
 
-function measureAppend(source: string, nextSource: string, suffix: string, nextText: string): AppendMeasure {
+function measureAppend(
+  source: string,
+  nextSource: string,
+  suffix: string,
+  nextText: string,
+): AppendMeasure {
   let length = Math.min(nextText.length, MAX_CHARS);
   if (!source || !nextSource.startsWith(source)) return { length, resetRuns: true };
 
@@ -102,7 +123,10 @@ function updateRevealRuns(runs: Run[], added: number, now: number): Run[] {
     active.push({
       length: added,
       at: now,
-      tier: revealTier(active.map((run) => run.at), now),
+      tier: revealTier(
+        active.map((run) => run.at),
+        now,
+      ),
     });
   }
   return active.slice(-MAX_RUNS);
@@ -132,9 +156,7 @@ function renderRevealRange(
     const span = root.ownerDocument.createElement('span');
     /* Only the newest run carries the blur: a filter forces an offscreen
        pass, and the older runs are already on their way out. */
-    span.className = isNewest
-      ? 'stream-append-reveal'
-      : 'stream-append-reveal stream-append-aged';
+    span.className = isNewest ? 'stream-append-reveal' : 'stream-append-reveal stream-append-aged';
     span.style.animationDelay = `${revealDelay(now - run.at, run.tier)}ms`;
     part.replaceWith(span);
     span.appendChild(part);
@@ -177,8 +199,11 @@ export function createStreamReveal() {
   return (root: Element, nextSource: string, now = performance.now()): number => {
     const view = root.ownerDocument.defaultView;
     let smoothStreamDisabled = false;
-    try { smoothStreamDisabled = view?.localStorage.getItem('socrates:smoothStream') === 'off'; }
-    catch { /* empty-catch: intentional — localStorage may be unavailable in an opaque document. */ }
+    try {
+      smoothStreamDisabled = view?.localStorage.getItem('socrates:smoothStream') === 'off';
+    } catch {
+      /* empty-catch: intentional — localStorage may be unavailable in an opaque document. */
+    }
     if (smoothStreamDisabled || view?.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       source = nextSource;
       suffix = '';

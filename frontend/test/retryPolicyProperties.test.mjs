@@ -3,20 +3,14 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import {
-  isRetryableAIError,
-  isUserAbort,
-  waitForAIRetry,
-} from '../src/chat/retryPolicy.ts';
+import { isRetryableAIError, isUserAbort, waitForAIRetry } from '../src/chat/retryPolicy.ts';
 
 const RUNS = 200;
 
 /* Transient statuses the policy treats as retryable transport/upstream
    failures: explicit 408/425/429 plus the whole 5xx range. */
-const transientStatus = () => fc.oneof(
-  fc.constantFrom(408, 425, 429),
-  fc.integer({ min: 500, max: 599 }),
-);
+const transientStatus = () =>
+  fc.oneof(fc.constantFrom(408, 425, 429), fc.integer({ min: 500, max: 599 }));
 
 /* Nest a status under one of the three shapes errorStatus() reads:
    top-level `status`, top-level `statusCode`, or `body.status`. */
@@ -51,33 +45,35 @@ test('Feature: chat-experience-revamp, Property 1: Transient failures are retrya
 // ---------------------------------------------------------------------------
 test('Feature: chat-experience-revamp, Property 2: Deterministic provider/config failures are never retryable', () => {
   // Terminal codes matched by the classifier's code regex.
-  const terminalCode = () => fc.constantFrom(
-    'MONTHLY_LIMIT',
-    'QUOTA',
-    'INVALID_API_KEY',
-    'INVALID-API-KEY',
-    'AUTH',
-    'UNAUTHORIZED',
-    'FORBIDDEN',
-    'INVALID_REQUEST',
-    'CONTENT_POLICY',
-    'BAD_REQUEST',
-  );
+  const terminalCode = () =>
+    fc.constantFrom(
+      'MONTHLY_LIMIT',
+      'QUOTA',
+      'INVALID_API_KEY',
+      'INVALID-API-KEY',
+      'AUTH',
+      'UNAUTHORIZED',
+      'FORBIDDEN',
+      'INVALID_REQUEST',
+      'CONTENT_POLICY',
+      'BAD_REQUEST',
+    );
   // Terminal messages matched by the classifier's message regex (used when no
   // status/code is present).
-  const terminalMessage = () => fc.constantFrom(
-    'monthly limit reached',
-    'quota exhausted',
-    'invalid api key',
-    'authentication failed',
-    'unauthorized',
-    'forbidden',
-    'invalid request',
-    'content policy violation',
-  );
+  const terminalMessage = () =>
+    fc.constantFrom(
+      'monthly limit reached',
+      'quota exhausted',
+      'invalid api key',
+      'authentication failed',
+      'unauthorized',
+      'forbidden',
+      'invalid request',
+      'content policy violation',
+    );
   // Non-retryable 4xx statuses (excluding the retryable 408/425/429).
-  const terminalStatus = () => fc.integer({ min: 400, max: 499 })
-    .filter((s) => s !== 408 && s !== 425 && s !== 429);
+  const terminalStatus = () =>
+    fc.integer({ min: 400, max: 499 }).filter((s) => s !== 408 && s !== 425 && s !== 429);
 
   fc.assert(
     fc.property(
@@ -100,13 +96,8 @@ test('Feature: chat-experience-revamp, Property 2: Deterministic provider/config
 // user intent and never retried
 // ---------------------------------------------------------------------------
 test('Feature: chat-experience-revamp, Property 3: User abort is classified as user intent and never retried', () => {
-  const userStopReason = () => fc.constantFrom(
-    'user-stop',
-    'user_stop',
-    'user stop',
-    'cancelled',
-    'canceled',
-  );
+  const userStopReason = () =>
+    fc.constantFrom('user-stop', 'user_stop', 'user stop', 'cancelled', 'canceled');
 
   // A signal-like object carrying an aborted flag and a reason.
   const abortedSignal = (reason) => ({ aborted: true, reason });
@@ -119,7 +110,8 @@ test('Feature: chat-experience-revamp, Property 3: User abort is classified as u
         // Named user-stop reasons carried on the signal.
         userStopReason().map((reason) => ({ error: {}, signal: abortedSignal(reason) })),
         // Bare DOM abort: aborted signal with no / abort-like reason.
-        fc.constantFrom('', 'abort', 'AbortError', 'The operation was aborted')
+        fc
+          .constantFrom('', 'abort', 'AbortError', 'The operation was aborted')
           .map((reason) => ({ error: {}, signal: abortedSignal(reason) })),
       ),
       ({ error, signal }) => {
@@ -137,17 +129,18 @@ test('Feature: chat-experience-revamp, Property 3: User abort is classified as u
 // ---------------------------------------------------------------------------
 test('Feature: chat-experience-revamp, Property 4: Retry waits and replays only below the attempt ceiling', async () => {
   const retryableError = () => transientStatus().map((status) => ({ status }));
-  const terminalError = () => fc.constantFrom(
-    { status: 401 },
-    { status: 400 },
-    { code: 'MONTHLY_LIMIT' },
-    { message: 'quota exhausted' },
-  );
+  const terminalError = () =>
+    fc.constantFrom(
+      { status: 401 },
+      { status: 400 },
+      { code: 'MONTHLY_LIMIT' },
+      { message: 'quota exhausted' },
+    );
 
   await fc.assert(
     fc.asyncProperty(
-      fc.integer({ min: 1, max: 20 }),   // maxRetries -> maxAttempts = maxRetries + 1
-      fc.integer({ min: 1, max: 40 }),   // attempt number
+      fc.integer({ min: 1, max: 20 }), // maxRetries -> maxAttempts = maxRetries + 1
+      fc.integer({ min: 1, max: 40 }), // attempt number
       retryableError(),
       terminalError(),
       fc.integer({ min: 0, max: 10000 }),
@@ -160,7 +153,9 @@ test('Feature: chat-experience-revamp, Property 4: Retry waits and replays only 
           const options = {
             maxRetries,
             delayMs,
-            sleep: async (ms) => { sleeps.push(ms); },
+            sleep: async (ms) => {
+              sleeps.push(ms);
+            },
           };
           const belowCeiling = ((attempt - 1) % maxAttempts) + 1; // 1..maxAttempts
           if (belowCeiling < maxAttempts) {
@@ -176,7 +171,9 @@ test('Feature: chat-experience-revamp, Property 4: Retry waits and replays only 
           const options = {
             maxRetries,
             delayMs,
-            sleep: async (ms) => { sleeps.push(ms); },
+            sleep: async (ms) => {
+              sleeps.push(ms);
+            },
           };
           const atOrAbove = maxAttempts + (attempt % 5); // >= maxAttempts
           const result = await waitForAIRetry(atOrAbove, retryable, options);
@@ -190,7 +187,9 @@ test('Feature: chat-experience-revamp, Property 4: Retry waits and replays only 
           const options = {
             maxRetries,
             delayMs,
-            sleep: async (ms) => { sleeps.push(ms); },
+            sleep: async (ms) => {
+              sleeps.push(ms);
+            },
           };
           const result = await waitForAIRetry(1, terminal, options);
           assert.equal(result, false);

@@ -60,6 +60,10 @@ export async function httpRequest(url, opts = {}) {
   const setCookies = r.headers.getSetCookie?.() || [];
   let json = null;
   const text = await r.text();
-  try { json = text ? JSON.parse(text) : null; } catch { /* keep null */ }
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    /* keep null */
+  }
   return { status: r.status, headers: r.headers, setCookies, body: json, text };
 }

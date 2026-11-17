@@ -13,7 +13,10 @@ test('formatting controls expose their active state without making undo a toggle
   const markup = renderToStaticMarkup(React.createElement(FormattingToolbar, { editor }));
   const document = new JSDOM(markup).window.document;
   assert.equal(document.querySelector('[aria-label="Bold"]').getAttribute('aria-pressed'), 'true');
-  assert.equal(document.querySelector('[aria-label="Italic"]').getAttribute('aria-pressed'), 'false');
+  assert.equal(
+    document.querySelector('[aria-label="Italic"]').getAttribute('aria-pressed'),
+    'false',
+  );
   const undo = document.querySelector('[aria-label="Undo"]');
   assert.equal(undo.hasAttribute('aria-pressed'), false);
   assert.equal(undo.disabled, true);

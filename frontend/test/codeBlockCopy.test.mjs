@@ -9,7 +9,7 @@ import { JSDOM } from 'jsdom';
 const dom = new JSDOM(
   '<!doctype html><html><body><div id="msgList"><div class="msg-body">' +
     '<pre><code class="language-js">const x = 1;</code></pre>' +
-  '</div></div></body></html>',
+    '</div></div></body></html>',
   { url: 'http://localhost/' },
 );
 globalThis.window = dom.window;
@@ -46,7 +46,10 @@ test('an inserted code-block header gets the copy control', async () => {
   header.className = 'code-block-header';
   pre.parentNode.insertBefore(header, pre);
 
-  assert.ok(await waitFor(() => header.querySelector('.code-block-copy')), 'shadcn copy button was not mounted');
+  assert.ok(
+    await waitFor(() => header.querySelector('.code-block-copy')),
+    'shadcn copy button was not mounted',
+  );
   assert.ok(header.querySelector('.code-block-expand'), 'shadcn expand button was not mounted');
 });
 

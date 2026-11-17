@@ -3,7 +3,9 @@
 declare module 'three' {
   export class Vector3 {
     constructor(x?: number, y?: number, z?: number);
-    x: number; y: number; z: number;
+    x: number;
+    y: number;
+    z: number;
     set(x: number, y: number, z: number): this;
     copy(other: Vector3): this;
     add(other: Vector3): this;
@@ -18,7 +20,10 @@ declare module 'three' {
   }
   export class Scene extends Object3D {}
   export class Group extends Object3D {}
-  export class Sphere { center: Vector3; radius: number; }
+  export class Sphere {
+    center: Vector3;
+    radius: number;
+  }
   export class Box3 {
     setFromObject(object: Object3D): this;
     getBoundingSphere(target: Sphere): Sphere;
@@ -33,7 +38,11 @@ declare module 'three' {
     updateProjectionMatrix(): void;
   }
   export class WebGLRenderer {
-    constructor(options?: { antialias?: boolean; alpha?: boolean; preserveDrawingBuffer?: boolean });
+    constructor(options?: {
+      antialias?: boolean;
+      alpha?: boolean;
+      preserveDrawingBuffer?: boolean;
+    });
     domElement: HTMLCanvasElement;
     setPixelRatio(value: number): void;
     setSize(width: number, height: number, updateStyle?: boolean): void;
@@ -41,16 +50,30 @@ declare module 'three' {
     dispose(): void;
     forceContextLoss(): void;
   }
-  export class HemisphereLight { constructor(skyColor?: number, groundColor?: number, intensity?: number); }
+  export class HemisphereLight {
+    constructor(skyColor?: number, groundColor?: number, intensity?: number);
+  }
   export class DirectionalLight {
     constructor(color?: number, intensity?: number);
     position: { set(x: number, y: number, z: number): void };
   }
-  export class GridHelper extends LineSegments { constructor(size?: number, divisions?: number, color1?: number, color2?: number); }
-  export class Material { dispose(): void; }
-  export class BufferGeometry { dispose(): void; }
+  export class GridHelper extends LineSegments {
+    constructor(size?: number, divisions?: number, color1?: number, color2?: number);
+  }
+  export class Material {
+    dispose(): void;
+  }
+  export class BufferGeometry {
+    dispose(): void;
+  }
   export class MeshStandardMaterial extends Material {
-    constructor(options?: { color?: number; roughness?: number; metalness?: number; transparent?: boolean; opacity?: number });
+    constructor(options?: {
+      color?: number;
+      roughness?: number;
+      metalness?: number;
+      transparent?: boolean;
+      opacity?: number;
+    });
     clone(): MeshStandardMaterial;
   }
   export class LineSegments extends Object3D {
@@ -62,10 +85,23 @@ declare module 'three' {
     geometry: BufferGeometry;
     material: Material | Material[];
   }
-  export class SphereGeometry extends BufferGeometry { constructor(radius?: number, widthSegments?: number, heightSegments?: number); }
-  export class CylinderGeometry extends BufferGeometry { constructor(radiusTop?: number, radiusBottom?: number, height?: number, radialSegments?: number); }
-  export class ConeGeometry extends BufferGeometry { constructor(radius?: number, height?: number, radialSegments?: number); }
-  export class BoxGeometry extends BufferGeometry { constructor(width?: number, height?: number, depth?: number); }
+  export class SphereGeometry extends BufferGeometry {
+    constructor(radius?: number, widthSegments?: number, heightSegments?: number);
+  }
+  export class CylinderGeometry extends BufferGeometry {
+    constructor(
+      radiusTop?: number,
+      radiusBottom?: number,
+      height?: number,
+      radialSegments?: number,
+    );
+  }
+  export class ConeGeometry extends BufferGeometry {
+    constructor(radius?: number, height?: number, radialSegments?: number);
+  }
+  export class BoxGeometry extends BufferGeometry {
+    constructor(width?: number, height?: number, depth?: number);
+  }
 }
 
 declare module 'three/addons/controls/OrbitControls.js' {

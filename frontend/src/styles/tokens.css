@@ -200,7 +200,7 @@
      skeleton placeholders (.skeleton-shimmer) share this clock. */
   --ui-duration-shimmer-sweep: 1900ms;
 
-  /* Wave loader (styles/components/wave.css + react/wave/Wave.tsx). */
+  /* Wave loader (styles/components/wave.css). */
   --ui-wave-duration: 1400ms;
   --ui-wave-bar-count: 5;
   --ui-wave-bar-width: 3px;

@@ -21,11 +21,16 @@ describe('@socrates/core', () => {
       onReasoning: (value: string) => reasoning.push(value),
       onToolProgress: (value: unknown) => tools.push(value),
       onError: (value: string) => errors.push(value),
-      onDone: () => { done += 1; },
+      onDone: () => {
+        done += 1;
+      },
     };
 
     dispatchChatSseFrame('data: {"choices":[{"delta":{"content":"Hello"}}]}\r\n\r\n', handlers);
-    dispatchChatSseFrame('data: {"choices":[{"delta":{"reasoning_content":"Think"}}]}\n\n', handlers);
+    dispatchChatSseFrame(
+      'data: {"choices":[{"delta":{"reasoning_content":"Think"}}]}\n\n',
+      handlers,
+    );
     dispatchChatSseFrame('event: tool_progress\ndata: {"step":1}\n\n', handlers);
     dispatchChatSseFrame('event: error\ndata: {"message":"No connection"}\n\n', handlers);
     dispatchChatSseFrame('data: [DONE]\n\n', handlers);
@@ -62,7 +67,10 @@ describe('@socrates/core', () => {
     dispatchChatSseFrame('event: tool_progress\ndata: {"step":2}\n\n', handlers);
     dispatchChatSseFrame('event: tool_call_delta\ndata: {"args":"x"}\n\n', handlers);
     dispatchChatSseFrame('event: execution_start\ndata: {"execId":"e1"}\n\n', handlers);
-    dispatchChatSseFrame('event: tool_approval\ndata: {"runId":"r1","approvalId":"a1"}\n\n', handlers);
+    dispatchChatSseFrame(
+      'event: tool_approval\ndata: {"runId":"r1","approvalId":"a1"}\n\n',
+      handlers,
+    );
 
     assert.deepEqual(captured.toolUse, [{ id: 'a' }]);
     assert.deepEqual(captured.toolResult, [{ id: 'a', output: 'done' }]);
@@ -99,14 +107,16 @@ describe('@socrates/core', () => {
       'event: error\ndata: {"status":429,"code":"LLM_RATE_LIMITED","message":"Try again later","retryable":false,"upstreamStatus":429,"retryAfterMs":2500}\n\n',
       handlers,
     );
-    assert.deepEqual(details, [{
-      message: 'Try again later',
-      status: 429,
-      code: 'LLM_RATE_LIMITED',
-      retryable: false,
-      upstreamStatus: 429,
-      retryAfterMs: 2500,
-    }]);
+    assert.deepEqual(details, [
+      {
+        message: 'Try again later',
+        status: 429,
+        code: 'LLM_RATE_LIMITED',
+        retryable: false,
+        upstreamStatus: 429,
+        retryAfterMs: 2500,
+      },
+    ]);
   });
 
   it('routes content and reasoning_content deltas independently in the same frame', () => {
@@ -129,7 +139,9 @@ describe('@socrates/core', () => {
     let done = 0;
     const handlers = {
       onError: (v: string) => errors.push(v),
-      onDone: () => { done += 1; },
+      onDone: () => {
+        done += 1;
+      },
     };
     dispatchChatSseFrame('event: telemetry\ndata: {"foo":1}\n\n', handlers);
     dispatchChatSseFrame('data: \n\n', handlers);
@@ -175,8 +187,22 @@ describe('@socrates/core', () => {
 
   it('reconstructs image and parsed document attachments as model content parts', () => {
     const content = buildUserContentParts('Describe these', [
-      { id: 'image-1', kind: 'image', name: 'diagram.png', mime: 'image/png', size: 12, dataUrl: 'data:image/png;base64,abc' },
-      { id: 'pdf-1', kind: 'pdf', name: 'notes.pdf', mime: 'application/pdf', size: 24, text: 'A long explanation.' },
+      {
+        id: 'image-1',
+        kind: 'image',
+        name: 'diagram.png',
+        mime: 'image/png',
+        size: 12,
+        dataUrl: 'data:image/png;base64,abc',
+      },
+      {
+        id: 'pdf-1',
+        kind: 'pdf',
+        name: 'notes.pdf',
+        mime: 'application/pdf',
+        size: 24,
+        text: 'A long explanation.',
+      },
     ]);
     assert.deepEqual(content, [
       { type: 'text', text: 'Describe these' },
@@ -187,15 +213,26 @@ describe('@socrates/core', () => {
 
   it('bounds history and strips inline reasoning tags without losing attachment context', () => {
     const messages = Array.from({ length: 65 }, (_, index) => ({
-      role: index % 2 === 0 ? 'user' as const : 'assistant' as const,
+      role: index % 2 === 0 ? ('user' as const) : ('assistant' as const),
       rawText: index % 2 === 0 ? `Question ${index}` : `<think>internal</think>Answer ${index}`,
       content: index % 2 === 0 ? `Question ${index}` : `<think>internal</think>Answer ${index}`,
-      ...(index === 64 ? {
-        attachments: [{ id: 'text-1', kind: 'text', name: 'source.txt', mime: 'text/plain', size: 1, text: 'source body' }],
-      } : {}),
+      ...(index === 64
+        ? {
+            attachments: [
+              {
+                id: 'text-1',
+                kind: 'text',
+                name: 'source.txt',
+                mime: 'text/plain',
+                size: 1,
+                text: 'source body',
+              },
+            ],
+          }
+        : {}),
     }));
     const history = buildChatHistory(messages, { maxTurns: 2, maxChars: 20 });
-    assert.equal((history).length, 4);
+    assert.equal(history.length, 4);
     assert.deepEqual(history.at(-1), {
       role: 'user',
       content: [
@@ -203,6 +240,11 @@ describe('@socrates/core', () => {
         { type: 'text', text: '[Parsed file: source.txt]\nsource body' },
       ],
     });
-    assert.equal(history.some((entry) => typeof entry.content === 'string' && entry.content.includes('<think>')), false);
+    assert.equal(
+      history.some(
+        (entry) => typeof entry.content === 'string' && entry.content.includes('<think>'),
+      ),
+      false,
+    );
   });
 });

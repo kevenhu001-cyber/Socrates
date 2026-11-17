@@ -52,9 +52,17 @@ function inline(node: DomNode): string {
     case 'b':
       return inner.trim() ? `**${inner.trim()}**` : inner;
     case 'sup':
-      return inner.trim() ? (inner.trim().length === 1 ? `^${inner.trim()}` : `^(${inner.trim()})`) : '';
+      return inner.trim()
+        ? inner.trim().length === 1
+          ? `^${inner.trim()}`
+          : `^(${inner.trim()})`
+        : '';
     case 'sub':
-      return inner.trim() ? (inner.trim().length === 1 ? `_${inner.trim()}` : `_(${inner.trim()})`) : '';
+      return inner.trim()
+        ? inner.trim().length === 1
+          ? `_${inner.trim()}`
+          : `_(${inner.trim()})`
+        : '';
     case 'a': {
       const href = node.getAttribute?.('href') || '';
       const text = inner.trim();
@@ -64,7 +72,12 @@ function inline(node: DomNode): string {
     /* Block elements nested inside a table cell or list item flatten to
        inline text separated by spaces. */
     case 'p':
-    case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+    case 'h1':
+    case 'h2':
+    case 'h3':
+    case 'h4':
+    case 'h5':
+    case 'h6':
     case 'li':
       return ` ${inner} `;
     default:
@@ -100,9 +113,11 @@ function tableBlock(table: DomNode): string {
     for (const child of children(node)) {
       const ct = tag(child);
       if (ct === 'tr') {
-        rows.push(children(child)
-          .filter((c) => tag(c) === 'td' || tag(c) === 'th')
-          .map((c) => inline(c).replace(/\s+/g, ' ').trim()));
+        rows.push(
+          children(child)
+            .filter((c) => tag(c) === 'td' || tag(c) === 'th')
+            .map((c) => inline(c).replace(/\s+/g, ' ').trim()),
+        );
       } else if (ct === 'thead' || ct === 'tbody' || ct === 'tfoot') {
         visit(child);
       }
@@ -133,12 +148,16 @@ function blocks(root: DomNode): string[] {
       const md = tableBlock(node);
       if (md) out.push(md);
     } else if (t === 'p' || t === 'blockquote' || t === 'pre') {
-      const text = inline(node).replace(/[ \t]+/g, ' ').trim();
+      const text = inline(node)
+        .replace(/[ \t]+/g, ' ')
+        .trim();
       if (text) out.push(t === 'blockquote' ? `> ${text}` : text);
     } else if (t === 'div' || t === 'section' || t === 'article' || t === 'body') {
       out.push(...blocks(node));
     } else {
-      const text = inline(node).replace(/[ \t]+/g, ' ').trim();
+      const text = inline(node)
+        .replace(/[ \t]+/g, ' ')
+        .trim();
       if (text) out.push(text);
     }
   }
@@ -153,12 +172,17 @@ export async function extract(filepath: string) {
   let tableCount = 0;
   let headingCount = 0;
   try {
-    const result = await mammoth.convertToHtml({ path: filepath }, {
-      /* Placeholder <img> (alt text kept by mammoth) instead of base64. */
-      convertImage: mammoth.images.imgElement(async () => ({ src: '' })),
-    });
+    const result = await mammoth.convertToHtml(
+      { path: filepath },
+      {
+        /* Placeholder <img> (alt text kept by mammoth) instead of base64. */
+        convertImage: mammoth.images.imgElement(async () => ({ src: '' })),
+      },
+    );
     messageCount = Array.isArray(result?.messages) ? result.messages.length : 0;
-    const dom = new JSDOM(`<!doctype html><html><body>${String(result?.value || '')}</body></html>`);
+    const dom = new JSDOM(
+      `<!doctype html><html><body>${String(result?.value || '')}</body></html>`,
+    );
     const body = dom.window.document.body as DomNode;
     const parts = blocks(body);
     tableCount = parts.filter((p) => p.startsWith('| ')).length;

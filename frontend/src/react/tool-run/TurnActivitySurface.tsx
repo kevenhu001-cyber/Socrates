@@ -34,7 +34,14 @@ import { ToolRunDetail } from './ToolRunDetail';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
 import { useElapsed } from './useElapsed';
-import { agentRunStateOf, runStartedAt, toolRunStateOf, toolRunView, type ToolCallRecord, type ToolRunView } from './toolRunModel';
+import {
+  agentRunStateOf,
+  runStartedAt,
+  toolRunStateOf,
+  toolRunView,
+  type ToolCallRecord,
+  type ToolRunView,
+} from './toolRunModel';
 import { tf, toolRunLabel } from '../../ui/toolPresentationModel.ts';
 import { interfaceIcon } from '../../ui/icons/interfaceIcons.ts';
 
@@ -85,11 +92,23 @@ function SummaryStep({ step, live }: { step: ThinkingStep; live: boolean }): Rea
 }
 
 function StepGlyph({ html }: { html: string }) {
-  return <span className="tool-inline-tool-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <span
+      className="tool-inline-tool-icon"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 function hasDetail(view: ToolRunView): boolean {
-  return Boolean(view.sections.length || view.tech.length || view.livePreview || view.liveOutput || view.approval);
+  return Boolean(
+    view.sections.length ||
+    view.tech.length ||
+    view.livePreview ||
+    view.liveOutput ||
+    view.approval,
+  );
 }
 
 /** One tool call as one row. The detail opens inline, not in a drawer. */
@@ -119,12 +138,20 @@ function ToolStep({ call, readOnly }: { call: ToolCallRecord; readOnly?: boolean
           expandable={expandable}
           open={disclosure.open}
           onToggle={expandable ? () => disclosure.setOpen(!disclosure.open) : undefined}
-          detail={expandable ? (
-            <div className="thinking-step-detail-body" data-testid="tool-detail">
-              <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
-              {view.agentRun ? <ToolRunAgentSteps run={view.agentRun} live={inFlight} state={agentRunStateOf(state)} /> : null}
-            </div>
-          ) : null}
+          detail={
+            expandable ? (
+              <div className="thinking-step-detail-body" data-testid="tool-detail">
+                <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
+                {view.agentRun ? (
+                  <ToolRunAgentSteps
+                    run={view.agentRun}
+                    live={inFlight}
+                    state={agentRunStateOf(state)}
+                  />
+                ) : null}
+              </div>
+            ) : null
+          }
         />
       </WebUiTheme>
     </div>
@@ -132,12 +159,20 @@ function ToolStep({ call, readOnly }: { call: ToolCallRecord; readOnly?: boolean
 }
 
 /** The observed run start: earliest activity or tool stamp, else mount time. */
-function useRunStart(activities: ReadonlyArray<TurnActivityEntry>, calls: ReadonlyArray<ToolCallRecord>): number {
+function useRunStart(
+  activities: ReadonlyArray<TurnActivityEntry>,
+  calls: ReadonlyArray<ToolCallRecord>,
+): number {
   const mountAt = useRef(Date.now());
   return useMemo(() => {
     let first = 0;
     for (const entry of activities) {
-      if (typeof entry.startedAt === 'number' && entry.startedAt > 0 && (!first || entry.startedAt < first)) first = entry.startedAt;
+      if (
+        typeof entry.startedAt === 'number' &&
+        entry.startedAt > 0 &&
+        (!first || entry.startedAt < first)
+      )
+        first = entry.startedAt;
     }
     for (const call of calls) {
       const started = runStartedAt(call);
@@ -160,25 +195,35 @@ function rowsFor(input: {
   readOnly?: boolean;
 }): ReactElement[] {
   const { steps, calls, intent, isLive, statusLabel, statusToolName, readOnly } = input;
-  const timeline = activityTimeline(steps, calls.map((call) => ({ id: call.id, startedAt: runStartedAt(call) || undefined, item: call })));
+  const timeline = activityTimeline(
+    steps,
+    calls.map((call) => ({ id: call.id, startedAt: runStartedAt(call) || undefined, item: call })),
+  );
   const lastStep = steps[steps.length - 1];
   const rows: ReactElement[] = [];
   if (intent) rows.push(<ActivityStep key="intent" testID="thinking-step" label={intent} />);
   for (const entry of timeline) {
     if (entry.kind === 'step') {
       const step = entry.step;
-      rows.push(<SummaryStep key={step.id} step={step} live={isLive && step === lastStep && step.phase === 'running'} />);
+      rows.push(
+        <SummaryStep
+          key={step.id}
+          step={step}
+          live={isLive && step === lastStep && step.phase === 'running'}
+        />,
+      );
       continue;
     }
-    for (const call of entry.tools) rows.push(<ToolStep key={call.id} call={call} readOnly={readOnly} />);
+    for (const call of entry.tools)
+      rows.push(<ToolStep key={call.id} call={call} readOnly={readOnly} />);
   }
 
   /* While the turn is live something must always be visibly working. If no
      tool row owns the spinner, the transport's own status takes the last row. */
-  const hasLiveRow = isLive && (
-    (lastStep?.phase === 'running')
-    || calls.some((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)))
-  );
+  const hasLiveRow =
+    isLive &&
+    (lastStep?.phase === 'running' ||
+      calls.some((call) => ['running', 'awaiting'].includes(toolRunStateOf(call))));
   if (isLive && !hasLiveRow) {
     rows.push(
       <ActivityStep
@@ -193,7 +238,14 @@ function rowsFor(input: {
   return rows;
 }
 
-function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; status?: LiveTurnStatus; answerStarted: boolean; isOpen: boolean; hasTimeline: boolean }) {
+function surfaceDataAttrs(input: {
+  isLive: boolean;
+  showActivityCue: boolean;
+  status?: LiveTurnStatus;
+  answerStarted: boolean;
+  isOpen: boolean;
+  hasTimeline: boolean;
+}) {
   return {
     'data-turn-surface-part': 'activity',
     'data-activity-timeline': input.hasTimeline ? 'true' : undefined,
@@ -204,13 +256,19 @@ function surfaceDataAttrs(input: { isLive: boolean; showActivityCue: boolean; st
   };
 }
 
-function useRunDuration(activities: ReadonlyArray<TurnActivityEntry>, calls: ReadonlyArray<ToolCallRecord>, isLive: boolean, elapsedSec?: number): number | undefined {
+function useRunDuration(
+  activities: ReadonlyArray<TurnActivityEntry>,
+  calls: ReadonlyArray<ToolCallRecord>,
+  isLive: boolean,
+  elapsedSec?: number,
+): number | undefined {
   const liveSec = useElapsed(useRunStart(activities, calls), isLive);
   /* Freeze exactly the displayed second, without rounding up again when
      the turn settles. An unknown historical duration stays unknown. */
   const lastSec = useRef(0);
-  if (isLive && liveSec > 0) lastSec.current = Math.max(lastSec.current, Math.max(1, Math.round(liveSec / 1000)));
-  return isLive ? liveSec / 1000 : (lastSec.current || undefined) ?? elapsedSec;
+  if (isLive && liveSec > 0)
+    lastSec.current = Math.max(lastSec.current, Math.max(1, Math.round(liveSec / 1000)));
+  return isLive ? liveSec / 1000 : ((lastSec.current || undefined) ?? elapsedSec);
 }
 
 function useTurnActivityViewModel(props: TurnActivitySurfaceProps) {
@@ -223,9 +281,17 @@ function useTurnActivityViewModel(props: TurnActivitySurfaceProps) {
   );
   const intent = useMemo(() => props.intentSummary?.trim() || '', [props.intentSummary]);
   const durationSec = useRunDuration(activities, calls, isLive, elapsedSec);
-  const header = thinkingHeaderOf({ live: isLive, durationSec, toolCount: calls.length, statusLabel });
+  const header = thinkingHeaderOf({
+    live: isLive,
+    durationSec,
+    toolCount: calls.length,
+    statusLabel,
+  });
   const label = thinkingLabelOf(header, thinkingLabels());
-  const durationLabel = header.durationSec === null ? undefined : tf('think.rn.elapsed', '{sec}秒', { sec: header.durationSec });
+  const durationLabel =
+    header.durationSec === null
+      ? undefined
+      : tf('think.rn.elapsed', '{sec}秒', { sec: header.durationSec });
 
   const statusToolName = props.status?.toolName;
   const rows = useMemo(
@@ -246,10 +312,22 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   useLocaleRefresh();
 
   const { timelineSteps, label, durationLabel, rows, hasDetails } = useTurnActivityViewModel(props);
-  const hasRecord = isLive || hasDetails || wasLive.current
-    || Boolean(elapsedSec) || Boolean(props.publicSummary) || activities.length > 0;
+  const hasRecord =
+    isLive ||
+    hasDetails ||
+    wasLive.current ||
+    Boolean(elapsedSec) ||
+    Boolean(props.publicSummary) ||
+    activities.length > 0;
   if (!hasRecord) return null;
-  const attrs = surfaceDataAttrs({ isLive, showActivityCue: props.showActivityCue !== false, status, answerStarted, isOpen, hasTimeline: timelineSteps.length > 0 });
+  const attrs = surfaceDataAttrs({
+    isLive,
+    showActivityCue: props.showActivityCue !== false,
+    status,
+    answerStarted,
+    isOpen,
+    hasTimeline: timelineSteps.length > 0,
+  });
 
   return (
     <div className={`rn-turn-activity${isLive ? ' is-live' : ''}`} {...attrs}>

@@ -36,11 +36,21 @@ describe('chatTurns: input validation (no DB)', () => {
   });
 
   test('setChatTurnStatus rejects unknown status without a database', async () => {
-    await assert.rejects(() => setChatTurnStatus('turn-1', 'bogus'), (err) => err && err.status === 400);
+    await assert.rejects(
+      () => setChatTurnStatus('turn-1', 'bogus'),
+      (err) => err && err.status === 400,
+    );
   });
 
   test('status vocabulary covers the full turn lifecycle', () => {
-    for (const expected of ['queued', 'running', 'awaiting_approval', 'completed', 'failed', 'interrupted']) {
+    for (const expected of [
+      'queued',
+      'running',
+      'awaiting_approval',
+      'completed',
+      'failed',
+      'interrupted',
+    ]) {
       assert.ok(CHAT_TURN_STATUSES.includes(expected), `missing status ${expected}`);
     }
   });

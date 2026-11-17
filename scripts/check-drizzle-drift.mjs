@@ -54,7 +54,9 @@ const META = join(DRIZZLE, 'meta');
 
 const problems = [];
 const notes = [];
-function fail(msg) { problems.push(msg); }
+function fail(msg) {
+  problems.push(msg);
+}
 
 /* ── 1 + 2. Journal ↔ file consistency ─────────────────────────────── */
 
@@ -64,20 +66,26 @@ if (!existsSync(journalPath)) {
 } else {
   const journal = JSON.parse(readFileSync(journalPath, 'utf8'));
   const entries = journal.entries ?? [];
-  const sqlFiles = readdirSync(DRIZZLE).filter((f) => f.endsWith('.sql')).sort();
+  const sqlFiles = readdirSync(DRIZZLE)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
 
   const tags = entries.map((e) => e.tag);
   const fileTags = sqlFiles.map((f) => f.replace(/\.sql$/, ''));
 
   for (const tag of tags) {
     if (!fileTags.includes(tag)) {
-      fail(`journal references "${tag}" but drizzle/${tag}.sql does not exist — the migrator will throw.`);
+      fail(
+        `journal references "${tag}" but drizzle/${tag}.sql does not exist — the migrator will throw.`,
+      );
     }
   }
   for (const tag of fileTags) {
     if (!tags.includes(tag)) {
-      fail(`drizzle/${tag}.sql has no journal entry — it will never be applied. ` +
-           'Add an entry, or delete the file if it was superseded.');
+      fail(
+        `drizzle/${tag}.sql has no journal entry — it will never be applied. ` +
+          'Add an entry, or delete the file if it was superseded.',
+      );
     }
   }
 
@@ -87,13 +95,17 @@ if (!existsSync(journalPath)) {
     if (seen.has(e.idx)) fail(`duplicate journal idx ${e.idx} (tag "${e.tag}").`);
     seen.add(e.idx);
     if (e.idx !== previous + 1) {
-      fail(`journal idx jumps from ${previous} to ${e.idx} (tag "${e.tag}"); entries must be gapless and ordered.`);
+      fail(
+        `journal idx jumps from ${previous} to ${e.idx} (tag "${e.tag}"); entries must be gapless and ordered.`,
+      );
     }
     previous = e.idx;
     const expectedPrefix = String(e.idx).padStart(4, '0');
     if (!e.tag.startsWith(expectedPrefix)) {
-      fail(`journal idx ${e.idx} carries tag "${e.tag}", which does not start with "${expectedPrefix}". ` +
-           'A mismatch here applies a different file than the index implies.');
+      fail(
+        `journal idx ${e.idx} carries tag "${e.tag}", which does not start with "${expectedPrefix}". ` +
+          'A mismatch here applies a different file than the index implies.',
+      );
     }
   }
 
@@ -101,21 +113,24 @@ if (!existsSync(journalPath)) {
   const last = entries[entries.length - 1];
   if (last) {
     const snapshots = readdirSync(META).filter((f) => /^\d+_snapshot\.json$/.test(f));
-    const highestSnapshot = snapshots
-      .map((f) => parseInt(f.slice(0, 4), 10))
-      .sort((a, b) => a - b)
-      .pop() ?? -1;
+    const highestSnapshot =
+      snapshots
+        .map((f) => parseInt(f.slice(0, 4), 10))
+        .sort((a, b) => a - b)
+        .pop() ?? -1;
     if (highestSnapshot < last.idx) {
       fail(
         `the newest migration is idx ${last.idx} ("${last.tag}") but the newest snapshot is ` +
-        `${highestSnapshot < 0 ? '(none)' : String(highestSnapshot).padStart(4, '0')}. ` +
-        'This is the 0034/0035 failure mode: the next `db:generate` will re-emit ' +
-        'already-applied DDL in non-idempotent form. Refresh with `npm run db:generate` ' +
-        'in server/, keep meta/<idx>_snapshot.json, and hand-write the .sql if the ' +
-        'generated statements include changes that are already live.',
+          `${highestSnapshot < 0 ? '(none)' : String(highestSnapshot).padStart(4, '0')}. ` +
+          'This is the 0034/0035 failure mode: the next `db:generate` will re-emit ' +
+          'already-applied DDL in non-idempotent form. Refresh with `npm run db:generate` ' +
+          'in server/, keep meta/<idx>_snapshot.json, and hand-write the .sql if the ' +
+          'generated statements include changes that are already live.',
       );
     } else {
-      notes.push(`snapshot ${String(highestSnapshot).padStart(4, '0')} covers newest migration ${String(last.idx).padStart(4, '0')}`);
+      notes.push(
+        `snapshot ${String(highestSnapshot).padStart(4, '0')} covers newest migration ${String(last.idx).padStart(4, '0')}`,
+      );
     }
   }
 }
@@ -123,9 +138,18 @@ if (!existsSync(journalPath)) {
 /* ── 5. Idempotency convention on hand-written SQL ─────────────────── */
 
 const NON_IDEMPOTENT = [
-  { re: /ALTER\s+TABLE\s+[^;]*?\bADD\s+COLUMN\s+(?!IF\s+NOT\s+EXISTS)/is, what: 'ADD COLUMN without IF NOT EXISTS' },
-  { re: /^\s*CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!IF\s+NOT\s+EXISTS|CONCURRENTLY\s+IF\s+NOT\s+EXISTS)/im, what: 'CREATE INDEX without IF NOT EXISTS' },
-  { re: /^\s*CREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS)/im, what: 'CREATE TABLE without IF NOT EXISTS' },
+  {
+    re: /ALTER\s+TABLE\s+[^;]*?\bADD\s+COLUMN\s+(?!IF\s+NOT\s+EXISTS)/is,
+    what: 'ADD COLUMN without IF NOT EXISTS',
+  },
+  {
+    re: /^\s*CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?!IF\s+NOT\s+EXISTS|CONCURRENTLY\s+IF\s+NOT\s+EXISTS)/im,
+    what: 'CREATE INDEX without IF NOT EXISTS',
+  },
+  {
+    re: /^\s*CREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS)/im,
+    what: 'CREATE TABLE without IF NOT EXISTS',
+  },
 ];
 
 /* Files predating the convention. Frozen: they are already applied
@@ -137,18 +161,20 @@ const LEGACY_ALLOWLIST = new Set(
     .filter((f) => parseInt(f.slice(0, 4), 10) <= 33),
 );
 
-for (const file of readdirSync(DRIZZLE).filter((f) => f.endsWith('.sql')).sort()) {
+for (const file of readdirSync(DRIZZLE)
+  .filter((f) => f.endsWith('.sql'))
+  .sort()) {
   if (LEGACY_ALLOWLIST.has(file)) continue;
   const sql = readFileSync(join(DRIZZLE, file), 'utf8');
   /* Strip comments and DO-block bodies: a guarded block is idempotent by
    * construction even though it contains a bare ADD COLUMN. */
-  const stripped = sql
-    .replace(/^\s*--.*$/gm, '')
-    .replace(/DO\s+\$\$[\s\S]*?\$\$\s*;/gi, '');
+  const stripped = sql.replace(/^\s*--.*$/gm, '').replace(/DO\s+\$\$[\s\S]*?\$\$\s*;/gi, '');
   for (const { re, what } of NON_IDEMPOTENT) {
     if (re.test(stripped)) {
-      fail(`drizzle/${file}: ${what}. Every migration in this repo must be safe to re-run; ` +
-           'use IF NOT EXISTS or wrap the statement in a guarded DO $$ ... $$ block.');
+      fail(
+        `drizzle/${file}: ${what}. Every migration in this repo must be safe to re-run; ` +
+          'use IF NOT EXISTS or wrap the statement in a guarded DO $$ ... $$ block.',
+      );
     }
   }
 }
@@ -171,7 +197,10 @@ try {
 
   const before = new Set(readdirSync(join(scratch, 'drizzle')).filter((f) => f.endsWith('.sql')));
   execFileSync('npx', ['drizzle-kit', 'generate', '--config=drizzle.config.js'], {
-    cwd: scratch, encoding: 'utf8', stdio: 'pipe', timeout: 180_000,
+    cwd: scratch,
+    encoding: 'utf8',
+    stdio: 'pipe',
+    timeout: 180_000,
   });
   const after = readdirSync(join(scratch, 'drizzle')).filter((f) => f.endsWith('.sql'));
   const emitted = after.filter((f) => !before.has(f));
@@ -180,25 +209,39 @@ try {
     const preview = emitted
       .map((f) => {
         const body = readFileSync(join(scratch, 'drizzle', f), 'utf8').trim();
-        return `        ${f}:\n` + body.split('\n').map((l) => `          ${l}`).join('\n');
+        return (
+          `        ${f}:\n` +
+          body
+            .split('\n')
+            .map((l) => `          ${l}`)
+            .join('\n')
+        );
       })
       .join('\n');
     fail(
       'src/db/schema/index.ts and the drizzle snapshot disagree: `db:generate` still has ' +
-      `${emitted.length} migration(s) to emit.\n` +
-      '      Anything listed below is a change that exists in the schema but not in the\n' +
-      '      recorded metadata. If it is ALREADY applied to production, the snapshot is\n' +
-      '      stale (refresh it and hand-write an idempotent .sql). If it is genuinely\n' +
-      '      new, commit the generated migration.\n' + preview,
+        `${emitted.length} migration(s) to emit.\n` +
+        '      Anything listed below is a change that exists in the schema but not in the\n' +
+        '      recorded metadata. If it is ALREADY applied to production, the snapshot is\n' +
+        '      stale (refresh it and hand-write an idempotent .sql). If it is genuinely\n' +
+        '      new, commit the generated migration.\n' +
+        preview,
     );
   } else {
     notes.push('db:generate has nothing to emit — schema and snapshot agree');
   }
 } catch (err) {
-  const detail = (err.stderr || err.stdout || err.message || '').toString().trim().split('\n').slice(-6).join('\n');
-  fail(`could not run drizzle-kit generate to check for drift:\n      ${detail}\n` +
-       '      Fix the tooling rather than skipping the check — this is the guard that ' +
-       'stops a non-idempotent migration from reaching production.');
+  const detail = (err.stderr || err.stdout || err.message || '')
+    .toString()
+    .trim()
+    .split('\n')
+    .slice(-6)
+    .join('\n');
+  fail(
+    `could not run drizzle-kit generate to check for drift:\n      ${detail}\n` +
+      '      Fix the tooling rather than skipping the check — this is the guard that ' +
+      'stops a non-idempotent migration from reaching production.',
+  );
 } finally {
   if (scratch) rmSync(scratch, { recursive: true, force: true });
 }

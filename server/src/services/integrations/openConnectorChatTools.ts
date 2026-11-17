@@ -37,10 +37,16 @@ const MAX_OUTPUT_CHARS = 12_000;
 function argumentDepth(value: unknown, depth = 0): number {
   if (depth > MAX_ARG_DEPTH) return depth;
   if (Array.isArray(value)) {
-    return value.reduce((max: number, item: unknown) => Math.max(max, argumentDepth(item, depth + 1)), depth);
+    return value.reduce(
+      (max: number, item: unknown) => Math.max(max, argumentDepth(item, depth + 1)),
+      depth,
+    );
   }
   if (value && typeof value === 'object') {
-    return Object.values(value as Record<string, unknown>).reduce((max: number, item: unknown) => Math.max(max, argumentDepth(item, depth + 1)), depth);
+    return Object.values(value as Record<string, unknown>).reduce(
+      (max: number, item: unknown) => Math.max(max, argumentDepth(item, depth + 1)),
+      depth,
+    );
   }
   return depth;
 }
@@ -48,21 +54,29 @@ function argumentDepth(value: unknown, depth = 0): number {
 function stringsWithinLimit(value: unknown): boolean {
   if (typeof value === 'string') return value.length <= MAX_STRING_VALUE_LENGTH;
   if (Array.isArray(value)) return (value as unknown[]).every(stringsWithinLimit);
-  if (value && typeof value === 'object') return Object.values(value as Record<string, unknown>).every(stringsWithinLimit);
+  if (value && typeof value === 'object')
+    return Object.values(value as Record<string, unknown>).every(stringsWithinLimit);
   return true;
 }
 
-export function validateOpenConnectorToolArguments(toolName: unknown, args: unknown):
-  | { ok: true; args: Record<string, unknown> }
-  | { ok: false; error: string } {
+export function validateOpenConnectorToolArguments(
+  toolName: unknown,
+  args: unknown,
+): { ok: true; args: Record<string, unknown> } | { ok: false; error: string } {
   const spec = getOpenConnectorChatTool(toolName);
   if (!spec) return { ok: false, error: 'unknown_openconnector_tool' };
   if (!args || typeof args !== 'object' || Array.isArray(args)) {
     return { ok: false, error: 'arguments must be an object' };
   }
   const input = args as Record<string, unknown>;
-  const params = (spec.parameters || {}) as { properties?: Record<string, unknown>; required?: unknown };
-  const properties = params.properties && typeof params.properties === 'object' ? Object.keys(params.properties) : [];
+  const params = (spec.parameters || {}) as {
+    properties?: Record<string, unknown>;
+    required?: unknown;
+  };
+  const properties =
+    params.properties && typeof params.properties === 'object'
+      ? Object.keys(params.properties)
+      : [];
   for (const key of Object.keys(input)) {
     if (properties.length > 0 && !properties.includes(key)) {
       return { ok: false, error: `unknown argument: ${key}` };
@@ -84,17 +98,23 @@ export function validateOpenConnectorToolArguments(toolName: unknown, args: unkn
     if (schema.type !== 'string') continue;
     if (typeof value !== 'string') return { ok: false, error: `argument ${key} must be a string` };
     const minLength = typeof schema.minLength === 'number' ? schema.minLength : 0;
-    const maxLength = typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY;
+    const maxLength =
+      typeof schema.maxLength === 'number' ? schema.maxLength : Number.POSITIVE_INFINITY;
     if (value.length < minLength) return { ok: false, error: `argument ${key} is too short` };
     if (value.length > maxLength) return { ok: false, error: `argument ${key} is too long` };
   }
-  if (spec.actionId === 'jimeng_ai.submit_image_generation_4_6'
-    && typeof input.prompt === 'string' && input.prompt.trim().length === 0) {
+  if (
+    spec.actionId === 'jimeng_ai.submit_image_generation_4_6' &&
+    typeof input.prompt === 'string' &&
+    input.prompt.trim().length === 0
+  ) {
     return { ok: false, error: 'argument prompt must not be blank' };
   }
   if (!stringsWithinLimit(input)) return { ok: false, error: 'an argument value is too long' };
-  if (argumentDepth(input) > MAX_ARG_DEPTH) return { ok: false, error: 'arguments are nested too deeply' };
-  if (JSON.stringify(input).length > MAX_ARG_JSON_BYTES) return { ok: false, error: 'arguments payload is too large' };
+  if (argumentDepth(input) > MAX_ARG_DEPTH)
+    return { ok: false, error: 'arguments are nested too deeply' };
+  if (JSON.stringify(input).length > MAX_ARG_JSON_BYTES)
+    return { ok: false, error: 'arguments payload is too large' };
   return { ok: true, args: input };
 }
 
@@ -102,7 +122,11 @@ export async function executeOpenConnectorTool(
   toolName: string,
   args: Record<string, unknown>,
   userId: string,
-  connection: { status?: string; connectionName?: string | null; connectedAccountId?: string | null } | null,
+  connection: {
+    status?: string;
+    connectionName?: string | null;
+    connectedAccountId?: string | null;
+  } | null,
 ) {
   const validated = validateOpenConnectorToolArguments(toolName, args);
   if (!validated.ok) {
@@ -115,11 +139,21 @@ export async function executeOpenConnectorTool(
   }
   const spec = getOpenConnectorChatTool(toolName);
   if (!spec || !connection || connection.status !== 'connected') {
-    return { status: 'failed', errorCode: 'app_not_connected', error: 'The required app is not connected.', userMessage: 'Connect this app in Plugin Center first.' };
+    return {
+      status: 'failed',
+      errorCode: 'app_not_connected',
+      error: 'The required app is not connected.',
+      userMessage: 'Connect this app in Plugin Center first.',
+    };
   }
   const project = getProjectConnector();
   if (!project) {
-    return { status: 'failed', errorCode: 'project_connector_not_configured', error: 'OOMOL ProjectConnector is not configured.', userMessage: 'The connector service is not configured yet.' };
+    return {
+      status: 'failed',
+      errorCode: 'project_connector_not_configured',
+      error: 'OOMOL ProjectConnector is not configured.',
+      userMessage: 'The connector service is not configured yet.',
+    };
   }
   try {
     /* The OOMOL-hosted runtime owns provider credentials and action execution;
@@ -135,7 +169,10 @@ export async function executeOpenConnectorTool(
     const output = JSON.stringify(data);
     return {
       status: 'completed',
-      output: output.length > MAX_OUTPUT_CHARS ? `${output.slice(0, MAX_OUTPUT_CHARS)}…[truncated]` : output,
+      output:
+        output.length > MAX_OUTPUT_CHARS
+          ? `${output.slice(0, MAX_OUTPUT_CHARS)}…[truncated]`
+          : output,
     };
   } catch (error) {
     const payload = connectorErrorPayload(error);

@@ -43,10 +43,7 @@ export interface CreateBridgeOptions<Snapshot extends RevisionedSnapshot, Action
   /** Initial snapshot value. */
   initial: Snapshot;
   /** Pure reducer `(state, action) => nextState`. */
-  reducer: (
-    state: Snapshot,
-    action: Action,
-  ) => Snapshot | Omit<Snapshot, 'revision'>;
+  reducer: (state: Snapshot, action: Action) => Snapshot | Omit<Snapshot, 'revision'>;
   /** Defaults to `deep`; legacy module stores opt into `shallow`. */
   freeze?: BridgeFreezeMode;
 }
@@ -87,15 +84,13 @@ export function createBridge<Snapshot extends RevisionedSnapshot, Action>(
 ): Bridge<Snapshot, Action> {
   const { initial, reducer, freeze = 'deep' } = options;
   const frozenSubtrees = new WeakSet<object>();
-  const freezeSnapshot = freeze === 'deep'
-    ? <T>(value: T): T => deepFreeze(value, frozenSubtrees)
-    : shallowFreeze;
+  const freezeSnapshot =
+    freeze === 'deep' ? <T>(value: T): T => deepFreeze(value, frozenSubtrees) : shallowFreeze;
   /* Deep mode clones the initial object so the caller's literal stays
      usable; shallow mode keeps the historical identity for tests and
      legacy code that compares against the initial snapshot. */
-  const start: Snapshot = freeze === 'deep'
-    ? freezeSnapshot({ ...initial })
-    : freezeSnapshot(initial);
+  const start: Snapshot =
+    freeze === 'deep' ? freezeSnapshot({ ...initial }) : freezeSnapshot(initial);
   let snapshot: Snapshot = start;
   const listeners = new Set<Listener>();
 

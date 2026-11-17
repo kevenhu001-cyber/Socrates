@@ -54,7 +54,10 @@ test('paragraphEndAfter stops after the blank run, or at EOF', () => {
 
 test('a mid-paragraph fire position advances past its paragraph', () => {
   const raw = '导语。\n\n我来搜索一下X的原因。结果如下。\n\n尾巴。';
-  assert.equal(toolRowAnchorOffset(raw, '导语。\n\n'.length + 2), '导语。\n\n我来搜索一下X的原因。结果如下。\n\n'.length);
+  assert.equal(
+    toolRowAnchorOffset(raw, '导语。\n\n'.length + 2),
+    '导语。\n\n我来搜索一下X的原因。结果如下。\n\n'.length,
+  );
 });
 
 test('a fire position at a clean paragraph start stays put', () => {
@@ -113,15 +116,24 @@ test('live layout withholds rows until their paragraph completes', () => {
   const live = { inlineThink: true, deferOpenParagraph: true };
 
   const pending = buildTurnLayout('我先查一下相关资料', calls, live);
-  assert.deepEqual(pending.map((s) => s.kind), ['text']);
+  assert.deepEqual(
+    pending.map((s) => s.kind),
+    ['text'],
+  );
 
   /* A finished sentence is NOT enough: the row waits for the paragraph —
      the sentence below is done but the paragraph runs on. */
   const sentenceDone = buildTurnLayout('我先查一下相关资料。后续没写完', calls, live);
-  assert.deepEqual(sentenceDone.map((s) => s.kind), ['text']);
+  assert.deepEqual(
+    sentenceDone.map((s) => s.kind),
+    ['text'],
+  );
 
   const ready = buildTurnLayout('我先查一下相关资料。这是第一段。\n\n后续。', calls, live);
-  assert.deepEqual(ready.map((s) => s.kind), ['text', 'group', 'text']);
+  assert.deepEqual(
+    ready.map((s) => s.kind),
+    ['text', 'group', 'text'],
+  );
   assert.equal(ready[0].text, '我先查一下相关资料。这是第一段。\n\n');
   assert.equal(ready[2].text, '后续。');
 });
@@ -133,14 +145,17 @@ test('mount gate accepts paragraph starts that no sentence test would', () => {
 });
 
 test('approval rows mount immediately even mid-paragraph', () => {
-  const calls = [call({
-    id: 's',
-    textOffset: '我先查一下'.length,
-    approval: { approvalId: 'ap1', runId: 'r1', status: 'pending' },
-  })];
-  const layout = buildTurnLayout(
-    '我先查一下相关资料', calls, { inlineThink: true, deferOpenParagraph: true },
-  );
+  const calls = [
+    call({
+      id: 's',
+      textOffset: '我先查一下'.length,
+      approval: { approvalId: 'ap1', runId: 'r1', status: 'pending' },
+    }),
+  ];
+  const layout = buildTurnLayout('我先查一下相关资料', calls, {
+    inlineThink: true,
+    deferOpenParagraph: true,
+  });
   assert.ok(layout.some((s) => s.kind === 'group' || s.kind === 'tool'));
 });
 
@@ -151,7 +166,10 @@ test('finalized layout mounts every row (nothing starves)', () => {
   ];
   /* Single trailing paragraph: both rows land behind it, grouped. */
   const layout = buildTurnLayout('原因有三：还没写完', calls);
-  assert.deepEqual(layout.map((s) => s.kind), ['text', 'group']);
+  assert.deepEqual(
+    layout.map((s) => s.kind),
+    ['text', 'group'],
+  );
   assert.equal(layout[0].text, '原因有三：还没写完');
   assert.equal(layout[1].members.map((m) => m.id).join(','), 's,f');
 });
@@ -163,14 +181,20 @@ test('restored layout keeps tool rows near their fire sentence in a long paragra
   assert.equal(restoredToolRowAnchorOffset(raw, calls[0].textOffset), '先检索一下资料。'.length);
 
   const restored = buildTurnLayout(raw, calls, { restoredFromHistory: true });
-  assert.deepEqual(restored.map((segment) => segment.kind), ['text', 'group', 'text']);
+  assert.deepEqual(
+    restored.map((segment) => segment.kind),
+    ['text', 'group', 'text'],
+  );
   assert.equal(restored[0].text, '先检索一下资料。');
   assert.equal(restored[2].text, '下面是整理后的完整回答。');
 
   /* Live turns keep the existing paragraph-atomic placement while text is
      arriving; the history-only policy must not change that path. */
   const live = buildTurnLayout(raw, calls, { deferOpenParagraph: true });
-  assert.deepEqual(live.map((segment) => segment.kind), ['text', 'group']);
+  assert.deepEqual(
+    live.map((segment) => segment.kind),
+    ['text', 'group'],
+  );
   assert.equal(live[0].text, raw);
 });
 
@@ -184,9 +208,18 @@ test('equal-offset calls keep event order before rows in later paragraphs', () =
   ];
 
   const layout = buildTurnLayout(raw, calls);
-  assert.deepEqual(layout.map((segment) => segment.kind), ['group', 'text', 'group', 'text']);
-  assert.deepEqual(layout[0].members.map((member) => member.id), ['event-b', 'event-a']);
+  assert.deepEqual(
+    layout.map((segment) => segment.kind),
+    ['group', 'text', 'group', 'text'],
+  );
+  assert.deepEqual(
+    layout[0].members.map((member) => member.id),
+    ['event-b', 'event-a'],
+  );
   assert.equal(layout[1].text, 'Paragraph one.\n\n');
-  assert.deepEqual(layout[2].members.map((member) => member.id), ['later']);
+  assert.deepEqual(
+    layout[2].members.map((member) => member.id),
+    ['later'],
+  );
   assert.equal(layout[3].text, 'Paragraph two.\n\nTail.');
 });

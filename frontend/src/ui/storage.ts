@@ -24,7 +24,9 @@ function _publishStorageState(): void {
       }),
       open: _storageOpen,
     });
-  } catch (_) { /* empty-catch: intentional — storage bridge publish is best effort */ }
+  } catch (_) {
+    /* empty-catch: intentional — storage bridge publish is best effort */
+  }
 }
 
 export function openStorageModal(): void {

@@ -28,12 +28,15 @@ export function showToast(msg: unknown, opts?: ToastOptions | number): void {
        toast just popped in. Reading layout forces that first recalc. */
     el.getBoundingClientRect();
     el.classList.add('visible');
-    setTimeout(() => {
-      el.classList.remove('visible');
-      setTimeout(() => {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-      }, 300);
-    }, typeof o.duration === 'number' ? o.duration : 1800);
+    setTimeout(
+      () => {
+        el.classList.remove('visible');
+        setTimeout(() => {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        }, 300);
+      },
+      typeof o.duration === 'number' ? o.duration : 1800,
+    );
   } catch (_) {
     /* empty-catch: intentional — toast is best-effort in detached or headless environments */
   }

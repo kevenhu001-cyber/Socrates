@@ -43,7 +43,18 @@ export interface TopBarActionProps {
   onPress: () => void;
 }
 
-export function TopBarAction({ id, icon, label, caption, pressed, visible = true, touch = false, iconSize, part, onPress }: TopBarActionProps) {
+export function TopBarAction({
+  id,
+  icon,
+  label,
+  caption,
+  pressed,
+  visible = true,
+  touch = false,
+  iconSize,
+  part,
+  onPress,
+}: TopBarActionProps) {
   const { colors } = useUiTheme();
   const size = touch ? uiControl.hit : PILL;
   return (
@@ -54,23 +65,39 @@ export function TopBarAction({ id, icon, label, caption, pressed, visible = true
       aria-pressed={pressed}
       onPress={onPress}
       {...dataSet({ topbarAction: part ?? id, visible: visible ? 'true' : 'false' })}
-      style={({ pressed: down, hovered }: PressState) => ({
-        display: visible ? 'flex' : 'none',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: uiStep[75] - 2,
-        height: size,
-        minWidth: size,
-        paddingHorizontal: caption ? uiControl.padNav : 0,
-        borderRadius: uiRadius.pill,
-        backgroundColor: down ? colors.fillPressed : pressed ? colors.fillHover : hovered ? colors.fill : 'transparent',
-        transitionProperty: 'background-color',
-        transitionDuration: `${uiMotion.fast}ms`,
-      } as object)}
+      style={({ pressed: down, hovered }: PressState) =>
+        ({
+          display: visible ? 'flex' : 'none',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: uiStep[75] - 2,
+          height: size,
+          minWidth: size,
+          paddingHorizontal: caption ? uiControl.padNav : 0,
+          borderRadius: uiRadius.pill,
+          backgroundColor: down
+            ? colors.fillPressed
+            : pressed
+              ? colors.fillHover
+              : hovered
+                ? colors.fill
+                : 'transparent',
+          transitionProperty: 'background-color',
+          transitionDuration: `${uiMotion.fast}ms`,
+        }) as object
+      }
     >
-      <UiIcon name={icon} size={iconSize ?? (touch ? 20 : 18)} color={pressed ? colors.ink : colors.inkSecondary} />
-      {caption ? <UiText variant="bodySm" numberOfLines={1}>{caption}</UiText> : null}
+      <UiIcon
+        name={icon}
+        size={iconSize ?? (touch ? 20 : 18)}
+        color={pressed ? colors.ink : colors.inkSecondary}
+      />
+      {caption ? (
+        <UiText variant="bodySm" numberOfLines={1}>
+          {caption}
+        </UiText>
+      ) : null}
     </Pressable>
   );
 }
@@ -90,7 +117,16 @@ export interface TopBarModelSwitcherProps {
   onPress: () => void;
 }
 
-export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded, compact, narrow = false, visible, onPress }: TopBarModelSwitcherProps) {
+export function TopBarModelSwitcher({
+  brand,
+  model,
+  accessibilityLabel,
+  expanded,
+  compact,
+  narrow = false,
+  visible,
+  onPress,
+}: TopBarModelSwitcherProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
   /* Desktop: a 15px wordmark beside a 14px model name on one 22px line. The
      old 18px lockup read as a page title and crowded the centred mode switch;
@@ -108,31 +144,57 @@ export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded
       aria-haspopup="dialog"
       aria-expanded={expanded}
       onPress={onPress}
-      {...dataSet({ chatConfigTrigger: '', topbarModel: compact ? 'chip' : 'lockup', visible: visible ? 'true' : 'false' })}
-      style={({ pressed, hovered }: PressState) => ({
-        display: visible ? 'flex' : 'none',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: uiStep[50] + (compact ? 0 : 2),
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: narrow ? 68 : compact ? 76 : 360,
-        height: PILL,
-        paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
-        paddingRight: showSettings ? 0 : uiStep[75] + (compact ? 0 : 2),
-        width: showSettings ? PILL : undefined,
-        justifyContent: showSettings ? 'center' : 'flex-start',
-        borderRadius: uiRadius.pill,
-        backgroundColor: pressed ? colors.fillPressed : expanded ? colors.fillHover : hovered ? colors.fill : 'transparent',
-        transitionProperty: 'background-color',
-        transitionDuration: `${uiMotion.fast}ms`,
-      } as object)}
+      {...dataSet({
+        chatConfigTrigger: '',
+        topbarModel: compact ? 'chip' : 'lockup',
+        visible: visible ? 'true' : 'false',
+      })}
+      style={({ pressed, hovered }: PressState) =>
+        ({
+          display: visible ? 'flex' : 'none',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: uiStep[50] + (compact ? 0 : 2),
+          flexShrink: 1,
+          minWidth: 0,
+          maxWidth: narrow ? 68 : compact ? 76 : 360,
+          height: PILL,
+          paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
+          paddingRight: showSettings ? 0 : uiStep[75] + (compact ? 0 : 2),
+          width: showSettings ? PILL : undefined,
+          justifyContent: showSettings ? 'center' : 'flex-start',
+          borderRadius: uiRadius.pill,
+          backgroundColor: pressed
+            ? colors.fillPressed
+            : expanded
+              ? colors.fillHover
+              : hovered
+                ? colors.fill
+                : 'transparent',
+          transitionProperty: 'background-color',
+          transitionDuration: `${uiMotion.fast}ms`,
+        }) as object
+      }
     >
       {showSettings ? (
-        <View {...dataSet({ part: 'model-settings' })}><UiIcon name="sliders" size={18} color={colors.inkSecondary} /></View>
+        <View {...dataSet({ part: 'model-settings' })}>
+          <UiIcon name="sliders" size={18} color={colors.inkSecondary} />
+        </View>
       ) : null}
       {compact ? null : (
-        <Text {...dataSet({ part: 'model-brand' })} numberOfLines={1} style={{ fontFamily, fontSize: brandSize, lineHeight: brandLine, fontWeight: '600', color: colors.ink }}>{brand}</Text>
+        <Text
+          {...dataSet({ part: 'model-brand' })}
+          numberOfLines={1}
+          style={{
+            fontFamily,
+            fontSize: brandSize,
+            lineHeight: brandLine,
+            fontWeight: '600',
+            color: colors.ink,
+          }}
+        >
+          {brand}
+        </Text>
       )}
       <Text
         nativeID="topModelSwitcherModel"
@@ -151,7 +213,9 @@ export function TopBarModelSwitcher({ brand, model, accessibilityLabel, expanded
       >
         {model}
       </Text>
-      {showSettings || narrow ? null : <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />}
+      {showSettings || narrow ? null : (
+        <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />
+      )}
     </Pressable>
   );
 }
@@ -183,9 +247,22 @@ export interface TopBarModeSwitchProps {
  * option (site product jump-nav). The options are tabs; the host wires the
  * arrow keys because roving focus needs the DOM.
  */
-export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, compact, narrow = false, reducedMotion, thumbShadow, onSelect }: TopBarModeSwitchProps) {
+export function TopBarModeSwitch({
+  value,
+  options,
+  accessibilityLabel,
+  visible,
+  compact,
+  narrow = false,
+  reducedMotion,
+  thumbShadow,
+  onSelect,
+}: TopBarModeSwitchProps) {
   const { colors } = useUiTheme();
-  const index = Math.max(0, options.findIndex((option) => option.mode === value));
+  const index = Math.max(
+    0,
+    options.findIndex((option) => option.mode === value),
+  );
   /* Phones (reference): a 186×36 control whose thumb is the full 36px height
      and sits flush on a track drawn 1.5px shorter top and bottom. */
   const optionWidth = narrow ? 64 : compact ? 93 : 96;
@@ -214,26 +291,36 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
         <View
           aria-hidden
           {...dataSet({ part: 'mode-track' })}
-          style={{ position: 'absolute', left: 0, right: 0, top: trackInset, bottom: trackInset, borderRadius: uiRadius.pill, backgroundColor: colors.fill }}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: trackInset,
+            bottom: trackInset,
+            borderRadius: uiRadius.pill,
+            backgroundColor: colors.fill,
+          }}
         />
       ) : null}
       <View
         aria-hidden
         {...dataSet({ part: 'mode-thumb' })}
-        style={{
-          position: 'absolute',
-          top: inset,
-          bottom: inset,
-          left: inset,
-          width: optionWidth,
-          borderRadius: uiRadius.pill,
-          backgroundColor: colors.card,
-          boxShadow: thumbShadow ?? uiShadow.light.raised,
-          transform: [{ translateX: index * optionWidth }],
-          transitionProperty: reducedMotion ? 'none' : 'transform',
-          transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
-          transitionTimingFunction: uiMotion.easeOut,
-        } as object}
+        style={
+          {
+            position: 'absolute',
+            top: inset,
+            bottom: inset,
+            left: inset,
+            width: optionWidth,
+            borderRadius: uiRadius.pill,
+            backgroundColor: colors.card,
+            boxShadow: thumbShadow ?? uiShadow.light.raised,
+            transform: [{ translateX: index * optionWidth }],
+            transitionProperty: reducedMotion ? 'none' : 'transform',
+            transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
+            transitionTimingFunction: uiMotion.easeOut,
+          } as object
+        }
       />
       {options.map((option) => {
         const selected = option.mode === value;
@@ -260,7 +347,13 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
                 variant="bodySm"
                 tone={selected || hovered ? 'ink' : 'secondary'}
                 numberOfLines={1}
-                style={{ fontWeight: selected ? '500' : '400', transitionProperty: 'color', transitionDuration: `${uiMotion.fast}ms` } as object}
+                style={
+                  {
+                    fontWeight: selected ? '500' : '400',
+                    transitionProperty: 'color',
+                    transitionDuration: `${uiMotion.fast}ms`,
+                  } as object
+                }
               >
                 {option.label}
               </UiText>
@@ -274,7 +367,19 @@ export function TopBarModeSwitch({ value, options, accessibilityLabel, visible, 
 
 /* ── Progress capsules ───────────────────────────────────────────────── */
 
-function Capsule({ id, label, role = 'status', children, part }: { id: string; label?: string; role?: 'status'; children: ReactNode; part: string }) {
+function Capsule({
+  id,
+  label,
+  role = 'status',
+  children,
+  part,
+}: {
+  id: string;
+  label?: string;
+  role?: 'status';
+  children: ReactNode;
+  part: string;
+}) {
   const { colors } = useUiTheme();
   return (
     <View
@@ -310,20 +415,51 @@ export interface TopBarStageProgressProps {
 }
 
 /** Tutor stage: its name and a 40px hairline bar filled to step / total. */
-export function TopBarStageProgress({ stage, step, total, progressLabel, title }: TopBarStageProgressProps) {
+export function TopBarStageProgress({
+  stage,
+  step,
+  total,
+  progressLabel,
+  title,
+}: TopBarStageProgressProps) {
   const { colors } = useUiTheme();
   const fraction = total > 0 ? Math.min(1, Math.max(0, step / total)) : 0;
   return (
-    <Capsule id="tutorMasteryPill" label={`${title} · ${stage} · ${progressLabel}`} part="stage-progress">
-      <UiText variant="labelSm" numberOfLines={1} nativeID="tutorMasteryStageLabel">{stage}</UiText>
+    <Capsule
+      id="tutorMasteryPill"
+      label={`${title} · ${stage} · ${progressLabel}`}
+      part="stage-progress"
+    >
+      <UiText variant="labelSm" numberOfLines={1} nativeID="tutorMasteryStageLabel">
+        {stage}
+      </UiText>
       <View
         aria-hidden
         {...dataSet({ part: 'stage-bar', step, total })}
-        style={{ width: 40, height: 3, borderRadius: uiRadius.pill, backgroundColor: colors.hairlineStrong, overflow: 'hidden' }}
+        style={{
+          width: 40,
+          height: 3,
+          borderRadius: uiRadius.pill,
+          backgroundColor: colors.hairlineStrong,
+          overflow: 'hidden',
+        }}
       >
-        <View style={{ width: `${fraction * 100}%`, height: '100%', borderRadius: uiRadius.pill, backgroundColor: colors.ink }} />
+        <View
+          style={{
+            width: `${fraction * 100}%`,
+            height: '100%',
+            borderRadius: uiRadius.pill,
+            backgroundColor: colors.ink,
+          }}
+        />
       </View>
-      <UiText variant="labelSm" tone="tertiary" numberOfLines={1} aria-hidden style={{ fontVariant: ['tabular-nums'], fontWeight: '400' }}>
+      <UiText
+        variant="labelSm"
+        tone="tertiary"
+        numberOfLines={1}
+        aria-hidden
+        style={{ fontVariant: ['tabular-nums'], fontWeight: '400' }}
+      >
         {`${step}/${total}`}
       </UiText>
     </Capsule>
@@ -339,8 +475,12 @@ export interface TopBarPracticeProgressProps {
 export function TopBarPracticeProgress({ phase, attempts }: TopBarPracticeProgressProps) {
   return (
     <Capsule id="practiceProgressChip" part="practice-progress">
-      <UiText variant="labelSm" numberOfLines={1}>{phase}</UiText>
-      <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ fontWeight: '400' }}>{attempts}</UiText>
+      <UiText variant="labelSm" numberOfLines={1}>
+        {phase}
+      </UiText>
+      <UiText variant="labelSm" tone="tertiary" numberOfLines={1} style={{ fontWeight: '400' }}>
+        {attempts}
+      </UiText>
     </Capsule>
   );
 }

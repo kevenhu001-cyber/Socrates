@@ -78,9 +78,11 @@ export function getOrCreateInFlight<T>(key: string, factory: () => Promise<T>): 
   if (existing) return existing;
   const promise = Promise.resolve().then(factory);
   _inFlight.set(key, promise);
-  void promise.finally(() => {
-    if (_inFlight.get(key) === promise) _inFlight.delete(key);
-  }).catch(() => undefined);
+  void promise
+    .finally(() => {
+      if (_inFlight.get(key) === promise) _inFlight.delete(key);
+    })
+    .catch(() => undefined);
   return promise;
 }
 

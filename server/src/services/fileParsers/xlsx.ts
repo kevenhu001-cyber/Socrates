@@ -89,7 +89,10 @@ export async function extract(filepath: string) {
   const worksheets = wb.worksheets;
   for (const worksheet of worksheets.slice(0, MAX_SHEETS)) {
     sheetNames.push(worksheet.name);
-    const columnCount = Math.min(MAX_COLUMNS, Math.max(worksheet.actualColumnCount || 0, worksheet.columnCount || 0));
+    const columnCount = Math.min(
+      MAX_COLUMNS,
+      Math.max(worksheet.actualColumnCount || 0, worksheet.columnCount || 0),
+    );
     const rows: string[][] = [];
     let dataRows = 0;
     worksheet.eachRow({ includeEmpty: false }, (row) => {

@@ -63,27 +63,44 @@ test('extension sets cover the upload allow-list categories', () => {
 
 test('formatAttachmentReadOutput emits paging metadata the model can follow', () => {
   const out = formatAttachmentReadOutput({
-    fileId: 'f1', name: 'report.pdf', kind: 'pdf',
-    mimeType: 'application/pdf', size: 2048,
-    readable: true, totalChars: 25000,
-    offset: 0, returnedChars: 12000, hasMore: true,
-    truncated: false, meta: { pageCount: 12 },
+    fileId: 'f1',
+    name: 'report.pdf',
+    kind: 'pdf',
+    mimeType: 'application/pdf',
+    size: 2048,
+    readable: true,
+    totalChars: 25000,
+    offset: 0,
+    returnedChars: 12000,
+    hasMore: true,
+    truncated: false,
+    meta: { pageCount: 12 },
     text: 'PAGE ONE TEXT',
   });
   assert.match(out, /\[file: "report\.pdf" — application\/pdf — 2 KB\]/);
   assert.match(out, /\[meta: pageCount=12\]/);
   /* hasMore pages forward with the next offset. */
-  assert.match(out, /chars 0–12000 of 25000 — more available; call read_attachment again with offset=12000/);
+  assert.match(
+    out,
+    /chars 0–12000 of 25000 — more available; call read_attachment again with offset=12000/,
+  );
   assert.match(out, /PAGE ONE TEXT$/);
 });
 
 test('formatAttachmentReadOutput marks the end of file and extraction caps', () => {
   const out = formatAttachmentReadOutput({
-    fileId: 'f1', name: 'big.xlsx', kind: 'xlsx',
+    fileId: 'f1',
+    name: 'big.xlsx',
+    kind: 'xlsx',
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    size: 1024, readable: true, totalChars: 5000,
-    offset: 4000, returnedChars: 1000, hasMore: false,
-    truncated: true, meta: {},
+    size: 1024,
+    readable: true,
+    totalChars: 5000,
+    offset: 4000,
+    returnedChars: 1000,
+    hasMore: false,
+    truncated: true,
+    meta: {},
     text: 'TAIL',
   });
   assert.match(out, /chars 4000–5000 of 5000 — end of file/);
@@ -92,11 +109,20 @@ test('formatAttachmentReadOutput marks the end of file and extraction caps', () 
 
 test('formatAttachmentReadOutput surfaces the unreadable note instead of text', () => {
   const out = formatAttachmentReadOutput({
-    fileId: 'f1', name: 'clip.mp4', kind: 'video',
-    mimeType: 'video/mp4', size: 999,
-    readable: false, totalChars: 0, offset: 0, returnedChars: 0,
-    hasMore: false, truncated: false, meta: {},
-    text: '', note: 'metadata only',
+    fileId: 'f1',
+    name: 'clip.mp4',
+    kind: 'video',
+    mimeType: 'video/mp4',
+    size: 999,
+    readable: false,
+    totalChars: 0,
+    offset: 0,
+    returnedChars: 0,
+    hasMore: false,
+    truncated: false,
+    meta: {},
+    text: '',
+    note: 'metadata only',
   });
   assert.match(out, /\[file: "clip\.mp4"/);
   assert.match(out, /metadata only/);

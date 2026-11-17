@@ -1,4 +1,4 @@
-import { stateStore } from '../state/store.ts';
+import { sessionStore, updateSessionMessage } from '../store/index.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
 
 interface LiveStatusSnapshot {
@@ -21,7 +21,14 @@ interface MessageSnapshot {
 }
 
 const LIVE_STATUS_FIELDS: ReadonlyArray<keyof LiveStatusSnapshot> = [
-  'phase', 'label', 'state', 'mode', 'error', 'elapsedSec', 'toolName', 'retryMode',
+  'phase',
+  'label',
+  'state',
+  'mode',
+  'error',
+  'elapsedSec',
+  'toolName',
+  'retryMode',
 ];
 
 /** Update one message in the authoritative session store by identity. */
@@ -32,21 +39,20 @@ export function updateMessageSnapshot(
 ) {
   if (!message) return null;
   const messageId = String(message.clientId || message.id || '');
-  const messages = stateStore.read('messages') as MessageSnapshot[];
+  const messages = sessionStore.getState().messages as MessageSnapshot[];
   let messageIndex = messages.indexOf(message);
   if (messageIndex < 0 && messageId) {
-    messageIndex = messages.findIndex((entry) =>
-      entry && String(entry.clientId || entry.id || '') === messageId,
+    messageIndex = messages.findIndex(
+      (entry) => entry && String(entry.clientId || entry.id || '') === messageId,
     );
   }
   if (messageIndex < 0) return null;
-  return stateStore.dispatch({
-    type: 'session/update-message',
-    index: messageIndex,
-    clientId: message.clientId || undefined,
+  return updateSessionMessage(
+    messageIndex,
+    message.clientId || undefined,
     patch,
-    deferNotify: deferNotify === true,
-  });
+    deferNotify === true,
+  );
 }
 
 function sameLiveStatus(
@@ -67,10 +73,14 @@ export function setReactLiveStatus(
   if (previous === status || sameLiveStatus(previous, status)) return;
 
   const messageId = String(message.clientId || message.id || '');
-  const updated = updateMessageSnapshot(message, {
-    _liveStatus: status,
-    _toolRunRev: (message._toolRunRev || 0) + 1,
-  }, true);
+  const updated = updateMessageSnapshot(
+    message,
+    {
+      _liveStatus: status,
+      _toolRunRev: (message._toolRunRev || 0) + 1,
+    },
+    true,
+  );
   if (!updated) return;
   publishReactChatRuntime({ type: 'tool-run-updated', messageId });
 }

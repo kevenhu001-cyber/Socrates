@@ -119,10 +119,13 @@ class RustFetchWorker {
     const id = randomUUID();
     const wireRequest: RustWireRequest = { ...request, id };
     return new Promise<RustFetchResponse>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        reject(new Error('rust fetch worker request timeout'));
-      }, Math.max(DEFAULT_REQUEST_TIMEOUT_MS, (request.timeoutMs || 0) + 2_000));
+      const timer = setTimeout(
+        () => {
+          this.pending.delete(id);
+          reject(new Error('rust fetch worker request timeout'));
+        },
+        Math.max(DEFAULT_REQUEST_TIMEOUT_MS, (request.timeoutMs || 0) + 2_000),
+      );
       this.pending.set(id, { resolve, reject, timer });
       try {
         this.child.stdin.write(`${JSON.stringify(wireRequest)}\n`, (error) => {
@@ -179,10 +182,14 @@ class RustFetchWorker {
     if (this.disposed) return;
     this.disposed = true;
     this.failAll(new Error('rust fetch worker stopped'));
-    try { this.child.stdin.end(); } catch {}
+    try {
+      this.child.stdin.end();
+    } catch {}
     await new Promise<void>((resolve) => {
       const timer = setTimeout(() => {
-        try { this.child.kill(); } catch {}
+        try {
+          this.child.kill();
+        } catch {}
         resolve();
       }, 1_000);
       this.child.once('exit', () => {

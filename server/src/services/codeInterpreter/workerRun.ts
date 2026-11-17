@@ -30,14 +30,14 @@ interface WorkerExecutionResult {
 function parseWorkerExecutionResult(value: unknown): WorkerExecutionResult | null {
   if (!isRecord(value) || typeof value.status !== 'string') return null;
   const artifacts = Array.isArray(value.artifacts)
-    ? value.artifacts.flatMap((artifact): WorkerArtifact[] => (
-      isRecord(artifact)
-      && typeof artifact.name === 'string'
-      && typeof artifact.absPath === 'string'
-      && typeof artifact.size === 'number'
-        ? [{ name: artifact.name, absPath: artifact.absPath, size: artifact.size }]
-        : []
-    ))
+    ? value.artifacts.flatMap((artifact): WorkerArtifact[] =>
+        isRecord(artifact) &&
+        typeof artifact.name === 'string' &&
+        typeof artifact.absPath === 'string' &&
+        typeof artifact.size === 'number'
+          ? [{ name: artifact.name, absPath: artifact.absPath, size: artifact.size }]
+          : [],
+      )
     : undefined;
   return {
     status: value.status,
@@ -59,17 +59,25 @@ export interface Artifact {
   [k: string]: unknown;
 }
 export interface WorkerResult {
-   status?: string;
-   stdout?: string;
-   stderr?: string;
-   exitCode?: number;
-   durationMs?: number;
-   errorMessage?: string;
-   errorCode?: string;
-   artifacts?: Artifact[];
-   [k: string]: unknown;
- }
-export async function runOnWorker({ executionId, code, timeoutMs, signal, scratchDir, maxOutputBytes, onProgress }: {
+  status?: string;
+  stdout?: string;
+  stderr?: string;
+  exitCode?: number;
+  durationMs?: number;
+  errorMessage?: string;
+  errorCode?: string;
+  artifacts?: Artifact[];
+  [k: string]: unknown;
+}
+export async function runOnWorker({
+  executionId,
+  code,
+  timeoutMs,
+  signal,
+  scratchDir,
+  maxOutputBytes,
+  onProgress,
+}: {
   executionId: string;
   code: string;
   timeoutMs?: number;
@@ -79,11 +87,11 @@ export async function runOnWorker({ executionId, code, timeoutMs, signal, scratc
   onProgress?: ProgressListener | null;
 }) {
   const startedAt = Date.now();
-    const pool = await getPool();
-    /* P_progress — surface the wait while a worker is busy/booting. */
-    emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
-    const slot = await pool!.acquireSlot();
-    emitProgress(executionId, { phase: 'ready', executionId }, onProgress);
+  const pool = await getPool();
+  /* P_progress — surface the wait while a worker is busy/booting. */
+  emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
+  const slot = await pool!.acquireSlot();
+  emitProgress(executionId, { phase: 'ready', executionId }, onProgress);
   // slot.tryClaim()/claim() already returned a fully-claimed slot with
   // a booted worker, so slot.worker is ready — no second await needed.
   const worker = slot.worker!;
@@ -99,27 +107,36 @@ export async function runOnWorker({ executionId, code, timeoutMs, signal, scratc
   // Progressive timeout warnings — notify listeners at 50%, 80%, and 95%
   // of the budget so the UI can show "still running…" instead of silence.
   const timeoutCheckpoints = [
-    { at: 0.50, label: '50%' },
-    { at: 0.80, label: '80%' },
+    { at: 0.5, label: '50%' },
+    { at: 0.8, label: '80%' },
     { at: 0.95, label: '95%' },
   ];
   const timeoutWarnings: NodeJS.Timeout[] = [];
   for (const cp of timeoutCheckpoints) {
-    const t = setTimeout(() => {
-      emitProgress(executionId, {
-        phase: 'timeout_warning',
-        stream: null,
-        chunk: `Execution at ${cp.label} of timeout (${(timeout / 1000).toFixed(0)}s)`,
-        executionId,
-        elapsedMs: Math.round(timeout * cp.at),
-      }, onProgress);
-    }, Math.round(timeout * cp.at));
+    const t = setTimeout(
+      () => {
+        emitProgress(
+          executionId,
+          {
+            phase: 'timeout_warning',
+            stream: null,
+            chunk: `Execution at ${cp.label} of timeout (${(timeout / 1000).toFixed(0)}s)`,
+            executionId,
+            elapsedMs: Math.round(timeout * cp.at),
+          },
+          onProgress,
+        );
+      },
+      Math.round(timeout * cp.at),
+    );
     timeoutWarnings.push(t);
   }
 
   const sigintTimer = setTimeout(() => {
     timedOut = true;
-    try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
+    try {
+      new Uint8Array(interruptBuffer)[0] = 0x02;
+    } catch (_) {}
   }, timeout);
 
   // Hard termination fallback: if SIGINT hasn't returned within timeout + 1s,
@@ -134,7 +151,9 @@ export async function runOnWorker({ executionId, code, timeoutMs, signal, scratc
       slot._inflightReject = reject; // per-slot, not pool._inflightReject
       const onAbort = () => {
         cancelledByCaller = true;
-        try { new Uint8Array(interruptBuffer)[0] = 0x02; } catch (_) {}
+        try {
+          new Uint8Array(interruptBuffer)[0] = 0x02;
+        } catch (_) {}
       };
       if (signal) {
         if (signal.aborted) onAbort();
@@ -143,13 +162,17 @@ export async function runOnWorker({ executionId, code, timeoutMs, signal, scratc
       const onMessage = (msg: unknown) => {
         if (!isRecord(msg) || msg.id !== id) return;
         if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'phase') {
-          emitProgress(executionId, {
-            phase: msg.type,
-            stream: msg.type,
-            chunk: typeof msg.chunk === 'string' ? msg.chunk : String(msg.chunk ?? ''),
+          emitProgress(
             executionId,
-            elapsedMs: typeof msg.elapsedMs === 'number' ? msg.elapsedMs : undefined,
-          }, onProgress);
+            {
+              phase: msg.type,
+              stream: msg.type,
+              chunk: typeof msg.chunk === 'string' ? msg.chunk : String(msg.chunk ?? ''),
+              executionId,
+              elapsedMs: typeof msg.elapsedMs === 'number' ? msg.elapsedMs : undefined,
+            },
+            onProgress,
+          );
           return;
         }
         if (msg.type === 'result' || typeof msg.status === 'string') {
@@ -198,24 +221,23 @@ export async function runOnWorker({ executionId, code, timeoutMs, signal, scratc
     return result;
   } catch (err) {
     const incoming = err as Error & { code?: string; status?: string; durationMs?: number };
-    const message = String(incoming && incoming.message || err);
+    const message = String((incoming && incoming.message) || err);
     const incomingStatus = incoming.status;
     const incomingCode = incoming.code;
-    const mappedStatus = incomingStatus || (cancelledByCaller ? 'cancelled' : timedOut ? 'timeout' : 'failed');
+    const mappedStatus =
+      incomingStatus || (cancelledByCaller ? 'cancelled' : timedOut ? 'timeout' : 'failed');
     const mapped = new Error(
-      cancelledByCaller
-        ? 'cancelled_by_caller'
+      cancelledByCaller ? 'cancelled_by_caller' : timedOut ? 'execution_timeout' : message,
+    ) as Error & { code?: string; status?: string; durationMs?: number };
+    mapped.code =
+      incomingCode ||
+      (cancelledByCaller
+        ? 'execution_cancelled'
         : timedOut
           ? 'execution_timeout'
-          : message,
-    ) as Error & { code?: string; status?: string; durationMs?: number };
-    mapped.code = incomingCode || (cancelledByCaller
-      ? 'execution_cancelled'
-      : timedOut
-        ? 'execution_timeout'
-        : /pyodide_worker_exited|pyodide_worker_entry_missing|Worker/i.test(message)
-          ? 'pyodide_worker_failed'
-          : 'code_execution_failed');
+          : /pyodide_worker_exited|pyodide_worker_entry_missing|Worker/i.test(message)
+            ? 'pyodide_worker_failed'
+            : 'code_execution_failed');
     mapped.status = mappedStatus;
     mapped.durationMs = incoming.durationMs ?? Date.now() - startedAt;
     throw mapped;

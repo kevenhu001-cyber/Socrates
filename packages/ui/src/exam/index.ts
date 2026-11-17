@@ -11,9 +11,21 @@ export { ExamNavigation } from './ExamNavigation';
 export { ExamFooter } from './ExamFooter';
 export { defaultExamStrings } from './strings';
 export type {
-  ExamNavStrings, ExamQuestionStrings, ExamSetupStrings, ExamStrings, ExamTypeCardCopy,
+  ExamNavStrings,
+  ExamQuestionStrings,
+  ExamSetupStrings,
+  ExamStrings,
+  ExamTypeCardCopy,
 } from './strings';
 export type {
-  ExamAction, ExamCommand, ExamCommandHandler, ExamDraft, ExamDraftPatch, ExamIds,
-  ExamProviderOption, ExamScreen, ExamTextPart, RenderExamText,
+  ExamAction,
+  ExamCommand,
+  ExamCommandHandler,
+  ExamDraft,
+  ExamDraftPatch,
+  ExamIds,
+  ExamProviderOption,
+  ExamScreen,
+  ExamTextPart,
+  RenderExamText,
 } from './model';

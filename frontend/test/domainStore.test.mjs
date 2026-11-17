@@ -5,7 +5,7 @@ globalThis.window = {};
 
 const { createDomainStore } = await import('../src/store/createDomainStore.ts');
 const { sessionBridge, sessionStore } = await import('../src/state/bridges.ts');
-const { stateStore } = await import('../src/state/store.ts');
+const { dispatchSession } = await import('../src/store/index.ts');
 
 test('createDomainStore reproduces the bridge contract: revision, batching, reset', async () => {
   const initial = { value: 0, tags: [], revision: 0 };
@@ -51,7 +51,10 @@ test('createDomainStore reproduces the bridge contract: revision, batching, rese
 
 test('the six domain namespaces ride the zustand stores without facade changes', () => {
   const before = sessionBridge.getSnapshot();
-  stateStore.dispatch({ type: 'session/append-message', payload: { clientId: 'z-1', role: 'user', rawText: 'hi' } });
+  dispatchSession({
+    type: 'session/append-message',
+    payload: { clientId: 'z-1', role: 'user', rawText: 'hi' },
+  });
   const after = sessionBridge.getSnapshot();
   assert.equal(after.messages.length, 1);
   assert.equal(after.revision, before.revision + 1);
@@ -66,7 +69,9 @@ test('public domain stores cannot bypass actions and split the bridge snapshot',
   });
   assert.equal(domain.store.setState, undefined);
   assert.ok(Object.isFrozen(domain.store));
-  assert.throws(() => { domain.store.setState = () => {}; }, TypeError);
+  assert.throws(() => {
+    domain.store.setState = () => {};
+  }, TypeError);
   const seen = [];
   const dispose = domain.store.subscribe((state) => seen.push(state));
   domain.bridge.dispatch(42);
@@ -84,7 +89,9 @@ test('new stores reject nested writes and preserve old snapshots across actions'
   });
   const before = domain.store.getState();
   assert.throws(() => before.items.push({ text: 'bypass' }), TypeError);
-  assert.throws(() => { before.items[0].text = 'bypass'; }, TypeError);
+  assert.throws(() => {
+    before.items[0].text = 'bypass';
+  }, TypeError);
   domain.bridge.dispatch('after');
   domain.bridge.flush();
   assert.equal(before.items[0].text, 'before');
@@ -96,11 +103,16 @@ test('new stores reject nested writes and preserve old snapshots across actions'
 test('a reducer that attempts an in-place write cannot corrupt a frozen snapshot', () => {
   const domain = createDomainStore({
     initial: { items: ['original'], revision: 0 },
-    reducer: (state) => { state.items.push('bad'); return state; },
+    reducer: (state) => {
+      state.items.push('bad');
+      return state;
+    },
   });
   const before = domain.store.getState();
   let notifications = 0;
-  domain.store.subscribe(() => { notifications += 1; });
+  domain.store.subscribe(() => {
+    notifications += 1;
+  });
   const originalError = console.error;
   const originalWarn = console.warn;
   try {

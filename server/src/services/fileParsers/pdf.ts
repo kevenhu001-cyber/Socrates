@@ -30,7 +30,10 @@ interface PdfPage {
   getTextContent(opts: Record<string, unknown>): Promise<{ items: PdfTextItem[] }>;
 }
 
-type PdfParseFn = (data: Buffer, opts?: Record<string, unknown>) => Promise<{
+type PdfParseFn = (
+  data: Buffer,
+  opts?: Record<string, unknown>,
+) => Promise<{
   text?: string;
   numpages?: number;
   info?: Record<string, unknown>;
@@ -59,7 +62,9 @@ function renderItems(items: PdfTextItem[]): string {
     const t = item.transform || [1, 0, 0, 1, 0, 0];
     const x = Number(t[4]) || 0;
     const y = Number(t[5]) || 0;
-    const fontSize = Math.abs(Number(item.height) || Math.hypot(Number(t[2]) || 0, Number(t[3]) || 0) || 10);
+    const fontSize = Math.abs(
+      Number(item.height) || Math.hypot(Number(t[2]) || 0, Number(t[3]) || 0) || 10,
+    );
     if (lastY === null) {
       out += str;
     } else {
@@ -70,8 +75,15 @@ function renderItems(items: PdfTextItem[]): string {
         const gap = x - lastXEnd;
         const prev = out.slice(-1);
         const next = str.slice(0, 1);
-        if (gap > fontSize * 0.2 && prev && next && prev !== ' ' && next !== ' '
-            && !CJK.test(prev) && !CJK.test(next)) {
+        if (
+          gap > fontSize * 0.2 &&
+          prev &&
+          next &&
+          prev !== ' ' &&
+          next !== ' ' &&
+          !CJK.test(prev) &&
+          !CJK.test(next)
+        ) {
           out += ' ';
         }
         out += str;
@@ -106,7 +118,10 @@ export async function extract(filepath: string) {
       pageTexts[index] = '';
       return '';
     }
-    const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: false });
+    const content = await page.getTextContent({
+      normalizeWhitespace: false,
+      disableCombineTextItems: false,
+    });
     const text = renderItems(content.items || []);
     pageTexts[index] = text;
     return text;
@@ -119,8 +134,13 @@ export async function extract(filepath: string) {
       pdfParse(data, { pagerender }),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
-          () => reject(parseError('PARSE_FAILED',
-            `pdf_timeout: the document took longer than ${PDF_PARSE_TIMEOUT_MS / 1000}s to parse.`)),
+          () =>
+            reject(
+              parseError(
+                'PARSE_FAILED',
+                `pdf_timeout: the document took longer than ${PDF_PARSE_TIMEOUT_MS / 1000}s to parse.`,
+              ),
+            ),
           PDF_PARSE_TIMEOUT_MS,
         );
       }),
@@ -128,8 +148,10 @@ export async function extract(filepath: string) {
   } catch (e) {
     const err = e as { name?: string; message?: string };
     if (err?.name === 'PasswordException' || /password/i.test(String(err?.message || ''))) {
-      throw parseError('ENCRYPTED',
-        'pdf_encrypted: this PDF is password-protected. Remove the password (or print it to a new PDF) and upload it again.');
+      throw parseError(
+        'ENCRYPTED',
+        'pdf_encrypted: this PDF is password-protected. Remove the password (or print it to a new PDF) and upload it again.',
+      );
     }
     throw parseError('PARSE_FAILED', 'pdf_parse_failed: ' + (err?.message || String(e)));
   } finally {
@@ -164,9 +186,10 @@ export async function extract(filepath: string) {
     meta.scanned = true;
     meta.textLayer = 'none';
   } else if (emptyPages.length > 0) {
-    meta.pagesWithoutText = emptyPages.length > 20
-      ? `${emptyPages.slice(0, 20).join(',')},… (${emptyPages.length} pages)`
-      : emptyPages.join(',');
+    meta.pagesWithoutText =
+      emptyPages.length > 20
+        ? `${emptyPages.slice(0, 20).join(',')},… (${emptyPages.length} pages)`
+        : emptyPages.join(',');
   }
 
   return {

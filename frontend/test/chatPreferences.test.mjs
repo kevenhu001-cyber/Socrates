@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'https://app.example.test/' });
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+  url: 'https://app.example.test/',
+});
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
@@ -15,7 +17,13 @@ test('chat preferences validate defaults and persist an atomic update', () => {
   assert.equal(preferences.getStoredResponseSpeed(), 'standard');
 
   let detail = null;
-  window.addEventListener('socrates:chat-preferences', (event) => { detail = event.detail; }, { once: true });
+  window.addEventListener(
+    'socrates:chat-preferences',
+    (event) => {
+      detail = event.detail;
+    },
+    { once: true },
+  );
   preferences.saveChatPreferences('high', 'fast');
 
   assert.equal(preferences.getStoredReasoningEffort(), 'high');
@@ -29,7 +37,6 @@ test('invalid stored values fall back safely', () => {
   assert.equal(preferences.getStoredReasoningEffort(), 'medium');
   assert.equal(preferences.getStoredResponseSpeed(), 'standard');
 });
-
 
 test('Instant persists as a fourth reasoning level without changing speed', () => {
   preferences.saveChatPreferences('instant', 'fast');

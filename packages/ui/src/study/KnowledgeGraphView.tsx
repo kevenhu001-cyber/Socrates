@@ -28,8 +28,19 @@ export function MasterySwatch({ status, label }: { status: KnowledgeStatus; labe
   const look = pillLook(status, colors);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
-      <View aria-hidden style={{ width: 18, height: 10, borderRadius: R.pill, backgroundColor: look.background, boxShadow: look.ring }} />
-      <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{label}</UiText>
+      <View
+        aria-hidden
+        style={{
+          width: 18,
+          height: 10,
+          borderRadius: R.pill,
+          backgroundColor: look.background,
+          boxShadow: look.ring,
+        }}
+      />
+      <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
+        {label}
+      </UiText>
     </View>
   );
 }
@@ -37,12 +48,26 @@ export function MasterySwatch({ status, label }: { status: KnowledgeStatus; labe
 function pillLook(status: KnowledgeStatus, colors: ReturnType<typeof useUiTheme>['colors']) {
   /* Site `.demo-node`: white capsule on an inset 12% ring; the kept idea is
      the filled ink capsule. Fuzzy deepens the ring to 1.5px ink. */
-  if (status === 'internalized') return { background: colors.ink, ring: undefined, tone: 'onInk' as const };
-  if (status === 'fuzzy') return { background: colors.card, ring: insetRing(colors.ink, 1.5), tone: 'ink' as const };
-  return { background: colors.card, ring: insetRing(colors.hairlineStrong), tone: 'secondary' as const };
+  if (status === 'internalized')
+    return { background: colors.ink, ring: undefined, tone: 'onInk' as const };
+  if (status === 'fuzzy')
+    return { background: colors.card, ring: insetRing(colors.ink, 1.5), tone: 'ink' as const };
+  return {
+    background: colors.card,
+    ring: insetRing(colors.hairlineStrong),
+    tone: 'secondary' as const,
+  };
 }
 
-function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: KnowledgeStrings; onPress: (index: number) => void }) {
+function GraphPill({
+  box,
+  strings,
+  onPress,
+}: {
+  box: GraphNodeBox;
+  strings: KnowledgeStrings;
+  onPress: (index: number) => void;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { subtle } = sheets(colors);
@@ -56,7 +81,12 @@ function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: Know
       aria-current={box.active ? 'step' : undefined}
       onPress={() => onPress(box.index)}
       {...handlers}
-      {...dataSet({ kbGraphNode: box.index, kbStatus: box.status, kbActive: box.active ? '1' : undefined, kbQuestions: box.questions })}
+      {...dataSet({
+        kbGraphNode: box.index,
+        kbStatus: box.status,
+        kbActive: box.active ? '1' : undefined,
+        kbQuestions: box.questions,
+      })}
       style={{
         position: 'absolute',
         left: box.x,
@@ -65,7 +95,10 @@ function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: Know
         height: box.height,
         borderRadius: R.pill,
         backgroundColor: hovered && box.status !== 'internalized' ? subtle : look.background,
-        boxShadow: [look.ring, box.status === 'internalized' ? undefined : '0 1px 2px rgb(0 0 0 / 4%)'].filter(Boolean).join(', ') || undefined,
+        boxShadow:
+          [look.ring, box.status === 'internalized' ? undefined : '0 1px 2px rgb(0 0 0 / 4%)']
+            .filter(Boolean)
+            .join(', ') || undefined,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: S[75],
@@ -76,13 +109,27 @@ function GraphPill({ box, strings, onPress }: { box: GraphNodeBox; strings: Know
         ...transition('background-color', reduced),
       }}
     >
-      <UiText variant="eyebrow" tone={look.tone} numberOfLines={1} style={{ letterSpacing: 0 }}>{box.label}</UiText>
+      <UiText variant="eyebrow" tone={look.tone} numberOfLines={1} style={{ letterSpacing: 0 }}>
+        {box.label}
+      </UiText>
     </Pressable>
   );
 }
 
 /** One segment of the zoom capsule: 28px, quiet until hovered. */
-function ZoomButton({ label, accessibilityLabel, onPress, data, wide }: { label: string; accessibilityLabel: string; onPress: () => void; data: Record<string, string>; wide?: boolean }) {
+function ZoomButton({
+  label,
+  accessibilityLabel,
+  onPress,
+  data,
+  wide,
+}: {
+  label: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+  data: Record<string, string>;
+  wide?: boolean;
+}) {
   const { colors } = useUiTheme();
   const { hovered, focused, handlers } = usePressFeedback();
   return (
@@ -103,12 +150,25 @@ function ZoomButton({ label, accessibilityLabel, onPress, data, wide }: { label:
         ...focusRing(colors, focused),
       }}
     >
-      <UiText variant="labelSm" tone={wide ? 'secondary' : 'ink'} style={{ fontVariant: ['tabular-nums'] }}>{label}</UiText>
+      <UiText
+        variant="labelSm"
+        tone={wide ? 'secondary' : 'ink'}
+        style={{ fontVariant: ['tabular-nums'] }}
+      >
+        {label}
+      </UiText>
     </Pressable>
   );
 }
 
-export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings, height = 280, onSelect }: {
+export function KnowledgeGraphView({
+  nodes,
+  activeIndex,
+  selectedIndex,
+  strings,
+  height = 280,
+  onSelect,
+}: {
   nodes: readonly KnowledgeNodeInput[];
   activeIndex: number;
   selectedIndex: number | null;
@@ -125,15 +185,22 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
   const fit = fitZoom(graph, viewport);
   const scale = zoom ?? fit;
 
-  const responder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) + Math.abs(gesture.dy) > 6,
-    onPanResponderGrant: () => {
-      pan.stopAnimation((value) => { panStart.current = value; });
-    },
-    onPanResponderMove: (_event, gesture) => {
-      pan.setValue({ x: panStart.current.x + gesture.dx, y: panStart.current.y + gesture.dy });
-    },
-  }), [pan]);
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_event, gesture) =>
+          Math.abs(gesture.dx) + Math.abs(gesture.dy) > 6,
+        onPanResponderGrant: () => {
+          pan.stopAnimation((value) => {
+            panStart.current = value;
+          });
+        },
+        onPanResponderMove: (_event, gesture) => {
+          pan.setValue({ x: panStart.current.x + gesture.dx, y: panStart.current.y + gesture.dy });
+        },
+      }),
+    [pan],
+  );
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { width } = event.nativeEvent.layout;
@@ -174,7 +241,9 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
             }}
           >
             {graph.edges.map((edge) => {
-              const lit = selectedIndex !== null && (edge.from === selectedIndex || edge.to === selectedIndex);
+              const lit =
+                selectedIndex !== null &&
+                (edge.from === selectedIndex || edge.to === selectedIndex);
               return (
                 <View
                   key={`${edge.from}-${edge.to}`}
@@ -193,25 +262,82 @@ export function KnowledgeGraphView({ nodes, activeIndex, selectedIndex, strings,
                 />
               );
             })}
-            {graph.nodes.map((box) => <GraphPill key={`${box.index}-${box.name}`} box={box} strings={strings} onPress={onSelect} />)}
+            {graph.nodes.map((box) => (
+              <GraphPill
+                key={`${box.index}-${box.name}`}
+                box={box}
+                strings={strings}
+                onPress={onSelect}
+              />
+            ))}
           </Animated.View>
         ) : null}
         {/* Zoom: one white capsule on the stage (site `.ui-seg` on white). */}
-        <View style={{ position: 'absolute', right: S[75], bottom: S[75], flexDirection: 'row', alignItems: 'center', gap: 2, padding: 2, borderRadius: R.pill, backgroundColor: colors.card, boxShadow: shadow(colors, 'raised') }}>
-          <ZoomButton label="−" accessibilityLabel={strings.zoomOut} onPress={() => setZoom(clampZoom(scale / GRAPH_ZOOM_STEP))} data={{ kbZoom: 'out' }} />
-          <ZoomButton label={`${Math.round(scale * 100)}%`} accessibilityLabel={strings.zoomFit} onPress={resetView} data={{ kbZoom: 'fit' }} wide />
-          <ZoomButton label="+" accessibilityLabel={strings.zoomIn} onPress={() => setZoom(clampZoom(scale * GRAPH_ZOOM_STEP))} data={{ kbZoom: 'in' }} />
+        <View
+          style={{
+            position: 'absolute',
+            right: S[75],
+            bottom: S[75],
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 2,
+            padding: 2,
+            borderRadius: R.pill,
+            backgroundColor: colors.card,
+            boxShadow: shadow(colors, 'raised'),
+          }}
+        >
+          <ZoomButton
+            label="−"
+            accessibilityLabel={strings.zoomOut}
+            onPress={() => setZoom(clampZoom(scale / GRAPH_ZOOM_STEP))}
+            data={{ kbZoom: 'out' }}
+          />
+          <ZoomButton
+            label={`${Math.round(scale * 100)}%`}
+            accessibilityLabel={strings.zoomFit}
+            onPress={resetView}
+            data={{ kbZoom: 'fit' }}
+            wide
+          />
+          <ZoomButton
+            label="+"
+            accessibilityLabel={strings.zoomIn}
+            onPress={() => setZoom(clampZoom(scale * GRAPH_ZOOM_STEP))}
+            data={{ kbZoom: 'in' }}
+          />
         </View>
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: S[200], rowGap: S[50], paddingHorizontal: S[50] }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: S[200],
+          rowGap: S[50],
+          paddingHorizontal: S[50],
+        }}
+      >
         <MasterySwatch status="internalized" label={strings.status.internalized} />
         <MasterySwatch status="fuzzy" label={strings.status.fuzzy} />
         <MasterySwatch status="blank" label={strings.status.blank} />
       </View>
       {/* 两段说明只用间距分开（不用「·」）。 */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: S[100], paddingHorizontal: S[50] }} {...dataSet({ kbEdgeKind: graph.edgeKind })}>
-        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{strings.captionMastery}</UiText>
-        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>{graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}</UiText>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          columnGap: S[100],
+          paddingHorizontal: S[50],
+        }}
+        {...dataSet({ kbEdgeKind: graph.edgeKind })}
+      >
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
+          {strings.captionMastery}
+        </UiText>
+        <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
+          {graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}
+        </UiText>
       </View>
     </View>
   );

@@ -1,4 +1,3 @@
-
 const EXTERNAL_LINK_SELECTOR = [
   '.msg-body p a[href^="http"]',
   '.msg-body li a[href^="http"]',
@@ -34,11 +33,16 @@ function fallbackFavicon(url: URL | null) {
   for (let index = 0; index < host.length; index++) {
     hue = (hue * 31 + host.charCodeAt(index)) % 360;
   }
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'
-    + '<rect width="64" height="64" rx="14" fill="hsl(' + hue + ',56%,45%)"/>'
-    + '<text x="32" y="45" font-family="system-ui,sans-serif" font-size="34"'
-    + ' font-weight="600" fill="#ffffff" text-anchor="middle">' + letter + '</text>'
-    + '</svg>';
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+    '<rect width="64" height="64" rx="14" fill="hsl(' +
+    hue +
+    ',56%,45%)"/>' +
+    '<text x="32" y="45" font-family="system-ui,sans-serif" font-size="34"' +
+    ' font-weight="600" fill="#ffffff" text-anchor="middle">' +
+    letter +
+    '</text>' +
+    '</svg>';
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
@@ -64,7 +68,10 @@ export function createLinkFavicon(rawUrl: unknown) {
   const watchdog = setTimeout(function () {
     if (!settled) image.src = image.dataset.fallback || '';
   }, 2500);
-  const settle = function () { settled = true; clearTimeout(watchdog); };
+  const settle = function () {
+    settled = true;
+    clearTimeout(watchdog);
+  };
   image.addEventListener('load', settle);
   image.addEventListener('error', function onError() {
     settle();

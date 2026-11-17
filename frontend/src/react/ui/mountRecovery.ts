@@ -18,7 +18,8 @@ export function showMountRecovery(
   const doc = host.ownerDocument;
   const notice = doc.createElement('div');
   notice.dataset.mountRecovery = spec.label;
-  notice.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:var(--ui-space-sm);padding:var(--ui-space-sm);color:var(--ui-text-secondary);font-size:var(--ui-font-size-sm);';
+  notice.style.cssText =
+    'display:flex;align-items:center;flex-wrap:wrap;gap:var(--ui-space-sm);padding:var(--ui-space-sm);color:var(--ui-text-secondary);font-size:var(--ui-font-size-sm);';
 
   const status = doc.createElement('span');
   status.id = `mount-recovery-${spec.hostId}`;

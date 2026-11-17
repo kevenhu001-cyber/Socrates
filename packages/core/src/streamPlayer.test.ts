@@ -16,8 +16,15 @@ import {
 const CFG: PlaybackConfig = { ...DEFAULT_PLAYBACK_CONFIG };
 
 test('arrival-rate sampling is independent of render cadence', () => {
-  const config = { maxLagMs: 0, arrivalEmaAlpha: 1, baseCps: 1, maxCps: 10_000,
-    maxSmoothedCps: 10_000, minSmoothedCps: 1, catchUpPending: Number.MAX_SAFE_INTEGER };
+  const config = {
+    maxLagMs: 0,
+    arrivalEmaAlpha: 1,
+    baseCps: 1,
+    maxCps: 10_000,
+    maxSmoothedCps: 10_000,
+    minSmoothedCps: 1,
+    catchUpPending: Number.MAX_SAFE_INTEGER,
+  };
   const stalled = createPlaybackClock(config, 10_000);
   const frequent = createPlaybackClock(config, 10_000);
   for (const clock of [stalled, frequent]) clock.push(1000, 10_000);
@@ -133,8 +140,16 @@ describe('createPlaybackClock — bounded display latency', () => {
   });
 
   test('arrival sampling accumulates short frames independently of playback', () => {
-    const withEma = createPlaybackClock({ maxLagMs: 0, arrivalEmaAlpha: 1, catchUpPending: 1000000 });
-    const withoutEma = createPlaybackClock({ maxLagMs: 0, arrivalEmaAlpha: 0, catchUpPending: 1000000 });
+    const withEma = createPlaybackClock({
+      maxLagMs: 0,
+      arrivalEmaAlpha: 1,
+      catchUpPending: 1000000,
+    });
+    const withoutEma = createPlaybackClock({
+      maxLagMs: 0,
+      arrivalEmaAlpha: 0,
+      catchUpPending: 1000000,
+    });
     let sampledRate = 0;
     let legacyRate = 0;
     for (let at = 16; at <= 256; at += 16) {

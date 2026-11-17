@@ -15,7 +15,8 @@ import { createBridge, type Bridge, type RevisionedSnapshot } from './bridge.ts'
 
 /** Read-only Zustand API: domain actions are the sole write entry. */
 export type DomainStoreReader<Snapshot> = Pick<
-  StoreApi<Snapshot>, 'getState' | 'getInitialState' | 'subscribe'
+  StoreApi<Snapshot>,
+  'getState' | 'getInitialState' | 'subscribe'
 >;
 
 export interface DomainStore<Snapshot extends RevisionedSnapshot, Action> {
@@ -27,10 +28,7 @@ export interface DomainStore<Snapshot extends RevisionedSnapshot, Action> {
 
 export interface CreateDomainStoreOptions<Snapshot extends RevisionedSnapshot, Action> {
   initial: Snapshot;
-  reducer: (
-    state: Snapshot,
-    action: Action,
-  ) => Snapshot | Omit<Snapshot, 'revision'>;
+  reducer: (state: Snapshot, action: Action) => Snapshot | Omit<Snapshot, 'revision'>;
 }
 
 export function createDomainStore<Snapshot extends RevisionedSnapshot, Action>(

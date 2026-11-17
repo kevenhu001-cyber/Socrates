@@ -26,9 +26,17 @@ function fakeRes(statusCode = 200) {
     headers: {},
     _status: null,
     setHeader() {},
-    on(name, fn) { e.on(name, fn); return this; },
-    once(name, fn) { e.once(name, fn); return this; },
-    emit(name) { e.emit(name); },
+    on(name, fn) {
+      e.on(name, fn);
+      return this;
+    },
+    once(name, fn) {
+      e.once(name, fn);
+      return this;
+    },
+    emit(name) {
+      e.emit(name);
+    },
   };
 }
 
@@ -52,7 +60,9 @@ function captureWarn() {
   };
   return {
     lines,
-    restore: () => { console.warn = original; },
+    restore: () => {
+      console.warn = original;
+    },
   };
 }
 
@@ -71,7 +81,9 @@ describe('audit middleware', () => {
       if (name === 'finish') finishListenerCount++;
       return origOn.call(res, name, fn);
     };
-    mw(req, res, () => { nextCalled = true; });
+    mw(req, res, () => {
+      nextCalled = true;
+    });
     assert.equal(nextCalled, true);
     assert.equal(finishListenerCount, 1);
   });
@@ -87,7 +99,10 @@ describe('audit middleware', () => {
     const capture = captureWarn();
     let warnCalled = false;
     const origWarn = console.warn;
-    console.warn = (...args) => { warnCalled = true; origWarn(...args); };
+    console.warn = (...args) => {
+      warnCalled = true;
+      origWarn(...args);
+    };
 
     mw(req, res, () => {});
     res.emit('finish');
@@ -111,7 +126,7 @@ describe('audit middleware', () => {
     const res = fakeRes(401);
     /* Pass a getDetail that returns the email so the log line
        carries correlation context. */
-    mw(req, res, () => {}, /* unused */);
+    mw(req, res, () => {} /* unused */);
     /* Actually audit(action, getDetail, opts) signature is:
        audit(action, getDetail?, opts?). Re-wire. */
     const mwWithDetail = audit('login', (r) => ({ email: r.body?.email || 'a@b.com' }));
@@ -119,7 +134,9 @@ describe('audit middleware', () => {
 
     let captured;
     const origWarn = console.warn;
-    console.warn = (...args) => { captured = args.join(' '); };
+    console.warn = (...args) => {
+      captured = args.join(' ');
+    };
     res.emit('finish');
     console.warn = origWarn;
 
@@ -140,7 +157,10 @@ describe('audit middleware', () => {
 
     const origWarn = console.warn;
     let warnCalled = false;
-    console.warn = (...args) => { warnCalled = true; origWarn(...args); };
+    console.warn = (...args) => {
+      warnCalled = true;
+      origWarn(...args);
+    };
 
     mw(req, res, () => {});
     res.emit('finish');
@@ -159,7 +179,10 @@ describe('audit middleware', () => {
 
     const origWarn = console.warn;
     let warnCalled = false;
-    console.warn = (...args) => { warnCalled = true; origWarn(...args); };
+    console.warn = (...args) => {
+      warnCalled = true;
+      origWarn(...args);
+    };
 
     assert.doesNotThrow(() => {
       mw(req, res, () => {});

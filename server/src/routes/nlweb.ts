@@ -36,28 +36,32 @@ const CORPUS: CorpusEntry[] = [
     '@type': 'TechArticle',
     name: 'Socrates OpenAPI specification',
     url: 'https://topodrive.top/openapi.json',
-    description: 'OpenAPI 3.0 contract for the public Socrates API with operationIds, schemas, scopes, and error model.',
+    description:
+      'OpenAPI 3.0 contract for the public Socrates API with operationIds, schemas, scopes, and error model.',
     keywords: ['openapi', 'api', 'specification', 'swagger', 'rest', 'endpoints'],
   },
   {
     '@type': 'TechArticle',
     name: 'Socrates authentication reference',
     url: 'https://topodrive.top/auth.md',
-    description: 'OAuth 2.0 authorization-code + PKCE, scoped agent API keys (ak_*), WWW-Authenticate challenges, and every auth error convention.',
+    description:
+      'OAuth 2.0 authorization-code + PKCE, scoped agent API keys (ak_*), WWW-Authenticate challenges, and every auth error convention.',
     keywords: ['auth', 'oauth', 'authentication', 'agent', 'key', 'token', 'pkce', 'scope'],
   },
   {
     '@type': 'WebPage',
     name: 'Socrates developer portal',
     url: 'https://topodrive.top/developers',
-    description: 'Quickstart, conventions (errors, idempotency, rate limits, pagination), and the full discovery index for developers.',
+    description:
+      'Quickstart, conventions (errors, idempotency, rate limits, pagination), and the full discovery index for developers.',
     keywords: ['developers', 'portal', 'quickstart', 'docs', 'documentation', 'sdk'],
   },
   {
     '@type': 'Service',
     name: 'Socrates MCP server',
     url: 'https://app.topodrive.top/api/mcp',
-    description: 'Model Context Protocol server (Streamable HTTP) exposing read-only Socrates discovery tools.',
+    description:
+      'Model Context Protocol server (Streamable HTTP) exposing read-only Socrates discovery tools.',
     keywords: ['mcp', 'model context protocol', 'tools', 'claude', 'cursor'],
   },
   {
@@ -90,7 +94,29 @@ const CORPUS: CorpusEntry[] = [
   },
 ];
 
-const STOPWORDS = new Set(['the', 'a', 'an', 'is', 'are', 'of', 'to', 'for', 'and', 'or', 'in', 'on', 'how', 'do', 'does', 'what', 'which', 'with', 'my', 'your', 'it']);
+const STOPWORDS = new Set([
+  'the',
+  'a',
+  'an',
+  'is',
+  'are',
+  'of',
+  'to',
+  'for',
+  'and',
+  'or',
+  'in',
+  'on',
+  'how',
+  'do',
+  'does',
+  'what',
+  'which',
+  'with',
+  'my',
+  'your',
+  'it',
+]);
 
 function tokenize(query: string): string[] {
   return query
@@ -122,8 +148,14 @@ function meta(responseType: string) {
 
 function extractQuery(req: Request): string {
   const body = req.body || {};
-  const fromBody = typeof body.query === 'string' ? body.query : typeof body.q === 'string' ? body.q : '';
-  const fromQuery = typeof req.query.query === 'string' ? req.query.query : typeof req.query.q === 'string' ? req.query.q : '';
+  const fromBody =
+    typeof body.query === 'string' ? body.query : typeof body.q === 'string' ? body.q : '';
+  const fromQuery =
+    typeof req.query.query === 'string'
+      ? req.query.query
+      : typeof req.query.q === 'string'
+        ? req.query.q
+        : '';
   return (fromBody || fromQuery).slice(0, 500);
 }
 
@@ -190,7 +222,9 @@ router.post('/stream', (req, res) => {
   // Yield once so the start frame is flushed before results land.
   setTimeout(pushNext, 15);
 
-  res.on('close', () => { i = results.length; });
+  res.on('close', () => {
+    i = results.length;
+  });
 });
 
 export default router;

@@ -31,11 +31,23 @@ export interface UiThemeValue {
   readonly iconRenderer: UiIconRenderer | null;
 }
 
-const defaultTheme: UiThemeValue = { colors: uiColors.light, fontFamily: uiFont.sans, typeScale: 1, iconRenderer: null };
+const defaultTheme: UiThemeValue = {
+  colors: uiColors.light,
+  fontFamily: uiFont.sans,
+  typeScale: 1,
+  iconRenderer: null,
+};
 
 const UiThemeContext = createContext<UiThemeValue>(defaultTheme);
 
-export function UiThemeProvider({ colors, fontFamily, fontFamilies, typeScale, iconRenderer, children }: {
+export function UiThemeProvider({
+  colors,
+  fontFamily,
+  fontFamilies,
+  typeScale,
+  iconRenderer,
+  children,
+}: {
   colors: UiColors;
   fontFamily?: string;
   fontFamilies?: Partial<Record<UiFontWeight, string>>;
@@ -44,13 +56,15 @@ export function UiThemeProvider({ colors, fontFamily, fontFamilies, typeScale, i
   children: ReactNode;
 }) {
   return (
-    <UiThemeContext.Provider value={{
-      colors,
-      fontFamily: fontFamily ?? uiFont.sans,
-      ...(fontFamilies ? { fontFamilies } : {}),
-      typeScale: typeScale ?? 1,
-      iconRenderer: iconRenderer ?? null,
-    }}>
+    <UiThemeContext.Provider
+      value={{
+        colors,
+        fontFamily: fontFamily ?? uiFont.sans,
+        ...(fontFamilies ? { fontFamilies } : {}),
+        typeScale: typeScale ?? 1,
+        iconRenderer: iconRenderer ?? null,
+      }}
+    >
       {children}
     </UiThemeContext.Provider>
   );

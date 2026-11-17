@@ -13,9 +13,10 @@ export function requestMessages(body: unknown): Record<string, unknown>[] {
 export function contentText(content: unknown): string {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
-  return content.flatMap((part): string[] => {
-    if (!isRecord(part) || part.type !== 'text' || typeof part.text !== 'string') return [];
-    return [part.text];
-  }).join('\n');
+  return content
+    .flatMap((part): string[] => {
+      if (!isRecord(part) || part.type !== 'text' || typeof part.text !== 'string') return [];
+      return [part.text];
+    })
+    .join('\n');
 }
-

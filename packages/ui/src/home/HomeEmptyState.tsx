@@ -16,7 +16,15 @@
  * reader the entries are new. Reduced-motion users get them in place.
  */
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import {
+  AccessibilityInfo,
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -45,7 +53,9 @@ export function HomeHero({ title, subtitle, titleId }: HomeHeroProps) {
   const { width } = useWindowDimensions();
   const compact = width < HOME_COMPACT_WIDTH;
   return (
-    <View style={{ alignItems: 'center', gap: uiSpace[3], paddingHorizontal: compact ? uiSpace[2] : 0 }}>
+    <View
+      style={{ alignItems: 'center', gap: uiSpace[3], paddingHorizontal: compact ? uiSpace[2] : 0 }}
+    >
       <UiText
         nativeID={titleId}
         role="heading"
@@ -57,7 +67,9 @@ export function HomeHero({ title, subtitle, titleId }: HomeHeroProps) {
         {title}
       </UiText>
       {subtitle ? (
-        <UiText variant={compact ? 'bodySm' : 'body'} tone="secondary" align="center">{subtitle}</UiText>
+        <UiText variant={compact ? 'bodySm' : 'body'} tone="secondary" align="center">
+          {subtitle}
+        </UiText>
       ) : null}
     </View>
   );
@@ -82,9 +94,17 @@ function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
     let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((value) => { if (alive) setReduce(value); }, () => undefined);
+    AccessibilityInfo.isReduceMotionEnabled().then(
+      (value) => {
+        if (alive) setReduce(value);
+      },
+      () => undefined,
+    );
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
-    return () => { alive = false; sub.remove(); };
+    return () => {
+      alive = false;
+      sub.remove();
+    };
   }, []);
   return reduce;
 }
@@ -101,11 +121,16 @@ function useEntrance(count: number, replayKey: string) {
     }
     const native = Platform.OS !== 'web';
     values.current.forEach((value) => value.setValue(0));
-    const animation = Animated.stagger(60, values.current.slice(0, count).map((value) => Animated.timing(value, {
-      toValue: 1,
-      duration: uiMotion.enter,
-      useNativeDriver: native,
-    })));
+    const animation = Animated.stagger(
+      60,
+      values.current.slice(0, count).map((value) =>
+        Animated.timing(value, {
+          toValue: 1,
+          duration: uiMotion.enter,
+          useNativeDriver: native,
+        }),
+      ),
+    );
     animation.start();
     return () => animation.stop();
   }, [count, replayKey, reduce]);
@@ -128,7 +153,13 @@ export interface HomeShortcutsProps {
 }
 
 /** Chat mode: a centred row of pale grey capsules, each with a quiet dismiss. */
-export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label }: HomeShortcutsProps) {
+export function HomeShortcuts({
+  items,
+  onSelect,
+  onDismiss,
+  dismissLabel,
+  label,
+}: HomeShortcutsProps) {
   const { colors } = useUiTheme();
   const { width } = useWindowDimensions();
   const compact = width < HOME_COMPACT_WIDTH;
@@ -148,51 +179,80 @@ export function HomeShortcuts({ items, onSelect, onDismiss, dismissLabel, label 
         <Animated.View
           key={item.id}
           testID={`home-shortcut-${item.id}`}
-          style={[{
-            flexDirection: 'row',
-            alignItems: 'center',
-            borderRadius: uiRadius.pill,
-            backgroundColor: item.pressed ? colors.ink : colors.fill,
-            borderWidth: 1,
-            borderColor: item.pressed ? colors.hairlineStrong : colors.hairline,
-          }, enter(index)]}
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              borderRadius: uiRadius.pill,
+              backgroundColor: item.pressed ? colors.ink : colors.fill,
+              borderWidth: 1,
+              borderColor: item.pressed ? colors.hairlineStrong : colors.hairline,
+            },
+            enter(index),
+          ]}
         >
           <UiButton
             testID={`home-shortcut-action-${item.id}`}
             label={item.label}
             variant={item.pressed ? 'primary' : 'ghost'}
             size={compact ? 'sm' : 'md'}
-            leading={item.icon ? <UiIcon name={item.icon} size={compact ? 16 : 18} color={item.pressed ? colors.onInk : colors.inkSecondary} /> : undefined}
+            leading={
+              item.icon ? (
+                <UiIcon
+                  name={item.icon}
+                  size={compact ? 16 : 18}
+                  color={item.pressed ? colors.onInk : colors.inkSecondary}
+                />
+              ) : undefined
+            }
             {...(item.pressed === undefined ? {} : { 'aria-pressed': item.pressed })}
             onPress={() => onSelect(item.id)}
           />
           {/* Touch has no hover, so phones drop the dismiss (it would only be
               reachable by a long-press that also opens the context menu). */}
-          {compact ? null : <Pressable
-            testID={`home-shortcut-dismiss-${item.id}`}
-            accessibilityRole="button"
-            accessibilityLabel={dismissLabel}
-            onPress={() => onDismiss(item.id)}
-            hitSlop={6}
-            style={({ pressed, hovered, focused }: { pressed: boolean; hovered?: boolean; focused?: boolean }) => ({
-              width: 24,
-              height: 24,
-              marginRight: uiSpace[2],
-              marginLeft: -uiSpace[1],
-              borderRadius: uiRadius.pill,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: pressed ? colors.fillPressed : hovered ? colors.fillHover : 'transparent',
-              outlineStyle: focused ? 'solid' : undefined,
-              outlineWidth: focused ? 2 : 0,
-              outlineColor: colors.ink,
-              outlineOffset: 1,
-            })}
-          >
-            {/* A real 14px line glyph: the bare "×" character rendered at
+          {compact ? null : (
+            <Pressable
+              testID={`home-shortcut-dismiss-${item.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={dismissLabel}
+              onPress={() => onDismiss(item.id)}
+              hitSlop={6}
+              style={({
+                pressed,
+                hovered,
+                focused,
+              }: {
+                pressed: boolean;
+                hovered?: boolean;
+                focused?: boolean;
+              }) => ({
+                width: 24,
+                height: 24,
+                marginRight: uiSpace[2],
+                marginLeft: -uiSpace[1],
+                borderRadius: uiRadius.pill,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: pressed
+                  ? colors.fillPressed
+                  : hovered
+                    ? colors.fillHover
+                    : 'transparent',
+                outlineStyle: focused ? 'solid' : undefined,
+                outlineWidth: focused ? 2 : 0,
+                outlineColor: colors.ink,
+                outlineOffset: 1,
+              })}
+            >
+              {/* A real 14px line glyph: the bare "×" character rendered at
                 label size read as a dot. */}
-            <UiIcon name="close" size={14} color={item.pressed ? colors.onInk : colors.inkSecondary} />
-          </Pressable>}
+              <UiIcon
+                name="close"
+                size={14}
+                color={item.pressed ? colors.onInk : colors.inkSecondary}
+              />
+            </Pressable>
+          )}
         </Animated.View>
       ))}
     </View>
@@ -213,15 +273,29 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
   const enter = useEntrance(items.length, 'starters');
   return (
     <View style={{ gap: compact ? uiSpace[3] : uiSpace[4] }}>
-      <UiText nativeID={headingId} role="heading" {...headingLevel(2)} variant="labelSm" tone="tertiary" align={compact ? 'left' : 'center'}>
+      <UiText
+        nativeID={headingId}
+        role="heading"
+        {...headingLevel(2)}
+        variant="labelSm"
+        tone="tertiary"
+        align={compact ? 'left' : 'center'}
+      >
         {heading}
       </UiText>
       {compact ? (
         /* Phones scroll the cards sideways: three stacked cards would bury
            the composer on short screens. */
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: uiSpace[2] }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: uiSpace[2] }}
+        >
           {items.map((item, index) => (
-            <Animated.View key={item.id} style={[{ width: Math.min(280, Math.round(width * 0.72)) }, enter(index)]}>
+            <Animated.View
+              key={item.id}
+              style={[{ width: Math.min(280, Math.round(width * 0.72)) }, enter(index)]}
+            >
               <StarterCard item={item} index={index} compact onSelect={onSelect} />
             </Animated.View>
           ))}
@@ -245,7 +319,17 @@ export function HomeStarters({ heading, headingId, items, onSelect }: HomeStarte
  * title and one line of hint. Hover lifts it onto white with the site's
  * second shadow (`.news-item:hover`); reduced motion keeps it in place.
  */
-function StarterCard({ item, index, compact, onSelect }: { item: HomeStarter; index: number; compact: boolean; onSelect: (id: string) => void }) {
+function StarterCard({
+  item,
+  index,
+  compact,
+  onSelect,
+}: {
+  item: HomeStarter;
+  index: number;
+  compact: boolean;
+  onSelect: (id: string) => void;
+}) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { subtle } = sheets(colors);
@@ -273,24 +357,33 @@ function StarterCard({ item, index, compact, onSelect }: { item: HomeStarter; in
           transform: [{ translateY: lift ? -2 : 0 }, { scale }],
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{
-            width: 32,
-            height: 32,
-            borderRadius: R.pill,
-            backgroundColor: colors.card,
-            boxShadow: insetRing(colors.hairline),
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: R.pill,
+              backgroundColor: colors.card,
+              boxShadow: insetRing(colors.hairline),
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>{String(index + 1).padStart(2, '0')}</UiText>
+            <UiText variant="labelSm" tone="secondary" style={{ fontVariant: ['tabular-nums'] }}>
+              {String(index + 1).padStart(2, '0')}
+            </UiText>
           </View>
-          <UiText variant="label" tone={hovered ? 'ink' : 'tertiary'} aria-hidden>→</UiText>
+          <UiText variant="label" tone={hovered ? 'ink' : 'tertiary'} aria-hidden>
+            →
+          </UiText>
         </View>
         <View style={{ gap: S[50] }}>
           <UiText variant="titleSm">{item.title}</UiText>
-          <UiText variant="bodySm" tone="secondary" numberOfLines={2}>{item.hint}</UiText>
+          <UiText variant="bodySm" tone="secondary" numberOfLines={2}>
+            {item.hint}
+          </UiText>
         </View>
       </Animated.View>
     </Pressable>

@@ -3,8 +3,14 @@ import assert from 'node:assert/strict';
 import { stripCitationMarkers } from '../src/render/text.ts';
 
 test('stripCitationMarkers removes inline search-citation runs', () => {
-  assert.equal(stripCitationMarkers('深度学习[1]是机器学习的一个分支'), '深度学习是机器学习的一个分支');
-  assert.equal(stripCitationMarkers('深度学习[1][2][3]是机器学习的一个分支'), '深度学习是机器学习的一个分支');
+  assert.equal(
+    stripCitationMarkers('深度学习[1]是机器学习的一个分支'),
+    '深度学习是机器学习的一个分支',
+  );
+  assert.equal(
+    stripCitationMarkers('深度学习[1][2][3]是机器学习的一个分支'),
+    '深度学习是机器学习的一个分支',
+  );
   assert.equal(stripCitationMarkers('The result agrees with [1, 2].'), 'The result agrees with.');
   assert.equal(stripCitationMarkers('见【1】与【2,3】的说明'), '见与的说明');
   assert.equal(stripCitationMarkers('如文献[12]所述，观点[4-6]也成立'), '如文献所述，观点也成立');
@@ -16,7 +22,10 @@ test('stripCitationMarkers consumes the space before a marker', () => {
 });
 
 test('stripCitationMarkers leaves markdown links and reference defs intact', () => {
-  assert.equal(stripCitationMarkers('see [1](https://example.com) here'), 'see [1](https://example.com) here');
+  assert.equal(
+    stripCitationMarkers('see [1](https://example.com) here'),
+    'see [1](https://example.com) here',
+  );
   assert.equal(stripCitationMarkers('[1]: https://example.com'), '[1]: https://example.com');
 });
 

@@ -51,11 +51,26 @@ export interface FinalizeTurnInput {
 
 export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
   const {
-    req, emitter, turnEvents, activity, abortController, turnId,
-    sessionIdFromQuery, provider, userPrompt, fullText, fullReasoning,
-    executedToolCalls, promptTokens, completionTokens, sawProviderUsage,
-    accumulatedProviderUsage, clearTurnTimer, checkpointTurn,
-    onStreamCompleted, activityStartedAt,
+    req,
+    emitter,
+    turnEvents,
+    activity,
+    abortController,
+    turnId,
+    sessionIdFromQuery,
+    provider,
+    userPrompt,
+    fullText,
+    fullReasoning,
+    executedToolCalls,
+    promptTokens,
+    completionTokens,
+    sawProviderUsage,
+    accumulatedProviderUsage,
+    clearTurnTimer,
+    checkpointTurn,
+    onStreamCompleted,
+    activityStartedAt,
   } = input;
   let turnRuntime = input.turnRuntime;
 
@@ -69,7 +84,10 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     turnRuntime = settleTurnRuntime(turnRuntime, 'stopped');
     /* Still record partial usage so the operator can see incomplete
      * responses in the heatmap and diagnose client-drop patterns. */
-    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+    if (
+      req.userId &&
+      (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)
+    ) {
       const settled = resolveUsage(accumulatedProviderUsage(), {
         promptTokens,
         completionTokens: estimateTokens(fullText),
@@ -93,7 +111,10 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     // already flipped to interrupted by the interrupt endpoint.
     clearTurnTimer();
     checkpointTurn();
-    if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)) {
+    if (
+      req.userId &&
+      (fullText.length > 0 || (promptTokens && promptTokens > 0) || sawProviderUsage)
+    ) {
       const settled = resolveUsage(accumulatedProviderUsage(), {
         promptTokens,
         completionTokens: estimateTokens(fullText),
@@ -109,35 +130,40 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
       });
       if (sessionIdFromQuery && fullText.length > 0) {
         const db = getDb();
-        const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
-          ? req.body.clientTurn.assistantClientId
-          : `ast-${turnId}`;
+        const assistantClientId =
+          typeof req.body?.clientTurn?.assistantClientId === 'string' &&
+          req.body.clientTurn.assistantClientId
+            ? req.body.clientTurn.assistantClientId
+            : `ast-${turnId}`;
         const safeContent = sanitizeStoredHtml(fullText);
         const safeRaw = sanitizePlainText(fullText);
         const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
-        db.insert(messages).values({
-          sessionId: sessionIdFromQuery,
-          role: 'assistant',
-          content: safeContent,
-          html: safeContent,
-          rawText: safeRaw,
-          reasoningContent: fullReasoning || null,
-          toolCalls: executedToolCalls,
-          turnRuntime: storedTurnRuntime,
-          model: provider.model,
-          clientId: assistantClientId,
-          type: 'assistant',
-        }).onConflictDoUpdate({
-          target: [messages.sessionId, messages.clientId],
-          set: {
+        db.insert(messages)
+          .values({
+            sessionId: sessionIdFromQuery,
+            role: 'assistant',
             content: safeContent,
             html: safeContent,
             rawText: safeRaw,
             reasoningContent: fullReasoning || null,
             toolCalls: executedToolCalls,
             turnRuntime: storedTurnRuntime,
-          },
-        }).catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
+            model: provider.model,
+            clientId: assistantClientId,
+            type: 'assistant',
+          })
+          .onConflictDoUpdate({
+            target: [messages.sessionId, messages.clientId],
+            set: {
+              content: safeContent,
+              html: safeContent,
+              rawText: safeRaw,
+              reasoningContent: fullReasoning || null,
+              toolCalls: executedToolCalls,
+              turnRuntime: storedTurnRuntime,
+            },
+          })
+          .catch((err) => console.error('[chat/stream] persist interrupted message failed:', err));
 
         db.update(sessions)
           .set({
@@ -161,7 +187,10 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     hasReasoning: Boolean(fullReasoning.trim()),
   });
   const emptyTurn = !fullText && !fullReasoning && executedToolCalls.length === 0;
-  turnEvents.done(abortController.signal.aborted ? 'stopped' : emptyTurn ? 'failed' : 'done', Date.now() - activityStartedAt);
+  turnEvents.done(
+    abortController.signal.aborted ? 'stopped' : emptyTurn ? 'failed' : 'done',
+    Date.now() - activityStartedAt,
+  );
   activity.done(Date.now() - activityStartedAt);
   if (turnSummary) emitter.event('turn_summary', { summary: turnSummary });
 
@@ -192,55 +221,69 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
     clearTurnTimer();
     checkpointTurn();
     const isBlank = !fullText && !fullReasoning && executedToolCalls.length === 0;
-    await setChatTurnStatus(turnId, isBlank && !abortController.signal.aborted ? 'failed' : 'completed', {
-      fullText: fullText || null,
-      fullReasoning: fullReasoning || null,
-      toolCalls: executedToolCalls,
-      turnRuntime,
-      ...(isBlank && !abortController.signal.aborted ? { error: 'Upstream returned no content' } : {}),
-    }).catch(() => {});
+    await setChatTurnStatus(
+      turnId,
+      isBlank && !abortController.signal.aborted ? 'failed' : 'completed',
+      {
+        fullText: fullText || null,
+        fullReasoning: fullReasoning || null,
+        toolCalls: executedToolCalls,
+        turnRuntime,
+        ...(isBlank && !abortController.signal.aborted
+          ? { error: 'Upstream returned no content' }
+          : {}),
+      },
+    ).catch(() => {});
   }
   // P_streaming-survival & backend persistence — save completed assistant message to messages table
   if (sessionIdFromQuery && req.userId && (fullText || executedToolCalls.length > 0)) {
     const db = getDb();
-    const assistantClientId = (typeof req.body?.clientTurn?.assistantClientId === 'string' && req.body.clientTurn.assistantClientId)
-      ? req.body.clientTurn.assistantClientId
-      : (turnId ? `ast-${turnId}` : `ast-${Date.now()}`);
+    const assistantClientId =
+      typeof req.body?.clientTurn?.assistantClientId === 'string' &&
+      req.body.clientTurn.assistantClientId
+        ? req.body.clientTurn.assistantClientId
+        : turnId
+          ? `ast-${turnId}`
+          : `ast-${Date.now()}`;
 
     const safeContent = sanitizeStoredHtml(fullText);
     const safeRaw = sanitizePlainText(fullText);
     const storedTurnRuntime = rebaseTurnRuntimeText(turnRuntime, fullText, safeRaw);
 
     try {
-      const [inserted] = await db.insert(messages).values({
-        sessionId: sessionIdFromQuery,
-        role: 'assistant',
-        content: safeContent,
-        html: safeContent,
-        rawText: safeRaw,
-        reasoningContent: fullReasoning || null,
-        /* P_turn-summary — persisted so a session reload still shows the
-           model's retrospective instead of recomputing a first-sentence
-           slice. Null when generation failed; the client falls back. */
-        summary: turnSummary,
-        toolCalls: executedToolCalls,
-        turnRuntime: storedTurnRuntime,
-        model: provider.model,
-        clientId: assistantClientId,
-        type: 'assistant',
-      }).onConflictDoUpdate({
-        target: [messages.sessionId, messages.clientId],
-        set: {
+      const [inserted] = await db
+        .insert(messages)
+        .values({
+          sessionId: sessionIdFromQuery,
+          role: 'assistant',
           content: safeContent,
           html: safeContent,
           rawText: safeRaw,
           reasoningContent: fullReasoning || null,
+          /* P_turn-summary — persisted so a session reload still shows the
+           model's retrospective instead of recomputing a first-sentence
+           slice. Null when generation failed; the client falls back. */
           summary: turnSummary,
           toolCalls: executedToolCalls,
           turnRuntime: storedTurnRuntime,
           model: provider.model,
-        },
-      }).returning({ id: messages.id });
+          clientId: assistantClientId,
+          type: 'assistant',
+        })
+        .onConflictDoUpdate({
+          target: [messages.sessionId, messages.clientId],
+          set: {
+            content: safeContent,
+            html: safeContent,
+            rawText: safeRaw,
+            reasoningContent: fullReasoning || null,
+            summary: turnSummary,
+            toolCalls: executedToolCalls,
+            turnRuntime: storedTurnRuntime,
+            model: provider.model,
+          },
+        })
+        .returning({ id: messages.id });
 
       if (inserted?.id && safeRaw) {
         try {
@@ -250,7 +293,8 @@ export async function finalizeTurn(input: FinalizeTurnInput): Promise<void> {
         }
       }
 
-      await db.update(sessions)
+      await db
+        .update(sessions)
         .set({
           preview: safeRaw.slice(0, 200),
           updatedAt: new Date(),

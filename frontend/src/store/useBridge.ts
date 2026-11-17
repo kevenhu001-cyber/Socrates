@@ -19,10 +19,7 @@ import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-s
 import type { Bridge } from './bridge.ts';
 
 export function useBridge<Snapshot>(bridge: Bridge<Snapshot, unknown>): Snapshot {
-  const subscribe = useCallback(
-    (listener: () => void) => bridge.subscribe(listener),
-    [bridge],
-  );
+  const subscribe = useCallback((listener: () => void) => bridge.subscribe(listener), [bridge]);
   const getSnapshot = useCallback(() => bridge.getSnapshot(), [bridge]);
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
@@ -32,16 +29,7 @@ export function useBridgeSelector<Snapshot, Slice>(
   selector: (snapshot: Snapshot) => Slice,
   isEqual?: (a: Slice, b: Slice) => boolean,
 ): Slice {
-  const subscribe = useCallback(
-    (listener: () => void) => bridge.subscribe(listener),
-    [bridge],
-  );
+  const subscribe = useCallback((listener: () => void) => bridge.subscribe(listener), [bridge]);
   const getSnapshot = useCallback(() => bridge.getSnapshot(), [bridge]);
-  return useSyncExternalStoreWithSelector(
-    subscribe,
-    getSnapshot,
-    getSnapshot,
-    selector,
-    isEqual,
-  );
+  return useSyncExternalStoreWithSelector(subscribe, getSnapshot, getSnapshot, selector, isEqual);
 }

@@ -7,15 +7,12 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { stateStore } = await import('../src/state/store.ts');
-const {
-  prepareUserEditBranch,
-  prepareAssistantRegenerateBranch,
-  switchMessageBranch,
-} = await import('../src/chat/branchManager.ts');
+const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
+const { prepareUserEditBranch, prepareAssistantRegenerateBranch, switchMessageBranch } =
+  await import('../src/chat/branchManager.ts');
 
 test('prepareUserEditBranch creates initial variants and preserves following messages', () => {
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [
       { clientId: 'u1', role: 'user', rawText: 'Prompt 1', html: '<p>Prompt 1</p>' },
@@ -40,7 +37,7 @@ test('prepareUserEditBranch creates initial variants and preserves following mes
 });
 
 test('prepareAssistantRegenerateBranch captures assistant state and prepares next variant', () => {
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [
       { clientId: 'u1', role: 'user', rawText: 'Question' },
@@ -82,9 +79,7 @@ test('switchMessageBranch switches between versions and restores corresponding s
             role: 'user',
             rawText: 'Prompt V2',
             html: '<p>Prompt V2</p>',
-            followingMessages: [
-              { clientId: 'a1-v2', role: 'assistant', rawText: 'Answer for V2' },
-            ],
+            followingMessages: [{ clientId: 'a1-v2', role: 'assistant', rawText: 'Answer for V2' }],
           },
         ],
       },
@@ -92,13 +87,13 @@ test('switchMessageBranch switches between versions and restores corresponding s
     { clientId: 'a1-v2', role: 'assistant', rawText: 'Answer for V2' },
   ];
 
-  stateStore.dispatch({ type: 'session/replace-messages', payload: initialMessages });
+  dispatchSession({ type: 'session/replace-messages', payload: initialMessages });
 
   // Switch back to version 1 (index 0)
   const switched = switchMessageBranch('u1-v2', 0);
   assert.ok(switched);
 
-  const msgs = stateStore.read('messages');
+  const msgs = sessionStore.getState().messages;
   assert.equal(msgs.length, 3); // u1-v1, a1-v1, u2-v1
   assert.equal(msgs[0].rawText, 'Prompt V1');
   assert.equal(msgs[0].branchInfo.currentIndex, 0);
@@ -109,7 +104,7 @@ test('switchMessageBranch switches between versions and restores corresponding s
   const switchedBack = switchMessageBranch('u1-v1', 1);
   assert.ok(switchedBack);
 
-  const msgsV2 = stateStore.read('messages');
+  const msgsV2 = sessionStore.getState().messages;
   assert.equal(msgsV2.length, 2); // u1-v2, a1-v2
   assert.equal(msgsV2[0].rawText, 'Prompt V2');
   assert.equal(msgsV2[0].branchInfo.currentIndex, 1);

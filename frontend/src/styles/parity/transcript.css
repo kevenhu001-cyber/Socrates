@@ -35,14 +35,14 @@
       transparent 0%,
       rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
       rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
-      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.50),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
       rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
       rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
       black var(--ui-scroll-fade-top),
       black calc(100% - var(--ui-scroll-fade-bottom)),
       rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
       rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
-      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.50),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
       rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
       rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
       transparent 100%
@@ -52,14 +52,14 @@
       transparent 0%,
       rgba(0, 0, 0, 0.05) calc(var(--ui-scroll-fade-top) * 0.15),
       rgba(0, 0, 0, 0.18) calc(var(--ui-scroll-fade-top) * 0.32),
-      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.50),
+      rgba(0, 0, 0, 0.38) calc(var(--ui-scroll-fade-top) * 0.5),
       rgba(0, 0, 0, 0.64) calc(var(--ui-scroll-fade-top) * 0.68),
       rgba(0, 0, 0, 0.88) calc(var(--ui-scroll-fade-top) * 0.85),
       black var(--ui-scroll-fade-top),
       black calc(100% - var(--ui-scroll-fade-bottom)),
       rgba(0, 0, 0, 0.88) calc(100% - var(--ui-scroll-fade-bottom) * 0.85),
       rgba(0, 0, 0, 0.64) calc(100% - var(--ui-scroll-fade-bottom) * 0.68),
-      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.50),
+      rgba(0, 0, 0, 0.38) calc(100% - var(--ui-scroll-fade-bottom) * 0.5),
       rgba(0, 0, 0, 0.18) calc(100% - var(--ui-scroll-fade-bottom) * 0.32),
       rgba(0, 0, 0, 0.05) calc(100% - var(--ui-scroll-fade-bottom) * 0.15),
       transparent 100%
@@ -73,9 +73,15 @@
     margin: 0;
     padding: 0;
   }
-  #appShell #msgList > .msg.user { align-items: flex-end; }
-  #appShell #msgList > .msg + .msg { margin-top: 24px; }
-  #appShell #msgList > .msg.assistant + .msg.user { margin-top: 40px; }
+  #appShell #msgList > .msg.user {
+    align-items: flex-end;
+  }
+  #appShell #msgList > .msg + .msg {
+    margin-top: 24px;
+  }
+  #appShell #msgList > .msg.assistant + .msg.user {
+    margin-top: 40px;
+  }
 
   #appShell #msgList .msg-body {
     color: var(--ui-text-prose);
@@ -97,15 +103,33 @@
     background: var(--conversation-user);
     box-shadow: var(--ui-bubble-shadow);
   }
-  #appShell #msgList .msg.user .msg-body p { margin: 0; }
+  #appShell #msgList .msg.user .msg-body p {
+    margin: 0;
+  }
 
   /* ── Prose (assistant) ───────────────────────────────────────────────── */
-  #appShell #msgList .msg.assistant .msg-body { padding: 0; border: 0; border-radius: 0; background: transparent; }
-  #appShell #msgList .msg-body :where(p, ul, ol, pre, table, blockquote, .code-block-header):first-child,
-  #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child { margin-top: 0; }
-  #appShell #msgList .msg-body p { margin: 0 0 var(--msg-para-gap); }
-  #appShell #msgList .msg-body p:last-child { margin-bottom: 0; }
-  #appShell #msgList .msg-body strong { font-weight: var(--ui-font-weight-semibold); }
+  #appShell #msgList .msg.assistant .msg-body {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  #appShell
+    #msgList
+    .msg-body
+    :where(p, ul, ol, pre, table, blockquote, .code-block-header):first-child,
+  #appShell #msgList .msg-body > :first-child > :where(h1, h2, h3, h4, p):first-child {
+    margin-top: 0;
+  }
+  #appShell #msgList .msg-body p {
+    margin: 0 0 var(--msg-para-gap);
+  }
+  #appShell #msgList .msg-body p:last-child {
+    margin-bottom: 0;
+  }
+  #appShell #msgList .msg-body strong {
+    font-weight: var(--ui-font-weight-semibold);
+  }
   /* Headings take the marketing site's medium weight: hierarchy comes from
      size and spacing, not from a heavy face. */
   #appShell #msgList .msg-body :where(h1, h2, h3, h4) {
@@ -116,15 +140,43 @@
   }
   /* h1 / h2 carry the answer's outline, so they take the semibold step the
      phone already uses (reference: bold section titles); sizes unchanged. */
-  #appShell #msgList .msg-body :where(h1, h2) { font-weight: var(--ui-font-weight-semibold); }
-  #appShell #msgList .msg-body h1:not(.sc-rich *) { margin: 28px 0 12px; font-size: var(--ui-font-size-xxl); line-height: 1.33; }
-  #appShell #msgList .msg-body h2:not(.sc-rich *) { margin: 24px 0 12px; font-size: var(--ui-font-size-xl); line-height: 1.4; }
-  #appShell #msgList .msg-body h3:not(.sc-rich *) { margin: 20px 0 8px; font-size: var(--ui-font-size-lg); line-height: 1.55; }
-  #appShell #msgList .msg-body h4:not(.sc-rich *) { margin: 16px 0 4px; font-size: var(--prose-size); line-height: var(--prose-line); }
-  #appShell #msgList .msg-body :where(ul, ol) { margin: 0 0 12px; padding-left: 26px; }
-  #appShell #msgList .msg-body li { margin: 0 0 6px; padding-left: 2px; }
-  #appShell #msgList .msg-body li > :where(ul, ol) { margin: 4px 0 0; }
-  #appShell #msgList .msg-body li::marker { color: var(--ui-text-tertiary); }
+  #appShell #msgList .msg-body :where(h1, h2) {
+    font-weight: var(--ui-font-weight-semibold);
+  }
+  #appShell #msgList .msg-body h1:not(.sc-rich *) {
+    margin: 28px 0 12px;
+    font-size: var(--ui-font-size-xxl);
+    line-height: 1.33;
+  }
+  #appShell #msgList .msg-body h2:not(.sc-rich *) {
+    margin: 24px 0 12px;
+    font-size: var(--ui-font-size-xl);
+    line-height: 1.4;
+  }
+  #appShell #msgList .msg-body h3:not(.sc-rich *) {
+    margin: 20px 0 8px;
+    font-size: var(--ui-font-size-lg);
+    line-height: 1.55;
+  }
+  #appShell #msgList .msg-body h4:not(.sc-rich *) {
+    margin: 16px 0 4px;
+    font-size: var(--prose-size);
+    line-height: var(--prose-line);
+  }
+  #appShell #msgList .msg-body :where(ul, ol) {
+    margin: 0 0 12px;
+    padding-left: 26px;
+  }
+  #appShell #msgList .msg-body li {
+    margin: 0 0 6px;
+    padding-left: 2px;
+  }
+  #appShell #msgList .msg-body li > :where(ul, ol) {
+    margin: 4px 0 0;
+  }
+  #appShell #msgList .msg-body li::marker {
+    color: var(--ui-text-tertiary);
+  }
   #appShell #msgList .msg-body hr {
     height: 0;
     margin: 24px 0;
@@ -139,7 +191,9 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
-  #appShell #msgList .msg-body a:not(.code-block-copy):hover { text-decoration-color: currentColor; }
+  #appShell #msgList .msg-body a:not(.code-block-copy):hover {
+    text-decoration-color: currentColor;
+  }
   #appShell #msgList .msg-body blockquote {
     margin: 0 0 var(--msg-para-gap);
     /* A hairline rule and muted ink — no fill, so a quote reads as an
@@ -152,7 +206,10 @@
     color: var(--muted-foreground);
     font-style: normal;
   }
-  #appShell #msgList .msg-body blockquote p { color: inherit; font-style: normal; }
+  #appShell #msgList .msg-body blockquote p {
+    color: inherit;
+    font-style: normal;
+  }
 
   /* Inline code */
   #appShell #msgList .msg-body :not(pre) > code {
@@ -243,8 +300,9 @@
     border-bottom-color: var(--ui-border-strong);
     font-weight: var(--ui-font-weight-semibold);
   }
-  #appShell #msgList .msg-body tr:last-child td:not(.ds-table *):not(.intui-table *) { border-bottom: 0; }
-
+  #appShell #msgList .msg-body tr:last-child td:not(.ds-table *):not(.intui-table *) {
+    border-bottom: 0;
+  }
 }
 
 /* Phones clip horizontal overflow on the transcript (#msgList is
@@ -278,17 +336,27 @@
 }
 
 @keyframes stream-append-reveal {
-  from { opacity: 0.75; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes stream-append-age {
-  from { opacity: 0.75; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tool-run-prose.is-live .stream-append-reveal { animation: none; }
+  .tool-run-prose.is-live .stream-append-reveal {
+    animation: none;
+  }
 }
 
 /* The "new reply" pill is a floating chip, and the legacy skin gave it a
@@ -306,34 +374,68 @@
    pastel tokens measure 1.9–3.0:1, so light mode re-maps the token classes
    onto the active palette's semantic roles. Dark mode keeps the bundled
    theme; neither branch flattens syntax to ink. */
-html[data-mode="light"] #appShell .msg-body :is(pre code.hljs, code.hljs) {
+html[data-mode='light'] #appShell .msg-body :is(pre code.hljs, code.hljs) {
   background: transparent;
   color: var(--ui-text-primary);
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-keyword, .hljs-doctag, .hljs-formula, .hljs-selector-tag, .hljs-template-tag, .hljs-template-variable) {
+html[data-mode='light']
+  #appShell
+  .msg-body
+  .hljs
+  :is(
+    .hljs-keyword,
+    .hljs-doctag,
+    .hljs-formula,
+    .hljs-selector-tag,
+    .hljs-template-tag,
+    .hljs-template-variable
+  ) {
   color: var(--ui-info);
   font-weight: var(--ui-font-weight-semibold);
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-bullet, .hljs-addition, .hljs-attribute) {
+html[data-mode='light']
+  #appShell
+  .msg-body
+  .hljs
+  :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-bullet, .hljs-addition, .hljs-attribute) {
   color: var(--ui-success);
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-number, .hljs-literal, .hljs-type, .hljs-built_in, .hljs-variable, .hljs-attr, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id, .hljs-selector-pseudo) {
+html[data-mode='light']
+  #appShell
+  .msg-body
+  .hljs
+  :is(
+    .hljs-number,
+    .hljs-literal,
+    .hljs-type,
+    .hljs-built_in,
+    .hljs-variable,
+    .hljs-attr,
+    .hljs-selector-attr,
+    .hljs-selector-class,
+    .hljs-selector-id,
+    .hljs-selector-pseudo
+  ) {
   color: var(--ui-warning);
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-title, .hljs-section, .hljs-name, .hljs-function, .hljs-params) {
+html[data-mode='light']
+  #appShell
+  .msg-body
+  .hljs
+  :is(.hljs-title, .hljs-section, .hljs-name, .hljs-function, .hljs-params) {
   color: var(--ui-brand-accent);
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote, .hljs-meta) {
+html[data-mode='light'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote, .hljs-meta) {
   color: var(--ui-text-tertiary);
   font-style: italic;
 }
-html[data-mode="light"] #appShell .msg-body .hljs :is(.hljs-deletion, .hljs-tag) {
+html[data-mode='light'] #appShell .msg-body .hljs :is(.hljs-deletion, .hljs-tag) {
   color: var(--ui-danger);
 }
 /* atom-one-dark's comment grey (#5c6370) drops to 2.7:1 on the app's
    #1f1f1f code sheet; keep the bundled palette but lift comments onto the
    theme's tertiary ink, as the pre-R1 ramp did. */
-html[data-mode="dark"] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
+html[data-mode='dark'] #appShell .msg-body .hljs :is(.hljs-comment, .hljs-quote) {
   color: var(--ui-text-tertiary);
   font-style: italic;
 }

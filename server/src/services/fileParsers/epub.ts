@@ -32,11 +32,12 @@ export async function extract(filepath: string) {
 
   /* Read the spine in order. EPUB 2.x puts ordered chapter ids in
      `flow`; fall back to `spine.contents` if flow is empty. */
-  const spineIds = (book.flow && book.flow.length)
-    ? book.flow.map((f) => f.id)
-    : (book.spine && Array.isArray(book.spine.contents)
+  const spineIds =
+    book.flow && book.flow.length
+      ? book.flow.map((f) => f.id)
+      : book.spine && Array.isArray(book.spine.contents)
         ? book.spine.contents.map((c) => c.id)
-        : []);
+        : [];
 
   const parts = [];
   let idx = 0;

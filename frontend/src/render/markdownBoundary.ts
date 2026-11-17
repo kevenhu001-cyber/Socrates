@@ -18,8 +18,10 @@ type DisplayMathMode = '$$' | '\\[' | null;
 const FENCE_RE = /^[ \t]{0,3}(`{3,}|~{3,})/;
 const HEADING_BOUNDARY_RE =
   /^(?:[ \t]|\u200b|\u200c|\u200d|\u2060|\ufeff|\u00a0|\u3000)*([#＃]+)(?![#＃])([ \t\u00a0\u3000]*)(\S.*)$/;
-const BOLD_WRAPPED_HEADING_RE = /^([ \t]{0,3})(\*\*|__)[ \t]*(#{1,6}|＃{1,6})[ \t]*(\S.*?)[ \t]*\2[ \t]*$/;
-const HEADING_DIRECTIVE_RE = /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
+const BOLD_WRAPPED_HEADING_RE =
+  /^([ \t]{0,3})(\*\*|__)[ \t]*(#{1,6}|＃{1,6})[ \t]*(\S.*?)[ \t]*\2[ \t]*$/;
+const HEADING_DIRECTIVE_RE =
+  /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
 const NUMBERED_TITLE_RE = /^\d{1,3}[.．、)）]\s*\S/;
 
 function isEscapedAt(line: string, index: number): boolean {
@@ -39,12 +41,14 @@ function isHeadingBoundary(line: string): boolean {
   /* Mirror fixHeadingMarkers: `#1` / `##3 条` (unspaced) are prose enumerations,
      while `# 1 标题` / `## 1 Introduction` (spaced) or `###1. 方法` / `##4、标题`
      are headings. */
-  if (runLength <= 2 && !hasSpace && /^\d/.test(rest) && !NUMBERED_TITLE_RE.test(rest)) return false;
+  if (runLength <= 2 && !hasSpace && /^\d/.test(rest) && !NUMBERED_TITLE_RE.test(rest))
+    return false;
   if (HEADING_DIRECTIVE_RE.test(rest)) return false;
   return true;
 }
 
-function scanDisplayMath(line: string, initial: DisplayMathMode): DisplayMathMode {  let mode = initial;
+function scanDisplayMath(line: string, initial: DisplayMathMode): DisplayMathMode {
+  let mode = initial;
   for (let i = 0; i < line.length; i++) {
     if (mode === null) {
       if (line.startsWith('$$', i) && !isEscapedAt(line, i)) {

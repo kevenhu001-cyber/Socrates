@@ -98,11 +98,7 @@ export async function verifyAgentKey(bearerValue: string): Promise<VerifiedAgent
   const candidateHash = sha256Hex(credential);
 
   const db = getDb();
-  const [row] = await db
-    .select()
-    .from(agentApiKeys)
-    .where(eq(agentApiKeys.keyId, keyId))
-    .limit(1);
+  const [row] = await db.select().from(agentApiKeys).where(eq(agentApiKeys.keyId, keyId)).limit(1);
 
   if (!row || row.revokedAt) return null;
   if (row.expiresAt && row.expiresAt < new Date()) return null;
@@ -113,11 +109,7 @@ export async function verifyAgentKey(bearerValue: string): Promise<VerifiedAgent
     return null;
   }
 
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, row.ownerUserId))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, row.ownerUserId)).limit(1);
   if (!user) return null;
 
   // Fire-and-forget liveness marker; never blocks or fails the request.

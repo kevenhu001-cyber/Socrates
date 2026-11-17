@@ -53,10 +53,18 @@ export type { MarkdownCodeRange };
 
 /** The ten scaffold tags a reply may carry. */
 export const SCAFFOLD_TAGS = [
-  'quiz', 'flashcard', 'practice', 'example', 'step',
-  'definition', 'theorem', 'proof', 'derivation', 'key-point',
+  'quiz',
+  'flashcard',
+  'practice',
+  'example',
+  'step',
+  'definition',
+  'theorem',
+  'proof',
+  'derivation',
+  'key-point',
 ] as const;
-export type ScaffoldTag = typeof SCAFFOLD_TAGS[number];
+export type ScaffoldTag = (typeof SCAFFOLD_TAGS)[number];
 
 export interface ScaffoldMarkupMatch extends MarkdownCodeRange {
   tag: ScaffoldTag;
@@ -86,7 +94,8 @@ export function scaffoldMarkupMatches(source: string): ScaffoldMarkupMatch[] {
   const candidates: ScaffoldMarkupMatch[] = [];
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) !== null) {
-    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index)
+      codeIndex += 1;
     const codeRange = codeRanges[codeIndex];
     if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
 
@@ -160,7 +169,10 @@ export type ScaffoldBlock =
   | (ScaffoldBlockBase & { kind: 'flashcard'; parsed: ParsedFlashcard })
   | (ScaffoldBlockBase & { kind: 'derivation'; parsed: ParsedDerivation })
   | (ScaffoldBlockBase & { kind: 'proof'; parsed: ParsedProof })
-  | (ScaffoldBlockBase & { kind: 'theorem'; parsed: ParsedTheorem & { proofTitle?: string; proofBody?: string } })
+  | (ScaffoldBlockBase & {
+      kind: 'theorem';
+      parsed: ParsedTheorem & { proofTitle?: string; proofBody?: string };
+    })
   | (ScaffoldBlockBase & { kind: 'key-point'; parsed: ParsedKeyPoint });
 
 export type ScaffoldSegment =
@@ -178,7 +190,9 @@ function attrOf(attrs: string, name: string): string | null {
 function slotIdOf(tag: ScaffoldTag, attrs: string): string | null {
   const attr = SLOT_ID_ATTR[tag];
   if (!attr) return null;
-  const value = attrs.match(new RegExp('\\b' + attr + '\\s*=\\s*["\']([\\w-]{1,120})["\']', 'i'))?.[1];
+  const value = attrs.match(
+    new RegExp('\\b' + attr + '\\s*=\\s*["\']([\\w-]{1,120})["\']', 'i'),
+  )?.[1];
   return value ?? null;
 }
 
@@ -190,7 +204,10 @@ function degradeText(block: ScaffoldBlock): string {
   if (block.kind === 'quiz') {
     const question = escapeHtml(block.parsed.q);
     const options = block.parsed.options
-      .map((option) => '- ' + escapeHtml(option.letter) + '. ' + escapeHtml(option.text).replace(/\n+/g, ' '))
+      .map(
+        (option) =>
+          '- ' + escapeHtml(option.letter) + '. ' + escapeHtml(option.text).replace(/\n+/g, ' '),
+      )
       .join('\n');
     return options ? question + '\n\n' + options : question;
   }
@@ -212,7 +229,12 @@ function parseStep(attrs: string, inner: string, stepIndex: number): ScaffoldBlo
   return { kind: 'step', raw: inner, attrs, slotId: null, parsed: { n, body } };
 }
 
-function parseBlock(tag: ScaffoldTag, attrs: string, inner: string, stepIndex: number): ScaffoldBlock | null {
+function parseBlock(
+  tag: ScaffoldTag,
+  attrs: string,
+  inner: string,
+  stepIndex: number,
+): ScaffoldBlock | null {
   const base = { raw: inner, attrs, slotId: slotIdOf(tag, attrs) };
   switch (tag) {
     case 'quiz': {
@@ -320,7 +342,10 @@ export function splitScaffolds(text: string): ScaffoldSegment[] {
 /** The scaffold blocks of a text, in order (fallbacks excluded). */
 export function scaffoldBlocks(text: string): ScaffoldBlock[] {
   return splitScaffolds(text)
-    .filter((segment): segment is { kind: 'scaffold'; block: ScaffoldBlock } => segment.kind === 'scaffold')
+    .filter(
+      (segment): segment is { kind: 'scaffold'; block: ScaffoldBlock } =>
+        segment.kind === 'scaffold',
+    )
     .map((segment) => segment.block);
 }
 

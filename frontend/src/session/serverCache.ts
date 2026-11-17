@@ -24,12 +24,18 @@ export const serverCache: ServerCache = {
 try {
   Object.defineProperty(window, 'SERVER_SESSIONS', {
     configurable: true,
-    get: function () { return serverCache.sessions; },
-    set: function (v) { serverCache.sessions = capSessions(v); },
+    get: function () {
+      return serverCache.sessions;
+    },
+    set: function (v) {
+      serverCache.sessions = capSessions(v);
+    },
   });
   Object.defineProperty(window, 'SERVER_SESSIONS_FETCH_FAILED', {
     configurable: true,
-    get: function () { return serverCache.fetchFailed; },
+    get: function () {
+      return serverCache.fetchFailed;
+    },
   });
 } catch {
   /* empty-catch: intentional — property redefinition can fail in tests */

@@ -91,7 +91,8 @@ test('embedded visualizations are capped while preserving unknown spec fields', 
 
 test('structured detail is stringified instead of failing z.string()', () => {
   const toolCall = {
-    id: 'c1', name: 'create_document',
+    id: 'c1',
+    name: 'create_document',
     detail: [{ path: 'steps', message: 'required' }],
   };
   const out = sanitizeSessionPayload(payloadWithToolCall(toolCall));
@@ -102,8 +103,10 @@ test('structured detail is stringified instead of failing z.string()', () => {
 
 test('boolean flags coerce and numeric bounds clamp', () => {
   const toolCall = {
-    id: 'c1', name: 'web_search',
-    isError: 1, retryable: 'true',
+    id: 'c1',
+    name: 'web_search',
+    isError: 1,
+    retryable: 'true',
     durationMs: 999_999_999,
     textOffset: 12.7,
     status: 's'.repeat(200),
@@ -132,15 +135,22 @@ test('sanitized payloads always satisfy the Zod schema (the production 400 regre
      toolCall with a >5 000-char snippet plus structured detail and
      loose-typed flags. */
   const dirty = payloadWithToolCall({
-    id: 'call_7', name: 'web_search',
+    id: 'call_7',
+    name: 'web_search',
     results: [{ title: 't', url: 'https://x', snippet: 'x'.repeat(12_000) }],
     artifacts: [{ id: 'a'.repeat(300) }],
     detail: { issues: [{ path: 'q', message: 'missing' }] },
-    isError: 'yes', retryable: 1,
-    durationMs: -5, textOffset: 3.9,
+    isError: 'yes',
+    retryable: 1,
+    durationMs: -5,
+    textOffset: 3.9,
   });
   const sanitized = sanitizeSessionPayload(dirty);
   const parsed = SessionPayloadSchema.safeParse(sanitized);
-  assert.equal(parsed.success, true,
-    'sanitized payload must pass schema: ' + JSON.stringify(parsed.error?.issues?.slice(0, 5) || []));
+  assert.equal(
+    parsed.success,
+    true,
+    'sanitized payload must pass schema: ' +
+      JSON.stringify(parsed.error?.issues?.slice(0, 5) || []),
+  );
 });

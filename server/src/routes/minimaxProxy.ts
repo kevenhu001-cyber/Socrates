@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { getActiveApiKey } from '../services/core/apiKey.js';
 import { streamChatCompletion } from '../services/core/llm/stream.js';
 import { callChatCompletion } from '../services/core/llm/complete.js';
-import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../services/core/usageTracker.js';
+import {
+  estimateMessageTokens,
+  estimateTokens,
+  recordUsage,
+  resolveUsage,
+} from '../services/core/usageTracker.js';
 import { requireAuth } from '../middleware/auth.js';
 import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
@@ -10,7 +15,12 @@ import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
 import { appendAssistantInstructions, prependTeacherModePrompt } from './chat/prepare/prompts.js';
 import { appendMemoryContext } from './chat/prepare/context.js';
-import { enforceServerSystemBoundary, classifyClientSystemMessages, renderClientBlocks, hasClientSystemPrefix } from './chat/prepare/clientSystem.js';
+import {
+  enforceServerSystemBoundary,
+  classifyClientSystemMessages,
+  renderClientBlocks,
+  hasClientSystemPrefix,
+} from './chat/prepare/clientSystem.js';
 import { transformMessagesForModel } from './chat/prepare/wire.js';
 import { SSE_PRIME } from './chat/prepare/sse.js';
 import { appendFinalOutputConstraints, injectUserContext } from '../lib/chatPolicy.js';
@@ -18,7 +28,11 @@ import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
 import { resolveSessionPromptOrAssemble } from '../services/core/sessionPromptSnapshot.js';
 import { splitPromptContext, appendTurnContext } from '../lib/chatPromptContext.js';
-import { insertProviderIdentity, insertResponseTypography, refreshServerPrompt } from '../lib/chatPolicy.js';
+import {
+  insertProviderIdentity,
+  insertResponseTypography,
+  refreshServerPrompt,
+} from '../lib/chatPolicy.js';
 import { buildSseErrorFrame } from '../lib/sseErrorFrame.js';
 
 const router = Router();
@@ -51,10 +65,24 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
     }
 
     /* `model` is intentionally not read — see P_privacy-leak below. */
-    const { messages: rawMessages, temperature, max_tokens, stream, reasoning_effort, response_speed, extra_body, assistantId, sessionId: bodySessionId } = req.body;
+    const {
+      messages: rawMessages,
+      temperature,
+      max_tokens,
+      stream,
+      reasoning_effort,
+      response_speed,
+      extra_body,
+      assistantId,
+      sessionId: bodySessionId,
+    } = req.body;
     const sessionId = req.query.sessionId ?? bodySessionId;
-    if ((assistantId && !isUuid(assistantId)) || (sessionId !== undefined && !isUuid(sessionId))
-        || (bodySessionId !== undefined && bodySessionId !== sessionId)) throw new BadRequest('Invalid or conflicting assistant/session id');
+    if (
+      (assistantId && !isUuid(assistantId)) ||
+      (sessionId !== undefined && !isUuid(sessionId)) ||
+      (bodySessionId !== undefined && bodySessionId !== sessionId)
+    )
+      throw new BadRequest('Invalid or conflicting assistant/session id');
     const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
 
     // Legacy built-in/synchronous callers share the SAME session snapshot as
@@ -68,15 +96,28 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
      * to their own upstream on every subsequent turn. The snapshot keeps only
      * provider-independent session state; the identity is appended per
      * request, after the snapshot has been resolved. */
-    const storedPrompt = await resolveSessionPromptOrAssemble(req.userId ?? undefined, sessionId, async () => {
-      let initialized = enforceServerSystemBoundary(context.initialization);
-      initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
-      if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
-      initialized = await appendAssistantInstructions(initialized, assistantId, sessionId, req.userId ?? undefined);
-      initialized = await appendMemoryContext(initialized, req.userId ?? undefined, isUuid(req.body.projectId) ? req.body.projectId : undefined);
-      initialized = appendFinalOutputConstraints(initialized);
-      return initialized[0].content as string;
-    });
+    const storedPrompt = await resolveSessionPromptOrAssemble(
+      req.userId ?? undefined,
+      sessionId,
+      async () => {
+        let initialized = enforceServerSystemBoundary(context.initialization);
+        initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
+        if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
+        initialized = await appendAssistantInstructions(
+          initialized,
+          assistantId,
+          sessionId,
+          req.userId ?? undefined,
+        );
+        initialized = await appendMemoryContext(
+          initialized,
+          req.userId ?? undefined,
+          isUuid(req.body.projectId) ? req.body.projectId : undefined,
+        );
+        initialized = appendFinalOutputConstraints(initialized);
+        return initialized[0].content as string;
+      },
+    );
     /* P_server-policy-refresh — the snapshot freezes turn 1's system
        prefix. The server policy and the client's turn state (template
        persona, tone preset, custom instructions) are re-derived on every
@@ -89,13 +130,18 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
       : undefined;
     const systemPrompt = insertProviderIdentity(
-      insertResponseTypography(refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort })),
+      insertResponseTypography(
+        refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort }),
+      ),
       await getBeagleSystemPrompt(),
     );
-    let messages = transformMessagesForModel([
-      { role: 'system', content: systemPrompt },
-      ...appendTurnContext(context.conversation, context.turnInstructions, null),
-    ], provider);
+    let messages = transformMessagesForModel(
+      [
+        { role: 'system', content: systemPrompt },
+        ...appendTurnContext(context.conversation, context.turnInstructions, null),
+      ],
+      provider,
+    );
     /* P_privacy-leak — the upstream model name is operator-configured
      * and must never be settable from the client. Even though the SPA
      * currently doesn't know the real model (we strip it from
@@ -118,9 +164,9 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Connection': 'keep-alive',
+        Pragma: 'no-cache',
+        Expires: '0',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
       });
 
@@ -132,8 +178,12 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       try {
         res.flushHeaders();
         res.write(SSE_PRIME);
-        try { (res as { flush?: () => void }).flush?.(); } catch {}
-      } catch { /* socket already closed */ }
+        try {
+          (res as { flush?: () => void }).flush?.();
+        } catch {}
+      } catch {
+        /* socket already closed */
+      }
 
       /* P_sse-metrics — bump the active-connection counter so the
          /api/health endpoint can report how many SSE streams are open. */
@@ -177,7 +227,9 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           onPreferenceFallback: (detail) => {
             try {
               res.write(`event: preference_fallback\ndata: ${JSON.stringify(detail)}\n\n`);
-            } catch { /* client disconnected */ }
+            } catch {
+              /* client disconnected */
+            }
           },
         },
         // onChunk
@@ -186,15 +238,21 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
           completionTokens = estimateTokens(fullText);
           try {
             res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
-            try { (res as { flush?: () => void }).flush?.(); } catch {}
-          } catch { /* client disconnected */ }
+            try {
+              (res as { flush?: () => void }).flush?.();
+            } catch {}
+          } catch {
+            /* client disconnected */
+          }
         },
         // onDone
         ({ usage }) => {
           try {
             res.write('data: [DONE]\n\n');
             res.end();
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           if (req.userId) {
             /* Built-in MiniMax provider: prefer its reported usage, fall
                back to the chars/4 estimate when the frame is absent. */
@@ -220,9 +278,14 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
-          } catch { /* ignore */ }
+          } catch {
+            /* ignore */
+          }
           if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0))) {
-            const settled = resolveUsage(null, { promptTokens, completionTokens: estimateTokens(fullText) });
+            const settled = resolveUsage(null, {
+              promptTokens,
+              completionTokens: estimateTokens(fullText),
+            });
             recordUsage({
               userId: req.userId,
               model: upstreamModel,
@@ -238,9 +301,15 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         // client so it can render the thinking pill.
         (reasoning) => {
           try {
-            res.write(`data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: reasoning } }] })}\n\n`);
-            try { (res as { flush?: () => void }).flush?.(); } catch {}
-          } catch { /* client disconnected */ }
+            res.write(
+              `data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: reasoning } }] })}\n\n`,
+            );
+            try {
+              (res as { flush?: () => void }).flush?.();
+            } catch {}
+          } catch {
+            /* client disconnected */
+          }
         },
       );
     } else {
@@ -267,7 +336,15 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
       res.json({
         /* P_deepseek-mode — preserve reasoning_content on the
            response so the client can persist it for the next turn. */
-        choices: [{ message: { role: 'assistant', content: result.content, ...(result.reasoning_content ? { reasoning_content: result.reasoning_content } : {}) } }],
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: result.content,
+              ...(result.reasoning_content ? { reasoning_content: result.reasoning_content } : {}),
+            },
+          },
+        ],
         meta: result.meta,
       });
     }

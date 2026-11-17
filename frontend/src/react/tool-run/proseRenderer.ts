@@ -1,8 +1,16 @@
 import { hasCompleteScaffold } from '../../render/markdownScaffolds.ts';
 import { isStableMarkdownPrefix } from '../../render/streaming.ts';
-import { createProseCache, sharedFinalProseCache, clearSharedProseCache } from '../../render/proseCache.ts';
+import {
+  createProseCache,
+  sharedFinalProseCache,
+  clearSharedProseCache,
+} from '../../render/proseCache.ts';
 import { useMemo, useSyncExternalStore } from 'react';
-import { applyScaffoldTurnPlan, scaffoldTurnPlan, type ScaffoldTurnPlan } from '@socrates/ui/learn-split';
+import {
+  applyScaffoldTurnPlan,
+  scaffoldTurnPlan,
+  type ScaffoldTurnPlan,
+} from '@socrates/ui/learn-split';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision, subscribeMathRenderRevision } from '../../render/mathRevision.ts';
@@ -14,13 +22,14 @@ function renderEnvKey(mathRevision: number): string {
   const runtime = window as unknown as {
     hljs?: unknown;
   };
-  return String(mathRevision)
-    + '|' + getCurrentLang()
-    + '|' + (runtime.hljs ? 1 : 0)
-    + '|';
+  return String(mathRevision) + '|' + getCurrentLang() + '|' + (runtime.hljs ? 1 : 0) + '|';
 }
 
-function sharedFinalProse(text: string, paint: () => string, mathRevision: number): { __html: string } {
+function sharedFinalProse(
+  text: string,
+  paint: () => string,
+  mathRevision: number,
+): { __html: string } {
   const key = renderEnvKey(mathRevision) + text;
   const hit = sharedFinalProseCache.get(key);
   if (hit !== undefined) return hit;
@@ -46,7 +55,11 @@ export interface ProseRenderer {
  * bounded cache, excluding renderers that register placeholders as effects.
  */
 export function useProseRenderer(live: boolean): ProseRenderer {
-  const mathRevision = useSyncExternalStore(subscribeMathRenderRevision, getMathRenderRevision, getMathRenderRevision);
+  const mathRevision = useSyncExternalStore(
+    subscribeMathRenderRevision,
+    getMathRenderRevision,
+    getMathRenderRevision,
+  );
   return useMemo(() => {
     const renderer = getLegacyActions().render;
     const final = renderer.renderAssistantHTML;
@@ -58,7 +71,9 @@ export function useProseRenderer(live: boolean): ProseRenderer {
         // Closed cards mount as soon as their data arrives. Other prose keeps
         // the progressive parser and its DOM through the end of the turn.
         const readyScaffold = hasCompleteScaffold(clean) && isStableMarkdownPrefix(clean);
-        return live && progressive && !readyScaffold ? progressive(clean, { complete }) : final(clean);
+        return live && progressive && !readyScaffold
+          ? progressive(clean, { complete })
+          : final(clean);
       } catch {
         /* A segment failure must not blank the rest of the assistant answer. */
         return '';

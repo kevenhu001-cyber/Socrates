@@ -24,18 +24,24 @@ const router = Router();
  * Audit: every successful describe is logged so operators can see
  *   who is using the upstream vision quota.
  */
-router.post('/describe', requireAuth, visionLimiter, audit('vision:describe'), async (req, res, next) => {
-  try {
-    const { dataUrl, prompt } = req.body || {};
-    const result = await describeImage({ dataUrl, prompt });
-    return res.json(result);
-  } catch (err) {
-    const e = err as { status?: number; message?: string };
-    if (e && e.status) {
-      return res.status(e.status).json({ code: 'VISION_ERROR', message: e.message });
+router.post(
+  '/describe',
+  requireAuth,
+  visionLimiter,
+  audit('vision:describe'),
+  async (req, res, next) => {
+    try {
+      const { dataUrl, prompt } = req.body || {};
+      const result = await describeImage({ dataUrl, prompt });
+      return res.json(result);
+    } catch (err) {
+      const e = err as { status?: number; message?: string };
+      if (e && e.status) {
+        return res.status(e.status).json({ code: 'VISION_ERROR', message: e.message });
+      }
+      next(err);
     }
-    next(err);
-  }
-});
+  },
+);
 
 export default router;

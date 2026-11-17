@@ -18,9 +18,10 @@ export interface ArtifactDocumentPalette {
 }
 
 export function escapeHtml(value: unknown): string {
-  return String(value == null ? '' : value).replace(/[&<>'"]/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c] as string
-  ));
+  return String(value == null ? '' : value).replace(
+    /[&<>'"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c] as string,
+  );
 }
 
 /** Bridge runtime injected into every island document. It posts to the
@@ -81,7 +82,8 @@ export function bridgeScript(artifactId: string): string {
 })();`;
 }
 
-const CSP = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; media-src data: blob:";
+const CSP =
+  "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; font-src data:; media-src data: blob:";
 
 function baseStyles(palette: ArtifactDocumentPalette): string {
   return `*{box-sizing:border-box}html,body{margin:0;padding:0}
@@ -161,7 +163,8 @@ const KATEX_VERSION = '0.16.11';
 const KATEX_BASE = `https://cdn.jsdelivr.net/npm/katex@${KATEX_VERSION}/dist`;
 const KATEX_JS_SRI = 'sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg';
 const KATEX_CSS_SRI = 'sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+';
-const MATH_CSP = "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'unsafe-inline' https://cdn.jsdelivr.net; font-src data: https://cdn.jsdelivr.net; media-src data: blob:";
+const MATH_CSP =
+  "default-src 'none'; img-src data: blob:; style-src 'unsafe-inline' https://cdn.jsdelivr.net; script-src 'unsafe-inline' https://cdn.jsdelivr.net; font-src data: https://cdn.jsdelivr.net; media-src data: blob:";
 
 const MATH_EXTRA_CSS = `.math-body{min-height:60px;font-size:16px;overflow-x:auto;padding:6px 2px}
 .math-body .katex-display{margin:6px 0}
@@ -217,11 +220,12 @@ export function buildMathDocument(input: {
   link.onerror = function(){ showOffline(); };
   d.head.appendChild(link);
 })();`;
-  const bodyHtml = `<div class="artifact-head"><h1 class="artifact-title">${escapeHtml(title || 'Formula')}</h1>`
-    + `<span class="artifact-kind">math</span></div>`
-    + `<div id="math" class="artifact-body math-body"></div>`
-    + `<pre id="math-source" class="artifact-source">${escapeHtml(tex)}</pre>`
-    + `<p id="math-note" class="artifact-note math-offline" hidden>KaTeX did not load (offline?) — showing TeX source. / KaTeX 未加载（离线？）——显示 TeX 源码。</p>`;
+  const bodyHtml =
+    `<div class="artifact-head"><h1 class="artifact-title">${escapeHtml(title || 'Formula')}</h1>` +
+    `<span class="artifact-kind">math</span></div>` +
+    `<div id="math" class="artifact-body math-body"></div>` +
+    `<pre id="math-source" class="artifact-source">${escapeHtml(tex)}</pre>` +
+    `<p id="math-note" class="artifact-note math-offline" hidden>KaTeX did not load (offline?) — showing TeX source. / KaTeX 未加载（离线？）——显示 TeX 源码。</p>`;
   return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta http-equiv="Content-Security-Policy" content="${MATH_CSP}"/>

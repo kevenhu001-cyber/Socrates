@@ -81,7 +81,9 @@ class FakeXHR {
 function installFakeXhr() {
   const prev = globalThis.XMLHttpRequest;
   globalThis.XMLHttpRequest = FakeXHR;
-  return () => { globalThis.XMLHttpRequest = prev; };
+  return () => {
+    globalThis.XMLHttpRequest = prev;
+  };
 }
 
 function textFile(name) {
@@ -121,10 +123,19 @@ test('at most MAX_CONCURRENT_UPLOADS transfers start; the rest queue visibly', a
   const restore = installFakeXhr();
   try {
     const files = [
-      textFile('a.txt'), textFile('b.txt'), textFile('c.txt'),
-      textFile('d.txt'), textFile('e.txt'), textFile('f.txt'),
+      textFile('a.txt'),
+      textFile('b.txt'),
+      textFile('c.txt'),
+      textFile('d.txt'),
+      textFile('e.txt'),
+      textFile('f.txt'),
     ];
-    const pending = addFiles(files, () => {}, () => {}, () => {});
+    const pending = addFiles(
+      files,
+      () => {},
+      () => {},
+      () => {},
+    );
     await sleep(60);
 
     assert.equal(FakeXHR.instances.length, MAX_CONCURRENT_UPLOADS);
@@ -157,7 +168,14 @@ test('upload progress reports percent plus byte counts and flips stage', async (
   const restore = installFakeXhr();
   try {
     let progressCalls = 0;
-    const pending = addFiles([textFile('p.txt')], () => {}, () => { progressCalls += 1; }, () => {});
+    const pending = addFiles(
+      [textFile('p.txt')],
+      () => {},
+      () => {
+        progressCalls += 1;
+      },
+      () => {},
+    );
     await sleep(60);
     assert.equal(FakeXHR.instances.length, 1);
 
@@ -188,7 +206,9 @@ test('removing a queued chip dequeues it and never hangs addFiles', async () => 
       [textFile('q1.txt'), textFile('q2.txt'), textFile('q3.txt'), textFile('q4.txt')],
       () => {},
       () => {},
-      (msg) => { rejections.push(msg); },
+      (msg) => {
+        rejections.push(msg);
+      },
     );
     await sleep(60);
     assert.equal(FakeXHR.instances.length, 3);
@@ -219,7 +239,9 @@ test('a failed upload keeps its File handle and retry re-queues the job', async 
       [textFile('r.txt')],
       () => {},
       () => {},
-      (msg) => { rejections.push(msg); },
+      (msg) => {
+        rejections.push(msg);
+      },
     );
     await sleep(60);
     assert.equal(FakeXHR.instances.length, 1);
@@ -233,7 +255,10 @@ test('a failed upload keeps its File handle and retry re-queues the job', async 
     assert.equal(entry.stage, 'error');
     assert.match(entry.error || '', /too large/);
 
-    assert.equal(retryAttachment(entry.id, () => {}), true);
+    assert.equal(
+      retryAttachment(entry.id, () => {}),
+      true,
+    );
     /* A free slot starts the job synchronously, so the stub may already
        read 'uploading' — either way it left the error state. */
     assert.ok(entry.stage === 'queued' || entry.stage === 'uploading');

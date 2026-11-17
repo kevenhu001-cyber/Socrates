@@ -2,26 +2,34 @@
 /* ─── Pass-2 merge (docs/plans/2026-11-04-sidebar-ui-consistency.md) ───
    Mobile rules relocated from components/sidebar.css then polish/sidebar.css
    in cascade old→new order, so every historical tie keeps its winner. */
-@media (max-width: 768px) {#appShell .sidebar {
-  color: var(--foreground);
-}
+@media (max-width: 768px) {
+  #appShell .sidebar {
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-
-#appShell .sidebar-inner { background: transparent; }
+  #appShell .sidebar-inner {
+    background: transparent;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-header-actions { gap: 2px; }
+  #appShell .sidebar-header-actions {
+    gap: 2px;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-header .icon-btn:hover { background: var(--accent); }
+  #appShell .sidebar-header .icon-btn:hover {
+    background: var(--accent);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn svg { color: inherit; }
+  #appShell .sidebar-nav-btn svg {
+    color: inherit;
+  }
 }
 
 /* The old components badge rule (4px / 1px 6px 2px / 16px) was deleted with
@@ -30,34 +38,45 @@
    parity rule (6px / 2px 6px / 14px) was and is the live mobile winner. */
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { font-weight: var(--ui-font-weight-regular); }
+  #appShell .sidebar-nav-btn.active {
+    font-weight: var(--ui-font-weight-regular);
+  }
 }
 
 @media (max-width: 768px) {
-body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-active):not(.exam-active)
-  #appShell .sidebar-nav-btn[data-nav="new"] {
-  background: var(--ui-bg-raised);
-  color: var(--foreground);
-}
-}
-
-@media (max-width: 768px) {
-#appShell .nav-kbd { display: none; }
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn[data-nav="exam"] { display: none; }
+  body:not([data-conversation-active='true']):not(.workspace-active):not(.admin-active):not(
+      .exam-active
+    )
+    #appShell
+    .sidebar-nav-btn[data-nav='new'] {
+    background: var(--ui-bg-raised);
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-search {
-  background: var(--ui-bg-raised);
-}
+  #appShell .nav-kbd {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .recent-item:hover,
-#appShell .recent-item.active { color: var(--foreground); }
+  #appShell .sidebar-nav-btn[data-nav='exam'] {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .sidebar-search {
+    background: var(--ui-bg-raised);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .recent-item:hover,
+  #appShell .recent-item.active {
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
@@ -65,13 +84,20 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     position: fixed;
     inset: 0 auto 0 0;
     transform: translateX(0);
-    transition: transform var(--ui-duration-normal) var(--ui-ease-out), box-shadow var(--ui-duration-normal) ease;
+    transition:
+      transform var(--ui-duration-normal) var(--ui-ease-out),
+      box-shadow var(--ui-duration-normal) ease;
     z-index: var(--ui-z-drawer);
   }
-  [data-mode="dark"] #appShell .sidebar {
-    box-shadow: 1px 0 0 var(--ui-border-subtle), 4px 0 28px -4px rgb(0 0 0 / 55%);
+  [data-mode='dark'] #appShell .sidebar {
+    box-shadow:
+      1px 0 0 var(--ui-border-subtle),
+      4px 0 28px -4px rgb(0 0 0 / 55%);
   }
-  #appShell .sidebar.collapsed { transform: translateX(-100%); box-shadow: none; }
+  #appShell .sidebar.collapsed {
+    transform: translateX(-100%);
+    box-shadow: none;
+  }
   #appShell .sidebar-backdrop {
     background: var(--ui-backdrop);
     z-index: var(--ui-z-backdrop, 80);
@@ -79,7 +105,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     backdrop-filter: none;
     transition: opacity var(--ui-duration-normal) ease;
   }
-  #appShell .sidebar-header .compose-btn { display: none; }
+  #appShell .sidebar-header .compose-btn {
+    display: none;
+  }
   /* The mobile drawer collapses the search row on grid-template-rows; the
      old 54px max-height was a guess at the content height. The clip margin
      drops to zero while the row is closed so the closing content does not
@@ -94,7 +122,11 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     padding-bottom: 0;
     opacity: 0;
     visibility: hidden;
-    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s linear var(--ui-duration-normal);
+    transition:
+      grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
+      opacity var(--ui-duration-fast) ease,
+      padding var(--ui-duration-normal) ease,
+      visibility 0s linear var(--ui-duration-normal);
   }
   #appShell .sidebar.search-open .sidebar-search-row {
     --sidebar-search-rows: 1fr;
@@ -102,273 +134,319 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     padding-bottom: 8px;
     opacity: 1;
     visibility: visible;
-    transition: grid-template-rows var(--ui-duration-normal) var(--ui-ease-out), opacity var(--ui-duration-fast) ease, padding var(--ui-duration-normal) ease, visibility 0s;
+    transition:
+      grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
+      opacity var(--ui-duration-fast) ease,
+      padding var(--ui-duration-normal) ease,
+      visibility 0s;
   }
-  #appShell .sidebar:not(.search-open) .sidebar-search-row { pointer-events: none; }
-  #appShell .sidebar-nav { padding-top: 4px; }
+  #appShell .sidebar:not(.search-open) .sidebar-search-row {
+    pointer-events: none;
+  }
+  #appShell .sidebar-nav {
+    padding-top: 4px;
+  }
   /* Mobile drawer footer keeps footer action buttons reachable. */
 
   /* The reference drawer keeps only the logo glyph in the header and a
      flat recent-session list — no mode bullets, meta rows, tag pills or
      time-group separators on phones. */
   #appShell .recents-filter-chips,
-  #appShell .recents-time-label { display: none; }
-  #appShell .recent-mode-badge { display: none; }
+  #appShell .recents-time-label {
+    display: none;
+  }
+  #appShell .recent-mode-badge {
+    display: none;
+  }
   #appShell .recent-item-meta,
-  #appShell .recent-item-tags { display: none; }
-
+  #appShell .recent-item-tags {
+    display: none;
+  }
 
   /* ⋯ overflow is persistent on phones; the dropdown menu itself is now
      a universal rule above (same trigger → menu contract as the reference
      drawer on every width). */
-  #appShell .recent-item-actions { opacity: 1; }
-  #appShell .recent-item-overflow svg { width: 18px; height: 18px; }
+  #appShell .recent-item-actions {
+    opacity: 1;
+  }
+  #appShell .recent-item-overflow svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 @media (max-width: 768px) {
-
-/* Reference drawer gutters: ~6px outside the row backgrounds on the left,
+  /* Reference drawer gutters: ~6px outside the row backgrounds on the left,
    ~4px on the right — everything inside (nav glyph, session title, label)
    then lands ~16px from the drawer edge via the rows' own 10px padding. */
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn {
-  /* Reference drawer renders nav labels and glyphs at primary brightness,
+  #appShell .sidebar-nav-btn {
+    /* Reference drawer renders nav labels and glyphs at primary brightness,
      same as the session titles below them. */
-  color: var(--foreground);
-  transition: background-color var(--ui-duration-fast) ease, color var(--ui-duration-fast) ease;
-}
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-nav-btn:hover { background: var(--accent); color: var(--foreground); }
+    color: var(--foreground);
+    transition:
+      background-color var(--ui-duration-fast) ease,
+      color var(--ui-duration-fast) ease;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
+  #appShell .sidebar-nav-btn:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-nav-btn .nav-kbd {
-  color: var(--ui-text-muted);
-  font-size: 11px;
-}
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-search-row {
-  padding: 0;
-  gap: 4px;
-}
+  #appShell .sidebar-nav-btn.active {
+    background: var(--ui-bg-surface);
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell#appShell .sidebar-search {
-  gap: 8px;
-  padding: 0 14px;
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-pill);
-  background: var(--ui-bg-raised);
-  transition: border-color var(--ui-duration-fast) ease, background-color var(--ui-duration-fast) ease;
-}
+  #appShell .sidebar-nav-btn .nav-kbd {
+    color: var(--ui-text-muted);
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell#appShell .sidebar-search:focus-within {
-  background: var(--ui-bg-surface);
-}
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
+  #appShell .sidebar-search-row {
+    padding: 0;
+    gap: 4px;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-search .sidebar-search-icon { width: 15px; height: 15px; color: var(--ui-text-muted); }
+  #appShell#appShell .sidebar-search {
+    gap: 8px;
+    padding: 0 14px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-bg-raised);
+    transition:
+      border-color var(--ui-duration-fast) ease,
+      background-color var(--ui-duration-fast) ease;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-search input {
-  color: var(--foreground);
-  background: color-mix(in srgb, var(--foreground) 1%, transparent);
-  transform: translateZ(0);
-}
+  #appShell#appShell .sidebar-search:focus-within {
+    background: var(--ui-bg-surface);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-search input::placeholder { color: var(--ui-text-placeholder); }
+  #appShell .sidebar {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }
 
 @media (max-width: 768px) {
-/* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
-#appShell #sidebar .recent-item { border-radius: var(--ui-round-md); }
-#appShell #sidebar .recent-item.active,
-#appShell #sidebar .recent-item[aria-current="true"] {
-  background: var(--ui-card);
-  box-shadow: var(--ui-elevation-raised);
-}
+  #appShell .sidebar-search .sidebar-search-icon {
+    width: 15px;
+    height: 15px;
+    color: var(--ui-text-muted);
+  }
 }
 
 @media (max-width: 768px) {
-/* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
+  #appShell .sidebar-search input {
+    color: var(--foreground);
+    background: color-mix(in srgb, var(--foreground) 1%, transparent);
+    transform: translateZ(0);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .sidebar-search input::placeholder {
+    color: var(--ui-text-placeholder);
+  }
+}
+
+@media (max-width: 768px) {
+  /* Phones: the drawer is the grey sheet; rows keep the same 12 / white-card language. */
+  #appShell #sidebar .recent-item {
+    border-radius: var(--ui-round-md);
+  }
+  #appShell #sidebar .recent-item.active,
+  #appShell #sidebar .recent-item[aria-current='true'] {
+    background: var(--ui-card);
+    box-shadow: var(--ui-elevation-raised);
+  }
+}
+
+@media (max-width: 768px) {
+  /* restore/chatgpt-v2 insets the panel 3px — collapse it so rows own the
    full inner width and their 10px padding lands content at ~16px. */
 }
 
 @media (max-width: 768px) {
-/* label+badge share one grid cell so the "新" pill hugs the text. */
-#appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-}
-
-@media (max-width: 768px) {
-#appShell .recents-header-actions { display: inline-flex; align-items: center; gap: 2px; }
+  /* label+badge share one grid cell so the "新" pill hugs the text. */
+  #appShell #sidebarNav .sidebar-nav-btn > .nav-label-wrap {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .recents-time-label {
-  /* Matches parity/sidebar.css: small labels use the secondary step so they
+  #appShell .recents-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .recents-time-label {
+    /* Matches parity/sidebar.css: small labels use the secondary step so they
      clear WCAG AA on the light sidebar rail, and keep its 12px size. The phone
      drawer used to drop to 11px here while the desktop rail stayed at 12px,
      so the same "Today" group header changed size with the viewport. */
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xxs);
-  font-weight: var(--ui-font-weight-medium);
-  letter-spacing: 0.04em;
-}
-#appShell .recents-title {
-  /* Matches parity/sidebar.css: small labels use the secondary step so they
+    color: var(--muted-foreground);
+    font-size: var(--ui-font-size-xxs);
+    font-weight: var(--ui-font-weight-medium);
+    letter-spacing: 0.04em;
+  }
+  #appShell .recents-title {
+    /* Matches parity/sidebar.css: small labels use the secondary step so they
      clear WCAG AA on the light sidebar rail. */
-}
-}
-
-@media (max-width: 768px) {
-#appShell .recents-time-label { padding: 12px 10px 4px; }
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .recents-time-label:first-child { padding-top: 2px; }
+  #appShell .recents-time-label {
+    padding: 12px 10px 4px;
+  }
 }
 
 @media (max-width: 768px) {
+  #appShell .recents-time-label:first-child {
+    padding-top: 2px;
+  }
+}
 
-/* The row carries the generic .btn class, whose base is `display:
+@media (max-width: 768px) {
+  /* The row carries the generic .btn class, whose base is `display:
    inline-flex; justify-content: center; min-width: var(--ui-control-md)` — on the drawer
    that shrink-wraps every session row to its title, leaves the ···
    floating mid-row, and adds a ~6px inline line-box gap under each row.
    Re-pin it to a full-width block-level flex row: title on the left, ···
    pushed to the right edge by .recent-item-main's flex:1. */
-#appShell #sidebar .recent-item {
-  border: 0;
-}
-/* Reference drawer titles sit at primary brightness; keep the pinned
+  #appShell #sidebar .recent-item {
+    border: 0;
+  }
+  /* Reference drawer titles sit at primary brightness; keep the pinned
    accent intact by scoping the raise to non-pinned rows. */
-#appShell .recent-item:not(.pinned) .recent-item-text {
-  color: var(--foreground);
-}
+  #appShell .recent-item:not(.pinned) .recent-item-text {
+    color: var(--foreground);
+  }
 }
 
 @media (max-width: 768px) {
-/* ~14px row type, matching the reference drawer's session titles against
+  /* ~14px row type, matching the reference drawer's session titles against
    the 15px nav rows (a stale restore/ rule previously forced 12px). */
 }
 
 @media (max-width: 768px) {
-#appShell .recent-item-meta {
-  font-size: 11px;
-  color: var(--ui-text-muted);
-}
-}
-
-@media (max-width: 768px) {
-#appShell #sidebarUserRow.user-row {
-  cursor: default;
-}
+  #appShell .recent-item-meta {
+    font-size: 11px;
+    color: var(--ui-text-muted);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell #sidebarUserRow.user-row:hover {
-  background: transparent;
-}
-}
-
-@media (max-width: 768px) {
-#appShell #sidebarUserRow.user-row:active {
-  transform: none;
-}
+  #appShell #sidebarUserRow.user-row {
+    cursor: default;
+  }
 }
 
 @media (max-width: 768px) {
-/* mobile-parity.css pins the drawer footer padding/border with
+  #appShell #sidebarUserRow.user-row:hover {
+    background: transparent;
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell #sidebarUserRow.user-row:active {
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  /* mobile-parity.css pins the drawer footer padding/border with
    !important; this layer owns only the min-height and flat background. */
-#appShell .sidebar-footer {
-  background: transparent;
-}
-}
-
-@media (max-width: 768px) {
-#appShell .user-row { gap: 10px; }
+  #appShell .sidebar-footer {
+    background: transparent;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .user-plan { color: var(--ui-text-muted); }
+  #appShell .user-row {
+    gap: 10px;
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .sidebar-footer .icon-btn {
-  border-radius: var(--ui-radius-control, 8px);
-  color: var(--ui-text-tertiary);
-}
-}
-
-@media (max-width: 768px) {
-#appShell .sidebar-footer .icon-btn:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
+  #appShell .user-plan {
+    color: var(--ui-text-muted);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell #navAssistants,
-#appShell #navSites,
-#appShell #navExam,
-#appShell #navSkills {
-  display: none;
-}
-#appShell .sidebar-nav-btn[data-nav="new"] {
-  background: var(--ui-bg-surface);
-  color: var(--foreground);
-  border-radius: var(--ui-radius-row);
-}
+  #appShell .sidebar-footer .icon-btn {
+    border-radius: var(--ui-radius-control, 8px);
+    color: var(--ui-text-tertiary);
+  }
 }
 
 @media (max-width: 768px) {
-#appShell .recents-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 36px 24px;
-  text-align: center;
-  color: var(--muted-foreground);
-  font-size: 13.5px;
-  line-height: 20px;
-}
-#appShell .recents-empty-text a {
-  color: var(--foreground);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  #appShell .sidebar-footer .icon-btn:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
 }
 
-/* The search field is its own focus surface: `.sidebar-search:focus-within`
+@media (max-width: 768px) {
+  #appShell #navAssistants,
+  #appShell #navSites,
+  #appShell #navExam,
+  #appShell #navSkills {
+    display: none;
+  }
+  #appShell .sidebar-nav-btn[data-nav='new'] {
+    background: var(--ui-bg-surface);
+    color: var(--foreground);
+    border-radius: var(--ui-radius-row);
+  }
+}
+
+@media (max-width: 768px) {
+  #appShell .recents-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    color: var(--muted-foreground);
+    font-size: 13.5px;
+    line-height: 20px;
+  }
+  #appShell .recents-empty-text a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* The search field is its own focus surface: `.sidebar-search:focus-within`
    already shifts its border, background and glow, so the forced app-wide
    focus ring would draw a second rectangle inside it. See the focus contract
    in components/input.css; the rule lives here because the sidebar surface is
@@ -377,10 +455,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
    The outline needs no `!important`: the transparent one restore/fixes.css
    already applies paints nothing either, so the result is the same and the
    forced-colours fallback there stays in charge of the outline. */
-#appShell#appShell#appShell .sidebar-search input:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
+  #appShell#appShell#appShell .sidebar-search input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 }
 @media (max-width: 768px) {
   /* Drawer: same surface as desktop rail + hairline edge (the border-right
@@ -398,7 +476,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     --ui-elevation-raised: none;
     background: var(--background);
   }
-  #appShell .sidebar-inner { padding: 0 6px 6px; }
+  #appShell .sidebar-inner {
+    padding: 0 6px 6px;
+  }
   #appShell #sidebarHeader {
     display: flex;
     align-items: center;
@@ -407,10 +487,23 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     min-height: calc(var(--ui-control-touch) + 18px);
     padding: 8px 10px;
   }
-  #appShell .sidebar-logo { display: flex; align-items: center; padding: 0 4px; gap: 4px; min-width: 0; }
-  #appShell .sidebar-logo-img { display: block; width: 24px; height: 24px; }
+  #appShell .sidebar-logo {
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    gap: 4px;
+    min-width: 0;
+  }
+  #appShell .sidebar-logo-img {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
   /* Reference drawer lockup: wordmark + ⌄, no mark. */
-  #appShell .sidebar-logo [data-part="brand-caret"] { display: grid; place-items: center; }
+  #appShell .sidebar-logo [data-part='brand-caret'] {
+    display: grid;
+    place-items: center;
+  }
   #appShell .sidebar-logo > span {
     display: inline-block;
     color: var(--foreground);
@@ -419,7 +512,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     line-height: 28px;
     letter-spacing: -0.02em;
   }
-  #appShell .cg-sidebar-caret { display: none; }
+  #appShell .cg-sidebar-caret {
+    display: none;
+  }
   #appShell #sidebarHeader .btn-icon {
     position: relative;
     display: grid;
@@ -433,7 +528,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-control);
     background: transparent;
     color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarHeader .btn-icon:hover {
     background: var(--accent);
@@ -442,13 +539,30 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarHeader .btn-icon:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarHeader .btn-icon svg { width: 20px; height: 20px; }
-  #appShell #sidebarHeader #sidebarSearchBtn { border: 0; border-radius: var(--ui-radius-control); background: transparent; }
-  #appShell .sidebar-search input { font-size: calc(16px * var(--app-type-scale)); line-height: 24px; }
-  #appShell #sidebarNav { display: flex; flex-direction: column; gap: 0; padding: 0; }
+  #appShell #sidebarHeader .btn-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+  #appShell #sidebarHeader #sidebarSearchBtn {
+    border: 0;
+    border-radius: var(--ui-radius-control);
+    background: transparent;
+  }
+  #appShell .sidebar-search input {
+    font-size: calc(16px * var(--app-type-scale));
+    line-height: 24px;
+  }
+  #appShell #sidebarNav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
   /* The nav label is a shared UiText (bodySm) whose size reads this role
      (SidebarNavButton); on the phone it takes the reference's 14px step. */
-  #appShell #sidebarNav { --nav-label-size: var(--ui-mobile-font-nav); }
+  #appShell #sidebarNav {
+    --nav-label-size: var(--ui-mobile-font-nav);
+  }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
     grid-template-columns: 20px minmax(0, 1fr) auto;
@@ -464,7 +578,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     font-weight: var(--ui-font-weight-regular);
     line-height: 24px;
     color: var(--ui-text-nav);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell #sidebarNav .sidebar-nav-btn:hover {
     background: var(--accent);
@@ -472,15 +588,39 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell #sidebarNav .sidebar-nav-btn:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarNav .sidebar-nav-btn svg { width: 20px; height: 20px; }
-  #appShell #sidebarNav .nav-label { line-height: 24px; }
-  #appShell #sidebarNav #navNew { order: 0; }
-  #appShell #sidebarNav #navImages { order: 1; }
-  #appShell #sidebarNav #navLibrary { order: 2; }
-  #appShell #sidebarNav #navScheduled { order: 3; }
-  #appShell #sidebarNav #navPlugins { order: 4; }
-  #appShell #sidebarNav .sidebar-project-nav { order: 5; display: grid; grid-template-columns: minmax(0, 1fr) var(--ui-control-md); align-items: center; border-radius: var(--ui-radius-row); }
-  #appShell #sidebarNav #navProjects { order: 0; padding-right: 0; }
+  #appShell #sidebarNav .sidebar-nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  #appShell #sidebarNav .nav-label {
+    line-height: 24px;
+  }
+  #appShell #sidebarNav #navNew {
+    order: 0;
+  }
+  #appShell #sidebarNav #navImages {
+    order: 1;
+  }
+  #appShell #sidebarNav #navLibrary {
+    order: 2;
+  }
+  #appShell #sidebarNav #navScheduled {
+    order: 3;
+  }
+  #appShell #sidebarNav #navPlugins {
+    order: 4;
+  }
+  #appShell #sidebarNav .sidebar-project-nav {
+    order: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--ui-control-md);
+    align-items: center;
+    border-radius: var(--ui-radius-row);
+  }
+  #appShell #sidebarNav #navProjects {
+    order: 0;
+    padding-right: 0;
+  }
   #appShell .sidebar-project-create {
     order: 1;
     display: grid;
@@ -493,21 +633,55 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: transparent;
     color: var(--foreground);
     cursor: pointer;
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
-  #appShell .sidebar-project-create svg { width: 18px; height: 18px; }
-  #appShell .sidebar-project-create:hover { color: var(--foreground); background: var(--accent); }
-  #appShell .sidebar-project-create:active { background: var(--ui-bg-active); }
-  #appShell #sidebarNav #navMore { order: 6; }
+  #appShell .sidebar-project-create svg {
+    width: 18px;
+    height: 18px;
+  }
+  #appShell .sidebar-project-create:hover {
+    color: var(--foreground);
+    background: var(--accent);
+  }
+  #appShell .sidebar-project-create:active {
+    background: var(--ui-bg-active);
+  }
+  #appShell #sidebarNav #navMore {
+    order: 6;
+  }
   #appShell #sidebarNav #navAssistants,
   #appShell #sidebarNav #navSkills,
-  #appShell #sidebarNav #navExam { display: none; }
-  #appShell #sidebarNav #navImages { display: grid; }
-  :root #appShell #sidebarNav #navSites { display: none; }
-  :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navImages { display: none; }
-  :root[data-user-tier]:not([data-user-tier="diophantus"]):not([data-user-tier="free"]) #appShell #sidebarNav #navSites { display: grid; order: 6; }
-  #appShell #sidebarHeader #newChatBtn { display: none; }
-  #appShell #sidebarNav #navNew, #appShell #sidebarNav .sidebar-nav-btn.active { background: var(--ui-bg-panel); }
+  #appShell #sidebarNav #navExam {
+    display: none;
+  }
+  #appShell #sidebarNav #navImages {
+    display: grid;
+  }
+  :root #appShell #sidebarNav #navSites {
+    display: none;
+  }
+  :root[data-user-tier]:not([data-user-tier='diophantus']):not([data-user-tier='free'])
+    #appShell
+    #sidebarNav
+    #navImages {
+    display: none;
+  }
+  :root[data-user-tier]:not([data-user-tier='diophantus']):not([data-user-tier='free'])
+    #appShell
+    #sidebarNav
+    #navSites {
+    display: grid;
+    order: 6;
+  }
+  #appShell #sidebarHeader #newChatBtn {
+    display: none;
+  }
+  #appShell #sidebarNav #navNew,
+  #appShell #sidebarNav .sidebar-nav-btn.active {
+    background: var(--ui-bg-panel);
+  }
   #appShell .recents-panel {
     padding: 0;
     margin-top: 0;
@@ -524,8 +698,22 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: var(--ui-scrollbar-thumb);
     border-radius: var(--ui-radius-pill);
   }
-  #appShell .recents-header { display: flex; align-items: center; justify-content: space-between; height: 30px; min-height: 30px; margin-top: 0; padding: 0 4px 0 10px; }
-  #appShell .recents-title { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-regular); line-height: 20px; letter-spacing: 0; color: var(--muted-foreground); }
+  #appShell .recents-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 30px;
+    min-height: 30px;
+    margin-top: 0;
+    padding: 0 4px 0 10px;
+  }
+  #appShell .recents-title {
+    font-size: var(--ui-mobile-font-nav);
+    font-weight: var(--ui-font-weight-regular);
+    line-height: 20px;
+    letter-spacing: 0;
+    color: var(--muted-foreground);
+  }
   /* 32px, not 22px: the drawer row holds two of these side by side, and a
      22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
      pointer targets. 32px matches the session-row overflow button in the
@@ -540,7 +728,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-control);
     background: transparent;
     color: var(--ui-text-muted);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell .recents-head-btn:hover {
     background: var(--accent);
@@ -550,7 +740,10 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     background: var(--ui-bg-active);
     color: var(--foreground);
   }
-  #appShell .recents-head-btn svg { width: 20px; height: 20px; }
+  #appShell .recents-head-btn svg {
+    width: 20px;
+    height: 20px;
+  }
   #appShell .sidebar-nav-sep {
     display: block;
     height: 0;
@@ -567,7 +760,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-row);
     font-size: var(--ui-mobile-font-nav);
     color: var(--ui-text-nav);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell .recent-item:hover {
     background: var(--accent);
@@ -575,7 +770,12 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   #appShell .recent-item:active {
     background: var(--ui-bg-active);
   }
-  #appShell .recent-item-text { font-size: inherit; line-height: 24px; font-weight: var(--ui-font-weight-regular); color: var(--ui-text-nav); }
+  #appShell .recent-item-text {
+    font-size: inherit;
+    line-height: 24px;
+    font-weight: var(--ui-font-weight-regular);
+    color: var(--ui-text-nav);
+  }
   #appShell .recent-item-overflow {
     display: grid;
     place-items: center;
@@ -588,7 +788,9 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-control);
     background: transparent;
     color: var(--ui-text-muted);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell .recent-item-overflow:hover {
     background: var(--accent);
@@ -611,13 +813,29 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-radius: var(--ui-radius-control);
     background: transparent;
     color: var(--ui-text-muted);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
-  #appShell .recent-item .recent-item-pin-toggle svg { width: 18px; height: 18px; }
-  #appShell .recent-item .recent-item-pin-toggle[aria-pressed="true"] { color: var(--ui-text-primary); }
-  #appShell .recent-item .recent-item-pin-toggle:active { background: var(--ui-bg-active); color: var(--ui-text-primary); }
-  #appShell .recent-item .recent-item-pin-icon { display: none; }
-  #appShell .recent-item.active, #appShell .recent-item.actions-open { background: var(--ui-bg-selected); box-shadow: none; }
+  #appShell .recent-item .recent-item-pin-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+  #appShell .recent-item .recent-item-pin-toggle[aria-pressed='true'] {
+    color: var(--ui-text-primary);
+  }
+  #appShell .recent-item .recent-item-pin-toggle:active {
+    background: var(--ui-bg-active);
+    color: var(--ui-text-primary);
+  }
+  #appShell .recent-item .recent-item-pin-icon {
+    display: none;
+  }
+  #appShell .recent-item.active,
+  #appShell .recent-item.actions-open {
+    background: var(--ui-bg-selected);
+    box-shadow: none;
+  }
   #appShell #sidebarFooter {
     flex: 0 0 auto;
     padding: 8px 8px max(24px, env(safe-area-inset-bottom, 24px));
@@ -625,9 +843,21 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
     border-top: 1px solid var(--ui-hairline-faint);
     gap: 0;
   }
-  #appShell #sidebarFooter .sidebar-footer-actions { display: none; }
-  #appShell #sidebarUserRow { display: block; width: 100%; padding: 0; flex: 0 0 auto; }
-  #appShell .sidebar-footer-account-wrap { display: flex; flex-direction: column; width: 100%; gap: 12px; }
+  #appShell #sidebarFooter .sidebar-footer-actions {
+    display: none;
+  }
+  #appShell #sidebarUserRow {
+    display: block;
+    width: 100%;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  #appShell .sidebar-footer-account-wrap {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
   #appShell #sidebarUserRow .sidebar-account-trigger {
     display: flex;
     align-items: center;
@@ -642,60 +872,122 @@ body:not([data-conversation-active="true"]):not(.workspace-active):not(.admin-ac
   }
   #appShell #sidebarUserRow .sidebar-account-trigger:hover,
   #appShell #sidebarUserRow .sidebar-account-trigger:active,
-  #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded="true"] {
+  #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded='true'] {
     background: var(--accent);
   }
-  #appShell #sidebarUserRow .user-avatar { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; font-size: 10px; }
+  #appShell #sidebarUserRow .user-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 10px;
+  }
   /* Reference account lockup: name 15px, plan 13px. */
-  #appShell #sidebarUserRow .user-name { font-size: var(--ui-mobile-font-account); line-height: 20px; font-weight: var(--ui-font-weight-regular); }
-  #appShell #sidebarUserRow .user-plan, #appShell #sidebarUserRow .tier-badge { font-size: var(--ui-mobile-font-meta); line-height: 18px; color: var(--ui-text-nav); }
+  #appShell #sidebarUserRow .user-name {
+    font-size: var(--ui-mobile-font-account);
+    line-height: 20px;
+    font-weight: var(--ui-font-weight-regular);
+  }
+  #appShell #sidebarUserRow .user-plan,
+  #appShell #sidebarUserRow .tier-badge {
+    font-size: var(--ui-mobile-font-meta);
+    line-height: 18px;
+    color: var(--ui-text-nav);
+  }
   /* Reference: the account menu is wider than the drawer (~305 of 390px) and
      overhangs its edge; it stays 16px clear of the viewport's right side. */
-  #appShell .sidebar-account-menu { width: min(304px, calc(100vw - 24px)); max-width: calc(100vw - 24px); padding: 12px; }
-  #appShell .sidebar-account-menu :is(button, a) { height: var(--ui-control-md); min-height: var(--ui-control-md); font-size: var(--ui-mobile-font-nav); }
-  #appShell .sidebar-account-menu .account-menu-identity { height: var(--ui-control-touch); gap: 8px; }
-  #appShell .sidebar-account-menu .user-avatar { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; font-size: 10px; border-radius: 50%; background: var(--ui-avatar-bg); color: var(--primary-foreground); }
-  #appShell .sidebar-account-menu .user-identity { display: flex; flex-direction: column; }
-  #appShell .sidebar-account-menu .user-name { font-size: var(--ui-mobile-font-nav); font-weight: var(--ui-font-weight-regular); }
-  #appShell .sidebar-account-menu .user-plan { font-size: var(--ui-mobile-font-meta); color: var(--ui-text-muted); }
+  #appShell .sidebar-account-menu {
+    width: min(304px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    padding: 12px;
+  }
+  #appShell .sidebar-account-menu :is(button, a) {
+    height: var(--ui-control-md);
+    min-height: var(--ui-control-md);
+    font-size: var(--ui-mobile-font-nav);
+  }
+  #appShell .sidebar-account-menu .account-menu-identity {
+    height: var(--ui-control-touch);
+    gap: 8px;
+  }
+  #appShell .sidebar-account-menu .user-avatar {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    font-size: 10px;
+    border-radius: 50%;
+    background: var(--ui-avatar-bg);
+    color: var(--primary-foreground);
+  }
+  #appShell .sidebar-account-menu .user-identity {
+    display: flex;
+    flex-direction: column;
+  }
+  #appShell .sidebar-account-menu .user-name {
+    font-size: var(--ui-mobile-font-nav);
+    font-weight: var(--ui-font-weight-regular);
+  }
+  #appShell .sidebar-account-menu .user-plan {
+    font-size: var(--ui-mobile-font-meta);
+    color: var(--ui-text-muted);
+  }
 
   /* Dark reference drawer tones: row glyphs and labels #cacaca, the header's
      search / collapse glyphs the secondary #b0b0b0, the wordmark and the
      account name the ink. The ancestor pair is written once and reused via
      :is() — repeating "#appShell #sidebar" on every line is the stacked-id
      debt the css-debt ratchet tracks. */
-  [data-mode="dark"] #appShell #sidebar svg {
+  [data-mode='dark'] #appShell #sidebar svg {
     color: var(--ui-text-nav);
 
     stroke-linecap: round;
     stroke-linejoin: round;
   }
-  [data-mode="dark"] #appShell #sidebarHeader .btn-icon svg { color: var(--muted-foreground); }
-  [data-mode="dark"] #appShell :is(#sidebar) :is(
-    #sidebarNav .sidebar-nav-btn,
-    .recent-item,
-    .recent-item-text,
-    .nav-new-badge,
-    #sidebarSearch,
-    #sidebarSearch::placeholder
-  ) { color: var(--ui-text-nav); }
-  [data-mode="dark"] #appShell :is(#sidebar) .sidebar-logo,
-  [data-mode="dark"] #appShell #sidebarUserRow :is(
-    .sidebar-account-trigger,
-    .user-name
-  ) { color: var(--ui-sidebar-glyph); }
+  [data-mode='dark'] #appShell #sidebarHeader .btn-icon svg {
+    color: var(--muted-foreground);
+  }
+  [data-mode='dark']
+    #appShell
+    :is(#sidebar)
+    :is(
+      #sidebarNav .sidebar-nav-btn,
+      .recent-item,
+      .recent-item-text,
+      .nav-new-badge,
+      #sidebarSearch,
+      #sidebarSearch::placeholder
+    ) {
+    color: var(--ui-text-nav);
+  }
+  [data-mode='dark'] #appShell :is(#sidebar) .sidebar-logo,
+  [data-mode='dark'] #appShell #sidebarUserRow :is(.sidebar-account-trigger, .user-name) {
+    color: var(--ui-sidebar-glyph);
+  }
 
   /* The phone drawer is narrow (~237px): keep the identity row tight so the
      name and plan line stay inside it. (Moved here from parity/sidebar.css —
      the desktop owner must not carry mobile rules.) */
-  #appShell #sidebarUserRow .sidebar-account-static { gap: 6px; padding: 4px 0; }
+  #appShell #sidebarUserRow .sidebar-account-static {
+    gap: 6px;
+    padding: 4px 0;
+  }
 }
 
 /* The desktop drawer pins `transition: none` on the shell (polish/motion.css);
    the phone drawer relied on the global .01ms blanket instead, which still
    commits a transition on every frame of the slide. Same explicit cut here. */
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
-  #appShell .sidebar { transition: none; }
-  #appShell .sidebar-backdrop { transition: none; }
-  #appShell .sidebar-search-row { transition: none; }
+  #appShell .sidebar {
+    transition: none;
+  }
+  #appShell .sidebar-backdrop {
+    transition: none;
+  }
+  #appShell .sidebar-search-row {
+    transition: none;
+  }
 }

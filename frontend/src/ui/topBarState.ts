@@ -1,4 +1,3 @@
-
 function resolveDocument(doc?: Document | null) {
   return doc || (typeof document !== 'undefined' ? document : null);
 }
@@ -10,7 +9,9 @@ export function setConversationChrome(active: boolean, doc?: Document | null) {
   const d = resolveDocument(doc);
   if (!d) return;
 
-  const desktopActions = d.querySelectorAll<HTMLElement>('.chat-top-bar .btn-group .icon-btn, .chat-top-bar .btn-group .start-btn');
+  const desktopActions = d.querySelectorAll<HTMLElement>(
+    '.chat-top-bar .btn-group .icon-btn, .chat-top-bar .btn-group .start-btn',
+  );
   desktopActions.forEach(function (element) {
     element.style.display = active ? '' : 'none';
   });
@@ -19,5 +20,4 @@ export function setConversationChrome(active: boolean, doc?: Document | null) {
   landingControls.forEach(function (element) {
     element.style.display = active || element.dataset.visible === 'false' ? 'none' : '';
   });
-
 }

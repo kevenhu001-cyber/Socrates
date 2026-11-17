@@ -20,23 +20,43 @@ export const executeCreateSite: ToolExecutor = async (
   const started = Date.now();
   let result: ToolResult;
 
-  const fail = (code: string, detail: string, userMessage = '站点创建失败。'): ToolExecutionResult => {
+  const fail = (
+    code: string,
+    detail: string,
+    userMessage = '站点创建失败。',
+  ): ToolExecutionResult => {
     /* Argument faults (missing title, non-HTML source) stay retryable so
        the model can fix the call; the turn policy decides when to stop
        inviting retries. Outcome is recorded here, so the dispatcher skips
        its generic accounting (outcomeRecorded). */
     toolPolicy.recordResult('create_site', false, code);
     const retryable = toolPolicy.remainingRetries('create_site') > 0;
-    const correction = !retryable ? undefined
+    const correction = !retryable
+      ? undefined
       : code === 'SITE_TITLE_REQUIRED'
         ? 'Provide a non-empty title and call create_site again.'
         : code === 'SITE_SOURCE_INVALID'
           ? 'The source must be one complete HTML document containing <html> and </html>. Fix the document and call create_site again.'
           : undefined;
-    result = { status: 'failed', error: code, errorCode: code, retryable, correction, durationMs: Date.now() - started };
+    result = {
+      status: 'failed',
+      error: code,
+      errorCode: code,
+      retryable,
+      correction,
+      durationMs: Date.now() - started,
+    };
     emitter.event('tool_result', {
-      id: call.id, name: 'create_site', ok: false, status: 'failed', output: '',
-      error: code, errorCode: code, retryable, userMessage, detail,
+      id: call.id,
+      name: 'create_site',
+      ok: false,
+      status: 'failed',
+      output: '',
+      error: code,
+      errorCode: code,
+      retryable,
+      userMessage,
+      detail,
       durationMs: result.durationMs,
     });
     return { result, outcomeRecorded: true };
@@ -58,13 +78,22 @@ export const executeCreateSite: ToolExecutor = async (
     const output = JSON.stringify(site);
     result = { status: 'completed', output, durationMs: Date.now() - started };
     emitter.event('tool_result', {
-      id: call.id, name: 'create_site', ok: true, status: 'completed', output,
-      siteId: site.id, url: site.url, visibility: site.visibility,
+      id: call.id,
+      name: 'create_site',
+      ok: true,
+      status: 'completed',
+      output,
+      siteId: site.id,
+      url: site.url,
+      visibility: site.visibility,
       retryable: false,
       userMessage: site.url ? `站点已发布：${site.url}` : '站点已保存（私有）。',
       durationMs: result.durationMs,
     });
-    console.info('[create_site]', JSON.stringify({ id: site.id, visibility: site.visibility, durationMs: result.durationMs }));
+    console.info(
+      '[create_site]',
+      JSON.stringify({ id: site.id, visibility: site.visibility, durationMs: result.durationMs }),
+    );
     return { result, outcomeRecorded: true };
   } catch (err) {
     const code = (err as { code?: string })?.code || 'site_create_failed';

@@ -31,17 +31,23 @@ function serializeJob(job: typeof importJobs.$inferSelect) {
 router.post('/', async (req, res, next) => {
   try {
     const { source, payload } = req.body;
-    if (!source || !payload) return res.status(400).json({ code: 'BAD_REQUEST', message: 'source and payload required' });
-    const total = Array.isArray(payload) ? payload.length
-      : Array.isArray(payload?.sessions) ? payload.sessions.length
-      : 1;
+    if (!source || !payload)
+      return res.status(400).json({ code: 'BAD_REQUEST', message: 'source and payload required' });
+    const total = Array.isArray(payload)
+      ? payload.length
+      : Array.isArray(payload?.sessions)
+        ? payload.sessions.length
+        : 1;
     const db = getDb();
-    const [job] = await db.insert(importJobs).values({
-      userId: req.userId!,
-      source,
-      status: 'queued',
-      progress: { total, processed: 0, errors: 0 },
-    }).returning();
+    const [job] = await db
+      .insert(importJobs)
+      .values({
+        userId: req.userId!,
+        source,
+        status: 'queued',
+        progress: { total, processed: 0, errors: 0 },
+      })
+      .returning();
 
     /* Unsupported sources still get a job row — its terminal
        'not_implemented' status is an honest answer the caller can poll
@@ -53,11 +59,16 @@ router.post('/', async (req, res, next) => {
         /* A catastrophic failure (DB drop mid-run, bug in the normalizer)
            must not leave the job pinned at 'running' — record it failed
            so polling clients terminate instead of waiting forever. */
-        await db.update(importJobs).set({ status: 'failed', completedAt: new Date() }).where(eq(importJobs.id, job.id)).catch(() => {});
+        await db
+          .update(importJobs)
+          .set({ status: 'failed', completedAt: new Date() })
+          .where(eq(importJobs.id, job.id))
+          .catch(() => {});
         throw runErr;
       }
     } else {
-      await db.update(importJobs)
+      await db
+        .update(importJobs)
         .set({ status: 'not_implemented', completedAt: new Date() })
         .where(eq(importJobs.id, job.id));
     }
@@ -65,16 +76,25 @@ router.post('/', async (req, res, next) => {
     const [finalJob] = await db.select().from(importJobs).where(eq(importJobs.id, job.id)).limit(1);
     res.setHeader('Location', `/api/import/${job.id}`);
     return res.status(202).json(serializeJob(finalJob || job));
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/import — list past imports */
 router.get('/', async (req, res, next) => {
   try {
     const db = getDb();
-    const rows = await db.select().from(importJobs).where(eq(importJobs.userId, req.userId!)).orderBy(desc(importJobs.createdAt)).limit(20);
+    const rows = await db
+      .select()
+      .from(importJobs)
+      .where(eq(importJobs.userId, req.userId!))
+      .orderBy(desc(importJobs.createdAt))
+      .limit(20);
     return res.json({ jobs: rows.map(serializeJob) });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* GET /api/import/:id */
@@ -84,12 +104,16 @@ router.get('/:id', async (req, res, next) => {
     // Use `and` rather than selecting first and string-comparing
     // userId; the previous version did a JS-level comparison that
     // would 404 for the right reasons but skip the DB-side filter.
-    const [job] = await db.select().from(importJobs)
+    const [job] = await db
+      .select()
+      .from(importJobs)
       .where(and(eq(importJobs.id, req.params.id), eq(importJobs.userId, req.userId!)))
       .limit(1);
     if (!job) return res.status(404).json({ code: 'NOT_FOUND', message: 'Import job not found' });
     return res.json(serializeJob(job));
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

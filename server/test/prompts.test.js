@@ -17,7 +17,10 @@ describe('production prompt contracts', () => {
     assert.ok(prompt.length < 4_000, `Beagle prompt grew to ${prompt.length} characters`);
     assert.match(prompt, /server policy above/i);
     assert.match(prompt, /`tools` array supplied by the server/i);
-    assert.doesNotMatch(prompt, /MiniMax|deny it if directly asked|web_search|web_fetch|code_interpreter|render_visualization|create_plan|create_spec/);
+    assert.doesNotMatch(
+      prompt,
+      /MiniMax|deny it if directly asked|web_search|web_fetch|code_interpreter|render_visualization|create_plan|create_spec/,
+    );
     /* Tool-calling protocol and global writing rules live only in
        SERVER_SYSTEM_POLICY (routes/chat/prepare/prompts.ts); minimaxProxy always
        applies enforceServerSystemBoundary before injecting this file, so a
@@ -28,7 +31,11 @@ describe('production prompt contracts', () => {
       'Do not use emoji',
       'dash punctuation',
     ]) {
-      assert.equal(prompt.includes(serverOwnedRule), false, `server-owned rule duplicated: ${serverOwnedRule}`);
+      assert.equal(
+        prompt.includes(serverOwnedRule),
+        false,
+        `server-owned rule duplicated: ${serverOwnedRule}`,
+      );
     }
     for (const staleProtocol of [
       '[web_search:',
@@ -36,7 +43,11 @@ describe('production prompt contracts', () => {
       'recent_chats',
       'tool_search',
     ]) {
-      assert.equal(prompt.includes(staleProtocol), false, `stale tool protocol found: ${staleProtocol}`);
+      assert.equal(
+        prompt.includes(staleProtocol),
+        false,
+        `stale tool protocol found: ${staleProtocol}`,
+      );
     }
   });
 
@@ -67,11 +78,23 @@ describe('production prompt contracts', () => {
        only when the matching native tool is available. teacher-mode must not
        restate the render_visualization/Mermaid/SVG/ASCII guidance, or the two
        copies would drift. */
-    assert.equal(prompt.includes('render_visualization'), false, 'viz routing duplicated in teacher-mode');
+    assert.equal(
+      prompt.includes('render_visualization'),
+      false,
+      'viz routing duplicated in teacher-mode',
+    );
     /* Global response-format guidance is owned once by
        SERVER_SYSTEM_POLICY (routes/chat/prepare/prompts.ts); teacher-mode must not
        restate the full rule here, or the two copies would drift. */
-    assert.equal(prompt.includes('默认不要把正文写成项目符号'), false, 'global prose default duplicated in teacher-mode');
-    assert.equal(prompt.includes('只有当顺序、检查清单'), false, 'global prose default duplicated in teacher-mode');
+    assert.equal(
+      prompt.includes('默认不要把正文写成项目符号'),
+      false,
+      'global prose default duplicated in teacher-mode',
+    );
+    assert.equal(
+      prompt.includes('只有当顺序、检查清单'),
+      false,
+      'global prose default duplicated in teacher-mode',
+    );
   });
 });

@@ -11,7 +11,11 @@ import { esc, escAttr, escHTML } from './text.ts';
 import { KATEX_MACROS } from './latex.ts';
 import { safeHljsLang } from './code.ts';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.ts';
-import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
+import {
+  preprocessMarkdown,
+  preprocessMarkdownForStreaming,
+  type StreamingPreprocessOptions,
+} from './preprocess.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
@@ -26,13 +30,21 @@ import {
   type ScaffoldTag,
 } from '@socrates/ui/learn-split';
 import {
-  findStreamScaffold, pendingScaffoldOpener, renderStreamScaffoldPreview,
-  streamScaffoldFallbackLabel, streamScaffoldFallbackText,
+  findStreamScaffold,
+  pendingScaffoldOpener,
+  renderStreamScaffoldPreview,
+  streamScaffoldFallbackLabel,
+  streamScaffoldFallbackText,
 } from './markdownScaffolds.ts';
 export { clearStreamScaffolds, registerStreamScaffold } from './markdownScaffolds.ts';
 import {
-  _looksLikeInlineMathTail, _looksLikeNumericMath, _stashInlineCode,
-  getKatex, hasMathDelimiters, renderStreamMath, replaceInlineDollarMath,
+  _looksLikeInlineMathTail,
+  _looksLikeNumericMath,
+  _stashInlineCode,
+  getKatex,
+  hasMathDelimiters,
+  renderStreamMath,
+  replaceInlineDollarMath,
 } from './markdownMath.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -135,7 +147,8 @@ function replaceDanglingScaffoldOutsideMarkdownCode(
   pattern.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(source)) !== null) {
-    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index)
+      codeIndex += 1;
     const codeRange = codeRanges[codeIndex];
     if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
     if (codeRange && codeRange.start < pattern.lastIndex && codeRange.end > match.index) {
@@ -144,7 +157,8 @@ function replaceDanglingScaffoldOutsideMarkdownCode(
          the rest of the answer normally. */
       const openingTagEnd = source.indexOf('>', match.index);
       if (openingTagEnd !== -1 && openingTagEnd < codeRange.start) {
-        output += source.slice(cursor, match.index) + escHTML(source.slice(match.index, openingTagEnd + 1));
+        output +=
+          source.slice(cursor, match.index) + escHTML(source.slice(match.index, openingTagEnd + 1));
         cursor = openingTagEnd + 1;
         replaced = true;
       }
@@ -166,7 +180,8 @@ function stripThinkingBlocks(source: string): string {
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(source)) !== null) {
-    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index) codeIndex += 1;
+    while (codeIndex < codeRanges.length && codeRanges[codeIndex].end <= match.index)
+      codeIndex += 1;
     const codeRange = codeRanges[codeIndex];
     if (codeRange && codeRange.start <= match.index && codeRange.end > match.index) continue;
     if (!match[1]) {
@@ -221,7 +236,7 @@ function renderProgressiveScaffold(
         if (html) return bank.save(html);
       }
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: render/markdown.ts:120');
+      reportEmptyCatch(error, 'empty catch: render/markdown.ts');
       /* Plugin threw — fall through to preview and plain text. */
     }
   }
@@ -238,8 +253,13 @@ function renderProgressiveScaffold(
     const html = renderStreamMath(math, false, false);
     return html === null ? match : bank.save(html);
   });
-  return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
-    + label + '</span> ' + escHTML(text) + '</div>');
+  return bank.save(
+    '<div class="scaffold-stream"><span class="scaffold-stream-label">' +
+      label +
+      '</span> ' +
+      escHTML(text) +
+      '</div>',
+  );
 }
 
 /* `<name` or `<name attrs…` at the very end of the text, with no `>` yet.
@@ -257,28 +277,33 @@ function replacePendingScaffoldOpener(source: string, bank: PlaceholderBank): st
   const match = PENDING_OPENER_RE.exec(source);
   if (!match) return source;
   const start = match.index + match[1].length;
-  if (markdownCodeRanges(source).some((range) => range.start <= start && range.end > start)) return source;
+  if (markdownCodeRanges(source).some((range) => range.start <= start && range.end > start))
+    return source;
   const kind = pendingScaffoldOpener(match[2], match[3] || '');
   if (!kind) return source;
   if (kind === 'hold') return source.slice(0, start);
   return source.slice(0, start) + renderProgressiveScaffold(kind, '', match[3] || '', bank, true);
 }
 
-function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank, complete = false): string {
+function replaceProgressiveScaffolds(
+  source: string,
+  bank: PlaceholderBank,
+  complete = false,
+): string {
   source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
   /* Thinking text is shown in the live status line, not in the transcript. */
   source = stripThinkingBlocks(source);
   const tags = SCAFFOLD_TAGS.join('|');
-  source = replaceScaffoldMarkup(
-    source,
-    (match) => renderProgressiveScaffold(match.tag, match.inner, match.attrs, bank),
+  source = replaceScaffoldMarkup(source, (match) =>
+    renderProgressiveScaffold(match.tag, match.inner, match.attrs, bank),
   );
   source = replaceDanglingScaffoldOutsideMarkdownCode(
     source,
     new RegExp('<(' + tags + ')\\b([^>]*)>([\\s\\S]*?)$', 'gi'),
-    (match) => bank.containsBlockPlaceholder(match[0])
-      ? escHTML(match[0])
-      : renderProgressiveScaffold(match[1], match[3], match[2], bank, !complete),
+    (match) =>
+      bank.containsBlockPlaceholder(match[0])
+        ? escHTML(match[0])
+        : renderProgressiveScaffold(match[1], match[3], match[2], bank, !complete),
   );
   /* Settled text cannot grow, so a trailing `<quiz` there is just text. */
   return complete ? source : replacePendingScaffoldOpener(source, bank);
@@ -291,9 +316,9 @@ function replaceProgressiveScaffolds(source: string, bank: PlaceholderBank, comp
 export function unlabeledHtml(lang: string, trimmed: string): boolean {
   if (lang) return false;
   const hasSvgTag = /<svg[\s>]/i.test(trimmed);
-  const looksLikeHtml = hasSvgTag || (
-    trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed)
-  );
+  const looksLikeHtml =
+    hasSvgTag ||
+    (trimmed.length > 30 && /<\/(style|script|canvas|svg|div|table)>|<style[\s>]/i.test(trimmed));
   return looksLikeHtml && (trimmed.length > 20 || hasSvgTag);
 }
 
@@ -304,25 +329,35 @@ function replaceProgressiveCodeBlocks(
 ): string {
   source = source.replace(/```mermaid\s*\n?([\s\S]*?)```/g, (_match, code: string) => {
     const trimmed = code.trim();
-    return trimmed ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
+    return trimmed
+      ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) }))
+      : '';
   });
   source = source.replace(/```mermaid\s*\n?([\s\S]*?)$/g, (_match, body: string) => {
     const trimmed = body.trim();
-    return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('mermaid', trimmed) }));
+    return bank.saveViz(
+      renderVizLoading({ streaming: true, stableId: _getStreamingVizId('mermaid', trimmed) }),
+    );
   });
   source = source.replace(/```plot\s*\n?([\s\S]*?)```/g, (_match, spec: string) => {
     const trimmed = spec.trim();
-    return trimmed ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+    return trimmed
+      ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) }))
+      : '';
   });
   source = source.replace(/```plot\s*\n?([\s\S]*?)$/g, (_match, body: string) => {
     const trimmed = body.trim();
-    return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId('plot', trimmed) }));
+    return bank.saveViz(
+      renderVizLoading({ streaming: true, stableId: _getStreamingVizId('plot', trimmed) }),
+    );
   });
   source = source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
     const trimmed = code.trim();
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
     if (isHtmlLang || unlabeledHtml(lang, trimmed)) {
-      return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+      return bank.saveViz(
+        renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }),
+      );
     }
     const hljsLang = safeHljsLang(lang);
     const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
@@ -330,19 +365,31 @@ function replaceProgressiveCodeBlocks(
   });
   return source.replace(/```(\w*)\n?([\s\S]*)$/g, (_match, lang: string, body: string) => {
     const trimmed = body.trim();
-    if (!trimmed) return bank.save('<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>');
+    if (!trimmed)
+      return bank.save(
+        '<span style="color:hsl(var(--text-400));font-style:italic;font-size:0.9em">…</span>',
+      );
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
     if (isHtmlLang) {
-      return bank.saveViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+      return bank.saveViz(
+        renderVizLoading({
+          streaming: true,
+          stableId: _getStreamingVizId(lang || 'html', trimmed),
+        }),
+      );
     }
     if (complete) {
       const hljsLang = safeHljsLang(lang);
       const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
       return bank.save('<pre><code' + langAttr + '>' + escHTML(trimmed) + '</code></pre>');
     }
-    return bank.save('<div class="stream-code-pending"><div class="stream-code-pending-header">'
-      + '<span class="stream-code-badge">' + escHTML(lang || 'code') + '</span>'
-      + '<span class="stream-code-dots shimmer-text">…</span></div></div>');
+    return bank.save(
+      '<div class="stream-code-pending"><div class="stream-code-pending-header">' +
+        '<span class="stream-code-badge">' +
+        escHTML(lang || 'code') +
+        '</span>' +
+        '<span class="stream-code-dots shimmer-text">…</span></div></div>',
+    );
   });
 }
 
@@ -350,10 +397,16 @@ function replaceProgressiveCodeBlocks(
    still streaming) holds its place with blank space of the formula's height:
    a display formula gets one quiet shimmer bar, an inline one a blank slot.
    No dots: the project bans dot ornaments. */
-const PENDING_DISPLAY_MATH = '<div class="katex-display math-stream-placeholder" aria-hidden="true"><span class="math-pending-bar"></span></div>';
-const PENDING_INLINE_MATH = '<span class="math-stream-placeholder" data-math-pending="inline" aria-hidden="true">\u200b</span>';
+const PENDING_DISPLAY_MATH =
+  '<div class="katex-display math-stream-placeholder" aria-hidden="true"><span class="math-pending-bar"></span></div>';
+const PENDING_INLINE_MATH =
+  '<span class="math-stream-placeholder" data-math-pending="inline" aria-hidden="true">\u200b</span>';
 
-function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: PlaceholderBank): string {
+function replaceProgressiveDisplayMath(
+  source: string,
+  complete: boolean,
+  bank: PlaceholderBank,
+): string {
   const replaceClosed = (match: string, math: string) => {
     const html = renderStreamMath(math, true, false);
     return html === null ? match : bank.save(html);
@@ -368,7 +421,6 @@ function replaceProgressiveDisplayMath(source: string, complete: boolean, bank: 
   source = source.replace(/\$\$([\s\S]+)$/g, replaceOpen);
   return source.replace(/\\\[([\s\S]+)$/g, replaceOpen);
 }
-
 
 /* KaTeX loads on demand, when the first formula arrives. For the frames
    until it lands, the live tail holds the formulas' places with the same
@@ -387,13 +439,17 @@ function replacePendingMath(source: string, bank: PlaceholderBank): string {
   source = source.replace(/\\\[([\s\S]+)$/g, display);
   source = replaceInlineDollarMath(source, false, inline);
   source = source.replace(/\\\((.+?)\\\)/g, inline);
-  source = source.replace(/\$([^\n$]+)$/g, (match, math: string) => (
-    _looksLikeInlineMathTail(math.trim()) ? inline() : match
-  ));
+  source = source.replace(/\$([^\n$]+)$/g, (match, math: string) =>
+    _looksLikeInlineMathTail(math.trim()) ? inline() : match,
+  );
   return source.replace(/\\\(([^\n]+)$/g, inline);
 }
 
-function replaceProgressiveInlineMath(source: string, complete: boolean, bank: PlaceholderBank): string {
+function replaceProgressiveInlineMath(
+  source: string,
+  complete: boolean,
+  bank: PlaceholderBank,
+): string {
   source = replaceInlineDollarMath(source, false, (math: string) => {
     const html = renderStreamMath(math, false, false);
     return html === null ? null : bank.save(html);
@@ -473,7 +529,9 @@ export function formatMsgProgressive(
 
 function _formatMsgProgressive(t: string, opts?: StreamingPreprocessOptions): string {
   let s = preprocessMarkdownForStreaming(t, opts);
-  if (s.charCodeAt(s.length - 1) === 10) { s = s.slice(0, -1); }
+  if (s.charCodeAt(s.length - 1) === 10) {
+    s = s.slice(0, -1);
+  }
   if (!s) return '';
 
   const bank = createPlaceholderBank();
@@ -518,27 +576,48 @@ function formatWithoutMarked(t: string): string {
     return 'XVIZFALLBACK' + id + 'X';
   };
   let raw = stripThinkingBlocks(preprocessMarkdown(t));
-  raw = raw.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/gi, (_match, lang: string, content: string) => {
-    const trimmed = content.trim();
-    return trimmed ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
-  });
+  raw = raw.replace(
+    /```(viz|html|svg)\s*\n?([\s\S]*?)```/gi,
+    (_match, lang: string, content: string) => {
+      const trimmed = content.trim();
+      return trimmed
+        ? saveFallbackViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) }))
+        : '';
+    },
+  );
   raw = raw.replace(/```plot\s*\n?([\s\S]*?)```/gi, (_match, content: string) => {
     const trimmed = content.trim();
-    return trimmed ? saveFallbackViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+    return trimmed
+      ? saveFallbackViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) }))
+      : '';
   });
-  raw = raw.replace(/```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i, (_match, lang: string, body: string) => (
-    saveFallbackViz(renderVizLoading({ streaming: true, stableId: _getStreamingVizId(lang, String(body || '').trim()) }))
-  ));
-  const escaped = esc(raw).replace(/```(\w*)\r?\n?([\s\S]*?)```/g,
-    (_match, _lang: string, code: string) => '<pre><code>' + esc(code.trim()) + '</code></pre>');
-  const fallbackHtml = '<p>' + escaped
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br>') + '</p>';
-  return sanitizeHtml(fallbackHtml, { chineseProse: true }).replace(/XVIZFALLBACK(\d+)X/g,
-    (_match, id: string) => fallbackViz[parseInt(id, 10)] || '');
+  raw = raw.replace(
+    /```(viz|html|svg|plot)\s*\n?([\s\S]*?)$/i,
+    (_match, lang: string, body: string) =>
+      saveFallbackViz(
+        renderVizLoading({
+          streaming: true,
+          stableId: _getStreamingVizId(lang, String(body || '').trim()),
+        }),
+      ),
+  );
+  const escaped = esc(raw).replace(
+    /```(\w*)\r?\n?([\s\S]*?)```/g,
+    (_match, _lang: string, code: string) => '<pre><code>' + esc(code.trim()) + '</code></pre>',
+  );
+  const fallbackHtml =
+    '<p>' +
+    escaped
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>') +
+    '</p>';
+  return sanitizeHtml(fallbackHtml, { chineseProse: true }).replace(
+    /XVIZFALLBACK(\d+)X/g,
+    (_match, id: string) => fallbackViz[parseInt(id, 10)] || '',
+  );
 }
 
 function boundedScaffoldText(content: string): string {
@@ -572,34 +651,51 @@ function replaceSettledScaffolds(
     if (mathScaffolds.has(tag) && typeof katex !== 'undefined') {
       text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_mathMatch, math: string) => {
         try {
-          return bank.save(katex.renderToString(math.trim(), {
-            displayMode: true, throwOnError: false, macros: KATEX_MACROS,
-          }));
+          return bank.save(
+            katex.renderToString(math.trim(), {
+              displayMode: true,
+              throwOnError: false,
+              macros: KATEX_MACROS,
+            }),
+          );
         } catch {
           return bank.save('<pre>' + esc('$$' + math + '$$') + '</pre>');
         }
       });
       text = replaceInlineDollarMath(text, false, (math: string) => {
         try {
-          return bank.save(katex.renderToString(math.trim(), {
-            displayMode: false, throwOnError: false, macros: KATEX_MACROS,
-          }));
+          return bank.save(
+            katex.renderToString(math.trim(), {
+              displayMode: false,
+              throwOnError: false,
+              macros: KATEX_MACROS,
+            }),
+          );
         } catch {
           return bank.save('<code>' + esc('$' + math + '$') + '</code>');
         }
       });
     }
     const label = '[' + labels[tag] + ']';
-    return bank.save('<div class="scaffold-stream"><span class="scaffold-stream-label">'
-      + label + '</span>' + esc(text) + '</div>');
+    return bank.save(
+      '<div class="scaffold-stream"><span class="scaffold-stream-label">' +
+        label +
+        '</span>' +
+        esc(text) +
+        '</div>',
+    );
   });
   return replaceDanglingScaffoldOutsideMarkdownCode(
     source,
     new RegExp('<(' + tags + ')\\b[^>]*>([\\s\\S]*?)$', 'gi'),
-    (match) => bank.containsBlockPlaceholder(match[0])
-      ? escHTML(match[0])
-      : bank.save('<span class="scaffold-stream scaffold-stream-unclosed">…'
-        + esc(match[1].toLowerCase()) + '…</span>'),
+    (match) =>
+      bank.containsBlockPlaceholder(match[0])
+        ? escHTML(match[0])
+        : bank.save(
+            '<span class="scaffold-stream scaffold-stream-unclosed">…' +
+              esc(match[1].toLowerCase()) +
+              '…</span>',
+          ),
   );
 }
 
@@ -607,30 +703,49 @@ function replaceSettledCodeBlocks(source: string, bank: PlaceholderBank): string
   source = source.replace(/^```(?:viz|html|svg)\s*$/m, '```viz\n');
   source = source.replace(/```mermaid\s*\n?([\s\S]*?)```/g, (_match, code: string) => {
     const trimmed = code.trim();
-    return trimmed ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) })) : '';
+    return trimmed
+      ? bank.saveViz(renderMermaid(trimmed, { stableId: _getStreamingVizId('mermaid', trimmed) }))
+      : '';
   });
-  source = source.replace(/```mermaid\s*\n?([\s\S]*?)$/g, (_match, body: string) => (
-    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId('mermaid', String(body || '').trim()) }))
-  ));
-  source = source.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)```/g, (_match, lang: string, content: string) => {
-    const trimmed = content.trim();
-    return trimmed ? bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) })) : '';
-  });
-  source = source.replace(/```(viz|html|svg)\s*\n?([\s\S]*?)$/g, (_match, lang: string, body: string) => (
-    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId(lang, String(body || '').trim()) }))
-  ));
+  source = source.replace(/```mermaid\s*\n?([\s\S]*?)$/g, (_match, body: string) =>
+    bank.saveViz(
+      renderVizLoading({ stableId: _getStreamingVizId('mermaid', String(body || '').trim()) }),
+    ),
+  );
+  source = source.replace(
+    /```(viz|html|svg)\s*\n?([\s\S]*?)```/g,
+    (_match, lang: string, content: string) => {
+      const trimmed = content.trim();
+      return trimmed
+        ? bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang, trimmed) }))
+        : '';
+    },
+  );
+  source = source.replace(
+    /```(viz|html|svg)\s*\n?([\s\S]*?)$/g,
+    (_match, lang: string, body: string) =>
+      bank.saveViz(
+        renderVizLoading({ stableId: _getStreamingVizId(lang, String(body || '').trim()) }),
+      ),
+  );
   source = source.replace(/```plot\s*\n?([\s\S]*?)```/g, (_match, spec: string) => {
     const trimmed = spec.trim();
-    return trimmed ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) })) : '';
+    return trimmed
+      ? bank.saveViz(renderPlot(trimmed, { stableId: _getStreamingVizId('plot', trimmed) }))
+      : '';
   });
-  source = source.replace(/```plot\s*\n?([\s\S]*?)$/g, (_match, body: string) => (
-    bank.saveViz(renderVizLoading({ stableId: _getStreamingVizId('plot', String(body || '').trim()) }))
-  ));
+  source = source.replace(/```plot\s*\n?([\s\S]*?)$/g, (_match, body: string) =>
+    bank.saveViz(
+      renderVizLoading({ stableId: _getStreamingVizId('plot', String(body || '').trim()) }),
+    ),
+  );
   return source.replace(/```(\w*)\n?([\s\S]*?)```/g, (_match, lang: string, code: string) => {
     const trimmed = code.trim();
     const isHtmlLang = lang === 'html' || lang === 'viz' || lang === 'svg';
     if (isHtmlLang || unlabeledHtml(lang, trimmed)) {
-      return bank.saveViz(renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }));
+      return bank.saveViz(
+        renderViz(trimmed, { stableId: _getStreamingVizId(lang || 'html', trimmed) }),
+      );
     }
     const hljsLang = safeHljsLang(lang);
     const langAttr = hljsLang ? ' class="language-' + escAttr(hljsLang) + '"' : '';
@@ -671,8 +786,12 @@ function replaceSettledMath(
 }
 
 function applyAutoRenderedMath(html: string, bank: PlaceholderBank): string {
-  if (typeof window === 'undefined' || typeof window.renderMathInElement !== 'function'
-      || typeof document === 'undefined') return bank.restoreViz(sanitizeHtml(html, { chineseProse: true }));
+  if (
+    typeof window === 'undefined' ||
+    typeof window.renderMathInElement !== 'function' ||
+    typeof document === 'undefined'
+  )
+    return bank.restoreViz(sanitizeHtml(html, { chineseProse: true }));
 
   /* Sanitize before detached parsing so hostile markup cannot start resource loads. */
   const clean = sanitizeHtml(html, { chineseProse: true });
@@ -734,7 +853,6 @@ function _formatMsg(t: string): string {
 }
 
 /* Copy controls are wired after Markdown module initialization. */
-
 
 export { sanitizeHtml };
 export { installCodeBlockCopy };

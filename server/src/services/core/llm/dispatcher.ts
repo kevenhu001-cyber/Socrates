@@ -5,7 +5,10 @@ import dns from 'node:dns';
 import { Agent, EnvHttpProxyAgent, ProxyAgent, type Dispatcher } from 'undici';
 
 let _llmDispatcher: Dispatcher | null = null;
-const _dnsCache = new Map<string, { addresses: Array<{ address: string; family: number }>; expires: number }>();
+const _dnsCache = new Map<
+  string,
+  { addresses: Array<{ address: string; family: number }>; expires: number }
+>();
 const DNS_CACHE_TTL_MS = 60_000;
 
 function cachedDnsLookup(
@@ -28,7 +31,11 @@ function cachedDnsLookup(
 
 export function getLlmDispatcher(): Dispatcher {
   if (_llmDispatcher) return _llmDispatcher;
-  const proxyUrl = process.env.LLM_PROXY || process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.all_proxy;
+  const proxyUrl =
+    process.env.LLM_PROXY ||
+    process.env.HTTPS_PROXY ||
+    process.env.HTTP_PROXY ||
+    process.env.all_proxy;
   if (proxyUrl) {
     if (process.env.LLM_PROXY && !process.env.HTTPS_PROXY) {
       process.env.HTTPS_PROXY = process.env.LLM_PROXY;

@@ -5,7 +5,7 @@ import { sessions, messages, apiKeys } from '../db/schema/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { ensureSessionWorkspaceForSession } from '../services/tools/agentRuntime.js';
-import { sanitizeLogValue } from '../lib/log.js';
+import { sanitizeLogValue } from '../lib/logRedaction.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -20,20 +20,23 @@ router.post('/', async (req, res, next) => {
     if (Array.isArray(localSessions)) {
       for (const s of localSessions) {
         const sessionId = s.id || crypto.randomUUID();
-        await db.insert(sessions).values({
-          id: sessionId,
-          userId: req.userId!,
-          topic: s.topic || '',
-          title: s.title || s.topic || null,
-          domain: s.domain || null,
-          mode: s.mode || 'chat',
-          phase: s.phase || 'topic',
-          pinned: !!s.pinned,
-          kbNodes: s.kbNodes || [],
-          mistakes: s.mistakes || [],
-          totalQ: s.totalQ || 0,
-          currentNode: s.currentNode || 0,
-        }).onConflictDoNothing();
+        await db
+          .insert(sessions)
+          .values({
+            id: sessionId,
+            userId: req.userId!,
+            topic: s.topic || '',
+            title: s.title || s.topic || null,
+            domain: s.domain || null,
+            mode: s.mode || 'chat',
+            phase: s.phase || 'topic',
+            pinned: !!s.pinned,
+            kbNodes: s.kbNodes || [],
+            mistakes: s.mistakes || [],
+            totalQ: s.totalQ || 0,
+            currentNode: s.currentNode || 0,
+          })
+          .onConflictDoNothing();
 
         /* Imported conversations are real sessions too. Create their private
          * workspace immediately; the startup reconciliation remains a
@@ -41,20 +44,25 @@ router.post('/', async (req, res, next) => {
         try {
           await ensureSessionWorkspaceForSession(req.userId!, sessionId, null);
         } catch (workspaceErr) {
-          console.warn(`[migrate] workspace initialization deferred for ${sanitizeLogValue(sessionId, 64)}: ${sanitizeLogValue((workspaceErr as Error).message, 300)}`);
+          console.warn(
+            `[migrate] workspace initialization deferred for ${sanitizeLogValue(sessionId, 64)}: ${sanitizeLogValue((workspaceErr as Error).message, 300)}`,
+          );
         }
 
         if (Array.isArray(s.messages)) {
           for (const m of s.messages) {
-            await db.insert(messages).values({
-              sessionId,
-              role: m.role || 'user',
-              content: m.rawText || m.content || '',
-              rawText: m.rawText || null,
-              html: m.html || null,
-              type: m.type || null,
-              sources: m.sources || null,
-            }).onConflictDoNothing();
+            await db
+              .insert(messages)
+              .values({
+                sessionId,
+                role: m.role || 'user',
+                content: m.rawText || m.content || '',
+                rawText: m.rawText || null,
+                html: m.html || null,
+                type: m.type || null,
+                sources: m.sources || null,
+              })
+              .onConflictDoNothing();
           }
         }
       }
@@ -62,19 +70,24 @@ router.post('/', async (req, res, next) => {
 
     // Migrate API key if provided
     if (localApi?.key && localApi?.url) {
-      await db.insert(apiKeys).values({
-        userId: req.userId!,
-        label: localApi.label || 'Migrated',
-        url: localApi.url,
-        model: localApi.model || 'gpt-4o',
-        keyCiphertext: encrypt(localApi.key, encryptionKey()),
-        keyHint: localApi.key.slice(0, 8),
-        isActive: true,
-      }).onConflictDoNothing();
+      await db
+        .insert(apiKeys)
+        .values({
+          userId: req.userId!,
+          label: localApi.label || 'Migrated',
+          url: localApi.url,
+          model: localApi.model || 'gpt-4o',
+          keyCiphertext: encrypt(localApi.key, encryptionKey()),
+          keyHint: localApi.key.slice(0, 8),
+          isActive: true,
+        })
+        .onConflictDoNothing();
     }
 
     return res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

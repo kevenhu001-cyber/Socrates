@@ -79,7 +79,9 @@ export async function getActiveEmbeddingConfig(): Promise<EmbeddingProviderConfi
   cfgInFlight = (async (): Promise<EmbeddingProviderConfig | null> => {
     try {
       const db = getDb();
-      const [row] = await db.select().from(embeddingConfig)
+      const [row] = await db
+        .select()
+        .from(embeddingConfig)
         .where(eq(embeddingConfig.isActive, true))
         .orderBy(desc(embeddingConfig.updatedAt))
         .limit(1);
@@ -122,7 +124,11 @@ export async function getActiveEmbeddingConfig(): Promise<EmbeddingProviderConfi
 export function isAllowedEmbeddingUrl(raw: unknown): boolean {
   if (typeof raw !== 'string' || raw.length > 2048) return false;
   let u;
-  try { u = new URL(raw); } catch (_) { return false; }
+  try {
+    u = new URL(raw);
+  } catch (_) {
+    return false;
+  }
   if (u.protocol !== 'https:') return false;
   if (u.username || u.password || u.hash) return false;
   const host = u.hostname.toLowerCase();
@@ -130,23 +136,24 @@ export function isAllowedEmbeddingUrl(raw: unknown): boolean {
   const isIPv4 = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
   if (isIPv4) {
     const parts = host.split('.').map(Number);
-    if (parts.some(p => !Number.isFinite(p) || p < 0 || p > 255)) return false;
+    if (parts.some((p) => !Number.isFinite(p) || p < 0 || p > 255)) return false;
     const [a, b] = parts;
-    if (a === 10) return false;                                 // RFC1918
-    if (a === 127) return false;                                // loopback
-    if (a === 0) return false;                                  // 0.0.0.0/8
-    if (a === 169 && b === 254) return false;                   // link-local
-    if (a === 172 && b >= 16 && b <= 31) return false;         // RFC1918
-    if (a === 192 && b === 168) return false;                  // RFC1918
-    if (a === 100 && b >= 64 && b <= 127) return false;        // carrier-grade NAT
-    if (a >= 224) return false;                                 // multicast / reserved
+    if (a === 10) return false; // RFC1918
+    if (a === 127) return false; // loopback
+    if (a === 0) return false; // 0.0.0.0/8
+    if (a === 169 && b === 254) return false; // link-local
+    if (a === 172 && b >= 16 && b <= 31) return false; // RFC1918
+    if (a === 192 && b === 168) return false; // RFC1918
+    if (a === 100 && b >= 64 && b <= 127) return false; // carrier-grade NAT
+    if (a >= 224) return false; // multicast / reserved
   }
   if (host.includes(':')) {
     /* WHATWG URL keeps the IPv6 literal's brackets in .hostname
        (e.g. "[::1]"), so strip them before comparing. */
     const h = host.replace(/^\[/, '').replace(/\]$/, '').split('%')[0];
     if (h === '::1' || h === '::') return false;
-    if (h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb')) return false;
+    if (h.startsWith('fe8') || h.startsWith('fe9') || h.startsWith('fea') || h.startsWith('feb'))
+      return false;
     if (h.startsWith('fc') || h.startsWith('fd')) return false;
     if (h.startsWith('::ffff:')) {
       const v4 = h.slice(7);
@@ -206,37 +213,43 @@ export async function requestEmbeddingBatch(
     body.dimensions = config.dimensions;
   }
   try {
-    return await withTimeBudget(async (signal) => {
-      const upstream = await fetch(`${baseUrl}/embeddings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.keyPlaintext}`,
-          'Accept-Encoding': 'identity',
-        },
-        body: JSON.stringify(body),
-        signal,
-        dispatcher: getLlmDispatcher(),
-      } as unknown as RequestInit);
-      if (!upstream.ok) {
-        const detail = await upstream.text().catch(() => '');
-        console.warn(`[embedding] upstream ${upstream.status}: ${detail.slice(0, 200)}`);
-        return null;
-      }
-      const payload = await upstream.json() as { data?: Array<{ embedding?: number[] }> };
-      const vectors: number[][] = (payload?.data || []).map((d) => d?.embedding || []);
-      if (vectors.length !== texts.length) {
-        console.warn(`[embedding] returned ${vectors.length} vectors for ${texts.length} inputs`);
-        return null;
-      }
-      for (const vec of vectors) {
-        if (!Array.isArray(vec) || vec.length !== config.dimensions) {
-          console.warn(`[embedding] vector length ${vec?.length} does not match dimensions ${config.dimensions}`);
+    return await withTimeBudget(
+      async (signal) => {
+        const upstream = await fetch(`${baseUrl}/embeddings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.keyPlaintext}`,
+            'Accept-Encoding': 'identity',
+          },
+          body: JSON.stringify(body),
+          signal,
+          dispatcher: getLlmDispatcher(),
+        } as unknown as RequestInit);
+        if (!upstream.ok) {
+          const detail = await upstream.text().catch(() => '');
+          console.warn(`[embedding] upstream ${upstream.status}: ${detail.slice(0, 200)}`);
           return null;
         }
-      }
-      return vectors;
-    }, { signal: options.signal, timeoutMs: EMBED_TIMEOUT_MS }, () => null);
+        const payload = (await upstream.json()) as { data?: Array<{ embedding?: number[] }> };
+        const vectors: number[][] = (payload?.data || []).map((d) => d?.embedding || []);
+        if (vectors.length !== texts.length) {
+          console.warn(`[embedding] returned ${vectors.length} vectors for ${texts.length} inputs`);
+          return null;
+        }
+        for (const vec of vectors) {
+          if (!Array.isArray(vec) || vec.length !== config.dimensions) {
+            console.warn(
+              `[embedding] vector length ${vec?.length} does not match dimensions ${config.dimensions}`,
+            );
+            return null;
+          }
+        }
+        return vectors;
+      },
+      { signal: options.signal, timeoutMs: EMBED_TIMEOUT_MS },
+      () => null,
+    );
   } catch (err) {
     if (options.signal?.aborted) return null;
     console.warn('[embedding] failed:', (err as Error).message);

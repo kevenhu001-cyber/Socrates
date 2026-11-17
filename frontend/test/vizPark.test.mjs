@@ -10,7 +10,8 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http:
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 
-const { getLiveVizCardIds, parkVizCardForTest, processPendingViz, unparkVizCardForTest } = await import('../src/render/viz.ts');
+const { getLiveVizCardIds, parkVizCardForTest, processPendingViz, unparkVizCardForTest } =
+  await import('../src/render/viz.ts');
 
 function makeCard(state = 'ready') {
   const card = document.createElement('div');
@@ -33,10 +34,12 @@ test('viz-ready releases its iframe from the internal handshake registry', () =>
   const iframe = card.querySelector('iframe');
   processPendingViz(document.body);
   assert.deepEqual(getLiveVizCardIds(), [card.id]);
-  window.dispatchEvent(new dom.window.MessageEvent('message', {
-    data: { type: 'viz-ready', vizId: card.id, h: 80 },
-    source: iframe.contentWindow,
-  }));
+  window.dispatchEvent(
+    new dom.window.MessageEvent('message', {
+      data: { type: 'viz-ready', vizId: card.id, h: 80 },
+      source: iframe.contentWindow,
+    }),
+  );
   assert.equal(card.getAttribute('data-viz-state'), 'ready');
   assert.deepEqual(getLiveVizCardIds(), []);
 });

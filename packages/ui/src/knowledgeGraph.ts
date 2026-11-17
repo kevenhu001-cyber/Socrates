@@ -77,8 +77,20 @@ export function layoutKnowledgeGraph(
       displacement[index].y += (centerY - points[index].y) * 0.03;
       const distance = Math.sqrt(displacement[index].x ** 2 + displacement[index].y ** 2) || 0.01;
       const step = Math.min(distance, 8 * temperature + 0.5);
-      points[index].x = Math.max(GRAPH_PADDING, Math.min(width - GRAPH_PADDING, points[index].x + (displacement[index].x / distance) * step));
-      points[index].y = Math.max(GRAPH_PADDING, Math.min(height - GRAPH_PADDING, points[index].y + (displacement[index].y / distance) * step));
+      points[index].x = Math.max(
+        GRAPH_PADDING,
+        Math.min(
+          width - GRAPH_PADDING,
+          points[index].x + (displacement[index].x / distance) * step,
+        ),
+      );
+      points[index].y = Math.max(
+        GRAPH_PADDING,
+        Math.min(
+          height - GRAPH_PADDING,
+          points[index].y + (displacement[index].y / distance) * step,
+        ),
+      );
     }
   }
   return points;

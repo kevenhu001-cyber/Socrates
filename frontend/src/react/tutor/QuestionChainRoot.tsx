@@ -27,9 +27,17 @@ import { useInlineMath } from '../rn/useInlineMath';
 import { i18n } from '../legacy/gateway.ts';
 import { useKbStore } from '../../store/index.ts';
 import { useIsChatStreaming } from '../useChatRuntime.ts';
-import { getQuestionChain, subscribeQuestionChain, syncQuestionChain } from '../../tutor/questionChain.ts';
+import {
+  getQuestionChain,
+  subscribeQuestionChain,
+  syncQuestionChain,
+} from '../../tutor/questionChain.ts';
 import { followChainCandidate } from '../../tutor/questionChainActions.ts';
-import { chooseLearningMode, getLearningMode, subscribeLearningMode } from '../../tutor/learningMode.ts';
+import {
+  chooseLearningMode,
+  getLearningMode,
+  subscribeLearningMode,
+} from '../../tutor/learningMode.ts';
 
 export function chainStrings(): QuestionChainStrings {
   return {
@@ -70,7 +78,10 @@ export function LatestTutorQuestionChain({ rawText }: { rawText: string }) {
   const parsed = extractNextQuestions(rawText);
   return (
     <div className="tutor-question-chain">
-      <QuestionChainRoot prompts={parsed.status === 'ok' ? parsed.questions : []} onFollow={followChainCandidate} />
+      <QuestionChainRoot
+        prompts={parsed.status === 'ok' ? parsed.questions : []}
+        onFollow={followChainCandidate}
+      />
     </div>
   );
 }
@@ -79,20 +90,35 @@ export function QuestionChainRoot({ prompts, onFollow }: QuestionChainRootProps)
   useLocaleRefresh();
   const sessionId = useSessionStore((snapshot) => snapshot.currentSessionId);
   const chain = useSyncExternalStore(subscribeQuestionChain, getQuestionChain);
-  useEffect(() => { syncQuestionChain(); }, [sessionId]);
+  useEffect(() => {
+    syncQuestionChain();
+  }, [sessionId]);
   const sessionMatches = chain.sessionKey === (sessionId ?? null);
   const mode = useLearningMode();
   const mistakes = useKbStore((snapshot) => snapshot.mistakes);
   const streaming = useIsChatStreaming();
   const renderText = useInlineMath();
-  const fromMistakes = learningModeSpec(mode).candidatesFromMistakes ? mistakeCandidates(mistakes) : [];
+  const fromMistakes = learningModeSpec(mode).candidatesFromMistakes
+    ? mistakeCandidates(mistakes)
+    : [];
   /* While a reply streams there is nothing to choose yet: the chain shows
      where the learner is, and the next questions return with the reply. */
-  const candidates = streaming ? [] : (fromMistakes.length > 0 ? fromMistakes : askCandidates(prompts, chain.steps));
+  const candidates = streaming
+    ? []
+    : fromMistakes.length > 0
+      ? fromMistakes
+      : askCandidates(prompts, chain.steps);
   if (!sessionMatches) return null;
   return (
     <WebUiTheme>
-      <QuestionChain steps={chain.steps} candidates={candidates} strings={chainStrings()} onSelect={onFollow} busy={streaming} renderText={renderText} />
+      <QuestionChain
+        steps={chain.steps}
+        candidates={candidates}
+        strings={chainStrings()}
+        onSelect={onFollow}
+        busy={streaming}
+        renderText={renderText}
+      />
     </WebUiTheme>
   );
 }
@@ -108,7 +134,9 @@ export function SessionLearningModes() {
         value={mode}
         label={i18n('learnMode.label', 'Learning mode')}
         triggerLabel={i18n('learnMode.trigger', 'Mode: {mode}')}
-        onChange={(id) => { void chooseLearningMode(id, 'session'); }}
+        onChange={(id) => {
+          void chooseLearningMode(id, 'session');
+        }}
       />
     </WebUiTheme>
   );

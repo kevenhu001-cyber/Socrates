@@ -18,11 +18,22 @@ import {
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+for (const key of [
+  'Element',
+  'Node',
+  'NodeFilter',
+  'DocumentFragment',
+  'HTMLElement',
+  'HTMLTemplateElement',
+]) {
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
-const { formatMsg, formatMsgProgressive: renderProgressive, stripMarkdown } = await import('../src/render/markdown.ts');
+const {
+  formatMsg,
+  formatMsgProgressive: renderProgressive,
+  stripMarkdown,
+} = await import('../src/render/markdown.ts');
 const { stripChatArtifacts } = await import('../src/util/stripChatArtifacts.ts');
 
 /* Load the vendored KaTeX UMD into a bare VM context and hand it back,
@@ -106,10 +117,7 @@ test('scaffold-looking tags inside Markdown code do not block stable streaming',
 
 test('final and progressive Markdown keep scaffold-like code literal', () => {
   const quiz = '<quiz><q>Example markup</q><o letter="A">not a card</o></quiz>';
-  const sources = [
-    `Example source:\n\n\`\`\`xml\n${quiz}\n\`\`\``,
-    `Literal tag: \`${quiz}\``,
-  ];
+  const sources = [`Example source:\n\n\`\`\`xml\n${quiz}\n\`\`\``, `Literal tag: \`${quiz}\``];
   const previousMarked = globalThis.marked;
   globalThis.marked = marked;
   try {
@@ -149,7 +157,8 @@ test('a dangling scaffold opener does not capture following Markdown code', () =
 });
 
 test('an incomplete outer scaffold does not swallow a completed inner card', () => {
-  const source = '<quiz>unfinished\n<example><problem>Problem</problem><solution>Worked</solution></example>';
+  const source =
+    '<quiz>unfinished\n<example><problem>Problem</problem><solution>Worked</solution></example>';
   const html = renderProgressive(source);
 
   assert.match(html, /data-scaffold-live="example"/);
@@ -172,7 +181,9 @@ test('Tutor scaffolds render as typed live cards before the closing tag arrives'
   assert.match(partial, /data-scaffold-live="key-point"/);
   assert.match(partial, /核心结论/);
 
-  const complete = renderProgressive('<quiz><q>选择</q><o letter="A">是</o><o letter="B">否</o></quiz>');
+  const complete = renderProgressive(
+    '<quiz><q>选择</q><o letter="A">是</o><o letter="B">否</o></quiz>',
+  );
   assert.match(complete, /data-scaffold-live="quiz"/);
   assert.match(complete, /sc-live-letter">A<\/span>/);
   assert.match(complete, /sc-live-letter">B<\/span>/);
@@ -500,11 +511,20 @@ test('auto-render host receives sanitized HTML', () => {
   let autoRenderCalls = 0;
   globalThis.marked = marked;
   globalThis.DOMPurify = {
-    sanitize(html) { return String(html).replace(/\son\w+\s*=\s*"[^"]*"/g, ''); },
+    sanitize(html) {
+      return String(html).replace(/\son\w+\s*=\s*"[^"]*"/g, '');
+    },
   };
-  globalThis.document = { createElement() { return { innerHTML: '' }; } };
+  globalThis.document = {
+    createElement() {
+      return { innerHTML: '' };
+    },
+  };
   globalThis.window = {
-    renderMathInElement(el) { autoRenderCalls += 1; hostHtml = el.innerHTML; },
+    renderMathInElement(el) {
+      autoRenderCalls += 1;
+      hostHtml = el.innerHTML;
+    },
   };
   try {
     const html = formatMsg('<img src=x onerror="window.__xss=1"> plain $x$ prose');
@@ -526,7 +546,9 @@ test('deeply nested scaffolds are depth-capped', () => {
   const depth = 64;
   const source = '<key-point>'.repeat(depth) + 'core' + '</key-point>'.repeat(depth);
   let html = '';
-  assert.doesNotThrow(() => { html = renderProgressive(source); });
+  assert.doesNotThrow(() => {
+    html = renderProgressive(source);
+  });
   assert.match(html, /core/);
 });
 
@@ -768,7 +790,10 @@ test('streaming and completed tables share the same markup and preserve alignmen
     assert.match(streaming, /val 1/);
     assert.doesNotMatch(streaming, /table-stream-placeholder/);
 
-    const closed = renderProgressive('Data:\n\n| Col 1 | Col 2 |\n| :--- | ---: |\n| val 1 | val 2 |\n\n', { complete: true });
+    const closed = renderProgressive(
+      'Data:\n\n| Col 1 | Col 2 |\n| :--- | ---: |\n| val 1 | val 2 |\n\n',
+      { complete: true },
+    );
     assert.match(closed, /class="ds-table-wrap"/);
     assert.match(closed, /role="region"/);
     assert.match(closed, /tabindex="0"/);
@@ -780,4 +805,3 @@ test('streaming and completed tables share the same markup and preserve alignmen
     globalThis.marked = prevMarked;
   }
 });
-

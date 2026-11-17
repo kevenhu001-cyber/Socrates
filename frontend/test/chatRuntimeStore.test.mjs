@@ -22,12 +22,11 @@ function fakeWindow() {
 
 globalThis.window = fakeWindow();
 
-const { stateStore } = await import('../src/state/store.ts');
-stateStore.dispatch({ type: 'state/batch', patch: { currentSessionId: 's-1', phase: 'chat' } });
+const { dispatchPatches, dispatchSession, updateSessionMessage } =
+  await import('../src/store/index.ts');
+dispatchPatches({ session: { currentSessionId: 's-1', phase: 'chat' } });
 
-const { chatRuntimeStore, getChatRuntimeSnapshot } = await import(
-  '../src/ui/chatRuntimeStore.ts'
-);
+const { chatRuntimeStore, getChatRuntimeSnapshot } = await import('../src/ui/chatRuntimeStore.ts');
 
 function runFrames() {
   const pending = [...frames.values()];
@@ -49,12 +48,14 @@ function message(clientId, rawText) {
 test('a tool-run publish re-reads the immutable message list', () => {
   const bridge = freshBridge();
   const messages = [message('m-1', 'he')];
-  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
+  dispatchSession({ type: 'session/replace-messages', payload: messages });
   bridge.publish({ type: 'stream-started', messageId: 'm-1' });
 
   const before = bridge.getSnapshot();
-  stateStore.dispatch({
-    type: 'session/update-message', index: 0, clientId: 'm-1',
+  dispatchSession({
+    type: 'session/update-message',
+    index: 0,
+    clientId: 'm-1',
     patch: { rawText: 'hello', toolCalls: [{ id: 'tc-1', name: 'web_search', phase: 'running' }] },
   });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-1' });
@@ -72,18 +73,18 @@ test('a tool-run publish re-reads the immutable message list', () => {
 test('stream and tool-run publishes coalesce to one commit per frame', () => {
   const bridge = freshBridge();
   const messages = [message('m-2', '')];
-  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
+  dispatchSession({ type: 'session/replace-messages', payload: messages });
   const start = bridge.getSnapshot().revision;
 
   for (let i = 1; i <= 5; i++) {
-    stateStore.dispatch({
-      type: 'session/update-message', index: 0, clientId: 'm-2',
-      patch: { rawText: 'x'.repeat(i) }, deferNotify: true,
-    });
+    updateSessionMessage(0, 'm-2', { rawText: 'x'.repeat(i) }, true);
     bridge.publish({ type: 'stream-delta', messageId: 'm-2', textLength: i });
   }
-  stateStore.dispatch({
-    type: 'session/update-message', index: 0, clientId: 'm-2', patch: { _toolRunRev: 1 },
+  dispatchSession({
+    type: 'session/update-message',
+    index: 0,
+    clientId: 'm-2',
+    patch: { _toolRunRev: 1 },
   });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-2' });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-2' });
@@ -98,9 +99,11 @@ test('stream and tool-run publishes coalesce to one commit per frame', () => {
 test('a message-added and a stream-started in one frame are both observed', () => {
   const bridge = freshBridge();
   const seen = [];
-  const stop = bridge.subscribe(() => { seen.push(bridge.getSnapshot().lastEvent); });
+  const stop = bridge.subscribe(() => {
+    seen.push(bridge.getSnapshot().lastEvent);
+  });
 
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [{ clientId: 'u-1', role: 'user', type: 'user', rawText: 'hi' }],
   });
@@ -124,13 +127,18 @@ test('a message-added and a stream-started in one frame are both observed', () =
 test('a frame that adds many messages still produces one lifecycle commit', () => {
   const bridge = freshBridge();
   const seen = [];
-  const stop = bridge.subscribe(() => { seen.push(bridge.getSnapshot().lastEvent); });
+  const stop = bridge.subscribe(() => {
+    seen.push(bridge.getSnapshot().lastEvent);
+  });
   const start = bridge.getSnapshot().revision;
 
   const rows = Array.from({ length: 12 }, (_, index) => ({
-    clientId: `u-${index}`, role: 'user', type: 'user', rawText: `m${index}`,
+    clientId: `u-${index}`,
+    role: 'user',
+    type: 'user',
+    rawText: `m${index}`,
   }));
-  stateStore.dispatch({ type: 'session/replace-messages', payload: rows });
+  dispatchSession({ type: 'session/replace-messages', payload: rows });
   for (const row of rows) {
     bridge.publish({ type: 'message-added', messageId: row.clientId });
   }
@@ -149,18 +157,22 @@ test('a frame that adds many messages still produces one lifecycle commit', () =
 
 test('tool updates for multiple messages still produce one snapshot commit', () => {
   const bridge = freshBridge();
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [message('m-tool-1', ''), message('m-tool-2', '')],
   });
   const start = bridge.getSnapshot().revision;
 
-  stateStore.dispatch({
-    type: 'session/update-message', index: 0, clientId: 'm-tool-1',
+  dispatchSession({
+    type: 'session/update-message',
+    index: 0,
+    clientId: 'm-tool-1',
     patch: { _toolRunRev: 1 },
   });
-  stateStore.dispatch({
-    type: 'session/update-message', index: 1, clientId: 'm-tool-2',
+  dispatchSession({
+    type: 'session/update-message',
+    index: 1,
+    clientId: 'm-tool-2',
     patch: { _toolRunRev: 1 },
   });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-tool-1' });
@@ -174,7 +186,7 @@ test('tool updates for multiple messages still produce one snapshot commit', () 
 
 test('stream-delta commits are paced by the adaptive render interval', async () => {
   const bridge = freshBridge();
-  stateStore.dispatch({ type: 'session/replace-messages', payload: [message('m-pace', '')] });
+  dispatchSession({ type: 'session/replace-messages', payload: [message('m-pace', '')] });
   bridge.publish({ type: 'stream-started', messageId: 'm-pace' });
   bridge.publish({ type: 'stream-delta', messageId: 'm-pace', textLength: 3 });
   runFrames();
@@ -191,18 +203,24 @@ test('stream-delta commits are paced by the adaptive render interval', async () 
      delta to the normal rAF seam and the next frame commits it. */
   await new Promise((resolve) => setTimeout(resolve, 60));
   runFrames();
-  assert.equal(bridge.getSnapshot().stream.textLength, 6, 'the paced delta commits at its deadline');
+  assert.equal(
+    bridge.getSnapshot().stream.textLength,
+    6,
+    'the paced delta commits at its deadline',
+  );
 });
 
 test('a terminal event flushes pending work before it commits', () => {
   const bridge = freshBridge();
   const messages = [message('m-3', 'partial')];
-  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
+  dispatchSession({ type: 'session/replace-messages', payload: messages });
 
   bridge.publish({ type: 'stream-delta', messageId: 'm-3', textLength: 7 });
   bridge.publish({ type: 'tool-run-updated', messageId: 'm-3' });
-  stateStore.dispatch({
-    type: 'session/update-message', index: 0, clientId: 'm-3',
+  dispatchSession({
+    type: 'session/update-message',
+    index: 0,
+    clientId: 'm-3',
     patch: { rawText: 'complete answer', type: 'assistant' },
   });
   bridge.publish({ type: 'stream-finished', messageId: 'm-3', textLength: 15 });
@@ -217,7 +235,7 @@ test('a terminal event flushes pending work before it commits', () => {
 
 test('a stale terminal event cannot release a newer streaming turn', () => {
   const bridge = freshBridge();
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [message('m-new', 'new turn')],
   });
@@ -234,20 +252,27 @@ test('a stale terminal event cannot release a newer streaming turn', () => {
 
 test('retry replacement removes the failed row and clears its terminal stream state', () => {
   const bridge = freshBridge();
-  stateStore.dispatch({
+  dispatchSession({
     type: 'session/replace-messages',
     payload: [message('m-retry', 'partial answer')],
   });
   bridge.publish({
-    type: 'stream-failed', messageId: 'm-retry', textLength: 14, error: 'upstream reset',
+    type: 'stream-failed',
+    messageId: 'm-retry',
+    textLength: 14,
+    error: 'upstream reset',
   });
   assert.equal(bridge.getSnapshot().stream.status, 'failed');
 
-  stateStore.dispatch({
-    type: 'session/remove-message-at', index: 0, clientId: 'm-retry',
+  dispatchSession({
+    type: 'session/remove-message-at',
+    index: 0,
+    clientId: 'm-retry',
   });
   bridge.publish({
-    type: 'stream-retry-replaced', messageId: 'm-retry', messageIndex: 0,
+    type: 'stream-retry-replaced',
+    messageId: 'm-retry',
+    messageIndex: 0,
   });
 
   const after = bridge.getSnapshot();

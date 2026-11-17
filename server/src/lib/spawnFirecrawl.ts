@@ -31,7 +31,10 @@ const DEFAULT_TIMEOUT_MS = 10_000;
  */
 export function buildFirecrawlSpawnEnv(extra: Record<string, string> = {}) {
   const sep = process.platform === 'win32' ? ';' : ':';
-  const env: Record<string, string> = { ...(process.env as Record<string, string>), ...extra } as Record<string, string>;
+  const env: Record<string, string> = {
+    ...(process.env as Record<string, string>),
+    ...extra,
+  } as Record<string, string>;
   const extraPaths = DEFAULT_EXTRA_PATHS.join(sep);
   env.PATH = extraPaths + sep + (env.PATH || (process.env.PATH as string) || '');
   return env;
@@ -49,9 +52,8 @@ let firecrawlAvailable: boolean | null = null;
 export function isFirecrawlCliAvailable(): boolean {
   if (firecrawlAvailable !== null) return firecrawlAvailable;
   const sep = process.platform === 'win32' ? ';' : ':';
-  const names = process.platform === 'win32'
-    ? ['firecrawl.cmd', 'firecrawl.exe', 'firecrawl']
-    : ['firecrawl'];
+  const names =
+    process.platform === 'win32' ? ['firecrawl.cmd', 'firecrawl.exe', 'firecrawl'] : ['firecrawl'];
   const dirs = (buildFirecrawlSpawnEnv().PATH || '').split(sep);
   for (const dir of dirs) {
     if (!dir) continue;
@@ -60,11 +62,15 @@ export function isFirecrawlCliAvailable(): boolean {
         fs.accessSync(path.join(dir, name), fs.constants.X_OK);
         firecrawlAvailable = true;
         return true;
-      } catch { /* not in this directory */ }
+      } catch {
+        /* not in this directory */
+      }
     }
   }
   firecrawlAvailable = false;
-  console.warn('[spawnFirecrawl] firecrawl CLI not found on PATH — the firecrawl search engine is disabled until it is installed and the server restarted');
+  console.warn(
+    '[spawnFirecrawl] firecrawl CLI not found on PATH — the firecrawl search engine is disabled until it is installed and the server restarted',
+  );
   return false;
 }
 
@@ -78,7 +84,10 @@ export function isFirecrawlCliAvailable(): boolean {
  * @param {AbortSignal} [opts.signal]
  * @returns {Promise<string>}  child stdout
  */
-export function runFirecrawl(args: string[], opts: { timeoutMs?: number; signal?: AbortSignal; [key: string]: unknown } = {}): Promise<string> {
+export function runFirecrawl(
+  args: string[],
+  opts: { timeoutMs?: number; signal?: AbortSignal; [key: string]: unknown } = {},
+): Promise<string> {
   const timeoutMs = Number.isFinite(opts.timeoutMs) ? opts.timeoutMs : DEFAULT_TIMEOUT_MS;
   return new Promise((resolve, reject) => {
     let proc;
@@ -95,14 +104,25 @@ export function runFirecrawl(args: string[], opts: { timeoutMs?: number; signal?
 
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (d) => { stdout += d.toString('utf8'); });
-    proc.stderr.on('data', (d) => { stderr += d.toString('utf8'); });
+    proc.stdout.on('data', (d) => {
+      stdout += d.toString('utf8');
+    });
+    proc.stderr.on('data', (d) => {
+      stderr += d.toString('utf8');
+    });
 
     const timer = setTimeout(() => {
-      try { proc.kill('SIGTERM'); } catch (err) { /* process already exited */ }
+      try {
+        proc.kill('SIGTERM');
+      } catch (err) {
+        /* process already exited */
+      }
     }, timeoutMs);
 
-    proc.on('error', (e) => { clearTimeout(timer); reject(e); });
+    proc.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
     proc.on('close', (code) => {
       clearTimeout(timer);
       if (code !== 0) {

@@ -24,15 +24,26 @@ import { marked } from 'marked';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-for (const key of ['Element', 'Node', 'NodeFilter', 'DocumentFragment', 'HTMLElement', 'HTMLTemplateElement']) {
+for (const key of [
+  'Element',
+  'Node',
+  'NodeFilter',
+  'DocumentFragment',
+  'HTMLElement',
+  'HTMLTemplateElement',
+]) {
   if (globalThis[key] === undefined) globalThis[key] = dom.window[key];
 }
 
-const { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } = await import('../src/render/markdown.ts');
+const { formatMsg, formatMsgProgressive, replaceInlineDollarMath, _looksLikeNumericMath } =
+  await import('../src/render/markdown.ts');
 const { fixHeadingMarkers } = await import('../src/render/markdownRepair.ts');
 
 function loadRealKatex() {
-  const code = readFileSync(new URL('../src/vendor-files/katex/katex.min.js', import.meta.url), 'utf8');
+  const code = readFileSync(
+    new URL('../src/vendor-files/katex/katex.min.js', import.meta.url),
+    'utf8',
+  );
   const ctx = { console };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
@@ -45,9 +56,13 @@ function withRenderers(fn) {
   const prevM = globalThis.marked;
   globalThis.katex = loadRealKatex();
   globalThis.marked = marked;
-  try { return fn(); } finally {
-    if (prevK === undefined) delete globalThis.katex; else globalThis.katex = prevK;
-    if (prevM === undefined) delete globalThis.marked; else globalThis.marked = prevM;
+  try {
+    return fn();
+  } finally {
+    if (prevK === undefined) delete globalThis.katex;
+    else globalThis.katex = prevK;
+    if (prevM === undefined) delete globalThis.marked;
+    else globalThis.marked = prevM;
   }
 }
 
@@ -79,7 +94,9 @@ const both = (src) => ({
 
 test('letter-free inline formulas render in both renderers', () => {
   withRenderers(() => {
-    const { final, live } = both('概率是 $1/2$，另一个是 $3+4=7$，还有 $2^{10}$、$0.5$、$5$ 和 $-1$。');
+    const { final, live } = both(
+      '概率是 $1/2$，另一个是 $3+4=7$，还有 $2^{10}$、$0.5$、$5$ 和 $-1$。',
+    );
     const expected = ['1/2', '3+4=7', '2^{10}', '0.5', '5', '-1'];
     assert.deepEqual(formulas(final), expected);
     assert.deepEqual(formulas(live), expected);
@@ -105,7 +122,11 @@ test('currency amounts stay literal (pandoc dollar rule)', () => {
 
 test('a currency amount before a formula no longer swallows its opening $', () => {
   withRenderers(() => {
-    for (const src of ['花了 $5，概率 $1/2$', '从 $5 涨到 $8，涨幅 $3/5$', '价格 \\$5，概率 $1/2$']) {
+    for (const src of [
+      '花了 $5，概率 $1/2$',
+      '从 $5 涨到 $8，涨幅 $3/5$',
+      '价格 \\$5，概率 $1/2$',
+    ]) {
       const { final, live } = both(src);
       assert.equal(formulas(final).length, 1, `final: ${src} → ${formulas(final)}`);
       assert.deepEqual(formulas(final), formulas(live), src);
@@ -117,13 +138,13 @@ test('a currency amount before a formula no longer swallows its opening $', () =
 test('_looksLikeNumericMath edges', () => {
   assert.equal(_looksLikeNumericMath('1/2', ''), true);
   assert.equal(_looksLikeNumericMath('1/2', '，'), true);
-  assert.equal(_looksLikeNumericMath('5-', '1'), false);   // `$5-$10`
-  assert.equal(_looksLikeNumericMath('5', '1'), false);    // closing $ followed by a digit
-  assert.equal(_looksLikeNumericMath('5 ', ''), false);    // `$5 到 $`
+  assert.equal(_looksLikeNumericMath('5-', '1'), false); // `$5-$10`
+  assert.equal(_looksLikeNumericMath('5', '1'), false); // closing $ followed by a digit
+  assert.equal(_looksLikeNumericMath('5 ', ''), false); // `$5 到 $`
   assert.equal(_looksLikeNumericMath(' 5', ''), false);
   assert.equal(_looksLikeNumericMath('5 到 ', ''), false); // CJK prose inside
-  assert.equal(_looksLikeNumericMath('/2', ''), false);    // dangling operator
-  assert.equal(_looksLikeNumericMath('...', ''), false);   // no digit
+  assert.equal(_looksLikeNumericMath('/2', ''), false); // dangling operator
+  assert.equal(_looksLikeNumericMath('...', ''), false); // no digit
   assert.equal(_looksLikeNumericMath('-1', ''), true);
 });
 
@@ -167,7 +188,11 @@ const HEADING_CASES = {
   missingSpace: [`##${H}`, 'h2', H],
   /* Glued after a closing formula dollar (physics derivations constantly
      glue `##` to `$…$`), a `》` / `]` close, or a CJK comma. */
-  gluedFormula: ['由牛顿第二定律$F=ma$## 四、推导加速度合成定理\n正文', 'h2', '四、推导加速度合成定理'],
+  gluedFormula: [
+    '由牛顿第二定律$F=ma$## 四、推导加速度合成定理\n正文',
+    'h2',
+    '四、推导加速度合成定理',
+  ],
   gluedBookTitle: ['详见《定理》## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
   gluedBracket: ['如图[见图1]## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
   gluedCjkComma: ['已知条件，## 四、推导加速度合成定理', 'h2', '四、推导加速度合成定理'],
@@ -211,7 +236,10 @@ test('heading repair leaves prose and code alone', () => {
     assert.doesNotMatch(fenced, /<h\d>/);
     assert.match(fenced, /上文。## y/);
     /* A heading nested under a list item keeps nesting. */
-    assert.match(formatMsg('1. 列表\n\n    ## 子标题\n正文'), /<li>[\s\S]*<h2>子标题<\/h2>[\s\S]*<\/li>/);
+    assert.match(
+      formatMsg('1. 列表\n\n    ## 子标题\n正文'),
+      /<li>[\s\S]*<h2>子标题<\/h2>[\s\S]*<\/li>/,
+    );
   });
 });
 
@@ -241,6 +269,8 @@ test('a live tail with a prose word after an amount is not a formula', () => {
     assert.deepEqual(formulas(formatMsgProgressive('between $10 and', { complete: false })), []);
     /* Real formulas on the live tail still render. */
     assert.deepEqual(formulas(formatMsgProgressive('设 $x + y', { complete: false })), ['x + y']);
-    assert.deepEqual(formulas(formatMsgProgressive('有 $\\sin x + \\cos x', { complete: false })), ['\\sin x + \\cos x']);
+    assert.deepEqual(formulas(formatMsgProgressive('有 $\\sin x + \\cos x', { complete: false })), [
+      '\\sin x + \\cos x',
+    ]);
   });
 });

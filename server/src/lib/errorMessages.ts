@@ -75,7 +75,9 @@ export const ERROR_COPY: Readonly<Record<string, ErrorCopy>> = Object.freeze({
 
 /** Is this value one of the locales the server can render? */
 export function isErrorLocale(value: unknown): value is ErrorLocale {
-  return typeof value === 'string' && (SUPPORTED_ERROR_LOCALES as readonly string[]).includes(value);
+  return (
+    typeof value === 'string' && (SUPPORTED_ERROR_LOCALES as readonly string[]).includes(value)
+  );
 }
 
 /**
@@ -136,7 +138,7 @@ export function localeFromAcceptLanguage(header: unknown): ErrorLocale | null {
  * every other client. English is the default.
  */
 export function resolveErrorLocale(headers: unknown): ErrorLocale {
-  const bag = (headers && typeof headers === 'object') ? headers as Record<string, unknown> : {};
+  const bag = headers && typeof headers === 'object' ? (headers as Record<string, unknown>) : {};
   const explicit = normalizeLocale(bag['x-socrates-locale'] ?? bag['X-Socrates-Locale']);
   if (explicit) return explicit;
   const accepted = localeFromAcceptLanguage(bag['accept-language'] ?? bag['Accept-Language']);

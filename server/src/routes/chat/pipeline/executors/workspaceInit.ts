@@ -9,10 +9,7 @@
  */
 
 import { updateWorkspacePolicy } from '../../../../services/tools/agentRuntime.js';
-import type {
-  ToolExecutor,
-  ToolExecutionResult,
-} from './types.js';
+import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 
 export const executeInitializeWorkspace: ToolExecutor = async (

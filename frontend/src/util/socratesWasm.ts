@@ -50,8 +50,8 @@ export function initSocratesWasm(
   wasmInitPromise = (async () => {
     const mod: SocratesWasmModule = await import('../../wasm/socrates_wasm.js');
     /* Older wasm-bindgen builds exported `init` instead of `default`. */
-    const init = (mod.default
-      || (mod as unknown as { init?: WasmInit }).init) as unknown as WasmInit;
+    const init = (mod.default ||
+      (mod as unknown as { init?: WasmInit }).init) as unknown as WasmInit;
     if (opts && opts.bytes) {
       await init(opts.bytes);
     } else {

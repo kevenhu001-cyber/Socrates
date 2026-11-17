@@ -1,4 +1,6 @@
-#appShell .cg-sidebar-caret { display: none; }
+#appShell .cg-sidebar-caret {
+  display: none;
+}
 /* The landing surface IS the new-chat surface — keep its row raised like
    the reference drawer does, until another surface takes over. */
 
@@ -23,7 +25,9 @@
   box-shadow: var(--ui-shadow-popover);
   overflow: visible;
 }
-#appShell .recent-item.actions-open .recent-item-menu { display: flex; }
+#appShell .recent-item.actions-open .recent-item-menu {
+  display: flex;
+}
 #appShell .recent-item-menu-content {
   display: flex;
   flex-direction: column;
@@ -47,7 +51,9 @@
   cursor: pointer;
   box-sizing: border-box;
 }
-#appShell .recent-item-menu .recent-item-menu-row:hover { background: var(--accent); }
+#appShell .recent-item-menu .recent-item-menu-row:hover {
+  background: var(--accent);
+}
 #appShell .recent-item-menu .recent-item-del {
   color: var(--destructive);
 }
@@ -100,19 +106,82 @@
   margin: 4px 6px;
   background: var(--ui-border-subtle);
 }
-#appShell .recent-item-action-icon { display: inline-flex; }
+#appShell .recent-item-action-icon {
+  display: inline-flex;
+}
 
 /* Shared viewport menus escape scrolling drawers via the menu portal. */
-#appShell .recent-item-menu.is-open { display: flex; }
-#appShell .sidebar-account-trigger { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 6px; border: 0; border-radius: var(--ui-radius-row); background: transparent; color: var(--foreground); text-align: left; font: inherit; cursor: pointer; }
-#appShell .sidebar-account-trigger:hover, #appShell .sidebar-account-trigger[aria-expanded="true"] { background: var(--accent); }
-#appShell .sidebar-account-menu { z-index: var(--ui-z-popover, 200); width: 242px; max-width: calc(100vw - 12px); box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--ui-border-subtle); border-radius: var(--ui-radius-popover); background: var(--popover); color: var(--foreground); box-shadow: var(--ui-shadow-popover); }
-#appShell .sidebar-account-menu :is(button, a) { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 4px; border: 0; border-radius: var(--ui-radius-control); background: transparent; color: inherit; font: inherit; font-size: var(--ui-font-size-sm); text-align: left; text-decoration: none; cursor: pointer; }
-#appShell .sidebar-account-menu :is(button, a):hover { background: var(--accent); }
-#appShell .sidebar-account-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
-#appShell .sidebar-account-menu hr { border: 0; border-top: 1px solid var(--ui-border-strong); margin: 12px 0 8px; }
-#appShell .sidebar-account-menu .account-menu-identity { min-height: 44px; }
-#appShell .sidebar-account-menu .account-menu-trailing, #appShell .sidebar-account-menu .account-menu-identity > svg { margin-left: auto; }
+#appShell .recent-item-menu.is-open {
+  display: flex;
+}
+#appShell .sidebar-account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--ui-radius-row);
+  background: transparent;
+  color: var(--foreground);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+#appShell .sidebar-account-trigger:hover,
+#appShell .sidebar-account-trigger[aria-expanded='true'] {
+  background: var(--accent);
+}
+#appShell .sidebar-account-menu {
+  z-index: var(--ui-z-popover, 200);
+  width: 242px;
+  max-width: calc(100vw - 12px);
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-popover);
+  background: var(--popover);
+  color: var(--foreground);
+  box-shadow: var(--ui-shadow-popover);
+}
+#appShell .sidebar-account-menu :is(button, a) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+#appShell .sidebar-account-menu :is(button, a):hover {
+  background: var(--accent);
+}
+#appShell .sidebar-account-menu svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+#appShell .sidebar-account-menu hr {
+  border: 0;
+  border-top: 1px solid var(--ui-border-strong);
+  margin: 12px 0 8px;
+}
+#appShell .sidebar-account-menu .account-menu-identity {
+  min-height: 44px;
+}
+#appShell .sidebar-account-menu .account-menu-trailing,
+#appShell .sidebar-account-menu .account-menu-identity > svg {
+  margin-left: auto;
+}
 
 /* Organization is a small choice menu, separate from archived-chat management. */
 #appShell .recents-organize-menu {
@@ -128,7 +197,11 @@
   color: var(--foreground);
   box-shadow: var(--ui-shadow-popover);
 }
-#appShell .organize-menu-heading { padding: 8px 10px; color: var(--muted-foreground); font-size: var(--ui-font-size-sm); }
+#appShell .organize-menu-heading {
+  padding: 8px 10px;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-sm);
+}
 #appShell .recents-organize-menu button {
   display: flex;
   align-items: center;
@@ -145,10 +218,25 @@
   text-align: start;
   cursor: pointer;
 }
-#appShell .recents-organize-menu button:hover { background: var(--accent); }
-#appShell .recents-organize-menu svg { width: 20px; height: 20px; flex: 0 0 20px; }
-#appShell .recents-organize-menu .organize-menu-check { margin-inline-start: auto; width: 16px; height: 16px; flex-basis: 16px; }
-#appShell .recents-organize-menu hr { margin: 6px 8px; border: 0; border-top: 1px solid var(--ui-border-subtle); }
+#appShell .recents-organize-menu button:hover {
+  background: var(--accent);
+}
+#appShell .recents-organize-menu svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+#appShell .recents-organize-menu .organize-menu-check {
+  margin-inline-start: auto;
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+}
+#appShell .recents-organize-menu hr {
+  margin: 6px 8px;
+  border: 0;
+  border-top: 1px solid var(--ui-border-subtle);
+}
 #appShell .recents-project-label {
   padding: 16px 12px 6px;
   overflow: hidden;
@@ -159,16 +247,44 @@
   text-overflow: ellipsis;
 }
 @media (max-width: 768px) {
-  #appShell .recent-item-menu { min-width: 158px; width: max-content; max-width: calc(100vw - 16px); gap: 0; padding: 14px; border-radius: var(--ui-radius-xl); background: var(--popover); }
-  #appShell .recent-item-menu .recent-item-menu-row { min-height: 40px; height: 40px; padding: 0 6px; font-size: var(--ui-font-size-sm); }
-  #appShell .recent-item-menu .recent-item-action-icon, #appShell .recent-item-menu .recent-item-action-icon svg { width: 18px; height: 18px; flex-basis: 18px; }
+  #appShell .recent-item-menu {
+    min-width: 158px;
+    width: max-content;
+    max-width: calc(100vw - 16px);
+    gap: 0;
+    padding: 14px;
+    border-radius: var(--ui-radius-xl);
+    background: var(--popover);
+  }
+  #appShell .recent-item-menu .recent-item-menu-row {
+    min-height: 40px;
+    height: 40px;
+    padding: 0 6px;
+    font-size: var(--ui-font-size-sm);
+  }
+  #appShell .recent-item-menu .recent-item-action-icon,
+  #appShell .recent-item-menu .recent-item-action-icon svg {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+  }
 }
 /* One size for the plan label everywhere on desktop: 12px, the same as
    #sidebarUserRow .tier-badge in parity/sidebar.css:662. The account menu is
    opened from that row, so the badge read two different sizes depending on
    whether the menu was open. Mobile keeps its own 14px step
    (polish/mobile-sidebar.css:78), which is a separate density. */
-#appShell .sidebar-account-menu .tier-badge { padding: 0; background: transparent; color: var(--ui-text-muted); font-size: var(--ui-font-size-xxs); font-weight: var(--ui-font-weight-regular); line-height: 16px; text-transform: none; }
+#appShell .sidebar-account-menu .tier-badge {
+  padding: 0;
+  background: transparent;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xxs);
+  font-weight: var(--ui-font-weight-regular);
+  line-height: 16px;
+  text-transform: none;
+}
 @media (max-width: 768px) {
-  #appShell .recent-item-menu .recent-item-action-text { font-size: var(--ui-font-size-sm); }
+  #appShell .recent-item-menu .recent-item-action-text {
+    font-size: var(--ui-font-size-sm);
+  }
 }

@@ -15,7 +15,12 @@ import { Router, type Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { BadRequest } from '../lib/errors.js';
-import { startSseKeepalive, trackSseConnection, writeSseEvent, writeSseHeaders } from '../lib/sse.js';
+import {
+  startSseKeepalive,
+  trackSseConnection,
+  writeSseEvent,
+  writeSseHeaders,
+} from '../lib/sse.js';
 import {
   createChatTurn,
   getChatTurn,
@@ -62,7 +67,11 @@ function sendTurnEvent(res: Response, event: ChatTurnEvent) {
   } else if (event.event === 'reasoning' && event.data && typeof event.data.delta === 'string') {
     writeSseData(res, { reasoning: event.data.delta });
   } else {
-    writeSseEvent(res, event.event, { turnId: event.turnId, sequence: event.sequence, ...event.data });
+    writeSseEvent(res, event.event, {
+      turnId: event.turnId,
+      sequence: event.sequence,
+      ...event.data,
+    });
   }
 }
 
@@ -159,7 +168,9 @@ router.get('/:id/events', async (req, res, next) => {
         }
         if (rows.length < 500) break;
       }
-    } finally { draining = false; }
+    } finally {
+      draining = false;
+    }
   };
   const wake = () => {
     void drain().catch((err) => {
@@ -168,7 +179,10 @@ router.get('/:id/events', async (req, res, next) => {
   };
   try {
     await getChatTurn(req.userId!, turnId);
-    if (closed || !writeSseHeaders(res)) { cleanup(); return; }
+    if (closed || !writeSseHeaders(res)) {
+      cleanup();
+      return;
+    }
     trackSseConnection(req.app, +1);
     tracked = true;
     keepalive = startSseKeepalive(res, { intervalMs: 10_000 });

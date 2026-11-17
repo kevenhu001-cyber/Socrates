@@ -11,7 +11,7 @@
  */
 import { extractNextQuestions, normalizeMistakeAnalysis } from '@socrates/core/learningBlocks';
 import { callAPI, type ChatRequestMessage } from '../chat/api/index.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchKb, kbStore, sessionStore } from '../store/index.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { languageName } from './conceptMap.ts';
@@ -19,8 +19,8 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import type { MistakeStateEntry } from '../state/kb.ts';
 
 function readEntries(): MistakeStateEntry[] {
-  const value = stateStore.read('mistakes');
-  return Array.isArray(value) ? value as MistakeStateEntry[] : [];
+  const value = kbStore.getState().mistakes;
+  return Array.isArray(value) ? (value as MistakeStateEntry[]) : [];
 }
 
 function optionLine(option: MistakeStateEntry['options'][number], index: number): string {
@@ -34,7 +34,8 @@ export function describeMistake(entry: MistakeStateEntry): string {
     `Topic: ${entry.topic || '?'}${entry.node ? `; sub-topic: ${entry.node}` : ''}`,
     `Question: ${entry.q}`,
   ];
-  if (Array.isArray(entry.options) && entry.options.length) lines.push('Options:\n' + entry.options.map(optionLine).join('\n'));
+  if (Array.isArray(entry.options) && entry.options.length)
+    lines.push('Options:\n' + entry.options.map(optionLine).join('\n'));
   lines.push(`Learner's answer: ${entry.userAnswer ?? '(none recorded)'}`);
   const keyed = entry.correct ?? entry.judgedAnswer ?? null;
   if (keyed) lines.push(`Correct answer: ${keyed}`);
@@ -49,23 +50,38 @@ export async function analyzeMistake(id: string): Promise<void> {
   const entry = readEntries().find((item) => item.id === id);
   if (!entry || !entry.q || entry.analysis || inflight.has(id)) return;
   inflight.add(id);
-  const sessionId = stateStore.read('currentSessionId');
+  const sessionId = sessionStore.getState().currentSessionId;
   try {
     const prompt =
       'You are a tutor writing a mistake-book entry for a learner who answered a question wrong.\n' +
-      'whyWrong: in one or two sentences, name the specific misconception or slip the learner\'s answer reveals (not just that it is wrong). ' +
+      "whyWrong: in one or two sentences, name the specific misconception or slip the learner's answer reveals (not just that it is wrong). " +
       'correctApproach: in two or three sentences, show the line of reasoning that reaches the correct answer, so the learner could redo it alone.\n' +
-      'Write in ' + languageName(getCurrentLanguage()) + ', matching the language of the question. The mistake card supports LaTeX: use $...$ for mathematical variables, powers, fractions and formulas in stems, options and explanations.\n' +
-      'Output ONLY one JSON object, no code fences: {"whyWrong":"...","correctApproach":"..."}\n' + STRING_RULE;
-    const msgs: ChatRequestMessage[] = [{ role: 'system', content: prompt }, { role: 'user', content: describeMistake(entry) }];
+      'Write in ' +
+      languageName(getCurrentLanguage()) +
+      ', matching the language of the question. The mistake card supports LaTeX: use $...$ for mathematical variables, powers, fractions and formulas in stems, options and explanations.\n' +
+      'Output ONLY one JSON object, no code fences: {"whyWrong":"...","correctApproach":"..."}\n' +
+      STRING_RULE;
+    const msgs: ChatRequestMessage[] = [
+      { role: 'system', content: prompt },
+      { role: 'user', content: describeMistake(entry) },
+    ];
     const resp = await callAPI(msgs, 1500);
     const analysis = normalizeMistakeAnalysis(typeof resp === 'string' ? resp : '');
-    if (analysis.status !== 'ok' || stateStore.read('currentSessionId') !== sessionId) return;
-    const next = readEntries().map((item) => item.id === id
-      ? { ...item, analysis: { whyWrong: analysis.whyWrong, correctApproach: analysis.correctApproach } }
-      : item);
-    stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: next });
-    try { saveCurrentSession(); } catch (error) { reportSwallow(error, 'tutor/mistakeAnalysis.save'); }
+    if (analysis.status !== 'ok' || sessionStore.getState().currentSessionId !== sessionId) return;
+    const next = readEntries().map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            analysis: { whyWrong: analysis.whyWrong, correctApproach: analysis.correctApproach },
+          }
+        : item,
+    );
+    dispatchKb({ type: 'kb/set', key: 'mistakes', value: next });
+    try {
+      saveCurrentSession();
+    } catch (error) {
+      reportSwallow(error, 'tutor/mistakeAnalysis.save');
+    }
   } catch (error) {
     reportSwallow(error, 'tutor/mistakeAnalysis.analyze');
   } finally {
@@ -94,29 +110,40 @@ export function subscribePendingNextQuestion(listener: () => void): () => void {
 
 /** Ask the model for one follow-up question built on a mistake. Exported for tests. */
 export async function writeMistakeFollowUp(entry: MistakeStateEntry): Promise<string | null> {
-  const analysis = entry.analysis?.whyWrong ? `\nKnown misconception: ${entry.analysis.whyWrong}` : '';
+  const analysis = entry.analysis?.whyWrong
+    ? `\nKnown misconception: ${entry.analysis.whyWrong}`
+    : '';
   const prompt =
-    'You turn a learner\'s past mistake into the next question on their question chain.\n' +
-    'Write ONE question, in the learner\'s voice (a question they would ask the tutor), that makes them confront exactly the misconception behind the mistake. ' +
+    "You turn a learner's past mistake into the next question on their question chain.\n" +
+    "Write ONE question, in the learner's voice (a question they would ask the tutor), that makes them confront exactly the misconception behind the mistake. " +
     'Do not repeat the original question and do not give away its answer. Under 40 words, plain text, no Markdown.\n' +
-    'Write in ' + languageName(getCurrentLanguage()) + ', matching the language of the question.\n' +
-    'Output ONLY: <next-questions>["the question"]</next-questions>\n' + STRING_RULE;
-  const msgs: ChatRequestMessage[] = [{ role: 'system', content: prompt }, { role: 'user', content: describeMistake(entry) + analysis }];
+    'Write in ' +
+    languageName(getCurrentLanguage()) +
+    ', matching the language of the question.\n' +
+    'Output ONLY: <next-questions>["the question"]</next-questions>\n' +
+    STRING_RULE;
+  const msgs: ChatRequestMessage[] = [
+    { role: 'system', content: prompt },
+    { role: 'user', content: describeMistake(entry) + analysis },
+  ];
   const resp = await callAPI(msgs, 800);
   const text = typeof resp === 'string' ? resp : '';
-  const parsed = extractNextQuestions(text.includes('<next-questions') ? text : `<next-questions>${text}</next-questions>`, 1);
+  const parsed = extractNextQuestions(
+    text.includes('<next-questions') ? text : `<next-questions>${text}</next-questions>`,
+    1,
+  );
   return parsed.status === 'ok' ? parsed.questions[0]! : null;
 }
 
 export async function turnMistakeIntoNextQuestion(id: string): Promise<boolean> {
   if (pendingNext) return false;
   const entry = readEntries().find((item) => item.id === id);
-  if (!entry || stateStore.read('phase') !== 'chat') return false;
-  const sessionId = stateStore.read('currentSessionId');
+  if (!entry || sessionStore.getState().phase !== 'chat') return false;
+  const sessionId = sessionStore.getState().currentSessionId;
   setPending(id);
   try {
     const question = await writeMistakeFollowUp(entry);
-    if (!question || stateStore.read('currentSessionId') !== sessionId) return false;
+    if (!question || sessionStore.getState().currentSessionId !== sessionId) return false;
     const { followChainCandidate } = await import('./questionChainActions.ts');
     followChainCandidate({ id: `ask:mistake:${id}`, text: question, kind: 'ask' });
     return true;

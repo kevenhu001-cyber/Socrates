@@ -22,7 +22,9 @@ router.get('/', async (req, res, next) => {
     else conditions.push(or(eq(prompts.userId, req.userId!), eq(prompts.isBuiltin, true)));
     if (cursor) conditions.push(sql`${prompts.createdAt} < ${cursor}::timestamptz`);
 
-    const rows = await db.select().from(prompts)
+    const rows = await db
+      .select()
+      .from(prompts)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(prompts.createdAt))
       .limit(maxLimit + 1);
@@ -32,7 +34,9 @@ router.get('/', async (req, res, next) => {
     const nextCursor = hasMore ? list[list.length - 1].createdAt.toISOString() : null;
 
     return res.json({ templates: list, nextCursor });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* POST /api/prompts */
@@ -41,37 +45,66 @@ router.post('/', async (req, res, next) => {
     const { title, description, body, icon, category, shortcut, systemPrompt } = req.body;
     if (!title || !body) throw new BadRequest('title and body are required');
     return await durableJsonWrite(req, res, 'prompts.create.v1', async (tx) => {
-      const [p] = await tx.insert(prompts).values({
-        userId: req.userId!, title, description, body, icon, category: category || 'other', shortcut, systemPrompt,
-      }).returning();
+      const [p] = await tx
+        .insert(prompts)
+        .values({
+          userId: req.userId!,
+          title,
+          description,
+          body,
+          icon,
+          category: category || 'other',
+          shortcut,
+          systemPrompt,
+        })
+        .returning();
       return { status: 201, body: p };
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* PATCH /api/prompts/:id */
 router.patch('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    const [p] = await db.select().from(prompts)
-      .where(and(eq(prompts.id, req.params.id), eq(prompts.userId, req.userId!))).limit(1);
+    const [p] = await db
+      .select()
+      .from(prompts)
+      .where(and(eq(prompts.id, req.params.id), eq(prompts.userId, req.userId!)))
+      .limit(1);
     if (!p) throw new NotFound('Template not found');
     const patch: Record<string, unknown> = {};
-    for (const k of ['title', 'description', 'body', 'icon', 'category', 'shortcut', 'systemPrompt'])
+    for (const k of [
+      'title',
+      'description',
+      'body',
+      'icon',
+      'category',
+      'shortcut',
+      'systemPrompt',
+    ])
       if (req.body[k] !== undefined) patch[k] = req.body[k];
     await db.update(prompts).set(patch).where(eq(prompts.id, req.params.id));
     const [updated] = await db.select().from(prompts).where(eq(prompts.id, req.params.id)).limit(1);
     return res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* DELETE /api/prompts/:id */
 router.delete('/:id', async (req, res, next) => {
   try {
     const db = getDb();
-    await db.delete(prompts).where(and(eq(prompts.id, req.params.id), eq(prompts.userId, req.userId!)));
+    await db
+      .delete(prompts)
+      .where(and(eq(prompts.id, req.params.id), eq(prompts.userId, req.userId!)));
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

@@ -62,7 +62,9 @@ function buildApp() {
   app.get('/api/whoami', requireAuth, (req, res) => {
     res.json({ userId: req.userId, kind: req.authKind, scopes: [...(req.authScopes || [])] });
   });
-  app.get('/api/probe', requireAuth, requireScope('chat:read'), (_req, res) => res.json({ ok: true }));
+  app.get('/api/probe', requireAuth, requireScope('chat:read'), (_req, res) =>
+    res.json({ ok: true }),
+  );
   app.use(errorHandler);
   return app;
 }
@@ -86,7 +88,11 @@ async function authorizeAndExchange(scope) {
   const get = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, {
     cookies: { sid: ctx.sid },
   });
-  assert.equal(get.status, 200, `consent screen should render, got ${get.status}: ${get.text?.slice(0, 160)}`);
+  assert.equal(
+    get.status,
+    200,
+    `consent screen should render, got ${get.status}: ${get.text?.slice(0, 160)}`,
+  );
   const match = /name="csrf_token" value="([a-f0-9]{64})"/.exec(get.text);
   assert.ok(match, 'csrf hidden field present on consent page');
   const csrfCookiePair = latestCsrfCookie(get.setCookies);
@@ -103,7 +109,11 @@ async function authorizeAndExchange(scope) {
       csrf_token: match[1],
     }).toString(),
   });
-  assert.equal(post.status, 302, `consent allow should 302, got ${post.status}: ${post.text?.slice(0, 160)}`);
+  assert.equal(
+    post.status,
+    302,
+    `consent allow should 302, got ${post.status}: ${post.text?.slice(0, 160)}`,
+  );
 
   const token = await httpRequest(`${server.url}/api/oauth/token`, {
     method: 'POST',
@@ -125,11 +135,14 @@ before(async () => {
     initDb(process.env.DATABASE_URL);
     const db = getDb();
     const email = `test-oauthflow-${crypto.randomUUID()}@invalid.test`;
-    const [user] = await db.insert(users).values({
-      email,
-      passwordHash: 'test-only-not-a-real-hash',
-      verifiedAt: new Date(),
-    }).returning();
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash: 'test-only-not-a-real-hash',
+        verifiedAt: new Date(),
+      })
+      .returning();
     const sid = crypto.randomBytes(32).toString('hex');
     await db.insert(authSessions).values({
       token: sid,
@@ -159,7 +172,9 @@ before(async () => {
 after(async () => {
   try {
     if (ctx?.user) await getDb().delete(users).where(eq(users.id, ctx.user.id));
-  } catch { /* best-effort cleanup */ }
+  } catch {
+    /* best-effort cleanup */
+  }
   if (server) await server.close();
   if (dbAvailable) await closeDb();
 });
@@ -175,7 +190,9 @@ describe('oauth2 authorization-code + PKCE flow', () => {
       code_challenge: s256('x'.repeat(43)),
       code_challenge_method: 'S256',
     });
-    const r = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, { cookies: { sid: ctx.sid } });
+    const r = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, {
+      cookies: { sid: ctx.sid },
+    });
     assert.equal(r.status, 200);
     assert.match(r.text, /Authorize Phase D flow test\?/);
     assert.match(r.text, /<code>chat:read<\/code>/);
@@ -204,7 +221,9 @@ describe('oauth2 authorization-code + PKCE flow', () => {
       redirect_uri: 'https://evil.example/cb',
       scope: 'chat:read',
     });
-    const r = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, { cookies: { sid: ctx.sid } });
+    const r = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, {
+      cookies: { sid: ctx.sid },
+    });
     assert.equal(r.status, 400);
     assert.doesNotMatch(r.headers.get('location') || '', /evil\.example/);
   });
@@ -223,7 +242,11 @@ describe('oauth2 authorization-code + PKCE flow', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       cookies: { sid: ctx.sid, csrf: 'f'.repeat(64) },
-      body: new URLSearchParams({ ...Object.fromEntries(authorizeParams), decision: 'allow', csrf_token: '0'.repeat(64) }).toString(),
+      body: new URLSearchParams({
+        ...Object.fromEntries(authorizeParams),
+        decision: 'allow',
+        csrf_token: '0'.repeat(64),
+      }).toString(),
     });
     assert.equal(post.status, 403);
     assert.match(post.text, /CSRF validation failed/);
@@ -242,7 +265,9 @@ describe('oauth2 authorization-code + PKCE flow', () => {
       code_challenge: s256(verifier),
       code_challenge_method: 'S256',
     });
-    const get = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, { cookies: { sid: ctx.sid } });
+    const get = await httpRequest(`${server.url}/api/oauth/authorize?${authorizeParams}`, {
+      cookies: { sid: ctx.sid },
+    });
     const csrfToken = /name="csrf_token" value="([a-f0-9]{64})"/.exec(get.text)[1];
     const csrfCookiePair = latestCsrfCookie(get.setCookies);
 
@@ -251,7 +276,11 @@ describe('oauth2 authorization-code + PKCE flow', () => {
       redirect: 'manual',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       cookies: { sid: ctx.sid, csrf: csrfCookiePair.slice('csrf='.length) },
-      body: new URLSearchParams({ ...Object.fromEntries(authorizeParams), decision: 'allow', csrf_token: csrfToken }).toString(),
+      body: new URLSearchParams({
+        ...Object.fromEntries(authorizeParams),
+        decision: 'allow',
+        csrf_token: csrfToken,
+      }).toString(),
     });
     assert.equal(post.status, 302);
     const location = new URL(post.headers.get('location'));
@@ -262,7 +291,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
 
     const token = await httpRequest(`${server.url}/api/oauth/token`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
@@ -281,7 +313,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
     // The code is single-use — replay loses the atomic consumption race.
     const replay = await httpRequest(`${server.url}/api/oauth/token`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
@@ -324,7 +359,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
     if (!dbAvailable) return t.skip();
     const refreshed = await httpRequest(`${server.url}/api/oauth/token`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: ctx.pair1.refresh_token,
@@ -336,7 +374,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
 
     const replay = await httpRequest(`${server.url}/api/oauth/token`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: ctx.pair1.refresh_token,
@@ -350,7 +391,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
     if (!dbAvailable) return t.skip();
     const revoked = await httpRequest(`${server.url}/api/oauth/revoke`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({ token: ctx.pair1.access_token }).toString(),
     });
     assert.equal(revoked.status, 200);
@@ -363,7 +407,10 @@ describe('oauth2 authorization-code + PKCE flow', () => {
     // The paired refresh half died with it.
     const deadRefresh = await httpRequest(`${server.url}/api/oauth/token`, {
       method: 'POST',
-      headers: { Authorization: basicHeader(), 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        Authorization: basicHeader(),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: ctx.pair1.refresh_token,

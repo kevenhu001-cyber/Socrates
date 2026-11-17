@@ -24,12 +24,7 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { sessionChunks } from '../../db/schema/index.js';
-import {
-  chunkText,
-  buildRagIndex,
-  searchRagIndex,
-  type RagChunk,
-} from './rag.js';
+import { chunkText, buildRagIndex, searchRagIndex, type RagChunk } from './rag.js';
 import { embedTexts, getActiveEmbeddingConfig } from './embedding.js';
 import { collectHybridRetrieval, type HybridRetrievalOptions } from './hybridRetrieval.js';
 
@@ -96,17 +91,22 @@ export async function indexMessageChunks(
       const vectors = await embedTexts(batch.map((c) => c.text));
       if (vectors && vectors.length === batch.length) {
         for (let i = 0; i < batch.length; i++) {
-          await db.update(sessionChunks)
+          await db
+            .update(sessionChunks)
             .set({ embedding: vectors[i] })
-            .where(and(
-              eq(sessionChunks.messageId, messageId),
-              eq(sessionChunks.ordinal, batch[i].index),
-            ));
+            .where(
+              and(
+                eq(sessionChunks.messageId, messageId),
+                eq(sessionChunks.ordinal, batch[i].index),
+              ),
+            );
         }
       }
     }
   } catch (err) {
-    console.warn(`[chunkIndex] embedding enrichment failed for ${messageId}: ${(err as Error).message}`);
+    console.warn(
+      `[chunkIndex] embedding enrichment failed for ${messageId}: ${(err as Error).message}`,
+    );
   }
 
   return chunks;
@@ -145,10 +145,7 @@ export async function searchSessionChunks(
 
   if (rows.length === 0) return [];
 
-  const index = buildRagIndex(
-    rows as Array<IndexedChunk>,
-    (record) => record.text,
-  );
+  const index = buildRagIndex(rows as Array<IndexedChunk>, (record) => record.text);
   const hits = searchRagIndex(index, query, {
     limit,
     minScore: options.minScore ?? 0.5,
@@ -163,10 +160,7 @@ export async function searchSessionChunks(
    true when the caller owns the session. A forged sessionId is
    rejected before any retrieval. The join is cheap (PK + FK) and
    the call only runs on user-initiated search. */
-export async function sessionOwnedBy(
-  sessionId: string,
-  userId: string,
-): Promise<boolean> {
+export async function sessionOwnedBy(sessionId: string, userId: string): Promise<boolean> {
   const { sessions } = await import('../../db/schema/index.js');
   const db = getDb();
   const [row] = await db
@@ -206,42 +200,53 @@ export async function searchSessionChunksHybrid(
   let probe: Promise<boolean> | undefined;
   const hasChunks = (signal: AbortSignal) => {
     if (signal.aborted) return Promise.resolve(false);
-    return probe ??= (async () => {
+    return (probe ??= (async () => {
       try {
-        const [row] = await getDb().select({ id: sessionChunks.id }).from(sessionChunks)
-          .where(eq(sessionChunks.sessionId, sessionId)).limit(1);
+        const [row] = await getDb()
+          .select({ id: sessionChunks.id })
+          .from(sessionChunks)
+          .where(eq(sessionChunks.sessionId, sessionId))
+          .limit(1);
         return Boolean(row);
       } catch {
         // Probe failure preserves the existing best-effort retrieval path.
         return true;
       }
-    })();
+    })());
   };
-  return collectHybridRetrieval(async (signal) => {
-    if (!(await hasChunks(signal)) || signal.aborted) return [];
-    return searchSessionChunks(sessionId, query, { limit });
-  }, async (signal) => {
-    try {
-      if (!(await hasChunks(signal)) || signal.aborted) return null;
-      const config = await getActiveEmbeddingConfig();
-      if (!config || signal.aborted) return null;
-      const [queryVector] = (await embedTexts([query], { signal })) || [];
-      if (signal.aborted || !queryVector || queryVector.length !== config.dimensions) return null;
-      return await getDb()
-        .select({
-          id: sessionChunks.id,
-          messageId: sessionChunks.messageId,
-          ordinal: sessionChunks.ordinal,
-          text: sessionChunks.text,
-          distance: sql<number>`"embedding" <=> ${JSON.stringify(queryVector)}::vector`,
-        })
-        .from(sessionChunks)
-        .where(and(eq(sessionChunks.sessionId, sessionId), isNotNull(sessionChunks.embedding)))
-        .orderBy(sql`"embedding" <=> ${JSON.stringify(queryVector)}::vector`)
-        .limit(limit);
-    } catch (err) {
-      if (!signal.aborted) console.warn('[chunkIndex] hybrid vector leg failed, degrading to BM25:', (err as Error).message);
-      return null;
-    }
-  }, options);
+  return collectHybridRetrieval(
+    async (signal) => {
+      if (!(await hasChunks(signal)) || signal.aborted) return [];
+      return searchSessionChunks(sessionId, query, { limit });
+    },
+    async (signal) => {
+      try {
+        if (!(await hasChunks(signal)) || signal.aborted) return null;
+        const config = await getActiveEmbeddingConfig();
+        if (!config || signal.aborted) return null;
+        const [queryVector] = (await embedTexts([query], { signal })) || [];
+        if (signal.aborted || !queryVector || queryVector.length !== config.dimensions) return null;
+        return await getDb()
+          .select({
+            id: sessionChunks.id,
+            messageId: sessionChunks.messageId,
+            ordinal: sessionChunks.ordinal,
+            text: sessionChunks.text,
+            distance: sql<number>`"embedding" <=> ${JSON.stringify(queryVector)}::vector`,
+          })
+          .from(sessionChunks)
+          .where(and(eq(sessionChunks.sessionId, sessionId), isNotNull(sessionChunks.embedding)))
+          .orderBy(sql`"embedding" <=> ${JSON.stringify(queryVector)}::vector`)
+          .limit(limit);
+      } catch (err) {
+        if (!signal.aborted)
+          console.warn(
+            '[chunkIndex] hybrid vector leg failed, degrading to BM25:',
+            (err as Error).message,
+          );
+        return null;
+      }
+    },
+    options,
+  );
 }

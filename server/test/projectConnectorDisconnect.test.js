@@ -36,13 +36,20 @@ before(async () => {
   try {
     initDb(process.env.DATABASE_URL);
     const email = `${TEST_EMAIL_PREFIX}${crypto.randomUUID()}@invalid.test`;
-    const [row] = await getDb().insert(users).values({
-      email,
-      passwordHash: 'test-only-not-a-real-hash',
-      verifiedAt: new Date(),
-    }).returning();
+    const [row] = await getDb()
+      .insert(users)
+      .values({
+        email,
+        passwordHash: 'test-only-not-a-real-hash',
+        verifiedAt: new Date(),
+      })
+      .returning();
     testUser = row;
-    const issued = await createAgentKey({ ownerUserId: row.id, label: 'disconnect-test', scopes: ['chat:read'] });
+    const issued = await createAgentKey({
+      ownerUserId: row.id,
+      label: 'disconnect-test',
+      scopes: ['chat:read'],
+    });
     bearer = `Bearer ${issued.credential}`;
     const app = express();
     app.use(express.json());
@@ -61,46 +68,59 @@ after(async () => {
   try {
     if (closeServer) await closeServer();
     if (testUser) await getDb().delete(users).where(eq(users.id, testUser.id));
-  } catch { /* best-effort cleanup */ }
+  } catch {
+    /* best-effort cleanup */
+  }
   if (!DB_GATED) await closeDb();
 });
 
 async function rowsFor(provider) {
-  return getDb().select().from(projectConnectorConnections).where(and(
-    eq(projectConnectorConnections.userId, testUser.id),
-    eq(projectConnectorConnections.provider, provider),
-  ));
+  return getDb()
+    .select()
+    .from(projectConnectorConnections)
+    .where(
+      and(
+        eq(projectConnectorConnections.userId, testUser.id),
+        eq(projectConnectorConnections.provider, provider),
+      ),
+    );
 }
 
 describe('DELETE /api/project-connectors/:provider/connection', () => {
   test('rejects unauthenticated callers', { skip: DB_GATED }, async () => {
-    const r = await httpRequest(`${baseUrl}/api/project-connectors/github/connection`, { method: 'DELETE' });
+    const r = await httpRequest(`${baseUrl}/api/project-connectors/github/connection`, {
+      method: 'DELETE',
+    });
     assert.equal(r.status, 401);
   });
 
   test('404s unknown providers without touching the db', { skip: DB_GATED }, async () => {
-    const before = await getDb().select().from(projectConnectorConnections).where(
-      eq(projectConnectorConnections.userId, testUser.id),
-    );
+    const before = await getDb()
+      .select()
+      .from(projectConnectorConnections)
+      .where(eq(projectConnectorConnections.userId, testUser.id));
     const r = await httpRequest(`${baseUrl}/api/project-connectors/no_such_app_xyz/connection`, {
       method: 'DELETE',
       headers: { authorization: bearer },
     });
     assert.equal(r.status, 404);
-    const after = await getDb().select().from(projectConnectorConnections).where(
-      eq(projectConnectorConnections.userId, testUser.id),
-    );
+    const after = await getDb()
+      .select()
+      .from(projectConnectorConnections)
+      .where(eq(projectConnectorConnections.userId, testUser.id));
     assert.equal(after.length, before.length);
   });
 
   test('deletes the row and reports disconnected (idempotent)', { skip: DB_GATED }, async () => {
-    await getDb().insert(projectConnectorConnections).values({
-      userId: testUser.id,
-      provider: 'github',
-      connectionName: 'socrates',
-      requestId: `sync_${Date.now()}`,
-      status: 'connected',
-    });
+    await getDb()
+      .insert(projectConnectorConnections)
+      .values({
+        userId: testUser.id,
+        provider: 'github',
+        connectionName: 'socrates',
+        requestId: `sync_${Date.now()}`,
+        status: 'connected',
+      });
     assert.equal((await rowsFor('github')).length, 1);
     const r = await httpRequest(`${baseUrl}/api/project-connectors/github/connection`, {
       method: 'DELETE',
@@ -117,13 +137,15 @@ describe('DELETE /api/project-connectors/:provider/connection', () => {
   });
 
   test('accepts namespaced oc_ ids', { skip: DB_GATED }, async () => {
-    await getDb().insert(projectConnectorConnections).values({
-      userId: testUser.id,
-      provider: 'oc_slack',
-      connectionName: 'socrates-test',
-      requestId: `sync_${Date.now()}`,
-      status: 'connected',
-    });
+    await getDb()
+      .insert(projectConnectorConnections)
+      .values({
+        userId: testUser.id,
+        provider: 'oc_slack',
+        connectionName: 'socrates-test',
+        requestId: `sync_${Date.now()}`,
+        status: 'connected',
+      });
     const r = await httpRequest(`${baseUrl}/api/project-connectors/oc_slack/connection`, {
       method: 'DELETE',
       headers: { authorization: bearer },

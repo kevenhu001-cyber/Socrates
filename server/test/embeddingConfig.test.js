@@ -20,15 +20,17 @@ describe('embeddingConfig — operator console gate', () => {
     // "disabled" message instead of the forms).
     const mod = await import('../src/routes/embeddingConfig.js');
     assert.ok(mod.default, 'expected the default router export');
-    assert.equal(typeof mod.default.stack?.length, 'number',
-      'expected an Express router with a middleware stack');
+    assert.equal(
+      typeof mod.default.stack?.length,
+      'number',
+      'expected an Express router with a middleware stack',
+    );
   });
 
   test('the router carries the requireAdminSession middleware', async () => {
     const mod = await import('../src/routes/embeddingConfig.js');
     const middlewareEntries = mod.default.stack.filter((l) => !l.route);
-    assert.ok(middlewareEntries.length >= 1,
-      'expected the requireAdminSession middleware layer');
+    assert.ok(middlewareEntries.length >= 1, 'expected the requireAdminSession middleware layer');
   });
 
   test('the router exposes GET /, PUT /, DELETE /:id', async () => {

@@ -16,9 +16,11 @@ export function publishReactChatRuntime(event: ChatRuntimeEvent) {
   }
   try {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-      window.dispatchEvent(new window.CustomEvent('socrates:chat-runtime-changed', {
-        detail: event || {},
-      }));
+      window.dispatchEvent(
+        new window.CustomEvent('socrates:chat-runtime-changed', {
+          detail: event || {},
+        }),
+      );
     }
   } catch (error) {
     reportSwallow(error, 'ui/reactBridge.dispatchRuntimeEvent', 'expected');

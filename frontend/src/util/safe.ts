@@ -27,7 +27,8 @@ export function escapeHtml(s: unknown): string {
 const SAFE_URL_RE = /^(?:https?:|mailto:|tel:|blob:|\/|#|\?)/i;
 const SAFE_RELATIVE_RE = /^[a-z0-9_.\-/~?#%@+=&,;:()[\]{}!*'$]+$/i;
 const SAFE_DATA_IMAGE_RE = /^data:image\/(?:png|jpeg|jpg|gif|webp|avif);base64,[a-z0-9+/=]+$/i;
-const DANGEROUS_URL_RE = /^\s*(?:javascript|vbscript|file|filesystem|data\s*:\s*(?:text\/html|image\/svg|application\/xhtml))/i;
+const DANGEROUS_URL_RE =
+  /^\s*(?:javascript|vbscript|file|filesystem|data\s*:\s*(?:text\/html|image\/svg|application\/xhtml))/i;
 
 export function sanitizeUrl(url: unknown): string {
   if (typeof url !== 'string') return '';
@@ -49,13 +50,20 @@ export function sanitizeUrls(html: string): string {
      defense-in-depth for the innerHTML paths that bypass it. */
   return html.replace(
     /\b(href|src|xlink:href|action|formaction)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'`>]+))/gi,
-    function (m: string, attr: string, q: string, double?: string, sglt?: string, bare?: string): string {
+    function (
+      m: string,
+      attr: string,
+      q: string,
+      double?: string,
+      sglt?: string,
+      bare?: string,
+    ): string {
       const url = double !== undefined ? double : sglt !== undefined ? sglt : bare;
       const fixed = sanitizeUrl(url);
       if (fixed === url) return m;
       /* Preserve the original quoting style; bare values get quoted. */
       if (q[0] === '"' || q[0] === "'") return attr + '=' + q[0] + fixed + q[0];
       return attr + '="' + fixed + '"';
-    }
+    },
   );
 }

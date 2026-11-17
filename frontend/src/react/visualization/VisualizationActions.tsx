@@ -30,7 +30,9 @@ export function VisualizationActions({
   const [tableOpen, setTableOpen] = useState(false);
 
   function toggleTable(event: MouseEvent<HTMLButtonElement>) {
-    const table = event.currentTarget.closest('.visualization-card')?.querySelector<HTMLElement>('.visualization-data');
+    const table = event.currentTarget
+      .closest('.visualization-card')
+      ?.querySelector<HTMLElement>('.visualization-data');
     if (!table) return;
     const nextOpen = table.hidden;
     table.hidden = !nextOpen;
@@ -39,16 +41,50 @@ export function VisualizationActions({
 
   return (
     <div className="visualization-actions" data-viz-actions-root>
-      <Button variant="ghost" size="xs" data-viz-action="table" hidden={!tableAvailable} aria-expanded={tableOpen} aria-label={labels.table} title={labels.table} onClick={toggleTable}>
+      <Button
+        variant="ghost"
+        size="xs"
+        data-viz-action="table"
+        hidden={!tableAvailable}
+        aria-expanded={tableOpen}
+        aria-label={labels.table}
+        title={labels.table}
+        onClick={toggleTable}
+      >
         {labels.table}
       </Button>
-      <Button variant="ghost" size="xs" data-viz-action="reset" hidden={!resetAvailable} aria-hidden={!resetAvailable || undefined} aria-label={labels.reset} title={labels.reset} onClick={onReset}>
+      <Button
+        variant="ghost"
+        size="xs"
+        data-viz-action="reset"
+        hidden={!resetAvailable}
+        aria-hidden={!resetAvailable || undefined}
+        aria-label={labels.reset}
+        title={labels.reset}
+        onClick={onReset}
+      >
         {labels.reset}
       </Button>
-      <Button variant="ghost" size="xs" data-viz-action="download" hidden={!downloadAvailable} aria-label={labels.download} title={labels.download} onClick={onDownload}>
+      <Button
+        variant="ghost"
+        size="xs"
+        data-viz-action="download"
+        hidden={!downloadAvailable}
+        aria-label={labels.download}
+        title={labels.download}
+        onClick={onDownload}
+      >
         {labels.download}
       </Button>
-      <Button variant="ghost" size="xs" data-viz-action="fullscreen" hidden={!fullscreenAvailable} aria-label={labels.fullscreen} title={labels.fullscreen} onClick={onFullscreen}>
+      <Button
+        variant="ghost"
+        size="xs"
+        data-viz-action="fullscreen"
+        hidden={!fullscreenAvailable}
+        aria-label={labels.fullscreen}
+        title={labels.fullscreen}
+        onClick={onFullscreen}
+      >
         {labels.fullscreen}
       </Button>
     </div>
@@ -91,18 +127,28 @@ export function VisualizationFallbackActions({
   return (
     <div className="visualization-fallback-actions">
       {showTableToggle ? (
-        <Button size="sm" data-viz-fallback="table" aria-expanded={tableOpen} onClick={() => {
-          const next = !tableOpen;
-          setTableOpen(next);
-          onToggleTable?.(next);
-        }}>
+        <Button
+          size="sm"
+          data-viz-fallback="table"
+          aria-expanded={tableOpen}
+          onClick={() => {
+            const next = !tableOpen;
+            setTableOpen(next);
+            onToggleTable?.(next);
+          }}
+        >
           {tableOpen ? hideTableLabel || tableLabel : tableLabel}
         </Button>
       ) : null}
       <Button variant="outline" size="sm" data-viz-fallback="retry" onClick={onRetry}>
         {retryLabel}
       </Button>
-      <Button variant={showTableToggle ? 'ghost' : 'outline'} size="sm" data-viz-fallback="fix" onClick={onFix}>
+      <Button
+        variant={showTableToggle ? 'ghost' : 'outline'}
+        size="sm"
+        data-viz-fallback="fix"
+        onClick={onFix}
+      >
         {fixLabel}
       </Button>
     </div>

@@ -25,24 +25,40 @@ import {
   buildMessageContent,
 } from '../src/attachments/index.ts';
 import { buildUserContentParts } from '../src/chat/history.ts';
-import { getProviderConfigSnapshot, publishProviderConfig } from '../src/config/providerConfig.store.ts';
+import {
+  getProviderConfigSnapshot,
+  publishProviderConfig,
+} from '../src/config/providerConfig.store.ts';
 
 async function withProvider(provider, fn) {
   const previous = getProviderConfigSnapshot();
-  publishProviderConfig({ providers: provider ? [{ id: 'test', ...provider }] : [], activeId: provider ? 'test' : null });
-  try { return await fn(); }
-  finally { publishProviderConfig(previous); }
+  publishProviderConfig({
+    providers: provider ? [{ id: 'test', ...provider }] : [],
+    activeId: provider ? 'test' : null,
+  });
+  try {
+    return await fn();
+  } finally {
+    publishProviderConfig(previous);
+  }
 }
 
 const FILE = {
-  id: 'att-1', kind: 'document', docKind: 'pdf',
-  name: 'report.pdf', mime: 'application/pdf', size: 12345,
+  id: 'att-1',
+  kind: 'document',
+  docKind: 'pdf',
+  name: 'report.pdf',
+  mime: 'application/pdf',
+  size: 12345,
   fileId: '11111111-2222-3333-4444-555555555555',
 };
 
 test('attachmentPointerLine carries name, mime, size and the fileId', () => {
   const line = attachmentPointerLine(FILE);
-  assert.match(line, /\[Attached file: "report\.pdf" \(application\/pdf, 12 KB\) — fileId: 11111111-2222-3333-4444-555555555555\./);
+  assert.match(
+    line,
+    /\[Attached file: "report\.pdf" \(application\/pdf, 12 KB\) — fileId: 11111111-2222-3333-4444-555555555555\./,
+  );
   assert.match(line, /read_attachment/);
 });
 
@@ -65,8 +81,12 @@ test('buildMessageContent emits a fileId pointer, not a parsed-text dump', async
 
 test('buildMessageContent drops the inline dataUrl once a fileId exists', async () => {
   const img = {
-    id: 'att-2', kind: 'image', name: 'shot.png', mime: 'image/png',
-    size: 999, fileId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    id: 'att-2',
+    kind: 'image',
+    name: 'shot.png',
+    mime: 'image/png',
+    size: 999,
+    fileId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     dataUrl: 'data:image/png;base64,AAAA',
   };
   await withProvider({ vision: true }, async () => {
@@ -83,8 +103,12 @@ test('buildMessageContent drops the inline dataUrl once a fileId exists', async 
 
 test('non-multimodal providers get the pointer, never an image_url part', async () => {
   const img = {
-    id: 'att-3', kind: 'image', name: 'shot.png', mime: 'image/png',
-    size: 999, fileId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    id: 'att-3',
+    kind: 'image',
+    name: 'shot.png',
+    mime: 'image/png',
+    size: 999,
+    fileId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
     dataUrl: 'data:image/png;base64,AAAA',
   };
   await withProvider({ vision: false }, async () => {
@@ -101,21 +125,42 @@ test('attachment-only turn (empty text) still ships the pointer', async () => {
 });
 
 test('a still-pending entry after the wait is flagged, not silently dropped', async () => {
-  const pending = { id: 'att-p', kind: 'text', name: 'notes.txt', mime: 'text/plain', size: 10, pending: true };
+  const pending = {
+    id: 'att-p',
+    kind: 'text',
+    name: 'notes.txt',
+    mime: 'text/plain',
+    size: 10,
+    pending: true,
+  };
   const built = await buildMessageContent('hi', [pending]);
   assert.ok(built.parts.some((p) => /did not finish uploading/.test(p.text || '')));
   assert.equal(built.attachmentList[0].error, 'upload_incomplete');
 });
 
 test('upload-failed entries produce an explicit failure pointer', async () => {
-  const failed = { id: 'att-e', kind: 'document', name: 'bad.pdf', mime: 'application/pdf', size: 10, error: 'Upload failed (413)' };
+  const failed = {
+    id: 'att-e',
+    kind: 'document',
+    name: 'bad.pdf',
+    mime: 'application/pdf',
+    size: 10,
+    error: 'Upload failed (413)',
+  };
   const built = await buildMessageContent('hi', [failed]);
   assert.ok(built.parts.some((p) => /failed to upload/.test(p.text || '')));
   assert.equal(built.attachmentList[0].error, 'Upload failed (413)');
 });
 
 test('legacy inline text attachments keep flowing (backward compat)', async () => {
-  const legacy = { id: 'att-l', kind: 'text', name: 'old.txt', mime: 'text/plain', size: 5, text: 'OLD BODY' };
+  const legacy = {
+    id: 'att-l',
+    kind: 'text',
+    name: 'old.txt',
+    mime: 'text/plain',
+    size: 5,
+    text: 'OLD BODY',
+  };
   const built = await buildMessageContent('hi', [legacy]);
   assert.ok(built.parts.some((p) => /\[Parsed file: old\.txt\]\nOLD BODY/.test(p.text || '')));
 });
@@ -134,7 +179,14 @@ test('buildUserContentParts rebuilds pointers from stored attachments', async ()
 });
 
 test('buildUserContentParts sends image_url only for multimodal providers', async () => {
-  const img = { id: 'i', kind: 'image', name: 'x.png', mime: 'image/png', size: 1, dataUrl: 'data:image/png;base64,AA' };
+  const img = {
+    id: 'i',
+    kind: 'image',
+    name: 'x.png',
+    mime: 'image/png',
+    size: 1,
+    dataUrl: 'data:image/png;base64,AA',
+  };
   await withProvider({ vision: true }, () => {
     assert.ok(buildUserContentParts('t', [img]).some((p) => p.type === 'image_url'));
   });

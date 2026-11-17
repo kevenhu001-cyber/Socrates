@@ -94,7 +94,14 @@ export function capSessions(arr: unknown): SessionRow[] {
   return Array.isArray(arr) ? (arr.slice(0, RECENTS_CAP) as SessionRow[]) : [];
 }
 
-function sessionSortTime(value: SessionRow['pinnedAt'] | SessionRow['updated_at'] | SessionRow['updatedAt'] | SessionRow['created_at'] | SessionRow['createdAt']): number {
+function sessionSortTime(
+  value:
+    | SessionRow['pinnedAt']
+    | SessionRow['updated_at']
+    | SessionRow['updatedAt']
+    | SessionRow['created_at']
+    | SessionRow['createdAt'],
+): number {
   return timeMs(value);
 }
 
@@ -103,7 +110,9 @@ function pinnedSessionTime(session: SessionRow): number {
 }
 
 function recentSessionTime(session: SessionRow): number {
-  return sessionSortTime(session.updated_at || session.updatedAt || session.created_at || session.createdAt);
+  return sessionSortTime(
+    session.updated_at || session.updatedAt || session.created_at || session.createdAt,
+  );
 }
 
 function compareVisibleSessions(a: SessionRow, b: SessionRow): number {
@@ -113,18 +122,30 @@ function compareVisibleSessions(a: SessionRow, b: SessionRow): number {
   return recentSessionTime(b) - recentSessionTime(a);
 }
 
-export function getVisibleSessions(sessions: ReadonlyArray<SessionRow>, now?: number): SessionRow[] {
+export function getVisibleSessions(
+  sessions: ReadonlyArray<SessionRow>,
+  now?: number,
+): SessionRow[] {
   const swept = sweepExpiredArchivesFrom(sessions, now).sessions;
-  const copy = swept.filter(function (s) { return !s || !s.archivedAt; });
+  const copy = swept.filter(function (s) {
+    return !s || !s.archivedAt;
+  });
   copy.sort(compareVisibleSessions);
   return copy;
 }
 
-export function getArchivedSessionsFrom(sessions: ReadonlyArray<SessionRow> | null | undefined, now?: number): SessionRow[] {
+export function getArchivedSessionsFrom(
+  sessions: ReadonlyArray<SessionRow> | null | undefined,
+  now?: number,
+): SessionRow[] {
   const cutoff = (now || Date.now()) - ARCHIVE_RETENTION_MS;
   return (sessions || [])
-    .filter(function (s) { return s && timeMs(s.archivedAt) > cutoff; })
-    .sort(function (a, b) { return timeMs(b.archivedAt) - timeMs(a.archivedAt); });
+    .filter(function (s) {
+      return s && timeMs(s.archivedAt) > cutoff;
+    })
+    .sort(function (a, b) {
+      return timeMs(b.archivedAt) - timeMs(a.archivedAt);
+    });
 }
 
 export interface SweepResult {
@@ -133,7 +154,7 @@ export interface SweepResult {
 }
 
 export function sweepExpiredArchivesFrom(sessions: unknown, now?: number): SweepResult {
-  const list: SessionRow[] = Array.isArray(sessions) ? sessions as SessionRow[] : [];
+  const list: SessionRow[] = Array.isArray(sessions) ? (sessions as SessionRow[]) : [];
   const cutoff = (now || Date.now()) - ARCHIVE_RETENTION_MS;
   const next = list.filter(function (s) {
     return !s || !timeMs(s.archivedAt) || timeMs(s.archivedAt) > cutoff;
@@ -159,7 +180,9 @@ export function createDeletedSessionGuard(limit?: number): DeletedSessionGuard {
       deletedIds[id] = Date.now();
       const keys = Object.keys(deletedIds);
       if (keys.length > max) {
-        keys.sort(function (a, b) { return deletedIds[a] - deletedIds[b]; });
+        keys.sort(function (a, b) {
+          return deletedIds[a] - deletedIds[b];
+        });
         const toDrop = keys.length - max;
         for (let i = 0; i < toDrop; i++) delete deletedIds[keys[i]];
       }

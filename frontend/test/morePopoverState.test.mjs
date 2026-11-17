@@ -5,7 +5,9 @@ import { useMorePopoverStore } from '../src/sidebar/morePopover.store.ts';
 test('More popover owner shares open state and notifies React subscribers', () => {
   useMorePopoverStore.getState().setOpen(false);
   let notifications = 0;
-  const unsubscribe = useMorePopoverStore.subscribe(() => { notifications += 1; });
+  const unsubscribe = useMorePopoverStore.subscribe(() => {
+    notifications += 1;
+  });
   try {
     useMorePopoverStore.getState().setOpen(true);
     assert.equal(useMorePopoverStore.getState().isOpen, true);

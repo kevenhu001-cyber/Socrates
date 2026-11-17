@@ -13,7 +13,11 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 
-import { idempotencyMiddleware, resetIdempotencyStore, idempotencyEntryCount } from '../src/middleware/idempotency.ts';
+import {
+  idempotencyMiddleware,
+  resetIdempotencyStore,
+  idempotencyEntryCount,
+} from '../src/middleware/idempotency.ts';
 import { usesDurableIdempotency } from '../src/lib/durableIdempotencyRoutes.ts';
 import { EventEmitter } from 'node:events';
 import { listen, httpRequest } from './_http.js';
@@ -47,8 +51,12 @@ function buildApp(counters) {
 describe('idempotency', () => {
   let server;
   const counters = { write: 0, flaky: 0 };
-  before(async () => { server = await listen(buildApp(counters)); });
-  after(async () => { await server.close(); });
+  before(async () => {
+    server = await listen(buildApp(counters));
+  });
+  after(async () => {
+    await server.close();
+  });
   beforeEach(() => {
     resetIdempotencyStore();
     counters.write = 0;
@@ -87,8 +95,14 @@ describe('idempotency', () => {
   });
 
   test('concurrent retries execute once, then replay the completed response', async () => {
-    const opts = { method: 'POST', headers: { 'Idempotency-Key': 'concurrent' }, body: { value: 1 } };
-    const responses = await Promise.all(Array.from({ length: 8 }, () => httpRequest(server.url + '/slow', opts)));
+    const opts = {
+      method: 'POST',
+      headers: { 'Idempotency-Key': 'concurrent' },
+      body: { value: 1 },
+    };
+    const responses = await Promise.all(
+      Array.from({ length: 8 }, () => httpRequest(server.url + '/slow', opts)),
+    );
     assert.equal(responses.filter((r) => r.status === 200).length, 1);
     assert.equal(responses.filter((r) => r.body.code === 'IDEMPOTENCY_IN_PROGRESS').length, 7);
     assert.equal(counters.write, 1);
@@ -100,7 +114,14 @@ describe('idempotency', () => {
   test('fresh successful responses cannot grow the cache beyond its limit', () => {
     for (let i = 0; i < 5005; i++) {
       const res = Object.assign(new EventEmitter(), { statusCode: 200, json: (body) => body });
-      const req = { method: 'POST', headers: { 'idempotency-key': `bounded-${i}` }, url: '/write', baseUrl: '', body: {}, ip: 'local' };
+      const req = {
+        method: 'POST',
+        headers: { 'idempotency-key': `bounded-${i}` },
+        url: '/write',
+        baseUrl: '',
+        body: {},
+        ip: 'local',
+      };
       idempotencyMiddleware(req, res, () => res.json({ i }));
     }
     assert.equal(idempotencyEntryCount(), 5000);
@@ -118,10 +139,12 @@ describe('idempotency', () => {
   test('different credentials do not collide on the same key', async () => {
     const base = { method: 'POST', headers: { 'Idempotency-Key': 'shared' }, body: {} };
     await httpRequest(server.url + '/write', {
-      ...base, headers: { ...base.headers, Authorization: 'Bearer user-A' },
+      ...base,
+      headers: { ...base.headers, Authorization: 'Bearer user-A' },
     });
     const other = await httpRequest(server.url + '/write', {
-      ...base, headers: { ...base.headers, Authorization: 'Bearer user-B' },
+      ...base,
+      headers: { ...base.headers, Authorization: 'Bearer user-B' },
     });
     assert.equal(other.headers.get('idempotency-replayed'), null);
     assert.equal(counters.write, 2);
@@ -141,8 +164,14 @@ describe('usesDurableIdempotency', () => {
     assert.equal(usesDurableIdempotency('POST', '/projects'), true);
     assert.equal(usesDurableIdempotency('POST', '/prompts'), true);
     assert.equal(usesDurableIdempotency('POST', '/scheduled-tasks'), true);
-    assert.equal(usesDurableIdempotency('POST', '/sessions/123e4567-e89b-12d3-a456-426614174000/archive'), true);
-    assert.equal(usesDurableIdempotency('PUT', '/sessions/123e4567-e89b-12d3-a456-426614174000/tags'), true);
+    assert.equal(
+      usesDurableIdempotency('POST', '/sessions/123e4567-e89b-12d3-a456-426614174000/archive'),
+      true,
+    );
+    assert.equal(
+      usesDurableIdempotency('PUT', '/sessions/123e4567-e89b-12d3-a456-426614174000/tags'),
+      true,
+    );
     assert.equal(usesDurableIdempotency('PATCH', '/users/me'), true);
     assert.equal(usesDurableIdempotency('PATCH', '/users/me/preferences'), true);
   });

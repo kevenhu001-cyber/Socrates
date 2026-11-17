@@ -46,48 +46,70 @@ function bodyField(body: unknown, key: string): unknown {
 
 function isEventStreamResponse(response: Response): boolean {
   try {
-    const type = response && response.headers && typeof response.headers.get === 'function'
-      ? String(response.headers.get('content-type') || '')
-      : '';
+    const type =
+      response && response.headers && typeof response.headers.get === 'function'
+        ? String(response.headers.get('content-type') || '')
+        : '';
     return /text\/event-stream/i.test(type);
-  } catch { /* empty-catch: intentional — header access cannot fail the request */ return false; }
+  } catch {
+    /* empty-catch: intentional — header access cannot fail the request */ return false;
+  }
 }
 
 async function throwRawResponseError(response: Response): Promise<never> {
   let text = '';
   let body: unknown = null;
-  try { text = await response.text(); }
-  catch (error) { reportSwallow(error, 'util/api.rawError.readBody'); }
-  try { if (text) body = JSON.parse(text); }
-  catch (error) { reportSwallow(error, 'util/api.rawError.parseBody'); }
-  const message = bodyField(body, 'message')
-    || bodyField(body, 'detail')
-    || bodyField(body, 'error')
-    || text
-    || response.statusText
-    || ('HTTP ' + response.status);
+  try {
+    text = await response.text();
+  } catch (error) {
+    reportSwallow(error, 'util/api.rawError.readBody');
+  }
+  try {
+    if (text) body = JSON.parse(text);
+  } catch (error) {
+    reportSwallow(error, 'util/api.rawError.parseBody');
+  }
+  const message =
+    bodyField(body, 'message') ||
+    bodyField(body, 'detail') ||
+    bodyField(body, 'error') ||
+    text ||
+    response.statusText ||
+    'HTTP ' + response.status;
   const code = bodyField(body, 'code');
-  throw makeApiError(response.status, String(message).slice(0, 200), body, typeof code === 'string' ? code : null, 0);
+  throw makeApiError(
+    response.status,
+    String(message).slice(0, 200),
+    body,
+    typeof code === 'string' ? code : null,
+    0,
+  );
 }
 
 function makeJsonResponseError(response: Response, body: unknown): ApiError {
-  const raw = bodyField(body, 'message') || bodyField(body, 'detail')
-    || bodyField(body, 'title') || bodyField(body, 'error');
-  const message = raw || ('HTTP ' + response.status);
+  const raw =
+    bodyField(body, 'message') ||
+    bodyField(body, 'detail') ||
+    bodyField(body, 'title') ||
+    bodyField(body, 'error');
+  const message = raw || 'HTTP ' + response.status;
   const code = bodyField(body, 'code');
   const error = makeApiError(
     response.status,
-    typeof message === 'string' ? message : ('HTTP ' + response.status),
+    typeof message === 'string' ? message : 'HTTP ' + response.status,
     body,
     typeof code === 'string' ? code : null,
     0,
   );
   try {
-    const requestId = response.headers && typeof response.headers.get === 'function'
-      ? response.headers.get('X-Request-Id')
-      : null;
+    const requestId =
+      response.headers && typeof response.headers.get === 'function'
+        ? response.headers.get('X-Request-Id')
+        : null;
     if (requestId) error.requestId = requestId;
-  } catch (caught) { reportSwallow(caught, 'util/api.jsonError.requestId'); }
+  } catch (caught) {
+    reportSwallow(caught, 'util/api.jsonError.requestId');
+  }
   return error;
 }
 
@@ -97,9 +119,12 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
   const linkedSignal = linkAbortSignal(opts.signal, 'util/api.apiFetchRaw');
   let response: Response;
   try {
-    response = await fetch(request.path, Object.assign({}, request.opts, {
-      signal: linkedSignal.controller.signal,
-    }) as RequestInit);
+    response = await fetch(
+      request.path,
+      Object.assign({}, request.opts, {
+        signal: linkedSignal.controller.signal,
+      }) as RequestInit,
+    );
   } catch {
     linkedSignal.detach();
     throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
@@ -127,18 +152,25 @@ export async function apiFetchRaw(path: string, opts: ApiRequestOptions = {}): P
  * The body is unknown by default. Callers that consume fields must declare
  * the response shape they expect or narrow the value at the API boundary.
  */
-export async function apiFetch<T = unknown>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
+export async function apiFetch<T = unknown>(
+  path: string,
+  opts: ApiRequestOptions = {},
+): Promise<T> {
   const request = prepareApiRequest(path, opts, { cacheBustGet: true });
   const userSignal = opts.signal || null;
   const linkedSignal = linkAbortSignal(userSignal, 'util/api.apiFetch');
   let response: Response;
   try {
-    response = await fetch(request.path, Object.assign({}, request.opts, {
-      signal: linkedSignal.controller.signal,
-    }) as RequestInit);
+    response = await fetch(
+      request.path,
+      Object.assign({}, request.opts, {
+        signal: linkedSignal.controller.signal,
+      }) as RequestInit,
+    );
   } catch (caught) {
     const failure = caught as { name?: string } | null;
-    const aborted = !!failure && (failure.name === 'AbortError' || linkedSignal.controller.signal.aborted);
+    const aborted =
+      !!failure && (failure.name === 'AbortError' || linkedSignal.controller.signal.aborted);
     const err = makeApiError(
       0,
       aborted ? '请求被取消' : '网络异常，请检查连接后重试',
@@ -174,10 +206,14 @@ function shouldRefreshCsrf(response: Response, opts: ApiRequestOptions, method: 
 
 async function readJsonBody(response: Response): Promise<unknown> {
   let text: string;
-  try { text = await response.text(); }
-  catch { throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0); }
-  try { return text ? JSON.parse(text) : null; }
-  catch (error) {
+  try {
+    text = await response.text();
+  } catch {
+    throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0);
+  }
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch (error) {
     reportSwallow(error, 'util/api.jsonResponse.parseBody');
     return null;
   }

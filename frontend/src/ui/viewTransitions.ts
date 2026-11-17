@@ -65,12 +65,17 @@ export function withViewTransition(update: () => void): void {
     });
     activeTransition = transition;
     // Skipping a transition rejects `ready`; it is expected on rapid input.
-    void transition.ready?.catch(() => { /* intentional: superseded snapshot */ });
-    void transition.finished?.then(() => {
-      if (activeTransition === transition) activeTransition = null;
-    }, () => {
-      if (activeTransition === transition) activeTransition = null;
+    void transition.ready?.catch(() => {
+      /* intentional: superseded snapshot */
     });
+    void transition.finished?.then(
+      () => {
+        if (activeTransition === transition) activeTransition = null;
+      },
+      () => {
+        if (activeTransition === transition) activeTransition = null;
+      },
+    );
   } catch (error) {
     // Never replay a mutation that itself threw in a synchronous adapter.
     if (invoked) throw error;

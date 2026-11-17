@@ -12,9 +12,7 @@ import bcrypt from 'bcryptjs';
  * default. Surface that immediately so the misconfiguration is loud.
  */
 if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
-  throw new Error(
-    'FATAL: SESSION_SECRET is required in production (used to encrypt api_keys)'
-  );
+  throw new Error('FATAL: SESSION_SECRET is required in production (used to encrypt api_keys)');
 }
 
 const BCRYPT_ROUNDS = 12;
@@ -133,8 +131,8 @@ export function sessionSecret(): string {
   if (process.env.SOCRATES_ALLOW_DEV_SECRET === '1') return DEV_SECRET;
   throw new Error(
     'SESSION_SECRET is not set — refusing to derive encryption keys from a ' +
-    'publicly known default. Set SESSION_SECRET in the environment, or set ' +
-    'SOCRATES_ALLOW_DEV_SECRET=1 to accept the insecure key for local development only.'
+      'publicly known default. Set SESSION_SECRET in the environment, or set ' +
+      'SOCRATES_ALLOW_DEV_SECRET=1 to accept the insecure key for local development only.',
   );
 }
 

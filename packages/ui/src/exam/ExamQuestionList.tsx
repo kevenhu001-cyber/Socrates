@@ -10,7 +10,17 @@ import { ExamAnswerDisplay, ExamAnswerField, ExamChoiceRow } from './controls';
 import type { ExamIds, RenderExamText } from './model';
 import type { ExamStrings } from './strings';
 
-const QuestionCard = memo(function QuestionCard({ question, order, total, value, readOnly, strings, renderText, onAnswer, idPrefix }: {
+const QuestionCard = memo(function QuestionCard({
+  question,
+  order,
+  total,
+  value,
+  readOnly,
+  strings,
+  renderText,
+  onAnswer,
+  idPrefix,
+}: {
   question: ExamQuestion;
   order: number;
   total: number;
@@ -24,7 +34,8 @@ const QuestionCard = memo(function QuestionCard({ question, order, total, value,
   const { colors } = useUiTheme();
   const selected = examAnswerValue(question, value);
   const selectedIndex = typeof selected === 'number' ? selected : undefined;
-  const answerText = typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
+  const answerText =
+    typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
   const answerLabel = strings.questions.answerLabel(order + 1);
 
   return (
@@ -61,7 +72,9 @@ const QuestionCard = memo(function QuestionCard({ question, order, total, value,
                 letter={option.letter}
                 selected={isSelected}
                 disabled={readOnly}
-                verdict={readOnly ? (isCorrect ? 'correct' : isSelected ? 'wrong' : undefined) : undefined}
+                verdict={
+                  readOnly ? (isCorrect ? 'correct' : isSelected ? 'wrong' : undefined) : undefined
+                }
                 onPress={readOnly ? undefined : () => onAnswer?.(question.index, optionIndex)}
               >
                 {renderText(option.text, 'exam-option')}
@@ -85,7 +98,15 @@ const QuestionCard = memo(function QuestionCard({ question, order, total, value,
   );
 });
 
-export function ExamQuestionList({ questions, answers, readOnly, strings, ids, renderText, onAnswer }: {
+export function ExamQuestionList({
+  questions,
+  answers,
+  readOnly,
+  strings,
+  ids,
+  renderText,
+  onAnswer,
+}: {
   questions: ExamQuestion[];
   answers: ExamAnswers;
   readOnly: boolean;

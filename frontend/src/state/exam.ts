@@ -4,7 +4,8 @@ import type { ExamQuestion } from '../exam/types.ts';
 
 export type ExamFormDraft = ExamDraft;
 
-export type ExamViewMode = 'form' | 'loading' | 'provider-required' | 'error' | 'cancelled' | 'questions';
+export type ExamViewMode =
+  'form' | 'loading' | 'provider-required' | 'error' | 'cancelled' | 'questions';
 
 export type ExamProgress = {
   index: number;

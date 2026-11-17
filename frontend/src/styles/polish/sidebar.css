@@ -38,8 +38,9 @@
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
@@ -82,10 +83,11 @@
     border-radius: var(--ui-radius-pill);
     background: var(--ui-card);
     color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                box-shadow var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      box-shadow var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .sidebar-search:hover {
     border-color: var(--ui-border-strong);
@@ -112,8 +114,12 @@
   #appShell #sidebar .sidebar-search:focus-within svg {
     color: var(--foreground);
   }
-  #appShell #sidebarSearch { color: var(--foreground); }
-  #appShell #sidebarSearch::placeholder { color: var(--ui-text-placeholder); }
+  #appShell #sidebarSearch {
+    color: var(--foreground);
+  }
+  #appShell #sidebarSearch::placeholder {
+    color: var(--ui-text-placeholder);
+  }
   #appShell #sidebarSearch:focus::placeholder {
     color: var(--ui-text-placeholder);
   }
@@ -163,8 +169,9 @@
     padding-inline: 8px;
     border-radius: var(--ui-radius-sm);
     color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell #sidebar .recent-item-text {
     color: var(--foreground);
@@ -178,12 +185,12 @@
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active,
-  #appShell #sidebar .recent-item[aria-current="true"] {
+  #appShell #sidebar .recent-item[aria-current='true'] {
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
   #appShell #sidebar .recent-item.active .recent-item-text,
-  #appShell #sidebar .recent-item[aria-current="true"] .recent-item-text {
+  #appShell #sidebar .recent-item[aria-current='true'] .recent-item-text {
     font-weight: var(--ui-font-weight-medium);
   }
   #appShell #sidebar .recent-item-actions {
@@ -193,8 +200,9 @@
   #appShell #sidebar .recent-item-overflow {
     border-radius: var(--ui-radius-sm);
     color: var(--ui-text-muted);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item-overflow:hover {
     background: var(--accent);
@@ -219,12 +227,13 @@
     padding: 6px 8px;
     border-radius: var(--ui-radius-sm);
     color: var(--foreground);
-    transition: background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-                color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    transition:
+      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
+      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
   }
   #appShell .sidebar-account-trigger:hover,
   #appShell .sidebar-account-trigger:focus-visible,
-  #appShell .sidebar-account-trigger[aria-expanded="true"] {
+  #appShell .sidebar-account-trigger[aria-expanded='true'] {
     background: var(--accent);
     color: var(--foreground);
   }
@@ -263,8 +272,9 @@
     padding: 0 8px;
     border-radius: var(--ui-radius-sm);
     font-size: var(--ui-font-size-xs);
-    transition: background-color var(--ui-duration-hover) ease,
-                color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   #appShell .sidebar-account-menu :is(button, a):hover {
     background: var(--accent);
@@ -323,8 +333,14 @@
   border-radius: var(--ui-radius-control, 8px);
   color: var(--ui-text-tertiary);
 }
-#appShell .sidebar-view-btn:hover { background: var(--accent); color: var(--foreground); }
-#appShell .sidebar-view-btn.active { background: var(--ui-bg-surface); color: var(--foreground); }
+#appShell .sidebar-view-btn:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+#appShell .sidebar-view-btn.active {
+  background: var(--ui-bg-surface);
+  color: var(--foreground);
+}
 
 /* ── Recents — tighter rows, quieter labels ── */
 /* Reference drawer affordances: compose / overflow icons on the Recents
@@ -347,7 +363,10 @@
 }
 #appShell .recent-item-tag-btn svg,
 #appShell .recent-item-archive svg,
-#appShell .recent-item-del svg { width: 14px; height: 14px; }
+#appShell .recent-item-del svg {
+  width: 14px;
+  height: 14px;
+}
 
 #appShell .recents-filter-chip-btn {
   border-radius: var(--ui-radius-pill);
@@ -391,7 +410,9 @@
    different marks appearing in place. The legacy `display: none` pair is
    overridden by the id selector, so the hidden glyph is still removed from
    the a11y tree by the button's own aria-label. */
-#themeToggle { position: relative; }
+#themeToggle {
+  position: relative;
+}
 #themeToggle .theme-sun,
 #themeToggle .theme-moon {
   display: block;
@@ -402,11 +423,25 @@
     opacity var(--ui-duration-fast) var(--ui-ease-out),
     transform var(--ui-duration-fast) var(--ui-ease-out);
 }
-[data-mode="dark"] #themeToggle .theme-sun { opacity: 0; transform: rotate(-60deg) scale(0.8); }
-[data-mode="dark"] #themeToggle .theme-moon { opacity: 1; transform: none; }
-[data-mode="light"] #themeToggle .theme-sun { opacity: 1; transform: none; }
-[data-mode="light"] #themeToggle .theme-moon { opacity: 0; transform: rotate(60deg) scale(0.8); }
+[data-mode='dark'] #themeToggle .theme-sun {
+  opacity: 0;
+  transform: rotate(-60deg) scale(0.8);
+}
+[data-mode='dark'] #themeToggle .theme-moon {
+  opacity: 1;
+  transform: none;
+}
+[data-mode='light'] #themeToggle .theme-sun {
+  opacity: 1;
+  transform: none;
+}
+[data-mode='light'] #themeToggle .theme-moon {
+  opacity: 0;
+  transform: rotate(60deg) scale(0.8);
+}
 @media (prefers-reduced-motion: reduce) {
   #themeToggle .theme-sun,
-  #themeToggle .theme-moon { transition: none; }
+  #themeToggle .theme-moon {
+    transition: none;
+  }
 }

@@ -7,11 +7,14 @@ import { JSDOM } from 'jsdom';
 const dom = new JSDOM('<!doctype html><html><body></body></html>');
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
-const { setChatStopState, resendLastUserMessage } = await import('../src/chat/turn/ui.ts');
-const { stateStore } = await import('../src/state/store.ts');
+const { setChatStopState } = await import('../src/chat/turn/composer.ts');
+const { cancelActiveTurn, detachActiveTurn } = await import('../src/chat/turn/cancelActiveTurn.ts');
+const { resendLastUserMessage } = await import('../src/chat/turn/resend.ts');
+const { turnState } = await import('../src/chat/turn/state.ts');
+const { dispatchSession } = await import('../src/store/index.ts');
 
 function setMessages(messages) {
-  stateStore.dispatch({ type: 'session/replace-messages', payload: messages });
+  dispatchSession({ type: 'session/replace-messages', payload: messages });
 }
 
 /* Build a fresh #composerPrimaryBtn and return it. */
@@ -27,24 +30,16 @@ function mountSendBtn() {
 test('Req 2.5: Stop is present iff the turn is in progress', () => {
   const btn = mountSendBtn();
 
-  // _turnUi-shaped states: Stop visibility is driven by inProgress.
-  const cases = [
-    { turnUi: { inProgress: true, lastUserMessageId: 'u1' }, stopPresent: true },
-    { turnUi: { inProgress: false, lastUserMessageId: 'u1' }, stopPresent: false },
-    { turnUi: { inProgress: true, lastUserMessageId: null }, stopPresent: true },
-    { turnUi: { inProgress: false, lastUserMessageId: null }, stopPresent: false },
-  ];
-
-  for (const { turnUi, stopPresent } of cases) {
-    setChatStopState(turnUi.inProgress);
+  for (const inProgress of [true, false]) {
+    setChatStopState(inProgress);
     assert.equal(
       btn.dataset.stop === '1',
-      stopPresent,
-      `inProgress=${turnUi.inProgress} should ${stopPresent ? '' : 'not '}present Stop`,
+      inProgress,
+      `inProgress=${inProgress} should ${inProgress ? '' : 'not '}present Stop`,
     );
     assert.equal(
       btn.classList.contains('chat-stop'),
-      stopPresent,
+      inProgress,
       'chat-stop class must mirror Stop presence',
     );
   }
@@ -63,69 +58,79 @@ test('Req 2.5/2.6: Stop present during a turn, gone after the turn ends', () => 
   assert.equal(btn.classList.contains('chat-stop'), false);
 });
 
-// ---------------------------------------------------------------------------
-// Req 2.7 — Resend starts a new turn from the most recent user message.
-// ---------------------------------------------------------------------------
-
-test('Req 2.7: resend dispatches askChatTurn with the latest user message text', () => {
-  const calls = [];
-  window.askChatTurn = (text) => { calls.push(text); };
-
-  const messages = [
-    { role: 'user', clientId: 'u1', content: 'first question' },
-    { role: 'assistant', clientId: 'a1', content: 'first answer' },
-    { role: 'user', clientId: 'u2', content: 'second question' },
-    { role: 'assistant', clientId: 'a2', content: 'stopped mid-answer' },
-  ];
-
-  setMessages(messages);
-  const dispatched = resendLastUserMessage();
-  assert.equal(dispatched, true, 'resend fires when a user message exists');
-  assert.deepEqual(calls, ['second question'], 'starts a new turn from the most recent user message');
-
-  delete window.askChatTurn;
-});
-
-test('Req 2.7: resend prefers rawText over content for the user message', () => {
-  const calls = [];
-  window.askChatTurn = (text) => { calls.push(text); };
-
-  const messages = [
-    { role: 'user', clientId: 'u1', rawText: 'raw markdown source', content: 'rendered content' },
-  ];
-
-  setMessages(messages);
-  resendLastUserMessage();
-  assert.deepEqual(calls, ['raw markdown source']);
-
-  delete window.askChatTurn;
-});
-
-test('Req 2.7: resend with no user message toasts and does not dispatch a turn', () => {
-  const calls = [];
-  window.askChatTurn = (text) => { calls.push(text); };
+test('resend without a user message returns false and shows a toast', () => {
   document.body.innerHTML = '';
+  setMessages([{ role: 'assistant', clientId: 'a1', content: 'no preceding user message' }]);
 
-  const messages = [
-    { role: 'assistant', clientId: 'a1', content: 'no preceding user message' },
-  ];
-
-  setMessages(messages);
-  const dispatched = resendLastUserMessage();
-  assert.equal(dispatched, false, 'no resend when there is no user message');
-  assert.equal(calls.length, 0, 'askChatTurn is never called without a target');
-  assert.equal(document.querySelectorAll('.msg-toast').length, 1, 'the no-target path toasts once');
-
-  delete window.askChatTurn;
+  assert.equal(resendLastUserMessage(), false);
+  assert.equal(document.querySelectorAll('.msg-toast').length, 1);
 });
 
-test('Req 2.7: resend does not dispatch when askChatTurn is unavailable', () => {
-  document.body.innerHTML = '';
-  const messages = [{ role: 'user', clientId: 'u1', content: 'question' }];
+test('cancellation uses the original request if renderer cleanup installs a new one', (t) => {
+  const calls = [];
+  t.after(() => {
+    turnState.activeChatCtl = null;
+    turnState.activeChatAbort = null;
+  });
+  const newRequest = () => calls.push('new request');
+  turnState.activeChatCtl = {
+    abort() {
+      turnState.activeChatAbort = newRequest;
+    },
+  };
+  turnState.activeChatAbort = (reason) => calls.push(reason);
 
-  // No window.askChatTurn wired.
-  setMessages(messages);
-  const dispatched = resendLastUserMessage();
-  assert.equal(dispatched, false, 'cannot resend without a send path');
-  assert.equal(document.querySelectorAll('.msg-toast').length, 1, 'falls back to a toast');
+  cancelActiveTurn('user-stop');
+
+  assert.deepEqual(calls, ['user-stop']);
+  assert.equal(turnState.activeChatAbort, newRequest);
+});
+
+test('superseding a turn keeps the precreated renderer and cancels the previous request', (t) => {
+  const calls = [];
+  t.after(() => {
+    turnState.activeChatCtl = null;
+    turnState.activeChatAbort = null;
+  });
+  const precreated = {
+    abort() {
+      calls.push('renderer');
+    },
+  };
+  turnState.activeChatCtl = precreated;
+  turnState.activeChatAbort = (reason) => calls.push(reason);
+
+  cancelActiveTurn('superseded', precreated);
+
+  assert.deepEqual(calls, ['superseded']);
+  assert.equal(turnState.activeChatCtl, precreated);
+});
+
+test('leaving a session aborts the request and renderer once and releases local ownership', () => {
+  const calls = [];
+  const abortPreparation = (reason) => calls.push(reason);
+  const renderer = {
+    abort() {
+      calls.push('renderer');
+    },
+  };
+  turnState.activeChatCtl = renderer;
+  turnState.pendingFirstTurnController = renderer;
+  turnState.activeChatAbort = abortPreparation;
+  turnState.activePagePreparationAbort = abortPreparation;
+  turnState.chatStreaming = true;
+  turnState.chatStopMode = true;
+  turnState.turnUi.inProgress = true;
+
+  detachActiveTurn('session-switch');
+  detachActiveTurn('session-switch');
+
+  assert.deepEqual(calls, ['session-switch', 'renderer']);
+  assert.equal(turnState.activeChatCtl, null);
+  assert.equal(turnState.pendingFirstTurnController, null);
+  assert.equal(turnState.activeChatAbort, null);
+  assert.equal(turnState.activePagePreparationAbort, null);
+  assert.equal(turnState.chatStreaming, false);
+  assert.equal(turnState.chatStopMode, false);
+  assert.equal(turnState.turnUi.inProgress, false);
 });

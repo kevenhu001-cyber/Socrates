@@ -59,45 +59,70 @@ let _vizParkObserver: IntersectionObserver | null = null;
 
 function _ensureVizParkObserver(): void {
   if (_vizParkObserver || typeof IntersectionObserver !== 'function') return;
-  _vizParkObserver = new IntersectionObserver(function (entries) {
-    for (let i = 0; i < entries.length; i++) {
-      const en = entries[i];
-      const card = en.target as ParkableVizCard;
-      if (en.isIntersecting) {
-        if (card.__vizParkTimer) { clearTimeout(card.__vizParkTimer); card.__vizParkTimer = null; }
-        if (card.getAttribute('data-viz-parked') === '1') _unparkVizCard(card);
-      } else if (!card.__vizParkTimer && card.getAttribute('data-viz-parked') !== '1') {
-        card.__vizParkTimer = setTimeout(function () {
-          card.__vizParkTimer = null;
-          _parkVizCard(card);
-        }, VIZ_PARK_DELAY_MS);
+  _vizParkObserver = new IntersectionObserver(
+    function (entries) {
+      for (let i = 0; i < entries.length; i++) {
+        const en = entries[i];
+        const card = en.target as ParkableVizCard;
+        if (en.isIntersecting) {
+          if (card.__vizParkTimer) {
+            clearTimeout(card.__vizParkTimer);
+            card.__vizParkTimer = null;
+          }
+          if (card.getAttribute('data-viz-parked') === '1') _unparkVizCard(card);
+        } else if (!card.__vizParkTimer && card.getAttribute('data-viz-parked') !== '1') {
+          card.__vizParkTimer = setTimeout(function () {
+            card.__vizParkTimer = null;
+            _parkVizCard(card);
+          }, VIZ_PARK_DELAY_MS);
+        }
       }
-    }
-    /* Generous bottom margin so a parked card remounts before the
+      /* Generous bottom margin so a parked card remounts before the
        user scrolls it into view — the reload happens offscreen. */
-  }, { rootMargin: '0px 0px 320px 0px' });
+    },
+    { rootMargin: '0px 0px 320px 0px' },
+  );
 }
 
 function _observeVizPark(card: ParkableVizCard): void {
   _ensureVizParkObserver();
   if (_vizParkObserver && card) {
-    try { _vizParkObserver.observe(card); } catch (e) { reportSwallow(e, 'viz._observeVizPark.observe'); /* ignore */ }
+    try {
+      _vizParkObserver.observe(card);
+    } catch (e) {
+      reportSwallow(e, 'viz._observeVizPark.observe'); /* ignore */
+    }
   }
 }
 
 function _unobserveVizPark(card: ParkableVizCard): void {
   if (_vizParkObserver && card) {
-    try { _vizParkObserver.unobserve(card); } catch (e) { reportSwallow(e, 'viz._unobserveVizPark.unobserve'); /* ignore */ }
+    try {
+      _vizParkObserver.unobserve(card);
+    } catch (e) {
+      reportSwallow(e, 'viz._unobserveVizPark.unobserve'); /* ignore */
+    }
   }
-  if (card && card.__vizParkTimer) { clearTimeout(card.__vizParkTimer); card.__vizParkTimer = null; }
+  if (card && card.__vizParkTimer) {
+    clearTimeout(card.__vizParkTimer);
+    card.__vizParkTimer = null;
+  }
 }
 
 function _parkVizCard(card: ParkableVizCard | null | undefined): void {
   if (!card || !card.isConnected) return;
   if (card.getAttribute('data-viz-state') !== 'ready') return;
   if (card.getAttribute('data-viz-parked') === '1') return;
-  try { if (document.visibilityState === 'hidden') return; } catch (e) { reportSwallow(e, 'viz._parkVizCard.visibilityState'); /* ignore */ }
-  try { if (document.fullscreenElement && card.contains(document.fullscreenElement)) return; } catch (e) { reportSwallow(e, 'viz._parkVizCard.fullscreenElement'); /* ignore */ }
+  try {
+    if (document.visibilityState === 'hidden') return;
+  } catch (e) {
+    reportSwallow(e, 'viz._parkVizCard.visibilityState'); /* ignore */
+  }
+  try {
+    if (document.fullscreenElement && card.contains(document.fullscreenElement)) return;
+  } catch (e) {
+    reportSwallow(e, 'viz._parkVizCard.fullscreenElement'); /* ignore */
+  }
   const iframe = card.querySelector('iframe');
   if (!iframe || !iframe.getAttribute('data-srcdoc')) return;
   /* Removing srcdoc navigates the frame to about:blank, tearing down
@@ -115,17 +140,30 @@ function _unparkVizCard(card: ParkableVizCard | null | undefined): void {
   if (!iframe || !srcdoc) return;
   card.setAttribute('data-viz-state', 'loading');
   iframe.setAttribute('srcdoc', srcdoc);
-  if (card.id && !_pendingViz.some(function (item: { id: string }) { return item.id === card.id; })) {
+  if (
+    card.id &&
+    !_pendingViz.some(function (item: { id: string }) {
+      return item.id === card.id;
+    })
+  ) {
     _pendingViz.push({ id: card.id });
   }
-  try { _processPendingViz?.(); } catch (e) { reportSwallow(e, 'viz._unparkVizCard.processPendingViz'); /* ignore */ }
+  try {
+    _processPendingViz?.();
+  } catch (e) {
+    reportSwallow(e, 'viz._unparkVizCard.processPendingViz'); /* ignore */
+  }
 }
 
 /* Test hooks — the IntersectionObserver path needs a real layout
    engine, but the park/unpark mechanics are plain DOM and worth
    unit coverage (see test/vizPark.test.mjs). */
-export function parkVizCardForTest(card: ParkableVizCard): void { _parkVizCard(card); }
-export function unparkVizCardForTest(card: ParkableVizCard): void { _unparkVizCard(card); }
+export function parkVizCardForTest(card: ParkableVizCard): void {
+  _parkVizCard(card);
+}
+export function unparkVizCardForTest(card: ParkableVizCard): void {
+  _unparkVizCard(card);
+}
 
 /**
  * Swap freshly-parsed `data-viz-state="loading"` placeholders inside `root`
@@ -145,11 +183,18 @@ export function reclaimVizCards(root: Element | null): void {
     try {
       card.replaceWith(cached);
       dropPendingVizId(card.id);
-    } catch (e) { reportSwallow(e, 'viz.reclaimVizCards.replaceWith'); /* leave the placeholder to render normally */ }
+    } catch (e) {
+      reportSwallow(
+        e,
+        'viz.reclaimVizCards.replaceWith',
+      ); /* leave the placeholder to render normally */
+    }
   }
 }
 
-export function findLiveVizFrame(source: unknown): { id: string; iframe: HTMLIFrameElement } | null {
+export function findLiveVizFrame(
+  source: unknown,
+): { id: string; iframe: HTMLIFrameElement } | null {
   if (!source) return null;
   let hit: { id: string; iframe: HTMLIFrameElement } | null = null;
   _liveVizCards.forEach(function (card, cardId) {

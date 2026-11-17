@@ -15,7 +15,9 @@ test('every learn label is filled in, in every language', () => {
   for (const language of ['en', 'zh'] as const) {
     const strings = learnStrings(language);
     for (const path of keyPaths(strings)) {
-      const value = path.split('.').reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], strings);
+      const value = path
+        .split('.')
+        .reduce<unknown>((node, key) => (node as Record<string, unknown>)[key], strings);
       assert.equal(typeof value, 'string', `${language}.${path} must be a string`);
       assert.ok((value as string).length > 0, `${language}.${path} must not be empty`);
     }

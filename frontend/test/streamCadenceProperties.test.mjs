@@ -18,11 +18,12 @@ const TIER_BOUNDARIES = [0, 31999, 32000];
 
 /* A non-negative accumulated length, biased toward tier boundaries but also
    sampling the full range (including very large answers). */
-const accumulatedLength = () => fc.oneof(
-  fc.integer({ min: 0, max: 20000 }),
-  fc.constantFrom(...TIER_BOUNDARIES),
-  fc.integer({ min: 0, max: 2_000_000 }),
-);
+const accumulatedLength = () =>
+  fc.oneof(
+    fc.integer({ min: 0, max: 20000 }),
+    fc.constantFrom(...TIER_BOUNDARIES),
+    fc.integer({ min: 0, max: 2_000_000 }),
+  );
 
 // ---------------------------------------------------------------------------
 // Feature: chat-experience-revamp, Property 8: Repaint cadence is bounded and
@@ -55,8 +56,8 @@ test('Feature: chat-experience-revamp, Property 8: Repaint cadence is bounded an
       // A longer (or equal) accumulated length never paints more frequently.
       assert.ok(
         getStreamRenderInterval(hi) >= getStreamRenderInterval(lo),
-        `interval decreased from length ${lo} (${getStreamRenderInterval(lo)}) `
-          + `to length ${hi} (${getStreamRenderInterval(hi)})`,
+        `interval decreased from length ${lo} (${getStreamRenderInterval(lo)}) ` +
+          `to length ${hi} (${getStreamRenderInterval(hi)})`,
       );
     }),
     { numRuns: RUNS },

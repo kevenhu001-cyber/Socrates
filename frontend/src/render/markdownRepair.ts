@@ -52,14 +52,25 @@ const HEADING_RUN_RE = /^([ \t]{0,3}(?:>[ \t]*|(?:[-*+]|\d{1,9}[.)])[ \t]+)*)([#
 /* Alternation, not a character class: ZWJ inside a class reads as a joined
    emoji sequence to eslint (no-misleading-character-class). */
 const LEAD_INVISIBLE = '(?:\\u200b|\\u200c|\\u200d|\\u2060|\\ufeff|\\u00a0|\\u3000)';
-const HEADING_LEAD_JUNK_RE = new RegExp('^(?:' + LEAD_INVISIBLE + '|[ \\t])*' + LEAD_INVISIBLE + '(?:' + LEAD_INVISIBLE + '|[ \\t])*(?=[#＃])');
+const HEADING_LEAD_JUNK_RE = new RegExp(
+  '^(?:' +
+    LEAD_INVISIBLE +
+    '|[ \\t])*' +
+    LEAD_INVISIBLE +
+    '(?:' +
+    LEAD_INVISIBLE +
+    '|[ \\t])*(?=[#＃])',
+);
 const HEADING_OVERINDENT_RE = /^(?:\t|[ ]{4,}|[ ]{0,3}\t)[ \t]*(?=[#＃]{1,6}[ \t]+\S)/;
 const LIST_OR_INDENTED_RE = /^(?:[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]|\t|[ ]{4})/;
-const BOLD_WRAPPED_HEADING_RE = /^([ \t]{0,3})(\*\*|__)[ \t]*(#{1,6}|＃{1,6})[ \t]*(\S.*?)[ \t]*\2[ \t]*$/;
+const BOLD_WRAPPED_HEADING_RE =
+  /^([ \t]{0,3})(\*\*|__)[ \t]*(#{1,6}|＃{1,6})[ \t]*(\S.*?)[ \t]*\2[ \t]*$/;
 /* `##4. 标题` / `##4、标题` — a numbered section title. `##3 条` stays prose. */
 const NUMBERED_TITLE_RE = /^\d{1,3}[.．、)）]\s*\S/;
-const GLUED_HEADING_RE = /^(.*?[。！？；：.!?;:…）)】」』”"*`~$》\]，、])[ \t]*((?:#{2,6}|＃{2,6})(?![#＃])[ \t]*[^\s#＃].*)$/;
-const HEADING_DIRECTIVE_RE = /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
+const GLUED_HEADING_RE =
+  /^(.*?[。！？；：.!?;:…）)】」』”"*`~$》\]，、])[ \t]*((?:#{2,6}|＃{2,6})(?![#＃])[ \t]*[^\s#＃].*)$/;
+const HEADING_DIRECTIVE_RE =
+  /^(?:include|define|pragma|ifdef|ifndef|elif|else|endif|error|warning|line|undef|import|using|region|endregion|!)/;
 
 interface HeadingScanState {
   inFence: boolean;
@@ -187,7 +198,9 @@ export function fixEmphasisMarkers(s: string): string {
     stash.push(m);
     return '\uE000SOCRATES_EM_' + id + '\uE001';
   };
-  const lines = String(s ?? '').replace(/`[^`\n]+`/g, keep).split('\n');
+  const lines = String(s ?? '')
+    .replace(/`[^`\n]+`/g, keep)
+    .split('\n');
   let inFence = false;
   let fenceChar = '';
   let inMath = false;
@@ -196,16 +209,20 @@ export function fixEmphasisMarkers(s: string): string {
     const fence = line.match(/^[ \t]{0,3}(`{3,}|~{3,})/);
     if (fence) {
       const ch = fence[1].charAt(0);
-      if (!inFence) { inFence = true; fenceChar = ch; }
-      else if (ch === fenceChar) { inFence = false; fenceChar = ''; }
+      if (!inFence) {
+        inFence = true;
+        fenceChar = ch;
+      } else if (ch === fenceChar) {
+        inFence = false;
+        fenceChar = '';
+      }
       continue;
     }
     if (inFence) continue;
     /* Same display-math tracking as fixHeadingMarkers: only lines that
        START inside the region are skipped. */
     const dollarRun = (line.match(/\$\$/g) || []).length;
-    const bracketDelta =
-      (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
+    const bracketDelta = (line.match(/\\\[/g) || []).length - (line.match(/\\\]/g) || []).length;
     const wasMath = inMath;
     if (dollarRun % 2 === 1 || bracketDelta !== 0) inMath = !inMath;
     if (wasMath) continue;
@@ -215,21 +232,27 @@ export function fixEmphasisMarkers(s: string): string {
     out = out.replace(/＿{2,}/g, (m) => '_'.repeat(m.length));
     /* No lookbehind (older WebViews lack it): the (^|[^*]) prefix keeps
        `***` triples out and is re-emitted verbatim. */
-    out = out.replace(/(^|[^*])\*\*(?!\*)([^*\n]*?\S[^*\n]*?)\*\*(?!\*)/g,
+    out = out.replace(
+      /(^|[^*])\*\*(?!\*)([^*\n]*?\S[^*\n]*?)\*\*(?!\*)/g,
       (m, pre: string, inner: string) => {
         const trimmed = inner.replace(/^[ \t]+/, '').replace(/[ \t]+$/, '');
         if (!trimmed || trimmed === inner) return m;
         return pre + '**' + trimmed + '**';
-      });
-    out = out.replace(/(^|[^_])__(?!_)([^_\n]*?\S[^_\n]*?)__(?!_)/g,
+      },
+    );
+    out = out.replace(
+      /(^|[^_])__(?!_)([^_\n]*?\S[^_\n]*?)__(?!_)/g,
       (m, pre: string, inner: string) => {
         const trimmed = inner.replace(/^[ \t]+/, '').replace(/[ \t]+$/, '');
         if (!trimmed || trimmed === inner) return m;
         return pre + '__' + trimmed + '__';
-      });
+      },
+    );
     lines[i] = out;
   }
-  return lines.join('\n').replace(/\uE000SOCRATES_EM_(\d+)\uE001/g, (_m, id: string) => stash[Number(id)]);
+  return lines
+    .join('\n')
+    .replace(/\uE000SOCRATES_EM_(\d+)\uE001/g, (_m, id: string) => stash[Number(id)]);
 }
 
 /* Detect and fix a GFM table separator row.
@@ -242,8 +265,14 @@ export function fixMarkdownTableSeparators(s: string): string {
     const cur = lines[i];
     if (!/\|/.test(prev)) continue;
     if (!/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(cur)) continue;
-    const headerCells = prev.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').length;
-    const sepCells = cur.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
+    const headerCells = prev
+      .replace(/^\s*\|/, '')
+      .replace(/\|\s*$/, '')
+      .split('|').length;
+    const sepCells = cur
+      .replace(/^\s*\|/, '')
+      .replace(/\|\s*$/, '')
+      .split('|');
     if (sepCells.length === headerCells) {
       if (!/\|/.test(cur.replace(/^\s*\|/, '').slice(-1)) || !/\|\s*$/.test(cur)) {
         lines[i] = cur.replace(/\s*$/, '') + ' |';

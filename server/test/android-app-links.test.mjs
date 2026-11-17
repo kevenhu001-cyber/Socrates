@@ -7,7 +7,9 @@ import { shutdownPubsub } from '../src/lib/pubsub.js';
 let server;
 const priorPackage = process.env.ANDROID_APP_LINKS_PACKAGE_NAME;
 const priorFingerprints = process.env.ANDROID_APP_LINKS_SHA256_FINGERPRINTS;
-before(async () => { server = await listen(app); });
+before(async () => {
+  server = await listen(app);
+});
 after(async () => {
   if (priorPackage === undefined) delete process.env.ANDROID_APP_LINKS_PACKAGE_NAME;
   else process.env.ANDROID_APP_LINKS_PACKAGE_NAME = priorPackage;
@@ -40,8 +42,14 @@ test('valid release fingerprints produce only the expected package association a
   process.env.ANDROID_APP_LINKS_PACKAGE_NAME = 'com.socrates.android';
   const fingerprint = Array(32).fill('AB').join(':');
   process.env.ANDROID_APP_LINKS_SHA256_FINGERPRINTS = ` ${fingerprint.toLowerCase()},bad,${fingerprint} `;
-  assert.deepEqual(await association(), [{
-    relation: ['delegate_permission/common.handle_all_urls'],
-    target: { namespace: 'android_app', package_name: 'com.socrates.android', sha256_cert_fingerprints: [fingerprint] },
-  }]);
+  assert.deepEqual(await association(), [
+    {
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: 'com.socrates.android',
+        sha256_cert_fingerprints: [fingerprint],
+      },
+    },
+  ]);
 });

@@ -47,22 +47,43 @@ export function vizReasonText(reason: VizFailureReason): string {
 function reasonFromValidationFailure(first: Record<string, unknown>): VizFailureReason {
   const issues = Array.isArray(first.issues) ? first.issues.join(' ') : '';
   switch (first.stage) {
-    case 'payload_shape': return /expected array, received undefined|required/i.test(issues) ? 'dataMissing' : 'dataFormat';
-    case 'semantic': return /at least one numeric|no finite values/i.test(issues) ? 'dataMissing' : 'mismatch';
-    case 'envelope': return /template/i.test(issues) ? 'unknownTemplate' : 'dataMissing';
-    case 'envelope_misuse': return 'syntax';
-    default: return 'unknown';
+    case 'payload_shape':
+      return /expected array, received undefined|required/i.test(issues)
+        ? 'dataMissing'
+        : 'dataFormat';
+    case 'semantic':
+      return /at least one numeric|no finite values/i.test(issues) ? 'dataMissing' : 'mismatch';
+    case 'envelope':
+      return /template/i.test(issues) ? 'unknownTemplate' : 'dataMissing';
+    case 'envelope_misuse':
+      return 'syntax';
+    default:
+      return 'unknown';
   }
 }
 
 /** Map a server failure detail (or tool error code) to one readable reason. */
-export function reasonFromToolFailure(detail: unknown, errorCode?: string | null): VizFailureReason {
-  const record = detail && typeof detail === 'object' && !Array.isArray(detail) ? detail as Record<string, unknown> : {};
+export function reasonFromToolFailure(
+  detail: unknown,
+  errorCode?: string | null,
+): VizFailureReason {
+  const record =
+    detail && typeof detail === 'object' && !Array.isArray(detail)
+      ? (detail as Record<string, unknown>)
+      : {};
   const truncatedCodes = ['arguments_truncated', 'arguments_too_large', 'arguments_parse_failed'];
-  if (record.truncated === true || record.stage === 'openui_truncated' || truncatedCodes.includes(errorCode ?? '')) return 'truncated';
+  if (
+    record.truncated === true ||
+    record.stage === 'openui_truncated' ||
+    truncatedCodes.includes(errorCode ?? '')
+  )
+    return 'truncated';
   if (record.stage === 'openui_syntax' || record.stage === 'openui_program') return 'syntax';
-  if (['demonstration', 'physics', 'learning', 'envelope', 'action'].includes(String(record.stage))) return 'structure';
-  const first = Array.isArray(record.visualizations) ? record.visualizations[0] as Record<string, unknown> | undefined : undefined;
+  if (['demonstration', 'physics', 'learning', 'envelope', 'action'].includes(String(record.stage)))
+    return 'structure';
+  const first = Array.isArray(record.visualizations)
+    ? (record.visualizations[0] as Record<string, unknown> | undefined)
+    : undefined;
   return first ? reasonFromValidationFailure(first) : 'unknown';
 }
 
@@ -81,14 +102,34 @@ export function VisualizationTable({ rows }: { rows: Array<Array<string | number
   return (
     <div className="ds-table-wrap visualization-table-wrap viz-state-table" tabIndex={0}>
       <table className="ds-table visualization-table">
-        <thead><tr>{header.map((cell, index) => <th key={index} scope="col"><MathText text={cell === null ? '' : String(cell)} /></th>)}</tr></thead>
+        <thead>
+          <tr>
+            {header.map((cell, index) => (
+              <th key={index} scope="col">
+                <MathText text={cell === null ? '' : String(cell)} />
+              </th>
+            ))}
+          </tr>
+        </thead>
         <tbody>
           {shown.map((row, rowIndex) => (
-            <tr key={rowIndex}>{row.map((cell, index) => <td key={index} data-numeric={typeof cell === 'number' ? 'true' : undefined}><MathText text={cell === null || cell === '' ? '—' : String(cell)} /></td>)}</tr>
+            <tr key={rowIndex}>
+              {row.map((cell, index) => (
+                <td key={index} data-numeric={typeof cell === 'number' ? 'true' : undefined}>
+                  <MathText text={cell === null || cell === '' ? '—' : String(cell)} />
+                </td>
+              ))}
+            </tr>
           ))}
         </tbody>
       </table>
-      {body.length > shown.length ? <p className="viz-state-note">{i18n('viz.state.rowsShown', 'Showing the first {shown} of {total} rows').replace('{shown}', String(shown.length)).replace('{total}', String(body.length))}</p> : null}
+      {body.length > shown.length ? (
+        <p className="viz-state-note">
+          {i18n('viz.state.rowsShown', 'Showing the first {shown} of {total} rows')
+            .replace('{shown}', String(shown.length))
+            .replace('{total}', String(body.length))}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -109,17 +150,30 @@ export interface VisualizationSkeletonProps {
  * The status line sits inside the stage, where the card shows its own
  * progress line, instead of adding a row that would vanish later.
  */
-export function VisualizationSkeleton({ title, phase, template, caption }: VisualizationSkeletonProps) {
-  const label = phase === 'receiving'
-    ? i18n('viz.state.receiving', 'Receiving data…')
-    : i18n('viz.state.loadingRenderer', 'Loading the chart renderer…');
+export function VisualizationSkeleton({
+  title,
+  phase,
+  template,
+  caption,
+}: VisualizationSkeletonProps) {
+  const label =
+    phase === 'receiving'
+      ? i18n('viz.state.receiving', 'Receiving data…')
+      : i18n('viz.state.loadingRenderer', 'Loading the chart renderer…');
   return (
-    <section className="viz-state-skeleton" aria-busy="true" data-viz-state={phase} data-renderer={visualizationRendererKind(template)}>
+    <section
+      className="viz-state-skeleton"
+      aria-busy="true"
+      data-viz-state={phase}
+      data-renderer={visualizationRendererKind(template)}
+    >
       <header className="viz-skeleton-header">
         <h3 className="viz-skeleton-title">{title || '\u00a0'}</h3>
       </header>
       <div className="viz-skeleton-stage">
-        <p className="viz-skeleton-progress" role="status">{label}</p>
+        <p className="viz-skeleton-progress" role="status">
+          {label}
+        </p>
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />
@@ -145,31 +199,64 @@ export interface VisualizationFailureProps {
   children?: ReactNode;
 }
 
-export function VisualizationFailure({ title, reason, data, rows: providedRows, details, onRetry, fixPrompt, readOnly, children }: VisualizationFailureProps) {
+export function VisualizationFailure({
+  title,
+  reason,
+  data,
+  rows: providedRows,
+  details,
+  onRetry,
+  fixPrompt,
+  readOnly,
+  children,
+}: VisualizationFailureProps) {
   const host = useRef<HTMLElement>(null);
   const [tableOpen, setTableOpen] = useState(false);
   let rows = providedRows ?? [];
   if (!providedRows && data !== undefined) {
-    try { rows = visualizationTableRows(data); } catch { rows = []; }
+    try {
+      rows = visualizationTableRows(data);
+    } catch {
+      rows = [];
+    }
   }
   const hasTable = rows.length > 1;
   const fix = () => {
     if (!fixPrompt || readOnly) return;
-    host.current?.dispatchEvent(new CustomEvent('tool-retry', {
-      bubbles: true,
-      detail: { tool: 'intelligent_ui', prompt: fixPrompt },
-    }));
+    host.current?.dispatchEvent(
+      new CustomEvent('tool-retry', {
+        bubbles: true,
+        detail: { tool: 'intelligent_ui', prompt: fixPrompt },
+      }),
+    );
   };
   return (
-    <section className="viz-state viz-state-failure" ref={host} data-viz-state="failed" data-viz-reason={reason}>
+    <section
+      className="viz-state viz-state-failure"
+      ref={host}
+      data-viz-state="failed"
+      data-viz-reason={reason}
+    >
       {title ? <h3 className="viz-state-title">{title}</h3> : null}
       <div className="viz-state-body" role="status">
-        <strong className="viz-state-heading">{i18n('viz.state.failedTitle', 'The chart could not be drawn')}</strong>
-        <p className="viz-state-reason">{i18n('viz.state.reasonLabel', 'Reason: ')}{vizReasonText(reason)}</p>
+        <strong className="viz-state-heading">
+          {i18n('viz.state.failedTitle', 'The chart could not be drawn')}
+        </strong>
+        <p className="viz-state-reason">
+          {i18n('viz.state.reasonLabel', 'Reason: ')}
+          {vizReasonText(reason)}
+        </p>
         <div className="viz-state-actions">
           {hasTable ? (
-            <Button size="sm" data-viz-fallback="table" aria-expanded={tableOpen} onClick={() => setTableOpen((open) => !open)}>
-              {tableOpen ? i18n('viz.action.hideTable', 'Hide table') : i18n('viz.action.viewTable', 'View as table')}
+            <Button
+              size="sm"
+              data-viz-fallback="table"
+              aria-expanded={tableOpen}
+              onClick={() => setTableOpen((open) => !open)}
+            >
+              {tableOpen
+                ? i18n('viz.action.hideTable', 'Hide table')
+                : i18n('viz.action.viewTable', 'View as table')}
             </Button>
           ) : null}
           {onRetry ? (
@@ -178,7 +265,12 @@ export function VisualizationFailure({ title, reason, data, rows: providedRows, 
             </Button>
           ) : null}
           {fixPrompt && !readOnly ? (
-            <Button size="sm" variant={hasTable ? 'ghost' : 'outline'} data-viz-fallback="fix" onClick={fix}>
+            <Button
+              size="sm"
+              variant={hasTable ? 'ghost' : 'outline'}
+              data-viz-fallback="fix"
+              onClick={fix}
+            >
               {i18n('viz.action.fixWithAi', 'Fix with AI')}
             </Button>
           ) : null}

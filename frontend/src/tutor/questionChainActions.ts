@@ -11,7 +11,8 @@ export function followChainCandidate(candidate: ChainCandidate): void {
     requestMistakeRedo(candidate.id.replace(/^mistake:/, ''));
     return;
   }
-  void import('../chat/sendPipeline.ts').then(({ submitChatMessage }) => submitChatMessage(candidate.text))
+  void import('../chat/sendPipeline.ts')
+    .then(({ submitChatMessage }) => submitChatMessage(candidate.text))
     .catch((error) => {
       reportSwallow(error, 'tutor/questionChainActions:followChain');
       /* Sending failed to load: leave the question in the composer instead. */

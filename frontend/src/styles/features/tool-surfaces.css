@@ -8,83 +8,138 @@
    The tool surfaces share one neutral scale: a light 1px outline, one
    quiet surface, generous padding, and no brand-colour state changes.
    Runtime semantics (error/delete) are the only intentional colour cue. */
-:root{
-  --tool-card-bg:hsl(0 0% 100%/.58);
-  --tool-card-bg-hover:hsl(0 0% 100%/.84);
-  --tool-card-bg-sunken:hsl(0 0% 0%/.035);
-  --tool-card-surface:hsl(0 0% 100%/.9);
-  --tool-card-border:hsl(0 0% 0%/.12);
-  --tool-card-border-strong:hsl(0 0% 0%/.22);
-  --tool-card-text:hsl(0 0% 16%);
-  --tool-card-text-muted:hsl(0 0% 36%);
-  --tool-card-text-subtle:hsl(0 0% 50%);
-  --tool-card-icon:hsl(0 0% 42%);
-  --tool-card-icon-hover:hsl(0 0% 16%);
-  --tool-card-radius:16px;
-  --tool-card-radius-sm:12px;
-  --tool-card-pad-y:12px;
-  --tool-card-pad-x:14px;
-  --tool-card-title-size:14px;
-  --tool-card-title-weight:var(--ui-font-weight-semibold);
-  --tool-card-desc-size:12.5px;
-  --tool-card-desc-weight:var(--ui-font-weight-regular);
-  --tool-card-meta-size:11px;
-  --tool-card-meta-weight:var(--ui-font-weight-regular);
-  --tool-card-focus:hsl(0 0% 0%/.36);
-  --tool-card-shadow:0 8px 24px hsl(0 0% 0%/.08);
-  --tool-card-danger:hsl(0 58% 46%);
-  --tool-card-danger-soft:hsl(0 58% 46%/.1);
-  --tool-card-danger-soft-strong:hsl(0 58% 46%/.18)
+:root {
+  --tool-card-bg: hsl(0 0% 100%/0.58);
+  --tool-card-bg-hover: hsl(0 0% 100%/0.84);
+  --tool-card-bg-sunken: hsl(0 0% 0%/0.035);
+  --tool-card-surface: hsl(0 0% 100%/0.9);
+  --tool-card-border: hsl(0 0% 0%/0.12);
+  --tool-card-border-strong: hsl(0 0% 0%/0.22);
+  --tool-card-text: hsl(0 0% 16%);
+  --tool-card-text-muted: hsl(0 0% 36%);
+  --tool-card-text-subtle: hsl(0 0% 50%);
+  --tool-card-icon: hsl(0 0% 42%);
+  --tool-card-icon-hover: hsl(0 0% 16%);
+  --tool-card-radius: 16px;
+  --tool-card-radius-sm: 12px;
+  --tool-card-pad-y: 12px;
+  --tool-card-pad-x: 14px;
+  --tool-card-title-size: 14px;
+  --tool-card-title-weight: var(--ui-font-weight-semibold);
+  --tool-card-desc-size: 12.5px;
+  --tool-card-desc-weight: var(--ui-font-weight-regular);
+  --tool-card-meta-size: 11px;
+  --tool-card-meta-weight: var(--ui-font-weight-regular);
+  --tool-card-focus: hsl(0 0% 0%/0.36);
+  --tool-card-shadow: 0 8px 24px hsl(0 0% 0%/0.08);
+  --tool-card-danger: hsl(0 58% 46%);
+  --tool-card-danger-soft: hsl(0 58% 46%/0.1);
+  --tool-card-danger-soft-strong: hsl(0 58% 46%/0.18);
 }
-[data-theme=socrates][data-mode=dark]{
-  --tool-card-bg:var(--ui-bg-raised);
-  --tool-card-bg-hover:var(--accent);
-  --tool-card-bg-sunken:var(--background);
-  --tool-card-surface:var(--ui-bg-surface);
-  --tool-card-border:var(--ui-border-subtle);
-  --tool-card-border-strong:var(--border);
-  --tool-card-text:var(--foreground);
-  --tool-card-text-muted:var(--muted-foreground);
-  --tool-card-text-subtle:var(--ui-text-tertiary);
-  --tool-card-icon:var(--ui-text-tertiary);
-  --tool-card-icon-hover:var(--foreground);
-  --tool-card-focus:var(--ui-border-strong);
-  --tool-card-shadow:var(--ui-shadow-popover);
-  --tool-card-danger:var(--destructive);
-  --tool-card-danger-soft:color-mix(in srgb,var(--destructive) 12%,var(--background));
-  --tool-card-danger-soft-strong:color-mix(in srgb,var(--destructive) 22%,var(--background))
+[data-theme='socrates'][data-mode='dark'] {
+  --tool-card-bg: var(--ui-bg-raised);
+  --tool-card-bg-hover: var(--accent);
+  --tool-card-bg-sunken: var(--background);
+  --tool-card-surface: var(--ui-bg-surface);
+  --tool-card-border: var(--ui-border-subtle);
+  --tool-card-border-strong: var(--border);
+  --tool-card-text: var(--foreground);
+  --tool-card-text-muted: var(--muted-foreground);
+  --tool-card-text-subtle: var(--ui-text-tertiary);
+  --tool-card-icon: var(--ui-text-tertiary);
+  --tool-card-icon-hover: var(--foreground);
+  --tool-card-focus: var(--ui-border-strong);
+  --tool-card-shadow: var(--ui-shadow-popover);
+  --tool-card-danger: var(--destructive);
+  --tool-card-danger-soft: color-mix(in srgb, var(--destructive) 12%, var(--background));
+  --tool-card-danger-soft-strong: color-mix(in srgb, var(--destructive) 22%, var(--background));
 }
 
 /* Menus and card surfaces */
 .slash-command-palette,
-.prompt-templates-modal{
-  background:var(--tool-card-surface);
-  border:1px solid var(--tool-card-border);
-  border-radius:var(--tool-card-radius);
-  box-shadow:var(--tool-card-shadow);
+.prompt-templates-modal {
+  background: var(--tool-card-surface);
+  border: 1px solid var(--tool-card-border);
+  border-radius: var(--tool-card-radius);
+  box-shadow: var(--tool-card-shadow);
 }
-.composer-tools-item{
-  transition:color .16s ease
+.composer-tools-item {
+  transition: color 0.16s ease;
 }
 .composer-tools-item:hover,
-.composer-tools-item:focus-visible {color:var(--tool-card-text)}
-.composer-tools-item:active{color:var(--tool-card-text);transform:none}
-.composer-tools-icon{width:22px;height:22px;color:var(--tool-card-icon)}
+.composer-tools-item:focus-visible {
+  color: var(--tool-card-text);
+}
+.composer-tools-item:active {
+  color: var(--tool-card-text);
+  transform: none;
+}
+.composer-tools-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--tool-card-icon);
+}
 .composer-tools-item:hover .composer-tools-icon,
-.composer-tools-item:focus-visible .composer-tools-icon{color:var(--tool-card-icon-hover)}
-.composer-tools-copy > span{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.composer-tools-copy small{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-subtle)}
+.composer-tools-item:focus-visible .composer-tools-icon {
+  color: var(--tool-card-icon-hover);
+}
+.composer-tools-copy > span {
+  font-size: var(--tool-card-title-size);
+  font-weight: var(--tool-card-title-weight);
+  color: var(--tool-card-text);
+}
+.composer-tools-copy small {
+  font-size: var(--tool-card-desc-size);
+  font-weight: var(--tool-card-desc-weight);
+  color: var(--tool-card-text-subtle);
+}
 
 /* Skills / shortcuts and slash-command entries */
-.prompt-templates-body{padding:18px 20px 20px;gap:10px}
-.prompt-row{gap:12px;padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
-.prompt-row:hover{background:var(--tool-card-bg-hover);border-color:var(--tool-card-border-strong)}
-.prompt-row-icon{display:grid;place-items:center;width:26px;height:26px;font-size:var(--ui-font-size-md);color:var(--tool-card-icon);filter:grayscale(1)}
-.prompt-row-icon svg{width:18px;height:18px;color:currentColor}
-.prompt-row-main{gap:3px}
-.prompt-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text);gap:8px}
+.prompt-templates-body {
+  padding: 18px 20px 20px;
+  gap: 10px;
+}
+.prompt-row {
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--tool-card-border);
+  border-radius: var(--tool-card-radius);
+  background: var(--tool-card-bg);
+}
+.prompt-row:hover {
+  background: var(--tool-card-bg-hover);
+  border-color: var(--tool-card-border-strong);
+}
+.prompt-row-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: var(--ui-font-size-md);
+  color: var(--tool-card-icon);
+  filter: grayscale(1);
+}
+.prompt-row-icon svg {
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+}
+.prompt-row-main {
+  gap: 3px;
+}
+.prompt-row-title {
+  font-size: var(--tool-card-title-size);
+  font-weight: var(--tool-card-title-weight);
+  color: var(--tool-card-text);
+  gap: 8px;
+}
 .prompt-row-shortcut {
-  padding:0;background:transparent;color:var(--tool-card-text-subtle);font-size:var(--tool-card-meta-size);font-weight:var(--tool-card-meta-weight);border-radius:0;
+  padding: 0;
+  background: transparent;
+  color: var(--tool-card-text-subtle);
+  font-size: var(--tool-card-meta-size);
+  font-weight: var(--tool-card-meta-weight);
+  border-radius: 0;
 }
 .slash-command-shortcut {
   display: inline-flex;
@@ -98,21 +153,66 @@
   font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
 }
-.prompt-row-desc,.slash-command-desc{font-size:var(--tool-card-desc-size);font-weight:var(--tool-card-desc-weight);color:var(--tool-card-text-muted)}
-.prompt-row-actions{gap:6px}
-.slash-command-palette{overflow:hidden}
-.slash-command-head{padding:12px 14px;color:var(--tool-card-text-subtle);border-bottom:1px solid var(--tool-card-border);font-weight:var(--tool-card-title-weight)}
-.slash-command-row{min-height:46px;padding:10px 14px;border-radius:var(--tool-card-radius-sm);transition:background-color .16s ease,color .16s ease}
-.slash-command-row:hover,.slash-command-row.selected{background:var(--tool-card-bg-hover)}
-.slash-command-icon{color:var(--tool-card-icon);filter:grayscale(1)}
-.slash-command-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.slash-command-foot{border-top:1px solid var(--tool-card-border)}
+.prompt-row-desc,
+.slash-command-desc {
+  font-size: var(--tool-card-desc-size);
+  font-weight: var(--tool-card-desc-weight);
+  color: var(--tool-card-text-muted);
+}
+.prompt-row-actions {
+  gap: 6px;
+}
+.slash-command-palette {
+  overflow: hidden;
+}
+.slash-command-head {
+  padding: 12px 14px;
+  color: var(--tool-card-text-subtle);
+  border-bottom: 1px solid var(--tool-card-border);
+  font-weight: var(--tool-card-title-weight);
+}
+.slash-command-row {
+  min-height: 46px;
+  padding: 10px 14px;
+  border-radius: var(--tool-card-radius-sm);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+.slash-command-row:hover,
+.slash-command-row.selected {
+  background: var(--tool-card-bg-hover);
+}
+.slash-command-icon {
+  color: var(--tool-card-icon);
+  filter: grayscale(1);
+}
+.slash-command-title {
+  font-size: var(--tool-card-title-size);
+  font-weight: var(--tool-card-title-weight);
+  color: var(--tool-card-text);
+}
+.slash-command-foot {
+  border-top: 1px solid var(--tool-card-border);
+}
 
 /* Storage and quick suggestions use the same quiet card language
    so tool output does not become a second dashboard. */
-.storage-row{padding:12px 14px;border:1px solid var(--tool-card-border);border-radius:var(--tool-card-radius);background:var(--tool-card-bg)}
-.storage-row-title{font-size:var(--tool-card-title-size);font-weight:var(--tool-card-title-weight);color:var(--tool-card-text)}
-.storage-row-meta{font-size:var(--tool-card-meta-size);color:var(--tool-card-text-subtle)}
+.storage-row {
+  padding: 12px 14px;
+  border: 1px solid var(--tool-card-border);
+  border-radius: var(--tool-card-radius);
+  background: var(--tool-card-bg);
+}
+.storage-row-title {
+  font-size: var(--tool-card-title-size);
+  font-weight: var(--tool-card-title-weight);
+  color: var(--tool-card-text);
+}
+.storage-row-meta {
+  font-size: var(--tool-card-meta-size);
+  color: var(--tool-card-text-subtle);
+}
 
 /* ── Unboxed assistant response ────────────────────────────────────
    The Codex reference keeps the assistant's prose on the page surface.
@@ -120,29 +220,29 @@
    treatment wrapped the entire answer in a panel, which made normal prose
    look like a user bubble and broke the visual hierarchy of the page. */
 .msg.assistant .msg-body:has(.agent-run-host),
-.msg.assistant .msg-body:has(.agent-tool-card){
-  margin:0;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  color:var(--foreground);
+.msg.assistant .msg-body:has(.agent-tool-card) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--foreground);
 }
 /* Embedded editors own their text palette; prose colors stop at that boundary. */
 .msg.assistant .msg-body:has(.agent-tool-card) p:not(:where(.tl-container *)),
-.msg.assistant .msg-body:has(.agent-tool-card) li:not(:where(.tl-container *)){
-  color:var(--foreground);
+.msg.assistant .msg-body:has(.agent-tool-card) li:not(:where(.tl-container *)) {
+  color: var(--foreground);
 }
-.msg.assistant .msg-body:has(.agent-tool-card) strong:not(:where(.tl-container *)){
-  color:var(--primary);
+.msg.assistant .msg-body:has(.agent-tool-card) strong:not(:where(.tl-container *)) {
+  color: var(--primary);
 }
-.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)){
-  color:var(--foreground);
-  text-decoration-color:var(--muted-foreground);
+.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)) {
+  color: var(--foreground);
+  text-decoration-color: var(--muted-foreground);
 }
-.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)):hover{
-  color:var(--primary);
+.msg.assistant .msg-body:has(.agent-tool-card) a:not(:where(.tl-container *)):hover {
+  color: var(--primary);
 }
 
 /* Tool charts and their status states sit in the answer flow, not inside a
@@ -150,22 +250,22 @@
    A chart the tutor writes as an ```openui fence in the prose follows the
    same rule: no frame, and no header band (the dark theme painted one). */
 #appShell .tool-inline-attachments .visualization-card,
-#appShell .intui-openui [data-openui-visualization] .visualization-card{
-  border:0;
-  box-shadow:none;
-  background:transparent;
+#appShell .intui-openui [data-openui-visualization] .visualization-card {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
 }
 #appShell .tool-inline-attachments .visualization-header,
-#appShell .intui-openui [data-openui-visualization] .visualization-header{
-  border-bottom:0;
-  background:transparent;
+#appShell .intui-openui [data-openui-visualization] .visualization-header {
+  border-bottom: 0;
+  background: transparent;
 }
 #appShell .tool-inline-attachments .viz-state,
-#appShell .intui-openui [data-openui-visualization] .viz-state{
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
+#appShell .intui-openui [data-openui-visualization] .viz-state {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 /* ── RN-2 hosts ──────────────────────────────────────────────────────────
@@ -212,7 +312,7 @@
   height: 87.5%;
   object-fit: contain;
 }
-.rn-tool-row[data-state="error"] .tool-inline-tool-icon,
-.rn-tool-row[data-state="awaiting"] .tool-inline-tool-icon {
+.rn-tool-row[data-state='error'] .tool-inline-tool-icon,
+.rn-tool-row[data-state='awaiting'] .tool-inline-tool-icon {
   color: var(--ui-ink);
 }

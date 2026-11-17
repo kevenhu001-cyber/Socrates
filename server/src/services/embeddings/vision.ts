@@ -23,11 +23,17 @@ import { tmpdir } from 'node:os';
 import nodePath from 'node:path';
 import { isMmxCliAvailable, runMmx } from '../../lib/spawnMmx.js';
 
-const MAX_BYTES = 8 * 1024 * 1024;          // 8 MB
-const REQUEST_TIMEOUT = 30_000;             // VLM calls are slower than text
+const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const REQUEST_TIMEOUT = 30_000; // VLM calls are slower than text
 const IMAGE_MIME_TYPES = new Set([
-  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
-  'image/heic', 'image/avif', 'image/bmp',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'image/avif',
+  'image/bmp',
 ]);
 
 /* `data:image/png;base64,…` → { mimeType, buffer }
@@ -76,11 +82,13 @@ export function isValidImagePayload(mimeType: string, buffer: Buffer): boolean {
     case 'image/jpg':
       return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
     case 'image/webp':
-      return buffer.toString('ascii', 0, 4) === 'RIFF'
-        && buffer.toString('ascii', 8, 12) === 'WEBP';
+      return (
+        buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP'
+      );
     case 'image/gif':
-      return buffer.toString('ascii', 0, 6) === 'GIF87a'
-        || buffer.toString('ascii', 0, 6) === 'GIF89a';
+      return (
+        buffer.toString('ascii', 0, 6) === 'GIF87a' || buffer.toString('ascii', 0, 6) === 'GIF89a'
+      );
     case 'image/bmp':
       return buffer.toString('ascii', 0, 2) === 'BM';
     case 'image/heic':
@@ -116,7 +124,10 @@ function reject(status: number, message: string) {
  *                                 to "Describe the image in detail."
  * @returns {Promise<{description: string, model: string, latencyMs: number}>}
  */
-export async function describeImage({ dataUrl, prompt }: { dataUrl?: string; prompt?: string } = {}) {
+export async function describeImage({
+  dataUrl,
+  prompt,
+}: { dataUrl?: string; prompt?: string } = {}) {
   if (!dataUrl || typeof dataUrl !== 'string') {
     throw reject(400, 'dataUrl is required');
   }
@@ -186,14 +197,23 @@ export async function describeImageFile({ path, prompt }: { path?: string; promp
 
   const start = Date.now();
   const stdout = await runMmx(
-    ['vision', 'describe', '--image', path, '--output', 'json', '--quiet',
-      ...(prompt ? ['--prompt', prompt] : [])],
+    [
+      'vision',
+      'describe',
+      '--image',
+      path,
+      '--output',
+      'json',
+      '--quiet',
+      ...(prompt ? ['--prompt', prompt] : []),
+    ],
     { timeoutMs: REQUEST_TIMEOUT },
   );
 
   let data;
-  try { data = JSON.parse(stdout as string); }
-  catch (_) {
+  try {
+    data = JSON.parse(stdout as string);
+  } catch (_) {
     throw reject(502, 'mmx returned non-JSON output');
   }
 

@@ -1,9 +1,17 @@
 import { toggleMorePopover } from './morePopover.ts';
 import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
-import { mountAdminPage, mountScheduledPage, mountWorkspacePage } from '../react/lib/boot/pageMounts.ts';
+import {
+  mountAdminPage,
+  mountScheduledPage,
+  mountWorkspacePage,
+} from '../react/lib/boot/pageMounts.ts';
 import { registerNavigationAdapters, installNavigationRouteListeners } from './navigation.service';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { loadLibraryData, loadPluginsData, loadProjectsData } from '../react/pages/workspace/workspace.service';
+import {
+  loadLibraryData,
+  loadPluginsData,
+  loadProjectsData,
+} from '../react/pages/workspace/workspace.service';
 import { loadScheduledTasks } from '../react/pages/scheduled/scheduled.service';
 import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.ts';
 import { getActiveDestination } from './navigation.store';
@@ -16,14 +24,16 @@ function closeAllPanels(): void {
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {
-  void import('../ui/creationSurfaces.ts').then(async (module) => {
-    if (getActiveDestination() !== name) return;
-    await module.openCreationSurface(name);
-    if (getActiveDestination() !== name) return;
-    activateMainView(DESTINATIONS[name].host, document);
-  }).catch((error) => {
-    console.error('[nav] creation surface failed to load', error);
-  });
+  void import('../ui/creationSurfaces.ts')
+    .then(async (module) => {
+      if (getActiveDestination() !== name) return;
+      await module.openCreationSurface(name);
+      if (getActiveDestination() !== name) return;
+      activateMainView(DESTINATIONS[name].host, document);
+    })
+    .catch((error) => {
+      console.error('[nav] creation surface failed to load', error);
+    });
 }
 
 function openLibrary(): void {
@@ -48,9 +58,11 @@ function openPlugins(): void {
 }
 
 function openExam(): void {
-  void import('../exam/index.ts').then((module) => module.openExamPanel()).catch((error) => {
-    reportSwallow(error, 'sidebar/navigation.openExam');
-  });
+  void import('../exam/index.ts')
+    .then((module) => module.openExamPanel())
+    .catch((error) => {
+      reportSwallow(error, 'sidebar/navigation.openExam');
+    });
 }
 
 function openAdmin(): void {
@@ -58,7 +70,11 @@ function openAdmin(): void {
 }
 
 function openMore(): void {
-  try { toggleMorePopover(); } catch (error) { reportSwallow(error, 'sidebar/navigation.openMore'); }
+  try {
+    toggleMorePopover();
+  } catch (error) {
+    reportSwallow(error, 'sidebar/navigation.openMore');
+  }
 }
 
 registerNavigationAdapters({

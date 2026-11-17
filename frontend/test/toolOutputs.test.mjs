@@ -11,10 +11,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  attachmentOutputsOf,
-  toolOutputsOf,
-} from '../src/react/tool-run/toolRunModel.ts';
+import { attachmentOutputsOf, toolOutputsOf } from '../src/react/tool-run/toolRunModel.ts';
 
 const VIZ = {
   version: 1,
@@ -30,19 +27,19 @@ test('legacy calls synthesize the protocol in a fixed order with stable ids', ()
     name: 'code_interpreter',
     input: { code: 'print(1)' },
     visualization: VIZ,
-    artifacts: [
-      { id: 'file-1', mimeType: 'image/png', name: 'plot.png' },
-      { id: 'file-2' },
-    ],
+    artifacts: [{ id: 'file-1', mimeType: 'image/png', name: 'plot.png' }, { id: 'file-2' }],
     output: '1',
     stderr: 'warning',
   });
-  assert.deepEqual(outputs.map((output) => [output.kind, output.id]), [
-    ['artifact', 'call-1:artifact:file-1'],
-    ['artifact', 'call-1:artifact:file-2'],
-    ['text', 'call-1:text:result'],
-    ['text', 'call-1:text:stderr'],
-  ]);
+  assert.deepEqual(
+    outputs.map((output) => [output.kind, output.id]),
+    [
+      ['artifact', 'call-1:artifact:file-1'],
+      ['artifact', 'call-1:artifact:file-2'],
+      ['text', 'call-1:text:result'],
+      ['text', 'call-1:text:stderr'],
+    ],
+  );
   assert.deepEqual(
     { mimeType: outputs[0].mimeType, name: outputs[0].name },
     { mimeType: 'image/png', name: 'plot.png' },
@@ -71,19 +68,21 @@ test('legacy artifacts dedupe by fileId and drop malformed entries', () => {
   );
 });
 
-
 test('a non-v1 spec is never handed to a renderer', () => {
   assert.deepEqual(toolOutputsOf({ id: 'x', name: 'Read', visualization: { version: 2 } }), []);
 });
 
 test('a rejected visualization does not mount the unvalidated input as an output', () => {
-  assert.deepEqual(toolOutputsOf({
-    id: 'bad-viz',
-    name: 'render_intelligent_ui',
-    input: VIZ,
-    status: 'failed',
-    isError: true,
-  }), []);
+  assert.deepEqual(
+    toolOutputsOf({
+      id: 'bad-viz',
+      name: 'render_intelligent_ui',
+      input: VIZ,
+      status: 'failed',
+      isError: true,
+    }),
+    [],
+  );
 });
 
 test('persisted outputs win over legacy fields and are validated entry by entry', () => {
@@ -104,16 +103,25 @@ test('persisted outputs win over legacy fields and are validated entry by entry'
       null,
     ],
   });
-  assert.deepEqual(outputs.map((output) => output.id), [
-    'call-4:visualization:0',
-    'call-4:artifact:file-9',
-    'call-4:text:stdout',
-    'call-4:text:result',
-  ]);
+  assert.deepEqual(
+    outputs.map((output) => output.id),
+    [
+      'call-4:visualization:0',
+      'call-4:artifact:file-9',
+      'call-4:text:stdout',
+      'call-4:text:result',
+    ],
+  );
   // The legacy visualization/artifact/text on the same call must not also
   // appear: the writer's normalized list is authoritative.
-  assert.equal(outputs.some((output) => output.kind === 'artifact' && output.fileId === 'legacy-file'), false);
-  assert.equal(outputs.some((output) => output.kind === 'text' && output.text === 'legacy text'), false);
+  assert.equal(
+    outputs.some((output) => output.kind === 'artifact' && output.fileId === 'legacy-file'),
+    false,
+  );
+  assert.equal(
+    outputs.some((output) => output.kind === 'text' && output.text === 'legacy text'),
+    false,
+  );
   // Empty text and unknown streams collapse to result; empty text is dropped.
   assert.equal(outputs[3].stream, 'result');
   assert.equal(outputs[3].text, 'fallback');
@@ -127,7 +135,10 @@ test('attachment outputs keep charts and files but leave text in the row', () =>
     artifacts: [{ id: 'file-5' }],
     output: '3 rows',
   });
-  assert.deepEqual(outputs.map((output) => output.kind), ['artifact']);
+  assert.deepEqual(
+    outputs.map((output) => output.kind),
+    ['artifact'],
+  );
   assert.deepEqual(attachmentOutputsOf(null), []);
   assert.deepEqual(toolOutputsOf(undefined), []);
 });
@@ -152,8 +163,12 @@ test('image artifacts stay out of automatic attachments for both output protocol
     ],
   });
 
-  assert.deepEqual(legacy.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), [
-    'csv',
-  ]);
-  assert.deepEqual(normalized.map((output) => output.kind === 'artifact' ? output.fileId : output.kind), ['pdf']);
+  assert.deepEqual(
+    legacy.map((output) => (output.kind === 'artifact' ? output.fileId : output.kind)),
+    ['csv'],
+  );
+  assert.deepEqual(
+    normalized.map((output) => (output.kind === 'artifact' ? output.fileId : output.kind)),
+    ['pdf'],
+  );
 });

@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { reconcileMessageSnapshots, snapshotMessage } = await import(
-  '../src/ui/chatRuntimeSnapshot.ts'
-);
+const { reconcileMessageSnapshots, snapshotMessage } =
+  await import('../src/ui/chatRuntimeSnapshot.ts');
 
 test('a published message snapshot is isolated from later legacy mutations', () => {
   const source = {
@@ -12,17 +11,19 @@ test('a published message snapshot is isolated from later legacy mutations', () 
     type: 'streaming',
     rawText: 'hello',
     attachments: [{ id: 'a-1', name: 'note.txt' }],
-    toolCalls: [{
-      id: 't-1',
-      name: 'web_search',
-      input: { query: 'before', filters: { kind: 'docs' } },
-      phase: 'running',
-      detail: { request: { attempt: 1 } },
-      _run: { phase: 'running', durationMs: 10 },
-      results: [{ title: 'before', metadata: { rank: 1 } }],
-      artifacts: [{ id: 'artifact-1', name: 'before.txt' }],
-      visualizations: [{ version: 1, payload: { series: [{ data: [1] }] } }],
-    }],
+    toolCalls: [
+      {
+        id: 't-1',
+        name: 'web_search',
+        input: { query: 'before', filters: { kind: 'docs' } },
+        phase: 'running',
+        detail: { request: { attempt: 1 } },
+        _run: { phase: 'running', durationMs: 10 },
+        results: [{ title: 'before', metadata: { rank: 1 } }],
+        artifacts: [{ id: 'artifact-1', name: 'before.txt' }],
+        visualizations: [{ version: 1, payload: { series: [{ data: [1] }] } }],
+      },
+    ],
     _liveStatus: { phase: 'tool-running', label: 'Searching' },
   };
 
@@ -80,11 +81,15 @@ test('an already-frozen domain message crosses the snapshot boundary zero-copy',
 
 test('immutable domain identity advances even when the legacy event id is stale', () => {
   const before = Object.freeze({
-    clientId: 'm-domain', role: 'assistant', rawText: 'before',
+    clientId: 'm-domain',
+    role: 'assistant',
+    rawText: 'before',
   });
   const previous = reconcileMessageSnapshots([], [before], null);
   const after = Object.freeze({
-    clientId: 'm-domain', role: 'assistant', rawText: 'after',
+    clientId: 'm-domain',
+    role: 'assistant',
+    rawText: 'after',
   });
 
   const next = reconcileMessageSnapshots(previous, [after], new Set(['wrong-id']));
@@ -96,20 +101,28 @@ test('immutable domain identity advances even when the legacy event id is stale'
 
 test('reconciliation advances only changed mutable message identities', () => {
   const firstSource = {
-    clientId: 'm-1', role: 'assistant', type: 'streaming', rawText: 'one', toolCalls: [],
+    clientId: 'm-1',
+    role: 'assistant',
+    type: 'streaming',
+    rawText: 'one',
+    toolCalls: [],
   };
   const secondSource = {
-    clientId: 'm-2', role: 'assistant', type: 'assistant', rawText: 'two', toolCalls: [],
+    clientId: 'm-2',
+    role: 'assistant',
+    type: 'assistant',
+    rawText: 'two',
+    toolCalls: [],
   };
   const thirdSource = {
-    clientId: 'm-3', role: 'user', type: 'user', rawText: 'three', toolCalls: [],
+    clientId: 'm-3',
+    role: 'user',
+    type: 'user',
+    rawText: 'three',
+    toolCalls: [],
   };
 
-  const previous = reconcileMessageSnapshots(
-    [],
-    [firstSource, secondSource, thirdSource],
-    null,
-  );
+  const previous = reconcileMessageSnapshots([], [firstSource, secondSource, thirdSource], null);
 
   firstSource.rawText = 'one updated';
   secondSource.rawText = 'two updated';
@@ -130,10 +143,16 @@ test('reconciliation advances only changed mutable message identities', () => {
 
 test('either clientId or persisted id invalidates the same mutable message snapshot', () => {
   const source = {
-    clientId: 'client-1', id: 'persisted-1', role: 'assistant', rawText: 'before',
+    clientId: 'client-1',
+    id: 'persisted-1',
+    role: 'assistant',
+    rawText: 'before',
   };
   const stableSource = {
-    clientId: 'client-2', id: 'persisted-2', role: 'assistant', rawText: 'stable',
+    clientId: 'client-2',
+    id: 'persisted-2',
+    role: 'assistant',
+    rawText: 'stable',
   };
   const previous = reconcileMessageSnapshots([], [source, stableSource], null);
 
@@ -182,11 +201,35 @@ test('state sync snapshots every mutable row even when ids are unchanged', () =>
 });
 
 test('legacy callers cannot mutate an already-published public runtime graph', () => {
-  const source = { clientId: 'runtime', role: 'assistant', turnRuntime: {
-    version: 1, turnId: 'turn-1', seq: 1, lifecycle: 'live', generation: 'streaming',
-    activities: [{ id: 'summary', kind: 'reasoning_summary', phase: 'running', startedAt: 1, text: 'Public observation' }],
-    uiSurfaces: [{ id: 'ui', toolCallId: 'ui', textOffset: 0, phase: 'streaming', nodes: [{ id: 'root', type: 'panel', state: { count: 1 } }] }],
-  } };
+  const source = {
+    clientId: 'runtime',
+    role: 'assistant',
+    turnRuntime: {
+      version: 1,
+      turnId: 'turn-1',
+      seq: 1,
+      lifecycle: 'live',
+      generation: 'streaming',
+      activities: [
+        {
+          id: 'summary',
+          kind: 'reasoning_summary',
+          phase: 'running',
+          startedAt: 1,
+          text: 'Public observation',
+        },
+      ],
+      uiSurfaces: [
+        {
+          id: 'ui',
+          toolCallId: 'ui',
+          textOffset: 0,
+          phase: 'streaming',
+          nodes: [{ id: 'root', type: 'panel', state: { count: 1 } }],
+        },
+      ],
+    },
+  };
   const published = snapshotMessage(source);
   source.turnRuntime.activities[0].text = 'Changed later';
   source.turnRuntime.uiSurfaces[0].nodes[0].state.count = 9;

@@ -16,7 +16,10 @@ type ApiKeyRow = typeof apiKeys.$inferSelect;
    POST / DELETE, the built-in seed, and validateApiKeys when it
    clears a corrupted ciphertext. The TTL is intentionally short — a
    missed invalidation cannot outlive it. */
-const _apiKeyCache = new Map<string, { result: ReturnType<typeof decryptProvider> | null; cachedAt: number }>();
+const _apiKeyCache = new Map<
+  string,
+  { result: ReturnType<typeof decryptProvider> | null; cachedAt: number }
+>();
 const API_KEY_CACHE_TTL_MS = 30_000;
 const API_KEY_CACHE_MAX_ENTRIES = 2_000;
 
@@ -30,9 +33,10 @@ function cacheKey(userId: string | null): string {
      user genuinely has no active key).
    - { hit: false } — the cache is empty or stale; the caller must
      hit the DB. */
-function cacheGet(userId: string | null, now: number):
-  | { hit: true; result: ReturnType<typeof decryptProvider> | null }
-  | { hit: false } {
+function cacheGet(
+  userId: string | null,
+  now: number,
+): { hit: true; result: ReturnType<typeof decryptProvider> | null } | { hit: false } {
   const key = cacheKey(userId);
   const entry = _apiKeyCache.get(key);
   if (!entry) return { hit: false };
@@ -43,7 +47,11 @@ function cacheGet(userId: string | null, now: number):
   return { hit: true, result: entry.result };
 }
 
-function cacheSet(userId: string | null, result: ReturnType<typeof decryptProvider> | null, now: number) {
+function cacheSet(
+  userId: string | null,
+  result: ReturnType<typeof decryptProvider> | null,
+  now: number,
+) {
   if (_apiKeyCache.size >= API_KEY_CACHE_MAX_ENTRIES) {
     const oldest = _apiKeyCache.keys().next();
     if (!oldest.done) _apiKeyCache.delete(oldest.value);
@@ -83,8 +91,16 @@ export async function getActiveApiKey(userId: string | null) {
   if (!userId) {
     // Anonymous users: check for built-in Beagle provider (global)
     const db = getDb();
-    const [globalKey] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+    const [globalKey] = await db
+      .select()
+      .from(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.isActive, true),
+          eq(apiKeys.isBuiltIn, true),
+          isNotNull(apiKeys.keyCiphertext),
+        ),
+      )
       .limit(1);
     if (globalKey) result = decryptProvider(globalKey);
   } else {
@@ -92,16 +108,32 @@ export async function getActiveApiKey(userId: string | null) {
     // First try user's active key (must have a ciphertext — a row without
     // one can't produce a usable provider and would otherwise short-circuit
     // the built-in fallback, causing a 503 KEY_DECRYPT_FAILED).
-    let [key] = await db.select().from(apiKeys)
-      .where(and(eq(apiKeys.userId, userId), eq(apiKeys.isActive, true), isNotNull(apiKeys.keyCiphertext)))
+    let [key] = await db
+      .select()
+      .from(apiKeys)
+      .where(
+        and(
+          eq(apiKeys.userId, userId),
+          eq(apiKeys.isActive, true),
+          isNotNull(apiKeys.keyCiphertext),
+        ),
+      )
       .limit(1);
 
     if (!key) {
       // Fall back to built-in (must also have a ciphertext).
       // Order by createdAt so the original seeded row is always preferred
       // over any duplicates that may have been created by previous seed runs.
-      [key] = await db.select().from(apiKeys)
-        .where(and(eq(apiKeys.isActive, true), eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
+      [key] = await db
+        .select()
+        .from(apiKeys)
+        .where(
+          and(
+            eq(apiKeys.isActive, true),
+            eq(apiKeys.isBuiltIn, true),
+            isNotNull(apiKeys.keyCiphertext),
+          ),
+        )
         .orderBy(apiKeys.createdAt)
         .limit(1);
     }
@@ -159,7 +191,8 @@ export async function seedBuiltInProvider() {
     const url = (process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1').replace(/\/+$/, '');
     const keyCiphertext = encrypt(apiKey, encryptionKey());
 
-    const [existing] = await db.select()
+    const [existing] = await db
+      .select()
       .from(apiKeys)
       .where(and(eq(apiKeys.isBuiltIn, true), eq(apiKeys.label, 'Beagle')))
       .limit(1);
@@ -170,33 +203,40 @@ export async function seedBuiltInProvider() {
        * upstream model in the boot log reveals the operator's
        * LLM choice to anyone with access to the systemd journal.
        * The "Updated" line below is enough to confirm the seed ran. */
-      const upd = await db.update(apiKeys)
+      const upd = await db
+        .update(apiKeys)
         .set({ keyCiphertext, keyHint: keyHintFor(apiKey), url, model, isMultimodal: true })
         .where(eq(apiKeys.id, existing.id))
         .returning({ id: apiKeys.id });
       console.log('[seed] Updated built-in Beagle provider (id=' + (upd[0] && upd[0].id) + ')');
       /* Clean up any stale built-in rows (e.g. "Beagle A" from
          previous seed runs) that could confuse getActiveApiKey(). */
-      const cleaned = await db.update(apiKeys)
+      const cleaned = await db
+        .update(apiKeys)
         .set({ isActive: false })
-        .where(and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, existing.id), eq(apiKeys.isActive, true)));
+        .where(
+          and(eq(apiKeys.isBuiltIn, true), ne(apiKeys.id, existing.id), eq(apiKeys.isActive, true)),
+        );
       if ((cleaned.rowCount ?? 0) > 0) {
         console.log('[seed] Deactivated ' + cleaned.rowCount + ' stale built-in row(s)');
       }
     } else {
-      const ins = await db.insert(apiKeys).values({
-        label: 'Beagle',
-        url,
-        model,
-        keyCiphertext,
-        keyHint: keyHintFor(apiKey),
-        isBuiltIn: true,
-        isActive: true,
-        /* P_attachments-multimodal — built-in Beagle is a vision
-         * model (MiniMax-M3). Force the flag on insert so chat.js
-         * forwards image_url parts without any user setup. */
-        isMultimodal: true,
-      }).returning({ id: apiKeys.id });
+      const ins = await db
+        .insert(apiKeys)
+        .values({
+          label: 'Beagle',
+          url,
+          model,
+          keyCiphertext,
+          keyHint: keyHintFor(apiKey),
+          isBuiltIn: true,
+          isActive: true,
+          /* P_attachments-multimodal — built-in Beagle is a vision
+           * model (MiniMax-M3). Force the flag on insert so chat.js
+           * forwards image_url parts without any user setup. */
+          isMultimodal: true,
+        })
+        .returning({ id: apiKeys.id });
       console.log('[seed] Created built-in Beagle provider (id=' + (ins[0] && ins[0].id) + ')');
     }
     /* P_ttfb-apikey-cache — the built-in key is the global fallback
@@ -237,7 +277,8 @@ export async function validateApiKeys() {
 
         /* Clear the corrupted ciphertext so decryptProvider() returns
            keyPlaintext=null, which chat.js surfaces as a clear error. */
-        await db.update(apiKeys)
+        await db
+          .update(apiKeys)
           .set({ keyCiphertext: null, keyHint: null })
           .where(eq(apiKeys.id, key.id));
 
@@ -246,7 +287,9 @@ export async function validateApiKeys() {
     }
 
     if (corruptedCount > 0) {
-      console.warn(`[validateApiKeys] Cleared ${corruptedCount} corrupted key(s). Users must re-enter their API keys.`);
+      console.warn(
+        `[validateApiKeys] Cleared ${corruptedCount} corrupted key(s). Users must re-enter their API keys.`,
+      );
       /* P_ttfb-apikey-cache — at least one row was mutated; drop
          the entire cache so the next read re-resolves. Cheaper than
          tracking which userId's row was touched. */
@@ -276,30 +319,42 @@ const SAFE_CREATE_PROJECTION = {
   createdAt: apiKeys.createdAt,
 };
 
-export async function createApiKey(userId: string, { label, url, model, key, isMultimodal }: {
-  label?: string;
-  url?: string;
-  model?: string;
-  key?: string;
-  isMultimodal?: boolean;
-}) {
+export async function createApiKey(
+  userId: string,
+  {
+    label,
+    url,
+    model,
+    key,
+    isMultimodal,
+  }: {
+    label?: string;
+    url?: string;
+    model?: string;
+    key?: string;
+    isMultimodal?: boolean;
+  },
+) {
   const keyCiphertext = key ? encrypt(key, encryptionKey()) : null;
   const keyHint = key ? keyHintFor(key) : null;
 
   const db = getDb();
-  const [result] = await db.insert(apiKeys).values({
-    userId,
-    label: label || 'Default',
-    url: url || 'https://api.openai.com/v1',
-    model: model || 'gpt-4o',
-    keyCiphertext,
-    keyHint,
-    isActive: true,
-    /* P_attachments-multimodal — user-controlled vision flag.
-     * Coerced to a strict boolean so a malicious client can't
-     * smuggle a non-boolean through zod's passthrough. */
-    isMultimodal: isMultimodal === true,
-  }).returning(SAFE_CREATE_PROJECTION);
+  const [result] = await db
+    .insert(apiKeys)
+    .values({
+      userId,
+      label: label || 'Default',
+      url: url || 'https://api.openai.com/v1',
+      model: model || 'gpt-4o',
+      keyCiphertext,
+      keyHint,
+      isActive: true,
+      /* P_attachments-multimodal — user-controlled vision flag.
+       * Coerced to a strict boolean so a malicious client can't
+       * smuggle a non-boolean through zod's passthrough. */
+      isMultimodal: isMultimodal === true,
+    })
+    .returning(SAFE_CREATE_PROJECTION);
 
   /* P_ttfb-apikey-cache — a new key creates a new active row (the
      insert is also the activation), so the per-user cache is now

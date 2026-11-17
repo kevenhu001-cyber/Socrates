@@ -1,6 +1,6 @@
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
-type FeatureRuntime = typeof import("./cmdK.impl.ts");
+type FeatureRuntime = typeof import('./cmdK.impl.ts');
 
 /* Cmd+K compatibility facade.
  * The palette/search implementation is interaction-triggered, but this public
@@ -43,15 +43,21 @@ function invoke(name: keyof FeatureRuntime, args: unknown[], loadIfMissing: bool
     return;
   }
   if (!runtimePromise && loadIfMissing === false) return;
-  loadCmdKRuntime().then(function (module: FeatureRuntime) {
-    const action = module[name];
-    if (typeof action === 'function') (action as (...values: unknown[]) => unknown)(...args);
-  }).catch(function () { /* loader already reports the error */ });
+  loadCmdKRuntime()
+    .then(function (module: FeatureRuntime) {
+      const action = module[name];
+      if (typeof action === 'function') (action as (...values: unknown[]) => unknown)(...args);
+    })
+    .catch(function () {
+      /* loader already reports the error */
+    });
 }
 
 export function resetCmdKSearchState() {
-  try { localStorage.removeItem('socrates-search-recent'); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: ui/cmdK.ts:51');
+  try {
+    localStorage.removeItem('socrates-search-recent');
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: ui/cmdK.ts');
     /* private mode */
   }
   if (runtime) {
@@ -67,12 +73,26 @@ export function markCmdKIndexDirty() {
   else pendingDirty = true;
 }
 
-export function openCmdK() { invoke('openCmdK', [], true); }
-export function closeCmdK() { invoke('closeCmdK', [], false); }
-export function onCmdKInput(q: string) { invoke('onCmdKInput', [q], true); }
-export function onCmdKKey(ev: KeyboardEvent) { invoke('onCmdKKey', [ev], true); }
-export function openCmdKResult(idx: number) { invoke('openCmdKResult', [idx], true); }
-export function rebuildCmdKIndex() { invoke('rebuildCmdKIndex', [], true); }
-export function updateCmdKSelected() { invoke('updateCmdKSelected', [], true); }
+export function openCmdK() {
+  invoke('openCmdK', [], true);
+}
+export function closeCmdK() {
+  invoke('closeCmdK', [], false);
+}
+export function onCmdKInput(q: string) {
+  invoke('onCmdKInput', [q], true);
+}
+export function onCmdKKey(ev: KeyboardEvent) {
+  invoke('onCmdKKey', [ev], true);
+}
+export function openCmdKResult(idx: number) {
+  invoke('openCmdKResult', [idx], true);
+}
+export function rebuildCmdKIndex() {
+  invoke('rebuildCmdKIndex', [], true);
+}
+export function updateCmdKSelected() {
+  invoke('updateCmdKSelected', [], true);
+}
 
 export { loadCmdKRuntime };

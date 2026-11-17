@@ -53,12 +53,14 @@ export function formatCategoryLabel(value: unknown, options?: CategoryAxisOption
 
 export function categoryAxisLayout(categories: unknown): CategoryAxisLayout {
   const list: unknown[] = Array.isArray(categories) ? categories : [];
-  const longest = list.reduce(function (max: number, item) { return Math.max(max, labelLength(item)); }, 0);
+  const longest = list.reduce(function (max: number, item) {
+    return Math.max(max, labelLength(item));
+  }, 0);
   const dense = list.length > 10;
-  const rotate = dense ? 35 : (list.length > 6 && longest > 18 ? 25 : 0);
+  const rotate = dense ? 35 : list.length > 6 && longest > 18 ? 25 : 0;
   return {
     rotate: rotate,
-    bottom: rotate ? 84 : (longest > 10 ? 68 : 46),
+    bottom: rotate ? 84 : longest > 10 ? 68 : 46,
     maxChars: dense ? 16 : 24,
     lineChars: dense ? 16 : 12,
   };

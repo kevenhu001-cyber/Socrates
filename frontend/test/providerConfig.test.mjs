@@ -41,10 +41,27 @@ test('provider refresh honors saved selection before server active and omits cre
   service.setServerBuiltInKeyAvailable(true);
   storage.set(LAST_ACTIVE_ID_KEY, 'provider-local');
   const key = 'never-publish-this-secret';
-  globalThis.fetch = async () => jsonResponse({ providers: [
-    { id: 'provider-server', label: 'Server', url: 'https://server.example/v1', model: 'server', key: 'server-key', isActive: true },
-    { id: 'provider-local', label: 'Local', url: 'https://local.example/v1', model: 'local', key, isActive: false },
-  ] });
+  globalThis.fetch = async () =>
+    jsonResponse({
+      providers: [
+        {
+          id: 'provider-server',
+          label: 'Server',
+          url: 'https://server.example/v1',
+          model: 'server',
+          key: 'server-key',
+          isActive: true,
+        },
+        {
+          id: 'provider-local',
+          label: 'Local',
+          url: 'https://local.example/v1',
+          model: 'local',
+          key,
+          isActive: false,
+        },
+      ],
+    });
 
   const snapshot = await service.refreshProviderConfig();
   const selected = snapshot.providers.find((provider) => provider.id === 'provider-local');
@@ -85,9 +102,18 @@ test('missing user and user-switch reset clear provider state and key drafts', a
   const calls = [];
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url: String(url), options });
-    if (String(url).includes('/api/v2/api-key?')) return jsonResponse({ providers: [
-      { id: 'provider-one', label: 'Provider', url: 'https://provider.example/v1', model: 'model', hasKey: true },
-    ] });
+    if (String(url).includes('/api/v2/api-key?'))
+      return jsonResponse({
+        providers: [
+          {
+            id: 'provider-one',
+            label: 'Provider',
+            url: 'https://provider.example/v1',
+            model: 'model',
+            hasKey: true,
+          },
+        ],
+      });
     return jsonResponse({ ok: true });
   };
 
@@ -112,14 +138,21 @@ test('missing user and user-switch reset clear provider state and key drafts', a
   assert.equal(callsWithoutUser, 1);
   assert.ok(update);
   assert.equal('key' in JSON.parse(update.options.body), false);
-  assert.equal(JSON.stringify(store.getProviderConfigSnapshot()).includes('user-one-secret'), false);
+  assert.equal(
+    JSON.stringify(store.getProviderConfigSnapshot()).includes('user-one-secret'),
+    false,
+  );
 });
-
 
 test('the browser expresses the selected effort and leaves vendor encoding to the server', async () => {
   reset();
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
-  store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
+  store.publishProviderConfig({
+    providers: [
+      { id: 'minimax', model: 'MiniMax-M3.1-Flash-Preview', label: 'MiniMax', hasKey: true },
+    ],
+    activeId: 'minimax',
+  });
   storage.set('socrates-reasoning-effort', 'low');
   try {
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
@@ -134,11 +167,13 @@ test('the browser expresses the selected effort and leaves vendor encoding to th
   }
 });
 
-
 test('the effort intent is sent for models whose family ignores effort levels', async () => {
   reset();
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
-  store.publishProviderConfig({ providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }], activeId: 'minimax' });
+  store.publishProviderConfig({
+    providers: [{ id: 'minimax', model: 'MiniMax-M3', label: 'MiniMax', hasKey: true }],
+    activeId: 'minimax',
+  });
   storage.set('socrates-reasoning-effort', 'low');
   try {
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
@@ -151,13 +186,23 @@ test('the effort intent is sent for models whose family ignores effort levels', 
   }
 });
 
-
 test('Instant remains available across all providers without a model allowlist', async () => {
   const { buildChatRequestBody } = await import('../src/chat/api/requestBody.ts');
-  for (const model of ['MiniMax-M3', 'MiniMax-M3.1-Flash-Preview', 'deepseek-chat', 'Qwen3-32B', 'gpt-5.2', 'custom-model', '']) {
+  for (const model of [
+    'MiniMax-M3',
+    'MiniMax-M3.1-Flash-Preview',
+    'deepseek-chat',
+    'Qwen3-32B',
+    'gpt-5.2',
+    'custom-model',
+    '',
+  ]) {
     reset();
     storage.set('socrates-reasoning-effort', 'instant');
-    store.publishProviderConfig({ providers: [{ id: 'active', model, label: model, hasKey: true }], activeId: 'active' });
+    store.publishProviderConfig({
+      providers: [{ id: 'active', model, label: model, hasKey: true }],
+      activeId: 'active',
+    });
     const body = buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7);
     assert.equal(body.reasoning_effort, 'none', model);
     assert.equal(storage.get('socrates-reasoning-effort'), 'instant');
@@ -179,19 +224,31 @@ test('the request body follows the capability the server published', async () =>
   /* The model always reasons: an Instant request would be rejected by the
      server, so the closest level the app has is sent instead. */
   publish({ isReasoning: true, supportsInstant: false, supportsEffort: true });
-  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'low');
+  assert.equal(
+    buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort,
+    'low',
+  );
 
   /* The model has neither Instant nor effort levels: no effort parameter
      goes on the wire at all. */
   publish({ isReasoning: true, supportsInstant: false, supportsEffort: false });
-  assert.equal('reasoning_effort' in buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7), false);
+  assert.equal(
+    'reasoning_effort' in buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7),
+    false,
+  );
 
   /* A model that supports Instant keeps the standard no-thinking field. */
   publish({ isReasoning: true, supportsInstant: true, supportsEffort: true });
-  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'none');
+  assert.equal(
+    buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort,
+    'none',
+  );
 
   /* Nothing published → the intent is forwarded and the server decides. */
   publish(undefined);
-  assert.equal(buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort, 'none');
+  assert.equal(
+    buildChatRequestBody([{ role: 'user', content: 'Hello' }], 100, 0.7).reasoning_effort,
+    'none',
+  );
   reset();
 });

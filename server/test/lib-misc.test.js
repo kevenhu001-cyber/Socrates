@@ -5,7 +5,7 @@
  *
  *   - src/lib/cookieEnv.js  — shouldUseSharedDomain(req)
  *   - src/lib/multimodal.js — isMultimodalProvider(provider)
- *   - src/lib/log.js        — safeUrl(rawUrl), stripQuery(rawUrl)
+ *   - src/lib/logRedaction.js — safeUrl(rawUrl), stripQuery(rawUrl)
  *
  * Each of these has security-relevant behaviour that the audit
  * identified as untested. They are all pure functions of their
@@ -17,14 +17,11 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  shouldUseSharedDomain,
-  SHARED_COOKIE_DOMAIN,
-} from '../src/lib/cookieEnv.js';
+import { shouldUseSharedDomain, SHARED_COOKIE_DOMAIN } from '../src/lib/cookieEnv.js';
 
 import { isMultimodalProvider } from '../src/lib/multimodal.js';
 
-import { safeUrl, sanitizeLogValue, stripQuery } from '../src/lib/log.js';
+import { safeUrl, sanitizeLogValue, stripQuery } from '../src/lib/logRedaction.js';
 
 /* ── cookieEnv ────────────────────────────────────────────────── */
 
@@ -60,7 +57,11 @@ describe('shouldUseSharedDomain', () => {
        controlled Host header — anything not in the allow-list
        must NOT receive the shared cookie domain (otherwise the
        browser silently rejects the cookie). */
-    for (const host of ['evil.example.com', 'topodrive.top.evil.com', 'app.topodrive.top.evil.com']) {
+    for (const host of [
+      'evil.example.com',
+      'topodrive.top.evil.com',
+      'app.topodrive.top.evil.com',
+    ]) {
       assert.equal(shouldUseSharedDomain({ headers: { host } }), false, host);
     }
   });
@@ -89,10 +90,16 @@ describe('isMultimodalProvider', () => {
   test('returns false when isMultimodal is false / missing / wrong type', () => {
     assert.equal(isMultimodalProvider({ isMultimodal: false }), false);
     assert.equal(isMultimodalProvider({}), false);
-    assert.equal(isMultimodalProvider({ isMultimodal: 'yes' }), false,
-      'truthy non-boolean strings must NOT count as true');
-    assert.equal(isMultimodalProvider({ isMultimodal: 1 }), false,
-      'numeric 1 must NOT count as true');
+    assert.equal(
+      isMultimodalProvider({ isMultimodal: 'yes' }),
+      false,
+      'truthy non-boolean strings must NOT count as true',
+    );
+    assert.equal(
+      isMultimodalProvider({ isMultimodal: 1 }),
+      false,
+      'numeric 1 must NOT count as true',
+    );
   });
 
   test('returns false for null / undefined / non-object inputs', () => {

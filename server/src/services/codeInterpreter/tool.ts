@@ -1,7 +1,12 @@
 /**
  * Frontend-visible tool definition for the chat route.
  */
-import { EXEC_RUNNER, ADVERTISED_MAX_CODE_CHARS, DEFAULT_TIMEOUT_MS, MAX_OUTPUT_BYTES } from './config.js';
+import {
+  EXEC_RUNNER,
+  ADVERTISED_MAX_CODE_CHARS,
+  DEFAULT_TIMEOUT_MS,
+  MAX_OUTPUT_BYTES,
+} from './config.js';
 
 /* ─── Tool definition (sent to upstream on every chat turn) ─── */
 export const CODE_INTERPRETER_TOOL = {
@@ -70,15 +75,14 @@ export const CODE_INTERPRETER_TOOL = {
           default: 'python',
           description: 'Always "python" in v1.',
         },
-          code: {
-            type: 'string',
-            description: `Python source code to execute (max ${Math.floor(ADVERTISED_MAX_CODE_CHARS / 1024)} KB — split longer programs into multiple calls). Files written to disk (matplotlib.savefig, open(..., "w"), pandas.to_csv) persist across every code call in this conversation — the scratch dir is session-scoped.`,
-            maxLength: ADVERTISED_MAX_CODE_CHARS,
-          },
+        code: {
+          type: 'string',
+          description: `Python source code to execute (max ${Math.floor(ADVERTISED_MAX_CODE_CHARS / 1024)} KB — split longer programs into multiple calls). Files written to disk (matplotlib.savefig, open(..., "w"), pandas.to_csv) persist across every code call in this conversation — the scratch dir is session-scoped.`,
+          maxLength: ADVERTISED_MAX_CODE_CHARS,
+        },
       },
       required: ['code'],
       additionalProperties: false,
     },
   },
 };
-

@@ -1,6 +1,13 @@
-export { intelligentUiControlIssues, normalizeIntelligentUiControl } from './intelligentUiControls.js';
-export { normalizeIntelligentUiNode, normalizeIntelligentUiArgs, normalizeIntelligentUiPatchArgs } from './intelligentUiNormalize.js';
-export * from './intelligenceUi';
+export {
+  intelligentUiControlIssues,
+  normalizeIntelligentUiControl,
+} from './intelligentUiControls.js';
+export {
+  normalizeIntelligentUiNode,
+  normalizeIntelligentUiArgs,
+  normalizeIntelligentUiPatchArgs,
+} from './intelligentUiNormalize.js';
+export * from './intelligentUi';
 export * from './turnRuntime.js';
 export { validateIntelligentUi } from './intelligentUiValidation.js';
 export * from './visualizationMath.js';
@@ -9,29 +16,11 @@ import type { Attachment, JsonValue, Message, Session } from '@socrates/contract
 
 export type { ChatSseHandlers, ChatStreamError, Message, Session } from '@socrates/contracts';
 
-export {
-  createToolRunApi,
-  pureToolRunApi,
-  TOOL_RUN_PHASES,
-} from './toolRun.ts';
-export type {
-  ToolRun,
-  ToolRunApi,
-  ToolRunSummary,
-  ToolRunWasmBinding,
-} from './toolRun.ts';
+export { createToolRunApi, pureToolRunApi, TOOL_RUN_PHASES } from './toolRun.ts';
+export type { ToolRun, ToolRunApi, ToolRunSummary, ToolRunWasmBinding } from './toolRun.ts';
 
-export {
-  createPlaybackClock,
-  computeCps,
-  DEFAULT_PLAYBACK_CONFIG,
-} from './streamPlayer.ts';
-export type {
-  PlaybackClock,
-  PlaybackConfig,
-  PlaybackState,
-  TickResult,
-} from './streamPlayer.ts';
+export { createPlaybackClock, computeCps, DEFAULT_PLAYBACK_CONFIG } from './streamPlayer.ts';
+export type { PlaybackClock, PlaybackConfig, PlaybackState, TickResult } from './streamPlayer.ts';
 
 export function messageText(message: Pick<Message, 'rawText' | 'content'>) {
   return message.rawText || message.content || '';
@@ -93,13 +82,14 @@ function attachmentParts(attachments: Attachment[], maxChars?: number): ChatCont
     }
     if (!attachment.text) continue;
     const text = maxChars === undefined ? attachment.text : clipped(attachment.text, maxChars);
-    const label = attachment.kind === 'pdf'
-      ? `[Parsed PDF: ${attachment.name}]`
-      : attachment.kind === 'text'
-        ? `[Parsed file: ${attachment.name}]`
-        : attachment.docKind
-          ? `[Parsed ${attachment.docKind.toUpperCase()}: ${attachment.name}]`
-          : `[Parsed document: ${attachment.name}]`;
+    const label =
+      attachment.kind === 'pdf'
+        ? `[Parsed PDF: ${attachment.name}]`
+        : attachment.kind === 'text'
+          ? `[Parsed file: ${attachment.name}]`
+          : attachment.docKind
+            ? `[Parsed ${attachment.docKind.toUpperCase()}: ${attachment.name}]`
+            : `[Parsed document: ${attachment.name}]`;
     parts.push({ type: 'text', text: `${label}\n${text}` });
   }
   return parts;
@@ -111,13 +101,23 @@ function attachmentParts(attachments: Attachment[], maxChars?: number): ChatCont
  * uses OpenAI-compatible content parts whenever the attachment has usable
  * image data or extracted text.
  */
-export function buildUserContentParts(rawText: string, attachments?: Attachment[], maxChars?: number): string | ChatContentPart[] {
+export function buildUserContentParts(
+  rawText: string,
+  attachments?: Attachment[],
+  maxChars?: number,
+): string | ChatContentPart[] {
   const text = maxChars === undefined ? rawText.trim() : clipped(rawText.trim(), maxChars);
   const parts: ChatContentPart[] = text ? [{ type: 'text', text }] : [];
   parts.push(...attachmentParts(attachments || [], maxChars));
-  return parts.length > 0 && (parts.length > 1 || (attachments || []).some((attachment) =>
-    attachment?.kind === 'image' && Boolean(attachment.dataUrl) || Boolean(attachment?.text)
-  )) ? parts : text;
+  return parts.length > 0 &&
+    (parts.length > 1 ||
+      (attachments || []).some(
+        (attachment) =>
+          (attachment?.kind === 'image' && Boolean(attachment.dataUrl)) ||
+          Boolean(attachment?.text),
+      ))
+    ? parts
+    : text;
 }
 
 /**
@@ -126,21 +126,22 @@ export function buildUserContentParts(rawText: string, attachments?: Attachment[
  * stored attachments are reconstructed so retry/regenerate does not degrade
  * a multimodal turn into a text-only prompt.
  */
-export function buildChatHistory(messages: Message[], options: { maxTurns?: number; maxChars?: number } = {}): ChatHistoryMessage[] {
+export function buildChatHistory(
+  messages: Message[],
+  options: { maxTurns?: number; maxChars?: number } = {},
+): ChatHistoryMessage[] {
   const maxTurns = options.maxTurns ?? CHAT_HISTORY_MAX_TURNS;
   const maxChars = options.maxChars ?? CHAT_HISTORY_MAX_CHARS;
   const source = messages.length > maxTurns * 2 ? messages.slice(-maxTurns * 2) : messages;
   const history: ChatHistoryMessage[] = [];
   for (const message of source) {
-    const role: ChatHistoryMessage['role'] = message.role === 'user'
-      ? 'user'
-      : message.role === 'system'
-        ? 'system'
-        : 'assistant';
+    const role: ChatHistoryMessage['role'] =
+      message.role === 'user' ? 'user' : message.role === 'system' ? 'system' : 'assistant';
     const raw = stripThinking(messageText(message));
-    const content = role === 'user' && message.attachments?.length
-      ? buildUserContentParts(raw, message.attachments, maxChars)
-      : clipped(raw, maxChars);
+    const content =
+      role === 'user' && message.attachments?.length
+        ? buildUserContentParts(raw, message.attachments, maxChars)
+        : clipped(raw, maxChars);
     if (!content && !(role === 'user' && message.attachments?.length)) continue;
     const entry: ChatHistoryMessage = { role, content };
     if (message.reasoningContent) entry.reasoning_content = message.reasoningContent;
@@ -173,9 +174,52 @@ export * from './intelligentUiPatch.js';
 export * from './turnRuntimeText.js';
 export { openUiProgramIssues, openUiStateIssue, openUiRuntimeIssues } from './openUiProgram.js';
 export { calculatorStep, initialCalculatorState, type CalculatorState } from './calculator';
-export { PHYSICS_MODELS, physicsModelDefinition, physicsParameters, physicsParametersError, createPhysicsRuntime, oscillatorState, electricField, pendulumTrajectory, type PhysicsModelDefinition, type PhysicsRuntime, type PhysicsPoint } from './physicsModels.js';
-export { validateDemonstration, demonstrationDomain, createDemonstrationRuntime, parseDemonstrationExpression, evaluateDemonstrationExpression, normalizeDemonstrationProgram, normalizeDemonstrationExpression, isDemonstrationBudgetError, type DemonstrationWarning, type DemonstrationIssue, type DemonstrationProgram, type DemonstrationValue, type DemonstrationRuntime, type DemonstrationView, type DemonstrationField, type DemonstrationPlot, type DemonstrationParameter, type DemonstrationTrajectory, type DemonstrationScene, type DemonstrationObject, type DemonstrationPoint } from './demonstration.js';
+export {
+  PHYSICS_MODELS,
+  physicsModelDefinition,
+  physicsParameters,
+  physicsParametersError,
+  createPhysicsRuntime,
+  oscillatorState,
+  electricField,
+  pendulumTrajectory,
+  type PhysicsModelDefinition,
+  type PhysicsRuntime,
+  type PhysicsPoint,
+} from './physicsModels.js';
+export {
+  validateDemonstration,
+  demonstrationDomain,
+  createDemonstrationRuntime,
+  parseDemonstrationExpression,
+  evaluateDemonstrationExpression,
+  normalizeDemonstrationProgram,
+  normalizeDemonstrationExpression,
+  isDemonstrationBudgetError,
+  type DemonstrationWarning,
+  type DemonstrationIssue,
+  type DemonstrationProgram,
+  type DemonstrationValue,
+  type DemonstrationRuntime,
+  type DemonstrationView,
+  type DemonstrationField,
+  type DemonstrationPlot,
+  type DemonstrationParameter,
+  type DemonstrationTrajectory,
+  type DemonstrationScene,
+  type DemonstrationObject,
+  type DemonstrationPoint,
+} from './demonstration.js';
 
 export { physicsDemonstrationProgram } from './physicsPrograms.js';
 
-export { LEARNING_KINDS, LEARNING_UI_GUIDANCE, LEARNING_UI_MISUSE_COMPONENTS, openUiLearningMisuse, normalizeLearningUiNode, learningUiIssues, type LearningUiNode, type LearningUiKind } from './learningUi.js';
+export {
+  LEARNING_KINDS,
+  LEARNING_UI_GUIDANCE,
+  LEARNING_UI_MISUSE_COMPONENTS,
+  openUiLearningMisuse,
+  normalizeLearningUiNode,
+  learningUiIssues,
+  type LearningUiNode,
+  type LearningUiKind,
+} from './learningUi.js';

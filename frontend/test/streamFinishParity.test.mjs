@@ -106,7 +106,10 @@ test('the line still being typed is never promoted to display math', () => {
   assert.equal(preprocessMarkdownForStreaming('$a$\n'), '$$a$$\n');
   assert.equal(preprocessMarkdownForStreaming('$a$', { complete: true }), '$$a$$');
   /* A formula that merely starts a line is inline math in both passes. */
-  assert.equal(preprocessMarkdownForStreaming('$a$ 和 $b$ 成立\n', { complete: true }), '$a$ 和 $b$ 成立\n');
+  assert.equal(
+    preprocessMarkdownForStreaming('$a$ 和 $b$ 成立\n', { complete: true }),
+    '$a$ 和 $b$ 成立\n',
+  );
 });
 
 test('lines inside a fence that is still open stay untouched', () => {

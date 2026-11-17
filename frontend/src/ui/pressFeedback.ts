@@ -1,4 +1,7 @@
-interface PressState { pressedAt: number; timer: ReturnType<typeof setTimeout> | 0 }
+interface PressState {
+  pressedAt: number;
+  timer: ReturnType<typeof setTimeout> | 0;
+}
 interface PressEnvironment {
   now?: () => number;
   setTimeout?: (callback: () => void, delay: number) => ReturnType<typeof setTimeout>;
@@ -56,9 +59,10 @@ export function wirePressFeedback(doc?: PressDocument | null, env?: PressEnviron
   if (!d || typeof d.addEventListener !== 'function') return noopTeardown;
   if (d.__socratesPressFeedback) return d.__socratesPressFeedback;
   const e = env || {};
-  const now = e.now || (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
-  const setT = e.setTimeout || ((fn: TimerHandler, ms: number|undefined) => setTimeout(fn, ms));
-  const clearT = e.clearTimeout || ((id: number|undefined) => clearTimeout(id));
+  const now =
+    e.now || (() => (typeof performance !== 'undefined' ? performance.now() : Date.now()));
+  const setT = e.setTimeout || ((fn: TimerHandler, ms: number | undefined) => setTimeout(fn, ms));
+  const clearT = e.clearTimeout || ((id: number | undefined) => clearTimeout(id));
 
   /* Per-element bookkeeping: when the press began and any pending
      release/cleanup timer, so rapid re-presses restart cleanly. */
@@ -67,12 +71,18 @@ export function wirePressFeedback(doc?: PressDocument | null, env?: PressEnviron
 
   function entry(el: Element) {
     let s = state.get(el);
-    if (!s) { s = { pressedAt: 0, timer: 0 }; state.set(el, s); }
+    if (!s) {
+      s = { pressedAt: 0, timer: 0 };
+      state.set(el, s);
+    }
     return s;
   }
 
   function clearTimer(s: PressState) {
-    if (s.timer) { clearT(s.timer); s.timer = 0; }
+    if (s.timer) {
+      clearT(s.timer);
+      s.timer = 0;
+    }
   }
 
   function release(el: Element) {
@@ -133,7 +143,10 @@ export function wirePressFeedback(doc?: PressDocument | null, env?: PressEnviron
 }
 
 function parseLengths(value: unknown) {
-  return String(value || '').trim().split(/\s+/).map((part) => parseFloat(part));
+  return String(value || '')
+    .trim()
+    .split(/\s+/)
+    .map((part) => parseFloat(part));
 }
 
 /**
@@ -146,7 +159,11 @@ function parseLengths(value: unknown) {
 export function restingRect(el: Element) {
   const rect = el.getBoundingClientRect();
   let cs;
-  try { cs = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null; } catch (_) { cs = null; }
+  try {
+    cs = typeof getComputedStyle === 'function' ? getComputedStyle(el) : null;
+  } catch (_) {
+    cs = null;
+  }
   const scaleValue = cs ? cs.scale : '';
   if (!scaleValue || scaleValue === 'none') return rect;
   const scales = parseLengths(scaleValue);

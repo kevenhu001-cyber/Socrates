@@ -23,7 +23,11 @@ function fencedCodeRanges(source: string): MarkdownCodeRange[] {
       const glued = closing ? null : /^ {0,3}(`+|~+)[ \t]*(?=<\/[a-z][\w-]*>)/i.exec(line);
       const close = closing ?? glued;
       if (close && close[1][0] === fence.marker && close[1].length >= fence.length) {
-        const end = glued ? lineStart + glued[0].length : (newline === -1 ? source.length : newline + 1);
+        const end = glued
+          ? lineStart + glued[0].length
+          : newline === -1
+            ? source.length
+            : newline + 1;
         ranges.push({ start: fence.start, end });
         fence = null;
       }

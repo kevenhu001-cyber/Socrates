@@ -7,10 +7,10 @@
  * paths are DB-backed; when the db is not initialised the executor must
  * surface a retryable memory_write_failed rather than throwing.
  */
-import {describe, test} from 'node:test';
+import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {executeSaveMemory} from '../src/routes/chat/pipeline/executors/saveMemory.js';
+import { executeSaveMemory } from '../src/routes/chat/pipeline/executors/saveMemory.js';
 
 const call = { id: 'call-1', name: 'save_memory', arguments: {} };
 
@@ -33,7 +33,9 @@ describe('save_memory executor: guards', () => {
 
   test('rejects empty text', async () => {
     const { result } = await executeSaveMemory(
-      { text: '   ' }, call, ctx({ req: { userId: 'u-1' } }),
+      { text: '   ' },
+      call,
+      ctx({ req: { userId: 'u-1' } }),
     );
     assert.equal(result.status, 'failed');
     assert.equal(result.errorCode, 'missing_text');
@@ -41,16 +43,15 @@ describe('save_memory executor: guards', () => {
   });
 
   test('rejects non-string text content', async () => {
-    const { result } = await executeSaveMemory(
-      { text: 0 }, call, ctx({ req: { userId: 'u-1' } }),
-    );
+    const { result } = await executeSaveMemory({ text: 0 }, call, ctx({ req: { userId: 'u-1' } }));
     assert.equal(result.errorCode, 'missing_text');
   });
 
   test('project scope without an active project fails fast', async () => {
     const { result } = await executeSaveMemory(
       { text: 'project fact', scope: 'project' },
-      call, ctx({ req: { userId: 'u-1' }, projectIdFromBody: null }),
+      call,
+      ctx({ req: { userId: 'u-1' }, projectIdFromBody: null }),
     );
     assert.equal(result.errorCode, 'no_active_project');
     assert.equal(result.retryable, false);
@@ -73,7 +74,9 @@ describe('save_memory executor: database boundary', () => {
      The executor must translate that into a retryable structured error. */
   test('db write failure is retryable, not a crash', async () => {
     const { result } = await executeSaveMemory(
-      { text: 'fact' }, call, ctx({ req: { userId: 'u-1' } }),
+      { text: 'fact' },
+      call,
+      ctx({ req: { userId: 'u-1' } }),
     );
     assert.equal(result.status, 'failed');
     assert.equal(result.errorCode, 'memory_write_failed');
@@ -83,7 +86,8 @@ describe('save_memory executor: database boundary', () => {
   test('project ownership check failure is retryable', async () => {
     const { result } = await executeSaveMemory(
       { text: 'fact', scope: 'project' },
-      call, ctx({ req: { userId: 'u-1' }, projectIdFromBody: '00000000-0000-0000-0000-000000000000' }),
+      call,
+      ctx({ req: { userId: 'u-1' }, projectIdFromBody: '00000000-0000-0000-0000-000000000000' }),
     );
     assert.equal(result.errorCode, 'memory_write_failed');
     assert.equal(result.retryable, true);

@@ -18,8 +18,11 @@ export const useSessionOrganization = create<{
 }>((set) => ({
   organization: readOrganization(),
   setOrganization: (organization) => {
-    try { localStorage.setItem(STORAGE_KEY, organization); }
-    catch { /* empty-catch: intentional — keep the view usable when storage is unavailable. */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, organization);
+    } catch {
+      /* empty-catch: intentional — keep the view usable when storage is unavailable. */
+    }
     set({ organization });
   },
 }));

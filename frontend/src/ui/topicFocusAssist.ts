@@ -20,17 +20,19 @@ interface VisibilityBounds {
 
 function keyboardEngaged(): boolean {
   const dataset = document.documentElement.dataset;
-  return dataset.keyboardOpen === 'true'
-    || Boolean(dataset.keyboardPhase && dataset.keyboardPhase !== 'closed')
-    || Boolean(dataset.keyboardMode && dataset.keyboardMode !== 'unknown');
+  return (
+    dataset.keyboardOpen === 'true' ||
+    Boolean(dataset.keyboardPhase && dataset.keyboardPhase !== 'closed') ||
+    Boolean(dataset.keyboardMode && dataset.keyboardMode !== 'unknown')
+  );
 }
 
 function touchKeyboardEnvironment(): boolean {
   if (document.documentElement.classList.contains('is-native-app')) return true;
   try {
     return Boolean(
-      window.matchMedia?.('(pointer: coarse)').matches
-      && window.matchMedia?.('(hover: none)').matches,
+      window.matchMedia?.('(pointer: coarse)').matches &&
+      window.matchMedia?.('(hover: none)').matches,
     );
   } catch {
     return false;
@@ -41,7 +43,11 @@ function focusedTopicComposer(): { composer: Element; topic: HTMLElement } | nul
   const active = document.activeElement;
   const composer = active?.closest(TOPIC_COMPOSER);
   const topic = composer?.closest(TOPIC_SCROLL_ROOT);
-  if (!composer || !(topic instanceof HTMLElement) || typeof topic.getBoundingClientRect !== 'function') {
+  if (
+    !composer ||
+    !(topic instanceof HTMLElement) ||
+    typeof topic.getBoundingClientRect !== 'function'
+  ) {
     return null;
   }
   return { composer, topic };
@@ -50,9 +56,8 @@ function focusedTopicComposer(): { composer: Element; topic: HTMLElement } | nul
 function visibilityBounds(): VisibilityBounds | null {
   const viewport = window.visualViewport;
   const offsetTop = viewport ? Number(viewport.offsetTop) || 0 : 0;
-  const height = viewport && Number(viewport.height) > 0
-    ? Number(viewport.height)
-    : Number(window.innerHeight);
+  const height =
+    viewport && Number(viewport.height) > 0 ? Number(viewport.height) : Number(window.innerHeight);
   if (!Number.isFinite(height) || height <= 0) return null;
   return { top: offsetTop + 8, bottom: offsetTop + height - 16 };
 }
@@ -86,8 +91,10 @@ function onFocusIn(): void {
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
-    try { ensureTopicComposerVisible(); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: ui/topicFocusAssist.ts:87');
+    try {
+      ensureTopicComposerVisible();
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: ui/topicFocusAssist.ts');
       /* detached focus target is no longer scrollable */
     }
   }, FOCUS_SETTLE_MS);
@@ -96,7 +103,10 @@ function onFocusIn(): void {
 export function initTopicFocusAssist(): () => void {
   document.addEventListener('focusin', onFocusIn);
   return () => {
-    if (timer) { clearTimeout(timer); timer = null; }
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
     document.removeEventListener('focusin', onFocusIn);
   };
 }

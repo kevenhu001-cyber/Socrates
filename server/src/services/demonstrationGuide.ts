@@ -21,7 +21,9 @@ Optional presets: at most four label and values entries, where values maps a par
 One format for new physics content: {version:1,nodes:[{id,type:"demonstration",title,program:{version:1,parameters,definitions,dynamics?,views,presets?}}]}. Do not emit a separate physics renderer, hand-written SVG/HTML/JS, or a fixed scene ID for a new model. Historical physics IDs and OpenUI Rayleigh are compatibility adapters into this same program renderer. Ordinary explanations stay in prose. Reuse a definition across force arrows, geometry, trajectories and readouts instead of generating disconnected visuals.
 Build a new model by declaring units/assumptions, choosing independent state variables, deriving force laws and initial conditions, then composing only the views that help. Change equations, boundary parameters, initial conditions, expressions, object count/order and view composition freely within the documented limits. The examples are editable starting points, not a list of permitted models. Derive new equations rather than selecting the nearest named scene; verify dimensions, conservation or a known limiting case. State approximations such as point masses, lumped temperature or prescribed motion. Never imply generic collision/PDE/contact/circuit solving.
 Available composed examples and assumptions:
-${Object.entries(PHYSICS_EXAMPLE_ASSUMPTIONS).map(([id,assumptions])=>`${id}: ${assumptions}`).join('\n')}
+${Object.entries(PHYSICS_EXAMPLE_ASSUMPTIONS)
+  .map(([id, assumptions]) => `${id}: ${assumptions}`)
+  .join('\n')}
 Editable coupled dynamics example (compose additional fields, objects or controls as needed):
 ${JSON.stringify(PHYSICS_EXAMPLES.coupledOscillators)}
 Editable electromagnetic example (change the mathematical model and composition, not just labels):
@@ -35,106 +37,186 @@ Example of a previously unregistered diffraction-grating demonstration:
    validateDemonstration in packages/core; the validator stays authoritative
    and still rejects anything the schema cannot express. */
 const EXPRESSION = { anyOf: [{ type: 'number' }, { type: 'string', maxLength: 1600 }] };
-const AXIS = { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION, description: 'Increasing [min,max] within ±1e6.' };
+const AXIS = {
+  type: 'array',
+  minItems: 2,
+  maxItems: 2,
+  items: EXPRESSION,
+  description: 'Increasing [min,max] within ±1e6.',
+};
 export const DEMONSTRATION_PROGRAM_SCHEMA = {
   type: 'object',
   description: DEMONSTRATION_GUIDANCE,
   required: ['version', 'views'],
   properties: {
     version: { type: 'integer', enum: [1], description: 'The number 1, not the string "1".' },
-    resetKey: { type: 'string', maxLength: 80, description: 'Change it to restore every declared default.' },
+    resetKey: {
+      type: 'string',
+      maxLength: 80,
+      description: 'Change it to restore every declared default.',
+    },
     parameters: {
-      type: 'array', maxItems: 12,
+      type: 'array',
+      maxItems: 12,
       description: 'Optional; at most 12. Use only for demonstration nodes, inside program.',
       items: {
-        type: 'object', required: ['id', 'label', 'value', 'min', 'max'],
+        type: 'object',
+        required: ['id', 'label', 'value', 'min', 'max'],
         properties: {
-          id: { type: 'string', pattern: '^[A-Za-z][A-Za-z0-9_]{0,39}$', description: 'ASCII identifier; never x,y,t,pi,e or a function name.' },
+          id: {
+            type: 'string',
+            pattern: '^[A-Za-z][A-Za-z0-9_]{0,39}$',
+            description: 'ASCII identifier; never x,y,t,pi,e or a function name.',
+          },
           label: { type: 'string', maxLength: 200 },
           value: { type: 'number', description: 'Default inside [min,max].' },
-          min: { type: 'number' }, max: { type: 'number' },
+          min: { type: 'number' },
+          max: { type: 'number' },
           step: { type: 'number', exclusiveMinimum: 0 },
           unit: { type: 'string', maxLength: 200 },
-          advanced: { type: 'boolean', description: 'Disclose this slider under an advanced section.' },
+          advanced: {
+            type: 'boolean',
+            description: 'Disclose this slider under an advanced section.',
+          },
         },
       },
     },
     definitions: {
-      type: 'object', maxProperties: 24,
+      type: 'object',
+      maxProperties: 24,
       additionalProperties: { anyOf: [{ type: 'number' }, { type: 'string', maxLength: 1600 }] },
-      description: 'Name to expression; may use other definitions in any order (no cycles), parameters, x, y, t and ODE states. Plain ASCII math: x^2, 2*x, pi.',
+      description:
+        'Name to expression; may use other definitions in any order (no cycles), parameters, x, y, t and ODE states. Plain ASCII math: x^2, 2*x, pi.',
     },
     dynamics: {
-      type: 'object', required: ['initial', 'derivatives', 'duration', 'step'],
+      type: 'object',
+      required: ['initial', 'derivatives', 'duration', 'step'],
       description: 'Optional for algebraic time animation; required for trajectory views.',
       properties: {
         initial: { type: 'object', maxProperties: 6, additionalProperties: EXPRESSION },
-        derivatives: { type: 'object', maxProperties: 6, additionalProperties: { type: 'string', maxLength: 1600 } },
+        derivatives: {
+          type: 'object',
+          maxProperties: 6,
+          additionalProperties: { type: 'string', maxLength: 1600 },
+        },
         duration: { type: 'number', exclusiveMinimum: 0, maximum: 30 },
         step: { type: 'number', minimum: 0.002, maximum: 0.05 },
       },
     },
     views: {
-      type: 'array', minItems: 1, maxItems: 8,
-      description: '1-8 views. Required per kind: plot x, y and 1-6 curves; field x, y and expression; trajectory x, y, horizontal, vertical and dynamics; scene x, y and 1-32 objects; metrics 1-6 values; controls nothing. At most one controls, two field views and twelve curves total.',
+      type: 'array',
+      minItems: 1,
+      maxItems: 8,
+      description:
+        '1-8 views. Required per kind: plot x, y and 1-6 curves; field x, y and expression; trajectory x, y, horizontal, vertical and dynamics; scene x, y and 1-32 objects; metrics 1-6 values; controls nothing. At most one controls, two field views and twelve curves total.',
       items: {
-        type: 'object', required: ['kind'],
-        description: 'The schema cannot express per-kind required fields; the validator enforces the list on views.',
+        type: 'object',
+        required: ['kind'],
+        description:
+          'The schema cannot express per-kind required fields; the validator enforces the list on views.',
         properties: {
-          kind: { type: 'string', enum: ['controls', 'plot', 'field', 'trajectory', 'scene', 'metrics'] },
+          kind: {
+            type: 'string',
+            enum: ['controls', 'plot', 'field', 'trajectory', 'scene', 'metrics'],
+          },
           label: { type: 'string', maxLength: 200 },
           xLabel: { type: 'string', maxLength: 200 },
           yLabel: { type: 'string', maxLength: 200 },
-          x: AXIS, y: AXIS,
+          x: AXIS,
+          y: AXIS,
           objects: {
-            type: 'array', minItems: 1, maxItems: 32,
-            description: 'Scene only. body requires center/radius; block center/width/height, optional angle; rod/spring/vector from/to; path 2-64 points, optional closed/dashed. Coordinates and positive sizes in physical axis units, angle in radians.',
+            type: 'array',
+            minItems: 1,
+            maxItems: 32,
+            description:
+              'Scene only. body requires center/radius; block center/width/height, optional angle; rod/spring/vector from/to; path 2-64 points, optional closed/dashed. Coordinates and positive sizes in physical axis units, angle in radians.',
             items: {
-              type: 'object', required: ['kind'],
+              type: 'object',
+              required: ['kind'],
               properties: {
-                kind: { type: 'string', enum: ['body', 'block', 'rod', 'spring', 'vector', 'path'] },
+                kind: {
+                  type: 'string',
+                  enum: ['body', 'block', 'rod', 'spring', 'vector', 'path'],
+                },
                 label: { type: 'string', maxLength: 200 },
-                color: { type: 'string', enum: ['ink', 'muted', 'blue', 'orange', 'red', 'green', 'violet'] },
+                color: {
+                  type: 'string',
+                  enum: ['ink', 'muted', 'blue', 'orange', 'red', 'green', 'violet'],
+                },
                 center: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION },
                 from: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION },
                 to: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION },
-                points: { type: 'array', minItems: 2, maxItems: 64, items: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION } },
-                closed: { type: 'boolean' }, dashed: { type: 'boolean' },
-                radius: EXPRESSION, width: EXPRESSION, height: EXPRESSION, angle: EXPRESSION,
+                points: {
+                  type: 'array',
+                  minItems: 2,
+                  maxItems: 64,
+                  items: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION },
+                },
+                closed: { type: 'boolean' },
+                dashed: { type: 'boolean' },
+                radius: EXPRESSION,
+                width: EXPRESSION,
+                height: EXPRESSION,
+                angle: EXPRESSION,
               },
             },
           },
           curves: {
-            type: 'array', minItems: 1, maxItems: 6,
+            type: 'array',
+            minItems: 1,
+            maxItems: 6,
             items: {
-              type: 'object', required: ['expression'],
+              type: 'object',
+              required: ['expression'],
               properties: {
-                expression: EXPRESSION, label: { type: 'string', maxLength: 200 },
-                color: { type: 'string', enum: ['ink', 'muted', 'blue', 'orange', 'red', 'green', 'violet'] },
+                expression: EXPRESSION,
+                label: { type: 'string', maxLength: 200 },
+                color: {
+                  type: 'string',
+                  enum: ['ink', 'muted', 'blue', 'orange', 'red', 'green', 'violet'],
+                },
                 dashed: { type: 'boolean' },
               },
             },
           },
           markers: {
-            type: 'array', maxItems: 8,
+            type: 'array',
+            maxItems: 8,
             items: {
-              type: 'object', required: ['x', 'y'],
-              properties: { x: EXPRESSION, y: EXPRESSION, label: { type: 'string', maxLength: 200 }, color: { type: 'string' } },
+              type: 'object',
+              required: ['x', 'y'],
+              properties: {
+                x: EXPRESSION,
+                y: EXPRESSION,
+                label: { type: 'string', maxLength: 200 },
+                color: { type: 'string' },
+              },
             },
           },
           expression: EXPRESSION,
           palette: { type: 'string', enum: ['light', 'signed', 'heat'] },
-          tint: { type: 'array', minItems: 3, maxItems: 3, items: { type: 'number', minimum: 0, maximum: 1 } },
-          gamma: EXPRESSION, exposure: EXPRESSION,
+          tint: {
+            type: 'array',
+            minItems: 3,
+            maxItems: 3,
+            items: { type: 'number', minimum: 0, maximum: 1 },
+          },
+          gamma: EXPRESSION,
+          exposure: EXPRESSION,
           height: { type: 'number', minimum: 64, maximum: 320 },
           vector: { type: 'array', minItems: 2, maxItems: 2, items: EXPRESSION },
-          horizontal: EXPRESSION, vertical: EXPRESSION,
+          horizontal: EXPRESSION,
+          vertical: EXPRESSION,
           values: {
-            type: 'array', minItems: 1, maxItems: 6,
+            type: 'array',
+            minItems: 1,
+            maxItems: 6,
             items: {
-              type: 'object', required: ['label', 'expression'],
+              type: 'object',
+              required: ['label', 'expression'],
               properties: {
-                label: { type: 'string', maxLength: 200 }, expression: EXPRESSION,
+                label: { type: 'string', maxLength: 200 },
+                expression: EXPRESSION,
                 unit: { type: 'string', maxLength: 200 },
                 digits: { type: 'integer', minimum: 0, maximum: 5 },
               },
@@ -145,10 +227,15 @@ export const DEMONSTRATION_PROGRAM_SCHEMA = {
     },
     duration: { type: 'number', exclusiveMinimum: 0, maximum: 30 },
     presets: {
-      type: 'array', maxItems: 4,
+      type: 'array',
+      maxItems: 4,
       items: {
-        type: 'object', required: ['label', 'values'],
-        properties: { label: { type: 'string', maxLength: 200 }, values: { type: 'object', additionalProperties: EXPRESSION } },
+        type: 'object',
+        required: ['label', 'values'],
+        properties: {
+          label: { type: 'string', maxLength: 200 },
+          values: { type: 'object', additionalProperties: EXPRESSION },
+        },
       },
     },
   },

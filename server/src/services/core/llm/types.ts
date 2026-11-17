@@ -1,7 +1,10 @@
 /**
  * Public request/response types and the provider error shape.
  */
-export const DEFAULT_MAX_TOKENS = Math.max(256, Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192);
+export const DEFAULT_MAX_TOKENS = Math.max(
+  256,
+  Number.parseInt(process.env.LLM_DEFAULT_MAX_TOKENS || '8192', 10) || 8192,
+);
 
 export interface ChatCompletionRequestOptions {
   apiBase: string;
@@ -35,7 +38,11 @@ export class LlmProviderError extends Error {
   /** Provider retries are exhausted here; the browser must not replay them. */
   readonly retryable = false;
 
-  constructor(status: number, body: string, readonly retryAfterMs?: number) {
+  constructor(
+    status: number,
+    body: string,
+    readonly retryAfterMs?: number,
+  ) {
     const compactBody = body.slice(0, 200);
     super(`LLM API error ${status}: ${compactBody}`);
     this.name = 'LlmProviderError';

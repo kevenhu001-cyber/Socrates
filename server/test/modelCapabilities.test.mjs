@@ -18,14 +18,24 @@ import {
  */
 
 const fetchBefore = globalThis.fetch;
-afterEach(() => { globalThis.fetch = fetchBefore; });
+afterEach(() => {
+  globalThis.fetch = fetchBefore;
+});
 
-const opts = { apiBase: 'https://llm.example.com/v1', apiKey: 'test-secret', model: 'MiniMax-M3', messages: [{ role: 'user', content: 'hello' }] };
+const opts = {
+  apiBase: 'https://llm.example.com/v1',
+  apiKey: 'test-secret',
+  model: 'MiniMax-M3',
+  messages: [{ role: 'user', content: 'hello' }],
+};
 const ok = () => new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }));
 
 async function bodyFor(overrides) {
   let body;
-  globalThis.fetch = async (_url, init) => { body = JSON.parse(init.body); return ok(); };
+  globalThis.fetch = async (_url, init) => {
+    body = JSON.parse(init.body);
+    return ok();
+  };
   await callChatCompletion({ ...opts, ...overrides });
   return body;
 }
@@ -83,7 +93,11 @@ test('Instant is encoded the way each family documents it', async () => {
 
   /* Model Studio documents the top-level `enable_thinking`; a self-hosted
      vLLM exposes the same switch as `chat_template_kwargs`. */
-  const dashscope = await bodyFor({ model: 'Qwen3-32B', apiBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', reasoning_effort: 'none' });
+  const dashscope = await bodyFor({
+    model: 'Qwen3-32B',
+    apiBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    reasoning_effort: 'none',
+  });
   assert.equal(dashscope.enable_thinking, false);
   assert.equal(dashscope.chat_template_kwargs, undefined);
 
@@ -112,11 +126,23 @@ test('Instant is encoded the way each family documents it', async () => {
 
 test('a model that cannot turn thinking off fails locally, with no upstream call', async () => {
   let calls = 0;
-  globalThis.fetch = async () => { calls++; return ok(); };
+  globalThis.fetch = async () => {
+    calls++;
+    return ok();
+  };
   /* Each of these either rejects `thinking.type=disabled` outright or ignores
      it — which would silently resume thinking although the user asked for
      Instant. Both are refused before a request is made. */
-  for (const model of ['kimi-k3', 'kimi-k2.7-code', 'glm-5.3', 'qwen3.8-2.4t-a95b', 'qwq-32b', 'MiniMax-M3.1-Flash', 'minimax-m2.5', 'gpt-5']) {
+  for (const model of [
+    'kimi-k3',
+    'kimi-k2.7-code',
+    'glm-5.3',
+    'qwen3.8-2.4t-a95b',
+    'qwq-32b',
+    'MiniMax-M3.1-Flash',
+    'minimax-m2.5',
+    'gpt-5',
+  ]) {
     await assert.rejects(
       () => callChatCompletion({ ...opts, model, reasoning_effort: 'none' }),
       { status: 400, code: 'MODEL_MODE_UNSUPPORTED' },
@@ -166,31 +192,36 @@ test('a model that ignores or rejects effort levels is never sent one', async ()
 
 test('the capability summary tells a client what the model can do', () => {
   /* MiniMax-M3 reasons, can switch thinking off, and ignores effort levels. */
-  assert.deepEqual(
-    summarizeModelCapabilities('MiniMax-M3'),
-    { isReasoning: true, supportsInstant: true, supportsEffort: false },
-  );
+  assert.deepEqual(summarizeModelCapabilities('MiniMax-M3'), {
+    isReasoning: true,
+    supportsInstant: true,
+    supportsEffort: false,
+  });
   /* M3.1 Flash always thinks but tunes its depth. */
-  assert.deepEqual(
-    summarizeModelCapabilities('MiniMax-M3.1-Flash'),
-    { isReasoning: true, supportsInstant: false, supportsEffort: true },
-  );
+  assert.deepEqual(summarizeModelCapabilities('MiniMax-M3.1-Flash'), {
+    isReasoning: true,
+    supportsInstant: false,
+    supportsEffort: true,
+  });
   /* Kimi-K3 always thinks and has effort levels of its own. */
-  assert.deepEqual(
-    summarizeModelCapabilities('kimi-k3'),
-    { isReasoning: true, supportsInstant: false, supportsEffort: true },
-  );
+  assert.deepEqual(summarizeModelCapabilities('kimi-k3'), {
+    isReasoning: true,
+    supportsInstant: false,
+    supportsEffort: true,
+  });
   /* A model that never thinks needs no switch and has no effort levels. */
-  assert.deepEqual(
-    summarizeModelCapabilities('gpt-4o'),
-    { isReasoning: false, supportsInstant: true, supportsEffort: false },
-  );
+  assert.deepEqual(summarizeModelCapabilities('gpt-4o'), {
+    isReasoning: false,
+    supportsInstant: true,
+    supportsEffort: false,
+  });
   /* An undeclared model keeps Instant: refusing it would block a request
      the upstream may well accept. */
-  assert.deepEqual(
-    summarizeModelCapabilities('custom-model'),
-    { isReasoning: true, supportsInstant: true, supportsEffort: false },
-  );
+  assert.deepEqual(summarizeModelCapabilities('custom-model'), {
+    isReasoning: true,
+    supportsInstant: true,
+    supportsEffort: false,
+  });
 });
 
 /* ── Context budget ─────────────────────────────────────────────────── */
@@ -224,21 +255,30 @@ test('the conversation budget follows the model window instead of one global con
   assert.equal(unknown.budget, DEFAULT_CONTEXT_BUDGET_TOKENS);
 
   /* An operator override always wins. */
-  const overridden = resolveContextBudget('MiniMax-M3', { overrideTokens: 12_345, reserveTokens: 8192 });
+  const overridden = resolveContextBudget('MiniMax-M3', {
+    overrideTokens: 12_345,
+    reserveTokens: 8192,
+  });
   assert.equal(overridden.source, 'override');
   assert.equal(overridden.budget, 12_345);
 });
 
 test('tool schemas are subtracted from the conversation budget', () => {
   const withoutTools = resolveContextBudget('gpt-4o', { reserveTokens: 16384 });
-  const withTools = resolveContextBudget('gpt-4o', { reserveTokens: 16384, toolSchemaTokens: 25_000 });
+  const withTools = resolveContextBudget('gpt-4o', {
+    reserveTokens: 16384,
+    toolSchemaTokens: 25_000,
+  });
   assert.equal(withTools.source, 'model-window');
   assert.equal(withTools.budget, withoutTools.budget - 25_000);
 
   /* The fixed overhead alone exceeds the declared input window. The budget
      must not fall back to the 100 K unknown-model floor, which would
      guarantee a provider context-length 400. */
-  const overflow = resolveContextBudget('gpt-4o', { reserveTokens: 16384, toolSchemaTokens: 200_000 });
+  const overflow = resolveContextBudget('gpt-4o', {
+    reserveTokens: 16384,
+    toolSchemaTokens: 200_000,
+  });
   assert.equal(overflow.source, 'model-window');
   assert.equal(overflow.budget, 1);
   assert.equal(overflow.fixedOverflow, true);
@@ -252,7 +292,11 @@ test('tool schemas are subtracted from the conversation budget', () => {
 test('a provider that rejects temperature while reasoning gets none', async () => {
   /* The GPT-6 family documents: "when reasoning effort is not `none`, remove
      temperature, top_p, and top_logprobs". */
-  const reasoning = await bodyFor({ model: 'gpt-6-sol', reasoning_effort: 'high', temperature: 0.3 });
+  const reasoning = await bodyFor({
+    model: 'gpt-6-sol',
+    reasoning_effort: 'high',
+    temperature: 0.3,
+  });
   assert.equal(reasoning.temperature, undefined);
   assert.equal(reasoning.reasoning_effort, 'high');
 
@@ -297,7 +341,11 @@ test('the per-provider instant encoding overrides the registry', async () => {
 
   /* An unknown override value is ignored rather than sent verbatim: the
      server only ever sends an encoding it knows how to spell. */
-  const bogus = await bodyFor({ model: 'qwen3-8b', reasoning_effort: 'none', instantEncoding: 'not-an-encoding' });
+  const bogus = await bodyFor({
+    model: 'qwen3-8b',
+    reasoning_effort: 'none',
+    instantEncoding: 'not-an-encoding',
+  });
   assert.equal(bogus.enable_thinking, undefined);
   assert.deepEqual(bogus.chat_template_kwargs, { enable_thinking: false });
 });

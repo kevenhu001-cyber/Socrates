@@ -58,7 +58,8 @@ export const defaultExamStrings: ExamStrings = {
   setup: {
     eyebrow: 'Assessment studio',
     heroTitle: 'Build a focused practice exam',
-    heroDescription: 'Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.',
+    heroDescription:
+      'Choose the scope and challenge. Socrates will compose a balanced paper you can complete at your own pace.',
     topic: 'Topic',
     topicHelp: 'Name the subject or learning objective',
     topicPlaceholder: 'e.g. Linear Algebra, World War II...',

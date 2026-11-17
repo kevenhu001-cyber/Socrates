@@ -9,7 +9,11 @@
  */
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter/index.js';
+import {
+  codeInterpreter,
+  CODE_INTERPRETER_TOOL,
+  resolvePyodideWorkerEntry,
+} from '../src/services/codeInterpreter/index.js';
 import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/tools/toolCallSafety.js';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
@@ -37,7 +41,10 @@ describe('codeInterpreter.execute — input guard rails', () => {
   });
 
   test('the TypeScript worker remains valid ESM without CommonJS require()', async () => {
-    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const source = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../src/services/pyodideWorker.ts',
+    );
     const workerSource = await fsPromises.readFile(source, 'utf8');
     assert.doesNotMatch(workerSource, /require\s*\(/);
     assert.match(workerSource, /import os from 'node:os'/);
@@ -55,13 +62,24 @@ describe('codeInterpreter.execute — input guard rails', () => {
    * to pass callbacks; this test pins the shape so the next refactor
    * can't silently drop them again. */
   test('loadPyodide() binds stdout/stderr callbacks to survive worker_threads', async () => {
-    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const source = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../src/services/pyodideWorker.ts',
+    );
     const workerSource = await fsPromises.readFile(source, 'utf8');
     const loadMatch = workerSource.match(/loadPyodide\(\s*\{[\s\S]*?\}\s*\)/);
     assert.ok(loadMatch, 'loadPyodide({ … }) call site not found in pyodideWorker.ts');
     const optionsBlock = loadMatch[0];
-    assert.match(optionsBlock, /\bstdout\s*:\s*\(/, 'loadPyodide() must pass a stdout callback (worker_threads has no process.stdout)');
-    assert.match(optionsBlock, /\bstderr\s*:\s*\(/, 'loadPyodide() must pass a stderr callback (worker_threads has no process.stderr)');
+    assert.match(
+      optionsBlock,
+      /\bstdout\s*:\s*\(/,
+      'loadPyodide() must pass a stdout callback (worker_threads has no process.stdout)',
+    );
+    assert.match(
+      optionsBlock,
+      /\bstderr\s*:\s*\(/,
+      'loadPyodide() must pass a stderr callback (worker_threads has no process.stderr)',
+    );
     /* fullStdLib:false stays — flipping it to true balloons the boot wheel
        cache by ~100 MB with no benefit (we pre-load only numpy/pandas/matplotlib). */
     assert.match(optionsBlock, /fullStdLib\s*:\s*false/);
@@ -77,7 +95,10 @@ describe('codeInterpreter.execute — input guard rails', () => {
    * until the escape was doubled (`\\r`). Escaped `\\r` / `\\n` are the
    * only acceptable forms — they stay literal text in the Python source. */
   test('embedded Python in pyodideWorker.ts contains no lone CR/LF escapes', async () => {
-    const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/services/pyodideWorker.ts');
+    const source = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '../src/services/pyodideWorker.ts',
+    );
     const workerSource = await fsPromises.readFile(source, 'utf8');
     // A raw CR byte anywhere in the file would corrupt any Python block.
     assert.doesNotMatch(workerSource, /\r/);
@@ -100,7 +121,12 @@ describe('codeInterpreter.execute — input guard rails', () => {
 
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {
     const huge = 'x'.repeat(400_000);
-    const res = await codeInterpreter.execute({ userId: '00000000-0000-4000-8000-000000000001', sessionId: null, code: huge, language: 'python' });
+    const res = await codeInterpreter.execute({
+      userId: '00000000-0000-4000-8000-000000000001',
+      sessionId: null,
+      code: huge,
+      language: 'python',
+    });
     assert.equal(res.status, 'failed');
     assert.match(res.errorMessage, /code_too_large/);
     assert.equal(res.exitCode, 1);
@@ -117,7 +143,12 @@ describe('codeInterpreter.execute — input guard rails', () => {
    * structured error so the model and the operator both get an
    * actionable message. */
   test('rejects calls without an authenticated user without touching the pool', async () => {
-    const res = await codeInterpreter.execute({ userId: null, sessionId: null, code: 'print(1)', language: 'python' });
+    const res = await codeInterpreter.execute({
+      userId: null,
+      sessionId: null,
+      code: 'print(1)',
+      language: 'python',
+    });
     assert.equal(res.status, 'failed');
     assert.match(res.errorMessage, /missing_user/);
     assert.equal(res.exitCode, 1);

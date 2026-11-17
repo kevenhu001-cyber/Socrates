@@ -1,4 +1,9 @@
-import { getComposerMarkdown, notifyComposerChange, readComposerSurface, registerComposer } from '../../composer/controller.ts';
+import {
+  getComposerMarkdown,
+  notifyComposerChange,
+  readComposerSurface,
+  registerComposer,
+} from '../../composer/controller.ts';
 import { composerLifecycleStore } from '../../composer/lifecycle.store.ts';
 import { submitComposer } from '../composer-input/lifecycle';
 import { getLegacyActions, i18n } from '../legacy/gateway';
@@ -10,7 +15,10 @@ export function mountBasicComposer(host: HTMLElement): () => void {
   const field = doc.createElement('textarea');
   field.className = 'msg-edit-area';
   field.dataset.basicComposer = 'true';
-  field.setAttribute('aria-label', i18n('topic.inputPlaceholder', 'What would you like to explore?'));
+  field.setAttribute(
+    'aria-label',
+    i18n('topic.inputPlaceholder', 'What would you like to explore?'),
+  );
   field.value = getComposerMarkdown(readComposerSurface());
   const send = doc.createElement('button');
   send.type = 'button';
@@ -18,7 +26,10 @@ export function mountBasicComposer(host: HTMLElement): () => void {
   send.textContent = i18n('chat.send', 'Send');
   const token = () => composerLifecycleStore.getState().extensionTokens[readComposerSurface()];
   const update = () => notifyComposerChange(readComposerSurface(), field.value);
-  const submit = () => { update(); submitComposer(getLegacyActions().composer); };
+  const submit = () => {
+    update();
+    submitComposer(getLegacyActions().composer);
+  };
   const keydown = (event: KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
       event.preventDefault();
@@ -27,9 +38,16 @@ export function mountBasicComposer(host: HTMLElement): () => void {
   };
   const unregister = registerComposer(readComposerSurface(), {
     getMarkdown: () => field.value,
-    setMarkdown: (value) => { field.value = value; },
-    insertText: (value) => { field.setRangeText(value, field.selectionStart, field.selectionEnd, 'end'); update(); },
-    clear: () => { field.value = ''; },
+    setMarkdown: (value) => {
+      field.value = value;
+    },
+    insertText: (value) => {
+      field.setRangeText(value, field.selectionStart, field.selectionEnd, 'end');
+      update();
+    },
+    clear: () => {
+      field.value = '';
+    },
     getExtensionToken: token,
     setExtensionToken: () => undefined,
     focus: () => field.focus({ preventScroll: true }),

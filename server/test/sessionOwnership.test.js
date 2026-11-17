@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { BadRequest } from '../src/lib/errors.js';
 import { parseChatSessionId } from '../src/lib/sessionOwnership.js';
-import { dispatchToolCalls } from '../src/services/tools/toolDispatch.js';
+import { dispatchToolCalls } from '../src/services/tools/toolScheduler.js';
 import { createSessionExecutionLock } from '../src/services/sessionExecutionLock.js';
 
 const SESSION_A = '00000000-0000-4000-8000-000000000001';
@@ -20,7 +20,9 @@ test('session execution lock serializes one session while allowing another sessi
   const lock = createSessionExecutionLock();
   const events = [];
   let releaseFirst;
-  const firstGate = new Promise((resolve) => { releaseFirst = resolve; });
+  const firstGate = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
 
   const first = lock.run('session-a', async () => {
     events.push('a1:start');
@@ -50,7 +52,9 @@ test('session execution lock serializes one session while allowing another sessi
 test('session execution lock recovers after a failed execution', async () => {
   const lock = createSessionExecutionLock();
   let releaseFailure;
-  const failureGate = new Promise((resolve) => { releaseFailure = resolve; });
+  const failureGate = new Promise((resolve) => {
+    releaseFailure = resolve;
+  });
   const first = lock.run('session-a', async () => {
     await failureGate;
     throw new Error('first failed');
@@ -58,10 +62,7 @@ test('session execution lock recovers after a failed execution', async () => {
   const second = lock.run('session-a', async () => 'recovered');
 
   releaseFailure();
-  await assert.rejects(
-    first,
-    /first failed/,
-  );
+  await assert.rejects(first, /first failed/);
   assert.equal(await second, 'recovered');
   assert.equal(lock.pendingSessions, 0);
 });
@@ -79,20 +80,34 @@ test('tool dispatch serializes registry-marked calls but keeps independent tools
   };
   const events = [];
   let releaseFirst;
-  const firstGate = new Promise((resolve) => { releaseFirst = resolve; });
-  const task = dispatchToolCalls(calls, (call) => call.name, registry, async (call) => {
-    events.push(`${call.id}:start`);
-    if (call.id === 'one') await firstGate;
-    events.push(`${call.id}:end`);
-    return call.id;
+  const firstGate = new Promise((resolve) => {
+    releaseFirst = resolve;
   });
+  const task = dispatchToolCalls(
+    calls,
+    (call) => call.name,
+    registry,
+    async (call) => {
+      events.push(`${call.id}:start`);
+      if (call.id === 'one') await firstGate;
+      events.push(`${call.id}:end`);
+      return call.id;
+    },
+  );
 
   await Promise.resolve();
   await Promise.resolve();
   assert.deepEqual(events, ['one:start', 'two:start', 'two:end']);
   releaseFirst();
   assert.deepEqual(await task, ['one', 'two', 'three']);
-  assert.deepEqual(events, ['one:start', 'two:start', 'two:end', 'one:end', 'three:start', 'three:end']);
+  assert.deepEqual(events, [
+    'one:start',
+    'two:start',
+    'two:end',
+    'one:end',
+    'three:start',
+    'three:end',
+  ]);
 });
 
 test('tool dispatch uses named serial lanes: shared lane serializes, separate lanes run concurrently', async () => {
@@ -106,20 +121,28 @@ test('tool dispatch uses named serial lanes: shared lane serializes, separate la
   ];
   const registry = {
     get(name) {
-      if (name === 'workspace_agent' || name === 'initialize_workspace') return { sessionSerial: 'workspace' };
+      if (name === 'workspace_agent' || name === 'initialize_workspace')
+        return { sessionSerial: 'workspace' };
       if (name === 'code_interpreter') return { sessionSerial: 'code' };
       return { sessionSerial: false };
     },
   };
   const events = [];
   let releaseAgent;
-  const agentGate = new Promise((resolve) => { releaseAgent = resolve; });
-  const task = dispatchToolCalls(calls, (call) => call.name, registry, async (call) => {
-    events.push(`${call.id}:start`);
-    if (call.id === 'agent') await agentGate;
-    events.push(`${call.id}:end`);
-    return call.id;
+  const agentGate = new Promise((resolve) => {
+    releaseAgent = resolve;
   });
+  const task = dispatchToolCalls(
+    calls,
+    (call) => call.name,
+    registry,
+    async (call) => {
+      events.push(`${call.id}:start`);
+      if (call.id === 'agent') await agentGate;
+      events.push(`${call.id}:end`);
+      return call.id;
+    },
+  );
 
   await Promise.resolve();
   await Promise.resolve();
@@ -128,5 +151,12 @@ test('tool dispatch uses named serial lanes: shared lane serializes, separate la
   assert.deepEqual(events, ['agent:start', 'code:start', 'code:end']);
   releaseAgent();
   assert.deepEqual(await task, ['agent', 'code', 'init']);
-  assert.deepEqual(events, ['agent:start', 'code:start', 'code:end', 'agent:end', 'init:start', 'init:end']);
+  assert.deepEqual(events, [
+    'agent:start',
+    'code:start',
+    'code:end',
+    'agent:end',
+    'init:start',
+    'init:end',
+  ]);
 });

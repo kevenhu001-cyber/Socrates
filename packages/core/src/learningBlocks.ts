@@ -36,13 +36,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /** Trim, collapse runs of spaces, cap the length (CJK-safe). Empty → null. */
 export function cleanText(value: unknown, max = MAX_TEXT): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
-  const text = String(value).replace(/\r\n?/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  const text = String(value)
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   if (!text) return null;
   const chars = Array.from(text);
-  return chars.length > max ? chars.slice(0, max - 1).join('').trimEnd() + '…' : text;
+  return chars.length > max
+    ? chars
+        .slice(0, max - 1)
+        .join('')
+        .trimEnd() + '…'
+    : text;
 }
 
-function firstText(record: Record<string, unknown>, keys: readonly string[], max = MAX_TEXT): string | null {
+function firstText(
+  record: Record<string, unknown>,
+  keys: readonly string[],
+  max = MAX_TEXT,
+): string | null {
   for (const key of keys) {
     const text = cleanText(record[key], max);
     if (text) return text;
@@ -65,7 +78,8 @@ function stripWrappers(text: string): string {
     if (close < 0) break;
     cursor = close + '</think>'.length;
   }
-  return parts.join('')
+  return parts
+    .join('')
     .replace(/```(?:json|JSON)?\s*/g, '')
     .replace(/```/g, '')
     .trim();
@@ -138,10 +152,15 @@ export function parseLooseJson(text: unknown): LooseJsonResult {
   const end = body.lastIndexOf(close);
   const candidates = end > 0 ? [body.slice(0, end + 1)] : [];
   for (const candidate of candidates) {
-    for (const attempt of [candidate, candidate.replace(/[“”]/g, '"').replace(/,\s*([}\]])/g, '$1')]) {
+    for (const attempt of [
+      candidate,
+      candidate.replace(/[“”]/g, '"').replace(/,\s*([}\]])/g, '$1'),
+    ]) {
       try {
         return { value: JSON.parse(attempt), truncated: false, salvaged: [] };
-      } catch { /* empty-catch: intentional — fall through to the next repair */ }
+      } catch {
+        /* empty-catch: intentional — fall through to the next repair */
+      }
     }
   }
   const salvaged: Array<Record<string, unknown>> = [];
@@ -149,7 +168,9 @@ export function parseLooseJson(text: unknown): LooseJsonResult {
     try {
       const parsed: unknown = JSON.parse(chunk);
       if (isRecord(parsed)) salvaged.push(parsed);
-    } catch { /* empty-catch: intentional — an unparseable fragment is simply not recovered */ }
+    } catch {
+      /* empty-catch: intentional — an unparseable fragment is simply not recovered */
+    }
   }
   return { value: undefined, truncated: endsOpen(body), salvaged };
 }
@@ -178,13 +199,22 @@ function questionListFrom(value: unknown): unknown[] | null {
 }
 
 function questionText(item: unknown): string | null {
-  if (isRecord(item)) return firstText(item, ['question', 'text', 'q', 'title'], NEXT_QUESTION_MAX_CHARS);
+  if (isRecord(item))
+    return firstText(item, ['question', 'text', 'q', 'title'], NEXT_QUESTION_MAX_CHARS);
   const text = cleanText(item, NEXT_QUESTION_MAX_CHARS);
-  return text ? text.replace(/^(?:[-*•]|\d+[.)、]|[（(]?\d+[）)])\s*/, '').replace(/^["'“「](.*)["'”」]$/, '$1').trim() || null : null;
+  return text
+    ? text
+        .replace(/^(?:[-*•]|\d+[.)、]|[（(]?\d+[）)])\s*/, '')
+        .replace(/^["'“「](.*)["'”」]$/, '$1')
+        .trim() || null
+    : null;
 }
 
 /** Normalize the inside of one `<next-questions>` block. */
-export function normalizeNextQuestions(inner: string, limit = NEXT_QUESTION_LIMIT): NextQuestionsResult {
+export function normalizeNextQuestions(
+  inner: string,
+  limit = NEXT_QUESTION_LIMIT,
+): NextQuestionsResult {
   const warnings: string[] = [];
   const parsed = parseLooseJson(inner);
   let items = questionListFrom(parsed.value);
@@ -193,8 +223,12 @@ export function normalizeNextQuestions(inner: string, limit = NEXT_QUESTION_LIMI
     warnings.push('Recovered questions from a broken JSON list.');
   }
   if (!items) {
-    if (parsed.truncated) return { status: 'truncated', questions: [], warnings: ['The question list was cut off.'] };
-    const lines = stripWrappers(inner).split('\n').map((line) => line.trim()).filter(Boolean);
+    if (parsed.truncated)
+      return { status: 'truncated', questions: [], warnings: ['The question list was cut off.'] };
+    const lines = stripWrappers(inner)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
     if (lines.length && !/^[[{]/.test(lines[0]!)) {
       items = lines;
       warnings.push('Read questions from a plain list instead of JSON.');
@@ -219,11 +253,15 @@ export function normalizeNextQuestions(inner: string, limit = NEXT_QUESTION_LIMI
 }
 
 /** Find and normalize the last complete `<next-questions>` block in a reply. */
-export function extractNextQuestions(text: string | null | undefined, limit = NEXT_QUESTION_LIMIT): NextQuestionsResult {
+export function extractNextQuestions(
+  text: string | null | undefined,
+  limit = NEXT_QUESTION_LIMIT,
+): NextQuestionsResult {
   const source = String(text ?? '');
   const blocks = [...source.matchAll(BLOCK_RE)];
   if (blocks.length) return normalizeNextQuestions(blocks[blocks.length - 1]![1] ?? '', limit);
-  if (OPEN_RE.test(source)) return { status: 'truncated', questions: [], warnings: ['The question block never closed.'] };
+  if (OPEN_RE.test(source))
+    return { status: 'truncated', questions: [], warnings: ['The question block never closed.'] };
   return { status: 'missing', questions: [], warnings: [] };
 }
 
@@ -273,7 +311,8 @@ function nameKey(name: string): string {
 }
 
 function resolveEndpoint(value: unknown, names: readonly string[]): number {
-  if (typeof value === 'number' && Number.isInteger(value)) return value >= 0 && value < names.length ? value : -1;
+  if (typeof value === 'number' && Number.isInteger(value))
+    return value >= 0 && value < names.length ? value : -1;
   const text = cleanText(value, 200);
   if (!text) return -1;
   if (/^\d+$/.test(text)) {
@@ -284,7 +323,8 @@ function resolveEndpoint(value: unknown, names: readonly string[]): number {
   const exact = names.findIndex((name) => nameKey(name) === key);
   if (exact >= 0) return exact;
   /* A model often shortens a long dimension name; accept a unique containment. */
-  const loose = names.map((name, index) => ({ index, key: nameKey(name) }))
+  const loose = names
+    .map((name, index) => ({ index, key: nameKey(name) }))
     .filter((entry) => key.length >= 2 && (entry.key.includes(key) || key.includes(entry.key)));
   return loose.length === 1 ? loose[0]!.index : -1;
 }
@@ -296,30 +336,56 @@ function resolveEndpoint(value: unknown, names: readonly string[]): number {
  * renames what the learner already has. Accepts the legacy shape too (a
  * bare array of node names).
  */
-export function normalizeConceptMap(text: unknown, knownNames: readonly string[] = [], maxNodes = 12): ConceptMapResult {
+export function normalizeConceptMap(
+  text: unknown,
+  knownNames: readonly string[] = [],
+  maxNodes = 12,
+): ConceptMapResult {
   const warnings: string[] = [];
-  const parsed = typeof text === 'string' ? parseLooseJson(text) : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
+  const parsed =
+    typeof text === 'string'
+      ? parseLooseJson(text)
+      : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
   let rawNodes: unknown[] = [];
   let rawLinks: unknown[] = [];
   if (Array.isArray(parsed.value)) rawNodes = parsed.value;
   else if (isRecord(parsed.value)) {
     const value = parsed.value;
-    rawNodes = Array.isArray(value.nodes) ? value.nodes : Array.isArray(value.concepts) ? value.concepts : [];
-    rawLinks = Array.isArray(value.links) ? value.links : Array.isArray(value.edges) ? value.edges : Array.isArray(value.relations) ? value.relations : [];
+    rawNodes = Array.isArray(value.nodes)
+      ? value.nodes
+      : Array.isArray(value.concepts)
+        ? value.concepts
+        : [];
+    rawLinks = Array.isArray(value.links)
+      ? value.links
+      : Array.isArray(value.edges)
+        ? value.edges
+        : Array.isArray(value.relations)
+          ? value.relations
+          : [];
   } else if (parsed.salvaged.length) {
     rawNodes = parsed.salvaged.filter((item) => !('from' in item) && !('source' in item));
     rawLinks = parsed.salvaged.filter((item) => 'from' in item || 'source' in item);
     warnings.push('Recovered complete entries from a cut-off concept map.');
   } else {
-    return { status: parsed.truncated ? 'truncated' : 'invalid', nodes: [], links: [], warnings: [parsed.truncated ? 'The concept map was cut off.' : 'No concept map found.'] };
+    return {
+      status: parsed.truncated ? 'truncated' : 'invalid',
+      nodes: [],
+      links: [],
+      warnings: [parsed.truncated ? 'The concept map was cut off.' : 'No concept map found.'],
+    };
   }
 
   const nodes: ConceptNode[] = knownNames.map((name) => ({ name, definition: null }));
   const names = nodes.map((node) => node.name);
   for (const item of rawNodes) {
-    const name = isRecord(item) ? firstText(item, ['name', 'concept', 'title', 'label'], 80) : cleanText(item, 80);
+    const name = isRecord(item)
+      ? firstText(item, ['name', 'concept', 'title', 'label'], 80)
+      : cleanText(item, 80);
     if (!name) continue;
-    const definition = isRecord(item) ? firstText(item, ['definition', 'define', 'summary', 'description', 'meaning']) : null;
+    const definition = isRecord(item)
+      ? firstText(item, ['definition', 'define', 'summary', 'description', 'meaning'])
+      : null;
     const at = resolveEndpoint(name, names);
     if (at >= 0) {
       if (definition && !nodes[at]!.definition) nodes[at]!.definition = definition;
@@ -340,17 +406,33 @@ export function normalizeConceptMap(text: unknown, knownNames: readonly string[]
     const from = resolveEndpoint(item.from ?? item.source, names);
     const to = resolveEndpoint(item.to ?? item.target, names);
     const why = firstText(item, ['why', 'reason', 'explanation', 'because']);
-    if (from < 0 || to < 0) { warnings.push('Dropped a link to a node that is not on the map.'); continue; }
-    if (from === to) { warnings.push('Dropped a link from a node to itself.'); continue; }
-    if (!why) { warnings.push('Dropped a link with no explanation.'); continue; }
+    if (from < 0 || to < 0) {
+      warnings.push('Dropped a link to a node that is not on the map.');
+      continue;
+    }
+    if (from === to) {
+      warnings.push('Dropped a link from a node to itself.');
+      continue;
+    }
+    if (!why) {
+      warnings.push('Dropped a link with no explanation.');
+      continue;
+    }
     const key = from < to ? `${from}-${to}` : `${to}-${from}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    links.push({ from, to, relation: firstText(item, ['relation', 'type', 'label', 'kind'], 40), why });
+    links.push({
+      from,
+      to,
+      relation: firstText(item, ['relation', 'type', 'label', 'kind'], 40),
+      why,
+    });
   }
-  const hasContent = nodes.some((node) => node.definition) || links.length > 0 || nodes.length > knownNames.length;
+  const hasContent =
+    nodes.some((node) => node.definition) || links.length > 0 || nodes.length > knownNames.length;
   const status: BlockStatus = hasContent ? 'ok' : parsed.truncated ? 'truncated' : 'invalid';
-  if (parsed.truncated && hasContent) warnings.push('The concept map was cut off; kept the complete entries.');
+  if (parsed.truncated && hasContent)
+    warnings.push('The concept map was cut off; kept the complete entries.');
   return { status, nodes, links, warnings };
 }
 
@@ -365,25 +447,43 @@ export interface DiagnosticInsightResult {
   warnings: string[];
 }
 
-export function normalizeDiagnosticInsight(text: unknown, nodeNames: readonly string[]): DiagnosticInsightResult {
+export function normalizeDiagnosticInsight(
+  text: unknown,
+  nodeNames: readonly string[],
+): DiagnosticInsightResult {
   const warnings: string[] = [];
-  const parsed = typeof text === 'string' ? parseLooseJson(text) : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
+  const parsed =
+    typeof text === 'string'
+      ? parseLooseJson(text)
+      : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
   const value = isRecord(parsed.value) ? parsed.value : null;
   const reasons: Record<number, string> = {};
   const rawGaps: unknown[] = value
-    ? (Array.isArray(value.gaps) ? value.gaps : Array.isArray(value.weaknesses) ? value.weaknesses : Array.isArray(value.reasons) ? value.reasons : [])
+    ? Array.isArray(value.gaps)
+      ? value.gaps
+      : Array.isArray(value.weaknesses)
+        ? value.weaknesses
+        : Array.isArray(value.reasons)
+          ? value.reasons
+          : []
     : parsed.salvaged;
   for (const gap of rawGaps) {
     if (!isRecord(gap)) continue;
     const index = resolveEndpoint(gap.name ?? gap.node ?? gap.dimension ?? gap.index, nodeNames);
     const reason = firstText(gap, ['reason', 'why', 'explanation', 'cause']);
-    if (index < 0 || !reason) { warnings.push('Dropped a gap reason that names no known dimension.'); continue; }
+    if (index < 0 || !reason) {
+      warnings.push('Dropped a gap reason that names no known dimension.');
+      continue;
+    }
     if (!reasons[index]) reasons[index] = reason;
   }
   const summary = value ? firstText(value, ['summary', 'overview']) : null;
-  const nextStep = value ? firstText(value, ['nextStep', 'next_step', 'next', 'suggestion', 'recommendation']) : null;
+  const nextStep = value
+    ? firstText(value, ['nextStep', 'next_step', 'next', 'suggestion', 'recommendation'])
+    : null;
   const hasContent = !!(summary || nextStep || Object.keys(reasons).length);
-  if (!value && parsed.salvaged.length && hasContent) warnings.push('Recovered gap reasons from a cut-off reply.');
+  if (!value && parsed.salvaged.length && hasContent)
+    warnings.push('Recovered gap reasons from a cut-off reply.');
   return {
     status: hasContent ? 'ok' : parsed.truncated ? 'truncated' : 'invalid',
     summary,
@@ -403,13 +503,37 @@ export interface MistakeAnalysisResult {
 }
 
 export function normalizeMistakeAnalysis(text: unknown): MistakeAnalysisResult {
-  const parsed = typeof text === 'string' ? parseLooseJson(text) : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
-  const value = isRecord(parsed.value) ? parsed.value : parsed.salvaged.find((item) => 'whyWrong' in item || 'correctApproach' in item) ?? null;
+  const parsed =
+    typeof text === 'string'
+      ? parseLooseJson(text)
+      : { value: text, truncated: false, salvaged: [] as Array<Record<string, unknown>> };
+  const value = isRecord(parsed.value)
+    ? parsed.value
+    : (parsed.salvaged.find((item) => 'whyWrong' in item || 'correctApproach' in item) ?? null);
   if (!value) {
-    return { status: parsed.truncated ? 'truncated' : 'invalid', whyWrong: null, correctApproach: null, warnings: [parsed.truncated ? 'The analysis was cut off.' : 'No analysis found.'] };
+    return {
+      status: parsed.truncated ? 'truncated' : 'invalid',
+      whyWrong: null,
+      correctApproach: null,
+      warnings: [parsed.truncated ? 'The analysis was cut off.' : 'No analysis found.'],
+    };
   }
-  const whyWrong = firstText(value, ['whyWrong', 'why_wrong', 'error', 'mistake', 'whereWrong', 'where_wrong']);
-  const correctApproach = firstText(value, ['correctApproach', 'correct_approach', 'approach', 'solution', 'rightWay', 'right_way']);
+  const whyWrong = firstText(value, [
+    'whyWrong',
+    'why_wrong',
+    'error',
+    'mistake',
+    'whereWrong',
+    'where_wrong',
+  ]);
+  const correctApproach = firstText(value, [
+    'correctApproach',
+    'correct_approach',
+    'approach',
+    'solution',
+    'rightWay',
+    'right_way',
+  ]);
   return {
     status: whyWrong || correctApproach ? 'ok' : 'invalid',
     whyWrong,

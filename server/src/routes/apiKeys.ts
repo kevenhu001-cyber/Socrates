@@ -9,7 +9,11 @@ import { encrypt, encryptionKey } from '../lib/crypto.js';
 import { getApiKeyLimit } from '../lib/tiers.js';
 import { isUuid } from '../lib/validate.js';
 import { invalidateApiKeyCache } from '../services/core/apiKey.js';
-import { summarizeModelCapabilities, isInstantEncoding, type ProviderCapabilitySummary } from '../lib/modelCapabilities.js';
+import {
+  summarizeModelCapabilities,
+  isInstantEncoding,
+  type ProviderCapabilitySummary,
+} from '../lib/modelCapabilities.js';
 
 /* P_model-capability-registry — a client cannot tell whether the selected
  * model can switch thinking off or has effort levels at all: the built-in
@@ -17,7 +21,9 @@ import { summarizeModelCapabilities, isInstantEncoding, type ProviderCapabilityS
  * user-configured model is an arbitrary string. The registry decides, so the
  * summary travels with the provider row instead of the client guessing from
  * a model name. */
-function withCapabilities<T extends { model?: string | null }>(row: T): T & { capabilities: ProviderCapabilitySummary } {
+function withCapabilities<T extends { model?: string | null }>(
+  row: T,
+): T & { capabilities: ProviderCapabilitySummary } {
   return { ...row, capabilities: summarizeModelCapabilities(row.model || '') };
 }
 
@@ -104,28 +110,32 @@ router.get('/', async (req, res, next) => {
        raw TEXT column through, so every signed-in client received the
        encrypted-at-rest key material on every refresh. Frontend coerces
        with `!!p.hasKey`, so the shape change is transparent. */
-    const rows = await db.select({
-      id: apiKeys.id,
-      label: apiKeys.label,
-      url: apiKeys.url,
-      model: apiKeys.model,
-      keyHint: apiKeys.keyHint,
-      isActive: apiKeys.isActive,
-      isBuiltIn: apiKeys.isBuiltIn,
-      /* P_attachments-multimodal — user-controlled vision flag. */
-      isMultimodal: apiKeys.isMultimodal,
-      /* P_provider-capability-override — per-provider instant encoding. */
-      instantEncoding: apiKeys.instantEncoding,
-      hasKey: sql`(${apiKeys.keyCiphertext} IS NOT NULL)`,
-      createdAt: apiKeys.createdAt,
-    }).from(apiKeys).where(eq(apiKeys.userId, req.userId!));
+    const rows = await db
+      .select({
+        id: apiKeys.id,
+        label: apiKeys.label,
+        url: apiKeys.url,
+        model: apiKeys.model,
+        keyHint: apiKeys.keyHint,
+        isActive: apiKeys.isActive,
+        isBuiltIn: apiKeys.isBuiltIn,
+        /* P_attachments-multimodal — user-controlled vision flag. */
+        isMultimodal: apiKeys.isMultimodal,
+        /* P_provider-capability-override — per-provider instant encoding. */
+        instantEncoding: apiKeys.instantEncoding,
+        hasKey: sql`(${apiKeys.keyCiphertext} IS NOT NULL)`,
+        createdAt: apiKeys.createdAt,
+      })
+      .from(apiKeys)
+      .where(eq(apiKeys.userId, req.userId!));
     /* Drizzle returns the boolean expression as a JS boolean already, but
        normalise to be defensive against future driver changes. */
     const keys = rows.map((r) => withCapabilities({ ...r, hasKey: r.hasKey === true }));
     /* The built-in provider row carries no userId, so it never appears in
        the caller's list — but the SPA still offers it as a model choice and
        needs the same capability summary for it. */
-    const [builtInRow] = await db.select({ model: apiKeys.model })
+    const [builtInRow] = await db
+      .select({ model: apiKeys.model })
       .from(apiKeys)
       .where(and(eq(apiKeys.isBuiltIn, true), isNotNull(apiKeys.keyCiphertext)))
       .limit(1);
@@ -133,75 +143,97 @@ router.get('/', async (req, res, next) => {
       providers: keys,
       builtInCapabilities: builtInRow ? summarizeBuiltInCapabilities(builtInRow.model) : null,
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Create API key ─── */
-router.post('/', audit('create_api_key', (req) => ({ label: req.body?.label, url: req.body?.url, model: req.body?.model })), async (req, res, next) => {
-  try {
-    const { label, url, model, key } = req.body;
-    if (!url || !model || !key) throw new BadRequest('url, model, and key are required');
-    if (!isAllowedProviderUrl(url)) {
-      throw new BadRequest('Invalid provider URL. Must be https with a public hostname.');
-    }
+router.post(
+  '/',
+  audit('create_api_key', (req) => ({
+    label: req.body?.label,
+    url: req.body?.url,
+    model: req.body?.model,
+  })),
+  async (req, res, next) => {
+    try {
+      const { label, url, model, key } = req.body;
+      if (!url || !model || !key) throw new BadRequest('url, model, and key are required');
+      if (!isAllowedProviderUrl(url)) {
+        throw new BadRequest('Invalid provider URL. Must be https with a public hostname.');
+      }
 
-    /* Enforce tier-based API key limit. */
-    const tier = req.user?.tier || 'diophantus';
-    const maxKeys = getApiKeyLimit(tier);
-    const db = getDb();
-    const [keyCount] = await db.select({ value: count() })
-      .from(apiKeys)
-      .where(eq(apiKeys.userId, req.userId!));
-    if ((keyCount?.value || 0) >= maxKeys) {
-      throw new Forbidden('FORBIDDEN', `API key limit reached for ${tier} plan (${maxKeys} keys). Upgrade your plan to add more.`);
-    }
+      /* Enforce tier-based API key limit. */
+      const tier = req.user?.tier || 'diophantus';
+      const maxKeys = getApiKeyLimit(tier);
+      const db = getDb();
+      const [keyCount] = await db
+        .select({ value: count() })
+        .from(apiKeys)
+        .where(eq(apiKeys.userId, req.userId!));
+      if ((keyCount?.value || 0) >= maxKeys) {
+        throw new Forbidden(
+          'FORBIDDEN',
+          `API key limit reached for ${tier} plan (${maxKeys} keys). Upgrade your plan to add more.`,
+        );
+      }
 
-    const keyCiphertext = encrypt(key, encryptionKey());
+      const keyCiphertext = encrypt(key, encryptionKey());
 
-    /* Deactivate all existing providers so the new one is the only
+      /* Deactivate all existing providers so the new one is the only
        active provider. Without this, creating a new provider leaves
        stale isActive=true rows and getActiveApiKey() returns the
        wrong one. */
-    await db.update(apiKeys)
-      .set({ isActive: false })
-      .where(and(eq(apiKeys.userId, req.userId!), eq(apiKeys.isActive, true)));
-    /* P_attachments-multimodal — accept the user-controlled flag.
-     * Coerce to strict boolean so a forged payload can't smuggle a
-     * truthy non-boolean that survives JSON.parse in the client. */
-    const isMultimodal = req.body.isMultimodal === true;
-    /* P_provider-capability-override — accept the per-provider instant
-     * encoding. Only the four encodings the registry knows how to send
-     * are accepted; anything else is a 400 rather than a value that would
-     * silently produce a malformed request body. */
-    const instantEncoding = readInstantEncoding(req.body.instantEncoding);
-    const [result] = await db.insert(apiKeys).values({
-      userId: req.userId!,
-      label: label || 'Default',
-      url,
-      model,
-      keyCiphertext,
-      keyHint: key.slice(0, 8),
-      isActive: true,
-      isMultimodal,
-      instantEncoding,
-    }).returning(SAFE_PROJECTION);
+      await db
+        .update(apiKeys)
+        .set({ isActive: false })
+        .where(and(eq(apiKeys.userId, req.userId!), eq(apiKeys.isActive, true)));
+      /* P_attachments-multimodal — accept the user-controlled flag.
+       * Coerce to strict boolean so a forged payload can't smuggle a
+       * truthy non-boolean that survives JSON.parse in the client. */
+      const isMultimodal = req.body.isMultimodal === true;
+      /* P_provider-capability-override — accept the per-provider instant
+       * encoding. Only the four encodings the registry knows how to send
+       * are accepted; anything else is a 400 rather than a value that would
+       * silently produce a malformed request body. */
+      const instantEncoding = readInstantEncoding(req.body.instantEncoding);
+      const [result] = await db
+        .insert(apiKeys)
+        .values({
+          userId: req.userId!,
+          label: label || 'Default',
+          url,
+          model,
+          keyCiphertext,
+          keyHint: key.slice(0, 8),
+          isActive: true,
+          isMultimodal,
+          instantEncoding,
+        })
+        .returning(SAFE_PROJECTION);
 
-    /* P_ttfb-apikey-cache — a fresh row is the new active provider
+      /* P_ttfb-apikey-cache — a fresh row is the new active provider
        (the deactivation above plus the insert). Drop the cached
        entry for this user so the next /api/chat/stream re-resolves
        to the new key instead of serving the old one. */
-    invalidateApiKeyCache(req.userId);
+      invalidateApiKeyCache(req.userId);
 
-    return res.status(201).json(withCapabilities(result));
-  } catch (err) { next(err); }
-});
+      return res.status(201).json(withCapabilities(result));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 /* ─── Update API key ─── */
 router.patch('/:id', async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
-    const [existing] = await db.select().from(apiKeys)
+    const [existing] = await db
+      .select()
+      .from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId!)))
       .limit(1);
     if (!existing) throw new NotFound('API key not found');
@@ -244,21 +276,28 @@ router.patch('/:id', async (req, res, next) => {
          isActive=true rows, and the LIMIT-1 lookup returns whichever
          PostgreSQL picks first. */
       if (req.body.isActive === true) {
-        await db.update(apiKeys)
+        await db
+          .update(apiKeys)
           .set({ isActive: false })
           .where(and(eq(apiKeys.userId, req.userId!), ne(apiKeys.id, req.params.id)));
       }
     }
 
     await db.update(apiKeys).set(patch).where(eq(apiKeys.id, req.params.id));
-    const [updated] = await db.select(SAFE_PROJECTION).from(apiKeys).where(eq(apiKeys.id, req.params.id)).limit(1);
+    const [updated] = await db
+      .select(SAFE_PROJECTION)
+      .from(apiKeys)
+      .where(eq(apiKeys.id, req.params.id))
+      .limit(1);
     /* P_ttfb-apikey-cache — a PATCH can flip isActive (selecting a
        different key), rotate the ciphertext, or change url/model.
        All three change the answer getActiveApiKey() should give, so
        drop the cached entry. */
     invalidateApiKeyCache(req.userId);
     return res.json(withCapabilities(updated));
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 /* ─── Delete API key ─── */
@@ -266,7 +305,9 @@ router.delete('/:id', audit('delete_api_key'), async (req, res, next) => {
   try {
     if (!isUuid(req.params.id)) throw new NotFound('API key not found');
     const db = getDb();
-    const [existing] = await db.select().from(apiKeys)
+    const [existing] = await db
+      .select()
+      .from(apiKeys)
       .where(and(eq(apiKeys.id, req.params.id), eq(apiKeys.userId, req.userId!)))
       .limit(1);
     if (!existing) throw new NotFound('API key not found');
@@ -278,7 +319,9 @@ router.delete('/:id', audit('delete_api_key'), async (req, res, next) => {
        the user's other active key or the built-in default. */
     invalidateApiKeyCache(req.userId);
     return res.status(204).end();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

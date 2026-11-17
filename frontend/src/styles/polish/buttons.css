@@ -49,7 +49,8 @@
   border-radius: var(--ui-radius-pill);
   background: transparent;
   color: var(--muted-foreground);
-  font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px var(--font-sans, system-ui, sans-serif);
+  font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px
+    var(--font-sans, system-ui, sans-serif);
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
@@ -67,7 +68,7 @@
 }
 
 .btn:disabled,
-.btn[aria-disabled="true"] {
+.btn[aria-disabled='true'] {
   opacity: 0.35;
   cursor: default;
   pointer-events: none;
@@ -97,8 +98,8 @@
 }
 
 .btn-ghost.active,
-.btn-ghost[aria-current="page"],
-.btn-ghost[aria-selected="true"] {
+.btn-ghost[aria-current='page'],
+.btn-ghost[aria-selected='true'] {
   background: var(--ui-bg-surface);
   color: var(--foreground);
 }
@@ -130,12 +131,12 @@
   color: var(--foreground);
 }
 
-[data-mode="light"] .btn {
+[data-mode='light'] .btn {
   color: var(--foreground);
 }
 
 .btn-icon:disabled,
-.btn-icon[aria-disabled="true"] {
+.btn-icon[aria-disabled='true'] {
   opacity: 0.35;
   cursor: default;
   pointer-events: none;
@@ -147,8 +148,12 @@
   display: block;
 }
 
-.btn-icon.circle { border-radius: var(--ui-radius-pill); }
-.btn-icon.square { border-radius: var(--ui-radius-control); }
+.btn-icon.circle {
+  border-radius: var(--ui-radius-pill);
+}
+.btn-icon.square {
+  border-radius: var(--ui-radius-control);
+}
 .btn-icon.accent {
   background: var(--accent);
   color: var(--foreground);
@@ -160,9 +165,13 @@
   min-width: var(--ui-control-sm);
   min-height: var(--ui-control-sm);
 }
-.btn-icon.sm svg { width: 16px; height: 16px; }
+.btn-icon.sm svg {
+  width: 16px;
+  height: 16px;
+}
 
-.btn-icon.md { }
+.btn-icon.md {
+}
 
 .btn-icon.touch {
   width: var(--ui-hit-area);
@@ -170,7 +179,10 @@
   min-width: var(--ui-hit-area);
   min-height: var(--ui-hit-area);
 }
-.btn-icon.touch svg { width: 22px; height: 22px; }
+.btn-icon.touch svg {
+  width: 22px;
+  height: 22px;
+}
 
 @media (max-width: 768px) {
   .btn {
@@ -178,10 +190,15 @@
     padding: 0 14px;
   }
 
-  .btn-touch { min-height: var(--ui-hit-area); min-width: var(--ui-hit-area); }
+  .btn-touch {
+    min-height: var(--ui-hit-area);
+    min-width: var(--ui-hit-area);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .btn,
-  .btn-icon { transition: none; }
+  .btn-icon {
+    transition: none;
+  }
 }

@@ -16,7 +16,10 @@ test('safe expression parser handles elementary functions and rejects code', () 
 test('ln(x) preserves its positive domain and has a finite real curve', () => {
   const sample = sampleFunction('ln(x)');
   assert.equal(sample.domain[0], 0);
-  const pointAtOne = sample.points.reduce((best, point) => Math.abs(point[0] - 1) < Math.abs(best[0] - 1) ? point : best, sample.points[0]);
+  const pointAtOne = sample.points.reduce(
+    (best, point) => (Math.abs(point[0] - 1) < Math.abs(best[0] - 1) ? point : best),
+    sample.points[0],
+  );
   assert.ok(Number.isFinite(pointAtOne[1]));
   assert.ok(sample.points.some((point) => Number.isFinite(point[1])));
 });
@@ -36,11 +39,12 @@ test('long chart categories wrap or rotate without unbounded labels', () => {
   assert.equal(wrapped.split('\n').length, 2);
   assert.match(wrapped, /…$/);
 
-  const dense = categoryAxisLayout(Array.from({ length: 12 }, (_, index) => `Category ${index + 1} with long text`));
+  const dense = categoryAxisLayout(
+    Array.from({ length: 12 }, (_, index) => `Category ${index + 1} with long text`),
+  );
   assert.equal(dense.rotate, 35);
   assert.ok(dense.bottom >= 80);
 });
-
 
 test('category math labels remain complete instead of splitting LaTeX commands', () => {
   const label = '$f(x)=\\frac{1}{1+x^2}$';
@@ -48,18 +52,31 @@ test('category math labels remain complete instead of splitting LaTeX commands',
 });
 
 test('function precedence matches mathematical notation including negative exponents', () => {
-  for (const [expression, expected] of [['-x^2', -9], ['(-x)^2', 9], ['2^-2', .25], ['2^3^2', 512], ['-2^2*3', -12], ['2*-x^2', -18]]) {
+  for (const [expression, expected] of [
+    ['-x^2', -9],
+    ['(-x)^2', 9],
+    ['2^-2', 0.25],
+    ['2^3^2', 512],
+    ['-2^2*3', -12],
+    ['2*-x^2', -18],
+  ]) {
     assert.equal(parseFunctionExpression(expression)(3), expected, expression);
   }
 });
 
 test('sampling keeps steep continuous curves and splits off-grid poles at any scale', () => {
   const steep = sampleFunction('1000000*x', [-2, 2], 400);
-  assert.ok(steep.points.every(point => Number.isFinite(point[1])));
+  assert.ok(steep.points.every((point) => Number.isFinite(point[1])));
   for (const expression of ['1/x', '0.001/x', '1/(x-0.123)', '0.001/(x-0.123)', 'tan(x)']) {
     const sample = sampleFunction(expression, [-2, 2], 400);
-    assert.ok(sample.points.some(point => point[1] === null), expression);
-    assert.ok(sample.points.some(point => Number.isFinite(point[1])), expression);
+    assert.ok(
+      sample.points.some((point) => point[1] === null),
+      expression,
+    );
+    assert.ok(
+      sample.points.some((point) => Number.isFinite(point[1])),
+      expression,
+    );
   }
   assert.equal(sampleFunction('x', [-1, 1], 120.5).points.length, 121);
 });
@@ -67,6 +84,9 @@ test('sampling keeps steep continuous curves and splits off-grid poles at any sc
 test('smooth extrema do not acquire false discontinuities between equal endpoints', () => {
   for (const expression of ['x^2', '1-x^2', 'sin(x)', 'cos(x)']) {
     const sample = sampleFunction(expression, [-2, 2], 400);
-    assert.ok(sample.points.every(point => Number.isFinite(point[1])), expression);
+    assert.ok(
+      sample.points.every((point) => Number.isFinite(point[1])),
+      expression,
+    );
   }
 });

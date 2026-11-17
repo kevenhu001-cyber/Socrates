@@ -4,9 +4,7 @@ import {
   OPEN_CONNECTOR_APP_INVENTORY,
   READY_CONNECTOR_APPS,
 } from '../src/services/integrations/openConnectorAppInventory.js';
-import {
-  OPEN_CONNECTOR_CLOUD_AUTH,
-} from '../src/services/integrations/openConnectorCloudAuth.generated.js';
+import { OPEN_CONNECTOR_CLOUD_AUTH } from '../src/services/integrations/openConnectorCloudAuth.generated.js';
 import {
   buildOpenConnectorCatalogForCloud,
   buildOpenConnectorStubCatalog,
@@ -58,7 +56,11 @@ test('ocAuthType prefers OAuth over key over custom credential', () => {
 
 test('ocCredentialInput shapes the frontend dialog form', () => {
   const apiKey = ocCredentialInput(
-    { authTypes: ['api_key'], auth: [{ type: 'api_key', label: 'Key', description: 'Paste it' }], actions: [] },
+    {
+      authTypes: ['api_key'],
+      auth: [{ type: 'api_key', label: 'Key', description: 'Paste it' }],
+      actions: [],
+    },
     'api_key',
   );
   assert.equal(apiKey.fields[0].key, 'apiKey');
@@ -66,21 +68,41 @@ test('ocCredentialInput shapes the frontend dialog form', () => {
   const custom = ocCredentialInput(
     {
       authTypes: ['custom_credential'],
-      auth: [{ type: 'custom_credential', fields: [
-        { key: 'email', label: 'Email', inputType: 'email', required: true },
-        { key: 'token', label: 'Token', inputType: 'password', secret: true, required: false },
-      ] }],
+      auth: [
+        {
+          type: 'custom_credential',
+          fields: [
+            { key: 'email', label: 'Email', inputType: 'email', required: true },
+            { key: 'token', label: 'Token', inputType: 'password', secret: true, required: false },
+          ],
+        },
+      ],
       actions: [],
     },
     'custom_credential',
   );
-  assert.deepEqual(custom.fields.map((field) => [field.key, field.type]), [['email', 'email'], ['token', 'password']]);
-  assert.equal(ocCredentialInput({ authTypes: ['oauth2'], auth: [], actions: [] }, 'oauth'), undefined);
+  assert.deepEqual(
+    custom.fields.map((field) => [field.key, field.type]),
+    [
+      ['email', 'email'],
+      ['token', 'password'],
+    ],
+  );
+  assert.equal(
+    ocCredentialInput({ authTypes: ['oauth2'], auth: [], actions: [] }, 'oauth'),
+    undefined,
+  );
 });
 
 test('ocCatalogItem keeps stable prefixed ids and inventory names', () => {
   const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.label === '高德地图');
-  const item = ocCatalogItem(entry, { service: 'amap', authTypes: ['api_key'], auth: [], categories: ['Location'], actions: [{}, {}] });
+  const item = ocCatalogItem(entry, {
+    service: 'amap',
+    authTypes: ['api_key'],
+    auth: [],
+    categories: ['Location'],
+    actions: [{}, {}],
+  });
   assert.equal(item.id, 'oc_amap');
   assert.equal(item.name, '高德地图');
   assert.ok(item.description.includes('2 actions'));
@@ -90,7 +112,13 @@ test('ocCatalogItem keeps stable prefixed ids and inventory names', () => {
 
 test('ocCatalogItem marks served apps available', () => {
   const entry = OPEN_CONNECTOR_APP_INVENTORY.find((item) => item.label === '高德地图');
-  const item = ocCatalogItem(entry, { service: 'amap', authTypes: ['api_key'], auth: [], categories: ['Location'], actions: [{}, {}] });
+  const item = ocCatalogItem(entry, {
+    service: 'amap',
+    authTypes: ['api_key'],
+    auth: [],
+    categories: ['Location'],
+    actions: [{}, {}],
+  });
   assert.equal(item.available, true);
 });
 
@@ -120,18 +148,28 @@ test('buildOpenConnectorStubCatalog covers the full ready inventory as stubs', (
   }
 });
 
-test('ocOAuthAppForm shapes the bring-your-own-app form', () => {  const form = ocOAuthAppForm({
+test('ocOAuthAppForm shapes the bring-your-own-app form', () => {
+  const form = ocOAuthAppForm({
     tokenEndpointAuthMethod: 'client_secret_post',
     clientConfigFields: [
       { key: 'tenant', label: 'Tenant', inputType: 'text', required: true, location: 'extra' },
-      { key: 'team', label: 'Team secret', inputType: 'password', required: false, location: 'secretExtra' },
+      {
+        key: 'team',
+        label: 'Team secret',
+        inputType: 'password',
+        required: false,
+        location: 'secretExtra',
+      },
     ],
   });
   assert.equal(form.clientSecretRequired, true);
-  assert.deepEqual(form.extraFields.map((field) => [field.key, field.type, field.secret]), [
-    ['tenant', 'text', false],
-    ['team', 'password', true],
-  ]);
+  assert.deepEqual(
+    form.extraFields.map((field) => [field.key, field.type, field.secret]),
+    [
+      ['tenant', 'text', false],
+      ['team', 'password', true],
+    ],
+  );
   assert.equal(ocOAuthAppForm({ tokenEndpointAuthMethod: 'none' }).clientSecretRequired, false);
   assert.deepEqual(ocOAuthAppForm(null).extraFields, []);
 });
@@ -141,7 +179,9 @@ test('Chat tool allow-list stays unique and inventory-backed', () => {
   const names = OPEN_CONNECTOR_CHAT_TOOLS.map((item) => item.tool);
   assert.equal(new Set(names).size, names.length);
   const readyServices = new Set(
-    OPEN_CONNECTOR_APP_INVENTORY.filter((entry) => entry.status === 'ready').map((entry) => entry.ocService),
+    OPEN_CONNECTOR_APP_INVENTORY.filter((entry) => entry.status === 'ready').map(
+      (entry) => entry.ocService,
+    ),
   );
   for (const item of OPEN_CONNECTOR_CHAT_TOOLS) {
     assert.match(item.tool, /^oc_[a-z0-9]+_[A-Za-z0-9_]+$/);
@@ -165,10 +205,20 @@ test('Jimeng image generation exposes only the bounded 4.6 submit and result act
     error: 'missing required argument: prompt',
   });
   assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: '   ' }).ok, false);
-  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(801) }).ok, false);
+  assert.equal(
+    validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(801) }).ok,
+    false,
+  );
   assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 7 }).ok, false);
-  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(800) }).ok, true);
-  assert.equal(validateOpenConnectorToolArguments(submitName, { prompt: 'painted sky', task_id: 'injected' }).ok, false);
+  assert.equal(
+    validateOpenConnectorToolArguments(submitName, { prompt: 'a'.repeat(800) }).ok,
+    true,
+  );
+  assert.equal(
+    validateOpenConnectorToolArguments(submitName, { prompt: 'painted sky', task_id: 'injected' })
+      .ok,
+    false,
+  );
   assert.equal(validateOpenConnectorToolArguments(resultName, { task_id: 'job-1' }).ok, true);
 });
 
@@ -190,7 +240,11 @@ test('Jimeng chat tool execution fails closed when the OOMOL gateway is not conf
   const previousKey = process.env.OOMOL_PROJECT_API_KEY;
   delete process.env.OOMOL_PROJECT_API_KEY;
   try {
-    const connected = { status: 'connected', connectionName: 'socrates', connectedAccountId: 'ca-1' };
+    const connected = {
+      status: 'connected',
+      connectionName: 'socrates',
+      connectedAccountId: 'ca-1',
+    };
     const submitted = await executeOpenConnectorTool(
       'oc_jimeng_ai_submit_image_generation_4_6',
       { prompt: 'A paper-cut rabbit under a moon.' },
@@ -223,14 +277,24 @@ test('Chat tool argument validation rejects bad shapes', () => {
   assert.equal(validateOpenConnectorToolArguments(tool, { keywords: 'x', admin: true }).ok, false);
   assert.equal(validateOpenConnectorToolArguments(tool, {}).ok, false);
   assert.equal(validateOpenConnectorToolArguments(tool, { keywords: 'x'.repeat(5000) }).ok, false);
-  assert.deepEqual(validateOpenConnectorToolArguments(tool, { keywords: '外滩' }), { ok: true, args: { keywords: '外滩' } });
+  assert.deepEqual(validateOpenConnectorToolArguments(tool, { keywords: '外滩' }), {
+    ok: true,
+    args: { keywords: '外滩' },
+  });
 });
 
 test('Chat tool execution fails closed without a connection', async () => {
-  const unconnected = await executeOpenConnectorTool('oc_amap_search_places', { keywords: '外滩' }, 'user-1', null);
+  const unconnected = await executeOpenConnectorTool(
+    'oc_amap_search_places',
+    { keywords: '外滩' },
+    'user-1',
+    null,
+  );
   assert.equal(unconnected.status, 'failed');
   assert.equal(unconnected.errorCode, 'app_not_connected');
-  const unknown = await executeOpenConnectorTool('oc_nope_nothing', {}, 'user-1', { status: 'connected' });
+  const unknown = await executeOpenConnectorTool('oc_nope_nothing', {}, 'user-1', {
+    status: 'connected',
+  });
   assert.equal(unknown.status, 'failed');
   assert.equal(unknown.errorCode, 'invalid_tool_arguments');
 });
@@ -240,8 +304,14 @@ test('Cloud auth snapshot covers every ready service with usable auth', () => {
   assert.ok(readyServices.size > 100);
   for (const service of readyServices) {
     const meta = OPEN_CONNECTOR_CLOUD_AUTH[service];
-    assert.ok(meta, `${service} missing from cloud snapshot (maintain server/src/services/integrations/openConnectorCloudAuth.generated.ts)`);
-    assert.ok(Array.isArray(meta.authTypes) && meta.authTypes.length > 0, `${service} needs authTypes`);
+    assert.ok(
+      meta,
+      `${service} missing from cloud snapshot (maintain server/src/services/integrations/openConnectorCloudAuth.generated.ts)`,
+    );
+    assert.ok(
+      Array.isArray(meta.authTypes) && meta.authTypes.length > 0,
+      `${service} needs authTypes`,
+    );
     assert.ok(Array.isArray(meta.auth), `${service} needs auth array`);
     assert.ok(Array.isArray(meta.categories), `${service} needs categories`);
     assert.equal(typeof meta.actionCount, 'number', `${service} needs actionCount`);

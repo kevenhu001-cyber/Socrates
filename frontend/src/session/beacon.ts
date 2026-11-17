@@ -50,7 +50,9 @@ export interface BeaconPayload {
 export function buildBeaconMessages(messages: unknown): BeaconMessage[] {
   if (!Array.isArray(messages)) return [];
   return (messages as SessionMessageLike[])
-    .filter(function (m) { return m && m.type !== 'streaming'; })
+    .filter(function (m) {
+      return m && m.type !== 'streaming';
+    })
     .map(function (m) {
       return {
         clientId: m.clientId || null,
@@ -72,7 +74,13 @@ export interface BeaconInput {
   messages?: unknown;
 }
 
-export function buildBeaconPayload({ sessionId, topic, sessionTitle, appMode, messages }: BeaconInput): BeaconPayload | null {
+export function buildBeaconPayload({
+  sessionId,
+  topic,
+  sessionTitle,
+  appMode,
+  messages,
+}: BeaconInput): BeaconPayload | null {
   const snapshot = buildBeaconMessages(messages);
   if (!sessionId || !snapshot.length) return null;
   return {

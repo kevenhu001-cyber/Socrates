@@ -6,8 +6,9 @@ import { JSDOM } from 'jsdom';
 const css = await readFile(new URL('../src/styles/components/chat.css', import.meta.url), 'utf8');
 
 function autoSelectors(rules) {
-  return [...rules].flatMap(rule => {
-    const own = rule.style?.getPropertyValue('content-visibility') === 'auto' ? [rule.selectorText] : [];
+  return [...rules].flatMap((rule) => {
+    const own =
+      rule.style?.getPropertyValue('content-visibility') === 'auto' ? [rule.selectorText] : [];
     return [...own, ...(rule.cssRules ? autoSelectors(rule.cssRules) : [])];
   });
 }
@@ -23,16 +24,33 @@ for (const tailRole of ['assistant', 'user']) {
       const selectors = autoSelectors(style.sheet.cssRules);
       assert.ok(selectors.length > 0, 'history size-skipping remains enabled');
       const list = document.getElementById('msgList');
-      for (const role of ['assistant', 'user', tailRole === 'assistant' ? 'user' : 'assistant', tailRole]) {
+      for (const role of [
+        'assistant',
+        'user',
+        tailRole === 'assistant' ? 'user' : 'assistant',
+        tailRole,
+      ]) {
         const row = document.createElement('div');
         row.className = `msg ${role}`;
         if (role === 'assistant') row.dataset.streamSettled = 'true';
         list.appendChild(row);
       }
-      const matchesAuto = row => selectors.some(selector => row.matches(selector));
-      assert.equal(matchesAuto(list.lastElementChild), false, 'the tail must never start at an intrinsic height estimate');
-      assert.equal(matchesAuto(list.children[2]), false, 'the previous prompt/answer must remain measured');
-      assert.equal(matchesAuto(list.children[0]), true, 'older assistant history can still skip layout');
+      const matchesAuto = (row) => selectors.some((selector) => row.matches(selector));
+      assert.equal(
+        matchesAuto(list.lastElementChild),
+        false,
+        'the tail must never start at an intrinsic height estimate',
+      );
+      assert.equal(
+        matchesAuto(list.children[2]),
+        false,
+        'the previous prompt/answer must remain measured',
+      );
+      assert.equal(
+        matchesAuto(list.children[0]),
+        true,
+        'older assistant history can still skip layout',
+      );
       assert.equal(matchesAuto(list.children[1]), true, 'older user history can still skip layout');
       list.children[0].classList.add('turn-viewport-anchor');
       assert.equal(matchesAuto(list.children[0]), false, 'viewport anchors must remain measured');

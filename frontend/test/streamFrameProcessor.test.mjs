@@ -15,9 +15,13 @@ test('JSON deltas emit visible text and reasoning in their own channels', () => 
     onThinking: (text) => thinking.push(text),
   });
 
-  processor.processFrame(dataFrame(JSON.stringify({
-    choices: [{ delta: { content: 'Answer', reasoning_content: { text: 'Reasoning' } } }],
-  })));
+  processor.processFrame(
+    dataFrame(
+      JSON.stringify({
+        choices: [{ delta: { content: 'Answer', reasoning_content: { text: 'Reasoning' } } }],
+      }),
+    ),
+  );
 
   assert.deepEqual(visible, ['Answer']);
   assert.deepEqual(thinking, ['Reasoning']);
@@ -27,7 +31,9 @@ test('JSON deltas emit visible text and reasoning in their own channels', () => 
 
 test('structured and recognizable truncated errors stay on the stream error channel', () => {
   const structured = createStreamFrameProcessor({});
-  structured.processFrame(dataFrame(JSON.stringify({ error: { message: 'upstream unavailable' }, status: 503 })));
+  structured.processFrame(
+    dataFrame(JSON.stringify({ error: { message: 'upstream unavailable' }, status: 503 })),
+  );
   assert.equal(structured.streamError.message, 'upstream unavailable');
   assert.equal(structured.streamError.status, 503);
 

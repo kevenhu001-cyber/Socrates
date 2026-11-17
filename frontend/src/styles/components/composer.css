@@ -6,9 +6,15 @@
 
 /* The legacy .send-btn.active scales the button up 5% and casts an accent
    glow; the capsule controls keep a constant footprint in every state. */
-#appShell .effort-caret { width: 16px; height: 16px; color: var(--ui-text-tertiary); }
+#appShell .effort-caret {
+  width: 16px;
+  height: 16px;
+  color: var(--ui-text-tertiary);
+}
 /* The compact level label is the phone variant of the React-owned pill. */
-#appShell .effort-value { display: none; }
+#appShell .effort-value {
+  display: none;
+}
 
 #appShell #chatInputBar {
   box-sizing: border-box;
@@ -40,9 +46,16 @@
 
   /* The reference pill reads the selected level (高/中/低), not the
      section label. */
-  #appShell .effort-label { display: none; }
-  #appShell .effort-value { display: inline; }
-  #appShell .effort-caret { width: 14px; height: 14px; }
+  #appShell .effort-label {
+    display: none;
+  }
+  #appShell .effort-value {
+    display: inline;
+  }
+  #appShell .effort-caret {
+    width: 14px;
+    height: 14px;
+  }
 
   /* Multiline drafts keep the single row — the editor grows inside and
      the controls pin to the bottom edge like the reference. */
