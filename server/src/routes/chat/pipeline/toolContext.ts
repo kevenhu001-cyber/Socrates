@@ -11,7 +11,7 @@
 import { eq, and } from 'drizzle-orm';
 import { getDb } from '../../../db/index.js';
 import { connectorConnections, projectConnectorConnections } from '../../../db/schema/index.js';
-import { codeInterpreter } from '../../../services/codeInterpreter.js';
+import { codeInterpreter } from '../../../services/codeInterpreter/index.js';
 import { createToolRegistry } from '../../../services/tools/toolRegistry.js';
 import { canonicalToolExampleJson } from '../../../services/tools/toolErrorFeedback.js';
 import { createToolTurnPolicy } from '../../../services/tools/toolTurnPolicy.js';

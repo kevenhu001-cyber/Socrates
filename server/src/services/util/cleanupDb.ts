@@ -16,7 +16,7 @@ import {
   statusMonitorEvents, statusSubscribers,
   ttsResults, idempotencyReceipts,
 } from '../../db/schema/index.js';
-import { codeInterpreter } from '../codeInterpreter.js';
+import { codeInterpreter } from '../codeInterpreter/index.js';
 
 let _timer: ReturnType<typeof setInterval> | null = null;
 

@@ -6,7 +6,7 @@ import { executions, files } from '../db/schema/index.js';
 import { isUuid } from '../lib/validate.js';
 import { NotFound } from '../lib/errors.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
-import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult, type ProgressEvent } from '../services/codeInterpreter.js';
+import { subscribeExecution, subscribeExecutionResult, unsubscribeExecution, unsubscribeExecutionResult, type ProgressEvent } from '../services/codeInterpreter/index.js';
 
 const router = Router();
 

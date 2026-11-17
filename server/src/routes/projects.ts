@@ -3,7 +3,7 @@ import { durableJsonWrite } from '../middleware/durableIdempotency.js';
 import { eq, and, inArray, or } from 'drizzle-orm';
 import fs from 'node:fs/promises';
 import { getDb } from '../db/index.js';
-import { codeInterpreter } from '../services/codeInterpreter.js';
+import { codeInterpreter } from '../services/codeInterpreter/index.js';
 import {
   projects, sessions, messages, memories, artifacts, artifactVersions,
   mistakes, agentRuns, usageEvents, files, executions,

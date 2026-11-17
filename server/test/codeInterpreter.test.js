@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Unit tests for the input-shape guard rails in
- * services/codeInterpreter.js. We intentionally avoid spinning up
+ * services/codeInterpreter/index.js. We intentionally avoid spinning up
  * the Pyodide worker pool — that path requires a 30+ MB WASM
  * download and is exercised by the live deployment, not the test
  * runner. The guard-rail tests verify the public surface and the
@@ -9,7 +9,7 @@
  */
 import { test, describe, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter.js';
+import { codeInterpreter, CODE_INTERPRETER_TOOL, resolvePyodideWorkerEntry } from '../src/services/codeInterpreter/index.js';
 import { MAX_TOOL_ARGUMENT_CHARS } from '../src/services/tools/toolCallSafety.js';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';

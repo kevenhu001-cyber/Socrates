@@ -2,13 +2,13 @@
  * Public code-interpreter facade.
  *
  * The pool, worker protocol, progress transport and execution transaction
- * live under ./codeInterpreter/. This file keeps the stable `codeInterpreter`
+ * live in this directory. This file keeps the stable `codeInterpreter`
  * object plus the subscription/worker-entry exports the routes and tests use.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { isUuid } from '../lib/validate.js';
-import { resolveInsideRoot } from '../lib/pathSafety.js';
+import { isUuid } from '../../lib/validate.js';
+import { resolveInsideRoot } from '../../lib/pathSafety.js';
 import {
   DEFAULT_TIMEOUT_MS,
   EXEC_RUNNER,
@@ -19,10 +19,10 @@ import {
   SCRATCH_DIR,
   executionScratchPath,
   sessionScratchPath,
-} from './codeInterpreter/config.js';
-import { getPool, sessionExecutionLock } from './codeInterpreter/pool.js';
-import { CODE_INTERPRETER_TOOL } from './codeInterpreter/tool.js';
-import { executeCode, type ExecuteOpts, type ExecutionResponse } from './codeInterpreter/execute.js';
+} from './config.js';
+import { getPool, sessionExecutionLock } from './pool.js';
+import { CODE_INTERPRETER_TOOL } from './tool.js';
+import { executeCode, type ExecuteOpts, type ExecutionResponse } from './execute.js';
 
 export {
   subscribeExecution,
@@ -30,9 +30,9 @@ export {
   subscribeExecutionResult,
   unsubscribeExecutionResult,
   type ProgressEvent,
-} from './codeInterpreter/progress.js';
-export { resolvePyodideWorkerEntry } from './codeInterpreter/config.js';
-export { CODE_INTERPRETER_TOOL } from './codeInterpreter/tool.js';
+} from './progress.js';
+export { resolvePyodideWorkerEntry } from './config.js';
+export { CODE_INTERPRETER_TOOL } from './tool.js';
 
 export const codeInterpreter = {
   /**

@@ -7,7 +7,7 @@
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
 import fs from 'node:fs/promises';
-import { codeInterpreter } from '../../services/codeInterpreter.js';
+import { codeInterpreter } from '../../services/codeInterpreter/index.js';
 import { removeSessionWorkspacesForUser } from '../../services/tools/agentRuntime.js';
 import { getDb } from '../../db/index.js';
 import {

@@ -100,7 +100,7 @@ function reconcileSessionWorkspaces(): void {
 function warmPyodidePool(): void {
   (async () => {
     try {
-      const { codeInterpreter } = await import('../services/codeInterpreter.js');
+      const { codeInterpreter } = await import('../services/codeInterpreter/index.js');
       await codeInterpreter.warm();
       console.log('[code-interpreter] Pyodide pool warmed');
     } catch (err) {
@@ -120,7 +120,7 @@ function sweepStaleScratchDirs(): void {
   (async () => {
     try {
       const ttlDays = parseInt(process.env.EXEC_SCRATCH_TTL_DAYS || '7', 10);
-      const { codeInterpreter } = await import('../services/codeInterpreter.js');
+      const { codeInterpreter } = await import('../services/codeInterpreter/index.js');
       const r = await codeInterpreter._reapStaleSessionScratches(ttlDays);
       if (r && r.removed > 0) console.log(`[code-interpreter] startup TTL sweep removed ${r.removed} stale session scratch dir(s)`);
     } catch (err) {
