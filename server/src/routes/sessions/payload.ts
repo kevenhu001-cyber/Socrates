@@ -16,6 +16,107 @@ export function md5Hex(text: string): string {
 
 // P6.x — zod schema caps field lengths and validates types; throws
 // ZodError → errorHandler returns 400 with the offending path.
+/**
+ * One persisted message row accepted by the session save path.
+ *
+ * This is deliberately narrower than contracts.Message:
+ * - `id`, `createdAt`, `feedback` and `citations` are server-owned/derived and
+ *   are never accepted from a client save.
+ * - unknown client-only fields are stripped by Zod; the route only persists
+ *   the columns listed below.
+ */
+export const SessionMessageSchema = z.object({
+  role: z.string(),
+  rawText: z.string().max(200000).optional().nullable(),
+  content: z.string().max(200000).optional().nullable(),
+  html: z.string().max(500000).optional().nullable(),
+  type: z.string().max(50).optional().nullable(),
+  sources: z.array(z.unknown()).max(100).optional().nullable(),
+  clientId: z.string().max(100).optional().nullable(),
+  /* P_reasoning-persist — chain-of-thought text from reasoning
+     models. Preserved so it survives session save/load. */
+  reasoningContent: z.string().max(500000).optional().nullable(),
+  turnRuntime: z.unknown().optional().transform((value) => normalizeTurnRuntime(value)),
+  /* P_attachments — array of {id, kind, name, mime, fileId?, dataUrl?,
+     text?, size, truncated?, error?} representing user-supplied files
+     for this message. Persisted so a session reload restores chips,
+     thumbnails and the durable file reference the model can re-read
+     via read_attachment. fileId points at the files table row created
+     by POST /api/files; dataUrl (still capped at 2 MB) is the legacy
+     inline-image path kept for multimodal turns. */
+  attachments: z.array(z.object({
+    id: z.string().max(100),
+    kind: z.string().max(50),
+    docKind: z.string().max(20).optional(),
+    name: z.string().max(500),
+    mime: z.string().max(200),
+    fileId: z.string().max(100).optional(),
+    dataUrl: z.string().max(2_000_000).optional(),
+    text: z.string().max(500_000).optional(),
+    truncated: z.boolean().optional(),
+    error: z.string().max(300).optional(),
+    size: z.number().int().nonnegative().max(50 * 1024 * 1024),
+  })).max(20).optional(),
+  /* P_tool-history — tool calls the assistant made on this turn
+   * (web_search, code_interpreter, etc). Each entry is rendered as
+   * a collapsible card under the message on reload so the user can
+   * see what tools ran. Capped to 20 calls per message and each
+   * output field is bounded so a runaway tool can't bloat the
+   * session row. */
+  toolCalls: z.array(z.object({
+    id: z.string().max(200),
+    name: z.string().max(100),
+    input: z.unknown().optional().nullable(),
+    output: z.string().max(500_000).optional().nullable(),
+    isError: z.boolean().optional().nullable(),
+    /* Preserve structured native-tool output and bounded execution metadata
+     * so a reload has the same cards as the live SSE stream. */
+    plan: z.unknown().optional().nullable(),
+    spec: z.unknown().optional().nullable(),
+    executionId: z.string().max(200).optional().nullable(),
+    durationMs: z.number().nonnegative().max(86_400_000).optional().nullable(),
+    progressPhase: z.string().max(200).optional().nullable(),
+    argumentsText: z.string().max(500_000).optional().nullable(),
+    stderr: z.string().max(500_000).optional().nullable(),
+    errorText: z.string().max(100_000).optional().nullable(),
+    userMessage: z.string().max(500_000).optional().nullable(),
+    detail: z.string().max(100_000).optional().nullable(),
+    retryable: z.boolean().optional().nullable(),
+    artifacts: z.array(z.object({
+      id: z.string().max(100),
+      mimeType: z.string().max(200).optional().nullable(),
+      name: z.string().max(500).optional().nullable(),
+    })).max(20).optional(),
+    results: z.array(z.object({
+      title: z.string().max(1000).optional(),
+      url: z.string().max(3000).optional(),
+      snippet: z.string().max(5000).optional(),
+      date: z.string().max(200).optional().nullable(),
+      source: z.string().max(100).optional().nullable(),
+      matchedQuery: z.string().max(1000).optional().nullable(),
+    }).passthrough()).max(20).optional(),
+    /* P_inline-restore — character offset in the assistant's rawText
+     * where this tool call split the reply, plus the native
+     * visualization specs the run produced. These are needed to
+     * rebuild the inline text→row→chart layout on reload/share. */
+    textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
+    visualizations: z.array(z.unknown()).max(8).optional(),
+    /* P_tool-run-restore — the Codex step log and the terminal status the
+     * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
+     * run's state without the live SSE stream. Steps are capped client-side
+     * too; the bound here keeps a hostile or buggy client from writing an
+     * unbounded jsonb payload. */
+    runId: z.string().max(200).optional().nullable(),
+    status: z.string().max(60).optional().nullable(),
+    /* Shape is validated where it is written (below) rather than here, so a
+     * malformed step entry degrades to "no steps" instead of failing the
+     * whole session save with a 400. */
+    steps: z.array(z.unknown()).max(60).optional(),
+  })).max(20).optional(),
+});
+
+export type SessionSaveMessage = z.infer<typeof SessionMessageSchema>;
+
 export const SessionPayloadSchema = z.object({
   /* M3 — coerce instead of reject: a legacy/non-UUID client id used to
    * 400 here (the isUuid fallback below was dead code because parse ran
@@ -50,95 +151,7 @@ export const SessionPayloadSchema = z.object({
     (v) => (v === undefined ? undefined : (v == null || v === '' ? null : (isUuid(v) ? v : null))),
     z.string().uuid().optional().nullable(),
   ),
-  messages: z.array(z.object({
-    role: z.string(),
-    rawText: z.string().max(200000).optional().nullable(),
-    content: z.string().max(200000).optional().nullable(),
-    html: z.string().max(500000).optional().nullable(),
-    type: z.string().max(50).optional().nullable(),
-    sources: z.array(z.unknown()).max(100).optional().nullable(),
-    clientId: z.string().max(100).optional().nullable(),
-    /* P_reasoning-persist — chain-of-thought text from reasoning
-       models. Preserved so it survives session save/load. */
-    reasoningContent: z.string().max(500000).optional().nullable(),
-    turnRuntime: z.unknown().optional().transform((value) => normalizeTurnRuntime(value)),
-    /* P_attachments — array of {id, kind, name, mime, fileId?, dataUrl?,
-       text?, size, truncated?, error?} representing user-supplied files
-       for this message. Persisted so a session reload restores chips,
-       thumbnails and the durable file reference the model can re-read
-       via read_attachment. fileId points at the files table row created
-       by POST /api/files; dataUrl (still capped at 2 MB) is the legacy
-       inline-image path kept for multimodal turns. */
-    attachments: z.array(z.object({
-      id: z.string().max(100),
-      kind: z.string().max(50),
-      docKind: z.string().max(20).optional(),
-      name: z.string().max(500),
-      mime: z.string().max(200),
-      fileId: z.string().max(100).optional(),
-      dataUrl: z.string().max(2_000_000).optional(),
-      text: z.string().max(500_000).optional(),
-      truncated: z.boolean().optional(),
-      error: z.string().max(300).optional(),
-      size: z.number().int().nonnegative().max(50 * 1024 * 1024),
-    })).max(20).optional(),
-    /* P_tool-history — tool calls the assistant made on this turn
-     * (web_search, code_interpreter, etc). Each entry is rendered as
-     * a collapsible card under the message on reload so the user can
-     * see what tools ran. Capped to 20 calls per message and each
-     * output field is bounded so a runaway tool can't bloat the
-     * session row. */
-    toolCalls: z.array(z.object({
-      id: z.string().max(200),
-      name: z.string().max(100),
-      input: z.unknown().optional().nullable(),
-      output: z.string().max(500_000).optional().nullable(),
-      isError: z.boolean().optional().nullable(),
-      /* Preserve structured native-tool output and bounded execution metadata
-       * so a reload has the same cards as the live SSE stream. */
-      plan: z.unknown().optional().nullable(),
-      spec: z.unknown().optional().nullable(),
-      executionId: z.string().max(200).optional().nullable(),
-      durationMs: z.number().nonnegative().max(86_400_000).optional().nullable(),
-      progressPhase: z.string().max(200).optional().nullable(),
-      argumentsText: z.string().max(500_000).optional().nullable(),
-      stderr: z.string().max(500_000).optional().nullable(),
-      errorText: z.string().max(100_000).optional().nullable(),
-      userMessage: z.string().max(500_000).optional().nullable(),
-      detail: z.string().max(100_000).optional().nullable(),
-      retryable: z.boolean().optional().nullable(),
-      artifacts: z.array(z.object({
-        id: z.string().max(100),
-        mimeType: z.string().max(200).optional().nullable(),
-        name: z.string().max(500).optional().nullable(),
-      })).max(20).optional(),
-      results: z.array(z.object({
-        title: z.string().max(1000).optional(),
-        url: z.string().max(3000).optional(),
-        snippet: z.string().max(5000).optional(),
-        date: z.string().max(200).optional().nullable(),
-        source: z.string().max(100).optional().nullable(),
-        matchedQuery: z.string().max(1000).optional().nullable(),
-      }).passthrough()).max(20).optional(),
-      /* P_inline-restore — character offset in the assistant's rawText
-       * where this tool call split the reply, plus the native
-       * visualization specs the run produced. These are needed to
-       * rebuild the inline text→row→chart layout on reload/share. */
-      textOffset: z.number().int().nonnegative().max(10_000_000).optional().nullable(),
-      visualizations: z.array(z.unknown()).max(8).optional(),
-      /* P_tool-run-restore — the Codex step log and the terminal status the
-       * declarative renderer (frontend/src/react/tool-run) needs to rebuild a
-       * run's state without the live SSE stream. Steps are capped client-side
-       * too; the bound here keeps a hostile or buggy client from writing an
-       * unbounded jsonb payload. */
-      runId: z.string().max(200).optional().nullable(),
-      status: z.string().max(60).optional().nullable(),
-      /* Shape is validated where it is written (below) rather than here, so a
-       * malformed step entry degrades to "no steps" instead of failing the
-       * whole session save with a 400. */
-      steps: z.array(z.unknown()).max(60).optional(),
-    })).max(20).optional(),
-  })).max(1000).optional(),
+  messages: z.array(SessionMessageSchema).max(1000).optional(),
   kbNodes: z.array(z.unknown()).max(5000).optional(),
   mistakes: z.array(z.unknown()).max(1000).optional(),
   pinned: z.boolean().optional(),
