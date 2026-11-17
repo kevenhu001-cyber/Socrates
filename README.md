@@ -315,7 +315,7 @@ sequenceDiagram
 | Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | Uploads | `multer`; thumbnails are stored as supplied derivatives | |
 | Email | `nodemailer` (SMTP) for verification, magic-link reset | |
-| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
+| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter/index.ts`](server/src/services/codeInterpreter/index.ts) |
 | Shared RN UI | React Native components rendered in the SPA via `react-native-web` | [`packages/ui/`](packages/ui/), [`frontend/src/react/rn/`](frontend/src/react/rn/) |
 | Native Android | Kotlin + Jetpack Compose client over `/api/v2` | [`apps/socrates-android/`](apps/socrates-android/) |
 | Shared packages | `@socrates/{core,contracts,theme,ui}` | [`packages/`](packages/) — DOM-free, enforced by `scripts/check-packages-dom.mjs` |

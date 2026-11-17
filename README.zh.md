@@ -235,7 +235,7 @@ sequenceDiagram
 | Web 搜索 | MiniMax + Bing (并行竞速), SearXNG 降级 | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
 | 上传 | `multer`；缩略图按客户端提供的衍生文件持久化 | |
 | 邮件 | `nodemailer` (SMTP) 用于验证和密码重置 | |
-| 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter.ts`](server/src/services/codeInterpreter.ts) |
+| 代码执行 | Pyodide WASM (Python 沙箱) | [`server/src/services/codeInterpreter/index.ts`](server/src/services/codeInterpreter/index.ts) |
 | 共享 RN UI | 通过 `react-native-web` 在 SPA 中渲染的 React Native 组件 | [`packages/ui/`](packages/ui/)、[`frontend/src/react/rn/`](frontend/src/react/rn/) |
 | 原生 Android | 基于 `/api/v2` 的 Kotlin + Jetpack Compose 客户端 | [`apps/socrates-android/`](apps/socrates-android/) |
 | 共享包 | `@socrates/{core,contracts,theme,ui}` | [`packages/`](packages/) —— 强制 DOM-free，由 `scripts/check-packages-dom.mjs` 校验 |
