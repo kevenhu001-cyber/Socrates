@@ -5,6 +5,7 @@ import { createInlineThinkScanner, type InlineThinkScanner } from './inlineThink
 import { notifySpeedFallbackOnce } from './speedFallback.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { type ChatApiError } from './api/shared.ts';
+import { makeStreamError } from './api/streamError.ts';
 import { type StreamCallOptions } from './stream.ts';
 
 const CALLBACK_BY_EVENT: Record<string, string> = Object.freeze({
@@ -60,7 +61,6 @@ function warnBadFrame(eventName: string, error: unknown): void {
 /* Keep the same error shape for request failures and structured SSE errors.
  * The implementation lives in a leaf module so a server-side contract test can
  * import it without pulling the SPA store through speedFallback → i18n. */
-import { makeStreamError } from './api/streamError.ts';
 export { makeStreamError };
 
 interface ParsedFrame {
