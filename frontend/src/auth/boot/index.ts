@@ -1,7 +1,10 @@
 /* Auth boot coordinator. URL-only routes, preflight requests, and /me retry
    policy live in ./boot/ so this module only sequences the startup flow. */
 
-import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../config/providerConfig.service.ts';
+import {
+  setBuiltInProviderModel,
+  setServerBuiltInKeyAvailable,
+} from '../../config/providerConfig.service.ts';
 import { showToast } from '../../ui/toast.js';
 import { i18n } from '../../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../../native/mobileWebSessionBridge.ts';
@@ -36,14 +39,18 @@ interface ServerConfig {
 function i18nSettled(): Promise<unknown> {
   try {
     const ready = (window as BootLegacyWindow).__i18nReady;
-    return ready ? Promise.race([ready, new Promise((resolve) => setTimeout(resolve, 500))]) : Promise.resolve();
-  } catch { return Promise.resolve(); }
+    return ready
+      ? Promise.race([ready, new Promise((resolve) => setTimeout(resolve, 500))])
+      : Promise.resolve();
+  } catch {
+    return Promise.resolve();
+  }
 }
 
 async function publishServerConfig(configRequest: Promise<unknown>): Promise<void> {
   let hasBuiltInKey = false;
   try {
-    const config = await configRequest as ServerConfig | null;
+    const config = (await configRequest) as ServerConfig | null;
     if (config && config.hasBeagleKey) {
       /* The raw key remains on the server; only the model name is public. */
       if (typeof config.beagleModel === 'string') setBuiltInProviderModel(config.beagleModel);
@@ -66,7 +73,10 @@ async function showSigninGate(): Promise<void> {
   showAuthSignin();
 }
 
-async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unknown>): Promise<void> {
+async function finishAuthenticatedBoot(
+  user: unknown,
+  csrfReady: PromiseLike<unknown>,
+): Promise<void> {
   await Promise.all([csrfReady, i18nSettled()]);
   setCurrentUser(user as import('../../app/lifecycle/index.ts').UserRecord);
   markAuthSuccess();
@@ -78,8 +88,14 @@ async function finishUnavailableBoot(): Promise<void> {
   await i18nSettled();
   showGate();
   showAuthSignin();
-  try { showToast(i18n('toast.authOffline', "Couldn't reach the server. Check your connection and retry."), 5000); }
-  catch (error) { reportSwallow(error, 'auth/boot.offlineToast'); }
+  try {
+    showToast(
+      i18n('toast.authOffline', "Couldn't reach the server. Check your connection and retry."),
+      5000,
+    );
+  } catch (error) {
+    reportSwallow(error, 'auth/boot.offlineToast');
+  }
   publishSidebarChrome();
 }
 
@@ -122,5 +138,7 @@ authBoot().catch(() => {
   try {
     showGate();
     showAuthSignin();
-  } catch (error) { reportSwallow(error, 'auth/boot.fallbackGate'); }
+  } catch (error) {
+    reportSwallow(error, 'auth/boot.fallbackGate');
+  }
 });

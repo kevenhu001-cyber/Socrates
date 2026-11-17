@@ -16,7 +16,7 @@
  * adjacent to the rest of the finish path.
  */
 import { settleTurnRuntime } from '@socrates/core/turnRuntime';
-import { stateStore } from '../../state/store.ts';
+import { dispatchUi, uiStore } from '../../store/index.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { stripChatArtifacts } from '../../util/stripChatArtifacts.ts';
 import { readTurnMessage } from './runtimeState.ts';
@@ -38,8 +38,9 @@ export interface FinishRender {
 
 function seedCanvasPendingId(win: ActiveTemplateWindow): void {
   if (!win._activeTemplate || win._activeTemplate.outputMode !== 'canvas') return;
-  stateStore.dispatch({
-    type: 'state/set', key: '_canvasPendingId',
+  dispatchUi({
+    type: 'ui/set',
+    key: '_canvasPendingId',
     value: 'canvas-' + Math.random().toString(36).slice(2, 10),
   });
 }
@@ -53,7 +54,8 @@ function stampToolOffsets(state: TurnRuntimeState): void {
       const id = call.id;
       if (id === undefined || !offsets.has(id) || call.textOffset === offsets.get(id)) return call;
       const updated: TurnToolCall = { ...call, textOffset: offsets.get(id) };
-      if (call._run) Object.defineProperty(updated, '_run', { value: call._run, enumerable: false });
+      if (call._run)
+        Object.defineProperty(updated, '_run', { value: call._run, enumerable: false });
       return updated;
     }),
   });
@@ -61,8 +63,10 @@ function stampToolOffsets(state: TurnRuntimeState): void {
 
 function finalizeThinkingStatus(state: TurnRuntimeState): void {
   if (!state.thinkCtl || typeof state.thinkCtl.finalize !== 'function') return;
-  try { state.thinkCtl.finalize(); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:63');
+  try {
+    state.thinkCtl.finalize();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts');
     /* status already finalized */
   }
 }
@@ -81,7 +85,8 @@ function finalizeOwnedMessage(
     rawText: state.full,
     type: 'assistant',
     reasoningContent: state.fullReasoning || null,
-    reasoningDurationSec: (state.fullReasoning && state.reasoningDurationSec) ? state.reasoningDurationSec : undefined,
+    reasoningDurationSec:
+      state.fullReasoning && state.reasoningDurationSec ? state.reasoningDurationSec : undefined,
     outputMode,
     _liveStatus: null,
     _streamSettled: true,
@@ -89,11 +94,12 @@ function finalizeOwnedMessage(
     _toolRunRev: previousToolRunRevision + 1,
   };
   if (outputMode === 'canvas') {
-    patch.canvasId = stateStore.read('_canvasPendingId') || ('canvas-' + Math.random().toString(36).slice(2, 10));
+    patch.canvasId =
+      uiStore.getState()._canvasPendingId || 'canvas-' + Math.random().toString(36).slice(2, 10);
     patch._extensionIcon = (win._activeTemplate && win._activeTemplate.icon) || '';
   }
   state.patchOwnedMessage(patch);
-  stateStore.dispatch({ type: 'state/set', key: '_canvasPendingId', value: null });
+  dispatchUi({ type: 'ui/set', key: '_canvasPendingId', value: null });
 }
 
 /**
@@ -118,7 +124,7 @@ export function createFinishRender(state: TurnRuntimeState): FinishRender {
     try {
       stampToolOffsets(state);
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts:126');
+      reportEmptyCatch(error, 'empty catch: chat/turn/finishRender.ts');
       /* tool offset writeback failed; layout will fall back */
     }
     // Ordinary chat persists raw text. Its progressive DOM is already painted;

@@ -6,10 +6,10 @@ type MenuRuntime = typeof import('./FoundationMenu');
 let runtimePromise: Promise<MenuRuntime> | null = null;
 
 function loadMenuRuntime() {
-  return runtimePromise ??= import('./FoundationMenu').catch((error) => {
+  return (runtimePromise ??= import('./FoundationMenu').catch((error) => {
     runtimePromise = null;
     throw error;
-  });
+  }));
 }
 
 function preloadMenuRuntime() {
@@ -18,7 +18,13 @@ function preloadMenuRuntime() {
 
 /** Keep a native trigger in the eager shell. A preload never replaces a focused
  * button; only an explicit open mounts the menu runtime and moves focus. */
-export function DeferredMenu({ children, trigger, open, onOpenChange, ...props }: Omit<FoundationMenuProps, 'children' | 'initialItem'> & {
+export function DeferredMenu({
+  children,
+  trigger,
+  open,
+  onOpenChange,
+  ...props
+}: Omit<FoundationMenuProps, 'children' | 'initialItem'> & {
   children: (runtime: MenuRuntime) => ReactNode;
 }) {
   const generatedId = useId();
@@ -30,18 +36,21 @@ export function DeferredMenu({ children, trigger, open, onOpenChange, ...props }
   useEffect(() => {
     if (!open || runtime) return;
     let cancelled = false;
-    void loadMenuRuntime().then((loaded) => {
-      if (!cancelled) setRuntime(loaded);
-    }).catch((error) => {
-      if (cancelled) return;
-      reportSwallow(error, 'menu:open');
-      onOpenChange(false);
-    });
+    void loadMenuRuntime()
+      .then((loaded) => {
+        if (!cancelled) setRuntime(loaded);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        reportSwallow(error, 'menu:open');
+        onOpenChange(false);
+      });
 
     // Dismiss pending opens too: a delayed chunk must not reopen the menu after
     // Escape, Tab or a click that has already moved the user somewhere else.
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !anchor.current?.contains(event.target)) onOpenChange(false);
+      if (event.target instanceof Node && !anchor.current?.contains(event.target))
+        onOpenChange(false);
     };
     const dismissKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' || event.key === 'Tab') onOpenChange(false);
@@ -56,10 +65,17 @@ export function DeferredMenu({ children, trigger, open, onOpenChange, ...props }
   }, [open, runtime, onOpenChange]);
 
   if (runtime) {
-    return <runtime.FoundationMenu {...props} open={open} onOpenChange={onOpenChange}
-      initialItem={initialItem} trigger={cloneElement(trigger, { id: triggerId })}>
-      {children(runtime)}
-    </runtime.FoundationMenu>;
+    return (
+      <runtime.FoundationMenu
+        {...props}
+        open={open}
+        onOpenChange={onOpenChange}
+        initialItem={initialItem}
+        trigger={cloneElement(trigger, { id: triggerId })}
+      >
+        {children(runtime)}
+      </runtime.FoundationMenu>
+    );
   }
 
   return cloneElement(trigger, {
@@ -84,7 +100,8 @@ export function DeferredMenu({ children, trigger, open, onOpenChange, ...props }
     },
     onKeyDown: (event) => {
       trigger.props.onKeyDown?.(event);
-      if (event.defaultPrevented || !['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) return;
+      if (event.defaultPrevented || !['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key))
+        return;
       event.preventDefault();
       setInitialItem(event.key === 'ArrowUp' ? 'last' : 'first');
       onOpenChange(true);

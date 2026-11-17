@@ -14,7 +14,10 @@ const LOGO = { uri: '/logo.png' };
 /* Phone drawer wordmark: the reference sets its brand line at 20px; the CSS
    role keeps it on the user's type scale. */
 /* Reference drawer wordmark: 18px semibold (cap + ascender ink 13px). */
-const MOBILE_BRAND_NAME = { fontSize: 'var(--ui-font-size-lg)', lineHeight: 28 } as unknown as TextStyle;
+const MOBILE_BRAND_NAME = {
+  fontSize: 'var(--ui-font-size-lg)',
+  lineHeight: 28,
+} as unknown as TextStyle;
 
 /**
  * RN-7 — the sidebar header is the shared RN shell part
@@ -36,7 +39,8 @@ export function SidebarHeader() {
      mirrors it as a class for the drawer's grid transition. */
   useLayoutEffect(() => {
     document.getElementById('sidebar')?.classList.toggle('search-open', searchOpen);
-    if (searchOpen) window.requestAnimationFrame(() => document.getElementById('sidebarSearch')?.focus());
+    if (searchOpen)
+      window.requestAnimationFrame(() => document.getElementById('sidebarSearch')?.focus());
   }, [searchOpen]);
   const isMobile = useMobileViewport();
   const closeButtonHidden = isMobile && !sidebarOpen;
@@ -82,7 +86,9 @@ export function SidebarHeader() {
           i18nKey="sidebar.startNewChat"
           iconSize={iconSize}
           hostStyle={webClass(isMobile && 'btn-icon', 'compose-btn')}
-          onPress={() => { void startNewChat(); }}
+          onPress={() => {
+            void startNewChat();
+          }}
         />
         <SidebarIconAction
           id="sidebarCloseBtn"
@@ -94,7 +100,9 @@ export function SidebarHeader() {
           visible={!closeButtonHidden}
           iconSize={iconSize}
           hostStyle={webClass(isMobile && 'btn-icon')}
-          onPress={() => { toggleSidebar(); }}
+          onPress={() => {
+            toggleSidebar();
+          }}
         />
       </SidebarHeaderActions>
     </WebUiTheme>

@@ -1,6 +1,6 @@
 // e2e/katex-retry.spec.mjs — a transient KaTeX chunk-load failure must
 // retry automatically without poisoning the rest of the chat session.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -16,7 +16,7 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
     await route.continue();
   });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
-    const content = 'The derivative: $f\'(x)$ inline and $$\\frac{dy}{dx}$$ display.';
+    const content = "The derivative: $f'(x)$ inline and $$\\frac{dy}{dx}$$ display.";
     const sse = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`;
     await route.fulfill({ status: 200, contentType: 'text/event-stream', body: sse });
   });
@@ -26,7 +26,7 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
@@ -51,20 +51,36 @@ test('formulas recover after a transient KaTeX chunk failure', async ({ page }) 
   expect(katexFailures, 'first katex request must have been aborted once').toBe(1);
 });
 
-
-test('a cold reload restores prose math and interactive quiz math after delayed KaTeX', async ({ page }) => {
+test('a cold reload restores prose math and interactive quiz math after delayed KaTeX', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   const id = '98989898-9898-4989-8989-989898989898';
-  await page.route(new RegExp('/api/(?:v2/)?sessions/' + id + '(?:\\?.*)?$'), route => route.fulfill({ json: {
-    id, topic: 'Math history', mode: 'chat', kind: 'chat', phase: 'chat', kbNodes: [], mistakes: [],
-    messages: [{ id: 'math-user', role: 'user', rawText: 'Show math' }, {
-      id: 'math-answer', role: 'assistant',
-      rawText: 'Inline $x^2$ and display $$\\frac{1}{2}$$.\n\n<quiz><q>What is $2^2$?</q><o letter="A">$4$</o><o letter="B">$5$</o><correct>A</correct></quiz>',
-      html: '<p>stale unrendered snapshot</p>',
-    }],
-  } }));
-  await page.route('**/assets/katex*.js', async route => {
-    await new Promise(resolve => setTimeout(resolve, 700));
+  await page.route(new RegExp('/api/(?:v2/)?sessions/' + id + '(?:\\?.*)?$'), (route) =>
+    route.fulfill({
+      json: {
+        id,
+        topic: 'Math history',
+        mode: 'chat',
+        kind: 'chat',
+        phase: 'chat',
+        kbNodes: [],
+        mistakes: [],
+        messages: [
+          { id: 'math-user', role: 'user', rawText: 'Show math' },
+          {
+            id: 'math-answer',
+            role: 'assistant',
+            rawText:
+              'Inline $x^2$ and display $$\\frac{1}{2}$$.\n\n<quiz><q>What is $2^2$?</q><o letter="A">$4$</o><o letter="B">$5$</o><correct>A</correct></quiz>',
+            html: '<p>stale unrendered snapshot</p>',
+          },
+        ],
+      },
+    }),
+  );
+  await page.route('**/assets/katex*.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 700));
     await route.continue();
   });
   await gotoAndSettle(page, '/');
@@ -72,7 +88,7 @@ test('a cold reload restores prose math and interactive quiz math after delayed 
   await page.reload();
   await waitForAppShell(page);
   await page.waitForFunction(() => typeof window.loadSession === 'function');
-  await page.evaluate(id => window.loadSession(id), id);
+  await page.evaluate((id) => window.loadSession(id), id);
   const body = page.locator('#msgList .msg.assistant .msg-body');
   await expect(body.locator('.tool-run-prose > p .katex')).toHaveCount(2);
   const quiz = body.locator('.sc-host[data-scaffold="quiz"]');

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -38,7 +38,12 @@ function installSessionBackend(page, sessionId, store) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify([
-          { id: sessionId, topic: '导数入门', title: '导数入门', updatedAt: new Date().toISOString() },
+          {
+            id: sessionId,
+            topic: '导数入门',
+            title: '导数入门',
+            updatedAt: new Date().toISOString(),
+          },
         ]),
       });
     }
@@ -68,13 +73,17 @@ function installSessionBackend(page, sessionId, store) {
 }
 
 async function bootChat(page) {
-  await page.addInitScript(() => { localStorage.setItem('socrates-appmode', 'chat'); });
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-appmode', 'chat');
+  });
   await mockAuthedApp(page, { lang: 'zh' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 }
 
-test('an incremental save still reconstructs the whole transcript after reload', async ({ page }) => {
+test('an incremental save still reconstructs the whole transcript after reload', async ({
+  page,
+}) => {
   const store = {};
   await bootChat(page);
   await installSessionBackend(page, S1, store);
@@ -87,14 +96,22 @@ test('an incremental save still reconstructs the whole transcript after reload',
       { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
       { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: null },
       { clientId: 'u2', role: 'user', rawText: '能举个例子吗', html: null },
-      { clientId: 'a2', role: 'assistant', rawText: '例如 f(x)=x^2, f\'(x)=2x。', html: '<p>例如 f(x)=x^2</p>' },
+      {
+        clientId: 'a2',
+        role: 'assistant',
+        rawText: "例如 f(x)=x^2, f'(x)=2x。",
+        html: '<p>例如 f(x)=x^2</p>',
+      },
     ];
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: '导数入门' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sid });
+    window.__socratesTestState.patch({ session: { topic: '导数入门' } });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sid } });
     for (const m of transcript) {
       acc.push(m);
-      window.stateStore.dispatch({ type: 'session/replace-messages', payload: acc.slice() });
+      window.__socratesTestState.dispatchSession({
+        type: 'session/replace-messages',
+        payload: acc.slice(),
+      });
       window.saveCurrentSession();
       await new Promise((r) => setTimeout(r, 250));
     }
@@ -117,16 +134,26 @@ test('an incremental save still reconstructs the whole transcript after reload',
      independent of the ?chat= auto-restore ordering. */
   await page.evaluate((sid) => window.loadSession(sid), S1);
   await expect
-    .poll(() => page.evaluate(() => window.stateStore.read('messages').length), { timeout: 10_000 })
+    .poll(() => page.evaluate(() => window.__socratesTestState.session().messages.length), {
+      timeout: 10_000,
+    })
     .toBe(4);
-  const restored = await page.evaluate(() => window.stateStore.read('messages').map((m) => m.clientId));
+  const restored = await page.evaluate(() =>
+    window.__socratesTestState.session().messages.map((m) => m.clientId),
+  );
   expect(restored.sort()).toEqual(['a1', 'a2', 'u1', 'u2']);
   // Raw-only restored answers must stay synced; viewing them must not invent
   // an HTML change that causes the next save to re-upload old history.
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'session/append-message', payload: {
-      clientId: 'u3', role: 'user', rawText: '继续', html: '',
-    } });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/append-message',
+      payload: {
+        clientId: 'u3',
+        role: 'user',
+        rawText: '继续',
+        html: '',
+      },
+    });
     window.saveCurrentSession();
   });
   await expect.poll(() => store.posts.at(-1)).toEqual(['u3']);
@@ -139,10 +166,10 @@ test('an edited message is re-sent even when its length is unchanged', async ({ 
   await installSessionBackend(page, S2, store);
 
   await page.evaluate(async (sid) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 't' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sid });
-    window.stateStore.dispatch({
+    window.__socratesTestState.patch({ session: { topic: 't' } });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sid } });
+    window.__socratesTestState.dispatchSession({
       type: 'session/replace-messages',
       payload: [{ clientId: 'u1', role: 'user', rawText: 'hello', html: null }],
     });
@@ -150,7 +177,7 @@ test('an edited message is re-sent even when its length is unchanged', async ({ 
     await new Promise((r) => setTimeout(r, 300));
     /* Same length, different text. The old length-only whole-payload
        signature could not see this, so the edit was dropped. */
-    window.stateStore.dispatch({
+    window.__socratesTestState.dispatchSession({
       type: 'session/replace-messages',
       payload: [{ clientId: 'u1', role: 'user', rawText: 'HELLO', html: null }],
     });
@@ -164,21 +191,28 @@ test('an edited message is re-sent even when its length is unchanged', async ({ 
   expect(store.messages.get('u1').rawText).toBe('HELLO');
 });
 
-test('reloading seeds the watermark so the first save after a switch is still a delta', async ({ page }) => {
+test('reloading seeds the watermark so the first save after a switch is still a delta', async ({
+  page,
+}) => {
   const store = {};
   await bootChat(page);
   await installSessionBackend(page, S1, store);
 
   /* Populate the server copy the way a previous visit would have. */
   await page.evaluate(async (sid) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: '导数入门' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sid });
-    window.stateStore.dispatch({
+    window.__socratesTestState.patch({ session: { topic: '导数入门' } });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sid } });
+    window.__socratesTestState.dispatchSession({
       type: 'session/replace-messages',
       payload: [
         { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
-        { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: '<p>导数描述变化率。</p>' },
+        {
+          clientId: 'a1',
+          role: 'assistant',
+          rawText: '导数描述变化率。',
+          html: '<p>导数描述变化率。</p>',
+        },
       ],
     });
     window.saveCurrentSession();
@@ -191,13 +225,15 @@ test('reloading seeds the watermark so the first save after a switch is still a 
      the watermark — then append one message and save. */
   await page.evaluate((sid) => window.loadSession(sid), S1);
   await expect
-    .poll(() => page.evaluate(() => window.stateStore.read('messages').length), { timeout: 10_000 })
+    .poll(() => page.evaluate(() => window.__socratesTestState.session().messages.length), {
+      timeout: 10_000,
+    })
     .toBe(2);
 
   await page.evaluate(async () => {
-    const acc = window.stateStore.read('messages').slice();
+    const acc = window.__socratesTestState.session().messages.slice();
     acc.push({ clientId: 'u2', role: 'user', rawText: '再详细一点', html: null });
-    window.stateStore.dispatch({ type: 'session/replace-messages', payload: acc });
+    window.__socratesTestState.dispatchSession({ type: 'session/replace-messages', payload: acc });
     window.saveCurrentSession();
     await new Promise((r) => setTimeout(r, 300));
   });

@@ -31,7 +31,8 @@ const TOOL_CHIP_BOX = [
   'inline-flex items-center gap-1 grow-0 shrink-0 basis-auto',
   'h-(--composer-control) rounded-md px-3 py-0 pl-2 font-medium leading-5',
 ].join(' ');
-const CHIP_ICON_BOX = 'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';
+const CHIP_ICON_BOX =
+  'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';
 const CHIP_LABEL_BOX = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
 const CHIP_REMOVE_BOX = [
   'grid shrink-0 grow-0 basis-(--ui-control-xs) place-items-center size-(--ui-control-xs)',
@@ -39,8 +40,7 @@ const CHIP_REMOVE_BOX = [
 ].join(' ');
 
 function useWebSearchOn(): boolean {
-  const read = () => isWebSearchOn()
-    && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
+  const read = () => isWebSearchOn() && window.matchMedia(DESKTOP_COMPOSER_QUERY).matches;
   const [on, setOn] = useState(read);
   useEffect(() => {
     const sync = () => setOn(read());
@@ -93,7 +93,7 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
       const host = document.getElementById('composerInputWrap');
       if (host) syncComposerShellFlags(host);
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/composer-input/ComposerPluginChips.tsx:93');
+      reportEmptyCatch(_, 'empty catch: react/composer-input/ComposerPluginChips.tsx');
       /* detached shell */
     }
   }, [plugins.length, webSearchOn, surface]);
@@ -107,14 +107,31 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
   };
 
   return (
-    <div className="composer-plugin-chips" aria-label={i18n('composer.selectedPlugins', 'Selected plugins')}>
+    <div
+      className="composer-plugin-chips"
+      aria-label={i18n('composer.selectedPlugins', 'Selected plugins')}
+    >
       {webSearchOn ? <WebSearchChip /> : null}
       {visiblePlugins.map((plugin) => (
-        <Badge variant="secondary" className={`composer-plugin-chip ${CHIP_BOX}`} key={plugin.id} title={plugin.description || plugin.name}>
+        <Badge
+          variant="secondary"
+          className={`composer-plugin-chip ${CHIP_BOX}`}
+          key={plugin.id}
+          title={plugin.description || plugin.name}
+        >
           {plugin.iconMarkup ? (
-            <span className={`composer-plugin-chip-icon ${CHIP_ICON_BOX}`} aria-hidden="true" dangerouslySetInnerHTML={{ __html: plugin.iconMarkup }} />
+            <span
+              className={`composer-plugin-chip-icon ${CHIP_ICON_BOX}`}
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: plugin.iconMarkup }}
+            />
           ) : (
-            <span className={`composer-plugin-chip-icon composer-plugin-chip-fallback ${CHIP_ICON_BOX}`} aria-hidden="true">{plugin.name.slice(0, 1).toUpperCase()}</span>
+            <span
+              className={`composer-plugin-chip-icon composer-plugin-chip-fallback ${CHIP_ICON_BOX}`}
+              aria-hidden="true"
+            >
+              {plugin.name.slice(0, 1).toUpperCase()}
+            </span>
           )}
           <span className={`composer-plugin-chip-label ${CHIP_LABEL_BOX}`}>{plugin.name}</span>
           <Button
@@ -122,7 +139,10 @@ function ComposerPluginChips({ surface }: { surface: ComposerSurface }) {
             variant="ghost"
             size="icon-xs"
             className={`composer-plugin-chip-remove ${CHIP_REMOVE_BOX}`}
-            aria-label={i18n('composer.plugin.remove', 'Remove {name}').replace('{name}', plugin.name)}
+            aria-label={i18n('composer.plugin.remove', 'Remove {name}').replace(
+              '{name}',
+              plugin.name,
+            )}
             title={i18n('composer.plugin.remove', 'Remove {name}').replace('{name}', plugin.name)}
             onMouseDown={(event) => event.preventDefault()}
             onClick={(event) => {

@@ -47,7 +47,8 @@ export const CJK_PUNCTUATION_BLOCKS = [
 const CJK_FAMILY = /Noto Sans SC|Noto Serif SC|PingFang|Hiragino|Microsoft YaHei|Songti|SimSun/i;
 
 /* A file whose name carries one of these markers is an explicit subset. */
-const SUBSET_FILE = /[-_](latin|latin-ext|cyrillic|cyrillic-ext|vietnamese|greek|arabic|hebrew|thai|symbols2?|ext)([-_.]|$)/i;
+const SUBSET_FILE =
+  /[-_](latin|latin-ext|cyrillic|cyrillic-ext|vietnamese|greek|arabic|hebrew|thai|symbols2?|ext)([-_.]|$)/i;
 
 /* The trees that paint Chinese prose, and how strict each one is. */
 const TREES = [
@@ -69,7 +70,9 @@ export function parseFaces(css) {
   const faces = [];
   for (const match of css.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
     const body = match[1];
-    const family = (body.match(/font-family:\s*([^;]+);/) || [])[1]?.trim().replace(/^['"]|['"]$/g, '');
+    const family = (body.match(/font-family:\s*([^;]+);/) || [])[1]
+      ?.trim()
+      .replace(/^['"]|['"]$/g, '');
     const range = (body.match(/unicode-range:\s*([^;]+);/) || [])[1]?.trim();
     const src = (body.match(/src:\s*([^;]+);/) || [])[1]?.trim() || '';
     if (family) faces.push({ family, range: range || null, src });
@@ -103,7 +106,9 @@ export function checkFaces(faces, { allowSubsetFile = false } = {}) {
     const where = `${face.family} (${face.range ? 'has unicode-range' : 'NO unicode-range'})`;
     if (!face.range) {
       if (allowSubsetFile && SUBSET_FILE.test(face.src)) continue;
-      violations.push(`${where}: a face without a unicode-range may claim every code point, including the CJK punctuation blocks`);
+      violations.push(
+        `${where}: a face without a unicode-range may claim every code point, including the CJK punctuation blocks`,
+      );
       continue;
     }
     const covered = coveredCodePoints(face.range);
@@ -112,7 +117,9 @@ export function checkFaces(faces, { allowSubsetFile = false } = {}) {
       return false;
     });
     if (claimsCjk && !CJK_FAMILY.test(face.family)) {
-      violations.push(`${where}: a non-CJK family may not own U+3000-303F / U+FF00-FFEF — those code points need full-width metrics`);
+      violations.push(
+        `${where}: a non-CJK family may not own U+3000-303F / U+FF00-FFEF — those code points need full-width metrics`,
+      );
     }
   }
   return violations;
@@ -130,14 +137,18 @@ for (const tree of TREES) {
     }
   }
   if (!treeFaces) {
-    console.error(`check-cjk-punctuation-fonts: parsed 0 @font-face blocks under ${tree.label} — refusing to gate on an empty parse`);
+    console.error(
+      `check-cjk-punctuation-fonts: parsed 0 @font-face blocks under ${tree.label} — refusing to gate on an empty parse`,
+    );
     process.exit(1);
   }
   faceCount += treeFaces;
 }
 
 if (!faceCount) {
-  console.error('check-cjk-punctuation-fonts: parsed 0 @font-face blocks — refusing to gate on an empty parse');
+  console.error(
+    'check-cjk-punctuation-fonts: parsed 0 @font-face blocks — refusing to gate on an empty parse',
+  );
   process.exit(1);
 }
 
@@ -146,4 +157,6 @@ if (violations.length) {
   for (const violation of violations) console.error(`  ${violation}`);
   process.exit(1);
 }
-console.log(`check-cjk-punctuation-fonts: ${faceCount} @font-face blocks ok (no face claims the CJK punctuation blocks without a CJK family)`);
+console.log(
+  `check-cjk-punctuation-fonts: ${faceCount} @font-face blocks ok (no face claims the CJK punctuation blocks without a CJK family)`,
+);

@@ -68,13 +68,15 @@ function updateCollapsedMeasure(
 ): void {
   const measuredEditorHeight = editorDom.clientHeight;
   const previousHeight = collapsedMeasureRef.current?.singleLineHeight ?? 0;
-  const singleLineHeight = previousHeight > 0
-    ? Math.min(measuredEditorHeight, previousHeight)
-    : measuredEditorHeight;
+  const singleLineHeight =
+    previousHeight > 0 ? Math.min(measuredEditorHeight, previousHeight) : measuredEditorHeight;
   collapsedMeasureRef.current = cacheCollapsedMeasure(editorDom, wrapWidth, singleLineHeight);
 }
 
-const measureProbes = new WeakMap<HTMLElement, { host: HTMLElement; editor: HTMLElement; html: string }>();
+const measureProbes = new WeakMap<
+  HTMLElement,
+  { host: HTMLElement; editor: HTMLElement; html: string }
+>();
 
 export function releaseComposerMeasureProbe(editorDom: HTMLElement): void {
   measureProbes.get(editorDom)?.host.remove();
@@ -107,7 +109,7 @@ function createCollapsedMeasureProbe(
   ].join(';');
   host.style.width = collapsedWidth + 'px';
 
-  const editor = previous?.editor ?? editorDom.cloneNode(false) as HTMLElement;
+  const editor = previous?.editor ?? (editorDom.cloneNode(false) as HTMLElement);
   const html = editorDom.innerHTML;
   if (!previous || previous.html !== html) editor.innerHTML = html;
   editor.removeAttribute('contenteditable');
@@ -137,7 +139,9 @@ export function shouldExpandComposer(
   collapsedMeasureRef: MutableRef<CollapsedComposerMeasure | null>,
 ): boolean {
   const hasEditorText = Boolean((editorDom.textContent || '').replace(/\u200b/g, '').trim());
-  const hasStructuralBreak = Boolean(editorDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'));
+  const hasStructuralBreak = Boolean(
+    editorDom.querySelector('br:not(.ProseMirror-trailingBreak), p + p, li + li'),
+  );
   /* Fast-path: empty editor without structural breaks can never expand.
      Bypasses computed styles, probe DOM insertion, and scrollHeight reflows. */
   if (!hasEditorText && !hasStructuralBreak) return false;
@@ -166,8 +170,9 @@ export function shouldExpandComposer(
   }
 
   const measureStyle = getComputedStyle(measureDom);
-  const paddingY = (Number.parseFloat(measureStyle.paddingTop) || 0)
-    + (Number.parseFloat(measureStyle.paddingBottom) || 0);
+  const paddingY =
+    (Number.parseFloat(measureStyle.paddingTop) || 0) +
+    (Number.parseFloat(measureStyle.paddingBottom) || 0);
   const singleLineHeight = Math.max(
     paddingY + lineHeight,
     collapsedMeasureRef.current?.singleLineHeight ?? 0,
@@ -181,7 +186,13 @@ export function shouldExpandComposer(
 
   /* Empty editors can exceed one line because of the surface's CSS minimum
      height. Only text or a rendered break may expand the shell. */
-  return hasMultilineContent(hasRenderedBreak, hasEditorText, contentHeight, singleLineHeight, lineHeight);
+  return hasMultilineContent(
+    hasRenderedBreak,
+    hasEditorText,
+    contentHeight,
+    singleLineHeight,
+    lineHeight,
+  );
 }
 
 function hasMultilineContent(

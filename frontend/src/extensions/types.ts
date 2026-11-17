@@ -83,7 +83,18 @@ export interface ExtensionContext {
 export interface AgentRunEvent {
   runId: string;
   workflow: 'explore' | 'deepResearch' | 'research' | 'analyze' | 'agent';
-  stage: 'queued' | 'recovering' | 'cancelled' | 'planning' | 'searching' | 'reading' | 'synthesizing' | 'working' | 'awaiting_approval' | 'completed' | 'failed';
+  stage:
+    | 'queued'
+    | 'recovering'
+    | 'cancelled'
+    | 'planning'
+    | 'searching'
+    | 'reading'
+    | 'synthesizing'
+    | 'working'
+    | 'awaiting_approval'
+    | 'completed'
+    | 'failed';
   status: 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled';
   current?: number;
   total?: number;

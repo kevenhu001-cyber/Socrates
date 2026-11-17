@@ -34,10 +34,7 @@ function lastId(items: ReadonlyArray<ChatMessage>): string | null {
 export function hasLiveTail(items: ReadonlyArray<ChatMessage>): boolean {
   const last = items.length ? items[items.length - 1] : null;
   return Boolean(
-    last
-    && last.role === 'assistant'
-    && last.type === 'streaming'
-    && last._streamSettled !== true,
+    last && last.role === 'assistant' && last.type === 'streaming' && last._streamSettled !== true,
   );
 }
 
@@ -88,9 +85,8 @@ function resolvedIndexes(
   return {
     start: Math.max(0, start),
     end: end < 0 ? items.length : end,
-    valid: (state.floor === null || start >= 0)
-      && (state.ceiling === null || end >= 0)
-      && end >= start,
+    valid:
+      (state.floor === null || start >= 0) && (state.ceiling === null || end >= 0) && end >= start,
   };
 }
 
@@ -108,9 +104,10 @@ export function resolveMountedRows(
 } {
   const replaced = items !== previous.items && isReplacement(previous.items, items);
   const forceLiveTail = !previous.full && previous.ceiling !== null && hasLiveTail(items);
-  let state: MountWindowState = replaced || forceLiveTail
-    ? tailState(items)
-    : { floor: previous.floor, ceiling: previous.ceiling, full: previous.full };
+  let state: MountWindowState =
+    replaced || forceLiveTail
+      ? tailState(items)
+      : { floor: previous.floor, ceiling: previous.ceiling, full: previous.full };
   let indexes = resolvedIndexes(items, state);
 
   if (!indexes.valid) {
@@ -123,12 +120,8 @@ export function resolveMountedRows(
        MAX_MOUNTED_ROWS resident instead of letting a long-lived session grow
        its DOM without bound. Explicit historical windows keep their ceiling. */
     const end = indexes.end;
-    const start = state.ceiling === null
-      ? Math.max(0, end - MAX_MOUNTED_ROWS)
-      : indexes.start;
-    const cappedEnd = state.ceiling === null
-      ? end
-      : Math.min(end, start + MAX_MOUNTED_ROWS);
+    const start = state.ceiling === null ? Math.max(0, end - MAX_MOUNTED_ROWS) : indexes.start;
+    const cappedEnd = state.ceiling === null ? end : Math.min(end, start + MAX_MOUNTED_ROWS);
     state = stateFromRange(items, start, cappedEnd);
     indexes = { start, end: cappedEnd, valid: true };
   }

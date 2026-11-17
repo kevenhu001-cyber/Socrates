@@ -22,11 +22,19 @@ export function buildChips(
   projects: ReadonlyArray<{ id: string; name: string }>,
   knownTags: ReadonlyArray<string>,
 ): ChipDescriptor[] {
-  const chips: ChipDescriptor[] = [{ kind: 'all', active: !currentFilter || currentFilter === 'all' }];
+  const chips: ChipDescriptor[] = [
+    { kind: 'all', active: !currentFilter || currentFilter === 'all' },
+  ];
 
   projects.forEach((project) => {
     const value = `project:${project.id}`;
-    chips.push({ kind: 'project', id: project.id, name: project.name, value, active: currentFilter === value });
+    chips.push({
+      kind: 'project',
+      id: project.id,
+      name: project.name,
+      value,
+      active: currentFilter === value,
+    });
   });
 
   const tags = knownTags.slice(0, 8);

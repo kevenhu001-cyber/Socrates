@@ -2,11 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-const HOVER_TARGETS = [
-  '#navNew',
-  '#composerToolsBtn',
-  '#composerPrimaryBtn',
-];
+const HOVER_TARGETS = ['#navNew', '#composerToolsBtn', '#composerPrimaryBtn'];
 
 async function readPalette(page) {
   return page.evaluate(() => {
@@ -53,7 +49,7 @@ test('light and dark surfaces keep SVG contrast and hover geometry stable', asyn
 
     for (const selector of HOVER_TARGETS) {
       const target = page.locator(selector).first();
-      if (await target.count() === 0) continue;
+      if ((await target.count()) === 0) continue;
       const before = await target.boundingBox();
       if (!before) throw new Error(`Missing hover target bounds for ${selector}`);
       await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);

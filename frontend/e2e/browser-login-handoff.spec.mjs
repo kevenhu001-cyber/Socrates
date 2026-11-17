@@ -13,14 +13,20 @@ async function mockProductionOrigin(page) {
   await page.route(origin + '/**', async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname.startsWith('/api/')) throw new Error('Unmocked test API');
-    const response = await route.fetch({ url: 'http://127.0.0.1:4173' + url.pathname + url.search });
+    const response = await route.fetch({
+      url: 'http://127.0.0.1:4173' + url.pathname + url.search,
+    });
     await route.fulfill({ response });
   });
   await mockAuthedApp(page);
-  await page.context().addCookies([{ name: 'csrf', value: 'smoke-csrf-token', url: origin, secure: true }]);
+  await page
+    .context()
+    .addCookies([{ name: 'csrf', value: 'smoke-csrf-token', url: origin, secure: true }]);
 }
 
-test('existing browser session requires account consent and an explicit verified HTTPS return link', async ({ page }) => {
+test('existing browser session requires account consent and an explicit verified HTTPS return link', async ({
+  page,
+}) => {
   await mockProductionOrigin(page);
   let issued = 0;
   await page.route('**/api/v2/auth/mobile/browser/authorize', async (route) => {
@@ -28,7 +34,9 @@ test('existing browser session requires account consent and an explicit verified
     expect(route.request().postDataJSON()).toEqual({ state, codeChallenge });
     expect(route.request().headers()['x-csrf-token']).toBe('smoke-csrf-token');
     expect(route.request().headers().authorization).toBeUndefined();
-    await route.fulfill({ json: { url: callback, expiresAt: new Date(Date.now() + 300000).toISOString() } });
+    await route.fulfill({
+      json: { url: callback, expiresAt: new Date(Date.now() + 300000).toISOString() },
+    });
   });
   await page.goto(`${origin}/?native_login=1&state=${state}&code_challenge=${codeChallenge}`);
   const dialog = page.locator('#androidLoginHandoff');
@@ -47,10 +55,15 @@ test('existing browser session requires account consent and an explicit verified
   await expect(dialog).toHaveCount(0);
 });
 
-test('browser fallback strips callback secrets and does not authorize another login', async ({ page }) => {
+test('browser fallback strips callback secrets and does not authorize another login', async ({
+  page,
+}) => {
   await mockProductionOrigin(page);
   let issued = 0;
-  await page.route('**/api/v2/auth/mobile/browser/authorize', async (route) => { issued++; await route.abort(); });
+  await page.route('**/api/v2/auth/mobile/browser/authorize', async (route) => {
+    issued++;
+    await route.abort();
+  });
   await page.goto(callback);
   await expect(page.getByRole('dialog')).toContainText('未能自动打开 Android 应用');
   expect(new URL(page.url()).hash).toBe('');

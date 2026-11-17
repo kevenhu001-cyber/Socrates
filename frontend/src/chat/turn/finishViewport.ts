@@ -5,7 +5,7 @@
  * Preserve that row or paragraph while the layout settles; proximity to the
  * bottom is never a reason to move the reader to a different paragraph.
  */
-import { stateStore } from '../../state/store.ts';
+import { sessionBridge, uiBridge } from '../../store/index.ts';
 import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
 import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';
@@ -79,17 +79,18 @@ function findVisibleInnerAnchor(anchor: Element | null, viewportTop: number): El
   if (!anchor) return null;
   const candidates = anchor.querySelectorAll(
     '.stream-settled-content > *,.stream-live-content > *,' +
-    '.think-prefix > *,.think-suffix > *,.tool-inline,.rn-tool-row,.rn-turn-activity,' +
-    '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *',
+      '.think-prefix > *,.think-suffix > *,.tool-inline,.rn-tool-row,.rn-turn-activity,' +
+      '.visualization-card,.exec-artifact,.tool-run-prose > *,.msg-body > *',
   );
   for (let index = 0; index < candidates.length; index++) {
-    if (candidates[index].getBoundingClientRect().bottom > viewportTop + 1) return candidates[index];
+    if (candidates[index].getBoundingClientRect().bottom > viewportTop + 1)
+      return candidates[index];
   }
   return null;
 }
 
 function latestMessageId(): string | null {
-  const messages = stateStore.read('messages') as Array<{ clientId?: string }> | undefined;
+  const messages = sessionBridge.getSnapshot().messages as Array<{ clientId?: string }> | undefined;
   return messages?.length ? messages[messages.length - 1].clientId || null : null;
 }
 
@@ -107,10 +108,10 @@ function captureFinishViewport(state: TurnRuntimeState): FinishViewportCapture {
   const measuredAnchor = anchor && Math.abs(rowOffset) <= 96 ? anchor : innerAnchor || anchor;
   return {
     scroller: list,
-    sessionId: stateStore.read('currentSessionId') as string | null,
+    sessionId: sessionBridge.getSnapshot().currentSessionId as string | null,
     latestMessageId: latestMessageId(),
     /* Freeze reader intent before handoff scroll events can change the live flag. */
-    scrolledAway: !!stateStore.read('_userScrolledAway'),
+    scrolledAway: !!uiBridge.getSnapshot()._userScrolledAway,
     scrollTop: list.scrollTop,
     streamRowId: stream.streamRowNearTop ? state.clientId : null,
     streamRowOffset: stream.streamRowNearTop ? stream.streamRowOffset : null,
@@ -122,7 +123,9 @@ function captureFinishViewport(state: TurnRuntimeState): FinishViewportCapture {
 
 function installFinishIntentGuard(): FinishIntentGuard {
   let userIntent = false;
-  const markIntent = (): void => { userIntent = true; };
+  const markIntent = (): void => {
+    userIntent = true;
+  };
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
   for (const event of events) {
     window.addEventListener(event, markIntent, { passive: true, capture: true });
@@ -136,8 +139,10 @@ function installFinishIntentGuard(): FinishIntentGuard {
 }
 
 function isCurrentFinish(viewport: FinishViewportCapture): boolean {
-  return stateStore.read('currentSessionId') === viewport.sessionId
-    && latestMessageId() === viewport.latestMessageId;
+  return (
+    sessionBridge.getSnapshot().currentSessionId === viewport.sessionId &&
+    latestMessageId() === viewport.latestMessageId
+  );
 }
 
 function reserveStreamRowForCorrection(
@@ -157,12 +162,19 @@ function reserveStreamRowForCorrection(
   row.style.minHeight = requiredMin + 'px';
   const message = readTurnMessage(state.msgIdx);
   if (!message) return;
-  updateMessageSnapshot(message, {
-    _turnAnchorMinHeight: Math.max(Number(message._turnAnchorMinHeight) || 0, requiredMin),
-  }, true);
+  updateMessageSnapshot(
+    message,
+    {
+      _turnAnchorMinHeight: Math.max(Number(message._turnAnchorMinHeight) || 0, requiredMin),
+    },
+    true,
+  );
 }
 
-function applyStreamRowCorrection(state: TurnRuntimeState, viewport: FinishViewportCapture): boolean {
+function applyStreamRowCorrection(
+  state: TurnRuntimeState,
+  viewport: FinishViewportCapture,
+): boolean {
   if (!viewport.streamRowId || !Number.isFinite(viewport.streamRowOffset)) return false;
   const row = state.list.querySelector(
     '.msg[data-client-id="' + viewport.streamRowId + '"][data-react-owned]',
@@ -179,8 +191,8 @@ function applyStreamRowCorrection(state: TurnRuntimeState, viewport: FinishViewp
 
 function applyExactAnchorCorrection(viewport: FinishViewportCapture): boolean {
   if (!viewport.anchorNode || !viewport.anchorNode.isConnected) return false;
-  const currentOffset = viewport.anchorNode.getBoundingClientRect().top
-    - viewport.scroller.getBoundingClientRect().top;
+  const currentOffset =
+    viewport.anchorNode.getBoundingClientRect().top - viewport.scroller.getBoundingClientRect().top;
   writeScrollTop(
     viewport.scroller,
     viewport.scroller.scrollTop + currentOffset - viewport.anchorOffset,
@@ -197,13 +209,17 @@ function findCurrentMessageAnchor(state: TurnRuntimeState, anchorId: string): El
   return null;
 }
 
-function applyMessageAnchorCorrection(state: TurnRuntimeState, viewport: FinishViewportCapture): void {
+function applyMessageAnchorCorrection(
+  state: TurnRuntimeState,
+  viewport: FinishViewportCapture,
+): void {
   const anchor = viewport.anchorId ? findCurrentMessageAnchor(state, viewport.anchorId) : null;
   if (!anchor) {
     writeScrollTop(viewport.scroller, viewport.scrollTop, 'finish');
     return;
   }
-  const currentOffset = anchor.getBoundingClientRect().top - viewport.scroller.getBoundingClientRect().top;
+  const currentOffset =
+    anchor.getBoundingClientRect().top - viewport.scroller.getBoundingClientRect().top;
   writeScrollTop(
     viewport.scroller,
     viewport.scroller.scrollTop + currentOffset - viewport.anchorOffset,
@@ -237,9 +253,10 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
 
   function capture(): void {
     if (!state.list) return;
-    try { finishViewport = captureFinishViewport(state); }
-    catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts:242');
+    try {
+      finishViewport = captureFinishViewport(state);
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts');
       /* viewport capture failed; settle will no-op */
     }
   }
@@ -257,9 +274,10 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
         intent.detach();
         return;
       }
-      try { applyFinishCorrection(state, viewport); }
-      catch (error) {
-        reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts:260');
+      try {
+        applyFinishCorrection(state, viewport);
+      } catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts');
         /* frame apply failed */
       }
       frames += 1;

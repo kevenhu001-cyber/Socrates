@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
 
 /* The conversation column is a bottom-anchored flex column: a short exchange
@@ -17,35 +17,45 @@ function history(count) {
 
 /* The first row's offset inside the scrollable content, independent of where
  * the transcript happens to be scrolled to. */
-const firstLineOffset = (page) => page.evaluate(() => {
-  const list = document.getElementById('msgList');
-  const row = list.querySelector('.msg');
-  return Math.round(row.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop);
-});
+const firstLineOffset = (page) =>
+  page.evaluate(() => {
+    const list = document.getElementById('msgList');
+    const row = list.querySelector('.msg');
+    return Math.round(
+      row.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop,
+    );
+  });
 
-const geometry = (page) => page.evaluate(() => {
-  const rect = (node) => {
-    if (!node) return null;
-    const value = node.getBoundingClientRect();
-    return { top: Math.round(value.top), bottom: Math.round(value.bottom), height: Math.round(value.height) };
-  };
-  const list = document.getElementById('msgList');
-  const rows = [...list.querySelectorAll('.msg')];
-  return {
-    list: rect(list),
-    first: rect(rows[0]),
-    last: rect(rows[rows.length - 1]),
-    scrollTop: list.scrollTop,
-    scrollHeight: list.scrollHeight,
-    clientHeight: list.clientHeight,
-    rows: rows.length,
-  };
-});
+const geometry = (page) =>
+  page.evaluate(() => {
+    const rect = (node) => {
+      if (!node) return null;
+      const value = node.getBoundingClientRect();
+      return {
+        top: Math.round(value.top),
+        bottom: Math.round(value.bottom),
+        height: Math.round(value.height),
+      };
+    };
+    const list = document.getElementById('msgList');
+    const rows = [...list.querySelectorAll('.msg')];
+    return {
+      list: rect(list),
+      first: rect(rows[0]),
+      last: rect(rows[rows.length - 1]),
+      scrollTop: list.scrollTop,
+      scrollHeight: list.scrollHeight,
+      clientHeight: list.clientHeight,
+      rows: rows.length,
+    };
+  });
 
 for (const mobile of [false, true]) {
   const viewport = mobile ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop;
 
-  test(`${mobile ? 'mobile' : 'desktop'} short conversation rests on the composer instead of the top of the transcript`, async ({ page }) => {
+  test(`${mobile ? 'mobile' : 'desktop'} short conversation rests on the composer instead of the top of the transcript`, async ({
+    page,
+  }) => {
     await prepareChatWorkbench(page, { viewport, messages: history(2) });
     await expect(page.locator('#msgList .msg')).toHaveCount(2);
 
@@ -61,7 +71,9 @@ for (const mobile of [false, true]) {
     expect(view.scrollTop).toBe(0);
   });
 
-  test(`${mobile ? 'mobile' : 'desktop'} long conversation still starts at its first line`, async ({ page }) => {
+  test(`${mobile ? 'mobile' : 'desktop'} long conversation still starts at its first line`, async ({
+    page,
+  }) => {
     await prepareChatWorkbench(page, { viewport, messages: history(30) });
     await expect(page.locator('[data-client-id="anchored-29"]')).toBeVisible();
 

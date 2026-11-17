@@ -3,10 +3,7 @@ import { createRootSlot } from '../lib/boot/ownedRoot';
 import { useEffect } from 'react';
 import { cn } from 'cn';
 
-import {
-  useShareDispatch,
-  useShareSnapshot,
-} from './shareModal.store';
+import { useShareDispatch, useShareSnapshot } from './shareModal.store';
 import { Icon } from '../../ui/Icon';
 import { ShareLinkPanel } from './ShareLinkPanel';
 import { ShareVisibilityOptions } from './ShareVisibilityOptions';

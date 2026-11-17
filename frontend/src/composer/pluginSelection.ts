@@ -41,11 +41,17 @@ const INITIAL: ComposerPluginSelectionSnapshot = Object.freeze({
 
 type ReducerAction = ComposerPluginSelectionAction;
 
-function freezePlugins(plugins: ReadonlyArray<ComposerPluginSelection>): ReadonlyArray<ComposerPluginSelection> {
-  return Object.freeze(plugins.map((plugin) => Object.freeze({
-    ...plugin,
-    capabilities: Object.freeze([...(plugin.capabilities || [])]),
-  })));
+function freezePlugins(
+  plugins: ReadonlyArray<ComposerPluginSelection>,
+): ReadonlyArray<ComposerPluginSelection> {
+  return Object.freeze(
+    plugins.map((plugin) =>
+      Object.freeze({
+        ...plugin,
+        capabilities: Object.freeze([...(plugin.capabilities || [])]),
+      }),
+    ),
+  );
 }
 
 const factoryBridge = createImmutableBridge<ComposerPluginSelectionSnapshot, ReducerAction>({
@@ -95,11 +101,17 @@ export function getComposerPluginSelectionSnapshot(): ComposerPluginSelectionSna
   return installComposerPluginSelectionBridge().getSnapshot();
 }
 
-export function selectedComposerPlugins(surface: ComposerSurface): ReadonlyArray<ComposerPluginSelection> {
+export function selectedComposerPlugins(
+  surface: ComposerSurface,
+): ReadonlyArray<ComposerPluginSelection> {
   return getComposerPluginSelectionSnapshot()[surface];
 }
 
-export function toggleComposerPlugin(surface: ComposerSurface, entry: PluginCatalogEntry, iconMarkup = ''): void {
+export function toggleComposerPlugin(
+  surface: ComposerSurface,
+  entry: PluginCatalogEntry,
+  iconMarkup = '',
+): void {
   installComposerPluginSelectionBridge().dispatch({
     type: 'toggle',
     surface,
@@ -129,4 +141,3 @@ export function copyComposerPlugins(from: ComposerSurface, to: ComposerSurface):
     plugins: getComposerPluginSelectionSnapshot()[from],
   });
 }
-

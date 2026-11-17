@@ -214,7 +214,9 @@ function main() {
     console.log(
       `button-sizes: no baseline found — wrote scripts/button-sizes.baseline.json (${hits.length} off-ladder declarations across ${scanned} live sheets).`,
     );
-    console.log('Review the list below, commit the baseline, and re-run. Growth beyond it now fails.');
+    console.log(
+      'Review the list below, commit the baseline, and re-run. Growth beyond it now fails.',
+    );
   } else if (UPDATE) {
     // Ratchet: only ever record the smaller number, never grow the budget.
     const shrunk = Math.min(hits.length, baseline.offLadder ?? hits.length);

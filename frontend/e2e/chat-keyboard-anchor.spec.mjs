@@ -59,12 +59,15 @@ function installFakeVisualViewport(page) {
 }
 
 async function seedChat(page, count = 40) {
-  const expectedRows = Array.from({ length: count }, (_, i) => (
-    `History ${i + 1}: ${'content '.repeat(8)}`
-  ));
+  const expectedRows = Array.from(
+    { length: count },
+    (_, i) => `History ${i + 1}: ${'content '.repeat(8)}`,
+  );
   await page.evaluate((n) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '99999999-9999-4999-8999-999999999999' },
+    });
     window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
     document.documentElement.dataset.keyboardOpen = 'false';
@@ -82,13 +85,14 @@ async function seedChat(page, count = 40) {
 async function rowVisualOffset(page, needle) {
   return page.evaluate((text) => {
     const list = document.getElementById('msgList');
-    const row = [...list.querySelectorAll(':scope > .msg')]
-      .find((el) => el.textContent.startsWith(text));
+    const row = [...list.querySelectorAll(':scope > .msg')].find((el) =>
+      el.textContent.startsWith(text),
+    );
     if (!row) return null;
     return Math.round(
-      row.getBoundingClientRect().top
-      - list.getBoundingClientRect().top
-      - (window.visualViewport?.offsetTop || 0),
+      row.getBoundingClientRect().top -
+        list.getBoundingClientRect().top -
+        (window.visualViewport?.offsetTop || 0),
     );
   }, needle);
 }
@@ -116,7 +120,7 @@ async function transcriptState(page) {
       anchorText,
       inset: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset').trim(),
       viewportOffsetTop: Math.round(window.visualViewport?.offsetTop || 0),
-      away: Boolean(window.stateStore.read('_userScrolledAway')),
+      away: Boolean(window.__socratesTestState.ui()._userScrolledAway),
     };
   });
 }
@@ -130,15 +134,17 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('progressive viewport samples keep the composer attached to the rising keyboard', async ({ page }) => {
+test('progressive viewport samples keep the composer attached to the rising keyboard', async ({
+  page,
+}) => {
   await seedChat(page, 8);
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
   await page.waitForTimeout(80);
 
-  const appBottom = await page.evaluate(() => Math.round(
-    document.getElementById('appShell').getBoundingClientRect().bottom,
-  ));
+  const appBottom = await page.evaluate(() =>
+    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom),
+  );
   const desiredInsets = [60, 120, 180, 240];
 
   /* The measured stream owns the timeline through direct 1:1 mirroring:
@@ -148,28 +154,35 @@ test('progressive viewport samples keep the composer attached to the rising keyb
      the keyboard is still rising. We record the painted inset on every
      animation frame while stepping the fake viewport through the stream,
      then assert on the whole trajectory. */
-  const motion = await page.evaluate(async ({ bottom, insets }) => new Promise((resolve) => {
-    const painted = [];
-    let sawFallback = false;
-    let stepIndex = 0;
-    const step = () => {
-      if (stepIndex < insets.length) {
-        window.__fakeViewport.__resize({ height: bottom - insets[stepIndex] });
-        stepIndex += 1;
-        setTimeout(step, 40);
-      }
-    };
-    const sample = () => {
-      painted.push(Number.parseFloat(
-        document.documentElement.style.getPropertyValue('--keyboard-inset'),
-      ) || 0);
-      sawFallback ||= document.documentElement.dataset.keyboardMotion === 'web-fallback-opening';
-      if (painted.length < 30) requestAnimationFrame(sample);
-      else resolve({ painted, sawFallback });
-    };
-    step();
-    requestAnimationFrame(sample);
-  }), { bottom: appBottom, insets: desiredInsets });
+  const motion = await page.evaluate(
+    async ({ bottom, insets }) =>
+      new Promise((resolve) => {
+        const painted = [];
+        let sawFallback = false;
+        let stepIndex = 0;
+        const step = () => {
+          if (stepIndex < insets.length) {
+            window.__fakeViewport.__resize({ height: bottom - insets[stepIndex] });
+            stepIndex += 1;
+            setTimeout(step, 40);
+          }
+        };
+        const sample = () => {
+          painted.push(
+            Number.parseFloat(
+              document.documentElement.style.getPropertyValue('--keyboard-inset'),
+            ) || 0,
+          );
+          sawFallback ||=
+            document.documentElement.dataset.keyboardMotion === 'web-fallback-opening';
+          if (painted.length < 30) requestAnimationFrame(sample);
+          else resolve({ painted, sawFallback });
+        };
+        step();
+        requestAnimationFrame(sample);
+      }),
+    { bottom: appBottom, insets: desiredInsets },
+  );
   const frames = motion.painted;
 
   /* 60px viewport steps are progressive IME samples, not a coarse jump.
@@ -194,9 +207,9 @@ test('progressive viewport samples keep the composer attached to the rising keyb
   /* Attached: once the stream ends the painted inset is already exactly
      the final target — no settle tail. */
   await page.waitForTimeout(400);
-  const settled = await page.evaluate(() => parseFloat(
-    document.documentElement.style.getPropertyValue('--keyboard-inset'),
-  ));
+  const settled = await page.evaluate(() =>
+    parseFloat(document.documentElement.style.getPropertyValue('--keyboard-inset')),
+  );
   expect(settled).toBe(240);
 });
 
@@ -206,29 +219,35 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
   await editor.focus();
   await page.waitForTimeout(80);
 
-  const appBottom = await page.evaluate(() => Math.round(
-    document.getElementById('appShell').getBoundingClientRect().bottom,
-  ));
-  const sampleMotion = (height) => page.evaluate((nextHeight) => new Promise((resolve) => {
-    const samples = [];
-    let count = 0;
-    window.__fakeViewport.__resize({ height: nextHeight });
-    const sample = () => {
-      const root = document.documentElement;
-      const wrap = document.getElementById('composerInputWrap');
-      const bar = document.getElementById('chatInputBar');
-      const rect = bar.getBoundingClientRect();
-      samples.push({
-        inset: Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-inset')) || 0,
-        height: wrap.getBoundingClientRect().height,
-        top: rect.top,
-        open: root.dataset.keyboardOpen,
-      });
-      if (++count < 24) requestAnimationFrame(sample);
-      else resolve(samples);
-    };
-    requestAnimationFrame(sample);
-  }), height);
+  const appBottom = await page.evaluate(() =>
+    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom),
+  );
+  const sampleMotion = (height) =>
+    page.evaluate(
+      (nextHeight) =>
+        new Promise((resolve) => {
+          const samples = [];
+          let count = 0;
+          window.__fakeViewport.__resize({ height: nextHeight });
+          const sample = () => {
+            const root = document.documentElement;
+            const wrap = document.getElementById('composerInputWrap');
+            const bar = document.getElementById('chatInputBar');
+            const rect = bar.getBoundingClientRect();
+            samples.push({
+              inset:
+                Number.parseFloat(getComputedStyle(root).getPropertyValue('--keyboard-inset')) || 0,
+              height: wrap.getBoundingClientRect().height,
+              top: rect.top,
+              open: root.dataset.keyboardOpen,
+            });
+            if (++count < 24) requestAnimationFrame(sample);
+            else resolve(samples);
+          };
+          requestAnimationFrame(sample);
+        }),
+      height,
+    );
 
   const opening = await sampleMotion(appBottom - 240);
   expect(opening.at(-1).open).toBe('true');
@@ -246,9 +265,9 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
   for (const frame of opening.slice(2)) {
     expect(frame.inset).toBe(240);
   }
-  expect(Math.max(...opening.slice(1).map((frame, index) =>
-    frame.height - opening[index].height,
-  ))).toBeLessThan(18);
+  expect(
+    Math.max(...opening.slice(1).map((frame, index) => frame.height - opening[index].height)),
+  ).toBeLessThan(18);
 
   const closing = await sampleMotion(appBottom);
   expect(closing.at(-1).open).toBe('false');
@@ -257,9 +276,9 @@ test('keyboard lift keeps composer geometry on the same continuous timeline', as
     expect(closing[index].height).toBeLessThanOrEqual(closing[index - 1].height + 1);
     expect(closing[index].top).toBeGreaterThanOrEqual(closing[index - 1].top - 2);
   }
-  expect(Math.max(...closing.slice(1).map((frame, index) =>
-    closing[index].height - frame.height,
-  ))).toBeLessThan(18);
+  expect(
+    Math.max(...closing.slice(1).map((frame, index) => closing[index].height - frame.height)),
+  ).toBeLessThan(18);
 });
 
 test('a progressive iOS viewport pan keeps the composer glued without jumps', async ({ page }) => {
@@ -268,62 +287,74 @@ test('a progressive iOS viewport pan keeps the composer glued without jumps', as
   await editor.focus();
   await page.waitForTimeout(80);
 
-  const appBottom = await page.evaluate(() => Math.round(
-    document.getElementById('appShell').getBoundingClientRect().bottom,
-  ));
+  const appBottom = await page.evaluate(() =>
+    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom),
+  );
   /* Real iOS pans in small per-frame scroll events while the height
      animates — ~15px height and ~5px pan per 60Hz frame, not 50px jumps.
      Each step keeps travel − pan continuous, so the layout inset (and the
      composer's visual position) glides instead of teleporting. */
-  const samples = await page.evaluate(async ({ bottom }) => new Promise((resolve) => {
-    const positions = [];
-    let frame = 0;
-    const targets = [
-      { height: bottom - 20, offsetTop: 0 },
-      { height: bottom - 45, offsetTop: 4 },
-      { height: bottom - 70, offsetTop: 9 },
-      { height: bottom - 95, offsetTop: 15 },
-      { height: bottom - 120, offsetTop: 22 },
-      { height: bottom - 145, offsetTop: 30 },
-      { height: bottom - 170, offsetTop: 39 },
-      { height: bottom - 195, offsetTop: 49 },
-      { height: bottom - 215, offsetTop: 59 },
-      { height: bottom - 230, offsetTop: 68 },
-      { height: bottom - 240, offsetTop: 76 },
-    ];
-    const sample = () => {
-      if (frame < targets.length) window.__fakeViewport.__resize(targets[frame]);
-      const root = document.documentElement;
-      const barTop = document.getElementById('chatInputBar').getBoundingClientRect().top;
-      positions.push({
-        visualTop: barTop - window.visualViewport.offsetTop,
-        barTop,
-        offsetTop: window.visualViewport.offsetTop,
-        inset: root.style.getPropertyValue('--keyboard-inset'),
-      });
-      frame += 1;
-      if (frame < 28) requestAnimationFrame(sample);
-      else resolve(positions);
-    };
-    requestAnimationFrame(sample);
-  }), { bottom: appBottom });
+  const samples = await page.evaluate(
+    async ({ bottom }) =>
+      new Promise((resolve) => {
+        const positions = [];
+        let frame = 0;
+        const targets = [
+          { height: bottom - 20, offsetTop: 0 },
+          { height: bottom - 45, offsetTop: 4 },
+          { height: bottom - 70, offsetTop: 9 },
+          { height: bottom - 95, offsetTop: 15 },
+          { height: bottom - 120, offsetTop: 22 },
+          { height: bottom - 145, offsetTop: 30 },
+          { height: bottom - 170, offsetTop: 39 },
+          { height: bottom - 195, offsetTop: 49 },
+          { height: bottom - 215, offsetTop: 59 },
+          { height: bottom - 230, offsetTop: 68 },
+          { height: bottom - 240, offsetTop: 76 },
+        ];
+        const sample = () => {
+          if (frame < targets.length) window.__fakeViewport.__resize(targets[frame]);
+          const root = document.documentElement;
+          const barTop = document.getElementById('chatInputBar').getBoundingClientRect().top;
+          positions.push({
+            visualTop: barTop - window.visualViewport.offsetTop,
+            barTop,
+            offsetTop: window.visualViewport.offsetTop,
+            inset: root.style.getPropertyValue('--keyboard-inset'),
+          });
+          frame += 1;
+          if (frame < 28) requestAnimationFrame(sample);
+          else resolve(positions);
+        };
+        requestAnimationFrame(sample);
+      }),
+    { bottom: appBottom },
+  );
 
   for (let index = 1; index < samples.length; index += 1) {
-    expect(samples[index].visualTop, JSON.stringify(samples)).toBeLessThanOrEqual(samples[index - 1].visualTop + 2);
+    expect(samples[index].visualTop, JSON.stringify(samples)).toBeLessThanOrEqual(
+      samples[index - 1].visualTop + 2,
+    );
   }
-  const largestStep = Math.max(...samples.slice(1).map((value, index) => (
-    Math.abs(value.visualTop - samples[index].visualTop)
-  )));
+  const largestStep = Math.max(
+    ...samples.slice(1).map((value, index) => Math.abs(value.visualTop - samples[index].visualTop)),
+  );
   /* Progressive pan+shrink steps move the visual position by ~25px per
      sample at most; guard against the old 64-112px pan jump while the
      direct follower tracks a fast keyboard. */
   expect(largestStep, JSON.stringify(samples)).toBeLessThan(35);
-  await expect.poll(async () => page.evaluate(() => Number.parseFloat(
-    document.documentElement.style.getPropertyValue('--keyboard-inset'),
-  ))).toBe(164);
+  await expect
+    .poll(async () =>
+      page.evaluate(() =>
+        Number.parseFloat(document.documentElement.style.getPropertyValue('--keyboard-inset')),
+      ),
+    )
+    .toBe(164);
 });
 
-test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({ page }) => {
+test('external keyboard inset keeps a history reader anchored instead of snapping to the bottom', async ({
+  page,
+}) => {
   await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -344,12 +375,14 @@ test('external keyboard inset keeps a history reader anchored instead of snappin
   expect(after.distanceFromBottom).toBeGreaterThan(64);
 });
 
-test('visualViewport keyboard lift follows a pinned reader through open and close', async ({ page }) => {
+test('visualViewport keyboard lift follows a pinned reader through open and close', async ({
+  page,
+}) => {
   await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
   await page.waitForTimeout(200);
 
@@ -361,16 +394,20 @@ test('visualViewport keyboard lift follows a pinned reader through open and clos
      of the lift — the correction is written in the same frame as the
      inset write, so a pinned reader's distance-from-bottom never opens
      up mid-motion. */
-  const liftDistances = await page.evaluate(() => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const distances = [];
-    const sample = () => {
-      distances.push(Math.round(list.scrollHeight - list.scrollTop - list.clientHeight));
-      if (distances.length < 24) requestAnimationFrame(sample); else resolve(distances);
-    };
-    window.__fakeViewport.__resize({ height: 510 });
-    requestAnimationFrame(sample);
-  }));
+  const liftDistances = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const distances = [];
+        const sample = () => {
+          distances.push(Math.round(list.scrollHeight - list.scrollTop - list.clientHeight));
+          if (distances.length < 24) requestAnimationFrame(sample);
+          else resolve(distances);
+        };
+        window.__fakeViewport.__resize({ height: 510 });
+        requestAnimationFrame(sample);
+      }),
+  );
   expect(Math.max(...liftDistances), JSON.stringify(liftDistances)).toBeLessThanOrEqual(4);
   await expect.poll(async () => (await transcriptState(page)).inset).toBe('334px');
   await page.waitForTimeout(400);
@@ -397,7 +434,9 @@ test('visualViewport keyboard lift follows a pinned reader through open and clos
   expect(closed.distanceFromBottom).toBeLessThanOrEqual(4);
 });
 
-test('visualViewport keyboard lift keeps a history reader anchored and never forces the bottom', async ({ page }) => {
+test('visualViewport keyboard lift keeps a history reader anchored and never forces the bottom', async ({
+  page,
+}) => {
   await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -430,7 +469,9 @@ test('visualViewport keyboard lift keeps a history reader anchored and never for
   expect(Math.abs(closed.anchorOffset - before.anchorOffset)).toBeLessThanOrEqual(1);
 });
 
-test('a prompt sent with the keyboard open keeps its top offset when the keyboard closes', async ({ page }) => {
+test('a prompt sent with the keyboard open keeps its top offset when the keyboard closes', async ({
+  page,
+}) => {
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 6_000));
     await route.fulfill({
@@ -452,33 +493,42 @@ test('a prompt sent with the keyboard open keeps its top offset when the keyboar
 
   await page.evaluate(() => window.submitChatMessage('Keep this prompt at the top'));
 
-  const promptOffset = () => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    const users = list.querySelectorAll('.msg-user, .msg.user');
-    const latest = users[users.length - 1];
-    if (!latest) return 9999;
-    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-  });
+  const promptOffset = () =>
+    page.evaluate(() => {
+      const list = document.getElementById('msgList');
+      const users = list.querySelectorAll('.msg-user, .msg.user');
+      const latest = users[users.length - 1];
+      if (!latest) return 9999;
+      return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+    });
   await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
 
   /* Sample the prompt for the whole close motion. Without a reserve that
      tracks the growing transcript, the browser clamps scrollTop and the
      prompt lands hundreds of pixels lower in one frame. */
-  const sampling = page.evaluate(() => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const offsets = [];
-    const deadline = performance.now() + 700;
-    const tick = () => {
-      const users = list.querySelectorAll('.msg-user, .msg.user');
-      const latest = users[users.length - 1];
-      offsets.push(latest
-        ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
-        : null);
-      if (performance.now() > deadline) { resolve(offsets); return; }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }));
+  const sampling = page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const offsets = [];
+        const deadline = performance.now() + 700;
+        const tick = () => {
+          const users = list.querySelectorAll('.msg-user, .msg.user');
+          const latest = users[users.length - 1];
+          offsets.push(
+            latest
+              ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
+              : null,
+          );
+          if (performance.now() > deadline) {
+            resolve(offsets);
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 844 }));
   const samples = (await sampling).filter((value) => value != null);
 
@@ -496,11 +546,12 @@ test('a prompt sent with the keyboard open keeps its top offset when the keyboar
   expect((await transcriptState(page)).distanceFromBottom).toBeGreaterThan(0);
 });
 
-test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }) => {  await seedChat(page);
+test('a wheel gesture during the keyboard lift owns the scroll', async ({ page }) => {
+  await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
   await page.waitForTimeout(200);
 
@@ -554,24 +605,32 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
      the tracked row's visual offset holds on every painted frame — a
      deferred restore would let it drift by the full pan delta for a
      frame. */
-  const panDrift = await page.evaluate((needle) => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const row = [...list.querySelectorAll(':scope > .msg')]
-      .find((el) => el.textContent.startsWith(needle));
-    const offsets = [];
-    const sample = () => {
-      offsets.push(row
-        ? Math.round(
-            row.getBoundingClientRect().top
-            - list.getBoundingClientRect().top
-            - (window.visualViewport?.offsetTop || 0),
-          )
-        : null);
-      if (offsets.length < 12) requestAnimationFrame(sample); else resolve(offsets);
-    };
-    window.__fakeViewport.__resize({ height: 410, offsetTop: 100 });
-    requestAnimationFrame(sample);
-  }), anchoredRow);
+  const panDrift = await page.evaluate(
+    (needle) =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const row = [...list.querySelectorAll(':scope > .msg')].find((el) =>
+          el.textContent.startsWith(needle),
+        );
+        const offsets = [];
+        const sample = () => {
+          offsets.push(
+            row
+              ? Math.round(
+                  row.getBoundingClientRect().top -
+                    list.getBoundingClientRect().top -
+                    (window.visualViewport?.offsetTop || 0),
+                )
+              : null,
+          );
+          if (offsets.length < 12) requestAnimationFrame(sample);
+          else resolve(offsets);
+        };
+        window.__fakeViewport.__resize({ height: 410, offsetTop: 100 });
+        requestAnimationFrame(sample);
+      }),
+    anchoredRow,
+  );
   const panOffsets = panDrift.filter((value) => value != null);
   for (const offset of panOffsets) {
     expect(Math.abs(offset - settledVisual), JSON.stringify(panDrift)).toBeLessThanOrEqual(3);
@@ -590,14 +649,16 @@ test('visual viewport pan compensates a history reader and returns on un-pan', a
   expect(unpanned.distanceFromBottom).toBeGreaterThan(64);
 });
 
-test('layout-viewport compression (Android resizes-content) follows pinned and anchors history', async ({ page }) => {
+test('layout-viewport compression (Android resizes-content) follows pinned and anchors history', async ({
+  page,
+}) => {
   await seedChat(page);
 
   /* Pinned: the layout shrinks like an Android resize-content keyboard. */
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await editor.focus();
@@ -664,8 +725,11 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
       window.__sy = (opts && opts.top) || 0;
     };
   });
-  const settledInset = await page.evaluate(() => Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  const settledInset = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
+  );
 
   await page.evaluate(() => {
     window.__sy = 60;
@@ -675,10 +739,10 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
 
   const during = await page.evaluate(() => ({
     calls: window.__scrollCalls.length,
-    inset: Number.parseFloat(getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-inset')),
-    pan: getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-pan-compensation'),
+    inset: Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
+    pan: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-pan-compensation'),
     phase: document.documentElement.dataset.keyboardPhase,
   }));
   /* No scrollTo fight while the session is live, and the stubbed scroll —
@@ -699,8 +763,9 @@ test('document scroll during an open session is absorbed, not fought', async ({ 
   await page.waitForTimeout(250);
   const overPanned = await page.evaluate(() => ({
     calls: window.__scrollCalls.length,
-    inset: Number.parseFloat(getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-inset')),
+    inset: Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
   }));
   expect(overPanned.calls).toBe(0);
   expect(Math.abs(overPanned.inset - settledInset)).toBeLessThanOrEqual(1);
@@ -745,7 +810,8 @@ test('focus on composer chrome keeps the transcript anchor alive', async ({ page
     open: document.documentElement.dataset.keyboardOpen,
     phase: document.documentElement.dataset.keyboardPhase,
     inset: Number.parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')),
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
   }));
   expect(focused.open).toBe('true');
   expect(focused.phase).toBe('open');
@@ -764,28 +830,35 @@ test('a single empty geometry frame does not dip the composer', async ({ page })
   await editor.focus();
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
-  const settledInset = await page.evaluate(() => Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  const settledInset = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
+  );
   expect(settledInset).toBeGreaterThan(300);
 
   /* A lone zero-height sample — an IME reporting hiccup — is held for one
      tick instead of retargeting the lift to zero. Restore within the tick
      window so the session never sees two consecutive zeros. */
-  const trace = await page.evaluate(() => new Promise((resolve) => {
-    const samples = [];
-    const read = () => {
-      samples.push({
-        inset: Number.parseFloat(getComputedStyle(document.documentElement)
-          .getPropertyValue('--keyboard-inset')),
-        phase: document.documentElement.dataset.keyboardPhase,
-      });
-      if (samples.length < 30) requestAnimationFrame(read);
-      else resolve(samples);
-    };
-    window.__fakeViewport.__resize({ height: 844 });
-    setTimeout(() => window.__fakeViewport.__resize({ height: 510 }), 5);
-    requestAnimationFrame(read);
-  }));
+  const trace = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const samples = [];
+        const read = () => {
+          samples.push({
+            inset: Number.parseFloat(
+              getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+            ),
+            phase: document.documentElement.dataset.keyboardPhase,
+          });
+          if (samples.length < 30) requestAnimationFrame(read);
+          else resolve(samples);
+        };
+        window.__fakeViewport.__resize({ height: 844 });
+        setTimeout(() => window.__fakeViewport.__resize({ height: 510 }), 5);
+        requestAnimationFrame(read);
+      }),
+  );
   const dip = Math.min(...trace.map((s) => s.inset));
   expect(dip).toBeGreaterThan(settledInset - 20);
   for (const s of trace) {
@@ -803,10 +876,14 @@ test('native height hint is a floor, not an override', async ({ page }) => {
      the composer off the screen — the hint is capped against the shell. */
   await page.evaluate(() => window.__socratesKeyboard.notifyNativeKeyboard('show', 2400));
   await page.waitForTimeout(700);
-  const hinted = await page.evaluate(() => Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  const hinted = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
+  );
   const shellBottom = await page.evaluate(() =>
-    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom));
+    Math.round(document.getElementById('appShell').getBoundingClientRect().bottom),
+  );
   expect(hinted).toBeLessThan(shellBottom * 0.68);
   expect(hinted).toBeGreaterThan(shellBottom * 0.5);
 
@@ -814,8 +891,11 @@ test('native height hint is a floor, not an override', async ({ page }) => {
      coverage the composer settles there, not at the native figure. */
   await page.evaluate(() => window.__fakeViewport.__resize({ height: 510 }));
   await page.waitForTimeout(700);
-  const measured = await page.evaluate(() => Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset')));
+  const measured = await page.evaluate(() =>
+    Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
+  );
   expect(Math.abs(measured - 334)).toBeLessThanOrEqual(12);
 
   await page.evaluate(() => {
@@ -824,8 +904,9 @@ test('native height hint is a floor, not an override', async ({ page }) => {
   });
   await page.waitForTimeout(900);
   const closed = await page.evaluate(() => ({
-    inset: Number.parseFloat(getComputedStyle(document.documentElement)
-      .getPropertyValue('--keyboard-inset')),
+    inset: Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+    ),
     phase: document.documentElement.dataset.keyboardPhase,
   }));
   expect(closed.phase).toBe('closed');

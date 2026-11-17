@@ -39,7 +39,10 @@ function spinnerEl(): HTMLDivElement {
   return el;
 }
 
-async function buildSlots(doc: pdfjs.PDFDocumentProxy, pagesEl: HTMLDivElement): Promise<PageSlot[]> {
+async function buildSlots(
+  doc: pdfjs.PDFDocumentProxy,
+  pagesEl: HTMLDivElement,
+): Promise<PageSlot[]> {
   const slots: PageSlot[] = [];
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
     const page = await doc.getPage(pageNumber);
@@ -55,7 +58,11 @@ async function buildSlots(doc: pdfjs.PDFDocumentProxy, pagesEl: HTMLDivElement):
 }
 
 /** Most-visible page drives the toolbar counter. */
-function trackCurrentPage(container: HTMLElement, slots: PageSlot[], callbacks: PreviewEngineCallbacks): () => void {
+function trackCurrentPage(
+  container: HTMLElement,
+  slots: PageSlot[],
+  callbacks: PreviewEngineCallbacks,
+): () => void {
   let scrollFrame = 0;
   const reportPage = () => {
     const box = container.getBoundingClientRect();
@@ -64,7 +71,7 @@ function trackCurrentPage(container: HTMLElement, slots: PageSlot[], callbacks: 
     let bestDistance = Number.POSITIVE_INFINITY;
     slots.forEach((slot, index) => {
       const rect = slot.el.getBoundingClientRect();
-      const distance = Math.abs((rect.top + rect.height / 2) - center);
+      const distance = Math.abs(rect.top + rect.height / 2 - center);
       if (distance < bestDistance) {
         bestDistance = distance;
         best = index + 1;
@@ -150,22 +157,25 @@ function createLayoutController(
     slot.renderedFor = scaleKey();
   };
 
-  const observer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      const slot = slots.find((candidate) => candidate.el === entry.target);
-      if (!slot) continue;
-      if (entry.isIntersecting) renderQueue.add(slot);
-      else renderQueue.delete(slot);
-    }
-    if (renderScheduled || !renderQueue.size) return;
-    renderScheduled = true;
-    requestAnimationFrame(() => {
-      renderScheduled = false;
-      for (const slot of [...renderQueue]) void renderSlot(slot);
-    });
-  }, { root: container, rootMargin: RENDER_MARGIN });
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const slot = slots.find((candidate) => candidate.el === entry.target);
+        if (!slot) continue;
+        if (entry.isIntersecting) renderQueue.add(slot);
+        else renderQueue.delete(slot);
+      }
+      if (renderScheduled || !renderQueue.size) return;
+      renderScheduled = true;
+      requestAnimationFrame(() => {
+        renderScheduled = false;
+        for (const slot of [...renderQueue]) void renderSlot(slot);
+      });
+    },
+    { root: container, rootMargin: RENDER_MARGIN },
+  );
 
-    const resizeObserver = new ResizeObserver(() => {
+  const resizeObserver = new ResizeObserver(() => {
     computeFit();
     relayout();
   });
@@ -183,7 +193,10 @@ function createLayoutController(
       slot?.el.scrollIntoView({ block: 'start' });
     },
     zoomStep(direction: 1 | -1) {
-      zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * (direction === 1 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR)));
+      zoom = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, zoom * (direction === 1 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR)),
+      );
       relayout();
       callbacks.onState({ zoomLabel: `${Math.round(zoom * 100)}%` });
     },

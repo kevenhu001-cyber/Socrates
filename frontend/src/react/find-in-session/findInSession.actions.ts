@@ -1,10 +1,18 @@
 import { installFindInSessionBridge, getFindInSessionSnapshot } from './find.bridge';
 import { runHighlightQuery, navigateNext, navigatePrev, closeHighlights } from './findHighlight';
 import { FIND_BAR_ID, FIND_INPUT_ID } from './findInSession.constants';
-import { getHistoryPagingSnapshot, requestAllOlderHistory } from '../../session/historyPagingState.ts';
+import {
+  getHistoryPagingSnapshot,
+  requestAllOlderHistory,
+} from '../../session/historyPagingState.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
-function publishFind(state: { isOpen: boolean; query: string; matchCount: number; activeIndex: number }): void {
+function publishFind(state: {
+  isOpen: boolean;
+  query: string;
+  matchCount: number;
+  activeIndex: number;
+}): void {
   installFindInSessionBridge().publish(state);
 }
 
@@ -42,16 +50,18 @@ let olderHistorySearch: Promise<number> | null = null;
 function searchOlderHistory(): void {
   if (olderHistorySearch || !getHistoryPagingSnapshot().hasMore) return;
   olderHistorySearch = requestAllOlderHistory();
-  void olderHistorySearch.then((added) => {
-    olderHistorySearch = null;
-    const state = getFindInSessionSnapshot();
-    if (added <= 0 || !state.isOpen || !state.query) return;
-    const result = runHighlightQuery(state.query);
-    publishFind({ isOpen: true, query: state.query, ...result });
-  }).catch((error: unknown) => {
-    olderHistorySearch = null;
-    reportSwallow(error, 'find-in-session.searchOlderHistory', 'expected');
-  });
+  void olderHistorySearch
+    .then((added) => {
+      olderHistorySearch = null;
+      const state = getFindInSessionSnapshot();
+      if (added <= 0 || !state.isOpen || !state.query) return;
+      const result = runHighlightQuery(state.query);
+      publishFind({ isOpen: true, query: state.query, ...result });
+    })
+    .catch((error: unknown) => {
+      olderHistorySearch = null;
+      reportSwallow(error, 'find-in-session.searchOlderHistory', 'expected');
+    });
 }
 
 function publishNavigation(previous: boolean): void {

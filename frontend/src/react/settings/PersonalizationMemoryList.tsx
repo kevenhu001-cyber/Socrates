@@ -32,7 +32,8 @@ export function PersonalizationMemoryList({
             <span className="settings-memory-key">{memory.key}</span>
             <span className="settings-memory-val">{memory.value}</span>
           </div>
-          <Button variant="destructive"
+          <Button
+            variant="destructive"
             size="icon-sm"
             type="button"
             className="settings-memory-del-btn"

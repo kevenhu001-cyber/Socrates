@@ -29,8 +29,10 @@ Use `feature/index.ts` for the public entry instead of `feature.ts` +
   `ChatStreamFrame` is the live SSE frame. Do not call all three "event".
 - One UI layer name: `react/` is React DOM, `packages/ui/` is RN-Web shared
   presentation, `frontend/src/ui/` is legacy DOM adapters (not components).
-- One intelligence-UI name: `openui` for the renderer and grammar; `intui.*`
-  is only an i18n key prefix kept for compatibility.
+- One intelligent-UI vocabulary: `intelligent-ui/` is the feature (the turn UI
+  blocks), `openui/` inside it is the renderer and grammar, and `intui.*` is
+  only an i18n key prefix kept for compatibility. Never write `intelligence`
+  (the noun) in a path or symbol — the adjective is `intelligent`.
 - `native/` means the Android WebView bridge; React Native Web lives in
   `react/rn/`.
 

@@ -21,7 +21,8 @@ async function railMetrics(page) {
     const main = document.querySelector('.main');
     return {
       varValue: getComputedStyle(document.documentElement)
-        .getPropertyValue('--app-sidebar-width').trim(),
+        .getPropertyValue('--app-sidebar-width')
+        .trim(),
       sidebarWidth: Math.round(sidebar.getBoundingClientRect().width),
       mainPadLeft: Math.round(parseFloat(getComputedStyle(main).paddingLeft)),
       collapsed: sidebar.classList.contains('collapsed'),
@@ -100,4 +101,3 @@ test('sidebar resize handle clamps to its min/max range', async ({ page }) => {
   const min = await railAtRest(page, 200);
   expect(min.sidebarWidth).toBe(200);
 });
-

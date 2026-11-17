@@ -29,7 +29,23 @@ export interface SessionRowMenuProps {
 
 declare global {
   interface Window {
-    getRecents?: () => ReadonlyArray<{ id: string; title?: string; topic?: string; updated_at?: number; updatedAt?: number; created_at?: number; createdAt?: number; total_q?: number; totalQ?: number; mode?: string; phase?: string; kind?: string; pinned?: boolean; tags?: string[]; archivedAt?: number | null }>;
+    getRecents?: () => ReadonlyArray<{
+      id: string;
+      title?: string;
+      topic?: string;
+      updated_at?: number;
+      updatedAt?: number;
+      created_at?: number;
+      createdAt?: number;
+      total_q?: number;
+      totalQ?: number;
+      mode?: string;
+      phase?: string;
+      kind?: string;
+      pinned?: boolean;
+      tags?: string[];
+      archivedAt?: number | null;
+    }>;
     getSessionLabel?: (id: string) => string;
     setRecentsSearch?: (q: string) => void;
     openTagEditor?: (id: string, e: MouseEvent) => void;

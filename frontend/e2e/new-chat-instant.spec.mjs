@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -6,31 +6,50 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
    and no wait on an in-flight session save. The conversation that was on
    screen must still be persisted once that earlier save settles. */
 test('new chat switches instantly while a session save is in flight', async ({ page }) => {
-  await page.addInitScript(() => { localStorage.setItem('socrates-appmode', 'chat'); });
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-appmode', 'chat');
+  });
   await mockAuthedApp(page, { lang: 'zh' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   const posted = [];
   let releaseSave;
-  const saveGate = new Promise((resolve) => { releaseSave = resolve; });
+  const saveGate = new Promise((resolve) => {
+    releaseSave = resolve;
+  });
   await page.route('**/api/**/sessions', async (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     const body = route.request().postDataJSON();
     posted.push(body);
     if (posted.length === 1) await saveGate;
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: body.id }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: body.id }),
+    });
   });
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: '导数入门' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'u1', role: 'user', rawText: '什么是导数', html: null }] });
+    window.__socratesTestState.patch({ session: { topic: '导数入门' } });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { messages: [{ clientId: 'u1', role: 'user', rawText: '什么是导数', html: null }] },
+    });
     window.saveCurrentSession();
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [
-      { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
-      { clientId: 'a1', role: 'assistant', rawText: '导数描述变化率。', html: '<p>导数描述变化率。</p>' },
-    ] });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'u1', role: 'user', rawText: '什么是导数', html: null },
+          {
+            clientId: 'a1',
+            role: 'assistant',
+            rawText: '导数描述变化率。',
+            html: '<p>导数描述变化率。</p>',
+          },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
   });
   await expect.poll(() => posted.length).toBe(1);
@@ -40,7 +59,7 @@ test('new chat switches instantly while a session save is in flight', async ({ p
   await expect(page.locator('#topicSetup')).toBeVisible();
   expect(Date.now() - started).toBeLessThan(1500);
   await expect(page.locator('#confirmDialog')).toBeHidden();
-  expect(await page.evaluate(() => window.stateStore.read('messages').length)).toBe(0);
+  expect(await page.evaluate(() => window.__socratesTestState.session().messages.length)).toBe(0);
 
   releaseSave();
   await expect.poll(() => posted.length).toBe(2);
@@ -54,27 +73,49 @@ test('new chat switches instantly while a session save is in flight', async ({ p
      bodies incremental. */
   expect(posted[0].messages.map((m) => m.clientId)).toEqual(['u1']);
   expect(posted[1].messages.map((m) => m.clientId)).toEqual(['a1']);
-  const sentAcrossAllPosts = [...new Set(posted.flatMap((b) => b.messages.map((m) => m.clientId)))].sort();
+  const sentAcrossAllPosts = [
+    ...new Set(posted.flatMap((b) => b.messages.map((m) => m.clientId))),
+  ].sort();
   expect(sentAcrossAllPosts).toEqual(['a1', 'u1']);
 });
 
-
-test('new chat returns from every destination with the same live editor and no reload', async ({ page }) => {
+test('new chat returns from every destination with the same live editor and no reload', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(() => { window.__originalComposer = document.querySelector('.rich-composer-editor'); });
-  for (const [path, view] of [['/plugins','pluginsPanel'], ['/library','libraryPanel'], ['/projects','spacesPanel'], ['/images','imagesPanel'], ['/assistants','assistantsPanel'], ['/sites','sitesPanel'], ['/admin','adminPanel'], ['/exam','examView']]) {
-    await page.evaluate(({ path, view }) => {
-      history.pushState({}, '', path);
-      window.__testActivateMainView(view);
-    }, { path, view });
+  await page.evaluate(() => {
+    window.__originalComposer = document.querySelector('.rich-composer-editor');
+  });
+  for (const [path, view] of [
+    ['/plugins', 'pluginsPanel'],
+    ['/library', 'libraryPanel'],
+    ['/projects', 'spacesPanel'],
+    ['/images', 'imagesPanel'],
+    ['/assistants', 'assistantsPanel'],
+    ['/sites', 'sitesPanel'],
+    ['/admin', 'adminPanel'],
+    ['/exam', 'examView'],
+  ]) {
+    await page.evaluate(
+      ({ path, view }) => {
+        history.pushState({}, '', path);
+        window.__testActivateMainView(view);
+      },
+      { path, view },
+    );
     await page.locator('#newChatBtn').click();
-    if (view === 'examView') await page.getByRole('alertdialog').getByRole('button', { name: 'OK', exact: true }).click();
+    if (view === 'examView')
+      await page.getByRole('alertdialog').getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.locator('#topicSetup')).toBeVisible();
     await expect(page.locator('.rich-composer-editor')).toBeVisible();
     await expect(page).toHaveURL(/\/$/);
-    expect(await page.evaluate(() => document.querySelector('.rich-composer-editor') === window.__originalComposer)).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.querySelector('.rich-composer-editor') === window.__originalComposer,
+      ),
+    ).toBe(true);
   }
   await page.screenshot({ path: 'test-results/new-chat-restored.png' });
 });

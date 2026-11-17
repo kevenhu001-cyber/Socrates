@@ -14,7 +14,8 @@ import {
 
 const ZH_FALLBACKS: Record<string, string> = {
   'consent.title': '我们尊重你的隐私',
-  'consent.message': '我们使用严格必需的 Cookie 来让 Socrates 正常运行。只有在你允许后，我们才会放置非必要 Cookie（例如分析 Cookie）。',
+  'consent.message':
+    '我们使用严格必需的 Cookie 来让 Socrates 正常运行。只有在你允许后，我们才会放置非必要 Cookie（例如分析 Cookie）。',
   'consent.essential': '仅必要 Cookie',
   'consent.accept': '全部接受',
   'consent.learnMore': '隐私政策',
@@ -60,7 +61,8 @@ export function CookieConsent() {
     if (!banner) return;
     const measure = () => {
       const height = banner.getBoundingClientRect().height;
-      if (height > 0) root.style.setProperty('--cookie-consent-space', `${Math.ceil(height + 12)}px`);
+      if (height > 0)
+        root.style.setProperty('--cookie-consent-space', `${Math.ceil(height + 12)}px`);
     };
     measure();
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
@@ -80,28 +82,52 @@ export function CookieConsent() {
   };
 
   return (
-    <div ref={bannerRef} id="socratesCookieConsent" className={`socrates-cookie-consent${authPlacement ? ' socrates-cookie-consent--auth' : ''}`}
-      role="region" aria-label={t('consent.title', 'We respect your privacy')} data-testid="cookie-consent-banner">
+    <div
+      ref={bannerRef}
+      id="socratesCookieConsent"
+      className={`socrates-cookie-consent${authPlacement ? ' socrates-cookie-consent--auth' : ''}`}
+      role="region"
+      aria-label={t('consent.title', 'We respect your privacy')}
+      data-testid="cookie-consent-banner"
+    >
       <strong className="socrates-cookie-consent-title" data-i18n-key="consent.title">
         {t('consent.title', 'We respect your privacy')}
       </strong>
       <p className="socrates-cookie-consent-message" data-i18n-key="consent.message">
-        {t('consent.message', 'We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.')}
+        {t(
+          'consent.message',
+          'We use strictly necessary cookies to make Socrates work. Non-essential cookies (for example analytics) are only placed after you choose to allow them.',
+        )}
       </p>
       <div className="socrates-cookie-consent-actions">
-        <Button variant="secondary" type="button" className="socrates-cookie-consent-btn secondary"
-          data-consent-choice={CONSENT_ESSENTIAL} onClick={() => choose(CONSENT_ESSENTIAL)}>
+        <Button
+          variant="secondary"
+          type="button"
+          className="socrates-cookie-consent-btn secondary"
+          data-consent-choice={CONSENT_ESSENTIAL}
+          onClick={() => choose(CONSENT_ESSENTIAL)}
+        >
           <span data-i18n-key="consent.essential">{t('consent.essential', 'Essential only')}</span>
         </Button>
-        <Button variant="default" type="button" className="socrates-cookie-consent-btn primary"
-          data-consent-choice={CONSENT_ACCEPT} onClick={() => choose(CONSENT_ACCEPT)}>
+        <Button
+          variant="default"
+          type="button"
+          className="socrates-cookie-consent-btn primary"
+          data-consent-choice={CONSENT_ACCEPT}
+          onClick={() => choose(CONSENT_ACCEPT)}
+        >
           <span data-i18n-key="consent.accept">{t('consent.accept', 'Accept all')}</span>
         </Button>
       </div>
-      <a className="socrates-cookie-consent-link" href={privacyUrl}
+      <a
+        className="socrates-cookie-consent-link"
+        href={privacyUrl}
         target={/^https?:/i.test(privacyUrl) ? '_blank' : undefined}
         rel={/^https?:/i.test(privacyUrl) ? 'noopener noreferrer' : undefined}
-        data-i18n-key="consent.learnMore">{t('consent.learnMore', 'Privacy policy')}</a>
+        data-i18n-key="consent.learnMore"
+      >
+        {t('consent.learnMore', 'Privacy policy')}
+      </a>
     </div>
   );
 }

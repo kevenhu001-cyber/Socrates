@@ -3,23 +3,14 @@ import { turnState, shouldQueueChatSend } from './turn/state.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { shouldRefreshSearch } from './webSearchPolicy.ts';
 import { shouldAutoSearchTutor } from '../tutor/policy.ts';
-import { stateStore } from '../state/store.ts';
+import { sessionStore } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import {
-  assembleSendPayload,
-  captureSendInput,
-  commitSendInput,
-} from './send/input.ts';
+import { assembleSendPayload, captureSendInput, commitSendInput } from './send/input.ts';
 import type { CommitSendOptions } from './send/input.ts';
-import {
-  dispatchSendTurn,
-  scheduleSendTurn,
-} from './send/dispatch.ts';
-import {
-  askChatTurn,
-  isWebSearchOn,
-  prefetchStreamingTurn,
-} from './send/runtime.ts';
+import { dispatchSendTurn, scheduleSendTurn } from './send/dispatch.ts';
+import { askChatTurn } from './turn/controller.ts';
+import { prefetchStreamingTurn } from './turn/loadStreamingTurn.ts';
+import { isWebSearchOn } from './send/runtime.ts';
 import { enqueuePrompt } from './promptQueue.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { resetAttachments } from '../attachments/index.ts';
@@ -34,7 +25,7 @@ function noteTypedQuestion(text: string): void {
 }
 
 function refreshTutorWebContext(text: string): void {
-  const topic = stateStore.read('topic');
+  const topic = sessionStore.getState().topic;
   if (!isWebSearchOn() || !topic || !shouldRefreshSearch()) return;
   const query = String(topic) + ' ' + text;
   if (!shouldAutoSearchTutor(query)) return;
@@ -72,7 +63,7 @@ export async function submitChatMessage(
   if (shouldQueueChatSend() && !sendOptions.bypassQueue) {
     const input = captureSendInput(textOverride);
     if (!input || !input.text.trim()) return;
-    const currentSessionId = (stateStore.read('currentSessionId') as string) || null;
+    const currentSessionId = (sessionStore.getState().currentSessionId as string) || null;
     enqueuePrompt({ text: input.text, sessionId: currentSessionId });
     if (input.isComposerSubmit) {
       noteTypedQuestion(input.text);
@@ -111,12 +102,14 @@ export async function submitChatMessage(
 
   refreshTutorWebContext(input.text);
 
-  const dispatch = (): Promise<void> => dispatchSendTurn({
-    text: input.text,
-    chatContent: payload.chatContent,
-    precreatedController: precreatedTurn?.controller || null,
-    options: sendOptions,
-    submitChatMessage,
-  });
+  const dispatch = (): Promise<void> =>
+    dispatchSendTurn({
+      text: input.text,
+      chatContent: payload.chatContent,
+      deepResearchOn: input.deepResearchOn,
+      precreatedController: precreatedTurn?.controller || null,
+      options: sendOptions,
+      submitChatMessage,
+    });
   scheduleSendTurn(dispatch);
 }

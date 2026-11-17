@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { kbBridge, sessionBridge } from '../../store/index.ts';
 import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
 import { showConfirm } from '../../ui/confirm.js';
 import { saveCurrentSession } from '../../session/persistence.ts';
@@ -10,18 +10,23 @@ import type { AppMode } from '../../config/providers.ts';
 
 function activeConversationIsInView() {
   const messageList = document.getElementById('msgList');
-  const hasRealMessages = messageList && Array.from(messageList.children)
-    .some((child) => !child.hasAttribute('data-react-message-list-empty'));
+  const hasRealMessages =
+    messageList &&
+    Array.from(messageList.children).some(
+      (child) => !child.hasAttribute('data-react-message-list-empty'),
+    );
   return hasActiveModeSession({
-    topic: stateStore.read('topic'),
-    knowledgeNodes: stateStore.read('kbNodes'),
-    phase: stateStore.read('phase'),
+    topic: sessionBridge.getSnapshot().topic,
+    knowledgeNodes: kbBridge.getSnapshot().kbNodes,
+    phase: sessionBridge.getSnapshot().phase,
     hasRealMessages,
   });
 }
 
 async function confirmSaveAndReset(nextMode: AppMode) {
-  const nextLabel = translateLifecycleText(nextMode === 'tutor' ? 'tutor.modeTutor' : 'tutor.modeChat');
+  const nextLabel = translateLifecycleText(
+    nextMode === 'tutor' ? 'tutor.modeTutor' : 'tutor.modeChat',
+  );
   const confirmed = await showConfirm(
     translateLifecycleText('confirm.switchMode.title').replace('{mode}', nextLabel),
     translateLifecycleText('confirm.switchMode.msg'),
@@ -31,8 +36,11 @@ async function confirmSaveAndReset(nextMode: AppMode) {
 
   const savePromise = saveCurrentSession();
   if (savePromise) {
-    try { await savePromise; }
-    catch (error) { reportSwallow(error, 'app/lifecycle.toggleAppMode.saveCurrent'); }
+    try {
+      await savePromise;
+    } catch (error) {
+      reportSwallow(error, 'app/lifecycle.toggleAppMode.saveCurrent');
+    }
   }
   const resetSucceeded = await resetApp({ confirmActiveSession: false });
   return resetSucceeded !== false;
@@ -45,8 +53,11 @@ function prepareActiveSessionForModeChange(nextMode: AppMode) {
 
 function persistAndSyncMode(nextMode: AppMode) {
   setAppMode(nextMode);
-  try { localStorage.setItem('socrates-appmode', appMode); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.toggleAppMode'); }
+  try {
+    localStorage.setItem('socrates-appmode', appMode);
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.toggleAppMode');
+  }
   syncAppModeUI();
   syncSidebarForMode();
 }
@@ -59,6 +70,6 @@ export async function toggleAppMode(targetMode: unknown) {
     return;
   }
   const preparation = prepareActiveSessionForModeChange(nextMode);
-  if (preparation && !await preparation) return;
+  if (preparation && !(await preparation)) return;
   persistAndSyncMode(nextMode);
 }

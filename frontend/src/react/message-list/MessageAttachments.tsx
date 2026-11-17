@@ -7,7 +7,17 @@ import type { ChatMessage } from '../types/domain';
 type MessageAttachment = NonNullable<ChatMessage['attachments']>[number];
 
 const PHOTO_ERROR_ICON = (
-  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="36"
+    height="36"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <rect x="3" y="4" width="18" height="16" rx="3" />
     <circle cx="8.5" cy="9.5" r="1.5" />
     <path d="m4 17 4.5-4.5 3 3L15 12l5 5" />
@@ -16,8 +26,7 @@ const PHOTO_ERROR_ICON = (
 );
 
 function isImageAttachment(attachment: MessageAttachment): boolean {
-  return attachment.kind === 'image'
-    || Boolean(attachment.dataUrl?.startsWith('data:image/'));
+  return attachment.kind === 'image' || Boolean(attachment.dataUrl?.startsWith('data:image/'));
 }
 
 function MessageImageAttachment({
@@ -130,25 +139,16 @@ export function MessageAttachments({ attachments }: { attachments: readonly Mess
         const key = `${attachment.id ?? attachment.name ?? 'attachment'}-${index}`;
         const isImage = isImageAttachment(attachment);
 
-        const fileUrl = attachment.fileId
-          ? `/api/v2/files/${attachment.fileId}/raw`
-          : undefined;
+        const fileUrl = attachment.fileId ? `/api/v2/files/${attachment.fileId}/raw` : undefined;
 
         if (isImage) {
-          return (
-            <MessageImageAttachment
-              key={key}
-              attachment={attachment}
-              fileUrl={fileUrl}
-            />
-          );
+          return <MessageImageAttachment key={key} attachment={attachment} fileUrl={fileUrl} />;
         }
 
         const ext = getFileExtension(attachment.name || attachment.docKind || '');
         const size = formatFileSize(attachment.size);
-        const subCaption = legacyPptNotice(attachment)
-          || [ext, size].filter(Boolean).join(' · ')
-          || ext;
+        const subCaption =
+          legacyPptNotice(attachment) || [ext, size].filter(Boolean).join(' · ') || ext;
         const { href, onOpen } = previewTrigger(attachment);
 
         return (

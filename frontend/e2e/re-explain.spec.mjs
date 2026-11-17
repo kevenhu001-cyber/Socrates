@@ -1,11 +1,12 @@
 // e2e/re-explain.spec.mjs — the Re-explain button must branch with a
 // visible re-explain prompt and fire a real turn; cancelling the
 // new-session confirm must not push anything or fire a turn.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-const RE_EXPLAIN_TEXT = 'Please re-explain that from a different angle. Use a different approach, analogy, or teaching method to help me understand better.';
+const RE_EXPLAIN_TEXT =
+  'Please re-explain that from a different angle. Use a different approach, analogy, or teaching method to help me understand better.';
 
 async function bootChat(page, streamBodies) {
   await mockAuthedApp(page);
@@ -20,19 +21,26 @@ async function bootChat(page, streamBodies) {
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Branch repro' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Branch repro' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '55555555-5555-4555-8555-555555555555' },
+    });
     window.__testActivateMainView('chatView');
     window.addMessage('user', 'Explain how derivatives work.');
-    window.addMessage('assistant', 'A derivative measures change: $f\'(x)$.');
+    window.addMessage('assistant', "A derivative measures change: $f'(x)$.");
   });
   await expect(page.locator('#msgList .msg')).toHaveCount(2);
 }
 
 async function requestReExplanation(page) {
-  await page.locator('#msgList .msg.assistant').getByRole('button', { name: 'More actions', exact: true }).click();
-  await page.getByRole('menuitem', { name: 'Re-explain from a different angle', exact: true }).click();
+  await page
+    .locator('#msgList .msg.assistant')
+    .getByRole('button', { name: 'More actions', exact: true })
+    .click();
+  await page
+    .getByRole('menuitem', { name: 'Re-explain from a different angle', exact: true })
+    .click();
   await expect(page.getByRole('alertdialog')).toBeVisible();
 }
 
@@ -45,7 +53,9 @@ test('re-explain sends a visible prompt and streams an answer', async ({ page })
 
   const promptBubble = page.locator('#msgList .msg.user').last();
   await expect(promptBubble.locator('.msg-body')).toHaveText(RE_EXPLAIN_TEXT);
-  await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText('Re-explained answer');
+  await expect(page.locator('#msgList .msg.assistant .msg-body').last()).toContainText(
+    'Re-explained answer',
+  );
   expect(streamBodies.length).toBeGreaterThanOrEqual(1);
   const lastBody = streamBodies[streamBodies.length - 1];
   const lastUser = lastBody.messages.filter((m) => m.role === 'user').pop();
@@ -61,7 +71,9 @@ test('cancelling the re-explain confirm pushes nothing and fires no turn', async
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
 
   const state = await page.evaluate(() => ({
-    userTexts: Array.from(document.querySelectorAll('#msgList .msg.user')).map((u) => (u.querySelector('.msg-body')?.textContent || '').trim()),
+    userTexts: Array.from(document.querySelectorAll('#msgList .msg.user')).map((u) =>
+      (u.querySelector('.msg-body')?.textContent || '').trim(),
+    ),
     msgCount: document.querySelectorAll('#msgList .msg').length,
   }));
   expect(state.userTexts).toEqual(['Explain how derivatives work.']);

@@ -28,24 +28,39 @@ export function ModelsSettingsPane({
   const providerState = useProviderListState();
   const providers = providerConfig.providers.map((provider) => ({
     ...provider,
-    isActive: provider.id === providerConfig.activeId || (!providerConfig.activeId && provider.isBuiltIn),
+    isActive:
+      provider.id === providerConfig.activeId || (!providerConfig.activeId && provider.isBuiltIn),
   }));
   return (
     <div className="settings-pane" hidden={hidden}>
       <h2>{label('模型与语音', 'Models & voice')}</h2>
-      <p>{label(
+      <p>
+        {label(
           '配置对话和图片模型。语音输入使用浏览器麦克风。',
           'Configure chat and image models. Voice input uses your browser microphone.',
-        )}</p>
+        )}
+      </p>
       <section className="settings-section">
         <div className="settings-section-head">
           <h3>{label('连接方式', 'Connection')}</h3>
-          <p>{label('选择 Socrates 是否可以使用你自己的 API 凭据。', 'Choose whether Socrates may use your own API credentials.')}</p>
+          <p>
+            {label(
+              '选择 Socrates 是否可以使用你自己的 API 凭据。',
+              'Choose whether Socrates may use your own API credentials.',
+            )}
+          </p>
         </div>
         <div className="settings-card settings-card--toggle">
           <Field orientation="horizontal">
-            <FieldLabel id="stgToggle" htmlFor={TRACK_ID} className="flex-1">{label('使用外部 API', 'Use External API')}</FieldLabel>
-            <Switch id={TRACK_ID} aria-labelledby="stgToggle" checked={externalApiOn} onCheckedChange={toggleExternalApi} />
+            <FieldLabel id="stgToggle" htmlFor={TRACK_ID} className="flex-1">
+              {label('使用外部 API', 'Use External API')}
+            </FieldLabel>
+            <Switch
+              id={TRACK_ID}
+              aria-labelledby="stgToggle"
+              checked={externalApiOn}
+              onCheckedChange={toggleExternalApi}
+            />
           </Field>
         </div>
       </section>

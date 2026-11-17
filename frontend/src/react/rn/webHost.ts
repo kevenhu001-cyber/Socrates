@@ -62,5 +62,7 @@ export function useDomRowHost(options: DomRowHostOptions): (node: unknown) => vo
       element.removeEventListener('dragend', end);
     };
   }, []);
-  return useCallback((value: unknown) => { node.current = (value as HTMLElement | null) ?? null; }, []);
+  return useCallback((value: unknown) => {
+    node.current = (value as HTMLElement | null) ?? null;
+  }, []);
 }

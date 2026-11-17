@@ -3,7 +3,8 @@
  * live transcript height changes (keyboard, composer, resize), and retire
  * reserves that belong to older turns.
  */
-import { stateStore } from '../../../state/store.ts';
+import { dispatchSession, sessionStore, uiStore } from '../../../store/index.ts';
+import { subscribeLegacyState } from '../../../store/legacyListeners.ts';
 import { publishReactChatRuntime } from '../../../ui/reactBridge.ts';
 import { updateMessageSnapshot } from '../../../ui/messageSnapshot.ts';
 import { writeScrollTop } from '../../../ui/scrollCoordinator.ts';
@@ -71,20 +72,26 @@ export function releaseTurnViewportHold(): void {
   viewportHold = null;
   hold.unsubScrollIntent?.();
   if (hold.observer) {
-    try { hold.observer.disconnect(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts:226');
+    try {
+      hold.observer.disconnect();
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts');
       /* detached list */
     }
   }
   if (hold.onViewportResize) {
-    try { window.removeEventListener('resize', hold.onViewportResize); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts:229');
+    try {
+      window.removeEventListener('resize', hold.onViewportResize);
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts');
       /* no window */
     }
   }
   if (hold.unsubInset) {
-    try { hold.unsubInset(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts:232');
+    try {
+      hold.unsubInset();
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts');
       /* released controller */
     }
   }
@@ -96,7 +103,7 @@ export function releaseTurnViewportHold(): void {
 
 function findAnchorEntry(clientId: string): MessageEntry | null {
   if (!clientId) return null;
-  const stored = stateStore.read('messages') as MessageEntry[];
+  const stored = sessionStore.getState().messages as MessageEntry[];
   for (let i = stored.length - 1; i >= 0; i -= 1) {
     if (stored[i] && stored[i].clientId === clientId) return stored[i];
   }
@@ -145,14 +152,17 @@ function shouldReleaseHold(
   reserve: number,
   holdTargetOffset: number,
 ): boolean {
-  if (!list.isConnected || stateStore.read('_userScrolledAway')) return true;
+  if (!list.isConnected || uiStore.getState()._userScrolledAway) return true;
   if (!promptRow.isConnected || latestUserRow(list) !== promptRow) return true;
   if (!anchorRow || !entry || reserve <= 0) return true;
   if (anchorRow.getBoundingClientRect().height > reserve + 1) return true;
-  const promptTarget = Math.max(0, Math.min(
-    Math.max(0, list.scrollHeight - list.clientHeight),
-    Math.round(promptRow.offsetTop - holdTargetOffset),
-  ));
+  const promptTarget = Math.max(
+    0,
+    Math.min(
+      Math.max(0, list.scrollHeight - list.clientHeight),
+      Math.round(promptRow.offsetTop - holdTargetOffset),
+    ),
+  );
   return list.scrollTop > promptTarget + 24;
 }
 
@@ -208,22 +218,35 @@ function holdTurnViewport(): void {
 function observeTurnViewportRow(el: HTMLElement): void {
   const hold = viewportHold;
   if (!hold || !hold.observer) return;
-  try { hold.observer.observe(el); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts:345');
+  try {
+    hold.observer.observe(el);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts');
     /* detached row */
   }
 }
 
-function observeHoldTargets(observer: ResizeObserver, list: HTMLElement, anchorRow: HTMLElement): void {
-  try { observer.observe(list, { box: 'border-box' }); }
-  catch (_) { try { observer.observe(list); } catch (err) {
-    reportEmptyCatch(err, 'empty catch: chat/turn/anchor/hold.ts:375');
-    /* detached list */
-  } }
+function observeHoldTargets(
+  observer: ResizeObserver,
+  list: HTMLElement,
+  anchorRow: HTMLElement,
+): void {
+  try {
+    observer.observe(list, { box: 'border-box' });
+  } catch (_) {
+    try {
+      observer.observe(list);
+    } catch (err) {
+      reportEmptyCatch(err, 'empty catch: chat/turn/anchor/hold.ts');
+      /* detached list */
+    }
+  }
   /* Watching the answer's own row is what retires the hold the moment the
      answer outgrows its reserve and sticky-bottom resumes. */
-  try { observer.observe(anchorRow); } catch (err) {
-    reportEmptyCatch(err, 'empty catch: chat/turn/anchor/hold.ts:378');
+  try {
+    observer.observe(anchorRow);
+  } catch (err) {
+    reportEmptyCatch(err, 'empty catch: chat/turn/anchor/hold.ts');
     /* detached row */
   }
 }
@@ -252,13 +275,15 @@ export function startTurnViewportHold(
     unsubInset: null,
     unsubScrollIntent: null,
   };
-  const observer = new ResizeObserver(function () { holdTurnViewport(); });
+  const observer = new ResizeObserver(function () {
+    holdTurnViewport();
+  });
   hold.observer = observer;
   viewportHold = hold;
   // A reader gesture must release ownership even when no resize follows.
   // Otherwise the history window remains blocked at its mounted top.
-  hold.unsubScrollIntent = stateStore.subscribe(() => {
-    if (stateStore.read('_userScrolledAway')) releaseTurnViewportHold();
+  hold.unsubScrollIntent = subscribeLegacyState(() => {
+    if (uiStore.getState()._userScrolledAway) releaseTurnViewportHold();
   });
   observeHoldTargets(observer, list, anchorRow);
   /* Resize-observer deliveries for a viewport change land one frame after the
@@ -266,9 +291,13 @@ export function startTurnViewportHold(
      reserve and clamp scrollTop. A discrete viewport resize (window, mobile
      rotation, resize-content keyboard) is announced by `resize` before that
      frame's paint, so correcting here keeps the change off screen. */
-  hold.onViewportResize = function () { holdTurnViewport(); };
-  try { window.addEventListener('resize', hold.onViewportResize); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts:385');
+  hold.onViewportResize = function () {
+    holdTurnViewport();
+  };
+  try {
+    window.addEventListener('resize', hold.onViewportResize);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/turn/anchor/hold.ts');
     /* no window */
   }
   /* The virtual keyboard is tweened into `--keyboard-inset` frame by frame
@@ -276,8 +305,13 @@ export function startTurnViewportHold(
      inside the same write that will be laid out — so the reserve can be
      corrected before that frame paints. */
   try {
-    hold.unsubInset = getKeyboardLift()?.onInset(() => { holdTurnViewport(); }) ?? null;
-  } catch (_) { hold.unsubInset = null; }
+    hold.unsubInset =
+      getKeyboardLift()?.onInset(() => {
+        holdTurnViewport();
+      }) ?? null;
+  } catch (_) {
+    hold.unsubInset = null;
+  }
   if (list.dataset) list.dataset.turnAnchorHold = 'true';
   /* Publish the ownership the mount window, the above-viewport compensation
      and the scroll animations already read. `align` is true only once the
@@ -290,8 +324,6 @@ export function startTurnViewportHold(
   if (align) markTurnViewportOwner(list);
   holdTurnViewport();
 }
-
-
 
 function latestAssistantId(messages: MessageEntry[]): string {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -319,12 +351,16 @@ function retireSpentReserve(
   if (id) {
     const entry = stored.find((candidate) => candidate && candidate.clientId === id);
     if (entry && (entry._turnAnchorMinHeight || entry._turnAnchorMarginTop)) {
-      updateMessageSnapshot(entry, {
-        _turnAnchorMinHeight: undefined,
-        _turnAnchorMarginTop: undefined,
-        _turnAnchorMode: undefined,
-        _turnViewportTarget: undefined,
-      }, true);
+      updateMessageSnapshot(
+        entry,
+        {
+          _turnAnchorMinHeight: undefined,
+          _turnAnchorMarginTop: undefined,
+          _turnAnchorMode: undefined,
+          _turnViewportTarget: undefined,
+        },
+        true,
+      );
     }
     if (entry && entry._supersededStub) {
       /* Hide the spent stub after it has held the layout open. */
@@ -338,43 +374,48 @@ function retireSpentReserve(
 
 function removeRetiredStubMessages(stubIds: string[]): void {
   for (const id of stubIds) {
-    const messages = stateStore.read('messages') as MessageEntry[];
+    const messages = sessionStore.getState().messages as MessageEntry[];
     const index = messages.findIndex((candidate) => candidate && candidate.clientId === id);
     if (index >= 0) {
-      stateStore.dispatch({ type: 'session/remove-message-at', index, clientId: id });
+      dispatchSession({ type: 'session/remove-message-at', index, clientId: id });
     }
   }
 }
 
-export function retireTurnReservesAboveViewport(list: TurnAnchorList | null, clientId: string): void {
+export function retireTurnReservesAboveViewport(
+  list: TurnAnchorList | null,
+  clientId: string,
+): void {
   if (!list) return;
   const listRect = list.getBoundingClientRect();
   const rows = list.querySelectorAll('.turn-viewport-anchor');
-  const stored = stateStore.read('messages') as MessageEntry[];
+  const stored = sessionStore.getState().messages as MessageEntry[];
   const latestId = latestAssistantId(stored);
   const promptRows = list.querySelectorAll('.msg.user');
-  const promptRow = promptRows.length ? promptRows[promptRows.length - 1] as HTMLElement : null;
+  const promptRow = promptRows.length ? (promptRows[promptRows.length - 1] as HTMLElement) : null;
   const promptOffsetBefore = promptRow
     ? promptRow.getBoundingClientRect().top - list.getBoundingClientRect().top
     : null;
   const stubIds: string[] = [];
   let cleared = 0;
   for (let i = 0; i < rows.length; i += 1) {
-    if (retireSpentReserve(
-      list,
-      rows[i] as HTMLElement,
-      stored,
-      clientId,
-      latestId,
-      listRect.bottom,
-      stubIds,
-    )) cleared += 1;
+    if (
+      retireSpentReserve(
+        list,
+        rows[i] as HTMLElement,
+        stored,
+        clientId,
+        latestId,
+        listRect.bottom,
+        stubIds,
+      )
+    )
+      cleared += 1;
   }
   if (!cleared) return;
   if (promptRow && promptOffsetBefore != null) {
-    const drift = promptRow.getBoundingClientRect().top
-      - list.getBoundingClientRect().top
-      - promptOffsetBefore;
+    const drift =
+      promptRow.getBoundingClientRect().top - list.getBoundingClientRect().top - promptOffsetBefore;
     if (Math.abs(drift) > 0.5) {
       suppressScrollPositionIntent(200);
       writeScrollTop(list, Math.max(0, list.scrollTop + drift), 'turn');
@@ -383,4 +424,3 @@ export function retireTurnReservesAboveViewport(list: TurnAnchorList | null, cli
   removeRetiredStubMessages(stubIds);
   publishReactChatRuntime({ type: 'state-synced', reason: 'turn-reserve-retire' });
 }
-

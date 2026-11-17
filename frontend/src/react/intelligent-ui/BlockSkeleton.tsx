@@ -11,8 +11,16 @@ import { i18n } from '../legacy/gateway';
  */
 export function BlockSkeleton({ announce = true }: { announce?: boolean }) {
   return (
-    <div className="intui-block-skeleton" role={announce ? 'status' : undefined} aria-busy={announce || undefined}>
-      <span className="intui-block-skeleton-line skeleton-shimmer" data-width="title" aria-hidden="true" />
+    <div
+      className="intui-block-skeleton"
+      role={announce ? 'status' : undefined}
+      aria-busy={announce || undefined}
+    >
+      <span
+        className="intui-block-skeleton-line skeleton-shimmer"
+        data-width="title"
+        aria-hidden="true"
+      />
       <span className="intui-block-skeleton-line skeleton-shimmer" aria-hidden="true" />
       {announce ? <span className="sr-only">{i18n('common.loading', 'Loading…')}</span> : null}
     </div>
@@ -22,9 +30,16 @@ export function BlockSkeleton({ announce = true }: { announce?: boolean }) {
 /** Suspense fallback with the same shell the loaded block renders in. */
 export function BlockSkeletonShell() {
   return (
-    <div className="intui" role="status" aria-busy="true" aria-label={i18n('common.loading', 'Loading…')}>
+    <div
+      className="intui"
+      role="status"
+      aria-busy="true"
+      aria-label={i18n('common.loading', 'Loading…')}
+    >
       <div className="intui-surface-shell" data-display-mode="inline">
-        <div className="intui-surface-document"><BlockSkeleton announce={false} /></div>
+        <div className="intui-surface-document">
+          <BlockSkeleton announce={false} />
+        </div>
       </div>
     </div>
   );

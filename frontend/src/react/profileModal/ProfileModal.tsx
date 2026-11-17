@@ -48,7 +48,8 @@ function ProfileModal() {
         </div>
         <Separator />
         <div className="profile-actions pt-3">
-          <UiButton variant="outline"
+          <UiButton
+            variant="outline"
             type="button"
             className="w-full"
             data-initial-focus

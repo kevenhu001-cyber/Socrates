@@ -6,10 +6,7 @@ import type { Root } from 'react-dom/client';
 import { t as _t } from '../legacy/gateway.ts';
 import { restingRect } from '../../ui/pressFeedback.ts';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
-import {
-  useMorePopoverDispatch,
-  useMorePopoverSnapshot,
-} from './morePopover.store';
+import { useMorePopoverDispatch, useMorePopoverSnapshot } from './morePopover.store';
 import type { MorePopoverAction } from './types';
 import { preloadSettingsModal } from '../settings/settings.preload.ts';
 
@@ -40,14 +37,49 @@ const SETTINGS_ICON =
    affordance. Plugins, API settings, display/theme, and sign-out live
    in the primary sidebar/footer, so they are intentionally omitted here. */
 const ITEMS: MenuItemSpec[] = [
-  { action: 'skills', labelKey: 'sidebar.nav.skills', labelFallback: 'Skills', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7"/></svg>' },
-  { action: 'images', labelKey: 'sidebar.nav.images', labelFallback: 'Images', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m4 17 5-5 3 3 2-2 6 6"/></svg>' },
-  { action: 'assistants', labelKey: 'sidebar.nav.assistants', labelFallback: 'Assistants', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10h.01M15 10h.01M9 15c2 2 4 2 6 0"/></svg>' },
+  {
+    action: 'skills',
+    labelKey: 'sidebar.nav.skills',
+    labelFallback: 'Skills',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM16.5 13v7M13 16.5h7"/></svg>',
+  },
+  {
+    action: 'images',
+    labelKey: 'sidebar.nav.images',
+    labelFallback: 'Images',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1"/><path d="m4 17 5-5 3 3 2-2 6 6"/></svg>',
+  },
+  {
+    action: 'assistants',
+    labelKey: 'sidebar.nav.assistants',
+    labelFallback: 'Assistants',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10h.01M15 10h.01M9 15c2 2 4 2 6 0"/></svg>',
+  },
   { action: 'exam', labelKey: 'sidebar.nav.exam', labelFallback: 'Exam', icon: EXAM_ICON },
-  { action: 'incognito', labelKey: 'sidebar.nav.incognito', labelFallback: 'Incognito chat', icon: INCOGNITO_ICON },
-  { action: 'display', labelKey: 'sidebar.more.display', labelFallback: 'Display & theme', icon: DISPLAY_ICON },
-  { action: 'settings', labelKey: 'sidebar.more.settings', labelFallback: 'API settings', icon: SETTINGS_ICON },
-  { action: 'shortcuts', labelKey: 'sidebar.more.shortcuts', labelFallback: 'Keyboard shortcuts', icon: SHORTCUTS_ICON },
+  {
+    action: 'incognito',
+    labelKey: 'sidebar.nav.incognito',
+    labelFallback: 'Incognito chat',
+    icon: INCOGNITO_ICON,
+  },
+  {
+    action: 'display',
+    labelKey: 'sidebar.more.display',
+    labelFallback: 'Display & theme',
+    icon: DISPLAY_ICON,
+  },
+  {
+    action: 'settings',
+    labelKey: 'sidebar.more.settings',
+    labelFallback: 'API settings',
+    icon: SETTINGS_ICON,
+  },
+  {
+    action: 'shortcuts',
+    labelKey: 'sidebar.more.shortcuts',
+    labelFallback: 'Keyboard shortcuts',
+    icon: SHORTCUTS_ICON,
+  },
 ];
 
 function i18n(key: string, fallback: string): string {
@@ -55,7 +87,13 @@ function i18n(key: string, fallback: string): string {
   return v !== key ? v : fallback;
 }
 
-function MenuItem({ spec, onPick }: { spec: MenuItemSpec; onPick: (action: MorePopoverAction) => void }) {
+function MenuItem({
+  spec,
+  onPick,
+}: {
+  spec: MenuItemSpec;
+  onPick: (action: MorePopoverAction) => void;
+}) {
   const label = i18n(spec.labelKey, spec.labelFallback);
   const className = spec.danger
     ? 'sidebar-more-item sidebar-more-item-danger'

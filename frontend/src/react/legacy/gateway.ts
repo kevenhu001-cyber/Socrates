@@ -52,11 +52,14 @@ export function setLegacyActions(actions: LegacyActions): void {
 
 function resolveBridge(): LegacyActions {
   if (_bridge) return _bridge;
-  const b = typeof window !== 'undefined' ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy : undefined;
+  const b =
+    typeof window !== 'undefined'
+      ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy
+      : undefined;
   if (!b) {
     throw new Error(
       '[legacy-gateway] window.__socratesLegacy not initialized. ' +
-      'Ensure app/legacyBridge.ts is imported before React hydrates.',
+        'Ensure app/legacyBridge.ts is imported before React hydrates.',
     );
   }
   _bridge = b;
@@ -78,7 +81,11 @@ export function getLegacyActions(): LegacyActions {
  */
 export function getLegacyActionsOrNull(): LegacyActions | null {
   if (_bridge) return _bridge;
-  return (typeof window !== 'undefined' ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy : undefined) ?? null;
+  return (
+    (typeof window !== 'undefined'
+      ? (window as Window & { __socratesLegacy?: LegacyActions }).__socratesLegacy
+      : undefined) ?? null
+  );
 }
 
 /**
@@ -165,9 +172,7 @@ export function isWebSearchOn(): boolean {
 /** Active extension mode selected in the legacy template system, if any. */
 export function getActiveTemplateExtensionKey(): string | null {
   const template = standaloneWindow()._activeTemplate;
-  return template && typeof template.extensionKey === 'string'
-    ? template.extensionKey
-    : null;
+  return template && typeof template.extensionKey === 'string' ? template.extensionKey : null;
 }
 
 /** Legacy deep-research toggle used by the composer tools menu. */

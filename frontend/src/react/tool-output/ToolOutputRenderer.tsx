@@ -27,11 +27,7 @@ export function ToolOutputRenderer({ output, host }: ToolOutputRendererProps) {
     default:
       return null;
   }
-  return (
-    <OutputErrorBoundary outputId={output.id}>
-      {content}
-    </OutputErrorBoundary>
-  );
+  return <OutputErrorBoundary outputId={output.id}>{content}</OutputErrorBoundary>;
 }
 
 export default ToolOutputRenderer;

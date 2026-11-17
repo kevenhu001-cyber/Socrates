@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -12,29 +12,41 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   await expect(page.locator('#topicTitle')).toBeVisible();
   await expect(topic.locator('#composerMicBtn')).toBeVisible();
 
-  const measure = async (wrapSelector, controls) => page.evaluate(({ wrapSelector: selector, controls: ids }) => {
-    const rect = (target) => {
-      const box = document.querySelector(target)?.getBoundingClientRect();
-      const controlStyle = document.querySelector(target) ? getComputedStyle(document.querySelector(target)) : null;
-      return box ? {
-        left: Math.round(box.left),
-        top: Math.round(box.top),
-        width: Math.round(box.width),
-        height: Math.round(box.height),
-        background: controlStyle?.backgroundColor,
-      } : null;
-    };
-    const style = document.querySelector(selector) ? getComputedStyle(document.querySelector(selector)) : null;
-    return {
-      wrap: rect(selector),
-      radius: style?.borderRadius,
-      background: style?.backgroundColor,
-      controls: ids.map(rect),
-    };
-  }, { wrapSelector, controls });
+  const measure = async (wrapSelector, controls) =>
+    page.evaluate(
+      ({ wrapSelector: selector, controls: ids }) => {
+        const rect = (target) => {
+          const box = document.querySelector(target)?.getBoundingClientRect();
+          const controlStyle = document.querySelector(target)
+            ? getComputedStyle(document.querySelector(target))
+            : null;
+          return box
+            ? {
+                left: Math.round(box.left),
+                top: Math.round(box.top),
+                width: Math.round(box.width),
+                height: Math.round(box.height),
+                background: controlStyle?.backgroundColor,
+              }
+            : null;
+        };
+        const style = document.querySelector(selector)
+          ? getComputedStyle(document.querySelector(selector))
+          : null;
+        return {
+          wrap: rect(selector),
+          radius: style?.borderRadius,
+          background: style?.backgroundColor,
+          controls: ids.map(rect),
+        };
+      },
+      { wrapSelector, controls },
+    );
 
   const landing = await measure('#composerInputWrap', [
-    '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
+    '#composerToolsBtn',
+    '#composerMicBtn',
+    '#composerPrimaryBtn',
   ]);
   /* RN-7: the phone question box is the site ask-box (ComposerFrame,
      compact): one white sheet with 28px corners on the inner frame, the
@@ -53,10 +65,15 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   expect(landing.controls[2]?.width).toBe(36);
   expect(landing.controls[2]?.height).toBe(36);
   expect(landing.controls[2]?.background).not.toBe('rgba(0, 0, 0, 0)');
-  expect(Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0))).toBeLessThanOrEqual(4);
+  expect(
+    Math.abs((landing.controls[0]?.top ?? 0) - (landing.controls[2]?.top ?? 0)),
+  ).toBeLessThanOrEqual(4);
   expect((landing.controls[0]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[1]?.left ?? 0);
   expect((landing.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(landing.controls[2]?.left ?? 0);
-  await page.screenshot({ path: 'test-results/socrates-mobile-unified-landing.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/socrates-mobile-unified-landing.png',
+    fullPage: true,
+  });
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
@@ -65,7 +82,9 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   await expect(page.locator('#composerInputWrap')).toBeVisible();
 
   const conversation = await measure('#composerInputWrap', [
-    '#composerToolsBtn', '#composerMicBtn', '#composerPrimaryBtn',
+    '#composerToolsBtn',
+    '#composerMicBtn',
+    '#composerPrimaryBtn',
   ]);
   /* Same single-row capsule height and chrome on both surfaces; the
      horizontal inset differs because the landing column owns 12px page
@@ -76,33 +95,47 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   expect(conversation.controls[0]?.width).toBe(36);
   expect(conversation.controls[1]?.width).toBe(36);
   expect(conversation.controls[2]?.width).toBe(36);
-  expect((conversation.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(conversation.controls[2]?.left ?? 0);
-  await page.screenshot({ path: 'test-results/socrates-mobile-unified-composer.png', fullPage: true });
+  expect((conversation.controls[1]?.left ?? 0) + 36).toBeLessThanOrEqual(
+    conversation.controls[2]?.left ?? 0,
+  );
+  await page.screenshot({
+    path: 'test-results/socrates-mobile-unified-composer.png',
+    fullPage: true,
+  });
 });
 
 /* This visual regression deliberately uses mockAuthedApp: browser coverage
    must exercise the post-login shell without depending on a real account. */
-test('mobile composer keeps model selector and reference controls discoverable', async ({ page }) => {
+test('mobile composer keeps model selector and reference controls discoverable', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAuthedApp(page, {
     lang: 'zh',
-    apiKeys: { providers: [{
-      id: 'luna',
-      label: '5.6 Luna',
-      model: 'luna-1',
-      url: 'https://models.example.test/v1',
-      isMultimodal: false,
-      hasKey: true,
-      isActive: true,
-    }], activeId: 'luna' },
+    apiKeys: {
+      providers: [
+        {
+          id: 'luna',
+          label: '5.6 Luna',
+          model: 'luna-1',
+          url: 'https://models.example.test/v1',
+          isMultimodal: false,
+          hasKey: true,
+          isActive: true,
+        },
+      ],
+      activeId: 'luna',
+    },
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Mobile reference check' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Mobile reference check' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '66666666-6666-4666-8666-666666666666' },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
@@ -132,7 +165,11 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(effort.locator('[data-effort-value]')).toHaveText('中');
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
-    window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
+    window.dispatchEvent(
+      new CustomEvent('socrates:chat-preferences', {
+        detail: { effort: 'high', speed: 'standard' },
+      }),
+    );
   });
   await expect(effort).toBeVisible();
   await expect(effort.locator('[data-effort-value]')).toHaveText('高');
@@ -141,10 +178,14 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await expect(composer).toHaveClass(/composer-focused/);
   await expect(effort).toBeVisible();
 
-  await page.evaluate(() => { document.documentElement.dataset.keyboardOpen = 'true'; });
+  await page.evaluate(() => {
+    document.documentElement.dataset.keyboardOpen = 'true';
+  });
   /* Keyboard open keeps the same two-row capsule; only actual
      multiline content increases its height. */
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(90);
+  await expect
+    .poll(async () => (await composer.boundingBox())?.height ?? 0)
+    .toBeLessThanOrEqual(90);
   const rows = await page.evaluate(() => {
     const rect = (selector) => {
       const node = document.querySelector(selector);
@@ -180,7 +221,10 @@ test('mobile composer keeps model selector and reference controls discoverable',
   const popBox = await pop.boundingBox();
   const triggerBox = await effort.locator('#effortTrigger').boundingBox();
   expect(popBox?.y ?? 0).toBeLessThan(triggerBox?.y ?? 0);
-  await page.screenshot({ path: 'test-results/socrates-mobile-composer-reference.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/socrates-mobile-composer-reference.png',
+    fullPage: true,
+  });
 });
 
 test('desktop configuration reuses the same content in an anchored popover', async ({ page }) => {
@@ -202,7 +246,9 @@ test('desktop configuration reuses the same content in an anchored popover', asy
   await pop.getByRole('button', { name: /速度/ }).click();
   await expect(pop.getByRole('option', { name: /快速/ })).toBeVisible();
   await pop.getByRole('option', { name: /快速/ }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-response-speed'))).toBe('fast');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-response-speed')))
+    .toBe('fast');
 
   await pop.getByRole('button', { name: /思考强度/ }).click();
   const slider = pop.locator('input[type="range"]');
@@ -214,7 +260,9 @@ test('desktop configuration reuses the same content in an anchored popover', asy
     setter.call(node, '3');
     node.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort')))
+    .toBe('high');
 
   /* Escape backs out of the slider sub-view first, then dismisses. */
   await page.keyboard.press('Escape');

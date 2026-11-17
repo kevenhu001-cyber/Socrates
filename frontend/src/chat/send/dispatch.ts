@@ -1,12 +1,7 @@
 import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { dispatchTutorTurn } from './tutorFlow.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
-import {
-  askChatTurn,
-  getAppMode,
-  isDeepResearchOn,
-  reportTurnFailure,
-} from './runtime.ts';
+import { askChatTurn } from '../turn/controller.ts';
+import { getAppMode, reportTurnFailure } from './runtime.ts';
 import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
 import type { StreamingTurnController } from '../turn/state.ts';
 
@@ -14,12 +9,17 @@ import type { StreamingTurnController } from '../turn/state.ts';
 export interface DispatchSendTurnInput {
   text: string;
   chatContent: unknown;
+  deepResearchOn: boolean;
   precreatedController?: StreamingTurnController | null;
   options?: unknown;
   submitChatMessage?: unknown;
 }
 
-async function runChatTurn(text: string, chatContent: unknown, precreatedController?: StreamingTurnController | null): Promise<void> {
+async function runChatTurn(
+  text: string,
+  chatContent: unknown,
+  precreatedController?: StreamingTurnController | null,
+): Promise<void> {
   try {
     await askChatTurn(text, chatContent, precreatedController);
   } catch (error) {
@@ -31,15 +31,12 @@ async function runChatTurn(text: string, chatContent: unknown, precreatedControl
 export async function dispatchSendTurn({
   text,
   chatContent,
+  deepResearchOn,
   precreatedController,
   options,
   submitChatMessage,
 }: DispatchSendTurnInput): Promise<void> {
-  if (isDeepResearchOn() && text) {
-    if (precreatedController) {
-      try { precreatedController.abort(); }
-      catch (error) { reportSwallow(error, 'sendPipeline.deepResearch.abortPrecreated'); }
-    }
+  if (deepResearchOn && text) {
     const { startDeepResearch } = await import('../../agent/researchAgent.ts');
     await startDeepResearch(text);
     return;

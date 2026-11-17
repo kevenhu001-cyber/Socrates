@@ -19,7 +19,9 @@ export function preloadAssistantTurn(): Promise<typeof import('./AssistantTurn')
   return turnModule;
 }
 
-const AssistantTurnImpl = lazy(() => preloadAssistantTurn().then(({ AssistantTurn }) => ({ default: AssistantTurn })));
+const AssistantTurnImpl = lazy(() =>
+  preloadAssistantTurn().then(({ AssistantTurn }) => ({ default: AssistantTurn })),
+);
 
 export function LazyAssistantTurn(props: AssistantTurnProps) {
   /* No stand-in markup: the stored HTML and the turn renderer use different

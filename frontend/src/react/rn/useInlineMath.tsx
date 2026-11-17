@@ -16,11 +16,21 @@ export type InlineTextRenderer = (text: string, part: string) => ReactNode;
 export function useInlineMath(): InlineTextRenderer {
   const [revision, setRevision] = useState(0);
   useEffect(() => onKatexReady(() => setRevision((value) => value + 1)), []);
-  return useCallback<InlineTextRenderer>((text, part) => {
-    const html = renderInlineMathHtml(text);
-    if (html === null) return text;
-    return <span className="math-inline" data-part={part} data-math-rev={revision} dangerouslySetInnerHTML={{ __html: html }} />;
-  }, [revision]);
+  return useCallback<InlineTextRenderer>(
+    (text, part) => {
+      const html = renderInlineMathHtml(text);
+      if (html === null) return text;
+      return (
+        <span
+          className="math-inline"
+          data-part={part}
+          data-math-rev={revision}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    },
+    [revision],
+  );
 }
 
 /** Shared rich inline text for DOM cards, including lazy KaTeX refresh. */

@@ -24,8 +24,9 @@ const CALLBACK_BY_EVENT: Record<string, string> = Object.freeze({
 
 /* The cast stands in for `vite/client` types, which this package does not
    pull in; non-Vite contexts (vitest) leave `env` undefined. */
-const DEV = ((typeof import.meta !== 'undefined'
-  && (import.meta as { env?: { DEV?: boolean } }).env?.DEV) === true);
+const DEV =
+  (typeof import.meta !== 'undefined' && (import.meta as { env?: { DEV?: boolean } }).env?.DEV) ===
+  true;
 
 /** What the transport hands the frame processor. */
 export interface StreamProcessorContext {
@@ -46,8 +47,14 @@ interface ProcessorState {
 
 function warnBadFrame(eventName: string, error: unknown): void {
   if (!DEV) return;
-  try { console.warn('[stream] failed to handle ' + eventName + ' frame:', error && (error as Error).message || error); }
-  catch (caught) { reportSwallow(caught, 'chat/streamFrameProcessor.warnBadFrame'); }
+  try {
+    console.warn(
+      '[stream] failed to handle ' + eventName + ' frame:',
+      (error && (error as Error).message) || error,
+    );
+  } catch (caught) {
+    reportSwallow(caught, 'chat/streamFrameProcessor.warnBadFrame');
+  }
 }
 
 /* Keep the same error shape for request failures and structured SSE errors. */
@@ -88,16 +95,20 @@ function dispatchCallbackEvent(
   eventName: string | null,
   dataParts: string[],
 ): boolean {
-  if (!eventName || !Object.prototype.hasOwnProperty.call(CALLBACK_BY_EVENT, eventName)) return false;
+  if (!eventName || !Object.prototype.hasOwnProperty.call(CALLBACK_BY_EVENT, eventName))
+    return false;
   if (eventName !== 'turn_activity' && eventName !== 'turn_event') state.semanticActivity = true;
-  const callback = context.opts
-    && (context.opts as Record<string, unknown>)[CALLBACK_BY_EVENT[eventName]!];
+  const callback =
+    context.opts && (context.opts as Record<string, unknown>)[CALLBACK_BY_EVENT[eventName]!];
   if (typeof callback === 'function' && dataParts.length) {
     /* A tool row's text offset must include visible text held for a possible
        split <think> opening tag. */
     if (eventName === 'tool_use') state.thinkScanner.flushVisibleTail();
-    try { (callback as (payload: unknown) => void)(JSON.parse(dataParts.join('\n'))); }
-    catch (error) { warnBadFrame(eventName, error); }
+    try {
+      (callback as (payload: unknown) => void)(JSON.parse(dataParts.join('\n')));
+    } catch (error) {
+      warnBadFrame(eventName, error);
+    }
   }
   return true;
 }
@@ -111,7 +122,9 @@ function handleTurnBound(context: StreamProcessorContext, dataParts: string[]): 
     if (context.opts && typeof context.opts.onTurnBound === 'function') {
       (context.opts.onTurnBound as (turnId: string) => void)(turn.turnId);
     }
-  } catch (error) { warnBadFrame('turn_bound', error); }
+  } catch (error) {
+    warnBadFrame('turn_bound', error);
+  }
 }
 
 function handlePreferenceFallback(dataParts: string[]): void {
@@ -119,13 +132,19 @@ function handlePreferenceFallback(dataParts: string[]): void {
   try {
     const fallback = JSON.parse(dataParts.join('\n'));
     if (fallback && fallback.preference === 'response_speed') notifySpeedFallbackOnce();
-  } catch (error) { warnBadFrame('preference_fallback', error); }
+  } catch (error) {
+    warnBadFrame('preference_fallback', error);
+  }
 }
 
 function handleStreamErrorEvent(state: ProcessorState, dataParts: string[]): void {
   try {
     const error = JSON.parse(dataParts.join('\n'));
-    state.streamError = makeStreamError(error.error || error.message || JSON.stringify(error), error.status, error);
+    state.streamError = makeStreamError(
+      error.error || error.message || JSON.stringify(error),
+      error.status,
+      error,
+    );
   } catch (_) {
     state.streamError = makeStreamError(dataParts.join(' ').slice(0, 200));
   }
@@ -152,24 +171,43 @@ function handleControlEvent(
   return false;
 }
 
-function emitReasoning(state: ProcessorState, context: StreamProcessorContext, reasoning: unknown): void {
+function emitReasoning(
+  state: ProcessorState,
+  context: StreamProcessorContext,
+  reasoning: unknown,
+): void {
   if (typeof reasoning !== 'string' || !reasoning.length) return;
   state.semanticActivity = true;
   if (typeof context.onThinking !== 'function') return;
-  try { context.onThinking(reasoning); }
-  catch (error) { reportSwallow(error, 'chat/streamFrameProcessor.reasoning'); }
+  try {
+    context.onThinking(reasoning);
+  } catch (error) {
+    reportSwallow(error, 'chat/streamFrameProcessor.reasoning');
+  }
 }
 
 function warnMissingThinkingCallback(state: ProcessorState, context: StreamProcessorContext): void {
-  if (state.hasWarnedMissingThinking || typeof context.onThinking === 'function'
-      || (!state.thinkScanner.isOpen && !state.thinkScanner.hasPendingThought)) return;
+  if (
+    state.hasWarnedMissingThinking ||
+    typeof context.onThinking === 'function' ||
+    (!state.thinkScanner.isOpen && !state.thinkScanner.hasPendingThought)
+  )
+    return;
   state.hasWarnedMissingThinking = true;
   try {
-    console.warn('[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).');
-  } catch (error) { reportSwallow(error, 'chat/streamFrameProcessor.missingThinkingCallback'); }
+    console.warn(
+      '[API stream] inline <think> detected but caller did not provide onThinking; thinking pill will not light up. Pass an onThinking callback in callAPIStream(...,onThinking,opts).',
+    );
+  } catch (error) {
+    reportSwallow(error, 'chat/streamFrameProcessor.missingThinkingCallback');
+  }
 }
 
-function emitVisibleDelta(state: ProcessorState, context: StreamProcessorContext, delta: unknown): void {
+function emitVisibleDelta(
+  state: ProcessorState,
+  context: StreamProcessorContext,
+  delta: unknown,
+): void {
   if (typeof delta !== 'string' || !delta.length) return;
   state.semanticActivity = true;
   state.thinkScanner.push(delta);
@@ -183,17 +221,17 @@ function recordTruncatedStreamError(state: ProcessorState, payload: string): voi
   }
 }
 
-function applyMessageError(state: ProcessorState, message: Record<string, unknown> | null): boolean {
+function applyMessageError(
+  state: ProcessorState,
+  message: Record<string, unknown> | null,
+): boolean {
   const messageError = message && message.error;
   if (!messageError) return false;
-  const detail = typeof messageError === 'string'
-    ? messageError
-    : ((messageError as { message?: string })?.message || 'upstream error');
-  state.streamError = makeStreamError(
-    detail,
-    message?.status,
-    message,
-  );
+  const detail =
+    typeof messageError === 'string'
+      ? messageError
+      : (messageError as { message?: string })?.message || 'upstream error';
+  state.streamError = makeStreamError(detail, message?.status, message);
   return true;
 }
 
@@ -208,13 +246,21 @@ function firstChoiceDelta(message: Record<string, unknown> | null): Record<strin
 function reasoningText(delta: Record<string, unknown> | null): string {
   const value = delta?.reasoning_content ?? delta?.reasoning ?? delta?.thinking;
   if (typeof value === 'string') return value;
-  if (value && typeof value === 'object' && typeof (value as { text?: unknown }).text === 'string') {
+  if (
+    value &&
+    typeof value === 'object' &&
+    typeof (value as { text?: unknown }).text === 'string'
+  ) {
     return (value as { text: string }).text;
   }
   return '';
 }
 
-function emitJsonDelta(state: ProcessorState, context: StreamProcessorContext, payload: string): void {
+function emitJsonDelta(
+  state: ProcessorState,
+  context: StreamProcessorContext,
+  payload: string,
+): void {
   let message: Record<string, unknown> | null;
   try {
     message = JSON.parse(payload);
@@ -230,7 +276,11 @@ function emitJsonDelta(state: ProcessorState, context: StreamProcessorContext, p
   emitVisibleDelta(state, context, delta && delta.content);
 }
 
-function processDataPayload(state: ProcessorState, context: StreamProcessorContext, payload: string): void {
+function processDataPayload(
+  state: ProcessorState,
+  context: StreamProcessorContext,
+  payload: string,
+): void {
   if (!payload || payload === '[DONE]' || payload === '__FORMATTED__') return;
 
   /* The final server-rendered response is an object with an actual string
@@ -243,7 +293,9 @@ function processDataPayload(state: ProcessorState, context: StreamProcessorConte
         state.semanticActivity = true;
         return;
       }
-    } catch (error) { reportSwallow(error, 'chat/streamFrameProcessor.formattedHtmlProbe'); }
+    } catch (error) {
+      reportSwallow(error, 'chat/streamFrameProcessor.formattedHtmlProbe');
+    }
   }
   emitJsonDelta(state, context, payload);
 }
@@ -272,18 +324,33 @@ export function createStreamFrameProcessor(context: StreamProcessorContext) {
   state.thinkScanner = createInlineThinkScanner({
     onVisibleText(text: string) {
       state.full += text;
-      try { if (context.onDelta) context.onDelta(text, state.full); }
-      catch (error) { console.warn('[API stream] onDelta threw:', error && (error as Error).message); }
+      try {
+        if (context.onDelta) context.onDelta(text, state.full);
+      } catch (error) {
+        console.warn('[API stream] onDelta threw:', error && (error as Error).message);
+      }
     },
     onThinking: context.onThinking,
   });
 
   return {
-    processFrame(frame: string) { processFrame(state, context, frame); },
-    finish() { finishFrame(state); },
-    get full() { return state.full; },
-    get formattedHtml() { return state.formattedHtml; },
-    get semanticActivity() { return state.semanticActivity; },
-    get streamError() { return state.streamError; },
+    processFrame(frame: string) {
+      processFrame(state, context, frame);
+    },
+    finish() {
+      finishFrame(state);
+    },
+    get full() {
+      return state.full;
+    },
+    get formattedHtml() {
+      return state.formattedHtml;
+    },
+    get semanticActivity() {
+      return state.semanticActivity;
+    },
+    get streamError() {
+      return state.streamError;
+    },
   };
 }

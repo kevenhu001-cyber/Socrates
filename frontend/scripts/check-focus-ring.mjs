@@ -68,7 +68,8 @@ const SHADOW_EXEMPTIONS = [
   { match: /#mainContent/, why: 'scroll surface, not a control' },
   { match: /\.sidebar-resize-handle/, why: '10px handle draws the ring inward at 1px' },
   {
-    match: /workspace-search-field input|plugin-directory-search input|sidebar-search input|rich-composer-editor/,
+    match:
+      /workspace-search-field input|plugin-directory-search input|sidebar-search input|rich-composer-editor/,
     why: 'the container carries the focus treatment',
   },
   {
@@ -85,18 +86,26 @@ function stripComments(text) {
 }
 
 /* Extract the body of a top-level rule whose selector matches. */
+/* Attribute selectors may be written with either quote style; normalize the
+ * quotes inside `[...]` so the selectors this guard looks for match
+ * regardless of how the stylesheet was formatted. */
+function normalizeAttributeQuotes(css) {
+  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replace(/'/g, '"'));
+}
+
 function ruleBody(css, selector) {
+  const normalized = normalizeAttributeQuotes(css);
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp('(^|[}\\n])\\s*' + escaped + '\\s*\\{', 'm');
-  const match = pattern.exec(css);
+  const match = pattern.exec(normalized);
   if (!match) return null;
-  const start = css.indexOf('{', match.index);
+  const start = normalized.indexOf('{', match.index);
   let depth = 0;
-  for (let i = start; i < css.length; i += 1) {
-    if (css[i] === '{') depth += 1;
-    else if (css[i] === '}') {
+  for (let i = start; i < normalized.length; i += 1) {
+    if (normalized[i] === '{') depth += 1;
+    else if (normalized[i] === '}') {
       depth -= 1;
-      if (depth === 0) return css.slice(start + 1, i);
+      if (depth === 0) return normalized.slice(start + 1, i);
     }
   }
   return null;
@@ -204,12 +213,18 @@ function walkCss(dir) {
 
 /* Split a selector list into its individual selectors. */
 function selectorParts(selector) {
-  return selector.split(',').map((part) => part.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  return selector
+    .split(',')
+    .map((part) => part.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
 }
 
 /* An outline value that paints nothing. */
 function isInvisibleOutline(value) {
-  const v = value.replace(/!\s*important/gi, '').trim().toLowerCase();
+  const v = value
+    .replace(/!\s*important/gi, '')
+    .trim()
+    .toLowerCase();
   if (v === 'none' || v === '0' || v === '0px') return true;
   if (v.includes('transparent')) return true;
   /* A colour-mix with a transparent component paints nothing either. */
@@ -227,19 +242,28 @@ function main() {
   if (!focusShadow) {
     failures.push('themes.css: --ui-focus-shadow is missing — the focus ring has no token');
   } else {
-    const layers = focusShadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter(Boolean);
+    const layers = focusShadow
+      .split(/,(?![^(]*\))/)
+      .map((part) => part.trim())
+      .filter(Boolean);
     if (layers.length !== 2) {
       failures.push(
         `themes.css: --ui-focus-shadow has ${layers.length} layer(s), expected 2 (the ring plus its bloom)`,
       );
     }
     if (!/var\(--ui-focus-ring\)/.test(layers[0] || '')) {
-      failures.push('themes.css: the inner layer of --ui-focus-shadow must be --ui-focus-ring — it is the indicator itself');
+      failures.push(
+        'themes.css: the inner layer of --ui-focus-shadow must be --ui-focus-ring — it is the indicator itself',
+      );
     }
     if (!/var\(--ui-focus-glow\)/.test(layers[1] || '')) {
-      failures.push('themes.css: the outer layer of --ui-focus-shadow must be --ui-focus-glow — it is the bloom around the ring');
+      failures.push(
+        'themes.css: the outer layer of --ui-focus-shadow must be --ui-focus-glow — it is the bloom around the ring',
+      );
     }
-    const spreads = layers.map((layer) => Number.parseFloat((/(\d+(?:\.\d+)?)px/.exec(layer) || [])[1]));
+    const spreads = layers.map((layer) =>
+      Number.parseFloat((/(\d+(?:\.\d+)?)px/.exec(layer) || [])[1]),
+    );
     if (spreads.some((value) => !Number.isFinite(value))) {
       failures.push('themes.css: every layer of --ui-focus-shadow needs an explicit px spread');
     } else if (spreads[1] <= spreads[0]) {
@@ -266,7 +290,10 @@ function main() {
       failures.push(`themes.css: [data-mode="${mode}"] is missing --ui-focus-ring`);
       continue;
     }
-    const mix = /color-mix\(\s*in srgb\s*,\s*var\(\s*(--[\w-]+)\s*\)\s*([\d.]+)%\s*,\s*transparent\s*\)/.exec(ringRaw);
+    const mix =
+      /color-mix\(\s*in srgb\s*,\s*var\(\s*(--[\w-]+)\s*\)\s*([\d.]+)%\s*,\s*transparent\s*\)/.exec(
+        ringRaw,
+      );
     let rgb = null;
     let ringAlpha = 1;
     if (mix) {
@@ -307,14 +334,16 @@ function main() {
   /* ---------- 3. the global contract in the foundations layer ---------- */
   const baseRaw = readFileSync(BASE_CSS, 'utf8');
   const baseRules = parseRules(stripComments(baseRaw));
-  const contract = baseRules.find(
-    (rule) => rule.selector === ':focus-visible',
-  );
+  const contract = baseRules.find((rule) => rule.selector === ':focus-visible');
   if (!contract) {
-    failures.push('foundations/base.css: no :focus-visible rule — the global focus contract is missing');
+    failures.push(
+      'foundations/base.css: no :focus-visible rule — the global focus contract is missing',
+    );
   } else {
     if (!/box-shadow\s*:\s*var\(--ui-focus-shadow\)/.test(contract.body)) {
-      failures.push('foundations/base.css: the :focus-visible contract must paint var(--ui-focus-shadow)');
+      failures.push(
+        'foundations/base.css: the :focus-visible contract must paint var(--ui-focus-shadow)',
+      );
     }
     const outline = /outline\s*:\s*([^;]+)/.exec(contract.body);
     if (!outline || !isInvisibleOutline(outline[1])) {
@@ -397,11 +426,15 @@ function main() {
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
     const raw = readFileSync(file, 'utf8');
-    stripComments(raw).split('\n').forEach((line, index) => {
-      if (/!\s*important[^;]*!\s*important/i.test(line)) {
-        failures.push(`${rel}:${index + 1}  declares !important twice — the declaration is invalid`);
-      }
-    });
+    stripComments(raw)
+      .split('\n')
+      .forEach((line, index) => {
+        if (/!\s*important[^;]*!\s*important/i.test(line)) {
+          failures.push(
+            `${rel}:${index + 1}  declares !important twice — the declaration is invalid`,
+          );
+        }
+      });
   }
 
   /* ---------- 5. the forced-colours fallback ---------- */
@@ -412,9 +445,10 @@ function main() {
   }
   for (const entry of suppressed) {
     const covered = [...forcedSelectors].some(
-      (forced) => forced === entry.selector
-        || forced.includes(entry.selector)
-        || entry.selector.includes(forced),
+      (forced) =>
+        forced === entry.selector ||
+        forced.includes(entry.selector) ||
+        entry.selector.includes(forced),
     );
     if (!covered) {
       failures.push(

@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { sessionBridge } from '../../store/index.ts';
 import { getStoredResponseSpeed, getStoredReasoningEffort } from '../../config/chatPreferences.ts';
 import { getCustomInstructionsString } from '../../config/customInstructions.ts';
 import { appMode } from '../../config/providers.ts';
@@ -31,8 +31,8 @@ export interface ChatRequestBody {
 
 function attachSessionContext(body: ChatRequestBody): void {
   try {
-    const sessionId = stateStore.read('currentSessionId') || null;
-    const projectId = stateStore.read('currentProjectId') || null;
+    const sessionId = sessionBridge.getSnapshot().currentSessionId || null;
+    const projectId = sessionBridge.getSnapshot().currentProjectId || null;
     if (sessionId) body.sessionId = String(sessionId);
     if (projectId) body.projectId = String(projectId);
     if (sessionId) body.ragSessionId = String(sessionId);
@@ -59,7 +59,9 @@ function prependCustomInstructions(body: ChatRequestBody): void {
 function activeProviderCapabilities(): ProviderCapabilities | null {
   try {
     const config = getProviderConfigSnapshot();
-    const active = (config.providers || []).find((provider) => provider && provider.id === config.activeId);
+    const active = (config.providers || []).find(
+      (provider) => provider && provider.id === config.activeId,
+    );
     return active?.capabilities ?? null;
   } catch (error) {
     reportSwallow(error, 'chat/api.requestBody.capabilities');

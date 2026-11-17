@@ -16,7 +16,7 @@ export const MAX_CONCURRENT_UPLOADS = 3;
 export const MAX_IMAGE_DATAURL_CHARS = 1_900_000;
 /* Base64 expands input by about 4/3; larger files decode directly from Blob. */
 export const MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL = Math.floor(
-  (MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4,
+  ((MAX_IMAGE_DATAURL_CHARS - 64) * 3) / 4,
 );
 
 /* Fail a transfer that stops making progress, while allowing slow active uploads. */

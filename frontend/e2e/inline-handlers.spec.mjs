@@ -30,9 +30,7 @@ const DATA_ACTION_RE = /\bdata-action(?:-input|-keydown|-change|-focus)?="([^"]+
 // Delegate.js built-in actions that are implemented inside delegate.js
 // itself and never expected as window.* bindings. Also includes actions
 // handled directly by React components (not via delegate.js → window.*).
-const BUILTIN_ACTIONS = new Set([
-  '__stop', 'preventDefault', 'select', 'blur',
-]);
+const BUILTIN_ACTIONS = new Set(['__stop', 'preventDefault', 'select', 'blur']);
 
 /**
  * Parse a single action spec (e.g. "closeMorePopover", "onFindInput:value")
@@ -82,11 +80,11 @@ test('every data-action function name resolves on window.fn at runtime', async (
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => document.documentElement.dataset.bootState === 'app',
-    null,
-    { timeout: 15_000 },
-  ).catch(() => {});
+  await page
+    .waitForFunction(() => document.documentElement.dataset.bootState === 'app', null, {
+      timeout: 15_000,
+    })
+    .catch(() => {});
   await page.waitForTimeout(500);
 
   const html = fs.readFileSync(indexHtmlPath, 'utf8');
@@ -97,7 +95,7 @@ test('every data-action function name resolves on window.fn at runtime', async (
     for (const name of n) {
       try {
         const v = window[name];
-        out[name] = (typeof v === 'function') ? 'fn' : (typeof v);
+        out[name] = typeof v === 'function' ? 'fn' : typeof v;
       } catch (e) {
         out[name] = 'threw:' + String(e);
       }
@@ -110,5 +108,8 @@ test('every data-action function name resolves on window.fn at runtime', async (
     console.error('Missing data-action window bindings (' + missing.length + '):');
     for (const [n, t] of missing) console.error(`  ${n} → ${t}`);
   }
-  expect(missing, `${missing.length}/${names.length} data-action bindings missing on window`).toEqual([]);
+  expect(
+    missing,
+    `${missing.length}/${names.length} data-action bindings missing on window`,
+  ).toEqual([]);
 });

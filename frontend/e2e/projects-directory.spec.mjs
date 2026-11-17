@@ -5,14 +5,25 @@
 // proportions, and the search field/action stay inside the header row. The
 // page must keep working in both the populated and empty states.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const PROJECTS = {
   projects: [
-    { id: 'p1', name: 'Thesis research', description: 'Sources and drafts', memoryMode: 'default', updatedAt: '2026-09-20T10:00:00.000Z' },
-    { id: 'p2', name: 'Exam prep', description: 'Practice questions', updatedAt: '2026-09-18T08:30:00.000Z' },
+    {
+      id: 'p1',
+      name: 'Thesis research',
+      description: 'Sources and drafts',
+      memoryMode: 'default',
+      updatedAt: '2026-09-20T10:00:00.000Z',
+    },
+    {
+      id: 'p2',
+      name: 'Exam prep',
+      description: 'Practice questions',
+      updatedAt: '2026-09-18T08:30:00.000Z',
+    },
   ],
 };
 
@@ -21,9 +32,17 @@ async function openProjects(page, { withProjects }) {
   if (withProjects) {
     await page.route(/\/api\/(v2\/)?projects(\?|$)/, (route) => {
       if (route.request().method() === 'GET') {
-        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PROJECTS) });
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(PROJECTS),
+        });
       } else {
-        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       }
     });
   }
@@ -85,7 +104,9 @@ test('projects directory empty state keeps the same compact chrome', async ({ pa
   const empty = page.locator('.projects-directory .workspace-empty');
   await expect(empty).toBeVisible();
 
-  const tabsHeight = await page.locator('.projects-filter-tabs').evaluate((el) => el.getBoundingClientRect().height);
+  const tabsHeight = await page
+    .locator('.projects-filter-tabs')
+    .evaluate((el) => el.getBoundingClientRect().height);
   expect(tabsHeight).toBeLessThanOrEqual(48);
   const titleBox = await page.locator('#projects-directory-title').boundingBox();
   expect(titleBox?.height ?? 0).toBeLessThanOrEqual(40);
@@ -96,7 +117,10 @@ test('typed project actions create, edit, and open a workspace from API data', a
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname.replace('/api/v2', '/api');
-    if (!pathname.startsWith('/api/projects')) { await route.fallback(); return; }
+    if (!pathname.startsWith('/api/projects')) {
+      await route.fallback();
+      return;
+    }
     if (request.method() === 'GET' && pathname === '/api/projects') {
       await route.fulfill({ json: PROJECTS });
       return;
@@ -135,7 +159,11 @@ test('typed project actions create, edit, and open a workspace from API data', a
     });
   });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -143,15 +171,32 @@ test('typed project actions create, edit, and open a workspace from API data', a
 
   await page.locator('.projects-directory .workspace-create-button').click();
   const form = page.locator('#projectForm');
-  await page.screenshot({ path: 'test-results/project-memory-mode-dialog.png', fullPage: true, animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/project-memory-mode-dialog.png',
+    fullPage: true,
+    animations: 'disabled',
+  });
   await form.locator('[name="name"]').fill('Reading project');
   await form.locator('[name="description"]').fill('Texts and notes');
   await form.locator('[name="memoryMode"]').selectOption('project-only');
-  const createRequest = page.waitForRequest((request) => request.method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(request.url()));
-  const createResponse = page.waitForResponse((response) => response.request().method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(response.url()));
+  const createRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' && /\/api\/(v2\/)?projects(?:\?|$)/.test(request.url()),
+  );
+  const createResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      /\/api\/(v2\/)?projects(?:\?|$)/.test(response.url()),
+  );
   await form.locator('button[type="submit"]').click();
-  expect((await createRequest).postDataJSON()).toMatchObject({ name: 'Reading project', description: 'Texts and notes', memoryMode: 'project-only' });
-  expect(await (await createResponse).json()).toMatchObject({ project: { id: 'project-new', name: 'Reading project' } });
+  expect((await createRequest).postDataJSON()).toMatchObject({
+    name: 'Reading project',
+    description: 'Texts and notes',
+    memoryMode: 'project-only',
+  });
+  expect(await (await createResponse).json()).toMatchObject({
+    project: { id: 'project-new', name: 'Reading project' },
+  });
   await expect(page.locator('.msg-toast').filter({ hasText: 'Project created' })).toBeVisible();
 
   const project = page.locator('.project-row', { hasText: 'Reading project' });
@@ -160,9 +205,15 @@ test('typed project actions create, edit, and open a workspace from API data', a
   await expect(page.locator('#projectForm [name="name"]')).toHaveValue('Reading project');
   await expect(page.locator('#projectForm [name="memoryMode"]')).toHaveValue('project-only');
   await page.locator('#projectForm [name="name"]').fill('Reading and writing');
-  const updateRequest = page.waitForRequest((request) => request.method() === 'PATCH' && /\/api\/(v2\/)?projects(?:\/|\?)/.test(request.url()));
+  const updateRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'PATCH' && /\/api\/(v2\/)?projects(?:\/|\?)/.test(request.url()),
+  );
   await page.locator('#projectForm button[type="submit"]').click();
-  expect((await updateRequest).postDataJSON()).toMatchObject({ name: 'Reading and writing', memoryMode: 'project-only' });
+  expect((await updateRequest).postDataJSON()).toMatchObject({
+    name: 'Reading and writing',
+    memoryMode: 'project-only',
+  });
   await expect(page.locator('.project-row', { hasText: 'Reading and writing' })).toBeVisible();
 
   await page.locator('.project-main', { hasText: 'Reading and writing' }).click();
@@ -171,13 +222,19 @@ test('typed project actions create, edit, and open a workspace from API data', a
 
   await page.locator('#workspaceDialog [data-action="new-chat"]').click();
   await expect(page.locator('#workspaceDialog')).toBeHidden();
-  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentProjectId'))).toBe('project-new');
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.session().currentProjectId))
+    .toBe('project-new');
   expect(await page.evaluate(() => window._nextProjectId)).toBeUndefined();
 
   await page.locator('#composerRoot .rich-composer-editor').fill('Start a project chat');
-  await page.evaluate(() => { window.__projectSessionPromise = window.startSession(); });
+  await page.evaluate(() => {
+    window.__projectSessionPromise = window.startSession();
+  });
   await expect(page.locator('#chatView')).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.stateStore.read('currentProjectId'))).toBe('project-new');
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.session().currentProjectId))
+    .toBe('project-new');
   await page.evaluate(() => window.__projectSessionPromise);
   expect(await page.evaluate(() => window._nextProjectId)).toBeUndefined();
 });

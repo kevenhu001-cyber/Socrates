@@ -27,7 +27,7 @@ export interface ChatTurn {
   fullText: string | null;
   fullReasoning: string | null;
   toolCalls: unknown[];
-  turnRuntime?: import("@socrates/contracts").TurnRuntime | null;
+  turnRuntime?: import('@socrates/contracts').TurnRuntime | null;
   usage: unknown;
   error: string | null;
 }
@@ -39,9 +39,18 @@ export interface TurnEventFrame {
   data: Record<string, unknown>;
 }
 
-interface ChatTurnCreateResponse { turn: ChatTurn; created?: boolean }
-interface ChatTurnReadResponse { turn: ChatTurn; events?: TurnEventFrame[] }
-interface ChatTurnInterruptResponse { turn: ChatTurn; idempotent?: boolean }
+interface ChatTurnCreateResponse {
+  turn: ChatTurn;
+  created?: boolean;
+}
+interface ChatTurnReadResponse {
+  turn: ChatTurn;
+  events?: TurnEventFrame[];
+}
+interface ChatTurnInterruptResponse {
+  turn: ChatTurn;
+  idempotent?: boolean;
+}
 
 export function newClientTurnId(): string {
   try {
@@ -49,7 +58,7 @@ export function newClientTurnId(): string {
       return crypto.randomUUID();
     }
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turn/client.ts:47');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts');
     /* fall through */
   }
   return `turn-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -73,16 +82,27 @@ export async function createChatTurn(input: {
   return { turn: res.turn as ChatTurn, created: !!res.created };
 }
 
-export async function getChatTurn(turnId: string, signal?: AbortSignal | null): Promise<{ turn: ChatTurn; events: TurnEventFrame[] }> {
-  const res = await apiFetch<ChatTurnReadResponse>(`/api/chat-turns/${encodeURIComponent(turnId)}`, { signal });
+export async function getChatTurn(
+  turnId: string,
+  signal?: AbortSignal | null,
+): Promise<{ turn: ChatTurn; events: TurnEventFrame[] }> {
+  const res = await apiFetch<ChatTurnReadResponse>(
+    `/api/chat-turns/${encodeURIComponent(turnId)}`,
+    { signal },
+  );
   return { turn: res.turn as ChatTurn, events: (res.events || []) as TurnEventFrame[] };
 }
 
-export async function interruptChatTurn(turnId: string): Promise<{ turn: ChatTurn; idempotent: boolean }> {
-  const res = await apiFetch<ChatTurnInterruptResponse>(`/api/chat-turns/${encodeURIComponent(turnId)}/interrupt`, {
-    method: 'POST',
-    body: {},
-  });
+export async function interruptChatTurn(
+  turnId: string,
+): Promise<{ turn: ChatTurn; idempotent: boolean }> {
+  const res = await apiFetch<ChatTurnInterruptResponse>(
+    `/api/chat-turns/${encodeURIComponent(turnId)}/interrupt`,
+    {
+      method: 'POST',
+      body: {},
+    },
+  );
   return { turn: res.turn as ChatTurn, idempotent: !!res.idempotent };
 }
 
@@ -131,7 +151,7 @@ function parseTurnEventFrame(frame: string): TurnEventFrame | null {
     const parsed = JSON.parse(dataParts.join('\n')) as TurnEventFrame;
     return parsed && typeof parsed.sequence === 'number' ? parsed : null;
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turn/client.ts:126');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts');
     /* malformed frame — skip */
   }
   return null;
@@ -181,9 +201,10 @@ async function consumeTurnEventStream(
     handlers.onError?.(err);
     throw err;
   } finally {
-    try { reader.releaseLock(); }
-    catch (error) {
-      reportSwallow(error, 'empty catch: chat/turn/client.ts:175', 'expected');
+    try {
+      reader.releaseLock();
+    } catch (error) {
+      reportSwallow(error, 'empty catch: chat/turn/client.ts', 'expected');
       /* ignore */
     }
   }
@@ -230,7 +251,10 @@ export function pendingKey(sessionId: string): string {
   return `${PENDING_KEY_PREFIX}${sessionId}`;
 }
 
-export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 'sessionId' | 'updatedAt'>): void {
+export function savePendingTurn(
+  sessionId: string,
+  pointer: Omit<PendingTurn, 'sessionId' | 'updatedAt'>,
+): void {
   try {
     if (!sessionId || !pointer.turnId) return;
     const record: PendingTurn = { ...pointer, sessionId, updatedAt: Date.now() };
@@ -243,7 +267,7 @@ export function savePendingTurn(sessionId: string, pointer: Omit<PendingTurn, 's
        next load so the slight delay is invisible. */
     batchSetItem(pendingKey(sessionId), JSON.stringify(record));
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turn/client.ts:232');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts');
     /* storage full/blocked — resume just won't survive reload */
   }
 }
@@ -267,7 +291,7 @@ export function bumpPendingSeq(sessionId: string, lastSeq: number): void {
     if (!cur) return;
     savePendingTurn(sessionId, { turnId: cur.turnId, clientTurnId: cur.clientTurnId, lastSeq });
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turn/client.ts:253', 'expected');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts', 'expected');
     /* ignore */
   }
 }
@@ -287,7 +311,7 @@ export function clearPendingTurn(sessionId: string, clientTurnId?: string): void
     }
     batchRemoveItem(pendingKey(sessionId));
   } catch (error) {
-    reportSwallow(error, 'empty catch: chat/turn/client.ts:270', 'expected');
+    reportSwallow(error, 'empty catch: chat/turn/client.ts', 'expected');
     /* ignore */
   }
 }

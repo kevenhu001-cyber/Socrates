@@ -4,7 +4,14 @@
    drawn, but every slide's text, images and tables are placed at their
    authored coordinates. */
 
-import { parsePptx, readArchive, type OoxmlArchive, type PptxDocument, type PptxParagraph, type PptxShape } from './ooxml.ts';
+import {
+  parsePptx,
+  readArchive,
+  type OoxmlArchive,
+  type PptxDocument,
+  type PptxParagraph,
+  type PptxShape,
+} from './ooxml.ts';
 import type { PreviewEngine, PreviewEngineCallbacks } from '../types.ts';
 
 /** EMU per CSS px at 96dpi — the natural scale a slide maps to. */
@@ -27,7 +34,8 @@ function paragraphEl(paragraph: PptxParagraph): HTMLParagraphElement {
     span.textContent = run.text;
     if (run.bold) span.style.fontWeight = '600';
     if (run.italic) span.style.fontStyle = 'italic';
-    if (run.sizePt) span.style.fontSize = `calc(var(--pptx-scale) * ${(run.sizePt * 4 / 3).toFixed(2)}px)`;
+    if (run.sizePt)
+      span.style.fontSize = `calc(var(--pptx-scale) * ${((run.sizePt * 4) / 3).toFixed(2)}px)`;
     if (run.color) span.style.color = run.color;
     p.appendChild(span);
   }
@@ -35,7 +43,12 @@ function paragraphEl(paragraph: PptxParagraph): HTMLParagraphElement {
   return p;
 }
 
-function shapeEl(shape: PptxShape, slide: PptxDocument, archive: OoxmlArchive, objectUrls: string[]): HTMLDivElement {
+function shapeEl(
+  shape: PptxShape,
+  slide: PptxDocument,
+  archive: OoxmlArchive,
+  objectUrls: string[],
+): HTMLDivElement {
   const el = document.createElement('div');
   el.className = `pptx-shape pptx-shape--${shape.kind}`;
   const slideWidth = slide.slideWidth || 1;

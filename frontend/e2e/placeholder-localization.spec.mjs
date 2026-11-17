@@ -48,11 +48,15 @@ test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) =
   expect(zhState.fontFamily).toContain('Geist Sans');
   expect(zhState.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
-  const brandFaces = await page.evaluate(async () => Promise.all([
-    document.fonts.load('400 16px "Geist Sans"', 'Socrates'),
-    document.fonts.load('700 16px "Geist Sans"', 'Socrates'),
-    document.fonts.load('400 16px "Geist Mono"', 'const value = 1;'),
-  ]).then((groups) => groups.every((faces) => faces.length > 0 && faces.every((face) => face.status === 'loaded'))));
+  const brandFaces = await page.evaluate(async () =>
+    Promise.all([
+      document.fonts.load('400 16px "Geist Sans"', 'Socrates'),
+      document.fonts.load('700 16px "Geist Sans"', 'Socrates'),
+      document.fonts.load('400 16px "Geist Mono"', 'const value = 1;'),
+    ]).then((groups) =>
+      groups.every((faces) => faces.length > 0 && faces.every((face) => face.status === 'loaded')),
+    ),
+  );
   expect(brandFaces).toBe(true);
 
   /* Switching back to English must restore the Latin UI face. */
@@ -65,7 +69,9 @@ test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) =
   expect(enFont).toContain('Geist Sans');
 });
 
-test('landing greeting has no leading logo and keeps the western Geist Sans face in Chinese UI', async ({ page }) => {
+test('landing greeting has no leading logo and keeps the western Geist Sans face in Chinese UI', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -78,7 +84,9 @@ test('landing greeting has no leading logo and keeps the western Geist Sans face
      assertion only has to prove that a localized greeting rendered so the
      CJK font fallback is measured against real Chinese glyphs. */
   const greeting = page.locator('#topicTitle');
-  await expect(greeting).toHaveText(/今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧|我们先从哪里开始呢？/);
+  await expect(greeting).toHaveText(
+    /今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧|我们先从哪里开始呢？/,
+  );
   const zhStyle = await greeting.evaluate((el) => ({
     fontFamily: getComputedStyle(el).fontFamily,
     paddingLeft: getComputedStyle(el).paddingLeft,

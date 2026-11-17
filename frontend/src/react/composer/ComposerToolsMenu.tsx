@@ -25,10 +25,11 @@ function ComposerToolsMenu() {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const selectionSnapshot = useComposerPluginSelectionSnapshot();
   const selectedPluginCount = snapshot.mode ? selectionSnapshot[snapshot.mode].length : 0;
-  const activeKey = getActiveTemplateExtensionKey()
-    ?? (isWebSearchOn() ? 'webSearch' : null)
-    ?? (isDeepResearchOn() ? 'deepResearch' : null)
-    ?? (isExtensiveThinkingOn() ? 'extensiveThinking' : null);
+  const activeKey =
+    getActiveTemplateExtensionKey() ??
+    (isWebSearchOn() ? 'webSearch' : null) ??
+    (isDeepResearchOn() ? 'deepResearch' : null) ??
+    (isExtensiveThinkingOn() ? 'extensiveThinking' : null);
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -45,7 +46,8 @@ function ComposerToolsMenu() {
     };
     schedulePosition();
 
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePosition) : null;
+    const observer =
+      typeof ResizeObserver === 'function' ? new ResizeObserver(schedulePosition) : null;
     observer?.observe(menu);
     window.addEventListener('resize', schedulePosition);
     document.addEventListener('scroll', schedulePosition, true);
@@ -70,9 +72,12 @@ function ComposerToolsMenu() {
   useEffect(() => {
     if (!snapshot.isOpen) return undefined;
     const handleDocumentClick = (event: MouseEvent) => {
-      const target = event.target instanceof Element
-        ? event.target
-        : event.target instanceof Node ? event.target.parentElement : null;
+      const target =
+        event.target instanceof Element
+          ? event.target
+          : event.target instanceof Node
+            ? event.target.parentElement
+            : null;
       const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
       if (target && (menuRef.current?.contains(target) || trigger?.contains(target))) return;
       closeComposerTools();
@@ -86,15 +91,27 @@ function ComposerToolsMenu() {
         return;
       }
       const menu = menuRef.current;
-      if (!menu || !(event.target instanceof Node) || (!menu.contains(event.target) && !trigger?.contains(event.target))) return;
+      if (
+        !menu ||
+        !(event.target instanceof Node) ||
+        (!menu.contains(event.target) && !trigger?.contains(event.target))
+      )
+        return;
       if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-      const items = Array.from(menu.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'))
-        .filter((item) => item.getClientRects().length > 0);
+      const items = Array.from(
+        menu.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'),
+      ).filter((item) => item.getClientRects().length > 0);
       if (!items.length) return;
       event.preventDefault();
       const index = items.indexOf(document.activeElement as HTMLButtonElement);
-      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
-        : event.key === 'ArrowDown' ? (index + 1) % items.length : (index <= 0 ? items.length : index) - 1;
+      const next =
+        event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? items.length - 1
+            : event.key === 'ArrowDown'
+              ? (index + 1) % items.length
+              : (index <= 0 ? items.length : index) - 1;
       items[next].focus();
     };
     document.addEventListener('click', handleDocumentClick);

@@ -9,13 +9,15 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
       <div className="profile-section-title">{profileText('profile.account', 'Account')}</div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.joined', 'Joined')}</span>
-        <span className="profile-row-value" id="profileJoined">{user.joinedAt}</span>
+        <span className="profile-row-value" id="profileJoined">
+          {user.joinedAt}
+        </span>
       </div>
       <div className="profile-row">
-        <span className="profile-row-label">{profileText('profile.emailVerified', 'Email verified')}</span>
-        <Badge variant={user.verifiedAt ? 'secondary' : 'outline'}
-          id="profileVerified"
-        >
+        <span className="profile-row-label">
+          {profileText('profile.emailVerified', 'Email verified')}
+        </span>
+        <Badge variant={user.verifiedAt ? 'secondary' : 'outline'} id="profileVerified">
           {user.verifiedAt ? 'Yes' : 'No'}
         </Badge>
       </div>
@@ -33,12 +35,14 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
   const tierLabel = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
   return (
     <div className="profile-section">
-      <div className="profile-section-title">{profileText('profile.subscription', 'Subscription')}</div>
+      <div className="profile-section-title">
+        {profileText('profile.subscription', 'Subscription')}
+      </div>
       <div className="profile-row">
-        <span className="profile-row-label">{profileText('profile.currentPlan', 'Current plan')}</span>
-        <Badge variant="secondary"
-          id="profileTier"
-        >
+        <span className="profile-row-label">
+          {profileText('profile.currentPlan', 'Current plan')}
+        </span>
+        <Badge variant="secondary" id="profileTier">
           {tierLabel}
         </Badge>
       </div>
@@ -48,7 +52,9 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
         style={{ display: user.subEnd || user.tier !== 'diophantus' ? 'flex' : 'none' }}
       >
         <span className="profile-row-label">{profileText('profile.renewal', 'Renewal')}</span>
-        <span className="profile-row-value" id="profileSubEnd">{user.subEnd || '—'}</span>
+        <span className="profile-row-value" id="profileSubEnd">
+          {user.subEnd || '—'}
+        </span>
       </div>
       <div style={{ marginTop: 10 }}>
         <a

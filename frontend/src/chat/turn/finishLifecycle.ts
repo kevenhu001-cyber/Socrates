@@ -1,5 +1,5 @@
 /* Finish, persist, publish, and release one streaming turn. */
-import { stateStore } from '../../state/store.ts';
+import { kbBridge, sessionBridge } from '../../store/index.ts';
 import { turnState } from '../turn/state.ts';
 import { setChatStopState, markTurnEnded } from '../turn/ui.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
@@ -40,18 +40,26 @@ function updateActiveBranchVariant(state: TurnRuntimeState, visibleFinal: string
 function releaseFinishedTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
-  try { setChatStopState(false); }
-  catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.setChatStopState'); }
-  try { markTurnEnded(); }
-  catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.markTurnEnded'); }
+  try {
+    setChatStopState(false);
+  } catch (error) {
+    reportSwallow(error, 'streamingTurn.finishAfterRender.setChatStopState');
+  }
+  try {
+    markTurnEnded();
+  } catch (error) {
+    reportSwallow(error, 'streamingTurn.finishAfterRender.markTurnEnded');
+  }
   turnState.activeChatCtl = null;
 
-  const currentSessionId = stateStore.read('currentSessionId') as string | null;
+  const currentSessionId = sessionBridge.getSnapshot().currentSessionId as string | null;
   const nextPrompt = dequeuePrompt(currentSessionId);
   if (!nextPrompt) return;
   setTimeout(() => {
     try {
-      const win = window as Window & { submitChatMessage?: (text: string, options: { bypassQueue: boolean }) => unknown };
+      const win = window as Window & {
+        submitChatMessage?: (text: string, options: { bypassQueue: boolean }) => unknown;
+      };
       if (typeof win.submitChatMessage === 'function') {
         void win.submitChatMessage(nextPrompt.text, { bypassQueue: true });
       }
@@ -81,7 +89,9 @@ function runAfterFinishPaint(work: () => void): void {
     return;
   }
   fallback = setTimeout(run, 250);
-  requestAnimationFrame(() => { setTimeout(run, 0); });
+  requestAnimationFrame(() => {
+    setTimeout(run, 0);
+  });
 }
 
 export interface FinishLifecycle {
@@ -99,7 +109,10 @@ export function createFinishLifecycle(
 
     /* A late [DONE] can arrive after the session changes. Abandon it before
        saving, updating memory, or writing into a reused message index. */
-    if (stateStore.read('currentSessionId') !== ownerSessionId || !state.ownsMessageSlot()) {
+    if (
+      sessionBridge.getSnapshot().currentSessionId !== ownerSessionId ||
+      !state.ownsMessageSlot()
+    ) {
       state.finished = true;
       state._disposed = true;
       if (state._elapsedTick) clearInterval(state._elapsedTick);
@@ -169,21 +182,28 @@ export function createFinishLifecycle(
        mirror, the screen-reader announcement, the session save) runs right
        after that frame paints instead. */
     const full = state.full;
-    const finishedSessionId = stateStore.read('currentSessionId') as string | null;
+    const finishedSessionId = sessionBridge.getSnapshot().currentSessionId as string | null;
     runAfterFinishPaint(() => {
-      if (stateStore.read('currentSessionId') !== finishedSessionId) return;
-      try { appendLocalMemory('assistant', full); }
-      catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.appendLocalMemory'); }
+      if (sessionBridge.getSnapshot().currentSessionId !== finishedSessionId) return;
+      try {
+        appendLocalMemory('assistant', full);
+      } catch (error) {
+        reportSwallow(error, 'streamingTurn.finishAfterRender.appendLocalMemory');
+      }
       try {
         if (typeof visibleFinal === 'string' && visibleFinal.trim()) {
           announceTranscript(visibleFinal);
         }
-      } catch (error) { reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript'); }
+      } catch (error) {
+        reportSwallow(error, 'streamingTurn.finishAfterRender.announceTranscript');
+      }
     });
 
-    const kbNodes = stateStore.read('kbNodes') as readonly unknown[];
-    if (stateStore.read('phase') === 'chat'
-      || (stateStore.read('topic') && kbNodes.length)) {
+    const kbNodes = kbBridge.getSnapshot().kbNodes as readonly unknown[];
+    if (
+      sessionBridge.getSnapshot().phase === 'chat' ||
+      (sessionBridge.getSnapshot().topic && kbNodes.length)
+    ) {
       saveCurrentSessionAfterPaint();
     }
 

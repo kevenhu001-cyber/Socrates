@@ -1,4 +1,4 @@
-type FeatureRuntime = typeof import("./editBranch.impl.ts");
+type FeatureRuntime = typeof import('./editBranch.impl.ts');
 
 /* chat/editBranch.ts — lazy compatibility facade.
  *
@@ -28,21 +28,36 @@ function runEditBranchAction(action: (module: FeatureRuntime) => void) {
     action(_impl);
     return;
   }
-  void loadEditBranchImpl().then(action).catch(function () { /* loader logs */ });
+  void loadEditBranchImpl()
+    .then(action)
+    .catch(function () {
+      /* loader logs */
+    });
 }
 
 export function commitUserMessageEdit(messageId: string, text: string) {
-  runEditBranchAction(function (module: FeatureRuntime) { module.commitUserMessageEdit(messageId, text); });
+  runEditBranchAction(function (module: FeatureRuntime) {
+    module.commitUserMessageEdit(messageId, text);
+  });
 }
 
 export function regenerateAssistantMessage(messageId: string) {
-  runEditBranchAction(function (module: FeatureRuntime) { module.regenerateAssistantMessage(messageId); });
+  runEditBranchAction(function (module: FeatureRuntime) {
+    module.regenerateAssistantMessage(messageId);
+  });
 }
 
-export function branchFromMessage(messageId: string, options: Parameters<FeatureRuntime['branchFromMessage']>[1]) {
-  runEditBranchAction(function (module: FeatureRuntime) { module.branchFromMessage(messageId, options); });
+export function branchFromMessage(
+  messageId: string,
+  options: Parameters<FeatureRuntime['branchFromMessage']>[1],
+) {
+  runEditBranchAction(function (module: FeatureRuntime) {
+    module.branchFromMessage(messageId, options);
+  });
 }
 
 export function switchMessageBranch(messageId: string, targetIndex: number) {
-  runEditBranchAction(function (module: FeatureRuntime) { module.switchMessageBranch(messageId, targetIndex); });
+  runEditBranchAction(function (module: FeatureRuntime) {
+    module.switchMessageBranch(messageId, targetIndex);
+  });
 }

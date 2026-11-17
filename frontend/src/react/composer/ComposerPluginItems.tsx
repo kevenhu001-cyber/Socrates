@@ -7,9 +7,7 @@ import type { ComposerToolsAction } from './types';
 import { loadPluginCatalog, type PluginCatalogEntry } from '../../composer/pluginCatalog.ts';
 import { getConnectorIconMarkupFn } from '../legacy/gateway.ts';
 import { useComposerPluginSelectionSnapshot } from './useComposerPluginSelection';
-import {
-  toggleComposerPlugin,
-} from '../../composer/pluginSelection.ts';
+import { toggleComposerPlugin } from '../../composer/pluginSelection.ts';
 
 function pluginIconMarkup(id: string): string {
   return getConnectorIconMarkupFn()?.(id) || '';
@@ -18,9 +16,19 @@ function pluginIconMarkup(id: string): string {
 function PluginMark({ plugin }: { plugin: PluginCatalogEntry }) {
   const markup = pluginIconMarkup(plugin.id);
   if (markup) {
-    return <span className="composer-plugin-mark" aria-hidden="true" dangerouslySetInnerHTML={{ __html: markup }} />;
+    return (
+      <span
+        className="composer-plugin-mark"
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: markup }}
+      />
+    );
   }
-  return <span className="composer-plugin-mark composer-plugin-mark-fallback" aria-hidden="true">{plugin.name.slice(0, 2).toUpperCase()}</span>;
+  return (
+    <span className="composer-plugin-mark composer-plugin-mark-fallback" aria-hidden="true">
+      {plugin.name.slice(0, 2).toUpperCase()}
+    </span>
+  );
 }
 
 function ComposerPluginItem({
@@ -41,7 +49,11 @@ function ComposerPluginItem({
       data-composer-plugin={plugin.id}
       role="menuitemcheckbox"
       aria-checked={selected}
-      aria-label={selected ? i18n('composer.plugin.added', '{name}: added').replace('{name}', plugin.name) : plugin.name}
+      aria-label={
+        selected
+          ? i18n('composer.plugin.added', '{name}: added').replace('{name}', plugin.name)
+          : plugin.name
+      }
       onClick={(event) => {
         event.stopPropagation();
         onPick(plugin);
@@ -49,9 +61,7 @@ function ComposerPluginItem({
     >
       <PluginMark plugin={plugin} />
       <span className="composer-tools-plugin-name">{plugin.name}</span>
-      {selected ? (
-        <Icon name="check" className="composer-tools-check" />
-      ) : null}
+      {selected ? <Icon name="check" className="composer-tools-check" /> : null}
     </Button>
   );
 }
@@ -89,7 +99,9 @@ export function ComposerPluginItems({
       .catch(() => {
         if (!cancelled) setLoadState('error');
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, attempt]);
 
   const connectedPlugins = useMemo(
@@ -109,10 +121,17 @@ export function ComposerPluginItems({
   const managePlugins = () => onPick('managePlugins');
 
   return (
-    <section className="composer-tools-plugins" aria-label={i18n('composer.tools.connectedApps', 'Connected apps')}>
-      <div className="composer-tools-group-label">{i18n('composer.tools.connectedApps', 'Connected apps')}</div>
+    <section
+      className="composer-tools-plugins"
+      aria-label={i18n('composer.tools.connectedApps', 'Connected apps')}
+    >
+      <div className="composer-tools-group-label">
+        {i18n('composer.tools.connectedApps', 'Connected apps')}
+      </div>
       {loadState === 'loading' || loadState === 'idle' ? (
-        <div className="composer-tools-plugin-state" role="status">{i18n('composer.tools.plugins.loading', 'Loading connected apps…')}</div>
+        <div className="composer-tools-plugin-state" role="status">
+          {i18n('composer.tools.plugins.loading', 'Loading connected apps…')}
+        </div>
       ) : null}
       {loadState === 'error' ? (
         <div className="composer-tools-plugin-state" role="status">
@@ -147,8 +166,20 @@ export function ComposerPluginItems({
       {loadState === 'ready' && connectedCount === 0 ? (
         <div className="composer-tools-plugin-state">
           <span>{i18n('composer.tools.plugins.empty', 'No connected apps yet.')}</span>
-          <small>{i18n('composer.tools.plugins.emptyHint', 'Connect an app to add its context to a chat.')}</small>
-          <Button type="button" variant="surface" size="surface" className="composer-tools-state-action" role="menuitem" onClick={managePlugins}>
+          <small>
+            {i18n(
+              'composer.tools.plugins.emptyHint',
+              'Connect an app to add its context to a chat.',
+            )}
+          </small>
+          <Button
+            type="button"
+            variant="surface"
+            size="surface"
+            className="composer-tools-state-action"
+            role="menuitem"
+            onClick={managePlugins}
+          >
             {i18n('composer.tools.plugins.manage', 'Manage apps')}
           </Button>
         </div>

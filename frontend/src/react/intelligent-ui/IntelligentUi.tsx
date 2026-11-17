@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   initialStateForNodes,
-  parseIntelligenceUiRecords,
-  type IntelligenceUiState,
+  parseIntelligentUiRecords,
+  type IntelligentUiState,
 } from '@socrates/core';
 
 import { i18n } from '../legacy/gateway';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
-import { UiNode } from './IntelligenceUiNodes';
+import { UiNode } from './IntelligentUiNodes';
 import { PendingBlock } from './BlockSkeleton';
 import { asProse, childMap, mergeDefaults, resolve, type RenderContext } from './renderRuntime';
 
-interface IntelligenceUiBlockProps {
+interface IntelligentUiBlockProps {
   source: string;
   displayMode?: IntelligentDisplayMode;
   tools?: ReadonlyArray<ToolCallRecord>;
@@ -22,7 +22,7 @@ interface IntelligenceUiBlockProps {
 }
 
 function resolveSurfaceMetadata(
-  roots: ReturnType<typeof parseIntelligenceUiRecords>,
+  roots: ReturnType<typeof parseIntelligentUiRecords>,
   context: RenderContext,
 ) {
   const root = context.surfaceRootId ? roots[0] : undefined;
@@ -31,11 +31,18 @@ function resolveSurfaceMetadata(
   return { title, description };
 }
 
-export function IntelligenceUiBlock({ source, tools = [], open = false, showActivityCue = true, readOnly = false, displayMode = 'inline' }: IntelligenceUiBlockProps) {
-  const nodes = useMemo(() => parseIntelligenceUiRecords(source), [source]);
+export function IntelligentUiBlock({
+  source,
+  tools = [],
+  open = false,
+  showActivityCue = true,
+  readOnly = false,
+  displayMode = 'inline',
+}: IntelligentUiBlockProps) {
+  const nodes = useMemo(() => parseIntelligentUiRecords(source), [source]);
   const defaults = useMemo(() => initialStateForNodes(nodes), [nodes]);
   const children = useMemo(() => childMap(nodes), [nodes]);
-  const [state, setState] = useState<IntelligenceUiState>(() => defaults);
+  const [state, setState] = useState<IntelligentUiState>(() => defaults);
 
   useEffect(() => {
     setState((previous) => mergeDefaults(previous, defaults));
@@ -44,9 +51,13 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
   const roots = nodes.filter((node) => !node.parent);
   /* Keep the loading footprint until the first record names a root. */
   if (!roots.length) {
-    return open
-      ? <PendingBlock open />
-      : <div className="intui-callout" data-intui-failure="document" role="status">{i18n('tool.uiInvalid', 'Component could not be displayed.')}</div>;
+    return open ? (
+      <PendingBlock open />
+    ) : (
+      <div className="intui-callout" data-intui-failure="document" role="status">
+        {i18n('tool.uiInvalid', 'Component could not be displayed.')}
+      </div>
+    );
   }
 
   const context: RenderContext = {
@@ -63,11 +74,13 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>
       <IntelligentSurface displayMode={displayMode} title={title} description={description}>
-        {roots.map((node) => <UiNode key={node.id} node={node} context={context} />)}
+        {roots.map((node) => (
+          <UiNode key={node.id} node={node} context={context} />
+        ))}
       </IntelligentSurface>
       {open && showActivityCue ? <span className="intui-stream-dot" aria-hidden="true" /> : null}
     </div>
   );
 }
 
-export default IntelligenceUiBlock;
+export default IntelligentUiBlock;

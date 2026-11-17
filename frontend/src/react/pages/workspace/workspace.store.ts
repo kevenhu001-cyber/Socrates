@@ -5,7 +5,14 @@ import type { LibraryItem, PluginItem, ProjectItem, WorkspaceSnapshot } from './
 export type WorkspaceState = WorkspaceSnapshot;
 
 const INITIAL: WorkspaceState = {
-  libraryData: { files: [], artifacts: [], tab: 'files', query: '', selection: {}, renameItem: null },
+  libraryData: {
+    files: [],
+    artifacts: [],
+    tab: 'files',
+    query: '',
+    selection: {},
+    renameItem: null,
+  },
   projectsData: [],
   pluginsData: [],
   projectConnectorConfigured: false,
@@ -19,7 +26,10 @@ export function patchLibraryData(patch: Partial<WorkspaceState['libraryData']>):
   useWorkspaceStore.setState((state) => ({ libraryData: { ...state.libraryData, ...patch } }));
 }
 
-export function setLibraryCollections(files: ReadonlyArray<LibraryItem>, artifacts: ReadonlyArray<LibraryItem>): void {
+export function setLibraryCollections(
+  files: ReadonlyArray<LibraryItem>,
+  artifacts: ReadonlyArray<LibraryItem>,
+): void {
   patchLibraryData({ files: [...files], artifacts: [...artifacts] });
 }
 

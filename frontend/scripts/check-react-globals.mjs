@@ -27,19 +27,82 @@ const ALLOWED_FILES = new Set(['legacy/gateway.ts']);
 
 /* Ordinary browser APIs — not part of the app's legacy global surface. */
 const BROWSER = new Set([
-  'innerWidth', 'innerHeight', 'outerWidth', 'outerHeight', 'devicePixelRatio',
-  'addEventListener', 'removeEventListener', 'dispatchEvent',
-  'requestAnimationFrame', 'cancelAnimationFrame',
-  'requestIdleCallback', 'cancelIdleCallback',
-  'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask',
-  'location', 'history', 'navigator', 'document', 'screen', 'frames', 'self', 'top', 'parent', 'name',
-  'localStorage', 'sessionStorage', 'crypto', 'performance', 'isSecureContext', 'origin',
-  'getComputedStyle', 'matchMedia', 'getSelection', 'scrollTo', 'scroll', 'scrollX', 'scrollY', 'scrollBy',
-  'open', 'close', 'focus', 'blur', 'stop', 'print', 'postMessage', 'alert', 'confirm', 'prompt',
-  'visualViewport', 'MutationObserver', 'ResizeObserver', 'IntersectionObserver',
-  'CustomEvent', 'Event', 'HTMLElement', 'Element', 'Image', 'Notification',
-  'fetch', 'structuredClone', 'atob', 'btoa', 'DOMParser', 'XMLSerializer', 'TextEncoder', 'TextDecoder',
-  'AbortController', 'URL', 'URLSearchParams', 'Blob', 'File', 'FileReader', 'FormData',
+  'innerWidth',
+  'innerHeight',
+  'outerWidth',
+  'outerHeight',
+  'devicePixelRatio',
+  'addEventListener',
+  'removeEventListener',
+  'dispatchEvent',
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'requestIdleCallback',
+  'cancelIdleCallback',
+  'setTimeout',
+  'clearTimeout',
+  'setInterval',
+  'clearInterval',
+  'queueMicrotask',
+  'location',
+  'history',
+  'navigator',
+  'document',
+  'screen',
+  'frames',
+  'self',
+  'top',
+  'parent',
+  'name',
+  'localStorage',
+  'sessionStorage',
+  'crypto',
+  'performance',
+  'isSecureContext',
+  'origin',
+  'getComputedStyle',
+  'matchMedia',
+  'getSelection',
+  'scrollTo',
+  'scroll',
+  'scrollX',
+  'scrollY',
+  'scrollBy',
+  'open',
+  'close',
+  'focus',
+  'blur',
+  'stop',
+  'print',
+  'postMessage',
+  'alert',
+  'confirm',
+  'prompt',
+  'visualViewport',
+  'MutationObserver',
+  'ResizeObserver',
+  'IntersectionObserver',
+  'CustomEvent',
+  'Event',
+  'HTMLElement',
+  'Element',
+  'Image',
+  'Notification',
+  'fetch',
+  'structuredClone',
+  'atob',
+  'btoa',
+  'DOMParser',
+  'XMLSerializer',
+  'TextEncoder',
+  'TextDecoder',
+  'AbortController',
+  'URL',
+  'URLSearchParams',
+  'Blob',
+  'File',
+  'FileReader',
+  'FormData',
 ]);
 
 function stripComments(text) {
@@ -82,19 +145,25 @@ function collect() {
 
 function main() {
   const offenders = collect();
-  const baseline = existsSync(BASELINE)
-    ? JSON.parse(readFileSync(BASELINE, 'utf8'))
-    : null;
+  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
 
   if (!baseline || UPDATE) {
-    const count = baseline && typeof baseline.count === 'number'
-      ? Math.min(baseline.count, offenders.length)
-      : offenders.length;
-    writeFileSync(BASELINE, JSON.stringify({
-      count,
-      note: 'React direct legacy-global reads. May only go down. Run with --update after an intentional reduction.',
-      generatedBy: 'check-react-globals.mjs --update',
-    }, null, 2) + '\n');
+    const count =
+      baseline && typeof baseline.count === 'number'
+        ? Math.min(baseline.count, offenders.length)
+        : offenders.length;
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          count,
+          note: 'React direct legacy-global reads. May only go down. Run with --update after an intentional reduction.',
+          generatedBy: 'check-react-globals.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
     console.log(`react-globals: baseline ${baseline ? 'updated' : 'written'} (count=${count}).`);
     if (offenders.length) {
       console.log('Current offenders:');
@@ -105,7 +174,9 @@ function main() {
 
   if (offenders.length > baseline.count) {
     console.error('react-globals check FAILED:');
-    console.error(`  React direct legacy-global reads: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`);
+    console.error(
+      `  React direct legacy-global reads: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`,
+    );
     for (const o of offenders) console.error(`  - ${o.file}: window.${o.id}`);
     console.error('  Route the new read through src/react/legacy/gateway.ts instead.');
     process.exitCode = 1;

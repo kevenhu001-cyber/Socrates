@@ -17,11 +17,21 @@ export function groupSessionsByProject(
   const pinned: SessionProjectGroup = { id: 'pinned', name: labels.pinned, sessions: [] };
   const other: SessionProjectGroup = { id: 'other', name: labels.other, sessions: [] };
   for (const session of sessions) {
-    if (session.pinned) { pinned.sessions.push(session); continue; }
-    if (!session.projectId) { other.sessions.push(session); continue; }
+    if (session.pinned) {
+      pinned.sessions.push(session);
+      continue;
+    }
+    if (!session.projectId) {
+      other.sessions.push(session);
+      continue;
+    }
     let group = groups.get(session.projectId);
     if (!group) {
-      group = { id: `project:${session.projectId}`, name: names.get(session.projectId) || labels.project, sessions: [] };
+      group = {
+        id: `project:${session.projectId}`,
+        name: names.get(session.projectId) || labels.project,
+        sessions: [],
+      };
       groups.set(session.projectId, group);
     }
     group.sessions.push(session);

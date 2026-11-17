@@ -7,7 +7,11 @@ interface ScheduledState {
   error: string | null;
 }
 
-export const useScheduledStore = create<ScheduledState>(() => ({ tasks: [], loading: false, error: null }));
+export const useScheduledStore = create<ScheduledState>(() => ({
+  tasks: [],
+  loading: false,
+  error: null,
+}));
 
 export function patchScheduledState(patch: Partial<ScheduledState>): void {
   useScheduledStore.setState(patch);

@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
-import {
-  getAgentRunSnapshot,
-  subscribeToAgentRuns,
-} from '../../extensions/agentRunStore';
+import { getAgentRunSnapshot, subscribeToAgentRuns } from '../../extensions/agentRunStore';
 import { ExploreStepper } from './ExploreStepper';
 import { ResearchJobs } from './ResearchJobs';
 
@@ -21,8 +18,7 @@ function EphemeralWorkflowLayer() {
   const hideTimer = useRef<number | null>(null);
 
   const hasActiveRun = !!event;
-  const terminal =
-    !!event && (event.stage === 'completed' || event.stage === 'failed');
+  const terminal = !!event && (event.stage === 'completed' || event.stage === 'failed');
 
   useEffect(() => {
     if (terminal) {
@@ -53,5 +49,10 @@ function EphemeralWorkflowLayer() {
 }
 
 export function WorkflowLayer() {
-  return <><ResearchJobs /><EphemeralWorkflowLayer /></>;
+  return (
+    <>
+      <ResearchJobs />
+      <EphemeralWorkflowLayer />
+    </>
+  );
 }

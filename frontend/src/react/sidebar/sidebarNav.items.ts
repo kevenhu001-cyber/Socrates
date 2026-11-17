@@ -17,11 +17,26 @@ export interface NavButtonSpec {
 export const BUTTONS: NavButtonSpec[] = [
   { key: 'new', label: 'New chat', i18nKey: 'sidebar.nav.new', icon: sidebarIcons.newChat },
   { key: 'library', label: 'Library', i18nKey: 'sidebar.nav.library', icon: sidebarIcons.library },
-  { key: 'projects', label: 'Projects', i18nKey: 'sidebar.nav.projects', icon: sidebarIcons.projects },
-  { key: 'scheduled', label: 'Scheduled', i18nKey: 'sidebar.nav.scheduled', icon: sidebarIcons.scheduled },
+  {
+    key: 'projects',
+    label: 'Projects',
+    i18nKey: 'sidebar.nav.projects',
+    icon: sidebarIcons.projects,
+  },
+  {
+    key: 'scheduled',
+    label: 'Scheduled',
+    i18nKey: 'sidebar.nav.scheduled',
+    icon: sidebarIcons.scheduled,
+  },
   { key: 'plugins', label: 'Plugins', i18nKey: 'sidebar.nav.plugins', icon: sidebarIcons.plugins },
   { key: 'images', label: 'Images', i18nKey: 'sidebar.nav.images', icon: sidebarIcons.images },
-  { key: 'assistants', label: 'Assistants', i18nKey: 'sidebar.nav.assistants', icon: sidebarIcons.assistants },
+  {
+    key: 'assistants',
+    label: 'Assistants',
+    i18nKey: 'sidebar.nav.assistants',
+    icon: sidebarIcons.assistants,
+  },
   {
     key: 'sites',
     label: 'Sites',

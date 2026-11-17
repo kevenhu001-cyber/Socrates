@@ -41,7 +41,5 @@ export default defineConfig({
     cwd: __dirname,
     env: { SMOKE_PORT: String(port) },
   },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });

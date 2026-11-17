@@ -3,7 +3,10 @@ import { getCurrentUser } from '../legacy/gateway.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 import { getTonePreset, setTonePreset } from '../../config/tonePresets.ts';
-import { loadCustomInstructions, type CustomInstructions } from '../../config/customInstructions.ts';
+import {
+  loadCustomInstructions,
+  type CustomInstructions,
+} from '../../config/customInstructions.ts';
 import { getAllMemories } from '../../storage/memoryStore.ts';
 import type { SettingsLabel, SettingsMemory, SaveSettingsPreference } from './settings.types';
 import { PersonalizationInstructionsSection } from './PersonalizationInstructionsSection';
@@ -27,9 +30,14 @@ function parseAccountInstructions(value: string): CustomInstructions {
     const divider = content.indexOf(aboutDivider);
     return divider < 0
       ? { response: content, about: '', savedAt: '' }
-      : { response: content.slice(0, divider), about: content.slice(divider + aboutDivider.length), savedAt: '' };
+      : {
+          response: content.slice(0, divider),
+          about: content.slice(divider + aboutDivider.length),
+          savedAt: '',
+        };
   }
-  if (value.startsWith(aboutPrefix)) return { response: '', about: value.slice(aboutPrefix.length), savedAt: '' };
+  if (value.startsWith(aboutPrefix))
+    return { response: '', about: value.slice(aboutPrefix.length), savedAt: '' };
   return { response: value, about: '', savedAt: '' };
 }
 
@@ -42,7 +50,10 @@ function readCustomInstructions(): CustomInstructions {
       return { response: localValue, about: '', savedAt: '' };
     }
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/settings/PersonalizationSettingsPane.tsx:read-local');
+    reportEmptyCatch(
+      error,
+      'empty catch: react/settings/PersonalizationSettingsPane.tsx:read-local',
+    );
   }
   const customInstructions = getCurrentUser<{ customInstructions?: unknown }>()?.customInstructions;
   return typeof customInstructions === 'string'
@@ -66,7 +77,8 @@ export function PersonalizationSettingsPane({
   reportSaveError,
 }: PersonalizationSettingsPaneProps) {
   const [selectedTone, setSelectedTone] = useState(() => getTonePreset());
-  const [customInstructions, setCustomInstructions] = useState<CustomInstructions>(readCustomInstructions);
+  const [customInstructions, setCustomInstructions] =
+    useState<CustomInstructions>(readCustomInstructions);
   const [memories, setMemories] = useState<SettingsMemory[]>(readMemories);
 
   const selectTone = (tone: string) => {

@@ -15,8 +15,20 @@ import { reportSwallow } from '../util/reportSwallow.ts';
  */
 
 const TARGETS = new Set([
-  'projects', 'scheduled', 'plugins', 'knowledge', 'mistakes', 'skills', 'api-settings',
-  'profile', 'usage', 'storage', 'display', 'shortcuts', 'library', 'exam',
+  'projects',
+  'scheduled',
+  'plugins',
+  'knowledge',
+  'mistakes',
+  'skills',
+  'api-settings',
+  'profile',
+  'usage',
+  'storage',
+  'display',
+  'shortcuts',
+  'library',
+  'exam',
 ]);
 const NAV_TARGETS = new Set(['projects', 'scheduled', 'plugins', 'library', 'exam']);
 const IMPORTED_TARGET_ACTIONS = {
@@ -59,17 +71,18 @@ function openMobileTarget(target: string) {
 
 function getReactNativeWebView() {
   if (typeof window === 'undefined') return undefined;
-  return (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } }).ReactNativeWebView;
+  return (window as unknown as { ReactNativeWebView?: { postMessage: (msg: string) => void } })
+    .ReactNativeWebView;
 }
 
-function postToNative(message: { type: string; }) {
+function postToNative(message: { type: string }) {
   try {
     const bridge = getReactNativeWebView();
     if (bridge && typeof bridge.postMessage === 'function') {
       bridge.postMessage(JSON.stringify(message));
     }
   } catch (_) {
-    reportSwallow(_, 'empty catch: native/mobileWebSessionBridge.ts:66');
+    reportSwallow(_, 'empty catch: native/mobileWebSessionBridge.ts');
     /* The page also runs as a normal browser SPA. */
   }
 }
@@ -122,7 +135,12 @@ function watchEmbeddedModalClose(target: string) {
       postToNative({ type: 'close' });
     }
   });
-  observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['class'],
+  });
   /* React portals may mount after the open action publishes its state. */
   setTimeout(() => {
     if (!closed && isOpen()) seenOpen = true;
@@ -137,7 +155,11 @@ function watchEmbeddedModalClose(target: string) {
 export function openMobileTargetFromUrl() {
   if (typeof window === 'undefined') return false;
   let url: URL;
-  try { url = new URL(window.location.href); } catch (_) { return false; }
+  try {
+    url = new URL(window.location.href);
+  } catch (_) {
+    return false;
+  }
   const target = url.searchParams.get('mobile_target');
   if (!target || !TARGETS.has(target)) return false;
 
@@ -155,10 +177,18 @@ export function openMobileTargetFromUrl() {
      * than the pre-navigation URL, otherwise this cleanup silently replaces
      * /projects with / and breaks reload/back-route parity. */
     let current = url;
-    try { current = new URL(window.location.href); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:144'); }
+    try {
+      current = new URL(window.location.href);
+    } catch (error) {
+      reportSwallow(error, 'native/mobileWebSessionBridge.ts:144');
+    }
     current.searchParams.delete('mobile_target');
     const next = current.pathname + current.search + current.hash;
-    try { window.history.replaceState(window.history.state, '', next); } catch (error) { reportSwallow(error, 'native/mobileWebSessionBridge.ts:147', 'expected'); }
+    try {
+      window.history.replaceState(window.history.state, '', next);
+    } catch (error) {
+      reportSwallow(error, 'native/mobileWebSessionBridge.ts:147', 'expected');
+    }
   }
   return opened;
 }

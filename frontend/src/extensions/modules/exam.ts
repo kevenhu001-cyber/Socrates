@@ -2,13 +2,15 @@ import { interfaceIcon } from '../../ui/icons/interfaceIcons';
 // frontend/src/extensions/modules/exam.ts
 
 import type { ExtensionDefinition } from '../types';
-import { stateStore } from '../../state/store.ts';
+import { uiBridge } from '../../store/index.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 function runExamCommand(command: 'openExamPanel' | 'closeExamView') {
-  void import('../../exam/index.ts').then((module) => module[command]()).catch((error) => {
-    reportSwallow(error, `extensions.exam.${command}`);
-  });
+  void import('../../exam/index.ts')
+    .then((module) => module[command]())
+    .catch((error) => {
+      reportSwallow(error, `extensions.exam.${command}`);
+    });
 }
 
 export const EXAM_ICON = interfaceIcon('exam', 18);
@@ -25,7 +27,7 @@ export const examExtension: ExtensionDefinition = {
   icon: EXAM_ICON,
   placement: { tools: 7, picker: 3 },
   onActivate(ctx) {
-    const inView = !!stateStore.read('_examInView');
+    const inView = !!uiBridge.getSnapshot()._examInView;
     // Toggle: if the panel is already open, close it instead of
     // re-opening. closeExamView() flips state._examInView and sets
     // state.examCancel so any in-flight generation loop bails.
@@ -43,7 +45,7 @@ export const examExtension: ExtensionDefinition = {
     // Safety net: when another extension takes over (e.g. user picks
     // a template after opening the exam), close the exam panel so it
     // doesn't linger behind the new template's UI.
-    if (stateStore.read('_examInView')) {
+    if (uiBridge.getSnapshot()._examInView) {
       runExamCommand('closeExamView');
     }
   },

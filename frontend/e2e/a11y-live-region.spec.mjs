@@ -3,17 +3,14 @@
 // 2) a finished streaming turn writes its prose into the #srLiveRegion
 //    polite announcer (and the announcer stays visually hidden).
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function startMockedTurn(page) {
   await page.evaluate(async () => {
     const originalFetch = window.fetch.bind(window);
-    const deltas = [
-      'The announcer must receive',
-      ' the final Markdown of this turn.',
-    ];
+    const deltas = ['The announcer must receive', ' the final Markdown of this turn.'];
     window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
@@ -34,17 +31,25 @@ async function startMockedTurn(page) {
           setTimeout(push, 80);
         },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
 
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [
-      { clientId: 'user-announce', role: 'user', rawText: 'Announce this turn', html: null },
-    ] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '66666666-6666-4666-8666-666666666666' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-announce', role: 'user', rawText: 'Announce this turn', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__announceTurn = window.askChatTurn('Announce this turn');
   });
@@ -57,7 +62,10 @@ test('skip link is the first Tab stop and focuses the main content', async ({ pa
   await waitForAppShell(page);
 
   const skipLink = page.locator('a.skip-link');
-  await expect(skipLink, 'index.html must carry exactly one skip link as the first focusable node').toHaveCount(1);
+  await expect(
+    skipLink,
+    'index.html must carry exactly one skip link as the first focusable node',
+  ).toHaveCount(1);
 
   // Parked off-screen until focus: its box must sit above the viewport.
   const hiddenBox = await skipLink.boundingBox();
@@ -94,10 +102,14 @@ test('a finished streaming turn is announced in the polite live region', async (
 
   // The announcer only appears once a turn finishes announcing.
   await expect
-    .poll(() => page.evaluate(() => {
-      const node = document.getElementById('srLiveRegion');
-      return node ? node.textContent : '';
-    }), { timeout: 5_000 })
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const node = document.getElementById('srLiveRegion');
+          return node ? node.textContent : '';
+        }),
+      { timeout: 5_000 },
+    )
     .toContain('final Markdown of this turn');
 
   const region = page.locator('#srLiveRegion');

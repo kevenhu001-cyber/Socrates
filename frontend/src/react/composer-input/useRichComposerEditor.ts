@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { cancelComposerNotification, getCachedComposerMarkdown, scheduleComposerNotification } from './composerMarkdown';
+import {
+  cancelComposerNotification,
+  getCachedComposerMarkdown,
+  scheduleComposerNotification,
+} from './composerMarkdown';
 import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -42,22 +46,25 @@ export function useRichComposerEditor({
     getLegacyActionsOrNull()?.composer.clearActiveTemplate?.();
   }, []);
 
-  const extensions = useMemo(() => [
-    StarterKit.configure({ link: false, underline: false }),
-    /* React owns the visible localized hint; Tiptap supplies empty-state
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({ link: false, underline: false }),
+      /* React owns the visible localized hint; Tiptap supplies empty-state
        classes used by the CSS placeholder. */
-    Placeholder.configure({ placeholder: '', showOnlyWhenEditable: false }),
-    Underline,
-    Link.configure({
-      openOnClick: false,
-      autolink: true,
-      HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
-    }),
-    TaskList,
-    TaskItem.configure({ nested: true }),
-    ExtensionToken.configure({ onRemove: onRemoveExtension }),
-    Markdown,
-  ], [onRemoveExtension]);
+      Placeholder.configure({ placeholder: '', showOnlyWhenEditable: false }),
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
+      }),
+      TaskList,
+      TaskItem.configure({ nested: true }),
+      ExtensionToken.configure({ onRemove: onRemoveExtension }),
+      Markdown,
+    ],
+    [onRemoveExtension],
+  );
   const tokenWasPresent = useRef(false);
 
   const editor = useEditor({
@@ -69,11 +76,12 @@ export function useRichComposerEditor({
         class: 'rich-composer-editor',
         'aria-label': activePlaceholder,
       },
-      transformPastedHTML: (html) => DOMPurify.sanitize(html, {
-        USE_PROFILES: { html: true },
-        FORBID_TAGS: ['img', 'style', 'script', 'iframe', 'object', 'embed'],
-        FORBID_ATTR: ['style', 'onerror', 'onclick'],
-      }),
+      transformPastedHTML: (html) =>
+        DOMPurify.sanitize(html, {
+          USE_PROFILES: { html: true },
+          FORBID_TAGS: ['img', 'style', 'script', 'iframe', 'object', 'embed'],
+          FORBID_ATTR: ['style', 'onerror', 'onclick'],
+        }),
       handlePaste: (_view, event) => {
         /* Clipboard screenshots often arrive as items while files is empty. */
         const files = Array.from(event.clipboardData?.files ?? []);
@@ -122,14 +130,21 @@ export function useRichComposerEditor({
         tokenWasPresent.current = activeToken;
       }
       cancelComposerNotification(editor);
-      if (!switchingSurface) scheduleComposerNotification(editor, () => {
-        if (readComposerSurface() === surface) notifyComposerChange(surface, getCachedComposerMarkdown(editor));
-      });
+      if (!switchingSurface)
+        scheduleComposerNotification(editor, () => {
+          if (readComposerSurface() === surface)
+            notifyComposerChange(surface, getCachedComposerMarkdown(editor));
+        });
       /* Coalesce geometry reads after the editor commits its document. */
       shape.syncComposerShape(editor.view.dom as HTMLElement);
     },
   });
-  useEffect(() => () => { if (editor) cancelComposerNotification(editor); }, [editor]);
+  useEffect(
+    () => () => {
+      if (editor) cancelComposerNotification(editor);
+    },
+    [editor],
+  );
   return editor;
 }
 

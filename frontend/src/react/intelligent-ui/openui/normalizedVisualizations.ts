@@ -13,7 +13,9 @@ import { createContext, useContext } from 'react';
 
 export type ServerVisualizationSpec = Record<string, unknown>;
 
-export const NormalizedVisualizationsContext = createContext<ReadonlyArray<ServerVisualizationSpec>>([]);
+export const NormalizedVisualizationsContext = createContext<
+  ReadonlyArray<ServerVisualizationSpec>
+>([]);
 
 export function useServerVisualizations(): ReadonlyArray<ServerVisualizationSpec> {
   return useContext(NormalizedVisualizationsContext);
@@ -27,7 +29,9 @@ export function matchServerVisualization(
 ): ServerVisualizationSpec | null {
   if (!specs.length || typeof template !== 'string') return null;
   const wanted = typeof title === 'string' ? title.trim() : '';
-  const matches = specs.filter((spec) => spec && spec.template === template && String(spec.title ?? '').trim() === wanted);
+  const matches = specs.filter(
+    (spec) => spec && spec.template === template && String(spec.title ?? '').trim() === wanted,
+  );
   /* Two identical (template, title) pairs are ambiguous: fall back to the
      local normalizer rather than risk drawing the sibling's data. */
   return matches.length === 1 ? matches[0] : null;

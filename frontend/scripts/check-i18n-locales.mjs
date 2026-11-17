@@ -27,16 +27,19 @@ const EN_PATH = fileURLToPath(new URL('../src/i18n/en.ts', import.meta.url));
 const ZH_PATH = fileURLToPath(new URL('../src/i18n/zh.ts', import.meta.url));
 
 /* A locale key is a dotted identifier in quotes followed by a colon.
- * Requiring the dot keeps this from matching unrelated quoted object keys. */
-const KEY_RE = /"([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+)"\s*:/g;
+ * Requiring the dot keeps this from matching unrelated quoted object keys.
+ * Both quote styles are accepted because the formatter normalizes them. */
+const KEY_RE = /(['"])([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)+)\1\s*:/g;
 
 function readKeys(label, path) {
   const source = readFileSync(path, 'utf8');
   const keys = new Set();
   let match;
-  while ((match = KEY_RE.exec(source)) !== null) keys.add(match[1]);
+  while ((match = KEY_RE.exec(source)) !== null) keys.add(match[2]);
   if (keys.size === 0) {
-    console.error(`${label}: parsed 0 locale keys from ${path} — refusing to gate on an empty parse`);
+    console.error(
+      `${label}: parsed 0 locale keys from ${path} — refusing to gate on an empty parse`,
+    );
     process.exit(1);
   }
   return keys;

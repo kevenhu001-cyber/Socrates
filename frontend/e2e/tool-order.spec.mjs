@@ -7,7 +7,7 @@
 //      sentence alone is not enough);
 //   2. (restored) a colon offset still splits prose at the next complete
 //      sentence, but the row stays in activity before both prose segments.
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -18,11 +18,12 @@ async function startControllableStream(page) {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    const textFrame = (content) => `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+    const textFrame = (content) =>
+      `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
     let push = null;
     let ref = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
         start(controller) {
@@ -31,46 +32,68 @@ async function startControllableStream(page) {
         },
       });
       window.__pushText = (content) => push(textFrame(content));
-      window.__pushToolUse = () => push(frame('tool_use', [
-        { id: 'live-search', name: 'web_search', input: { query: '北京天气' } },
-      ]));
-      window.__pushToolResult = () => push(frame('tool_result', {
-        id: 'live-search', ok: true, status: 'completed', output: 'Beijing: sunny, 22C',
-      }));
+      window.__pushToolUse = () =>
+        push(
+          frame('tool_use', [
+            { id: 'live-search', name: 'web_search', input: { query: '北京天气' } },
+          ]),
+        );
+      window.__pushToolResult = () =>
+        push(
+          frame('tool_result', {
+            id: 'live-search',
+            ok: true,
+            status: 'completed',
+            output: 'Beijing: sunny, 22C',
+          }),
+        );
       window.__closeStream = () => {
         push('data: [DONE]\n\n');
         ref.close();
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'en');
+    } catch (_) {}
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '77777777-7777-4777-8777-777777777777';
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-order', role: 'user', rawText: '天气', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-order', role: 'user', rawText: '天气', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__orderTurnPromise = window.askChatTurn('天气');
   });
-  await page.waitForFunction(() => (
-    typeof window.__pushText === 'function'
-    && typeof window.__pushToolUse === 'function'
-    && typeof window.__pushToolResult === 'function'
-    && typeof window.__closeStream === 'function'
-  ), null, { timeout: 15_000 });
+  await page.waitForFunction(
+    () =>
+      typeof window.__pushText === 'function' &&
+      typeof window.__pushToolUse === 'function' &&
+      typeof window.__pushToolResult === 'function' &&
+      typeof window.__closeStream === 'function',
+    null,
+    { timeout: 15_000 },
+  );
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
-test('a live row waits for its paragraph, then mounts once in activity before the prose', async ({ page }) => {
+test('a live row waits for its paragraph, then mounts once in activity before the prose', async ({
+  page,
+}) => {
   const body = await startControllableStream(page);
 
   /* The <think> tail buffer holds back up to 7 chars per frame, so the
@@ -88,7 +111,9 @@ test('a live row waits for its paragraph, then mounts once in activity before th
      a meaningful assertion (otherwise we might just be faster than the
      render pass). The icon moved from the header into the row, so the
      surface's live state is the signal the header can still prove. */
-  await expect(body.locator('[data-turn-surface-part="activity"][data-live="true"]')).toHaveCount(1);
+  await expect(body.locator('[data-turn-surface-part="activity"][data-live="true"]')).toHaveCount(
+    1,
+  );
   await expect(body.locator('[data-testid="turn-activity-indicator"]')).toBeVisible();
   /* The paragraph is unfinished: no row may mount (and therefore nothing
      can jump when punctuation arrives). A finished sentence alone must
@@ -121,11 +146,14 @@ test('a live row waits for its paragraph, then mounts once in activity before th
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('rn-turn-activity')) {
-        for (const row of node.querySelectorAll('.rn-tool-row')) out.push(`row:${row.dataset.tcid}`);
+        for (const row of node.querySelectorAll('.rn-tool-row'))
+          out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
-      } else if (!node.classList.contains('tool-run-turn-status')
-        && !(node.textContent || '').includes('Tool running')) {
+      } else if (
+        !node.classList.contains('tool-run-turn-status') &&
+        !(node.textContent || '').includes('Tool running')
+      ) {
         out.push(`other:${node.className}`);
       }
     }
@@ -147,52 +175,63 @@ const COLON_RAW = '原因有三：第一。第二。尾巴。';
 async function loadColonFixture(page) {
   await mockAuthedApp(page);
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'en');
+    } catch (_) {}
   });
-  await page.route(new RegExp('/api/(?:v2/)?sessions/' + COLON_SESSION_ID + '(?:\\?.*)?$'), async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: COLON_SESSION_ID,
-        topic: 'Tool order',
-        title: 'Tool order',
-        domain: 'ml',
-        mode: 'chat',
-        kind: 'chat',
-        phase: 'chat',
-        messages: [
-          { id: 'o-user', role: 'user', rawText: 'why', html: '<p>why</p>' },
-          {
-            id: 'o-assistant',
-            role: 'assistant',
-            rawText: COLON_RAW,
-            html: `<p>${COLON_RAW}</p>`,
-            toolCalls: [{
-              id: 'c1',
-              name: 'web_search',
-              input: { query: 'why' },
-              output: '1 result',
-              durationMs: 100,
-              status: 'completed',
-              /* Fired right behind the colon — must advance to 第一。, not EOF. */
-              textOffset: '原因有三：'.length,
-            }],
-          },
-        ],
-        kbNodes: [],
-        mistakes: [],
-      }),
-    });
-  });
+  await page.route(
+    new RegExp('/api/(?:v2/)?sessions/' + COLON_SESSION_ID + '(?:\\?.*)?$'),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: COLON_SESSION_ID,
+          topic: 'Tool order',
+          title: 'Tool order',
+          domain: 'ml',
+          mode: 'chat',
+          kind: 'chat',
+          phase: 'chat',
+          messages: [
+            { id: 'o-user', role: 'user', rawText: 'why', html: '<p>why</p>' },
+            {
+              id: 'o-assistant',
+              role: 'assistant',
+              rawText: COLON_RAW,
+              html: `<p>${COLON_RAW}</p>`,
+              toolCalls: [
+                {
+                  id: 'c1',
+                  name: 'web_search',
+                  input: { query: 'why' },
+                  output: '1 result',
+                  durationMs: 100,
+                  status: 'completed',
+                  /* Fired right behind the colon — must advance to 第一。, not EOF. */
+                  textOffset: '原因有三：'.length,
+                },
+              ],
+            },
+          ],
+          kbNodes: [],
+          mistakes: [],
+        }),
+      });
+    },
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, {
+    timeout: 15_000,
+  });
   await page.evaluate((id) => window.loadSession(id), COLON_SESSION_ID);
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
 
-test('a restored colon-offset row stays in activity while prose splits at the next sentence', async ({ page }) => {
+test('a restored colon-offset row stays in activity while prose splits at the next sentence', async ({
+  page,
+}) => {
   const body = await loadColonFixture(page);
   await expect(body.locator('.rn-turn-activity .rn-tool-row[data-tcid="c1"]')).toHaveCount(1);
   const order = await body.evaluate((el) => {
@@ -202,7 +241,8 @@ test('a restored colon-offset row stays in activity while prose splits at the ne
       if (node.classList.contains('tool-run-prose')) {
         out.push(`text:${(node.textContent || '').trim()}`);
       } else if (node.classList.contains('rn-turn-activity')) {
-        for (const row of node.querySelectorAll('.rn-tool-row')) out.push(`row:${row.dataset.tcid}`);
+        for (const row of node.querySelectorAll('.rn-tool-row'))
+          out.push(`row:${row.dataset.tcid}`);
       } else if (node.classList.contains('rn-tool-row')) {
         out.push(`row:${node.dataset.tcid}`);
       } else {
@@ -213,9 +253,5 @@ test('a restored colon-offset row stays in activity while prose splits at the ne
   });
   /* The row belongs to activity; the sentence-safe prose split remains
      intact without inserting a tool between the two text segments. */
-  expect(order).toEqual([
-    'row:c1',
-    'text:原因有三：第一。',
-    'text:第二。尾巴。',
-  ]);
+  expect(order).toEqual(['row:c1', 'text:原因有三：第一。', 'text:第二。尾巴。']);
 });

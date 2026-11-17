@@ -3,7 +3,7 @@
  * and Chat/Tutor transitions are delegated to focused modules below.
  * Render/list surfaces still owned by the legacy shell resolve via window.*.
  */
-import { resetState } from '../../state/store.ts';
+import { resetDomains } from '../../store/index.ts';
 import { turnState } from '../../chat/turn/state.ts';
 import { saveState } from '../../session/saveState.ts';
 import { apiFetch } from '../../util/api/index.ts';
@@ -24,7 +24,15 @@ import { toggleAppMode } from './mode.ts';
 
 export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
 
-export type UserRecord = (Partial<import('@socrates/contracts').User> & { subscriptionEnd?: string | null; verifiedAt?: string | null; createdAt?: string | null; customInstructions?: unknown }) | null | undefined;
+export type UserRecord =
+  | (Partial<import('@socrates/contracts').User> & {
+      subscriptionEnd?: string | null;
+      verifiedAt?: string | null;
+      createdAt?: string | null;
+      customInstructions?: unknown;
+    })
+  | null
+  | undefined;
 
 interface CurrentUserWindow extends Window {
   CURRENT_USER?: UserRecord;
@@ -50,7 +58,9 @@ try {
     const win = window as CurrentUserWindow;
     if (win.CURRENT_USER === undefined) win.CURRENT_USER = null;
   }
-} catch (e) { reportSwallow(e, 'app/lifecycle.currentUserMirror'); }
+} catch (e) {
+  reportSwallow(e, 'app/lifecycle.currentUserMirror');
+}
 
 /* Post-auth grace window (see isInAuthGraceWindow). */
 let _lastAuthSuccessAt = 0;
@@ -61,24 +71,28 @@ const AUTH_GRACE_MS = 3000;
    automatically, so asking "start a new session?" there is pure friction:
    switch immediately. The confirm is kept only where work would be lost —
    a reply that is still streaming, or an exam in progress. */
-export function startNewChat(){
+export function startNewChat() {
   return startNewComposerSession(resetApp);
 }
 
-export function syncIncognitoBtn(){
-  const on=isIncognitoOn();
-  try{document.body.setAttribute("data-incognito",on?"true":"false")}catch(e){reportSwallow(e,'app/lifecycle.syncIncognitoBtn');}
+export function syncIncognitoBtn() {
+  const on = isIncognitoOn();
+  try {
+    document.body.setAttribute('data-incognito', on ? 'true' : 'false');
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.syncIncognitoBtn');
+  }
 }
 
-export async function toggleIncognito(){
-  if(isIncognitoOn()){
+export async function toggleIncognito() {
+  if (isIncognitoOn()) {
     /* Leaving incognito — reset the view while the flag is STILL on so
        saveCurrentSession() bails and the temporary chat is discarded,
        then turn incognito off for future (saved) sessions. */
     await resetApp();
     setIncognitoOn(false);
     syncIncognitoBtn();
-    if(typeof showToast==="function")showToast(_t("incognito.off"));
+    if (typeof showToast === 'function') showToast(_t('incognito.off'));
     return;
   }
   /* Entering incognito — resetApp() saves any prior real session and
@@ -87,29 +101,31 @@ export async function toggleIncognito(){
   await resetApp();
   setIncognitoOn(true);
   syncIncognitoBtn();
-  if(typeof showToast==="function")showToast(_t("incognito.on"));
+  if (typeof showToast === 'function') showToast(_t('incognito.on'));
 }
 
-export function setCurrentUser(user: UserRecord){
+export function setCurrentUser(user: UserRecord) {
   _currentUser = user;
   try {
     if (typeof window !== 'undefined') {
       (window as CurrentUserWindow).CURRENT_USER = user;
     }
-  } catch (e) { reportSwallow(e, 'app/lifecycle.setCurrentUser'); }
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.setCurrentUser');
+  }
 }
 
-export function markAuthSuccess(){
-  _lastAuthSuccessAt=Date.now();
+export function markAuthSuccess() {
+  _lastAuthSuccessAt = Date.now();
 }
 
-export function isInAuthGraceWindow(){
-  return (Date.now()-_lastAuthSuccessAt) < AUTH_GRACE_MS;
+export function isInAuthGraceWindow() {
+  return Date.now() - _lastAuthSuccessAt < AUTH_GRACE_MS;
 }
 
-export function handleAuthExpired(cause: unknown){
-  console.log("[auth] handleAuthExpired called, cause="+(cause ? String(cause) : "apiFetch-401"));
-  try{
+export function handleAuthExpired(cause: unknown) {
+  console.log('[auth] handleAuthExpired called, cause=' + (cause ? String(cause) : 'apiFetch-401'));
+  try {
     /* P_bleed-auth-expired — same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the
        screen; without clearing cached user memories / geo info, the
@@ -117,8 +133,16 @@ export function handleAuthExpired(cause: unknown){
        memories in any subsequent system-context preview, and
        turnState.pendingChatContent could replay a draft image after the
        user signs back in. */
-    try{clearUserMemories()}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearMemories');}
-    try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.clearPendingChat');}
+    try {
+      clearUserMemories();
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.handleAuthExpired.clearMemories');
+    }
+    try {
+      turnState.pendingChatContent = null;
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.handleAuthExpired.clearPendingChat');
+    }
     /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing serverCache.sessions /
        providerConfig / _cmdKIndex, the sign-in gate's flash of
@@ -129,47 +153,64 @@ export function handleAuthExpired(cause: unknown){
     clearCurrentUserMirror();
     /* P_bleed-auth-expired-v2 — reset state so React components
        reading from state don't see the previous user's data after
-       the gate shows. Without this, state.session, stateStore.read("messages"),
-       stateStore.read("topic") etc. remain dirty until the next session load,
+       the gate shows. Without this, state.session, sessionBridge.getSnapshot().messages,
+       sessionBridge.getSnapshot().topic etc. remain dirty until the next session load,
        and any React subscription that fires between the gate and
        the next user's first fetch could briefly render stale data. */
-    resetState();
-    turnState.chatStreaming=false;
-    turnState.chatStopMode=false;
-    publishReactChatRuntime({type:"state-synced",reason:"auth-expired"});
+    resetDomains();
+    turnState.chatStreaming = false;
+    turnState.chatStopMode = false;
+    publishReactChatRuntime({ type: 'state-synced', reason: 'auth-expired' });
     /* Abort any active SSE chat stream so in-flight requests don't
         complete after the user has been sent to the auth gate and
         trigger further state mutations. */
-    try{
-      if(turnState.activeChatCtl){turnState.activeChatCtl.abort();turnState.activeChatCtl=null}
-      if(turnState.activeChatAbort){turnState.activeChatAbort("session-expired");turnState.activeChatAbort=null}
-    }catch(e){reportSwallow(e,'app/lifecycle.handleAuthExpired.abortActive');}
+    try {
+      if (turnState.activeChatCtl) {
+        turnState.activeChatCtl.abort();
+        turnState.activeChatCtl = null;
+      }
+      if (turnState.activeChatAbort) {
+        turnState.activeChatAbort('session-expired');
+        turnState.activeChatAbort = null;
+      }
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.handleAuthExpired.abortActive');
+    }
     /* Show the gate; the existing showGate() handles UI swap. */
-    if(typeof showGate==="function"){showGate()}
-    if(typeof showAuthSignin==="function"){showAuthSignin()}
+    if (typeof showGate === 'function') {
+      showGate();
+    }
+    if (typeof showAuthSignin === 'function') {
+      showAuthSignin();
+    }
     /* Inject a one-line hint above the sign-in form. We look for
        an existing auth banner element; if absent, we create a
        transient notice. */
-    setTimeout(function(){
-      let banner=document.getElementById("authExpiredBanner");
-      if(!banner){
-        banner=document.createElement("div");
-        banner.id="authExpiredBanner";
-        banner.className="auth-expired-banner";
-        banner.textContent=_t("auth.sessionExpired");
-        const gate=document.getElementById("authGate");
-        if(gate){gate.insertBefore(banner,gate.firstChild)}
+    setTimeout(function () {
+      let banner = document.getElementById('authExpiredBanner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'authExpiredBanner';
+        banner.className = 'auth-expired-banner';
+        banner.textContent = _t('auth.sessionExpired');
+        const gate = document.getElementById('authGate');
+        if (gate) {
+          gate.insertBefore(banner, gate.firstChild);
+        }
       }
-    },0);
-  }catch(e){/* handleAuthExpired failed */ reportSwallow(e,'app/lifecycle.handleAuthExpired.outer');}
+    }, 0);
+  } catch (e) {
+    /* handleAuthExpired failed */ reportSwallow(e, 'app/lifecycle.handleAuthExpired.outer');
+  }
 }
 
 function clearLocalCookies(host: string): void {
-  document.cookie.split(";").forEach(function(c){
-    const eq=c.indexOf("="),name=eq>-1?c.substring(0,eq).trim():c.trim();
-    if(!name)return;
-    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-    document.cookie=name+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain="+host;
+  document.cookie.split(';').forEach(function (c) {
+    const eq = c.indexOf('='),
+      name = eq > -1 ? c.substring(0, eq).trim() : c.trim();
+    if (!name) return;
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + host;
   });
 }
 
@@ -179,11 +220,17 @@ function clearCurrentUserMirror(): void {
     if (typeof window !== 'undefined') {
       (window as CurrentUserWindow).CURRENT_USER = null;
     }
-  } catch(e) { reportSwallow(e, 'app/lifecycle.clearCurrentUserMirror'); }
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.clearCurrentUserMirror');
+  }
 }
 
-export async function signOut(){
-  try{await apiFetch("/api/auth/logout",{method:"POST"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.apiLogout');}
+export async function signOut() {
+  try {
+    await apiFetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.signOut.apiLogout');
+  }
   /* Clear browser cookies on the current domain. The server already
    * cleared both the host-only and .topodrive.top variants of `sid`
    * and `csrf`, but belt-and-braces: also expire the host-only copy
@@ -194,22 +241,34 @@ export async function signOut(){
    * overwrite it on the next login. */
   clearLocalCookies(location.hostname);
   /* Re-fetch the CSRF token cookie so subsequent auth POSTs succeed. */
-  try{await fetch("/api/v2/auth/csrf-token",{credentials:"include"})}catch(e){reportSwallow(e,'app/lifecycle.signOut.csrfRefresh');}
+  try {
+    await fetch('/api/v2/auth/csrf-token', { credentials: 'include' });
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.signOut.csrfRefresh');
+  }
   /* P_bleed-signout — drain any in-flight save first, so the
      subsequent saveCurrentSession doesn't cascade into a stale
      saveState.saveDirty chain. */
-  if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'app/lifecycle.signOut.drainInFlight1');}
+  if (saveState.saveInFlight) {
+    try {
+      await saveState.saveInFlight;
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.signOut.drainInFlight1');
+    }
   }
   /* P_bleed-signout-v2 — save the current session BEFORE clearing
      any caches or state. Previously (Bug 1&2), clearPerUserClientState
      + CURRENT_USER=null + resetState ran before resetApp's internal
      saveCurrentSession(), causing doSave() to bail because CURRENT_USER
-     was null and stateStore.read("topic") was empty — the active session was
+     was null and sessionBridge.getSnapshot().topic was empty — the active session was
      silently lost on every sign-out. */
   saveCurrentSession();
-  if(saveState.saveInFlight){
-    try{await saveState.saveInFlight}catch(e){reportSwallow(e,'app/lifecycle.signOut.drainInFlight2');}
+  if (saveState.saveInFlight) {
+    try {
+      await saveState.saveInFlight;
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.signOut.drainInFlight2');
+    }
   }
   /* P_bleed-signout — wipe every per-user cache so the next user on
       this browser starts from a clean slate. Clears cached user memories /
@@ -219,20 +278,44 @@ export async function signOut(){
   clearPerUserClientState();
   clearCurrentUserMirror();
   /* Reset state. */
-  resetState();
+  resetDomains();
   /* Abort any active chat stream — resetApp() isn't called from
      signOut (to avoid its "Start a new session?" confirm dialog), so
      we inline the essential stream teardown here. */
-  if(turnState.activeChatAbort){try{turnState.activeChatAbort("signout")}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortActive');}}
-  if(turnState.activeChatCtl){try{turnState.activeChatCtl.abort()}catch(e){reportSwallow(e,'app/lifecycle.signOut.abortTurnState');}}
-  turnState.activeChatCtl=null;
-  turnState.activeChatAbort=null;
-  turnState.chatStreaming=false;
-  turnState.chatStopMode=false;
+  if (turnState.activeChatAbort) {
+    try {
+      turnState.activeChatAbort('signout');
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.signOut.abortActive');
+    }
+  }
+  if (turnState.activeChatCtl) {
+    try {
+      turnState.activeChatCtl.abort();
+    } catch (e) {
+      reportSwallow(e, 'app/lifecycle.signOut.abortTurnState');
+    }
+  }
+  turnState.activeChatCtl = null;
+  turnState.activeChatAbort = null;
+  turnState.chatStreaming = false;
+  turnState.chatStopMode = false;
   resetShareToken();
-  try{turnState.pendingChatContent=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingChat');}
-  try{turnState.pendingAttachments=null}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearPendingAttachments');}
-  try{localStorage.removeItem('socrates-recents-filter')}catch(e){reportSwallow(e,'app/lifecycle.signOut.clearRecentsFilter','expected');}
+  try {
+    turnState.pendingChatContent = null;
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.signOut.clearPendingChat');
+  }
+  try {
+    turnState.pendingAttachments = null;
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.signOut.clearPendingAttachments');
+  }
+  try {
+    localStorage.removeItem('socrates-recents-filter');
+  } catch (e) {
+    reportSwallow(e, 'app/lifecycle.signOut.clearRecentsFilter', 'expected');
+  }
   showGate();
   publishSidebarChrome();
 }

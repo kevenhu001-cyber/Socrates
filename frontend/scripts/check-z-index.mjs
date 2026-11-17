@@ -123,17 +123,24 @@ function main() {
   if (!baseline) {
     writeFileSync(
       BASELINE,
-      JSON.stringify({ offenders: hits.length, generatedBy: 'check-z-index.mjs --update' }, null, 2) + '\n',
+      JSON.stringify(
+        { offenders: hits.length, generatedBy: 'check-z-index.mjs --update' },
+        null,
+        2,
+      ) + '\n',
     );
     console.log(
       `z-index: no baseline found — wrote scripts/z-index.baseline.json (${hits.length} off-token declarations across ${scanned} live sheets).`,
     );
-    console.log('Review the list below, commit the baseline, and re-run. Growth beyond it now fails.');
+    console.log(
+      'Review the list below, commit the baseline, and re-run. Growth beyond it now fails.',
+    );
   } else if (UPDATE) {
     const shrunk = Math.min(hits.length, baseline.offenders ?? hits.length);
     writeFileSync(
       BASELINE,
-      JSON.stringify({ offenders: shrunk, generatedBy: 'check-z-index.mjs --update' }, null, 2) + '\n',
+      JSON.stringify({ offenders: shrunk, generatedBy: 'check-z-index.mjs --update' }, null, 2) +
+        '\n',
     );
     console.log(`z-index: baseline updated to ${shrunk} (counts only ever shrink).`);
   } else if (hits.length > baseline.offenders) {

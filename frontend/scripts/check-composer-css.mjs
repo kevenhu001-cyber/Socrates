@@ -53,7 +53,9 @@ for (const file of walk(STYLES)) {
 if (problems.length) {
   console.error(`composer CSS check failed (${problems.length}):`);
   for (const p of problems) console.error('  ' + p);
-  console.error('\nStyle the composer only in src/styles/parity/composer-unified.css (via .composer-shell).');
+  console.error(
+    '\nStyle the composer only in src/styles/parity/composer-unified.css (via .composer-shell).',
+  );
   process.exit(1);
 }
 console.log('composer CSS check passed (single owner: src/styles/parity/composer-unified.css)');

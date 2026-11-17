@@ -8,10 +8,10 @@ type ConfirmRuntime = typeof import('./ConfirmDialogContent');
 let runtimePromise: Promise<ConfirmRuntime> | null = null;
 
 function loadConfirmRuntime() {
-  return runtimePromise ??= import('./ConfirmDialogContent').catch((error) => {
+  return (runtimePromise ??= import('./ConfirmDialogContent').catch((error) => {
     runtimePromise = null;
     throw error;
-  });
+  }));
 }
 
 /** The boot root subscribes immediately; modal primitives load on first use. */
@@ -23,13 +23,15 @@ function ConfirmDialog() {
   useEffect(() => {
     if (!snapshot.open || runtime) return;
     let cancelled = false;
-    void loadConfirmRuntime().then((loaded) => {
-      if (!cancelled) setRuntime(loaded);
-    }).catch((error) => {
-      if (cancelled) return;
-      reportSwallow(error, 'confirm:load');
-      cancel();
-    });
+    void loadConfirmRuntime()
+      .then((loaded) => {
+        if (!cancelled) setRuntime(loaded);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        reportSwallow(error, 'confirm:load');
+        cancel();
+      });
     const dismissKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' && event.key !== 'Tab') return;
       if (event.key === 'Escape') {

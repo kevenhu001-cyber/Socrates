@@ -1,14 +1,18 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { completeFrame, namedFrame, prepareChatWorkbench, textFrame } from './_chat-workbench.mjs';
 
-test('whiteboard, composer and menu work together after the shared-dependency split', async ({ page }, testInfo) => {
+test('whiteboard, composer and menu work together after the shared-dependency split', async ({
+  page,
+}, testInfo) => {
   const errors = [];
   const cspViolations = [];
   page.on('pageerror', (error) => errors.push({ message: error.message, stack: error.stack }));
   await page.exposeFunction('recordWhiteboardCsp', (uri) => cspViolations.push(uri));
-  await page.addInitScript(() => document.addEventListener('securitypolicyviolation', (event) => {
-    window.recordWhiteboardCsp(event.blockedURI);
-  }));
+  await page.addInitScript(() =>
+    document.addEventListener('securitypolicyviolation', (event) => {
+      window.recordWhiteboardCsp(event.blockedURI);
+    }),
+  );
   const spec = {
     version: 1,
     template: 'whiteboard',
@@ -17,10 +21,25 @@ test('whiteboard, composer and menu work together after the shared-dependency sp
     payload: { nodes: [{ label: 'Shared dependency check' }] },
   };
   await prepareChatWorkbench(page, {
-    streamBody: namedFrame('tool_use', [{ id: 'whiteboard-runtime-tool', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]} }])
-      + namedFrame('tool_result', { id: 'whiteboard-runtime-tool', name: 'render_intelligent_ui',
-        ok: true, status: 'completed', visualizations: [{...spec,nodeId:'visual',index:0}], output: 'Whiteboard ready', durationMs: 1 })
-      + textFrame('The whiteboard is ready.') + completeFrame(),
+    streamBody:
+      namedFrame('tool_use', [
+        {
+          id: 'whiteboard-runtime-tool',
+          name: 'render_intelligent_ui',
+          input: { version: 1, nodes: [{ ...spec, id: 'visual', type: 'visualization' }] },
+        },
+      ]) +
+      namedFrame('tool_result', {
+        id: 'whiteboard-runtime-tool',
+        name: 'render_intelligent_ui',
+        ok: true,
+        status: 'completed',
+        visualizations: [{ ...spec, nodeId: 'visual', index: 0 }],
+        output: 'Whiteboard ready',
+        durationMs: 1,
+      }) +
+      textFrame('The whiteboard is ready.') +
+      completeFrame(),
   });
   await page.evaluate(() => window.askChatTurn('Draw a whiteboard'));
   const card = page.locator('.visualization-card[data-visualization-renderer="tldraw"]');
@@ -38,13 +57,19 @@ test('whiteboard, composer and menu work together after the shared-dependency sp
   // same-origin CSP blocks. Keep that observed limitation explicit; do not hide
   // module/React errors or relax production CSP to make this regression pass.
   const blockedAssets = cspViolations.filter((uri) => uri.startsWith('https://cdn.tldraw.com/'));
-  const isBlockedAssetError = (error) => blockedAssets.length > 0
-    && error.message === 'Failed to fetch' && error.stack?.includes('/assets/vendor-tldraw-');
+  const isBlockedAssetError = (error) =>
+    blockedAssets.length > 0 &&
+    error.message === 'Failed to fetch' &&
+    error.stack?.includes('/assets/vendor-tldraw-');
   expect(errors.filter((error) => !isBlockedAssetError(error))).toEqual([]);
   if (blockedAssets.length) {
-    testInfo.annotations.push({ type: 'known-issue', description: 'tldraw default CDN assets are blocked by the same-origin CSP' });
+    testInfo.annotations.push({
+      type: 'known-issue',
+      description: 'tldraw default CDN assets are blocked by the same-origin CSP',
+    });
     await testInfo.attach('whiteboard-csp-assets', {
-      body: JSON.stringify({ blockedAssets, errors }, null, 2), contentType: 'application/json',
+      body: JSON.stringify({ blockedAssets, errors }, null, 2),
+      contentType: 'application/json',
     });
   }
 });

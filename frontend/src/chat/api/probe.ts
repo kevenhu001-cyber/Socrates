@@ -16,8 +16,13 @@ import type { ChatApiError } from './shared.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 const SEMANTIC_EVENTS = new Set([
-  'tool_use', 'tool_result', 'tool_progress', 'execution_start',
-  'tool_call_delta', 'agent_step', 'agent_plan',
+  'tool_use',
+  'tool_result',
+  'tool_progress',
+  'execution_start',
+  'tool_call_delta',
+  'agent_step',
+  'agent_plan',
 ]);
 
 /** Shape the probe hands back to the tool-detection callers. */
@@ -53,10 +58,13 @@ type ProbeOutcome =
 
 function parseProbeError(payload: string): ChatApiError {
   let errorData: ProbePayload | null;
-  try { errorData = JSON.parse(payload) as ProbePayload; }
-  catch { return makeAIError(payload); }
+  try {
+    errorData = JSON.parse(payload) as ProbePayload;
+  } catch {
+    return makeAIError(payload);
+  }
   return makeAIError(
-    errorData && (errorData.error || errorData.message) || payload,
+    (errorData && (errorData.error || errorData.message)) || payload,
     errorData && errorData.status,
     errorData as Record<string, unknown> | null,
   );
@@ -87,14 +95,17 @@ function addProbeChoice(payload: ProbePayload | null, state: ProbeState): void {
 function addProbeData(raw: string, state: ProbeState): void {
   if (!raw || raw === '[DONE]') return;
   let payload: ProbePayload | null;
-  try { payload = JSON.parse(raw) as ProbePayload; }
-  catch { return; } // Ignore keep-alive and unknown frames.
+  try {
+    payload = JSON.parse(raw) as ProbePayload;
+  } catch {
+    return;
+  } // Ignore keep-alive and unknown frames.
 
   if (payload && payload.error) {
     state.streamError = makeAIError(
       typeof payload.error === 'string'
         ? payload.error
-        : ((payload.error as { message?: unknown }).message || 'upstream error'),
+        : (payload.error as { message?: unknown }).message || 'upstream error',
       payload.status,
       payload as Record<string, unknown>,
     );
@@ -142,8 +153,11 @@ async function consumeProbeResponse(response: Response): Promise<ProbeOutcome> {
         split = buffer.indexOf('\n\n');
       }
     }
-    try { reader.releaseLock(); }
-    catch (error) { reportSwallow(error, 'chat/api.probe.releaseReader'); }
+    try {
+      reader.releaseLock();
+    } catch (error) {
+      reportSwallow(error, 'chat/api.probe.releaseReader');
+    }
     reader = null;
     buffer += decoder.decode();
     if (buffer && buffer.indexOf('data:') >= 0) processProbeFrame(buffer, state);
@@ -151,15 +165,22 @@ async function consumeProbeResponse(response: Response): Promise<ProbeOutcome> {
     return failedProbe(error, state.semanticActivity);
   } finally {
     if (reader) {
-      try { await reader.cancel(); }
-      catch (error) { reportSwallow(error, 'chat/api.probe.cancelReader'); }
-      try { reader.releaseLock(); }
-      catch (error) { reportSwallow(error, 'chat/api.probe.releaseFailedReader'); }
+      try {
+        await reader.cancel();
+      } catch (error) {
+        reportSwallow(error, 'chat/api.probe.cancelReader');
+      }
+      try {
+        reader.releaseLock();
+      } catch (error) {
+        reportSwallow(error, 'chat/api.probe.releaseFailedReader');
+      }
     }
   }
 
   if (state.streamError) return failedProbe(state.streamError, state.semanticActivity);
-  if (!state.full) return failedProbe(makeAIError('empty or malformed stream'), state.semanticActivity);
+  if (!state.full)
+    return failedProbe(makeAIError('empty or malformed stream'), state.semanticActivity);
   return {
     kind: 'success',
     result: { text: state.full, html: null, widgets: [], cancelled: false },
@@ -180,8 +201,11 @@ async function runProbeAttempt(
       signal: controller.signal,
     });
     const outcome = await consumeProbeResponse(response);
-    if (outcome.kind === 'failure'
-        && (isUserAbort(outcome.error, retryOptions.signal) || isUserAbort(outcome.error, controller.signal))) {
+    if (
+      outcome.kind === 'failure' &&
+      (isUserAbort(outcome.error, retryOptions.signal) ||
+        isUserAbort(outcome.error, controller.signal))
+    ) {
       return { kind: 'cancelled' };
     }
     return outcome;
@@ -209,9 +233,8 @@ export async function callAPIChat(
   }
   setLastCallError(null);
 
-  const maxAttempts = retryOptions.maxRetries == null
-    ? AI_MAX_ATTEMPTS
-    : Math.max(0, retryOptions.maxRetries) + 1;
+  const maxAttempts =
+    retryOptions.maxRetries == null ? AI_MAX_ATTEMPTS : Math.max(0, retryOptions.maxRetries) + 1;
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {

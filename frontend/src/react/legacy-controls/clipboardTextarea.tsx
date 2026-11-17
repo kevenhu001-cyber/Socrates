@@ -13,13 +13,17 @@ export function copyTextWithShadcnTextarea(value: string): Promise<void> {
   let root!: ReturnType<typeof mountOwnedRoot>;
   try {
     flushSync(() => {
-      root = mountOwnedRoot(host, 'clipboard-textarea', createElement(Textarea, {
-        ref,
-        defaultValue: value,
-        readOnly: true,
-        tabIndex: -1,
-        className: 'h-1 min-h-0 w-1 resize-none p-0',
-      }));
+      root = mountOwnedRoot(
+        host,
+        'clipboard-textarea',
+        createElement(Textarea, {
+          ref,
+          defaultValue: value,
+          readOnly: true,
+          tabIndex: -1,
+          className: 'h-1 min-h-0 w-1 resize-none p-0',
+        }),
+      );
     });
     const textarea = ref.current;
     if (!textarea) throw new Error('clipboard textarea did not mount');
@@ -32,6 +36,7 @@ export function copyTextWithShadcnTextarea(value: string): Promise<void> {
   } finally {
     root.destroy();
     host.remove();
-    if (focused instanceof HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
+    if (focused instanceof HTMLElement && focused.isConnected)
+      focused.focus({ preventScroll: true });
   }
 }

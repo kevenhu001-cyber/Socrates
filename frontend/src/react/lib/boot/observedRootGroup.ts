@@ -35,7 +35,13 @@ export function createObservedRootGroup(label: string, options: ObservedRootGrou
   };
 
   const observe = () => {
-    if (observer || typeof MutationObserver === 'undefined' || typeof document === 'undefined' || !document.body) return;
+    if (
+      observer ||
+      typeof MutationObserver === 'undefined' ||
+      typeof document === 'undefined' ||
+      !document.body
+    )
+      return;
     observer = new MutationObserver(releaseDetached);
     observer.observe(document.body, { childList: true, subtree: true });
   };

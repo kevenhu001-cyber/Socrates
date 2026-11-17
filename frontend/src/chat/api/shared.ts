@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { dispatchCall } from '../../store/index.ts';
 import { isUserAbort, waitForAIRetry } from '../retryPolicy.ts';
 import type { AIRequestOptions } from '../retryPolicy.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -24,10 +24,14 @@ export interface RetryDecision {
 }
 
 export function setLastCallError(value: unknown): void {
-  stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value });
+  dispatchCall({ type: 'call/set', key: 'lastCallError', value });
 }
 
-export function makeAIError(message: unknown, status?: number | null, body?: Record<string, unknown> | null): ChatApiError {
+export function makeAIError(
+  message: unknown,
+  status?: number | null,
+  body?: Record<string, unknown> | null,
+): ChatApiError {
   const error = new Error(String(message || 'model request failed')) as ChatApiError;
   if (status != null) error.status = Number(status);
   if (body != null) error.body = body;
@@ -37,16 +41,19 @@ export function makeAIError(message: unknown, status?: number | null, body?: Rec
 
 export function errorMessage(error: unknown, fallback?: string): string {
   const record = error as { message?: unknown } | null | undefined;
-  return String(record && record.message || error || fallback || 'model request failed');
+  return String((record && record.message) || error || fallback || 'model request failed');
 }
 
 export function monthlyLimitMessage(error: unknown): string {
-  const record = error as { code?: unknown; body?: { code?: unknown; message?: unknown } } | null | undefined;
+  const record = error as
+    { code?: unknown; body?: { code?: unknown; message?: unknown } } | null | undefined;
   const body = record && record.body;
-  const code = String(record && record.code || body && body.code || '').toUpperCase();
+  const code = String((record && record.code) || (body && body.code) || '').toUpperCase();
   if (code !== 'MONTHLY_LIMIT') return '';
-  return 'Monthly Beagle usage limit reached. '
-    + String(body && body.message || 'Upgrade your plan or wait until next month.');
+  return (
+    'Monthly Beagle usage limit reached. ' +
+    String((body && body.message) || 'Upgrade your plan or wait until next month.')
+  );
 }
 
 export function bindAbortSignal(
@@ -55,14 +62,20 @@ export function bindAbortSignal(
 ): (() => void) | null {
   if (!parent) return null;
   const onAbort = (): void => {
-    try { child.abort(parent.reason || 'aborted'); }
-    catch (error) { reportSwallow(error, 'chat/api.bindAbortSignal.abort'); }
+    try {
+      child.abort(parent.reason || 'aborted');
+    } catch (error) {
+      reportSwallow(error, 'chat/api.bindAbortSignal.abort');
+    }
   };
   if (parent.aborted) onAbort();
   else parent.addEventListener('abort', onAbort, { once: true });
   return () => {
-    try { parent.removeEventListener('abort', onAbort); }
-    catch (error) { reportSwallow(error, 'chat/api.bindAbortSignal.cleanup'); }
+    try {
+      parent.removeEventListener('abort', onAbort);
+    } catch (error) {
+      reportSwallow(error, 'chat/api.bindAbortSignal.cleanup');
+    }
   };
 }
 
@@ -71,8 +84,9 @@ export async function waitForRetry(
   error: unknown,
   options?: AIRequestOptions,
 ): Promise<boolean> {
-  try { return await waitForAIRetry(attempt, error, options); }
-  catch (abortError) {
+  try {
+    return await waitForAIRetry(attempt, error, options);
+  } catch (abortError) {
     if (isUserAbort(abortError, options && options.signal)) return false;
     throw abortError;
   }
@@ -83,8 +97,11 @@ export async function retryDecision(
   error: unknown,
   options?: AIRequestOptions,
 ): Promise<RetryDecision> {
-  try { return { retry: await waitForRetry(attempt, error, options), error: null }; }
-  catch (retryError) { return { retry: false, error: retryError }; }
+  try {
+    return { retry: await waitForRetry(attempt, error, options), error: null };
+  } catch (retryError) {
+    return { retry: false, error: retryError };
+  }
 }
 
 export function isAbortError(error: unknown): boolean {
@@ -93,7 +110,5 @@ export function isAbortError(error: unknown): boolean {
 }
 
 export function attemptLimit(options: AIRequestOptions, defaultAttempts: number): number {
-  return options.maxRetries == null
-    ? defaultAttempts
-    : Math.max(0, options.maxRetries) + 1;
+  return options.maxRetries == null ? defaultAttempts : Math.max(0, options.maxRetries) + 1;
 }

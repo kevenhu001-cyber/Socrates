@@ -34,7 +34,7 @@ function storeToken(token: string): void {
   try {
     sessionStorage.setItem(TOKEN_KEY, token);
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:35', 'expected');
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts', 'expected');
     // Session storage can be unavailable in restricted browser contexts.
   }
 }
@@ -43,7 +43,7 @@ export function clearAdminToken(): void {
   try {
     sessionStorage.removeItem(TOKEN_KEY);
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:43', 'expected');
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts', 'expected');
     // Session storage can be unavailable in restricted browser contexts.
   }
 }
@@ -93,10 +93,15 @@ export async function loginAdmin(password: string): Promise<void> {
     credentials: 'same-origin',
     body: JSON.stringify({ password }),
   });
-  const payload = await responsePayload<{ error?: string; message?: string; token?: string }>(response, {});
+  const payload = await responsePayload<{ error?: string; message?: string; token?: string }>(
+    response,
+    {},
+  );
   if (!response.ok) {
     if (response.status === 403 && payload.error === 'admin_ip_not_allowed') {
-      throw new Error('This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.');
+      throw new Error(
+        'This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.',
+      );
     }
     if (response.status === 429) {
       throw new Error('Too many failed attempts — the console is locked for 15 minutes.');
@@ -121,9 +126,14 @@ export async function loadAdminConfiguration(): Promise<{
     ? await responsePayload<SystemModelConfig | null>(systemResponse, null)
     : null;
   const embeddingPayload = embeddingResponse.ok
-    ? await responsePayload<EmbeddingProviderConfig | EmbeddingProviderConfig[] | null>(embeddingResponse, null)
+    ? await responsePayload<EmbeddingProviderConfig | EmbeddingProviderConfig[] | null>(
+        embeddingResponse,
+        null,
+      )
     : null;
-  const embedding = Array.isArray(embeddingPayload) ? embeddingPayload[0] ?? null : embeddingPayload;
+  const embedding = Array.isArray(embeddingPayload)
+    ? (embeddingPayload[0] ?? null)
+    : embeddingPayload;
   return { systemModel, embedding };
 }
 
@@ -142,7 +152,11 @@ export async function saveSystemModel(
   if (options.includeKeyHint && form.keyHint) body.keyHint = form.keyHint;
   const response = await fetch(ADMIN_API, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(options.includeToken), ...csrfHeaders() },
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(options.includeToken),
+      ...csrfHeaders(),
+    },
     credentials: 'same-origin',
     body: JSON.stringify(body),
   });
@@ -165,7 +179,11 @@ export async function saveEmbeddingProvider(
   if (options.includeKeyHint && form.keyHint) body.keyHint = form.keyHint;
   const response = await fetch(EMBEDDING_API, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...authHeaders(options.includeToken), ...csrfHeaders() },
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(options.includeToken),
+      ...csrfHeaders(),
+    },
     credentials: 'same-origin',
     body: JSON.stringify(body),
   });
@@ -190,7 +208,7 @@ export async function logoutAdmin(): Promise<void> {
       credentials: 'same-origin',
     });
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts:189');
+    reportEmptyCatch(error, 'empty catch: react/adminModal/adminApi.ts');
     // Clear the local session even if the server cannot be reached.
   }
   clearAdminToken();

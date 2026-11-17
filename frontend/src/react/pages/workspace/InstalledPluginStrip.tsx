@@ -9,13 +9,19 @@ interface InstalledPluginStripProps {
   onShowPersonal: () => void;
 }
 
-export function InstalledPluginStrip({ plugins, onSelect, onShowPersonal }: InstalledPluginStripProps) {
+export function InstalledPluginStrip({
+  plugins,
+  onSelect,
+  onShowPersonal,
+}: InstalledPluginStripProps) {
   if (plugins.length === 0) return null;
   return (
     <div className="plugin-installed-strip" aria-label={i18n('plugins.installed', 'Installed')}>
       <UiButton type="button" className="plugin-installed-label" onClick={onShowPersonal}>
         {i18n('plugins.installed', 'Installed')}
-        <span className="plugin-installed-caret" aria-hidden="true">›</span>
+        <span className="plugin-installed-caret" aria-hidden="true">
+          ›
+        </span>
       </UiButton>
       <div className="plugin-installed-icons">
         {plugins.map((plugin) => (

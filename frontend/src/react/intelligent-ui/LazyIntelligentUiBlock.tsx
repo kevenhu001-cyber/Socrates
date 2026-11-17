@@ -3,14 +3,14 @@ import { lazy, Suspense, type ComponentProps } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { BlockSkeletonShell } from './BlockSkeleton';
 
-const IntelligenceUiBlock = lazy(() => import('./IntelligenceUi'));
+const IntelligentUiBlock = lazy(() => import('./IntelligentUi'));
 
 /** Keep rich response surfaces outside the ordinary prose/boot graph. */
-export function LazyIntelligenceUiBlock(props: ComponentProps<typeof IntelligenceUiBlock>) {
+export function LazyIntelligentUiBlock(props: ComponentProps<typeof IntelligentUiBlock>) {
   return (
     <ErrorBoundary>
       <Suspense fallback={<BlockSkeletonShell />}>
-        <IntelligenceUiBlock {...props} />
+        <IntelligentUiBlock {...props} />
       </Suspense>
     </ErrorBoundary>
   );

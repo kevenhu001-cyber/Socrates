@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import {
   WORKBENCH_VIEWPORTS,
   completeFrame,
@@ -9,12 +9,29 @@ import {
 } from './_chat-workbench.mjs';
 
 const BASE_MESSAGES = [
-  { clientId: 'fixture-user', role: 'user', rawText: 'Build a compact workbench.', html: '<p>Build a compact workbench.</p>', type: 'user' },
-  { clientId: 'fixture-assistant', role: 'assistant', rawText: 'The workbench is ready.', html: '<p>The workbench is ready.</p>', type: 'assistant' },
+  {
+    clientId: 'fixture-user',
+    role: 'user',
+    rawText: 'Build a compact workbench.',
+    html: '<p>Build a compact workbench.</p>',
+    type: 'user',
+  },
+  {
+    clientId: 'fixture-assistant',
+    role: 'assistant',
+    rawText: 'The workbench is ready.',
+    html: '<p>The workbench is ready.</p>',
+    type: 'assistant',
+  },
 ];
 
-test('desktop chat workbench keeps shell, transcript and composer in one viewport', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+test('desktop chat workbench keeps shell, transcript and composer in one viewport', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.desktop,
+  });
 
   await expect(page.locator('#sidebar')).toBeVisible();
   await expect(page.locator('.top-bar')).toBeVisible();
@@ -82,7 +99,10 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
       userBackground: userStyle?.backgroundColor,
       assistantBackground: assistantStyle?.backgroundColor,
       assistantFontSize: Math.round(parseFloat(assistantStyle?.fontSize || '0')),
-      fontScale: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale')) || 1,
+      fontScale:
+        parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale'),
+        ) || 1,
       assistantLineHeight: Math.round(parseFloat(assistantStyle?.lineHeight || '0')),
       toolbarHeight: Math.round(toolbar?.getBoundingClientRect().height || 0),
     };
@@ -101,13 +121,18 @@ test('desktop chat workbench keeps shell, transcript and composer in one viewpor
   expect(messageLayout.assistantBackground).toBe('rgba(0, 0, 0, 0)');
   /* chatgpt.com prose is 16px at the default display step (1.125×); other
      steps scale around it (--app-type-scale, styles/tokens.css). */
-  expect(messageLayout.assistantFontSize).toBe(Math.round(16 * messageLayout.fontScale / 1.125));
+  expect(messageLayout.assistantFontSize).toBe(Math.round((16 * messageLayout.fontScale) / 1.125));
   expect(messageLayout.assistantLineHeight).toBeGreaterThanOrEqual(24);
   expect(messageLayout.toolbarHeight).toBeLessThanOrEqual(32);
 });
 
-test('desktop composer keeps focus and grows for multiline input without submitting', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+test('desktop composer keeps focus and grows for multiline input without submitting', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.desktop,
+  });
 
   const editor = page.locator('#composerRoot .rich-composer-editor');
   const wrap = page.locator('#composerInputWrap');
@@ -156,21 +181,28 @@ test('desktop composer keeps focus and grows for multiline input without submitt
   expect(composed.messageCount).toBe(initial.messageCount);
 });
 
-test('desktop idle composer keeps its edge controls circular and optically aligned', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+test('desktop idle composer keeps its edge controls circular and optically aligned', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.desktop,
+  });
 
   const geometry = await page.evaluate(() => {
     const measure = (selector) => {
       const node = document.querySelector(selector);
       const rect = node?.getBoundingClientRect();
       const style = node ? getComputedStyle(node) : null;
-      return rect && style ? {
-        width: Math.round(rect.width),
-        height: Math.round(rect.height),
-        centerY: rect.top + rect.height / 2,
-        radius: style.borderRadius,
-        background: style.backgroundColor,
-      } : null;
+      return rect && style
+        ? {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            centerY: rect.top + rect.height / 2,
+            radius: style.borderRadius,
+            background: style.backgroundColor,
+          }
+        : null;
     };
     return {
       wrap: measure('#composerInputWrap'),
@@ -199,15 +231,23 @@ test('desktop idle composer keeps its edge controls circular and optically align
      same row can land 1px apart after rounding. A control that actually
      moved to another row is off by tens of pixels, so the check still
      catches real misalignment. */
-  expect(Math.abs((geometry.attach?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(2);
-  expect(Math.abs((geometry.mic?.centerY ?? 0) - (geometry.send?.centerY ?? 0))).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs((geometry.attach?.centerY ?? 0) - (geometry.send?.centerY ?? 0)),
+  ).toBeLessThanOrEqual(2);
+  expect(
+    Math.abs((geometry.mic?.centerY ?? 0) - (geometry.send?.centerY ?? 0)),
+  ).toBeLessThanOrEqual(2);
 });
 
-test('mobile chat workbench keeps a focusable multiline composer without horizontal overflow', async ({ page }) => {
+test('mobile chat workbench keeps a focusable multiline composer without horizontal overflow', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page, {
     messages: BASE_MESSAGES,
     viewport: WORKBENCH_VIEWPORTS.mobile,
-    streamBody: [textFrame('Sent without changing the composer surface.'), completeFrame()].join(''),
+    streamBody: [textFrame('Sent without changing the composer surface.'), completeFrame()].join(
+      '',
+    ),
   });
 
   const editor = page.locator('#composerRoot .rich-composer-editor');
@@ -279,9 +319,14 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
     window.__composerShapeObserver = new MutationObserver(() => {
       window.__composerShapeTransitions.push(wrapNode.classList.contains('composer-multiline'));
     });
-    window.__composerShapeObserver.observe(wrapNode, { attributes: true, attributeFilter: ['class'] });
+    window.__composerShapeObserver.observe(wrapNode, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
   });
-  await editor.fill('This sentence is intentionally long enough to wrap naturally inside the compact mobile composer without an explicit newline.');
+  await editor.fill(
+    'This sentence is intentionally long enough to wrap naturally inside the compact mobile composer without an explicit newline.',
+  );
   await expect(wrap).toHaveClass(/composer-multiline/);
   await page.waitForTimeout(500);
   const shapeTransitions = await page.evaluate(() => {
@@ -301,7 +346,9 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   await expect(wrap).not.toHaveClass(/composer-multiline/);
   await page.waitForTimeout(360);
   await editor.press('Enter');
-  await expect(page.locator('#msgList .msg.assistant').last()).toContainText('Sent without changing');
+  await expect(page.locator('#msgList .msg.assistant').last()).toContainText(
+    'Sent without changing',
+  );
   /* The capsule animates back from the multiline card to the idle row, so
      wait for the height to settle before comparing the rest of the
      geometry — measuring mid-transition reads an intermediate value. */
@@ -328,15 +375,33 @@ test('mobile chat workbench keeps a focusable multiline composer without horizon
   expect(afterSend.pageBackground).toBe(initial.pageBackground);
 });
 
-test('deterministic tool fixture preserves one durable row and finalized answer', async ({ page }) => {
+test('deterministic tool fixture preserves one durable row and finalized answer', async ({
+  page,
+}) => {
   const streamBody = [
-    namedFrame('tool_use', [{ id: 'fixture-search', name: 'web_search', input: { query: 'Socrates' } }]),
-    namedFrame('tool_result', { id: 'fixture-search', name: 'web_search', ok: true, durationMs: 420, results: [{ title: 'Source', url: 'https://example.test/source' }] }),
+    namedFrame('tool_use', [
+      { id: 'fixture-search', name: 'web_search', input: { query: 'Socrates' } },
+    ]),
+    namedFrame('tool_result', {
+      id: 'fixture-search',
+      name: 'web_search',
+      ok: true,
+      durationMs: 420,
+      results: [{ title: 'Source', url: 'https://example.test/source' }],
+    }),
     textFrame('A deterministic response.'),
     completeFrame(),
   ].join('');
   await prepareChatWorkbench(page, {
-    messages: [{ clientId: 'fixture-user', role: 'user', rawText: 'Search', html: '<p>Search</p>', type: 'user' }],
+    messages: [
+      {
+        clientId: 'fixture-user',
+        role: 'user',
+        rawText: 'Search',
+        html: '<p>Search</p>',
+        type: 'user',
+      },
+    ],
     streamBody,
   });
 
@@ -344,5 +409,8 @@ test('deterministic tool fixture preserves one durable row and finalized answer'
   const answer = page.locator('#msgList .msg.assistant').last();
   await expect(answer).toContainText('A deterministic response.');
   await expect(answer.locator('.rn-tool-row[data-tcid="fixture-search"]')).toHaveCount(1);
-  await expect(answer.locator('.rn-tool-row[data-tcid="fixture-search"]')).toHaveAttribute('data-state', 'done');
+  await expect(answer.locator('.rn-tool-row[data-tcid="fixture-search"]')).toHaveAttribute(
+    'data-state',
+    'done',
+  );
 });

@@ -1,93 +1,118 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function prepareDelayedStream(page, options = {}) {
   const delay = options.delay || 150;
   const finishDelay = options.finishDelay || 1000;
-  await page.evaluate(async ({ delay, finishDelay }) => {
-    const originalFetch = window.fetch.bind(window);
-    const deltas = [
-      '# Stable heading\n\nThe live tail begins',
-      ' and keeps growing without replacing',
-      ' the completed heading. This response',
-      ' contains enough text to exercise the',
-      ' adaptive streaming cadence and pinned',
-      ' scrolling behavior across multiple',
-      ' visual updates while the network sends',
-      ' small chunks. The final Markdown remains correct.',
-    ];
-    window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
-      const encoder = new TextEncoder();
-      let timer = null;
-      const stream = new ReadableStream({
-        start(controller) {
-          let index = 0;
-          const push = () => {
-            if (index < deltas.length) {
-              const payload = { choices: [{ delta: { content: deltas[index++] } }] };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-              timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
-              return;
-            }
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            controller.close();
-          };
-          timer = setTimeout(push, delay);
-        },
-        cancel() { if (timer) clearTimeout(timer); },
-      });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
-    };
+  await page.evaluate(
+    async ({ delay, finishDelay }) => {
+      const originalFetch = window.fetch.bind(window);
+      const deltas = [
+        '# Stable heading\n\nThe live tail begins',
+        ' and keeps growing without replacing',
+        ' the completed heading. This response',
+        ' contains enough text to exercise the',
+        ' adaptive streaming cadence and pinned',
+        ' scrolling behavior across multiple',
+        ' visual updates while the network sends',
+        ' small chunks. The final Markdown remains correct.',
+      ];
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
+        const encoder = new TextEncoder();
+        let timer = null;
+        const stream = new ReadableStream({
+          start(controller) {
+            let index = 0;
+            const push = () => {
+              if (index < deltas.length) {
+                const payload = { choices: [{ delta: { content: deltas[index++] } }] };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
+                return;
+              }
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              controller.close();
+            };
+            timer = setTimeout(push, delay);
+          },
+          cancel() {
+            if (timer) clearTimeout(timer);
+          },
+        });
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          }),
+        );
+      };
 
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '77777777-7777-4777-8777-777777777777' });
-    /* A tall transcript, through state.messages: #msgList is React-owned, so
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({
+        session: { currentSessionId: '77777777-7777-4777-8777-777777777777' },
+      });
+      /* A tall transcript, through state.messages: #msgList is React-owned, so
        foreign nodes appended to it are not something the renderer promises to
        keep — and the scroll maths below only mean something if the height
        comes from what is actually rendered. */
-    const earlier = [];
-    for (let i = 0; i < 24; i += 1) {
-      const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
-      earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
-    }
-    /* History precedes the current prompt, as it does in a real transcript.
+      const earlier = [];
+      for (let i = 0; i < 24; i += 1) {
+        const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
+        earlier.push({
+          clientId: 'pre-' + i,
+          role: 'assistant',
+          rawText: text,
+          html: `<p>${text}</p>`,
+          type: null,
+        });
+      }
+      /* History precedes the current prompt, as it does in a real transcript.
        The initial progressive window must include the submitted user row so
        the product (not the fixture) can establish the send-time anchor. */
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [...earlier, { clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null }] });
-    window.__testActivateMainView('chatView');
+      window.__socratesTestState.patch({
+        session: {
+          messages: [
+            ...earlier,
+            { clientId: 'user-stream', role: 'user', rawText: 'Stream smoothly', html: null },
+          ],
+        },
+      });
+      window.__testActivateMainView('chatView');
 
-    const list = document.getElementById('msgList');
-    /* Start the turn first, then wait for the send-time anchor to settle: while
+      const list = document.getElementById('msgList');
+      /* Start the turn first, then wait for the send-time anchor to settle: while
        scheduleActiveTurnToTop holds the prompt at the top of the viewport,
        "pinned to the bottom" is a position the app is deliberately not at yet. */
-    window.__smoothStreamPromise = window.askChatTurn('Stream smoothly');
-    await new Promise((resolve) => {
-      const wait = () => {
-        if (list.querySelector('.msg.assistant[data-viewport-anchor]')) return resolve();
-        requestAnimationFrame(wait);
-      };
-      wait();
-    });
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    list.scrollTop = list.scrollHeight;
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
-  }, { delay, finishDelay });
+      window.__smoothStreamPromise = window.askChatTurn('Stream smoothly');
+      await new Promise((resolve) => {
+        const wait = () => {
+          if (list.querySelector('.msg.assistant[data-viewport-anchor]')) return resolve();
+          requestAnimationFrame(wait);
+        };
+        wait();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      list.scrollTop = list.scrollHeight;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
+    },
+    { delay, finishDelay },
+  );
 }
 
 async function waitForStreamHandoff(page) {
   await page.waitForFunction(() => {
-    const id = window.stateStore.read("messages").at(-1)?.clientId;
+    const id = window.__socratesTestState.session().messages.at(-1)?.clientId;
     if (!id) return false;
-    return document.querySelector(`[data-client-id="${id}"][data-react-owned]`)
-      && !Array.from(document.querySelectorAll(`[data-client-id="${id}"]`))
-        .some((node) => !node.hasAttribute('data-react-owned'));
+    return (
+      document.querySelector(`[data-client-id="${id}"][data-react-owned]`) &&
+      !Array.from(document.querySelectorAll(`[data-client-id="${id}"]`)).some(
+        (node) => !node.hasAttribute('data-react-owned'),
+      )
+    );
   });
 }
 
@@ -107,16 +132,24 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
      settled block itself stays mounted while the tail changes. */
   const heading = bubble.locator('.tool-run-prose.is-settled > *');
   await expect(heading).toContainText('Stable heading');
-  expect(await page.evaluate(() => {
-    window.__settledHeading = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
-    return Boolean(window.__settledHeading);
-  })).toBe(true);
+  expect(
+    await page.evaluate(() => {
+      window.__settledHeading = document.querySelector(
+        '.tool-run-prose.is-settled',
+      )?.firstElementChild;
+      return Boolean(window.__settledHeading);
+    }),
+  ).toBe(true);
 
-  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('adaptive streaming cadence');
-  expect(await page.evaluate(() => {
-    const current = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
-    return current === window.__settledHeading;
-  })).toBe(true);
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText(
+    'adaptive streaming cadence',
+  );
+  expect(
+    await page.evaluate(() => {
+      const current = document.querySelector('.tool-run-prose.is-settled')?.firstElementChild;
+      return current === window.__settledHeading;
+    }),
+  ).toBe(true);
   /* P_smooth-stream — the visual playback stream is decoupled from arrival,
      so the LAST sentence need not be visible in the live tail before finish:
      the playback clock may still be revealing it. The invariant here is that
@@ -129,16 +162,22 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
      transplant is what used to jump the scroll and re-run the post-render
      hooks). The prose *segment* does change class when the last block settles,
      so identity is checked on the row, not on the settled div. */
-  expect(await page.evaluate(() => {
-    const id = window.stateStore.read("messages").at(-1)?.clientId;
-    window.__streamRow = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
-    return Boolean(window.__streamRow);
-  })).toBe(true);
+  expect(
+    await page.evaluate(() => {
+      const id = window.__socratesTestState.session().messages.at(-1)?.clientId;
+      window.__streamRow = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
+      return Boolean(window.__streamRow);
+    }),
+  ).toBe(true);
 
-  await expect.poll(() => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
-  })).toBeLessThanOrEqual(2);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const list = document.getElementById('msgList');
+        return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+      }),
+    )
+    .toBeLessThanOrEqual(2);
 
   await page.evaluate(() => window.__smoothStreamPromise);
   await waitForStreamHandoff(page);
@@ -148,17 +187,22 @@ test('streaming keeps settled Markdown mounted and follows a pinned reader', asy
      finish() handoff; the cursor is removed (not just hidden) once
      `isLive` flips, but the test also allows a brief cross-fade window
      during which the row still has the cursor in the DOM with opacity 0. */
-  await expect.poll(() => bubble.locator('.stream-cursor').count(), { timeout: 600 })
-    .toBe(0);
-  expect(await page.evaluate(() => {
-    const id = window.stateStore.read("messages").at(-1)?.clientId;
-    const current = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
-    return current === window.__streamRow && Boolean(current?.isConnected);
-  })).toBe(true);
-  await expect.poll(() => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
-  })).toBeLessThanOrEqual(2);
+  await expect.poll(() => bubble.locator('.stream-cursor').count(), { timeout: 600 }).toBe(0);
+  expect(
+    await page.evaluate(() => {
+      const id = window.__socratesTestState.session().messages.at(-1)?.clientId;
+      const current = id ? document.querySelector(`[data-client-id="${id}"]`) : null;
+      return current === window.__streamRow && Boolean(current?.isConnected);
+    }),
+  ).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const list = document.getElementById('msgList');
+        return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+      }),
+    )
+    .toBeLessThanOrEqual(2);
 });
 
 test('streaming respects an intentional scroll-away', async ({ page }) => {
@@ -168,21 +212,27 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
 
   const list = page.locator('#msgList');
   await list.hover();
-  await expect.poll(async () => {
-    const position = await list.evaluate((node) => ({
-      top: node.scrollTop,
-      first: node.querySelector(':scope > .msg')?.dataset.clientId,
-    }));
-    /* Native wheel intent cancels a running follow animation. Keep reading
+  await expect
+    .poll(async () => {
+      const position = await list.evaluate((node) => ({
+        top: node.scrollTop,
+        first: node.querySelector(':scope > .msg')?.dataset.clientId,
+      }));
+      /* Native wheel intent cancels a running follow animation. Keep reading
        older chunks until this is the real transcript top, not window top. */
-    if (position.first !== 'pre-0' || position.top >= 8) {
-      await page.mouse.wheel(0, -10000);
-      return false;
-    }
-    return true;
-  }).toBe(true);
-  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(true);
-  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('pinned scrolling behavior');
+      if (position.first !== 'pre-0' || position.top >= 8) {
+        await page.mouse.wheel(0, -10000);
+        return false;
+      }
+      return true;
+    })
+    .toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway))
+    .toBe(true);
+  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText(
+    'pinned scrolling behavior',
+  );
   expect(await page.evaluate(() => document.getElementById('msgList').scrollTop)).toBeLessThan(8);
   await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);
   /* P_smooth-stream — the reader scrolled away; the invariant is that finish
@@ -208,15 +258,16 @@ test('streaming respects an intentional scroll-away', async ({ page }) => {
    visual contrast instead. */
 test('markdown h3 heading is visually distinct from body text', async ({ page }) => {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   await page.evaluate(() => {
-    window.addMessage?.('assistant',
+    window.addMessage?.(
+      'assistant',
       '我们用两种方法求解这个问题：\n\n' +
-      '### 方法 1：特征方程法\n\n' +
-      '建立特征方程 $r^2 - 2r + 1 = 0$，\n\n' +
-      '可以解出 $r = 1$ 是二重根。',
+        '### 方法 1：特征方程法\n\n' +
+        '建立特征方程 $r^2 - 2r + 1 = 0$，\n\n' +
+        '可以解出 $r = 1$ 是二重根。',
     );
   });
   await expect(page.locator('#msgList .msg.assistant .msg-body h3')).toHaveCount(1);
@@ -230,7 +281,9 @@ test('markdown h3 heading is visually distinct from body text', async ({ page })
     return {
       headingSize: parseFloat(h.fontSize),
       headingWeight: parseInt(h.fontWeight, 10),
-      headingWeightToken: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui-font-weight-medium')),
+      headingWeightToken: parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--ui-font-weight-medium'),
+      ),
       headingColor: h.color,
       bodySize: parseFloat(p.fontSize),
       bodyWeight: parseInt(p.fontWeight, 10),
@@ -265,7 +318,9 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
   // Wait for streaming to begin — the streaming bubble carries
   // .tool-run-prose.is-live. The 24 pre-existing assistant messages
   // don't, so the locator uniquely selects the new bubble.
-  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.tool-run-prose.is-live') });
+  const bubble = page
+    .locator('.msg.assistant')
+    .filter({ has: page.locator('.tool-run-prose.is-live') });
   await expect(bubble).toHaveCount(1);
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('keeps growing');
 
@@ -275,7 +330,9 @@ test('finish preserves mid-message scroll position (row anchor)', async ({ page 
   // header chrome.
   const before = await page.evaluate(() => {
     const list = document.getElementById('msgList');
-    const b = document.querySelector('.msg.assistant .tool-run-prose.is-live')?.closest('.msg.assistant');
+    const b = document
+      .querySelector('.msg.assistant .tool-run-prose.is-live')
+      ?.closest('.msg.assistant');
     if (!b) throw new Error('streaming bubble missing');
     list.scrollTop = b.offsetTop;
     list.dispatchEvent(new Event('scroll', { bubbles: true }));

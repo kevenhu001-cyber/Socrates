@@ -37,9 +37,14 @@ export class OutputErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     try {
-      console.warn('[tool-output] renderer failed', this.props.outputId, error.message, info.componentStack);
+      console.warn(
+        '[tool-output] renderer failed',
+        this.props.outputId,
+        error.message,
+        info.componentStack,
+      );
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/tool-output/OutputErrorBoundary.tsx:40');
+      reportEmptyCatch(_, 'empty catch: react/tool-output/OutputErrorBoundary.tsx');
       /* logging must never rethrow */
     }
   }
@@ -53,7 +58,9 @@ export class OutputErrorBoundary extends Component<
       return (
         <div className="tool-output-error" role="status">
           <span>This result failed to render.</span>
-          <Button type="button" onClick={this.retry}>Retry</Button>
+          <Button type="button" onClick={this.retry}>
+            Retry
+          </Button>
         </div>
       );
     }

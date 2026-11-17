@@ -1,5 +1,5 @@
 // debug-topic-desktop.spec.mjs — Desktop inspect.
-import { test } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -39,7 +39,9 @@ test('DEBUG: topic composer on DESKTOP — focus + 1 line behavior', async ({ pa
   const afterOneLine = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC AFTER 1LINE:', JSON.stringify(afterOneLine));
 
-  await page.locator('#composerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
+  await page
+    .locator('#composerRoot .rich-composer-editor')
+    .fill('A much longer line of text that should wrap to the second line on desktop');
   await page.waitForTimeout(500);
   const afterMulti = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP TOPIC AFTER MULTILINE:', JSON.stringify(afterMulti));
@@ -53,7 +55,7 @@ test('DEBUG: chat composer on DESKTOP — focus + 1 line behavior', async ({ pag
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(150);
@@ -70,7 +72,9 @@ test('DEBUG: chat composer on DESKTOP — focus + 1 line behavior', async ({ pag
   const afterOneLine = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT AFTER 1LINE:', JSON.stringify(afterOneLine));
 
-  await page.locator('#composerRoot .rich-composer-editor').fill('A much longer line of text that should wrap to the second line on desktop');
+  await page
+    .locator('#composerRoot .rich-composer-editor')
+    .fill('A much longer line of text that should wrap to the second line on desktop');
   await page.waitForTimeout(800);
   const afterMulti = await snapshotWrap(page, '#composerInputWrap');
   console.log('DESKTOP CHAT AFTER MULTILINE:', JSON.stringify(afterMulti));

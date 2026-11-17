@@ -36,7 +36,9 @@ function installControllableStream(page) {
       const encoder = new TextEncoder();
       let controllerRef;
       const body = new ReadableStream({
-        start(controller) { controllerRef = controller; },
+        start(controller) {
+          controllerRef = controller;
+        },
       });
       window.__pushDelta = (text) => {
         const payload = { choices: [{ delta: { content: text } }] };
@@ -46,10 +48,12 @@ function installControllableStream(page) {
         controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
         controllerRef.close();
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
 }
@@ -59,8 +63,10 @@ function installControllableStream(page) {
    Mirrors prepareDelayedStream() in streaming-render.spec.mjs. */
 async function bootStreamingChat(page) {
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '88888888-8888-4888-8888-888888888888' },
+    });
     window.__testActivateMainView('chatView');
 
     /* A tall transcript so the scroller overflows. These go through
@@ -69,11 +75,24 @@ async function bootStreamingChat(page) {
     const earlier = [];
     for (let i = 0; i < 24; i += 1) {
       const text = `Earlier message ${i}: ${'context '.repeat(12)}`;
-      earlier.push({ clientId: 'pre-' + i, role: 'assistant', rawText: text, html: `<p>${text}</p>`, type: null });
+      earlier.push({
+        clientId: 'pre-' + i,
+        role: 'assistant',
+        rawText: text,
+        html: `<p>${text}</p>`,
+        type: null,
+      });
     }
     /* The submitted prompt belongs after its history. Putting it first leaves
        it outside the initial tail window, so no send-time anchor can mount. */
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [...earlier, { clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null }] });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          ...earlier,
+          { clientId: 'user-scroll', role: 'user', rawText: 'Scroll smoothly', html: null },
+        ],
+      },
+    });
     /* The renderer re-reads state.messages when the turn publishes its first
        event, so start the stream, then wait for the list to actually overflow
        before pinning — "at the bottom" is meaningless while nothing scrolls. */
@@ -81,8 +100,11 @@ async function bootStreamingChat(page) {
     const list = document.getElementById('msgList');
     await new Promise((resolve) => {
       const wait = () => {
-        if (list.querySelector('.msg.assistant[data-viewport-anchor]')
-          && list.scrollHeight > list.clientHeight + 80) return resolve();
+        if (
+          list.querySelector('.msg.assistant[data-viewport-anchor]') &&
+          list.scrollHeight > list.clientHeight + 80
+        )
+          return resolve();
         requestAnimationFrame(wait);
       };
       wait();
@@ -95,7 +117,7 @@ async function bootStreamingChat(page) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     list.scrollTop = list.scrollHeight;
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
 }
 
@@ -122,7 +144,9 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
   // Push the first delta so the live tail (.tool-run-prose.is-live — the
   // re-parsed block of the declarative turn) mounts, then bind the bubble.
   await page.evaluate(() => window.__pushDelta('The answer begins and keeps growing. '));
-  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.tool-run-prose.is-live') });
+  const bubble = page
+    .locator('.msg.assistant')
+    .filter({ has: page.locator('.tool-run-prose.is-live') });
   await expect(bubble).toHaveCount(1);
 
   // A pinned reader should keep the newest content in view —
@@ -134,18 +158,26 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
 
   // Push a large delta that forces the scroller to grow well past one
   // viewport; the pinned reader is followed to the new bottom.
-  await page.evaluate(() => window.__pushDelta('It adds several more lines of streamed content to force the scroller to grow well past a single viewport height while the reader remains pinned. '.repeat(6)));
+  await page.evaluate(() =>
+    window.__pushDelta(
+      'It adds several more lines of streamed content to force the scroller to grow well past a single viewport height while the reader remains pinned. '.repeat(
+        6,
+      ),
+    ),
+  );
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
 
   // The scroll-away flag must remain clear for a pinned reader.
-  expect(await page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
+  expect(await page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway)).toBe(false);
   await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
 
   await page.evaluate(() => window.__finishStream());
   await page.evaluate(() => window.__streamPromise);
 });
 
-test('a pinned reader follows repeated stream growth without losing the newest content', async ({ page }) => {
+test('a pinned reader follows repeated stream growth without losing the newest content', async ({
+  page,
+}) => {
   await bootStreamingChat(page);
   const initialHeight = await page.evaluate(() => {
     window.__scrollSampleActive = true;
@@ -162,7 +194,11 @@ test('a pinned reader follows repeated stream growth without losing the newest c
 
   for (let i = 0; i < 8; i += 1) {
     await page.evaluate((index) => {
-      window.__pushDelta(`Growth packet ${index}: the answer continues with enough text to wrap and extend the transcript. `.repeat(6) + '\n\n');
+      window.__pushDelta(
+        `Growth packet ${index}: the answer continues with enough text to wrap and extend the transcript. `.repeat(
+          6,
+        ) + '\n\n',
+      );
     }, i);
     await page.waitForTimeout(70);
   }
@@ -172,7 +208,10 @@ test('a pinned reader follows repeated stream growth without losing the newest c
      min-height, so text can grow inside that reserve without moving the
      scroller at all. Sample until the transcript actually outgrows the
      reserve, then judge following from those samples. */
-  await expect.poll(() => page.evaluate(() => document.getElementById('msgList').scrollHeight), { timeout: 20000 })
+  await expect
+    .poll(() => page.evaluate(() => document.getElementById('msgList').scrollHeight), {
+      timeout: 20000,
+    })
     .toBeGreaterThan(initialHeight + 40);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   const tops = await page.evaluate(() => {
@@ -181,7 +220,9 @@ test('a pinned reader follows repeated stream growth without losing the newest c
   });
   expect(tops.length).toBeGreaterThan(12);
   for (let i = 1; i < tops.length; i += 1) {
-    expect(tops[i], `frame ${i} moved away from the newest content`).toBeGreaterThanOrEqual(tops[i - 1] - 1);
+    expect(tops[i], `frame ${i} moved away from the newest content`).toBeGreaterThanOrEqual(
+      tops[i - 1] - 1,
+    );
   }
   expect(Math.max(...tops) - Math.min(...tops)).toBeGreaterThan(24);
 
@@ -189,13 +230,23 @@ test('a pinned reader follows repeated stream growth without losing the newest c
   await page.evaluate(() => window.__streamPromise);
 });
 
-test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it re-pins', async ({ page }) => {
+test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it re-pins', async ({
+  page,
+}) => {
   await bootStreamingChat(page);
 
   // Prime the stream so the streaming surface mounts, then confirm the
   // reader starts pinned.
-  await page.evaluate(() => window.__pushDelta('The answer begins and keeps growing with enough content to overflow the scroller. '.repeat(3)));
-  const bubble = page.locator('.msg.assistant').filter({ has: page.locator('.tool-run-prose.is-live') });
+  await page.evaluate(() =>
+    window.__pushDelta(
+      'The answer begins and keeps growing with enough content to overflow the scroller. '.repeat(
+        3,
+      ),
+    ),
+  );
+  const bubble = page
+    .locator('.msg.assistant')
+    .filter({ has: page.locator('.tool-run-prose.is-live') });
   await expect(bubble).toHaveCount(1);
   await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('The answer begins');
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
@@ -213,11 +264,19 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
 
   // Auto-scroll must stop: the flag flips and the reader stays off the
   // bottom even as more content streams in.
-  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(true);
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway))
+    .toBe(true);
   const distanceAfterGesture = await distanceFromBottom(page);
   expect(distanceAfterGesture).toBeGreaterThan(64);
 
-  await page.evaluate(() => window.__pushDelta('More streamed content arrives while the reader has scrolled away and should not be dragged back down. '.repeat(3)));
+  await page.evaluate(() =>
+    window.__pushDelta(
+      'More streamed content arrives while the reader has scrolled away and should not be dragged back down. '.repeat(
+        3,
+      ),
+    ),
+  );
   // The reader was NOT re-pinned by the new delta (auto-scroll stopped).
   await expect.poll(() => distanceFromBottom(page)).toBeGreaterThan(64);
 
@@ -226,7 +285,9 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
 
   // Clicking the pill clears the scrolled-away flag and snaps to bottom.
   await page.locator('#newReplyPill').click();
-  await expect.poll(() => page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway))
+    .toBe(false);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
 
@@ -238,11 +299,16 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
    through the real composer pipeline so the send-time turn anchor runs. */
 async function bootSendableChat(page) {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '99999999-9999-4999-8999-999999999999' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '99999999-9999-4999-8999-999999999999' },
+    });
     window.__testActivateMainView('chatView');
     for (let i = 0; i < 30; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Anchor history ${i + 1}: ${'context '.repeat(12)}`);
+      window.addMessage(
+        i % 2 ? 'assistant' : 'user',
+        `Anchor history ${i + 1}: ${'context '.repeat(12)}`,
+      );
     }
   });
   /* History is progressively mounted, not eagerly rendered in full. Read
@@ -250,42 +316,52 @@ async function bootSendableChat(page) {
      This also guards against the 13–60-row expansion regression. */
   await page.locator('#msgList .msg').last().scrollIntoViewIfNeeded();
   await page.locator('#msgList').hover();
-  await expect.poll(async () => {
-    const count = await page.locator('#msgList .msg').count();
-    if (count !== 30) await page.mouse.wheel(0, -2000);
-    return count;
-  }).toBe(30);
+  await expect
+    .poll(async () => {
+      const count = await page.locator('#msgList .msg').count();
+      if (count !== 30) await page.mouse.wheel(0, -2000);
+      return count;
+    })
+    .toBe(30);
   await expect(page.locator('#msgList .msg')).toHaveCount(30);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
   await page.waitForTimeout(250);
 }
 
 test('send glides the prompt to the top instead of teleporting', async ({ page }) => {
   await bootSendableChat(page);
-  const startTop = await page.evaluate(() => Math.round(document.getElementById('msgList').scrollTop));
+  const startTop = await page.evaluate(() =>
+    Math.round(document.getElementById('msgList').scrollTop),
+  );
 
   /* Sample the scroller for the whole anchor window: the settling flag is
      set when the glide starts and cleared when it converges. */
-  const motionPromise = page.evaluate(() => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const values = [];
-    let sawSettling = false;
-    const deadline = performance.now() + 1800;
-    const tick = () => {
-      values.push(Math.round(list.scrollTop));
-      if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
-      if ((sawSettling && list.dataset.turnAnchorSettling !== 'true') || performance.now() > deadline) {
-        resolve(values);
-        return;
-      }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }));
+  const motionPromise = page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const values = [];
+        let sawSettling = false;
+        const deadline = performance.now() + 1800;
+        const tick = () => {
+          values.push(Math.round(list.scrollTop));
+          if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
+          if (
+            (sawSettling && list.dataset.turnAnchorSettling !== 'true') ||
+            performance.now() > deadline
+          ) {
+            resolve(values);
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
 
   await page.evaluate(() => window.submitChatMessage('Glide the prompt to the top'));
   const values = await motionPromise;
@@ -305,7 +381,7 @@ test('send glides the prompt to the top instead of teleporting', async ({ page }
     return {
       userOffset: Math.round(latest.getBoundingClientRect().top - listRect.top),
       settling: list.dataset.turnAnchorSettling === 'true',
-      away: window.stateStore.read('_userScrolledAway'),
+      away: window.__socratesTestState.ui()._userScrolledAway,
     };
   });
   expect(settled.settling).toBe(false);
@@ -322,10 +398,18 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
   await page.evaluate(() => window.submitChatMessage('A long streamed answer follows this prompt'));
 
   /* The prompt is anchored near the top with reserved answer room below. */
-  await expect.poll(() => page.evaluate(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor'),
-  ))).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true')).toBe(false);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(document.querySelector('#msgList .msg.assistant.turn-viewport-anchor')),
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true'),
+    )
+    .toBe(false);
   const anchored = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const users = list.querySelectorAll('.msg-user, .msg.user');
@@ -340,18 +424,28 @@ test('sticky bottom resumes once the answer outgrows the prompt reserve', async 
 
   /* A delta far larger than the reserved room: the tail must stay visible
      (sticky bottom) even though the prompt-anchor row is still mounted. */
-  await page.evaluate(() => window.__pushDelta('Long streamed content keeps arriving. '.repeat(140)));
+  await page.evaluate(() =>
+    window.__pushDelta('Long streamed content keeps arriving. '.repeat(140)),
+  );
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   /* The playback clock can still have most of this delta buffered at the
      first bottom sample. Require the entire live answer to be visible, then
      check again: a transient pin must not hide a lost final resize delivery. */
-  await expect(page.locator('#msgList .tool-run-prose.is-live')).toHaveText('Long streamed content keeps arriving. '.repeat(140).trim());
-  await expect.poll(() => page.evaluate(() => {
-    const row = document.querySelector('#msgList .msg.assistant.turn-viewport-anchor');
-    return Boolean(row && row.getBoundingClientRect().height > parseFloat(row.style.minHeight) + 1);
-  })).toBe(true);
+  await expect(page.locator('#msgList .tool-run-prose.is-live')).toHaveText(
+    'Long streamed content keeps arriving. '.repeat(140).trim(),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const row = document.querySelector('#msgList .msg.assistant.turn-viewport-anchor');
+        return Boolean(
+          row && row.getBoundingClientRect().height > parseFloat(row.style.minHeight) + 1,
+        );
+      }),
+    )
+    .toBe(true);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
-  expect(await page.evaluate(() => window.stateStore.read("_userScrolledAway"))).toBe(false);
+  expect(await page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway)).toBe(false);
   const tailVisible = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const live = list.querySelector('.tool-run-prose.is-live');
@@ -369,29 +463,49 @@ test('superseding a still-thinking turn keeps the send visually stable', async (
 
   /* First turn stays in its empty "thinking" state (no deltas pushed). */
   await page.evaluate(() => window.submitChatMessage('First turn that stays in thinking'));
-  await expect.poll(() => page.evaluate(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]'),
-  ))).toBe(true);
-  await expect.poll(() => page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true')).toBe(false);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(
+          document.querySelector(
+            '#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]',
+          ),
+        ),
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true'),
+    )
+    .toBe(false);
   await page.waitForTimeout(200);
 
-  const startTop = await page.evaluate(() => Math.round(document.getElementById('msgList').scrollTop));
+  const startTop = await page.evaluate(() =>
+    Math.round(document.getElementById('msgList').scrollTop),
+  );
 
   /* Sample the scroller while the second send supersedes the empty turn.
      Removing its reserve used to collapse the range and clamp scrollTop by
      the reserve height (the send "flash"); the invisible stub keeps the
      layout open until the new anchor glides past it. */
-  const framesPromise = page.evaluate(() => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const values = [];
-    const deadline = performance.now() + 1200;
-    const tick = () => {
-      values.push(Math.round(list.scrollTop));
-      if (performance.now() > deadline) { resolve(values); return; }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }));
+  const framesPromise = page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const values = [];
+        const deadline = performance.now() + 1200;
+        const tick = () => {
+          values.push(Math.round(list.scrollTop));
+          if (performance.now() > deadline) {
+            resolve(values);
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
   await page.evaluate(() => window.submitChatMessage('Second turn supersedes the thinking one'));
   const values = await framesPromise;
 
@@ -399,17 +513,21 @@ test('superseding a still-thinking turn keeps the send visually stable', async (
   expect(startTop - minTop, JSON.stringify(values.slice(0, 20))).toBeLessThanOrEqual(150);
 
   /* The new prompt lands at the viewport top and the spent stub is gone. */
-  await expect.poll(() => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    if (list.dataset.turnAnchorSettling === 'true') return 9999;
-    const users = list.querySelectorAll('.msg.user');
-    const latest = users[users.length - 1];
-    if (!latest) return 9999;
-    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-  })).toBeLessThanOrEqual(24);
-  await expect.poll(() => page.evaluate(
-    () => document.querySelectorAll('#msgList [data-turn-stub]').length,
-  )).toBe(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const list = document.getElementById('msgList');
+        if (list.dataset.turnAnchorSettling === 'true') return 9999;
+        const users = list.querySelectorAll('.msg.user');
+        const latest = users[users.length - 1];
+        if (!latest) return 9999;
+        return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+      }),
+    )
+    .toBeLessThanOrEqual(24);
+  await expect
+    .poll(() => page.evaluate(() => document.querySelectorAll('#msgList [data-turn-stub]').length))
+    .toBe(0);
 
   await page.evaluate(() => window.__finishStream());
   await page.waitForTimeout(200);

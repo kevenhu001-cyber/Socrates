@@ -76,10 +76,7 @@ function walk(dir, out = []) {
 
 const SCAN_EXT = new Set(['.js', '.mjs', '.ts', '.tsx', '.css', '.html']);
 
-const SCAN_FILES = [
-  join(FRONTEND, 'index.html'),
-  ...walk(join(FRONTEND, 'src')),
-];
+const SCAN_FILES = [join(FRONTEND, 'index.html'), ...walk(join(FRONTEND, 'src'))];
 
 /* Replace a matched comment with spaces, keeping every offset intact so the
  * reported line/column still points at the real code. */
@@ -105,11 +102,17 @@ function stripComments(text, ext) {
     for (let k = 0; k < line.length - 1; k++) {
       const ch = line[k];
       if (quote) {
-        if (ch === '\\') { k++; continue; }
+        if (ch === '\\') {
+          k++;
+          continue;
+        }
         if (ch === quote) quote = '';
         continue;
       }
-      if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        quote = ch;
+        continue;
+      }
       if (ch === '/' && line[k + 1] === '/' && line[k - 1] !== ':') {
         line = line.slice(0, k) + blank(line.slice(k));
         break;
@@ -172,16 +175,25 @@ function main() {
       JSON.stringify(
         {
           generatedBy: 'check-external-hosts.mjs --update',
-          violations: hits.map((v) => ({ file: v.file, line: v.line, host: v.host, snippet: v.snippet })),
+          violations: hits.map((v) => ({
+            file: v.file,
+            line: v.line,
+            host: v.host,
+            snippet: v.snippet,
+          })),
         },
         null,
         2,
       ) + '\n',
     );
-    console.log(`external-hosts: no baseline found — wrote ${hits.length} entr(ies) to scripts/external-hosts.baseline.json.`);
+    console.log(
+      `external-hosts: no baseline found — wrote ${hits.length} entr(ies) to scripts/external-hosts.baseline.json.`,
+    );
     for (const v of hits) console.log(`  ${keyOf(v)}  ${v.snippet}`);
     if (hits.length) {
-      console.log('\nReview each entry: either it is not a runtime request (add the host to ALLOWED_HOSTS with a reason) or it is a real external dependency that must be vendored.');
+      console.log(
+        '\nReview each entry: either it is not a runtime request (add the host to ALLOWED_HOSTS with a reason) or it is a real external dependency that must be vendored.',
+      );
     }
     return;
   }
@@ -199,26 +211,41 @@ function main() {
       JSON.stringify(
         {
           generatedBy: 'check-external-hosts.mjs --update',
-          violations: kept.map((v) => ({ file: v.file, line: v.line, host: v.host, snippet: v.snippet })),
+          violations: kept.map((v) => ({
+            file: v.file,
+            line: v.line,
+            host: v.host,
+            snippet: v.snippet,
+          })),
         },
         null,
         2,
       ) + '\n',
     );
-    console.log(`external-hosts: baseline updated to ${kept.length} entries (from ${baseKeys.size}).`);
+    console.log(
+      `external-hosts: baseline updated to ${kept.length} entries (from ${baseKeys.size}).`,
+    );
     for (const d of dropped) console.log(d);
     return;
   }
 
   const newHits = hits.filter((v) => !baseKeys.has(keyOf(v)));
   if (newHits.length) {
-    console.error(`external-hosts: ${newHits.length} non-allowlisted host(s) in the SPA (baseline has ${baseKeys.size}).`);
+    console.error(
+      `external-hosts: ${newHits.length} non-allowlisted host(s) in the SPA (baseline has ${baseKeys.size}).`,
+    );
     for (const v of newHits) console.error(`  ${v.file}:${v.line}  ${v.host}\n      ${v.snippet}`);
-    console.error('\nEvery runtime byte the app needs must come from our own origin — a third-party host is unreachable for users behind the GFW and shows up as a hung request.');
-    console.error('Vendor the asset (see src/vendor-files/ and src/vendor/lazy.ts), or, if the URL is genuinely never fetched, add the host to ALLOWED_HOSTS in scripts/check-external-hosts.mjs with a reason.');
+    console.error(
+      '\nEvery runtime byte the app needs must come from our own origin — a third-party host is unreachable for users behind the GFW and shows up as a hung request.',
+    );
+    console.error(
+      'Vendor the asset (see src/vendor-files/ and src/vendor/lazy.ts), or, if the URL is genuinely never fetched, add the host to ALLOWED_HOSTS in scripts/check-external-hosts.mjs with a reason.',
+    );
     process.exit(1);
   }
-  console.log(`external-hosts: ok (${hits.length} baseline entr(ies), no new hosts; GeoGebra is the only third-party host left).`);
+  console.log(
+    `external-hosts: ok (${hits.length} baseline entr(ies), no new hosts; GeoGebra is the only third-party host left).`,
+  );
 }
 
 main();

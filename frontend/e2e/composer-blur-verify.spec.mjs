@@ -1,13 +1,15 @@
 // TEMP verification for composer blur-on-send + focus transition smoothness.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function enterChat(page) {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Composer check' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '44444444-4444-4444-8444-444444444444' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Composer check' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '44444444-4444-4444-8444-444444444444' },
+    });
     window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(300);
@@ -22,9 +24,13 @@ function focusInComposer(page) {
 
 test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) => route.fulfill({
-    status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n',
-  }));
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    }),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await enterChat(page);
@@ -53,11 +59,19 @@ test('click-send blurs the composer; Enter-send keeps focus', async ({ page }) =
 
 test('click-send blurs before asynchronous attachment preparation finishes', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
-    status: 201,
-    contentType: 'application/json',
-    body: JSON.stringify({ id: 'blur-image', name: 'slow.png', mimeType: 'image/png', size: 68, kind: 'image' }),
-  }));
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'blur-image',
+        name: 'slow.png',
+        mimeType: 'image/png',
+        size: 68,
+        kind: 'image',
+      }),
+    }),
+  );
   let visionStarted = false;
   await page.route(/\/api\/vision\/describe(?:\?|$)/, async (route) => {
     visionStarted = true;
@@ -68,9 +82,13 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
       body: JSON.stringify({ description: 'A delayed test image.' }),
     });
   });
-  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) => route.fulfill({
-    status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n',
-  }));
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    }),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await enterChat(page);
@@ -80,7 +98,10 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   await page.locator('#composerAttachInput').setInputFiles({
     name: 'slow.png',
     mimeType: 'image/png',
-    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/g6sAAAAASUVORK5CYII=', 'base64'),
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/g6sAAAAASUVORK5CYII=',
+      'base64',
+    ),
   });
   await expect(page.locator('#composerAttachmentChips .attachment-chip')).toHaveCount(1);
   await editor.focus();
@@ -103,7 +124,9 @@ test('click-send blurs before asynchronous attachment preparation finishes', asy
   expect(selectionCleared).toBe(true);
 });
 
-test('chat-input-wrap transitions cover focus feedback without geometry animation', async ({ page }) => {
+test('chat-input-wrap transitions cover focus feedback without geometry animation', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -122,6 +145,8 @@ test('chat-input-wrap transitions cover focus feedback without geometry animatio
   for (const prop of ['border-color', 'background-color']) {
     expect(t.property, `transition must include ${prop}`).toContain(prop);
   }
-  expect(t.property, 'no geometry property may transition').not.toMatch(/min-height|padding|border-radius/);
+  expect(t.property, 'no geometry property may transition').not.toMatch(
+    /min-height|padding|border-radius/,
+  );
   expect(t.duration).toContain('0.18s');
 });

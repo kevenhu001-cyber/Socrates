@@ -26,27 +26,61 @@ function walk(dir, results = []) {
 export function inspectSource(source, name) {
   const ast = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const normalizedName = name.replaceAll('\\', '/');
-  const replacedFeature = /(?:^|\/)react\/(?:settings|profileModal|adminModal|sidebar|sidebar-chrome)\//.test(normalizedName)
-    || /(?:^|\/)react\/pages\/workspace\/(?:LibraryToolbar|PluginDetailHeader|PluginDirectory|PluginDirectoryCard|ProjectsView|workspaceUi)\.tsx$/.test(normalizedName);
+  const replacedFeature =
+    /(?:^|\/)react\/(?:settings|profileModal|adminModal|sidebar|sidebar-chrome)\//.test(
+      normalizedName,
+    ) ||
+    /(?:^|\/)react\/pages\/workspace\/(?:LibraryToolbar|PluginDetailHeader|PluginDirectory|PluginDirectoryCard|ProjectsView|workspaceUi)\.tsx$/.test(
+      normalizedName,
+    );
   const problems = [];
   function report(node, kind, message) {
     const line = ast.getLineAndCharacterOfPosition(node.getStart(ast)).line + 1;
     problems.push({ kind, message, line });
   }
   function visit(node) {
-    if (replacedFeature && ts.isImportDeclaration(node) && /\/ui\/(?:Button|IconButton)$|\/ui\/shadcn\/native-select$/.test(node.moduleSpecifier.text)) {
-      report(node, 'compatibilityControls', 'use a semantic shadcn component in this migrated feature');
+    if (
+      replacedFeature &&
+      ts.isImportDeclaration(node) &&
+      /\/ui\/(?:Button|IconButton)$|\/ui\/shadcn\/native-select$/.test(node.moduleSpecifier.text)
+    ) {
+      report(
+        node,
+        'compatibilityControls',
+        'use a semantic shadcn component in this migrated feature',
+      );
     }
-    if (replacedFeature && ts.isJsxAttribute(node) && node.name.text === 'variant' && node.initializer && ts.isStringLiteral(node.initializer) && node.initializer.text === 'surface') {
-      report(node, 'compatibilityControls', 'use a semantic component variant in this migrated feature');
+    if (
+      replacedFeature &&
+      ts.isJsxAttribute(node) &&
+      node.name.text === 'variant' &&
+      node.initializer &&
+      ts.isStringLiteral(node.initializer) &&
+      node.initializer.text === 'surface'
+    ) {
+      report(
+        node,
+        'compatibilityControls',
+        'use a semantic component variant in this migrated feature',
+      );
     }
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && CONTROLS.has(node.tagName.getText(ast))) {
-      report(node, 'rawControls', `use a shared shadcn control instead of <${node.tagName.getText(ast)}>`);
+    if (
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      CONTROLS.has(node.tagName.getText(ast))
+    ) {
+      report(
+        node,
+        'rawControls',
+        `use a shared shadcn control instead of <${node.tagName.getText(ast)}>`,
+      );
     }
     if (ts.isImportDeclaration(node) && node.moduleSpecifier.text?.startsWith('@base-ui/react/')) {
       // The menu boundary retains its viewport positioning algorithm. Its
       // interactive root, items, groups and popup are shadcn components.
-      if (!(name.replaceAll('\\', '/').endsWith('menu/FoundationMenu.tsx') && node.moduleSpecifier.text === '@base-ui/react/menu')) {
+      if (!(
+        name.replaceAll('\\', '/').endsWith('menu/FoundationMenu.tsx') &&
+        node.moduleSpecifier.text === '@base-ui/react/menu'
+      )) {
         report(node, 'unadaptedPrimitives', 'import the adapted component from react/ui/shadcn');
       }
     }
@@ -63,7 +97,8 @@ function collect(dir, results = []) {
       if (path !== join(ROOT, 'src/react/ui')) collect(path, results);
     } else if (/\.tsx?$/.test(entry.name)) {
       const name = relative(ROOT, path).replaceAll('\\', '/');
-      for (const problem of inspectSource(readFileSync(path, 'utf8'), name)) results.push({ ...problem, name });
+      for (const problem of inspectSource(readFileSync(path, 'utf8'), name))
+        results.push({ ...problem, name });
     }
   }
   return results;
@@ -84,7 +119,9 @@ function collectRetained() {
     reactTemplateControls: 0,
   };
   const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
-  counts.retainedMarkupControls = (html.match(/<(?:button|input|select|textarea|label)\b/g) || []).length;
+  counts.retainedMarkupControls = (
+    html.match(/<(?:button|input|select|textarea|label)\b/g) || []
+  ).length;
   for (const path of walk(join(ROOT, 'src'))) {
     const name = relative(ROOT, path).replaceAll('\\', '/');
     // `src/react/ui` holds the shared adapters and the shadcn sources; they
@@ -98,7 +135,9 @@ function collectRetained() {
       continue;
     }
     counts.legacyTemplateControls += templateControls;
-    const domControls = (source.match(/createElement\(\s*['"](?:button|input|select|textarea)['"]/g) || []).length;
+    const domControls = (
+      source.match(/createElement\(\s*['"](?:button|input|select|textarea)['"]/g) || []
+    ).length;
     if (name.endsWith('.mjs')) counts.legacyMjsDomControls += domControls;
     else counts.legacyDomControls += domControls;
   }
@@ -107,21 +146,34 @@ function collectRetained() {
 
 function main() {
   const problems = collect(join(ROOT, 'src/react'));
-  const counts = { rawControls: 0, unadaptedPrimitives: 0, compatibilityControls: 0, ...collectRetained() };
+  const counts = {
+    rawControls: 0,
+    unadaptedPrimitives: 0,
+    compatibilityControls: 0,
+    ...collectRetained(),
+  };
   for (const problem of problems) counts[problem.kind]++;
   const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
   if (process.argv.includes('--update')) {
-    const next = Object.fromEntries(Object.entries(counts).map(([key, value]) => [key, Math.min(value, baseline[key])]));
+    const next = Object.fromEntries(
+      Object.entries(counts).map(([key, value]) => [key, Math.min(value, baseline[key])]),
+    );
     writeFileSync(BASELINE, JSON.stringify(next, null, 2) + '\n');
     console.log('shadcn adoption baseline only shrank:', next);
   }
   const exceeded = new Set(Object.keys(counts).filter((key) => counts[key] > baseline[key]));
   if (exceeded.size) {
-    for (const problem of problems.filter((item) => exceeded.has(item.kind))) console.error(`${problem.name}:${problem.line} ${problem.message}`);
-    for (const key of exceeded) console.error(`shadcn adoption regression: ${key} is ${counts[key]}, baseline allows ${baseline[key]}`);
+    for (const problem of problems.filter((item) => exceeded.has(item.kind)))
+      console.error(`${problem.name}:${problem.line} ${problem.message}`);
+    for (const key of exceeded)
+      console.error(
+        `shadcn adoption regression: ${key} is ${counts[key]}, baseline allows ${baseline[key]}`,
+      );
     process.exitCode = 1;
   } else {
-    console.log(`shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features, ${counts.retainedMarkupControls}/${baseline.retainedMarkupControls} retained markup controls, ${counts.legacyDomControls}/${baseline.legacyDomControls} legacy DOM controls, ${counts.legacyMjsDomControls}/${baseline.legacyMjsDomControls} legacy MJS DOM controls, ${counts.legacyTemplateControls}/${baseline.legacyTemplateControls} legacy template controls, ${counts.reactTemplateControls}/${baseline.reactTemplateControls} retained React template controls).`);
+    console.log(
+      `shadcn adoption passed (${counts.rawControls}/${baseline.rawControls} raw controls, ${counts.unadaptedPrimitives}/${baseline.unadaptedPrimitives} unadapted primitives, ${counts.compatibilityControls}/${baseline.compatibilityControls} compatibility controls in migrated features, ${counts.retainedMarkupControls}/${baseline.retainedMarkupControls} retained markup controls, ${counts.legacyDomControls}/${baseline.legacyDomControls} legacy DOM controls, ${counts.legacyMjsDomControls}/${baseline.legacyMjsDomControls} legacy MJS DOM controls, ${counts.legacyTemplateControls}/${baseline.legacyTemplateControls} legacy template controls, ${counts.reactTemplateControls}/${baseline.reactTemplateControls} retained React template controls).`,
+    );
   }
 }
 

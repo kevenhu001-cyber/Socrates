@@ -1,17 +1,31 @@
 export type TeachingStage = 'motivate' | 'define' | 'develop' | 'illustrate' | 'exercise' | 'check';
 
-const TEACHING_STAGES: TeachingStage[] = ['motivate', 'define', 'develop', 'illustrate', 'exercise', 'check'];
+const TEACHING_STAGES: TeachingStage[] = [
+  'motivate',
+  'define',
+  'develop',
+  'illustrate',
+  'exercise',
+  'check',
+];
 
 export function isSubstantiveTutorAnswer(text: unknown): boolean {
   const answer = String(text || '').trim();
   if (answer.length <= 40) return false;
   // CJK prose usually has no spaces, so a whitespace-only word count never advances lessons.
-  const cjkLength = (answer.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu) || []).length;
+  const cjkLength = (
+    answer.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu) || []
+  ).length;
   return answer.split(/\s+/).length > 8 || cjkLength >= 20;
 }
 
 export function countsTowardTutorProgress(text: unknown, origin?: string | null): boolean {
-  return isSubstantiveTutorAnswer(text) && origin !== 'quiz' && origin !== 'practice' && origin !== 'hint';
+  return (
+    isSubstantiveTutorAnswer(text) &&
+    origin !== 'quiz' &&
+    origin !== 'practice' &&
+    origin !== 'hint'
+  );
 }
 
 export function nextTutorStage(
@@ -19,13 +33,19 @@ export function nextTutorStage(
   isSubstantive: boolean,
   origin?: string | null,
 ): string | null {
-  if (!isSubstantive || origin === 'quiz' || origin === 'hint' || currentStage === 'check') return null;
+  if (!isSubstantive || origin === 'quiz' || origin === 'hint' || currentStage === 'check')
+    return null;
   const currentIndex = TEACHING_STAGES.indexOf((currentStage || 'motivate') as TeachingStage);
   if (currentIndex < 0 || currentIndex >= TEACHING_STAGES.length - 1) return null;
   return TEACHING_STAGES[currentIndex + 1];
 }
 
-export function tutorNodeProgressDecision({ node, substantiveCount, teachingStage, origin }: {
+export function tutorNodeProgressDecision({
+  node,
+  substantiveCount,
+  teachingStage,
+  origin,
+}: {
   node: unknown;
   substantiveCount: number;
   teachingStage?: string | null;
@@ -33,10 +53,7 @@ export function tutorNodeProgressDecision({ node, substantiveCount, teachingStag
 }): boolean {
   const stageIndex = TEACHING_STAGES.indexOf((teachingStage || 'motivate') as TeachingStage);
   const exerciseIndex = TEACHING_STAGES.indexOf('exercise');
-  return Boolean(node)
-    && substantiveCount >= 3
-    && !origin
-    && stageIndex >= exerciseIndex;
+  return Boolean(node) && substantiveCount >= 3 && !origin && stageIndex >= exerciseIndex;
 }
 
 /** Options the send path threads through the tutor flow. */
@@ -55,7 +72,11 @@ export interface StuckTransition {
   patch: Record<string, unknown> | null;
 }
 
-export function stuckPromptTransition({ stuckCount, offered, rejected }: {
+export function stuckPromptTransition({
+  stuckCount,
+  offered,
+  rejected,
+}: {
   stuckCount: number;
   offered?: boolean;
   rejected?: number;

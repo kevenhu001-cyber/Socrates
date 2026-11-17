@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
@@ -26,7 +26,9 @@ async function scrollWindow(page, edge) {
   await page.waitForTimeout(40);
 }
 
-test('long settled histories keep a bounded DOM while sliding in both directions', async ({ page }) => {
+test('long settled histories keep a bounded DOM while sliding in both directions', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page, { messages: history(240) });
   await expect(page.locator('[data-client-id="history-239"]')).toBeVisible();
 
@@ -52,7 +54,9 @@ test('long settled histories keep a bounded DOM while sliding in both directions
   expect(await residentRows(page)).toBeLessThanOrEqual(60);
 });
 
-test('in-session find temporarily full-mounts history and restores the bounded window', async ({ page }) => {
+test('in-session find temporarily full-mounts history and restores the bounded window', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page, { messages: history(120) });
   await expect.poll(() => residentRows(page)).toBeLessThanOrEqual(60);
 

@@ -32,9 +32,10 @@ export function ComposerToolMenuItems({
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
   const definitions = toolDefinitions();
-  const findTools = (actions: ReadonlyArray<string>) => actions
-    .map((key) => definitions.find((spec) => spec.key === key))
-    .filter((spec): spec is MenuItemSpec => Boolean(spec));
+  const findTools = (actions: ReadonlyArray<string>) =>
+    actions
+      .map((key) => definitions.find((spec) => spec.key === key))
+      .filter((spec): spec is MenuItemSpec => Boolean(spec));
   const groups = TOOL_GROUPS.map((group) => ({
     ...group,
     label: i18n(group.labelKey, group.label),
@@ -51,17 +52,31 @@ export function ComposerToolMenuItems({
   return (
     <>
       <div className="composer-tools-desktop-items">
-        {groups.map((group) => group.tools.length ? (
-          <div className="composer-tools-group" role="group" aria-label={group.label} key={group.key}>
-            <div className="composer-tools-group-label">{group.label}</div>
-            {group.tools.map((spec) => (
-              <MenuItem key={spec.key} spec={spec} active={spec.key === activeKey} onPick={onPick} />
-            ))}
-          </div>
-        ) : null)}
+        {groups.map((group) =>
+          group.tools.length ? (
+            <div
+              className="composer-tools-group"
+              role="group"
+              aria-label={group.label}
+              key={group.key}
+            >
+              <div className="composer-tools-group-label">{group.label}</div>
+              {group.tools.map((spec) => (
+                <MenuItem
+                  key={spec.key}
+                  spec={spec}
+                  active={spec.key === activeKey}
+                  onPick={onPick}
+                />
+              ))}
+            </div>
+          ) : null,
+        )}
       </div>
       <div className="composer-tools-mobile-items">
-        <div className="composer-tools-group-label">{i18n('composer.tools.group.context', 'Add context')}</div>
+        <div className="composer-tools-group-label">
+          {i18n('composer.tools.group.context', 'Add context')}
+        </div>
         {/* 4-Tile Grid: 拍照, 照片, 本地文件, 微信文件 */}
         <div className="composer-tools-tiles">
           {MOBILE_TILES.map((tile) => (

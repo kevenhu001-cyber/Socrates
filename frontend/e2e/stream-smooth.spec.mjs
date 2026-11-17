@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -15,50 +15,62 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
  */
 
 async function startStream(page, { deltas, gapMs = 400, smooth = true, holdOpenMs = 0 }) {
-  await page.evaluate(async ({ deltas, gapMs, smooth, holdOpenMs }) => {
-    if (smooth) localStorage.removeItem('socrates:smoothStream');
-    else localStorage.setItem('socrates:smoothStream', 'off');
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = function (input, init) {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
-      const encoder = new TextEncoder();
-      let timer = null;
-      const stream = new ReadableStream({
-        start(controller) {
-          let index = 0;
-          const push = () => {
-            if (index < deltas.length) {
-              const payload = { choices: [{ delta: { content: deltas[index++] } }] };
-              window.__smoothArrivedAt = performance.now();
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-              timer = setTimeout(push, gapMs);
-              return;
-            }
-            // Optionally hold the SSE open (no more deltas) to exercise a stall
-            // with an empty buffer before [DONE].
-            timer = setTimeout(() => {
-              window.__smoothDoneAt = performance.now();
-              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-              controller.close();
-            }, holdOpenMs);
-          };
-          timer = setTimeout(push, gapMs);
-        },
-        cancel() { if (timer) clearTimeout(timer); },
+  await page.evaluate(
+    async ({ deltas, gapMs, smooth, holdOpenMs }) => {
+      if (smooth) localStorage.removeItem('socrates:smoothStream');
+      else localStorage.setItem('socrates:smoothStream', 'off');
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
+        const encoder = new TextEncoder();
+        let timer = null;
+        const stream = new ReadableStream({
+          start(controller) {
+            let index = 0;
+            const push = () => {
+              if (index < deltas.length) {
+                const payload = { choices: [{ delta: { content: deltas[index++] } }] };
+                window.__smoothArrivedAt = performance.now();
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                timer = setTimeout(push, gapMs);
+                return;
+              }
+              // Optionally hold the SSE open (no more deltas) to exercise a stall
+              // with an empty buffer before [DONE].
+              timer = setTimeout(() => {
+                window.__smoothDoneAt = performance.now();
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+              }, holdOpenMs);
+            };
+            timer = setTimeout(push, gapMs);
+          },
+          cancel() {
+            if (timer) clearTimeout(timer);
+          },
+        });
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          }),
+        );
+      };
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({
+        session: { currentSessionId: '88888888-8888-4888-8888-888888888888' },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200, headers: { 'Content-Type': 'text/event-stream' },
-      }));
-    };
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '88888888-8888-4888-8888-888888888888' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [
-      { clientId: 'user-smooth', role: 'user', rawText: 'Go', html: null },
-    ] });
-    window.__testActivateMainView('chatView');
-    window.__smoothPromise = window.askChatTurn('Go');
-  }, { deltas, gapMs, smooth, holdOpenMs });
+      window.__socratesTestState.patch({
+        session: {
+          messages: [{ clientId: 'user-smooth', role: 'user', rawText: 'Go', html: null }],
+        },
+      });
+      window.__testActivateMainView('chatView');
+      window.__smoothPromise = window.askChatTurn('Go');
+    },
+    { deltas, gapMs, smooth, holdOpenMs },
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -88,12 +100,17 @@ for (const holdOpenMs of [2000, 0]) {
       requestAnimationFrame(sample);
     }, text);
     await startStream(page, { deltas: [text], gapMs: 50, holdOpenMs });
-    await expect.poll(() => page.evaluate(() => window.__burstProbe.settledAt), { timeout: 6000 }).toBeTruthy();
+    await expect
+      .poll(() => page.evaluate(() => window.__burstProbe.settledAt), { timeout: 6000 })
+      .toBeTruthy();
     const timing = await page.evaluate(() => ({
       arrivalToPaintMs: window.__burstProbe.paintedAt - window.__smoothArrivedAt,
       doneToSettledMs: window.__burstProbe.settledAt - window.__smoothDoneAt,
     }));
-    await info.attach('burst-latency', { body: JSON.stringify(timing), contentType: 'application/json' });
+    await info.attach('burst-latency', {
+      body: JSON.stringify(timing),
+      contentType: 'application/json',
+    });
     expect(timing.arrivalToPaintMs).toBeLessThan(500);
     expect(timing.doneToSettledMs).toBeLessThan(500);
     await expect(page.locator('#msgList .msg.assistant').last()).toContainText(text);
@@ -113,7 +130,11 @@ test('the first batch is fully visible on its first DOM paint', async ({ page })
       window.__smoothOpening = { length: text.length, at: performance.now() };
       observer.disconnect();
     });
-    observer.observe(document.getElementById('msgList'), { subtree: true, childList: true, characterData: true });
+    observer.observe(document.getElementById('msgList'), {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
   });
   await startStream(page, { deltas: [big], gapMs: 200, holdOpenMs: 12000 });
 
@@ -121,7 +142,8 @@ test('the first batch is fully visible on its first DOM paint', async ({ page })
   await expect(live).toBeVisible();
 
   await expect.poll(() => page.evaluate(() => window.__smoothOpening)).toBeTruthy();
-  const opening = await page.evaluate(() => ({ ...window.__smoothOpening,
+  const opening = await page.evaluate(() => ({
+    ...window.__smoothOpening,
     delayMs: window.__smoothOpening.at - window.__smoothArrivedAt,
   }));
   expect(opening.length).toBeGreaterThan(0);
@@ -130,13 +152,24 @@ test('the first batch is fully visible on its first DOM paint', async ({ page })
 
   // It eventually catches up to the whole burst (measured on the bubble, since
   // once playback completes the tail is a settled block, not the live region).
-  await expect.poll(async () => page.evaluate(
-    () => (document.querySelector('.msg.assistant:last-of-type .msg-body')?.textContent || '').length,
-  ), { timeout: 12000 }).toBeGreaterThanOrEqual(big.length - 2);
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(
+          () =>
+            (document.querySelector('.msg.assistant:last-of-type .msg-body')?.textContent || '')
+              .length,
+        ),
+      { timeout: 12000 },
+    )
+    .toBeGreaterThanOrEqual(big.length - 2);
 });
 
-test('live prose softly reveals new chunks without animating whole paragraphs', async ({ page }) => {
-  const para = 'Streaming text stays smooth because playback is paced before React paints the live tail. ';
+test('live prose softly reveals new chunks without animating whole paragraphs', async ({
+  page,
+}) => {
+  const para =
+    'Streaming text stays smooth because playback is paced before React paints the live tail. ';
   await startStream(page, {
     deltas: [para, para, para, para, para],
     gapMs: 250,
@@ -163,28 +196,45 @@ test('live prose softly reveals new chunks without animating whole paragraphs', 
   expect(state.opacity).toBe('1');
   /* The newest run carries the blur; the older ones only finish their
      opacity, because a filter on a settled span forces an offscreen pass. */
-  expect(state.names.every((name) => name === 'stream-append-reveal' || name === 'stream-append-age')).toBe(true);
+  expect(
+    state.names.every((name) => name === 'stream-append-reveal' || name === 'stream-append-age'),
+  ).toBe(true);
 });
 
 test('reduced motion displays streamed prose immediately', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await startStream(page, { deltas: ['中文流式输出立即可读，保留 **Markdown** 格式。'], gapMs: 100, holdOpenMs: 3000 });
+  await startStream(page, {
+    deltas: ['中文流式输出立即可读，保留 **Markdown** 格式。'],
+    gapMs: 100,
+    holdOpenMs: 3000,
+  });
   const live = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-live');
   await expect(live).toContainText('中文流式输出');
   expect(await live.locator('.stream-append-reveal').count()).toBe(0);
   // The reduced-motion CSS collapses transitions to 0.01ms; Chromium can
   // still list them until its next animation tick. Reject persistent motion
   // without racing that final tick.
-  await expect.poll(() => live.evaluate((el) => el.getAnimations({ subtree: true }).length)).toBe(0);
+  await expect
+    .poll(() => live.evaluate((el) => el.getAnimations({ subtree: true }).length))
+    .toBe(0);
 });
 
-test('a paragraph that settles mid-stream does not replay an entrance animation', async ({ page }) => {
+test('a paragraph that settles mid-stream does not replay an entrance animation', async ({
+  page,
+}) => {
   await startStream(page, {
-    deltas: ['First paragraph settles here.\n\n', 'Second paragraph keeps growing while the first stays put.'],
+    deltas: [
+      'First paragraph settles here.\n\n',
+      'Second paragraph keeps growing while the first stays put.',
+    ],
     gapMs: 250,
     holdOpenMs: 4000,
   });
-  const settled = page.locator('.msg.assistant').last().locator('.tool-run-prose.is-settled').first();
+  const settled = page
+    .locator('.msg.assistant')
+    .last()
+    .locator('.tool-run-prose.is-settled')
+    .first();
   await expect(settled).toBeVisible({ timeout: 6000 });
   // Sample the settled block over several frames: no running animation and
   // full opacity on every frame — the reader never sees it fade in again.
@@ -210,7 +260,9 @@ test('a paragraph that settles mid-stream does not replay an entrance animation'
   }
 });
 
-test('an upstream stall with an empty buffer keeps a single slowed cursor dot', async ({ page }) => {
+test('an upstream stall with an empty buffer keeps a single slowed cursor dot', async ({
+  page,
+}) => {
   // A short first delta drains quickly; then the stream holds open with no
   // further deltas, so the playback buffer empties and the clock goes starved.
   await startStream(page, { deltas: ['Hi'], gapMs: 200, holdOpenMs: 5000 });
@@ -233,7 +285,9 @@ test('kill switch paints the whole arrived text immediately', async ({ page }) =
   expect(await page.evaluate(() => typeof window.__socratesSmoothStream)).toBe('undefined');
 });
 
-test('input stays responsive during a network gap and the resumed burst is paced', async ({ page }) => {
+test('input stays responsive during a network gap and the resumed burst is paced', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const prefix = 'The first part is already readable. ';
@@ -243,10 +297,17 @@ test('input stays responsive during a network gap and the resumed burst is paced
     const observer = new MutationObserver(() => {
       const text = document.querySelector('.tool-run-prose.is-live')?.textContent || '';
       if (text.length <= prefix.length || window.__recoveredOpening) return;
-      window.__recoveredOpening = { length: text.length, delayMs: performance.now() - window.__smoothArrivedAt };
+      window.__recoveredOpening = {
+        length: text.length,
+        delayMs: performance.now() - window.__smoothArrivedAt,
+      };
       observer.disconnect();
     });
-    observer.observe(document.getElementById('msgList'), { subtree: true, childList: true, characterData: true });
+    observer.observe(document.getElementById('msgList'), {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
   }, prefix);
   await startStream(page, { deltas: [prefix, burst], gapMs: 1500, holdOpenMs: 1500 });
   const bubble = page.locator('.msg.assistant').last();

@@ -10,7 +10,8 @@ test('mobile conversation home matches the compact dark reference layout', async
 
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(350);
 
@@ -29,17 +30,23 @@ test('mobile conversation home matches the compact dark reference layout', async
   const geometry = await page.evaluate(() => {
     const rect = (selector) => {
       const box = document.querySelector(selector)?.getBoundingClientRect();
-      return box ? { x: box.x, y: box.y, width: box.width, height: box.height, bottom: box.bottom } : null;
+      return box
+        ? { x: box.x, y: box.y, width: box.width, height: box.height, bottom: box.bottom }
+        : null;
     };
     return {
       left: rect('#sidebarOpenBtn'),
       composer: rect('#composerInputWrap'),
-      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
+      topicFontSize: parseFloat(
+        getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize,
+      ),
       viewportHeight: window.innerHeight,
       /* .main is a transparent layout box; the painted surface is
          .main-content (the shell's canonical page colour). */
       background: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
-      pageToken: getComputedStyle(document.getElementById('appShell')).getPropertyValue('--ui-bg-page').trim(),
+      pageToken: getComputedStyle(document.getElementById('appShell'))
+        .getPropertyValue('--ui-bg-page')
+        .trim(),
     };
   });
 
@@ -90,18 +97,23 @@ test('mobile conversation home matches the compact dark reference layout', async
       textAlign: style?.textAlign,
     };
   });
-  expect(centering.position, 'greeting is positioned against the live landing surface').toBe('absolute');
+  expect(centering.position, 'greeting is positioned against the live landing surface').toBe(
+    'absolute',
+  );
   expect(centering.textAlign).toBe('center');
   /* ±1px slack covers browser sub-pixel rendering and any safe-area
      asymmetry on the top-bar that does not propagate into the
      greeting's parent flex column. */
-  expect(Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2))
-    .toBeLessThanOrEqual(1);
+  expect(
+    Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2),
+  ).toBeLessThanOrEqual(1);
   const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.405;
-  expect(Math.abs(centering.centerY - expectedCenterY))
-    .toBeLessThanOrEqual(1);
+  expect(Math.abs(centering.centerY - expectedCenterY)).toBeLessThanOrEqual(1);
 
-  await page.screenshot({ path: 'test-results/mobile-home-reference-collapsed.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/mobile-home-reference-collapsed.png',
+    fullPage: true,
+  });
 
   /* The active-chat header uses the reference's one tactile navigation
      control plus two unframed utilities. Expose the session-only controls
@@ -111,24 +123,32 @@ test('mobile conversation home matches the compact dark reference layout', async
     window.__testShowConversationActions(true);
   });
   /* 顶栏由 store 驱动，React 异步提交后查找/分享按钮才出现；等它们渲染完成再测量。 */
-  await expect.poll(() => page.evaluate(() => [
-    document.querySelector('#findBtn')?.getBoundingClientRect().width ?? 0,
-    document.querySelector('#shareBtn')?.getBoundingClientRect().width ?? 0,
-  ].every((width) => width > 0))).toBe(true);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        [
+          document.querySelector('#findBtn')?.getBoundingClientRect().width ?? 0,
+          document.querySelector('#shareBtn')?.getBoundingClientRect().width ?? 0,
+        ].every((width) => width > 0),
+      ),
+    )
+    .toBe(true);
   const headerVisual = await page.evaluate(() => {
     const measure = (selector) => {
       const el = document.querySelector(selector);
       const rect = el?.getBoundingClientRect();
       const style = el ? getComputedStyle(el) : null;
-      return rect && style ? {
-        x: rect.x,
-        right: rect.right,
-        width: rect.width,
-        height: rect.height,
-        borderStyle: style.borderStyle,
-        borderWidth: style.borderWidth,
-        background: style.backgroundColor,
-      } : null;
+      return rect && style
+        ? {
+            x: rect.x,
+            right: rect.right,
+            width: rect.width,
+            height: rect.height,
+            borderStyle: style.borderStyle,
+            borderWidth: style.borderWidth,
+            background: style.backgroundColor,
+          }
+        : null;
     };
     return {
       sidebar: measure('#sidebarOpenBtn'),
@@ -139,7 +159,9 @@ test('mobile conversation home matches the compact dark reference layout', async
       sidebarStatus: measure('.mobile-sidebar-status'),
       findIcon: measure('#findBtn svg'),
       shareIcon: measure('#shareBtn svg'),
-      shareLabelVisible: Boolean(document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length),
+      shareLabelVisible: Boolean(
+        document.querySelector('#shareBtn .share-btn-label')?.getClientRects().length,
+      ),
     };
   });
   /* This block deliberately flips body[data-conversation-active="true"]
@@ -164,7 +186,11 @@ test('mobile conversation home matches the compact dark reference layout', async
       const rect = (selector) => document.querySelector(selector).getBoundingClientRect();
       const switcher = rect('#topModelSwitcher');
       const newChat = rect('#mobileNewChatBtn');
-      return { switcherRight: switcher.right, newChatLeft: newChat.left, switcherWidth: switcher.width };
+      return {
+        switcherRight: switcher.right,
+        newChatLeft: newChat.left,
+        switcherWidth: switcher.width,
+      };
     });
     expect(boxes.switcherWidth).toBe(0);
   }
@@ -180,10 +206,15 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* The supplied visual's app-owned region normalizes to roughly 390×756
      after removing browser chrome. Capture that exact comparison viewport
      outside the repo for the design-QA pass. */
-  await page.evaluate(() => { document.body.dataset.conversationActive = 'false'; });
+  await page.evaluate(() => {
+    document.body.dataset.conversationActive = 'false';
+  });
   await page.setViewportSize({ width: 390, height: 756 });
   await page.waitForTimeout(180);
-  await page.screenshot({ path: 'test-results/socrates-mobile-reference-implementation.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/socrates-mobile-reference-implementation.png',
+    fullPage: true,
+  });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(180);
 
@@ -193,7 +224,11 @@ test('mobile conversation home matches the compact dark reference layout', async
      Set before the height baseline so any layout effect is absorbed. */
   await page.evaluate(() => {
     localStorage.setItem('socrates-reasoning-effort', 'high');
-    window.dispatchEvent(new CustomEvent('socrates:chat-preferences', { detail: { effort: 'high', speed: 'standard' } }));
+    window.dispatchEvent(
+      new CustomEvent('socrates:chat-preferences', {
+        detail: { effort: 'high', speed: 'standard' },
+      }),
+    );
   });
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
@@ -207,8 +242,11 @@ test('mobile conversation home matches the compact dark reference layout', async
   /* The pill stays visible inside the idle capsule, like the reference. */
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
 
-  await editor.fill('This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.');
-  await expect.poll(async () => (await composer.boundingBox())?.height ?? 0)
+  await editor.fill(
+    'This topic is deliberately long enough to wrap onto a second rendered line in the compact mobile field.',
+  );
+  await expect
+    .poll(async () => (await composer.boundingBox())?.height ?? 0)
     .toBeGreaterThan(beforeFocus + 36);
   await expect(composer.locator('[data-composer-control=effort]')).toBeVisible();
   /* The landing composer mirrors the reference controls row: a dedicated
@@ -216,14 +254,19 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(composer.locator('#composerMicBtn')).toHaveCount(1);
   await expect(composer.locator('#composerMicBtn')).toBeVisible();
   await expect(composer.locator('[data-composer-control=send]')).toBeVisible();
-  await expect(composer.locator('[data-composer-control=send]')).toHaveAttribute('aria-label', 'Send');
+  await expect(composer.locator('[data-composer-control=send]')).toHaveAttribute(
+    'aria-label',
+    'Send',
+  );
 
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
   /* Grouped mobile actions retain the common capture, file, create, and
      search workflows. */
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action]')).not.toHaveCount(0);
+  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action]')).not.toHaveCount(
+    0,
+  );
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
   await expect(menu).toContainText('Upload files');

@@ -1,4 +1,4 @@
-type FeatureRuntime = typeof import("./tutorStart.impl.ts");
+type FeatureRuntime = typeof import('./tutorStart.impl.ts');
 
 /* Tutor-only session bootstrap. Keep diagnostics, knowledge-node generation,
  * and Tutor setup dependencies out of the ordinary Chat startup graph. */
@@ -16,7 +16,7 @@ function loadRuntime() {
   return runtimeImport;
 }
 
-export async function startTutorSession(...args: Parameters<FeatureRuntime["startTutorSession"]>) {
+export async function startTutorSession(...args: Parameters<FeatureRuntime['startTutorSession']>) {
   const runtime = await loadRuntime();
   return runtime.startTutorSession(...args);
 }

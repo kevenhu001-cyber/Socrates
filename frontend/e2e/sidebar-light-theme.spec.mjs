@@ -7,7 +7,7 @@ const SESSIONS = [
   '储能技术评测选题',
   '分析二通道直线问题',
   '解题干涉问题',
-  '解答薄膜干涉题'
+  '解答薄膜干涉题',
 ].map((title, i) => ({
   id: `s${i}`,
   title,
@@ -23,15 +23,20 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
     localStorage.setItem('socrates-sb', '1');
   });
   await mockAuthedApp(page, { lang: 'zh' });
-  await page.route('**/api/**/sessions**', (r) => (r.request().method() === 'GET'
-    ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: SESSIONS }) }) : r.fallback()));
+  await page.route('**/api/**/sessions**', (r) =>
+    r.request().method() === 'GET'
+      ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: SESSIONS }) })
+      : r.fallback(),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   // Read computed styles of sidebar elements in desktop light mode
   const styles = await page.evaluate(() => {
     const navItem = document.querySelector('#sidebarNav .sidebar-nav-btn');
-    const navText = navItem ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span') : null;
+    const navText = navItem
+      ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span')
+      : null;
     const navSvg = navItem ? navItem.querySelector('svg') : null;
     const recentItem = document.querySelector('.recent-item');
     const recentText = document.querySelector('.recent-item-text');
@@ -41,7 +46,7 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
     const searchSvg = searchWrap ? searchWrap.querySelector('svg') : null;
     const sidebar = document.getElementById('sidebar');
 
-    const cs = (el) => el ? getComputedStyle(el) : null;
+    const cs = (el) => (el ? getComputedStyle(el) : null);
     return {
       sidebarBg: cs(sidebar)?.backgroundColor,
       navColor: cs(navItem)?.color,
@@ -69,10 +74,12 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
 
   const mobileStyles = await page.evaluate(() => {
     const navItem = document.querySelector('#sidebarNav .sidebar-nav-btn');
-    const navText = navItem ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span') : null;
+    const navText = navItem
+      ? navItem.querySelector('[data-i18n-key]') || navItem.querySelector('span')
+      : null;
     const recentItem = document.querySelector('.recent-item');
     const recentText = document.querySelector('.recent-item-text');
-    const cs = (el) => el ? getComputedStyle(el) : null;
+    const cs = (el) => (el ? getComputedStyle(el) : null);
     return {
       navColor: cs(navItem)?.color,
       navTextColor: cs(navText)?.color,

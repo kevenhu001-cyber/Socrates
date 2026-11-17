@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
@@ -15,15 +15,21 @@ test.afterEach(async ({ page }) => {
 });
 
 async function blockMenuRuntime(page) {
-  const report = JSON.parse(readFileSync(new URL('../dist/.vite/entry-graph.json', import.meta.url), 'utf8'));
+  const report = JSON.parse(
+    readFileSync(new URL('../dist/.vite/entry-graph.json', import.meta.url), 'utf8'),
+  );
   const module = report.modules.find((item) => item.id === 'src/react/menu/FoundationMenu.tsx');
   expect(module).toBeTruthy();
   expect(report.chunks.find((chunk) => chunk.file === module.chunk).eager).toBe(false);
   const url = `/${module.chunk}`;
   let release;
   let started;
-  const held = new Promise((resolve) => { release = resolve; });
-  const requested = new Promise((resolve) => { started = resolve; });
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const requested = new Promise((resolve) => {
+    started = resolve;
+  });
   await page.route(`**${url}`, async (route) => {
     started();
     await held;
@@ -56,7 +62,9 @@ test('first click opens the menu after a delayed runtime load', async ({ page })
   await expect(trigger).toBeFocused();
 });
 
-test('focus preload keeps the trigger and a cold ArrowUp opens at the last item', async ({ page }) => {
+test('focus preload keeps the trigger and a cold ArrowUp opens at the last item', async ({
+  page,
+}) => {
   const loading = await blockMenuRuntime(page);
   await prepareChatWorkbench(page);
   const trigger = page.locator('.sidebar-account-trigger');
@@ -78,7 +86,9 @@ test('focus preload keeps the trigger and a cold ArrowUp opens at the last item'
 });
 
 for (const dismissal of ['Escape', 'Tab', 'outside']) {
-  test(`${dismissal} cancels a pending menu without reopening or stealing focus`, async ({ page }) => {
+  test(`${dismissal} cancels a pending menu without reopening or stealing focus`, async ({
+    page,
+  }) => {
     const loading = await blockMenuRuntime(page);
     await prepareChatWorkbench(page);
     const trigger = page.locator('.sidebar-account-trigger');

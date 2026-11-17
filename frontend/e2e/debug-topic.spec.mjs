@@ -2,7 +2,7 @@
 // resize behavior on a mobile viewport. Each test starts fresh from page
 // reload, so initial state is documented before any interaction.
 
-import { test } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -47,7 +47,9 @@ async function installHeightSampler(page, selector = '#composerInputWrap') {
     });
     ro.observe(wrap);
     ro.observe(editor);
-    window.__resetSamples = () => { window.__samples = []; };
+    window.__resetSamples = () => {
+      window.__samples = [];
+    };
   }, selector);
 }
 
@@ -70,7 +72,9 @@ test('DEBUG: topic composer — multiline content must trigger height growth', a
   await setup(page, { width: 390, height: 844 })(page);
   const editor = page.locator('#composerRoot .rich-composer-editor');
   await editor.focus();
-  await editor.fill('Long enough content to overflow into a second visual line on the mobile composer.');
+  await editor.fill(
+    'Long enough content to overflow into a second visual line on the mobile composer.',
+  );
   await page.waitForTimeout(700);
   const after = await snapshotWrap(page, '#composerInputWrap');
   console.log('TOPIC AFTER MULTILINE:', JSON.stringify(after));
@@ -79,7 +83,7 @@ test('DEBUG: topic composer — multiline content must trigger height growth', a
 test('DEBUG: chat composer — focus + one line must NOT change wrap height', async ({ page }) => {
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   await page.waitForTimeout(150);
@@ -100,7 +104,9 @@ test('DEBUG: chat composer — focus + one line must NOT change wrap height', as
     });
     ro.observe(wrap);
     ro.observe(editor);
-    window.__resetSamples = () => { window.__samples = []; };
+    window.__resetSamples = () => {
+      window.__samples = [];
+    };
   });
   await page.locator('#composerRoot .rich-composer-editor').focus();
   await page.waitForTimeout(60);
@@ -115,7 +121,7 @@ test('DEBUG: chat composer — focus + one line must NOT change wrap height', as
 test('DEBUG: chat composer — multiline content must grow smoothly', async ({ page }) => {
   await setup(page, { width: 390, height: 844 })(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.__samples = [];
     const wrap = document.getElementById('composerInputWrap');
@@ -137,7 +143,9 @@ test('DEBUG: chat composer — multiline content must grow smoothly', async ({ p
   await page.waitForTimeout(150);
   const samplesAfterShort = await page.evaluate(() => window.__samples);
   console.log('CHAT AFTER SHORT (samples):', JSON.stringify(samplesAfterShort, null, 2));
-  await page.evaluate(() => { window.__samples = []; });
+  await page.evaluate(() => {
+    window.__samples = [];
+  });
   await editor.press('Shift+Enter');
   await editor.type('Second line');
   await page.waitForTimeout(500);

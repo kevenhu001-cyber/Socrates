@@ -10,7 +10,7 @@
 //
 // After the fix, the empty state should distinguish "fetch failed" from
 // "truly no sessions", surface the error to the user, and offer a retry.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 
 test('Recent list surfaces fetch failure instead of misleading "no sessions" message', async ({ page }) => {
@@ -76,7 +76,7 @@ test('Recent list surfaces fetch failure instead of misleading "no sessions" mes
       recentsHTML: list.innerHTML || '',
       serverSessionsLen: (window.SERVER_SESSIONS || []).length,
       fetchFailedFlag: window.SERVER_SESSIONS_FETCH_FAILED,
-      activeProjectFilter: window.stateStore.read("activeProjectFilter"),
+      activeProjectFilter: window.__socratesTestState.session().activeProjectFilter,
       recentsFilter: window.getRecentsFilter && window.getRecentsFilter(),
     };
   });

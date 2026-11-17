@@ -6,7 +6,6 @@ import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
 import { renderActionButton } from '../ui/actionButton.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
-
 export let __socratesGlobalErrorHandlerInstalled = false;
 
 function renderDismissButton(host: HTMLElement, onDismiss: () => void) {
@@ -16,8 +15,13 @@ function renderDismissButton(host: HTMLElement, onDismiss: () => void) {
     size: 'sm',
     className: 'global-error-banner-dismiss',
     style: {
-      background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,0.6)',
-      borderRadius: '4px', padding: '3px 8px', cursor: 'pointer', fontSize: '12px',
+      background: 'transparent',
+      color: '#fff',
+      borderColor: 'rgba(255,255,255,0.6)',
+      borderRadius: '4px',
+      padding: '3px 8px',
+      cursor: 'pointer',
+      fontSize: '12px',
     },
     onClick: onDismiss,
     children: 'Dismiss',
@@ -30,7 +34,8 @@ function payloadField(payload: unknown, key: string): unknown {
     : undefined;
 }
 
-const EXPECTED_ABORT_PATTERN = /session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout|abort|aborted|请求被取消|the user aborted|signal is aborted|bodystreambuffer was aborted|operation was aborted/;
+const EXPECTED_ABORT_PATTERN =
+  /session-expired|session-switch|session-deleted|session-purged|session-reset|archived-session|new-session|superseded|msg-edit|msg-regen|signout|sign-out|user-stop|user_stop|cancelled|canceled|first-delta-timeout|abort|aborted|请求被取消|the user aborted|signal is aborted|bodystreambuffer was aborted|operation was aborted/;
 
 function isAbortCodeOrName(code: unknown, name: unknown): boolean {
   if (code === 'ABORTED' || code === 'ABORT_ERR' || code === 20) return true;
@@ -64,7 +69,9 @@ export function installGlobalErrorGuard() {
     // quote in a bug report; not enough to be a guessable secret.
     return (
       Date.now().toString(36).slice(-6) +
-      Math.floor(Math.random() * 0xffff).toString(16).padStart(4, '0')
+      Math.floor(Math.random() * 0xffff)
+        .toString(16)
+        .padStart(4, '0')
     );
   }
 
@@ -75,7 +82,10 @@ export function installGlobalErrorGuard() {
     el.id = '__socrates_global_err_banner';
     el.setAttribute('role', 'status');
     el.style.cssText = [
-      'position:fixed', 'left:16px', 'right:16px', 'bottom:16px',
+      'position:fixed',
+      'left:16px',
+      'right:16px',
+      'bottom:16px',
       'z-index:2147483647',
       'padding:10px 14px',
       'border-radius:8px',
@@ -83,14 +93,17 @@ export function installGlobalErrorGuard() {
       'color:#fff',
       'font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
       'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
-      'display:flex', 'align-items:center', 'justify-content:space-between', 'gap:12px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'gap:12px',
       'pointer-events:auto',
     ].join(';');
     document.body.appendChild(el);
     return el;
   }
 
-  function showBanner(correl: string, hint: string|null) {
+  function showBanner(correl: string, hint: string | null) {
     try {
       const el = ensureBanner();
       // Clear any previous banner content first (multiple errors
@@ -101,7 +114,8 @@ export function installGlobalErrorGuard() {
       msg.textContent = hint;
       const id = document.createElement('code');
       id.textContent = '#' + correl;
-      id.style.cssText = 'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
+      id.style.cssText =
+        'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
 
       const btnHost = document.createElement('span');
       btnHost.className = 'global-error-banner-dismiss-host';
@@ -117,7 +131,7 @@ export function installGlobalErrorGuard() {
         if (el.parentNode) el.parentNode.removeChild(el);
       }, 12000);
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts:92');
+      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
       /* banner creation failed — swallow */
     }
   }
@@ -129,7 +143,7 @@ export function installGlobalErrorGuard() {
       const data = JSON.stringify({
         correl: correl,
         label: label,
-        msg: message ? String(message) : (typeof payload === 'string' ? payload : String(payload)),
+        msg: message ? String(message) : typeof payload === 'string' ? payload : String(payload),
         stack: stack ? String(stack) : '',
         href: typeof window !== 'undefined' && window.location ? window.location.href : '',
         ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
@@ -137,19 +151,24 @@ export function installGlobalErrorGuard() {
       if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
         navigator.sendBeacon(CLIENT_ERROR_PATH, new Blob([data], { type: 'application/json' }));
       } else if (typeof fetch !== 'undefined') {
-        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function () { /* noop: beacon fallback error */ });
+        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(
+          function () {
+            /* noop: beacon fallback error */
+          },
+        );
       }
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts:110');
+      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
       /* swallow */
     }
   }
 
   function showErrorBanner(correl: string, label: string) {
     if (typeof document === 'undefined' || !document.body) return;
-    const hint = label === 'unhandledrejection'
-      ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
-      : 'Something broke. Try refreshing — if it repeats, share the code below.';
+    const hint =
+      label === 'unhandledrejection'
+        ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
+        : 'Something broke. Try refreshing — if it repeats, share the code below.';
     showBanner(correl, hint);
   }
 
@@ -182,14 +201,14 @@ export function installGlobalErrorGuard() {
       if (ev && /ResizeObserver loop/i.test(String(ev.message || ''))) return true;
       // ev.error holds the Error object when available; fall back to
       // ev.message for the rare case the browser only reports a string.
-      handle('error', ev && (ev.error || ev.message) || 'unknown');
+      handle('error', (ev && (ev.error || ev.message)) || 'unknown');
       // Returning true suppresses the browser's default handler so we
       // don't double-report via onerror("…", "…", line, col).
       return true;
     });
 
     window.addEventListener('unhandledrejection', (ev) => {
-      handle('unhandledrejection', ev && (ev.reason || ev) || 'unknown');
+      handle('unhandledrejection', (ev && (ev.reason || ev)) || 'unknown');
       // Don't preventDefault — let the dev tools still flag it.
     });
 

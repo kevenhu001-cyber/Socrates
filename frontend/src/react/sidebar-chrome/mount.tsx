@@ -17,10 +17,16 @@ export function mountSidebarChrome(): void {
   const headHost = document.getElementById('sidebarHeader');
   const footHost = document.getElementById('sidebarUserRow');
   const recentsHost = document.querySelector<HTMLElement>('#recentsPanel .recents-header');
-  if (!headHost || !footHost) { rootSlot.destroy(); portalHosts = null; return; }
-  if (portalHosts && (portalHosts.footer !== footHost || portalHosts.recents !== recentsHost)) rootSlot.destroy();
+  if (!headHost || !footHost) {
+    rootSlot.destroy();
+    portalHosts = null;
+    return;
+  }
+  if (portalHosts && (portalHosts.footer !== footHost || portalHosts.recents !== recentsHost))
+    rootSlot.destroy();
   portalHosts = { footer: footHost, recents: recentsHost };
-  rootSlot.mount(headHost,
+  rootSlot.mount(
+    headHost,
     <>
       <SidebarHeader />
       {createPortal(<SidebarFooter />, footHost)}

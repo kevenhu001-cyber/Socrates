@@ -11,11 +11,17 @@ export function ProfileDangerSection({ dispatch }: { dispatch: ProfileDispatch }
       <div className="profile-action-row">
         <div>
           <div className="profile-action-label">{profileText('profile.signOut', 'Sign out')}</div>
-          <div className="profile-action-desc">{profileText('profile.signOutDesc', 'End your session on this device.')}</div>
+          <div className="profile-action-desc">
+            {profileText('profile.signOutDesc', 'End your session on this device.')}
+          </div>
         </div>
-        <UiButton variant="outline"
+        <UiButton
+          variant="outline"
           type="button"
-          onClick={() => { dispatch.signOut(); dispatch.close(); }}
+          onClick={() => {
+            dispatch.signOut();
+            dispatch.close();
+          }}
         >
           {profileText('profile.signOut', 'Sign out')}
         </UiButton>
@@ -25,12 +31,14 @@ export function ProfileDangerSection({ dispatch }: { dispatch: ProfileDispatch }
           <div className="profile-action-label">
             {profileText('profile.deleteAccount', 'Delete account')}
           </div>
-          <div className="profile-action-desc">{profileText('profile.deleteAccountDesc', 'Permanently delete your account and all data.')}</div>
+          <div className="profile-action-desc">
+            {profileText(
+              'profile.deleteAccountDesc',
+              'Permanently delete your account and all data.',
+            )}
+          </div>
         </div>
-        <UiButton variant="destructive"
-          type="button"
-          onClick={dispatch.deleteAccount}
-        >
+        <UiButton variant="destructive" type="button" onClick={dispatch.deleteAccount}>
           {profileText('profile.deleteAccount', 'Delete')}
         </UiButton>
       </div>

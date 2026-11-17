@@ -9,7 +9,7 @@
 //      inside the iframe (verified by reading the iframe's canvas
 //      image data through postMessage from the test).
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -58,9 +58,15 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
   });
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-2', role: 'user', rawText: 'render a canvas', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '22222222-2222-4222-8222-222222222222' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-2', role: 'user', rawText: 'render a canvas', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('render a canvas');
   });
@@ -159,9 +165,17 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '88888888-8888-4888-8888-888888888888' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('render fullscreen canvas');
   });
@@ -189,27 +203,41 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
   await expect(sourceModal).toBeVisible();
   await expect(sourceModal.locator('.viz-source-code')).toContainText('fillRect');
   await sourceModal.locator('.viz-source-copy').click();
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toContain('fillRect');
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toContain('fillRect');
   await page.keyboard.press('Escape');
   await expect(sourceButton).toBeFocused();
 });
 
-test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({ page }) => {
+test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
-    const broken = '```html\n<div>before failure</div><script>throw new Error("chart exploded")</script>\n```';
+    const broken =
+      '```html\n<div>before failure</div><script>throw new Error("chart exploded")</script>\n```';
     await route.fulfill({
       status: 200,
       contentType: 'text/event-stream',
-      body: 'data: ' + JSON.stringify({ choices: [{ delta: { content: broken } }] }) + '\n\ndata: [DONE]\n\n',
+      body:
+        'data: ' +
+        JSON.stringify({ choices: [{ delta: { content: broken } }] }) +
+        '\n\ndata: [DONE]\n\n',
     });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '44444444-4444-4444-8444-444444444444' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-4', role: 'user', rawText: 'broken canvas', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '44444444-4444-4444-8444-444444444444' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-4', role: 'user', rawText: 'broken canvas', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('broken canvas');
   });
@@ -234,9 +262,15 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-3', role: 'user', rawText: 'plot sin', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '33333333-3333-4333-8333-333333333333' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-3', role: 'user', rawText: 'plot sin', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('plot sin');
   });
@@ -258,7 +292,9 @@ test('plot card draws the function and posts viz-ready', async ({ page }) => {
   expect(srcdoc).toContain('sin(x)');
 });
 
-test('ready viz cards keep accepting late viz-error without a global registry hook', async ({ page }) => {
+test('ready viz cards keep accepting late viz-error without a global registry hook', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
@@ -276,9 +312,15 @@ test('ready viz cards keep accepting late viz-error without a global registry ho
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-5', role: 'user', rawText: 'draw ready', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '55555555-5555-4555-8555-555555555555' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-5', role: 'user', rawText: 'draw ready', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('draw ready');
   });
@@ -296,7 +338,10 @@ test('ready viz cards keep accepting late viz-error without a global registry ho
   const vizFrame = await vizIframe.contentFrame();
   expect(vizFrame).not.toBeNull();
   await vizFrame.evaluate(() => {
-    parent.postMessage({ type: 'viz-error', vizId: 'forged-id-ignored', message: 'late chart failure' }, '*');
+    parent.postMessage(
+      { type: 'viz-error', vizId: 'forged-id-ignored', message: 'late chart failure' },
+      '*',
+    );
   });
   await expect(card).toHaveAttribute('data-viz-state', 'error', { timeout: 3000 });
   await expect(card.locator('.viz-error')).toContainText('late chart failure');
@@ -306,7 +351,9 @@ test('ready viz cards keep accepting late viz-error without a global registry ho
   await expect(card.locator('.viz-error-source')).toBeVisible();
 });
 
-test('viz card Preview/Code toggle switches views and hides the iframe in code view', async ({ page }) => {
+test('viz card Preview/Code toggle switches views and hides the iframe in code view', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
@@ -324,9 +371,15 @@ test('viz card Preview/Code toggle switches views and hides the iframe in code v
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-6', role: 'user', rawText: 'toggle view', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '55555555-5555-4555-8555-555555555555' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-6', role: 'user', rawText: 'toggle view', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('toggle view');
   });
@@ -348,7 +401,9 @@ test('viz card Preview/Code toggle switches views and hides the iframe in code v
   await expect(card.locator('iframe')).toBeVisible();
 });
 
-test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({ page }) => {
+test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -362,7 +417,9 @@ test('processPendingVizActions does not trigger a document-wide [data-action] sc
     return window.__vizActionScanCount;
   });
   expect(before).toBe(0);
-  await expect.poll(() => page.evaluate(() => typeof window.processPendingVizActions)).toBe('undefined');
+  await expect
+    .poll(() => page.evaluate(() => typeof window.processPendingVizActions))
+    .toBe('undefined');
   // Call processPendingVizActions many times — under the old code
   // every call did a full document-wide querySelectorAll. The new
   // typed legacy entry only walks the explicit _pendingActions queue.

@@ -31,9 +31,19 @@ export function ModelsProviderSection({
       <div className="settings-section-head settings-section-head--actions">
         <div>
           <h3>{label('模型服务商', 'Model providers')}</h3>
-          <p>{label('添加服务商或选择当前使用的模型。', 'Add a provider or choose the active model.')}</p>
+          <p>
+            {label(
+              '添加服务商或选择当前使用的模型。',
+              'Add a provider or choose the active model.',
+            )}
+          </p>
         </div>
-        <Button variant="outline" id="addProviderBtn" type="button" onClick={() => void providerState.addProvider()}>
+        <Button
+          variant="outline"
+          id="addProviderBtn"
+          type="button"
+          onClick={() => void providerState.addProvider()}
+        >
           <PlusIcon data-icon="inline-start" aria-hidden />
           {label('添加服务商', 'Add provider')}
         </Button>

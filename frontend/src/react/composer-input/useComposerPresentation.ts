@@ -25,6 +25,8 @@ export function useComposerPresentation(
     try {
       const wrap = editor.view.dom.closest('.composer-shell');
       if (wrap) syncComposerShellFlags(wrap);
-    } catch (_) { /* empty-catch: intentional — the editor may have detached */ }
+    } catch (_) {
+      /* empty-catch: intentional — the editor may have detached */
+    }
   }, [editor, webSearchOn, surface]);
 }

@@ -4,9 +4,7 @@
 // third-party CDN scripts that the sandbox can't reach). Loads with
 // waitUntil:'commit' (HTTP committed) and then polls until the bundle
 // has registered enough globals to be testable.
-import { test as base } from '@playwright/test';
-
-export const test = base;
+export { test } from './_state-fixture.mjs';
 
 /**
  * Resolved 8-bit RGB channels of a computed colour value.
@@ -46,12 +44,15 @@ export async function gotoAndSettle(page, url = '/', opts = {}) {
   if (opts.consent !== false) {
     await page.addInitScript(() => {
       try {
-        localStorage.setItem('socrates-cookie-consent', JSON.stringify({
-          v: 1,
-          choice: 'accept',
-          nonEssential: true,
-          updatedAt: new Date().toISOString(),
-        }));
+        localStorage.setItem(
+          'socrates-cookie-consent',
+          JSON.stringify({
+            v: 1,
+            choice: 'accept',
+            nonEssential: true,
+            updatedAt: new Date().toISOString(),
+          }),
+        );
       } catch (_) {}
     });
   }
@@ -68,23 +69,42 @@ export async function gotoAndSettle(page, url = '/', opts = {}) {
   // to burn the full 48-second budget if one migration shim was omitted.
   // The bindings list comes from this module — same import in the page
   // might not be reachable, so we hard-code a short suffix here.
-  const probe = ['setLang', 't', 'openSettings', 'showConfirm', 'openCmdK', 'openProfile', 'resetApp', 'toggleAppMode', 'signOut'];
+  const probe = [
+    'setLang',
+    't',
+    'openSettings',
+    'showConfirm',
+    'openCmdK',
+    'openProfile',
+    'resetApp',
+    'toggleAppMode',
+    'signOut',
+  ];
   for (let i = 0; i < 60; i++) {
     await page.waitForTimeout(800);
     const ok = await page.evaluate((req) => {
       const leg = window.__socratesLegacy || {};
-      const hasAny = (k) => typeof window[k] === 'function' ||
+      const hasAny = (k) =>
+        typeof window[k] === 'function' ||
         typeof leg[k] === 'function' ||
-        Object.values(leg).some((domain) => domain && typeof domain === 'object' && typeof domain[k] === 'function');
+        Object.values(leg).some(
+          (domain) => domain && typeof domain === 'object' && typeof domain[k] === 'function',
+        );
       return req.filter(hasAny).length >= Math.ceil(req.length * 0.25);
     }, probe);
     if (ok) return;
   }
 }
 
-export async function login(page, { email = 'qa-tester@example.com', password = 'QaTest12345!' } = {}) {
+export async function login(
+  page,
+  { email = 'qa-tester@example.com', password = 'QaTest12345!' } = {},
+) {
   // Hide auth gate if still visible (e.g. previous session leaked a token but page.reload cleared)
-  const visible = await page.locator('#authGate').isVisible().catch(() => false);
+  const visible = await page
+    .locator('#authGate')
+    .isVisible()
+    .catch(() => false);
   if (!visible) return;
   await page.fill('#authSigninEmail', email);
   await page.fill('#authSigninPassword', password);
@@ -92,7 +112,10 @@ export async function login(page, { email = 'qa-tester@example.com', password = 
   // Wait for gate to hide
   for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(400);
-    const v = await page.locator('#authGate').isVisible().catch(() => false);
+    const v = await page
+      .locator('#authGate')
+      .isVisible()
+      .catch(() => false);
     if (!v) break;
   }
   // Also wait for bindings to appear
@@ -101,7 +124,9 @@ export async function login(page, { email = 'qa-tester@example.com', password = 
 
 export async function setLang(page, lang) {
   await page.evaluate((l) => {
-    try { window.__socratesLegacy?.profile?.setLang(l); } catch (_) {}
+    try {
+      window.__socratesLegacy?.profile?.setLang(l);
+    } catch (_) {}
   }, lang);
   await page.waitForTimeout(300);
 }
@@ -109,8 +134,10 @@ export async function setLang(page, lang) {
 /** Publish through the browser event entry point shared by built app bundles. */
 export async function publishChatRuntime(page, event) {
   await page.evaluate((runtimeEvent) => {
-    window.dispatchEvent(new CustomEvent('socrates:chat-runtime-publish', {
-      detail: runtimeEvent,
-    }));
+    window.dispatchEvent(
+      new CustomEvent('socrates:chat-runtime-publish', {
+        detail: runtimeEvent,
+      }),
+    );
   }, event);
 }

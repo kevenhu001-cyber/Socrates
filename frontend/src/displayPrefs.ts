@@ -8,14 +8,13 @@ import { scrollToBottomIfPinned } from './ui/scroll.ts';
 import { withViewTransition } from './ui/viewTransitions.ts';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
-
 /* ── constants ── */
-export const DISPLAY_FONT_STEPS  = [1, 1.125, 1.25, 1.375];
-export const DISPLAY_WIDTH_STEPS = [0.85,  1, 1.3,   1.7];
-export const FONT_LABELS  = ["S","M","L","XL"];
-export const WIDTH_LABELS = ["S","M","L","XL"];
-export const THEME_PREFERENCES = ["system", "light", "dark"];
-export const THEME_STYLES = ["socrates", "philosophy"];
+export const DISPLAY_FONT_STEPS = [1, 1.125, 1.25, 1.375];
+export const DISPLAY_WIDTH_STEPS = [0.85, 1, 1.3, 1.7];
+export const FONT_LABELS = ['S', 'M', 'L', 'XL'];
+export const WIDTH_LABELS = ['S', 'M', 'L', 'XL'];
+export const THEME_PREFERENCES = ['system', 'light', 'dark'];
+export const THEME_STYLES = ['socrates', 'philosophy'];
 
 /* ── state ── */
 interface DisplayPreferences {
@@ -29,9 +28,15 @@ type ThemePreference = 'system' | 'light' | 'dark';
 type ThemeStyle = 'socrates' | 'philosophy';
 type ThemeMode = 'light' | 'dark';
 
-export const displayPrefs: DisplayPreferences = { font: 1.125, width: 1, darkBg: "", lightBg: "", showGrid: false };
+export const displayPrefs: DisplayPreferences = {
+  font: 1.125,
+  width: 1,
+  darkBg: '',
+  lightBg: '',
+  showGrid: false,
+};
 
-let _systemThemeQuery: MediaQueryList|null = null;
+let _systemThemeQuery: MediaQueryList | null = null;
 export const DISPLAY_PREFS_CHANGE_EVENT = 'socrates:display-prefs-change';
 export const DISPLAY_PREFS_TOGGLE_EVENT = 'socrates:display-prefs-toggle';
 
@@ -44,63 +49,74 @@ function isThemeStyle(value: string | null): value is ThemeStyle {
 }
 
 export function getThemeStyle() {
-  const attr = document.documentElement.getAttribute("data-theme");
+  const attr = document.documentElement.getAttribute('data-theme');
   if (isThemeStyle(attr)) return attr;
   try {
-    const saved = localStorage.getItem("socrates-theme-style");
+    const saved = localStorage.getItem('socrates-theme-style');
     if (isThemeStyle(saved)) return saved;
-  } catch (_) { /* empty-catch: intentional — theme style preference read is best-effort */ }
-  return "socrates";
+  } catch (_) {
+    /* empty-catch: intentional — theme style preference read is best-effort */
+  }
+  return 'socrates';
 }
 
 export function setThemeStyle(style: string | null) {
   if (!isThemeStyle(style)) return;
-  try { localStorage.setItem("socrates-theme-style", style); } catch (_) { /* empty-catch: intentional — theme style preference write is best-effort */ }
+  try {
+    localStorage.setItem('socrates-theme-style', style);
+  } catch (_) {
+    /* empty-catch: intentional — theme style preference write is best-effort */
+  }
   /* A palette swap repaints every surface at once. The browser's own
      cross-fade is the only transition that covers the whole page without
      painting intermediate palettes; older browsers and reduced motion run
      the update synchronously, exactly as before. */
   withViewTransition(() => {
-    document.documentElement.setAttribute("data-theme", style);
+    document.documentElement.setAttribute('data-theme', style);
     applyDisplayPrefs();
   });
 }
 
 function systemThemeMode(): ThemeMode {
   try {
-    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
+    return typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   } catch (_) {
-    return "dark";
+    return 'dark';
   }
 }
 
 export function getThemePreference() {
-  const attr = document.documentElement.getAttribute("data-theme-preference");
+  const attr = document.documentElement.getAttribute('data-theme-preference');
   if (isThemePreference(attr)) return attr;
   try {
-    const saved = localStorage.getItem("socrates-theme");
+    const saved = localStorage.getItem('socrates-theme');
     if (isThemePreference(saved)) return saved;
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:79', 'expected');
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
-  return "dark";
+  return 'dark';
 }
 
 export function resolveThemeMode(preference: string | null): ThemeMode {
-  return preference === "system" ? systemThemeMode() : (preference === "light" ? "light" : "dark");
+  return preference === 'system' ? systemThemeMode() : preference === 'light' ? 'light' : 'dark';
 }
 
 function syncMermaidTheme(mode: ThemeMode) {
   try {
-    const mermaid = typeof window !== "undefined" ? (window as unknown as { mermaid?: { initialize?: (opts: unknown) => void } }).mermaid : undefined;
+    const mermaid =
+      typeof window !== 'undefined'
+        ? (window as unknown as { mermaid?: { initialize?: (opts: unknown) => void } }).mermaid
+        : undefined;
     if (mermaid && mermaid.initialize) {
-      mermaid.initialize({ startOnLoad: false, theme: mode === "dark" ? "dark" : "default" });
+      mermaid.initialize({ startOnLoad: false, theme: mode === 'dark' ? 'dark' : 'default' });
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:92', 'expected');
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
 }
@@ -112,22 +128,22 @@ export function syncThemeUI() {
 function syncBrowserChromeColor(mode: ThemeMode) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) return;
-  let color = "";
+  let color = '';
   try {
-    color = getComputedStyle(document.documentElement).getPropertyValue("--background").trim();
+    color = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:129', 'expected');
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');
     /* computed style unavailable during boot — use the fallback */
   }
-  if (!color || color.indexOf("var(") !== -1) {
-    color = mode === "dark" ? "#121110" : "#f7f4ee";
+  if (!color || color.indexOf('var(') !== -1) {
+    color = mode === 'dark' ? '#121110' : '#f7f4ee';
   }
-  meta.setAttribute("content", color);
+  meta.setAttribute('content', color);
 }
 
 function setEffectiveThemeMode(mode: ThemeMode) {
   const html = document.documentElement;
-  html.setAttribute("data-mode", mode);
+  html.setAttribute('data-mode', mode);
   html.style.colorScheme = mode;
   syncMermaidTheme(mode);
   syncBrowserChromeColor(mode);
@@ -136,28 +152,28 @@ function setEffectiveThemeMode(mode: ThemeMode) {
 function watchSystemTheme() {
   if (_systemThemeQuery || typeof window === 'undefined' || !window.matchMedia) return;
   try {
-    _systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    _systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = function () {
-      if (getThemePreference() !== "system") return;
-      setEffectiveThemeMode(resolveThemeMode("system"));
+      if (getThemePreference() !== 'system') return;
+      setEffectiveThemeMode(resolveThemeMode('system'));
       applyDisplayPrefs();
     };
-    if (typeof _systemThemeQuery.addEventListener === "function") {
-      _systemThemeQuery.addEventListener("change", onChange);
-    } else if (typeof _systemThemeQuery.addListener === "function") {
+    if (typeof _systemThemeQuery.addEventListener === 'function') {
+      _systemThemeQuery.addEventListener('change', onChange);
+    } else if (typeof _systemThemeQuery.addListener === 'function') {
       _systemThemeQuery.addListener(onChange);
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:159', 'expected');
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
 }
 
 export function initTheme() {
   const preference = getThemePreference();
-  document.documentElement.setAttribute("data-theme-preference", preference!);
+  document.documentElement.setAttribute('data-theme-preference', preference!);
   const style = getThemeStyle();
-  document.documentElement.setAttribute("data-theme", style!);
+  document.documentElement.setAttribute('data-theme', style!);
   setEffectiveThemeMode(resolveThemeMode(preference));
   watchSystemTheme();
   syncThemeUI();
@@ -165,14 +181,16 @@ export function initTheme() {
 
 export function setThemePreference(preference: string | null) {
   if (!isThemePreference(preference)) return;
-  try { localStorage.setItem("socrates-theme", preference); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: displayPrefs.ts:189', 'expected');
+  try {
+    localStorage.setItem('socrates-theme', preference);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
   /* Light ↔ dark is a full-page repaint; cross-fade it instead of cutting.
      The preference is already persisted, so the callback only owns the paint. */
   withViewTransition(() => {
-    document.documentElement.setAttribute("data-theme-preference", preference);
+    document.documentElement.setAttribute('data-theme-preference', preference);
     setEffectiveThemeMode(resolveThemeMode(preference));
     applyDisplayPrefs();
   });
@@ -181,27 +199,27 @@ export function setThemePreference(preference: string | null) {
 /* ── helpers ── */
 export function loadDisplayPrefs() {
   try {
-    const raw = localStorage.getItem("socrates-display");
+    const raw = localStorage.getItem('socrates-display');
     if (raw) {
       const p = JSON.parse(raw);
-      if (typeof p.font === "number" && p.font > 0) displayPrefs.font = p.font;
-      if (typeof p.width === "number" && p.width > 0) displayPrefs.width = p.width;
-      if (typeof p.darkBg === "string") displayPrefs.darkBg = p.darkBg;
-      if (typeof p.lightBg === "string") displayPrefs.lightBg = p.lightBg;
+      if (typeof p.font === 'number' && p.font > 0) displayPrefs.font = p.font;
+      if (typeof p.width === 'number' && p.width > 0) displayPrefs.width = p.width;
+      if (typeof p.darkBg === 'string') displayPrefs.darkBg = p.darkBg;
+      if (typeof p.lightBg === 'string') displayPrefs.lightBg = p.lightBg;
       if (p.showGrid === true) displayPrefs.showGrid = true;
       else displayPrefs.showGrid = false;
     }
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:207', 'expected');
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
   /* One-time cleanup: the accent-colour picker was removed, so drop any
      persisted accent preference and never let it resurface. */
   try {
-    localStorage.removeItem("socrates-accent-hex");
-    localStorage.removeItem("socrates-accent-hue");
+    localStorage.removeItem('socrates-accent-hex');
+    localStorage.removeItem('socrates-accent-hue');
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:213', 'expected');
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
   /* One-time migration (bgMigratedV1): earlier builds shipped warm/green
@@ -211,48 +229,51 @@ export function loadDisplayPrefs() {
      the neutral theme tokens. Runs once; users who deliberately pick a
      color afterwards are never touched again. */
   try {
-    if (localStorage.getItem("socrates-bg-migrated-v1") !== "1") {
+    if (localStorage.getItem('socrates-bg-migrated-v1') !== '1') {
       let stripped = false;
-      (["darkBg", "lightBg"] as const).forEach(function (field) {
+      (['darkBg', 'lightBg'] as const).forEach(function (field) {
         const hex = displayPrefs[field];
-        if (typeof hex === "string" && /^#?[0-9a-fA-F]{3,6}$/.test(hex.trim())) {
+        if (typeof hex === 'string' && /^#?[0-9a-fA-F]{3,6}$/.test(hex.trim())) {
           const hsl = parseHexColor(hex.trim());
           /* Any perceptible chroma → drop it back to the neutral default. */
           if (hsl && hsl.s > 4) {
-            displayPrefs[field] = "";
+            displayPrefs[field] = '';
             stripped = true;
           }
         }
       });
-      localStorage.setItem("socrates-bg-migrated-v1", "1");
+      localStorage.setItem('socrates-bg-migrated-v1', '1');
       if (stripped) saveDisplayPrefs();
     }
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:237', 'expected');
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
   applyDisplayPrefs();
 }
 
 export function applyDisplayPrefs() {
-  document.documentElement.style.setProperty("--app-font-scale", String(displayPrefs.font));
-  document.documentElement.style.setProperty("--app-width-scale", String(displayPrefs.width));
-  const mode: ThemeMode = document.documentElement.getAttribute("data-mode") === "light" ? "light" : "dark";
-  const customHex = mode === "dark" ? displayPrefs.darkBg : displayPrefs.lightBg;
+  document.documentElement.style.setProperty('--app-font-scale', String(displayPrefs.font));
+  document.documentElement.style.setProperty('--app-width-scale', String(displayPrefs.width));
+  const mode: ThemeMode =
+    document.documentElement.getAttribute('data-mode') === 'light' ? 'light' : 'dark';
+  const customHex = mode === 'dark' ? displayPrefs.darkBg : displayPrefs.lightBg;
   if (customHex) {
     applyCustomBg(customHex, mode);
   } else {
     removeCustomBg();
   }
-  document.documentElement.dataset.showGrid = displayPrefs.showGrid === false ? "false" : "true";
+  document.documentElement.dataset.showGrid = displayPrefs.showGrid === false ? 'false' : 'true';
   /* After font/width change, layout shifts — keep pinned users at bottom */
   scrollToBottomIfPinned();
   syncThemeUI();
 }
 
 export function saveDisplayPrefs() {
-  try { localStorage.setItem("socrates-display", JSON.stringify(displayPrefs)); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: displayPrefs.ts:260', 'expected');
+  try {
+    localStorage.setItem('socrates-display', JSON.stringify(displayPrefs));
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: displayPrefs.ts', 'expected');
     /* ignore */
   }
 }
@@ -272,38 +293,38 @@ export function setDisplayWidth(step: number) {
 
 /* ── background colors ── */
 export function setBackgroundColor(hex: string) {
-  displayPrefs.darkBg = hex || "";
+  displayPrefs.darkBg = hex || '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
 
 export function setBackgroundDark(hex: string) {
-  displayPrefs.darkBg = hex || "";
+  displayPrefs.darkBg = hex || '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
 
 export function setBackgroundLight(hex: string) {
-  displayPrefs.lightBg = hex || "";
+  displayPrefs.lightBg = hex || '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
 
 export function resetBackgroundColor() {
-  displayPrefs.darkBg = "";
-  displayPrefs.lightBg = "";
+  displayPrefs.darkBg = '';
+  displayPrefs.lightBg = '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
 
 export function resetBackgroundDark() {
-  displayPrefs.darkBg = "";
+  displayPrefs.darkBg = '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
 
 export function resetBackgroundLight() {
-  displayPrefs.lightBg = "";
+  displayPrefs.lightBg = '';
   applyDisplayPrefs();
   saveDisplayPrefs();
 }
@@ -326,8 +347,8 @@ export function toggleDisplayPrefs() {
 
 export function toggleTheme() {
   const html = document.documentElement;
-  const mode = html.getAttribute("data-mode");
-  const next = mode === "dark" ? "light" : "dark";
+  const mode = html.getAttribute('data-mode');
+  const next = mode === 'dark' ? 'light' : 'dark';
   setThemePreference(next);
 }
 

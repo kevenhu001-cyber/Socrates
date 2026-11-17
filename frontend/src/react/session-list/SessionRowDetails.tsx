@@ -12,7 +12,12 @@ import type { SessionItem } from '../../ui/sessionListState.ts';
  * and the tag pills that filter the list.
  */
 
-export function SessionRenameField({ session, saving, onSaveTitle, onCancelRename }: {
+export function SessionRenameField({
+  session,
+  saving,
+  onSaveTitle,
+  onCancelRename,
+}: {
   session: SessionItem;
   saving: boolean;
   onSaveTitle: (title: string) => void;
@@ -44,7 +49,8 @@ export function SessionTagPills({ tags }: { tags: readonly string[] }) {
   return (
     <>
       {tags.map((tag) => (
-        <UiButton type="submit"
+        <UiButton
+          type="submit"
           key={tag}
           className="recent-tag-pill"
           onClick={(event) => {
@@ -52,7 +58,9 @@ export function SessionTagPills({ tags }: { tags: readonly string[] }) {
             setRecentsFilter(tag);
           }}
           title={t('session.filterByTag').replace('{tag}', tag)}
-        >#{tag}</UiButton>
+        >
+          #{tag}
+        </UiButton>
       ))}
     </>
   );

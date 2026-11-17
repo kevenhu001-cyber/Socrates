@@ -26,7 +26,9 @@ test('Sidebar React mode hydrates #sidebarNav and #recentsFilterChips', async ({
   // Both state domains are typed stores; recents has no window snapshot.
   const bridges = await page.evaluate(() => ({
     nav: '__socratesSidebarNavBridge' in window,
-    filter: typeof window.__socratesRecentsFilterBridge === 'object' && window.__socratesRecentsFilterBridge !== null,
+    filter:
+      typeof window.__socratesRecentsFilterBridge === 'object' &&
+      window.__socratesRecentsFilterBridge !== null,
   }));
   expect(bridges).toEqual({ nav: false, filter: false });
 });
@@ -57,7 +59,8 @@ test('typed recents filter updates while the compact drawer hides chips', async 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(400);
   await page.evaluate(() => localStorage.setItem('socrates-recents-filter', 'algebra'));
@@ -65,7 +68,9 @@ test('typed recents filter updates while the compact drawer hides chips', async 
   await waitForAppShell(page);
 
   // React should always render the "All" chip first.
-  const allChip = page.locator('#recentsFilterChips .recents-filter-chip-btn[data-filter="all"]').first();
+  const allChip = page
+    .locator('#recentsFilterChips .recents-filter-chip-btn[data-filter="all"]')
+    .first();
   await expect(allChip).toBeAttached();
   await expect(allChip).not.toHaveClass(CHIP_ACTIVE);
 
@@ -105,7 +110,9 @@ test('React recents chips refresh after project and session caches change', asyn
     window.renderRecents();
   });
 
-  await expect(page.locator('#recentsFilterChips [data-filter="project:project-algebra"]')).toContainText('Algebra project');
+  await expect(
+    page.locator('#recentsFilterChips [data-filter="project:project-algebra"]'),
+  ).toContainText('Algebra project');
   await expect(page.locator('#recentsFilterChips [data-filter="algebra"]')).toHaveCount(1);
   await expect(page.locator('#recentsFilterChips [data-filter="practice"]')).toHaveCount(1);
 });
@@ -113,7 +120,9 @@ test('React recents chips refresh after project and session caches change', asyn
 test('Recents fetches project filter data once while the request is pending', async ({ page }) => {
   let projectRequestCount = 0;
   let releaseProjects;
-  const projectsGate = new Promise((resolve) => { releaseProjects = resolve; });
+  const projectsGate = new Promise((resolve) => {
+    releaseProjects = resolve;
+  });
 
   await mockAuthedApp(page);
   await page.route('**/api/**', async (route) => {
@@ -155,7 +164,9 @@ test('Sidebar React mode always loads (no ?react=1 flag needed)', async ({ page 
 
   const installed = await page.evaluate(() => ({
     nav: '__socratesSidebarNavBridge' in window,
-    filter: typeof window.__socratesRecentsFilterBridge === 'object' && window.__socratesRecentsFilterBridge !== null,
+    filter:
+      typeof window.__socratesRecentsFilterBridge === 'object' &&
+      window.__socratesRecentsFilterBridge !== null,
   }));
   expect(installed).toEqual({ nav: false, filter: false });
 });

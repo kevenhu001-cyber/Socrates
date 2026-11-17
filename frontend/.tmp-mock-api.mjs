@@ -40,9 +40,13 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST') return json(res, { id: 'smoke-provider-1' }, 201);
     return json(res, { ok: true });
   }
-  if (url.startsWith('/api/memories') || url.startsWith('/api/usage') ||
-      url.startsWith('/api/projects') || url.startsWith('/api/share') ||
-      url.startsWith('/api/mistakes')) {
+  if (
+    url.startsWith('/api/memories') ||
+    url.startsWith('/api/usage') ||
+    url.startsWith('/api/projects') ||
+    url.startsWith('/api/share') ||
+    url.startsWith('/api/mistakes')
+  ) {
     return json(res, EMPTY);
   }
   return json(res, { ok: true, stub: true });

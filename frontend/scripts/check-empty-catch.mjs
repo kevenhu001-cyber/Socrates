@@ -64,8 +64,12 @@ function walk(dir, out = []) {
 export function collectEmptyCatchSites(raw, filename = 'fixture.js') {
   const source = ts.createSourceFile(filename, raw, ts.ScriptTarget.Latest, true);
   if (source.parseDiagnostics.length) {
-    throw new Error('Cannot parse ' + filename + ': ' +
-      ts.flattenDiagnosticMessageText(source.parseDiagnostics[0].messageText, '\n'));
+    throw new Error(
+      'Cannot parse ' +
+        filename +
+        ': ' +
+        ts.flattenDiagnosticMessageText(source.parseDiagnostics[0].messageText, '\n'),
+    );
   }
   const offenders = [];
   const exempted = [];
@@ -78,14 +82,22 @@ export function collectEmptyCatchSites(raw, filename = 'fixture.js') {
         ...(ts.getTrailingCommentRanges(raw, position) || []),
       ];
       return ranges.some(({ pos, end, kind }) => {
-        if (position === node.end &&
-            source.getLineAndCharacterOfPosition(pos).line !==
-            source.getLineAndCharacterOfPosition(node.end).line) return false;
-        if (position === node.pos &&
-            source.getLineAndCharacterOfPosition(end).line !==
-            source.getLineAndCharacterOfPosition(node.getStart(source)).line) return false;
-        const comment = raw.slice(pos + 2,
-          kind === ts.SyntaxKind.MultiLineCommentTrivia ? end - 2 : end);
+        if (
+          position === node.end &&
+          source.getLineAndCharacterOfPosition(pos).line !==
+            source.getLineAndCharacterOfPosition(node.end).line
+        )
+          return false;
+        if (
+          position === node.pos &&
+          source.getLineAndCharacterOfPosition(end).line !==
+            source.getLineAndCharacterOfPosition(node.getStart(source)).line
+        )
+          return false;
+        const comment = raw.slice(
+          pos + 2,
+          kind === ts.SyntaxKind.MultiLineCommentTrivia ? end - 2 : end,
+        );
         return EXEMPT_MARKER.test(comment);
       });
     });
@@ -117,23 +129,29 @@ function collect() {
 
 function main() {
   const { offenders, exempted } = collect();
-  const baseline = existsSync(BASELINE)
-    ? JSON.parse(readFileSync(BASELINE, 'utf8'))
-    : null;
+  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
 
   if (!baseline || UPDATE) {
     /* On first run or `--update`, freeze the current count as the new
        baseline. We never GROW the baseline (the ratchet semantics);
        when updating with a real one, take the smaller of the two so an
        accidental regression can't be laundered into a higher budget. */
-    const count = baseline && typeof baseline.count === 'number'
-      ? Math.min(baseline.count, offenders.length)
-      : offenders.length;
-    writeFileSync(BASELINE, JSON.stringify({
-      count,
-      note: 'Empty catch blocks (try { ... } catch (_) {} / catch {}). May only go down. Run with --update after an intentional reduction.',
-      generatedBy: 'check-empty-catch.mjs --update',
-    }, null, 2) + '\n');
+    const count =
+      baseline && typeof baseline.count === 'number'
+        ? Math.min(baseline.count, offenders.length)
+        : offenders.length;
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          count,
+          note: 'Empty catch blocks (try { ... } catch (_) {} / catch {}). May only go down. Run with --update after an intentional reduction.',
+          generatedBy: 'check-empty-catch.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
     console.log(`empty-catch: baseline ${baseline ? 'updated' : 'written'} (count=${count}).`);
     if (exempted.length) {
       console.log(`Exempted sites (${exempted.length}):`);
@@ -148,9 +166,13 @@ function main() {
 
   if (offenders.length > baseline.count) {
     console.error('empty-catch check FAILED:');
-    console.error(`  empty catch blocks: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`);
+    console.error(
+      `  empty catch blocks: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`,
+    );
     for (const o of offenders) console.error(`  - ${o}`);
-    console.error('  Convert with `reportSwallow(err, "<context>")` from src/util/reportSwallow.ts, or annotate with `empty-catch: intentional — <reason>` to exempt.');
+    console.error(
+      '  Convert with `reportSwallow(err, "<context>")` from src/util/reportSwallow.ts, or annotate with `empty-catch: intentional — <reason>` to exempt.',
+    );
     process.exitCode = 1;
   } else {
     console.log(`empty-catch check passed (${offenders.length}/${baseline.count} allowed).`);

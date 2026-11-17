@@ -1,5 +1,5 @@
 import { webSearchOn } from '../config/providers.ts';
-import { stateStore } from '../state/store.ts';
+import { searchBridge, sessionBridge } from '../store/index.ts';
 
 const SEARCH_REFRESH_EVERY = 5;
 
@@ -8,11 +8,8 @@ const SEARCH_REFRESH_EVERY = 5;
  * is actually due. */
 export function shouldRefreshSearch(): boolean {
   if (!webSearchOn) return false;
-  const store = typeof window !== 'undefined' && window.stateStore
-    ? window.stateStore
-    : stateStore;
-  const last = (store.read('searchContextAt') as number) || 0;
+  const last = (searchBridge.getSnapshot().searchContextAt as number) || 0;
   if (Date.now() - last < 30000) return false;
-  if (!store.read('searchContextQuery')) return false;
-  return ((store.read('totalQ') as number) % SEARCH_REFRESH_EVERY) === 0;
+  if (!searchBridge.getSnapshot().searchContextQuery) return false;
+  return (sessionBridge.getSnapshot().totalQ as number) % SEARCH_REFRESH_EVERY === 0;
 }

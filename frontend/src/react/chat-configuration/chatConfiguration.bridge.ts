@@ -2,10 +2,16 @@ import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.store.ts';
 import { getStoredReasoningEffort, getStoredResponseSpeed } from '../../config/chatPreferences.ts';
 import { restingRect } from '../../ui/pressFeedback.ts';
-import type { ChatConfigurationBridge, ChatConfigurationSnapshot, ChatProviderOption } from './types';
+import type {
+  ChatConfigurationBridge,
+  ChatConfigurationSnapshot,
+  ChatProviderOption,
+} from './types';
 
 declare global {
-  interface Window { openSettings?: () => void }
+  interface Window {
+    openSettings?: () => void;
+  }
 }
 
 type Action = Omit<ChatConfigurationSnapshot, 'revision'>;
@@ -41,7 +47,8 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     closeChatConfiguration();
     return;
   }
-  returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  returnFocus =
+    trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   /* The trigger is still mid-press when its click opens the popover. */
   const rect = trigger ? restingRect(trigger) : null;
   const providerConfig = getProviderConfigSnapshot();
@@ -61,7 +68,14 @@ export function openChatConfiguration(trigger?: HTMLElement | null): void {
     speed: getStoredResponseSpeed(),
     triggerId: trigger?.id || null,
     anchorRect: rect
-      ? { top: rect.top, left: rect.left, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height }
+      ? {
+          top: rect.top,
+          left: rect.left,
+          right: rect.right,
+          bottom: rect.bottom,
+          width: rect.width,
+          height: rect.height,
+        }
       : null,
   });
 }

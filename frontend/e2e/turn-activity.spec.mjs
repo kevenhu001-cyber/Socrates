@@ -1,11 +1,13 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 
 async function controller(page) {
   await page.evaluate(async () => {
-    window.__activityController = await window.addStreamingMessage({ userPrompt: '为什么 React 页面掉帧，先检查状态管理再看动画？' });
+    window.__activityController = await window.addStreamingMessage({
+      userPrompt: '为什么 React 页面掉帧，先检查状态管理再看动画？',
+    });
     window.__activityController.recordTurnActivity({ type: 'thinking' });
     window.__activityController.appendThinking('PRIVATE SCRATCH WORK: 第一阶段检查组件树。');
   });
@@ -14,7 +16,9 @@ async function controller(page) {
 test('activity hands the same message body to the first answer token', async ({ page }) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
-    window.__thinkingController = await window.addStreamingMessage({ userPrompt: '先分析问题，再给出答案。' });
+    window.__thinkingController = await window.addStreamingMessage({
+      userPrompt: '先分析问题，再给出答案。',
+    });
     window.__thinkingController.recordTurnActivity({ type: 'thinking' });
   });
 
@@ -51,7 +55,9 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
     const realNow = Date.now;
     let offset = 0;
     Date.now = () => realNow() + offset;
-    window.__advanceReasoningClock = () => { offset = 5000; };
+    window.__advanceReasoningClock = () => {
+      offset = 5000;
+    };
     window.__waitingController = await window.addStreamingMessage({});
     window.__waitingController.recordTurnActivity({ type: 'thinking' });
   });
@@ -68,7 +74,9 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await expect(status).toHaveAttribute('data-phase', 'thinking');
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking…');
   await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
-  const duration = await page.evaluate(() => window.stateStore.read('messages').at(-1).reasoningDurationSec);
+  const duration = await page.evaluate(
+    () => window.__socratesTestState.session().messages.at(-1).reasoningDurationSec,
+  );
   expect(duration).toBe(0);
   await page.screenshot({ path: 'test-results/observed-reasoning.png' });
   await expect(message).not.toContainText('PRIVATE REASONING');
@@ -78,20 +86,33 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await page.evaluate(() => window.__waitingController.finish());
 });
 
-test('settled assistant history keeps the same surface when only legacy HTML exists', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [
-    { clientId: 'history-user', role: 'user', rawText: '历史问题', html: '<p>历史问题</p>' },
-    { clientId: 'history-assistant', role: 'assistant', rawText: '', html: '<p>历史答案仍在同一个回答 surface 中。</p>' },
-  ] });
+test('settled assistant history keeps the same surface when only legacy HTML exists', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: [
+      { clientId: 'history-user', role: 'user', rawText: '历史问题', html: '<p>历史问题</p>' },
+      {
+        clientId: 'history-assistant',
+        role: 'assistant',
+        rawText: '',
+        html: '<p>历史答案仍在同一个回答 surface 中。</p>',
+      },
+    ],
+  });
 
   const message = page.locator('#msgList .msg.assistant').last();
   const surface = message.locator('.msg-body.turn-surface');
   await expect(surface).toHaveAttribute('data-ui-surface', 'assistant-turn');
   await expect(surface).toHaveAttribute('data-turn-state', 'settled');
-  await expect(surface.locator('.tool-run-prose')).toContainText('历史答案仍在同一个回答 surface 中。');
+  await expect(surface.locator('.tool-run-prose')).toContainText(
+    '历史答案仍在同一个回答 surface 中。',
+  );
 });
 
-test('streaming actions are absent and running tools own the activity surface', async ({ page }) => {
+test('streaming actions are absent and running tools own the activity surface', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await controller(page);
   const message = page.locator('#msgList .msg.assistant').last();
@@ -103,15 +124,23 @@ test('streaming actions are absent and running tools own the activity surface', 
   await page.evaluate(() => {
     const ctl = window.__activityController;
     ctl.recordTurnActivity({ type: 'tool', toolCallId: 'search', toolName: 'web_search' });
-    ctl.recordToolUse({ id: 'search', name: 'web_search', input: { query: 'React Context rendering' } });
+    ctl.recordToolUse({
+      id: 'search',
+      name: 'web_search',
+      input: { query: 'React Context rendering' },
+    });
     ctl.appendThinking('More private scratch work while searching.');
   });
   await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
   // The collapsed header names the running call; time remains secondary.
-  await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText('React Context rendering');
-  await expect(message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText(
+    'React Context rendering',
+  );
+  await expect(
+    message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner'),
+  ).toHaveCount(1);
   await expect(message.getByTestId('turn-activity-label')).toContainText('React Context rendering');
   await expect(message.getByTestId('turn-activity-duration')).toContainText(/\d/);
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
@@ -119,7 +148,14 @@ test('streaming actions are absent and running tools own the activity surface', 
 
   await page.evaluate(() => {
     const ctl = window.__activityController;
-    ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Found documentation.', results: [] });
+    ctl.recordToolResult({
+      id: 'search',
+      name: 'web_search',
+      ok: true,
+      status: 'completed',
+      output: 'Found documentation.',
+      results: [],
+    });
     ctl.recordTurnActivity({ type: 'synthesizing' });
     ctl.append('The relevant evidence is now in the answer.');
     ctl.recordTurnActivity({ type: 'done', durationMs: 1200 });
@@ -127,22 +163,54 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.msg-toolbar')).toBeHidden();
   await page.evaluate(() => window.__activityController.finish());
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
-  await expect(message.locator('.msg-body.turn-surface')).toHaveAttribute('data-turn-state', 'settled');
+  await expect(message.locator('.msg-body.turn-surface')).toHaveAttribute(
+    'data-turn-state',
+    'settled',
+  );
   await expect(message.locator('.msg-toolbar button').first()).toBeVisible();
   await page.screenshot({ path: 'test-results/turn-activity-settled.png' });
 });
 
 test('detail-free rows are static and native UI output is outside disclosure', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'native-ui', role: 'assistant', rawText: 'Adjust the inputs below.', type: null,
-    toolCalls: [{ id: 'ui', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, output: '', input: {
-      version: 1, nodes: [
-        { id: 'panel', type: 'panel', title: 'Evidence', state: { count: 2 } },
-        { id: 'value', type: 'metric', parent: 'panel', label: 'Count', value: { state: 'count' } },
-        { id: 'add', type: 'button', parent: 'panel', label: 'Add one', action: { type: 'increment', key: 'count', value: 1 } },
-      ],
-    } }],
-  }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'native-ui',
+        role: 'assistant',
+        rawText: 'Adjust the inputs below.',
+        type: null,
+        toolCalls: [
+          {
+            id: 'ui',
+            name: 'render_intelligent_ui',
+            status: 'completed',
+            textOffset: 0,
+            output: '',
+            input: {
+              version: 1,
+              nodes: [
+                { id: 'panel', type: 'panel', title: 'Evidence', state: { count: 2 } },
+                {
+                  id: 'value',
+                  type: 'metric',
+                  parent: 'panel',
+                  label: 'Count',
+                  value: { state: 'count' },
+                },
+                {
+                  id: 'add',
+                  type: 'button',
+                  parent: 'panel',
+                  label: 'Add one',
+                  action: { type: 'increment', key: 'count', value: 1 },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+  });
   await expect(page.locator('.intui')).toBeVisible();
   const before = await page.locator('.intui').innerText();
   await page.getByRole('button', { name: 'Add one', exact: true }).click();
@@ -157,17 +225,30 @@ test('detail-free rows are static and native UI output is outside disclosure', a
   await expect(page.locator('.intui')).toBeVisible();
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{
-      clientId: 'static-row', role: 'assistant', rawText: 'Done.', type: null,
-      toolCalls: [{ id: 'empty', name: 'unknown_tool', status: 'completed', textOffset: 0, output: '' }],
-    }] });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          {
+            clientId: 'static-row',
+            role: 'assistant',
+            rawText: 'Done.',
+            type: null,
+            toolCalls: [
+              { id: 'empty', name: 'unknown_tool', status: 'completed', textOffset: 0, output: '' },
+            ],
+          },
+        ],
+      },
+    });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'static-row-fixture' });
   await expect(page.locator('.rn-tool-row[data-tcid="empty"]')).toHaveCount(1);
   await expect(page.locator('[data-testid="tool-row-empty"][role="button"]')).toHaveCount(0);
 });
 
-test('native UI survives a tool-only settled turn and recovers raw streamed arguments', async ({ page }) => {
+test('native UI survives a tool-only settled turn and recovers raw streamed arguments', async ({
+  page,
+}) => {
   const document = {
     version: 1,
     nodes: [
@@ -175,13 +256,27 @@ test('native UI survives a tool-only settled turn and recovers raw streamed argu
       { id: 'value', type: 'metric', parent: 'panel', label: 'Score', value: 7 },
     ],
   };
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'native-ui-tool-only', role: 'assistant', rawText: '', html: '', type: null,
-    toolCalls: [{
-      id: 'ui-raw', name: 'render_intelligent_ui', status: 'completed', textOffset: 0,
-      output: 'Rendered 2 UI nodes', input: { __raw: JSON.stringify(document) },
-    }],
-  }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'native-ui-tool-only',
+        role: 'assistant',
+        rawText: '',
+        html: '',
+        type: null,
+        toolCalls: [
+          {
+            id: 'ui-raw',
+            name: 'render_intelligent_ui',
+            status: 'completed',
+            textOffset: 0,
+            output: 'Rendered 2 UI nodes',
+            input: { __raw: JSON.stringify(document) },
+          },
+        ],
+      },
+    ],
+  });
 
   const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-tool-only"]');
   await expect(message).toHaveCount(1);
@@ -192,7 +287,9 @@ test('native UI survives a tool-only settled turn and recovers raw streamed argu
   await expect(message.locator('[data-intui-id="value"]')).toContainText('7');
 });
 
-test('native UI can mount from cumulative arguments before the tool result arrives', async ({ page }) => {
+test('native UI can mount from cumulative arguments before the tool result arrives', async ({
+  page,
+}) => {
   const document = {
     version: 1,
     nodes: [
@@ -200,13 +297,28 @@ test('native UI can mount from cumulative arguments before the tool result arriv
       { id: 'progress', type: 'progress', parent: 'panel', label: 'Ready', value: 40, max: 100 },
     ],
   };
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'native-ui-arguments', role: 'assistant', rawText: '', html: '', type: null,
-    toolCalls: [{
-      id: 'ui-arguments', name: 'render_intelligent_ui', status: 'running', textOffset: 0,
-      output: null, input: null, argumentsText: JSON.stringify(document),
-    }],
-  }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'native-ui-arguments',
+        role: 'assistant',
+        rawText: '',
+        html: '',
+        type: null,
+        toolCalls: [
+          {
+            id: 'ui-arguments',
+            name: 'render_intelligent_ui',
+            status: 'running',
+            textOffset: 0,
+            output: null,
+            input: null,
+            argumentsText: JSON.stringify(document),
+          },
+        ],
+      },
+    ],
+  });
 
   const message = page.locator('#msgList .msg.assistant[data-client-id="native-ui-arguments"]');
   await expect(message).toHaveCount(1);
@@ -215,22 +327,39 @@ test('native UI can mount from cumulative arguments before the tool result arriv
   await expect(message.locator('[data-intui-id="progress"]')).toContainText('40%');
 });
 
-
-test('the browser states the effort intent and leaves MiniMax specifics to the server', async ({ page }) => {
+test('the browser states the effort intent and leaves MiniMax specifics to the server', async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     localStorage.setItem('socrates-last-active-id', 'minimax-m3');
     localStorage.setItem('socrates-reasoning-effort', 'low');
   });
-  await mockAuthedApp(page, { apiKeys: { providers: [{ id: 'minimax-m3', label: 'MiniMax', model: 'MiniMax-M3', url: 'https://provider.example/v1', hasKey: true, isActive: true }] } });
+  await mockAuthedApp(page, {
+    apiKeys: {
+      providers: [
+        {
+          id: 'minimax-m3',
+          label: 'MiniMax',
+          model: 'MiniMax-M3',
+          url: 'https://provider.example/v1',
+          hasKey: true,
+          isActive: true,
+        },
+      ],
+    },
+  });
   let sentBody;
-  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async route => {
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     sentBody = route.request().postDataJSON();
-    await route.fulfill({ contentType: 'text/event-stream', body: 'data: {"choices":[{"delta":{"content":"M3 answer."}}]}\n\ndata: [DONE]\n\n' });
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"M3 answer."}}]}\n\ndata: [DONE]\n\n',
+    });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.submitChatMessage('Say hello.');
   });

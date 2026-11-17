@@ -33,13 +33,18 @@ export function initializeSettingsService(): void {
      preload it on pointer/focus intent, which is the moment that matters. */
 }
 
-export async function openSettings({ section, mobileIndex = false, returnFocus }: {
+export async function openSettings({
+  section,
+  mobileIndex = false,
+  returnFocus,
+}: {
   section?: SettingsSection;
   mobileIndex?: boolean;
   returnFocus?: HTMLElement | null;
 } = {}): Promise<void> {
   const active = document.activeElement;
-  const trigger = returnFocus ?? (active instanceof HTMLElement && active !== document.body ? active : null);
+  const trigger =
+    returnFocus ?? (active instanceof HTMLElement && active !== document.body ? active : null);
   const request = Symbol();
   pendingOpen = request;
   try {
@@ -56,9 +61,11 @@ export async function openSettings({ section, mobileIndex = false, returnFocus }
   }
   const current = getSettingsSnapshot();
   if (!current.open) settingsReturnFocus = trigger;
-  installSettingsBridge().publish(section
-    ? { open: true, section, query: '', mobileDetail: !mobileIndex }
-    : { open: true, mobileDetail: current.open && current.mobileDetail });
+  installSettingsBridge().publish(
+    section
+      ? { open: true, section, query: '', mobileDetail: !mobileIndex }
+      : { open: true, mobileDetail: current.open && current.mobileDetail },
+  );
   publishProfileSnapshot();
 }
 
@@ -69,9 +76,10 @@ export function closeSettings(): void {
 
 export function toggleExternalApi(): void {
   const externalApiOn = !getSettingsSnapshot().externalApiOn;
-  try { localStorage.setItem('socrates-external-api', JSON.stringify(externalApiOn)); }
-  catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/settings/settings.service.ts:51');
+  try {
+    localStorage.setItem('socrates-external-api', JSON.stringify(externalApiOn));
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/settings/settings.service.ts');
     /* Preference is still updated for this page session. */
   }
   installSettingsBridge().publish({ externalApiOn });

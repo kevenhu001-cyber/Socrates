@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { test } from './_state-fixture.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('measure composer and reserve - what is happening?', async ({ page }) => {
@@ -8,7 +8,7 @@ test('measure composer and reserve - what is happening?', async ({ page }) => {
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 
@@ -27,7 +27,9 @@ test('measure composer and reserve - what is happening?', async ({ page }) => {
       listPaddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       cssVarHeight: getComputedStyle(view).getPropertyValue('--chat-input-bar-height'),
       cssReserve: getComputedStyle(view).getPropertyValue('--chat-content-bottom-reserve'),
-      cssKeyboardInset: getComputedStyle(document.documentElement).getPropertyValue('--keyboard-inset'),
+      cssKeyboardInset: getComputedStyle(document.documentElement).getPropertyValue(
+        '--keyboard-inset',
+      ),
     };
   });
   console.log('Initial state:', JSON.stringify(initial, null, 2));
@@ -56,7 +58,9 @@ test('measure composer and reserve - what is happening?', async ({ page }) => {
       listPaddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       listScrollHeight: list.scrollHeight,
       listClientHeight: list.clientHeight,
-      clearance: lastBody ? Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom) : null,
+      clearance: lastBody
+        ? Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom)
+        : null,
     };
   });
   console.log('After messages (scroll not yet):', JSON.stringify(afterMessages, null, 2));
@@ -79,7 +83,9 @@ test('measure composer and reserve - what is happening?', async ({ page }) => {
       lastBodyTop: lastBody ? lastBody.getBoundingClientRect().top : null,
       lastBodyBottom: lastBody ? lastBody.getBoundingClientRect().bottom : null,
       listScrollTop: list.scrollTop,
-      clearance: lastBody ? Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom) : null,
+      clearance: lastBody
+        ? Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom)
+        : null,
     };
   });
   console.log('After scroll:', JSON.stringify(afterScroll, null, 2));

@@ -1,4 +1,4 @@
-import { stripIntelligenceUiBlocks } from '@socrates/core';
+import { stripIntelligentUiBlocks } from '@socrates/core';
 import type { ChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
@@ -13,11 +13,14 @@ function messageIdOf(message: ChatMessage): string | null {
 function plainTextOf(message: ChatMessage): string {
   let text = '';
   if (typeof message.rawText === 'string' && message.rawText.length > 0) {
-    text = stripIntelligenceUiBlocks(message.rawText);
+    text = stripIntelligentUiBlocks(message.rawText);
   } else if (typeof message.html === 'string' && message.html.length > 0) {
     text = stripHtmlToText(message.html);
   }
-  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/<\/?think>/gi, '').trim();
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/?think>/gi, '')
+    .trim();
 }
 
 function stripHtmlToText(html: string): string {
@@ -35,15 +38,20 @@ function stripHtmlToText(html: string): string {
     }
     return (container.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
   } catch (_) {
-    return stripHtmlTags(html).replace(/&nbsp;/g, ' ').trim();
+    return stripHtmlTags(html)
+      .replace(/&nbsp;/g, ' ')
+      .trim();
   }
 }
 
 function fallbackCopy(text: string): void {
-  void import('../legacy-controls/clipboardTextarea').then(({ copyTextWithShadcnTextarea }) => copyTextWithShadcnTextarea(text)).then(
-    () => getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
-    () => getLegacyActions().messages.showToast?.(i18n('clipboard.failed', 'Copy failed')),
-  );
+  void import('../legacy-controls/clipboardTextarea')
+    .then(({ copyTextWithShadcnTextarea }) => copyTextWithShadcnTextarea(text))
+    .then(
+      () =>
+        getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
+      () => getLegacyActions().messages.showToast?.(i18n('clipboard.failed', 'Copy failed')),
+    );
 }
 
 function doCopy(message: ChatMessage): void {
@@ -52,9 +60,14 @@ function doCopy(message: ChatMessage): void {
     getLegacyActions().messages.showToast?.(i18n('clipboard.nothing', 'Nothing to copy'));
     return;
   }
-  if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.clipboard &&
+    typeof navigator.clipboard.writeText === 'function'
+  ) {
     navigator.clipboard.writeText(text).then(
-      () => getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
+      () =>
+        getLegacyActions().messages.showToast?.(i18n('clipboard.copied', 'Copied to clipboard')),
       () => fallbackCopy(text),
     );
   } else {
@@ -92,9 +105,29 @@ function assistantMessageCallbacks(
   role: string,
   id: string | null,
   legacy: ReturnType<typeof getLegacyActions> | null,
-): Pick<MessageToolbarCallbacks, 'onShare' | 'onRegenerate' | 'onThumbsUp' | 'onThumbsDown' | 'onBranch' | 'onReExplain' | 'onReadAloud' | 'onSwitchBranch'> {
+): Pick<
+  MessageToolbarCallbacks,
+  | 'onShare'
+  | 'onRegenerate'
+  | 'onThumbsUp'
+  | 'onThumbsDown'
+  | 'onBranch'
+  | 'onReExplain'
+  | 'onReadAloud'
+  | 'onSwitchBranch'
+> {
   if (role !== 'assistant') return {};
-  const callbacks: Pick<MessageToolbarCallbacks, 'onShare' | 'onRegenerate' | 'onThumbsUp' | 'onThumbsDown' | 'onBranch' | 'onReExplain' | 'onReadAloud' | 'onSwitchBranch'> = {
+  const callbacks: Pick<
+    MessageToolbarCallbacks,
+    | 'onShare'
+    | 'onRegenerate'
+    | 'onThumbsUp'
+    | 'onThumbsDown'
+    | 'onBranch'
+    | 'onReExplain'
+    | 'onReadAloud'
+    | 'onSwitchBranch'
+  > = {
     onShare: () => getLegacyActions().messages.openShareModal(),
   };
   if (!id || !legacy) return callbacks;

@@ -89,17 +89,24 @@ function collect() {
 
     function visit(node) {
       const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
-      if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
-        && node.moduleSpecifier && isStringSpecifier(node.moduleSpecifier)) {
+      if (
+        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+        node.moduleSpecifier &&
+        isStringSpecifier(node.moduleSpecifier)
+      ) {
         collectSpecifierIssues(node.moduleSpecifier.text, line, rel, offenders);
-      } else if (ts.isImportEqualsDeclaration(node)
-        && ts.isExternalModuleReference(node.moduleReference)
-        && node.moduleReference.expression
-        && isStringSpecifier(node.moduleReference.expression)) {
+      } else if (
+        ts.isImportEqualsDeclaration(node) &&
+        ts.isExternalModuleReference(node.moduleReference) &&
+        node.moduleReference.expression &&
+        isStringSpecifier(node.moduleReference.expression)
+      ) {
         collectSpecifierIssues(node.moduleReference.expression.text, line, rel, offenders);
-      } else if (ts.isImportTypeNode(node)
-        && ts.isLiteralTypeNode(node.argument)
-        && isStringSpecifier(node.argument.literal)) {
+      } else if (
+        ts.isImportTypeNode(node) &&
+        ts.isLiteralTypeNode(node.argument) &&
+        isStringSpecifier(node.argument.literal)
+      ) {
         collectSpecifierIssues(node.argument.literal.text, line, rel, offenders);
       } else if (ts.isCallExpression(node)) {
         const isDynamicImport = node.expression.kind === ts.SyntaxKind.ImportKeyword;
@@ -109,7 +116,9 @@ function collect() {
           if (argument && isStringSpecifier(argument)) {
             collectSpecifierIssues(argument.text, line, rel, offenders);
           } else {
-            offenders.push(`${rel}:${line}: -> non-literal ${isDynamicImport ? 'dynamic import' : 'require'} (target cannot be checked)`);
+            offenders.push(
+              `${rel}:${line}: -> non-literal ${isDynamicImport ? 'dynamic import' : 'require'} (target cannot be checked)`,
+            );
           }
         }
       }
@@ -124,21 +133,31 @@ function main() {
   const offenders = collect();
   if (UPDATE || !existsSync(BASELINE)) {
     const previous = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
-    const count = previous && typeof previous.count === 'number'
-      ? Math.min(previous.count, offenders.length)
-      : offenders.length;
-    writeFileSync(BASELINE, JSON.stringify({
-      count,
-      note: 'src/chat/** modules importing src/react/** (src/react/types/** is the allowed shared contract). May only go down.',
-      generatedBy: 'check-chat-layering.mjs --update',
-    }, null, 2) + '\n');
+    const count =
+      previous && typeof previous.count === 'number'
+        ? Math.min(previous.count, offenders.length)
+        : offenders.length;
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          count,
+          note: 'src/chat/** modules importing src/react/** (src/react/types/** is the allowed shared contract). May only go down.',
+          generatedBy: 'check-chat-layering.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
     console.log(`chat-layering: baseline ${previous ? 'updated' : 'written'} (count=${count}).`);
     return;
   }
 
   const allowed = JSON.parse(readFileSync(BASELINE, 'utf8')).count;
   if (offenders.length > allowed) {
-    console.error(`chat-layering FAILED: ${offenders.length} chat/ -> react/ imports, ${allowed} allowed.`);
+    console.error(
+      `chat-layering FAILED: ${offenders.length} chat/ -> react/ imports, ${allowed} allowed.`,
+    );
     for (const o of offenders) console.error(`  - ${o}`);
     console.error('The legacy chat layer must not depend on the React component tree.');
     console.error('Move the shared piece to src/ui/ or src/react/types/, not into the import.');

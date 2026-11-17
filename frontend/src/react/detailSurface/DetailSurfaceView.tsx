@@ -10,7 +10,13 @@ export interface DetailSurfaceOptions {
   onClose?: () => void;
 }
 
-export function DetailSurfaceView({ options, onClose }: { options: DetailSurfaceOptions | null; onClose: () => void }) {
+export function DetailSurfaceView({
+  options,
+  onClose,
+}: {
+  options: DetailSurfaceOptions | null;
+  onClose: () => void;
+}) {
   const closeLabel = options?.closeLabel ?? '';
   return (
     <>
@@ -31,7 +37,9 @@ export function DetailSurfaceView({ options, onClose }: { options: DetailSurface
         <header className="detail-header">
           <div className="detail-heading">
             <h2 id="detailSurfaceTitle">{options?.title ?? ''}</h2>
-            <p className="detail-meta" hidden={!options?.meta}>{options?.meta ?? ''}</p>
+            <p className="detail-meta" hidden={!options?.meta}>
+              {options?.meta ?? ''}
+            </p>
           </div>
           <Button
             type="button"
@@ -41,7 +49,13 @@ export function DetailSurfaceView({ options, onClose }: { options: DetailSurface
             aria-label={closeLabel}
             onClick={onClose}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </Button>

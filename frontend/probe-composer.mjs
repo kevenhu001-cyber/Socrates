@@ -1,7 +1,9 @@
+import { enableTestState } from './e2e/_state-init.mjs';
 import { chromium } from '@playwright/test';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+await enableTestState(page);
 page.on('console', (m) => { if (m.type() === 'error') console.log('[console]', m.text().slice(0, 200)); });
 page.on('pageerror', (e) => console.log('[pageerror]', String(e).slice(0, 300)));
 await page.addInitScript(() => {
@@ -42,8 +44,8 @@ console.log('LANDING start', JSON.stringify(await dump('#startBtn')));
 console.log('LANDING tools', JSON.stringify(await dump('#topicComposerToolsBtn')));
 
 await page.evaluate(() => {
-  window.stateStore?.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-  window.stateStore?.dispatch({ type: 'state/set', key: 'topic', value: 'probe' });
+  window.__socratesTestState.patch({ session: { phase: 'chat' } });
+  window.__socratesTestState.patch({ session: { topic: 'probe' } });
   document.getElementById('topicSetup')?.classList.add('hidden');
   document.getElementById('mainInner')?.classList.add('hidden');
   document.getElementById('chatView')?.classList.remove('hidden');

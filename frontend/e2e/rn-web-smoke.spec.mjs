@@ -4,7 +4,8 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
-    if (message.type() === 'error' && !/status of 401 \(Unauthorized\)/i.test(message.text())) consoleErrors.push(message.text());
+    if (message.type() === 'error' && !/status of 401 \(Unauthorized\)/i.test(message.text()))
+      consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/auth/me', async (route) => {
@@ -30,11 +31,14 @@ test('React Native web shell boots and keeps the sign-in flow interactive', asyn
   expect(consoleErrors, consoleErrors.join('\n')).toEqual([]);
 });
 
-test('React Native web shell renders the authenticated navigation for each viewport', async ({ page }, testInfo) => {
+test('React Native web shell renders the authenticated navigation for each viewport', async ({
+  page,
+}, testInfo) => {
   const consoleErrors = [];
   const pageErrors = [];
   page.on('console', (message) => {
-    if (message.type() === 'error' && !/status of 401 \(Unauthorized\)/i.test(message.text())) consoleErrors.push(message.text());
+    if (message.type() === 'error' && !/status of 401 \(Unauthorized\)/i.test(message.text()))
+      consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/auth/me', async (route) => {

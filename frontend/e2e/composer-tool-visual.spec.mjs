@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -18,13 +18,28 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.setViewportSize({ width: 1440, height: 960 });
-  await page.locator('#composerRoot .rich-composer-editor').fill('How does the Socratic method improve learning?');
+  await page
+    .locator('#composerRoot .rich-composer-editor')
+    .fill('How does the Socratic method improve learning?');
   await page.screenshot({ path: 'test-results/visual-qa/topic-dark.png', fullPage: true });
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'visual-user', role: 'user', rawText: 'Explore Socratic learning', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '11111111-1111-4111-8111-111111111111' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          {
+            clientId: 'visual-user',
+            role: 'user',
+            rawText: 'Explore Socratic learning',
+            html: null,
+          },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Explore Socratic learning');
   });
@@ -32,7 +47,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.locator('.msg.assistant [data-testid="turn-activity-toggle"]').click();
   const toolRow = page.locator('.msg.assistant .rn-tool-row[data-tcid="search-visual"]');
   await expect(toolRow).toBeVisible();
-  await expect(toolRow.locator('[data-testid="thinking-step-title"]')).toContainText('Socratic learning');
+  await expect(toolRow.locator('[data-testid="thinking-step-title"]')).toContainText(
+    'Socratic learning',
+  );
   await expect(page.locator('.agent-tool-card')).toHaveCount(0);
 
   const chatComposer = page.locator('#composerInputWrap');
@@ -51,7 +68,9 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       const element = document.querySelector(selector);
       if (!element || getComputedStyle(element).display === 'none') return null;
       const rect = element?.getBoundingClientRect();
-      return rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom } : null;
+      return rect
+        ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }
+        : null;
     };
     return {
       attach: box('#composerInputWrap #composerToolsBtn'),
@@ -64,11 +83,19 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   expect(desktopControlBoxes.effort).toBeNull();
   /* RN-7 ask-box: the editor is the top storey, the rail sits beneath it —
      + on the left, mic and send on the right, all on one centre line. */
-  expect(desktopControlBoxes.editor?.bottom ?? 0).toBeLessThanOrEqual((desktopControlBoxes.attach?.top ?? 0) + 1);
-  expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.mic?.left ?? 0) + 1);
-  expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual((desktopControlBoxes.send?.left ?? 0) + 1);
-  const sendCenter = ((desktopControlBoxes.send?.top ?? 0) + (desktopControlBoxes.send?.bottom ?? 0)) / 2;
-  const attachCenter = ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
+  expect(desktopControlBoxes.editor?.bottom ?? 0).toBeLessThanOrEqual(
+    (desktopControlBoxes.attach?.top ?? 0) + 1,
+  );
+  expect(desktopControlBoxes.attach?.right ?? 0).toBeLessThanOrEqual(
+    (desktopControlBoxes.mic?.left ?? 0) + 1,
+  );
+  expect(desktopControlBoxes.mic?.right ?? 0).toBeLessThanOrEqual(
+    (desktopControlBoxes.send?.left ?? 0) + 1,
+  );
+  const sendCenter =
+    ((desktopControlBoxes.send?.top ?? 0) + (desktopControlBoxes.send?.bottom ?? 0)) / 2;
+  const attachCenter =
+    ((desktopControlBoxes.attach?.top ?? 0) + (desktopControlBoxes.attach?.bottom ?? 0)) / 2;
   expect(Math.abs(sendCenter - attachCenter)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: 'test-results/visual-qa/chat-composer-dark.png', fullPage: true });
   await page.evaluate(() => document.getElementById('themeToggle')?.click?.());
@@ -80,7 +107,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await page.waitForTimeout(400);
@@ -94,7 +122,8 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
   const collapsedGeometry = await page.evaluate(() => {
     const rect = (selector) => {
       const el = document.querySelector(selector);
-      if (!(el instanceof HTMLElement) || el.hidden || getComputedStyle(el).display === 'none') return null;
+      if (!(el instanceof HTMLElement) || el.hidden || getComputedStyle(el).display === 'none')
+        return null;
       const r = el.getBoundingClientRect();
       return { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
     };
@@ -102,27 +131,43 @@ test('capture composer and tool UI at desktop and mobile breakpoints', async ({ 
       left: rect('#composerInputWrap #composerToolsBtn'),
       editor: rect('#composerInputWrap .rich-composer-editor'),
       send: rect('#composerPrimaryBtn'),
-      bodyDisplay: getComputedStyle(document.querySelector('#composerInputWrap [data-composer-slot="rail"]')).display,
+      bodyDisplay: getComputedStyle(
+        document.querySelector('#composerInputWrap [data-composer-slot="rail"]'),
+      ).display,
     };
   });
   console.log('[mobile-collapsed-geometry]', JSON.stringify(collapsedGeometry));
   expect(['contents', 'grid', 'flex']).toContain(collapsedGeometry.bodyDisplay);
-  expect((collapsedGeometry.send?.top ?? 0)).toBeGreaterThanOrEqual((collapsedGeometry.editor?.bottom ?? 0) - 8);
-  await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png', fullPage: true });
+  expect(collapsedGeometry.send?.top ?? 0).toBeGreaterThanOrEqual(
+    (collapsedGeometry.editor?.bottom ?? 0) - 8,
+  );
+  await page.screenshot({
+    path: 'test-results/visual-qa/chat-composer-mobile-collapsed.png',
+    fullPage: true,
+  });
 
   await mobileEditor.click();
   await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
-  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
+  await expect
+    .poll(async () => (await mobileComposer.boundingBox())?.height ?? 0)
+    .toBeGreaterThanOrEqual((collapsedBox?.height ?? 0) - 1);
   const focusedBox = await mobileComposer.boundingBox();
-  const focusedEditorBox = await page.locator('#composerInputWrap .rich-composer-editor').boundingBox();
+  const focusedEditorBox = await page
+    .locator('#composerInputWrap .rich-composer-editor')
+    .boundingBox();
   expect(focusedEditorBox?.width).toBeGreaterThanOrEqual(96);
   expect(focusedEditorBox?.right ?? 0).toBeLessThanOrEqual(focusedBox?.right ?? 0);
   expect(focusedBox?.height ?? 999).toBeLessThanOrEqual(112);
-  await page.screenshot({ path: 'test-results/visual-qa/chat-composer-mobile-focused.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/visual-qa/chat-composer-mobile-focused.png',
+    fullPage: true,
+  });
 
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
   await expect(mobileComposer.locator('[data-composer-control=effort]')).toBeVisible();
-  await expect.poll(async () => (await mobileComposer.boundingBox())?.height ?? 0).toBeLessThanOrEqual(112);
+  await expect
+    .poll(async () => (await mobileComposer.boundingBox())?.height ?? 0)
+    .toBeLessThanOrEqual(112);
 });

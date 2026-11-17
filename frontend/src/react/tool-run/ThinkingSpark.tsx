@@ -58,9 +58,18 @@ type Pose = { transform: string; opacity: number };
 const PHI = (1 + Math.sqrt(5)) / 2;
 const NORM = Math.sqrt(1 + PHI * PHI);
 const UNIT_POINTS: readonly Vec[] = [
-  [0, 1, PHI], [0, -1, PHI], [0, 1, -PHI], [0, -1, -PHI],
-  [1, PHI, 0], [-1, PHI, 0], [1, -PHI, 0], [-1, -PHI, 0],
-  [PHI, 0, 1], [-PHI, 0, 1], [PHI, 0, -1], [-PHI, 0, -1],
+  [0, 1, PHI],
+  [0, -1, PHI],
+  [0, 1, -PHI],
+  [0, -1, -PHI],
+  [1, PHI, 0],
+  [-1, PHI, 0],
+  [1, -PHI, 0],
+  [-1, -PHI, 0],
+  [PHI, 0, 1],
+  [-PHI, 0, 1],
+  [PHI, 0, -1],
+  [-PHI, 0, -1],
 ].map(([x, y, z]) => [x / NORM, y / NORM, z / NORM] as const);
 
 export const THINKING_DOT_COUNT = UNIT_POINTS.length;
@@ -105,7 +114,9 @@ function posesAt(phase: number): Pose[] {
 
 /** Per-dot keyframes for one seamless turn: sample 0 repeated at the end. */
 const TRACKS: readonly Keyframe[][] = (() => {
-  const frames = Array.from({ length: SAMPLES + 1 }, (_, index) => posesAt((index % SAMPLES) / SAMPLES));
+  const frames = Array.from({ length: SAMPLES + 1 }, (_, index) =>
+    posesAt((index % SAMPLES) / SAMPLES),
+  );
   return UNIT_POINTS.map((_, dot) => frames.map((poses) => ({ ...poses[dot] })));
 })();
 
@@ -133,7 +144,11 @@ function useOrbit(rootRef: { current: HTMLSpanElement | null }): void {
     const start = (): void => {
       if (animations.length > 0) return;
       animations = dots.map((dot, index) => {
-        const animation = dot.animate(TRACKS[index], { duration: PERIOD_MS, iterations: Infinity, easing: 'linear' });
+        const animation = dot.animate(TRACKS[index], {
+          duration: PERIOD_MS,
+          iterations: Infinity,
+          easing: 'linear',
+        });
         /* Begin from the rest pose so the hand-off from the static frame is seamless. */
         animation.currentTime = REST_PHASE * PERIOD_MS;
         return animation;
@@ -155,12 +170,13 @@ function useOrbit(rootRef: { current: HTMLSpanElement | null }): void {
       animations.forEach((animation) => (run ? animation.play() : animation.pause()));
     };
 
-    const observer = typeof IntersectionObserver === 'function'
-      ? new IntersectionObserver((entries) => {
-        onScreen = entries.some((entry) => entry.isIntersecting);
-        sync();
-      })
-      : null;
+    const observer =
+      typeof IntersectionObserver === 'function'
+        ? new IntersectionObserver((entries) => {
+            onScreen = entries.some((entry) => entry.isIntersecting);
+            sync();
+          })
+        : null;
     observer?.observe(root);
     still?.addEventListener('change', sync);
     document.addEventListener('visibilitychange', sync);
@@ -188,7 +204,11 @@ export function ThinkingSpark({ size = 18 }: { size?: number }): ReactElement {
       style={{ width: size, height: size }}
     >
       {REST_POSES.map((pose, index) => (
-        <span key={index} className="thinking-spark-dot" style={{ ...DOT_BOX, transform: pose.transform, opacity: pose.opacity }} />
+        <span
+          key={index}
+          className="thinking-spark-dot"
+          style={{ ...DOT_BOX, transform: pose.transform, opacity: pose.opacity }}
+        />
       ))}
     </span>
   );

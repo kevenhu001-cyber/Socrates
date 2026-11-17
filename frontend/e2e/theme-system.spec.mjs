@@ -6,10 +6,17 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
    assertion is about the colour, not the build's serialization. */
 function hex6(value) {
   const short = /^#([0-9a-f]{3})$/i.exec(value);
-  return short ? `#${short[1].split('').map((channel) => channel + channel).join('')}` : value;
+  return short
+    ? `#${short[1]
+        .split('')
+        .map((channel) => channel + channel)
+        .join('')}`
+    : value;
 }
 
-test('theme selector follows the operating system and persists explicit modes', async ({ page }) => {
+test('theme selector follows the operating system and persists explicit modes', async ({
+  page,
+}) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
     localStorage.setItem('socrates-theme', 'system');
@@ -24,7 +31,10 @@ test('theme selector follows the operating system and persists explicit modes', 
   await page.locator('#displayPrefsBtn').click();
   const themeSegs = page.locator('#displayThemeSegs');
   await expect(themeSegs).toBeVisible();
-  await expect(themeSegs.locator('[data-theme-option="system"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(themeSegs.locator('[data-theme-option="system"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
 
   await themeSegs.locator('[data-theme-option="dark"]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'dark');
@@ -94,5 +104,8 @@ test('theme selector follows the operating system and persists explicit modes', 
 
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
-  await expect(themeSegs.locator('[data-theme-option="system"]')).toHaveAttribute('aria-checked', 'true');
+  await expect(themeSegs.locator('[data-theme-option="system"]')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
 });

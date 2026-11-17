@@ -2,7 +2,7 @@
  * Send-time convergence: stamp the reserve, run the glide, position retries,
  * and settle the active turn at its target offset.
  */
-import { stateStore } from '../../../state/store.ts';
+import { dispatchUi, sessionStore, uiStore } from '../../../store/index.ts';
 import { publishReactChatRuntime } from '../../../ui/reactBridge.ts';
 import { updateMessageSnapshot } from '../../../ui/messageSnapshot.ts';
 import { cancelScrollAnimation, velocityScrollTo } from '../../../ui/scroll.ts';
@@ -40,7 +40,7 @@ export function scheduleTurnToTopForMessage(
   if (!list) return;
   const id = String(clientId || '');
   if (!id) return;
-  const messages = stateStore.read('messages') as MessageEntry[];
+  const messages = sessionStore.getState().messages as MessageEntry[];
   const msgIdx = messages.findIndex((entry) =>
     Boolean(entry && entry.clientId === id && entry.role === 'assistant'),
   );
@@ -72,15 +72,23 @@ function stampTurnAnchor(
   if (!mounted && !context.isReactMounted()) return;
   if (context.isReactMounted()) {
     const message = context.readMessage();
-    if (!message || (message._turnAnchorMinHeight === reserve && message._turnAnchorMode === mode)) return;
-    const updated = updateMessageSnapshot(message, {
-      _turnAnchorMinHeight: reserve,
-      _turnAnchorMode: mode,
-      _turnViewportTarget: targetOffset,
-      _toolRunRev: (message._toolRunRev || 0) + 1,
-    }, true) as MessageEntry | null;
+    if (!message || (message._turnAnchorMinHeight === reserve && message._turnAnchorMode === mode))
+      return;
+    const updated = updateMessageSnapshot(
+      message,
+      {
+        _turnAnchorMinHeight: reserve,
+        _turnAnchorMode: mode,
+        _turnViewportTarget: targetOffset,
+        _toolRunRev: (message._toolRunRev || 0) + 1,
+      },
+      true,
+    ) as MessageEntry | null;
     context.writeMessage(updated || message);
-    publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(context.clientId || '') });
+    publishReactChatRuntime({
+      type: 'tool-run-updated',
+      messageId: String(context.clientId || ''),
+    });
     return;
   }
   mounted!.classList.add('turn-viewport-anchor');
@@ -89,15 +97,20 @@ function stampTurnAnchor(
   mounted!.style.minHeight = reserve + 'px';
   const message = context.readMessage();
   if (!message) return;
-  const updated = updateMessageSnapshot(message, { _turnAnchorMinHeight: reserve }, true) as MessageEntry | null;
+  const updated = updateMessageSnapshot(
+    message,
+    { _turnAnchorMinHeight: reserve },
+    true,
+  ) as MessageEntry | null;
   context.writeMessage(updated || message);
 }
 
 function hasTurnAnchorReserve(row: () => HTMLElement | null): boolean {
   const mounted = row();
   if (!mounted) return false;
-  return (parseFloat(mounted.style.minHeight) || 0) > 0
-    || (parseFloat(mounted.style.marginTop) || 0) > 0;
+  return (
+    (parseFloat(mounted.style.minHeight) || 0) > 0 || (parseFloat(mounted.style.marginTop) || 0) > 0
+  );
 }
 
 function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
@@ -108,7 +121,11 @@ function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
   if (mounted === assistant && mounted) mounted.style.marginTop = '';
   const priorMessage = context.readMessage();
   if (priorMessage) {
-    const updated = updateMessageSnapshot(priorMessage, { _turnAnchorMarginTop: undefined }, true) as MessageEntry | null;
+    const updated = updateMessageSnapshot(
+      priorMessage,
+      { _turnAnchorMarginTop: undefined },
+      true,
+    ) as MessageEntry | null;
     context.writeMessage(updated || priorMessage);
   }
   const bottomPadding = parseFloat(getComputedStyle(list).paddingBottom) || 0;
@@ -161,21 +178,32 @@ function positionRetryTurnAnchor(context: RetryPositionContext): boolean {
       current.style.marginTop = missingSpace + 'px';
       const message = context.readMessage();
       if (!message) return;
-      const updated = updateMessageSnapshot(message, { _turnAnchorMarginTop: missingSpace }, true) as MessageEntry | null;
+      const updated = updateMessageSnapshot(
+        message,
+        { _turnAnchorMarginTop: missingSpace },
+        true,
+      ) as MessageEntry | null;
       context.writeMessage(updated || message);
       return;
     }
     const message = context.readMessage();
     if (!message) return;
-    const updated = updateMessageSnapshot(message, {
-      _turnAnchorMarginTop: missingSpace,
-      _toolRunRev: (message._toolRunRev || 0) + 1,
-    }, true) as MessageEntry | null;
+    const updated = updateMessageSnapshot(
+      message,
+      {
+        _turnAnchorMarginTop: missingSpace,
+        _toolRunRev: (message._toolRunRev || 0) + 1,
+      },
+      true,
+    ) as MessageEntry | null;
     context.writeMessage(updated || message);
-    publishReactChatRuntime({ type: 'tool-run-updated', messageId: String(context.clientId || '') });
+    publishReactChatRuntime({
+      type: 'tool-run-updated',
+      messageId: String(context.clientId || ''),
+    });
   };
   requestAnimationFrame(settleRetryAnchor);
-  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
   return true;
 }
 
@@ -187,11 +215,22 @@ function settleNormalTurnAnchor(
   deadline: number,
   onDone?: () => void,
 ): void {
-  const finish = (): void => { if (onDone) onDone(); };
-  if (!list || stateStore.read('_userScrolledAway')) { finish(); return; }
-  if ((!assistant || !assistant.isConnected) && !row()) { finish(); return; }
+  const finish = (): void => {
+    if (onDone) onDone();
+  };
+  if (!list || uiStore.getState()._userScrolledAway) {
+    finish();
+    return;
+  }
+  if ((!assistant || !assistant.isConnected) && !row()) {
+    finish();
+    return;
+  }
   const anchor = latestUserRow(list);
-  if (!anchor || !anchor.isConnected) { finish(); return; }
+  if (!anchor || !anchor.isConnected) {
+    finish();
+    return;
+  }
   const actualOffset = anchor.getBoundingClientRect().top - list.getBoundingClientRect().top;
   const delta = actualOffset - targetOffset;
   if (Math.abs(delta) > 1) {
@@ -207,7 +246,9 @@ function settleNormalTurnAnchor(
     }
   }
   if (Date.now() < deadline) {
-    requestAnimationFrame(() => settleNormalTurnAnchor(list, assistant, row, targetOffset, deadline, onDone));
+    requestAnimationFrame(() =>
+      settleNormalTurnAnchor(list, assistant, row, targetOffset, deadline, onDone),
+    );
   } else {
     finish();
   }
@@ -222,14 +263,21 @@ function releaseTurnAnchor(
   settlingSeq: number,
   clearSettling: () => void,
 ): void {
-  const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  const holdClientId =
+    clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
   const done = (): void => {
     retireTurnReservesAboveViewport(list, clientId);
     clearSettling();
   };
-  if (stateStore.read('_userScrolledAway')) { done(); return; }
-  if (!isSettlingOwner(settlingSeq)) { done(); return; }
-  stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+  if (uiStore.getState()._userScrolledAway) {
+    done();
+    return;
+  }
+  if (!isSettlingOwner(settlingSeq)) {
+    done();
+    return;
+  }
+  dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
   startTurnViewportHold(list, row, holdClientId, targetOffset);
   settleNormalTurnAnchor(list, assistant, row, targetOffset, Date.now() + 140, done);
 }
@@ -248,12 +296,20 @@ interface NormalTurnMotionContext {
 
 function startNormalTurnMotion(context: NormalTurnMotionContext): void {
   const {
-    list, assistant, clientId, row, targetOffset, settlingSeq, clearSettling,
-    target, promptTarget,
+    list,
+    assistant,
+    clientId,
+    row,
+    targetOffset,
+    settlingSeq,
+    clearSettling,
+    target,
+    promptTarget,
   } = context;
   if (isSettlingOwner(settlingSeq)) list.dataset.turnAnchorSettling = 'true';
   const plan = planSendGlide(Math.abs(target - list.scrollTop), list.clientHeight);
-  const holdClientId = clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  const holdClientId =
+    clientId || (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
   /* A snap has no animation to protect, so the send owns the viewport
      immediately. A real glide stays on `turnAnchorSettling` until the hold
      starts aligning (claiming the owner here aborts the glide's first
@@ -273,17 +329,22 @@ function startNormalTurnMotion(context: NormalTurnMotionContext): void {
       promptBubble.dataset.bubbleArriving = 'true';
     }
   }
-  velocityScrollTo(list, target, { smooth: true, owner: 'turn', target: promptTarget, plan }).then(() => {
-    if (!list.isConnected) { clearSettling(); return; }
-    if (isSettlingOwner(settlingSeq)) {
-      const promptRows = list.querySelectorAll('.msg.user');
-      const promptBubble = promptRows.length
-        ? (promptRows[promptRows.length - 1] as HTMLElement)
-        : null;
-      if (promptBubble) delete promptBubble.dataset.bubbleArriving;
-    }
-    releaseTurnAnchor(list, assistant, clientId, row, targetOffset, settlingSeq, clearSettling);
-  });
+  velocityScrollTo(list, target, { smooth: true, owner: 'turn', target: promptTarget, plan }).then(
+    () => {
+      if (!list.isConnected) {
+        clearSettling();
+        return;
+      }
+      if (isSettlingOwner(settlingSeq)) {
+        const promptRows = list.querySelectorAll('.msg.user');
+        const promptBubble = promptRows.length
+          ? (promptRows[promptRows.length - 1] as HTMLElement)
+          : null;
+        if (promptBubble) delete promptBubble.dataset.bubbleArriving;
+      }
+      releaseTurnAnchor(list, assistant, clientId, row, targetOffset, settlingSeq, clearSettling);
+    },
+  );
 }
 
 interface PositionRetryContext {
@@ -346,17 +407,21 @@ export function scheduleActiveTurnToTop(
   if (list && !retryViewport) {
     if (list.dataset) list.dataset.turnAnchorSettling = 'true';
     cancelScrollAnimation(list);
-    try { hideNewReplyPill(); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/schedule.ts:770');
+    try {
+      hideNewReplyPill();
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/turn/anchor/schedule.ts');
       /* pill not mounted */
     }
   }
-  const messages = stateStore.read('messages') as MessageEntry[];
-  let message: MessageEntry | null =
-    msgIdx >= 0 && messages[msgIdx] ? messages[msgIdx] : null;
-  const clientId: string = message && message.clientId
-    ? message.clientId
-    : (assistant && assistant.dataset ? assistant.dataset.clientId || '' : '');
+  const messages = sessionStore.getState().messages as MessageEntry[];
+  let message: MessageEntry | null = msgIdx >= 0 && messages[msgIdx] ? messages[msgIdx] : null;
+  const clientId: string =
+    message && message.clientId
+      ? message.clientId
+      : assistant && assistant.dataset
+        ? assistant.dataset.clientId || ''
+        : '';
   function row(): HTMLElement | null {
     return turnRowFor(list, assistant, clientId);
   }
@@ -364,7 +429,9 @@ export function scheduleActiveTurnToTop(
     row,
     clientId,
     readMessage: () => message,
-    writeMessage: (next) => { message = next; },
+    writeMessage: (next) => {
+      message = next;
+    },
     isReactMounted: () => isMsgListMounted(),
   };
   function position(): void {

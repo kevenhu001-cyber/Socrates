@@ -10,8 +10,11 @@ export function captureMarketingQuestion(): void {
   const question = url.searchParams.get('q')?.trim() || '';
   if (question) {
     inMemoryQuestion = question;
-    try { window.sessionStorage.setItem(PENDING_QUESTION_KEY, question); }
-    catch { /* empty-catch: intentional — the in-memory copy covers same-page sign-in. */ }
+    try {
+      window.sessionStorage.setItem(PENDING_QUESTION_KEY, question);
+    } catch {
+      /* empty-catch: intentional — the in-memory copy covers same-page sign-in. */
+    }
   }
 
   url.searchParams.delete('q');
@@ -22,7 +25,9 @@ export function captureMarketingQuestion(): void {
       '',
       `${url.pathname}${query ? `?${query}` : ''}${url.hash}`,
     );
-  } catch { /* empty-catch: intentional — the question is still queued if history cannot be rewritten. */ }
+  } catch {
+    /* empty-catch: intentional — the question is still queued if history cannot be rewritten. */
+  }
 }
 
 /** Read and clear the one-shot question after the authenticated shell hydrates. */
@@ -32,6 +37,8 @@ export function consumeMarketingQuestion(): string | null {
   try {
     question = window.sessionStorage.getItem(PENDING_QUESTION_KEY) || question;
     window.sessionStorage.removeItem(PENDING_QUESTION_KEY);
-  } catch { /* empty-catch: intentional — the in-memory copy covers unavailable session storage. */ }
+  } catch {
+    /* empty-catch: intentional — the in-memory copy covers unavailable session storage. */
+  }
   return question?.trim() || null;
 }

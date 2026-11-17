@@ -45,32 +45,56 @@ function SessionRowActionMenu(props: Omit<SessionRowMenuProps, 'trigger'>) {
   return (
     <SessionRowMenu
       {...props}
-      trigger={<UiButton
-        className="btn-icon recent-item-overflow"
-        type="button"
-        title={t('session.moreActions')}
-        aria-label={t('session.moreActions')}
-        aria-haspopup="menu"
-        aria-expanded={props.open}
-        data-i18n-title="session.moreActions"
-        data-i18n-aria="session.moreActions"
-        onClick={(event) => event.stopPropagation()}
-      >
-        {/* 「更多」：参考图的三个圆点 ⋯。 */}
-        <Icon name="more" size={16} />
-      </UiButton>}
+      trigger={
+        <UiButton
+          className="btn-icon recent-item-overflow"
+          type="button"
+          title={t('session.moreActions')}
+          aria-label={t('session.moreActions')}
+          aria-haspopup="menu"
+          aria-expanded={props.open}
+          data-i18n-title="session.moreActions"
+          data-i18n-aria="session.moreActions"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {/* 「更多」：参考图的三个圆点 ⋯。 */}
+          <Icon name="more" size={16} />
+        </UiButton>
+      }
     />
   );
 }
 
-type SessionRowControlsProps = Pick<SessionRowProps, 'session' | 'onTag' | 'onArchive' | 'onDelete'> & {
+type SessionRowControlsProps = Pick<
+  SessionRowProps,
+  'session' | 'onTag' | 'onArchive' | 'onDelete'
+> & {
   actions: ReturnType<typeof useSessionRowActions>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
-function SessionRowControls({ session, actions, open, onOpenChange, onTag, onArchive, onDelete }: SessionRowControlsProps) {
-  const { projects, loadingProjects, projectError, error, saving, closeMenu, resetProjects, update, setRenaming, loadProjects } = actions;
+function SessionRowControls({
+  session,
+  actions,
+  open,
+  onOpenChange,
+  onTag,
+  onArchive,
+  onDelete,
+}: SessionRowControlsProps) {
+  const {
+    projects,
+    loadingProjects,
+    projectError,
+    error,
+    saving,
+    closeMenu,
+    resetProjects,
+    update,
+    setRenaming,
+    loadProjects,
+  } = actions;
   const pinKey = session.pinned ? 'session.ctxUnpin' : 'session.ctxPin';
   return (
     <>
@@ -153,10 +177,13 @@ function SessionRowBase({
     onRetentionChange?.(session.id, retained);
     return () => onRetentionChange?.(session.id, false);
   }, [onRetentionChange, session.id, retained]);
-  const setMenuOpen = useCallback((open: boolean) => {
-    if (open) setActionsOpen(true);
-    else closeMenu();
-  }, [closeMenu]);
+  const setMenuOpen = useCallback(
+    (open: boolean) => {
+      if (open) setActionsOpen(true);
+      else closeMenu();
+    },
+    [closeMenu],
+  );
 
   /* The row opens a session, so it has to be reachable without a mouse. It
      cannot be a real button element: the overflow trigger inside it is one,
@@ -167,12 +194,20 @@ function SessionRowBase({
   const rowRef = useDomRowHost({
     role: renaming ? undefined : 'button',
     draggable: true,
-    onDragStart: (event) => { setDragging(true); onDragStart(event, session.id); },
-    onDragEnd: (event) => { setDragging(false); onDragEnd(event); },
+    onDragStart: (event) => {
+      setDragging(true);
+      onDragStart(event, session.id);
+    },
+    onDragEnd: (event) => {
+      setDragging(false);
+      onDragEnd(event);
+    },
   });
 
   const mode = modeLabel(session);
-  const prefetch = useCallback(() => { void detailCache.prefetch(session.id); }, [session.id]);
+  const prefetch = useCallback(() => {
+    void detailCache.prefetch(session.id);
+  }, [session.id]);
 
   return (
     <ConversationRow
@@ -194,33 +229,56 @@ function SessionRowBase({
       activeShadow="var(--ui-elevation-raised)"
       parts={{
         ...PARTS,
-        row: webClass('btn btn-ghost btn-touch recent-item', isActive && 'active', session.pinned && 'pinned', actionsOpen && 'actions-open', dragging && 'dragging'),
+        row: webClass(
+          'btn btn-ghost btn-touch recent-item',
+          isActive && 'active',
+          session.pinned && 'pinned',
+          actionsOpen && 'actions-open',
+          dragging && 'dragging',
+        ),
         badge: PARTS.badge(mode.cls),
       }}
       onPress={() => onPick(session.id)}
       onIntent={prefetch}
-      renameSlot={<SessionRenameField
-        session={session}
-        saving={saving}
-        onSaveTitle={(title) => void update({ title })}
-        onCancelRename={() => setRenaming(false)}
-      />}
-      tags={session.tags && session.tags.length > 0 ? <SessionTagPills tags={session.tags} /> : undefined}
-      actions={<SessionRowControls session={session} actions={actions} open={actionsOpen} onOpenChange={setMenuOpen}
-        onTag={onTag} onArchive={onArchive} onDelete={onDelete} />}
+      renameSlot={
+        <SessionRenameField
+          session={session}
+          saving={saving}
+          onSaveTitle={(title) => void update({ title })}
+          onCancelRename={() => setRenaming(false)}
+        />
+      }
+      tags={
+        session.tags && session.tags.length > 0 ? (
+          <SessionTagPills tags={session.tags} />
+        ) : undefined
+      }
+      actions={
+        <SessionRowControls
+          session={session}
+          actions={actions}
+          open={actionsOpen}
+          onOpenChange={setMenuOpen}
+          onTag={onTag}
+          onArchive={onArchive}
+          onDelete={onDelete}
+        />
+      }
     />
   );
 }
 
-export const SessionRow = memo(SessionRowBase, (previous, next) => (
-  previous.session === next.session
-  && previous.isActive === next.isActive
-  && previous.timeLabel === next.timeLabel
-  && previous.onPick === next.onPick
-  && previous.onTag === next.onTag
-  && previous.onArchive === next.onArchive
-  && previous.onDelete === next.onDelete
-  && previous.onDragStart === next.onDragStart
-  && previous.onRetentionChange === next.onRetentionChange
-  && previous.onDragEnd === next.onDragEnd
-));
+export const SessionRow = memo(
+  SessionRowBase,
+  (previous, next) =>
+    previous.session === next.session &&
+    previous.isActive === next.isActive &&
+    previous.timeLabel === next.timeLabel &&
+    previous.onPick === next.onPick &&
+    previous.onTag === next.onTag &&
+    previous.onArchive === next.onArchive &&
+    previous.onDelete === next.onDelete &&
+    previous.onDragStart === next.onDragStart &&
+    previous.onRetentionChange === next.onRetentionChange &&
+    previous.onDragEnd === next.onDragEnd,
+);

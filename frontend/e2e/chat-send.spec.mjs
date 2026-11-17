@@ -2,12 +2,14 @@
 // Spec 5/6: typing into the chat input + clicking send mounts a streaming
 // bubble (or surfaces an offline notice) without throwing.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { readHistory } from './_history-reader.mjs';
 
-test('clicking send mounts a streaming bubble or surfaces a notice without throwing', async ({ page }) => {
+test('clicking send mounts a streaming bubble or surfaces a notice without throwing', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -26,20 +28,25 @@ test('clicking send mounts a streaming bubble or surfaces a notice without throw
 
   const consoleErrors = [];
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text());
+  });
 
   await chatInput.fill('Hi from the smoke test.');
   await sendBtn.click({ timeout: 2_000 }).catch((e) => consoleErrors.push('click: ' + String(e)));
   await page.waitForTimeout(1_500);
 
-  const realErrors = consoleErrors.filter((e) =>
-    /ReferenceError|TypeError|SyntaxError/.test(e) &&
-    !/fetch|network|api\/|\b401\b|csrf/i.test(e),
+  const realErrors = consoleErrors.filter(
+    (e) =>
+      /ReferenceError|TypeError|SyntaxError/.test(e) &&
+      !/fetch|network|api\/|\b401\b|csrf/i.test(e),
   );
   expect(realErrors, `submitChatMessage threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
 
-test('mobile send places the submitted prompt and thinking state at the viewport top', async ({ page }) => {
+test('mobile send places the submitted prompt and thinking state at the viewport top', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1_500));
@@ -55,18 +62,23 @@ test('mobile send places the submitted prompt and thinking state at the viewport
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Mobile scroll smoke' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Mobile scroll smoke' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '22222222-2222-4222-8222-222222222222' },
+    });
     window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '280px');
 
     for (let i = 0; i < 24; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Existing message ${i + 1}: enough text to make the mobile transcript scroll.`);
+      window.addMessage(
+        i % 2 ? 'assistant' : 'user',
+        `Existing message ${i + 1}: enough text to make the mobile transcript scroll.`,
+      );
     }
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
 
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
@@ -77,37 +89,41 @@ test('mobile send places the submitted prompt and thinking state at the viewport
      interaction. */
   await page.locator('#composerPrimaryBtn').click();
   await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
-  const enteringTransform = await page.locator('#msgList .msg.user').last().evaluate(
-    (row) => getComputedStyle(row).transform,
-  );
+  const enteringTransform = await page
+    .locator('#msgList .msg.user')
+    .last()
+    .evaluate((row) => getComputedStyle(row).transform);
   /* Spatial movement belongs to turnAnchor's scroll glide. A per-row
      translate here makes the freshly submitted prompt flash at a second,
      compositor-only position while its layout anchor is being measured. */
   expect(enteringTransform).toBe('none');
-  const sendFrames = await page.evaluate(() => new Promise((resolve) => {
-    const frames = [];
-    let count = 0;
-    const sample = () => {
-      const list = document.getElementById('msgList');
-      const users = list?.querySelectorAll('.msg.user');
-      const row = users?.[users.length - 1];
-      if (row) {
-        const listRect = list.getBoundingClientRect();
-        const rect = row.getBoundingClientRect();
-        const style = getComputedStyle(row);
-        frames.push({
-          offset: rect.top - listRect.top,
-          opacity: Number(style.opacity),
-          transform: style.transform,
-          display: style.display,
-          visibility: style.visibility,
-        });
-      }
-      if (++count < 24) requestAnimationFrame(sample);
-      else resolve(frames);
-    };
-    requestAnimationFrame(sample);
-  }));
+  const sendFrames = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const frames = [];
+        let count = 0;
+        const sample = () => {
+          const list = document.getElementById('msgList');
+          const users = list?.querySelectorAll('.msg.user');
+          const row = users?.[users.length - 1];
+          if (row) {
+            const listRect = list.getBoundingClientRect();
+            const rect = row.getBoundingClientRect();
+            const style = getComputedStyle(row);
+            frames.push({
+              offset: rect.top - listRect.top,
+              opacity: Number(style.opacity),
+              transform: style.transform,
+              display: style.display,
+              visibility: style.visibility,
+            });
+          }
+          if (++count < 24) requestAnimationFrame(sample);
+          else resolve(frames);
+        };
+        requestAnimationFrame(sample);
+      }),
+  );
   expect(sendFrames.length).toBeGreaterThan(0);
   /* The submitted bubble fades from 0.4 to 1 within the first part of
      the turn-anchor glide — turnAnchor stamps the user bubble with
@@ -118,30 +134,43 @@ test('mobile send places the submitted prompt and thinking state at the viewport
      window and that no transform/visibility regresses — spatial motion
      stays owned by turnAnchor. */
   expect(sendFrames.some((frame) => frame.opacity >= 0.99)).toBe(true);
-  expect(sendFrames.every((frame) =>
-    frame.transform === 'none'
-    && frame.display !== 'none'
-    && frame.visibility !== 'hidden',
-  )).toBe(true);
-  await page.waitForFunction(() => Boolean(
-    document.querySelector('#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]'),
-  ));
+  expect(
+    sendFrames.every(
+      (frame) =>
+        frame.transform === 'none' && frame.display !== 'none' && frame.visibility !== 'hidden',
+    ),
+  ).toBe(true);
+  await page.waitForFunction(() =>
+    Boolean(
+      document.querySelector(
+        '#msgList .msg.assistant.turn-viewport-anchor [data-testid="turn-activity-label"][role="status"]',
+      ),
+    ),
+  );
   /* The send-time anchor now glides the prompt into place; wait for the
      settling window to close before measuring the final offset. */
-  await expect.poll(() => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    if (list.dataset.turnAnchorSettling === 'true') return 9999;
-    const users = list.querySelectorAll('.msg.user');
-    const latest = users[users.length - 1];
-    if (!latest) return 9999;
-    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-  }), { timeout: 5_000 }).toBeLessThanOrEqual(24);
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const list = document.getElementById('msgList');
+          if (list.dataset.turnAnchorSettling === 'true') return 9999;
+          const users = list.querySelectorAll('.msg.user');
+          const latest = users[users.length - 1];
+          if (!latest) return 9999;
+          return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+        }),
+      { timeout: 5_000 },
+    )
+    .toBeLessThanOrEqual(24);
 
   const placement = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const users = list.querySelectorAll('.msg.user');
     const latestUser = users[users.length - 1];
-    const thinking = list.querySelector('.msg.assistant:last-child [data-testid="turn-activity-label"][role="status"]');
+    const thinking = list.querySelector(
+      '.msg.assistant:last-child [data-testid="turn-activity-label"][role="status"]',
+    );
     const listRect = list.getBoundingClientRect();
     const userRect = latestUser?.getBoundingClientRect();
     return {
@@ -165,7 +194,9 @@ test('mobile send places the submitted prompt and thinking state at the viewport
 test('Tutor button send uses the same top anchor while the reply streams', async ({ page }) => {
   await mockAuthedApp(page);
   let releaseStream;
-  const streamGate = new Promise((resolve) => { releaseStream = resolve; });
+  const streamGate = new Promise((resolve) => {
+    releaseStream = resolve;
+  });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     await streamGate;
     await route.fulfill({
@@ -182,13 +213,15 @@ test('Tutor button send uses the same top anchor while the reply streams', async
   await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Tutor anchor smoke' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentNode', value: 0 });
-    window.stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: [
-      { name: 'A concept', status: 'fuzzy', questions: 1 },
-    ] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Tutor anchor smoke' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '66666666-6666-4666-8666-666666666666' },
+    });
+    window.__socratesTestState.patch({ kb: { currentNode: 0 } });
+    window.__socratesTestState.patch({
+      kb: { kbNodes: [{ name: 'A concept', status: 'fuzzy', questions: 1 }] },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     for (let i = 0; i < 24; i += 1) {
@@ -199,28 +232,46 @@ test('Tutor button send uses the same top anchor while the reply streams', async
       window.addMessage(role, text);
     }
   });
-  await readHistory(page, Array.from({ length: 24 }, (_, i) => (
-    `Tutor history ${i + 1}: ${'reasoning context '.repeat(10)}`
-  )));
+  await readHistory(
+    page,
+    Array.from(
+      { length: 24 },
+      (_, i) => `Tutor history ${i + 1}: ${'reasoning context '.repeat(10)}`,
+    ),
+  );
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
 
   const chatInput = page.locator('#composerRoot .rich-composer-editor').first();
-  await chatInput.fill('Tutor should glide my submitted answer to the top before following the response.');
+  await chatInput.fill(
+    'Tutor should glide my submitted answer to the top before following the response.',
+  );
   await page.locator('#composerPrimaryBtn').click();
   try {
     await expect(page.locator('#msgList .msg.user').last()).toBeVisible();
-    await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]').last()).toBeVisible();
-    await expect.poll(() => page.evaluate(() => {
-      const list = document.getElementById('msgList');
-      const users = list.querySelectorAll('.msg.user');
-      const latest = users[users.length - 1];
-      if (!latest) return 9999;
-      return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-    }), { timeout: 5_000 }).toBeLessThanOrEqual(24);
+    await expect(
+      page
+        .locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')
+        .last(),
+    ).toBeVisible();
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const list = document.getElementById('msgList');
+            const users = list.querySelectorAll('.msg.user');
+            const latest = users[users.length - 1];
+            if (!latest) return 9999;
+            return Math.round(
+              latest.getBoundingClientRect().top - list.getBoundingClientRect().top,
+            );
+          }),
+        { timeout: 5_000 },
+      )
+      .toBeLessThanOrEqual(24);
 
     const state = await page.evaluate(() => {
       const list = document.getElementById('msgList');
@@ -230,7 +281,7 @@ test('Tutor button send uses the same top anchor while the reply streams', async
         mode: document.body.dataset.appMode,
         offset: Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top),
         anchored: Boolean(list.querySelector('.msg.assistant.turn-viewport-anchor')),
-        away: window.stateStore.read('_userScrolledAway'),
+        away: window.__socratesTestState.ui()._userScrolledAway,
       };
     });
     expect(state.mode).toBe('tutor');
@@ -263,22 +314,27 @@ test('mobile first turn stays at the transcript top when the viewport grows', as
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'First turn top smoke' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'First turn top smoke' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '77777777-7777-4777-8777-777777777777' },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     window.submitChatMessage('First prompt');
   });
   await expect(page.locator('#msgList .msg.user')).toHaveCount(1);
-  await expect(page.locator('#msgList [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
+  await expect(
+    page.locator('#msgList [data-testid="turn-activity-label"][role="status"]'),
+  ).toBeVisible();
 
-  const firstTurnOffset = () => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    const user = list.querySelector('.msg.user');
-    const listRect = list.getBoundingClientRect();
-    return Math.round(user.getBoundingClientRect().top - listRect.top);
-  });
+  const firstTurnOffset = () =>
+    page.evaluate(() => {
+      const list = document.getElementById('msgList');
+      const user = list.querySelector('.msg.user');
+      const listRect = list.getBoundingClientRect();
+      return Math.round(user.getBoundingClientRect().top - listRect.top);
+    });
   /* The anchor glides the first prompt into place; poll until it settles
      rather than sampling a fixed moment mid-glide. */
   await expect.poll(firstTurnOffset, { timeout: 5_000 }).toBeLessThanOrEqual(40);
@@ -308,34 +364,44 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Viewport growth smoke' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Viewport growth smoke' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '33333333-3333-4333-8333-333333333333' },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
     for (let i = 0; i < 30; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`);
+      window.addMessage(
+        i % 2 ? 'assistant' : 'user',
+        `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`,
+      );
     }
   });
-  await readHistory(page, Array.from({ length: 30 }, (_, i) => (
-    `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`
-  )));
+  await readHistory(
+    page,
+    Array.from(
+      { length: 30 },
+      (_, i) => `Reserve follow history ${i + 1}: ${'context '.repeat(12)}`,
+    ),
+  );
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
   await page.waitForTimeout(250);
 
   await page.evaluate(() => window.submitChatMessage('Keep this prompt at the top'));
 
-  const promptOffset = () => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    const users = list.querySelectorAll('.msg.user');
-    const latest = users[users.length - 1];
-    if (!latest) return 9999;
-    return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
-  });
+  const promptOffset = () =>
+    page.evaluate(() => {
+      const list = document.getElementById('msgList');
+      const users = list.querySelectorAll('.msg.user');
+      const latest = users[users.length - 1];
+      if (!latest) return 9999;
+      return Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top);
+    });
   await expect.poll(promptOffset, { timeout: 5_000 }).toBeLessThanOrEqual(24);
 
   /* Sample the anchored prompt for the whole layout change. A reserve that
@@ -343,21 +409,30 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
      scrollTop, which lands the prompt hundreds of pixels lower in a single
      frame; the hold has to correct the reserve inside the same frame the
      viewport changes, so no sample may show a jump. */
-  const sampleFrames = () => page.evaluate(() => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const offsets = [];
-    const deadline = performance.now() + 600;
-    const tick = () => {
-      const users = list.querySelectorAll('.msg.user');
-      const latest = users[users.length - 1];
-      offsets.push(latest
-        ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
-        : null);
-      if (performance.now() > deadline) { resolve(offsets); return; }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }));
+  const sampleFrames = () =>
+    page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          const list = document.getElementById('msgList');
+          const offsets = [];
+          const deadline = performance.now() + 600;
+          const tick = () => {
+            const users = list.querySelectorAll('.msg.user');
+            const latest = users[users.length - 1];
+            offsets.push(
+              latest
+                ? Math.round(latest.getBoundingClientRect().top - list.getBoundingClientRect().top)
+                : null,
+            );
+            if (performance.now() > deadline) {
+              resolve(offsets);
+              return;
+            }
+            requestAnimationFrame(tick);
+          };
+          tick();
+        }),
+    );
 
   const assertStable = (name, offsets) => {
     const samples = offsets.filter((value) => value != null);
@@ -391,7 +466,9 @@ test('a sent prompt keeps its top offset across viewport changes', async ({ page
   expect(await promptOffset(), 'settled offset after the shrink').toBeLessThanOrEqual(24);
 });
 
-test('retry replaces the failed answer and resumes at the visible error position', async ({ page }) => {
+test('retry replaces the failed answer and resumes at the visible error position', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   let streamCalls = 0;
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
@@ -419,23 +496,25 @@ test('retry replaces the failed answer and resumes at the visible error position
 
   await page.evaluate(() => {
     const sessionId = '44444444-4444-4444-8444-444444444444';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Retry viewport smoke' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Retry viewport smoke' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
     window.__testActivateMainView('chatView');
     for (let i = 0; i < 18; i += 1) {
       window.addMessage(i % 2 ? 'assistant' : 'user', `Retry history ${i + 1}`);
     }
   });
 
-  await page.evaluate(() => window.submitChatMessage(
-    'Retry this answer without jumping back to my prompt.',
-  ));
+  await page.evaluate(() =>
+    window.submitChatMessage('Retry this answer without jumping back to my prompt.'),
+  );
   const retryButton = page.locator('#msgList .msg-error .msg-retry-btn').last();
   await expect(retryButton).toBeVisible();
 
-  const failedMessageId = await retryButton.evaluate((button) => button.closest('.msg')?.dataset.clientId);
+  const failedMessageId = await retryButton.evaluate(
+    (button) => button.closest('.msg')?.dataset.clientId,
+  );
   const errorOffset = await retryButton.evaluate((button) => {
     const list = document.getElementById('msgList');
     const error = button.closest('.msg-error');
@@ -449,11 +528,12 @@ test('retry replaces the failed answer and resumes at the visible error position
      captured error offset. Waiting on the status line alone can catch a frame
      of the new row before that positioning lands. */
   await page.waitForFunction((oldId) => {
-    const message = document.querySelector(
-      '#msgList .msg.assistant[data-viewport-anchor="retry"]',
+    const message = document.querySelector('#msgList .msg.assistant[data-viewport-anchor="retry"]');
+    return Boolean(
+      message &&
+      message.dataset.clientId !== oldId &&
+      message.querySelector('[data-testid="turn-activity-label"][role="status"]'),
     );
-    return Boolean(message && message.dataset.clientId !== oldId
-      && message.querySelector('[data-testid="turn-activity-label"][role="status"]'));
   }, failedMessageId);
 
   const retried = await page.evaluate((oldId) => {
@@ -483,11 +563,19 @@ test('retry replaces the failed answer and resumes at the visible error position
 
 test('retry replays the failed turn content including attachments', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) => route.fulfill({
-    status: 201,
-    contentType: 'application/json',
-    body: JSON.stringify({ id: 'retry-file', name: 'notes.txt', mimeType: 'text/plain', size: 43, kind: 'text' }),
-  }));
+  await page.route(/\/api\/(?:v2\/)?files(?:\?|$)/, (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'retry-file',
+        name: 'notes.txt',
+        mimeType: 'text/plain',
+        size: 43,
+        kind: 'text',
+      }),
+    }),
+  );
   const streamBodies = [];
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     streamBodies.push(route.request().postDataJSON());
@@ -510,9 +598,11 @@ test('retry replays the failed turn content including attachments', async ({ pag
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: 'Retry content smoke' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '55555555-5555-4555-8555-555555555555' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Retry content smoke' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '55555555-5555-4555-8555-555555555555' },
+    });
     window.__testActivateMainView('chatView');
   });
 
@@ -521,9 +611,14 @@ test('retry replays the failed turn content including attachments', async ({ pag
     mimeType: 'text/plain',
     buffer: Buffer.from('Attachment payload the retry must preserve.'),
   });
-  await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(/pending|error/);
+  await expect(page.locator('#composerAttachmentChips .attachment-chip')).not.toHaveClass(
+    /pending|error/,
+  );
 
-  await page.locator('#composerRoot .rich-composer-editor').first().fill('Read the attached notes.');
+  await page
+    .locator('#composerRoot .rich-composer-editor')
+    .first()
+    .fill('Read the attached notes.');
   await page.evaluate(() => window.submitChatMessage());
 
   const retryButton = page.locator('#msgList .msg-error .msg-retry-btn').last();
@@ -551,18 +646,28 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return nativeFetch(input, init);
       const encoder = new TextEncoder();
       let controller;
-      const body = new ReadableStream({ start(c) { controller = c; } });
+      const body = new ReadableStream({
+        start(c) {
+          controller = c;
+        },
+      });
       window.__pushDelta = (text) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`));
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`,
+          ),
+        );
       };
       window.__finishStream = () => {
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
         controller.close();
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await gotoAndSettle(page, '/');
@@ -570,10 +675,14 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Streaming ownership' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '33333333-3333-4333-8333-333333333333' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: window.stateStore.read("currentSessionId") });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Streaming ownership' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '33333333-3333-4333-8333-333333333333' },
+    });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: window.__socratesTestState.session().currentSessionId },
+    });
     window.__testActivateMainView('chatView');
     window.addMessage('user', 'Keep the next streamed answer visible.');
     /* Drive the real streaming path: the entry goes into state.messages and
@@ -584,11 +693,21 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
   });
   // First use can still be downloading streamingTurn. Observe the real
   // placeholder instead of relying on an idle prefetch to make it synchronous.
-  await expect.poll(() => page.evaluate(() =>
-    window.stateStore.read('messages').some((message) => message.type === 'streaming'),
-  )).toBe(true);
-  const clientId = await page.evaluate(() =>
-    window.stateStore.read('messages').filter((message) => message.type === 'streaming').pop()?.clientId,
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        window.__socratesTestState
+          .session()
+          .messages.some((message) => message.type === 'streaming'),
+      ),
+    )
+    .toBe(true);
+  const clientId = await page.evaluate(
+    () =>
+      window.__socratesTestState
+        .session()
+        .messages.filter((message) => message.type === 'streaming')
+        .pop()?.clientId,
   );
   expect(clientId, 'a streaming entry is in state.messages').toBeTruthy();
 
@@ -601,7 +720,9 @@ test('the live turn keeps exactly one row while deltas arrive', async ({ page })
      holds them back in case a `<think` tag straddles the chunk boundary), so
      assert on the leading words mid-stream and on the whole sentence once
      [DONE] flushes. */
-  await page.evaluate(() => window.__pushDelta('Partial reply, and the answer keeps growing from here. '));
+  await page.evaluate(() =>
+    window.__pushDelta('Partial reply, and the answer keeps growing from here. '),
+  );
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('Partial reply');
 
@@ -620,15 +741,21 @@ test('send button marks the sending beat, then settles on the stop state', async
   /* Hold the stream open so the button stays in its stop state. */
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 2_500));
-    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
   });
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '33333333-3333-4333-8333-333333333333' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '33333333-3333-4333-8333-333333333333' },
+    });
     window.__testActivateMainView('chatView');
     /* RN-7: the primary is the shared RN control; it reports the short
        sending beat as data-sending and swaps arrow → stop without a
@@ -648,6 +775,10 @@ test('send button marks the sending beat, then settles on the stop state', async
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-sending', 'false');
 
   /* After the beat, the button shows the stop glyph while the turn streams. */
-  await expect(page.locator('#composerPrimaryBtn[data-stop="1"] #composerPrimaryBtnContent [data-ui-icon=stop]')).toHaveCount(1);
+  await expect(
+    page.locator(
+      '#composerPrimaryBtn[data-stop="1"] #composerPrimaryBtnContent [data-ui-icon=stop]',
+    ),
+  ).toHaveCount(1);
   expect(pageErrors).toEqual([]);
 });

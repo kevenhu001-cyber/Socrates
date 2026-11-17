@@ -8,16 +8,37 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const cdp = (process.argv.find((a) => a.startsWith('--cdp=')) || '--cdp=http://127.0.0.1:9222').slice(6);
+const cdp = (
+  process.argv.find((a) => a.startsWith('--cdp=')) || '--cdp=http://127.0.0.1:9222'
+).slice(6);
 const OUT = fileURLToPath(new URL('../debug/parity/', import.meta.url));
 const REF = fileURLToPath(new URL('../../docs/ref/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 mkdirSync(REF, { recursive: true });
 
-const KEYS = ['display', 'color', 'backgroundColor', 'fontFamily', 'fontSize', 'fontWeight',
-  'lineHeight', 'letterSpacing', 'borderRadius', 'borderTopWidth', 'borderTopColor', 'boxShadow',
-  'padding', 'gap', 'maxWidth', 'transitionProperty', 'transitionDuration',
-  'transitionTimingFunction', 'animationName', 'animationDuration', 'backdropFilter'];
+const KEYS = [
+  'display',
+  'color',
+  'backgroundColor',
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'lineHeight',
+  'letterSpacing',
+  'borderRadius',
+  'borderTopWidth',
+  'borderTopColor',
+  'boxShadow',
+  'padding',
+  'gap',
+  'maxWidth',
+  'transitionProperty',
+  'transitionDuration',
+  'transitionTimingFunction',
+  'animationName',
+  'animationDuration',
+  'backdropFilter',
+];
 
 const ROLES = {
   body: 'body',
@@ -33,7 +54,8 @@ const ROLES = {
   composer: 'form [class*="composer"], form > div > div, form > div',
   composerPlus: '[data-testid="composer-plus-btn"], form button',
   composerEditor: '#prompt-textarea',
-  composerSend: '#composer-submit-button, [data-testid="send-button"], [data-testid="composer-speech-button"]',
+  composerSend:
+    '#composer-submit-button, [data-testid="send-button"], [data-testid="composer-speech-button"]',
   composerMic: 'button[aria-label*="Dictate" i], button[aria-label*="dictation" i]',
   suggestionChip: 'main button.btn, main [class*="rounded-full"][class*="border"]',
   footerNote: 'main .text-token-text-secondary, main [class*="text-xs"]',
@@ -43,23 +65,37 @@ const ROLES = {
 };
 
 async function measure(page) {
-  return page.evaluate(({ roles, keys }) => {
-    const out = {};
-    for (const [role, sel] of Object.entries(roles)) {
-      const el = [...document.querySelectorAll(sel)].find((n) => {
-        const r = n.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      });
-      if (!el) { out[role] = null; continue; }
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      const style = {};
-      for (const k of keys) style[k] = cs[k];
-      out[role] = { sel: el.id ? `#${el.id}` : `${el.tagName.toLowerCase()}.${[...el.classList].slice(0, 6).join('.')}`,
-        x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), style };
-    }
-    return out;
-  }, { roles: ROLES, keys: KEYS });
+  return page.evaluate(
+    ({ roles, keys }) => {
+      const out = {};
+      for (const [role, sel] of Object.entries(roles)) {
+        const el = [...document.querySelectorAll(sel)].find((n) => {
+          const r = n.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        if (!el) {
+          out[role] = null;
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        const style = {};
+        for (const k of keys) style[k] = cs[k];
+        out[role] = {
+          sel: el.id
+            ? `#${el.id}`
+            : `${el.tagName.toLowerCase()}.${[...el.classList].slice(0, 6).join('.')}`,
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          style,
+        };
+      }
+      return out;
+    },
+    { roles: ROLES, keys: KEYS },
+  );
 }
 
 async function cssVars(page) {
@@ -68,7 +104,11 @@ async function cssVars(page) {
     const names = new Set();
     for (const sheet of document.styleSheets) {
       let rules;
-      try { rules = sheet.cssRules; } catch { continue; }
+      try {
+        rules = sheet.cssRules;
+      } catch {
+        continue;
+      }
       const walk = (list) => {
         for (const r of list) {
           if (r.style) for (const p of r.style) if (p.startsWith('--')) names.add(p);
@@ -77,7 +117,8 @@ async function cssVars(page) {
       };
       walk(rules);
     }
-    const wanted = /^--(main-surface|sidebar|text-|border|bg-|message|composer|interactive|icon|surface|link|spacing|radius|cot|thread|screen|header|menu|popover|elevation|shadow|ease|duration)/;
+    const wanted =
+      /^--(main-surface|sidebar|text-|border|bg-|message|composer|interactive|icon|surface|link|spacing|radius|cot|thread|screen|header|menu|popover|elevation|shadow|ease|duration)/;
     const out = {};
     for (const n of [...names].sort()) {
       if (!wanted.test(n)) continue;
@@ -109,23 +150,40 @@ for (const scheme of ['light', 'dark']) {
   entry.states.sidebarHover = await page.evaluate(() => {
     const a = document.querySelectorAll('nav a')[1];
     if (!a) return null;
-    const cs = getComputedStyle(a); const r = a.getBoundingClientRect();
-    return { h: Math.round(r.height), w: Math.round(r.width), bg: cs.backgroundColor, radius: cs.borderRadius,
-      padding: cs.padding, fontSize: cs.fontSize, transition: cs.transition };
+    const cs = getComputedStyle(a);
+    const r = a.getBoundingClientRect();
+    return {
+      h: Math.round(r.height),
+      w: Math.round(r.width),
+      bg: cs.backgroundColor,
+      radius: cs.borderRadius,
+      padding: cs.padding,
+      fontSize: cs.fontSize,
+      transition: cs.transition,
+    };
   });
 
   // Focus + type into composer.
-  await page.locator('#prompt-textarea').click().catch(() => {});
+  await page
+    .locator('#prompt-textarea')
+    .click()
+    .catch(() => {});
   await page.keyboard.type('Explain Bayes theorem with an example', { delay: 5 });
   await page.waitForTimeout(400);
   entry.states.typing = await measure(page);
   await page.screenshot({ path: `${OUT}chatgpt-typing-1440-${scheme}.png` });
   // Multiline.
-  for (let i = 0; i < 4; i++) { await page.keyboard.down('Shift'); await page.keyboard.press('Enter'); await page.keyboard.up('Shift'); await page.keyboard.type('line ' + i); }
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.down('Shift');
+    await page.keyboard.press('Enter');
+    await page.keyboard.up('Shift');
+    await page.keyboard.type('line ' + i);
+  }
   await page.waitForTimeout(400);
   entry.states.multiline = await measure(page);
   await page.screenshot({ path: `${OUT}chatgpt-multiline-1440-${scheme}.png` });
-  await page.keyboard.press('Control+a'); await page.keyboard.press('Backspace');
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Backspace');
 
   // + menu.
   const plus = page.locator('[data-testid="composer-plus-btn"]').first();
@@ -148,7 +206,9 @@ for (const scheme of ['light', 'dark']) {
   await page.keyboard.press('Escape');
 
   // Collapsed sidebar.
-  const tog = page.locator('[data-testid="close-sidebar-button"], button[aria-label*="Close sidebar" i]').first();
+  const tog = page
+    .locator('[data-testid="close-sidebar-button"], button[aria-label*="Close sidebar" i]')
+    .first();
   if (await tog.count()) {
     await tog.click().catch(() => {});
     await page.waitForTimeout(700);

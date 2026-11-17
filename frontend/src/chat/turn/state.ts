@@ -5,6 +5,7 @@
  * Zero-behavior-change: same initial values, same mutation semantics.
  */
 import { createStreamRetryViewport } from '../streamRetry.ts';
+import type { ChatMessageShape } from '../../state/session.ts';
 
 /** The abort surface every streaming turn exposes to the rest of the app. */
 export interface ActiveChatController {
@@ -52,11 +53,10 @@ export interface LiveTurnRuntime {
 
 export interface TurnUiState {
   inProgress: boolean;
-  lastUserMessageId: string | null;
 }
 
 export interface PendingBranchContext {
-  messages: unknown[];
+  messages: ChatMessageShape[];
   topic: string;
   title: string;
   branchedFrom: { sessionId: string | null; messageId: string; reExplain: boolean };
@@ -97,7 +97,7 @@ export const turnState: TurnState = {
   pendingChatContent: null,
   chatStopMode: false,
   chatStreaming: false,
-  turnUi: { inProgress: false, lastUserMessageId: null },
+  turnUi: { inProgress: false },
   liveRetryOwner: null,
   liveTurnRuntimes: new Map(),
   liveSearchRetry: null,
@@ -111,8 +111,10 @@ export function getTurnState(): TurnState {
 
 /** Whether an in-flight turn should retain the normal follow-up queue policy. */
 export function shouldQueueChatSend(): boolean {
-  return (turnState.turnUi.inProgress || turnState.chatStreaming)
-    && typeof turnState.activePagePreparationAbort !== 'function';
+  return (
+    (turnState.turnUi.inProgress || turnState.chatStreaming) &&
+    typeof turnState.activePagePreparationAbort !== 'function'
+  );
 }
 
 export function resetTurnState(): void {
@@ -125,7 +127,7 @@ export function resetTurnState(): void {
   turnState.pendingChatContent = null;
   turnState.chatStopMode = false;
   turnState.chatStreaming = false;
-  turnState.turnUi = { inProgress: false, lastUserMessageId: null };
+  turnState.turnUi = { inProgress: false };
   turnState.liveRetryOwner = null;
   turnState.pendingAssistantBranchInfo = null;
   if (turnState.liveTurnRuntimes && typeof turnState.liveTurnRuntimes.clear === 'function') {

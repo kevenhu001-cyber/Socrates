@@ -1,4 +1,11 @@
-import { useEffect, useSyncExternalStore, type ComponentProps, type FormEvent, type KeyboardEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  useEffect,
+  useSyncExternalStore,
+  type ComponentProps,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
@@ -39,7 +46,13 @@ function useAuthViewClass(id: string): string {
 
 function AuthInput(props: ComponentProps<typeof Input> & { id: string }) {
   const value = useAuthUi((state) => state.fields[props.id] || '');
-  return <Input {...props} value={value} onChange={(event) => setAuthField(props.id, event.currentTarget.value)} />;
+  return (
+    <Input
+      {...props}
+      value={value}
+      onChange={(event) => setAuthField(props.id, event.currentTarget.value)}
+    />
+  );
 }
 
 function AuthStatusButton(props: ComponentProps<typeof Button> & { id: string }) {
@@ -53,7 +66,11 @@ function AuthStatusButton(props: ComponentProps<typeof Button> & { id: string })
 
 function AuthError({ id }: { id: string }) {
   const message = useAuthUi((state) => state.errors[id] || '');
-  return <div className="auth-error" id={id} role="alert">{message}</div>;
+  return (
+    <div className="auth-error" id={id} role="alert">
+      {message}
+    </div>
+  );
 }
 
 function AuthText({ id }: { id: string }) {
@@ -115,7 +132,9 @@ export function AuthGate() {
             data-tab="signin"
             data-i18n-key="auth.signIn"
             onClick={() => showAuthSignin()}
-            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => focusAuthTab(event.currentTarget, event.nativeEvent)}
+            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
+              focusAuthTab(event.currentTarget, event.nativeEvent)
+            }
           >
             Sign in
           </Button>
@@ -131,7 +150,9 @@ export function AuthGate() {
             data-tab="register"
             data-i18n-key="auth.createAccount"
             onClick={() => showAuthRegister()}
-            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => focusAuthTab(event.currentTarget, event.nativeEvent)}
+            onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) =>
+              focusAuthTab(event.currentTarget, event.nativeEvent)
+            }
           >
             Create account
           </Button>
@@ -154,7 +175,15 @@ export function AuthGate() {
   );
 }
 
-function FieldLabel({ htmlFor, labelKey, text }: { htmlFor: string; labelKey?: string; text: string }) {
+function FieldLabel({
+  htmlFor,
+  labelKey,
+  text,
+}: {
+  htmlFor: string;
+  labelKey?: string;
+  text: string;
+}) {
   return (
     <Label className="auth-label" htmlFor={htmlFor} data-i18n-key={labelKey}>
       {text}
@@ -165,7 +194,11 @@ function FieldLabel({ htmlFor, labelKey, text }: { htmlFor: string; labelKey?: s
 function SigninView() {
   const className = useAuthViewClass('authSigninView');
   return (
-    <form className={className} id="authSigninView" onSubmit={(event) => handleAuthSubmit(event, submitAuthSignin)}>
+    <form
+      className={className}
+      id="authSigninView"
+      onSubmit={(event) => handleAuthSubmit(event, submitAuthSignin)}
+    >
       <FieldLabel htmlFor="authSigninEmail" labelKey="auth.email" text="Email" />
       <AuthInput
         className="auth-input"
@@ -186,14 +219,26 @@ function SigninView() {
         required
         placeholder="••••••••"
       />
-      <a className="auth-inline-link auth-inline-link-right" href="#" data-i18n-key="auth.forgotPassword" onClick={(event) => handleAuthLink(event, showAuthForgotPassword)}>
+      <a
+        className="auth-inline-link auth-inline-link-right"
+        href="#"
+        data-i18n-key="auth.forgotPassword"
+        onClick={(event) => handleAuthLink(event, showAuthForgotPassword)}
+      >
         Forgot password?
       </a>
       <AuthError id="authSigninError" />
-      <AuthStatusButton className="auth-btn primary" id="authSigninBtn" type="submit" data-i18n-key="auth.signIn">
+      <AuthStatusButton
+        className="auth-btn primary"
+        id="authSigninBtn"
+        type="submit"
+        data-i18n-key="auth.signIn"
+      >
         Sign in
       </AuthStatusButton>
-      <div className="auth-view-separator" data-i18n-key="auth.or">or</div>
+      <div className="auth-view-separator" data-i18n-key="auth.or">
+        or
+      </div>
       <a
         className="auth-btn secondary auth-github-btn"
         id="authGithubBtn"
@@ -204,7 +249,12 @@ function SigninView() {
         </svg>
         <span data-i18n-key="auth.continueGithub">Continue with GitHub</span>
       </a>
-      <a className="auth-inline-link auth-code-login-link" href="#" data-i18n-key="auth.codeLoginLink" onClick={(event) => handleAuthLink(event, showAuthCodeLogin)}>
+      <a
+        className="auth-inline-link auth-code-login-link"
+        href="#"
+        data-i18n-key="auth.codeLoginLink"
+        onClick={(event) => handleAuthLink(event, showAuthCodeLogin)}
+      >
         Login with verification code
       </a>
     </form>
@@ -214,7 +264,11 @@ function SigninView() {
 function RegisterView() {
   const className = useAuthViewClass('authRegisterView');
   return (
-    <form className={className} id="authRegisterView" onSubmit={(event) => handleAuthSubmit(event, submitAuthRegister)}>
+    <form
+      className={className}
+      id="authRegisterView"
+      onSubmit={(event) => handleAuthSubmit(event, submitAuthRegister)}
+    >
       <p className="auth-lede" data-i18n-key="auth.registerLede">
         Sign up with your email. We&apos;ll send a verification link — no codes to memorize.
       </p>
@@ -241,12 +295,23 @@ function RegisterView() {
         data-i18n-placeholder="chrome.passwordHint"
       />
       <AuthError id="authRegisterError" />
-      <AuthStatusButton className="auth-btn primary" id="authRegisterBtn" type="submit" data-i18n-key="auth.sendVerificationLink">
+      <AuthStatusButton
+        className="auth-btn primary"
+        id="authRegisterBtn"
+        type="submit"
+        data-i18n-key="auth.sendVerificationLink"
+      >
         Send verification link
       </AuthStatusButton>
       <div className="auth-foot">
         <span data-i18n-key="auth.alreadyVerified">Already verified?</span>{' '}
-        <a href="#" data-i18n-key="auth.signIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Sign in</a>
+        <a
+          href="#"
+          data-i18n-key="auth.signIn"
+          onClick={(event) => handleAuthLink(event, showAuthSignin)}
+        >
+          Sign in
+        </a>
       </div>
     </form>
   );
@@ -254,7 +319,16 @@ function RegisterView() {
 
 function MailIcon() {
   return (
-    <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={40}
+      height={40}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
     </svg>
@@ -268,19 +342,37 @@ function VerifySentView() {
       <div className="auth-icon">
         <MailIcon />
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
+      <h2 className="auth-title" data-i18n-key="auth.checkInbox">
+        Check your inbox
+      </h2>
       <p className="auth-lede">
         <span data-i18n-key="auth.verifySentPre">We sent a verification link to </span>
-        <strong id="authVerifyEmail"><AuthText id="authVerifyEmail" /></strong>
+        <strong id="authVerifyEmail">
+          <AuthText id="authVerifyEmail" />
+        </strong>
         <span data-i18n-key="auth.verifySentPost">
-          . Click the button in the email to start learning with Socrates. The link expires in 24 hours.
+          . Click the button in the email to start learning with Socrates. The link expires in 24
+          hours.
         </span>
       </p>
-      <Button className="auth-btn secondary" type="button" data-i18n-key="auth.resendLink" onClick={() => { void resendVerification(); }}>
+      <Button
+        className="auth-btn secondary"
+        type="button"
+        data-i18n-key="auth.resendLink"
+        onClick={() => {
+          void resendVerification();
+        }}
+      >
         Resend the link
       </Button>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.useDifferentEmail" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Use a different email</a>
+        <a
+          href="#"
+          data-i18n-key="auth.useDifferentEmail"
+          onClick={(event) => handleAuthLink(event, showAuthSignin)}
+        >
+          Use a different email
+        </a>
       </div>
     </div>
   );
@@ -291,14 +383,27 @@ function VerifyFailedView() {
   return (
     <div className={className} id="authVerifyFailedView">
       <div className="auth-icon auth-icon-warn">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <line x1="12" y1="8" x2="12" y2="12" />
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       </div>
-      <h2 className="auth-title" id="authVerifyFailedTitle"><AuthText id="authVerifyFailedTitle" /></h2>
-      <p className="auth-lede" id="authVerifyFailedMsg"><AuthText id="authVerifyFailedMsg" /></p>
+      <h2 className="auth-title" id="authVerifyFailedTitle">
+        <AuthText id="authVerifyFailedTitle" />
+      </h2>
+      <p className="auth-lede" id="authVerifyFailedMsg">
+        <AuthText id="authVerifyFailedMsg" />
+      </p>
       <form onSubmit={(event) => handleAuthSubmit(event, resendVerification)}>
         <FieldLabel htmlFor="authResendEmail" labelKey="auth.email" text="Email" />
         <AuthInput
@@ -315,7 +420,9 @@ function VerifyFailedView() {
         </Button>
       </form>
       <div className="auth-foot">
-        <a href="#" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
+        <a href="#" onClick={(event) => handleAuthLink(event, showAuthSignin)}>
+          Back to sign in
+        </a>
       </div>
     </div>
   );
@@ -326,11 +433,22 @@ function VerifiedView() {
   return (
     <div className={className} id="authVerifiedView">
       <div className="auth-icon auth-icon-ok">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.verifiedTitle">Email verified</h2>
+      <h2 className="auth-title" data-i18n-key="auth.verifiedTitle">
+        Email verified
+      </h2>
       <p className="auth-lede" data-i18n-key="auth.verifiedMsg">
         You&apos;re signed in. Taking you to your dashboard…
       </p>
@@ -340,8 +458,21 @@ function VerifiedView() {
 
 function BackLink() {
   return (
-    <a className="auth-back-link" href="#" onClick={(event) => handleAuthLink(event, showAuthSignin)}>
-      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <a
+      className="auth-back-link"
+      href="#"
+      onClick={(event) => handleAuthLink(event, showAuthSignin)}
+    >
+      <svg
+        width={14}
+        height={14}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <line x1="19" y1="12" x2="5" y2="12" />
         <polyline points="12 19 5 12 12 5" />
       </svg>
@@ -353,15 +484,30 @@ function BackLink() {
 function ForgotPasswordView() {
   const className = useAuthViewClass('authForgotPasswordView');
   return (
-    <form className={className} id="authForgotPasswordView" onSubmit={(event) => handleAuthSubmit(event, submitAuthForgotPassword)}>
+    <form
+      className={className}
+      id="authForgotPasswordView"
+      onSubmit={(event) => handleAuthSubmit(event, submitAuthForgotPassword)}
+    >
       <BackLink />
       <div className="auth-icon">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.resetTitle">Reset your password</h2>
+      <h2 className="auth-title" data-i18n-key="auth.resetTitle">
+        Reset your password
+      </h2>
       <p className="auth-lede" data-i18n-key="auth.resetLede">
         Enter your email and we&apos;ll send a reset link.
       </p>
@@ -376,7 +522,12 @@ function ForgotPasswordView() {
         placeholder="you@example.com"
       />
       <AuthError id="authForgotError" />
-      <AuthStatusButton className="auth-btn primary" id="authForgotBtn" type="submit" data-i18n-key="auth.sendResetLink">
+      <AuthStatusButton
+        className="auth-btn primary"
+        id="authForgotBtn"
+        type="submit"
+        data-i18n-key="auth.sendResetLink"
+      >
         Send reset link
       </AuthStatusButton>
     </form>
@@ -390,16 +541,26 @@ function ForgotSentView() {
       <div className="auth-icon">
         <MailIcon />
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.checkInbox">Check your inbox</h2>
+      <h2 className="auth-title" data-i18n-key="auth.checkInbox">
+        Check your inbox
+      </h2>
       <p className="auth-lede">
         <span data-i18n-key="auth.forgotSentPre">If an account exists for </span>
-        <strong id="authForgotSentEmail"><AuthText id="authForgotSentEmail" /></strong>
+        <strong id="authForgotSentEmail">
+          <AuthText id="authForgotSentEmail" />
+        </strong>
         <span data-i18n-key="auth.forgotSentPost">
           , we sent a password reset link. The link expires in 1 hour.
         </span>
       </p>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.backToSignIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
+        <a
+          href="#"
+          data-i18n-key="auth.backToSignIn"
+          onClick={(event) => handleAuthLink(event, showAuthSignin)}
+        >
+          Back to sign in
+        </a>
       </div>
     </div>
   );
@@ -408,14 +569,29 @@ function ForgotSentView() {
 function ResetPasswordView() {
   const className = useAuthViewClass('authResetPasswordView');
   return (
-    <form className={className} id="authResetPasswordView" onSubmit={(event) => handleAuthSubmit(event, submitAuthResetPassword)}>
+    <form
+      className={className}
+      id="authResetPasswordView"
+      onSubmit={(event) => handleAuthSubmit(event, submitAuthResetPassword)}
+    >
       <div className="auth-icon auth-icon-ok">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.setNewPassword">Set new password</h2>
+      <h2 className="auth-title" data-i18n-key="auth.setNewPassword">
+        Set new password
+      </h2>
       <p className="auth-lede" data-i18n-key="auth.setNewPasswordLede">
         Choose a new password for your account.
       </p>
@@ -423,7 +599,9 @@ function ResetPasswordView() {
           form so the new password can be associated with an account. The
           reset link carries the token + email, so this field stays hidden
           but part of the form. */}
-      <Label className="auth-label sr-only-old" htmlFor="authResetEmail">Email</Label>
+      <Label className="auth-label sr-only-old" htmlFor="authResetEmail">
+        Email
+      </Label>
       <AuthInput
         className="auth-input sr-only-opacity"
         id="authResetEmail"
@@ -444,7 +622,11 @@ function ResetPasswordView() {
         placeholder="At least 8 characters"
         data-i18n-placeholder="chrome.passwordHint"
       />
-      <FieldLabel htmlFor="authResetConfirm" labelKey="auth.confirmPassword" text="Confirm password" />
+      <FieldLabel
+        htmlFor="authResetConfirm"
+        labelKey="auth.confirmPassword"
+        text="Confirm password"
+      />
       <AuthInput
         className="auth-input"
         id="authResetConfirm"
@@ -457,7 +639,12 @@ function ResetPasswordView() {
         data-i18n-placeholder="chrome.repeatPassword"
       />
       <AuthError id="authResetError" />
-      <AuthStatusButton className="auth-btn primary" id="authResetBtn" type="submit" data-i18n-key="auth.resetPassword">
+      <AuthStatusButton
+        className="auth-btn primary"
+        id="authResetBtn"
+        type="submit"
+        data-i18n-key="auth.resetPassword"
+      >
         Reset password
       </AuthStatusButton>
     </form>
@@ -469,15 +656,31 @@ function ResetSuccessView() {
   return (
     <div className={className} id="authResetSuccessView">
       <div className="auth-icon auth-icon-ok">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.passwordUpdated">Password updated</h2>
+      <h2 className="auth-title" data-i18n-key="auth.passwordUpdated">
+        Password updated
+      </h2>
       <p className="auth-lede" data-i18n-key="auth.passwordUpdatedLede">
         Your password has been reset successfully. Sign in with your new password.
       </p>
-      <Button className="auth-btn primary" type="button" data-i18n-key="auth.signIn" onClick={() => showAuthSignin()}>
+      <Button
+        className="auth-btn primary"
+        type="button"
+        data-i18n-key="auth.signIn"
+        onClick={() => showAuthSignin()}
+      >
         Sign in
       </Button>
     </div>
@@ -495,13 +698,24 @@ function CodeLoginView() {
     <div className={className} id="authCodeLoginView">
       <BackLink />
       <div className="auth-icon">
-        <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          width={40}
+          height={40}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <rect x="2" y="4" width="20" height="16" rx="2" />
           <path d="M12 11v4" />
           <circle cx="12" cy="8" r=".5" fill="currentColor" />
         </svg>
       </div>
-      <h2 className="auth-title" data-i18n-key="auth.codeLoginTitle">Email code login</h2>
+      <h2 className="auth-title" data-i18n-key="auth.codeLoginTitle">
+        Email code login
+      </h2>
       <p className="auth-lede" data-i18n-key="auth.codeLoginLede">
         Enter your email to receive an 8-character login code.
       </p>
@@ -532,22 +746,56 @@ function CodeLoginView() {
         />
         <p className={`auth-msg${sentMessageVisible ? '' : ' hidden'}`} id="authCodeSentMsg">
           <span data-i18n-key="auth.codeSentPre">We sent a code to </span>
-          <strong id="authCodeSentEmail"><AuthText id="authCodeSentEmail" /></strong>
+          <strong id="authCodeSentEmail">
+            <AuthText id="authCodeSentEmail" />
+          </strong>
           <span data-i18n-key="auth.codeSentPost">. It expires in 10 minutes.</span>
         </p>
       </div>
       <AuthError id="authCodeError" />
-      <AuthStatusButton className={`auth-btn primary${sendButtonVisible ? '' : ' hidden'}`} id="authCodeSendBtn" type="button" data-i18n-key="auth.sendCode" onClick={() => { void submitAuthSendCode(); }}>
+      <AuthStatusButton
+        className={`auth-btn primary${sendButtonVisible ? '' : ' hidden'}`}
+        id="authCodeSendBtn"
+        type="button"
+        data-i18n-key="auth.sendCode"
+        onClick={() => {
+          void submitAuthSendCode();
+        }}
+      >
         Send code
       </AuthStatusButton>
-      <AuthStatusButton className={`auth-btn primary${loginButtonVisible ? '' : ' hidden'}`} id="authCodeLoginBtn" type="button" data-i18n-key="auth.logIn" onClick={() => { void submitAuthLoginWithCode(); }}>
+      <AuthStatusButton
+        className={`auth-btn primary${loginButtonVisible ? '' : ' hidden'}`}
+        id="authCodeLoginBtn"
+        type="button"
+        data-i18n-key="auth.logIn"
+        onClick={() => {
+          void submitAuthLoginWithCode();
+        }}
+      >
         Log in
       </AuthStatusButton>
       <div className={`auth-foot${resendVisible ? '' : ' hidden'}`} id="authCodeResendWrap">
-        <a href="#" data-i18n-key="auth.resendCode" onClick={(event) => handleAuthLink(event, () => { void resendAuthCode(); })}>Resend code</a>
+        <a
+          href="#"
+          data-i18n-key="auth.resendCode"
+          onClick={(event) =>
+            handleAuthLink(event, () => {
+              void resendAuthCode();
+            })
+          }
+        >
+          Resend code
+        </a>
       </div>
       <div className="auth-foot">
-        <a href="#" data-i18n-key="auth.backToSignIn" onClick={(event) => handleAuthLink(event, showAuthSignin)}>Back to sign in</a>
+        <a
+          href="#"
+          data-i18n-key="auth.backToSignIn"
+          onClick={(event) => handleAuthLink(event, showAuthSignin)}
+        >
+          Back to sign in
+        </a>
       </div>
     </div>
   );

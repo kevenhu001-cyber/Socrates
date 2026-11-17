@@ -25,16 +25,22 @@ export function MessageBody({
 }) {
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
   function handlePreviewClick(event: MouseEvent<HTMLDivElement>) {
-    const clicked = event.target instanceof Element ? event.target.closest('[data-artifact-preview]') : null;
-    const assistantImage = !clicked && role === 'assistant' && event.target instanceof Element
-      ? event.target.closest('img:not(.exec-artifact-image):not(.site-link-favicon)')
-      : null;
+    const clicked =
+      event.target instanceof Element ? event.target.closest('[data-artifact-preview]') : null;
+    const assistantImage =
+      !clicked && role === 'assistant' && event.target instanceof Element
+        ? event.target.closest('img:not(.exec-artifact-image):not(.site-link-favicon)')
+        : null;
     const target = clicked || assistantImage;
     if (!target) return;
     event.preventDefault();
     openArtifactPreview({
-      url: target.getAttribute('data-artifact-url') || target.getAttribute('src') || target.getAttribute('href'),
-      mimeType: target.getAttribute('data-artifact-mime') || (target.tagName === 'IMG' ? 'image/*' : ''),
+      url:
+        target.getAttribute('data-artifact-url') ||
+        target.getAttribute('src') ||
+        target.getAttribute('href'),
+      mimeType:
+        target.getAttribute('data-artifact-mime') || (target.tagName === 'IMG' ? 'image/*' : ''),
       name: target.getAttribute('data-artifact-name') || target.getAttribute('alt') || '',
     });
   }
@@ -76,11 +82,21 @@ export function MessageBody({
       <div className="msg-body" ref={bodyRef} onClick={handlePreviewClick}>
         {rawText}
         {message.pageLinkPreviews?.length || message.pageLinkHint ? (
-          <LinkPreviews items={message.pageLinkPreviews || []} showMissingUrlHint={message.pageLinkHint === true} />
+          <LinkPreviews
+            items={message.pageLinkPreviews || []}
+            showMissingUrlHint={message.pageLinkHint === true}
+          />
         ) : null}
       </div>
     );
   }
 
-  return <div className="msg-body" ref={bodyRef} onClick={handlePreviewClick} dangerouslySetInnerHTML={{ __html: bodyHtml }} />;
+  return (
+    <div
+      className="msg-body"
+      ref={bodyRef}
+      onClick={handlePreviewClick}
+      dangerouslySetInnerHTML={{ __html: bodyHtml }}
+    />
+  );
 }

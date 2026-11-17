@@ -1,8 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('topic submit opens a stable chat with one user turn and one live assistant placeholder', async ({ page }) => {
+test('topic submit opens a stable chat with one user turn and one live assistant placeholder', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route(/\/api\/(?:v2\/)?chat-turns(?:\?|$)/, async (route) => {
     await route.fulfill({
@@ -51,20 +53,24 @@ test('topic submit opens a stable chat with one user turn and one live assistant
   await expect(page.locator('#msgList .msg.assistant')).toHaveCount(1);
   /* P_thinking-unified — every live phase (including pre-first-token
      waiting) renders the same live thinking caption. */
-  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
+  await expect(
+    page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]'),
+  ).toBeVisible();
 
-  const first = await page.evaluate(() => window.stateStore.read('messages').map((message) => ({
-    clientId: message.clientId,
-    role: message.role,
-    type: message.type,
-  })));
+  const first = await page.evaluate(() =>
+    window.__socratesTestState.session().messages.map((message) => ({
+      clientId: message.clientId,
+      role: message.role,
+      type: message.type,
+    })),
+  );
   expect(first.map((message) => message.role)).toEqual(['user', 'assistant']);
   expect(first[1].type).toBe('streaming');
 
   await page.waitForTimeout(250);
   const settled = await page.evaluate(() => ({
     retiredHandoffPresent: '__socratesSyncCtl' in window,
-    messages: window.stateStore.read('messages').map((message) => ({
+    messages: window.__socratesTestState.session().messages.map((message) => ({
       clientId: message.clientId,
       role: message.role,
       type: message.type,

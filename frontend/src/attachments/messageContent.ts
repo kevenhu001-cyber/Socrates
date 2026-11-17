@@ -1,4 +1,4 @@
-import type { PendingAttachment, MessageContentPart } from "./types.ts";
+import type { PendingAttachment, MessageContentPart } from './types.ts';
 import { ATTACHMENT_READY_TIMEOUT_MS, MAX_TOTAL_ATTACHMENTS } from './limits.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -10,7 +10,12 @@ export function formatAttachmentSize(bytes: unknown) {
 }
 
 /** The model-facing pointer line one durable attachment contributes. */
-export function attachmentPointerLine(attachment: { fileId?: string | null; name?: string | null; mime?: string | null; size?: unknown }) {
+export function attachmentPointerLine(attachment: {
+  fileId?: string | null;
+  name?: string | null;
+  mime?: string | null;
+  size?: unknown;
+}) {
   const name = String((attachment && attachment.name) || 'file');
   const mime = String((attachment && attachment.mime) || 'application/octet-stream');
   return `[Attached file: "${name}" (${mime}, ${formatAttachmentSize(attachment && attachment.size)}) — fileId: ${attachment.fileId}. Call read_attachment with this fileId to read its contents.]`;
@@ -21,8 +26,19 @@ export function attachmentPointerLine(attachment: { fileId?: string | null; name
  * only sees the small operations it needs and remains independent from XHR,
  * thumbnail lifetime, and composer mutation details.
  */
-export function createBuildMessageContent({ getAttachments, waitForReady, supportsImages }: { getAttachments: () => PendingAttachment[]; waitForReady: (list: PendingAttachment[], timeoutMs: number) => Promise<unknown>; supportsImages: () => boolean }) {
-  return async function buildMessageContent(text: unknown, attachmentSnapshot?: PendingAttachment[] | null) {
+export function createBuildMessageContent({
+  getAttachments,
+  waitForReady,
+  supportsImages,
+}: {
+  getAttachments: () => PendingAttachment[];
+  waitForReady: (list: PendingAttachment[], timeoutMs: number) => Promise<unknown>;
+  supportsImages: () => boolean;
+}) {
+  return async function buildMessageContent(
+    text: unknown,
+    attachmentSnapshot?: PendingAttachment[] | null,
+  ) {
     const rawText = String(text || '');
     /* A cleared composer must not change the snapshot already claimed by a turn. */
     const turnAttachments = Array.isArray(attachmentSnapshot)
@@ -43,8 +59,11 @@ export function createBuildMessageContent({ getAttachments, waitForReady, suppor
     await waitForReady(turnAttachments, ATTACHMENT_READY_TIMEOUT_MS);
     for (const attachment of turnAttachments) {
       if (attachment && attachment.pending && typeof attachment._abort === 'function') {
-        try { attachment._abort(); }
-        catch (error) { reportSwallow(error, 'attachments.buildMessageContent.abortStale'); }
+        try {
+          attachment._abort();
+        } catch (error) {
+          reportSwallow(error, 'attachments.buildMessageContent.abortStale');
+        }
       }
     }
 
@@ -73,7 +92,11 @@ export function createBuildMessageContent({ getAttachments, waitForReady, suppor
   };
 }
 
-function appendAttachmentParts(parts: MessageContentPart[], attachment: PendingAttachment, multimodal: boolean) {
+function appendAttachmentParts(
+  parts: MessageContentPart[],
+  attachment: PendingAttachment,
+  multimodal: boolean,
+) {
   if (!attachment) return;
   if (appendPendingAttachment(parts, attachment)) return;
   appendImagePreview(parts, attachment, multimodal);
@@ -92,7 +115,11 @@ function appendPendingAttachment(parts: MessageContentPart[], attachment: Pendin
   return true;
 }
 
-function appendImagePreview(parts: MessageContentPart[], attachment: PendingAttachment, multimodal: boolean) {
+function appendImagePreview(
+  parts: MessageContentPart[],
+  attachment: PendingAttachment,
+  multimodal: boolean,
+) {
   if (attachment.kind === 'image' && attachment.dataUrl && multimodal) {
     /* Omit `detail`: some providers reject values such as "auto". */
     parts.push({ type: 'image_url', image_url: { url: attachment.dataUrl } });
@@ -123,7 +150,11 @@ function appendLegacyText(parts: MessageContentPart[], attachment: PendingAttach
   return true;
 }
 
-function appendUnavailableImage(parts: MessageContentPart[], attachment: PendingAttachment, multimodal: boolean) {
+function appendUnavailableImage(
+  parts: MessageContentPart[],
+  attachment: PendingAttachment,
+  multimodal: boolean,
+) {
   if (attachment.kind === 'image' && attachment.dataUrl && !multimodal) {
     parts.push({
       type: 'text',
@@ -133,6 +164,8 @@ function appendUnavailableImage(parts: MessageContentPart[], attachment: Pending
 }
 
 function isLegacyTextAttachment(attachment: PendingAttachment) {
-  return (attachment.kind === 'text' || attachment.kind === 'document' || attachment.kind === 'pdf')
-    && attachment.text;
+  return (
+    (attachment.kind === 'text' || attachment.kind === 'document' || attachment.kind === 'pdf') &&
+    attachment.text
+  );
 }

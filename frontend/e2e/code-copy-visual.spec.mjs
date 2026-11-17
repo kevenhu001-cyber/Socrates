@@ -62,7 +62,9 @@ function installClipboardStub(page) {
           configurable: true,
           value: { writeText: record },
         });
-      } catch (__) { /* ignore */ }
+      } catch (__) {
+        /* ignore */
+      }
     }
   });
 }
@@ -71,19 +73,24 @@ function installClipboardStub(page) {
    assistant message contains a fenced code block so the code-block header
    and its injected copy control mount. */
 async function bootChatWithCodeBlock(page) {
-  await page.evaluate(async (payload) => {
-    const sessionId = '88888888-8888-4888-8888-888888888888';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    try { window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId }); } catch (_) {}
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
-    window.__testActivateMainView('chatView');
+  await page.evaluate(
+    async (payload) => {
+      const sessionId = '88888888-8888-4888-8888-888888888888';
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+      try {
+        window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+      } catch (_) {}
+      window.__socratesTestState.patch({ session: { messages: [] } });
+      window.__testActivateMainView('chatView');
 
-    window.addMessage('user', 'Show me a snippet.');
-    window.addMessage('assistant', payload.md);
-    // Let React commit the bubbles and the header/copy passes run.
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  }, { md: ASSISTANT_MARKDOWN });
+      window.addMessage('user', 'Show me a snippet.');
+      window.addMessage('assistant', payload.md);
+      // Let React commit the bubbles and the header/copy passes run.
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    },
+    { md: ASSISTANT_MARKDOWN },
+  );
 }
 
 test.beforeEach(async ({ page }) => {
@@ -121,7 +128,9 @@ test('clicking copy on a code block writes the code content to the clipboard', a
   await expect(copyBtn).toHaveClass(/copied/);
 });
 
-test('user/assistant messages carry the revamped classes; capture a visual screenshot', async ({ page }) => {
+test('user/assistant messages carry the revamped classes; capture a visual screenshot', async ({
+  page,
+}) => {
   await bootChatWithCodeBlock(page);
 
   // Revamped message-bubble classes (Req 3.7): the user turn is a

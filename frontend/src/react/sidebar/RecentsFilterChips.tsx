@@ -4,10 +4,7 @@ import { useEffect, useReducer, useSyncExternalStore } from 'react';
 
 import { getKnownTagsFromSessions } from '../../ui/recentsModel.ts';
 import { serverCache } from '../../session/serverCache.ts';
-import {
-  getProjectCacheSnapshot,
-  subscribeToProjectCache,
-} from '../../projects/projectCache.ts';
+import { getProjectCacheSnapshot, subscribeToProjectCache } from '../../projects/projectCache.ts';
 import { onRecentsFilterChipClick, hydrateRecentsFilterState } from '../../sidebar/sidebar.service';
 import { useSidebarStore } from '../../sidebar/sidebar.store';
 import { RecentsFilterChip } from './RecentsFilterChip';
@@ -24,11 +21,12 @@ export function RecentsFilterChips() {
   const filter = useSidebarStore((state) => state.recentsFilter);
   useSidebarStore((state) => state.recentsVersion);
   const pick = onRecentsFilterChipClick;
-  const projects = useSyncExternalStore(
-    subscribeToProjectCache,
-    getProjectCacheSnapshot,
-    getProjectCacheSnapshot,
-  ) ?? [];
+  const projects =
+    useSyncExternalStore(
+      subscribeToProjectCache,
+      getProjectCacheSnapshot,
+      getProjectCacheSnapshot,
+    ) ?? [];
   const tags = getKnownTagsFromSessions(serverCache.sessions);
   const chips = buildChips(filter, projects, tags);
 
@@ -74,5 +72,13 @@ export interface RecentsChipsHandle {
 export function hydrateRecentsFilterChips(): RecentsChipsHandle | null {
   const target = document.getElementById(TARGET_ID);
   if (!target) return null;
-  return { target, ...mountOwnedRoot(target, 'recents-filter-chips', <RecentsFilterChips />, hydrateRecentsFilterState) };
+  return {
+    target,
+    ...mountOwnedRoot(
+      target,
+      'recents-filter-chips',
+      <RecentsFilterChips />,
+      hydrateRecentsFilterState,
+    ),
+  };
 }

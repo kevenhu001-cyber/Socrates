@@ -34,11 +34,13 @@ export function saveChatPreferences(effort: ReasoningEffort, speed: ResponseSpee
     localStorage.setItem(EFFORT_KEY, safeEffort);
     localStorage.setItem(SPEED_KEY, safeSpeed);
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: config/chatPreferences.ts:33', 'expected');
+    reportEmptyCatch(error, 'empty catch: config/chatPreferences.ts', 'expected');
     /* the storage shim may be unavailable in an isolated harness */
   }
   setExtensiveThinkingOn(safeEffort === 'high');
-  window.dispatchEvent(new window.CustomEvent('socrates:chat-preferences', {
-    detail: { effort: safeEffort, speed: safeSpeed },
-  }));
+  window.dispatchEvent(
+    new window.CustomEvent('socrates:chat-preferences', {
+      detail: { effort: safeEffort, speed: safeSpeed },
+    }),
+  );
 }

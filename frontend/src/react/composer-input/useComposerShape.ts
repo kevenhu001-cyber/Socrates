@@ -27,50 +27,55 @@ export function useComposerShape(surface: ComposerSurface) {
   const shapeAnimationCleanupRef = useRef<(() => void) | null>(null);
   const shapeHeightRef = useRef<number | null>(null);
   const collapsedMeasureRef = useRef<CollapsedComposerMeasure | null>(null);
-  const shapeState = useMemo<ComposerShapeState>(() => ({
-    animation: shapeAnimationRef,
-    animationCleanup: shapeAnimationCleanupRef,
-    height: shapeHeightRef,
-  }), []);
+  const shapeState = useMemo<ComposerShapeState>(
+    () => ({
+      animation: shapeAnimationRef,
+      animationCleanup: shapeAnimationCleanupRef,
+      height: shapeHeightRef,
+    }),
+    [],
+  );
 
   const cacheSettledShapeHeight = useCallback((wrap: HTMLElement) => {
     shapeHeightRef.current = wrap.getBoundingClientRect().height;
   }, []);
 
-  const syncComposerShape = useCallback((editorDom: HTMLElement, immediate = false) => {
-    if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
-    const run = () => {
-      shapeFrameRef.current = null;
-      measuredEditorRef.current = editorDom;
-      const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
-      if (!wrap) return;
-      /* View swaps briefly expose a pre-layout collapsed box. Skip that frame
+  const syncComposerShape = useCallback(
+    (editorDom: HTMLElement, immediate = false) => {
+      if (shapeFrameRef.current !== null) cancelAnimationFrame(shapeFrameRef.current);
+      const run = () => {
+        shapeFrameRef.current = null;
+        measuredEditorRef.current = editorDom;
+        const wrap = editorDom.closest<HTMLElement>('.composer-input-wrap');
+        if (!wrap) return;
+        /* View swaps briefly expose a pre-layout collapsed box. Skip that frame
          so it cannot become a false animation source. */
-      const hiddenAncestor = editorDom.closest('.chat-view.hidden, .topic-setup.hidden, .main-inner.hidden');
-      if (hiddenAncestor) { return; }
-      /* Plugin chips own the empty first row; the empty editor below them
+        const hiddenAncestor = editorDom.closest(
+          '.chat-view.hidden, .topic-setup.hidden, .main-inner.hidden',
+        );
+        if (hiddenAncestor) {
+          return;
+        }
+        /* Plugin chips own the empty first row; the empty editor below them
          must not toggle the multiline class from its intrinsic height. */
-      if (clearPluginOnlyShape(editorDom, wrap, shapeState)) {
-        // Plugin-only layout intentionally removed the temporary height.
-        return;
-      }
-      /* While the shell is between tiers, editor measurements are transient.
+        if (clearPluginOnlyShape(editorDom, wrap, shapeState)) {
+          // Plugin-only layout intentionally removed the temporary height.
+          return;
+        }
+        /* While the shell is between tiers, editor measurements are transient.
          Retry after the current animation lands before classifying the draft. */
-      if (shapeAnimationRef.current) {
-        shapeFrameRef.current = requestAnimationFrame(run);
-        return;
-      }
-      const shouldExpand = shouldExpandComposer(
-        editorDom,
-        wrap,
-        surface,
-        collapsedMeasureRef,
-      );
-      transitionComposerShape(wrap, shouldExpand, shapeState);
-    };
-    if (immediate) run();
-    else shapeFrameRef.current = requestAnimationFrame(run);
-  }, [shapeState, surface]);
+        if (shapeAnimationRef.current) {
+          shapeFrameRef.current = requestAnimationFrame(run);
+          return;
+        }
+        const shouldExpand = shouldExpandComposer(editorDom, wrap, surface, collapsedMeasureRef);
+        transitionComposerShape(wrap, shouldExpand, shapeState);
+      };
+      if (immediate) run();
+      else shapeFrameRef.current = requestAnimationFrame(run);
+    },
+    [shapeState, surface],
+  );
 
   const handleComposerFocus = useCallback((editorDom: HTMLElement) => {
     composerWrapRef.current = editorDom.closest<HTMLElement>('.composer-input-wrap');
@@ -139,9 +144,10 @@ export function useComposerShapeObserver(
       /* The transition itself emits height changes every frame. Re-measure
          only when width changes can affect line wrapping. */
       if (
-        Math.abs(editorWidth - previousEditorWidth) < 0.5
-        && Math.abs(wrapWidth - previousWrapWidth) < 0.5
-      ) return;
+        Math.abs(editorWidth - previousEditorWidth) < 0.5 &&
+        Math.abs(wrapWidth - previousWrapWidth) < 0.5
+      )
+        return;
       previousEditorWidth = editorWidth;
       previousWrapWidth = wrapWidth;
       syncComposerShape(editorDom);

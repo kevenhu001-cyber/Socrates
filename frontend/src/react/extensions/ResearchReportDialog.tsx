@@ -21,7 +21,8 @@ function reportTextOf(message: Message | null): string {
 }
 
 function reportOutlineOf(text: string): ReportOutlineItem[] {
-  return text.split(/\r?\n/)
+  return text
+    .split(/\r?\n/)
     .map((line) => line.match(/^#{1,3}\s+(.+?)\s*#*$/))
     .filter((match): match is RegExpMatchArray => Boolean(match?.[1]))
     .slice(0, 12)
@@ -52,9 +53,15 @@ function ResearchReportNavigation({ outline }: { outline: ReportOutlineItem[] })
       <a href="#research-report-plan">{t('research.plan')}</a>
       <a href="#research-report-sources">{t('research.sources')}</a>
       <a href="#research-report-activity">{t('research.activity')}</a>
-      {outline.length ? <div className="research-report-outline">
-        {outline.map((entry) => <a key={entry.id} href={`#${entry.id}`}>{entry.label}</a>)}
-      </div> : null}
+      {outline.length ? (
+        <div className="research-report-outline">
+          {outline.map((entry) => (
+            <a key={entry.id} href={`#${entry.id}`}>
+              {entry.label}
+            </a>
+          ))}
+        </div>
+      ) : null}
     </aside>
   );
 }
@@ -63,9 +70,19 @@ function ResearchReportMetadata({ job }: { job: ResearchJob }) {
   return (
     <div className="research-report-meta" aria-label={t('research.reportSummary')}>
       <span>{t('research.completed')}</span>
-      {job.sourceCount > 0 ? <span>{t('research.sourcesCount').replace('{count}', String(job.sourceCount))}</span> : null}
-      {job.searched > 0 ? <span>{t('research.queriesCount').replace('{searched}', String(job.searched)).replace('{total}', String(job.plan.length || job.searched))}</span> : null}
-      {job.completedAt ? <time dateTime={job.completedAt}>{formatDate(job.completedAt)}</time> : null}
+      {job.sourceCount > 0 ? (
+        <span>{t('research.sourcesCount').replace('{count}', String(job.sourceCount))}</span>
+      ) : null}
+      {job.searched > 0 ? (
+        <span>
+          {t('research.queriesCount')
+            .replace('{searched}', String(job.searched))
+            .replace('{total}', String(job.plan.length || job.searched))}
+        </span>
+      ) : null}
+      {job.completedAt ? (
+        <time dateTime={job.completedAt}>{formatDate(job.completedAt)}</time>
+      ) : null}
     </div>
   );
 }
@@ -77,9 +94,17 @@ function ResearchReportArticle({ text, outline }: { text: string; outline: Repor
         const heading = line.match(/^(#{1,3})\s+(.+?)\s*#*$/);
         if (heading) {
           const item = outline.find((entry) => entry.label === heading[2]);
-          return <h3 key={index} id={item?.id}>{heading[2]}</h3>;
+          return (
+            <h3 key={index} id={item?.id}>
+              {heading[2]}
+            </h3>
+          );
         }
-        return line.trim() ? <p key={index}>{line}</p> : <div key={index} className="research-report-spacer" aria-hidden="true" />;
+        return line.trim() ? (
+          <p key={index}>{line}</p>
+        ) : (
+          <div key={index} className="research-report-spacer" aria-hidden="true" />
+        );
       })}
     </article>
   );
@@ -90,21 +115,42 @@ function ResearchReportSections({ job, message }: { job: ResearchJob; message: M
     <>
       <section id="research-report-plan" className="research-report-section">
         <h3>{t('research.plan')}</h3>
-        <ol>{job.plan.map((step, index) => <li key={`${job.id}-step-${index}`} className={index < job.searched ? 'is-complete' : ''}>{step}</li>)}</ol>
+        <ol>
+          {job.plan.map((step, index) => (
+            <li
+              key={`${job.id}-step-${index}`}
+              className={index < job.searched ? 'is-complete' : ''}
+            >
+              {step}
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section id="research-report-sources" className="research-report-section">
         <h3>{t('research.sources')}</h3>
         {message?.citations?.length ? (
           <ol className="research-report-sources">
-            {message.citations.map((citation) => <li key={citation.id}><a href={citation.url} target="_blank" rel="noreferrer">{citation.title || citation.source || citation.url}</a></li>)}
+            {message.citations.map((citation) => (
+              <li key={citation.id}>
+                <a href={citation.url} target="_blank" rel="noreferrer">
+                  {citation.title || citation.source || citation.url}
+                </a>
+              </li>
+            ))}
           </ol>
-        ) : <p>{job.sourceCount > 0 ? t('research.sourcesSaved') : t('research.noSources')}</p>}
+        ) : (
+          <p>{job.sourceCount > 0 ? t('research.sourcesSaved') : t('research.noSources')}</p>
+        )}
       </section>
 
       <section id="research-report-activity" className="research-report-section">
         <h3>{t('research.activity')}</h3>
-        <p>{t('research.activitySummary').replace('{searched}', String(job.searched)).replace('{sources}', String(job.sourceCount))}</p>
+        <p>
+          {t('research.activitySummary')
+            .replace('{searched}', String(job.searched))
+            .replace('{sources}', String(job.sourceCount))}
+        </p>
       </section>
     </>
   );
@@ -128,9 +174,21 @@ function ResearchReportBody({
   return (
     <main className="research-report-main">
       <ResearchReportMetadata job={job} />
-      {loading ? <p className="research-report-state" role="status">{t('research.loadingReport')}</p> : null}
-      {!loading && failed ? <p className="research-report-state" role="alert">{t('research.reportUnavailable')}</p> : null}
-      {!loading && !failed && !text ? <p className="research-report-state" role="status">{t('research.reportUnavailable')}</p> : null}
+      {loading ? (
+        <p className="research-report-state" role="status">
+          {t('research.loadingReport')}
+        </p>
+      ) : null}
+      {!loading && failed ? (
+        <p className="research-report-state" role="alert">
+          {t('research.reportUnavailable')}
+        </p>
+      ) : null}
+      {!loading && !failed && !text ? (
+        <p className="research-report-state" role="status">
+          {t('research.reportUnavailable')}
+        </p>
+      ) : null}
       {!loading && !failed && text ? <ResearchReportArticle text={text} outline={outline} /> : null}
       <ResearchReportSections job={job} message={message} />
     </main>
@@ -175,7 +233,11 @@ export function ResearchReportDialog({ job, onClose }: ResearchReportDialogProps
       }}
       overlayClassName="research-report-backdrop"
       className="research-report-dialog"
-      contentStyle={{ overflow: 'hidden', height: '100%', maxHeight: 'calc(100dvh - 2 * var(--ui-space-md))' }}
+      contentStyle={{
+        overflow: 'hidden',
+        height: '100%',
+        maxHeight: 'calc(100dvh - 2 * var(--ui-space-md))',
+      }}
     >
       <header className="research-report-header">
         <div className="research-report-heading">
@@ -185,8 +247,23 @@ export function ResearchReportDialog({ job, onClose }: ResearchReportDialogProps
           </FoundationDialogTitle>
         </div>
         <div className="research-report-header-actions">
-          <UiButton type="button" className="research-report-icon-button" onClick={() => downloadReport(text, job.query)} disabled={!text} aria-label={t('research.downloadReport')} title={t('research.downloadReport')}>↓</UiButton>
-          <FoundationDialogClose className="research-report-icon-button" onClick={onClose} aria-label={t('dialog.close', 'Close')}>×</FoundationDialogClose>
+          <UiButton
+            type="button"
+            className="research-report-icon-button"
+            onClick={() => downloadReport(text, job.query)}
+            disabled={!text}
+            aria-label={t('research.downloadReport')}
+            title={t('research.downloadReport')}
+          >
+            ↓
+          </UiButton>
+          <FoundationDialogClose
+            className="research-report-icon-button"
+            onClick={onClose}
+            aria-label={t('dialog.close', 'Close')}
+          >
+            ×
+          </FoundationDialogClose>
         </div>
       </header>
 

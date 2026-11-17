@@ -1,26 +1,52 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime } from './_lib.mjs';
 
-test('new Chinese prose fades in while completed paragraphs and final text stay stable', async ({ page }) => {
+test('new Chinese prose fades in while completed paragraphs and final text stay stable', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await prepareChatWorkbench(page, { messages: [{ clientId: 'reveal-user', role: 'user', rawText: '解释一下', html: '' }] });
+  await prepareChatWorkbench(page, {
+    messages: [{ clientId: 'reveal-user', role: 'user', rawText: '解释一下', html: '' }],
+  });
   const text = '已完成的段落保持稳定。\n\n新的内容正在输出';
   await page.evaluate((text) => {
-    window.stateStore.dispatch({ type: 'session/append-message', payload: {
-      clientId: 'reveal-answer', role: 'assistant', type: 'streaming', rawText: text, html: '',
-    } });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/append-message',
+      payload: {
+        clientId: 'reveal-answer',
+        role: 'assistant',
+        type: 'streaming',
+        rawText: text,
+        html: '',
+      },
+    });
   }, text);
-  await publishChatRuntime(page, { type: 'stream-delta', messageId: 'reveal-answer', textLength: text.length });
+  await publishChatRuntime(page, {
+    type: 'stream-delta',
+    messageId: 'reveal-answer',
+    textLength: text.length,
+  });
   const bubble = page.locator('[data-client-id="reveal-answer"]');
   await expect(bubble.locator('.is-settled').first()).toContainText('已完成的段落保持稳定');
-  await page.evaluate(() => { window.__revealPrefix = document.querySelector('[data-client-id="reveal-answer"] .is-settled'); });
+  await page.evaluate(() => {
+    window.__revealPrefix = document.querySelector('[data-client-id="reveal-answer"] .is-settled');
+  });
   const finalText = text + '，通过 **柔和渐显** 呈现，中文与 emoji 😀 都保持完整。';
   await page.evaluate((rawText) => {
-    window.stateStore.dispatch({ type: 'session/update-message', index: 1, clientId: 'reveal-answer', patch: { rawText } });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/update-message',
+      index: 1,
+      clientId: 'reveal-answer',
+      patch: { rawText },
+    });
   }, finalText);
-  await publishChatRuntime(page, { type: 'stream-delta', messageId: 'reveal-answer', textLength: finalText.length });
+  await publishChatRuntime(page, {
+    type: 'stream-delta',
+    messageId: 'reveal-answer',
+    textLength: finalText.length,
+  });
   await expect(bubble.locator('strong')).toHaveText('柔和渐显');
   const evidence = await bubble.evaluate((el) => {
     const tail = el.querySelector('.is-tail');
@@ -52,21 +78,37 @@ test('new Chinese prose fades in while completed paragraphs and final text stay 
   const blurred = evidence.filters.filter((filter) => filter !== 'none').length;
   expect(revealing).toBeGreaterThan(0);
   expect(blurred).toBe(0);
-  expect(evidence.names.every((name, index) => name !== 'stream-append-age' || evidence.filters[index] === 'none')).toBe(true);
+  expect(
+    evidence.names.every(
+      (name, index) => name !== 'stream-append-age' || evidence.filters[index] === 'none',
+    ),
+  ).toBe(true);
   expect(evidence.opacities.some((opacity) => opacity > 0.25 && opacity < 1)).toBe(true);
   await page.screenshot({ path: 'test-results/stream-reveal-desktop.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   /* The newest run is the last one in document order — the reveal splits
      the tail from the end backwards, so the first span belongs to the
      oldest run and has already aged to the opacity-only animation. */
-  await expect(bubble.locator('.stream-append-reveal').last()).toHaveCSS('animation-name', 'stream-append-reveal');
+  await expect(bubble.locator('.stream-append-reveal').last()).toHaveCSS(
+    'animation-name',
+    'stream-append-reveal',
+  );
   await page.screenshot({ path: 'test-results/stream-reveal-mobile.png' });
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'session/update-message', index: 1, clientId: 'reveal-answer', patch: { type: 'assistant' } });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/update-message',
+      index: 1,
+      clientId: 'reveal-answer',
+      patch: { type: 'assistant' },
+    });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'stream-reveal-finished' });
   await expect(bubble.locator('.tool-run-prose.is-live')).toHaveCount(0);
   await expect(bubble).toContainText('中文与 emoji 😀 都保持完整');
-  expect(await bubble.locator('.tool-run-prose').evaluateAll((els) => els.every((el) => el.getAnimations({ subtree: true }).length === 0))).toBe(true);
+  expect(
+    await bubble
+      .locator('.tool-run-prose')
+      .evaluateAll((els) => els.every((el) => el.getAnimations({ subtree: true }).length === 0)),
+  ).toBe(true);
   expect(errors).toEqual([]);
 });

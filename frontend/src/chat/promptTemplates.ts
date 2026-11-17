@@ -1,22 +1,38 @@
 export interface PromptTemplate {
- id: string; title: string; shortcut: string;
- description?: string; icon?: string; category?: string; body?: string;
- systemPrompt?: string; hint?: string; isBuiltin?: boolean;
- extensionKey?: string; runId?: string; workflow?: unknown; outputMode?: string;
- [key: string]: unknown;
+  id: string;
+  title: string;
+  shortcut: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  body?: string;
+  systemPrompt?: string;
+  hint?: string;
+  isBuiltin?: boolean;
+  extensionKey?: string;
+  runId?: string;
+  workflow?: unknown;
+  outputMode?: string;
+  [key: string]: unknown;
 }
 
 import { apiFetch } from '../util/api/index.ts';
 /* chat/promptTemplates.ts — built-in and user-defined prompt templates. */
 
-const ICON_SUMMARIZE='<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';
-const ICON_TRANSLATE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.5" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/></svg>';
-const ICON_EXPLAIN_CODE='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,4.5 2.5,8 6,11.5"/><polyline points="10,4.5 13.5,8 10,11.5"/><line x1="9.2" y1="3.5" x2="6.8" y2="12.5"/></svg>';
-const ICON_DEBUG='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="8" cy="9.5" rx="3.2" ry="3.8"/><line x1="4.8" y1="9.5" x2="11.2" y2="9.5"/><line x1="6.5" y1="6" x2="5.5" y2="3.8"/><line x1="9.5" y1="6" x2="10.5" y2="3.8"/><line x1="5" y1="12" x2="3" y2="13.2"/><line x1="11" y1="12" x2="13" y2="13.2"/><line x1="3.2" y1="9.5" x2="1.4" y2="9.5"/><line x1="12.8" y1="9.5" x2="14.6" y2="9.5"/></svg>';
-const ICON_QUIZ='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.7 6.3a2.3 2.3 0 0 1 4.5.7c0 1.1-.9 1.5-1.5 1.8-.4.2-.5.6-.5 1.1"/><circle cx="8.2" cy="11.8" r="0.7" fill="currentColor" stroke="none"/></svg>';
-const ICON_SOCRATIC='<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H7l-3 3v-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><circle cx="5.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/></svg>';
+const ICON_SUMMARIZE =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';
+const ICON_TRANSLATE =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><ellipse cx="8" cy="8" rx="2.5" ry="6"/><line x1="2" y1="8" x2="14" y2="8"/></svg>';
+const ICON_EXPLAIN_CODE =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6,4.5 2.5,8 6,11.5"/><polyline points="10,4.5 13.5,8 10,11.5"/><line x1="9.2" y1="3.5" x2="6.8" y2="12.5"/></svg>';
+const ICON_DEBUG =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="8" cy="9.5" rx="3.2" ry="3.8"/><line x1="4.8" y1="9.5" x2="11.2" y2="9.5"/><line x1="6.5" y1="6" x2="5.5" y2="3.8"/><line x1="9.5" y1="6" x2="10.5" y2="3.8"/><line x1="5" y1="12" x2="3" y2="13.2"/><line x1="11" y1="12" x2="13" y2="13.2"/><line x1="3.2" y1="9.5" x2="1.4" y2="9.5"/><line x1="12.8" y1="9.5" x2="14.6" y2="9.5"/></svg>';
+const ICON_QUIZ =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M5.7 6.3a2.3 2.3 0 0 1 4.5.7c0 1.1-.9 1.5-1.5 1.8-.4.2-.5.6-.5 1.1"/><circle cx="8.2" cy="11.8" r="0.7" fill="currentColor" stroke="none"/></svg>';
+const ICON_SOCRATIC =
+  '<svg viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h10a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H7l-3 3v-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><circle cx="5.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="8" cy="6.5" r="0.6" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r="0.6" fill="currentColor" stroke="none"/></svg>';
 
-export const SYSTEM_PROMPT_SUMMARIZE=`You are a precise summarization specialist. Condense the user's passage into a compact, self-contained summary that preserves the supported facts, names, numbers, dates, and conclusions.
+export const SYSTEM_PROMPT_SUMMARIZE = `You are a precise summarization specialist. Condense the user's passage into a compact, self-contained summary that preserves the supported facts, names, numbers, dates, and conclusions.
 
 Style:
 - Match the source language. Do not translate.
@@ -27,7 +43,7 @@ Style:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const SYSTEM_PROMPT_TRANSLATE=`You are a professional translator into English. Translate the user's text naturally while preserving meaning, tone, register, formatting, and technical precision.
+export const SYSTEM_PROMPT_TRANSLATE = `You are a professional translator into English. Translate the user's text naturally while preserving meaning, tone, register, formatting, and technical precision.
 
 Style:
 - Adapt idioms to natural English rather than translating them literally.
@@ -38,7 +54,7 @@ Style:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const SYSTEM_PROMPT_EXPLAIN_CODE=`You are a patient code mentor. Explain the user's code, its data flow, and its design choices.
+export const SYSTEM_PROMPT_EXPLAIN_CODE = `You are a patient code mentor. Explain the user's code, its data flow, and its design choices.
 
 Style:
 - Start with a concise summary of what the code does, then walk through it in whatever order reads most clearly, usually the flow from inputs to outputs.
@@ -48,7 +64,7 @@ Style:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const SYSTEM_PROMPT_DEBUG=`You are a senior debugger. The user provides code plus the expected and actual behavior. Diagnose the most likely cause and propose the smallest useful fix.
+export const SYSTEM_PROMPT_DEBUG = `You are a senior debugger. The user provides code plus the expected and actual behavior. Diagnose the most likely cause and propose the smallest useful fix.
 
 Style:
 - Be direct. Say what the most likely root cause is, point to the relevant line or condition, explain why the behavior follows and which assumption is wrong, show a corrected snippet, and give one quick way to verify.
@@ -57,7 +73,7 @@ Style:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const SYSTEM_PROMPT_QUIZ=`You are a quiz master. The user provides a topic. Generate a short, genuinely varied quiz on it: one easy recall question, a couple of application or comparison questions, and a couple of analysis, synthesis, or edge-case questions.
+export const SYSTEM_PROMPT_QUIZ = `You are a quiz master. The user provides a topic. Generate a short, genuinely varied quiz on it: one easy recall question, a couple of application or comparison questions, and a couple of analysis, synthesis, or edge-case questions.
 
 Style:
 - Give each question a few plausible options, with distractors that reflect real misconceptions, mark the correct answer, and add a one-sentence explanation.
@@ -66,7 +82,7 @@ Style:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const SYSTEM_PROMPT_SOCRATIC=`You are a Socratic tutor. Help the user reason toward a sound answer through focused questions and explanations.
+export const SYSTEM_PROMPT_SOCRATIC = `You are a Socratic tutor. Help the user reason toward a sound answer through focused questions and explanations.
 
 Rules:
 - Start by identifying what the user already understands when that information is missing.
@@ -78,60 +94,143 @@ Rules:
 
 Note: the surrounding system prompt's language, formatting, and safety rules still apply; this template only narrows the role.`;
 
-export const BUILTIN_TEMPLATES: PromptTemplate[]=[
-  {id:"tpl-summarize",title:"Summarize",description:"Condense the pasted text to its essentials.",icon:ICON_SUMMARIZE,category:"writing",shortcut:"/summarize",body:"Paste the text you want summarized:\n\n",systemPrompt:SYSTEM_PROMPT_SUMMARIZE,isBuiltin:true},
-  {id:"tpl-translate",title:"Translate to English",description:"Translate the input into natural English.",icon:ICON_TRANSLATE,category:"writing",shortcut:"/translate",body:"Paste the text to translate into English:\n\n",systemPrompt:SYSTEM_PROMPT_TRANSLATE,isBuiltin:true},
-  {id:"tpl-explain-code",title:"Explain this code",description:"Walk through the snippet in execution order.",icon:ICON_EXPLAIN_CODE,category:"code",shortcut:"/explain",body:"Paste the code you want explained:\n\n```\n\n```\n",systemPrompt:SYSTEM_PROMPT_EXPLAIN_CODE,isBuiltin:true},
-  {id:"tpl-debug",title:"Debug this",description:"Find the bug, propose a fix, explain why it worked.",icon:ICON_DEBUG,category:"code",shortcut:"/debug",body:"Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n",systemPrompt:SYSTEM_PROMPT_DEBUG,isBuiltin:true},
-  {id:"tpl-quiz",title:"Quiz me",description:"Generate 5 questions on a topic.",icon:ICON_QUIZ,category:"learning",shortcut:"/quiz",body:"Topic to be quizzed on:\n",systemPrompt:SYSTEM_PROMPT_QUIZ,isBuiltin:true},
-  {id:"tpl-socratic",title:"Socratic me",description:"Work toward the answer through focused questions.",icon:ICON_SOCRATIC,category:"learning",shortcut:"/socratic",body:"Problem to work through:\n",systemPrompt:SYSTEM_PROMPT_SOCRATIC,isBuiltin:true}
+export const BUILTIN_TEMPLATES: PromptTemplate[] = [
+  {
+    id: 'tpl-summarize',
+    title: 'Summarize',
+    description: 'Condense the pasted text to its essentials.',
+    icon: ICON_SUMMARIZE,
+    category: 'writing',
+    shortcut: '/summarize',
+    body: 'Paste the text you want summarized:\n\n',
+    systemPrompt: SYSTEM_PROMPT_SUMMARIZE,
+    isBuiltin: true,
+  },
+  {
+    id: 'tpl-translate',
+    title: 'Translate to English',
+    description: 'Translate the input into natural English.',
+    icon: ICON_TRANSLATE,
+    category: 'writing',
+    shortcut: '/translate',
+    body: 'Paste the text to translate into English:\n\n',
+    systemPrompt: SYSTEM_PROMPT_TRANSLATE,
+    isBuiltin: true,
+  },
+  {
+    id: 'tpl-explain-code',
+    title: 'Explain this code',
+    description: 'Walk through the snippet in execution order.',
+    icon: ICON_EXPLAIN_CODE,
+    category: 'code',
+    shortcut: '/explain',
+    body: 'Paste the code you want explained:\n\n```\n\n```\n',
+    systemPrompt: SYSTEM_PROMPT_EXPLAIN_CODE,
+    isBuiltin: true,
+  },
+  {
+    id: 'tpl-debug',
+    title: 'Debug this',
+    description: 'Find the bug, propose a fix, explain why it worked.',
+    icon: ICON_DEBUG,
+    category: 'code',
+    shortcut: '/debug',
+    body: 'Paste the misbehaving code:\n\n```\n\n```\n\nExpected behavior:\nActual behavior:\n',
+    systemPrompt: SYSTEM_PROMPT_DEBUG,
+    isBuiltin: true,
+  },
+  {
+    id: 'tpl-quiz',
+    title: 'Quiz me',
+    description: 'Generate 5 questions on a topic.',
+    icon: ICON_QUIZ,
+    category: 'learning',
+    shortcut: '/quiz',
+    body: 'Topic to be quizzed on:\n',
+    systemPrompt: SYSTEM_PROMPT_QUIZ,
+    isBuiltin: true,
+  },
+  {
+    id: 'tpl-socratic',
+    title: 'Socratic me',
+    description: 'Work toward the answer through focused questions.',
+    icon: ICON_SOCRATIC,
+    category: 'learning',
+    shortcut: '/socratic',
+    body: 'Problem to work through:\n',
+    systemPrompt: SYSTEM_PROMPT_SOCRATIC,
+    isBuiltin: true,
+  },
 ];
 
-export const PROMPT_TEMPLATES_KEY="socrates-prompt-templates";
+export const PROMPT_TEMPLATES_KEY = 'socrates-prompt-templates';
 
-export function loadPromptTemplates(){
+export function loadPromptTemplates() {
   /* Throttled background pull — keeps the local cache fresh for the slash
      palette and the modal without making callers wait on the network. */
-  try { syncPromptTemplates(); } catch (_) { /* empty-catch: intentional — background sync failure is non-fatal */ }
+  try {
+    syncPromptTemplates();
+  } catch (_) {
+    /* empty-catch: intentional — background sync failure is non-fatal */
+  }
   let custom: PromptTemplate[];
-  try{
-    const raw=localStorage.getItem(PROMPT_TEMPLATES_KEY);
-    custom=raw?JSON.parse(raw):null;
-    if(!Array.isArray(custom))custom=[];
-  }catch(_){custom=[]}
+  try {
+    const raw = localStorage.getItem(PROMPT_TEMPLATES_KEY);
+    custom = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(custom)) custom = [];
+  } catch (_) {
+    custom = [];
+  }
   const byShortcut: Record<string, PromptTemplate> = {};
-  BUILTIN_TEMPLATES.forEach(function(t){byShortcut[t.shortcut]=t;});
-  custom.forEach(function(t){if(t&&t.shortcut)byShortcut[t.shortcut]=t;});
-  return Object.values(byShortcut).sort(function(a,b){
-    return(a.title||"").localeCompare(b.title||"");
+  BUILTIN_TEMPLATES.forEach(function (t) {
+    byShortcut[t.shortcut] = t;
+  });
+  custom.forEach(function (t) {
+    if (t && t.shortcut) byShortcut[t.shortcut] = t;
+  });
+  return Object.values(byShortcut).sort(function (a, b) {
+    return (a.title || '').localeCompare(b.title || '');
   });
 }
 
-export function savePromptTemplates(customs: PromptTemplate[]){
-  try{
-    const persistable=(customs||[]).filter(function(t){return t&&!t.isBuiltin;});
-    localStorage.setItem(PROMPT_TEMPLATES_KEY,JSON.stringify(persistable));
-  } catch (_) { /* empty-catch: intentional — localStorage may be full or blocked */ }
+export function savePromptTemplates(customs: PromptTemplate[]) {
+  try {
+    const persistable = (customs || []).filter(function (t) {
+      return t && !t.isBuiltin;
+    });
+    localStorage.setItem(PROMPT_TEMPLATES_KEY, JSON.stringify(persistable));
+  } catch (_) {
+    /* empty-catch: intentional — localStorage may be full or blocked */
+  }
 }
 
-export function findTemplateByShortcut(s: string | null | undefined){
-  if(!s)return null;
-  const list=loadPromptTemplates();
-  for(let i=0;i<list.length;i++)if(list[i].shortcut===s)return list[i];
+export function findTemplateByShortcut(s: string | null | undefined) {
+  if (!s) return null;
+  const list = loadPromptTemplates();
+  for (let i = 0; i < list.length; i++) if (list[i].shortcut === s) return list[i];
   return null;
 }
 
-export function upsertCustomTemplate(t: PromptTemplate){
-  const customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
-  let idx=-1;
-  for(let i=0;i<customs.length;i++)if(customs[i].id===t.id){idx=i;break}
-  if(idx>=0)customs[idx]=t;else customs.push(t);
+export function upsertCustomTemplate(t: PromptTemplate) {
+  const customs = loadPromptTemplates().filter(function (x) {
+    return !x.isBuiltin;
+  });
+  let idx = -1;
+  for (let i = 0; i < customs.length; i++)
+    if (customs[i].id === t.id) {
+      idx = i;
+      break;
+    }
+  if (idx >= 0) customs[idx] = t;
+  else customs.push(t);
   savePromptTemplates(customs);
   _syncTemplateToServer(t);
 }
 
-export function deleteCustomTemplate(id: string){
-  const customs=loadPromptTemplates().filter(function(x){return!x.isBuiltin&&x.id!==id;});
+export function deleteCustomTemplate(id: string) {
+  const customs = loadPromptTemplates().filter(function (x) {
+    return !x.isBuiltin && x.id !== id;
+  });
   savePromptTemplates(customs);
   _deleteTemplateOnServer(id);
 }
@@ -144,22 +243,31 @@ export function deleteCustomTemplate(id: string){
  * keep localStorage-only behaviour — loadPromptTemplates() stays the
  * synchronous source of truth for every caller.
  */
-function _isServerId(id: unknown){
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id||""));
+function _isServerId(id: unknown) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id || ''));
 }
-function _templateToServerRow(t: PromptTemplate){
+function _templateToServerRow(t: PromptTemplate) {
   return {
-    title:t.title, description:t.description||null, body:t.body||"",
-    icon:t.icon||null, category:t.category||"other",
-    shortcut:t.shortcut||null, systemPrompt:t.systemPrompt||null
+    title: t.title,
+    description: t.description || null,
+    body: t.body || '',
+    icon: t.icon || null,
+    category: t.category || 'other',
+    shortcut: t.shortcut || null,
+    systemPrompt: t.systemPrompt || null,
   };
 }
-function _serverRowToTemplate(row: PromptTemplate){
+function _serverRowToTemplate(row: PromptTemplate) {
   return {
-    id:row.id, title:row.title||"", description:row.description||"",
-    icon:row.icon||"pg", category:row.category||"other",
-    shortcut:row.shortcut||"", body:row.body||"",
-    systemPrompt:row.systemPrompt||"", isBuiltin:false
+    id: row.id,
+    title: row.title || '',
+    description: row.description || '',
+    icon: row.icon || 'pg',
+    category: row.category || 'other',
+    shortcut: row.shortcut || '',
+    body: row.body || '',
+    systemPrompt: row.systemPrompt || '',
+    isBuiltin: false,
   };
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -182,75 +290,106 @@ function parseServerTemplate(value: unknown): PromptTemplate | null {
 function createdTemplateId(value: unknown): string | null {
   return isRecord(value) && typeof value.id === 'string' ? value.id : null;
 }
-function _loadCustomTemplates(){
-  return loadPromptTemplates().filter(function(x){return!x.isBuiltin;});
+function _loadCustomTemplates() {
+  return loadPromptTemplates().filter(function (x) {
+    return !x.isBuiltin;
+  });
 }
 
-let _syncInFlight: Promise<void> | null=null;
-let _lastSyncAt=0;
-const SYNC_MIN_INTERVAL_MS=30000;
+let _syncInFlight: Promise<void> | null = null;
+let _lastSyncAt = 0;
+const SYNC_MIN_INTERVAL_MS = 30000;
 
-export function syncPromptTemplates(force?: boolean|undefined){
-  if(typeof window==="undefined")return Promise.resolve();
-  const now=Date.now();
-  if(!force&&now-_lastSyncAt<SYNC_MIN_INTERVAL_MS)return Promise.resolve();
-  if(_syncInFlight)return _syncInFlight;
-  _lastSyncAt=now;
-  _syncInFlight=apiFetch("/api/prompts?scope=mine&limit=200")
-    .then(function(res: unknown){
-      const rows = isRecord(res) && Array.isArray(res.templates)
-        ? res.templates.flatMap((row) => { const parsed = parseServerTemplate(row); return parsed ? [parsed] : []; })
-        : [];
+export function syncPromptTemplates(force?: boolean | undefined) {
+  if (typeof window === 'undefined') return Promise.resolve();
+  const now = Date.now();
+  if (!force && now - _lastSyncAt < SYNC_MIN_INTERVAL_MS) return Promise.resolve();
+  if (_syncInFlight) return _syncInFlight;
+  _lastSyncAt = now;
+  _syncInFlight = apiFetch('/api/prompts?scope=mine&limit=200')
+    .then(function (res: unknown) {
+      const rows =
+        isRecord(res) && Array.isArray(res.templates)
+          ? res.templates.flatMap((row) => {
+              const parsed = parseServerTemplate(row);
+              return parsed ? [parsed] : [];
+            })
+          : [];
       const remoteIds: Record<string, boolean> = {};
-      const merged: PromptTemplate[]=rows.map(function(row){
-        remoteIds[row.id]=true;
+      const merged: PromptTemplate[] = rows.map(function (row) {
+        remoteIds[row.id] = true;
         return _serverRowToTemplate(row);
       });
       const remoteShortcuts: Record<string, boolean> = {};
-      merged.forEach(function(t){if(t.shortcut)remoteShortcuts[t.shortcut]=true;});
-      const pending: PromptTemplate[]=[];
-      _loadCustomTemplates().forEach(function(t){
-        if(_isServerId(t.id))return;      /* server copy wins; absent => deleted elsewhere */
-        if(t.shortcut&&remoteShortcuts[t.shortcut])return;  /* remote row already owns this /alias */
+      merged.forEach(function (t) {
+        if (t.shortcut) remoteShortcuts[t.shortcut] = true;
+      });
+      const pending: PromptTemplate[] = [];
+      _loadCustomTemplates().forEach(function (t) {
+        if (_isServerId(t.id)) return; /* server copy wins; absent => deleted elsewhere */
+        if (t.shortcut && remoteShortcuts[t.shortcut])
+          return; /* remote row already owns this /alias */
         pending.push(t);
       });
       /* Push never-synced local templates so they follow the account. */
-      return Promise.all(pending.map(function(t){
-        return apiFetch("/api/prompts",{method:"POST",body:_templateToServerRow(t)})
-          .then(function(created: unknown){const id = createdTemplateId(created); if (id) t.id = id;})
-          .catch(function(){ /* stays local-only until next sync */ });
-      })).then(function(){
+      return Promise.all(
+        pending.map(function (t) {
+          return apiFetch('/api/prompts', { method: 'POST', body: _templateToServerRow(t) })
+            .then(function (created: unknown) {
+              const id = createdTemplateId(created);
+              if (id) t.id = id;
+            })
+            .catch(function () {
+              /* stays local-only until next sync */
+            });
+        }),
+      ).then(function () {
         savePromptTemplates(merged.concat(pending));
         try {
-          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent("socrates:prompt-templates-synced"));
-        } catch (_) { /* empty-catch: intentional — CustomEvent dispatch failure is non-fatal */ }
+          if (typeof window !== 'undefined')
+            window.dispatchEvent(new CustomEvent('socrates:prompt-templates-synced'));
+        } catch (_) {
+          /* empty-catch: intentional — CustomEvent dispatch failure is non-fatal */
+        }
       });
     })
-    .catch(function(){ /* offline / guest — localStorage keeps working */ })
-    .finally(function(){_syncInFlight=null;});
+    .catch(function () {
+      /* offline / guest — localStorage keeps working */
+    })
+    .finally(function () {
+      _syncInFlight = null;
+    });
   return _syncInFlight;
 }
 
 /* Fire-and-forget write-through. Errors are swallowed — the local copy is
    already saved and the next pull sync reconciles. */
-function _syncTemplateToServer(t: PromptTemplate){
-  if(typeof window==="undefined")return;
-  const row=_templateToServerRow(t);
-  const op=_isServerId(t.id)
-    ?apiFetch("/api/prompts/"+encodeURIComponent(t.id),{method:"PATCH",body:row})
-    :apiFetch("/api/prompts",{method:"POST",body:row}).then(function(created: unknown){
+function _syncTemplateToServer(t: PromptTemplate) {
+  if (typeof window === 'undefined') return;
+  const row = _templateToServerRow(t);
+  const op = _isServerId(t.id)
+    ? apiFetch('/api/prompts/' + encodeURIComponent(t.id), { method: 'PATCH', body: row })
+    : apiFetch('/api/prompts', { method: 'POST', body: row }).then(function (created: unknown) {
         const createdId = createdTemplateId(created);
-        if(createdId&&createdId!==t.id){
+        if (createdId && createdId !== t.id) {
           /* adopt the server uuid so future edits PATCH instead of duplicating */
-          const customs=_loadCustomTemplates();
-          for(let i=0;i<customs.length;i++)if(customs[i].id===t.id){customs[i].id=createdId;break}
+          const customs = _loadCustomTemplates();
+          for (let i = 0; i < customs.length; i++)
+            if (customs[i].id === t.id) {
+              customs[i].id = createdId;
+              break;
+            }
           savePromptTemplates(customs);
-          t.id=createdId;
+          t.id = createdId;
         }
       });
-  op.catch(function () { /* noop: server sync failure is non-fatal */ });
+  op.catch(function () {
+    /* noop: server sync failure is non-fatal */
+  });
 }
-function _deleteTemplateOnServer(id: string){
-  if(typeof window==="undefined"||!_isServerId(id))return;
-  apiFetch("/api/prompts/"+encodeURIComponent(id),{method:"DELETE"}).catch(function () { /* noop: server sync failure is non-fatal */ });
+function _deleteTemplateOnServer(id: string) {
+  if (typeof window === 'undefined' || !_isServerId(id)) return;
+  apiFetch('/api/prompts/' + encodeURIComponent(id), { method: 'DELETE' }).catch(function () {
+    /* noop: server sync failure is non-fatal */
+  });
 }

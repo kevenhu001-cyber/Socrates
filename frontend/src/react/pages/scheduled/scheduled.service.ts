@@ -16,26 +16,36 @@ function toast(message: string): void {
 }
 
 export async function loadScheduledTasks(): Promise<void> {
-  if (!useScheduledStore.getState().tasks.length) patchScheduledState({ loading: true, error: null });
+  if (!useScheduledStore.getState().tasks.length)
+    patchScheduledState({ loading: true, error: null });
   try {
-    const result = await api()('/api/scheduled-tasks') as { tasks?: ScheduledTask[] };
+    const result = (await api()('/api/scheduled-tasks')) as { tasks?: ScheduledTask[] };
     replaceScheduledTasks(result?.tasks || []);
     patchScheduledState({ loading: false, error: null });
   } catch (error) {
     replaceScheduledTasks([]);
-    const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
+    const status =
+      error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     patchScheduledState({
       loading: false,
-      error: status === 401 ? 'Sign in to schedule tasks.' : 'Tasks could not be loaded. Try again.',
+      error:
+        status === 401 ? 'Sign in to schedule tasks.' : 'Tasks could not be loaded. Try again.',
     });
   }
 }
 
-export async function saveScheduledTask(taskId: string | null, body: Record<string, unknown>): Promise<void> {
+export async function saveScheduledTask(
+  taskId: string | null,
+  body: Record<string, unknown>,
+): Promise<void> {
   try {
-    await api()(taskId ? '/api/scheduled-tasks/' + encodeURIComponent(taskId) : '/api/scheduled-tasks', {
-      method: taskId ? 'PATCH' : 'POST', body,
-    });
+    await api()(
+      taskId ? '/api/scheduled-tasks/' + encodeURIComponent(taskId) : '/api/scheduled-tasks',
+      {
+        method: taskId ? 'PATCH' : 'POST',
+        body,
+      },
+    );
     await loadScheduledTasks();
     toast(taskId ? 'Task updated' : 'Task scheduled');
   } catch {
@@ -46,7 +56,10 @@ export async function saveScheduledTask(taskId: string | null, body: Record<stri
 
 export async function toggleScheduledTask(id: string, pause: boolean): Promise<void> {
   try {
-    await api()('/api/scheduled-tasks/' + encodeURIComponent(id), { method: 'PATCH', body: { status: pause ? 'paused' : 'active' } });
+    await api()('/api/scheduled-tasks/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: { status: pause ? 'paused' : 'active' },
+    });
     await loadScheduledTasks();
     toast(pause ? 'Task paused' : 'Task resumed');
   } catch {
@@ -59,8 +72,14 @@ export async function runScheduledTask(id: string): Promise<void> {
   try {
     await api()('/api/scheduled-tasks/' + encodeURIComponent(id) + '/run', { method: 'POST' });
     await loadScheduledTasks();
-    try { void getLegacyActions().sessions.flushRecentsReconcile(); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: react/pages/scheduled/scheduled.service.ts:61', 'expected');
+    try {
+      void getLegacyActions().sessions.flushRecentsReconcile();
+    } catch (error) {
+      reportEmptyCatch(
+        error,
+        'empty catch: react/pages/scheduled/scheduled.service.ts',
+        'expected',
+      );
       /* recents refresh is best-effort */
     }
     toast('Task ran — see Recents for the result');
@@ -72,7 +91,11 @@ export async function runScheduledTask(id: string): Promise<void> {
 
 export async function deleteScheduledTask(id: string, closeDialog?: () => void): Promise<void> {
   try {
-    const confirmed = await getLegacyActions().confirm.showConfirm('Delete this scheduled task?', 'This cannot be undone.', true);
+    const confirmed = await getLegacyActions().confirm.showConfirm(
+      'Delete this scheduled task?',
+      'This cannot be undone.',
+      true,
+    );
     if (confirmed === false) return;
     await api()('/api/scheduled-tasks/' + encodeURIComponent(id), { method: 'DELETE' });
     await loadScheduledTasks();

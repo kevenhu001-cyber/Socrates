@@ -32,30 +32,37 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
   account: UserRoundIcon,
 };
 
-export function SettingsHeader({
-  label,
-}: {
-  label: SettingsLabel;
-}) {
+export function SettingsHeader({ label }: { label: SettingsLabel }) {
   return (
     <DialogHeader className="settings-header flex-row items-center justify-between">
-      <DialogTitle id="settingsTitle" className="settings-title">{label('设置', 'Settings')}</DialogTitle>
-      <DialogClose render={
-        <Button
-          variant="ghost" size="icon"
-          id="settingsCloseBtn"
-          aria-label={label('关闭', 'Close')}
-          data-i18n-aria="common.close"
-          data-initial-focus="true"
-        />
-      }>
+      <DialogTitle id="settingsTitle" className="settings-title">
+        {label('设置', 'Settings')}
+      </DialogTitle>
+      <DialogClose
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            id="settingsCloseBtn"
+            aria-label={label('关闭', 'Close')}
+            data-i18n-aria="common.close"
+            data-initial-focus="true"
+          />
+        }
+      >
         <XIcon data-icon="inline-start" aria-hidden />
       </DialogClose>
     </DialogHeader>
   );
 }
 
-export function SettingsMobileBack({ label, onBack }: { label: SettingsLabel; onBack: () => void }) {
+export function SettingsMobileBack({
+  label,
+  onBack,
+}: {
+  label: SettingsLabel;
+  onBack: () => void;
+}) {
   return (
     <Button
       id="settingsMobileBack"
@@ -91,16 +98,19 @@ export function SettingsNavigation({
   const onCategoryKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
     if (!keys.includes(event.key)) return;
-    const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-section]'));
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-section]'),
+    );
     if (!items.length) return;
     event.preventDefault();
     const current = items.findIndex((item) => item === document.activeElement);
     const index = current < 0 ? 0 : current;
-    const next = event.key === 'Home'
-      ? 0
-      : event.key === 'End'
-        ? items.length - 1
-        : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? items.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
     items[next]?.focus();
     items[next]?.click();
   };
@@ -115,7 +125,9 @@ export function SettingsNavigation({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-        <InputGroupAddon><SearchIcon aria-hidden /></InputGroupAddon>
+        <InputGroupAddon>
+          <SearchIcon aria-hidden />
+        </InputGroupAddon>
       </InputGroup>
       <div
         className="settings-nav-categories"
@@ -135,7 +147,9 @@ export function SettingsNavigation({
               aria-current={section === key ? 'page' : undefined}
               onClick={() => onSectionChange(key)}
             >
-              <span className="settings-category-icon"><CategoryIcon aria-hidden /></span>
+              <span className="settings-category-icon">
+                <CategoryIcon aria-hidden />
+              </span>
               <span className="settings-category-copy">
                 <span className="settings-category-name">{name}</span>
                 <span className="settings-category-description">{description}</span>
@@ -144,9 +158,11 @@ export function SettingsNavigation({
             </Button>
           );
         })}
-        {categories.length === 0
-          ? <p className="settings-nav-empty" role="status">{label('没有匹配的设置。', 'No matching settings.')}</p>
-          : null}
+        {categories.length === 0 ? (
+          <p className="settings-nav-empty" role="status">
+            {label('没有匹配的设置。', 'No matching settings.')}
+          </p>
+        ) : null}
       </div>
     </aside>
   );

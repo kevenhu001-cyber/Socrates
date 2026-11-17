@@ -41,9 +41,13 @@ async function holdAndMeasure(page, selector) {
      null — which would read as "the icon moved" instead of "there is no
      icon to measure". */
   const icon = target.locator('svg:visible').first();
-  const opacityOf = () => page.evaluate((sel) => parseFloat(getComputedStyle(document.querySelector(sel)).opacity), selector);
+  const opacityOf = () =>
+    page.evaluate(
+      (sel) => parseFloat(getComputedStyle(document.querySelector(sel)).opacity),
+      selector,
+    );
   const box = await target.boundingBox();
-  const iconBefore = await icon.count() ? await icon.boundingBox() : null;
+  const iconBefore = (await icon.count()) ? await icon.boundingBox() : null;
   const opacityBefore = await opacityOf();
   expect(box, `${selector} is on screen`).not.toBeNull();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -58,20 +62,35 @@ async function holdAndMeasure(page, selector) {
   const released = await computedScale(page, selector);
   const opacityReleased = await opacityOf();
   return {
-    pressed, released, boxBefore: box, boxDuring, iconBefore, iconDuring,
-    opacityBefore, opacityDuring, opacityReleased,
+    pressed,
+    released,
+    boxBefore: box,
+    boxDuring,
+    iconBefore,
+    iconDuring,
+    opacityBefore,
+    opacityDuring,
+    opacityReleased,
   };
 }
 
 test('the primary composer button stays geometrically stable while pressed', async ({ page }) => {
   await boot(page);
-  await page.locator('#composerRoot .rich-composer-editor').fill('A draft enables the send control.');
+  await page
+    .locator('#composerRoot .rich-composer-editor')
+    .fill('A draft enables the send control.');
   await expect(page.locator('#composerPrimaryBtn')).toHaveCSS('opacity', '1');
   // Exercise the real pointer states without sending this test draft upstream.
   await page.locator('#composerPrimaryBtn').evaluate((button) => {
-    button.addEventListener('click', (event) => event.stopImmediatePropagation(), { capture: true, once: true });
+    button.addEventListener('click', (event) => event.stopImmediatePropagation(), {
+      capture: true,
+      once: true,
+    });
   });
-  const { pressed, released, opacityBefore, opacityDuring } = await holdAndMeasure(page, '#composerPrimaryBtn');
+  const { pressed, released, opacityBefore, opacityDuring } = await holdAndMeasure(
+    page,
+    '#composerPrimaryBtn',
+  );
   expect(pressed).toBe(1);
   expect(released).toBe(1);
   expect(opacityDuring).toBeLessThan(opacityBefore);
@@ -88,7 +107,10 @@ test('a generic button uses stable paint-only feedback', async ({ page }) => {
     b.style.cssText = 'position:fixed;left:40px;top:40px;z-index:99999;padding:12px 24px';
     document.body.appendChild(b);
   });
-  const { pressed, released, opacityBefore, opacityDuring, opacityReleased } = await holdAndMeasure(page, '#pressProbe');
+  const { pressed, released, opacityBefore, opacityDuring, opacityReleased } = await holdAndMeasure(
+    page,
+    '#pressProbe',
+  );
   expect(pressed).toBe(1);
   expect(released).toBe(1);
   /* Stable geometry is only half the contract — the press has to be *seen*.
@@ -109,7 +131,9 @@ test('row-style controls tint instead of scaling', async ({ page }) => {
     b.style.cssText = 'position:fixed;left:40px;top:120px;z-index:99999;width:240px;padding:10px';
     document.body.appendChild(b);
   });
-  const before = await page.evaluate(() => getComputedStyle(document.getElementById('rowProbe')).backgroundColor);
+  const before = await page.evaluate(
+    () => getComputedStyle(document.getElementById('rowProbe')).backgroundColor,
+  );
   const box = await page.locator('#rowProbe').boundingBox();
   await page.mouse.move(box.x + 20, box.y + box.height / 2);
   await page.mouse.down();
@@ -124,8 +148,13 @@ test('row-style controls tint instead of scaling', async ({ page }) => {
   expect(during.scale === 'none' || parseFloat(during.scale) === 1).toBe(true);
 });
 
-test('a fast touch tap keeps the pressed state visible for more than a frame', async ({ browser }) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+test('a fast touch tap keeps the pressed state visible for more than a frame', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    hasTouch: true,
+    viewport: { width: 390, height: 844 },
+  });
   const page = await context.newPage();
   try {
     await boot(page);
@@ -138,7 +167,10 @@ test('a fast touch tap keeps the pressed state visible for more than a frame', a
       /* Record every class change so the check does not race a timer. */
       window.__pressLog = [];
       new MutationObserver(() => {
-        window.__pressLog.push({ t: performance.now(), pressed: b.classList.contains('is-pressed') });
+        window.__pressLog.push({
+          t: performance.now(),
+          pressed: b.classList.contains('is-pressed'),
+        });
       }).observe(b, { attributes: true, attributeFilter: ['class'] });
     });
     const box = await page.locator('#tapProbe').boundingBox();
@@ -170,7 +202,9 @@ test('disabled buttons do not press', async ({ page }) => {
   await page.mouse.down();
   await page.waitForTimeout(160);
   const scale = await computedScale(page, '#disabledProbe');
-  const pressedClass = await page.evaluate(() => document.getElementById('disabledProbe').classList.contains('is-pressed'));
+  const pressedClass = await page.evaluate(() =>
+    document.getElementById('disabledProbe').classList.contains('is-pressed'),
+  );
   await page.mouse.up();
   expect(scale).toBe(1);
   expect(pressedClass).toBe(false);
@@ -182,11 +216,14 @@ test('reduced motion: presses never scale', async ({ page }) => {
   expect(pressed).toBe(1);
 });
 
-test('real shell controls: an icon button stays stable and a sidebar row tints', async ({ page }) => {
+test('real shell controls: an icon button stays stable and a sidebar row tints', async ({
+  page,
+}) => {
   await boot(page);
   const iconSel = await page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('#appShell .icon-btn'))
-      .find((b) => !b.disabled && b.offsetParent !== null && b.getBoundingClientRect().width > 0);
+    const el = Array.from(document.querySelectorAll('#appShell .icon-btn')).find(
+      (b) => !b.disabled && b.offsetParent !== null && b.getBoundingClientRect().width > 0,
+    );
     if (!el) return null;
     el.setAttribute('data-press-probe', 'icon');
     return '[data-press-probe="icon"]';
@@ -203,8 +240,9 @@ test('real shell controls: an icon button stays stable and a sidebar row tints',
   }
 
   const rowSel = await page.evaluate(() => {
-    const el = Array.from(document.querySelectorAll('#appShell .sidebar-nav-btn'))
-      .find((b) => !b.disabled && b.offsetParent !== null && b.getBoundingClientRect().width > 0);
+    const el = Array.from(document.querySelectorAll('#appShell .sidebar-nav-btn')).find(
+      (b) => !b.disabled && b.offsetParent !== null && b.getBoundingClientRect().width > 0,
+    );
     if (!el) return null;
     el.setAttribute('data-press-probe', 'row');
     return '[data-press-probe="row"]';
@@ -212,7 +250,10 @@ test('real shell controls: an icon button stays stable and a sidebar row tints',
   test.skip(!rowSel, 'no visible sidebar row in this shell layout');
   const box = await page.locator(rowSel).boundingBox();
   await page.mouse.move(box.x + 12, box.y + box.height / 2);
-  const hoverBg = await page.evaluate((sel) => getComputedStyle(document.querySelector(sel)).backgroundColor, rowSel);
+  const hoverBg = await page.evaluate(
+    (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor,
+    rowSel,
+  );
   await page.mouse.down();
   await page.waitForTimeout(120);
   const pressed = await page.evaluate((sel) => {
@@ -225,7 +266,9 @@ test('real shell controls: an icon button stays stable and a sidebar row tints',
   expect(pressed.scale === 'none' || parseFloat(pressed.scale) === 1).toBe(true);
 });
 
-test('a popover opened by a pressed trigger is placed from the trigger\'s resting box', async ({ page }) => {
+test("a popover opened by a pressed trigger is placed from the trigger's resting box", async ({
+  page,
+}) => {
   await boot(page);
   /* Desktop landing: composerTools.js places the menu at trigger.bottom + 8.
      The trigger now stays fixed during a press; the compatibility geometry
@@ -242,7 +285,9 @@ test('a popover opened by a pressed trigger is placed from the trigger\'s restin
       inlineScale: trigger.style.getPropertyValue('scale'),
     };
   });
-  expect(Math.abs(geo.menuTop - (geo.restingBottom + 8)), JSON.stringify(geo)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(geo.menuTop - (geo.restingBottom + 8)), JSON.stringify(geo)).toBeLessThanOrEqual(
+    0.5,
+  );
   expect(geo.inlineScale, 'the guard lifted its pin').toBe('');
   await page.keyboard.press('Escape');
 });

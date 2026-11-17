@@ -14,7 +14,8 @@ import { getReplyLanguage } from './replyLanguage.ts';
  * (Cyrillic, Arabic) win when present. Returns "en" as the safe default. */
 function detectLanguage(text: string): string {
   if (!text) return 'en';
-  let cjkRun = 0, bestCjkRun = 0;
+  let cjkRun = 0,
+    bestCjkRun = 0;
   for (let i = 0; i < text.length; i++) {
     if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(text[i])) {
       cjkRun++;
@@ -53,47 +54,65 @@ function languageDirectiveFor(text: string): string {
      whatever the surrounding prompt felt like and could answer in the
      other language. Fall back to the UI language instead, which is the
      only signal the reader actually chose. */
-  const noLanguageSignal = t.length >= 2 && (
-    /^(https?:\/\/|www\.|[/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t)
-    || /^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(t)
-  );
-  const hasLangSignal = !noLanguageSignal
-    && /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(t);
+  const noLanguageSignal =
+    t.length >= 2 &&
+    (/^(https?:\/\/|www\.|[/\\][\w\-./\\]+\.\w{1,5}$)/i.test(t) ||
+      /^(function\s|class\s|def\s|import\s|const\s|let\s|var\s|#include|<\?xml|<!DOCTYPE)/i.test(
+        t,
+      ));
+  const hasLangSignal =
+    !noLanguageSignal &&
+    /[A-Za-z\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af\u0400-\u04ff\u0600-\u06ff]/.test(
+      t,
+    );
   const uiLang = getCurrentLanguage();
   const preference = getReplyLanguage();
   /* An explicit answer-language preference wins; otherwise the reply follows
      the language the user actually wrote in, never the UI locale. */
-  const lang = preference !== 'auto'
-    ? preference
-    : hasLangSignal ? detectLanguage(t) : (uiLang || detectLanguage(t));
+  const lang =
+    preference !== 'auto'
+      ? preference
+      : hasLangSignal
+        ? detectLanguage(t)
+        : uiLang || detectLanguage(t);
   if (lang === 'zh') {
-    return '\n\n## 语言指令：使用中文\n\n' +
+    return (
+      '\n\n## 语言指令：使用中文\n\n' +
       '用中文回答。代码、命令、文件路径、数学符号与公式变量、已成型的英文技术缩写（API、HTTP、JSON、SQL、URL、HTML、GPU）以及用户提供的英文原文保持原样。' +
-      '技术术语首次出现可写作「中文 (English)」，之后只用中文；不要在中文句子里夹入不必要的英文单词。';
+      '技术术语首次出现可写作「中文 (English)」，之后只用中文；不要在中文句子里夹入不必要的英文单词。'
+    );
   }
   if (lang === 'ja') {
-    return '\n\n## \u8a00\u8a9e\u6307\u4ee4\uff1a\u65e5\u672c\u8a9e\u306e\u307f\u3001\u6df7\u5728\u7981\u6b62\n\n' +
+    return (
+      '\n\n## \u8a00\u8a9e\u6307\u4ee4\uff1a\u65e5\u672c\u8a9e\u306e\u307f\u3001\u6df7\u5728\u7981\u6b62\n\n' +
       '\u3042\u306a\u305f\u306f\u65e5\u672c\u8a9e\u3067\u56de\u7b54\u3057\u3066\u304f\u3060\u3055\u3044\u3002\u898b\u51fa\u3057\u30fb\u6bb5\u843d\u30fb\u30ea\u30b9\u30c8\u30fb\u30e9\u30d9\u30eb\u306f\u3059\u3079\u3066\u65e5\u672c\u8a9e\u3067\u8a18\u8ff0\u3057\u3001\u82f1\u8a9e\u30fb\u4e2d\u56fd\u8a9e\u305d\u306e\u4ed6\u306e\u5916\u56fd\u8a9e\u306e\u6df7\u5165\u3092\u7981\u3058\u307e\u3059\u3002\n\n' +
       '\u4f8b\u5916\uff08\u539f\u6587\u306e\u307e\u307e\u3067\u53ef\uff09\uff1a\u30d7\u30ed\u30b0\u30e9\u30df\u30f3\u30b0\u30b3\u30fc\u30c9\u3001\u6570\u5b66\u8a18\u53f7\u3001\u56fa\u6709\u540d\u3068\u3057\u3066\u306e\u6280\u8853\u7528\u8a9e\uff08API\u3001HTTP\u3001JSON \u306a\u3069\uff09\u3001\u30e6\u30fc\u30b6\u30fc\u6307\u5b9a\u306e\u5f15\u7528\u6587\u3002\n\n' +
-      '\u4e0d\u8981\u306b\u82f1\u8a9e\u3092\u4ea4\u3048\u305f\u5834\u5408\u3001\u305d\u308c\u306f\u8a00\u8a9e\u9055\u53cd\u3068\u307f\u306a\u3057\u307e\u3059\u3002';
+      '\u4e0d\u8981\u306b\u82f1\u8a9e\u3092\u4ea4\u3048\u305f\u5834\u5408\u3001\u305d\u308c\u306f\u8a00\u8a9e\u9055\u53cd\u3068\u307f\u306a\u3057\u307e\u3059\u3002'
+    );
   }
   if (lang === 'ko') {
-    return '\n\n## \uc5b8\uc5b4 \uc9c0\uc2dc: \ud55c\uad6d\uc5b4 \uc804\uc6a9, \ud63c\uc6a9 \uae08\uc9c0\n\n' +
+    return (
+      '\n\n## \uc5b8\uc5b4 \uc9c0\uc2dc: \ud55c\uad6d\uc5b4 \uc804\uc6a9, \ud63c\uc6a9 \uae08\uc9c0\n\n' +
       '\ubaa8\ub4e0 \uc751\ub2f5\uc740 \ud55c\uad6d\uc5b4\ub85c \uc791\uc131\ub418\uc5b4\uc57c \ud569\ub2c8\ub2e4. \uc601\uc5b4\u00b7\uc911\uad6d\uc5b4 \ub4f1\uc774 \uc11e\uc774\uc9c0 \ub9c8\uc2ed\uc2dc\uc624.\n\n' +
       '\uc608\uc678 (\uc6d0\ubb38 \uadf8\ub300\ub85c \ud5c8\uc6a9): \ud504\ub85c\uadf8\ub798\ubc0d \ucf54\ub4dc, \uc218\ud559 \uae30\ud638, \ud655\ub9bd\ub41c \uae30\uc220 \uc6a9\uc5b4 (API, HTTP, JSON \ub4f1), \uc0ac\uc6a9\uc790\uac00 \uc81c\uacf5\ud55c \uc778\uc6a9\ubb38.\n\n' +
-      '\ubd88\ud544\uc694\ud55c \uc601\uc5b4 \ud63c\uc6a9\uc740 \uc5b8\uc5b4 \uc704\ubc18\uc73c\ub85c \uac04\uc8c1\ub429\ub2c8\ub2e4.';
+      '\ubd88\ud544\uc694\ud55c \uc601\uc5b4 \ud63c\uc6a9\uc740 \uc5b8\uc5b4 \uc704\ubc18\uc73c\ub85c \uac04\uc8c1\ub429\ub2c8\ub2e4.'
+    );
   }
   if (lang === 'ru') {
-    return '\n\n## \u042f\u0417\u042b\u041a\u041e\u0412\u0410\u042f \u0418\u041d\u0421\u0422\u0420\u0423\u041a\u0426\u0418\u042f: \u0442\u043e\u043b\u044c\u043a\u043e \u0440\u0443\u0441\u0441\u043a\u0438\u0439, \u0441\u043c\u0435\u0448\u0435\u043d\u0438\u0435 \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u043e\n\n' +
+    return (
+      '\n\n## \u042f\u0417\u042b\u041a\u041e\u0412\u0410\u042f \u0418\u041d\u0421\u0422\u0420\u0423\u041a\u0426\u0418\u042f: \u0442\u043e\u043b\u044c\u043a\u043e \u0440\u0443\u0441\u0441\u043a\u0438\u0439, \u0441\u043c\u0435\u0448\u0435\u043d\u0438\u0435 \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u043e\n\n' +
       '\u041e\u0442\u0432\u0435\u0447\u0430\u0439\u0442\u0435 \u0442\u043e\u043b\u044c\u043a\u043e \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c \u044f\u0437\u044b\u043a\u0435. \u0417\u0430\u0433\u043e\u043b\u043e\u0432\u043a\u0438, \u0430\u0431\u0437\u0430\u0446\u044b, \u0441\u043f\u0438\u0441\u043a\u0438 \u0438 \u043f\u043e\u0434\u043f\u0438\u0441\u0438 \u0434\u043e\u043b\u0436\u043d\u044b \u0431\u044b\u0442\u044c \u043d\u0430 \u0440\u0443\u0441\u0441\u043a\u043e\u043c.\n\n' +
       '\u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f (\u043c\u043e\u0433\u0443\u0442 \u043e\u0441\u0442\u0430\u0432\u0430\u0442\u044c\u0441\u044f \u0432 \u043e\u0440\u0438\u0433\u0438\u043d\u0430\u043b\u0435): \u043f\u0440\u043e\u0433\u0440\u0430\u043c\u043c\u043d\u044b\u0439 \u043a\u043e\u0434, \u043c\u0430\u0442\u0435\u043c\u0430\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0441\u0438\u043c\u0432\u043e\u043b\u044b, \u0443\u0441\u0442\u043e\u044f\u0432\u0448\u0438\u0435\u0441\u044f \u0442\u0435\u0445\u043d\u0438\u0447\u0435\u0441\u043a\u0438\u0435 \u0442\u0435\u0440\u043c\u0438\u043d\u044b (API, HTTP, JSON \u0438 \u0442.\u043f.), \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0435 \u0446\u0438\u0442\u0430\u0442\u044b.\n\n' +
-      '\u041b\u044e\u0431\u043e\u0435 \u043d\u0435\u043e\u043f\u0440\u0430\u0432\u0434\u0430\u043d\u043d\u043e\u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u0433\u043e \u0438\u043b\u0438 \u043a\u0438\u0442\u0430\u0439\u0441\u043a\u043e\u0433\u043e \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0435\u043c.';
+      '\u041b\u044e\u0431\u043e\u0435 \u043d\u0435\u043e\u043f\u0440\u0430\u0432\u0434\u0430\u043d\u043d\u043e\u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u0435 \u0430\u043d\u0433\u043b\u0438\u0439\u0441\u043a\u043e\u0433\u043e \u0438\u043b\u0438 \u043a\u0438\u0442\u0430\u0439\u0441\u043a\u043e\u0433\u043e \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f \u043d\u0430\u0440\u0443\u0448\u0435\u043d\u0438\u0435\u043c.'
+    );
   }
   if (lang === 'ar') {
-    return '\n\n## \u062a\u0639\u0644\u064a\u0645\u0627\u062a \u0627\u0644\u0644\u063a\u0629: \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u0642\u0637\u060c \u064a\u064f\u0645\u0646\u0639 \u0627\u0644\u062e\u0644\u0637\n\n' +
+    return (
+      '\n\n## \u062a\u0639\u0644\u064a\u0645\u0627\u062a \u0627\u0644\u0644\u063a\u0629: \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u0642\u0637\u060c \u064a\u064f\u0645\u0646\u0639 \u0627\u0644\u062e\u0644\u0637\n\n' +
       '\u0623\u062c\u0628 \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0641\u0642\u0637. \u064a\u062c\u0628 \u0623\u0646 \u062a\u0643\u0648\u0646 \u0627\u0644\u0639\u0646\u0627\u0648\u064a\u0646 \u0648\u0627\u0644\u0641\u0642\u0631\u0627\u062a \u0648\u0627\u0644\u0642\u0648\u0627\u0626\u0645 \u0648\u0627\u0644\u062a\u0633\u0645\u064a\u0627\u062a \u0628\u0627\u0644\u0639\u0631\u0628\u064a\u0629.\n\n' +
       '\u0627\u0644\u0627\u0633\u062a\u062b\u0646\u0627\u0621\u0627\u062a (\u064a\u0628\u0642\u0649 \u0643\u0645\u0627 \u0647\u0648): \u0627\u0644\u0634\u0641\u0631\u0629 \u0627\u0644\u0628\u0631\u0645\u062c\u064a\u0629\u060c \u0627\u0644\u0631\u0645\u0648\u0632 \u0627\u0644\u0631\u064a\u0627\u0636\u064a\u0629\u060c \u0627\u0644\u0645\u0635\u0637\u0644\u062d\u0627\u062a \u0627\u0644\u062a\u0642\u0646\u064a\u0629 \u0627\u0644\u0631\u0627\u0633\u062e\u0629 (API, HTTP, JSON)\u060c \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u0645\u0642\u062a\u0628\u0633\u0629 \u0645\u0646 \u0627\u0644\u0645\u0633\u062a\u062e\u062f\u0645.\n\n' +
-      '\u0623\u064a \u062e\u0644\u0637 \u063a\u064a\u0631 \u0645\u0628\u0631\u0631 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629 \u0623\u0648 \u0627\u0644\u0635\u064a\u0646\u064a\u0629 \u064a\u064f\u0639\u062f \u0627\u0646\u062a\u0647\u0627\u0643\u064b\u0627.';
+      '\u0623\u064a \u062e\u0644\u0637 \u063a\u064a\u0631 \u0645\u0628\u0631\u0631 \u0628\u0627\u0644\u0625\u0646\u062c\u0644\u064a\u0632\u064a\u0629 \u0623\u0648 \u0627\u0644\u0635\u064a\u0646\u064a\u0629 \u064a\u064f\u0639\u062f \u0627\u0646\u062a\u0647\u0627\u0643\u064b\u0627.'
+    );
   }
   if (lang === 'en') {
     /* English used to be the unmarked default: no directive was injected,
@@ -101,14 +120,16 @@ function languageDirectiveFor(text: string): string {
        answer back into the other language mid-stream. The directive is
        deliberately symmetric with the zh one and names the same exceptions
        (code, formulas, technical names, the user's own quotes). */
-    return '\n\n## Language directive: English only, no language mixing\n\n' +
+    return (
+      '\n\n## Language directive: English only, no language mixing\n\n' +
       'Answer in English. Every sentence, heading, list item and label must be written in English.\n\n' +
       'The following may stay verbatim (not a violation):\n' +
       '- code: variable, function and class names, commands, file paths\n' +
       '- Latin letters and symbols inside math (\u03c0, \u2211, \u222b, sin, cos, lim)\n' +
       '- established technical names (API, HTTP, JSON, SQL, CPU, GPU, URL, HTML)\n' +
       '- text the user supplied (quotes, file names, URLs, error messages)\n\n' +
-      'Never switch language halfway through a sentence, never write a whole paragraph in Chinese and then add an English ending, and do not add unnecessary Chinese words to an English sentence.';
+      'Never switch language halfway through a sentence, never write a whole paragraph in Chinese and then add an English ending, and do not add unnecessary Chinese words to an English sentence.'
+    );
   }
   return '';
 }

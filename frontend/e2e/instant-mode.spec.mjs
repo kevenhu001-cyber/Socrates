@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -8,12 +8,31 @@ for (const [label, model, viewport, lang] of [
 ]) {
   test(`Instant is a persistent reasoning level for every model (${label})`, async ({ page }) => {
     await page.setViewportSize(viewport);
-    await page.addInitScript(() => localStorage.setItem('socrates-last-active-id', 'instant-provider'));
-    await mockAuthedApp(page, { lang, apiKeys: { providers: [{ id: 'instant-provider', label: model, model, url: 'https://provider.example/v1', hasKey: true, isActive: true }] } });
+    await page.addInitScript(() =>
+      localStorage.setItem('socrates-last-active-id', 'instant-provider'),
+    );
+    await mockAuthedApp(page, {
+      lang,
+      apiKeys: {
+        providers: [
+          {
+            id: 'instant-provider',
+            label: model,
+            model,
+            url: 'https://provider.example/v1',
+            hasKey: true,
+            isActive: true,
+          },
+        ],
+      },
+    });
     const requests = [];
-    await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async route => {
+    await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
       requests.push(route.request().postDataJSON());
-      await route.fulfill({ contentType: 'text/event-stream', body: 'data: {"choices":[{"delta":{"content":"Direct answer."}}]}\n\ndata: [DONE]\n\n' });
+      await route.fulfill({
+        contentType: 'text/event-stream',
+        body: 'data: {"choices":[{"delta":{"content":"Direct answer."}}]}\n\ndata: [DONE]\n\n',
+      });
     });
     await gotoAndSettle(page, '/');
     await waitForAppShell(page);
@@ -21,7 +40,9 @@ for (const [label, model, viewport, lang] of [
       const pop = page.locator('.chat-config-pop');
       if (label === 'desktop') {
         await page.locator('#topModelSwitcher').click();
-        await pop.getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ }).click();
+        await pop
+          .getByRole('button', { name: lang === 'zh' ? /思考强度/ : /Reasoning effort/ })
+          .click();
       } else {
         /* Phones follow the reference: no model chip in the header; the
            composer's always-visible effort pill opens the effort view directly. */
@@ -38,28 +59,44 @@ for (const [label, model, viewport, lang] of [
     await expect(instant).toHaveAttribute('aria-pressed', 'true');
     await expect(pop.getByRole('slider')).toHaveAttribute('max', '3');
     await expect(pop.getByRole('slider')).toHaveValue('0');
-    await expect(pop.getByRole('slider')).toHaveAttribute('aria-valuetext', lang === 'zh' ? '立即' : 'Instant');
+    await expect(pop.getByRole('slider')).toHaveAttribute(
+      'aria-valuetext',
+      lang === 'zh' ? '立即' : 'Instant',
+    );
     await expect(pop.locator('.chat-config-slider-dots span')).toHaveCount(4);
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('instant');
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort')))
+      .toBe('instant');
     await page.screenshot({ path: `test-results/instant-${encodeURIComponent(label)}.png` });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await waitForAppShell(page);
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('instant');
-    await expect.poll(() => page.evaluate(() => typeof window.getReasoningEffort)).toBe('undefined');
-    await expect.poll(() => page.evaluate(() => typeof window.getCustomInstructionsString)).toBe('undefined');
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort')))
+      .toBe('instant');
+    await expect
+      .poll(() => page.evaluate(() => typeof window.getReasoningEffort))
+      .toBe('undefined');
+    await expect
+      .poll(() => page.evaluate(() => typeof window.getCustomInstructionsString))
+      .toBe('undefined');
     await page.evaluate(() => {
-      window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
       window.__testActivateMainView('chatView');
       window.submitChatMessage('Answer directly.');
     });
     await expect.poll(() => requests.length).toBe(1);
     expect(requests[0].reasoning_effort).toBe('none');
-    await expect(page.locator('#msgList .msg.assistant').last()).toHaveAttribute('data-stream-settled', 'true');
+    await expect(page.locator('#msgList .msg.assistant').last()).toHaveAttribute(
+      'data-stream-settled',
+      'true',
+    );
     await expect(page.locator('#msgList .msg.assistant').last()).toContainText('Direct answer.');
     pop = await openEffort();
     await pop.getByRole('slider').focus();
     await page.keyboard.press('End');
-    await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort')))
+      .toBe('high');
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await page.evaluate(() => window.submitChatMessage('Answer with thinking enabled again.'));
@@ -77,11 +114,29 @@ test('Instant is not offered for a model that cannot switch thinking off', async
   });
   /* The server publishes what the model supports. This model always
      reasons, so Instant is not something the request could carry. */
-  await mockAuthedApp(page, { lang: 'en', apiKeys: { providers: [{ id: 'instant-provider', label: 'Kimi', model: 'kimi-k3', url: 'https://provider.example/v1', hasKey: true, isActive: true, capabilities: { isReasoning: true, supportsInstant: false, supportsEffort: true } }] } });
+  await mockAuthedApp(page, {
+    lang: 'en',
+    apiKeys: {
+      providers: [
+        {
+          id: 'instant-provider',
+          label: 'Kimi',
+          model: 'kimi-k3',
+          url: 'https://provider.example/v1',
+          hasKey: true,
+          isActive: true,
+          capabilities: { isReasoning: true, supportsInstant: false, supportsEffort: true },
+        },
+      ],
+    },
+  });
   const requests = [];
-  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async route => {
+  await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     requests.push(route.request().postDataJSON());
-    await route.fulfill({ contentType: 'text/event-stream', body: 'data: {"choices":[{"delta":{"content":"Answer."}}]}\n\ndata: [DONE]\n\n' });
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"Answer."}}]}\n\ndata: [DONE]\n\n',
+    });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -98,7 +153,7 @@ test('Instant is not offered for a model that cannot switch thinking off', async
   /* A stored Instant never reaches the wire for a model that cannot honour
      it — the closest level the app has is sent instead. */
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.submitChatMessage('Answer directly.');
   });

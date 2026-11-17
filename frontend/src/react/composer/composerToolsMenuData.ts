@@ -1,7 +1,5 @@
 import { interfaceIcon } from '../../ui/icons/interfaceIcons';
-import {
-  t as _t,
-} from '../legacy/gateway.ts';
+import { t as _t } from '../legacy/gateway.ts';
 import { registry } from '../../extensions/registry';
 import { extensiveThinkingExtension } from '../../extensions/modules/extensiveThinking';
 import type { ExtensionDefinition } from '../../extensions/types';

@@ -9,7 +9,9 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('interrupted menus reverse from their visible opacity instead of replaying endpoints', async ({ page }) => {
+test('interrupted menus reverse from their visible opacity instead of replaying endpoints', async ({
+  page,
+}) => {
   const result = await page.evaluate(async () => {
     const node = document.createElement('div');
     node.className = 'anchored-menu';
@@ -21,7 +23,10 @@ test('interrupted menus reverse from their visible opacity instead of replaying 
     delete node.dataset.startingStyle;
     await new Promise(requestAnimationFrame);
     await new Promise(requestAnimationFrame);
-    for (const animation of node.getAnimations()) { animation.pause(); animation.currentTime = 50; }
+    for (const animation of node.getAnimations()) {
+      animation.pause();
+      animation.currentTime = 50;
+    }
     const before = Number(getComputedStyle(node).opacity);
     node.dataset.state = 'closing';
     node.dataset.endingStyle = '';
@@ -30,7 +35,13 @@ test('interrupted menus reverse from their visible opacity instead of replaying 
     const frames = node.getAnimations().flatMap((animation) => animation.effect.getKeyframes());
     const animationName = getComputedStyle(node).animationName;
     node.remove();
-    return { before, after, properties, animationName, hasFilter: frames.some((frame) => 'filter' in frame) };
+    return {
+      before,
+      after,
+      properties,
+      animationName,
+      hasFilter: frames.some((frame) => 'filter' in frame),
+    };
   });
   expect(result.before).toBeGreaterThan(0.1);
   expect(result.before).toBeLessThan(0.98);
@@ -40,7 +51,9 @@ test('interrupted menus reverse from their visible opacity instead of replaying 
   expect(result.hasFilter).toBe(false);
 });
 
-test('rapid page navigation cancels the outgoing pane motion and keeps the final destination', async ({ page }) => {
+test('rapid page navigation cancels the outgoing pane motion and keeps the final destination', async ({
+  page,
+}) => {
   const result = await page.evaluate(() => {
     window.__socratesLegacy.navigation.openNav('library');
     const library = document.getElementById('libraryPanel');
@@ -55,7 +68,13 @@ test('rapid page navigation cancels the outgoing pane motion and keeps the final
       shellAnimations: document.getElementById('appShell').getAnimations().length,
     };
   });
-  expect(result).toMatchObject({ oldState: 'idle', oldAnimations: 0, newAnimations: 1, active: 'spacesPanel', shellAnimations: 0 });
+  expect(result).toMatchObject({
+    oldState: 'idle',
+    oldAnimations: 0,
+    newAnimations: 1,
+    active: 'spacesPanel',
+    shellAnimations: 0,
+  });
   await expect(page.locator('#spacesPanel')).toBeVisible();
   await expect(page.locator('#libraryPanel')).toBeHidden();
   await expect(page).toHaveURL(/\/projects$/);

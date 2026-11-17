@@ -8,7 +8,7 @@ import {
 } from '../webLinks.ts';
 import { buildLinkPreviewItems } from '../../ui/linkPreviews.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { stateStore } from '../../state/store.ts';
+import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import type { ChatMessage } from '../../react/types/domain';
 
@@ -21,7 +21,7 @@ export interface TurnPageContext {
 
 function updateLatestUserMessage(userMessage: string, patch: Record<string, unknown>): void {
   try {
-    const messages = stateStore.read('messages') as ChatMessage[];
+    const messages = sessionStore.getState().messages as ChatMessage[];
     let index = -1;
     for (let cursor = messages.length - 1; cursor >= 0; cursor -= 1) {
       const message = messages[cursor];
@@ -32,14 +32,16 @@ function updateLatestUserMessage(userMessage: string, patch: Record<string, unkn
     }
     if (index < 0) return;
     const message = messages[index];
-    stateStore.dispatch({
+    dispatchSession({
       type: 'session/update-message',
       index,
       ...(message.clientId ? { clientId: message.clientId } : {}),
       patch,
     });
     publishReactChatRuntime({ type: 'state-synced', reason: 'user-link-preview-updated' });
-  } catch (error) { reportSwallow(error, 'chat/turn/pageContext.updateLatestUserMessage'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/turn/pageContext.updateLatestUserMessage');
+  }
 }
 
 export async function prepareTurnPageContext(
@@ -73,7 +75,10 @@ export async function prepareTurnPageContext(
       if (turnState.activeChatAbort === abortPreparation) turnState.activeChatAbort = null;
     }
     if (preparation.signal.aborted || turnWasCancelled()) return null;
-    updateLatestUserMessage(userMessage, { pageLinkPreviews: buildLinkPreviewItems(urls, results), pageLinkHint: false });
+    updateLatestUserMessage(userMessage, {
+      pageLinkPreviews: buildLinkPreviewItems(urls, results),
+      pageLinkHint: false,
+    });
   } else if (mentionedSite) {
     updateLatestUserMessage(userMessage, { pageLinkPreviews: [], pageLinkHint: true });
   }

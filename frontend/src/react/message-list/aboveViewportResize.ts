@@ -20,7 +20,7 @@
 import { useEffect, useLayoutEffect } from 'react';
 
 import { isSticky, scrollHost } from './messageScroll';
-import { stateStore } from '../../state/store.ts';
+import { uiBridge } from '../../store/index.ts';
 import { scrollOwnerOf, writeScrollTop } from '../../ui/scrollCoordinator.ts';
 
 interface Keeper {
@@ -80,7 +80,12 @@ function keeperFor(host: HTMLElement): Keeper | null {
   if (typeof ResizeObserver !== 'function') return null;
   if (keeper && keeper.host === host) return keeper;
   keeper?.observer.disconnect();
-  keeper = { host, observer: new ResizeObserver(onResize), heights: new WeakMap(), observed: new Set() };
+  keeper = {
+    host,
+    observer: new ResizeObserver(onResize),
+    heights: new WeakMap(),
+    observed: new Set(),
+  };
   return keeper;
 }
 
@@ -147,7 +152,7 @@ let readingAnchorDirty = true;
  * scrollHeight/layout reads on every streamed token below the reader. */
 export function mutationsCanMoveReadingBlock(block: Element, records: MutationRecord[]): boolean {
   if (!block.isConnected) return true;
-  return records.some(record => {
+  return records.some((record) => {
     const position = block.compareDocumentPosition(record.target);
     // A descendant is FOLLOWING too, so exclude CONTAINED_BY from the fast path.
     return !(position & 4) || !!(position & 16) || !!(position & 1);
@@ -155,7 +160,8 @@ export function mutationsCanMoveReadingBlock(block: Element, records: MutationRe
 }
 
 function markReadingMutations(records: MutationRecord[]): void {
-  if (!readingAnchor || mutationsCanMoveReadingBlock(readingAnchor.block, records)) readingAnchorDirty = true;
+  if (!readingAnchor || mutationsCanMoveReadingBlock(readingAnchor.block, records))
+    readingAnchorDirty = true;
 }
 
 function escapeClientId(id: string): string {
@@ -174,8 +180,7 @@ function blockTextOf(element: Element): string {
 }
 
 function readerPinned(host: HTMLElement): boolean {
-  return isSticky(host)
-    || host.scrollHeight - host.scrollTop - host.clientHeight <= 2;
+  return isSticky(host) || host.scrollHeight - host.scrollTop - host.clientHeight <= 2;
 }
 
 /**
@@ -186,7 +191,7 @@ function readerPinned(host: HTMLElement): boolean {
  * meant to remove.
  */
 function readerHoldsPosition(): boolean {
-  return stateStore.read('_userScrolledAway') === true;
+  return uiBridge.getSnapshot()._userScrolledAway === true;
 }
 
 function canRestoreReadingAnchor(host: HTMLElement | null, anchor: ReadingAnchor | null): boolean {
@@ -211,12 +216,18 @@ function restoreReadingAnchor(): void {
   const anchor = readingAnchor;
   if (!anchor) return;
   const host = scrollHost();
-  if (!host || host !== anchor.host) { readingAnchor = null; return; }
+  if (!host || host !== anchor.host) {
+    readingAnchor = null;
+    return;
+  }
   if (!canRestoreReadingAnchor(host, anchor)) return;
   const row = host.querySelector<HTMLElement>(
     '.msg[data-client-id="' + escapeClientId(anchor.clientId) + '"]',
   );
-  if (!row) { readingAnchor = null; return; }
+  if (!row) {
+    readingAnchor = null;
+    return;
+  }
   const block = findMatchingReadingBlock(row, anchor);
   if (!block) return;
   const offset = block.getBoundingClientRect().top - host.getBoundingClientRect().top;
@@ -230,7 +241,10 @@ function restoreReadingAnchor(): void {
 function rememberReadingAnchor(): void {
   rememberFrame = 0;
   const host = scrollHost();
-  if (!host || !readerHoldsPosition() || readerPinned(host)) { readingAnchor = null; return; }
+  if (!host || !readerHoldsPosition() || readerPinned(host)) {
+    readingAnchor = null;
+    return;
+  }
   const hostTop = host.getBoundingClientRect().top;
   for (const row of Array.from(host.children)) {
     if (!(row instanceof HTMLElement) || !row.classList.contains('msg')) continue;
@@ -240,7 +254,14 @@ function rememberReadingAnchor(): void {
     for (let index = 0; index < blocks.length; index++) {
       const rect = blocks[index].getBoundingClientRect();
       if (rect.height <= 0 || rect.bottom <= hostTop + 1) continue;
-      readingAnchor = { host, block: blocks[index], clientId, text: blockTextOf(blocks[index]), index, offset: rect.top - hostTop };
+      readingAnchor = {
+        host,
+        block: blocks[index],
+        clientId,
+        text: blockTextOf(blocks[index]),
+        index,
+        offset: rect.top - hostTop,
+      };
       return;
     }
   }
@@ -275,7 +296,12 @@ export function useAboveViewportResizeCompensation(): void {
     const host = scrollHost();
     if (host && typeof MutationObserver === 'function') {
       readingMutations = new MutationObserver(markReadingMutations);
-      readingMutations.observe(host, { subtree: true, childList: true, characterData: true, attributes: true });
+      readingMutations.observe(host, {
+        subtree: true,
+        childList: true,
+        characterData: true,
+        attributes: true,
+      });
     }
     host?.addEventListener('scroll', onReaderScroll, { passive: true });
     return () => {

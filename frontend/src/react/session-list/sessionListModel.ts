@@ -2,8 +2,18 @@ import type { SessionItem } from '../../ui/sessionListState.ts';
 import { formatRelativeTime } from './sessionList.store';
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 export function safeId(sessionId: string): string {

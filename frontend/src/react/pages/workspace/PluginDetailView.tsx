@@ -7,11 +7,19 @@ import { PluginDetailHeader } from './PluginDetailHeader';
 import { PluginDetailSections } from './PluginDetailSections';
 import { reportSwallow as reportEmptyCatch } from '../../../util/reportSwallow.ts';
 
-export function PluginDetailView({ plugin, configured, dispatch, onBack, renderMark }: PluginDetailViewProps) {
+export function PluginDetailView({
+  plugin,
+  configured,
+  dispatch,
+  onBack,
+  renderMark,
+}: PluginDetailViewProps) {
   const isConnected = plugin.connection?.status === 'connected';
   const isOpenConnector = plugin.id.startsWith('oc_');
   const connectable = plugin.available !== false && (isOpenConnector || configured);
-  const capabilities = Array.isArray(plugin.capabilities) ? plugin.capabilities.filter(Boolean) : [];
+  const capabilities = Array.isArray(plugin.capabilities)
+    ? plugin.capabilities.filter(Boolean)
+    : [];
 
   const handleConnect = () => {
     if (plugin.authType === 'api_key' || plugin.authType === 'custom_credential') {
@@ -29,19 +37,27 @@ export function PluginDetailView({ plugin, configured, dispatch, onBack, renderM
          selection. A false result means the user cancelled confirmation. */
       const resetResult = await getLegacyActions().navigation.startNewChat();
       if (resetResult === false) return;
-      toggleComposerPlugin('topic', {
-        id: plugin.id,
-        name: plugin.name,
-        description: plugin.description || '',
-        capabilities,
-        authType: plugin.authType || 'oauth',
-        configured: true,
-        connectionStatus: 'connected',
-        source: 'project',
-      }, getConnectorIconMarkup(plugin.id) || '');
+      toggleComposerPlugin(
+        'topic',
+        {
+          id: plugin.id,
+          name: plugin.name,
+          description: plugin.description || '',
+          capabilities,
+          authType: plugin.authType || 'oauth',
+          configured: true,
+          connectionStatus: 'connected',
+          source: 'project',
+        },
+        getConnectorIconMarkup(plugin.id) || '',
+      );
       focusComposer('topic');
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: react/pages/workspace/PluginDetailView.tsx:55', 'expected');
+      reportEmptyCatch(
+        error,
+        'empty catch: react/pages/workspace/PluginDetailView.tsx',
+        'expected',
+      );
       // Best effort; worst case the user lands on a plain new chat.
     }
   };
@@ -56,7 +72,9 @@ export function PluginDetailView({ plugin, configured, dispatch, onBack, renderM
         onBack={onBack}
         onConnect={handleConnect}
         onManage={handleManage}
-        onUseInChat={() => { void handleUseInChat(); }}
+        onUseInChat={() => {
+          void handleUseInChat();
+        }}
       />
       <PluginDetailSections plugin={plugin} capabilities={capabilities} />
     </div>

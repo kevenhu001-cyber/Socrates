@@ -20,7 +20,10 @@ const bridge = {
   subscribe: store.subscribe,
   publish(patch: Action): void {
     // Controlled search input needs the new value within the input event.
-    store.setState((state) => Object.freeze({ ...state, ...patch, revision: state.revision + 1 }), true);
+    store.setState(
+      (state) => Object.freeze({ ...state, ...patch, revision: state.revision + 1 }),
+      true,
+    );
   },
   __resetForTests(): void {
     store.setState(initial, true);

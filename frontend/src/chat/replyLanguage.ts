@@ -42,7 +42,9 @@ export function setReplyLanguage(next: ReplyLanguage): void {
     /* empty-catch: intentional — the preference still applies to this page session. */
   }
   try {
-    document.dispatchEvent(new CustomEvent('socrates:reply-language', { detail: { language: current } }));
+    document.dispatchEvent(
+      new CustomEvent('socrates:reply-language', { detail: { language: current } }),
+    );
   } catch {
     /* empty-catch: intentional — non-DOM hosts (tests) have no event target. */
   }

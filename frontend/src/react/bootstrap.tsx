@@ -1,4 +1,8 @@
-import { configureMountRegistry, runMountRegistry, type MountRegistryOptions } from './lib/boot/registry';
+import {
+  configureMountRegistry,
+  runMountRegistry,
+  type MountRegistryOptions,
+} from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
 import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
@@ -14,9 +18,15 @@ import { isImportLoadError } from './lib/boot/retryImport';
 const RECOVERY_MESSAGES: Record<string, [string, string]> = {
   'sidebar-nav': ['boot.navigationUnavailable', 'The navigation could not load.'],
   'sidebar-chrome': ['boot.navigationUnavailable', 'The navigation could not load.'],
-  'composer-shell': ['boot.composerUnavailable', 'You can keep writing in the basic editor. Retry to restore rich editing.'],
+  'composer-shell': [
+    'boot.composerUnavailable',
+    'You can keep writing in the basic editor. Retry to restore rich editing.',
+  ],
   'top-bar': ['boot.headerUnavailable', 'The conversation controls could not load.'],
-  'msg-list': ['boot.messagesUnavailable', 'The conversation could not load. Your messages have not been changed.'],
+  'msg-list': [
+    'boot.messagesUnavailable',
+    'The conversation could not load. Your messages have not been changed.',
+  ],
 };
 
 const mountOptions: MountRegistryOptions = {
@@ -25,13 +35,28 @@ const mountOptions: MountRegistryOptions = {
     if (!message) return;
     const isComposer = failure.spec.label === 'composer-shell';
     const releaseInput = isComposer ? mountBasicComposer(failure.host) : undefined;
-    const reload = isComposer && isImportLoadError(failure.error) && canReloadComposer() ? {
-      run: reloadWithComposerDrafts,
-      label: i18n('boot.composerReload', 'Reload page and keep draft'),
-      failureMessage: i18n('boot.composerReloadFailed', 'Could not save the draft for reload. You can keep editing here.'),
-    } : undefined;
-    const releaseNotice = showMountRecovery(failure, i18n(...message), i18n('error.retry', 'Try again'), message[0], reload);
-    return () => { releaseInput?.(); releaseNotice(); };
+    const reload =
+      isComposer && isImportLoadError(failure.error) && canReloadComposer()
+        ? {
+            run: reloadWithComposerDrafts,
+            label: i18n('boot.composerReload', 'Reload page and keep draft'),
+            failureMessage: i18n(
+              'boot.composerReloadFailed',
+              'Could not save the draft for reload. You can keep editing here.',
+            ),
+          }
+        : undefined;
+    const releaseNotice = showMountRecovery(
+      failure,
+      i18n(...message),
+      i18n('error.retry', 'Try again'),
+      message[0],
+      reload,
+    );
+    return () => {
+      releaseInput?.();
+      releaseNotice();
+    };
   },
 };
 
@@ -49,7 +74,10 @@ export function bootstrapReactCompatibilityRuntime(): void {
      hydrated; mount the remaining app surfaces after auth reveals the shell. The
      registry is idempotent, so a second call only mounts hosts that were
      deferred. */
-  runMountRegistry(document, { ...mountOptions, labels: new Set(['sidebar-nav', 'cookie-consent']) });
+  runMountRegistry(document, {
+    ...mountOptions,
+    labels: new Set(['sidebar-nav', 'cookie-consent']),
+  });
   const runtime = window as Window & {
     __socratesMountReactCompatibility?: () => void;
   };
@@ -68,11 +96,14 @@ export function bootstrapReactCompatibilityRuntime(): void {
  */
 function warmAssistantTurnOnComposerIntent(): void {
   const composerOwns = (target: EventTarget | null): boolean =>
-    target instanceof Element
-    && target.closest('#composerInputWrap, #composerRoot, #topicComposerSlot, #chatComposerSlot') !== null;
+    target instanceof Element &&
+    target.closest('#composerInputWrap, #composerRoot, #topicComposerSlot, #chatComposerSlot') !==
+      null;
   const warm = (): void => {
     for (const type of COMPOSER_INTENT_EVENTS) document.removeEventListener(type, onIntent, true);
-    preloadAssistantTurn().catch((error: unknown) => reportSwallow(error, 'react:preload-assistant-turn'));
+    preloadAssistantTurn().catch((error: unknown) =>
+      reportSwallow(error, 'react:preload-assistant-turn'),
+    );
   };
   const onIntent = (event: Event): void => {
     /* Modifier keys alone (Tab, Ctrl, …) are not intent to write. */

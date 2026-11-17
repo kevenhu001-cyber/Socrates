@@ -47,12 +47,15 @@ export async function mockAuthedApp(page, options = {}) {
   if (options.consent !== false) {
     await page.addInitScript(() => {
       try {
-        localStorage.setItem('socrates-cookie-consent', JSON.stringify({
-          v: 1,
-          choice: 'accept',
-          nonEssential: true,
-          updatedAt: new Date().toISOString(),
-        }));
+        localStorage.setItem(
+          'socrates-cookie-consent',
+          JSON.stringify({
+            v: 1,
+            choice: 'accept',
+            nonEssential: true,
+            updatedAt: new Date().toISOString(),
+          }),
+        );
       } catch (_) {}
     });
   }
@@ -66,18 +69,33 @@ export async function mockAuthedApp(page, options = {}) {
   if (options.lang !== false) {
     const lang = options.lang || 'en';
     await page.addInitScript((value) => {
-      try { localStorage.setItem('socrates-lang-app', value); } catch (_) {}
+      try {
+        localStorage.setItem('socrates-lang-app', value);
+      } catch (_) {}
     }, lang);
   }
 
   // Cookies that auth/boot.js + util/api.ts expect to find.
-  await page.context().addCookies([{
-    name: 'csrf', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',
-  }, {
-    name: 'xsrf-token', value: CSRF_COOKIE_VALUE, domain: '127.0.0.1', path: '/',
-  }, {
-    name: 'sid', value: 'smoke-sid-abc', domain: '127.0.0.1', path: '/',
-  }]);
+  await page.context().addCookies([
+    {
+      name: 'csrf',
+      value: CSRF_COOKIE_VALUE,
+      domain: '127.0.0.1',
+      path: '/',
+    },
+    {
+      name: 'xsrf-token',
+      value: CSRF_COOKIE_VALUE,
+      domain: '127.0.0.1',
+      path: '/',
+    },
+    {
+      name: 'sid',
+      value: 'smoke-sid-abc',
+      domain: '127.0.0.1',
+      path: '/',
+    },
+  ]);
 
   // IMPORTANT: Playwright route handlers are matched in REVERSE order of
   // registration — the LAST registered route is tried FIRST. So we register
@@ -124,44 +142,171 @@ export async function mockAuthedApp(page, options = {}) {
       }
       return;
     }
-    if (apiUrl.includes('/api/memories') || apiUrl.includes('/api/usage') ||
-        apiUrl.includes('/api/projects') || apiUrl.includes('/api/share') ||
-        apiUrl.includes('/api/mistakes')) {
+    if (
+      apiUrl.includes('/api/memories') ||
+      apiUrl.includes('/api/usage') ||
+      apiUrl.includes('/api/projects') ||
+      apiUrl.includes('/api/share') ||
+      apiUrl.includes('/api/mistakes')
+    ) {
       await route.fulfill(jsonResponse({ items: [], list: [], count: 0, ok: true }));
       return;
     }
     if (apiUrl.includes('/api/connectors/zotero/items')) {
-      await route.fulfill(jsonResponse({ items: [{ id: 'TEST1234', title: 'A test reference', itemType: 'journalArticle', creators: ['Ada Lovelace'], date: '1843' }] }));
+      await route.fulfill(
+        jsonResponse({
+          items: [
+            {
+              id: 'TEST1234',
+              title: 'A test reference',
+              itemType: 'journalArticle',
+              creators: ['Ada Lovelace'],
+              date: '1843',
+            },
+          ],
+        }),
+      );
       return;
     }
     if (apiUrl.includes('/api/connectors/arxiv/papers')) {
-      await route.fulfill(jsonResponse({ papers: [{ id: '2501.00001', title: 'A test preprint', summary: 'A concise test abstract.', authors: ['Claude Shannon'], categories: ['cs.AI'], publishedAt: '2025-01-01T00:00:00Z', abstractUrl: 'https://arxiv.org/abs/2501.00001', pdfUrl: 'https://arxiv.org/pdf/2501.00001.pdf' }] }));
+      await route.fulfill(
+        jsonResponse({
+          papers: [
+            {
+              id: '2501.00001',
+              title: 'A test preprint',
+              summary: 'A concise test abstract.',
+              authors: ['Claude Shannon'],
+              categories: ['cs.AI'],
+              publishedAt: '2025-01-01T00:00:00Z',
+              abstractUrl: 'https://arxiv.org/abs/2501.00001',
+              pdfUrl: 'https://arxiv.org/pdf/2501.00001.pdf',
+            },
+          ],
+        }),
+      );
       return;
     }
     if (apiUrl.includes('/api/connectors/zotero') && req.method() === 'POST') {
-      await route.fulfill(jsonResponse({ connection: { status: 'connected', displayName: 'Smoke Zotero' } }, 201));
+      await route.fulfill(
+        jsonResponse({ connection: { status: 'connected', displayName: 'Smoke Zotero' } }, 201),
+      );
       return;
     }
     if (apiUrl.endsWith('/api/project-connectors') || apiUrl.includes('/api/project-connectors?')) {
-      await route.fulfill(jsonResponse({
-        mode: 'oomol-project-connector',
-        configured: true,
-        connectors: [
-          { id: 'github', name: 'GitHub', description: 'Bring repositories, issues, pull requests, and CI context into a chat.', capabilities: ['Repositories', 'Issues', 'Pull requests'], authType: 'oauth', connection: null },
-          { id: 'gmail', name: 'Gmail', description: 'Search mail context that you explicitly authorize.', capabilities: ['Mail search'], authType: 'oauth', connection: null },
-          { id: 'googledrive', name: 'Google Drive', description: 'Bring files and folders from your Google Drive into a chat.', capabilities: ['Files', 'Folders'], authType: 'oauth', connection: null },
-          { id: 'googlecalendar', name: 'Google Calendar', description: 'Use your schedule and event context when planning study sessions.', capabilities: ['Events'], authType: 'oauth', connection: null },
-          { id: 'notion', name: 'Notion', description: 'Search pages and knowledge you share with Socrates.', capabilities: ['Page search'], authType: 'oauth', connection: null },
-        ],
-      }));
+      await route.fulfill(
+        jsonResponse({
+          mode: 'oomol-project-connector',
+          configured: true,
+          connectors: [
+            {
+              id: 'github',
+              name: 'GitHub',
+              description: 'Bring repositories, issues, pull requests, and CI context into a chat.',
+              capabilities: ['Repositories', 'Issues', 'Pull requests'],
+              authType: 'oauth',
+              connection: null,
+            },
+            {
+              id: 'gmail',
+              name: 'Gmail',
+              description: 'Search mail context that you explicitly authorize.',
+              capabilities: ['Mail search'],
+              authType: 'oauth',
+              connection: null,
+            },
+            {
+              id: 'googledrive',
+              name: 'Google Drive',
+              description: 'Bring files and folders from your Google Drive into a chat.',
+              capabilities: ['Files', 'Folders'],
+              authType: 'oauth',
+              connection: null,
+            },
+            {
+              id: 'googlecalendar',
+              name: 'Google Calendar',
+              description: 'Use your schedule and event context when planning study sessions.',
+              capabilities: ['Events'],
+              authType: 'oauth',
+              connection: null,
+            },
+            {
+              id: 'notion',
+              name: 'Notion',
+              description: 'Search pages and knowledge you share with Socrates.',
+              capabilities: ['Page search'],
+              authType: 'oauth',
+              connection: null,
+            },
+          ],
+        }),
+      );
       return;
     }
     if (apiUrl.includes('/api/project-connectors/') && apiUrl.endsWith('/connect')) {
-      await route.fulfill(jsonResponse({ requestId: 'request-smoke-1', authorizationUrl: '/plugins?connector=smoke', expiresAt: '2026-01-01T00:10:00Z' }, 201));
+      await route.fulfill(
+        jsonResponse(
+          {
+            requestId: 'request-smoke-1',
+            authorizationUrl: '/plugins?connector=smoke',
+            expiresAt: '2026-01-01T00:10:00Z',
+          },
+          201,
+        ),
+      );
       return;
     }
     if (apiUrl.includes('/api/connectors')) {
-      await route.fulfill(jsonResponse({ connectors: [{ id: 'github', name: 'GitHub', description: 'Connect repositories, issues, and pull requests.', availability: 'available', configured: true, connection: null }, { id: 'gmail', name: 'Gmail', description: 'Search and triage your inbox without leaving the chat.', auth: 'oauth', availability: 'available', configured: true, connection: null }, { id: 'googledrive', name: 'Google Drive', description: 'Pull documents and spreadsheets you have access to.', auth: 'oauth', availability: 'available', configured: true, connection: null }, { id: 'notion', name: 'Notion', description: 'Search pages you share with Socrates.', availability: 'available', configured: true, connection: null }, { id: 'zotero', name: 'Zotero', description: 'Search your research library with your own read-only API Key.', auth: 'api_key', availability: 'available', configured: true, connection: null }] }));
+      await route.fulfill(
+        jsonResponse({
+          connectors: [
+            {
+              id: 'github',
+              name: 'GitHub',
+              description: 'Connect repositories, issues, and pull requests.',
+              availability: 'available',
+              configured: true,
+              connection: null,
+            },
+            {
+              id: 'gmail',
+              name: 'Gmail',
+              description: 'Search and triage your inbox without leaving the chat.',
+              auth: 'oauth',
+              availability: 'available',
+              configured: true,
+              connection: null,
+            },
+            {
+              id: 'googledrive',
+              name: 'Google Drive',
+              description: 'Pull documents and spreadsheets you have access to.',
+              auth: 'oauth',
+              availability: 'available',
+              configured: true,
+              connection: null,
+            },
+            {
+              id: 'notion',
+              name: 'Notion',
+              description: 'Search pages you share with Socrates.',
+              availability: 'available',
+              configured: true,
+              connection: null,
+            },
+            {
+              id: 'zotero',
+              name: 'Zotero',
+              description: 'Search your research library with your own read-only API Key.',
+              auth: 'api_key',
+              availability: 'available',
+              configured: true,
+              connection: null,
+            },
+          ],
+        }),
+      );
       return;
     }
     // Default: pretend success so callers don't throw on offline fetches.
@@ -175,9 +320,15 @@ export async function mockAuthedApp(page, options = {}) {
  * from "checking" → "auth" or "app". In mocked mode we want "app".
  */
 export async function waitForAppShell(page, timeoutMs = 15_000) {
-  await page.waitForFunction(() => {
-    const s = document.documentElement.dataset.bootState;
-    return s === 'app' || s === 'auth';
-  }, null, { timeout: timeoutMs }).catch(() => {});
+  await page
+    .waitForFunction(
+      () => {
+        const s = document.documentElement.dataset.bootState;
+        return s === 'app' || s === 'auth';
+      },
+      null,
+      { timeout: timeoutMs },
+    )
+    .catch(() => {});
   await page.waitForTimeout(300);
 }

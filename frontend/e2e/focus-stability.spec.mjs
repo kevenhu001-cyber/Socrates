@@ -21,7 +21,7 @@
 // The shared ring itself is checked as well: --ui-focus-shadow must be an
 // inset ring, so no surface can grow a focus ring that reaches outside
 // its own border box.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
@@ -37,7 +37,10 @@ const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tab
 const COLLECT = async () => {
   const splitLayers = (shadow) => {
     if (!shadow || shadow === 'none') return [];
-    return shadow.split(/,(?![^(]*\))/).map((part) => part.trim()).filter(Boolean);
+    return shadow
+      .split(/,(?![^(]*\))/)
+      .map((part) => part.trim())
+      .filter(Boolean);
   };
 
   /* A layer's geometry is what decides whether the paint survived: the
@@ -46,7 +49,10 @@ const COLLECT = async () => {
   const parseLayer = (text) => {
     const nums = [...text.matchAll(/(-?[\d.]+)px/g)].map((match) => Number.parseFloat(match[1]));
     const geo = nums.slice(0, 4);
-    const colorText = text.replace(/-?[\d.]+px/g, ' ').replace(/inset/gi, ' ').trim();
+    const colorText = text
+      .replace(/-?[\d.]+px/g, ' ')
+      .replace(/inset/gi, ' ')
+      .trim();
     return {
       inset: /inset/i.test(text),
       geo: geo.join(','),
@@ -58,7 +64,9 @@ const COLLECT = async () => {
   /* rgba(r, g, b, a) / rgb(r, g, b) / modern `rgb(r g b / a)` / oklab / color(). */
   function alphaOf(colorText) {
     if (/transparent/i.test(colorText)) return 0;
-    const legacy = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/.exec(colorText);
+    const legacy = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)/.exec(
+      colorText,
+    );
     if (legacy) return legacy[4] === undefined ? 1 : Number.parseFloat(legacy[4]);
     const slash = /\/\s*([\d.]+)\s*\)/.exec(colorText);
     if (slash) return Number.parseFloat(slash[1]);
@@ -89,7 +97,12 @@ const COLLECT = async () => {
     let current = el.parentElement;
     let depth = 0;
     while (current && depth < max) {
-      out.push({ depth, tag: current.tagName.toLowerCase(), id: current.id || '', ...describe(current) });
+      out.push({
+        depth,
+        tag: current.tagName.toLowerCase(),
+        id: current.id || '',
+        ...describe(current),
+      });
       current = current.parentElement;
       depth += 1;
     }
@@ -99,7 +112,9 @@ const COLLECT = async () => {
   const isVisible = (el) => {
     const rect = el.getBoundingClientRect();
     const style = getComputedStyle(el);
-    return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none';
+    return (
+      rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
+    );
   };
 
   /* Wait for the element's transitions to finish before it is measured:
@@ -121,7 +136,14 @@ const COLLECT = async () => {
   const selector = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
   const nodes = [...document.querySelectorAll(selector)].filter(isVisible);
   for (const el of nodes) {
-    const label = el.id || el.tagName.toLowerCase() + '.' + String(el.className || '').split(' ').slice(0, 2).join('.');
+    const label =
+      el.id ||
+      el.tagName.toLowerCase() +
+        '.' +
+        String(el.className || '')
+          .split(' ')
+          .slice(0, 2)
+          .join('.');
     el.blur();
     await settle(el);
     const rest = describe(el);
@@ -139,8 +161,14 @@ const COLLECT = async () => {
        revealed by the focus, not moved by it. Its box is allowed to change
        because nothing was on screen to begin with. */
     const onScreenArea =
-      Math.max(0, Math.min(rest.rect[0] + rest.rect[2], window.innerWidth) - Math.max(rest.rect[0], 0)) *
-      Math.max(0, Math.min(rest.rect[1] + rest.rect[3], window.innerHeight) - Math.max(rest.rect[1], 0));
+      Math.max(
+        0,
+        Math.min(rest.rect[0] + rest.rect[2], window.innerWidth) - Math.max(rest.rect[0], 0),
+      ) *
+      Math.max(
+        0,
+        Math.min(rest.rect[1] + rest.rect[3], window.innerHeight) - Math.max(rest.rect[1], 0),
+      );
     const restHidden = onScreenArea === 0;
     const ancestorShift = restChain.some((ancestor, index) => {
       const now = focChain[index];
@@ -154,7 +182,8 @@ const COLLECT = async () => {
 
     /* 3 — focus may only add inset (or invisible) layers */
     const added = foc.layers.filter(
-      (layer) => !rest.layers.some((before) => before.geo === layer.geo && before.inset === layer.inset),
+      (layer) =>
+        !rest.layers.some((before) => before.geo === layer.geo && before.inset === layer.inset),
     );
     const outwardAdded = added.filter((layer) => !layer.inset && layer.alpha > 0);
 
@@ -163,7 +192,9 @@ const COLLECT = async () => {
       foc.outlineVisible ||
       foc.borderColor !== rest.borderColor ||
       foc.layers.some((layer, index) => {
-        const before = rest.layers.find((candidate) => candidate.geo === layer.geo && candidate.inset === layer.inset);
+        const before = rest.layers.find(
+          (candidate) => candidate.geo === layer.geo && candidate.inset === layer.inset,
+        );
         return before ? before.colorText !== layer.colorText && layer.alpha > 0 : layer.alpha > 0;
       });
     const ancestorCue = restChain.some((ancestor, index) => {
@@ -197,7 +228,9 @@ const COLLECT = async () => {
 async function bootLanding(page, theme) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.addInitScript((mode) => {
-    try { localStorage.setItem('socrates-theme', mode); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-theme', mode);
+    } catch (_) {}
   }, theme);
   await mockAuthedApp(page, { lang: 'en' });
   await gotoAndSettle(page, '/');
@@ -246,7 +279,10 @@ test('the shared focus ring is an inset ring, so no surface can grow one', async
     return value.trim();
   });
   expect(token).not.toBe('');
-  const layers = token.split(/,(?![^(]*\))/).map((part) => part.trim()).filter(Boolean);
+  const layers = token
+    .split(/,(?![^(]*\))/)
+    .map((part) => part.trim())
+    .filter(Boolean);
   expect(layers.length).toBe(2);
   for (const layer of layers) {
     expect(layer, `--ui-focus-shadow paints outside the control: ${layer}`).toMatch(/inset/i);
@@ -263,7 +299,9 @@ for (const theme of ['light', 'dark']) {
 
   test(`conversation focus is stable and visible in ${theme} mode`, async ({ page }) => {
     await page.addInitScript((mode) => {
-      try { localStorage.setItem('socrates-theme', mode); } catch (_) {}
+      try {
+        localStorage.setItem('socrates-theme', mode);
+      } catch (_) {}
     }, theme);
     await prepareChatWorkbench(page, { viewport: WORKBENCH_VIEWPORTS.desktop });
     await page.waitForTimeout(400);

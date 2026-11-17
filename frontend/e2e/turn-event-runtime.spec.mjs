@@ -1,27 +1,53 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
 const nodes = [
   { id: 'panel', type: 'panel', title: 'Live estimate', state: { count: 1 } },
   { id: 'value', type: 'metric', parent: 'panel', label: 'Count', value: { state: 'count' } },
-  { id: 'add', type: 'button', parent: 'panel', label: 'Add one', action: { type: 'increment', key: 'count', amount: 1 } },
+  {
+    id: 'add',
+    type: 'button',
+    parent: 'panel',
+    label: 'Add one',
+    action: { type: 'increment', key: 'count', amount: 1 },
+  },
 ];
 
 async function start(page) {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
-    window.__turnEventCtl = await window.addStreamingMessage({ userPrompt: 'Build a live estimate and check the sources.' });
+    window.__turnEventCtl = await window.addStreamingMessage({
+      userPrompt: 'Build a live estimate and check the sources.',
+    });
     let seq = 0;
-    window.__turnEvent = (payload) => window.__turnEventCtl.recordTurnEvent({ version: 1, turnId: 'runtime-e2e', seq: ++seq, at: Date.now(), ...payload });
+    window.__turnEvent = (payload) =>
+      window.__turnEventCtl.recordTurnEvent({
+        version: 1,
+        turnId: 'runtime-e2e',
+        seq: ++seq,
+        at: Date.now(),
+        ...payload,
+      });
   });
 }
 
-test('nodes stream before tool_use, retain local state through commit, and coexist with prose and activity', async ({ page }) => {
+test('nodes stream before tool_use, retain local state through commit, and coexist with prose and activity', async ({
+  page,
+}) => {
   await start(page);
   await page.evaluate((nodes) => {
     window.__turnEventCtl.append('First finding.\n\n');
     window.__turnEvent({ type: 'generation', phase: 'streaming' });
-    window.__turnEvent({ type: 'activity.upsert', activity: { id: 'public', kind: 'reasoning_summary', phase: 'running', text: 'Checking two official sources.', startedAt: Date.now() } });
+    window.__turnEvent({
+      type: 'activity.upsert',
+      activity: {
+        id: 'public',
+        kind: 'reasoning_summary',
+        phase: 'running',
+        text: 'Checking two official sources.',
+        startedAt: Date.now(),
+      },
+    });
     window.__turnEvent({ type: 'ui.begin', surfaceId: 'ui', toolCallId: 'ui', textOffset: 16 });
     for (const node of nodes) window.__turnEvent({ type: 'ui.add', surfaceId: 'ui', node });
   }, nodes);
@@ -29,36 +55,71 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
   const ui = message.locator('.intui');
   await expect(ui).toBeVisible();
   await expect(ui).toHaveAttribute('data-intui-streaming', 'true');
-  expect(await page.evaluate(() => window.stateStore.read('messages').at(-1).toolCalls?.length || 0)).toBe(0);
+  expect(
+    await page.evaluate(
+      () => window.__socratesTestState.session().messages.at(-1).toolCalls?.length || 0,
+    ),
+  ).toBe(0);
   await ui.getByRole('button', { name: 'Add one', exact: true }).click();
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
-  await ui.locator('[data-intui-id="panel"]').evaluate((element) => { element.__sameNode = true; });
+  await ui.locator('[data-intui-id="panel"]').evaluate((element) => {
+    element.__sameNode = true;
+  });
   await message.locator('[data-testid="turn-activity-toggle"]').click();
-  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText('Checking two official sources.');
+  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText(
+    'Checking two official sources.',
+  );
   await expect(message.locator('.tool-run-prose').first()).toContainText('First finding.');
   await page.screenshot({ path: 'test-results/turn-event-progressive.png' });
 
-  const completeNodes = [...nodes, { id: 'final', parent: 'panel', type: 'text', text: 'New evidence arrived.' }];
+  const completeNodes = [
+    ...nodes,
+    { id: 'final', parent: 'panel', type: 'text', text: 'New evidence arrived.' },
+  ];
   await page.evaluate((completeNodes) => {
     window.__turnEvent({ type: 'ui.add', surfaceId: 'ui', node: completeNodes.at(-1) });
     // A preceding parallel tool changes the run's first member. Its UI host
     // must retain the user's local state across the tool_use handoff.
-    window.__turnEventCtl.recordToolUse({ id: 'search', name: 'web_search', input: { query: 'official sources' } });
-    window.__turnEventCtl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Found sources.' });
-    window.__turnEventCtl.recordToolUse({ id: 'ui', name: 'render_intelligent_ui', input: { version: 1, nodes: completeNodes } });
-    window.__turnEventCtl.recordToolResult({ id: 'ui', name: 'render_intelligent_ui', ok: true, status: 'completed', output: 'Rendered 4 UI nodes' });
+    window.__turnEventCtl.recordToolUse({
+      id: 'search',
+      name: 'web_search',
+      input: { query: 'official sources' },
+    });
+    window.__turnEventCtl.recordToolResult({
+      id: 'search',
+      name: 'web_search',
+      ok: true,
+      status: 'completed',
+      output: 'Found sources.',
+    });
+    window.__turnEventCtl.recordToolUse({
+      id: 'ui',
+      name: 'render_intelligent_ui',
+      input: { version: 1, nodes: completeNodes },
+    });
+    window.__turnEventCtl.recordToolResult({
+      id: 'ui',
+      name: 'render_intelligent_ui',
+      ok: true,
+      status: 'completed',
+      output: 'Rendered 4 UI nodes',
+    });
     window.__turnEvent({ type: 'ui.commit', surfaceId: 'ui', nodes: completeNodes });
     window.__turnEventCtl.append('The answer continues while the sources are checked.');
   }, completeNodes);
   await expect(ui.locator('[data-intui-id="final"]')).toContainText('New evidence arrived.');
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
-  expect(await ui.locator('[data-intui-id="panel"]').evaluate((element) => element.__sameNode)).toBe(true);
+  expect(
+    await ui.locator('[data-intui-id="panel"]').evaluate((element) => element.__sameNode),
+  ).toBe(true);
   /* The public step survives the tool_use handoff and commit next to the
      prose. The RN timeline only inks a step as running while the activity
      surface itself is live, and answer prose has started here, so the step
      is checked for presence rather than for data-phase="running". */
   await expect(message.locator('[data-testid="thinking-step"]')).toHaveCount(1);
-  await expect(message.locator('[data-testid="thinking-step"]')).toContainText('Checking two official sources.');
+  await expect(message.locator('[data-testid="thinking-step"]')).toContainText(
+    'Checking two official sources.',
+  );
   await expect(message).toContainText('The answer continues');
   await expect(message.locator('.msg-toolbar')).toBeHidden();
   await page.evaluate(() => {
@@ -67,7 +128,9 @@ test('nodes stream before tool_use, retain local state through commit, and coexi
   });
   await expect(message).toHaveAttribute('data-stream-settled', 'true');
   await expect(ui).toHaveAttribute('data-intui-streaming', 'false');
-  await expect(message.locator('[data-testid="thinking-step"][data-phase="running"]')).toHaveCount(0);
+  await expect(message.locator('[data-testid="thinking-step"][data-phase="running"]')).toHaveCount(
+    0,
+  );
   await expect(ui.locator('[data-intui-id="value"]')).toContainText('2');
   await page.screenshot({ path: 'test-results/turn-event-completed.png' });
 });
@@ -77,7 +140,11 @@ test('rejected previews disappear and malformed events never mount unsafe UI', a
   await page.evaluate((nodes) => {
     window.__turnEventCtl.append('Checking the estimate.\n\n');
     window.__turnEvent({ type: 'ui.begin', surfaceId: 'bad', toolCallId: 'bad', textOffset: 24 });
-    window.__turnEvent({ type: 'ui.add', surfaceId: 'bad', node: { id: 'unsafe', type: 'panel', html: '<script>bad()</script>' } });
+    window.__turnEvent({
+      type: 'ui.add',
+      surfaceId: 'bad',
+      node: { id: 'unsafe', type: 'panel', html: '<script>bad()</script>' },
+    });
     window.__turnEvent({ type: 'ui.add', surfaceId: 'bad', node: nodes[0] });
   }, nodes);
   const message = page.locator('#msgList .msg.assistant').last();
@@ -88,12 +155,31 @@ test('rejected previews disappear and malformed events never mount unsafe UI', a
   await page.evaluate(() => window.__turnEventCtl.finish());
 });
 
-test('completed checkpoint restores UI beyond the first event page and ignores older replay', async ({ page }) => {
+test('completed checkpoint restores UI beyond the first event page and ignores older replay', async ({
+  page,
+}) => {
   await start(page);
   await page.evaluate((nodes) => {
-    const snapshot = { version: 1, turnId: 'runtime-e2e', seq: 800, lifecycle: 'done', generation: 'done', durationMs: 1400,
-      activities: [{ id: 'summary', kind: 'reasoning_summary', phase: 'done', startedAt: 100, endedAt: 1500, text: 'Compared the official sources.' }],
-      uiSurfaces: [{ id: 'restored-ui', toolCallId: 'restored-ui', textOffset: 0, phase: 'committed', nodes }],
+    const snapshot = {
+      version: 1,
+      turnId: 'runtime-e2e',
+      seq: 800,
+      lifecycle: 'done',
+      generation: 'done',
+      durationMs: 1400,
+      activities: [
+        {
+          id: 'summary',
+          kind: 'reasoning_summary',
+          phase: 'done',
+          startedAt: 100,
+          endedAt: 1500,
+          text: 'Compared the official sources.',
+        },
+      ],
+      uiSurfaces: [
+        { id: 'restored-ui', toolCallId: 'restored-ui', textOffset: 0, phase: 'committed', nodes },
+      ],
     };
     window.__turnEventCtl.recordTurnSnapshot(snapshot);
     window.__turnEventCtl.recordTurnSnapshot({ ...snapshot, seq: 799, uiSurfaces: [] });
@@ -105,30 +191,65 @@ test('completed checkpoint restores UI beyond the first event page and ignores o
   await expect(message.locator('.intui')).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('1');
   await message.locator('[data-testid="turn-activity-toggle"]').click();
-  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText('Compared the official sources.');
-  expect(await page.evaluate(() => window.stateStore.read('messages').at(-1).turnRuntime.seq)).toBe(800);
+  await expect(message.locator('[data-testid="thinking-timeline"]')).toContainText(
+    'Compared the official sources.',
+  );
+  expect(
+    await page.evaluate(() => window.__socratesTestState.session().messages.at(-1).turnRuntime.seq),
+  ).toBe(800);
 });
 
-test('committed UI patch retains DOM, local state and disclosure while removing a subtree', async ({ page }) => {
+test('committed UI patch retains DOM, local state and disclosure while removing a subtree', async ({
+  page,
+}) => {
   await start(page);
   await page.evaluate((nodes) => {
-    window.__turnEvent({ type: 'ui.begin', surfaceId: 'editable', toolCallId: 'editable', textOffset: 0 });
-    window.__turnEvent({ type: 'ui.commit', surfaceId: 'editable', nodes: [...nodes,
-      { id: 'old-group', type: 'stack', parent: 'panel' }, { id: 'old-child', type: 'text', parent: 'old-group', text: 'Outdated evidence' },
-    ] });
+    window.__turnEvent({
+      type: 'ui.begin',
+      surfaceId: 'editable',
+      toolCallId: 'editable',
+      textOffset: 0,
+    });
+    window.__turnEvent({
+      type: 'ui.commit',
+      surfaceId: 'editable',
+      nodes: [
+        ...nodes,
+        { id: 'old-group', type: 'stack', parent: 'panel' },
+        { id: 'old-child', type: 'text', parent: 'old-group', text: 'Outdated evidence' },
+      ],
+    });
   }, nodes);
   const message = page.locator('#msgList .msg.assistant').last();
   const panel = message.locator('[data-intui-id="panel"]');
-  await panel.evaluate((node) => { node.__retained = true; });
+  await panel.evaluate((node) => {
+    node.__retained = true;
+  });
   await message.getByRole('button', { name: 'Add one', exact: true }).click();
   const button = message.getByRole('button', { name: 'Add one', exact: true });
   await button.focus();
-  await page.evaluate(() => window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 0, operations: [
-    { op: 'patch', nodeId: 'panel', props: { title: 'Updated estimate', state: { count: 99 } } },
-    { op: 'remove', nodeId: 'old-group' },
-    { op: 'add', node: { id: 'new-evidence', type: 'text', parent: 'panel', text: 'Fresh evidence' } },
-  ] }));
-  await expect(message.getByRole('heading', { name: 'Updated estimate', exact: true })).toBeVisible();
+  await page.evaluate(() =>
+    window.__turnEvent({
+      type: 'ui.edit',
+      surfaceId: 'editable',
+      baseRevision: 0,
+      operations: [
+        {
+          op: 'patch',
+          nodeId: 'panel',
+          props: { title: 'Updated estimate', state: { count: 99 } },
+        },
+        { op: 'remove', nodeId: 'old-group' },
+        {
+          op: 'add',
+          node: { id: 'new-evidence', type: 'text', parent: 'panel', text: 'Fresh evidence' },
+        },
+      ],
+    }),
+  );
+  await expect(
+    message.getByRole('heading', { name: 'Updated estimate', exact: true }),
+  ).toBeVisible();
   await expect(panel).toContainText('Fresh evidence');
   await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
   await expect(message.locator('[data-intui-id="old-child"]')).toHaveCount(0);
@@ -136,14 +257,26 @@ test('committed UI patch retains DOM, local state and disclosure while removing 
   expect(await panel.evaluate((node) => node.__retained)).toBe(true);
   await page.evaluate(() => {
     // A stale revision and a mixed invalid transaction must preserve the view.
-    window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 0, operations: [{ op: 'remove', nodeId: 'add' }] });
-    window.__turnEvent({ type: 'ui.edit', surfaceId: 'editable', baseRevision: 1, operations: [
-      { op: 'patch', nodeId: 'panel', props: { title: 'Must not commit' } },
-      { op: 'patch', nodeId: 'new-evidence', props: { html: '<script/>' } },
-    ] });
+    window.__turnEvent({
+      type: 'ui.edit',
+      surfaceId: 'editable',
+      baseRevision: 0,
+      operations: [{ op: 'remove', nodeId: 'add' }],
+    });
+    window.__turnEvent({
+      type: 'ui.edit',
+      surfaceId: 'editable',
+      baseRevision: 1,
+      operations: [
+        { op: 'patch', nodeId: 'panel', props: { title: 'Must not commit' } },
+        { op: 'patch', nodeId: 'new-evidence', props: { html: '<script/>' } },
+      ],
+    });
     window.__turnEventCtl.finish();
   });
-  await expect(message.getByRole('heading', { name: 'Updated estimate', exact: true })).toBeVisible();
+  await expect(
+    message.getByRole('heading', { name: 'Updated estimate', exact: true }),
+  ).toBeVisible();
   await expect(button).toBeVisible();
   await expect(message.locator('[data-intui-id="value"]')).toContainText('2');
   await page.screenshot({ path: 'test-results/intelligent-ui-patch.png' });

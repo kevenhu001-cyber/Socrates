@@ -64,26 +64,100 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
           key={level}
           label={`Heading ${level}`}
           active={editor.isActive('heading', { level })}
-          onClick={run(() => editor.chain().focus().toggleHeading({ level: level as 1 | 2 | 3 }).run())}
+          onClick={run(() =>
+            editor
+              .chain()
+              .focus()
+              .toggleHeading({ level: level as 1 | 2 | 3 })
+              .run(),
+          )}
         >
           H{level}
         </ToolbarButton>
       ))}
       <span className="rich-composer-divider" />
-      <ToolbarButton label="Bold" active={editor.isActive('bold')} onClick={run(() => editor.chain().focus().toggleBold().run())}><strong>B</strong></ToolbarButton>
-      <ToolbarButton label="Italic" active={editor.isActive('italic')} onClick={run(() => editor.chain().focus().toggleItalic().run())}><em>I</em></ToolbarButton>
-      <ToolbarButton label="Underline" active={editor.isActive('underline')} onClick={run(() => editor.chain().focus().toggleUnderline().run())}><u>U</u></ToolbarButton>
-      <ToolbarButton label="Strikethrough" active={editor.isActive('strike')} onClick={run(() => editor.chain().focus().toggleStrike().run())}><s>S</s></ToolbarButton>
-      <ToolbarButton label="Link" active={editor.isActive('link')} onClick={setLink}>↗</ToolbarButton>
+      <ToolbarButton
+        label="Bold"
+        active={editor.isActive('bold')}
+        onClick={run(() => editor.chain().focus().toggleBold().run())}
+      >
+        <strong>B</strong>
+      </ToolbarButton>
+      <ToolbarButton
+        label="Italic"
+        active={editor.isActive('italic')}
+        onClick={run(() => editor.chain().focus().toggleItalic().run())}
+      >
+        <em>I</em>
+      </ToolbarButton>
+      <ToolbarButton
+        label="Underline"
+        active={editor.isActive('underline')}
+        onClick={run(() => editor.chain().focus().toggleUnderline().run())}
+      >
+        <u>U</u>
+      </ToolbarButton>
+      <ToolbarButton
+        label="Strikethrough"
+        active={editor.isActive('strike')}
+        onClick={run(() => editor.chain().focus().toggleStrike().run())}
+      >
+        <s>S</s>
+      </ToolbarButton>
+      <ToolbarButton label="Link" active={editor.isActive('link')} onClick={setLink}>
+        ↗
+      </ToolbarButton>
       <span className="rich-composer-divider" />
-      <ToolbarButton label="Bullet list" active={editor.isActive('bulletList')} onClick={run(() => editor.chain().focus().toggleBulletList().run())}>•≡</ToolbarButton>
-      <ToolbarButton label="Numbered list" active={editor.isActive('orderedList')} onClick={run(() => editor.chain().focus().toggleOrderedList().run())}>1≡</ToolbarButton>
-      <ToolbarButton label="Task list" active={editor.isActive('taskList')} onClick={run(() => editor.chain().focus().toggleTaskList().run())}>☑</ToolbarButton>
-      <ToolbarButton label="Quote" active={editor.isActive('blockquote')} onClick={run(() => editor.chain().focus().toggleBlockquote().run())}>❝</ToolbarButton>
-      <ToolbarButton label="Code block" active={editor.isActive('codeBlock')} onClick={run(() => editor.chain().focus().toggleCodeBlock().run())}>{'</>'}</ToolbarButton>
+      <ToolbarButton
+        label="Bullet list"
+        active={editor.isActive('bulletList')}
+        onClick={run(() => editor.chain().focus().toggleBulletList().run())}
+      >
+        •≡
+      </ToolbarButton>
+      <ToolbarButton
+        label="Numbered list"
+        active={editor.isActive('orderedList')}
+        onClick={run(() => editor.chain().focus().toggleOrderedList().run())}
+      >
+        1≡
+      </ToolbarButton>
+      <ToolbarButton
+        label="Task list"
+        active={editor.isActive('taskList')}
+        onClick={run(() => editor.chain().focus().toggleTaskList().run())}
+      >
+        ☑
+      </ToolbarButton>
+      <ToolbarButton
+        label="Quote"
+        active={editor.isActive('blockquote')}
+        onClick={run(() => editor.chain().focus().toggleBlockquote().run())}
+      >
+        ❝
+      </ToolbarButton>
+      <ToolbarButton
+        label="Code block"
+        active={editor.isActive('codeBlock')}
+        onClick={run(() => editor.chain().focus().toggleCodeBlock().run())}
+      >
+        {'</>'}
+      </ToolbarButton>
       <span className="rich-composer-divider" />
-      <ToolbarButton label="Undo" disabled={!editor.can().undo()} onClick={run(() => editor.chain().focus().undo().run())}>↶</ToolbarButton>
-      <ToolbarButton label="Redo" disabled={!editor.can().redo()} onClick={run(() => editor.chain().focus().redo().run())}>↷</ToolbarButton>
+      <ToolbarButton
+        label="Undo"
+        disabled={!editor.can().undo()}
+        onClick={run(() => editor.chain().focus().undo().run())}
+      >
+        ↶
+      </ToolbarButton>
+      <ToolbarButton
+        label="Redo"
+        disabled={!editor.can().redo()}
+        onClick={run(() => editor.chain().focus().redo().run())}
+      >
+        ↷
+      </ToolbarButton>
     </div>
   );
 }

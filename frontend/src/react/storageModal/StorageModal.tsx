@@ -36,22 +36,31 @@ function StorageModal() {
         <FoundationDialogTitle ref={titleRef} tabIndex={-1} className="modal-title">
           {`Archived sessions (${archived.length})`}
         </FoundationDialogTitle>
-        <FoundationDialogClose className="modal-close" onClick={() => dispatch.close()} aria-label="Close">
+        <FoundationDialogClose
+          className="modal-close"
+          onClick={() => dispatch.close()}
+          aria-label="Close"
+        >
           ×
         </FoundationDialogClose>
       </div>
       <div className="storage-modal-body">
         <div className="storage-modal-desc">
-          Archived chats stay here for 30 days. Use Archive on a Recents row to tuck one away without deleting it; Restore brings it back, or Delete forever erases it now.
+          Archived chats stay here for 30 days. Use Archive on a Recents row to tuck one away
+          without deleting it; Restore brings it back, or Delete forever erases it now.
         </div>
         {archived.length === 0 ? (
           <div className="storage-empty">
-            No archived sessions. Archive one from a Recents row to keep it out of the way for up to 30 days.
+            No archived sessions. Archive one from a Recents row to keep it out of the way for up to
+            30 days.
           </div>
         ) : (
           <div className="storage-list">
             {archived.map((s) => {
-              const ageDays = Math.max(0, Math.floor((Date.now() - (s.archivedAt || 0)) / (24 * 60 * 60 * 1000)));
+              const ageDays = Math.max(
+                0,
+                Math.floor((Date.now() - (s.archivedAt || 0)) / (24 * 60 * 60 * 1000)),
+              );
               const remain = Math.max(0, 30 - ageDays);
               return (
                 <div className="storage-row" key={s.id}>

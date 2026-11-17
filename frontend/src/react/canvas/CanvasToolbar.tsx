@@ -50,7 +50,7 @@ export function CanvasToolbar({
           type="button"
           className="canvas-btn"
           aria-pressed={mode === 'view-original'}
-            data-action="canvas-original"
+          data-action="canvas-original"
           onClick={onToggleOriginal}
         >
           {mode === 'view-original'
@@ -61,24 +61,19 @@ export function CanvasToolbar({
           type="button"
           className="canvas-btn"
           aria-pressed={mode === 'edit'}
-            data-action="canvas-edit"
+          data-action="canvas-edit"
           onClick={onToggleEdit}
         >
           {editLabel}
         </UiButton>
-        <UiButton
-          type="button"
-          className="canvas-btn"
-          onClick={onCopy}
-            data-action="canvas-copy"
-        >
+        <UiButton type="button" className="canvas-btn" onClick={onCopy} data-action="canvas-copy">
           {t('composer.canvas.copy')}
         </UiButton>
         <UiButton
           type="button"
           className="canvas-btn"
           onClick={onIterate}
-            data-action="canvas-iterate"
+          data-action="canvas-iterate"
         >
           {t('composer.canvas.iterate')}
         </UiButton>
@@ -86,7 +81,7 @@ export function CanvasToolbar({
           type="button"
           className="canvas-btn"
           aria-pressed={isFullscreen}
-            data-action="canvas-fullscreen"
+          data-action="canvas-fullscreen"
           onClick={onFullscreen}
         >
           {isFullscreen ? t('composer.canvas.exitFullscreen') : t('composer.canvas.fullscreen')}

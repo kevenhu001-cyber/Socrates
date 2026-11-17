@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -19,15 +19,15 @@ test('message list renders user messages through React', async ({ page }) => {
   await expect(page.locator('#msgList')).not.toHaveAttribute('data-mounted-by', /.+/);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Hello from the message-list compat spec.');
   });
 
-  const userBubble = page.locator(
-    '[data-client-id^="msg-"].msg.user .msg-body',
-  );
+  const userBubble = page.locator('[data-client-id^="msg-"].msg.user .msg-body');
   await expect(userBubble).toHaveCount(1);
   await expect(userBubble).toContainText('Hello from the message-list compat spec.');
 
@@ -35,8 +35,12 @@ test('message list renders user messages through React', async ({ page }) => {
   await expect(toolbar).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Edit message"]')).toHaveCount(1);
-  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Delete message"]')).toHaveCount(1);
-  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(0);
+  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Delete message"]')).toHaveCount(
+    1,
+  );
+  await expect(
+    toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]'),
+  ).toHaveCount(0);
 });
 
 test('message list renders assistant messages with toolbar and model label', async ({ page }) => {
@@ -50,9 +54,11 @@ test('message list renders assistant messages with toolbar and model label', asy
   });
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     /* Replicate the same finalize step addStreamingMessage → finish()
        takes (body.innerHTML gets set, html is computed via
        renderAssistantHTML). We push a finalized assistant entry so the
@@ -60,19 +66,17 @@ test('message list renders assistant messages with toolbar and model label', asy
     window.addMessage('assistant', 'Sure — here is the answer.');
   });
 
-  const assistantBubble = page.locator(
-    '[data-client-id^="msg-"].msg.assistant .msg-body',
-  );
+  const assistantBubble = page.locator('[data-client-id^="msg-"].msg.assistant .msg-body');
   await expect(assistantBubble).toHaveCount(1);
   await expect(assistantBubble).toContainText('here is the answer');
 
-  const toolbar = page.locator(
-    '[data-client-id^="msg-"].msg.assistant .msg-toolbar',
-  );
+  const toolbar = page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar');
   await expect(toolbar).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Helpful"]')).toHaveCount(1);
   await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Not helpful"]')).toHaveCount(1);
-  await expect(toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]')).toHaveCount(1);
+  await expect(
+    toolbar.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]'),
+  ).toHaveCount(1);
   await expect(toolbar.getByRole('button', { name: 'More actions', exact: true })).toHaveCount(1);
   await expect(toolbar.getByRole('menuitem', { name: 'Branch from here' })).toHaveCount(0);
 });
@@ -88,9 +92,11 @@ test('message list snapshots react to message-added events', async ({ page }) =>
   });
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
   });
 
   await expect(page.locator('#msgList .msg')).toHaveCount(0);
@@ -115,12 +121,17 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     window.__messageListSpecToast = null;
-    const showToastMock = (msg) => { window.__messageListSpecToast = msg; };
+    const showToastMock = (msg) => {
+      window.__messageListSpecToast = msg;
+    };
     window.showToast = showToastMock;
-    if (window.__socratesLegacy?.messages) window.__socratesLegacy.messages.showToast = showToastMock;
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'ffffffff-ffff-4fff-8fff-ffffffffffff' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    if (window.__socratesLegacy?.messages)
+      window.__socratesLegacy.messages.showToast = showToastMock;
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'ffffffff-ffff-4fff-8fff-ffffffffffff' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'copy me please');
   });
 
@@ -129,39 +140,63 @@ test('message list toolbar copy button reads rawText and triggers toast', async 
   await userBubble.hover();
   await userBubble.locator('button.msg-toolbar-btn[aria-label="Copy"]').click();
 
-  await expect.poll(async () => {
-    return await page.evaluate(() => window.__messageListSpecToast || null);
-  }).toMatch(/Copied|Copy/);
+  await expect
+    .poll(async () => {
+      return await page.evaluate(() => window.__messageListSpecToast || null);
+    })
+    .toMatch(/Copied|Copy/);
 });
 
-test('React owns message editing while remaining toolbar actions dispatch through the typed bridge', async ({ page }) => {
+test('React owns message editing while remaining toolbar actions dispatch through the typed bridge', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  expect(await page.evaluate(() => [
-    'editUserMessage', 'deleteUserMessage', 'regenerateAssistantMessage',
-    'branchFromMessage', 'switchMessageBranch', 'sendFeedback',
-  ].filter((name) => name in window))).toEqual([]);
-  expect(await page.evaluate(() => typeof window.__socratesLegacy?.messages?.editUserMessage)).toBe('undefined');
+  expect(
+    await page.evaluate(() =>
+      [
+        'editUserMessage',
+        'deleteUserMessage',
+        'regenerateAssistantMessage',
+        'branchFromMessage',
+        'switchMessageBranch',
+        'sendFeedback',
+      ].filter((name) => name in window),
+    ),
+  ).toEqual([]);
+  expect(await page.evaluate(() => typeof window.__socratesLegacy?.messages?.editUserMessage)).toBe(
+    'undefined',
+  );
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     window.__msgSpecEditCalls = [];
     window.__msgSpecFeedbackCalls = [];
-    const deleteMock = (id) => { window.__msgSpecEditCalls.push('del:'+id); };
-    const regenMock = (id) => { window.__msgSpecEditCalls.push('regen:'+id); };
-    const branchMock = (id) => { window.__msgSpecEditCalls.push('branch:'+id); };
-    const feedbackMock = (id, rating) => { window.__msgSpecFeedbackCalls.push([id, rating]); };
+    const deleteMock = (id) => {
+      window.__msgSpecEditCalls.push('del:' + id);
+    };
+    const regenMock = (id) => {
+      window.__msgSpecEditCalls.push('regen:' + id);
+    };
+    const branchMock = (id) => {
+      window.__msgSpecEditCalls.push('branch:' + id);
+    };
+    const feedbackMock = (id, rating) => {
+      window.__msgSpecFeedbackCalls.push([id, rating]);
+    };
     if (window.__socratesLegacy?.messages) {
       window.__socratesLegacy.messages.deleteUserMessage = deleteMock;
       window.__socratesLegacy.messages.regenerateAssistantMessage = regenMock;
       window.__socratesLegacy.messages.branchFromMessage = branchMock;
       window.__socratesLegacy.messages.sendFeedback = feedbackMock;
     }
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '11111111-1111-4111-8111-111111111111' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'edit and delete me');
   });
 
@@ -183,9 +218,7 @@ test('React owns message editing while remaining toolbar actions dispatch throug
     window.addMessage('assistant', 'reply B');
   });
 
-  const assistantBubble = page.locator(
-    '[data-client-id^="msg-"].msg.assistant',
-  ).last();
+  const assistantBubble = page.locator('[data-client-id^="msg-"].msg.assistant').last();
   await assistantBubble.hover();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Regenerate response"]').click();
   await assistantBubble.locator('button.msg-toolbar-btn[aria-label="Helpful"]').click();
@@ -202,7 +235,9 @@ test('React owns message editing while remaining toolbar actions dispatch throug
   expect(assistantResult.feedback[0][1]).toBe('up');
 });
 
-test('React owns the live streaming row and keeps it through the settled commit', async ({ page }) => {
+test('React owns the live streaming row and keeps it through the settled commit', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -210,9 +245,11 @@ test('React owns the live streaming row and keeps it through the settled commit'
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '22222222-2222-4222-8222-222222222222' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'kick off a stream');
   });
 
@@ -222,7 +259,7 @@ test('React owns the live streaming row and keeps it through the settled commit'
     /* Hold the stream open after its first delta so the test can verify the
        live row is already React-owned before the settled commit. */
     const originalFetch = window.fetch.bind(window);
-    window.fetch = function(input, init) {
+    window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
       const encoder = new TextEncoder();
@@ -236,21 +273,29 @@ test('React owns the live streaming row and keeps it through the settled commit'
           };
         },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
     /* Capture the in-flight promise so the test can await completion after
        releasing the controlled stream. */
     window.__msgSpecStreamPromise = window.askChatTurn('kick off a stream').catch(() => {});
   });
 
-  const liveAssistant = page.locator('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]');
+  const liveAssistant = page.locator(
+    '[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]',
+  );
   await expect(liveAssistant.locator('.msg-body')).toContainText('stream-owned-live');
-  await expect(page.locator('[data-client-id^="msg-"].msg.assistant:not([data-react-owned="1"])')).toHaveCount(0);
+  await expect(
+    page.locator('[data-client-id^="msg-"].msg.assistant:not([data-react-owned="1"])'),
+  ).toHaveCount(0);
   await page.evaluate(() => {
-    window.__streamMessageNode = document.querySelector('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]');
+    window.__streamMessageNode = document.querySelector(
+      '[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]',
+    );
     window.__releaseMessageListStream();
   });
   await page.evaluate(() => window.__msgSpecStreamPromise);
@@ -258,12 +303,26 @@ test('React owns the live streaming row and keeps it through the settled commit'
 
   await expect(page.locator('[data-client-id^="msg-"].msg.user')).toHaveCount(1);
   await expect(page.locator('[data-client-id^="msg-"].msg.assistant')).toHaveCount(1);
-  await expect(page.locator('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"] .msg-body')).toContainText('stream-owned-live');
-  expect(await page.evaluate(() => window.__streamMessageNode === document.querySelector('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]'))).toBe(true);
-  await expect(page.locator('[data-client-id^="msg-"].msg.assistant .msg-toolbar button.msg-toolbar-btn[aria-label="Copy"]')).toHaveCount(1);
+  await expect(
+    page.locator('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"] .msg-body'),
+  ).toContainText('stream-owned-live');
+  expect(
+    await page.evaluate(
+      () =>
+        window.__streamMessageNode ===
+        document.querySelector('[data-client-id^="msg-"].msg.assistant[data-react-owned="1"]'),
+    ),
+  ).toBe(true);
+  await expect(
+    page.locator(
+      '[data-client-id^="msg-"].msg.assistant .msg-toolbar button.msg-toolbar-btn[aria-label="Copy"]',
+    ),
+  ).toHaveCount(1);
 });
 
-test('replacing the transcript host remounts its current messages and keeps later updates live', async ({ page }) => {
+test('replacing the transcript host remounts its current messages and keeps later updates live', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await mockAuthedApp(page);
@@ -271,11 +330,13 @@ test('replacing the transcript host remounts its current messages and keeps late
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Transcript survives host replacement.');
   });
-  await expect(page.locator('#msgList .msg-body').first()).toContainText('Transcript survives host replacement.');
+  await expect(page.locator('#msgList .msg-body').first()).toContainText(
+    'Transcript survives host replacement.',
+  );
   await page.evaluate(() => {
     const host = document.getElementById('msgList');
     host.replaceWith(host.cloneNode(false));
@@ -291,12 +352,16 @@ test('replacing the transcript host remounts its current messages and keeps late
   await page.screenshot({ path: 'test-results/transcript-host-replacement.png' });
 });
 
-test('edited turn anchors while its PATCH is pending and stays put when PATCH finishes', async ({ page }) => {
+test('edited turn anchors while its PATCH is pending and stays put when PATCH finishes', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   let releasePatch;
-  const gate = new Promise(resolve => { releasePatch = resolve; });
+  const gate = new Promise((resolve) => {
+    releasePatch = resolve;
+  });
   let patchStarted = false;
-  await page.route('**/api/**/messages/**', async route => {
+  await page.route('**/api/**/messages/**', async (route) => {
     if (route.request().method() !== 'PATCH') return route.fallback();
     patchStarted = true;
     await gate;
@@ -306,16 +371,20 @@ test('edited turn anchors while its PATCH is pending and stays put when PATCH fi
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' });
-    window.stateStore.dispatch({ type: 'session/replace-messages', payload: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' },
+    });
+    window.__socratesTestState.dispatchSession({ type: 'session/replace-messages', payload: [] });
     for (let index = 0; index < 8; index++) {
       window.addMessage('user', `Earlier prompt ${index}`);
-      window.addMessage('assistant', ('Earlier answer paragraph.\n\n').repeat(8));
+      window.addMessage('assistant', 'Earlier answer paragraph.\n\n'.repeat(8));
     }
     window.addMessage('user', 'Edit this prompt');
-    window.addMessage('assistant', ('Answer to replace.\n\n').repeat(8));
-    window.askChatTurn = (_text, _content, controller) => { window.__editReplayHasController = Boolean(controller); };
+    window.addMessage('assistant', 'Answer to replace.\n\n'.repeat(8));
+    window.askChatTurn = (_text, _content, controller) => {
+      window.__editReplayHasController = Boolean(controller);
+    };
   });
   const user = page.locator('#msgList .msg.user').last();
   await user.getByRole('button', { name: 'Edit message', exact: true }).click();
@@ -323,20 +392,25 @@ test('edited turn anchors while its PATCH is pending and stays put when PATCH fi
   await user.locator('.msg-edit-submit').click();
   await expect.poll(() => patchStarted).toBe(true);
   await expect(page.locator('#msgList .msg.assistant').last()).toBeVisible();
-  const offset = () => user.evaluate(row => row.getBoundingClientRect().top - document.getElementById('msgList').getBoundingClientRect().top);
+  const offset = () =>
+    user.evaluate(
+      (row) =>
+        row.getBoundingClientRect().top -
+        document.getElementById('msgList').getBoundingClientRect().top,
+    );
   await expect.poll(offset).toBeLessThan(30);
   await expect.poll(offset).toBeGreaterThanOrEqual(0);
   const before = await offset();
   releasePatch();
   await expect.poll(() => page.evaluate(() => window.__editReplayHasController)).toBe(true);
   await page.waitForTimeout(300);
-  expect(Math.abs(await offset() - before)).toBeLessThan(4);
+  expect(Math.abs((await offset()) - before)).toBeLessThan(4);
   await page.screenshot({ path: 'test-results/edited-turn-stable.png' });
 });
 
 test('basic composer stays usable when the rich editor chunk fails to load', async ({ page }) => {
   await mockAuthedApp(page);
-  await page.route('**/assets/vendor-editor-*.js', route => route.abort('failed'));
+  await page.route('**/assets/vendor-editor-*.js', (route) => route.abort('failed'));
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   const basic = page.locator('[data-basic-composer="true"]');
@@ -346,8 +420,10 @@ test('basic composer stays usable when the rich editor chunk fails to load', asy
   await expect(page.locator('[data-mount-recovery="composer-shell"]')).toBeVisible();
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    const sent = () => { window.__basicSent = true; };
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    const sent = () => {
+      window.__basicSent = true;
+    };
     window.__socratesLegacy.composer.submitChatMessage = sent;
     window.__socratesLegacy.composer.startSession = sent;
   });
@@ -365,12 +441,15 @@ test('user message attachments use the reference preview shapes', async ({ page 
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  const pixel = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const pixel =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   await page.evaluate((dataUrl) => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Image only.', null, null, [
       { id: 'img-only', kind: 'image', name: 'plot.png', mime: 'image/png', size: 2048, dataUrl },
     ]);
@@ -384,8 +463,23 @@ test('user message attachments use the reference preview shapes', async ({ page 
 
   await page.evaluate((dataUrl) => {
     window.addMessage('user', 'Image and document.', null, null, [
-      { id: 'img-mixed', kind: 'image', name: 'plot-2.png', mime: 'image/png', size: 2048, dataUrl },
-      { id: 'doc-mixed', kind: 'document', docKind: 'pdf', name: 'notes.pdf', mime: 'application/pdf', size: 1234, fileId: 'file-mixed' },
+      {
+        id: 'img-mixed',
+        kind: 'image',
+        name: 'plot-2.png',
+        mime: 'image/png',
+        size: 2048,
+        dataUrl,
+      },
+      {
+        id: 'doc-mixed',
+        kind: 'document',
+        docKind: 'pdf',
+        name: 'notes.pdf',
+        mime: 'application/pdf',
+        size: 1234,
+        fileId: 'file-mixed',
+      },
     ]);
   }, pixel);
 
@@ -407,11 +501,20 @@ test('a broken message image keeps its preview frame', async ({ page }) => {
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'ffffffff-ffff-4fff-8fff-ffffffffffff' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'ffffffff-ffff-4fff-8fff-ffffffffffff' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Broken image.', null, null, [
-      { id: 'img-broken', kind: 'image', name: 'missing.png', mime: 'image/png', size: 10, dataUrl: 'data:image/png;base64,AAAA' },
+      {
+        id: 'img-broken',
+        kind: 'image',
+        name: 'missing.png',
+        mime: 'image/png',
+        size: 10,
+        dataUrl: 'data:image/png;base64,AAAA',
+      },
     ]);
   });
 

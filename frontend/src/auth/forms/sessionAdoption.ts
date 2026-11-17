@@ -16,7 +16,15 @@ export interface AdoptAuthenticatedUserOptions<T> {
 
 async function retryCanonicalUser<T>(
   fallbackUser: T | null,
-  { fetchMe, setUser, wait, report, context }: Required<Pick<AdoptAuthenticatedUserOptions<T>, 'fetchMe' | 'setUser' | 'wait' | 'report' | 'context'>>,
+  {
+    fetchMe,
+    setUser,
+    wait,
+    report,
+    context,
+  }: Required<
+    Pick<AdoptAuthenticatedUserOptions<T>, 'fetchMe' | 'setUser' | 'wait' | 'report' | 'context'>
+  >,
 ): Promise<T | null> {
   await wait(150);
   try {
@@ -51,15 +59,18 @@ export async function adoptAuthenticatedUser<T>(
     report = () => null,
     context = 'auth/forms.recheckMe',
   } = options;
-  const fallbackUser = nullFallback ? (loginUser || null) : loginUser;
+  const fallbackUser = nullFallback ? loginUser || null : loginUser;
 
   try {
     const me = await fetchMe();
     const currentUser = me && me.user ? me.user : fallbackUser;
     setUser(currentUser);
     return currentUser;
-  } catch { /* empty-catch: intentional — fall back to the login response below */ setUser(fallbackUser); }
+  } catch {
+    /* empty-catch: intentional — fall back to the login response below */ setUser(fallbackUser);
+  }
 
-  if (!shouldRetryAfterFailure(retryAfterFailure, retryOnlyWithCurrentUser, getCurrentUser)) return fallbackUser;
+  if (!shouldRetryAfterFailure(retryAfterFailure, retryOnlyWithCurrentUser, getCurrentUser))
+    return fallbackUser;
   return retryCanonicalUser(fallbackUser, { fetchMe, setUser, wait, report, context });
 }

@@ -34,7 +34,7 @@ export interface AIRequestOptions {
 const RETRYABLE_STATUS = new Set([408, 425, 429]);
 
 function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' ? value as Record<string, unknown> : null;
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
 }
 
 function errorBody(error: unknown): Record<string, unknown> | null {
@@ -88,15 +88,19 @@ const USER_ABORT_REASONS = new Set([
 ]);
 
 function isGenericAbortReason(reason: string): boolean {
-  return !reason
-    || reason === 'abort'
-    || reason.startsWith('aborterror')
-    || reason.includes('operation was aborted');
+  return (
+    !reason ||
+    reason === 'abort' ||
+    reason.startsWith('aborterror') ||
+    reason.includes('operation was aborted')
+  );
 }
 
 export function isUserAbort(error: unknown, signal?: AbortSignal): boolean {
   const record = asRecord(error);
-  const reason = String(record?.reason ?? signal?.reason ?? '').trim().toLowerCase();
+  const reason = String(record?.reason ?? signal?.reason ?? '')
+    .trim()
+    .toLowerCase();
   if (USER_ABORT_REASONS.has(reason)) return true;
   /* AbortController.abort() without an explicit reason is how the Codex
      Stop button cancels its turn. The client never aborts on a timer, so
@@ -120,7 +124,11 @@ export function isRetryableAIError(
   if (asRecord(error)?.retryable === false || errorBody(error)?.retryable === false) return false;
 
   const code = errorCode(error);
-  if (/MONTHLY_LIMIT|QUOTA|INVALID[_ -]?API[_ -]?KEY|AUTH|UNAUTHORIZED|FORBIDDEN|INVALID[_ -]?REQUEST|MODEL_MODE_UNSUPPORTED|CONTENT[_ -]?POLICY|BAD[_ -]?REQUEST/.test(code)) {
+  if (
+    /MONTHLY_LIMIT|QUOTA|INVALID[_ -]?API[_ -]?KEY|AUTH|UNAUTHORIZED|FORBIDDEN|INVALID[_ -]?REQUEST|MODEL_MODE_UNSUPPORTED|CONTENT[_ -]?POLICY|BAD[_ -]?REQUEST/.test(
+      code,
+    )
+  ) {
     return false;
   }
 
@@ -132,7 +140,11 @@ export function isRetryableAIError(
   }
 
   const message = errorMessage(error).toLowerCase();
-  if (/monthly limit|quota exhausted|invalid api key|authentication failed|unauthorized|forbidden|invalid request|content policy/.test(message)) {
+  if (
+    /monthly limit|quota exhausted|invalid api key|authentication failed|unauthorized|forbidden|invalid request|content policy/.test(
+      message,
+    )
+  ) {
     return false;
   }
 
@@ -192,8 +204,10 @@ export async function waitForAIRetry(
     source: options.source ?? 'chat',
     reason: reasonFor(error),
   };
-  try { options.onRetry?.(notice); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/retryPolicy.ts:193');
+  try {
+    options.onRetry?.(notice);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/retryPolicy.ts');
     /* UI callbacks are non-critical. */
   }
   const sleep = options.sleep ?? sleepForAIRetry;

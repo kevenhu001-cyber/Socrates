@@ -5,7 +5,8 @@
  * across alternative branches using the < 1 / 2 > branch switcher in the message toolbar.
  */
 
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
+import type { ChatMessageShape } from '../state/session.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
@@ -38,15 +39,19 @@ interface BranchSwitchContext {
   currentIndex: number;
 }
 
-function getBranchSwitchContext(messageId: string, targetIndex: number): BranchSwitchContext | null {
+function getBranchSwitchContext(
+  messageId: string,
+  targetIndex: number,
+): BranchSwitchContext | null {
   const index = findMessageIndex(messageId);
   if (index < 0) return null;
-  const messages = stateStore.read('messages') as ChatMessage[];
+  const messages = sessionStore.getState().messages as ChatMessage[];
   const currentMessage = messages[index];
   if (!currentMessage.branchInfo || !Array.isArray(currentMessage.branchInfo.variants)) return null;
 
   const { variants, currentIndex } = currentMessage.branchInfo;
-  if (targetIndex < 0 || targetIndex >= variants.length || targetIndex === currentIndex) return null;
+  if (targetIndex < 0 || targetIndex >= variants.length || targetIndex === currentIndex)
+    return null;
   return { index, messages, currentMessage, variants, currentIndex };
 }
 
@@ -101,9 +106,9 @@ function replaceBranchSubtree(
 }
 
 export function findMessageIndex(messageId: string): number {
-  const messages = stateStore.read('messages');
+  const messages = sessionStore.getState().messages;
   if (!Array.isArray(messages)) return -1;
-  return messages.findIndex((m) => (m.clientId === messageId || m.id === messageId));
+  return messages.findIndex((m) => m.clientId === messageId || m.id === messageId);
 }
 
 /** Prepare branch info when starting a new user edit branch */
@@ -113,7 +118,7 @@ export function prepareUserEditBranch(
 ): { branchInfo: MessageBranchInfo; entry: ChatMessage } | null {
   const idx = findMessageIndex(messageId);
   if (idx < 0) return null;
-  const messages = stateStore.read('messages') as ChatMessage[];
+  const messages = sessionStore.getState().messages as ChatMessage[];
   const entry = messages[idx];
   const following = messages.slice(idx + 1);
 
@@ -166,7 +171,7 @@ export function prepareAssistantRegenerateBranch(
 ): { branchInfo: MessageBranchInfo; assistantEntry: ChatMessage; userEntry: ChatMessage } | null {
   const assistantIdx = findMessageIndex(messageId);
   if (assistantIdx < 0) return null;
-  const messages = stateStore.read('messages') as ChatMessage[];
+  const messages = sessionStore.getState().messages as ChatMessage[];
   const currentAssistant = messages[assistantIdx];
 
   let userIdx = assistantIdx - 1;
@@ -184,7 +189,9 @@ export function prepareAssistantRegenerateBranch(
         ...variants[currIdx],
         rawText: currentAssistant.rawText,
         html: currentAssistant.html,
-        toolCalls: currentAssistant.toolCalls ? (currentAssistant.toolCalls as unknown[]).slice() : [],
+        toolCalls: currentAssistant.toolCalls
+          ? (currentAssistant.toolCalls as unknown[]).slice()
+          : [],
         turnRuntime: currentAssistant.turnRuntime,
         reasoningContent: currentAssistant.reasoningContent,
         followingMessages: following,
@@ -197,7 +204,9 @@ export function prepareAssistantRegenerateBranch(
       role: 'assistant',
       rawText: currentAssistant.rawText,
       html: currentAssistant.html,
-      toolCalls: currentAssistant.toolCalls ? (currentAssistant.toolCalls as unknown[]).slice() : [],
+      toolCalls: currentAssistant.toolCalls
+        ? (currentAssistant.toolCalls as unknown[]).slice()
+        : [],
       turnRuntime: currentAssistant.turnRuntime,
       reasoningContent: currentAssistant.reasoningContent,
       followingMessages: following,
@@ -238,8 +247,15 @@ export function switchMessageBranch(messageId: string, targetIndex: number): boo
   const switchedMessage = createSwitchedMessage(currentMessage, target, updatedBranchInfo);
   const nextMessages = replaceBranchSubtree(messages, index, switchedMessage, target);
 
-  stateStore.dispatch({ type: 'session/replace-messages', payload: nextMessages });
+  dispatchSession({
+    type: 'session/replace-messages',
+    payload: nextMessages as ChatMessageShape[],
+  });
   publishReactChatRuntime({ type: 'state-synced', reason: 'message-branch-switched' });
-  try { saveCurrentSession(); } catch (error) { reportSwallow(error, 'branchManager.switchMessageBranch.save'); }
+  try {
+    saveCurrentSession();
+  } catch (error) {
+    reportSwallow(error, 'branchManager.switchMessageBranch.save');
+  }
   return true;
 }

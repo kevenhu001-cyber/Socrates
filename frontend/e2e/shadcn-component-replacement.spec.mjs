@@ -1,8 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('preference Select supports keyboard selection and Escape closes only the top layer', async ({ page }) => {
+test('preference Select supports keyboard selection and Escape closes only the top layer', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -36,11 +38,31 @@ test('preference Select supports keyboard selection and Escape closes only the t
   await expect(appearance).toContainText('Light');
 });
 
-test('provider radio arrow navigation preserves text editing and persists the new active model', async ({ page }) => {
-  await mockAuthedApp(page, { apiKeys: { providers: [
-    { id: 'first', label: 'First provider', url: 'https://first.example.test/v1', model: 'first', hasKey: true, isActive: true },
-    { id: 'second', label: 'Second provider', url: 'https://second.example.test/v1', model: 'second', hasKey: true, isActive: false },
-  ] } });
+test('provider radio arrow navigation preserves text editing and persists the new active model', async ({
+  page,
+}) => {
+  await mockAuthedApp(page, {
+    apiKeys: {
+      providers: [
+        {
+          id: 'first',
+          label: 'First provider',
+          url: 'https://first.example.test/v1',
+          model: 'first',
+          hasKey: true,
+          isActive: true,
+        },
+        {
+          id: 'second',
+          label: 'Second provider',
+          url: 'https://second.example.test/v1',
+          model: 'second',
+          hasKey: true,
+          isActive: false,
+        },
+      ],
+    },
+  });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
@@ -58,7 +80,9 @@ test('provider radio arrow navigation preserves text editing and persists the ne
   await expect(second.getByRole('radio')).toBeChecked();
   await expect(second.getByRole('radio')).toBeFocused();
   await expect(first.getByRole('radio')).not.toBeChecked();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-last-active-id'))).toBe('second');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-last-active-id')))
+    .toBe('second');
 });
 
 test('sharing RadioGroup uses arrow keys and submits the selected visibility', async ({ page }) => {
@@ -67,13 +91,18 @@ test('sharing RadioGroup uses arrow keys and submits the selected visibility', a
   await page.route('**/api/**/sessions/*/share', async (route) => {
     if (route.request().method() === 'POST') {
       submitted = route.request().postDataJSON();
-      await route.fulfill({ status: 201, json: { token: 'private-token', url: '/a/private-token', visibility: 'private' } });
+      await route.fulfill({
+        status: 201,
+        json: { token: 'private-token', url: '/a/private-token', visibility: 'private' },
+      });
     } else await route.fulfill({ json: { token: null, visibility: 'public' } });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '11111111-1111-4111-8111-111111111111' });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '11111111-1111-4111-8111-111111111111' },
+    });
     window.__socratesLegacy.messages.openShareModal();
   });
   const share = page.locator('#shareOverlay');
@@ -109,7 +138,9 @@ test('provider Card fields and choices remain reachable on a narrow phone', asyn
   const radio = provider.getByRole('radio');
   await radio.click();
   await expect(radio).toBeChecked();
-  const overflow = await settings.locator('.settings-body').evaluate(node => node.scrollWidth - node.clientWidth);
+  const overflow = await settings
+    .locator('.settings-body')
+    .evaluate((node) => node.scrollWidth - node.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'test-results/shadcn-provider-phone.png' });

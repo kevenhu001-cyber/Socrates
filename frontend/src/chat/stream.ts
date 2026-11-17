@@ -7,7 +7,7 @@
    Reads the active provider from the typed window bridge. Retry budget and
    offline status are imported from their module owner. */
 
-import { stateStore } from '../state/store.ts';
+import { dispatchCall } from '../store/index.ts';
 import { turnState } from './turn/state.ts';
 import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { offlineGuard, STREAM_MAX_ATTEMPTS } from './offline.ts';
@@ -52,7 +52,7 @@ export type StreamDeltaHandler = ((text: string, full: string) => void) | null;
 export type StreamThinkingHandler = ((text: string) => void) | null;
 
 function setLastCallError(value: string | null): void {
-  stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value });
+  dispatchCall({ type: 'call/set', key: 'lastCallError', value });
 }
 
 function bindAbortSignal(
@@ -61,24 +61,27 @@ function bindAbortSignal(
 ): (() => void) | null {
   if (!parent) return null;
   const onAbort = (): void => {
-    try { child.abort(parent.reason || 'aborted'); }
-    catch (error) { reportSwallow(error, 'chat/stream.bindAbortSignal'); }
+    try {
+      child.abort(parent.reason || 'aborted');
+    } catch (error) {
+      reportSwallow(error, 'chat/stream.bindAbortSignal');
+    }
   };
   if (parent.aborted) onAbort();
   else parent.addEventListener('abort', onAbort, { once: true });
   return () => {
-    try { parent.removeEventListener('abort', onAbort); }
-    catch (error) { reportSwallow(error, 'chat/stream.bindAbortSignal#2'); }
+    try {
+      parent.removeEventListener('abort', onAbort);
+    } catch (error) {
+      reportSwallow(error, 'chat/stream.bindAbortSignal#2');
+    }
   };
 }
 
 function maxStreamAttempts(opts?: StreamCallOptions | null): number {
-  const configured = opts && typeof opts.maxAttempts === 'number'
-    ? opts.maxAttempts
-    : STREAM_MAX_ATTEMPTS;
-  return typeof configured === 'number' && configured > 0
-    ? configured
-    : AI_MAX_ATTEMPTS;
+  const configured =
+    opts && typeof opts.maxAttempts === 'number' ? opts.maxAttempts : STREAM_MAX_ATTEMPTS;
+  return typeof configured === 'number' && configured > 0 ? configured : AI_MAX_ATTEMPTS;
 }
 
 /* Drop the global abort handle only while it is still the one this call
@@ -97,9 +100,13 @@ function createRetryHooks(
 } {
   async function waitForRetry(attempt: number, error: unknown): Promise<boolean> {
     try {
-      return await waitForAIRetry(attempt, error, Object.assign({}, retryOptions, {
-        signal: turnController.signal,
-      }));
+      return await waitForAIRetry(
+        attempt,
+        error,
+        Object.assign({}, retryOptions, {
+          signal: turnController.signal,
+        }),
+      );
     } catch (caught) {
       if (isUserAbort(caught, turnController.signal) || isUserAbort(caught, retryOptions.signal)) {
         return false;
@@ -109,15 +116,24 @@ function createRetryHooks(
   }
   return {
     waitForRetry,
-    retryWasCancelled: () => turnController.signal.aborted && isUserAbort(null, turnController.signal),
+    retryWasCancelled: () =>
+      turnController.signal.aborted && isUserAbort(null, turnController.signal),
   };
 }
 
-function prepareNextAttempt(opts: StreamCallOptions | null | undefined, activeTurn: { current: string | null }): void {
+function prepareNextAttempt(
+  opts: StreamCallOptions | null | undefined,
+  activeTurn: { current: string | null },
+): void {
   /* Retire a replaced server turn while preserving an explicit same-turn rebind. */
   const rebindsSameTurn = !!(opts && typeof opts.turnId === 'string' && opts.turnId);
   if (!rebindsSameTurn) abandonServerTurn(activeTurn.current);
-  if (opts && typeof opts === 'object' && opts.clientTurn && typeof (opts.clientTurn as { id?: unknown }).id === 'string') {
+  if (
+    opts &&
+    typeof opts === 'object' &&
+    opts.clientTurn &&
+    typeof (opts.clientTurn as { id?: unknown }).id === 'string'
+  ) {
     (opts.clientTurn as { id: string }).id = newClientTurnId();
   }
   activeTurn.current = null;
@@ -138,7 +154,8 @@ async function executeStreamAttempts(args: {
     current: args.opts && typeof args.opts.turnId === 'string' ? args.opts.turnId : null,
   };
   let lastError: Error | null = null;
-  const activeAbortHandle = (reason?: unknown): void => args.turnController.abort(reason || 'user-stop');
+  const activeAbortHandle = (reason?: unknown): void =>
+    args.turnController.abort(reason || 'user-stop');
   turnState.activeChatAbort = activeAbortHandle;
   args.onAbortHandle(activeAbortHandle);
   const { runStreamAttempt } = await import('./streamAttempt.ts');
@@ -226,7 +243,9 @@ export async function callAPIStream(
       maxAttempts,
       turnController,
       retryHooks,
-      onAbortHandle: (handle) => { activeAbortHandle = handle; },
+      onAbortHandle: (handle) => {
+        activeAbortHandle = handle;
+      },
     });
   } finally {
     if (unbindExternal) unbindExternal();

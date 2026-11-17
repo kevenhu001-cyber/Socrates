@@ -1,8 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('first conversation and reload presentation converge to the exact same UI structure', async ({ page }) => {
+test('first conversation and reload presentation converge to the exact same UI structure', async ({
+  page,
+}) => {
   let savedSession = null;
 
   await mockAuthedApp(page);
@@ -29,7 +31,9 @@ test('first conversation and reload presentation converge to the exact same UI s
       }
       if (Array.isArray(postData.messages)) {
         for (const msg of postData.messages) {
-          const idx = savedSession.messages.findIndex((m) => m.clientId && m.clientId === msg.clientId);
+          const idx = savedSession.messages.findIndex(
+            (m) => m.clientId && m.clientId === msg.clientId,
+          );
           if (idx >= 0) savedSession.messages[idx] = msg;
           else savedSession.messages.push(msg);
         }
@@ -81,13 +85,16 @@ test('first conversation and reload presentation converge to the exact same UI s
     'data: [DONE]\n\n',
   ].join('');
 
-  await page.route(/\/api\/(?:v2\/)?(?:chat\/stream|minimax\/v1\/chat\/completions)(?:\?|$)/, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/event-stream',
-      body: sseBody,
-    });
-  });
+  await page.route(
+    /\/api\/(?:v2\/)?(?:chat\/stream|minimax\/v1\/chat\/completions)(?:\?|$)/,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: sseBody,
+      });
+    },
+  );
 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -102,7 +109,9 @@ test('first conversation and reload presentation converge to the exact same UI s
   await expect(page.locator('#msgList .msg.assistant')).toHaveCount(1);
 
   // Wait for stream to finish and settle
-  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toHaveCount(0, { timeout: 10_000 });
+  await expect(
+    page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]'),
+  ).toHaveCount(0, { timeout: 10_000 });
   await page.waitForTimeout(500);
 
   // Ensure save occurred
@@ -134,7 +143,7 @@ test('first conversation and reload presentation converge to the exact same UI s
     };
 
     return {
-      sessionId: window.stateStore.read('currentSessionId'),
+      sessionId: window.__socratesTestState.session().currentSessionId,
       userBody: getMetrics(userBody),
       asstBody: getMetrics(asstBody),
       chatViewVisible: !document.getElementById('chatView')?.classList.contains('hidden'),

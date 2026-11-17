@@ -49,10 +49,10 @@ import { initTheme, loadDisplayPrefs } from './displayPrefs.ts';
 import { syncWebSearchUI } from './chat/webSearchToggle.ts';
 import { bootstrapApp } from './app/bootstrap.ts';
 import { installWidgetRuntime } from './app/widgetSetup.ts';
+import { installTestState } from './app/testState.ts';
 import { loadTonePreset } from './config/tonePresets.ts';
 import { installAuthHooks } from './util/api/index.ts';
 import { syncAppModeUI, syncSidebarForMode } from './config/providers.ts';
-
 
 initCookieConsent({ privacyUrl: 'https://topodrive.top/privacy' });
 initLinkFavicons();
@@ -71,47 +71,56 @@ initTheme();
 
 loadDisplayPrefs();
 
-
 initSidebarDrag();
 
 installKeyboardShortcuts();
 
 /* Share one keyboard session between responsive layout and the native bridge. */
 const keyboardLift = initKeyboardLift({
-  inputs: [
-    document.getElementById('composerInputWrap'),
-  ].filter((element): element is HTMLElement => element !== null),
+  inputs: [document.getElementById('composerInputWrap')].filter(
+    (element): element is HTMLElement => element !== null,
+  ),
   container: document.getElementById('appShell'),
 });
 
 if (typeof window !== 'undefined') {
-  (window as unknown as { __socratesKeyboard?: typeof keyboardLift }).__socratesKeyboard = keyboardLift;
+  (window as unknown as { __socratesKeyboard?: typeof keyboardLift }).__socratesKeyboard =
+    keyboardLift;
 }
 initAndroidBridge();
 initTopicFocusAssist();
 
-(function initMsgScrollbar(){
-  const ml=document.getElementById("msgList");
-  if(!ml)return;
-  let timer: number|null|undefined=null;
-  let ticking=false;
+(function initMsgScrollbar() {
+  const ml = document.getElementById('msgList');
+  if (!ml) return;
+  let timer: number | null | undefined = null;
+  let ticking = false;
   /* P_perf-scrollbar — scroll fires per frame while velocityScrollTo drives
      scrollTop (and per wheel tick while the reader scrolls). Coalesce the
      class write + timer reset to one rAF so rapid events share a single DOM
      touch; passive because the handler never cancels the scroll. */
-  const raf=typeof requestAnimationFrame==="function"
-    ?requestAnimationFrame
-    :function(cb: TimerHandler){return setTimeout(cb,16)};
-  ml.addEventListener("scroll",function(){
-    if(ticking)return;
-    ticking=true;
-    raf(function(){
-      ticking=false;
-      if(!ml.classList.contains("scrollbar-visible"))ml.classList.add("scrollbar-visible");
-      clearTimeout((timer ?? undefined));
-      timer=setTimeout(function(){ml.classList.remove("scrollbar-visible")},1500);
-    });
-  },{passive:true});
+  const raf =
+    typeof requestAnimationFrame === 'function'
+      ? requestAnimationFrame
+      : function (cb: TimerHandler) {
+          return setTimeout(cb, 16);
+        };
+  ml.addEventListener(
+    'scroll',
+    function () {
+      if (ticking) return;
+      ticking = true;
+      raf(function () {
+        ticking = false;
+        if (!ml.classList.contains('scrollbar-visible')) ml.classList.add('scrollbar-visible');
+        clearTimeout(timer ?? undefined);
+        timer = setTimeout(function () {
+          ml.classList.remove('scrollbar-visible');
+        }, 1500);
+      });
+    },
+    { passive: true },
+  );
 })();
 initChatComposerReserve();
 
@@ -120,6 +129,7 @@ installDiagnosticFlowActions();
 installLiveTurnRetryListener();
 
 installWidgetRuntime();
+installTestState();
 
 /* Install auth recovery before bootstrap can start API-backed work. */
 installAuthHooks({ on401: handleAuthExpired, isInGraceWindow: isInAuthGraceWindow });

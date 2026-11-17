@@ -36,7 +36,9 @@ export function saveCustomInstructions(value: CustomInstructions): void {
   }
 }
 
-export function buildCustomInstructionsString(value: Pick<CustomInstructions, 'response' | 'about'>): string {
+export function buildCustomInstructionsString(
+  value: Pick<CustomInstructions, 'response' | 'about'>,
+): string {
   const parts: string[] = [];
   if (value.response) parts.push('[How to respond]\n' + value.response);
   if (value.about) parts.push('[About the user]\n' + value.about);

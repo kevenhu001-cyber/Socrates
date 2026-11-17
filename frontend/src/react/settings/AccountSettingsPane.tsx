@@ -36,35 +36,83 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
         </Badge>
       </div>
       <section className="settings-section">
-        <div className="settings-section-head"><h3>{label('账户详情', 'Account details')}</h3></div>
-        <div className="settings-choice"><span>{label('加入时间', 'Joined')}</span><span className="settings-choice-value">{profile.user.joinedAt || '—'}</span></div>
-        <div className="settings-choice"><span>{label('邮箱验证', 'Email verified')}</span><span className={'settings-choice-value' + (profile.user.verifiedAt ? ' is-yes' : '')}>{profile.user.verifiedAt ? label('已验证', 'Verified') : label('未验证', 'Not verified')}</span></div>
-        <div className="settings-choice"><span>{label('用户 ID', 'User ID')}</span><span className="settings-choice-value settings-mono">{profile.user.userId || '—'}</span></div>
-        <div className="settings-choice"><span>{label('续期', 'Renewal')}</span><span className="settings-choice-value">{profile.user.subEnd || '—'}</span></div>
+        <div className="settings-section-head">
+          <h3>{label('账户详情', 'Account details')}</h3>
+        </div>
+        <div className="settings-choice">
+          <span>{label('加入时间', 'Joined')}</span>
+          <span className="settings-choice-value">{profile.user.joinedAt || '—'}</span>
+        </div>
+        <div className="settings-choice">
+          <span>{label('邮箱验证', 'Email verified')}</span>
+          <span className={'settings-choice-value' + (profile.user.verifiedAt ? ' is-yes' : '')}>
+            {profile.user.verifiedAt
+              ? label('已验证', 'Verified')
+              : label('未验证', 'Not verified')}
+          </span>
+        </div>
+        <div className="settings-choice">
+          <span>{label('用户 ID', 'User ID')}</span>
+          <span className="settings-choice-value settings-mono">{profile.user.userId || '—'}</span>
+        </div>
+        <div className="settings-choice">
+          <span>{label('续期', 'Renewal')}</span>
+          <span className="settings-choice-value">{profile.user.subEnd || '—'}</span>
+        </div>
       </section>
       <section className="settings-section">
-        <div className="settings-section-head"><h3>{label('数据与用量', 'Data & usage')}</h3></div>
+        <div className="settings-section-head">
+          <h3>{label('数据与用量', 'Data & usage')}</h3>
+        </div>
         <div className="settings-choice">
           <span>{label('Token 用量', 'Token usage')}</span>
-          <Button variant="outline" type="button" onClick={() => { closeSettings(); actions.openUsage(); }}>{label('查看', 'View')}</Button>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              closeSettings();
+              actions.openUsage();
+            }}
+          >
+            {label('查看', 'View')}
+          </Button>
         </div>
         <div className="settings-choice">
           <span>{label('已归档会话', 'Archived sessions')}</span>
-          <Button variant="outline" type="button" onClick={() => { closeSettings(); actions.openStorage(); }}>{label('管理', 'Manage')}</Button>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              closeSettings();
+              actions.openStorage();
+            }}
+          >
+            {label('管理', 'Manage')}
+          </Button>
         </div>
       </section>
       <section className="settings-section">
-        <div className="settings-section-head"><h3>{label('会话', 'Session')}</h3></div>
+        <div className="settings-section-head">
+          <h3>{label('会话', 'Session')}</h3>
+        </div>
         <div className="settings-choice">
           <span>{label('退出当前设备上的登录状态', 'End the session on this device')}</span>
-          <Button variant="outline" type="button" onClick={() => actions.signOut()}>{label('退出登录', 'Sign out')}</Button>
+          <Button variant="outline" type="button" onClick={() => actions.signOut()}>
+            {label('退出登录', 'Sign out')}
+          </Button>
         </div>
       </section>
       <section className="settings-section settings-danger-zone">
-        <div className="settings-section-head"><h3>{label('危险区', 'Danger zone')}</h3></div>
+        <div className="settings-section-head">
+          <h3>{label('危险区', 'Danger zone')}</h3>
+        </div>
         <div className="settings-choice">
-          <span className="settings-danger-text">{label('永久删除账户及全部数据', 'Permanently delete your account and all data')}</span>
-          <Button variant="destructive" type="button" onClick={() => actions.deleteAccount()}>{label('删除账户', 'Delete account')}</Button>
+          <span className="settings-danger-text">
+            {label('永久删除账户及全部数据', 'Permanently delete your account and all data')}
+          </span>
+          <Button variant="destructive" type="button" onClick={() => actions.deleteAccount()}>
+            {label('删除账户', 'Delete account')}
+          </Button>
         </div>
       </section>
     </section>

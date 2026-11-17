@@ -12,30 +12,35 @@
 import { isPageDestination, DESTINATIONS } from '../sidebar/navigation.destinations.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
-export const WORKSPACE_ROUTES = /* @__PURE__ */ (() => Object.fromEntries(
-  Object.entries(DESTINATIONS).map(([name, { path }]) => [name, path]),
-))();
+export const WORKSPACE_ROUTES = /* @__PURE__ */ (() =>
+  Object.fromEntries(Object.entries(DESTINATIONS).map(([name, { path }]) => [name, path])))();
 
 export function workspaceForPath(pathname: string | null | undefined) {
-  const clean = String(pathname || "/").replace(/\/+$/, "") || "/";
-  return Object.keys(DESTINATIONS).find(function (name) { return isPageDestination(name) && DESTINATIONS[name].path === clean; }) || null;
+  const clean = String(pathname || '/').replace(/\/+$/, '') || '/';
+  return (
+    Object.keys(DESTINATIONS).find(function (name) {
+      return isPageDestination(name) && DESTINATIONS[name].path === clean;
+    }) || null
+  );
 }
 
 export function pushWorkspaceRoute(name: string) {
   const next = isPageDestination(name) ? DESTINATIONS[name].path : undefined;
-  if (next && location.pathname !== next) history.pushState({ workspace: name }, "", next);
+  if (next && location.pathname !== next) history.pushState({ workspace: name }, '', next);
 }
 
 /* The plugin center's in-page back button exits explicitly to home —
    history-back is unreliable there because the previous entry may be a
    bare "/" no workspace route owns. */
 export function pushHomeRoute() {
-  try { history.pushState({}, "", "/"); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: app/router.ts:32');
+  try {
+    history.pushState({}, '', '/');
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: app/router.ts');
     /* non-critical */
   }
 }
 
 export function replaceRoute(url: string | URL) {
-  history.replaceState(null, "", url);
+  history.replaceState(null, '', url);
 }

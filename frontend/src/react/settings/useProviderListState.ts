@@ -30,7 +30,9 @@ export function useProviderListState(): ProviderListState {
   const onKeyRef = (id: string, element: HTMLInputElement | null) => {
     keyRefs.current[id] = element;
   };
-  const onSetActive = (id: string) => { void setActiveProvider(id); };
+  const onSetActive = (id: string) => {
+    void setActiveProvider(id);
+  };
   const onRemove = async (id: string) => {
     await removeProviderConfig(id);
   };

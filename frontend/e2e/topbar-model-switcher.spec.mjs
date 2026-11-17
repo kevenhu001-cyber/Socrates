@@ -9,10 +9,26 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthedApp(page, {
     lang: 'zh',
-    apiKeys: { providers: [
-      { id: 'switcher-first', label: 'First model', model: 'first-v1', url: 'https://first.example/v1', hasKey: true, isActive: true },
-      { id: 'switcher-second', label: 'Second model', model: 'second-v1', url: 'https://second.example/v1', hasKey: true, isActive: false },
-    ] },
+    apiKeys: {
+      providers: [
+        {
+          id: 'switcher-first',
+          label: 'First model',
+          model: 'first-v1',
+          url: 'https://first.example/v1',
+          hasKey: true,
+          isActive: true,
+        },
+        {
+          id: 'switcher-second',
+          label: 'Second model',
+          model: 'second-v1',
+          url: 'https://second.example/v1',
+          hasKey: true,
+          isActive: false,
+        },
+      ],
+    },
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -21,8 +37,14 @@ test.beforeEach(async ({ page }) => {
 test('header is a 52px bar with the switcher at the top-left', async ({ page }) => {
   const g = await page.evaluate(() => {
     const r = (s) => document.querySelector(s).getBoundingClientRect();
-    const bar = r('.top-bar'); const sw = r('#topModelSwitcher');
-    return { barH: bar.height, swLeft: sw.left - bar.left, swH: sw.height, swCy: sw.top + sw.height / 2 - bar.top };
+    const bar = r('.top-bar');
+    const sw = r('#topModelSwitcher');
+    return {
+      barH: bar.height,
+      swLeft: sw.left - bar.left,
+      swH: sw.height,
+      swCy: sw.top + sw.height / 2 - bar.top,
+    };
   });
   expect(Math.round(g.barH)).toBe(52);
   expect(Math.round(g.swH)).toBe(36);
@@ -31,7 +53,9 @@ test('header is a 52px bar with the switcher at the top-left', async ({ page }) 
   await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toHaveText('Socrates');
 });
 
-test('switcher toggles the configuration menu below it and closes on outside click', async ({ page }) => {
+test('switcher toggles the configuration menu below it and closes on outside click', async ({
+  page,
+}) => {
   const sw = page.locator('#topModelSwitcher');
   await sw.click();
   const pop = page.locator('.chat-config-pop');
@@ -66,7 +90,9 @@ test('React model selection updates the top-bar label', async ({ page }) => {
   await expect(switcher).toHaveAttribute('aria-label', /Second model/);
 });
 
-test('phones name the model in a chip instead of an unlabelled settings glyph', async ({ page }) => {
+test('phones name the model in a chip instead of an unlabelled settings glyph', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#topModelSwitcher')).toBeVisible();
   /* The chip carries the resolved model name; the brand lockup and the
@@ -87,7 +113,9 @@ test('phones name the model in a chip instead of an unlabelled settings glyph', 
   await expect(page.locator('.chat-config-pop')).toBeInViewport();
 });
 
-test('switcher exposes the React model label and composer effort stays in sync', async ({ page }) => {
+test('switcher exposes the React model label and composer effort stays in sync', async ({
+  page,
+}) => {
   const switcher = page.locator('#topModelSwitcher');
   const model = (await page.locator('#topModelSwitcherModel').textContent())?.trim() || '';
   expect(model).not.toBe('');
@@ -99,7 +127,9 @@ test('switcher exposes the React model label and composer effort stays in sync',
   const slider = pop.getByRole('slider');
   await slider.focus();
   await page.keyboard.press('End');
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort'))).toBe('high');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-reasoning-effort')))
+    .toBe('high');
   await switcher.click();
   await expect(pop).toHaveCount(0);
 

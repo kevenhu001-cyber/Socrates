@@ -25,7 +25,8 @@ export function useAdminSession() {
             systemModel: null,
             embedding: null,
             isAdmin: false,
-            adminGateError: 'ADMIN_PASSWORD is not set on the server — the admin console is disabled.',
+            adminGateError:
+              'ADMIN_PASSWORD is not set on the server — the admin console is disabled.',
           });
           setAuthed(false);
           return;
@@ -37,7 +38,8 @@ export function useAdminSession() {
             systemModel: null,
             embedding: null,
             isAdmin: false,
-            adminGateError: 'This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.',
+            adminGateError:
+              'This client IP is not on the admin allowlist (ADMIN_IP_ALLOWLIST). Contact the operator to add it.',
           });
           setAuthed(false);
           return;
@@ -57,7 +59,9 @@ export function useAdminSession() {
       }
     };
     void initialize();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const signOut = async () => {

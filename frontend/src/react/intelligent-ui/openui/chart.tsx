@@ -1,14 +1,14 @@
 import { SvgMathText } from '../../rn/SvgMathText';
 import { MathText } from '../../rn/useInlineMath';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
-import { defineComponent, useIsStreaming } from "@openuidev/react-lang";
-import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
-import { z } from "zod/v4";
+import { defineComponent, useIsStreaming } from '@openuidev/react-lang';
+import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { z } from 'zod/v4';
 
 type Row = Record<string, unknown>;
 type Format = (value: number, compact?: boolean) => string;
 type Spec = {
-  type: "bar" | "line" | "area" | "pie" | "donut" | "scatter";
+  type: 'bar' | 'line' | 'area' | 'pie' | 'donut' | 'scatter';
   rows: Row[];
   x: string;
   series: string[];
@@ -23,21 +23,36 @@ const num = (value: unknown) => {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(1e100, Math.max(-1e100, number)) : 0;
 };
-const label = (row: Row, x: string) => String(row[x] ?? "");
+const label = (row: Row, x: string) => String(row[x] ?? '');
 
 function makeFormat(kind: string | undefined, currency: string | undefined): Format {
-  const code = typeof currency === "string" && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : "USD";
+  const code =
+    typeof currency === 'string' && /^[A-Za-z]{3}$/.test(currency) ? currency.toUpperCase() : 'USD';
   // Axis ticks are compact ("$2B"); tooltips keep two decimals ("$1.24B").
   return (value, compact) => {
-    if (kind === "percent") return `${Number(value.toFixed(compact ? 1 : 2))}%`;
+    if (kind === 'percent') return `${Number(value.toFixed(compact ? 1 : 2))}%`;
     const big = Math.abs(value) >= (compact ? 1000 : 1e6);
-    const options: Intl.NumberFormatOptions = { minimumFractionDigits: 0, maximumFractionDigits: compact && big ? 1 : 2, ...(big ? { notation: "compact" } : {}) };
-    return value.toLocaleString("en-US", kind === "currency" ? { ...options, style: "currency", currency: code } : options);
+    const options: Intl.NumberFormatOptions = {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: compact && big ? 1 : 2,
+      ...(big ? { notation: 'compact' } : {}),
+    };
+    return value.toLocaleString(
+      'en-US',
+      kind === 'currency' ? { ...options, style: 'currency', currency: code } : options,
+    );
   };
 }
 
 /** A bar with only its far end rounded, so stacked segments meet flush. */
-function barPath(x: number, top: number, width: number, height: number, radius: number, roundTop: boolean) {
+function barPath(
+  x: number,
+  top: number,
+  width: number,
+  height: number,
+  radius: number,
+  roundTop: boolean,
+) {
   const r = Math.max(0, Math.min(radius, width / 2, height));
   const f = (n: number) => n.toFixed(2);
   if (!r) return `M${f(x)},${f(top)}h${f(width)}v${f(height)}h${f(-width)}Z`;
@@ -87,12 +102,14 @@ function Legend({ series }: { series: string[] }) {
 function Cartesian({ spec, width }: { spec: Spec; width: number }) {
   const [hover, setHover] = useState<number | null>(null);
   const { rows, series, type, height, format, x } = spec;
-  const stacked = spec.stacked && type !== "line";
+  const stacked = spec.stacked && type !== 'line';
   const tops = rows.map((row) => {
     let total = 0;
     return series.map((s) => (total += Math.max(0, num(row[s]))));
   });
-  const values = stacked ? tops.map((t) => t[t.length - 1] ?? 0) : rows.flatMap((row) => series.map((s) => num(row[s])));
+  const values = stacked
+    ? tops.map((t) => t[t.length - 1] ?? 0)
+    : rows.flatMap((row) => series.map((s) => num(row[s])));
   const step = niceStep((Math.max(0, ...values) - Math.min(0, ...values)) / 5);
   const lo = Math.floor(Math.min(0, ...values) / step) * step;
   const hi = Math.max(lo + step, Math.ceil(Math.max(0, ...values) / step) * step);
@@ -116,11 +133,24 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
   const tip = hover === null ? null : rows[hover];
   return (
     <div className="iui-chart-plot" style={{ height }}>
-      <svg width={width} height={height} role="img" aria-label={`${type} chart of ${series.join(", ")} by ${x}`} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+      <svg
+        width={width}
+        height={height}
+        role="img"
+        aria-label={`${type} chart of ${series.join(', ')} by ${x}`}
+        onPointerMove={onMove}
+        onPointerLeave={() => setHover(null)}
+      >
         {ticks.map((t) => (
           <g key={t}>
             {/* Solid hairlines; the zero line carries the axis weight. */}
-            <line x1={pad.left} x2={pad.left + w} y1={y(t)} y2={y(t)} className={t === 0 ? "iui-chart-baseline" : "iui-chart-grid"} />
+            <line
+              x1={pad.left}
+              x2={pad.left + w}
+              y1={y(t)}
+              y2={y(t)}
+              className={t === 0 ? 'iui-chart-baseline' : 'iui-chart-grid'}
+            />
             <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="iui-chart-tick">
               {format(t, true)}
             </text>
@@ -128,11 +158,27 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
         ))}
         {rows.map((row, i) =>
           shown(i) ? (
-            <SvgMathText key={i} x={xAt(i)} y={height - 6} anchor="middle" width={Math.max(40, band * every)} className="iui-chart-category" text={label(row, x)} />
+            <SvgMathText
+              key={i}
+              x={xAt(i)}
+              y={height - 6}
+              anchor="middle"
+              width={Math.max(40, band * every)}
+              className="iui-chart-category"
+              text={label(row, x)}
+            />
           ) : null,
         )}
-        {hover !== null && type === "bar" && <rect x={pad.left + band * hover} y={pad.top} width={band} height={h} className="iui-chart-hover" />}
-        {type === "bar" &&
+        {hover !== null && type === 'bar' && (
+          <rect
+            x={pad.left + band * hover}
+            y={pad.top}
+            width={band}
+            height={h}
+            className="iui-chart-hover"
+          />
+        )}
+        {type === 'bar' &&
           rows.map((row, i) => {
             /* Slim bars with air between them read as data, not as blocks. */
             const inner = Math.min(band * 0.6, 44 * Math.max(1, stacked ? 1 : series.length));
@@ -140,39 +186,105 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
               return series.map((s, si) => {
                 const top = y(tops[i][si]);
                 const base = y(tops[i][si - 1] ?? 0);
-                return <path key={`${i}-${s}`} d={barPath(xAt(i) - inner / 2, top, inner, Math.max(0, base - top), 3, si === series.length - 1)} fill={seriesColor(si)} />;
+                return (
+                  <path
+                    key={`${i}-${s}`}
+                    d={barPath(
+                      xAt(i) - inner / 2,
+                      top,
+                      inner,
+                      Math.max(0, base - top),
+                      3,
+                      si === series.length - 1,
+                    )}
+                    fill={seriesColor(si)}
+                  />
+                );
               });
             const each = inner / series.length;
             return series.map((s, si) => {
               const v = num(row[s]);
-              return <path key={`${i}-${s}`} d={barPath(xAt(i) - inner / 2 + each * si + 1, Math.min(y(v), y(0)), Math.max(1, each - 2), Math.abs(y(0) - y(v)), 3, v >= 0)} fill={seriesColor(si)} />;
+              return (
+                <path
+                  key={`${i}-${s}`}
+                  d={barPath(
+                    xAt(i) - inner / 2 + each * si + 1,
+                    Math.min(y(v), y(0)),
+                    Math.max(1, each - 2),
+                    Math.abs(y(0) - y(v)),
+                    3,
+                    v >= 0,
+                  )}
+                  fill={seriesColor(si)}
+                />
+              );
             });
           })}
-        {(type === "line" || type === "area") &&
+        {(type === 'line' || type === 'area') &&
           series.map((s, si) => {
             const top = (i: number) => (stacked ? tops[i][si] : num(rows[i][s]));
             const base = (i: number) => (stacked ? (tops[i][si - 1] ?? 0) : 0);
             const points = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(top(i)).toFixed(1)}`);
-            const under = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(base(i)).toFixed(1)}`).reverse();
+            const under = rows
+              .map((_, i) => `${xAt(i).toFixed(1)},${y(base(i)).toFixed(1)}`)
+              .reverse();
             return (
               <g key={s}>
                 {/* A flat translucent fill: no gradient bands at any zoom. */}
-                {type === "area" && rows.length > 1 && <path d={`M${points.join("L")}L${under.join("L")}Z`} fill={seriesColor(si)} fillOpacity={stacked ? 0.32 : 0.12} />}
-                <path d={`M${points.join("L")}`} fill="none" stroke={seriesColor(si)} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                {type === 'area' && rows.length > 1 && (
+                  <path
+                    d={`M${points.join('L')}L${under.join('L')}Z`}
+                    fill={seriesColor(si)}
+                    fillOpacity={stacked ? 0.32 : 0.12}
+                  />
+                )}
+                <path
+                  d={`M${points.join('L')}`}
+                  fill="none"
+                  stroke={seriesColor(si)}
+                  strokeWidth={2}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
                 {(rows.length <= 16 || hover !== null) &&
-                  rows.map((_, i) => (rows.length <= 16 || i === hover ? <circle key={i} cx={xAt(i)} cy={y(top(i))} r={i === hover ? 4.5 : 3} fill={seriesColor(si)} stroke="var(--iui-canvas)" strokeWidth={1.5} /> : null))}
+                  rows.map((_, i) =>
+                    rows.length <= 16 || i === hover ? (
+                      <circle
+                        key={i}
+                        cx={xAt(i)}
+                        cy={y(top(i))}
+                        r={i === hover ? 4.5 : 3}
+                        fill={seriesColor(si)}
+                        stroke="var(--iui-canvas)"
+                        strokeWidth={1.5}
+                      />
+                    ) : null,
+                  )}
               </g>
             );
           })}
-        {hover !== null && type !== "bar" && <line x1={xAt(hover)} x2={xAt(hover)} y1={pad.top} y2={pad.top + h} className="iui-chart-guide" />}
+        {hover !== null && type !== 'bar' && (
+          <line
+            x1={xAt(hover)}
+            x2={xAt(hover)}
+            y1={pad.top}
+            y2={pad.top + h}
+            className="iui-chart-guide"
+          />
+        )}
       </svg>
       {tip && (
-        <div className="iui-chart-tooltip" style={{ left: Math.min(Math.max(xAt(hover!), 70), width - 70), top: pad.top }}>
-          <strong><MathText text={label(tip, x)} /></strong>
+        <div
+          className="iui-chart-tooltip"
+          style={{ left: Math.min(Math.max(xAt(hover!), 70), width - 70), top: pad.top }}
+        >
+          <strong>
+            <MathText text={label(tip, x)} />
+          </strong>
           {series.map((s, si) => (
             <span key={s}>
               <i style={{ background: seriesColor(si) }} />
-              {series.length > 1 ? <MathText text={`${s} `} /> : ""}
+              {series.length > 1 ? <MathText text={`${s} `} /> : ''}
               <b>{format(num(tip[s]))}</b>
             </span>
           ))}
@@ -188,16 +300,28 @@ function axis(values: number[], zero: boolean) {
   const step = niceStep((max - min || Math.abs(max) || 1) / 5);
   const lo = Math.floor(min / step) * step;
   const hi = Math.max(lo + step, Math.ceil(max / step) * step);
-  return { lo, hi, ticks: Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, k) => lo + k * step) };
+  return {
+    lo,
+    hi,
+    ticks: Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, k) => lo + k * step),
+  };
 }
 
 /** Points with a numeric x; each series is a color. The first text key names a point in its tooltip. */
 function Scatter({ spec, width }: { spec: Spec; width: number }) {
   const [hover, setHover] = useState<{ i: number; si: number } | null>(null);
   const { rows, series, height, format, x } = spec;
-  const name = rows[0] ? Object.keys(rows[0]).find((k) => k !== x && typeof rows[0][k] === "string") : undefined;
-  const ya = axis(rows.flatMap((r) => series.map((s) => num(r[s]))), false);
-  const xa = axis(rows.map((r) => num(r[x])), false);
+  const name = rows[0]
+    ? Object.keys(rows[0]).find((k) => k !== x && typeof rows[0][k] === 'string')
+    : undefined;
+  const ya = axis(
+    rows.flatMap((r) => series.map((s) => num(r[s]))),
+    false,
+  );
+  const xa = axis(
+    rows.map((r) => num(r[x])),
+    false,
+  );
   const left = Math.max(...ya.ticks.map((t) => format(t, true).length)) * 6.4 + 12;
   const pad = { top: 10, right: 8, bottom: 26, left };
   const w = Math.max(10, width - pad.left - pad.right);
@@ -208,25 +332,77 @@ function Scatter({ spec, width }: { spec: Spec; width: number }) {
   const tip = hover && rows[hover.i];
   return (
     <div className="iui-chart-plot" style={{ height }}>
-      <svg width={width} height={height} role="img" aria-label={`scatter chart of ${series.join(", ")} by ${x}`} onPointerLeave={() => setHover(null)}>
+      <svg
+        width={width}
+        height={height}
+        role="img"
+        aria-label={`scatter chart of ${series.join(', ')} by ${x}`}
+        onPointerLeave={() => setHover(null)}
+      >
         {ya.ticks.map((t) => (
           <g key={`y${t}`}>
-            <line x1={pad.left} x2={pad.left + w} y1={py(t)} y2={py(t)} className="iui-chart-grid" />
-            <text x={pad.left - 10} y={py(t) + 4} textAnchor="end" className="iui-chart-tick">{format(t, true)}</text>
+            <line
+              x1={pad.left}
+              x2={pad.left + w}
+              y1={py(t)}
+              y2={py(t)}
+              className="iui-chart-grid"
+            />
+            <text x={pad.left - 10} y={py(t) + 4} textAnchor="end" className="iui-chart-tick">
+              {format(t, true)}
+            </text>
           </g>
         ))}
-        {xa.ticks.map((t, k) => (k % every === 0 ? <text key={`x${t}`} x={px(t)} y={height - 6} textAnchor="middle" className="iui-chart-tick">{Number(t.toFixed(6)).toLocaleString("en-US", { notation: Math.abs(t) >= 1e4 ? "compact" : "standard" })}</text> : null))}
+        {xa.ticks.map((t, k) =>
+          k % every === 0 ? (
+            <text
+              key={`x${t}`}
+              x={px(t)}
+              y={height - 6}
+              textAnchor="middle"
+              className="iui-chart-tick"
+            >
+              {Number(t.toFixed(6)).toLocaleString('en-US', {
+                notation: Math.abs(t) >= 1e4 ? 'compact' : 'standard',
+              })}
+            </text>
+          ) : null,
+        )}
         {series.map((s, si) =>
           rows.map((r, i) => (
-            <circle key={`${si}-${i}`} cx={px(num(r[x]))} cy={py(num(r[s]))} r={hover?.i === i && hover.si === si ? 6.5 : 5} fill={seriesColor(si)} fillOpacity={0.78} stroke="var(--iui-canvas)" strokeWidth={1.5} onPointerEnter={() => setHover({ i, si })} />
+            <circle
+              key={`${si}-${i}`}
+              cx={px(num(r[x]))}
+              cy={py(num(r[s]))}
+              r={hover?.i === i && hover.si === si ? 6.5 : 5}
+              fill={seriesColor(si)}
+              fillOpacity={0.78}
+              stroke="var(--iui-canvas)"
+              strokeWidth={1.5}
+              onPointerEnter={() => setHover({ i, si })}
+            />
           )),
         )}
       </svg>
       {tip && hover && (
-        <div className="iui-chart-tooltip" style={{ left: Math.min(Math.max(px(num(tip[x])), 70), width - 70), top: Math.max(0, py(num(tip[series[hover.si]])) - 70) }}>
-          <strong><MathText text={name ? String(tip[name]) : series[hover.si]} /></strong>
-          <span><MathText text={x} /> <b>{num(tip[x]).toLocaleString("en-US", { maximumFractionDigits: 2 })}</b></span>
-          <span><i style={{ background: seriesColor(hover.si) }} /><MathText text={series[hover.si]} /> <b>{format(num(tip[series[hover.si]]))}</b></span>
+        <div
+          className="iui-chart-tooltip"
+          style={{
+            left: Math.min(Math.max(px(num(tip[x])), 70), width - 70),
+            top: Math.max(0, py(num(tip[series[hover.si]])) - 70),
+          }}
+        >
+          <strong>
+            <MathText text={name ? String(tip[name]) : series[hover.si]} />
+          </strong>
+          <span>
+            <MathText text={x} />{' '}
+            <b>{num(tip[x]).toLocaleString('en-US', { maximumFractionDigits: 2 })}</b>
+          </span>
+          <span>
+            <i style={{ background: seriesColor(hover.si) }} />
+            <MathText text={series[hover.si]} /> <b>{format(num(tip[series[hover.si]]))}</b>
+          </span>
         </div>
       )}
     </div>
@@ -235,16 +411,25 @@ function Scatter({ spec, width }: { spec: Spec; width: number }) {
 
 function Pie({ spec, width }: { spec: Spec; width: number }) {
   const key = spec.series[0];
-  const items = spec.rows.map((row) => ({ label: label(row, spec.x), value: Math.max(0, num(key ? row[key] : 0)) }));
+  const items = spec.rows.map((row) => ({
+    label: label(row, spec.x),
+    value: Math.max(0, num(key ? row[key] : 0)),
+  }));
   const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
   const size = Math.max(80, Math.min(200, width < 420 ? width * 0.62 : 200));
   const r = size / 2;
-  const inner = spec.type === "donut" ? r * 0.62 : 0;
+  const inner = spec.type === 'donut' ? r * 0.62 : 0;
   let angle = -Math.PI / 2;
-  const point = (radius: number, a: number) => `${(r + radius * Math.cos(a)).toFixed(2)},${(r + radius * Math.sin(a)).toFixed(2)}`;
+  const point = (radius: number, a: number) =>
+    `${(r + radius * Math.cos(a)).toFixed(2)},${(r + radius * Math.sin(a)).toFixed(2)}`;
   return (
     <div className="iui-pie">
-      <svg width={size} height={size} role="img" aria-label={`${spec.type} chart of ${key ?? "values"} by ${spec.x}`}>
+      <svg
+        width={size}
+        height={size}
+        role="img"
+        aria-label={`${spec.type} chart of ${key ?? 'values'} by ${spec.x}`}
+      >
         {items.map((item, i) => {
           const sweep = (item.value / total) * Math.PI * 2;
           const a0 = angle;
@@ -252,7 +437,15 @@ function Pie({ spec, width }: { spec: Spec; width: number }) {
           const large = sweep > Math.PI ? 1 : 0;
           if (sweep >= Math.PI * 2 - 1e-6)
             return inner ? (
-              <circle key={i} cx={r} cy={r} r={(r + inner) / 2} fill="none" stroke={seriesColor(i)} strokeWidth={r - inner} />
+              <circle
+                key={i}
+                cx={r}
+                cy={r}
+                r={(r + inner) / 2}
+                fill="none"
+                stroke={seriesColor(i)}
+                strokeWidth={r - inner}
+              />
             ) : (
               <circle key={i} cx={r} cy={r} r={r} fill={seriesColor(i)} />
             );
@@ -270,7 +463,9 @@ function Pie({ spec, width }: { spec: Spec; width: number }) {
         {items.map((item, i) => (
           <div key={i}>
             <i style={{ background: seriesColor(i) }} />
-            <span><MathText text={item.label} /></span>
+            <span>
+              <MathText text={item.label} />
+            </span>
             <b>{`${Math.round((item.value / total) * 1000) / 10}%`}</b>
           </div>
         ))}
@@ -280,23 +475,36 @@ function Pie({ spec, width }: { spec: Spec; width: number }) {
 }
 
 const chartProps = z.object({
-  type: z.enum(["bar", "line", "area", "pie", "donut", "scatter"]),
+  type: z.enum(['bar', 'line', 'area', 'pie', 'donut', 'scatter']),
   data: z.array(z.record(z.string(), z.union([z.string(), z.number()]))),
   x: z.string().optional(),
   series: z.array(z.string()).optional(),
-  format: z.enum(["number", "currency", "percent"]).optional(),
+  format: z.enum(['number', 'currency', 'percent']).optional(),
   currency: z.string().optional(),
   stacked: z.boolean().optional(),
   height: z.number().optional(),
 });
 
 function toSpec(props: z.infer<typeof chartProps>): Spec | null {
-  const rows = ((Array.isArray(props.data) ? props.data : []) as unknown[]).slice(0, 200).filter((r): r is Row => !!r && typeof r === "object" && !Array.isArray(r));
+  const rows = ((Array.isArray(props.data) ? props.data : []) as unknown[])
+    .slice(0, 200)
+    .filter((r): r is Row => !!r && typeof r === 'object' && !Array.isArray(r));
   const first = rows[0];
   if (!first) return null;
-  const x = (props.x && props.x in first ? props.x : null) ?? Object.keys(first).find((k) => (props.type === "scatter" ? typeof first[k] === "number" : typeof first[k] === "string")) ?? Object.keys(first)[0];
-  const series = (props.series?.length ? props.series.filter((s) => typeof s === "string") : Object.keys(first).filter((k) => k !== x && typeof first[k] === "number")).slice(0, 8);
-  const type = (["bar", "line", "area", "pie", "donut", "scatter"] as const).includes(props.type) ? props.type : "bar";
+  const x =
+    (props.x && props.x in first ? props.x : null) ??
+    Object.keys(first).find((k) =>
+      props.type === 'scatter' ? typeof first[k] === 'number' : typeof first[k] === 'string',
+    ) ??
+    Object.keys(first)[0];
+  const series = (
+    props.series?.length
+      ? props.series.filter((s) => typeof s === 'string')
+      : Object.keys(first).filter((k) => k !== x && typeof first[k] === 'number')
+  ).slice(0, 8);
+  const type = (['bar', 'line', 'area', 'pie', 'donut', 'scatter'] as const).includes(props.type)
+    ? props.type
+    : 'bar';
   return {
     type,
     rows,
@@ -310,19 +518,21 @@ function toSpec(props: z.infer<typeof chartProps>): Spec | null {
 
 /** The height the drawn plot will take, known before its rows are complete. */
 function reservedHeight(spec: Spec | null, height: number | undefined, width: number) {
-  if (spec?.type === "pie" || spec?.type === "donut") return Math.max(80, Math.min(200, width > 0 && width < 420 ? width * 0.62 : 200));
+  if (spec?.type === 'pie' || spec?.type === 'donut')
+    return Math.max(80, Math.min(200, width > 0 && width < 420 ? width * 0.62 : 200));
   return spec?.height ?? Math.min(480, Math.max(140, height ?? 240));
 }
 
 export const Chart = defineComponent({
-  name: "Chart",
+  name: 'Chart',
   props: chartProps,
-  description: 'Rows of data; x is the category key (a number key for scatter), series the value keys (default: every number key). percent values are like 45; currency is a code like "EUR".',
+  description:
+    'Rows of data; x is the category key (a number key for scatter), series the value keys (default: every number key). percent values are like 45; currency is a code like "EUR".',
   component: function ChartView({ props }) {
     const [ref, width] = useWidth();
     const streaming = useIsStreaming();
     const spec = toSpec(props);
-    const pie = spec?.type === "pie" || spec?.type === "donut";
+    const pie = spec?.type === 'pie' || spec?.type === 'donut';
     /* Half-streamed rows would rescale the axes on every token. Hold the
        plot's footprint (and the legend row, once the series are known) and
        draw once the data is complete. */
@@ -330,9 +540,20 @@ export const Chart = defineComponent({
     const reserved = reservedHeight(spec, props.height, width);
     return (
       <figure className="iui-chart" ref={ref} aria-busy={streaming || undefined}>
-        {ready ? pie ? <Pie spec={spec} width={width} /> : spec.type === "scatter" ? <Scatter spec={spec} width={width} /> : <Cartesian spec={spec} width={width} /> : (
+        {ready ? (
+          pie ? (
+            <Pie spec={spec} width={width} />
+          ) : spec.type === 'scatter' ? (
+            <Scatter spec={spec} width={width} />
+          ) : (
+            <Cartesian spec={spec} width={width} />
+          )
+        ) : (
           <div className="iui-chart-pending" style={{ height: reserved }} aria-hidden="true">
-            <span /><span /><span /><span />
+            <span />
+            <span />
+            <span />
+            <span />
           </div>
         )}
         {spec && !pie && <Legend series={spec.series} />}

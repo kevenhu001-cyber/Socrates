@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -13,16 +13,22 @@ async function boot(page) {
       if (!/\/fetch-batch/.test(url)) return nativeFetch(input, options);
       window.__pageReadStarted = true;
       // The deadline must also cover stalled JSON/transport implementations.
-      options.signal.addEventListener('abort', () => { window.__pageReadAborted = true; });
+      options.signal.addEventListener('abort', () => {
+        window.__pageReadAborted = true;
+      });
       return new Promise(() => {});
     };
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/batch', patch: {
-      phase: 'chat', topic: 'Preparation', currentSessionId: '11111111-1111-4111-8111-111111111111',
-    } });
+    window.__socratesTestState.patch({
+      session: {
+        phase: 'chat',
+        topic: 'Preparation',
+        currentSessionId: '11111111-1111-4111-8111-111111111111',
+      },
+    });
     window.__testActivateMainView('chatView');
   });
 }
@@ -31,38 +37,61 @@ async function recordStreams(page) {
   const bodies = [];
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     bodies.push(route.request().postDataJSON());
-    await route.fulfill({ status: 200, contentType: 'text/event-stream',
-      body: 'data: {"choices":[{"delta":{"content":"Prepared reply"}}]}\n\ndata: [DONE]\n\n' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: {"choices":[{"delta":{"content":"Prepared reply"}}]}\n\ndata: [DONE]\n\n',
+    });
   });
   return bodies;
 }
 
 async function sendLink(page) {
-  await page.evaluate(() => { window.__preparePromise = window.submitChatMessage('Read https://example.com/page'); });
+  await page.evaluate(() => {
+    window.__preparePromise = window.submitChatMessage('Read https://example.com/page');
+  });
   await expect.poll(() => page.evaluate(() => window.__pageReadStarted)).toBe(true);
-  await expect(page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]')).toBeVisible();
+  await expect(
+    page.locator('#msgList .msg.assistant [data-testid="turn-activity-label"][role="status"]'),
+  ).toBeVisible();
 }
 
 test('fetched link previews render as part of the React message row', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route(/\/api\/(?:v2\/)?fetch-batch(?:\?|$)/, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [{
-      ok: true,
-      title: '<img src=x onerror="window.__linkPreviewXss = 1">Example article',
-      content: 'x'.repeat(230),
-      truncated: true,
-      chars: 230,
-    }] }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        results: [
+          {
+            ok: true,
+            title: '<img src=x onerror="window.__linkPreviewXss = 1">Example article',
+            content: 'x'.repeat(230),
+            truncated: true,
+            chars: 230,
+          },
+        ],
+      }),
+    });
   });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: [DONE]\n\n' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: 'data: [DONE]\n\n',
+    });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/batch', patch: {
-      phase: 'chat', topic: 'Link previews', currentSessionId: 'a2222222-2222-4222-8222-222222222222',
-    } });
+    window.__socratesTestState.patch({
+      session: {
+        phase: 'chat',
+        topic: 'Link previews',
+        currentSessionId: 'a2222222-2222-4222-8222-222222222222',
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__linkPreviewXss = 0;
     window.submitChatMessage('Read https://example.com/article');
@@ -81,9 +110,13 @@ test('a site mention without a URL renders the React missing-link hint', async (
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/batch', patch: {
-      phase: 'chat', topic: 'Link previews', currentSessionId: 'a3333333-3333-4333-8333-333333333333',
-    } });
+    window.__socratesTestState.patch({
+      session: {
+        phase: 'chat',
+        topic: 'Link previews',
+        currentSessionId: 'a3333333-3333-4333-8333-333333333333',
+      },
+    });
     window.__testActivateMainView('chatView');
     window.submitChatMessage('Can you read that website?');
   });
@@ -100,7 +133,9 @@ test('a stalled linked page cannot indefinitely delay the model request', async 
   await expect(page.locator('#msgList .msg.assistant').last()).toContainText('Prepared reply');
 });
 
-test('Stop during linked-page preparation aborts reading and prevents a late model request', async ({ page }) => {
+test('Stop during linked-page preparation aborts reading and prevents a late model request', async ({
+  page,
+}) => {
   await boot(page);
   const bodies = await recordStreams(page);
   await sendLink(page);
@@ -111,7 +146,9 @@ test('Stop during linked-page preparation aborts reading and prevents a late mod
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
 });
 
-test('a newer send cancels the old page preparation and sends only the new turn', async ({ page }) => {
+test('a newer send cancels the old page preparation and sends only the new turn', async ({
+  page,
+}) => {
   await boot(page);
   const bodies = await recordStreams(page);
   await sendLink(page);
@@ -123,12 +160,15 @@ test('a newer send cancels the old page preparation and sends only the new turn'
   expect(lastUser.content).toBe('Use this newer prompt instead');
 });
 
-
-test('starting a new conversation cancels pending page reading without sending the old request', async ({ page }) => {
+test('starting a new conversation cancels pending page reading without sending the old request', async ({
+  page,
+}) => {
   await boot(page);
   const bodies = await recordStreams(page);
   await sendLink(page);
-  await page.evaluate(() => { window.__resetPromise = window.resetApp({ confirmActiveSession: false }); });
+  await page.evaluate(() => {
+    window.__resetPromise = window.resetApp({ confirmActiveSession: false });
+  });
   await page.locator('#confirmOkBtn').click();
   await page.evaluate(() => window.__resetPromise);
   await page.evaluate(() => window.__preparePromise);
@@ -139,7 +179,9 @@ test('starting a new conversation cancels pending page reading without sending t
   await expect(page.locator('#topicSetup')).toBeVisible();
 });
 
-test('a follow-up during a normal stream queues until the current answer finishes', async ({ page }) => {
+test('a follow-up during a normal stream queues until the current answer finishes', async ({
+  page,
+}) => {
   await boot(page);
   await page.evaluate(() => window.renderRecents());
   await page.evaluate(() => {
@@ -152,7 +194,11 @@ test('a follow-up during a normal stream queues until the current answer finishe
       window.__normalStreamRequests += 1;
       const stream = new ReadableStream({
         start(controller) {
-          controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"The current answer is still streaming."}}]}\n\n'));
+          controller.enqueue(
+            encoder.encode(
+              'data: {"choices":[{"delta":{"content":"The current answer is still streaming."}}]}\n\n',
+            ),
+          );
           const finish = () => {
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
@@ -161,9 +207,12 @@ test('a follow-up during a normal stream queues until the current answer finishe
           else finish();
         },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200, headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
     window.submitChatMessage('Start a normal answer');
   });

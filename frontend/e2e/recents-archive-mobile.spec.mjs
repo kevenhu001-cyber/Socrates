@@ -9,7 +9,9 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const SECOND_ID = 'bbbbbbbb-0000-4000-8000-000000000001';
 
-test('phone row menu shows tag/archive/delete and archive POSTs from a real click', async ({ page }) => {
+test('phone row menu shows tag/archive/delete and archive POSTs from a real click', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'zh' });
   await page.setViewportSize({ width: 393, height: 851 });
 
@@ -58,34 +60,69 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
       return;
     }
     if (url.includes('/api/config')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ hasBeagleKey: false }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ hasBeagleKey: false }),
+      });
       return;
     }
     if (url.includes('/api/auth/csrf-token')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }),
+      });
       return;
     }
     if (/\/api\/(?:v2\/)?sessions\/[^/]+\/archive$/.test(url) && method === 'POST') {
       archiveCalls.push(url);
       const id = url.split('/sessions/')[1].split('/')[0];
-      sessions = sessions.map((s) => (s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s));
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      sessions = sessions.map((s) =>
+        s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
       return;
     }
     if (/\/api\/(?:v2\/)?sessions/.test(url) && method === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sessions }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ sessions }),
+      });
       return;
     }
-    if (url.includes('/api/memories') || url.includes('/api/api-key') || url.includes('/api/usage') || url.includes('/api/projects')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], list: [], count: 0, ok: true }) });
+    if (
+      url.includes('/api/memories') ||
+      url.includes('/api/api-key') ||
+      url.includes('/api/usage') ||
+      url.includes('/api/projects')
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], list: [], count: 0, ok: true }),
+      });
       return;
     }
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
   });
 
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'zh'); } catch (_) {}
-    try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'zh');
+    } catch (_) {}
+    try {
+      localStorage.removeItem('socrates-recents-filter');
+    } catch (_) {}
   });
 
   await gotoAndSettle(page, '/');
@@ -95,7 +132,8 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
   // Expand the phone drawer if it boots collapsed.
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.waitForTimeout(300);
 
@@ -125,7 +163,12 @@ test('phone row menu shows tag/archive/delete and archive POSTs from a real clic
       if (!node) return null;
       const cs = getComputedStyle(node);
       const r = node.getBoundingClientRect();
-      return { opacity: cs.opacity, display: cs.display, w: Math.round(r.width), h: Math.round(r.height) };
+      return {
+        opacity: cs.opacity,
+        display: cs.display,
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      };
     };
     const menuCs = getComputedStyle(el);
     // The shared primitive owns fixed positioning and stacking on its wrapper.

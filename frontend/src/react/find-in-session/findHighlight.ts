@@ -9,10 +9,7 @@
  */
 
 import { prefersReducedMotion } from '../../ui/motion/index.ts';
-import {
-  flushDeferredMessageRows,
-  restoreDeferredMessageRows,
-} from '../message-list/deferredRows';
+import { flushDeferredMessageRows, restoreDeferredMessageRows } from '../message-list/deferredRows';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 let _findMatches: HTMLElement[] = [];
@@ -51,8 +48,10 @@ function clearHighlights(): void {
       const parent = m.parentNode;
       if (!parent) return;
       parent.replaceChild(document.createTextNode(m.textContent || ''), m);
-      try { parent.normalize(); } catch (_) {
-        reportEmptyCatch(_, 'empty catch: react/find-in-session/findHighlight.ts:53', 'expected');
+      try {
+        parent.normalize();
+      } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/find-in-session/findHighlight.ts', 'expected');
         /* ignore */
       }
     });
@@ -66,15 +65,21 @@ function highlightTextNodes(query: string): { matchCount: number } {
   _findQuery = query;
   const list = msgList();
   if (!_findQuery || !list) {
-    try { restoreDeferredMessageRows(); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts:65', 'expected');
+    try {
+      restoreDeferredMessageRows();
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts', 'expected');
       /* empty-catch: best-effort bounded restore. */
     }
     return { matchCount: 0 };
   }
   /* The normal transcript is a bounded DOM window. Search explicitly opts
      into the expensive full mount, then releases it when the query closes. */
-  try { flushDeferredMessageRows(); } catch { /* empty-catch: intentional — search mounted rows if full mount fails. */ }
+  try {
+    flushDeferredMessageRows();
+  } catch {
+    /* empty-catch: intentional — search mounted rows if full mount fails. */
+  }
   const needle = _findQuery.toLowerCase();
   const textNodes: Text[] = [];
   const bodies = list.querySelectorAll('.msg-body');
@@ -113,11 +118,16 @@ function setActive(i: number): void {
   const el = _findMatches[_findIndex];
   if (el) {
     el.classList.add('find-hl-active');
-    try { el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); }
-    catch (_) { try { el.scrollIntoView(); } catch (__) {
-      reportEmptyCatch(__, 'empty catch: react/find-in-session/findHighlight.ts:110', 'expected');
-      /* ignore */
-    } }
+    try {
+      el.scrollIntoView({ block: 'center', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    } catch (_) {
+      try {
+        el.scrollIntoView();
+      } catch (__) {
+        reportEmptyCatch(__, 'empty catch: react/find-in-session/findHighlight.ts', 'expected');
+        /* ignore */
+      }
+    }
   }
 }
 
@@ -139,8 +149,10 @@ export function navigatePrev(): { matchCount: number; activeIndex: number } {
 export function closeHighlights(): void {
   clearHighlights();
   _findQuery = '';
-  try { restoreDeferredMessageRows(); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts:132');
+  try {
+    restoreDeferredMessageRows();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: react/find-in-session/findHighlight.ts');
     /* empty-catch: closing search must remain safe. */
   }
 }

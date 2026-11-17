@@ -62,9 +62,13 @@ export function setBootState(root: AuthRoot, state: 'app' | 'auth'): void {
   }
 }
 
-export function showView(root: AuthRoot, id: string, viewIds: readonly string[] = AUTH_VIEW_IDS): void {
+export function showView(
+  root: AuthRoot,
+  id: string,
+  viewIds: readonly string[] = AUTH_VIEW_IDS,
+): void {
   if (isDocumentRoot(root)) {
-    if (viewIds.includes(id as typeof viewIds[number])) setAuthView(id);
+    if (viewIds.includes(id as (typeof viewIds)[number])) setAuthView(id);
     return;
   }
   for (const v of viewIds) {
@@ -104,7 +108,8 @@ export function clearTabSelection(root: AuthRoot): void {
 }
 
 export function focusTab(root: AuthRoot, current: Element, key: string): boolean {
-  if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Home', 'End'].indexOf(key) === -1) return false;
+  if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Home', 'End'].indexOf(key) === -1)
+    return false;
   const tabs = Array.from(root.querySelectorAll('.auth-tab')) as HTMLElement[];
   const idx = tabs.indexOf(current as HTMLElement);
   if (idx < 0 || !tabs.length) return false;

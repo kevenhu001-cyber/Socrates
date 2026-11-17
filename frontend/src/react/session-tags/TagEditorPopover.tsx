@@ -31,7 +31,14 @@ const MAX_TAGS = 12;
  * the `.visible` class) stays imperative because `organize.ts` re-anchors it to
  * whichever row was clicked; only the contents are React.
  */
-export function TagEditorPopover({ tags, knownTags, labels, onAdd, onRemove, onClose }: TagEditorPopoverProps) {
+export function TagEditorPopover({
+  tags,
+  knownTags,
+  labels,
+  onAdd,
+  onRemove,
+  onClose,
+}: TagEditorPopoverProps) {
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -50,9 +57,7 @@ export function TagEditorPopover({ tags, knownTags, labels, onAdd, onRemove, onC
     setDraft('');
   };
 
-  const suggestions = knownTags
-    .filter((tag) => tags.indexOf(tag) < 0)
-    .slice(0, MAX_TAGS);
+  const suggestions = knownTags.filter((tag) => tags.indexOf(tag) < 0).slice(0, MAX_TAGS);
 
   return (
     <div className="flex flex-col gap-2.5" role="dialog" aria-label={labels.title}>
@@ -63,7 +68,12 @@ export function TagEditorPopover({ tags, knownTags, labels, onAdd, onRemove, onC
           <span className="text-xs italic text-muted-foreground">{labels.empty}</span>
         ) : (
           tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="max-w-[180px] gap-0.5 pr-0.5" title={tag}>
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="max-w-[180px] gap-0.5 pr-0.5"
+              title={tag}
+            >
               <span className="truncate">{tag}</span>
               <Button
                 variant="ghost"

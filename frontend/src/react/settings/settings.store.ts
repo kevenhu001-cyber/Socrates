@@ -50,7 +50,9 @@ function readPreferences(): SettingsPreferencesState {
   };
 }
 
-export const useSettingsPreferencesStore = create<SettingsPreferencesState>(() => readPreferences());
+export const useSettingsPreferencesStore = create<SettingsPreferencesState>(() =>
+  readPreferences(),
+);
 
 function sync(): void {
   useSettingsPreferencesStore.setState(readPreferences());
@@ -62,7 +64,9 @@ let installed = false;
 export function installSettingsPreferencesSync(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
-  try { window.addEventListener(DISPLAY_PREFS_CHANGE_EVENT, sync); } catch {
+  try {
+    window.addEventListener(DISPLAY_PREFS_CHANGE_EVENT, sync);
+  } catch {
     /* empty-catch: intentional — non-DOM hosts have no event target. */
   }
   if (typeof MutationObserver === 'function') {
@@ -79,15 +83,42 @@ export function installSettingsPreferencesSync(): void {
 
 /** Write-through actions: local paint is immediate, persistence is the module's. */
 export const settingsPreferenceActions = {
-  setTheme(theme: string): void { setThemePreference(theme); sync(); },
-  setThemeStyle(style: string): void { setThemeStyle(style); sync(); },
-  setFont(step: number): void { setDisplayFont(step); sync(); },
-  setWidth(step: number): void { setDisplayWidth(step); sync(); },
-  setGrid(show: boolean): void { setGrid(show); sync(); },
-  setDarkBackground(hex: string): void { setBackgroundDark(hex); sync(); },
-  setLightBackground(hex: string): void { setBackgroundLight(hex); sync(); },
-  resetDarkBackground(): void { resetBackgroundDark(); sync(); },
-  resetLightBackground(): void { resetBackgroundLight(); sync(); },
+  setTheme(theme: string): void {
+    setThemePreference(theme);
+    sync();
+  },
+  setThemeStyle(style: string): void {
+    setThemeStyle(style);
+    sync();
+  },
+  setFont(step: number): void {
+    setDisplayFont(step);
+    sync();
+  },
+  setWidth(step: number): void {
+    setDisplayWidth(step);
+    sync();
+  },
+  setGrid(show: boolean): void {
+    setGrid(show);
+    sync();
+  },
+  setDarkBackground(hex: string): void {
+    setBackgroundDark(hex);
+    sync();
+  },
+  setLightBackground(hex: string): void {
+    setBackgroundLight(hex);
+    sync();
+  },
+  resetDarkBackground(): void {
+    resetBackgroundDark();
+    sync();
+  },
+  resetLightBackground(): void {
+    resetBackgroundLight();
+    sync();
+  },
 };
 
 /** Language is owned by the i18n layer; this is only its current value. */

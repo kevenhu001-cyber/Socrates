@@ -15,13 +15,21 @@ export function buildLegacyMigrationPayload(
     try {
       const sessions: unknown = JSON.parse(localSessions);
       if (Array.isArray(sessions) && sessions.length) payload.localSessions = sessions;
-    } catch (error) { report(error, 'auth/postAuth.migrate.parseSessions'); }
+    } catch (error) {
+      report(error, 'auth/postAuth.migrate.parseSessions');
+    }
   }
   if (localApi) {
     try {
       const config = JSON.parse(localApi) as {
         activeId?: string;
-        providers?: Array<{ id?: string; key?: string; label?: string; url?: string; model?: string }>;
+        providers?: Array<{
+          id?: string;
+          key?: string;
+          label?: string;
+          url?: string;
+          model?: string;
+        }>;
       } | null;
       const providers = config && Array.isArray(config.providers) ? config.providers : [];
       const provider = providers.find((item) => item.id === config?.activeId) || providers[0];
@@ -33,7 +41,9 @@ export function buildLegacyMigrationPayload(
           key: provider.key,
         };
       }
-    } catch (error) { report(error, 'auth/postAuth.migrate.parseApi'); }
+    } catch (error) {
+      report(error, 'auth/postAuth.migrate.parseApi');
+    }
   }
   return Object.keys(payload).length ? payload : null;
 }
@@ -50,7 +60,9 @@ export async function fetchWithAuthGraceRetry<T>(
 ): Promise<T | null> {
   if (typeof fetcher !== 'function') return null;
   const isInGraceWindow = options.isInGraceWindow || (() => false);
-  const wait = options.wait || ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const wait =
+    options.wait ||
+    ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   try {
     return await fetcher();
   } catch (error) {
@@ -85,13 +97,7 @@ export interface RestoreRoutedSessionOptions {
 
 /** Restore the chat or exam route after the user's bootstrap data has loaded. */
 export async function restoreRoutedSession(options: RestoreRoutedSessionOptions): Promise<boolean> {
-  const {
-    chatId,
-    examId,
-    loadSession,
-    onChatFailure,
-    onExamFailure,
-  } = options;
+  const { chatId, examId, loadSession, onChatFailure, onExamFailure } = options;
   if (chatId) return tryRestoreSession(chatId, loadSession, onChatFailure);
   if (examId) return tryRestoreSession(examId, loadSession, onExamFailure);
   return false;

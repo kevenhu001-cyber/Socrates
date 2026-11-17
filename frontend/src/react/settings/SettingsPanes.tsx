@@ -18,8 +18,14 @@ type PaneProps = Omit<SettingsPanesProps, 'section' | 'hideAll'> & { hidden: boo
 const panes = {
   general: { name: 'GeneralSettingsPane', load: () => import('./GeneralSettingsPane') },
   display: { name: 'DisplaySettingsPane', load: () => import('./DisplaySettingsPane') },
-  notifications: { name: 'NotificationsSettingsPane', load: () => import('./SettingsUtilityPanes') },
-  personalization: { name: 'PersonalizationSettingsPane', load: () => import('./PersonalizationSettingsPane') },
+  notifications: {
+    name: 'NotificationsSettingsPane',
+    load: () => import('./SettingsUtilityPanes'),
+  },
+  personalization: {
+    name: 'PersonalizationSettingsPane',
+    load: () => import('./PersonalizationSettingsPane'),
+  },
   models: { name: 'ModelsSettingsPane', load: () => import('./ModelsSettingsPane') },
   apps: { name: 'AppConnectionsSettingsPane', load: () => import('./SettingsUtilityPanes') },
   data: { name: 'DataControlsSettingsPane', load: () => import('./SettingsUtilityPanes') },
@@ -52,40 +58,67 @@ function SettingsPaneLoader({ section, ...props }: PaneProps & { section: Settin
     const url = retryUrl.current;
     if (url) url.searchParams.set('settings-retry', String(attempt));
     const load = url ? import(/* @vite-ignore */ url.href) : pane.load();
-    void load.then((module: Record<string, ComponentType<PaneProps>>) => {
-      const component = module[pane.name];
-      if (!component) throw new Error('Settings category export unavailable');
-      if (!disposed) setComponent(() => component);
-    }).catch((error: unknown) => {
-      if (!disposed) {
-        retryUrl.current = failedModuleUrl(error) || retryUrl.current;
-        setFailed(true);
-      }
-    });
-    return () => { disposed = true; };
+    void load
+      .then((module: Record<string, ComponentType<PaneProps>>) => {
+        const component = module[pane.name];
+        if (!component) throw new Error('Settings category export unavailable');
+        if (!disposed) setComponent(() => component);
+      })
+      .catch((error: unknown) => {
+        if (!disposed) {
+          retryUrl.current = failedModuleUrl(error) || retryUrl.current;
+          setFailed(true);
+        }
+      });
+    return () => {
+      disposed = true;
+    };
   }, [section, attempt]);
 
   if (Component) return <Component {...props} />;
-  return <section className="settings-pane" hidden={props.hidden} aria-busy={!failed}>
-    <p role={failed ? 'alert' : 'status'}>{failed
-      ? props.label('无法加载此分类，请重试。', 'Could not load this category. Please try again.')
-      : props.label('加载中…', 'Loading…')}</p>
-    {failed ? <Button variant="outline" type="button" onClick={() => setAttempt((value) => value + 1)}>
-      {props.label('重试', 'Try again')}
-    </Button> : null}
-  </section>;
+  return (
+    <section className="settings-pane" hidden={props.hidden} aria-busy={!failed}>
+      <p role={failed ? 'alert' : 'status'}>
+        {failed
+          ? props.label(
+              '无法加载此分类，请重试。',
+              'Could not load this category. Please try again.',
+            )
+          : props.label('加载中…', 'Loading…')}
+      </p>
+      {failed ? (
+        <Button variant="outline" type="button" onClick={() => setAttempt((value) => value + 1)}>
+          {props.label('重试', 'Try again')}
+        </Button>
+      ) : null}
+    </section>
+  );
 }
 
-export function SettingsPanes({ open, section, hideAll = false, ...props }: SettingsPanesProps & { open: boolean }) {
-  const [visited, setVisited] = useState<SettingsSection[]>(() => open ? [section] : []);
+export function SettingsPanes({
+  open,
+  section,
+  hideAll = false,
+  ...props
+}: SettingsPanesProps & { open: boolean }) {
+  const [visited, setVisited] = useState<SettingsSection[]>(() => (open ? [section] : []));
   // Record visits only after the open request commits. Keep visited panes
   // mounted at stable keys so drafts survive section changes and reopening.
   useEffect(() => {
     if (!open) return;
-    setVisited((current) => current.includes(section) ? current : [...current, section]);
+    setVisited((current) => (current.includes(section) ? current : [...current, section]));
   }, [open, section]);
   const renderedSections = open && !visited.includes(section) ? [...visited, section] : visited;
-  return <>{renderedSections.map((key) =>
-    <SettingsPaneLoader key={key} section={key} hidden={hideAll || section !== key} {...props} />,
-  )}</>;
+  return (
+    <>
+      {renderedSections.map((key) => (
+        <SettingsPaneLoader
+          key={key}
+          section={key}
+          hidden={hideAll || section !== key}
+          {...props}
+        />
+      ))}
+    </>
+  );
 }

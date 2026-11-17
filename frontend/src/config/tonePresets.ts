@@ -37,51 +37,51 @@ export interface TonePresetSummary {
   descriptionZh: string;
 }
 
-const TONE_KEY = "socrates-tone";
-let _currentTone = "default";
+const TONE_KEY = 'socrates-tone';
+let _currentTone = 'default';
 
 /* Tone definitions: each has a label, description, and a voice snippet
    that replaces the VOICE section of CHAT_SYSTEM_PROMPT. */
 const TONE_PRESETS: Record<string, TonePreset> = {
-  "default": {
-    label: "Default",
-    labelZh: "默认",
-    description: "Clear, concrete, precise",
-    descriptionZh: "清晰、具体、严谨",
+  default: {
+    label: 'Default',
+    labelZh: '默认',
+    description: 'Clear, concrete, precise',
+    descriptionZh: '清晰、具体、严谨',
     voice: `Use the direct, approachable voice of a lecturer explaining a hard idea at the board. State conclusions plainly, choose vivid and precise language, and acknowledge material uncertainty.`,
   },
-  "friendly": {
-    label: "Friendly",
-    labelZh: "友好",
-    description: "Warm, approachable, conversational",
-    descriptionZh: "温暖、亲切、对话式",
+  friendly: {
+    label: 'Friendly',
+    labelZh: '友好',
+    description: 'Warm, approachable, conversational',
+    descriptionZh: '温暖、亲切、对话式',
     voice: `You are warm and approachable. You speak like a knowledgeable friend who genuinely enjoys helping. You are encouraging without being saccharine, and you explain things in a way that feels like a conversation, not a lecture.
 
 You are precise but not stiff. You can use analogies and everyday language to make complex ideas accessible. You never condescend or oversimplify, but you also never hide behind jargon when a simpler word would do.`,
   },
-  "efficient": {
-    label: "Efficient",
-    labelZh: "高效",
-    description: "Direct, concise, no preamble",
-    descriptionZh: "直接、简洁、无铺垫",
+  efficient: {
+    label: 'Efficient',
+    labelZh: '高效',
+    description: 'Direct, concise, no preamble',
+    descriptionZh: '直接、简洁、无铺垫',
     voice: `You are direct and efficient. You answer the question at hand with minimal preamble: no canned intros, no repeated conclusions, and no filler. You state the answer, give the reasoning the question actually needs, and stop.
 
 You are not rude, but you are not chatty. Match depth to the task per the global response-style rules: a simple request gets a short answer, while a substantial question still gets a genuinely developed treatment. Respect the user's competence and provide the depth the task needs without making them ask again for an adequate explanation.`,
   },
-  "professional": {
-    label: "Professional",
-    labelZh: "专业",
-    description: "Formal, technical, precise",
-    descriptionZh: "正式、技术性、精确",
+  professional: {
+    label: 'Professional',
+    labelZh: '专业',
+    description: 'Formal, technical, precise',
+    descriptionZh: '正式、技术性、精确',
     voice: `You speak in a formal, precise register, like a technical expert writing a professional document. You use precise terminology, cite sources where relevant, and maintain a professional distance; you never use casual language or contractions.
 
 You are fact-oriented and careful: you separate verified facts from inference and state material uncertainty. Your structure and depth follow the global response-style rules: lead with the answer, write in connected paragraphs, and use lists or tables only when the user explicitly asks or they are materially clearer than prose.`,
   },
-  "candid": {
-    label: "Candid",
-    labelZh: "坦诚",
-    description: "Straightforward, honest, no flattery",
-    descriptionZh: "直率、诚实、不奉承",
+  candid: {
+    label: 'Candid',
+    labelZh: '坦诚',
+    description: 'Straightforward, honest, no flattery',
+    descriptionZh: '直率、诚实、不奉承',
     voice: `You are candid and straightforward. You do not soften the truth or add unnecessary pleasantries. When the user is wrong, you say so plainly. When you do not know, you say so without hedging.
 
 You are not rude, but you value honesty over politeness. You assume the user wants the unvarnished truth and can handle direct feedback. You avoid phrases like "great question" or "that is a good point" unless you genuinely mean them.`,
@@ -97,10 +97,10 @@ function loadTonePreset(): string {
       return _currentTone;
     }
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts:99', 'expected');
+    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts', 'expected');
     /* ignore */
   }
-  _currentTone = "default";
+  _currentTone = 'default';
   return _currentTone;
 }
 
@@ -108,8 +108,10 @@ function loadTonePreset(): string {
 function setTonePreset(tone: string): void {
   if (!TONE_PRESETS[tone]) return;
   _currentTone = tone;
-  try { localStorage.setItem(TONE_KEY, tone); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts:108', 'expected');
+  try {
+    localStorage.setItem(TONE_KEY, tone);
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/tonePresets.ts', 'expected');
     /* ignore */
   }
 }
@@ -122,14 +124,20 @@ function getTonePreset(): string {
 /* Get the voice snippet for the current tone. */
 function getToneVoice(): string {
   const preset = TONE_PRESETS[_currentTone];
-  return preset ? preset.voice : TONE_PRESETS["default"].voice;
+  return preset ? preset.voice : TONE_PRESETS['default'].voice;
 }
 
 /* Get all available presets as an array of { id, label, labelZh, description, descriptionZh }. */
 function getAvailablePresets(): TonePresetSummary[] {
   return Object.keys(TONE_PRESETS).map(function (id) {
     const p = TONE_PRESETS[id];
-    return { id: id, label: p.label, labelZh: p.labelZh, description: p.description, descriptionZh: p.descriptionZh };
+    return {
+      id: id,
+      label: p.label,
+      labelZh: p.labelZh,
+      description: p.description,
+      descriptionZh: p.descriptionZh,
+    };
   });
 }
 

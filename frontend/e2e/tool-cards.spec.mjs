@@ -14,10 +14,17 @@
 // The legacy agent-tool-card path is preserved for share/history
 // replay; that is exercised separately by share-view.spec.mjs.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
-import { TURN, openActivity, openToolDetail, openToolGroups, toolRow, toolRowButton } from './_turn-ui.mjs';
+import {
+  TURN,
+  openActivity,
+  openToolDetail,
+  openToolGroups,
+  toolRow,
+  toolRowButton,
+} from './_turn-ui.mjs';
 
 /* Every copy assertion below is English — the app ships with zh as its default
    language, and the labels are now derived per-tool with objects ("Searched
@@ -25,7 +32,9 @@ import { TURN, openActivity, openToolDetail, openToolGroups, toolRow, toolRowBut
    instead of depending on the shipped default. */
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'en');
+    } catch (_) {}
   });
 });
 
@@ -55,9 +64,15 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Run the tools', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '11111111-1111-4111-8111-111111111111' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-1', role: 'user', rawText: 'Run the tools', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Run the tools');
   });
@@ -84,7 +99,9 @@ test('live chat shows an inline tool status instead of a tool card', async ({ pa
   await expect(links).toContainText('example.test');
 });
 
-test('live Python image artifacts stay hidden until cited in assistant markdown', async ({ page }) => {
+test('live Python image artifacts stay hidden until cited in assistant markdown', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/files/plot-1/raw**', async (route) => {
     await route.fulfill({ status: 200, contentType: 'image/png', body: ONE_PIXEL_PNG });
@@ -102,9 +119,15 @@ test('live Python image artifacts stay hidden until cited in assistant markdown'
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '88888888-8888-4888-8888-888888888888' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-image', role: 'user', rawText: 'Make a plot', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '88888888-8888-4888-8888-888888888888' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-image', role: 'user', rawText: 'Make a plot', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Make a plot');
   });
@@ -133,11 +156,15 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     const sessionId = '11111111-1111-4111-8111-111111111111';
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }] });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-boundary', role: 'user', rawText: 'Check it', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Check it');
   });
@@ -148,7 +175,9 @@ test('tool activity lands behind its paragraph without splitting it', async ({ p
   await expect(row).toHaveCount(1);
   await expect(bubble.locator(`${TURN.body} [data-tcid="boundary-search"]`)).toHaveCount(1);
   const prose = await bubble.locator('.tool-run-prose').allTextContents();
-  expect(prose.join(' ').replace(/\s+/g, ' ')).toContain('先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。');
+  expect(prose.join(' ').replace(/\s+/g, ' ')).toContain(
+    '先说明结论。 然后继续检查这个模块的实现细节。 再给出修复方案。',
+  );
 });
 
 test('live chat shows a running search row while the model is searching', async ({ page }) => {
@@ -162,26 +191,32 @@ test('live chat shows a running search row while the model is searching', async 
       const body = new ReadableStream({
         start(controller) {
           controllerRef = controller;
-          controller.enqueue(encoder.encode(
-            'data: {"choices":[{"delta":{"reasoning_content":"先判断需要查询哪些信息。"}}]}\n\n'
-            + 'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
-          ));
+          controller.enqueue(
+            encoder.encode(
+              'data: {"choices":[{"delta":{"reasoning_content":"先判断需要查询哪些信息。"}}]}\n\n' +
+                'event: tool_use\ndata: [{"id":"late-search","name":"web_search","input":{"query":"weather today"}}]\n\n',
+            ),
+          );
         },
       });
       window.__finishSearchStream = () => {
-        controllerRef.enqueue(encoder.encode(
-          'event: tool_result\ndata: {"id":"late-search","ok":true,"status":"completed","output":"one source","results":[{"title":"Weather source","url":"https://example.test/weather"}]}\n\n',
-        ));
-        controllerRef.enqueue(encoder.encode(
-          'data: {"choices":[{"delta":{"content":"The search is complete."}}]}\n\n',
-        ));
+        controllerRef.enqueue(
+          encoder.encode(
+            'event: tool_result\ndata: {"id":"late-search","ok":true,"status":"completed","output":"one source","results":[{"title":"Weather source","url":"https://example.test/weather"}]}\n\n',
+          ),
+        );
+        controllerRef.enqueue(
+          encoder.encode('data: {"choices":[{"delta":{"content":"The search is complete."}}]}\n\n'),
+        );
         controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
         controllerRef.close();
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
@@ -192,10 +227,14 @@ test('live chat shows a running search row while the model is searching', async 
 
   await page.evaluate(() => {
     const sessionId = '22222222-2222-4222-8222-222222222222';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-2', role: 'user', rawText: 'Look something up', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__searchTurnPromise = window.askChatTurn('Look something up');
   });
@@ -224,7 +263,9 @@ test('live chat shows a running search row while the model is searching', async 
   await expect(detail.locator(TURN.source)).toHaveCount(1);
 });
 
-test('code execution streams live output into its row without thinking overlap', async ({ page }) => {
+test('code execution streams live output into its row without thinking overlap', async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     window.fetch = (input, init) => {
@@ -235,28 +276,37 @@ test('code execution streams live output into its row without thinking overlap',
       const body = new ReadableStream({
         start(controller) {
           controllerRef = controller;
-          controller.enqueue(encoder.encode(
-            'event: tool_use\ndata: [{"id":"live-code","name":"code_interpreter","input":{"code":"print(1)"}}]\n\n',
-          ));
+          controller.enqueue(
+            encoder.encode(
+              'event: tool_use\ndata: [{"id":"live-code","name":"code_interpreter","input":{"code":"print(1)"}}]\n\n',
+            ),
+          );
         },
       });
-      window.__sendCodeProgress = () => controllerRef.enqueue(encoder.encode(
-        'event: tool_progress\ndata: {"id":"live-code","phase":"stdout","elapsedMs":420,"chunk":"1\\n"}\n\n',
-      ));
+      window.__sendCodeProgress = () =>
+        controllerRef.enqueue(
+          encoder.encode(
+            'event: tool_progress\ndata: {"id":"live-code","phase":"stdout","elapsedMs":420,"chunk":"1\\n"}\n\n',
+          ),
+        );
       window.__finishCodeStream = () => {
-        controllerRef.enqueue(encoder.encode(
-          'event: tool_result\ndata: {"id":"live-code","ok":true,"status":"completed","output":"1"}\n\n',
-        ));
-        controllerRef.enqueue(encoder.encode(
-          'data: {"choices":[{"delta":{"content":"Code finished."}}]}\n\n',
-        ));
+        controllerRef.enqueue(
+          encoder.encode(
+            'event: tool_result\ndata: {"id":"live-code","ok":true,"status":"completed","output":"1"}\n\n',
+          ),
+        );
+        controllerRef.enqueue(
+          encoder.encode('data: {"choices":[{"delta":{"content":"Code finished."}}]}\n\n'),
+        );
         controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
         controllerRef.close();
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
@@ -264,10 +314,14 @@ test('code execution streams live output into its row without thinking overlap',
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '55555555-5555-4555-8555-555555555555';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-code', role: 'user', rawText: 'Run code', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__codeTurnPromise = window.askChatTurn('Run code');
   });
@@ -313,13 +367,15 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   await page.locator('#topModeTutor').click();
   await page.evaluate(async () => {
     const sessionId = '33333333-3333-4333-8333-333333333333';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Tutor tools' });
-    window.stateStore.dispatch({ type: "state/set", key: "domain", value: 'Tutor tools' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentNode", value: 0 });
-    window.stateStore.dispatch({ type: "state/set", key: "kbNodes", value: [{ name: 'Evidence', status: 'blank', questions: 0 }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Tutor tools' } });
+    window.__socratesTestState.patch({ session: { domain: 'Tutor tools' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ kb: { currentNode: 0 } });
+    window.__socratesTestState.patch({
+      kb: { kbNodes: [{ name: 'Evidence', status: 'blank', questions: 0 }] },
+    });
     window.__testActivateMainView('chatView');
     await window.askNextQuestion();
   });
@@ -333,7 +389,9 @@ test('Tutor streams the same native tools and sends the tutor mode contract', as
   await expect(detail.locator(TURN.sources)).toContainText('Primary source');
 });
 
-test('live chat keeps a burst in the reading flow and persists every call on finish', async ({ page }) => {
+test('live chat keeps a burst in the reading flow and persists every call on finish', async ({
+  page,
+}) => {
   // P_tool_live_card — the persisted HTML on the finished message must
   // contain every call so a reload / share view re-renders all three
   // inline rows. The single-card slot is presentation-only; this is the
@@ -359,10 +417,16 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
 
   await page.evaluate(async () => {
     const sessionId = '44444444-4444-4444-8444-444444444444';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-burst', role: 'user', rawText: 'Run three tools', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Run three tools');
   });
@@ -374,7 +438,10 @@ test('live chat keeps a burst in the reading flow and persists every call on fin
      baked-HTML implementation. Stage 2 removes that baking; the assertions
      below hold either way.) The single-card slot stays presentation-only. */
   const finalized = await page.evaluate(() => {
-    const last = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
+    const last =
+      window.__socratesTestState.session().messages[
+        window.__socratesTestState.session().messages.length - 1
+      ];
     const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
     return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
@@ -408,10 +475,14 @@ test('consecutive tools stay one row each and open their own details', async ({ 
 
   await page.evaluate(async () => {
     const sessionId = '66666666-6666-4666-8666-666666666666';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-group', role: 'user', rawText: 'Search twice', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Search twice');
   });
@@ -431,12 +502,18 @@ test('consecutive tools stay one row each and open their own details', async ({ 
 
   /* Same split-point contract as the burst test above: one record per call. */
   const groupCalls = await page.evaluate(() => {
-    const last = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
+    const last =
+      window.__socratesTestState.session().messages[
+        window.__socratesTestState.session().messages.length - 1
+      ];
     const calls = Array.isArray(last && last.toolCalls) ? last.toolCalls : [];
     return { ids: calls.map((t) => t.id), offsets: calls.map((t) => t.textOffset) };
   });
   expect(groupCalls.ids).toEqual(['group-a', 'group-b']);
-  expect(groupCalls.offsets.every((o) => typeof o === 'number'), 'merging must not drop a split point').toBe(true);
+  expect(
+    groupCalls.offsets.every((o) => typeof o === 'number'),
+    'merging must not drop a split point',
+  ).toBe(true);
 });
 
 test('a failed member keeps its own error row and detail', async ({ page }) => {
@@ -459,10 +536,14 @@ test('a failed member keeps its own error row and detail', async ({ page }) => {
 
   await page.evaluate(async () => {
     const sessionId = '77777777-7777-4777-8777-777777777777';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-fail', role: 'user', rawText: 'Search', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Search');
   });

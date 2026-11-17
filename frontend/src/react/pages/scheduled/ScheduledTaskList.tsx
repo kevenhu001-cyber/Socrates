@@ -10,7 +10,13 @@ interface ScheduledTaskListProps {
   onRemove: (id: string) => void;
 }
 
-export function ScheduledTaskList({ tasks, onEdit, onRun, onToggle, onRemove }: ScheduledTaskListProps) {
+export function ScheduledTaskList({
+  tasks,
+  onEdit,
+  onRun,
+  onToggle,
+  onRemove,
+}: ScheduledTaskListProps) {
   return (
     <div className="scheduled-task-list">
       <div className="scheduled-section-heading scheduled-task-heading">
@@ -18,7 +24,14 @@ export function ScheduledTaskList({ tasks, onEdit, onRun, onToggle, onRemove }: 
         <span>{tasks.length}</span>
       </div>
       {tasks.map((task) => (
-        <ScheduledTaskRow key={task.id} task={task} onEdit={onEdit} onRun={onRun} onToggle={onToggle} onRemove={onRemove} />
+        <ScheduledTaskRow
+          key={task.id}
+          task={task}
+          onEdit={onEdit}
+          onRun={onRun}
+          onToggle={onToggle}
+          onRemove={onRemove}
+        />
       ))}
     </div>
   );

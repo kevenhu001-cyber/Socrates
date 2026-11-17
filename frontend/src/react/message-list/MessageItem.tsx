@@ -58,9 +58,10 @@ function viewportAnchorData(message: LiveFields, hasAnchor: boolean): ViewportAn
   return {
     className: hasAnchor ? ' turn-viewport-anchor' : '',
     mode: hasAnchor ? message._turnAnchorMode || 'turn' : undefined,
-    target: hasAnchor && message._turnViewportTarget != null
-      ? String(message._turnViewportTarget)
-      : undefined,
+    target:
+      hasAnchor && message._turnViewportTarget != null
+        ? String(message._turnViewportTarget)
+        : undefined,
   };
 }
 
@@ -79,10 +80,13 @@ function turnAnchorOf(message: ChatMessage): TurnAnchor {
   return {
     minHeight,
     marginTop,
-    style: minHeight || marginTop ? {
-      minHeight: minHeight ? `${minHeight}px` : undefined,
-      marginTop: marginTop ? `${marginTop}px` : undefined,
-    } : undefined,
+    style:
+      minHeight || marginTop
+        ? {
+            minHeight: minHeight ? `${minHeight}px` : undefined,
+            marginTop: marginTop ? `${marginTop}px` : undefined,
+          }
+        : undefined,
   };
 }
 
@@ -105,20 +109,39 @@ function isRenderable(message: ChatMessage, live: boolean): boolean {
      that turn still has visible declarative content even with zero prose.
      Without this check the row (and Intelligent UI attached to it) disappears
      exactly at the live -> settled boundary. */
-  if (hasTurnStructure(
-    typeof message.rawText === 'string' ? message.rawText : '',
-    message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
-  )) return true;
+  if (
+    hasTurnStructure(
+      typeof message.rawText === 'string' ? message.rawText : '',
+      message.toolCalls as ReadonlyArray<ToolCallRecord> | undefined,
+    )
+  )
+    return true;
   /* Older tool-only rows may not have a persisted textOffset. They still
      have visible legacy HTML and must remain in the same assistant surface. */
   if (Array.isArray(message.toolCalls) && message.toolCalls.length > 0) return true;
-  if (message.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed' && surface.nodes.length > 0)) return true;
+  if (
+    message.turnRuntime?.uiSurfaces.some(
+      (surface) => surface.phase === 'committed' && surface.nodes.length > 0,
+    )
+  )
+    return true;
   /* Attachment-only user messages still need a row; the chips are their
      entire content. */
   return Array.isArray(message.attachments) && message.attachments.length > 0;
 }
 
-function MessageContent({ editing, message, role, html, isLive, readOnly, declarative, bodyRef, onCancelEdit, onCommitEdit }: {
+function MessageContent({
+  editing,
+  message,
+  role,
+  html,
+  isLive,
+  readOnly,
+  declarative,
+  bodyRef,
+  onCancelEdit,
+  onCommitEdit,
+}: {
   editing: boolean;
   message: ChatMessage;
   role: string;
@@ -158,26 +181,48 @@ function MessageContent({ editing, message, role, html, isLive, readOnly, declar
   );
 }
 
-function shouldShowToolbar(role: string, showSettledToolbar: boolean, isLive: boolean, readOnly: boolean, editing: boolean): boolean {
+function shouldShowToolbar(
+  role: string,
+  showSettledToolbar: boolean,
+  isLive: boolean,
+  readOnly: boolean,
+  editing: boolean,
+): boolean {
   return !readOnly && !editing && (role === 'user' || showSettledToolbar || isLive);
 }
 
-function userEditHandler(role: string, setEditing: (editing: boolean) => void): (() => void) | undefined {
+function userEditHandler(
+  role: string,
+  setEditing: (editing: boolean) => void,
+): (() => void) | undefined {
   return role === 'user' ? () => setEditing(true) : undefined;
 }
 
 /** Derive visibility once so the row and its toolbar share the same gates. */
-function messageRowVisibility(role: string, showSettledToolbar: boolean, isLive: boolean, readOnly: boolean, editing: boolean, isLatestOfRole: boolean) {
+function messageRowVisibility(
+  role: string,
+  showSettledToolbar: boolean,
+  isLive: boolean,
+  readOnly: boolean,
+  editing: boolean,
+  isLatestOfRole: boolean,
+) {
   const showContextMenu = !readOnly && !editing && !isLatestOfRole && !isLive;
   return {
     showContextMenu,
     showHistoryToolbar: showContextMenu,
-    showToolbar: isLatestOfRole && shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
+    showToolbar:
+      isLatestOfRole && shouldShowToolbar(role, showSettledToolbar, isLive, readOnly, editing),
     tabIndex: !readOnly && !isLatestOfRole ? 0 : undefined,
   };
 }
 
-function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnly = false }: MessageItemProps) {
+function MessageItemBase({
+  message,
+  isLatest,
+  isLatestOfRole = isLatest,
+  readOnly = false,
+}: MessageItemProps) {
   const [editing, setEditing] = useState(false);
   const role = messageRole(message);
   /* The chat runtime store gives React an immutable snapshot for this row. */
@@ -194,7 +239,14 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
      toolbar and cursor transition without replacing the message body. */
   const declarative = usesDeclarativeBody(role);
   const onEdit = userEditHandler(role, setEditing);
-  const visibility = messageRowVisibility(role, presentation.showToolbar, isLive, readOnly, editing, Boolean(isLatestOfRole));
+  const visibility = messageRowVisibility(
+    role,
+    presentation.showToolbar,
+    isLive,
+    readOnly,
+    editing,
+    Boolean(isLatestOfRole),
+  );
   const contextMenu = useMessageContextMenu(visibility.showContextMenu);
 
   useMessagePostRender(message, html, clientId, isLive, bodyRef);
@@ -236,9 +288,16 @@ function MessageItemBase({ message, isLatest, isLatestOfRole = isLatest, readOnl
           commitUserMessageEdit(clientId, text);
         }}
       />
-      {!readOnly && !isLive ? <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} /> : null}
+      {!readOnly && !isLive ? (
+        <TutorMessageActions message={message} messageId={clientId} isLatest={isLatest} />
+      ) : null}
       {visibility.showHistoryToolbar ? (
-        <MessageToolbar message={message} role={toolbarRole(role)} onEdit={onEdit} contextMenu={contextMenu} />
+        <MessageToolbar
+          message={message}
+          role={toolbarRole(role)}
+          onEdit={onEdit}
+          contextMenu={contextMenu}
+        />
       ) : null}
       {visibility.showToolbar ? (
         <MessageToolbar

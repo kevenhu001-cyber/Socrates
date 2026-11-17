@@ -1,4 +1,10 @@
-import type { StreamCallOptions, StreamResult, StreamAttemptOutcome, StreamDeltaHandler, StreamThinkingHandler } from './stream.ts';
+import type {
+  StreamCallOptions,
+  StreamResult,
+  StreamAttemptOutcome,
+  StreamDeltaHandler,
+  StreamThinkingHandler,
+} from './stream.ts';
 interface StreamAttemptContext {
   messages: ChatRequestMessage[];
   maxTokens?: number;
@@ -20,7 +26,11 @@ interface StreamAttemptContext {
 type Processor = ReturnType<typeof createStreamFrameProcessor>;
 type ProcessorView = Pick<Processor, 'full' | 'formattedHtml'>;
 type Reader = ReadableStreamDefaultReader<Uint8Array>;
-interface StreamRead { gotAnyData: boolean; bytesReceived: number; error: unknown }
+interface StreamRead {
+  gotAnyData: boolean;
+  bytesReceived: number;
+  error: unknown;
+}
 /* Execute one /api/chat/stream attempt. Request errors, stream errors, and
  * successful results use the same small outcome shape so the caller can own
  * the global retry budget and final cleanup. */
@@ -38,7 +48,15 @@ import { turnState } from './turn/state.ts';
 import { t } from '../i18n/index.ts';
 
 function failureMessage(error: ChatApiError | null) {
-  return providerErrorMessage({ message: error?.message, status: error?.status, code: error?.code || undefined, body: error?.body }, t);
+  return providerErrorMessage(
+    {
+      message: error?.message,
+      status: error?.status,
+      code: error?.code || undefined,
+      body: error?.body,
+    },
+    t,
+  );
 }
 
 function completed(result: StreamResult): StreamAttemptOutcome {
@@ -64,8 +82,8 @@ function emptyCancelledResult() {
 function cancelledStreamResult(processor: ProcessorView) {
   return {
     text: processor.full || '',
-    html: processor.formattedHtml && processor.formattedHtml.html || null,
-    widgets: processor.formattedHtml && processor.formattedHtml.widgets || [],
+    html: (processor.formattedHtml && processor.formattedHtml.html) || null,
+    widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
     cancelled: true,
   };
 }
@@ -83,13 +101,19 @@ function isClaimConflictError(error: ChatApiError | null | undefined) {
   );
 }
 
-async function retryOrCancel(context: StreamAttemptContext, error: ChatApiError | null): Promise<StreamAttemptOutcome | null> {
+async function retryOrCancel(
+  context: StreamAttemptContext,
+  error: ChatApiError | null,
+): Promise<StreamAttemptOutcome | null> {
   if (await context.waitForRetry(context.attempt, error)) return retry(error!);
   if (context.retryWasCancelled()) return cancelled(emptyCancelledResult());
   return null;
 }
 
-async function retryThenFail(context: StreamAttemptContext, error: ChatApiError | null): Promise<StreamAttemptOutcome> {
+async function retryThenFail(
+  context: StreamAttemptContext,
+  error: ChatApiError | null,
+): Promise<StreamAttemptOutcome> {
   const retryOutcome = await retryOrCancel(context, error);
   if (retryOutcome) return retryOutcome;
   context.setLastCallError(failureMessage(error));
@@ -103,10 +127,16 @@ function buildRequestBody(context: StreamAttemptContext) {
   try {
     if (context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
       body.turnId = context.opts.turnId;
-    } else if (context.opts && context.opts.clientTurn && typeof context.opts.clientTurn.id === 'string') {
+    } else if (
+      context.opts &&
+      context.opts.clientTurn &&
+      typeof context.opts.clientTurn.id === 'string'
+    ) {
       body.clientTurn = context.opts.clientTurn;
     }
-  } catch (error) { reportSwallow(error, 'chat/streamAttempt.attachTurn'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/streamAttempt.attachTurn');
+  }
   /* RN-6: a tutor turn names its learning mode; the server owns what it means. */
   const learningMode = context.opts?.learningMode;
   if (typeof learningMode === 'string' && learningMode) body.learningMode = learningMode;
@@ -123,7 +153,11 @@ function resetClaimedTurn(context: StreamAttemptContext) {
   context.setLastCallError('Turn execution conflict. Please click Retry to create a new turn.');
 }
 
-async function recoverClaimConflict(error: ChatApiError | null, processor: ProcessorView, context: StreamAttemptContext) {
+async function recoverClaimConflict(
+  error: ChatApiError | null,
+  processor: ProcessorView,
+  context: StreamAttemptContext,
+) {
   const recovered = await recoverAfterReadError(error, processor, context);
   if (recovered) return completed(recovered);
   resetClaimedTurn(context);
@@ -136,7 +170,7 @@ function makeRequestError(error: ChatApiError, signal: AbortSignal) {
   const requestError = makeStreamError(
     aborted
       ? 'request was interrupted'
-      : (status ? status + ' ' : 'network: ') + (error && error.message || error),
+      : (status ? status + ' ' : 'network: ') + ((error && error.message) || error),
     status,
     error && error.body,
   );
@@ -145,7 +179,11 @@ function makeRequestError(error: ChatApiError, signal: AbortSignal) {
   return requestError;
 }
 
-async function handleRequestFailure(error: ChatApiError, context: StreamAttemptContext, signal: AbortSignal) {
+async function handleRequestFailure(
+  error: ChatApiError,
+  context: StreamAttemptContext,
+  signal: AbortSignal,
+) {
   const requestError = makeRequestError(error, signal);
   if (isUserAbort(error, signal) || isUserAbort(error, context.turnSignal)) {
     return cancelled(emptyCancelledResult());
@@ -160,7 +198,10 @@ async function handleRequestFailure(error: ChatApiError, context: StreamAttemptC
   return failed();
 }
 
-async function requestStream(context: StreamAttemptContext, signal: AbortSignal): Promise<StreamAttemptOutcome | { kind: 'response'; response: Response }> {
+async function requestStream(
+  context: StreamAttemptContext,
+  signal: AbortSignal,
+): Promise<StreamAttemptOutcome | { kind: 'response'; response: Response }> {
   try {
     const body = buildRequestBody(context);
     const response = await apiFetchRaw('/api/chat/stream', {
@@ -187,7 +228,8 @@ async function handleNoStreamBody(context: StreamAttemptContext) {
 function turnIdFromError(error: (ChatApiError & { turnId?: string }) | null) {
   if (!error) return null;
   if (typeof error.turnId === 'string' && error.turnId) return error.turnId;
-  if (error.body && typeof error.body.turnId === 'string' && error.body.turnId) return error.body.turnId;
+  if (error.body && typeof error.body.turnId === 'string' && error.body.turnId)
+    return error.body.turnId;
   return null;
 }
 
@@ -196,24 +238,39 @@ async function resolveRecoveryTurnId(error: ChatApiError | null, context: Stream
   if (!turnId && context.opts && typeof context.opts.turnId === 'string' && context.opts.turnId) {
     turnId = context.opts.turnId;
   }
-  if (!turnId && context.opts && context.opts.clientTurn && typeof context.opts.clientTurn.id === 'string') {
+  if (
+    !turnId &&
+    context.opts &&
+    context.opts.clientTurn &&
+    typeof context.opts.clientTurn.id === 'string'
+  ) {
     try {
       const existing = await createChatTurn({ clientTurnId: context.opts.clientTurn.id });
       if (existing && existing.turn && existing.turn.id) turnId = existing.turn.id;
-    } catch (caught) { reportSwallow(caught, 'chat/stream.createChatTurn'); }
+    } catch (caught) {
+      reportSwallow(caught, 'chat/stream.createChatTurn');
+    }
   }
   return turnId;
 }
 
 function notifyTurnBound(context: StreamAttemptContext, turnId: string) {
   if (context.opts && typeof context.opts.onTurnBound === 'function') {
-    try { context.opts.onTurnBound(turnId); }
-    catch (caught) { reportSwallow(caught, 'chat/streamAttempt.onTurnBound'); }
+    try {
+      context.opts.onTurnBound(turnId);
+    } catch (caught) {
+      reportSwallow(caught, 'chat/streamAttempt.onTurnBound');
+    }
   }
 }
 
-async function recoverAfterReadError(error: ChatApiError | null, processor: ProcessorView, context: StreamAttemptContext) {
-  if (isUserAbort(error, context.attemptSignal) || isUserAbort(error, context.turnSignal)) return null;
+async function recoverAfterReadError(
+  error: ChatApiError | null,
+  processor: ProcessorView,
+  context: StreamAttemptContext,
+) {
+  if (isUserAbort(error, context.attemptSignal) || isUserAbort(error, context.turnSignal))
+    return null;
   const turnId = await resolveRecoveryTurnId(error, context);
   if (!turnId) return null;
   if (!context.activeTurn.current) context.activeTurn.current = turnId;
@@ -224,7 +281,12 @@ async function recoverAfterReadError(error: ChatApiError | null, processor: Proc
     let recoveredFull = processor.full;
     return await recoverDetachedTurn(turnId, {
       currentFull: processor.full,
-      onDelta: context.onDelta ? (delta) => { recoveredFull += delta; context.onDelta!(delta, recoveredFull); } : undefined,
+      onDelta: context.onDelta
+        ? (delta) => {
+            recoveredFull += delta;
+            context.onDelta!(delta, recoveredFull);
+          }
+        : undefined,
       onThinking: context.onThinking || undefined,
       opts: context.opts,
       signal: context.turnSignal,
@@ -236,26 +298,43 @@ async function recoverAfterReadError(error: ChatApiError | null, processor: Proc
 }
 
 function isSilentAbort(error: ChatApiError, processor: Processor, context: StreamAttemptContext) {
-  return isUserAbort(error, context.attemptSignal)
-    || isUserAbort(error, context.turnSignal)
-    || (!processor.semanticActivity
-      && (!context.attemptSignal!.reason || context.attemptSignal!.reason === 'user-stop'));
+  return (
+    isUserAbort(error, context.attemptSignal) ||
+    isUserAbort(error, context.turnSignal) ||
+    (!processor.semanticActivity &&
+      (!context.attemptSignal!.reason || context.attemptSignal!.reason === 'user-stop'))
+  );
 }
 
-async function handleAbortReadError(error: ChatApiError, reader: Reader, processor: Processor, context: StreamAttemptContext) {
+async function handleAbortReadError(
+  error: ChatApiError,
+  reader: Reader,
+  processor: Processor,
+  context: StreamAttemptContext,
+) {
   /* Retry transport interruptions only before visible or side-effectful
      output; replaying an active turn would duplicate text and tool calls. */
   const attemptError = makeStreamError('stream was interrupted before it completed');
   attemptError.reason = context.attemptSignal!.reason;
-  if (!isUserAbort(error, context.attemptSignal)
-      && !isUserAbort(error, context.turnSignal)
-      && !processor.semanticActivity) {
+  if (
+    !isUserAbort(error, context.attemptSignal) &&
+    !isUserAbort(error, context.turnSignal) &&
+    !processor.semanticActivity
+  ) {
     const retryOutcome = await retryOrCancel(context, attemptError);
     if (retryOutcome) {
       if (retryOutcome.kind === 'retry') {
         console.warn('[API stream]', attemptError.message + ', retrying before visible output');
-        try { await reader.cancel(); } catch (caught) { reportSwallow(caught, 'chat/streamAttempt.cancelRetryReader'); }
-        try { reader.releaseLock(); } catch (caught) { reportSwallow(caught, 'chat/streamAttempt.releaseRetryReader'); }
+        try {
+          await reader.cancel();
+        } catch (caught) {
+          reportSwallow(caught, 'chat/streamAttempt.cancelRetryReader');
+        }
+        try {
+          reader.releaseLock();
+        } catch (caught) {
+          reportSwallow(caught, 'chat/streamAttempt.releaseRetryReader');
+        }
       }
       return retryOutcome;
     }
@@ -268,14 +347,20 @@ async function handleAbortReadError(error: ChatApiError, reader: Reader, process
   return null;
 }
 
-async function handleReadError(error: ChatApiError, reader: Reader, processor: Processor, context: StreamAttemptContext) {
+async function handleReadError(
+  error: ChatApiError,
+  reader: Reader,
+  processor: Processor,
+  context: StreamAttemptContext,
+) {
   console.error('[API stream] read error:', error);
-  const isAbort = error && (error.name === 'AbortError' || (error as { code?: unknown }).code === 20);
+  const isAbort =
+    error && (error.name === 'AbortError' || (error as { code?: unknown }).code === 20);
   if (isAbort) {
     const outcome = await handleAbortReadError(error, reader, processor, context);
     if (outcome) return outcome;
   } else {
-    context.setLastCallError(String(error && error.message || error));
+    context.setLastCallError(String((error && error.message) || error));
   }
 
   const recovered = await recoverAfterReadError(error, processor, context);
@@ -300,8 +385,11 @@ async function consumeStream(reader: Reader, processor: Processor) {
       buffer = consumeSseBuffer(buffer, processor.processFrame);
     }
     /* Return the HTTP/2 stream slot to the browser connection pool. */
-    try { reader.releaseLock(); }
-    catch (error) { reportSwallow(error, 'chat/streamAttempt.releaseReader'); }
+    try {
+      reader.releaseLock();
+    } catch (error) {
+      reportSwallow(error, 'chat/streamAttempt.releaseReader');
+    }
     buffer += decoder.decode();
     /* A server may close without its final SSE delimiter. */
     if (buffer && buffer.indexOf('data:') >= 0) processor.processFrame(buffer);
@@ -315,9 +403,13 @@ async function consumeStream(reader: Reader, processor: Processor) {
 function cancelResponseBody(body: ReadableStream<Uint8Array>) {
   try {
     if (body.cancel) {
-      body.cancel().catch((error: unknown) => reportSwallow(error, 'chat/streamAttempt.cancelReject'));
+      body
+        .cancel()
+        .catch((error: unknown) => reportSwallow(error, 'chat/streamAttempt.cancelReject'));
     }
-  } catch (error) { reportSwallow(error, 'chat/streamAttempt.cancelGuard'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/streamAttempt.cancelGuard');
+  }
 }
 
 async function finishStreamError(processor: Processor, context: StreamAttemptContext) {
@@ -329,7 +421,11 @@ async function finishStreamError(processor: Processor, context: StreamAttemptCon
   return failed();
 }
 
-async function finishEmptyStream(processor: Processor, stream: StreamRead, context: StreamAttemptContext) {
+async function finishEmptyStream(
+  processor: Processor,
+  stream: StreamRead,
+  context: StreamAttemptContext,
+) {
   if (processor.semanticActivity) {
     return completed({
       text: processor.full || '',
@@ -350,14 +446,19 @@ async function finishEmptyStream(processor: Processor, stream: StreamRead, conte
   return outcome;
 }
 
-async function finishStreamResponse(processor: Processor, stream: StreamRead, context: StreamAttemptContext) {
+async function finishStreamResponse(
+  processor: Processor,
+  stream: StreamRead,
+  context: StreamAttemptContext,
+) {
   if (processor.streamError) return finishStreamError(processor, context);
-  if (!processor.full && !processor.formattedHtml) return finishEmptyStream(processor, stream, context);
+  if (!processor.full && !processor.formattedHtml)
+    return finishEmptyStream(processor, stream, context);
 
   return completed({
     text: processor.full,
-    html: processor.formattedHtml && processor.formattedHtml.html || null,
-    widgets: processor.formattedHtml && processor.formattedHtml.widgets || [],
+    html: (processor.formattedHtml && processor.formattedHtml.html) || null,
+    widgets: (processor.formattedHtml && processor.formattedHtml.widgets) || [],
     cancelled: false,
     semanticActivity: processor.semanticActivity,
   });
@@ -371,23 +472,34 @@ async function readStreamResponse(response: Response, context: StreamAttemptCont
     opts: context.opts,
     onDelta: context.onDelta || undefined,
     onThinking: context.onThinking || undefined,
-    onActiveTurnBound: (turnId) => { context.activeTurn.current = turnId; },
+    onActiveTurnBound: (turnId) => {
+      context.activeTurn.current = turnId;
+    },
   });
   const stream = await consumeStream(reader, processor);
-  if (stream.error) return handleReadError(stream.error as ChatApiError, reader, processor, context);
+  if (stream.error)
+    return handleReadError(stream.error as ChatApiError, reader, processor, context);
   cancelResponseBody(response.body);
   return finishStreamResponse(processor, stream, context);
 }
 
-export async function runStreamAttempt(context: StreamAttemptContext): Promise<StreamAttemptOutcome> {
+export async function runStreamAttempt(
+  context: StreamAttemptContext,
+): Promise<StreamAttemptOutcome> {
   const attemptController = new AbortController();
   const unbindAttempt = context.bindAttemptSignal(attemptController);
   context.attemptSignal = attemptController.signal;
   const activeAbortHandle = (reason?: unknown) => {
-    try { context.turnController.abort(reason); }
-    catch (error) { reportSwallow(error, 'chat/streamAttempt.abortTurn'); }
-    try { attemptController.abort(reason); }
-    catch (error) { reportSwallow(error, 'chat/streamAttempt.abortAttempt'); }
+    try {
+      context.turnController.abort(reason);
+    } catch (error) {
+      reportSwallow(error, 'chat/streamAttempt.abortTurn');
+    }
+    try {
+      attemptController.abort(reason);
+    } catch (error) {
+      reportSwallow(error, 'chat/streamAttempt.abortAttempt');
+    }
   };
   turnState.activeChatAbort = activeAbortHandle;
   context.onAbortHandle(activeAbortHandle);

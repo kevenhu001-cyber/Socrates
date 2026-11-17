@@ -32,14 +32,18 @@ export function ImageVoiceSettingsSection({
   label: SettingsLabel;
   savePreference: SaveSettingsPreference;
 }) {
-  const [imageModel, setImageModel] = useState(() => readPreference('socrates-image-model', 'imageModel', ''));
-  const [voiceLanguage, setVoiceLanguage] = useState(() => readPreference('socrates-voice-language', 'voiceLanguage', 'auto'));
+  const [imageModel, setImageModel] = useState(() =>
+    readPreference('socrates-image-model', 'imageModel', ''),
+  );
+  const [voiceLanguage, setVoiceLanguage] = useState(() =>
+    readPreference('socrates-voice-language', 'voiceLanguage', 'auto'),
+  );
   const updateImageModel = (value: string) => {
     setImageModel(value);
     try {
       localStorage.setItem('socrates-image-model', value);
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx:38');
+      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx');
       // Private browsing can disable localStorage; preference sync remains available.
     }
   };
@@ -48,7 +52,7 @@ export function ImageVoiceSettingsSection({
     try {
       localStorage.setItem('socrates-voice-language', value);
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx:46');
+      reportEmptyCatch(error, 'empty catch: react/settings/ModelsPreferenceSections.tsx');
       // Private browsing can disable localStorage; preference sync remains available.
     }
     void savePreference({ voiceLanguage: value });
@@ -59,21 +63,43 @@ export function ImageVoiceSettingsSection({
       <section className="settings-section">
         <div className="settings-section-head">
           <h3>{label('图片模型', 'Image model')}</h3>
-          <p>{label('填写当前图片服务支持的模型 ID。', 'Enter the model ID supported by your image provider.')}</p>
+          <p>
+            {label(
+              '填写当前图片服务支持的模型 ID。',
+              'Enter the model ID supported by your image provider.',
+            )}
+          </p>
         </div>
         <Field className="settings-image-model-field">
           <FieldLabel htmlFor="settings-image-model">{label('模型 ID', 'Model ID')}</FieldLabel>
           <div className="settings-inline-action">
-            <ShadcnInput id="settings-image-model" value={imageModel} placeholder="gpt-image-1" onChange={(event) => updateImageModel(event.target.value)} />
-            <Button variant="outline" onClick={() => void savePreference({ imageModel })}>{label('同步图片模型', 'Sync image model')}</Button>
+            <ShadcnInput
+              id="settings-image-model"
+              value={imageModel}
+              placeholder="gpt-image-1"
+              onChange={(event) => updateImageModel(event.target.value)}
+            />
+            <Button variant="outline" onClick={() => void savePreference({ imageModel })}>
+              {label('同步图片模型', 'Sync image model')}
+            </Button>
           </div>
         </Field>
       </section>
       <section className="settings-section">
-        <div className="settings-section-head"><h3>{label('语音输入语言', 'Voice input language')}</h3></div>
-        <PreferenceSelect id="settings-voice-language" label={label('识别语言', 'Recognition language')} value={voiceLanguage}
-          options={[{ value: 'auto', label: label('自动', 'Automatic') }, { value: 'zh-CN', label: '中文' }, { value: 'en-US', label: 'English' }]}
-          onValueChange={updateVoiceLanguage} />
+        <div className="settings-section-head">
+          <h3>{label('语音输入语言', 'Voice input language')}</h3>
+        </div>
+        <PreferenceSelect
+          id="settings-voice-language"
+          label={label('识别语言', 'Recognition language')}
+          value={voiceLanguage}
+          options={[
+            { value: 'auto', label: label('自动', 'Automatic') },
+            { value: 'zh-CN', label: '中文' },
+            { value: 'en-US', label: 'English' },
+          ]}
+          onValueChange={updateVoiceLanguage}
+        />
       </section>
     </>
   );
@@ -90,7 +116,13 @@ export function SettingsModelActions({
 }) {
   return (
     <div className="settings-actions settings-provider-actions">
-      <Button variant="ghost" type="button" className="settings-clear-api" id="clearSettingsBtn" onClick={confirmClearSettings}>
+      <Button
+        variant="ghost"
+        type="button"
+        className="settings-clear-api"
+        id="clearSettingsBtn"
+        onClick={confirmClearSettings}
+      >
         {label('清除 API 设置', 'Clear API settings')}
       </Button>
       <Button type="button" id={SAVE_BTN_ID} disabled={saving} onClick={() => void onSave()}>

@@ -1,29 +1,46 @@
 import { Separator as ShadcnSeparator } from '../../ui/Separator';
 // Adapted from thesysdev/open-intelligent-ui (MIT); see LICENSE.
-import { defineComponent, FormNameContext } from "@openuidev/react-lang";
-import { useId, type CSSProperties } from "react";
-import { z } from "zod/v4";
-import { bg, children, color, onColor, cx, length, radius, radiusSchema, size, space } from "./style";
+import { defineComponent, FormNameContext } from '@openuidev/react-lang';
+import { useId, type CSSProperties } from 'react';
+import { z } from 'zod/v4';
+import {
+  bg,
+  children,
+  color,
+  onColor,
+  cx,
+  length,
+  radius,
+  radiusSchema,
+  size,
+  space,
+} from './style';
 
-const align = z.enum(["start", "center", "end", "stretch"]);
-const justify = z.enum(["start", "center", "end", "between"]);
-const FLEX: Record<string, string> = { start: "flex-start", end: "flex-end", center: "center", stretch: "stretch", between: "space-between" };
+const align = z.enum(['start', 'center', 'end', 'stretch']);
+const justify = z.enum(['start', 'center', 'end', 'between']);
+const FLEX: Record<string, string> = {
+  start: 'flex-start',
+  end: 'flex-end',
+  center: 'center',
+  stretch: 'stretch',
+  between: 'space-between',
+};
 
 type FlexProps = { gap?: number; align?: string; justify?: string; wrap?: boolean };
 const flexStyle = (p: FlexProps, column = false): CSSProperties => ({
   gap: space(p.gap),
   alignItems: p.align ? FLEX[p.align] : undefined,
   justifyContent: p.justify ? FLEX[p.justify] : undefined,
-  flexWrap: !column && p.wrap !== false ? "wrap" : p.wrap ? "wrap" : undefined,
+  flexWrap: !column && p.wrap !== false ? 'wrap' : p.wrap ? 'wrap' : undefined,
   // A centered column centers its wrapped lines too.
-  textAlign: column && (p.align === "center" || p.align === "end") ? p.align : undefined,
+  textAlign: column && (p.align === 'center' || p.align === 'end') ? p.align : undefined,
 });
 
 export const Box = defineComponent({
-  name: "Box",
+  name: 'Box',
   props: z.object({
     children: children.optional(),
-    direction: z.enum(["row", "col"]).optional(),
+    direction: z.enum(['row', 'col']).optional(),
     gap: z.number().optional(),
     padding: z.number().optional(),
     background: color.optional(),
@@ -36,25 +53,34 @@ export const Box = defineComponent({
     justify: justify.optional(),
     wrap: z.boolean().optional(),
   }),
-  description: "Flex container, a column by default. radius also clips the content.",
+  description: 'Flex container, a column by default. radius also clips the content.',
   component: ({ props, renderNode }) => {
-    const row = props.direction === "row";
+    const row = props.direction === 'row';
     return (
       <div
-        className={cx("iui-box", row ? "iui-row" : "iui-col", !row && props.gap == null && "iui-flow")}
+        className={cx(
+          'iui-box',
+          row ? 'iui-row' : 'iui-col',
+          !row && props.gap == null && 'iui-flow',
+        )}
         style={{
           ...flexStyle(props, !row),
           padding: space(props.padding),
           background: bg(props.background),
           ...onColor(props.background),
           borderRadius: radius(props.radius),
-          overflow: props.radius !== undefined ? "clip" : undefined,
-          border: props.border ? "1px solid var(--iui-border)" : undefined,
+          overflow: props.radius !== undefined ? 'clip' : undefined,
+          border: props.border ? '1px solid var(--iui-border)' : undefined,
           width: size(props.width),
           height: size(props.height),
           // null, like an omitted argument, means no flex.
           // A width in px is meant: a Row with long text beside it must not squeeze it.
-          flex: props.flex != null ? `${Math.max(0, props.flex)} 1 0%` : typeof props.width === "number" ? "0 0 auto" : undefined,
+          flex:
+            props.flex != null
+              ? `${Math.max(0, props.flex)} 1 0%`
+              : typeof props.width === 'number'
+                ? '0 0 auto'
+                : undefined,
         }}
       >
         {renderNode(props.children)}
@@ -64,7 +90,7 @@ export const Box = defineComponent({
 });
 
 export const Row = defineComponent({
-  name: "Row",
+  name: 'Row',
   props: z.object({
     children,
     gap: z.number().optional(),
@@ -72,7 +98,8 @@ export const Row = defineComponent({
     justify: justify.optional(),
     wrap: z.boolean().optional(),
   }),
-  description: "Horizontal layout; items are vertically centered and wrap on narrow screens. Use Col for a heading followed by explanatory text. Set wrap=false only for deliberately compact rows.",
+  description:
+    'Horizontal layout; items are vertically centered and wrap on narrow screens. Use Col for a heading followed by explanatory text. Set wrap=false only for deliberately compact rows.',
   component: ({ props, renderNode }) => (
     <div className="iui-row" style={flexStyle(props)}>
       {renderNode(props.children)}
@@ -81,37 +108,43 @@ export const Row = defineComponent({
 });
 
 export const Col = defineComponent({
-  name: "Col",
+  name: 'Col',
   props: z.object({ children, gap: z.number().optional(), align: align.optional() }),
-  description: "Vertical layout. Without gap it spaces blocks like an article.",
+  description: 'Vertical layout. Without gap it spaces blocks like an article.',
   component: ({ props, renderNode }) => (
-    <div className={cx("iui-col", props.gap == null && "iui-flow")} style={flexStyle(props, true)}>
+    <div className={cx('iui-col', props.gap == null && 'iui-flow')} style={flexStyle(props, true)}>
       {renderNode(props.children)}
     </div>
   ),
 });
 
 export const Grid = defineComponent({
-  name: "Grid",
+  name: 'Grid',
   props: z.object({
     children,
     columns: z.number().optional(),
     minChildWidth: z.number().optional(),
     gap: z.number().optional(),
   }),
-  description: "Equal columns (default 2), dropping columns on narrow screens. minChildWidth defaults to 180px; set it to 0 only for deliberately compact grids such as keypads.",
+  description:
+    'Equal columns (default 2), dropping columns on narrow screens. minChildWidth defaults to 180px; set it to 0 only for deliberately compact grids such as keypads.',
   component: ({ props, renderNode }) => {
     const columns = Math.min(12, Math.max(1, Math.round(props.columns ?? 2)));
-    const gap = space(props.gap) ?? "12px";
+    const gap = space(props.gap) ?? '12px';
     // At most `columns` columns, each at least minChildWidth wide.
     const minChildWidth = props.minChildWidth ?? 180;
-    const min = minChildWidth > 0 ? `max(${minChildWidth}px, (100% - ${columns - 1} * ${gap}) / ${columns})` : null;
+    const min =
+      minChildWidth > 0
+        ? `max(${minChildWidth}px, (100% - ${columns - 1} * ${gap}) / ${columns})`
+        : null;
     return (
       <div
         className="iui-grid"
         style={{
           gap,
-          gridTemplateColumns: min ? `repeat(auto-fill, minmax(min(100%, ${min}), 1fr))` : `repeat(${columns}, minmax(0, 1fr))`,
+          gridTemplateColumns: min
+            ? `repeat(auto-fill, minmax(min(100%, ${min}), 1fr))`
+            : `repeat(${columns}, minmax(0, 1fr))`,
         }}
       >
         {renderNode(props.children)}
@@ -121,17 +154,22 @@ export const Grid = defineComponent({
 });
 
 export const Card = defineComponent({
-  name: "Card",
+  name: 'Card',
   props: z.object({
     children,
-    variant: z.enum(["outline", "soft"]).optional(),
+    variant: z.enum(['outline', 'soft']).optional(),
     padding: z.number().optional(),
     gap: z.number().optional(),
   }),
-  description: "Borderless semantic group with compact spacing. Prefer plain Col for a continuous explanation; soft adds a subtle filled surface for a distinct summary. Avoid nesting cards.",
+  description:
+    'Borderless semantic group with compact spacing. Prefer plain Col for a continuous explanation; soft adds a subtle filled surface for a distinct summary. Avoid nesting cards.',
   component: ({ props, renderNode }) => (
     <section
-      className={cx("iui-card", props.variant === "soft" && "iui-card-soft", props.gap == null && "iui-flow")}
+      className={cx(
+        'iui-card',
+        props.variant === 'soft' && 'iui-card-soft',
+        props.gap == null && 'iui-flow',
+      )}
       style={{ padding: space(props.padding), gap: space(props.gap) }}
     >
       {renderNode(props.children)}
@@ -140,23 +178,23 @@ export const Card = defineComponent({
 });
 
 export const Divider = defineComponent({
-  name: "Divider",
+  name: 'Divider',
   props: z.object({}),
-  description: "",
+  description: '',
   component: () => <ShadcnSeparator className="iui-divider" />,
 });
 
 export const Spacer = defineComponent({
-  name: "Spacer",
+  name: 'Spacer',
   props: z.object({}),
-  description: "Fills the free space in a Row.",
+  description: 'Fills the free space in a Row.',
   component: () => <div className="iui-spacer" aria-hidden />,
 });
 
 export const Form = defineComponent({
-  name: "Form",
+  name: 'Form',
   props: z.object({ children }),
-  description: "Groups fields; their values go with any @ToAssistant inside.",
+  description: 'Groups fields; their values go with any @ToAssistant inside.',
   component: function FormView({ props, renderNode, statementId }) {
     const id = useId();
     return (

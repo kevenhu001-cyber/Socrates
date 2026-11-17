@@ -3,7 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, KeyboardEvent } from 'react';
 import type { Root } from 'react-dom/client';
 
-import { installFindInSessionBridge, subscribeToFindInSession, getFindInSessionSnapshot } from './find.bridge';
+import {
+  installFindInSessionBridge,
+  subscribeToFindInSession,
+  getFindInSessionSnapshot,
+} from './find.bridge';
 import { closeFindInSession, findNext, findPrev, onFindInput } from './findInSession.actions';
 import { FIND_BAR_ID } from './findInSession.constants';
 import { FindInSessionControls } from './FindInSessionControls';
@@ -47,7 +51,9 @@ export function FindInSession() {
     if (!snapshot.isOpen) return undefined;
     const chatView = document.getElementById('chatView');
     if (!chatView) return undefined;
-    const sync = () => { if (chatView.classList.contains('hidden')) closeFindInSession(); };
+    const sync = () => {
+      if (chatView.classList.contains('hidden')) closeFindInSession();
+    };
     const observer = new MutationObserver(sync);
     observer.observe(chatView, { attributes: true, attributeFilter: ['class'] });
     sync();
@@ -111,7 +117,15 @@ export function FindInSession() {
   );
 }
 
-export { openFindInSession, closeFindInSession, onFindInput, onFindKey, findNext, findPrev, isFindOpen } from './findInSession.actions';
+export {
+  openFindInSession,
+  closeFindInSession,
+  onFindInput,
+  onFindKey,
+  findNext,
+  findPrev,
+  isFindOpen,
+} from './findInSession.actions';
 
 export interface FindInSessionReactRootHandle {
   root: Root;

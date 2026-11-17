@@ -1,12 +1,7 @@
 import { apiFetch } from '../util/api/index.ts';
 
 export type PluginConnectionStatus =
-  | 'connected'
-  | 'initiated'
-  | 'needs_installation'
-  | 'error'
-  | 'disconnected'
-  | 'unavailable';
+  'connected' | 'initiated' | 'needs_installation' | 'error' | 'disconnected' | 'unavailable';
 
 export interface PluginCatalogEntry {
   id: string;
@@ -68,19 +63,29 @@ const DIRECTIVE_TEMPLATES: Record<string, string> = {
 };
 
 export function normalisePluginId(value: unknown): string {
-  return String(value || '').toLowerCase().replace(/[_-]/g, '');
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[_-]/g, '');
 }
 
 function connectionStatus(raw: RawPluginEntry): PluginConnectionStatus {
   const status = String(raw.connection?.status || '').toLowerCase();
-  if (status === 'connected' || status === 'initiated' || status === 'needs_installation' || status === 'error') {
+  if (
+    status === 'connected' ||
+    status === 'initiated' ||
+    status === 'needs_installation' ||
+    status === 'error'
+  ) {
     return status;
   }
   if (raw.configured === false) return 'unavailable';
   return 'disconnected';
 }
 
-export function decoratePluginEntry(raw: RawPluginEntry, configuredOverride?: boolean): PluginCatalogEntry | null {
+export function decoratePluginEntry(
+  raw: RawPluginEntry,
+  configuredOverride?: boolean,
+): PluginCatalogEntry | null {
   const id = String(raw.id || '').trim();
   const name = String(raw.name || id).trim();
   if (!id || !name) return null;
@@ -103,7 +108,9 @@ export function decoratePluginEntry(raw: RawPluginEntry, configuredOverride?: bo
   };
 }
 
-export function pluginDirective(entry: Pick<PluginCatalogEntry, 'name' | 'directiveTemplate' | 'capabilities'>): string {
+export function pluginDirective(
+  entry: Pick<PluginCatalogEntry, 'name' | 'directiveTemplate' | 'capabilities'>,
+): string {
   if (entry.directiveTemplate) return entry.directiveTemplate;
   const capabilityText = entry.capabilities.length ? ` (${entry.capabilities.join(', ')})` : '';
   return `Use my connected ${entry.name}${capabilityText} context when relevant to the user's request.`;
@@ -148,4 +155,3 @@ export async function loadPluginCatalog(force = false): Promise<ReadonlyArray<Pl
 export function resetPluginCatalogForTests(): void {
   catalogRequest = null;
 }
-

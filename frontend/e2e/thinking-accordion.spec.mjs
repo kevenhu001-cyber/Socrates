@@ -1,12 +1,22 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime, setLang } from './_lib.mjs';
 
-test('thinking disclosure supports keyboard control and preserves intent through completion', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'disclosure-fixture', role: 'assistant', type: 'streaming',
-    rawText: '<think>internal draft</think>', _activity: { type: 'public_reasoning_summary', text: 'Preparing a concise comparison.' }, _streamSettled: false,
-  }] });
+test('thinking disclosure supports keyboard control and preserves intent through completion', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'disclosure-fixture',
+        role: 'assistant',
+        type: 'streaming',
+        rawText: '<think>internal draft</think>',
+        _activity: { type: 'public_reasoning_summary', text: 'Preparing a concise comparison.' },
+        _streamSettled: false,
+      },
+    ],
+  });
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
   const body = accordion.getByTestId('turn-activity-body');
@@ -24,19 +34,25 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
   await page.evaluate(() => {
-    const messages = window.stateStore.read('messages').map((message) => ({
-      ...message, rawText: '<think>internal draft with additional private detail</think>', _activity: { type: 'public_reasoning_summary', text: 'Checked the relevant sources.' },
+    const messages = window.__socratesTestState.session().messages.map((message) => ({
+      ...message,
+      rawText: '<think>internal draft with additional private detail</think>',
+      _activity: { type: 'public_reasoning_summary', text: 'Checked the relevant sources.' },
     }));
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
+    window.__socratesTestState.patch({ session: { messages: messages } });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-update' });
-  await expect(accordion.getByTestId('thinking-step-title').first()).toHaveText('Checked the relevant sources.');
+  await expect(accordion.getByTestId('thinking-step-title').first()).toHaveText(
+    'Checked the relevant sources.',
+  );
   await expect(accordion).not.toContainText('internal draft');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await page.keyboard.press('Enter');
   await page.evaluate(() => {
-    const messages = window.stateStore.read('messages').map((message) => ({ ...message, type: 'assistant', _streamSettled: true }));
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: messages });
+    const messages = window.__socratesTestState
+      .session()
+      .messages.map((message) => ({ ...message, type: 'assistant', _streamSettled: true }));
+    window.__socratesTestState.patch({ session: { messages: messages } });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'disclosure-complete' });
   await expect(accordion).not.toHaveAttribute('data-live', 'true');
@@ -47,7 +63,13 @@ test('thinking disclosure supports keyboard control and preserves intent through
   // presented as a measure of reasoning progress.
   await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考过程');
   await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d+ 秒/);
-  await page.screenshot({ path: 'test-results/thinking-disclosure-desktop.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/thinking-disclosure-desktop.png',
+    animations: 'disabled',
+  });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: 'test-results/thinking-disclosure-mobile.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/thinking-disclosure-mobile.png',
+    animations: 'disabled',
+  });
 });

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle, rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -80,11 +80,13 @@ async function installVoiceMocks(page) {
 
     const mediaDevices = navigator.mediaDevices || {};
     mediaDevices.getUserMedia = async () => ({
-      getTracks: () => [{
-        stop() {
-          window.__voiceTrackStopped = true;
+      getTracks: () => [
+        {
+          stop() {
+            window.__voiceTrackStopped = true;
+          },
         },
-      }],
+      ],
     });
     try {
       Object.defineProperty(navigator, 'mediaDevices', {
@@ -107,16 +109,20 @@ async function bootVoiceFixture(page, viewport) {
 
 async function enterChat(page) {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Voice input check' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '55555555-5555-4555-8555-555555555555' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Voice input check' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '55555555-5555-4555-8555-555555555555' },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
   await page.waitForTimeout(300);
 }
 
-test('incognito lives in the 更多 popover; new-chat stays out of the home header', async ({ page }) => {
+test('incognito lives in the 更多 popover; new-chat stays out of the home header', async ({
+  page,
+}) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   /* The home header keeps the hamburger and mode pill; new-chat is hidden
      here. Incognito moved into the sidebar's 更多 menu. */
@@ -162,7 +168,9 @@ test('the mic records inline and the phone shows the live spectrum', async ({ pa
   expect(new URL(page.url()).pathname).toBe('/');
   expect(await page.title()).not.toBe('');
   await expect(page.locator('#appShell')).toBeVisible();
-  await expect(page.locator('vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay')).toHaveCount(0);
+  await expect(
+    page.locator('vite-error-overlay, nextjs-portal, #webpack-dev-server-client-overlay'),
+  ).toHaveCount(0);
   expect(await page.evaluate(() => typeof window.stopSpeechInput)).toBe('undefined');
 
   const wrap = page.locator('#composerInputWrap');
@@ -195,10 +203,15 @@ test('the mic records inline and the phone shows the live spectrum', async ({ pa
     };
   });
   expect(emptyCaret.anchorOffset).toBe(0);
-  expect(emptyCaret.paragraphLeft).toBeLessThanOrEqual(emptyCaret.editorLeft + emptyCaret.paddingLeft + 1);
+  expect(emptyCaret.paragraphLeft).toBeLessThanOrEqual(
+    emptyCaret.editorLeft + emptyCaret.paddingLeft + 1,
+  );
   expect(emptyCaret.placeholderPosition).toBe('absolute');
   expect(emptyCaret.placeholderFloat).toBe('none');
-  await page.screenshot({ path: 'test-results/socrates-composer-empty-focused.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/socrates-composer-empty-focused.png',
+    fullPage: true,
+  });
 
   await editor.pressSequentially('typed');
   await expect(primary).toHaveAttribute('data-ready', 'true');
@@ -288,7 +301,9 @@ test('the chat mic uses the same inline recording state', async ({ page }) => {
   await expect(primary).toHaveAttribute('aria-label', 'Send');
 });
 
-test('canceling while transcribing discards the transcript and releases the mic', async ({ page }) => {
+test('canceling while transcribing discards the transcript and releases the mic', async ({
+  page,
+}) => {
   await bootVoiceFixture(page, { width: 390, height: 844 });
   const wrap = page.locator('#composerInputWrap');
   const editor = page.locator('#composerRoot .rich-composer-editor');

@@ -1,11 +1,11 @@
+import { sessionStore } from '../store/index.ts';
 import { loadLocalMemory } from '../storage/localMemory.ts';
 import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments/index.ts';
 import { sanitizeHtml } from '../render/sanitizeHtml.ts';
 
 type HistoryRole = 'system' | 'user' | 'assistant';
 type ContentPart =
-  | { type: 'text'; text: string }
-  | { type: 'image_url'; image_url: { url: string } };
+  { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
 
 interface StoredAttachment {
   kind?: string;
@@ -31,83 +31,105 @@ export interface HistoryEntry {
   reasoning_content?: unknown;
 }
 
-const HISTORY_MAX_TURNS=30;      /* user+assistant pairs to keep (increased for longer context) */
-const HISTORY_MAX_CHARS=2000;    /* per-message truncation ceiling (increased from 500) */
+const HISTORY_MAX_TURNS = 30; /* user+assistant pairs to keep (increased for longer context) */
+const HISTORY_MAX_CHARS = 2000; /* per-message truncation ceiling (increased from 500) */
 
 /* Compress a list of message texts into a short summary for when
    the conversation is longer than HISTORY_MAX_TURNS. Drops oldest
    messages but captures their key topics in a condensed form. */
-function compressMessages(msgs: readonly StoredMessage[] | null | undefined): string{
-  if(!msgs||!msgs.length)return"";
-  const parts: string[]=[];
-  for(let ci=0;ci<msgs.length;ci++){
-    let ct=String(msgs[ci].rawText||msgs[ci].content||"").trim();
-    if(!ct)continue;
+function compressMessages(msgs: readonly StoredMessage[] | null | undefined): string {
+  if (!msgs || !msgs.length) return '';
+  const parts: string[] = [];
+  for (let ci = 0; ci < msgs.length; ci++) {
+    let ct = String(msgs[ci].rawText || msgs[ci].content || '').trim();
+    if (!ct) continue;
     /* Take first 120 chars of each older message as a keyphrase. */
-    if(ct.length>120)ct=ct.slice(0,117)+"…";
+    if (ct.length > 120) ct = ct.slice(0, 117) + '…';
     parts.push(ct);
   }
-  if(!parts.length)return"";
-  return"[Earlier conversation: "+parts.join(" | ")+"]";
+  if (!parts.length) return '';
+  return '[Earlier conversation: ' + parts.join(' | ') + ']';
 }
 
-function isTextAttachment(att: StoredAttachment | null | undefined): boolean{
-  if(!att)return false;
-  return att.kind==="text"||att.kind==="document"||att.kind==="pdf";
+function isTextAttachment(att: StoredAttachment | null | undefined): boolean {
+  if (!att) return false;
+  return att.kind === 'text' || att.kind === 'document' || att.kind === 'pdf';
 }
 
-function hasUsableAttachmentContent(att: StoredAttachment | null | undefined): boolean{
-  return Boolean(att&&(
-    (att.kind==="image"&&att.dataUrl)
-    ||att.fileId
-    ||(isTextAttachment(att)&&att.text)
-  ));
+function hasUsableAttachmentContent(att: StoredAttachment | null | undefined): boolean {
+  return Boolean(
+    att &&
+    ((att.kind === 'image' && att.dataUrl) || att.fileId || (isTextAttachment(att) && att.text)),
+  );
 }
 
-function truncateHistoryText(text: string,truncate: boolean): string{
-  return truncate&&text.length>HISTORY_MAX_CHARS?text.slice(0,HISTORY_MAX_CHARS)+"…":text;
+function truncateHistoryText(text: string, truncate: boolean): string {
+  return truncate && text.length > HISTORY_MAX_CHARS
+    ? text.slice(0, HISTORY_MAX_CHARS) + '…'
+    : text;
 }
 
-function appendMultimodalImage(parts: ContentPart[],att: StoredAttachment,multimodal: boolean): void{
-  if(att.kind!=="image"||!att.dataUrl||!multimodal)return;
+function appendMultimodalImage(
+  parts: ContentPart[],
+  att: StoredAttachment,
+  multimodal: boolean,
+): void {
+  if (att.kind !== 'image' || !att.dataUrl || !multimodal) return;
   /* `detail` is omitted on purpose — MiniMax 400s on "auto"; the
      backend transform strips the field anyway (helpers.ts). */
-  parts.push({type:"image_url",image_url:{url:att.dataUrl}});
+  parts.push({ type: 'image_url', image_url: { url: att.dataUrl } });
 }
 
-function appendFilePointer(parts: ContentPart[],att: StoredAttachment): boolean{
-  if(att.fileId){
-    parts.push({type:"text",text:attachmentPointerLine(att)});
+function appendFilePointer(parts: ContentPart[], att: StoredAttachment): boolean {
+  if (att.fileId) {
+    parts.push({ type: 'text', text: attachmentPointerLine(att) });
     return true;
   }
   return false;
 }
 
-function appendParsedText(parts: ContentPart[],att: StoredAttachment,truncate: boolean): boolean{
-  if(isTextAttachment(att)&&att.text){
-    const attTxt=truncateHistoryText(att.text,truncate);
-    const label=att.docKind
-      ?"[Parsed "+String(att.docKind).toUpperCase()+": "+(att.name||"file")+"]"
-      :(att.kind==="pdf"?"[Parsed PDF: "+(att.name||"document")+"]":"[Parsed file: "+(att.name||"file")+"]");
-    parts.push({type:"text",text:label+"\n"+attTxt});
+function appendParsedText(parts: ContentPart[], att: StoredAttachment, truncate: boolean): boolean {
+  if (isTextAttachment(att) && att.text) {
+    const attTxt = truncateHistoryText(att.text, truncate);
+    const label = att.docKind
+      ? '[Parsed ' + String(att.docKind).toUpperCase() + ': ' + (att.name || 'file') + ']'
+      : att.kind === 'pdf'
+        ? '[Parsed PDF: ' + (att.name || 'document') + ']'
+        : '[Parsed file: ' + (att.name || 'file') + ']';
+    parts.push({ type: 'text', text: label + '\n' + attTxt });
     return true;
   }
   return false;
 }
 
-function appendUnviewableImage(parts: ContentPart[],att: StoredAttachment,multimodal: boolean): void{
-  if(att.kind==="image"&&att.dataUrl&&!multimodal){
+function appendUnviewableImage(
+  parts: ContentPart[],
+  att: StoredAttachment,
+  multimodal: boolean,
+): void {
+  if (att.kind === 'image' && att.dataUrl && !multimodal) {
     /* Persisted inline image on a text-only provider with no fileId:
        the model cannot see it — say so instead of dropping silently. */
-    parts.push({type:"text",text:"[User attached an image \""+(att.name||"image")+"\" that this model cannot view inline.]"});
+    parts.push({
+      type: 'text',
+      text:
+        '[User attached an image "' +
+        (att.name || 'image') +
+        '" that this model cannot view inline.]',
+    });
   }
 }
 
-function appendStoredAttachmentParts(parts: ContentPart[],att: StoredAttachment | null | undefined,multimodal: boolean,truncate: boolean): void{
-  if(!att)return;
-  appendMultimodalImage(parts,att,multimodal);
-  if(appendFilePointer(parts,att)||appendParsedText(parts,att,truncate))return;
-  appendUnviewableImage(parts,att,multimodal);
+function appendStoredAttachmentParts(
+  parts: ContentPart[],
+  att: StoredAttachment | null | undefined,
+  multimodal: boolean,
+  truncate: boolean,
+): void {
+  if (!att) return;
+  appendMultimodalImage(parts, att, multimodal);
+  if (appendFilePointer(parts, att) || appendParsedText(parts, att, truncate)) return;
+  appendUnviewableImage(parts, att, multimodal);
 }
 
 /* P_file-attachments — rebuild a content-parts array from a user
@@ -126,19 +148,20 @@ function partsForStoredAttachments(
   rawText: unknown,
   attachments: unknown,
   opts: { truncate?: boolean } | null = {},
-): ContentPart[] | null{
-  const truncate=Boolean(opts?.truncate);
-  if(!Array.isArray(attachments)||!attachments.length)return null;
-  const multimodal=Boolean(activeProviderSupportsImages());
+): ContentPart[] | null {
+  const truncate = Boolean(opts?.truncate);
+  if (!Array.isArray(attachments) || !attachments.length) return null;
+  const multimodal = Boolean(activeProviderSupportsImages());
   /* Any inline image counts — multimodal providers get the image_url part,
      text-only ones get the "cannot view" note. */
-  const storedAttachments=attachments as Array<StoredAttachment | null | undefined>;
-  if(!storedAttachments.some(hasUsableAttachmentContent))return null;
-  const text=String(rawText||"").trim();
-  const parts: ContentPart[]=[];
-  if(text)parts.push({type:"text",text:truncateHistoryText(text,truncate)});
-  for(const attachment of storedAttachments)appendStoredAttachmentParts(parts,attachment,multimodal,truncate);
-  return parts.length?parts:null;
+  const storedAttachments = attachments as Array<StoredAttachment | null | undefined>;
+  if (!storedAttachments.some(hasUsableAttachmentContent)) return null;
+  const text = String(rawText || '').trim();
+  const parts: ContentPart[] = [];
+  if (text) parts.push({ type: 'text', text: truncateHistoryText(text, truncate) });
+  for (const attachment of storedAttachments)
+    appendStoredAttachmentParts(parts, attachment, multimodal, truncate);
+  return parts.length ? parts : null;
 }
 
 /* P0.1 BUG-P01-03 — rebuild a multimodal content parts array from a
@@ -149,21 +172,27 @@ function partsForStoredAttachments(
    usable multimodal attachments, or null when it's text-only (callers
    then send the plain string). Unlike the history path this does NOT
    truncate — it is the CURRENT turn's content, not compressed context. */
-export function buildUserContentParts(rawText: unknown, attachments: unknown): ContentPart[] | null{
-  return partsForStoredAttachments(rawText,attachments,{truncate:false});
+export function buildUserContentParts(
+  rawText: unknown,
+  attachments: unknown,
+): ContentPart[] | null {
+  return partsForStoredAttachments(rawText, attachments, { truncate: false });
 }
 
-function summaryPrefix(messages: readonly StoredMessage[]): HistoryEntry[]{
-  const maxMessages=HISTORY_MAX_TURNS*2;
-  if(messages.length<=maxMessages)return[];
-  const summary=compressMessages(messages.slice(0,messages.length-maxMessages));
+function summaryPrefix(messages: readonly StoredMessage[]): HistoryEntry[] {
+  const maxMessages = HISTORY_MAX_TURNS * 2;
+  if (messages.length <= maxMessages) return [];
+  const summary = compressMessages(messages.slice(0, messages.length - maxMessages));
   return summary
-    ?[{role:"system",content:"[Conversation summary of earlier messages]: "+summary}]
-    :[];
+    ? [{ role: 'system', content: '[Conversation summary of earlier messages]: ' + summary }]
+    : [];
 }
 
-function cleanTurnText(value: unknown): string{
-  return String(value||"").replace(/^Thinking\.\.\.\s*/i,"").replace(/^Thinking\s*/i,"").trim();
+function cleanTurnText(value: unknown): string {
+  return String(value || '')
+    .replace(/^Thinking\.\.\.\s*/i, '')
+    .replace(/^Thinking\s*/i, '')
+    .trim();
 }
 
 function canvasEditedText(html: string): string {
@@ -173,8 +202,23 @@ function canvasEditedText(html: string): string {
   const template = document.createElement('template');
   template.innerHTML = sanitizeHtml(String(html ?? ''), { keepContent: false });
   const blockTags = new Set([
-    'ADDRESS', 'ARTICLE', 'BLOCKQUOTE', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
-    'LI', 'OL', 'P', 'PRE', 'TABLE', 'TR', 'UL',
+    'ADDRESS',
+    'ARTICLE',
+    'BLOCKQUOTE',
+    'DIV',
+    'H1',
+    'H2',
+    'H3',
+    'H4',
+    'H5',
+    'H6',
+    'LI',
+    'OL',
+    'P',
+    'PRE',
+    'TABLE',
+    'TR',
+    'UL',
   ]);
   const parts: string[] = [];
   const visit = (node: Node): void => {
@@ -195,7 +239,8 @@ function canvasEditedText(html: string): string {
     for (const child of Array.from(node.childNodes)) visit(child);
   };
   for (const child of Array.from(template.content.childNodes)) visit(child);
-  return parts.join('')
+  return parts
+    .join('')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -210,19 +255,29 @@ function historyTextOf(message: StoredMessage): string {
   /* Reasoning can also be embedded inline in older assistant snapshots.
      Its canonical value stays in reasoningContent below. */
   if (message.role === 'assistant' || message.role === 'system') {
-    text = text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<\/?think>/g, '').trim();
+    text = text
+      .replace(/<think>[\s\S]*?<\/think>/g, '')
+      .replace(/<\/?think>/g, '')
+      .trim();
   }
   return text;
 }
 
 function historyAttachmentsOf(message: StoredMessage): Array<StoredAttachment | null | undefined> {
-  if (message.role !== 'user' || !Array.isArray(message.attachments) || !message.attachments.length) return [];
+  if (message.role !== 'user' || !Array.isArray(message.attachments) || !message.attachments.length)
+    return [];
   return message.attachments as Array<StoredAttachment | null | undefined>;
 }
 
-function historyContentOf(text: string, attachments: Array<StoredAttachment | null | undefined>): string | ContentPart[] {
+function historyContentOf(
+  text: string,
+  attachments: Array<StoredAttachment | null | undefined>,
+): string | ContentPart[] {
   if (!attachments.length) return truncateHistoryText(text, true);
-  return partsForStoredAttachments(text, attachments, { truncate: true }) || truncateHistoryText(text, true);
+  return (
+    partsForStoredAttachments(text, attachments, { truncate: true }) ||
+    truncateHistoryText(text, true)
+  );
 }
 
 function historyMessageFromStore(message: StoredMessage | null | undefined): HistoryEntry | null {
@@ -239,71 +294,71 @@ function historyMessageFromStore(message: StoredMessage | null | undefined): His
   return output;
 }
 
-function historyFromStateMessages(messages: unknown): HistoryEntry[] | null{
-  if(!Array.isArray(messages)||!messages.length)return null;
-  const storedMessages=messages as Array<StoredMessage | null | undefined>;
-  const maxMessages=HISTORY_MAX_TURNS*2;
-  const out=summaryPrefix(storedMessages as StoredMessage[]);
-  for(let i=Math.max(0,storedMessages.length-maxMessages);i<storedMessages.length;i++){
-    const message=historyMessageFromStore(storedMessages[i]);
-    if(message)out.push(message);
+function historyFromStateMessages(messages: unknown): HistoryEntry[] | null {
+  if (!Array.isArray(messages) || !messages.length) return null;
+  const storedMessages = messages as Array<StoredMessage | null | undefined>;
+  const maxMessages = HISTORY_MAX_TURNS * 2;
+  const out = summaryPrefix(storedMessages as StoredMessage[]);
+  for (let i = Math.max(0, storedMessages.length - maxMessages); i < storedMessages.length; i++) {
+    const message = historyMessageFromStore(storedMessages[i]);
+    if (message) out.push(message);
   }
-  return out.length?out:null;
+  return out.length ? out : null;
 }
 
-function historyFromLocalMemory(record: ReturnType<typeof loadLocalMemory>): HistoryEntry[] | null{
-  const messages=record&&record.messages;
-  if(!messages||!messages.length)return null;
-  const maxMessages=HISTORY_MAX_TURNS*2;
-  const out=summaryPrefix(messages);
-  for(let i=Math.max(0,messages.length-maxMessages);i<messages.length;i++){
-    const message=messages[i];
-    if(!message||!message.content)continue;
-    const text=truncateHistoryText(cleanTurnText(message.content),true);
-    if(!text)continue;
-    out.push({role:message.role==="user"?"user":"assistant",content:text});
+function historyFromLocalMemory(record: ReturnType<typeof loadLocalMemory>): HistoryEntry[] | null {
+  const messages = record && record.messages;
+  if (!messages || !messages.length) return null;
+  const maxMessages = HISTORY_MAX_TURNS * 2;
+  const out = summaryPrefix(messages);
+  for (let i = Math.max(0, messages.length - maxMessages); i < messages.length; i++) {
+    const message = messages[i];
+    if (!message || !message.content) continue;
+    const text = truncateHistoryText(cleanTurnText(message.content), true);
+    if (!text) continue;
+    out.push({ role: message.role === 'user' ? 'user' : 'assistant', content: text });
   }
-  return out.length?out:null;
+  return out.length ? out : null;
 }
 
-function historyFromDom(list: HTMLElement | null): HistoryEntry[]{
-  if(!list)return[];
-  const out: HistoryEntry[]=[];
-  const children=list.children;
-  for(let i=children.length-1;i>=0&&out.length<HISTORY_MAX_TURNS*2;i--){
-    const element=children[i];
-    const isUser=element.classList.contains("user");
-    if(!isUser&&!element.classList.contains("assistant"))continue;
-    const body=element.querySelector<HTMLElement>(".msg-body");
-    if(!body)continue;
-    let text=(body.innerText||body.textContent||"").trim();
-    if(!text)continue;
+function historyFromDom(list: HTMLElement | null): HistoryEntry[] {
+  if (!list) return [];
+  const out: HistoryEntry[] = [];
+  const children = list.children;
+  for (let i = children.length - 1; i >= 0 && out.length < HISTORY_MAX_TURNS * 2; i--) {
+    const element = children[i];
+    const isUser = element.classList.contains('user');
+    if (!isUser && !element.classList.contains('assistant')) continue;
+    const body = element.querySelector<HTMLElement>('.msg-body');
+    if (!body) continue;
+    let text = (body.innerText || body.textContent || '').trim();
+    if (!text) continue;
     /* Strip leaked UI affordances that may have been serialised into history. */
-    text=truncateHistoryText(cleanTurnText(text),true);
-    out.unshift({role:isUser?"user":"assistant",content:text});
+    text = truncateHistoryText(cleanTurnText(text), true);
+    out.unshift({ role: isUser ? 'user' : 'assistant', content: text });
   }
   return out;
 }
 
-export function extractHistory(): HistoryEntry[]{
+export function extractHistory(): HistoryEntry[] {
   /* P1.1 — three-tier source-of-truth, preferred in order:
-     1. window.stateStore.read("messages").rawText (authoritative, in-memory, never
+     1. sessionStore message rawText (authoritative, in-memory, never
        re-rendered, never has half-streamed text)
      2. localStorage mirror (good for cross-tab / post-reload)
      3. live DOM (legacy fallback — only used when neither 1 nor 2
        is available, e.g. a session that was loaded from the server
        but the in-memory list hasn't been hydrated yet) */
-  const inMemory=historyFromStateMessages(window.stateStore!.read("messages"));
-  if(inMemory)return inMemory;
+  const inMemory = historyFromStateMessages(sessionStore.getState().messages);
+  if (inMemory) return inMemory;
   /* P_context-race — if currentSessionId is null (state was reset
      but no session loaded yet), skip the localStorage fallback.
      _memKey(null) resolves to "socrates-memory-default" which is a
      shared key that may contain stale messages from a previous
      session — reading it would inject wrong history into the LLM
      context ("会话串台"). */
-  const sid=window.stateStore!.read("currentSessionId");
-  if(!sid)return[];
-  const fromStorage=historyFromLocalMemory(loadLocalMemory(sid as string));
-  if(fromStorage)return fromStorage;
-  return historyFromDom(document.getElementById("msgList"));
+  const sid = sessionStore.getState().currentSessionId;
+  if (!sid) return [];
+  const fromStorage = historyFromLocalMemory(loadLocalMemory(sid as string));
+  if (fromStorage) return fromStorage;
+  return historyFromDom(document.getElementById('msgList'));
 }

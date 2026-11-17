@@ -1,6 +1,6 @@
 // RN-2 activity rail: every tool call is one row on the turn's hairline rail,
 // and a row opens its own detail inline beneath the label.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -28,7 +28,13 @@ function searchCall(id, query, sources) {
 
 const FIXTURE_CALLS = [
   searchCall('s1', 'alpha theory', [
-    { title: 'Alpha one', url: 'https://example.test/alpha-one', snippet: 'First', date: '2026-07-15', source: 'bing' },
+    {
+      title: 'Alpha one',
+      url: 'https://example.test/alpha-one',
+      snippet: 'First',
+      date: '2026-07-15',
+      source: 'bing',
+    },
     { title: 'Alpha two', url: 'https://example.test/alpha-two', snippet: 'Second' },
   ]),
   searchCall('s2', 'beta theory', [
@@ -79,48 +85,65 @@ const FIXTURE_CALLS = [
    `localStorage['socrates-theme']` at boot, so a screenshot pass has to pin it
    before navigation rather than poke an attribute afterwards. Later init
    scripts run later, so calling this again on the same page re-themes it. */
-async function loadFixtureSession(page, { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en' } = {}) {
+async function loadFixtureSession(
+  page,
+  { theme = 'dark', html = null, toolCalls = FIXTURE_CALLS, language = 'en' } = {},
+) {
   await mockAuthedApp(page);
-  await page.addInitScript(({ name, appLanguage }) => {
-    try {
-      localStorage.setItem('socrates-lang-app', appLanguage);
-      localStorage.setItem('socrates-theme', name);
-    } catch (_) {}
-  }, { name: theme, appLanguage: language });
-  await page.route(new RegExp('/api/(?:v2/)?sessions/' + SESSION_ID + '(?:\\?.*)?$'), async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: SESSION_ID,
-        topic: 'Tool run layout',
-        title: 'Tool run layout',
-        domain: 'ml',
-        mode: 'chat',
-        kind: 'chat',
-        phase: 'chat',
-        messages: [
-          { id: 'tr-user', role: 'user', rawText: 'Look into MoE routing', html: '<p>Look into MoE routing</p>' },
-          {
-            id: 'tr-assistant',
-            role: 'assistant',
-            rawText: RAW_TEXT,
-            /* Deliberately stale: the declarative renderer must draw the rows
+  await page.addInitScript(
+    ({ name, appLanguage }) => {
+      try {
+        localStorage.setItem('socrates-lang-app', appLanguage);
+        localStorage.setItem('socrates-theme', name);
+      } catch (_) {}
+    },
+    { name: theme, appLanguage: language },
+  );
+  await page.route(
+    new RegExp('/api/(?:v2/)?sessions/' + SESSION_ID + '(?:\\?.*)?$'),
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: SESSION_ID,
+          topic: 'Tool run layout',
+          title: 'Tool run layout',
+          domain: 'ml',
+          mode: 'chat',
+          kind: 'chat',
+          phase: 'chat',
+          messages: [
+            {
+              id: 'tr-user',
+              role: 'user',
+              rawText: 'Look into MoE routing',
+              html: '<p>Look into MoE routing</p>',
+            },
+            {
+              id: 'tr-assistant',
+              role: 'assistant',
+              rawText: RAW_TEXT,
+              /* Deliberately stale: the declarative renderer must draw the rows
                from toolCalls[], never from this string. */
-            html: html === null
-              ? '<p>Lead paragraph.</p><details class="tool-inline"><summary>baked row</summary></body></details>'
-              : html,
-            toolCalls,
-          },
-        ],
-        kbNodes: [],
-        mistakes: [],
-      }),
-    });
-  });
+              html:
+                html === null
+                  ? '<p>Lead paragraph.</p><details class="tool-inline"><summary>baked row</summary></body></details>'
+                  : html,
+              toolCalls,
+            },
+          ],
+          kbNodes: [],
+          mistakes: [],
+        }),
+      });
+    },
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, {
+    timeout: 15_000,
+  });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
   const body = page.locator('#msgList .msg.assistant').last().locator('.msg-body');
   await body.getByTestId('turn-activity-toggle').click();
@@ -138,15 +161,21 @@ async function openDetail(page, body, id) {
 
 test('every call is one row on the rail, in call order', async ({ page }) => {
   const body = await loadFixtureSession(page);
-  expect(await body.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)))
-    .toEqual(['s1', 's2', 's3', 'f1', 'w1', 'w2']);
+  expect(
+    await body.locator('.rn-tool-row').evaluateAll((rows) => rows.map((row) => row.dataset.tcid)),
+  ).toEqual(['s1', 's2', 's3', 'f1', 'w1', 'w2']);
   const s1 = body.getByTestId('tool-row-s1');
   await expect(s1).toContainText('alpha theory');
   await expect(body.getByTestId('tool-row-w1')).toContainText('router_v2.py');
   await expect(body.getByTestId('tool-row-w2')).toContainText('moe.py');
   // A row that is still in flight leads with the spinner; settled rows do not.
-  await expect(body.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute('data-state', 'running');
-  await expect(body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(body.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute(
+    'data-state',
+    'running',
+  );
+  await expect(
+    body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
+  ).toHaveCount(1);
   await expect(s1.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
 });
@@ -158,7 +187,9 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   const detail = await openDetail(page, body, 's1');
   await expect(row).toHaveAttribute('aria-expanded', 'true');
   expect(await detail.getAttribute('role')).toBe(null);
-  await expect(detail.getByTestId('tool-detail-section-input')).toContainText('"query": "alpha theory"');
+  await expect(detail.getByTestId('tool-detail-section-input')).toContainText(
+    '"query": "alpha theory"',
+  );
   const sources = detail.getByTestId('tool-detail-section-sources');
   await expect(sources.getByTestId('tool-source')).toHaveCount(2);
   await expect(sources.getByTestId('tool-source-title').first()).toHaveText('Alpha one');
@@ -172,7 +203,9 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   await page.keyboard.press('Escape');
   await expect(panel).toBeHidden();
   // The panel sits inside the prose column, under its own row.
-  expect(await detail.evaluate((el) => Boolean(el.closest('.rn-tool-row[data-tcid="s1"]')))).toBe(true);
+  expect(await detail.evaluate((el) => Boolean(el.closest('.rn-tool-row[data-tcid="s1"]')))).toBe(
+    true,
+  );
   await row.click();
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);
 });
@@ -189,12 +222,23 @@ test('keyboard activation toggles the row disclosure', async ({ page }) => {
 
 test('long tool output expands and copies the complete source text', async ({ page }) => {
   const output = Array.from({ length: 30 }, (_, i) => `line-${i}: ${'x'.repeat(500)}`).join('\n');
-  const call = { id: 'long-output', name: 'code_interpreter', input: { code: 'print(1)' }, output, status: 'completed', textOffset: 0 };
+  const call = {
+    id: 'long-output',
+    name: 'code_interpreter',
+    input: { code: 'print(1)' },
+    output,
+    status: 'completed',
+    textOffset: 0,
+  };
   const body = await loadFixtureSession(page, { toolCalls: [call] });
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
-      value: { writeText: async (text) => { window.__copiedToolOutput = text; } },
+      value: {
+        writeText: async (text) => {
+          window.__copiedToolOutput = text;
+        },
+      },
     });
   });
   const detail = await openDetail(page, body, 'long-output');
@@ -235,7 +279,9 @@ test('a failure keeps a readable reason and a Retry in the transcript', async ({
   const notice = body.getByTestId('tool-error');
   await expect(notice).toHaveCount(1);
   await expect(notice).toHaveAttribute('role', 'alert');
-  await expect(notice.getByTestId('tool-error-message')).toHaveText('Search upstream timed out after 30s');
+  await expect(notice.getByTestId('tool-error-message')).toHaveText(
+    'Search upstream timed out after 30s',
+  );
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-error', '1');
 
   /* Retry must reach the legacy delegate listener as the same CustomEvent. */
@@ -252,7 +298,9 @@ test('a failure keeps a readable reason and a Retry in the transcript', async ({
 
   /* The inline panel carries the full error and the error code as a footnote. */
   const detail = await openDetail(page, body, 'f1');
-  await expect(detail.getByTestId('tool-detail-section-error')).toContainText('Search upstream timed out after 30s');
+  await expect(detail.getByTestId('tool-detail-section-error')).toContainText(
+    'Search upstream timed out after 30s',
+  );
   await expect(detail.getByTestId('tool-detail-section-technical')).toContainText('SEARCH_TIMEOUT');
 });
 
@@ -266,15 +314,19 @@ test('each file action names its file in the row and in its own details', async 
   await expect(detail).toContainText('router_v2.py');
 });
 
-test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({ page }) => {
+test('answer prose keeps its recorded order around the rows, with no baked-in duplicates', async ({
+  page,
+}) => {
   const body = await loadFixtureSession(page);
   const layout = await body.locator('.turn-evidence').evaluate((el) => {
     const order = [];
     for (const node of Array.from(el.children)) {
       if (node.classList.contains('tool-inline-attachments')) continue;
       if (node.classList.contains('rn-turn-activity')) order.push('activity');
-      else if (node.classList.contains('tool-run-prose')) order.push(`text:${(node.textContent || '').trim()}`);
-      else if (node.classList.contains('rn-tool-actions')) order.push(`actions:${node.dataset.toolActions}`);
+      else if (node.classList.contains('tool-run-prose'))
+        order.push(`text:${(node.textContent || '').trim()}`);
+      else if (node.classList.contains('rn-tool-actions'))
+        order.push(`actions:${node.dataset.toolActions}`);
       else order.push(`other:${node.className}`);
     }
     return order;
@@ -355,20 +407,29 @@ test('rows share one icon column and the prose column', async ({ page }) => {
   const body = await loadFixtureSession(page);
   await body.scrollIntoViewIfNeeded();
   await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
-  const icons = await body.locator('.rn-tool-row .tool-inline-tool-icon').evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
+  const icons = await body
+    .locator('.rn-tool-row .tool-inline-tool-icon')
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
   /* Five settled rows carry their tool glyph; the in-flight row leads with
      the shared spinner instead, so it contributes no icon. */
   expect(icons.length).toBe(5);
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
-  await expect(body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner')).toHaveCount(1);
-  const proseWidth = await body.locator('.tool-run-prose').first().evaluate((el) => {
-    const p = el.querySelector('p') || el.firstElementChild;
-    return p ? p.getBoundingClientRect().width : 0;
-  });
+  await expect(
+    body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
+  ).toHaveCount(1);
+  const proseWidth = await body
+    .locator('.tool-run-prose')
+    .first()
+    .evaluate((el) => {
+      const p = el.querySelector('p') || el.firstElementChild;
+      return p ? p.getBoundingClientRect().width : 0;
+    });
   expect(proseWidth).toBeGreaterThan(200);
 });
 
-test('a running code call streams into the open panel and keeps it open on completion', async ({ page }) => {
+test('a running code call streams into the open panel and keeps it open on completion', async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
     const encoder = new TextEncoder();
@@ -376,34 +437,56 @@ test('a running code call streams into the open panel and keeps it open on compl
     let push = null;
     let ref = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
         start(controller) {
           ref = controller;
           push = (text) => controller.enqueue(encoder.encode(text));
-          push(frame('tool_use', [{ id: 'live-code', name: 'code_interpreter', input: { code: '' } }]));
+          push(
+            frame('tool_use', [{ id: 'live-code', name: 'code_interpreter', input: { code: '' } }]),
+          );
         },
       });
       /* Cumulative partial JSON, exactly as the backend sends it. Long enough
          on purpose that the box has to scroll instead of growing. */
       const code = Array.from({ length: 40 }, (_, i) => `step_${i}(data)`).join('\n');
-      window.__streamArgs = () => push(frame('tool_call_delta', {
-        id: 'live-code', index: 0, arguments: '{"code":' + JSON.stringify(code),
-      }));
-      window.__streamStdout = () => push(frame('tool_progress', {
-        id: 'live-code', phase: 'stdout', elapsedMs: 420, chunk: 'running step_0\n',
-      }));
+      window.__streamArgs = () =>
+        push(
+          frame('tool_call_delta', {
+            id: 'live-code',
+            index: 0,
+            arguments: '{"code":' + JSON.stringify(code),
+          }),
+        );
+      window.__streamStdout = () =>
+        push(
+          frame('tool_progress', {
+            id: 'live-code',
+            phase: 'stdout',
+            elapsedMs: 420,
+            chunk: 'running step_0\n',
+          }),
+        );
       window.__finishCode = () => {
-        push(frame('tool_result', { id: 'live-code', ok: true, status: 'completed', output: 'all steps ran' }));
+        push(
+          frame('tool_result', {
+            id: 'live-code',
+            ok: true,
+            status: 'completed',
+            output: 'all steps ran',
+          }),
+        );
         push('data: {"choices":[{"delta":{"content":"All steps ran."}}]}\n\n');
         push('data: [DONE]\n\n');
         ref.close();
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
@@ -411,9 +494,13 @@ test('a running code call streams into the open panel and keeps it open on compl
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '55555555-5555-4555-8555-555555555555';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-code', role: 'user', rawText: 'Run it', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-code', role: 'user', rawText: 'Run it', html: null }],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__codeTurnPromise = window.askChatTurn('Run it');
   });
@@ -425,7 +512,7 @@ test('a running code call streams into the open panel and keeps it open on compl
   await expect(bubble.getByTestId('turn-activity-duration')).toContainText(/\d/);
 
   await page.evaluate(() => {
-    window.__beforeToolSnapshot = window.stateStore.read('messages').at(-1);
+    window.__beforeToolSnapshot = window.__socratesTestState.session().messages.at(-1);
     window.__streamArgs();
   });
   const preview = page.getByTestId('tool-live-preview');
@@ -450,7 +537,7 @@ test('a running code call streams into the open panel and keeps it open on compl
   await expect(output).toContainText('running step_0');
   await detail.screenshot({ path: 'test-results/tool-run-live-preview.png' });
   const snapshotChecks = await page.evaluate(() => {
-    const current = window.stateStore.read('messages').at(-1);
+    const current = window.__socratesTestState.session().messages.at(-1);
     const call = current.toolCalls[0];
     const previous = window.__beforeToolSnapshot;
     return {
@@ -459,13 +546,19 @@ test('a running code call streams into the open panel and keeps it open on compl
       previousOutput: previous.toolCalls[0]._liveOutput ?? null,
       previousArguments: previous.toolCalls[0].argumentsText ?? null,
       currentOutput: call._liveOutput,
-      privateBuffer: '_liveBuffer' in call || '_pendingDeltas' in call || '_orphanProgress' in current,
+      privateBuffer:
+        '_liveBuffer' in call || '_pendingDeltas' in call || '_orphanProgress' in current,
       persistedRuntime: '_run' in JSON.parse(JSON.stringify(call)),
     };
   });
   expect(snapshotChecks).toEqual({
-    frozen: true, replaced: true, previousOutput: null, previousArguments: null,
-    currentOutput: 'running step_0', privateBuffer: false, persistedRuntime: false,
+    frozen: true,
+    replaced: true,
+    previousOutput: null,
+    previousArguments: null,
+    currentOutput: 'running step_0',
+    privateBuffer: false,
+    persistedRuntime: false,
   });
 
   await page.evaluate(() => window.__finishCode());
@@ -484,34 +577,54 @@ test('a pending approval stays visible in the transcript with pill decisions', a
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     let push = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
-      const stream = new ReadableStream({ start(controller) {
-        push = (event, data) => controller.enqueue(encoder.encode(frame(event, data)));
-        push('tool_use', [{ id: 'approval-tool', name: 'workspace_agent', input: { command: 'npm test' } }]);
-        window.__requestToolApproval = () => push('tool_approval', {
-          id: 'approval-tool', runId: 'run-approval', approvalId: 'approval-123',
-          kind: 'commandExecution', command: 'npm test', cwd: '/workspace',
-          reason: 'Validate the project', status: 'pending',
-          availableDecisions: ['accept', 'decline'],
-        });
-      } });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      const stream = new ReadableStream({
+        start(controller) {
+          push = (event, data) => controller.enqueue(encoder.encode(frame(event, data)));
+          push('tool_use', [
+            { id: 'approval-tool', name: 'workspace_agent', input: { command: 'npm test' } },
+          ]);
+          window.__requestToolApproval = () =>
+            push('tool_approval', {
+              id: 'approval-tool',
+              runId: 'run-approval',
+              approvalId: 'approval-123',
+              kind: 'commandExecution',
+              command: 'npm test',
+              cwd: '/workspace',
+              reason: 'Validate the project',
+              status: 'pending',
+              availableDecisions: ['accept', 'decline'],
+            });
+        },
+      });
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
   await page.addInitScript(() => localStorage.setItem('socrates-lang-app', 'en'));
   const decisions = [];
-  await page.route(/\/api\/(?:v2\/)?agent-runs\/run-approval\/approvals\/approval-123(?:\?.*)?$/, async (route) => {
-    decisions.push({ method: route.request().method(), body: route.request().postDataJSON() });
-    await route.fulfill({ json: { ok: true } });
-  });
+  await page.route(
+    /\/api\/(?:v2\/)?agent-runs\/run-approval\/approvals\/approval-123(?:\?.*)?$/,
+    async (route) => {
+      decisions.push({ method: route.request().method(), body: route.request().postDataJSON() });
+      await route.fulfill({ json: { ok: true } });
+    },
+  );
   await page.route(/\/api\/(?:v2\/)?agent-runs\/run-approval(?:\?.*)?$/, async (route) => {
     if (route.request().method() === 'GET') {
-      await route.fulfill({ json: { run: { status: 'completed', summary: 'Command approved and completed.' }, artifacts: [] } });
+      await route.fulfill({
+        json: {
+          run: { status: 'completed', summary: 'Command approved and completed.' },
+          artifacts: [],
+        },
+      });
     } else {
       await route.fallback();
     }
@@ -520,14 +633,23 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '66666666-6666-4666-8666-666666666666';
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [{ clientId: 'user-approval', role: 'user', rawText: 'Run the tests', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-approval', role: 'user', rawText: 'Run the tests', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     window.__approvalTurnPromise = window.askChatTurn('Run the tests');
   });
 
-  const row = page.locator('.msg.assistant').last().locator('.rn-tool-row[data-tcid="approval-tool"]');
+  const row = page
+    .locator('.msg.assistant')
+    .last()
+    .locator('.rn-tool-row[data-tcid="approval-tool"]');
   await expect(row).toHaveAttribute('data-state', 'running');
   await page.evaluate(() => window.__requestToolApproval());
   const prompt = page.locator('.rn-tool-approval');

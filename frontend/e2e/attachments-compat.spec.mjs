@@ -24,7 +24,14 @@ test('Attachment chip row React mode hydrates without a window array alias', asy
     typedRenderer: typeof window.__socratesLegacy?.composer?.renderAttachmentChips === 'function',
     windowArrayAlias: 'attachments' in window,
   }));
-  expect(ownership).toEqual({ bridge: false, retryAlias: false, typedRetry: true, renderAlias: false, typedRenderer: true, windowArrayAlias: false });
+  expect(ownership).toEqual({
+    bridge: false,
+    retryAlias: false,
+    typedRetry: true,
+    renderAlias: false,
+    typedRenderer: true,
+    windowArrayAlias: false,
+  });
 });
 
 test('Attachment chips React mode render files selected through the composer', async ({ page }) => {
@@ -96,8 +103,12 @@ async function chatChipsAttrVisible(page, selector) {
    Multimodality no longer gates admission: a text-only model still
    receives the file as an attachment the read_attachment tool can read. */
 const MOCK_UPLOAD = {
-  id: 'file-uuid-1', name: 'shot.png', mimeType: 'image/png',
-  size: 21, kind: 'image', sha256: 'deadbeef',
+  id: 'file-uuid-1',
+  name: 'shot.png',
+  mimeType: 'image/png',
+  size: 21,
+  kind: 'image',
+  sha256: 'deadbeef',
 };
 
 function mockProviderAndUpload(page, providers) {
@@ -124,13 +135,22 @@ function mockProviderAndUpload(page, providers) {
   });
 }
 
-test('Image upload is admitted for a text-only model and stored as a durable file', async ({ page }) => {
+test('Image upload is admitted for a text-only model and stored as a durable file', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
-  await mockProviderAndUpload(page, [{
-    id: 'text-only', label: 'Text only', url: 'https://example.test/v1',
-    model: 'text-model', hasKey: true, isActive: true,
-    isBuiltIn: false, isMultimodal: false,
-  }]);
+  await mockProviderAndUpload(page, [
+    {
+      id: 'text-only',
+      label: 'Text only',
+      url: 'https://example.test/v1',
+      model: 'text-model',
+      hasKey: true,
+      isActive: true,
+      isBuiltIn: false,
+      isMultimodal: false,
+    },
+  ]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -149,11 +169,18 @@ test('Image upload is admitted for a text-only model and stored as a durable fil
 
 test('Image upload is admitted for a multimodal active model', async ({ page }) => {
   await mockAuthedApp(page);
-  await mockProviderAndUpload(page, [{
-    id: 'vision', label: 'Vision', url: 'https://example.test/v1',
-    model: 'vision-model', hasKey: true, isActive: true,
-    isBuiltIn: false, isMultimodal: true,
-  }]);
+  await mockProviderAndUpload(page, [
+    {
+      id: 'vision',
+      label: 'Vision',
+      url: 'https://example.test/v1',
+      model: 'vision-model',
+      hasKey: true,
+      isActive: true,
+      isBuiltIn: false,
+      isMultimodal: true,
+    },
+  ]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -172,11 +199,18 @@ test('Image upload is admitted for a multimodal active model', async ({ page }) 
    button so an attachment-only landing draft can enter chat. */
 test('Attachment-only landing draft activates Send and enters chat', async ({ page }) => {
   await mockAuthedApp(page);
-  await mockProviderAndUpload(page, [{
-    id: 'any', label: 'Any', url: 'https://example.test/v1',
-    model: 'm', hasKey: true, isActive: true,
-    isBuiltIn: false, isMultimodal: false,
-  }]);
+  await mockProviderAndUpload(page, [
+    {
+      id: 'any',
+      label: 'Any',
+      url: 'https://example.test/v1',
+      model: 'm',
+      hasKey: true,
+      isActive: true,
+      isBuiltIn: false,
+      isMultimodal: false,
+    },
+  ]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -210,20 +244,38 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
     if (req.method() === 'POST' && apiUrl.includes('/api/files')) {
       attempts++;
       if (attempts === 1) {
-        await route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' });
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: '{"error":"boom"}',
+        });
       } else {
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(MOCK_UPLOAD) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify(MOCK_UPLOAD),
+        });
       }
       return;
     }
     if (req.method() === 'GET' && apiUrl.includes('/api/api-key')) {
       await route.fulfill({
-        status: 200, contentType: 'application/json',
-        body: JSON.stringify({ providers: [{
-          id: 'any', label: 'Any', url: 'https://example.test/v1',
-          model: 'm', hasKey: true, isActive: true,
-          isBuiltIn: false, isMultimodal: false,
-        }] }),
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          providers: [
+            {
+              id: 'any',
+              label: 'Any',
+              url: 'https://example.test/v1',
+              model: 'm',
+              hasKey: true,
+              isActive: true,
+              isBuiltIn: false,
+              isMultimodal: false,
+            },
+          ],
+        }),
       });
       return;
     }
@@ -233,7 +285,9 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
   await waitForAppShell(page);
 
   await page.locator('#composerAttachInput').setInputFiles({
-    name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello'),
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('hello'),
   });
 
   /* First attempt fails → error chip with a retry button carrying the
@@ -253,11 +307,18 @@ test('Failed upload shows a retry affordance that re-runs the job', async ({ pag
 
 test('Re-picking an identical file is deduplicated', async ({ page }) => {
   await mockAuthedApp(page);
-  await mockProviderAndUpload(page, [{
-    id: 'any', label: 'Any', url: 'https://example.test/v1',
-    model: 'm', hasKey: true, isActive: true,
-    isBuiltIn: false, isMultimodal: false,
-  }]);
+  await mockProviderAndUpload(page, [
+    {
+      id: 'any',
+      label: 'Any',
+      url: 'https://example.test/v1',
+      model: 'm',
+      hasKey: true,
+      isActive: true,
+      isBuiltIn: false,
+      isMultimodal: false,
+    },
+  ]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -270,11 +331,18 @@ test('Re-picking an identical file is deduplicated', async ({ page }) => {
 
 test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) => {
   await mockAuthedApp(page);
-  await mockProviderAndUpload(page, [{
-    id: 'any', label: 'Any', url: 'https://example.test/v1',
-    model: 'm', hasKey: true, isActive: true,
-    isBuiltIn: false, isMultimodal: false,
-  }]);
+  await mockProviderAndUpload(page, [
+    {
+      id: 'any',
+      label: 'Any',
+      url: 'https://example.test/v1',
+      model: 'm',
+      hasKey: true,
+      isActive: true,
+      isBuiltIn: false,
+      isMultimodal: false,
+    },
+  ]);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
@@ -296,7 +364,9 @@ test('Document upload (PDF) produces a fileId pointer chip', async ({ page }) =>
    document card. The row used to add a second 12px inset on top of the
    frame slot, and the image tile inherited a 56px flex basis from the parity
    layer, so it rendered 56×64. */
-test('Composer attachment previews align with the editor and keep their shapes', async ({ page }) => {
+test('Composer attachment previews align with the editor and keep their shapes', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await mockProviderAndUpload(page, []);
   await gotoAndSettle(page, '/');
@@ -309,7 +379,11 @@ test('Composer attachment previews align with the editor and keep their shapes',
   );
   await page.locator('#composerAttachInput').setInputFiles([
     { name: 'cat.png', mimeType: 'image/png', buffer: png },
-    { name: 'lecture-notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 fake') },
+    {
+      name: 'lecture-notes.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 fake'),
+    },
   ]);
 
   const chips = page.locator('#composerAttachmentChips .attachment-chip');
@@ -326,8 +400,8 @@ test('Composer attachment previews align with the editor and keep their shapes',
   expect(Math.round(fileBox.width)).toBe(240);
   expect(Math.round(fileBox.height)).toBe(64);
 
-  const editorLeft = await page.locator('#composerRoot .rich-composer-editor').evaluate(
-    (node) => node.getBoundingClientRect().left,
-  );
+  const editorLeft = await page
+    .locator('#composerRoot .rich-composer-editor')
+    .evaluate((node) => node.getBoundingClientRect().left);
   expect(Math.abs(imageBox.x - editorLeft)).toBeLessThanOrEqual(1);
 });

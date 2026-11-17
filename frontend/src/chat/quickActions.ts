@@ -4,7 +4,7 @@
  * calls the turn and session helpers it imports directly.
  */
 
-import { stateStore } from '../state/store.ts';
+import { dispatchPatches, dispatchSession, kbBridge, sessionBridge } from '../store/index.ts';
 import { getMistakeBookUI } from '../app/widgetSetup.ts';
 import { submitChatMessage } from './sendPipeline.ts';
 import { parsePracticeInner } from '@socrates/ui/learn-model';
@@ -20,7 +20,9 @@ type TutorMessage = ChatMessageShape;
 
 function recordTutorMistake(messages: TutorMessage[], index: number, nodeName: string): void {
   const previous = messages.slice(0, index).reverse();
-  const question = previous.find((message) => message.role === 'assistant' && message.type !== 'suggest')?.rawText || nodeName;
+  const question =
+    previous.find((message) => message.role === 'assistant' && message.type !== 'suggest')
+      ?.rawText || nodeName;
   const practice = question.match(/<practice\b[^>]*>([\s\S]*?)<\/practice>/i);
   getMistakeBookUI().recordMistake?.({
     type: 'practice',
@@ -36,14 +38,14 @@ async function explainCurrentNode(
 ): Promise<boolean> {
   const node = kbNodes[currentNode];
   if (!node) return false;
-  stateStore.dispatch({ type: 'state/batch', patch: { explaining: true, substantiveCount: 0 } });
+  dispatchPatches({ session: { explaining: true, substantiveCount: 0 } });
   try {
     const explanation = await getExplanation(node.status ?? '');
-    if (stateStore.read('currentSessionId') !== sessionId) return false;
+    if (sessionBridge.getSnapshot().currentSessionId !== sessionId) return false;
     addMessage('assistant', explanation);
   } finally {
-    if (stateStore.read('currentSessionId') === sessionId) {
-      stateStore.dispatch({ type: 'state/set', key: 'explaining', value: false });
+    if (sessionBridge.getSnapshot().currentSessionId === sessionId) {
+      dispatchSession({ type: 'session/set', key: 'explaining', value: false });
     }
   }
   return true;
@@ -51,15 +53,20 @@ async function explainCurrentNode(
 
 async function handleQuickAction(action: string, messageId: string): Promise<void> {
   if (!['explain', 'skip', 'retry', 'hint', 'mistake'].includes(action)) return;
-  const messages: TutorMessage[] = stateStore.read('messages');
+  const messages: TutorMessage[] = sessionBridge.getSnapshot().messages;
   const index = messages.findIndex((message) => message.clientId === messageId);
   if (index < 0 || !Array.isArray(messages[index].actions)) return;
-  stateStore.dispatch({ type: 'session/update-message', index, clientId: messageId, patch: { actions: null } });
+  dispatchSession({
+    type: 'session/update-message',
+    index,
+    clientId: messageId,
+    patch: { actions: null },
+  });
   publishReactChatRuntime({ type: 'state-synced', reason: 'tutor-action-consumed' });
 
-  const kbNodes = stateStore.read('kbNodes') as Array<{ name?: string; status?: string }>;
-  const currentNode = stateStore.read('currentNode') as number;
-  const sessionId = stateStore.read('currentSessionId');
+  const kbNodes = kbBridge.getSnapshot().kbNodes as Array<{ name?: string; status?: string }>;
+  const currentNode = kbBridge.getSnapshot().currentNode as number;
+  const sessionId = sessionBridge.getSnapshot().currentSessionId;
   const isZh = getCurrentLanguage() === 'zh';
   switch (action) {
     case 'explain': {
@@ -67,7 +74,12 @@ async function handleQuickAction(action: string, messageId: string): Promise<voi
       break;
     }
     case 'hint':
-      await submitChatMessage(isZh ? '请给我一个提示，不要直接给出完整答案。' : 'Give me one hint without revealing the full solution.', { origin: 'hint' });
+      await submitChatMessage(
+        isZh
+          ? '请给我一个提示，不要直接给出完整答案。'
+          : 'Give me one hint without revealing the full solution.',
+        { origin: 'hint' },
+      );
       break;
     case 'mistake':
       recordTutorMistake(messages, index, kbNodes[currentNode]?.name || '');
@@ -77,7 +89,9 @@ async function handleQuickAction(action: string, messageId: string): Promise<voi
        * but this used to advance currentNode, silently skipping the whole
        * sub-topic. Stay on the same node and generate a fresh question;
        * sub-topic advancement remains the job of the mastery flow. */
-      stateStore.dispatch({ type: 'state/batch', patch: { stuckCount: 0, stuckCheckOffered: false, stuckCheckRejected: 0 } });
+      dispatchPatches({
+        session: { stuckCount: 0, stuckCheckOffered: false, stuckCheckRejected: 0 },
+      });
       await askNextQuestion();
       break;
     case 'retry':
@@ -88,7 +102,7 @@ async function handleQuickAction(action: string, messageId: string): Promise<voi
       addMessage('assistant', translate('tutor.takeTime'));
       break;
   }
-  if (stateStore.read('currentSessionId') === sessionId) saveCurrentSession();
+  if (sessionBridge.getSnapshot().currentSessionId === sessionId) saveCurrentSession();
 }
 
 export { handleQuickAction };

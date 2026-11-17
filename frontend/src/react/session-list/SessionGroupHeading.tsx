@@ -8,5 +8,11 @@ const TIME = webClass('recents-time-label');
 const PROJECT = webClass('recents-project-label');
 
 export function SessionGroupHeading({ label, project }: { label: string; project?: boolean }) {
-  return <ConversationGroupHeading label={label} kind={project ? 'project' : 'time'} hostStyle={project ? PROJECT : TIME} />;
+  return (
+    <ConversationGroupHeading
+      label={label}
+      kind={project ? 'project' : 'time'}
+      hostStyle={project ? PROJECT : TIME}
+    />
+  );
 }

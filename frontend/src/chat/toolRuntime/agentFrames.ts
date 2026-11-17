@@ -74,7 +74,11 @@ export function createAgentFrameRuntime<
     if (direct) return direct;
     const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
     for (let index = calls.length - 1; index >= 0; index--) {
-      if (calls[index] && calls[index].name === 'workspace_agent' && !calls[index]._toolResultApplied) {
+      if (
+        calls[index] &&
+        calls[index].name === 'workspace_agent' &&
+        !calls[index]._toolResultApplied
+      ) {
         return calls[index];
       }
     }
@@ -131,7 +135,7 @@ export function createAgentFrameRuntime<
     if (!buckets) return;
     const queued = [
       ...(buckets[entry.id] || []),
-      ...(entry.name === 'workspace_agent' ? (buckets.workspace_agent || []) : []),
+      ...(entry.name === 'workspace_agent' ? buckets.workspace_agent || [] : []),
     ];
     delete buckets[entry.id];
     if (entry.name === 'workspace_agent') delete buckets.workspace_agent;

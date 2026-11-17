@@ -77,7 +77,18 @@ function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) 
           <span className="source-card-title">{item.title}</span>
           {item.snippet ? <span className="source-card-snippet">{item.snippet}</span> : null}
         </span>
-        <svg className="source-card-arrow" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          className="source-card-arrow"
+          viewBox="0 0 16 16"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M6 3h7v7M13 3 5.5 10.5M12 9v4H3V4h4" />
         </svg>
       </a>
@@ -137,12 +148,25 @@ export function SourcesPanel() {
     <div className="sources-panel-inner">
       <header className="sources-panel-header">
         <div className="sources-panel-heading">
-          <svg className="sources-panel-icon" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg
+            className="sources-panel-icon"
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
             <path d="M4 2.5h5.5L12 5v8.5H4z" />
             <path d="M9.5 2.5V5H12M6 8h4M6 10.5h4" />
           </svg>
           <h2 className="sources-panel-title">{entry.title}</h2>
-          <span className="sources-panel-count" aria-hidden="true">{entry.items.length}</span>
+          <span className="sources-panel-count" aria-hidden="true">
+            {entry.items.length}
+          </span>
         </div>
         <Button
           ref={closeRef}
@@ -152,7 +176,16 @@ export function SourcesPanel() {
           aria-label={i18n('sources.close', 'Close sources')}
           title={i18n('sources.close', 'Close sources')}
         >
-          <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
             <path d="m4 4 8 8M12 4l-8 8" />
           </svg>
         </Button>

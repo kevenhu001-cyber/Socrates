@@ -221,7 +221,8 @@ function xfrmOf(shapeEl: Element): EmuBox | null {
   /* Shapes keep their transform in p:spPr/p:grpSpPr; a graphicFrame (table)
      carries p:xfrm directly on the frame element. */
   const spPr = firstChildByLocal(shapeEl, 'spPr') ?? firstChildByLocal(shapeEl, 'grpSpPr');
-  const xfrm = (spPr ? firstChildByLocal(spPr, 'xfrm') : null) ?? firstChildByLocal(shapeEl, 'xfrm');
+  const xfrm =
+    (spPr ? firstChildByLocal(spPr, 'xfrm') : null) ?? firstChildByLocal(shapeEl, 'xfrm');
   if (!xfrm) return null;
   const off = firstChildByLocal(xfrm, 'off');
   const ext = firstChildByLocal(xfrm, 'ext');
@@ -234,7 +235,9 @@ function xfrmOf(shapeEl: Element): EmuBox | null {
   };
 }
 
-function parseRunProperties(runPr: Element | null): Pick<PptxTextRun, 'bold' | 'italic' | 'sizePt' | 'color'> {
+function parseRunProperties(
+  runPr: Element | null,
+): Pick<PptxTextRun, 'bold' | 'italic' | 'sizePt' | 'color'> {
   if (!runPr) return {};
   const sizePt = Number(runPr.getAttribute('sz')) / 100;
   const solidFill = firstChildByLocal(runPr, 'solidFill');
@@ -253,7 +256,14 @@ function parseParagraphs(txBody: Element): PptxParagraph[] {
     const pPr = firstChildByLocal(p, 'pPr');
     const alignRaw = pPr?.getAttribute('algn');
     const paragraph: PptxParagraph = {
-      align: alignRaw === 'ctr' ? 'center' : alignRaw === 'r' ? 'right' : alignRaw === 'just' ? 'justify' : undefined,
+      align:
+        alignRaw === 'ctr'
+          ? 'center'
+          : alignRaw === 'r'
+            ? 'right'
+            : alignRaw === 'just'
+              ? 'justify'
+              : undefined,
       runs: [],
     };
     for (let child = p.firstElementChild; child; child = child.nextElementSibling) {
@@ -261,12 +271,19 @@ function parseParagraphs(txBody: Element): PptxParagraph[] {
       if (local === 'r') {
         const t = firstChildByLocal(child, 't');
         if (!t) continue;
-        paragraph.runs.push({ text: textOf(t), ...parseRunProperties(firstChildByLocal(child, 'rPr')) });
+        paragraph.runs.push({
+          text: textOf(t),
+          ...parseRunProperties(firstChildByLocal(child, 'rPr')),
+        });
       } else if (local === 'br') {
         paragraph.runs.push({ text: '\n' });
       } else if (local === 'fld') {
         const t = firstChildByLocal(child, 't');
-        if (t) paragraph.runs.push({ text: textOf(t), ...parseRunProperties(firstChildByLocal(child, 'rPr')) });
+        if (t)
+          paragraph.runs.push({
+            text: textOf(t),
+            ...parseRunProperties(firstChildByLocal(child, 'rPr')),
+          });
       }
     }
     paragraphs.push(paragraph);
@@ -315,7 +332,11 @@ function shapeFromText(child: Element, group: GroupTransform | null): PptxShape 
   return { kind: 'text', ...(group ? mapThroughGroup(rawBox, group) : rawBox), paragraphs };
 }
 
-function shapeFromPicture(child: Element, rels: Map<string, string>, group: GroupTransform | null): PptxShape | null {
+function shapeFromPicture(
+  child: Element,
+  rels: Map<string, string>,
+  group: GroupTransform | null,
+): PptxShape | null {
   const rawBox = xfrmOf(child);
   if (!rawBox) return null;
   const blipFill = firstChildByLocal(child, 'blipFill');
@@ -332,7 +353,11 @@ function shapeFromTable(child: Element, group: GroupTransform | null): PptxShape
   const graphicData = graphic ? firstChildByLocal(graphic, 'graphicData') : null;
   const tbl = graphicData ? firstChildByLocal(graphicData, 'tbl') : null;
   if (!tbl) return null;
-  return { kind: 'table', ...(group ? mapThroughGroup(rawBox, group) : rawBox), table: parseTableCells(tbl) };
+  return {
+    kind: 'table',
+    ...(group ? mapThroughGroup(rawBox, group) : rawBox),
+    table: parseTableCells(tbl),
+  };
 }
 
 function groupTransformOf(grpSp: Element): GroupTransform | null {
@@ -353,7 +378,12 @@ function groupTransformOf(grpSp: Element): GroupTransform | null {
   };
 }
 
-function collectShapes(container: Element, rels: Map<string, string>, group: GroupTransform | null, out: PptxShape[]): void {
+function collectShapes(
+  container: Element,
+  rels: Map<string, string>,
+  group: GroupTransform | null,
+  out: PptxShape[],
+): void {
   for (let child = container.firstElementChild; child; child = child.nextElementSibling) {
     if (child.localName === 'sp') {
       const shape = shapeFromText(child, group);

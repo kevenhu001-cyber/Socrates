@@ -26,9 +26,23 @@ export function WebIconRenderer({ name, shapes, size, color, strokeWidth }: UiIc
         const key = `${name}-${index}`;
         const common = { vectorEffect: 'non-scaling-stroke' as const };
         if (shape[0] === 'p') return <path key={key} d={shape[1]} {...common} />;
-        if (shape[0] === 'c') return <circle key={key} cx={shape[1]} cy={shape[2]} r={shape[3]} {...common} />;
-        if (shape[0] === 'r') return <rect key={key} x={shape[1]} y={shape[2]} width={shape[3]} height={shape[4]} rx={shape[5]} {...common} />;
-        return <line key={key} x1={shape[1]} y1={shape[2]} x2={shape[3]} y2={shape[4]} {...common} />;
+        if (shape[0] === 'c')
+          return <circle key={key} cx={shape[1]} cy={shape[2]} r={shape[3]} {...common} />;
+        if (shape[0] === 'r')
+          return (
+            <rect
+              key={key}
+              x={shape[1]}
+              y={shape[2]}
+              width={shape[3]}
+              height={shape[4]}
+              rx={shape[5]}
+              {...common}
+            />
+          );
+        return (
+          <line key={key} x1={shape[1]} y1={shape[2]} x2={shape[3]} y2={shape[4]} {...common} />
+        );
       })}
     </svg>
   );

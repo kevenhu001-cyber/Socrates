@@ -71,7 +71,9 @@ export function buildTeachingPlanFromKB(state: TeachingPlanState): TeachingPlan 
   };
 }
 
-export function syncCurrentNodeFromTeachingPlan(state: TeachingPlanState): SyncedTeachingPlan | null {
+export function syncCurrentNodeFromTeachingPlan(
+  state: TeachingPlanState,
+): SyncedTeachingPlan | null {
   const plan = state.teachingPlan;
   if (!plan || !plan.subtopics.length) return null;
   let firstActive = -1;

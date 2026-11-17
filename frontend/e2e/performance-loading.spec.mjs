@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
@@ -6,7 +6,9 @@ import { ACTIVE_CLASS, gotoAndSettle, login, publishChatRuntime } from './_lib.m
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
-test('download-first UI fonts preload one variable face without duplicate transfers', async ({ page }) => {
+test('download-first UI fonts preload one variable face without duplicate transfers', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -49,7 +51,10 @@ test('download-first UI fonts preload one variable face without duplicate transf
   await devTools.send('DOM.enable');
   await devTools.send('CSS.enable');
   const { root } = await devTools.send('DOM.getDocument');
-  const { nodeId } = await devTools.send('DOM.querySelector', { nodeId: root.nodeId, selector: '#composerInputWrap .tiptap p' });
+  const { nodeId } = await devTools.send('DOM.querySelector', {
+    nodeId: root.nodeId,
+    selector: '#composerInputWrap .tiptap p',
+  });
   const { fonts: renderedFonts } = await devTools.send('CSS.getPlatformFontsForNode', { nodeId });
   expect(renderedFonts).toEqual([
     expect.objectContaining({ familyName: 'Noto Sans SC', isCustomFont: true, glyphCount: 8 }),
@@ -60,35 +65,78 @@ test('download-first UI fonts preload one variable face without duplicate transf
   await page.screenshot({ path: 'test-results/download-first-fonts.png' });
 });
 
-test('ordinary prose defers rich UI; slow renderer loading preserves prose and latest tool data', async ({ page }) => {
-  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const renderer = report.modules.find((item) => item.id === 'src/react/intelligence-ui/IntelligenceUiNodes.tsx');
+test('ordinary prose defers rich UI; slow renderer loading preserves prose and latest tool data', async ({
+  page,
+}) => {
+  const report = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
+  const renderer = report.modules.find(
+    (item) => item.id === 'src/react/intelligent-ui/IntelligentUiNodes.tsx',
+  );
   let requested = false;
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   await page.route(`**/${renderer.chunk}`, async (route) => {
     requested = true;
     await gate;
     await route.continue();
   });
   try {
-    await prepareChatWorkbench(page, { messages: [{
-      clientId: 'lazy-ui-prose', role: 'assistant', type: 'assistant',
-      rawText: 'The explanation stays readable.', html: '<p>The explanation stays readable.</p>',
-    }] });
+    await prepareChatWorkbench(page, {
+      messages: [
+        {
+          clientId: 'lazy-ui-prose',
+          role: 'assistant',
+          type: 'assistant',
+          rawText: 'The explanation stays readable.',
+          html: '<p>The explanation stays readable.</p>',
+        },
+      ],
+    });
     await expect(page.locator('#msgList')).toContainText('The explanation stays readable.');
     await expect(page.locator('#composerInputWrap .tiptap')).toBeVisible();
     expect(requested).toBe(false);
 
     const updateUi = async (value) => {
       await page.evaluate((nextValue) => {
-        const prose = window.stateStore.read('messages')[0];
-        window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [prose, {
-          clientId: 'lazy-ui-tool', role: 'assistant', type: 'assistant', rawText: '', html: '',
-          toolCalls: [{ id: 'lazy-ui-call', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, output: '',
-            input: { version: 1, nodes: [{ id: 'lazy-metric', type: 'metric', label: 'Latest estimate', value: nextValue }] },
-          }],
-        }] });
+        const prose = window.__socratesTestState.session().messages[0];
+        window.__socratesTestState.patch({
+          session: {
+            messages: [
+              prose,
+              {
+                clientId: 'lazy-ui-tool',
+                role: 'assistant',
+                type: 'assistant',
+                rawText: '',
+                html: '',
+                toolCalls: [
+                  {
+                    id: 'lazy-ui-call',
+                    name: 'render_intelligent_ui',
+                    status: 'completed',
+                    textOffset: 0,
+                    output: '',
+                    input: {
+                      version: 1,
+                      nodes: [
+                        {
+                          id: 'lazy-metric',
+                          type: 'metric',
+                          label: 'Latest estimate',
+                          value: nextValue,
+                        },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        });
       }, value);
       await publishChatRuntime(page, { type: 'state-synced', reason: 'lazy-ui-fixture' });
     };
@@ -114,13 +162,21 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   const report = JSON.parse(readFileSync(resolve(dist, '.vite/entry-graph.json'), 'utf8'));
   const chunks = new Map(report.chunks.map((chunk) => [chunk.file, chunk]));
   // Recompute the closure from the HTML instead of trusting eager flags.
-  const scripts = new Set([...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.js)"/g)].map((match) => match[1]));
+  const scripts = new Set(
+    [...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.js)"/g)].map((match) => match[1]),
+  );
   for (const file of scripts) {
     expect(chunks.has(file), `missing graph for ${file}`).toBe(true);
     for (const dependency of chunks.get(file).imports) scripts.add(dependency);
   }
-  const styles = new Set([...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.css)"/g)].map((match) => match[1]));
-  const sum = (files) => [...files].reduce((total, file) => total + gzipSync(readFileSync(resolve(dist, file))).length, 0);
+  const styles = new Set(
+    [...html.matchAll(/(?:src|href)="\/(assets\/[^"?#]+\.css)"/g)].map((match) => match[1]),
+  );
+  const sum = (files) =>
+    [...files].reduce(
+      (total, file) => total + gzipSync(readFileSync(resolve(dist, file))).length,
+      0,
+    );
   const metrics = {
     htmlGzipBytes: gzipSync(Buffer.from(html)).length,
     staticJsGzipBytes: sum(scripts),
@@ -137,7 +193,7 @@ test('production entry keeps the static closure gzip transfer under budget', () 
   expect(Object.values(metrics).reduce((sum, bytes) => sum + bytes, 0)).toBeLessThan(588_000);
 
   const lazyOnly = [
-    'src/react/intelligence-ui/IntelligenceUiNodes.tsx',
+    'src/react/intelligent-ui/IntelligentUiNodes.tsx',
     'src/react/extensions/WorkflowLayer.tsx',
     'src/react/find-in-session/FindInSession.tsx',
     'src/chat/streamAttempt.ts',
@@ -168,8 +224,13 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   await gotoAndSettle(page, '/');
   await login(page);
 
-  const loadedScripts = () => page.evaluate(() => performance.getEntriesByType('resource')
-    .map((entry) => new URL(entry.name).pathname).filter((path) => path.endsWith('.js')));
+  const loadedScripts = () =>
+    page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .map((entry) => new URL(entry.name).pathname)
+        .filter((path) => path.endsWith('.js')),
+    );
   const newlyLoadedScripts = (before, after) => after.some((path) => !before.includes(path));
   const initial = await loadedScripts();
 
@@ -185,37 +246,71 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   expect(newlyLoadedScripts(afterSettings, afterWorkspace)).toBe(true);
 });
 
-test('settings modal and first pane preload on trigger intent before the click', async ({ page }) => {
-  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const modal = report.modules.find((module) => module.id === 'src/react/settings/SettingsModal.tsx');
-  const general = report.modules.find((module) => module.id === 'src/react/settings/GeneralSettingsPane.tsx');
+test('settings modal and first pane preload on trigger intent before the click', async ({
+  page,
+}) => {
+  const report = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
+  const modal = report.modules.find(
+    (module) => module.id === 'src/react/settings/SettingsModal.tsx',
+  );
+  const general = report.modules.find(
+    (module) => module.id === 'src/react/settings/GeneralSettingsPane.tsx',
+  );
   expect(modal).toBeTruthy();
   expect(general).toBeTruthy();
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await login(page);
 
-  const loadedScripts = () => page.evaluate(() => performance.getEntriesByType('resource')
-    .map((entry) => new URL(entry.name).pathname).filter((path) => path.endsWith('.js')));
+  const loadedScripts = () =>
+    page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .map((entry) => new URL(entry.name).pathname)
+        .filter((path) => path.endsWith('.js')),
+    );
   const trigger = page.locator('#apiSettingsBtn');
   const beforeIntent = await loadedScripts();
   expect(beforeIntent.some((path) => path.endsWith(modal.chunk))).toBe(false);
   expect(beforeIntent.some((path) => path.endsWith(general.chunk))).toBe(false);
 
   await trigger.hover();
-  await expect.poll(async () => {
-    const paths = await loadedScripts();
-    return paths.some((path) => path.endsWith(modal.chunk)) && paths.some((path) => path.endsWith(general.chunk));
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const paths = await loadedScripts();
+      return (
+        paths.some((path) => path.endsWith(modal.chunk)) &&
+        paths.some((path) => path.endsWith(general.chunk))
+      );
+    })
+    .toBe(true);
   await trigger.click();
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 
-test('signed-in boot reuses the head session prefetch instead of fetching twice', async ({ page }) => {
+test('signed-in boot reuses the head session prefetch instead of fetching twice', async ({
+  page,
+}) => {
   const rows = [
-    { id: 'sess-alpha', title: 'Alpha', topic: 'alpha', updated_at: 1_700_000_000_000, created_at: 1_699_000_000_000, total_q: 2 },
-    { id: 'sess-beta', title: 'Beta', topic: 'beta', updated_at: 1_699_500_000_000, created_at: 1_699_000_000_000, total_q: 1 },
+    {
+      id: 'sess-alpha',
+      title: 'Alpha',
+      topic: 'alpha',
+      updated_at: 1_700_000_000_000,
+      created_at: 1_699_000_000_000,
+      total_q: 2,
+    },
+    {
+      id: 'sess-beta',
+      title: 'Beta',
+      topic: 'beta',
+      updated_at: 1_699_500_000_000,
+      created_at: 1_699_000_000_000,
+      total_q: 1,
+    },
   ];
   await mockAuthedApp(page, { sessions: { sessions: rows } });
   const sessionGets = [];
@@ -227,7 +322,10 @@ test('signed-in boot reuses the head session prefetch instead of fetching twice'
   await login(page);
   await waitForAppShell(page);
   /* The sidebar must show the prefetched rows... */
-  await expect(page.locator('#recentsList, .recents-list, #recents').first()).toContainText('Alpha', { timeout: 15_000 });
+  await expect(page.locator('#recentsList, .recents-list, #recents').first()).toContainText(
+    'Alpha',
+    { timeout: 15_000 },
+  );
   /* ...and the prefetch must REPLACE the later fetch, not add to it. Two GETs
      here means session/bootSessions.ts failed to take the handoff and the
      sidebar paid a second round trip. */
@@ -240,7 +338,11 @@ test('anonymous boot checks the session once', async ({ page }) => {
   let sessionChecks = 0;
   await page.route(/\/api\/(?:v2\/)?auth\/me(?:\?|$)/, (route) => {
     sessionChecks += 1;
-    return route.fulfill({ status: 401, contentType: 'application/json', body: '{"error":"unauthorized"}' });
+    return route.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: '{"error":"unauthorized"}',
+    });
   });
   await gotoAndSettle(page, '/');
   await expect(page.locator('#authGate')).toBeVisible();
@@ -254,7 +356,11 @@ test('session check starts before slow config finishes', async ({ page }) => {
   await page.route(/\/api\/v2\/config(?:\?|$)/, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 400));
     configFinished = true;
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"hasBeagleKey":true}' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{"hasBeagleKey":true}',
+    });
   });
   await page.route(/\/api\/v2\/auth\/me(?:\?|$)/, (route) => {
     sessionStartedEarly = !configFinished;
@@ -266,10 +372,16 @@ test('session check starts before slow config finishes', async ({ page }) => {
 });
 
 test('late workspace imports cannot reveal an inactive page', async ({ page }) => {
-  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const workspace = report.modules.find((module) => module.id === 'src/react/pages/workspace/WorkspacePage.tsx');
+  const report = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
+  const workspace = report.modules.find(
+    (module) => module.id === 'src/react/pages/workspace/WorkspacePage.tsx',
+  );
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   let requested = false;
   await page.route(`**/${workspace.chunk}`, async (route) => {
     requested = true;
@@ -294,10 +406,14 @@ test('late workspace imports cannot reveal an inactive page', async ({ page }) =
 });
 
 test('late creation imports cannot replace a newer navigation destination', async ({ page }) => {
-  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const report = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
   const creation = report.modules.find((module) => module.id === 'src/ui/creationSurfaces.ts');
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   let requested = false;
   await page.route(`**/${creation.chunk}`, async (route) => {
     requested = true;

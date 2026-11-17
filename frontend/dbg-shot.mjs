@@ -10,10 +10,13 @@ async function setup(page) {
     document.documentElement.dataset.bootState = 'app';
     document.documentElement.dataset.mode = 'dark';
     document.getElementById('sidebar')?.classList.add('collapsed');
-    document.querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent').forEach(e => e.remove());
-    document.querySelectorAll('div').forEach(e => {
+    document
+      .querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent')
+      .forEach((e) => e.remove());
+    document.querySelectorAll('div').forEach((e) => {
       const t = e.textContent?.trim();
-      if (t === "Couldn't reach the server. Check your connection and retry.") e.style.display = 'none';
+      if (t === "Couldn't reach the server. Check your connection and retry.")
+        e.style.display = 'none';
     });
   });
   await page.waitForTimeout(500);
@@ -32,42 +35,81 @@ async function setup(page) {
   await p.waitForTimeout(500);
 
   console.log('=== Empty ===');
-  console.log(JSON.stringify(await p.evaluate(() => {
-    const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.composer-footer');
-    return {
-      wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
-      body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },
-    };
-  }), null, 2));
+  console.log(
+    JSON.stringify(
+      await p.evaluate(() => {
+        const wrap = document.getElementById('chatInputWrap');
+        const body = wrap.querySelector('.composer-footer');
+        return {
+          wrap: {
+            rect: wrap.getBoundingClientRect(),
+            height: getComputedStyle(wrap).height,
+            classes: Array.from(wrap.classList),
+          },
+          body: {
+            rect: body.getBoundingClientRect(),
+            rows: getComputedStyle(body).gridTemplateRows,
+          },
+        };
+      }),
+      null,
+      2,
+    ),
+  );
 
   await p.locator('#chatComposerRoot .rich-composer-editor').focus();
   await p.keyboard.type('Hello');
   await p.waitForTimeout(500);
 
   console.log('=== After Hello (single line) ===');
-  console.log(JSON.stringify(await p.evaluate(() => {
-    const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.composer-footer');
-    return {
-      wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
-      body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },
-    };
-  }), null, 2));
+  console.log(
+    JSON.stringify(
+      await p.evaluate(() => {
+        const wrap = document.getElementById('chatInputWrap');
+        const body = wrap.querySelector('.composer-footer');
+        return {
+          wrap: {
+            rect: wrap.getBoundingClientRect(),
+            height: getComputedStyle(wrap).height,
+            classes: Array.from(wrap.classList),
+          },
+          body: {
+            rect: body.getBoundingClientRect(),
+            rows: getComputedStyle(body).gridTemplateRows,
+          },
+        };
+      }),
+      null,
+      2,
+    ),
+  );
 
   await p.keyboard.press('Shift+Enter');
   await p.keyboard.type('World');
   await p.waitForTimeout(500);
 
   console.log('=== After Shift+Enter World (2 lines) ===');
-  console.log(JSON.stringify(await p.evaluate(() => {
-    const wrap = document.getElementById('chatInputWrap');
-    const body = wrap.querySelector('.composer-footer');
-    return {
-      wrap: { rect: wrap.getBoundingClientRect(), height: getComputedStyle(wrap).height, classes: Array.from(wrap.classList) },
-      body: { rect: body.getBoundingClientRect(), rows: getComputedStyle(body).gridTemplateRows },
-    };
-  }), null, 2));
+  console.log(
+    JSON.stringify(
+      await p.evaluate(() => {
+        const wrap = document.getElementById('chatInputWrap');
+        const body = wrap.querySelector('.composer-footer');
+        return {
+          wrap: {
+            rect: wrap.getBoundingClientRect(),
+            height: getComputedStyle(wrap).height,
+            classes: Array.from(wrap.classList),
+          },
+          body: {
+            rect: body.getBoundingClientRect(),
+            rows: getComputedStyle(body).gridTemplateRows,
+          },
+        };
+      }),
+      null,
+      2,
+    ),
+  );
 
   await p.close();
 }

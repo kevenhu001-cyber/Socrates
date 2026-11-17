@@ -44,10 +44,18 @@ function asFailure(value: unknown): RequestFailure {
 function interpretCustomResponse(response: unknown): CustomOutcome {
   const payload = (response || {}) as CustomProviderResponse;
   if (typeof payload.content !== 'string') {
-    return { kind: 'failure', error: makeAIError('malformed response'), userCancelled: false, cause: null };
+    return {
+      kind: 'failure',
+      error: makeAIError('malformed response'),
+      userCancelled: false,
+      cause: null,
+    };
   }
-  if (payload.meta && payload.meta.response_speed_applied === 'standard'
-      && getStoredResponseSpeed() === 'fast') {
+  if (
+    payload.meta &&
+    payload.meta.response_speed_applied === 'standard' &&
+    getStoredResponseSpeed() === 'fast'
+  ) {
     notifySpeedFallbackOnce();
   }
   return { kind: 'success', content: payload.content };
@@ -63,7 +71,9 @@ function normalizeCustomFailure(
   const aborted = !!(caught && (failure.name === 'AbortError' || controller.signal.aborted));
   const status = failure.status;
   const message = aborted
-    ? (isUserAbort(caught, controller.signal) ? 'request cancelled' : 'request interrupted')
+    ? isUserAbort(caught, controller.signal)
+      ? 'request cancelled'
+      : 'request interrupted'
     : (status ? status + ' ' : 'network: ') + String(failure.message || caught);
   const error = makeAIError(message, status, failure.body);
   error.code = failure.code;
@@ -71,7 +81,8 @@ function normalizeCustomFailure(
   return {
     kind: 'failure',
     error,
-    userCancelled: isUserAbort(caught, retryOptions.signal) || isUserAbort(caught, controller.signal),
+    userCancelled:
+      isUserAbort(caught, retryOptions.signal) || isUserAbort(caught, controller.signal),
     cause: caught,
   };
 }

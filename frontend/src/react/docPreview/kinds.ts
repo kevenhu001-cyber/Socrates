@@ -51,9 +51,12 @@ function extensionOf(name: string): string {
 
 /** Route an attachment to its preview kind; 'unsupported' keeps the old link. */
 export function previewKindFor(name: string, mime?: string, docKind?: string): PreviewKind {
-  const byEngine = ENGINE_KINDS.get(extensionOf(name)) ?? ENGINE_KINDS.get(String(docKind || '').toLowerCase());
+  const byEngine =
+    ENGINE_KINDS.get(extensionOf(name)) ?? ENGINE_KINDS.get(String(docKind || '').toLowerCase());
   if (byEngine) return byEngine;
-  const byServer = SERVER_TEXT_KINDS.get(extensionOf(name)) ?? SERVER_TEXT_KINDS.get(String(docKind || '').toLowerCase());
+  const byServer =
+    SERVER_TEXT_KINDS.get(extensionOf(name)) ??
+    SERVER_TEXT_KINDS.get(String(docKind || '').toLowerCase());
   if (byServer) return 'text';
   const mimeKind = mime ? KINDS_BY_MIME.get(mime.toLowerCase()) : undefined;
   if (mimeKind) {

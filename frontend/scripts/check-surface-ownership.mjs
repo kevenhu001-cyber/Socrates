@@ -10,18 +10,24 @@ const STYLES = join(FRONTEND, 'src', 'styles');
 const surfaces = {
   sidebar: {
     owners: ['parity/sidebar.css', 'polish/sidebar.css'],
-    context: /#sidebar(?![-\w])|\.sidebar(?![-\w])|\.sidebar-(?:inner|header|logo|logo-img|header-actions|nav|nav-btn|search|search-row|search-btn|footer|footer-actions|resize-handle)(?![-\w])|#sidebar(?:Header|Nav|Footer|CloseBtn|SearchBtn|UserRow|Search)(?![-\w])|#newChatBtn|\.nav-kbd|#nav[A-Z]\w+|\.recents-(?:panel|header|title|time-label|list-content)(?![-\w])|#recentsPanel|#recentsList|\.recent-item(?:-main|-title-row|-text|-meta|-overflow|-actions)?(?![-\w])|\.recent-mode-badge|\.user-(?:row|avatar|identity|name|plan)(?![-\w])/,
-    exclude: /knowledge|mistake|kb-|tab-badge|sidebar-view-btn|tutor-only|recents-filter|filter-chip|recent-item-menu|recent-item-(?:tag|archive|del|action|rename|tags)|rename|tag-|drag|drop|more-popover|popover|backdrop|voice-/,
+    context:
+      /#sidebar(?![-\w])|\.sidebar(?![-\w])|\.sidebar-(?:inner|header|logo|logo-img|header-actions|nav|nav-btn|search|search-row|search-btn|footer|footer-actions|resize-handle)(?![-\w])|#sidebar(?:Header|Nav|Footer|CloseBtn|SearchBtn|UserRow|Search)(?![-\w])|#newChatBtn|\.nav-kbd|#nav[A-Z]\w+|\.recents-(?:panel|header|title|time-label|list-content)(?![-\w])|#recentsPanel|#recentsList|\.recent-item(?:-main|-title-row|-text|-meta|-overflow|-actions)?(?![-\w])|\.recent-mode-badge|\.user-(?:row|avatar|identity|name|plan)(?![-\w])/,
+    exclude:
+      /knowledge|mistake|kb-|tab-badge|sidebar-view-btn|tutor-only|recents-filter|filter-chip|recent-item-menu|recent-item-(?:tag|archive|del|action|rename|tags)|rename|tag-|drag|drop|more-popover|popover|backdrop|voice-/,
   },
   topbar: {
     owners: ['parity/topbar.css', 'polish/topbar.css'],
-    context: /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|\.top-model-switcher/,
-    exclude: /mobile-|incognito|plugin-workspace|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
+    context:
+      /\.top-bar(?![-\w])|\.top-bar-(?:left|right)(?![-\w])|#modeSegmentedTop|\.top-mode-tabs(?![-\w])|\.app-mode-toggle|#shareBtn|\.share-btn(?![-\w])|\.share-btn-label|#findBtn|\.find-btn(?![-\w])|\.top-model-switcher/,
+    exclude:
+      /mobile-|incognito|plugin-workspace|exam-|chat-stats|sidebarOpenBtn|toggle-sidebar|glyph-/,
   },
   transcript: {
     owners: ['parity/transcript.css', 'components/chat.css', 'polish/transcript.css'],
-    context: /#msgList|\.msg(?![-\w])|\.msg-(?:body|toolbar|toolbar-btn)(?![-\w])|\.code-block-(?:header|header-lang|copy|copy-label|expand)(?![-\w])/,
-    exclude: /viz|tool-|tool_|think|thinking|reasoning|katex|math|tutor|scaffold|quiz|exam|widget|theorem|proof|attachment|edit|artifact|canvas|mermaid|plot|chart|card|intui|search-|source|citation|streaming|stream-|cursor|typing|caret|new-reply|jump|skeleton|loading|error|retry|branch|feedback|rating|kb-|mindmap|inline-|Copied|copied|checkmark|agent/,
+    context:
+      /#msgList|\.msg(?![-\w])|\.msg-(?:body|toolbar|toolbar-btn)(?![-\w])|\.code-block-(?:header|header-lang|copy|copy-label|expand)(?![-\w])/,
+    exclude:
+      /viz|tool-|tool_|think|thinking|reasoning|katex|math|tutor|scaffold|quiz|exam|widget|theorem|proof|attachment|edit|artifact|canvas|mermaid|plot|chart|card|intui|search-|source|citation|streaming|stream-|cursor|typing|caret|new-reply|jump|skeleton|loading|error|retry|branch|feedback|rating|kb-|mindmap|inline-|Copied|copied|checkmark|agent/,
   },
 };
 
@@ -44,9 +50,9 @@ const MOTION_PROPERTIES = new Set([
 ]);
 
 function isMotionDeclaration(prop) {
-  return MOTION_PROPERTIES.has(prop)
-    || prop.startsWith('animation-')
-    || prop.startsWith('transition-');
+  return (
+    MOTION_PROPERTIES.has(prop) || prop.startsWith('animation-') || prop.startsWith('transition-')
+  );
 }
 
 function isMotionOnlyRule(rule) {
@@ -84,26 +90,42 @@ for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
   // Completed migrations must not gain a second owner in compatibility CSS.
   const migratedSurfaces = [
-    { name: 'home shortcut', pattern: /\.home-quick-action/,
-      owners: ['polish/home.css', 'polish/mobile-shell.css', 'polish/press.css'] },
-    { name: 'chat terminal state', pattern: /\.msg-(?:error(?:-text)?|retry-btn|resend)(?![-\w])/,
-      owners: ['features/thinking-activity.css'] },
+    {
+      name: 'home shortcut',
+      pattern: /\.home-quick-action/,
+      owners: ['polish/home.css', 'polish/mobile-shell.css', 'polish/press.css'],
+    },
+    {
+      name: 'chat terminal state',
+      pattern: /\.msg-(?:error(?:-text)?|retry-btn|resend)(?![-\w])/,
+      owners: ['features/thinking-activity.css'],
+    },
   ];
   const migratedRoot = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   migratedRoot.walkRules((rule) => {
     for (const surface of migratedSurfaces) {
       if (!surface.owners.includes(rel) && surface.pattern.test(rule.selector)) {
-        problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${surface.name} rule outside ${surface.owners.join(', ')}`);
+        problems.push(
+          `${rel}:${rule.source?.start?.line ?? '?'} ${surface.name} rule outside ${surface.owners.join(', ')}`,
+        );
       }
     }
   });
-  if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
+  if (
+    rel.startsWith('legacy/') ||
+    rel.startsWith('restore/') ||
+    rel === 'themes.css' ||
+    rel === 'tokens.css'
+  )
+    continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (insideKeyframes(rule)) return;
 
     if (rel === CROSS_SURFACE_MOTION_OWNER && !isMotionOnlyRule(rule)) {
-      problems.push(`${rel}:${rule.source?.start?.line ?? '?'} motion policy may declare motion properties only: ${rule.selectors.join(', ')}`);
+      problems.push(
+        `${rel}:${rule.source?.start?.line ?? '?'} motion policy may declare motion properties only: ${rule.selectors.join(', ')}`,
+      );
       return;
     }
 
@@ -114,7 +136,9 @@ for (const file of walk(STYLES)) {
       for (const selector of rule.selectors) {
         if (!surface.context.test(selector) || surface.exclude.test(selector)) continue;
         if (motionException) continue;
-        problems.push(`${rel}:${rule.source?.start?.line ?? '?'} ${name} desktop rule outside ${surface.owners.join(', ')}: ${selector}`);
+        problems.push(
+          `${rel}:${rule.source?.start?.line ?? '?'} ${name} desktop rule outside ${surface.owners.join(', ')}: ${selector}`,
+        );
       }
     }
   });
@@ -183,14 +207,23 @@ const duplicatePairs = [
 
 /* Last simple selector of a compound: "#appShell .a .b" -> ".b". */
 const lastSimple = (selector) => {
-  const parts = selector.trim().split(/\s+|(?=\.|#\[)/).filter(Boolean);
+  const parts = selector
+    .trim()
+    .split(/\s+|(?=\.|#\[)/)
+    .filter(Boolean);
   return parts.length ? parts[parts.length - 1] : selector.trim();
 };
 
 const ownerOf = new Map();
 for (const file of walk(STYLES)) {
   const rel = relative(STYLES, file).replaceAll('\\', '/');
-  if (rel.startsWith('legacy/') || rel.startsWith('restore/') || rel === 'themes.css' || rel === 'tokens.css') continue;
+  if (
+    rel.startsWith('legacy/') ||
+    rel.startsWith('restore/') ||
+    rel === 'themes.css' ||
+    rel === 'tokens.css'
+  )
+    continue;
   const root = postcss.parse(readFileSync(file, 'utf8'), { from: file });
   root.walkRules((rule) => {
     if (!appliesOnDesktop(rule)) return;
@@ -198,12 +231,16 @@ for (const file of walk(STYLES)) {
       const tail = lastSimple(selector);
       for (const [className, property] of duplicatePairs) {
         if (tail !== className) continue;
-        const decl = rule.nodes?.find((node) => node.type === 'decl' && node.prop === property && !node.important);
+        const decl = rule.nodes?.find(
+          (node) => node.type === 'decl' && node.prop === property && !node.important,
+        );
         if (!decl) continue;
         const prior = ownerOf.get(`${className}|${property}`);
         const here = `${rel}:${rule.source?.start?.line ?? '?'} ${property}: ${decl.value}`;
         if (prior && prior.value !== decl.value) {
-          problems.push(`${property} on ${className} has two live desktop values — ${prior.where} vs ${here}. Keep one owner and delete the other.`);
+          problems.push(
+            `${property} on ${className} has two live desktop values — ${prior.where} vs ${here}. Keep one owner and delete the other.`,
+          );
         } else if (!prior) {
           ownerOf.set(`${className}|${property}`, { value: decl.value, where: here });
         }
@@ -218,4 +255,6 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log('surface ownership check passed (sidebar, topbar, transcript + migrated surfaces + restricted motion owner + duplicate-declaration pairs)');
+console.log(
+  'surface ownership check passed (sidebar, topbar, transcript + migrated surfaces + restricted motion owner + duplicate-declaration pairs)',
+);

@@ -155,9 +155,16 @@ export function handleBackPress(): boolean {
  * Handle real-time keyboard height update from Android WindowInsetsAnimationCallback.
  */
 export function onKeyboardHeight(heightDp: number): void {
-  const windowKeyboard = typeof window !== 'undefined'
-    ? (window as unknown as { __socratesKeyboard?: { notifyNativeKeyboard: (kind: 'show' | 'hide', height?: number) => void } }).__socratesKeyboard
-    : null;
+  const windowKeyboard =
+    typeof window !== 'undefined'
+      ? (
+          window as unknown as {
+            __socratesKeyboard?: {
+              notifyNativeKeyboard: (kind: 'show' | 'hide', height?: number) => void;
+            };
+          }
+        ).__socratesKeyboard
+      : null;
   const lift = getKeyboardLift() || windowKeyboard;
   if (lift && typeof lift.notifyNativeKeyboard === 'function') {
     if (heightDp > 0) {
@@ -167,7 +174,10 @@ export function onKeyboardHeight(heightDp: number): void {
     }
   }
   if (typeof document !== 'undefined') {
-    document.documentElement.style.setProperty('--native-keyboard-inset', `${Math.max(0, heightDp)}px`);
+    document.documentElement.style.setProperty(
+      '--native-keyboard-inset',
+      `${Math.max(0, heightDp)}px`,
+    );
   }
 }
 

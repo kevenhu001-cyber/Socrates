@@ -14,11 +14,23 @@ import unusedImports from 'eslint-plugin-unused-imports';
    order. Listing them keeps no-undef at error strength without
    hundreds of false positives. */
 const READONLY_GLOBALS = [
-  'state', 't', 'tutorSocratic', 'mermaid', 'hljs',
-  'resetState', '_activeChatCtl', '_activeChatAbort',
-  'renderMathInElement', 'scrollToBottomIfPinned', 'syncAppModeUI',
-  'setLang', 'openNav', 'openProjects', 'LAST_ACTIVE_ID_KEY',
-  'setCurrentSessionId', 'Fuse',
+  'state',
+  't',
+  'tutorSocratic',
+  'mermaid',
+  'hljs',
+  'resetState',
+  '_activeChatCtl',
+  '_activeChatAbort',
+  'renderMathInElement',
+  'scrollToBottomIfPinned',
+  'syncAppModeUI',
+  'setLang',
+  'openNav',
+  'openProjects',
+  'LAST_ACTIVE_ID_KEY',
+  'setCurrentSessionId',
+  'Fuse',
 ];
 /* Mutable cross-file state is no longer shared through the global scope:
    the Cmd-K index and exam autosave timers are module-private and are
@@ -93,12 +105,15 @@ export default tseslint.config(
       // Function-size backlog: keep complexity and long functions visible
       // while the legacy chat/session modules are split into smaller units.
       // Flip these to 'error' per-directory as the warning backlog is reduced.
-      'complexity': ['warn', 15],
-      'max-lines-per-function': ['warn', {
-        max: 120,
-        skipBlankLines: true,
-        skipComments: true,
-      }],
+      complexity: ['warn', 15],
+      'max-lines-per-function': [
+        'warn',
+        {
+          max: 120,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
       // tseslint.configs.recommended enables the TS variant for ALL files
       // (no files scope) at error severity; JS files use the core rule and
       // the TS override below re-enables it for TS files only.

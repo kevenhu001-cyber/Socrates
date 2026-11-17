@@ -60,7 +60,9 @@ const removed = baselineFiles.filter((file) => !currentSet.has(file));
 
 if (!baseline) {
   writeBaseline(files);
-  console.log(`legacy JS: no baseline found — wrote scripts/legacy-js.baseline.json (${files.length} files).`);
+  console.log(
+    `legacy JS: no baseline found — wrote scripts/legacy-js.baseline.json (${files.length} files).`,
+  );
   console.log('Commit the baseline; growth beyond it now fails.');
 } else if (UPDATE) {
   /* Shrink-only: an update may drop known paths, never add new ones. */
@@ -71,19 +73,27 @@ if (!baseline) {
     process.exitCode = 1;
   } else {
     writeBaseline(files);
-    console.log(`legacy JS: baseline updated to ${files.length} paths (the allow-list only shrinks).`);
+    console.log(
+      `legacy JS: baseline updated to ${files.length} paths (the allow-list only shrinks).`,
+    );
   }
 } else {
   const failures = [];
   if (baseline.count !== baselineFiles.length) {
-    failures.push(`baseline count ${baseline.count} does not match its ${baselineFiles.length} paths; run --update after reviewing the inventory`);
+    failures.push(
+      `baseline count ${baseline.count} does not match its ${baselineFiles.length} paths; run --update after reviewing the inventory`,
+    );
   }
   if (added.length) {
-    failures.push('new untyped JavaScript paths are not allowed; write new frontend modules in TypeScript:');
+    failures.push(
+      'new untyped JavaScript paths are not allowed; write new frontend modules in TypeScript:',
+    );
     for (const file of added) failures.push(`  ${file}`);
   }
   if (removed.length) {
-    failures.push('the inventory has shrunk; review the migration and run --update to record removed paths:');
+    failures.push(
+      'the inventory has shrunk; review the migration and run --update to record removed paths:',
+    );
     for (const file of removed) failures.push(`  ${file}`);
   }
 

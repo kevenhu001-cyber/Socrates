@@ -1,6 +1,4 @@
-
 import { reportSwallow } from './util/reportSwallow.ts';
-
 
 /* Cookie consent manager
  *
@@ -23,15 +21,10 @@ export const CONSENT_VERSION = 1;
 export const CONSENT_ACCEPT = 'accept';
 export const CONSENT_ESSENTIAL = 'essential';
 
-const ESSENTIAL_COOKIE_NAMES = new Set([
-  'sid',
-  'csrf',
-  'xsrf-token',
-  CONSENT_COOKIE,
-]);
+const ESSENTIAL_COOKIE_NAMES = new Set(['sid', 'csrf', 'xsrf-token', CONSENT_COOKIE]);
 
 let _cookieGuardInstalled = false;
-let _cookieGuardDocument: Document|null = null;
+let _cookieGuardDocument: Document | null = null;
 let _cookieConsentInitialized = false;
 let _cookieConsentPrivacyUrl = '/privacy';
 let _cookieConsentAuthPlacement = false;
@@ -69,12 +62,12 @@ export function getConsentPreference() {
       try {
         pref = normalizePreference(JSON.parse(raw));
       } catch (_) {
-        reportSwallow(_, 'empty catch: cookieConsent.ts:70');
+        reportSwallow(_, 'empty catch: cookieConsent.ts');
         /* malformed local entry — fall through to cookie */
       }
     }
   } catch (_) {
-    reportSwallow(_, 'empty catch: cookieConsent.ts:72');
+    reportSwallow(_, 'empty catch: cookieConsent.ts');
     /* storage blocked */
   }
   if (!pref) {
@@ -83,13 +76,17 @@ export function getConsentPreference() {
       try {
         pref = normalizePreference(JSON.parse(cookieRaw));
       } catch (_) {
-        reportSwallow(_, 'empty catch: cookieConsent.ts:78');
+        reportSwallow(_, 'empty catch: cookieConsent.ts');
         /* malformed cookie — treat as no choice */
       }
     }
   }
   if (pref) {
-    try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) { reportSwallow(error, 'cookieConsent.js:74', 'expected'); }
+    try {
+      localStorage.setItem(CONSENT_KEY, JSON.stringify(pref));
+    } catch (error) {
+      reportSwallow(error, 'cookieConsent.js:74', 'expected');
+    }
   }
   return pref;
 }
@@ -104,7 +101,11 @@ export function allowsNonEssential() {
 }
 
 export function isEssentialCookieName(name: string) {
-  return ESSENTIAL_COOKIE_NAMES.has(String(name || '').trim().toLowerCase());
+  return ESSENTIAL_COOKIE_NAMES.has(
+    String(name || '')
+      .trim()
+      .toLowerCase(),
+  );
 }
 
 function sharedDomainSuffix() {
@@ -121,11 +122,21 @@ function secureSuffix() {
   return location.protocol === 'https:' ? '; Secure' : '';
 }
 
-function consentCookieString(pref: { v: number; choice: string; nonEssential: boolean; updatedAt: string; }) {
+function consentCookieString(pref: {
+  v: number;
+  choice: string;
+  nonEssential: boolean;
+  updatedAt: string;
+}) {
   const value = encodeURIComponent(JSON.stringify(pref));
-  return CONSENT_COOKIE + '=' + value +
+  return (
+    CONSENT_COOKIE +
+    '=' +
+    value +
     '; path=/; max-age=31536000; SameSite=Lax' +
-    sharedDomainSuffix() + secureSuffix();
+    sharedDomainSuffix() +
+    secureSuffix()
+  );
 }
 
 export function setConsentPreference(choice: string) {
@@ -135,15 +146,27 @@ export function setConsentPreference(choice: string) {
     nonEssential: choice === CONSENT_ACCEPT,
     updatedAt: new Date().toISOString(),
   };
-  try { localStorage.setItem(CONSENT_KEY, JSON.stringify(pref)); } catch (error) { reportSwallow(error, 'cookieConsent.js:120', 'expected'); }
-  try { document.cookie = consentCookieString(pref); } catch (error) { reportSwallow(error, 'cookieConsent.js:121', 'expected'); }
+  try {
+    localStorage.setItem(CONSENT_KEY, JSON.stringify(pref));
+  } catch (error) {
+    reportSwallow(error, 'cookieConsent.js:120', 'expected');
+  }
+  try {
+    document.cookie = consentCookieString(pref);
+  } catch (error) {
+    reportSwallow(error, 'cookieConsent.js:121', 'expected');
+  }
   try {
     if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
-      window.dispatchEvent(new CustomEvent('socrates:cookie-consent', {
-        detail: { preference: pref },
-      }));
+      window.dispatchEvent(
+        new CustomEvent('socrates:cookie-consent', {
+          detail: { preference: pref },
+        }),
+      );
     }
-  } catch (error) { reportSwallow(error, 'cookieConsent.js:128'); }
+  } catch (error) {
+    reportSwallow(error, 'cookieConsent.js:128');
+  }
   return pref;
 }
 
@@ -156,7 +179,8 @@ function parseCookieAssignment(raw: unknown) {
   const value = first.slice(eq + 1).trim();
   const lower = s.toLowerCase();
   const maxAgeMatch = /(?:^|;\s*)max-age\s*=\s*(-?\d+)/i.exec(lower);
-  const isDeletion = value === '' ||
+  const isDeletion =
+    value === '' ||
     (maxAgeMatch && Number(maxAgeMatch[1]) <= 0) ||
     /expires\s*=\s*thu,\s*01\s*jan\s*1970/i.test(lower);
   return { name: name, value: value, isDeletion: isDeletion };
@@ -174,9 +198,11 @@ export function installCookieGuard() {
   if (_cookieGuardInstalled && _cookieGuardDocument === document) return;
   if (typeof document === 'undefined') return;
   const proto = Object.getPrototypeOf(document);
-  const desc = Object.getOwnPropertyDescriptor(document, 'cookie') ||
+  const desc =
+    Object.getOwnPropertyDescriptor(document, 'cookie') ||
     (proto && Object.getOwnPropertyDescriptor(proto, 'cookie')) ||
-    (typeof Document !== 'undefined' && Object.getOwnPropertyDescriptor(Document.prototype, 'cookie'));
+    (typeof Document !== 'undefined' &&
+      Object.getOwnPropertyDescriptor(Document.prototype, 'cookie'));
   const nativeGet = desc && desc.get ? desc.get : null;
   const nativeSet = desc && desc.set ? desc.set : null;
   try {
@@ -195,7 +221,7 @@ export function installCookieGuard() {
     _cookieGuardInstalled = true;
     _cookieGuardDocument = document;
   } catch (_) {
-    reportSwallow(_, 'empty catch: cookieConsent.ts:187');
+    reportSwallow(_, 'empty catch: cookieConsent.ts');
     /* unsupported host — skip the client-side guard */
   }
 }
@@ -239,19 +265,29 @@ export function initCookieConsent(options: { _queued?: boolean; privacyUrl?: str
   if (!document.body) {
     if (!options._queued) {
       options._queued = true;
-      document.addEventListener('DOMContentLoaded', function () {
-        initCookieConsent(options);
-      }, { once: true });
+      document.addEventListener(
+        'DOMContentLoaded',
+        function () {
+          initCookieConsent(options);
+        },
+        { once: true },
+      );
     }
     return { shown: false };
   }
-  if (_cookieConsentInitialized || document.getElementById('socratesCookieConsent')) return { shown: false };
+  if (_cookieConsentInitialized || document.getElementById('socratesCookieConsent'))
+    return { shown: false };
   _cookieConsentInitialized = true;
   _cookieConsentPrivacyUrl = options.privacyUrl || '/privacy';
   if (getConsentPreference()) return { shown: false };
   const gate = document.getElementById('authGate');
-  syncCookieConsentPlacement(!!(gate && !gate.classList.contains('hidden') &&
-    document.documentElement.dataset.bootState === 'auth'));
+  syncCookieConsentPlacement(
+    !!(
+      gate &&
+      !gate.classList.contains('hidden') &&
+      document.documentElement.dataset.bootState === 'auth'
+    ),
+  );
   return { shown: true };
 }
 

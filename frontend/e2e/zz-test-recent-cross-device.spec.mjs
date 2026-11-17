@@ -1,7 +1,7 @@
 // E2E test for the cross-device Recent list bug:
 // Sessions assigned to a custom project (created on Device A) must still
 // render on Device B where the project doesn't exist in local PROJECTS.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 
 const CUSTOM_PROJECT_ID = '11111111-2222-3333-4444-555555555555';
@@ -70,7 +70,7 @@ test('Recent list renders sessions whose projectId is unknown to the local PROJE
       recentsHTML: (document.getElementById('recentsList') || {}).innerHTML || '',
       serverSessionsLen: (window.SERVER_SESSIONS || []).length,
       projectsLen: (window.PROJECTS || []).length,
-      activeProjectFilter: window.stateStore.read("activeProjectFilter"),
+      activeProjectFilter: window.__socratesTestState.session().activeProjectFilter,
       recentsFilter: window.getRecentsFilter && window.getRecentsFilter(),
     };
   });

@@ -75,10 +75,10 @@ function countButtons(file) {
   const hits = [];
   const visit = (node) => {
     if (
-      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node))
-      && node.tagName
-      && ts.isIdentifier(node.tagName)
-      && node.tagName.text === 'button'
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      node.tagName &&
+      ts.isIdentifier(node.tagName) &&
+      node.tagName.text === 'button'
     ) {
       const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
       hits.push(line + 1);
@@ -109,9 +109,7 @@ function collect() {
 
 function main() {
   const { offenders, errors } = collect();
-  const baseline = existsSync(BASELINE)
-    ? JSON.parse(readFileSync(BASELINE, 'utf8'))
-    : null;
+  const baseline = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
 
   if (errors.length) {
     console.error('button-primitive check FAILED:');
@@ -122,15 +120,23 @@ function main() {
   }
 
   if (!baseline || UPDATE) {
-    const count = baseline && typeof baseline.count === 'number'
-      ? Math.min(baseline.count, offenders.length)
-      : offenders.length;
-    writeFileSync(BASELINE, JSON.stringify({
-      count,
-      excluded: EXCLUDED_DIRS.map((dir) => `src/react/${dir}`),
-      note: 'Raw JSX <button> elements in src/react/** outside the shared primitives. May only go down. Run with --update after an intentional reduction.',
-      generatedBy: 'check-button-primitive.mjs --update',
-    }, null, 2) + '\n');
+    const count =
+      baseline && typeof baseline.count === 'number'
+        ? Math.min(baseline.count, offenders.length)
+        : offenders.length;
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          count,
+          excluded: EXCLUDED_DIRS.map((dir) => `src/react/${dir}`),
+          note: 'Raw JSX <button> elements in src/react/** outside the shared primitives. May only go down. Run with --update after an intentional reduction.',
+          generatedBy: 'check-button-primitive.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
     console.log(`button-primitive: baseline ${baseline ? 'updated' : 'written'} (count=${count}).`);
     if (offenders.length) {
       console.log('Current raw buttons:');
@@ -141,7 +147,9 @@ function main() {
 
   if (offenders.length > baseline.count) {
     console.error('button-primitive check FAILED:');
-    console.error(`  Raw JSX <button> elements: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`);
+    console.error(
+      `  Raw JSX <button> elements: ${offenders.length} > baseline ${baseline.count} (+${offenders.length - baseline.count}).`,
+    );
     for (const o of offenders) console.error(`  - ${o.file}:${o.line}`);
     console.error('  Use the shared primitives from src/react/ui/ instead of a raw button.');
     process.exitCode = 1;

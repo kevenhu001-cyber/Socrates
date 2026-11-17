@@ -10,13 +10,18 @@ export function createRetryDynamicImportsPlugin() {
       const edits = [];
       const visit = (node) => {
         if (!node || typeof node !== 'object') return;
-        if (node.type === 'ImportExpression' && node.source?.type === 'Literal'
-          && typeof node.source.value === 'string' && /^\.\.?\//.test(node.source.value)) {
+        if (
+          node.type === 'ImportExpression' &&
+          node.source?.type === 'Literal' &&
+          typeof node.source.value === 'string' &&
+          /^\.\.?\//.test(node.source.value)
+        ) {
           edits.push([node.start, node.start + 6]);
         }
         for (const value of Object.values(node)) {
           if (Array.isArray(value)) value.forEach(visit);
-          else if (value && typeof value === 'object' && typeof value.type === 'string') visit(value);
+          else if (value && typeof value === 'object' && typeof value.type === 'string')
+            visit(value);
         }
       };
       visit(this.parse(code));
@@ -24,7 +29,10 @@ export function createRetryDynamicImportsPlugin() {
       for (const [start, end] of edits.sort((a, b) => b[0] - a[0])) {
         code = code.slice(0, start) + '__socratesImport' + code.slice(end);
       }
-      return { code: code + `
+      return {
+        code:
+          code +
+          `
 const __socratesFailedImports = new Map();
 function __socratesImport(path) {
   const attempt = __socratesFailedImports.get(path) || 0;
@@ -37,7 +45,9 @@ function __socratesImport(path) {
     throw error;
   });
 }
-`, map: null };
+`,
+        map: null,
+      };
     },
   };
 }

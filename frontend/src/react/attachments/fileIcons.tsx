@@ -13,14 +13,10 @@ const OFFICE_BADGE = (color: string, letter: string) =>
   `<rect x="3" y="10" width="10" height="9" rx="2.5" fill="${color}" stroke="none"/>` +
   `<text x="8" y="17" text-anchor="middle" font-size="7" font-weight="800" font-family="Geist Sans,Arial,sans-serif" fill="#ffffff" stroke="none">${letter}</text>`;
 
-const WORD_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
-const EXCEL_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;
-const POWERPOINT_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#ea580c', 'P')}</svg>`;
-const PDF_ICON =
-  `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#dc2626', 'P')}</svg>`;
+const WORD_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#2563eb', 'W')}</svg>`;
+const EXCEL_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#16a34a', 'X')}</svg>`;
+const POWERPOINT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#ea580c', 'P')}</svg>`;
+const PDF_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${DOC_PATH}${OFFICE_BADGE('#dc2626', 'P')}</svg>`;
 
 const TEXT_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -60,22 +56,78 @@ const MEDIA_ICON =
  * Order doesn't matter: the first matcher in FILE_ICON_PICKER that
  * accepts the entry wins, so this list is grouped by specificity. */
 const CODE_EXTENSIONS = new Set([
-  'py', 'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
-  'java', 'kt', 'kts', 'swift', 'go', 'rs', 'rb',
-  'php', 'c', 'cc', 'cpp', 'cxx', 'h', 'hpp', 'm', 'mm',
-  'cs', 'scala', 'sh', 'bash', 'zsh', 'fish', 'sql', 'r',
-  'lua', 'pl', 'dart', 'ex', 'exs', 'elm', 'clj',
-  'html', 'htm', 'xml', 'vue', 'svelte', 'yaml', 'yml', 'toml',
-  'css', 'scss', 'less', 'ipynb', 'diff', 'patch', 'proto',
-  'ps1', 'bat', 'cmd',
+  'py',
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'mjs',
+  'cjs',
+  'java',
+  'kt',
+  'kts',
+  'swift',
+  'go',
+  'rs',
+  'rb',
+  'php',
+  'c',
+  'cc',
+  'cpp',
+  'cxx',
+  'h',
+  'hpp',
+  'm',
+  'mm',
+  'cs',
+  'scala',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'sql',
+  'r',
+  'lua',
+  'pl',
+  'dart',
+  'ex',
+  'exs',
+  'elm',
+  'clj',
+  'html',
+  'htm',
+  'xml',
+  'vue',
+  'svelte',
+  'yaml',
+  'yml',
+  'toml',
+  'css',
+  'scss',
+  'less',
+  'ipynb',
+  'diff',
+  'patch',
+  'proto',
+  'ps1',
+  'bat',
+  'cmd',
 ]);
 const TEXT_EXTENSIONS = new Set(['txt', 'md', 'markdown', 'rst', 'log', 'json', 'csv', 'tsv']);
 const MEDIA_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac']);
 const DOC_KIND_ICONS = new Map<string, string>([
-  ['docx', WORD_ICON], ['doc', WORD_ICON],
-  ['xlsx', EXCEL_ICON], ['xls', EXCEL_ICON], ['ods', EXCEL_ICON],
-  ['pptx', POWERPOINT_ICON], ['ppt', POWERPOINT_ICON], ['odp', POWERPOINT_ICON],
-  ['pdf', PDF_ICON], ['epub', EPUB_ICON], ['rtf', RTF_ICON], ['odt', TEXT_ICON],
+  ['docx', WORD_ICON],
+  ['doc', WORD_ICON],
+  ['xlsx', EXCEL_ICON],
+  ['xls', EXCEL_ICON],
+  ['ods', EXCEL_ICON],
+  ['pptx', POWERPOINT_ICON],
+  ['ppt', POWERPOINT_ICON],
+  ['odp', POWERPOINT_ICON],
+  ['pdf', PDF_ICON],
+  ['epub', EPUB_ICON],
+  ['rtf', RTF_ICON],
+  ['odt', TEXT_ICON],
 ]);
 
 function getExtension(name: string | undefined): string {

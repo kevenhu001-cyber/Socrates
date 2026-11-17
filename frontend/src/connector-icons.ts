@@ -178,7 +178,7 @@ import twochatPng from './assets/connector-icons/twochat.png';
  *     vendor files can never cross-resolve (wrong gradient / wrong clip). */
 let __iconUid = 0;
 function cleanIcon(raw: string): string {
-  const ns = 'ci' + (++__iconUid) + '_';
+  const ns = 'ci' + ++__iconUid + '_';
   const namespaced = String(raw || '')
     .replace(/fill="#212121"/gi, 'fill="var(--ui-connector-tile)"')
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
@@ -190,7 +190,10 @@ function cleanIcon(raw: string): string {
 
   if (/<rect[^>]+width="(?:24|100%)"/i.test(namespaced)) {
     const rootStripped = namespaced.replace(/<svg[^>]*>/i, (tag) =>
-      tag.replace(/\swidth="[^"]*"/gi, '').replace(/\sheight="[^"]*"/gi, '').replace(/\sstyle="[^"]*"/i, ''),
+      tag
+        .replace(/\swidth="[^"]*"/gi, '')
+        .replace(/\sheight="[^"]*"/gi, '')
+        .replace(/\sstyle="[^"]*"/i, ''),
     );
     return rootStripped.replace(/<svg /i, '<svg aria-hidden="true" ');
   }
@@ -199,7 +202,9 @@ function cleanIcon(raw: string): string {
   let minY = 0;
   let width = 24;
   let height = 24;
-  const vbMatch = namespaced.match(/viewBox=["']\s*([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)["']/i);
+  const vbMatch = namespaced.match(
+    /viewBox=["']\s*([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)[,\s]+([-\d.]+)["']/i,
+  );
   if (vbMatch) {
     minX = parseFloat(vbMatch[1]);
     minY = parseFloat(vbMatch[2]);
@@ -236,24 +241,46 @@ function cleanIcon(raw: string): string {
   return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">${defs}<rect width="24" height="24" rx="6" fill="var(--ui-connector-tile)"/><g fill="currentColor" transform="translate(${dx}, ${dy}) scale(${sStr})">${inner}</g></svg>`;
 }
 
-const GITHUB = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(4.8, 4.8) scale(0.6)"><path fill="var(--ui-ink)" fill-rule="evenodd" d="M12 0c6.63 0 12 5.276 12 11.79-.001 5.067-3.29 9.567-8.175 11.187-.6.118-.825-.25-.825-.56 0-.398.015-1.665.015-3.242 0-1.105-.375-1.813-.81-2.181 2.67-.295 5.475-1.297 5.475-5.822 0-1.297-.465-2.344-1.23-3.169.12-.295.54-1.503-.12-3.125 0 0-1.005-.324-3.3 1.209a11.32 11.32 0 00-3-.398c-1.02 0-2.04.133-3 .398-2.295-1.518-3.3-1.209-3.3-1.209-.66 1.622-.24 2.83-.12 3.125-.765.825-1.23 1.887-1.23 3.169 0 4.51 2.79 5.527 5.46 5.822-.345.294-.66.81-.765 1.577-.69.31-2.415.81-3.495-.973-.225-.354-.9-1.223-1.845-1.209-1.005.015-.405.56.015.781.51.28 1.095 1.327 1.23 1.666.24.663 1.02 1.93 4.035 1.385 0 .988.015 1.916.015 2.196 0 .31-.225.664-.825.56C3.303 21.374-.003 16.867 0 11.791 0 5.276 5.37 0 12 0z"/></g></svg>');
+const GITHUB = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(4.8, 4.8) scale(0.6)"><path fill="var(--ui-ink)" fill-rule="evenodd" d="M12 0c6.63 0 12 5.276 12 11.79-.001 5.067-3.29 9.567-8.175 11.187-.6.118-.825-.25-.825-.56 0-.398.015-1.665.015-3.242 0-1.105-.375-1.813-.81-2.181 2.67-.295 5.475-1.297 5.475-5.822 0-1.297-.465-2.344-1.23-3.169.12-.295.54-1.503-.12-3.125 0 0-1.005-.324-3.3 1.209a11.32 11.32 0 00-3-.398c-1.02 0-2.04.133-3 .398-2.295-1.518-3.3-1.209-3.3-1.209-.66 1.622-.24 2.83-.12 3.125-.765.825-1.23 1.887-1.23 3.169 0 4.51 2.79 5.527 5.46 5.822-.345.294-.66.81-.765 1.577-.69.31-2.415.81-3.495-.973-.225-.354-.9-1.223-1.845-1.209-1.005.015-.405.56.015.781.51.28 1.095 1.327 1.23 1.666.24.663 1.02 1.93 4.035 1.385 0 .988.015 1.916.015 2.196 0 .31-.225.664-.825.56C3.303 21.374-.003 16.867 0 11.791 0 5.276 5.37 0 12 0z"/></g></svg>',
+);
 const NOTION = cleanIcon(notionRaw);
 const BAIDU = cleanIcon(baiduCloudRaw);
 const TENCENT = cleanIcon(tencentRaw);
-const MICROSOFT = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><rect x="4.2" y="4.2" width="7.8" height="7.8" rx="2.5" fill="#258BF5"/><rect x="14.4" y="4.2" width="5.4" height="5.4" rx="1.8" fill="#1271D6"/><rect x="4.2" y="14.4" width="5.4" height="5.4" rx="1.8" fill="#1271D6"/><rect x="12" y="12" width="7.8" height="7.8" rx="2.5" fill="#50B5FF"/></svg>');
+const MICROSOFT = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><rect x="4.2" y="4.2" width="7.8" height="7.8" rx="2.5" fill="#258BF5"/><rect x="14.4" y="4.2" width="5.4" height="5.4" rx="1.8" fill="#1271D6"/><rect x="4.2" y="14.4" width="5.4" height="5.4" rx="1.8" fill="#1271D6"/><rect x="12" y="12" width="7.8" height="7.8" rx="2.5" fill="#50B5FF"/></svg>',
+);
 const GOOGLE = cleanIcon(googleRaw);
-const SUPABASE = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="sb-grad" x1="53.97" y1="54.97" x2="94.16" y2="71.83" gradientUnits="userSpaceOnUse"><stop stop-color="#249361"/><stop offset="1" stop-color="#3ECF8E"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 4.6) scale(0.128)"><path d="M63.7076 110.284C60.8481 113.885 55.0502 111.912 54.9813 107.314L53.9738 40.0627L99.1935 40.0627C107.384 40.0627 111.952 49.5228 106.859 55.9374L63.7076 110.284Z" fill="url(#sb-grad)"/><path d="M45.317 2.07103C48.1765 -1.53037 53.9745 0.442937 54.0434 5.041L54.4849 72.2922H9.83113C1.64038 72.2922 -2.92775 62.8321 2.1655 56.4175L45.317 2.07103Z" fill="#3ECF8E"/></g></svg>');
-const HEALTH = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><circle cx="15.6" cy="12.0" r="2.7" fill="#E52E2E"/><circle cx="14.55" cy="14.55" r="2.7" fill="#E52E2E"/><circle cx="12.0" cy="15.6" r="2.7" fill="#E52E2E"/><circle cx="9.45" cy="14.55" r="2.7" fill="#E52E2E"/><circle cx="8.4" cy="12.0" r="2.7" fill="#E52E2E"/><circle cx="9.45" cy="9.45" r="2.7" fill="#E52E2E"/><circle cx="12.0" cy="8.4" r="2.7" fill="#E52E2E"/><circle cx="14.55" cy="9.45" r="2.7" fill="#E52E2E"/><circle cx="12" cy="12" r="4.2" fill="#E52E2E"/><path d="M12 14.8l-.7-.6C8.8 12 7 10.4 7 8.5c0-1.5 1.2-2.7 2.7-2.7.9 0 1.7.4 2.3 1.1.6-.7 1.4-1.1 2.3-1.1 1.5 0 2.7 1.2 2.7 2.7 0 1.9-1.8 3.5-4.3 5.7l-.7.6z" fill="#FFFFFF"/></svg>');
-const CALENDAR = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><rect x="2.5" y="4" width="19" height="16" rx="3.5" fill="#E5E7EB"/><path d="M2.5 7.5C2.5 5.57 4.07 4 6 4h12c1.93 0 3.5 1.57 3.5 3.5V9h-19V7.5z" fill="#38BDF8"/><circle cx="5.8" cy="6.5" r="0.9" fill="#0284C7"/><circle cx="8.6" cy="6.5" r="0.9" fill="#0284C7"/><circle cx="11.4" cy="6.5" r="0.9" fill="#0284C7"/></svg>');
+const SUPABASE = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="sb-grad" x1="53.97" y1="54.97" x2="94.16" y2="71.83" gradientUnits="userSpaceOnUse"><stop stop-color="#249361"/><stop offset="1" stop-color="#3ECF8E"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 4.6) scale(0.128)"><path d="M63.7076 110.284C60.8481 113.885 55.0502 111.912 54.9813 107.314L53.9738 40.0627L99.1935 40.0627C107.384 40.0627 111.952 49.5228 106.859 55.9374L63.7076 110.284Z" fill="url(#sb-grad)"/><path d="M45.317 2.07103C48.1765 -1.53037 53.9745 0.442937 54.0434 5.041L54.4849 72.2922H9.83113C1.64038 72.2922 -2.92775 62.8321 2.1655 56.4175L45.317 2.07103Z" fill="#3ECF8E"/></g></svg>',
+);
+const HEALTH = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><circle cx="15.6" cy="12.0" r="2.7" fill="#E52E2E"/><circle cx="14.55" cy="14.55" r="2.7" fill="#E52E2E"/><circle cx="12.0" cy="15.6" r="2.7" fill="#E52E2E"/><circle cx="9.45" cy="14.55" r="2.7" fill="#E52E2E"/><circle cx="8.4" cy="12.0" r="2.7" fill="#E52E2E"/><circle cx="9.45" cy="9.45" r="2.7" fill="#E52E2E"/><circle cx="12.0" cy="8.4" r="2.7" fill="#E52E2E"/><circle cx="14.55" cy="9.45" r="2.7" fill="#E52E2E"/><circle cx="12" cy="12" r="4.2" fill="#E52E2E"/><path d="M12 14.8l-.7-.6C8.8 12 7 10.4 7 8.5c0-1.5 1.2-2.7 2.7-2.7.9 0 1.7.4 2.3 1.1.6-.7 1.4-1.1 2.3-1.1 1.5 0 2.7 1.2 2.7 2.7 0 1.9-1.8 3.5-4.3 5.7l-.7.6z" fill="#FFFFFF"/></svg>',
+);
+const CALENDAR = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><rect x="2.5" y="4" width="19" height="16" rx="3.5" fill="#E5E7EB"/><path d="M2.5 7.5C2.5 5.57 4.07 4 6 4h12c1.93 0 3.5 1.57 3.5 3.5V9h-19V7.5z" fill="#38BDF8"/><circle cx="5.8" cy="6.5" r="0.9" fill="#0284C7"/><circle cx="8.6" cy="6.5" r="0.9" fill="#0284C7"/><circle cx="11.4" cy="6.5" r="0.9" fill="#0284C7"/></svg>',
+);
 const BROWSER = CALENDAR;
-const PALETTE = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="pal-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#C084FC"/><stop offset="100%" stop-color="#9333EA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#pal-grad)"/><path d="M12 4.5C7.86 4.5 4.5 7.86 4.5 12c0 3.62 2.59 6.64 6.04 7.33.49.09.79-.31.79-.67 0-.3-.11-.81-.17-1.3-.16-1.37.89-2.5 2.27-2.5h1.39c2.59 0 4.69-2.1 4.69-4.69 0-4.14-3.36-7.67-7.51-7.67zm-4.22 8.44c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm1.88-3.75c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm4.69 0c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm2.34 3.75c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41z" fill="#FFFFFF"/></svg>');
+const PALETTE = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="pal-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#C084FC"/><stop offset="100%" stop-color="#9333EA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#pal-grad)"/><path d="M12 4.5C7.86 4.5 4.5 7.86 4.5 12c0 3.62 2.59 6.64 6.04 7.33.49.09.79-.31.79-.67 0-.3-.11-.81-.17-1.3-.16-1.37.89-2.5 2.27-2.5h1.39c2.59 0 4.69-2.1 4.69-4.69 0-4.14-3.36-7.67-7.51-7.67zm-4.22 8.44c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm1.88-3.75c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm4.69 0c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41zm2.34 3.75c-.78 0-1.41-.63-1.41-1.41s.63-1.41 1.41-1.41 1.41.63 1.41 1.41-.63 1.41-1.41 1.41z" fill="#FFFFFF"/></svg>',
+);
 const ZAPIER = PALETTE;
-const CHART = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="ch-bg" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#72BEFF"/><stop offset="50%" stop-color="#B4B2FF"/><stop offset="100%" stop-color="#F7C4E8"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#ch-bg)"/><rect x="5.5" y="9.5" width="4" height="9.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.9"/><rect x="9.8" y="5.5" width="4.4" height="13.5" rx="1.8" fill="#FFFFFF" fill-opacity="0.95"/><rect x="14.5" y="11.5" width="4" height="7.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.9"/></svg>');
+const CHART = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="ch-bg" x1="100%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#72BEFF"/><stop offset="50%" stop-color="#B4B2FF"/><stop offset="100%" stop-color="#F7C4E8"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#ch-bg)"/><rect x="5.5" y="9.5" width="4" height="9.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.9"/><rect x="9.8" y="5.5" width="4.4" height="13.5" rx="1.8" fill="#FFFFFF" fill-opacity="0.95"/><rect x="14.5" y="11.5" width="4" height="7.5" rx="1.5" fill="#FFFFFF" fill-opacity="0.9"/></svg>',
+);
 const THUMBSUP = CHART;
-const WORKFLOW = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="wf-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D946EF"/><stop offset="100%" stop-color="#9333EA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#wf-grad)"/><circle cx="5" cy="8" r="1.5" stroke="#FFFFFF" stroke-width="1.6"/><circle cx="19" cy="8" r="1.5" stroke="#FFFFFF" stroke-width="1.6"/><line x1="6.8" y1="8" x2="9.5" y2="8" stroke="#FFFFFF" stroke-width="1.6"/><line x1="14.5" y1="8" x2="17.2" y2="8" stroke="#FFFFFF" stroke-width="1.6"/><rect x="9.5" y="6" width="5" height="5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><rect x="5" y="14" width="4.5" height="4.5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><rect x="14.5" y="14" width="4.5" height="4.5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><path d="M10.5 11c0 2-3 2-3 3" stroke="#FFFFFF" stroke-width="1.6" fill="none"/><path d="M13.5 11c0 2 3 2 3 3" stroke="#FFFFFF" stroke-width="1.6" fill="none"/></svg>');
-const VERCEL = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#FFFFFF"/><polygon points="12 6.8 17.8 17.2 6.2 17.2" fill="#000000"/></svg>');
-const GMAIL_OLED = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 6.75) scale(0.159) translate(-52, -42)"><path fill="#4285f4" d="M58 108h14V74L52 59v43c0 3.32 2.69 6 6 6"/><path fill="#34a853" d="M120 108h14c3.32 0 6-2.69 6-6V59l-20 15"/><path fill="#fbbc04" d="M120 48v26l20-15v-8c0-7.42-8.47-11.65-14.4-7.2"/><path fill="#ea4335" d="M72 74V48l24 18 24-18v26L96 92"/><path fill="#c5221f" d="M52 51v8l20 15V48l-5.6-4.2c-5.94-4.45-14.4-.22-14.4 7.2"/></g></svg>');
-const GOOGLEDRIVE_OLED = cleanIcon('<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 5.75) scale(0.0547)"><path d="M19.3542312,196.033928 L30.644172,215.534816 C32.9900287,219.64014 36.3622164,222.86588 40.3210929,225.211737 C51.6602421,210.818376 59.5534225,199.772864 64.000634,192.075201 C68.5137119,184.263529 74.0609657,172.045039 80.6423954,155.41973 C62.9064315,153.085282 49.4659974,151.918058 40.3210929,151.918058 C31.545465,151.918058 18.1051007,153.085282 0,155.41973 C0,159.964996 1.17298825,164.510261 3.51893479,168.615586 L19.3542312,196.033928 Z" fill="#0066DA"/><path d="M215.681443,225.211737 C219.64032,222.86588 223.012507,219.64014 225.358364,215.534816 L230.050377,207.470615 L252.483511,168.615586 C254.829368,164.510261 256.002446,159.964996 256.002446,155.41973 C237.79254,153.085282 224.376613,151.918058 215.754667,151.918058 C206.488712,151.918058 193.072785,153.085282 175.506888,155.41973 C182.010479,172.136093 187.484394,184.354584 191.928633,192.075201 C196.412073,199.863919 204.329677,210.909431 215.681443,225.211737 Z" fill="#EA4335"/><path d="M128.001268,73.3111515 C141.121182,57.4655263 150.162898,45.2470011 155.126415,36.6555757 C159.123121,29.7376196 163.521739,18.6920726 168.322271,3.51893479 C164.363395,1.1729583 159.818129,0 155.126415,0 L100.876121,0 C96.1841079,0 91.638842,1.31958557 87.6799655,3.51893479 C93.7861943,20.9210065 98.9675428,33.3058067 103.224011,40.6733354 C107.927832,48.8151881 116.186918,59.6944602 128.001268,73.3111515 Z" fill="#00832D"/><path d="M175.360141,155.41973 L80.6420959,155.41973 L40.3210929,225.211737 C44.2799694,227.557893 48.8252352,228.730672 53.5172481,228.730672 L202.485288,228.730672 C207.177301,228.730672 211.722567,227.411146 215.681443,225.211737 L175.360141,155.41973 Z" fill="#2684FC"/><path d="M128.001268,73.3111515 L87.680265,3.51893479 C83.7213885,5.86488134 80.3489013,9.09044179 78.0030446,13.1960654 L3.51893479,142.223575 C1.17298825,146.329198 0,150.874464 0,155.41973 L80.6423954,155.41973 L128.001268,73.3111515 Z" fill="#00AC47"/><path d="M215.241501,77.7099697 L177.999492,13.1960654 C175.653635,9.09044179 172.281148,5.86488134 168.322271,3.51893479 L128.001268,73.3111515 L175.360141,155.41973 L255.855999,155.41973 C255.855999,150.874464 254.682921,146.329198 252.337064,142.223575 L215.241501,77.7099697 Z" fill="#FFBA00"/></g></svg>');
+const WORKFLOW = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><defs><linearGradient id="wf-grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D946EF"/><stop offset="100%" stop-color="#9333EA"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#wf-grad)"/><circle cx="5" cy="8" r="1.5" stroke="#FFFFFF" stroke-width="1.6"/><circle cx="19" cy="8" r="1.5" stroke="#FFFFFF" stroke-width="1.6"/><line x1="6.8" y1="8" x2="9.5" y2="8" stroke="#FFFFFF" stroke-width="1.6"/><line x1="14.5" y1="8" x2="17.2" y2="8" stroke="#FFFFFF" stroke-width="1.6"/><rect x="9.5" y="6" width="5" height="5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><rect x="5" y="14" width="4.5" height="4.5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><rect x="14.5" y="14" width="4.5" height="4.5" rx="1.5" stroke="#FFFFFF" stroke-width="1.6"/><path d="M10.5 11c0 2-3 2-3 3" stroke="#FFFFFF" stroke-width="1.6" fill="none"/><path d="M13.5 11c0 2 3 2 3 3" stroke="#FFFFFF" stroke-width="1.6" fill="none"/></svg>',
+);
+const VERCEL = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#FFFFFF"/><polygon points="12 6.8 17.8 17.2 6.2 17.2" fill="#000000"/></svg>',
+);
+const GMAIL_OLED = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 6.75) scale(0.159) translate(-52, -42)"><path fill="#4285f4" d="M58 108h14V74L52 59v43c0 3.32 2.69 6 6 6"/><path fill="#34a853" d="M120 108h14c3.32 0 6-2.69 6-6V59l-20 15"/><path fill="#fbbc04" d="M120 48v26l20-15v-8c0-7.42-8.47-11.65-14.4-7.2"/><path fill="#ea4335" d="M72 74V48l24 18 24-18v26L96 92"/><path fill="#c5221f" d="M52 51v8l20 15V48l-5.6-4.2c-5.94-4.45-14.4-.22-14.4 7.2"/></g></svg>',
+);
+const GOOGLEDRIVE_OLED = cleanIcon(
+  '<svg viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="6" fill="#212121"/><g transform="translate(5, 5.75) scale(0.0547)"><path d="M19.3542312,196.033928 L30.644172,215.534816 C32.9900287,219.64014 36.3622164,222.86588 40.3210929,225.211737 C51.6602421,210.818376 59.5534225,199.772864 64.000634,192.075201 C68.5137119,184.263529 74.0609657,172.045039 80.6423954,155.41973 C62.9064315,153.085282 49.4659974,151.918058 40.3210929,151.918058 C31.545465,151.918058 18.1051007,153.085282 0,155.41973 C0,159.964996 1.17298825,164.510261 3.51893479,168.615586 L19.3542312,196.033928 Z" fill="#0066DA"/><path d="M215.681443,225.211737 C219.64032,222.86588 223.012507,219.64014 225.358364,215.534816 L230.050377,207.470615 L252.483511,168.615586 C254.829368,164.510261 256.002446,159.964996 256.002446,155.41973 C237.79254,153.085282 224.376613,151.918058 215.754667,151.918058 C206.488712,151.918058 193.072785,153.085282 175.506888,155.41973 C182.010479,172.136093 187.484394,184.354584 191.928633,192.075201 C196.412073,199.863919 204.329677,210.909431 215.681443,225.211737 Z" fill="#EA4335"/><path d="M128.001268,73.3111515 C141.121182,57.4655263 150.162898,45.2470011 155.126415,36.6555757 C159.123121,29.7376196 163.521739,18.6920726 168.322271,3.51893479 C164.363395,1.1729583 159.818129,0 155.126415,0 L100.876121,0 C96.1841079,0 91.638842,1.31958557 87.6799655,3.51893479 C93.7861943,20.9210065 98.9675428,33.3058067 103.224011,40.6733354 C107.927832,48.8151881 116.186918,59.6944602 128.001268,73.3111515 Z" fill="#00832D"/><path d="M175.360141,155.41973 L80.6420959,155.41973 L40.3210929,225.211737 C44.2799694,227.557893 48.8252352,228.730672 53.5172481,228.730672 L202.485288,228.730672 C207.177301,228.730672 211.722567,227.411146 215.681443,225.211737 L175.360141,155.41973 Z" fill="#2684FC"/><path d="M128.001268,73.3111515 L87.680265,3.51893479 C83.7213885,5.86488134 80.3489013,9.09044179 78.0030446,13.1960654 L3.51893479,142.223575 C1.17298825,146.329198 0,150.874464 0,155.41973 L80.6423954,155.41973 L128.001268,73.3111515 Z" fill="#00AC47"/><path d="M215.241501,77.7099697 L177.999492,13.1960654 C175.653635,9.09044179 172.281148,5.86488134 168.322271,3.51893479 L128.001268,73.3111515 L175.360141,155.41973 L255.855999,155.41973 C255.855999,150.874464 254.682921,146.329198 252.337064,142.223575 L215.241501,77.7099697 Z" fill="#FFBA00"/></g></svg>',
+);
 
 /* Raster twin of cleanIcon: wraps a bundled PNG URL in the same tile
  * contract (host CSS sizes `img.connector-logo` with object-fit). */
@@ -550,134 +577,136 @@ const MARKS: Record<string, string> = {
  * when the id lookup misses (e.g. oc_amap → 高德地图). Registering the
  * official display names keeps those rows branded too. */
 const NAME_MARKS: Record<string, string> = {
-  'AccuLynx': cleanIcon(acculynxRaw),
-  'Affinda': cleanIcon(affindaRaw),
-  'Affinity': cleanIcon(affinityRaw),
-  'AgentMail': cleanIcon(agentMailRaw),
-  'Agenty': cleanIcon(agentyRaw),
-  'Agora': cleanIcon(agoraRaw),
-  'Airbrake': cleanIcon(airbrakeRaw),
-  'Aircall': cleanIcon(aircallRaw),
-  'Airtable': cleanIcon(airtableRaw),
+  AccuLynx: cleanIcon(acculynxRaw),
+  Affinda: cleanIcon(affindaRaw),
+  Affinity: cleanIcon(affinityRaw),
+  AgentMail: cleanIcon(agentMailRaw),
+  Agenty: cleanIcon(agentyRaw),
+  Agora: cleanIcon(agoraRaw),
+  Airbrake: cleanIcon(airbrakeRaw),
+  Aircall: cleanIcon(aircallRaw),
+  Airtable: cleanIcon(airtableRaw),
   'AltText.ai': cleanIcon(altTextAiRaw),
-  '高德地图': cleanIcon(amapRaw),
+  高德地图: cleanIcon(amapRaw),
   'Anchor Browser': cleanIcon(anchorBrowserRaw),
-  'Anthropic': cleanIcon(anthropicRaw),
+  Anthropic: cleanIcon(anthropicRaw),
   'Anthropic Admin': cleanIcon(anthropicAdminRaw),
   'APIPie AI': cleanIcon(apipieAiRaw),
-  'Asana': cleanIcon(asanaRaw),
-  'AssemblyAI': cleanIcon(assemblyaiRaw),
+  Asana: cleanIcon(asanaRaw),
+  AssemblyAI: cleanIcon(assemblyaiRaw),
   'Atlas.so': cleanIcon(atlasSoRaw),
-  'Bluesky': cleanIcon(blueskyRaw),
-  'Botpress': cleanIcon(botpressRaw),
-  'Botsonic': cleanIcon(botsonicRaw),
-  'CallerAPI': cleanIcon(callerapiRaw),
-  'Callingly': cleanIcon(callinglyRaw),
-  'CallPage': cleanIcon(callpageRaw),
-  'ChatBotKit': cleanIcon(chatbotkitRaw),
-  'ChatPDF': cleanIcon(chatpdfRaw),
-  'Chorus': cleanIcon(chorusRaw),
-  'Circle': cleanIcon(circleRaw),
+  Bluesky: cleanIcon(blueskyRaw),
+  Botpress: cleanIcon(botpressRaw),
+  Botsonic: cleanIcon(botsonicRaw),
+  CallerAPI: cleanIcon(callerapiRaw),
+  Callingly: cleanIcon(callinglyRaw),
+  CallPage: cleanIcon(callpageRaw),
+  ChatBotKit: cleanIcon(chatbotkitRaw),
+  ChatPDF: cleanIcon(chatpdfRaw),
+  Chorus: cleanIcon(chorusRaw),
+  Circle: cleanIcon(circleRaw),
   'Claid AI': cleanIcon(claidAiRaw),
-  'ClickMeeting': cleanIcon(clickmeetingRaw),
-  'ClickSend': cleanIcon(clicksendRaw),
-  'ClickUp': cleanIcon(clickupRaw),
-  'Codegen': cleanIcon(codegenRaw),
-  'Cohere': cleanIcon(cohereRaw),
-  'Context7': cleanIcon(context7Raw),
-  'Courier': cleanIcon(courierRaw),
-  'Crisp': cleanIcon(crispRaw),
-  'Cursor': cleanIcon(cursorRaw),
+  ClickMeeting: cleanIcon(clickmeetingRaw),
+  ClickSend: cleanIcon(clicksendRaw),
+  ClickUp: cleanIcon(clickupRaw),
+  Codegen: cleanIcon(codegenRaw),
+  Cohere: cleanIcon(cohereRaw),
+  Context7: cleanIcon(context7Raw),
+  Courier: cleanIcon(courierRaw),
+  Crisp: cleanIcon(crispRaw),
+  Cursor: cleanIcon(cursorRaw),
   'CustomGPT.ai': cleanIcon(customgptRaw),
-  'Dailybot': cleanIcon(dailybotRaw),
+  Dailybot: cleanIcon(dailybotRaw),
   'Deck.co': cleanIcon(deckCoRaw),
-  'Deepgram': cleanIcon(deepgramRaw),
-  'DeepL': cleanIcon(deeplRaw),
-  'DeepSeek': cleanIcon(deepseekRaw),
-  'Devin': cleanIcon(devinRaw),
-  'Diffbot': cleanIcon(diffbotRaw),
-  'Discord': cleanIcon(discordRaw),
-  'Discourse': cleanIcon(discourseRaw),
-  'Dixa': cleanIcon(dixaRaw),
+  Deepgram: cleanIcon(deepgramRaw),
+  DeepL: cleanIcon(deeplRaw),
+  DeepSeek: cleanIcon(deepseekRaw),
+  Devin: cleanIcon(devinRaw),
+  Diffbot: cleanIcon(diffbotRaw),
+  Discord: cleanIcon(discordRaw),
+  Discourse: cleanIcon(discourseRaw),
+  Dixa: cleanIcon(dixaRaw),
   'DocsBot AI': cleanIcon(docsbotAiRaw),
-  'Docsumo': cleanIcon(docsumoRaw),
-  'E2B': cleanIcon(e2bRaw),
-  'ElevenLabs': cleanIcon(elevenlabsRaw),
-  'Emailable': cleanIcon(emailableRaw),
-  'EmailListVerify': cleanIcon(emaillistverifyRaw),
-  'EmailOctopus': cleanIcon(emailoctopusRaw),
-  'Encharge': cleanIcon(enchargeRaw),
-  'Freshdesk': cleanIcon(freshdeskRaw),
-  'Freshservice': cleanIcon(freshserviceRaw),
-  'Front': cleanIcon(frontappRaw),
-  'Gemini': cleanIcon(geminiRaw),
-  'Gleap': cleanIcon(gleapRaw),
-  'Gmail': GMAIL_OLED,
+  Docsumo: cleanIcon(docsumoRaw),
+  E2B: cleanIcon(e2bRaw),
+  ElevenLabs: cleanIcon(elevenlabsRaw),
+  Emailable: cleanIcon(emailableRaw),
+  EmailListVerify: cleanIcon(emaillistverifyRaw),
+  EmailOctopus: cleanIcon(emailoctopusRaw),
+  Encharge: cleanIcon(enchargeRaw),
+  Freshdesk: cleanIcon(freshdeskRaw),
+  Freshservice: cleanIcon(freshserviceRaw),
+  Front: cleanIcon(frontappRaw),
+  Gemini: cleanIcon(geminiRaw),
+  Gleap: cleanIcon(gleapRaw),
+  Gmail: GMAIL_OLED,
   'Google 日历': cleanIcon(googlecalendarRaw),
   'ima 知识库': cleanIcon(imaRaw),
-  'Intercom': cleanIcon(intercomRaw),
+  Intercom: cleanIcon(intercomRaw),
   '即梦 AI': cleanIcon(jimengAiRaw),
-  'Jira': cleanIcon(jiraRaw),
-  'Linear': cleanIcon(linearRaw),
+  Jira: cleanIcon(jiraRaw),
+  Linear: cleanIcon(linearRaw),
   'Lingvanex 翻译 API': cleanIcon(lingvanexTranslationApiRaw),
   '麦当劳中国 MCP': cleanIcon(mcdonaldsCnRaw),
-  'monday': cleanIcon(mondayRaw),
-  'OpenAI': cleanIcon(openaiRaw),
-  'Outlook': cleanIcon(outlookRaw),
-  'Perplexity': cleanIcon(perplexityRaw),
-  'Pipedrive': cleanIcon(pipedriveRaw),
+  monday: cleanIcon(mondayRaw),
+  OpenAI: cleanIcon(openaiRaw),
+  Outlook: cleanIcon(outlookRaw),
+  Perplexity: cleanIcon(perplexityRaw),
+  Pipedrive: cleanIcon(pipedriveRaw),
   'QQ 邮箱': cleanIcon(qqMailRaw),
-  'SendGrid': cleanIcon(sendgridRaw),
-  'Slack': cleanIcon(slackRaw),
+  SendGrid: cleanIcon(sendgridRaw),
+  Slack: cleanIcon(slackRaw),
   'Torii 图片翻译器': cleanIcon(toriiRaw),
-  'Trello': cleanIcon(trelloRaw),
-  'Twilio': cleanIcon(twilioRaw),
-  'Zendesk': cleanIcon(zendeskRaw),
-  '知乎': cleanIcon(zhihuRaw),
-  '麦当劳中国': cleanIcon(mcdonaldsCnRaw),
-  '百度地图': cleanIcon(baiduMapsRaw),
-  'QQ邮箱': cleanIcon(qqMailRaw),
-  '网易邮箱': cleanIcon(neteaseMailRaw),
-  '网易企业邮箱': cleanIcon(neteaseMailRaw),
-  '钉钉机器人': cleanIcon(dingtalkBotRaw),
-  '企业微信机器人': cleanIcon(wecomBotRaw),
-  '腾讯文档': cleanIcon(tencentDocsRaw),
-  'ima知识库': cleanIcon(imaRaw),
-  '华宇元典法律数据': cleanIcon(yuandianRaw),
-  '百度千帆': cleanIcon(qianfanRaw),
-  '即梦AI': cleanIcon(jimengAiRaw),
-  '瑞幸咖啡': cleanIcon(luckinCoffeeRaw),
-  '滴答清单': cleanIcon(ticktickRaw),
-  '飞书': cleanIcon(feishuRaw),
-  '飞书应用机器人': cleanIcon(feishuRaw),
-  '飞书自定义机器人': cleanIcon(feishuCustomBotRaw),
-  'Discord机器人': cleanIcon(discordRaw),
+  Trello: cleanIcon(trelloRaw),
+  Twilio: cleanIcon(twilioRaw),
+  Zendesk: cleanIcon(zendeskRaw),
+  知乎: cleanIcon(zhihuRaw),
+  麦当劳中国: cleanIcon(mcdonaldsCnRaw),
+  百度地图: cleanIcon(baiduMapsRaw),
+  QQ邮箱: cleanIcon(qqMailRaw),
+  网易邮箱: cleanIcon(neteaseMailRaw),
+  网易企业邮箱: cleanIcon(neteaseMailRaw),
+  钉钉机器人: cleanIcon(dingtalkBotRaw),
+  企业微信机器人: cleanIcon(wecomBotRaw),
+  腾讯文档: cleanIcon(tencentDocsRaw),
+  ima知识库: cleanIcon(imaRaw),
+  华宇元典法律数据: cleanIcon(yuandianRaw),
+  百度千帆: cleanIcon(qianfanRaw),
+  即梦AI: cleanIcon(jimengAiRaw),
+  瑞幸咖啡: cleanIcon(luckinCoffeeRaw),
+  滴答清单: cleanIcon(ticktickRaw),
+  飞书: cleanIcon(feishuRaw),
+  飞书应用机器人: cleanIcon(feishuRaw),
+  飞书自定义机器人: cleanIcon(feishuCustomBotRaw),
+  Discord机器人: cleanIcon(discordRaw),
   'Discord 机器人': cleanIcon(discordRaw),
   'Telegram Bot': cleanIcon(telegramRaw),
   'Chat API for WhatsApp': cleanIcon(whatsappRaw),
   'Cloudflare Email Routing': cleanIcon(cloudflareEmailRoutingRaw),
   '7shifts': pngIcon(sevenShiftsPng),
   'Accredible Certificates': pngIcon(accrediblePng),
-  'Agiled': pngIcon(agiledPng),
-  'AnySearch': pngIcon(anysearchPng),
-  'AgentQL': pngIcon(agentqlPng),
-  'AiVOOV': pngIcon(aivoovPng),
-  'Bark': pngIcon(barkPng),
-  'Beamer': pngIcon(beamerPng),
-  'Bird': pngIcon(birdPng),
+  Agiled: pngIcon(agiledPng),
+  AnySearch: pngIcon(anysearchPng),
+  AgentQL: pngIcon(agentqlPng),
+  AiVOOV: pngIcon(aivoovPng),
+  Bark: pngIcon(barkPng),
+  Beamer: pngIcon(beamerPng),
+  Bird: pngIcon(birdPng),
   'Browse AI': pngIcon(browseAiPng),
   'Campaign Cleaner': pngIcon(campaignCleanerPng),
-  'Chatwork': pngIcon(chatworkPng),
-  'Data247': pngIcon(data247Png),
+  Chatwork: pngIcon(chatworkPng),
+  Data247: pngIcon(data247Png),
   'Detect Language': pngIcon(detectLanguagePng),
   'Eagle Doc': pngIcon(eagleDocPng),
   'Eden AI': pngIcon(edenAiPng),
-  'GoDial': pngIcon(godialPng),
+  GoDial: pngIcon(godialPng),
   '2Chat': pngIcon(twochatPng),
 };
 
 export function normaliseConnectorId(value: unknown): string {
-  return String(value || '').toLowerCase().replace(/[_-]/g, '');
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[_-]/g, '');
 }
 
 /* Inline-SVG markup for a connector, or '' when the connector has no
@@ -686,14 +715,22 @@ export function getConnectorIconMarkup(id: unknown): string {
   const key = normaliseConnectorId(id);
   if (!key) return '';
   const stripped = key.replace(/^oc/, '');
-  return MARKS[key] || MARKS[stripped] || MARKS[String(id || '').toLowerCase()] || NAME_MARKS[String(id || '')] || '';
+  return (
+    MARKS[key] ||
+    MARKS[stripped] ||
+    MARKS[String(id || '').toLowerCase()] ||
+    NAME_MARKS[String(id || '')] ||
+    ''
+  );
 }
 
 /** Transcript marks use the unpadded vendor glyph where available. The
  * directory's dark tile would make GitHub too small beside body-sized text. */
 export function getConnectorActivityIconMarkup(id: unknown): string {
   if (normaliseConnectorId(id) === 'github') {
-    return githubRaw.replace(/<title>[\s\S]*?<\/title>/i, '').replace(/<svg /, '<svg aria-hidden="true" ');
+    return githubRaw
+      .replace(/<title>[\s\S]*?<\/title>/i, '')
+      .replace(/<svg /, '<svg aria-hidden="true" ');
   }
   return getConnectorIconMarkup(id);
 }

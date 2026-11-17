@@ -26,7 +26,10 @@ const CATEGORY_RULES: Array<{ type: string; matches: (kind: string, ext: string)
   { type: 'code', matches: (_kind, ext) => ['json', 'js', 'ts', 'py', 'css'].includes(ext) },
   { type: 'video', matches: (kind, ext) => kind === 'video' || VIDEO_EXTENSIONS.includes(ext) },
   { type: 'audio', matches: (kind, ext) => kind === 'audio' || AUDIO_EXTENSIONS.includes(ext) },
-  { type: 'doc', matches: (kind, ext) => DOC_EXTENSIONS.includes(ext) || ['pdf', 'text', 'docx'].includes(kind) },
+  {
+    type: 'doc',
+    matches: (kind, ext) => DOC_EXTENSIONS.includes(ext) || ['pdf', 'text', 'docx'].includes(kind),
+  },
 ];
 
 function getFileTypeCategory(item: LibraryItemRecord): string {
@@ -36,7 +39,17 @@ function getFileTypeCategory(item: LibraryItemRecord): string {
 
 function FileGlyph({ children }: { children: React.ReactNode }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       {children}
     </svg>
   );
@@ -52,7 +65,11 @@ const GLYPH_RULES: Array<{ type: string; matches: (kind: string, ext: string) =>
   { type: 'table', matches: (kind, ext) => kind === 'xlsx' || TABLE_EXTENSIONS.includes(ext) },
   { type: 'slide', matches: (kind, ext) => kind === 'pptx' || SLIDE_EXTENSIONS.includes(ext) },
   { type: 'book', matches: (kind, ext) => kind === 'epub' || BOOK_EXTENSIONS.includes(ext) },
-  { type: 'doc', matches: (kind, ext) => ['pdf', 'text', 'docx', 'rtf'].includes(kind) || DOC_EXTENSIONS.includes(ext) },
+  {
+    type: 'doc',
+    matches: (kind, ext) =>
+      ['pdf', 'text', 'docx', 'rtf'].includes(kind) || DOC_EXTENSIONS.includes(ext),
+  },
 ];
 
 function glyphType(item: LibraryItemRecord): string {
@@ -67,8 +84,17 @@ const FILE_TYPE_GLYPHS: Record<string, () => React.ReactNode> = {
       <path d="M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18" />
     </FileGlyph>
   ),
-  code: () => <FileGlyph><path d="m8 6-5 6 5 6M16 6l5 6-5 6M14 4l-4 16" /></FileGlyph>,
-  text: () => <FileGlyph><rect x="4" y="2.5" width="16" height="19" rx="3" /><path d="M8 9h8M8 15h5" /></FileGlyph>,
+  code: () => (
+    <FileGlyph>
+      <path d="m8 6-5 6 5 6M16 6l5 6-5 6M14 4l-4 16" />
+    </FileGlyph>
+  ),
+  text: () => (
+    <FileGlyph>
+      <rect x="4" y="2.5" width="16" height="19" rx="3" />
+      <path d="M8 9h8M8 15h5" />
+    </FileGlyph>
+  ),
   image: () => (
     <FileGlyph>
       <rect x="3" y="3" width="18" height="18" rx="2.5" />

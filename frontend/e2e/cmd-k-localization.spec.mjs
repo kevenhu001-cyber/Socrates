@@ -45,7 +45,9 @@ test('an English palette stays English', async ({ page }) => {
 
   const input = page.locator('#cmdKInput');
   await expect(input).toHaveAttribute('placeholder', 'Search sessions and messages…');
-  await expect(page.locator('.cmd-k-results')).toContainText('Type to search across all your sessions.');
+  await expect(page.locator('.cmd-k-results')).toContainText(
+    'Type to search across all your sessions.',
+  );
   await expect(page.locator('.cmd-k-foot')).toContainText('Navigate');
 });
 
@@ -62,8 +64,12 @@ test('the search row owns the focus cue instead of drawing a ring', async ({ pag
 
   // The row's hairline strengthens instead — same signal as the sidebar
   // search field, which also suppresses the input's own ring.
-  const focused = await page.locator('.cmd-k-input-row').evaluate((el) => getComputedStyle(el).borderBottomColor);
+  const focused = await page
+    .locator('.cmd-k-input-row')
+    .evaluate((el) => getComputedStyle(el).borderBottomColor);
   await input.evaluate((el) => el.blur());
-  const blurred = await page.locator('.cmd-k-input-row').evaluate((el) => getComputedStyle(el).borderBottomColor);
+  const blurred = await page
+    .locator('.cmd-k-input-row')
+    .evaluate((el) => getComputedStyle(el).borderBottomColor);
   expect(focused).not.toBe(blurred);
 });

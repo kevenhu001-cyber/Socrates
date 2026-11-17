@@ -1,7 +1,13 @@
 import { consumeResearchStream } from './researchStream.ts';
-import type { Message, ResearchJob, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
+import type {
+  Message,
+  ResearchJob,
+  ResearchJobRefineResult,
+  ResearchJobRequest,
+} from '@socrates/contracts';
 import { apiFetch, apiFetchRaw } from '../util/api/index.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, sessionStore } from '../store/index.ts';
+import { subscribeLegacyState } from '../store/legacyListeners.ts';
 import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
@@ -17,21 +23,56 @@ function pending(scope: ResearchScope, value: ResearchJobRequest | null | undefi
     const raw = localStorage.getItem(key);
     if (!raw || raw.length > 5000) return null;
     const saved = JSON.parse(raw) as ResearchJobRequest;
-    return saved.sessionId === scope.sessionId && saved.projectId === scope.projectId
-      && typeof saved.query === 'string' && saved.query.length <= 1200 && typeof saved.idempotencyKey === 'string' ? saved : null;
-  } catch { /* empty-catch: intentional — unavailable browser storage cannot block research. */ return null; }
+    return saved.sessionId === scope.sessionId &&
+      saved.projectId === scope.projectId &&
+      typeof saved.query === 'string' &&
+      saved.query.length <= 1200 &&
+      typeof saved.idempotencyKey === 'string'
+      ? saved
+      : null;
+  } catch {
+    /* empty-catch: intentional — unavailable browser storage cannot block research. */ return null;
+  }
 }
 
 export const researchClient = createResearchController({
-  list: async (scope, signal) => (await apiFetch<{ jobs: ResearchJob[] }>(`/api/research-jobs?sessionId=${encodeURIComponent(scope.sessionId)}`, { signal })).jobs,
+  list: async (scope, signal) =>
+    (
+      await apiFetch<{ jobs: ResearchJob[] }>(
+        `/api/research-jobs?sessionId=${encodeURIComponent(scope.sessionId)}`,
+        { signal },
+      )
+    ).jobs,
   create: async (body, signal) => {
-    if (body.sessionId === stateStore.read('currentSessionId')) await saveCurrentSession();
+    if (body.sessionId === sessionStore.getState().currentSessionId) await saveCurrentSession();
     signal.throwIfAborted();
-    return (await apiFetch<{ job: ResearchJob }>('/api/research-jobs', { method: 'POST', body: { ...body }, signal })).job;
+    return (
+      await apiFetch<{ job: ResearchJob }>('/api/research-jobs', {
+        method: 'POST',
+        body: { ...body },
+        signal,
+      })
+    ).job;
   },
-  get: async (id, signal) => (await apiFetch<{ job: ResearchJob }>(`/api/research-jobs/${encodeURIComponent(id)}`, { signal })).job,
-  control: async (id, action, signal) => (await apiFetch<{ job: ResearchJob }>(`/api/research-jobs/${encodeURIComponent(id)}/${action}`, { method: 'POST', signal })).job,
-  refine: async (id, instruction, signal) => await apiFetch<ResearchJobRefineResult>(`/api/research-jobs/${encodeURIComponent(id)}/refine`, { method: 'POST', body: { instruction }, signal }),
+  get: async (id, signal) =>
+    (
+      await apiFetch<{ job: ResearchJob }>(`/api/research-jobs/${encodeURIComponent(id)}`, {
+        signal,
+      })
+    ).job,
+  control: async (id, action, signal) =>
+    (
+      await apiFetch<{ job: ResearchJob }>(
+        `/api/research-jobs/${encodeURIComponent(id)}/${action}`,
+        { method: 'POST', signal },
+      )
+    ).job,
+  refine: async (id, instruction, signal) =>
+    await apiFetch<ResearchJobRefineResult>(`/api/research-jobs/${encodeURIComponent(id)}/refine`, {
+      method: 'POST',
+      body: { instruction },
+      signal,
+    }),
   watch: async (id, after, signal, onEvent) => {
     // A separate stream controller releases apiFetchRaw's linked abort
     // listener on every reconnect, including a clean server EOF.
@@ -40,45 +81,79 @@ export const researchClient = createResearchController({
     signal.addEventListener('abort', abort, { once: true });
     if (signal.aborted) stream.abort();
     try {
-      const response = await apiFetchRaw(`/api/research-jobs/${encodeURIComponent(id)}/events`, { signal: stream.signal, headers: { 'Last-Event-ID': String(after) } });
+      const response = await apiFetchRaw(`/api/research-jobs/${encodeURIComponent(id)}/events`, {
+        signal: stream.signal,
+        headers: { 'Last-Event-ID': String(after) },
+      });
       await consumeResearchStream(response, onEvent, stream.signal);
-    } finally { stream.abort(); signal.removeEventListener('abort', abort); }
+    } finally {
+      stream.abort();
+      signal.removeEventListener('abort', abort);
+    }
   },
-  hasReport: (job) => stateStore.read('messages').some((message) => message.clientId === `research-${job.id}`),
-  report: async (job, signal) => (await apiFetch<{ message: Message | null }>(`/api/research-jobs/${encodeURIComponent(job.id)}/result`, { signal })).message,
+  hasReport: (job) =>
+    sessionStore.getState().messages.some((message) => message.clientId === `research-${job.id}`),
+  report: async (job, signal) =>
+    (
+      await apiFetch<{ message: Message | null }>(
+        `/api/research-jobs/${encodeURIComponent(job.id)}/result`,
+        { signal },
+      )
+    ).message,
   deliver: (job, message) => {
-    if (stateStore.read('currentSessionId') !== job.sessionId) return;
-    const messages = stateStore.read('messages');
-    if (messages.some((entry) => entry.clientId === message.clientId || entry.id === message.id)) return;
+    if (sessionStore.getState().currentSessionId !== job.sessionId) return;
+    const messages = sessionStore.getState().messages;
+    if (messages.some((entry) => entry.clientId === message.clientId || entry.id === message.id))
+      return;
     const restored = restoreSessionMessage({
-      id: message.id, clientId: message.clientId, role: message.role, rawText: message.rawText,
-      content: message.content, type: message.type, createdAt: message.createdAt,
+      id: message.id,
+      clientId: message.clientId,
+      role: message.role,
+      rawText: message.rawText,
+      content: message.content,
+      type: message.type,
+      createdAt: message.createdAt,
     });
-    stateStore.dispatch({ type: 'session/append-message', payload: restored });
+    dispatchSession({ type: 'session/append-message', payload: { ...restored } });
     publishReactChatRuntime({ type: 'message-added', messageId: restored.clientId });
   },
   pending,
   key: () => crypto.randomUUID(),
-  delay: (ms, signal) => new Promise<void>((resolve, reject) => {
-    const abort = () => { clearTimeout(timer); reject(signal.reason); };
-    const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
-    signal.addEventListener('abort', abort, { once: true });
-    if (signal.aborted) abort();
-  }),
+  delay: (ms, signal) =>
+    new Promise<void>((resolve, reject) => {
+      const abort = () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      };
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', abort);
+        resolve();
+      }, ms);
+      signal.addEventListener('abort', abort, { once: true });
+      if (signal.aborted) abort();
+    }),
 });
 
 function visibleScope(): ResearchScope | null {
-  const sessionId = stateStore.read('currentSessionId') as string | null;
+  const sessionId = sessionStore.getState().currentSessionId as string | null;
   const userId = getCurrentUser()?.id;
-  if (!userId || !sessionId || isIncognitoOn() || stateStore.read('phase') !== 'chat') return null;
-  return { userId, sessionId, projectId: stateStore.read('currentProjectId') as string | null || null };
+  if (!userId || !sessionId || isIncognitoOn() || sessionStore.getState().phase !== 'chat')
+    return null;
+  return {
+    userId,
+    sessionId,
+    projectId: (sessionStore.getState().currentProjectId as string | null) || null,
+  };
 }
 
 export function installResearchTracking() {
   const sync = () => researchClient.open(visibleScope());
-  const unsubscribe = stateStore.subscribe(sync);
+  const unsubscribe = subscribeLegacyState(sync);
   sync();
-  return () => { unsubscribe(); researchClient.open(null); };
+  return () => {
+    unsubscribe();
+    researchClient.open(null);
+  };
 }
 
 export async function submitResearch(query: string) {
@@ -90,6 +165,14 @@ export async function submitResearch(query: string) {
 }
 
 /** Fetch the durable report on demand for the full-screen report workspace. */
-export async function fetchResearchReport(jobId: string, signal?: AbortSignal): Promise<Message | null> {
-  return (await apiFetch<{ message: Message | null }>(`/api/research-jobs/${encodeURIComponent(jobId)}/result`, { signal })).message;
+export async function fetchResearchReport(
+  jobId: string,
+  signal?: AbortSignal,
+): Promise<Message | null> {
+  return (
+    await apiFetch<{ message: Message | null }>(
+      `/api/research-jobs/${encodeURIComponent(jobId)}/result`,
+      { signal },
+    )
+  ).message;
 }

@@ -5,8 +5,8 @@ import { LiveTextSegment } from '../tool-run/LiveTextSegment';
 import type { ProseRenderer } from '../tool-run/proseRenderer';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
-import { LazyIntelligenceUiBlock } from './LazyIntelligenceUiBlock';
-import { splitIntelligenceUiText } from '@socrates/core';
+import { LazyIntelligentUiBlock } from './LazyIntelligentUiBlock';
+import { splitIntelligentUiText } from '@socrates/core';
 
 interface IntelligentTextSegmentProps {
   text: string;
@@ -16,7 +16,7 @@ interface IntelligentTextSegmentProps {
   readOnly?: boolean;
 }
 
-function lastTextSegmentIndex(segments: ReturnType<typeof splitIntelligenceUiText>): number {
+function lastTextSegmentIndex(segments: ReturnType<typeof splitIntelligentUiText>): number {
   for (let index = segments.length - 1; index >= 0; index -= 1) {
     if (segments[index].kind === 'text') return index;
   }
@@ -25,7 +25,9 @@ function lastTextSegmentIndex(segments: ReturnType<typeof splitIntelligenceUiTex
 
 function SettledTextProse({ html }: { html: { __html: string } }) {
   const host = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => { if (host.current) wireProseWidgets(host.current); }, [html]);
+  useLayoutEffect(() => {
+    if (host.current) wireProseWidgets(host.current);
+  }, [html]);
   return <div ref={host} className="tool-run-prose" dangerouslySetInnerHTML={html} />;
 }
 
@@ -53,7 +55,7 @@ export function IntelligentTextSegment({
 }: IntelligentTextSegmentProps) {
   /* The split is O(text length); memoizing keeps tool/prose identity churn
      from re-scanning the whole accumulated segment on every render. */
-  const segments = useMemo(() => splitIntelligenceUiText(text), [text]);
+  const segments = useMemo(() => splitIntelligentUiText(text), [text]);
   // Keep the same keyed prose sequence before and after the first UI block
   // arrives. Switching from a single child to a keyed fragment remounts the
   // already painted answer and resets embedded widgets/reveal state.
@@ -66,9 +68,17 @@ export function IntelligentTextSegment({
            JSONL records arrive and the same block expands in place. */
         const key = `${segment.kind}-${segment.start}`;
         if (segment.kind === 'ui') {
-          if (segment.format === 'openui') return <LazyOpenUiBlock key={key} source={segment.source} open={live && segment.open} readOnly={readOnly} />;
+          if (segment.format === 'openui')
+            return (
+              <LazyOpenUiBlock
+                key={key}
+                source={segment.source}
+                open={live && segment.open}
+                readOnly={readOnly}
+              />
+            );
           return (
-            <LazyIntelligenceUiBlock
+            <LazyIntelligentUiBlock
               key={key}
               source={segment.source}
               tools={tools}
@@ -79,7 +89,9 @@ export function IntelligentTextSegment({
         }
 
         if (!segment.text) return null;
-        return <TextProse key={key} text={segment.text} live={index === liveTextIndex} prose={prose} />;
+        return (
+          <TextProse key={key} text={segment.text} live={index === liveTextIndex} prose={prose} />
+        );
       })}
     </>
   );

@@ -27,7 +27,9 @@ test('first visit shows the consent banner and accepts persist on reload', async
   await expect(banner).toBeHidden();
 });
 
-test('essential-only choice persists and still hides the banner on later visits', async ({ page }) => {
+test('essential-only choice persists and still hides the banner on later visits', async ({
+  page,
+}) => {
   await page.goto('/', { waitUntil: 'commit' });
   const banner = page.locator('#socratesCookieConsent');
   await expect(banner).toBeVisible({ timeout: 15_000 });

@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('admin console signs in, saves both providers, removes embedding, and signs out', async ({ page }) => {
+test('admin console signs in, saves both providers, removes embedding, and signs out', async ({
+  page,
+}) => {
   let systemWrite;
   let systemHeaders;
   let embeddingWrite;
@@ -84,16 +86,20 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   await expect.poll(() => loginHeaders).not.toBeUndefined();
   expect(loginHeaders['x-csrf-token']).toBe('smoke-csrf-token');
 
-  await expect(page.getByRole('heading', { name: 'System model (built-in / Beagle)' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'System model (built-in / Beagle)' }),
+  ).toBeVisible();
   await page.getByLabel('Display name').nth(0).fill('Updated system model');
   await page.getByLabel('API key').fill('system-secret');
   await page.getByRole('checkbox', { name: 'Accepts images (multimodal)' }).check();
   await page.getByRole('button', { name: 'Save system model' }).click();
-  await expect.poll(() => systemWrite).toMatchObject({
-    label: 'Updated system model',
-    key: 'system-secret',
-    isMultimodal: true,
-  });
+  await expect
+    .poll(() => systemWrite)
+    .toMatchObject({
+      label: 'Updated system model',
+      key: 'system-secret',
+      isMultimodal: true,
+    });
   expect(systemHeaders['x-admin-token']).toBe('smoke-admin-token');
   expect(systemHeaders['x-csrf-token']).toBe('smoke-csrf-token');
 
@@ -104,12 +110,14 @@ test('admin console signs in, saves both providers, removes embedding, and signs
   await page.getByLabel('Dimensions').fill('768');
   await page.getByLabel('API key').nth(1).fill('embedding-secret');
   await page.getByRole('button', { name: 'Save embedding' }).click();
-  await expect.poll(() => embeddingWrite).toMatchObject({
-    label: 'Study embeddings',
-    model: 'study-embed-v1',
-    dimensions: 768,
-    key: 'embedding-secret',
-  });
+  await expect
+    .poll(() => embeddingWrite)
+    .toMatchObject({
+      label: 'Study embeddings',
+      model: 'study-embed-v1',
+      dimensions: 768,
+      key: 'embedding-secret',
+    });
   expect(embeddingHeaders['x-admin-token']).toBe('smoke-admin-token');
   expect(embeddingHeaders['x-csrf-token']).toBe('smoke-csrf-token');
   await page.screenshot({ path: 'test-results/shadcn-admin.png' });

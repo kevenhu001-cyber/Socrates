@@ -2,14 +2,21 @@
    and buildFollowUpMessages. Keeping it in one place means the
    stage names and their instructions never drift apart. */
 export function stageInstruction(stage: string): string {
-  switch(stage){
-    case "motivate":   return "Give a short motivation and one concrete intuition. Do not define the concept yet.";
-    case "define":     return "Give the precise definition and only the essential first derivation. Build on the motivation already shown.";
-    case "develop":    return "Add the next layer of the concept and at most one worked example. Do not restart from the definition.";
-    case "illustrate": return "Give at most two worked examples with clear progression. Do not repeat the preceding exposition.";
-    case "exercise":   return "Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student's attempt.";
-    case "check":      return "Give brief feedback and exactly one short quiz. Do not add another example or practice problem.";
-    default:           return "Advance the lesson by one focused step.";
+  switch (stage) {
+    case 'motivate':
+      return 'Give a short motivation and one concrete intuition. Do not define the concept yet.';
+    case 'define':
+      return 'Give the precise definition and only the essential first derivation. Build on the motivation already shown.';
+    case 'develop':
+      return 'Add the next layer of the concept and at most one worked example. Do not restart from the definition.';
+    case 'illustrate':
+      return 'Give at most two worked examples with clear progression. Do not repeat the preceding exposition.';
+    case 'exercise':
+      return "Give exactly one multiple-choice transfer quiz (free response only if explicitly requested) and wait for the student's attempt.";
+    case 'check':
+      return 'Give brief feedback and exactly one short quiz. Do not add another example or practice problem.';
+    default:
+      return 'Advance the lesson by one focused step.';
   }
 }
 
@@ -18,7 +25,8 @@ export function stageInstruction(stage: string): string {
    DEPTH (how much prerequisite support is needed). The current stage
    decides whether to establish intuition or introduce the definition.
    Reference: P_teaching-plan, P_level-consistency, P_knowledge-point. */
-export const BASELINE_LEVEL = "baseline (not mastery), depth cue only; establish foundations within the current teaching stage";
+export const BASELINE_LEVEL =
+  'baseline (not mastery), depth cue only; establish foundations within the current teaching stage';
 
 /** The node fields the directive reads. */
 export interface DirectiveNode {
@@ -32,22 +40,27 @@ export function fromBasicsDirective(
   node: DirectiveNode | null | undefined,
   opts?: DirectiveOptions | null,
 ): string {
-  const status = (node && node.status) || "unknown";
+  const status = (node && node.status) || 'unknown';
   const continuation = Boolean(opts && opts.continuation);
-  if(continuation){
-    return "FOUNDATION ANCHOR FOR THIS FOLLOW-UP:\n"+
-      "The core definition has already been introduced in the conversation. Refer back to it in at most one sentence when it helps, but do not restate the definition, derivation, examples, or summary. Only revisit the foundation in detail if the student's answer shows a specific misconception.\n\n";
+  if (continuation) {
+    return (
+      'FOUNDATION ANCHOR FOR THIS FOLLOW-UP:\n' +
+      "The core definition has already been introduced in the conversation. Refer back to it in at most one sentence when it helps, but do not restate the definition, derivation, examples, or summary. Only revisit the foundation in detail if the student's answer shows a specific misconception.\n\n"
+    );
   }
-  return "CRITICAL, TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n"+
-    "Principle 1 (DEPTH ONLY): The cold-start diagnostic for this sub-topic is '"+status+
-      "'. This result tells you ONLY how detailed your explanation should be:\n"+
-    "  - 'fuzzy' / 'internalized' (some familiarity): less scaffolding and less repetition; use examples only as needed within the current stage.\n"+
-    "  - 'blank' (no familiarity): more explicit prerequisites and smaller explanatory steps; add a relevant example or analogy when the stage calls for it.\n"+
-    "  The diagnostic does NOT mean the student has mastered anything.\n"+
-    "Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result (fuzzy, blank, or skipped), "+
-      "establish the essential foundation before advanced details. In the motivate stage, start with intuition and defer the formal definition to the define stage; thereafter build up layer by layer. "+
-      "Never start from a mid-level detail, application, or shortcut. Never assume the student already knows the core definition "+
-      "even if the diagnostic said 'fuzzy'.\n\n";
+  return (
+    'CRITICAL, TWO PRINCIPLES YOU MUST FOLLOW FOR THIS SUB-TOPIC:\n' +
+    "Principle 1 (DEPTH ONLY): The cold-start diagnostic for this sub-topic is '" +
+    status +
+    "'. This result tells you ONLY how detailed your explanation should be:\n" +
+    "  - 'fuzzy' / 'internalized' (some familiarity): less scaffolding and less repetition; use examples only as needed within the current stage.\n" +
+    "  - 'blank' (no familiarity): more explicit prerequisites and smaller explanatory steps; add a relevant example or analogy when the stage calls for it.\n" +
+    '  The diagnostic does NOT mean the student has mastered anything.\n' +
+    'Principle 2 (ALWAYS START FROM THE FOUNDATION): Regardless of the diagnostic result (fuzzy, blank, or skipped), ' +
+    'establish the essential foundation before advanced details. In the motivate stage, start with intuition and defer the formal definition to the define stage; thereafter build up layer by layer. ' +
+    'Never start from a mid-level detail, application, or shortcut. Never assume the student already knows the core definition ' +
+    "even if the diagnostic said 'fuzzy'.\n\n"
+  );
 }
 
 /* Per-turn output limits. The long textbook prompt remains useful for
@@ -56,31 +69,43 @@ export function fromBasicsDirective(
    prompt so the current stage and conversation history win. */
 export function tutorTurnDirective(stage: string, isFirst: boolean): string {
   const opening = isFirst
-    ? "This is the opening turn for the current sub-topic."
-    : "This is a continuation turn. The student has already seen earlier material in the conversation.";
+    ? 'This is the opening turn for the current sub-topic.'
+    : 'This is a continuation turn. The student has already seen earlier material in the conversation.';
   let scope;
-  switch(stage){
-    case "motivate":
-      scope="Give a short, engaging motivation with one concrete intuition, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.";
+  switch (stage) {
+    case 'motivate':
+      scope =
+        'Give a short, engaging motivation with one concrete intuition, and leave it at that; hold off on definitions, worked examples, and exercises until the next stage.';
       break;
-    case "define":
-      scope="Teach the precise definition with the essential first steps of a derivation, building on the motivation already shown. Keep the turn focused on this and do not reopen what is already established.";
+    case 'define':
+      scope =
+        'Teach the precise definition with the essential first steps of a derivation, building on the motivation already shown. Keep the turn focused on this and do not reopen what is already established.';
       break;
-    case "develop":
-      scope="Add the next layer of the concept and one worked example when it helps. Advance new reasoning only; do not replay earlier examples or conclusions.";
+    case 'develop':
+      scope =
+        'Add the next layer of the concept and one worked example when it helps. Advance new reasoning only; do not replay earlier examples or conclusions.';
       break;
-    case "illustrate":
-      scope="Work through a small, clearly progressing set of examples (usually two is enough), with brief surrounding explanation, and do not restate the lesson so far.";
+    case 'illustrate':
+      scope =
+        'Work through a small, clearly progressing set of examples (usually two is enough), with brief surrounding explanation, and do not restate the lesson so far.';
       break;
-    case "exercise":
-      scope="Set up one multiple-choice transfer quiz (free response only if explicitly requested) in a couple of short sentences, then stop and wait for the student's attempt.";
+    case 'exercise':
+      scope =
+        "Set up one multiple-choice transfer quiz (free response only if explicitly requested) in a couple of short sentences, then stop and wait for the student's attempt.";
       break;
-    case "check":
-      scope="Keep the reply concise: brief feedback and one short quiz, with no new example or practice problem.";
+    case 'check':
+      scope =
+        'Keep the reply concise: brief feedback and one short quiz, with no new example or practice problem.';
       break;
     default:
-      scope="Keep this turn focused on one new idea and avoid repeating material already visible in the conversation.";
+      scope =
+        'Keep this turn focused on one new idea and avoid repeating material already visible in the conversation.';
   }
-  return "TURN-SCOPE RULES. These rules scope the lesson activity within the server policy and native output schemas. A direct user request for an explanation, worked solution, or different format takes precedence over this default stage plan. "+opening+" "+scope+
-    " Never pad with synonyms, repeated definitions, repeated derivation steps, or a second conclusion. Every new idea should be expressed plainly and in the shape that fits the stage best.";
+  return (
+    'TURN-SCOPE RULES. These rules scope the lesson activity within the server policy and native output schemas. A direct user request for an explanation, worked solution, or different format takes precedence over this default stage plan. ' +
+    opening +
+    ' ' +
+    scope +
+    ' Never pad with synonyms, repeated definitions, repeated derivation steps, or a second conclusion. Every new idea should be expressed plainly and in the shape that fits the stage best.'
+  );
 }

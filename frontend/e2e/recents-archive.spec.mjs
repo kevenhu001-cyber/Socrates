@@ -1,13 +1,15 @@
 // e2e/recents-archive.spec.mjs — quick archive from the Recents row menu.
 // Soft-hide only: POST /api/sessions/:id/archive, row leaves Recents,
 // Storage modal lists it for restore / permanent delete.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 
-test('archive from Recents row soft-hides the session and surfaces it in Storage', async ({ page }) => {
+test('archive from Recents row soft-hides the session and surfaces it in Storage', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
 
   const now = Date.now();
@@ -41,41 +43,80 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
       return;
     }
     if (url.includes('/api/config')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ hasBeagleKey: false }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ hasBeagleKey: false }),
+      });
       return;
     }
     if (url.includes('/api/auth/csrf-token')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ csrfToken: 'test-csrf', ok: true }),
+      });
       return;
     }
     if (/\/api\/(?:v2\/)?sessions\/[^/]+\/archive$/.test(url) && method === 'POST') {
       archiveCalls.push(url);
       const id = url.split('/sessions/')[1].split('/')[0];
-      sessions = sessions.map((s) => (s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s));
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      sessions = sessions.map((s) =>
+        s.id === id ? { ...s, archivedAt: new Date().toISOString() } : s,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
       return;
     }
     if (/\/api\/(?:v2\/)?sessions/.test(url) && method === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sessions }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ sessions }),
+      });
       return;
     }
-    if (url.includes('/api/memories') || url.includes('/api/api-key') || url.includes('/api/usage') || url.includes('/api/projects')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], list: [], count: 0, ok: true }) });
+    if (
+      url.includes('/api/memories') ||
+      url.includes('/api/api-key') ||
+      url.includes('/api/usage') ||
+      url.includes('/api/projects')
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], list: [], count: 0, ok: true }),
+      });
       return;
     }
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
   });
 
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
-    try { localStorage.removeItem('socrates-recents-filter'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'en');
+    } catch (_) {}
+    try {
+      localStorage.removeItem('socrates-recents-filter');
+    } catch (_) {}
   });
 
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => 'retryRecentsFetch' in window)).toBe(false);
-  expect(await page.evaluate(() => 'scheduleRecentsReconcile' in window || 'flushRecentsReconcile' in window)).toBe(false);
+  expect(
+    await page.evaluate(
+      () => 'scheduleRecentsReconcile' in window || 'flushRecentsReconcile' in window,
+    ),
+  ).toBe(false);
 
   const row = page.locator('#recentsList .recent-item', { hasText: 'Archive me please' });
   await expect(row).toBeVisible();
@@ -108,8 +149,56 @@ test('archive from Recents row soft-hides the session and surfaces it in Storage
 
   // Open the Storage modal and confirm the row is restorable.
   await page.evaluate(() => window.__socratesLegacy.navigation.openStorageModal());
-  const storageRow = page.locator('#storageModalOverlay .storage-row', { hasText: 'Archive me please' });
+  const storageRow = page.locator('#storageModalOverlay .storage-row', {
+    hasText: 'Archive me please',
+  });
   await expect(storageRow).toBeVisible();
   await expect(storageRow.locator('.storage-btn-restore')).toBeVisible();
   await expect(storageRow.locator('.storage-btn-delete')).toBeVisible();
+});
+
+test('an archive response leaves the newly opened session intact', async ({ page }) => {
+  const nextId = '11111111-2222-4333-8444-555555555555';
+  await mockAuthedApp(page, { lang: 'en' });
+  let releaseArchive;
+  let archiveRequested = false;
+  const responseGate = new Promise((resolve) => {
+    releaseArchive = resolve;
+  });
+  await page.route(`**/api/**/sessions/${SESSION_ID}/archive`, async (route) => {
+    archiveRequested = true;
+    await responseGate;
+    await route.fulfill({ json: { ok: true } });
+  });
+
+  try {
+    await gotoAndSettle(page, '/');
+    await waitForAppShell(page);
+    await page.evaluate((id) => {
+      window.__socratesTestState.patch({ session: { currentSessionId: id, phase: 'chat' } });
+      window.__testActivateMainView('chatView');
+      window.__archiveRequest = window.__socratesLegacy.sessions.archiveSession(id);
+    }, SESSION_ID);
+    await expect.poll(() => archiveRequested).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => window.__socratesTestState.session().currentSessionId))
+      .toBeNull();
+
+    await page.evaluate((id) => {
+      window.__socratesTestState.patch({ session: { currentSessionId: id, phase: 'chat' } });
+      window.__testActivateMainView('chatView');
+      window.addMessage('user', 'Keep this new conversation');
+    }, nextId);
+    releaseArchive();
+    await page.evaluate(() => window.__archiveRequest);
+
+    expect(await page.evaluate(() => window.__socratesTestState.session().currentSessionId)).toBe(
+      nextId,
+    );
+    await expect(page.locator('#msgList .msg.user').last()).toContainText(
+      'Keep this new conversation',
+    );
+  } finally {
+    releaseArchive();
+  }
 });

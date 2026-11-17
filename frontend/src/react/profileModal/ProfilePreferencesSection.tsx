@@ -26,11 +26,19 @@ export function ProfilePreferencesSection({
 
   return (
     <div className="profile-section">
-      <div className="profile-section-title">{profileText('profile.preferences', 'Preferences')}</div>
+      <div className="profile-section-title">
+        {profileText('profile.preferences', 'Preferences')}
+      </div>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
-        <ToggleGroup id="profileLangToggle" value={[snapshot.currentLang]} aria-label={profileText('profile.language', 'Language')}
-          onValueChange={(values) => { if (values[0] === 'en' || values[0] === 'zh') dispatch.setLang(values[0]); }}>
+        <ToggleGroup
+          id="profileLangToggle"
+          value={[snapshot.currentLang]}
+          aria-label={profileText('profile.language', 'Language')}
+          onValueChange={(values) => {
+            if (values[0] === 'en' || values[0] === 'zh') dispatch.setLang(values[0]);
+          }}
+        >
           <ToggleGroupItem
             type="button"
             className={cn(snapshot.currentLang === 'en' && 'active')}
@@ -51,11 +59,20 @@ export function ProfilePreferencesSection({
       </div>
 
       <div className="profile-toggle-desc">
-        {profileText('profile.webSearchDesc', 'Enable web search to include real-time results in questions.')}
+        {profileText(
+          'profile.webSearchDesc',
+          'Enable web search to include real-time results in questions.',
+        )}
       </div>
       <Field orientation="horizontal" className="profile-row">
-        <FieldLabel htmlFor="profileWebSearchToggle" className="flex-1">{profileText('profile.webSearch', 'Web search')}</FieldLabel>
-        <Switch id="profileWebSearchToggle" checked={snapshot.webSearchOn} onCheckedChange={dispatch.toggleWebSearch} />
+        <FieldLabel htmlFor="profileWebSearchToggle" className="flex-1">
+          {profileText('profile.webSearch', 'Web search')}
+        </FieldLabel>
+        <Switch
+          id="profileWebSearchToggle"
+          checked={snapshot.webSearchOn}
+          onCheckedChange={dispatch.toggleWebSearch}
+        />
       </Field>
 
       <div className="profile-instructions">

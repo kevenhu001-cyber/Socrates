@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEventHandler } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEventHandler,
+} from 'react';
 
 import type { ChatMessage } from '../types/domain';
 import { setComposerMarkdown } from '../../composer/controller.ts';
@@ -33,7 +40,13 @@ interface CanvasBlockProps {
  * main.js:renderAssistantHTML. React hydrates from the same data-canvas-id
  * attribute and never enters dangerouslySetInnerHTML for this message.
  */
-export function CanvasBlock({ message, html, canvasId, originalText, onPreviewClick }: CanvasBlockProps) {
+export function CanvasBlock({
+  message,
+  html,
+  canvasId,
+  originalText,
+  onPreviewClick,
+}: CanvasBlockProps) {
   const innerRef = useRef<HTMLDivElement | null>(null);
   const [mode, setMode] = useState<CanvasMode>('view-edited');
   const [hasEdited, setHasEdited] = useState<boolean>(!!message.editedText);
@@ -57,9 +70,7 @@ export function CanvasBlock({ message, html, canvasId, originalText, onPreviewCl
      upstream html actually changes. */
   useLayoutEffect(() => {
     if (!innerRef.current) return;
-    const seed = message.editedText && message.editedText.length > 0
-      ? message.editedText
-      : html;
+    const seed = message.editedText && message.editedText.length > 0 ? message.editedText : html;
     innerRef.current.innerHTML = sanitizeHtml(seed);
     if (message.editedText) setHasEdited(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,7 +134,12 @@ export function CanvasBlock({ message, html, canvasId, originalText, onPreviewCl
   })();
 
   return (
-    <div className={`canvas-block${isFullscreen ? ' is-fullscreen' : ''}`} data-canvas-id={canvasId} data-output-mode="canvas" onClick={onPreviewClick}>
+    <div
+      className={`canvas-block${isFullscreen ? ' is-fullscreen' : ''}`}
+      data-canvas-id={canvasId}
+      data-output-mode="canvas"
+      onClick={onPreviewClick}
+    >
       <CanvasToolbar
         mode={mode}
         extensionIcon={extensionIcon}

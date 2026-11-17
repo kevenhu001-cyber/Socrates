@@ -7,9 +7,12 @@
 // tools / effort popovers are separate components and never match.
 
 export const COMPOSER_SURFACE = {
-  context: /#topicInputWrap|#chatInputWrap|#composerInputWrap(?!rap)|\.topic-input-wrap|\.chat-input-wrap|\.composer-shell|\.composer-footer|\.composer-primary-btn|#sendBtn|#startBtn|#topicMobileMicBtn|#chatMobileMicBtn|#topicComposerToolsBtn|#chatComposerToolsBtn|#topicComposerRoot|#chatComposerRoot|\.topic-footer|\.chat-input-footer|\.footer-left-group|\.chat-composer-body|\.composer-editor-root|\.rich-composer(?![-\w])|\.rich-composer-editor|\.composer-plugin-chip|\.composer-tool-chip|\.attach-btn|\.send-btn|\.start-btn|\.mobile-mic-btn|\.composer-tools-trigger|\.effort-picker|\.effort-trigger/,
-  subject: /InputWrap|input-wrap|composer-shell|composer-footer|composer-primary-btn|ComposerRoot|topic-footer|chat-input-footer|footer-left-group|chat-composer-body|composer-editor-root|rich-composer(?![-\w])|rich-composer-editor|tiptap|ProseMirror|is-editor-empty|is-empty|^p(?![-\w])|composer-plugin-chip|composer-tool-chip|send-btn|start-btn|mobile-mic-btn|attach-btn|composer-tools-trigger|#sendBtn|#startBtn|MobileMicBtn|ComposerToolsBtn|BtnContent|icon-voice|icon-send|icon-stop|icon-arrow|effort-picker|effort-trigger|effort-label|effort-value|effort-caret|^svg|^span|^path|^rect|^\*/,
-  exclude: /voice-recording-(?!active)|voice-wave|attachment-chip|attach-chip|composer-tools-menu|effort-menu|effort-popover|effort-panel|effort-option|effort-sheet|slash-|template-|mention-/,
+  context:
+    /#topicInputWrap|#chatInputWrap|#composerInputWrap(?!rap)|\.topic-input-wrap|\.chat-input-wrap|\.composer-shell|\.composer-footer|\.composer-primary-btn|#sendBtn|#startBtn|#topicMobileMicBtn|#chatMobileMicBtn|#topicComposerToolsBtn|#chatComposerToolsBtn|#topicComposerRoot|#chatComposerRoot|\.topic-footer|\.chat-input-footer|\.footer-left-group|\.chat-composer-body|\.composer-editor-root|\.rich-composer(?![-\w])|\.rich-composer-editor|\.composer-plugin-chip|\.composer-tool-chip|\.attach-btn|\.send-btn|\.start-btn|\.mobile-mic-btn|\.composer-tools-trigger|\.effort-picker|\.effort-trigger/,
+  subject:
+    /InputWrap|input-wrap|composer-shell|composer-footer|composer-primary-btn|ComposerRoot|topic-footer|chat-input-footer|footer-left-group|chat-composer-body|composer-editor-root|rich-composer(?![-\w])|rich-composer-editor|tiptap|ProseMirror|is-editor-empty|is-empty|^p(?![-\w])|composer-plugin-chip|composer-tool-chip|send-btn|start-btn|mobile-mic-btn|attach-btn|composer-tools-trigger|#sendBtn|#startBtn|MobileMicBtn|ComposerToolsBtn|BtnContent|icon-voice|icon-send|icon-stop|icon-arrow|effort-picker|effort-trigger|effort-label|effort-value|effort-caret|^svg|^span|^path|^rect|^\*/,
+  exclude:
+    /voice-recording-(?!active)|voice-wave|attachment-chip|attach-chip|composer-tools-menu|effort-menu|effort-popover|effort-panel|effort-option|effort-sheet|slash-|template-|mention-/,
 };
 
 export function stripNot(sel) {
@@ -19,7 +22,13 @@ export function stripNot(sel) {
       let depth = 0;
       for (let j = i + 4; j < sel.length; j += 1) {
         if (sel[j] === '(') depth += 1;
-        else if (sel[j] === ')') { depth -= 1; if (depth === 0) { i = j; break; } }
+        else if (sel[j] === ')') {
+          depth -= 1;
+          if (depth === 0) {
+            i = j;
+            break;
+          }
+        }
       }
       continue;
     }
@@ -30,7 +39,10 @@ export function stripNot(sel) {
 
 export function subjectOf(sel) {
   const s = stripNot(sel).replace(/::?[a-z-]+(\([^)]*\))?/gi, (m) => (m.startsWith('::') ? m : ''));
-  const parts = s.trim().split(/\s*[\s>+~]\s*/).filter(Boolean);
+  const parts = s
+    .trim()
+    .split(/\s*[\s>+~]\s*/)
+    .filter(Boolean);
   return parts[parts.length - 1] || '';
 }
 

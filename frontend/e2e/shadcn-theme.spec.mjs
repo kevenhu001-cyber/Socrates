@@ -9,14 +9,19 @@ for (const style of ['socrates', 'philosophy']) {
     test(`${style} ${mode}: theme reaches native shell and shadcn controls`, async ({ page }) => {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+      page.on('console', (message) => {
+        if (message.type() === 'error') errors.push(message.text());
+      });
       await page.setViewportSize({ width: 1440, height: 960 });
       await page.emulateMedia({ colorScheme: mode });
       await mockAuthedApp(page);
-      await page.addInitScript(({ style, mode }) => {
-        localStorage.setItem('socrates-theme-style', style);
-        localStorage.setItem('socrates-theme', mode);
-      }, { style, mode });
+      await page.addInitScript(
+        ({ style, mode }) => {
+          localStorage.setItem('socrates-theme-style', style);
+          localStorage.setItem('socrates-theme', mode);
+        },
+        { style, mode },
+      );
       await gotoAndSettle(page, '/');
       await waitForAppShell(page);
       await expect(page).toHaveTitle(/Socrates/i);
@@ -28,14 +33,27 @@ for (const style of ['socrates', 'philosophy']) {
       await expect(settings).toBeVisible();
       const appearance = settings.locator('#settings-appearance');
       await expect(appearance).toHaveAttribute('data-slot', 'select-trigger');
-      await expect(settings.locator('.settings-nav input')).toHaveAttribute('data-slot', 'input-group-control');
-      await expect(settings.locator('#settingsCloseBtn')).toHaveAttribute('data-slot', 'dialog-close');
+      await expect(settings.locator('.settings-nav input')).toHaveAttribute(
+        'data-slot',
+        'input-group-control',
+      );
+      await expect(settings.locator('#settingsCloseBtn')).toHaveAttribute(
+        'data-slot',
+        'dialog-close',
+      );
       const aliases = await page.evaluate(() => {
         const css = getComputedStyle(document.documentElement);
-        return [['--background', '--ui-bg-page'], ['--foreground', '--ui-text-primary'],
-          ['--primary', '--ui-accent-strong'], ['--border', '--ui-border-default'],
-          ['--sidebar', '--ui-bg-sidebar'], ['--popover', '--ui-bg-overlay']]
-          .map(([semantic, legacy]) => [css.getPropertyValue(semantic).trim(), css.getPropertyValue(legacy).trim()]);
+        return [
+          ['--background', '--ui-bg-page'],
+          ['--foreground', '--ui-text-primary'],
+          ['--primary', '--ui-accent-strong'],
+          ['--border', '--ui-border-default'],
+          ['--sidebar', '--ui-bg-sidebar'],
+          ['--popover', '--ui-bg-overlay'],
+        ].map(([semantic, legacy]) => [
+          css.getPropertyValue(semantic).trim(),
+          css.getPropertyValue(legacy).trim(),
+        ]);
       });
       for (const [semantic, legacy] of aliases) {
         expect(semantic).not.toBe('');
@@ -44,17 +62,32 @@ for (const style of ['socrates', 'philosophy']) {
       await settings.locator('.settings-nav [data-section="personalization"]').click();
       await expect(settings.locator('[data-slot="card"]')).toBeVisible();
       // A global unlayered padding reset used to silently beat utilities.
-      expect(await settings.locator('[data-slot="card-header"]').evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft))).toBeGreaterThan(0);
+      expect(
+        await settings
+          .locator('[data-slot="card-header"]')
+          .evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft)),
+      ).toBeGreaterThan(0);
       const tones = settings.locator('#tonePresetOptions');
       await expect(tones.getByRole('button').first()).toHaveCSS('border-width', '1px');
-      await expect(tones.getByRole('button', { pressed: true })).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-      await expect(settings.locator('.settings-nav [aria-current="page"]')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-      expect((await tones.boundingBox()).width).toBeGreaterThan((await settings.locator('.settings-pane:visible').boundingBox()).width * 0.9);
+      await expect(tones.getByRole('button', { pressed: true })).not.toHaveCSS(
+        'background-color',
+        'rgba(0, 0, 0, 0)',
+      );
+      await expect(settings.locator('.settings-nav [aria-current="page"]')).not.toHaveCSS(
+        'background-color',
+        'rgba(0, 0, 0, 0)',
+      );
+      expect((await tones.boundingBox()).width).toBeGreaterThan(
+        (await settings.locator('.settings-pane:visible').boundingBox()).width * 0.9,
+      );
       const instructions = settings.locator('#settings-custom-instructions');
       await instructions.fill('A shared theme must preserve editable form state.');
       await expect(instructions).toHaveValue('A shared theme must preserve editable form state.');
       await page.evaluate(() => document.fonts.ready);
-      await page.screenshot({ path: `test-results/shadcn-settings-${encodeURIComponent(style)}-${encodeURIComponent(mode)}.png`, fullPage: false });
+      await page.screenshot({
+        path: `test-results/shadcn-settings-${encodeURIComponent(style)}-${encodeURIComponent(mode)}.png`,
+        fullPage: false,
+      });
       await page.keyboard.press('Escape');
       await expect(settings).toBeHidden();
       await expect(page.locator('#apiSettingsBtn')).toBeFocused();
@@ -63,7 +96,9 @@ for (const style of ['socrates', 'philosophy']) {
   }
 }
 
-test('display options support keyboard navigation and switches persist on mobile', async ({ page }) => {
+test('display options support keyboard navigation and switches persist on mobile', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
@@ -82,7 +117,9 @@ test('display options support keyboard navigation and switches persist on mobile
   const before = await grid.getAttribute('aria-checked');
   await grid.click();
   await expect(grid).toHaveAttribute('aria-checked', before === 'true' ? 'false' : 'true');
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display')).font)).toBe(1.25);
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display')).font))
+    .toBe(1.25);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/shadcn-settings-mobile.png', fullPage: false });
 });

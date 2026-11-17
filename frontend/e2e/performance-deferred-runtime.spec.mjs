@@ -47,24 +47,33 @@ test('interaction-only runtimes stay outside the production static closure', () 
   }
 
   const primitives = report.modules.filter((item) => item.id.includes('node_modules/@base-ui/'));
-  expect(primitives.length, 'Base UI must be present in the deferred primitive runtimes').toBeGreaterThan(0);
+  expect(
+    primitives.length,
+    'Base UI must be present in the deferred primitive runtimes',
+  ).toBeGreaterThan(0);
   for (const module of primitives) {
     expect(scripts.has(module.chunk), `${module.id} leaked into static closure`).toBe(false);
   }
 
   const chunks = new Map(report.chunks.map((chunk) => [chunk.file, chunk]));
-  const shared = report.modules.filter((module) => module.id.includes('@oxc-project')
-    || /node_modules\/(?:react|react-dom|use-sync-external-store)\//.test(module.id));
+  const shared = report.modules.filter(
+    (module) =>
+      module.id.includes('@oxc-project') ||
+      /node_modules\/(?:react|react-dom|use-sync-external-store)\//.test(module.id),
+  );
   expect(shared.length, 'the build must retain shared React/runtime helpers').toBeGreaterThan(0);
   for (const module of shared) {
-    expect(module.chunk, `${module.id} must not be captured by a heavy vendor group`)
-      .not.toMatch(/vendor-(?:editor|tldraw|three)-/);
+    expect(module.chunk, `${module.id} must not be captured by a heavy vendor group`).not.toMatch(
+      /vendor-(?:editor|tldraw|three)-/,
+    );
   }
   for (const id of ['src/react/menu/FoundationMenu.tsx', 'src/react/dialog/FoundationDialog.tsx']) {
     const primitive = report.modules.find((item) => item.id === id);
     const scripts = new Set([primitive.chunk]);
     for (const file of scripts) {
-      expect(file, `${id} must not load an editor or drawing runtime`).not.toMatch(/vendor-(?:editor|tldraw|three)-/);
+      expect(file, `${id} must not load an editor or drawing runtime`).not.toMatch(
+        /vendor-(?:editor|tldraw|three)-/,
+      );
       for (const dependency of chunks.get(file).imports) scripts.add(dependency);
     }
   }

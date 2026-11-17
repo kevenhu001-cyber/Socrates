@@ -10,16 +10,22 @@ async function shotMobile() {
     document.documentElement.dataset.bootState = 'app';
     document.documentElement.dataset.mode = 'dark';
     document.getElementById('sidebar')?.classList.add('collapsed');
-    document.querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent').forEach(e => e.remove());
+    document
+      .querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent')
+      .forEach((e) => e.remove());
   });
   await p.waitForTimeout(800);
   await p.evaluate(() => {
-    document.querySelectorAll('div').forEach(e => {
+    document.querySelectorAll('div').forEach((e) => {
       const t = e.textContent?.trim();
-      if (t === "Couldn't reach the server. Check your connection and retry.") e.style.display = 'none';
+      if (t === "Couldn't reach the server. Check your connection and retry.")
+        e.style.display = 'none';
     });
   });
-  await p.screenshot({ path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-mobile.png', fullPage: true });
+  await p.screenshot({
+    path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-mobile.png',
+    fullPage: true,
+  });
   console.log('mobile ok');
   await p.close();
 }
@@ -32,16 +38,22 @@ async function shotDesktop() {
     document.getElementById('appShell')?.classList.remove('hidden');
     document.documentElement.dataset.bootState = 'app';
     document.documentElement.dataset.mode = 'dark';
-    document.querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent').forEach(e => e.remove());
+    document
+      .querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent')
+      .forEach((e) => e.remove());
   });
   await p.waitForTimeout(800);
   await p.evaluate(() => {
-    document.querySelectorAll('div').forEach(e => {
+    document.querySelectorAll('div').forEach((e) => {
       const t = e.textContent?.trim();
-      if (t === "Couldn't reach the server. Check your connection and retry.") e.style.display = 'none';
+      if (t === "Couldn't reach the server. Check your connection and retry.")
+        e.style.display = 'none';
     });
   });
-  await p.screenshot({ path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-desktop.png', fullPage: true });
+  await p.screenshot({
+    path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-desktop.png',
+    fullPage: true,
+  });
   console.log('desktop ok');
   await p.close();
 }
@@ -55,19 +67,25 @@ async function shotMobileToolsOpen() {
     document.documentElement.dataset.bootState = 'app';
     document.documentElement.dataset.mode = 'dark';
     document.getElementById('sidebar')?.classList.add('collapsed');
-    document.querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent').forEach(e => e.remove());
+    document
+      .querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent')
+      .forEach((e) => e.remove());
   });
   await p.waitForTimeout(800);
   await p.evaluate(() => {
-    document.querySelectorAll('div').forEach(e => {
+    document.querySelectorAll('div').forEach((e) => {
       const t = e.textContent?.trim();
-      if (t === "Couldn't reach the server. Check your connection and retry.") e.style.display = 'none';
+      if (t === "Couldn't reach the server. Check your connection and retry.")
+        e.style.display = 'none';
     });
   });
   const trigger = await p.$('.topic-input-wrap .attach-btn');
   if (trigger) await trigger.click();
   await p.waitForTimeout(300);
-  await p.screenshot({ path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-mobile-tools.png', fullPage: true });
+  await p.screenshot({
+    path: 'C:/Users/Jiacheng/AppData/Local/Temp/opencode/verify-mobile-tools.png',
+    fullPage: true,
+  });
   console.log('mobile tools ok');
   await p.close();
 }

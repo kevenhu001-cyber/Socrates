@@ -9,7 +9,9 @@ export function DemoIssue({ headline, details }: { headline: string; details: st
       {lines.length ? (
         <details>
           <summary>{i18n('intui.demo.details', 'Details')}</summary>
-          {lines.map((line, index) => <div key={index}>{line}</div>)}
+          {lines.map((line, index) => (
+            <div key={index}>{line}</div>
+          ))}
         </details>
       ) : null}
     </div>

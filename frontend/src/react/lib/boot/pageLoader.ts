@@ -27,33 +27,40 @@ export function loadPage(
   if (!current.pending) {
     if (!current.loaded) {
       host.classList.remove('visually-hidden');
-      host.innerHTML = '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
+      host.innerHTML =
+        '<div class="workspace-chunk-loading" role="status"><span class="workspace-chunk-loading-label shimmer-text">Loading…</span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer"></span><span class="workspace-chunk-loading-line workspace-skeleton-shimmer workspace-chunk-loading-line-short"></span></div>';
       host.setAttribute('aria-busy', 'true');
     }
-    current.pending = Promise.resolve().then(load).then((mount) => {
-      if (!isCurrentHost()) return false;
-      mount(host);
-      current.loaded = true;
-      return true;
-    }).catch((error) => {
-      reportSwallow(error, `react:page:${hostId}`);
-      // Never replace an already-mounted React tree with an error string.
-      if (isCurrentHost() && !current.loaded && !hasOwnedRoot(host)) {
-        host.textContent = 'Could not load this page. Please try again.';
-      }
-      return false;
-    }).finally(() => {
-      host.removeAttribute('aria-busy');
-      current.pending = undefined;
-    });
+    current.pending = Promise.resolve()
+      .then(load)
+      .then((mount) => {
+        if (!isCurrentHost()) return false;
+        mount(host);
+        current.loaded = true;
+        return true;
+      })
+      .catch((error) => {
+        reportSwallow(error, `react:page:${hostId}`);
+        // Never replace an already-mounted React tree with an error string.
+        if (isCurrentHost() && !current.loaded && !hasOwnedRoot(host)) {
+          host.textContent = 'Could not load this page. Please try again.';
+        }
+        return false;
+      })
+      .finally(() => {
+        host.removeAttribute('aria-busy');
+        current.pending = undefined;
+      });
   }
   const pending = current.pending;
   if (!afterMount) return pending;
-  return pending.then(async (loaded) => {
-    if (loaded && isCurrentHost()) await afterMount();
-    return loaded;
-  }).catch((error) => {
-    reportSwallow(error, `react:page:${hostId}:after-mount`);
-    return false;
-  });
+  return pending
+    .then(async (loaded) => {
+      if (loaded && isCurrentHost()) await afterMount();
+      return loaded;
+    })
+    .catch((error) => {
+      reportSwallow(error, `react:page:${hostId}:after-mount`);
+      return false;
+    });
 }

@@ -59,8 +59,12 @@ test('using a connected plugin waits for the chat reset to succeed', async ({ pa
   await page.locator('.plugin-detail-btn-primary').click();
 
   await expect(page.locator('#topicSetup')).toBeVisible();
-  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
-  expect(await page.evaluate(() => '__socratesComposerPluginSelectionBridge' in window)).toBe(false);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText([
+    'GitHub',
+  ]);
+  expect(await page.evaluate(() => '__socratesComposerPluginSelectionBridge' in window)).toBe(
+    false,
+  );
 });
 
 test('canceling the chat reset keeps the connected plugin unselected', async ({ page }) => {
@@ -96,16 +100,23 @@ test('plus menu supports connector multi-select and removal', async ({ page }) =
   await page.locator('[data-composer-plugin="github"]').click();
   await page.locator('[data-composer-plugin="notion"]').click();
   await expect(page.locator('#composerInputWrap .composer-plugin-chip')).toHaveCount(2);
-  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub', 'Notion']);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText([
+    'GitHub',
+    'Notion',
+  ]);
 
   await page.locator('#composerInputWrap .composer-plugin-chip-remove').first().click();
   await expect(page.locator('#composerInputWrap .composer-plugin-chip')).toHaveCount(1);
-  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['Notion']);
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText([
+    'Notion',
+  ]);
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
 });
 
-test('plugin center filters public/personal apps and scheduled templates prefill the form', async ({ page }) => {
+test('plugin center filters public/personal apps and scheduled templates prefill the form', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
   await mockConnectedCatalog(page);
   await gotoAndSettle(page, '/');
@@ -115,7 +126,10 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('.plugin-directory')).toBeVisible();
   // The public scope is the default, matching the reference design.
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
-  await page.screenshot({ path: 'test-results/plugin-directory-reference-desktop.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/plugin-directory-reference-desktop.png',
+    fullPage: true,
+  });
 
   const appSearch = page.locator('.plugin-directory-search input');
   await appSearch.fill('gmail');
@@ -149,8 +163,9 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('#taskForm')).toBeVisible();
   await expect(page.locator('#taskForm input[name="title"]')).toHaveValue(/daily briefing/i);
   await expect(page.locator('#taskForm textarea[name="prompt"]')).toHaveValue(/daily briefing/i);
-  const scheduledRequest = page.waitForRequest((request) =>
-    request.method() === 'POST' && /\/api\/(v2\/)?scheduled-tasks(?:\?|$)/.test(request.url()),
+  const scheduledRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' && /\/api\/(v2\/)?scheduled-tasks(?:\?|$)/.test(request.url()),
   );
   await page.locator('#taskForm button[type="submit"]').click();
   expect((await scheduledRequest).postDataJSON()).toMatchObject({
@@ -161,7 +176,9 @@ test('plugin center filters public/personal apps and scheduled templates prefill
   await expect(page.locator('#workspaceDialog')).toBeHidden();
 });
 
-test('OpenConnector apps the hosted runtime does not serve yet render disabled', async ({ page }) => {
+test('OpenConnector apps the hosted runtime does not serve yet render disabled', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.route('**/api/**', async (route) => {
     if (!route.request().url().includes('project-connectors')) {
@@ -175,9 +192,32 @@ test('OpenConnector apps the hosted runtime does not serve yet render disabled',
         configured: true,
         openConnector: { available: false },
         connectors: [
-          { id: 'github', name: 'GitHub', description: 'Repositories', authType: 'oauth', available: undefined, connection: null },
-          { id: 'oc_slack', name: 'Slack', description: 'Connect Slack to use its actions in chat. (via OpenConnector)', capabilities: ['Actions'], authType: 'oauth', available: false, connection: null },
-          { id: 'oc_amap', name: '高德地图', description: 'Connect 高德地图 to use its actions in chat. (via OpenConnector)', capabilities: ['Actions'], authType: 'api_key', available: false, connection: null },
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Repositories',
+            authType: 'oauth',
+            available: undefined,
+            connection: null,
+          },
+          {
+            id: 'oc_slack',
+            name: 'Slack',
+            description: 'Connect Slack to use its actions in chat. (via OpenConnector)',
+            capabilities: ['Actions'],
+            authType: 'oauth',
+            available: false,
+            connection: null,
+          },
+          {
+            id: 'oc_amap',
+            name: '高德地图',
+            description: 'Connect 高德地图 to use its actions in chat. (via OpenConnector)',
+            capabilities: ['Actions'],
+            authType: 'api_key',
+            available: false,
+            connection: null,
+          },
         ],
       }),
     });
@@ -190,7 +230,9 @@ test('OpenConnector apps the hosted runtime does not serve yet render disabled',
   await expect(page.locator('.plugin-directory-row')).toHaveCount(3);
 
   /* Legacy OOMOL apps stay connectable when the gateway is configured. */
-  await expect(page.locator('[data-connector-id="github"] button.plugin-directory-icon-action')).toBeEnabled();
+  await expect(
+    page.locator('[data-connector-id="github"] button.plugin-directory-icon-action'),
+  ).toBeEnabled();
   /* Stub-catalog apps (not covered by the gateway snapshot) are greyed out
      with the setup-needed title. */
   const slack = page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action');
@@ -207,7 +249,11 @@ test('connected apps open manage or credential dialogs, disconnect works', async
     const url = route.request().url();
     if (url.includes('project-connectors') && route.request().method() === 'DELETE') {
       deleteSeen = url;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'disconnected' }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'disconnected' }),
+      });
       return;
     }
     if (!route.request().url().includes('project-connectors')) {
@@ -220,11 +266,35 @@ test('connected apps open manage or credential dialogs, disconnect works', async
       body: JSON.stringify({
         configured: true,
         connectors: [
-          { id: 'oc_slack', name: 'Slack', description: 'Team chat', capabilities: ['Messaging'], authType: 'oauth', available: true,
-            connection: { status: 'connected', displayName: 'Study org', updatedAt: '2026-09-09T00:00:00.000Z' } },
-          { id: 'oc_amap', name: '高德地图', description: 'Maps', capabilities: ['Location'], authType: 'api_key', available: true,
-            credentialInput: { fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }] },
-            connection: { status: 'connected', displayName: null, updatedAt: '2026-09-09T00:00:00.000Z' } },
+          {
+            id: 'oc_slack',
+            name: 'Slack',
+            description: 'Team chat',
+            capabilities: ['Messaging'],
+            authType: 'oauth',
+            available: true,
+            connection: {
+              status: 'connected',
+              displayName: 'Study org',
+              updatedAt: '2026-09-09T00:00:00.000Z',
+            },
+          },
+          {
+            id: 'oc_amap',
+            name: '高德地图',
+            description: 'Maps',
+            capabilities: ['Location'],
+            authType: 'api_key',
+            available: true,
+            credentialInput: {
+              fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }],
+            },
+            connection: {
+              status: 'connected',
+              displayName: null,
+              updatedAt: '2026-09-09T00:00:00.000Z',
+            },
+          },
         ],
       }),
     });
@@ -264,8 +334,27 @@ test('OpenConnector apps served through the OOMOL cloud stay connectable', async
         configured: true,
         openConnector: { available: false, cloud: true },
         connectors: [
-          { id: 'oc_slack', name: 'Slack', description: 'Connect Slack to use its 2 actions in chat. (via OpenConnector)', capabilities: ['Messaging'], authType: 'oauth', available: true, connection: null },
-          { id: 'oc_amap', name: '高德地图', description: 'Connect 高德地图 to use its 15 actions in chat. (via OpenConnector)', capabilities: ['Location'], authType: 'api_key', available: true, credentialInput: { fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }] }, connection: null },
+          {
+            id: 'oc_slack',
+            name: 'Slack',
+            description: 'Connect Slack to use its 2 actions in chat. (via OpenConnector)',
+            capabilities: ['Messaging'],
+            authType: 'oauth',
+            available: true,
+            connection: null,
+          },
+          {
+            id: 'oc_amap',
+            name: '高德地图',
+            description: 'Connect 高德地图 to use its 15 actions in chat. (via OpenConnector)',
+            capabilities: ['Location'],
+            authType: 'api_key',
+            available: true,
+            credentialInput: {
+              fields: [{ key: 'apiKey', label: 'API Key', type: 'password', required: true }],
+            },
+            connection: null,
+          },
         ],
       }),
     });
@@ -278,7 +367,9 @@ test('OpenConnector apps served through the OOMOL cloud stay connectable', async
   await expect(page.locator('.plugin-directory-row')).toHaveCount(2);
 
   /* Cloud-served apps are enabled with the Connect title. */
-  await expect(page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action')).toBeEnabled();
+  await expect(
+    page.locator('[data-connector-id="oc_slack"] button.plugin-directory-icon-action'),
+  ).toBeEnabled();
   const amap = page.locator('[data-connector-id="oc_amap"] button.plugin-directory-icon-action');
   await expect(amap).toBeEnabled();
   await expect(amap).toHaveAttribute('title', 'Connect');
@@ -287,34 +378,42 @@ test('OpenConnector apps served through the OOMOL cloud stay connectable', async
 test('OAuth return restores the original composer surface and plugin context', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   await page.addInitScript(() => {
-    sessionStorage.setItem('socrates-connector-return-v1', JSON.stringify({
-      connectorId: 'github',
-      returnPath: '/',
-      createdAt: Date.now(),
-      composer: {
-        topic: [{
-          id: 'github',
-          name: 'GitHub',
-          description: 'Repositories',
-          capabilities: ['Repositories'],
-          directiveTemplate: 'Use my connected GitHub context.',
-          iconMarkup: '',
-        }],
-        chat: [],
-        drafts: { topic: 'Restored OAuth draft', chat: '' },
-      },
-    }));
+    sessionStorage.setItem(
+      'socrates-connector-return-v1',
+      JSON.stringify({
+        connectorId: 'github',
+        returnPath: '/',
+        createdAt: Date.now(),
+        composer: {
+          topic: [
+            {
+              id: 'github',
+              name: 'GitHub',
+              description: 'Repositories',
+              capabilities: ['Repositories'],
+              directiveTemplate: 'Use my connected GitHub context.',
+              iconMarkup: '',
+            },
+          ],
+          chat: [],
+          drafts: { topic: 'Restored OAuth draft', chat: '' },
+        },
+      }),
+    );
   });
   await gotoAndSettle(page, '/plugins?connector=github');
   await waitForAppShell(page);
 
   await expect(page.locator('#topicSetup')).toBeVisible();
   await expect(page.locator('#pluginsPanel')).toBeHidden();
-  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText(['GitHub']);
-  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText('Restored OAuth draft');
-  await expect(page).toHaveURL(url => url.pathname === '/' && url.search === '');
+  await expect(page.locator('#composerInputWrap .composer-plugin-chip-label')).toHaveText([
+    'GitHub',
+  ]);
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toContainText(
+    'Restored OAuth draft',
+  );
+  await expect(page).toHaveURL((url) => url.pathname === '/' && url.search === '');
 });
-
 
 test('plugin detail preserves directory query and themed SVG tiles', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
@@ -330,10 +429,15 @@ test('plugin detail preserves directory query and themed SVG tiles', async ({ pa
       document.documentElement.dataset.mode = mode;
       document.documentElement.classList.toggle('dark', mode === 'dark');
     }, mode);
-    const colors = await tile.evaluate(el => ({ fill: getComputedStyle(el).fill, expected: getComputedStyle(el).getPropertyValue('--ui-connector-tile').trim() }));
+    const colors = await tile.evaluate((el) => ({
+      fill: getComputedStyle(el).fill,
+      expected: getComputedStyle(el).getPropertyValue('--ui-connector-tile').trim(),
+    }));
     expect(colors.expected).toBeTruthy();
-    if (mode === 'light') await page.screenshot({ path: 'test-results/plugin-tile-light.png', animations: 'disabled' });
-    else await page.screenshot({ path: 'test-results/plugin-tile-dark.png', animations: 'disabled' });
+    if (mode === 'light')
+      await page.screenshot({ path: 'test-results/plugin-tile-light.png', animations: 'disabled' });
+    else
+      await page.screenshot({ path: 'test-results/plugin-tile-dark.png', animations: 'disabled' });
   }
   await page.locator('[data-connector-id="github"]').click();
   await page.locator('.plugin-detail-back-btn').click();
@@ -341,19 +445,27 @@ test('plugin detail preserves directory query and themed SVG tiles', async ({ pa
   await expect(page.locator('[data-connector-id="github"]')).toBeVisible();
 });
 
-
 test('returning from plugin detail restores the directory scroll position', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
-  await mockConnectedCatalog(page, Array.from({ length: 40 }, (_, i) => ({ ...CONNECTORS[0], id: `service_${i}`, name: `Service ${i}` })));
+  await mockConnectedCatalog(
+    page,
+    Array.from({ length: 40 }, (_, i) => ({
+      ...CONNECTORS[0],
+      id: `service_${i}`,
+      name: `Service ${i}`,
+    })),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.locator('#navPlugins').click();
   const row = page.locator('[data-connector-id="service_30"]');
   await row.scrollIntoViewIfNeeded();
-  const position = await page.locator('#pluginsPanel').evaluate(el => el.scrollTop);
+  const position = await page.locator('#pluginsPanel').evaluate((el) => el.scrollTop);
   expect(position).toBeGreaterThan(0);
   await row.click();
   await expect(page.locator('.plugin-detail-view')).toBeVisible();
   await page.locator('.plugin-detail-back-btn').click();
-  await expect.poll(() => page.locator('#pluginsPanel').evaluate(el => el.scrollTop)).toBe(position);
+  await expect
+    .poll(() => page.locator('#pluginsPanel').evaluate((el) => el.scrollTop))
+    .toBe(position);
 });

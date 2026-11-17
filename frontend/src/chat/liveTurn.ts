@@ -3,7 +3,7 @@
  * message lookup, approval checks, search-retry wiring.
  * Zero-behavior-change lift; state lives in turn/state.ts.
  */
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { streamRetryViewport, turnState } from './turn/state.ts';
 import type { ActiveChatController, LiveTurnRuntime } from './turn/state.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
@@ -36,11 +36,15 @@ export function retryLiveTurn(messageId?: string | null): boolean {
   if (!owner) return false;
   // Streaming controllers expose identity through their public accessor.
   // Restored/legacy owners can still supply a clientId field.
-  const ownerId = typeof owner.owner.getClientId === 'function'
-    ? owner.owner.getClientId() : owner.owner.clientId;
+  const ownerId =
+    typeof owner.owner.getClientId === 'function'
+      ? owner.owner.getClientId()
+      : owner.owner.clientId;
   if (messageId && String(ownerId || '') !== String(messageId)) return false;
-  try { owner.run(); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts:46');
+  try {
+    owner.run();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts');
     /* the retry handler threw — the turn is unchanged */
   }
   return true;
@@ -71,8 +75,9 @@ export function retryRecoveredTurn(messageId: string): boolean {
   const action = recoveredRetries.get(messageId);
   if (!action) return false;
   recoveredRetries.delete(messageId);
-  try { action(); }
-  catch (error) {
+  try {
+    action();
+  } catch (error) {
     reportEmptyCatch(error, 'chat/liveTurn.retryRecoveredTurn');
   }
   return true;
@@ -82,7 +87,10 @@ export function retryRecoveredTurn(messageId: string): boolean {
    __socratesLegacy.liveTurn, and the only code that can POST a decision lives
    inside the runtime that recorded it (chat/toolRuntime/index.ts needs the message
    closure to write the outcome back onto toolCalls[].approval). */
-export function registerLiveTurnRuntime(messageId: string | null | undefined, runtime: LiveTurnRuntime | null | undefined): void {
+export function registerLiveTurnRuntime(
+  messageId: string | null | undefined,
+  runtime: LiveTurnRuntime | null | undefined,
+): void {
   if (!messageId || !runtime) return;
   turnState.liveTurnRuntimes.set(String(messageId), runtime);
   if (turnState.liveTurnRuntimes.size > 16) {
@@ -93,7 +101,7 @@ export function registerLiveTurnRuntime(messageId: string | null | undefined, ru
 
 export function liveTurnMessage(messageId?: string | null): LiveTurnMessage | null {
   const key = String(messageId || '');
-  const msgs = stateStore.read('messages');
+  const msgs = sessionBridge.getSnapshot().messages;
   if (!key || !Array.isArray(msgs)) return null;
   for (let i = msgs.length - 1; i >= 0; i--) {
     const m = msgs[i] as LiveTurnMessage | null | undefined;
@@ -128,12 +136,17 @@ export function decideLiveApproval(
   /* The runtime records a failed POST into approval.ui (which the row paints)
      and re-enables the buttons, so the rejection has nowhere useful left to
      go — swallow it rather than leave an unhandled promise. */
-  return Promise.resolve(runtime.decideApproval(toolCallId, decision)).then(() => undefined, () => undefined);
+  return Promise.resolve(runtime.decideApproval(toolCallId, decision)).then(
+    () => undefined,
+    () => undefined,
+  );
 }
 
 /* P_tool_retry_button — Retry on a failed search row re-issues the query
    through the streaming closure that owns the prompt (`onSearchRetry`). */
-export function claimLiveSearchRetry(handler: ((query: string, detail?: unknown) => void) | null): void {
+export function claimLiveSearchRetry(
+  handler: ((query: string, detail?: unknown) => void) | null,
+): void {
   turnState.liveSearchRetry = typeof handler === 'function' ? handler : null;
 }
 
@@ -150,8 +163,10 @@ export function installLiveTurnRetryListener(): void {
       /* P_tool_retry_prompt — pass the whole detail so repair prompts
          (viz-failure "Fix with AI") reach the handler alongside the
          legacy `query` field. */
-      try { handler(detail.query || '', detail); } catch (error) {
-        reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts:124');
+      try {
+        handler(detail.query || '', detail);
+      } catch (error) {
+        reportEmptyCatch(error, 'empty catch: chat/liveTurn.ts');
         /* a failed retry is just a missed click */
       }
     });

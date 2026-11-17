@@ -48,7 +48,11 @@ function activeToken(surface: ComposerSurface): ComposerExtensionToken | null {
   return composerLifecycleStore.getState().extensionTokens[surface];
 }
 
-export function registerComposer(surface: ComposerSurface, handle: ComposerHandle, identity: object = handle): () => void {
+export function registerComposer(
+  surface: ComposerSurface,
+  handle: ComposerHandle,
+  identity: object = handle,
+): () => void {
   currentHandle = handle;
   // Restore when the editor instance changes, including recovery textarea →
   // rich editor. Surface effects re-register the same editor without replaying
@@ -56,10 +60,16 @@ export function registerComposer(surface: ComposerSurface, handle: ComposerHandl
   if (initializedEditor !== identity) {
     initializedEditor = identity;
     const state = composerLifecycleStore.getState();
-    try { handle.setMarkdown(state.drafts[state.surface]); }
-    catch (error) { reportSwallow(error, 'controller.registerComposer.setMarkdown'); }
-    try { handle.setExtensionToken(state.extensionTokens[state.surface]); }
-    catch (error) { reportSwallow(error, 'controller.registerComposer.setExtensionToken'); }
+    try {
+      handle.setMarkdown(state.drafts[state.surface]);
+    } catch (error) {
+      reportSwallow(error, 'controller.registerComposer.setMarkdown');
+    }
+    try {
+      handle.setExtensionToken(state.extensionTokens[state.surface]);
+    } catch (error) {
+      reportSwallow(error, 'controller.registerComposer.setExtensionToken');
+    }
   }
   void surface;
   return () => {
@@ -71,8 +81,11 @@ export function notifyComposerChange(surface: ComposerSurface, value: string): v
   const owner = surface === activeSurface() ? surface : activeSurface();
   writeComposerDraft(owner, value);
   if (currentHandle) {
-    try { writeComposerExtensionToken(owner, currentHandle.getExtensionToken()); }
-    catch (error) { reportSwallow(error, 'controller.notifyComposerChange.readToken'); }
+    try {
+      writeComposerExtensionToken(owner, currentHandle.getExtensionToken());
+    } catch (error) {
+      reportSwallow(error, 'controller.notifyComposerChange.readToken');
+    }
   }
   listeners.forEach((listener) => listener(owner, value));
 }
@@ -93,16 +106,22 @@ export function isComposerSurfaceTransitioning(): boolean {
 
 export function getComposerMarkdown(surface: ComposerSurface): string {
   if (surface === activeSurface() && currentHandle) {
-    try { return currentHandle.getMarkdown(); }
-    catch (error) { reportSwallow(error, 'controller.getComposerMarkdown'); }
+    try {
+      return currentHandle.getMarkdown();
+    } catch (error) {
+      reportSwallow(error, 'controller.getComposerMarkdown');
+    }
   }
   return activeDraft(surface);
 }
 
 export function setComposerMarkdown(surface: ComposerSurface, value: string): void {
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.setMarkdown(value); }
-    catch { writeComposerDraft(surface, value); }
+    try {
+      currentHandle.setMarkdown(value);
+    } catch {
+      writeComposerDraft(surface, value);
+    }
   } else {
     writeComposerDraft(surface, value);
     listeners.forEach((listener) => listener(surface, value));
@@ -113,8 +132,12 @@ export function setComposerMarkdown(surface: ComposerSurface, value: string): vo
 
 export function insertComposerText(surface: ComposerSurface, value: string): void {
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.insertText(value); return; }
-    catch (error) { reportSwallow(error, 'controller.insertComposerText'); }
+    try {
+      currentHandle.insertText(value);
+      return;
+    } catch (error) {
+      reportSwallow(error, 'controller.insertComposerText');
+    }
   }
   setComposerMarkdown(surface, `${activeDraft(surface)}${value}`);
 }
@@ -125,15 +148,21 @@ export function setComposerExtensionToken(
 ): void {
   writeComposerExtensionToken(surface, token);
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.setExtensionToken(token); }
-    catch (error) { reportSwallow(error, 'controller.setComposerExtensionToken'); }
+    try {
+      currentHandle.setExtensionToken(token);
+    } catch (error) {
+      reportSwallow(error, 'controller.setComposerExtensionToken');
+    }
   }
 }
 
 export function getComposerExtensionToken(surface: ComposerSurface): ComposerExtensionToken | null {
   if (surface === activeSurface() && currentHandle) {
-    try { return currentHandle.getExtensionToken(); }
-    catch (error) { reportSwallow(error, 'controller.getComposerExtensionToken'); }
+    try {
+      return currentHandle.getExtensionToken();
+    } catch (error) {
+      reportSwallow(error, 'controller.getComposerExtensionToken');
+    }
   }
   return activeToken(surface);
 }
@@ -142,10 +171,16 @@ export function clearComposer(surface: ComposerSurface): void {
   writeComposerDraft(surface, '');
   writeComposerExtensionToken(surface, null);
   if (surface === activeSurface() && currentHandle) {
-    try { currentHandle.clear(); }
-    catch (error) { reportSwallow(error, 'controller.clearComposer'); }
-    try { currentHandle.setExtensionToken(null); }
-    catch (error) { reportSwallow(error, 'controller.clearComposer.clearToken'); }
+    try {
+      currentHandle.clear();
+    } catch (error) {
+      reportSwallow(error, 'controller.clearComposer');
+    }
+    try {
+      currentHandle.setExtensionToken(null);
+    } catch (error) {
+      reportSwallow(error, 'controller.clearComposer.clearToken');
+    }
   }
   if (surface === activeSurface()) notifyComposerChange(surface, '');
   else listeners.forEach((listener) => listener(surface, ''));
@@ -158,14 +193,19 @@ export function clearComposerDrafts(): void {
 
 export function focusComposer(surface: ComposerSurface, position: 'start' | 'end' = 'end'): void {
   if (surface !== activeSurface()) return;
-  try { currentHandle?.focus(position); }
-  catch (error) { reportSwallow(error, 'controller.focusComposer'); }
+  try {
+    currentHandle?.focus(position);
+  } catch (error) {
+    reportSwallow(error, 'controller.focusComposer');
+  }
 }
 
 export function getVisibleComposerSurface(): ComposerSurface {
   try {
     if (currentHandle?.isVisible()) return activeSurface();
-  } catch (error) { reportSwallow(error, 'controller.getVisibleComposerSurface.isVisible'); }
+  } catch (error) {
+    reportSwallow(error, 'controller.getVisibleComposerSurface.isVisible');
+  }
   return 'topic';
 }
 
@@ -182,18 +222,30 @@ export function activateComposerSurface(surface: ComposerSurface, doc?: Document
   const previousSurface = activeSurface();
   if (previousSurface !== surface) {
     if (currentHandle) {
-      try { writeComposerDraft(previousSurface, currentHandle.getMarkdown()); }
-      catch (error) { reportSwallow(error, 'controller.activateSurface.saveDraft'); }
-      try { writeComposerExtensionToken(previousSurface, currentHandle.getExtensionToken()); }
-      catch (error) { reportSwallow(error, 'controller.activateSurface.saveToken'); }
+      try {
+        writeComposerDraft(previousSurface, currentHandle.getMarkdown());
+      } catch (error) {
+        reportSwallow(error, 'controller.activateSurface.saveDraft');
+      }
+      try {
+        writeComposerExtensionToken(previousSurface, currentHandle.getExtensionToken());
+      } catch (error) {
+        reportSwallow(error, 'controller.activateSurface.saveToken');
+      }
     }
     writeComposerSurface(surface);
     surfaceTransitionInProgress = true;
     try {
-      try { currentHandle?.setMarkdown(activeDraft(surface)); }
-      catch (error) { reportSwallow(error, 'controller.activateSurface.restoreDraft'); }
-      try { currentHandle?.setExtensionToken(activeToken(surface)); }
-      catch (error) { reportSwallow(error, 'controller.activateSurface.restoreToken'); }
+      try {
+        currentHandle?.setMarkdown(activeDraft(surface));
+      } catch (error) {
+        reportSwallow(error, 'controller.activateSurface.restoreDraft');
+      }
+      try {
+        currentHandle?.setExtensionToken(activeToken(surface));
+      } catch (error) {
+        reportSwallow(error, 'controller.activateSurface.restoreToken');
+      }
     } finally {
       surfaceTransitionInProgress = false;
     }
@@ -216,8 +268,11 @@ export function readComposerSurface(doc?: Document): ComposerSurface {
 
 export function getComposerSelection(surface: ComposerSurface): ComposerSelection {
   if (surface === activeSurface() && currentHandle) {
-    try { return currentHandle.getSelection(); }
-    catch (error) { reportSwallow(error, 'controller.getComposerSelection'); }
+    try {
+      return currentHandle.getSelection();
+    } catch (error) {
+      reportSwallow(error, 'controller.getComposerSelection');
+    }
   }
   return { from: 0, to: 0 };
 }

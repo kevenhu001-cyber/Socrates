@@ -25,7 +25,9 @@ function inlineHandlerHash() {
   const matches = [
     ...html.matchAll(/\b(?:onclick|oninput|onchange|onsubmit|onkeydown|onfocus)="([^"]+)"/g),
     ...html.matchAll(/\bdata-action(?:-[a-z]+)?="([^"]+)"/g),
-  ].map((m) => m[1]).sort();
+  ]
+    .map((m) => m[1])
+    .sort();
   return createHash('sha256').update(matches.join('\n')).digest('hex').slice(0, 16);
 }
 
@@ -46,7 +48,9 @@ test.beforeAll(() => {
   }
 });
 
-test('page boots, dist HTML script ordering correct, inline-handler hash matches snapshot', async ({ page }) => {
+test('page boots, dist HTML script ordering correct, inline-handler hash matches snapshot', async ({
+  page,
+}) => {
   expect(
     fs.existsSync(distHtml),
     'dist/index.html missing — run `npm run build` in frontend/ before the smoke suite',
@@ -54,13 +58,16 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
 
   const consoleErrors = [];
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text());
+  });
 
   /* The browser sandbox intentionally has no public-network access. The app
      is fully self-hosted now (fonts + vendor libs), so the real dist HTML
      boots offline; keep the route as a safety net for any stale external
      reference that might slip back in. */
-  const offlineHtml = fs.readFileSync(distHtml, 'utf8')
+  const offlineHtml = fs
+    .readFileSync(distHtml, 'utf8')
     .replace(/<link[^>]+https:\/\/cdn\.jsdelivr\.net[^>]*>\s*/gi, '')
     .replace(/<link[^>]+https:\/\/fonts\.googleapis\.com[^>]*>\s*/gi, '')
     .replace(/<link[^>]+https:\/\/fonts\.gstatic\.com[^>]*>\s*/gi, '')
@@ -77,10 +84,16 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
   // the module graph by src/vendor/init.ts; mermaid/echarts/plotly are
   // self-hosted static assets injected only on demand.
   const html = fs.readFileSync(distHtml, 'utf8');
-  expect(html, 'dist/index.html must not load external JS/CSS').not.toMatch(/https:\/\/cdn\.jsdelivr\.net[^"']*\.(?:js|css)/);
-  expect(html, 'dist/index.html must not load Google Fonts').not.toContain('fonts.googleapis.com/css');
+  expect(html, 'dist/index.html must not load external JS/CSS').not.toMatch(
+    /https:\/\/cdn\.jsdelivr\.net[^"']*\.(?:js|css)/,
+  );
+  expect(html, 'dist/index.html must not load Google Fonts').not.toContain(
+    'fonts.googleapis.com/css',
+  );
   expect(html, 'dist/index.html must not preconnect to gstatic').not.toContain('fonts.gstatic.com');
-  expect(html, 'dist/index.html should reference the assets/index-*.js bundle').toMatch(/assets\/index-[^"]+\.js/);
+  expect(html, 'dist/index.html should reference the assets/index-*.js bundle').toMatch(
+    /assets\/index-[^"]+\.js/,
+  );
 
   // The bundle must load as an ES module (deferred, single entry point).
   expect(
@@ -109,17 +122,20 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
   const currentHash = inlineHandlerHash();
   if (fs.existsSync(snap)) {
     const saved = fs.readFileSync(snap, 'utf8').trim();
-    expect(currentHash, `inline-handler hash drifted: saved=${saved} current=${currentHash}`).toBe(saved);
+    expect(currentHash, `inline-handler hash drifted: saved=${saved} current=${currentHash}`).toBe(
+      saved,
+    );
   }
 
   // After boot: the legacy shell's interactive controls are now owned by
   // direct listeners (ui/legacyShellListeners.ts) and React roots, which
   // replaced the document-wide data-action delegation. Guard that at least
   // the primary nav stays React-hydrated so the shell is still interactive.
-  const reactNavCount = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('#sidebarNav .sidebar-nav-btn')).filter(
-      (el) => Object.keys(el).some((k) => k.startsWith('__reactProps$')),
-    ).length,
+  const reactNavCount = await page.evaluate(
+    () =>
+      Array.from(document.querySelectorAll('#sidebarNav .sidebar-nav-btn')).filter((el) =>
+        Object.keys(el).some((k) => k.startsWith('__reactProps$')),
+      ).length,
   );
   expect(reactNavCount, 'React-hydrated nav button count').toBeGreaterThanOrEqual(7);
 
@@ -146,7 +162,9 @@ test('no inline on* handlers built in src/react', async () => {
   const offenders = [];
   for (const file of collectSourceFiles(reactDir)) {
     const source = fs.readFileSync(file, 'utf8');
-    for (const m of source.matchAll(/\bon(?:click|input|change|submit|keydown|keyup|focus|blur|mouseover|mouseenter|mouseleave)="[^"]*"/gi)) {
+    for (const m of source.matchAll(
+      /\bon(?:click|input|change|submit|keydown|keyup|focus|blur|mouseover|mouseenter|mouseleave)="[^"]*"/gi,
+    )) {
       offenders.push(`${file}: ${m[0].slice(0, 80)}`);
     }
   }

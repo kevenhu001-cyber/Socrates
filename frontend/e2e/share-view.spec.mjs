@@ -9,7 +9,7 @@
 //   4. A turn that recorded tool split points is laid out by the same
 //      declarative renderer the chat uses — read-only, so no Retry.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -68,22 +68,31 @@ const SHARED_PAYLOAD = {
   visibility: 'public',
   messages: [
     {
-      id: 'm-1', role: 'user', content: 'What is gravity?', createdAt: '2026-01-01T00:00:01Z',
+      id: 'm-1',
+      role: 'user',
+      content: 'What is gravity?',
+      createdAt: '2026-01-01T00:00:01Z',
     },
     {
-      id: 'm-2', role: 'assistant', content: 'Gravity is a force that attracts two bodies with mass.', createdAt: '2026-01-01T00:00:02Z',
-      toolCalls: [{
-        id: 'shared-viz',
-        name: 'render_intelligent_ui',
-        input: {version:1,nodes:[{...SHARED_VIZ,id:'visual',type:'visualization'}]},
-        output: 'Visualization ready',
-        artifacts: [],
-      }],
+      id: 'm-2',
+      role: 'assistant',
+      content: 'Gravity is a force that attracts two bodies with mass.',
+      createdAt: '2026-01-01T00:00:02Z',
+      toolCalls: [
+        {
+          id: 'shared-viz',
+          name: 'render_intelligent_ui',
+          input: { version: 1, nodes: [{ ...SHARED_VIZ, id: 'visual', type: 'visualization' }] },
+          output: 'Visualization ready',
+          artifacts: [],
+        },
+      ],
     },
     {
       id: 'm-3',
       role: 'assistant',
-      content: '<p>Gravity pulls masses together.</p><p>It weakens with the square of distance.</p>',
+      content:
+        '<p>Gravity pulls masses together.</p><p>It weakens with the square of distance.</p>',
       rawText: SHARED_RAW,
       toolCalls: SHARED_CALLS,
       createdAt: '2026-01-01T00:00:03Z',
@@ -95,10 +104,18 @@ async function mockShareRoute(page) {
   await page.route('**/api/**/shares/*', async (route) => {
     const url = route.request().url();
     if (url.includes(SHARE_TOKEN)) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SHARED_PAYLOAD) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(SHARED_PAYLOAD),
+      });
       return;
     }
-    await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'NOT_FOUND' }) });
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 'NOT_FOUND' }),
+    });
   });
 }
 
@@ -129,15 +146,17 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
 
   // Shared loading must preserve every immutable namespace.
   const nsDiag = await page.evaluate(() => {
-    const s = window.stateStore.getSnapshot();
+    const s = window.__socratesTestState.snapshot();
     const session = s.session;
     if (!session) return { ok: false, reason: 'no session' };
     return {
-      ok: Array.isArray(session.messages)
-        && typeof session.currentSessionId === 'string'
-        && Array.isArray(s.kb.kbNodes)
-        && Array.isArray(s.search.searchResults)
-        && s.call && typeof s.call.lastCallSource === 'object',
+      ok:
+        Array.isArray(session.messages) &&
+        typeof session.currentSessionId === 'string' &&
+        Array.isArray(s.kb.kbNodes) &&
+        Array.isArray(s.search.searchResults) &&
+        s.call &&
+        typeof s.call.lastCallSource === 'object',
       messages: Array.isArray(session.messages),
       currentSessionId: session.currentSessionId,
       kbNodes: Array.isArray(s.kb.kbNodes),
@@ -158,7 +177,9 @@ test('public ?share=TOKEN loads the read-only chat view without auth', async ({ 
 test('a shared turn lays its tool rows out declaratively, read-only', async ({ page }) => {
   await mockAuthedApp(page);
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'en'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-lang-app', 'en');
+    } catch (_) {}
   });
   await mockShareRoute(page);
   await page.goto('/?share=' + encodeURIComponent(SHARE_TOKEN));
@@ -181,14 +202,23 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   // (Compared whitespace-collapsed: the markdown renderer's block output
   // separates paragraphs with one newline in textContent, not the source's two.)
   const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
-  const order = await body.locator('.turn-evidence').evaluate((el) => Array.from(el.children).map((node) => (
-    node.classList.contains('tool-run-prose')
-      ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
-      : node.classList.contains('rn-turn-activity') ? 'activity' : 'other'
-  )));
+  const order = await body
+    .locator('.turn-evidence')
+    .evaluate((el) =>
+      Array.from(el.children).map((node) =>
+        node.classList.contains('tool-run-prose')
+          ? 'text:' + (node.textContent || '').replace(/\s+/g, ' ').trim()
+          : node.classList.contains('rn-turn-activity')
+            ? 'activity'
+            : 'other',
+      ),
+    );
   expect(order).toEqual(['activity', 'text:' + oneLine(SHARED_RAW)]);
 
-  await expect(body.getByTestId('thinking-step-title')).toContainText(['inverse square law', 'arxiv.org']);
+  await expect(body.getByTestId('thinking-step-title')).toContainText([
+    'inverse square law',
+    'arxiv.org',
+  ]);
   await body.getByTestId('tool-row-shared-search').click();
   // Sources are shown only inside their own action detail.
   await expect(page.getByTestId('tool-detail').getByTestId('tool-source')).toHaveCount(2);
@@ -205,33 +235,47 @@ test('a shared turn lays its tool rows out declaratively, read-only', async ({ p
   await body.screenshot({ path: 'test-results/share-turn-declarative.png' });
 });
 
-test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {  await mockAuthedApp(page);
+test('create + revoke share uses /api/sessions/:id/share', async ({ page }) => {
+  await mockAuthedApp(page);
   const calls = [];
   await page.route('**/api/**/sessions/*/share', async (route) => {
     calls.push(route.request().method() + ' ' + route.request().url());
     if (route.request().method() === 'POST') {
       await route.fulfill({
-        status: 201, contentType: 'application/json',
+        status: 201,
+        contentType: 'application/json',
         body: JSON.stringify({ token: 'tok-abc', url: '/a/tok-abc', visibility: 'public' }),
       });
     } else if (route.request().method() === 'DELETE') {
       await route.fulfill({ status: 204, body: '' });
     } else {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: null, visibility: 'private' }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ token: null, visibility: 'private' }),
+      });
     }
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  expect(await page.evaluate(() => ['createShareLink', 'revokeShareLink'].filter((name) => name in window))).toEqual([]);
+  expect(
+    await page.evaluate(() =>
+      ['createShareLink', 'revokeShareLink'].filter((name) => name in window),
+    ),
+  ).toEqual([]);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '11111111-1111-4111-8111-111111111111' });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '11111111-1111-4111-8111-111111111111' },
+    });
     window.__socratesLegacy.messages.openShareModal();
   });
   await page.evaluate(() => window.__socratesLegacy.share.createShareLink());
   await expect(page.locator('#shareLinkInput')).toBeVisible();
   await expect(page.locator('#shareLinkInput')).toHaveValue(/tok-abc/);
   await page.evaluate(() => window.__socratesLegacy.share.revokeShareLink());
-  const shareCalls = calls.filter((c) => /\/api\/(?:v2\/)?sessions\//.test(c) && c.includes('/share'));
+  const shareCalls = calls.filter(
+    (c) => /\/api\/(?:v2\/)?sessions\//.test(c) && c.includes('/share'),
+  );
   expect(shareCalls.some((c) => c.startsWith('POST'))).toBe(true);
   expect(shareCalls.some((c) => c.startsWith('DELETE'))).toBe(true);
   expect(shareCalls.some((c) => /\/api\/(?:v2\/)?shares\//.test(c))).toBe(false);
@@ -263,6 +307,8 @@ test('late compatibility mounting preserves the read-only shared transcript', as
   await expect(page.locator('#chatInputBar')).not.toHaveClass(/hidden/);
   await expect(page.locator('#composerRoot')).not.toHaveAttribute('aria-disabled', 'true');
   await expect(page.locator('#msgList .msg')).toHaveCount(0);
-  await expect(page.locator('#msgList > [data-react-message-list-empty="1"][data-react-owned="1"]')).toHaveCount(1);
+  await expect(
+    page.locator('#msgList > [data-react-message-list-empty="1"][data-react-owned="1"]'),
+  ).toHaveCount(1);
   expect(errors).toEqual([]);
 });

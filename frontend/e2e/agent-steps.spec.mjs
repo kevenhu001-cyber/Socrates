@@ -11,7 +11,7 @@
 //   4. the run settles with its total duration, and
 //   5. the steps survive the finish() re-render that serializes the bubble.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -36,7 +36,11 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   /* The reference wording is Chinese, so run this spec in the zh locale;
      the English dictionary entries are covered by the unit tests. */
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-lang-app', 'zh'); } catch (_) { /* ignore */ }
+    try {
+      localStorage.setItem('socrates-lang-app', 'zh');
+    } catch (_) {
+      /* ignore */
+    }
   });
 
   await gotoAndSettle(page, '/');
@@ -44,9 +48,17 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   await waitForAppShell(page);
 
   await page.evaluate(async () => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '22222222-2222-4222-8222-222222222222' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-1', role: 'user', rawText: 'Do the workspace task', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '22222222-2222-4222-8222-222222222222' },
+    });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-1', role: 'user', rawText: 'Do the workspace task', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     await window.askChatTurn('Do the workspace task');
   });
@@ -81,7 +93,9 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
   // Expanding a step reveals the command and its output.
   const stepHead = steps.nth(1).locator('.agent-step-head');
   await stepHead.click();
-  await expect(steps.nth(1).locator('.agent-step-pre[data-kind="output"]')).toContainText('226 pass');
+  await expect(steps.nth(1).locator('.agent-step-pre[data-kind="output"]')).toContainText(
+    '226 pass',
+  );
 
   /* P_declarative-tool-run — what survives serialization is the data, not the
      markup: `message.html` is prose only, and the step list comes back from
@@ -89,17 +103,29 @@ test('the workspace agent streams its steps into the chat', async ({ page }) => 
      The DOM above already proves the list rendered; pinning html to it again
      would only re-test the implementation this change removes. */
   const persisted = await page.evaluate(() => {
-    const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
-    return message ? { rawText: message.rawText || '', html: message.html || '' } : { rawText: '', html: '' };
+    const message =
+      window.__socratesTestState.session().messages[
+        window.__socratesTestState.session().messages.length - 1
+      ];
+    return message
+      ? { rawText: message.rawText || '', html: message.html || '' }
+      : { rawText: '', html: '' };
   });
   expect(persisted.rawText, 'the answer text is stored as plain text').toContain('notes.txt');
-  expect(persisted.html, 'no agent chrome is baked into legacy html').not.toContain('agent-run-host');
+  expect(persisted.html, 'no agent chrome is baked into legacy html').not.toContain(
+    'agent-run-host',
+  );
   expect(persisted.html, 'no step markup is baked into legacy html').not.toContain('agent-step');
 
   const stored = await page.evaluate(() => {
-    const message = window.stateStore.read("messages")[window.stateStore.read("messages").length - 1];
+    const message =
+      window.__socratesTestState.session().messages[
+        window.__socratesTestState.session().messages.length - 1
+      ];
     const call = (message.toolCalls || []).find((entry) => entry.name === 'workspace_agent');
-    return call ? { runId: call.runId, steps: (call.steps || []).map((s) => s.stepId), plan: !!call.plan } : null;
+    return call
+      ? { runId: call.runId, steps: (call.steps || []).map((s) => s.stepId), plan: !!call.plan }
+      : null;
   });
   expect(stored).toEqual({ runId: 'run-1', steps: ['s1', 's2', 's3'], plan: true });
 });

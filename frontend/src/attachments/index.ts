@@ -1,4 +1,4 @@
-import type { PendingAttachment, UploadOutcome, AddFilesResult, UploadProgress } from "./types.ts";
+import type { PendingAttachment, UploadOutcome, AddFilesResult, UploadProgress } from './types.ts';
 /**
  * attachments.js — pending-attachment store for the chat composer.
  *
@@ -38,11 +38,20 @@ import { getActiveProvider as getActiveProviderConfig } from '../config/provider
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { AttachmentClassification, classifyAttachmentFile, docKindFromFile } from './fileTypes.ts';
 import { createBuildMessageContent } from './messageContent.ts';
-import { ATTACHMENT_READY_TIMEOUT_MS, MAX_CONCURRENT_UPLOADS, MAX_FILE_BYTES, MAX_IMAGE_BYTES, MAX_IMAGE_DATAURL_CHARS, MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL, MAX_TOTAL_ATTACHMENTS, XHR_TIMEOUT_MS, UPLOAD_IDLE_TIMEOUT_MS } from './limits.ts';
+import {
+  ATTACHMENT_READY_TIMEOUT_MS,
+  MAX_CONCURRENT_UPLOADS,
+  MAX_FILE_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_IMAGE_DATAURL_CHARS,
+  MAX_IMAGE_SOURCE_BYTES_BEFORE_DATAURL,
+  MAX_TOTAL_ATTACHMENTS,
+  XHR_TIMEOUT_MS,
+  UPLOAD_IDLE_TIMEOUT_MS,
+} from './limits.ts';
 import { publishAttachmentsState } from '../ui/attachmentsState.ts';
-import { stateStore } from '../state/store.ts';
+import { sessionBridge } from '../store/index.ts';
 import { t } from '../i18n/index.ts';
-
 
 export {
   ATTACHMENT_READY_TIMEOUT_MS,
@@ -96,7 +105,10 @@ function pumpUploadQueue() {
  * cancelled so addFiles()' Promise.all can never hang on a dropped
  * entry. Once the slot starts, prepareAttachment replaces entry._abort
  * with the live XHR abort handle. */
-function enqueueUploadJob(entry: PendingAttachment, job: () => Promise<UploadOutcome>): Promise<UploadOutcome> {
+function enqueueUploadJob(
+  entry: PendingAttachment,
+  job: () => Promise<UploadOutcome>,
+): Promise<UploadOutcome> {
   return new Promise<UploadOutcome>((resolve) => {
     let started = false;
     entry._cancelled = false;
@@ -105,7 +117,11 @@ function enqueueUploadJob(entry: PendingAttachment, job: () => Promise<UploadOut
       if (started) return;
       const index = queuedUploadJobs.indexOf(task);
       if (index !== -1) queuedUploadJobs.splice(index, 1);
-      resolve({ ok: false, error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true });
+      resolve({
+        ok: false,
+        error: _t('chat.attach.cancelled', 'Upload cancelled'),
+        cancelled: true,
+      });
     };
     const task = async () => {
       started = true;
@@ -130,7 +146,9 @@ function _t(key: string, fallback?: string | null) {
   try {
     const v = t(key);
     if (v && v !== key) return v;
-  } catch (e) { reportSwallow(e, 'attachments._t.prefLookup'); /* fall through */ }
+  } catch (e) {
+    reportSwallow(e, 'attachments._t.prefLookup'); /* fall through */
+  }
   return fallback != null ? fallback : key;
 }
 
@@ -138,7 +156,9 @@ function getActiveProvider() {
   return getActiveProviderConfig();
 }
 
-function providerSupportsImages(provider: { vision?: boolean; isMultimodal?: boolean } | null | undefined) {
+function providerSupportsImages(
+  provider: { vision?: boolean; isMultimodal?: boolean } | null | undefined,
+) {
   return !!(provider && (provider.vision === true || provider.isMultimodal === true));
 }
 
@@ -149,9 +169,11 @@ export function activeProviderSupportsImages() {
 
 function currentSessionId() {
   try {
-    const sid = stateStore.read('currentSessionId');
+    const sid = sessionBridge.getSnapshot().currentSessionId;
     if (typeof sid === 'string' && sid) return sid;
-  } catch (e) { reportSwallow(e, 'attachments.store.sessionIdLookup'); /* fall through */ }
+  } catch (e) {
+    reportSwallow(e, 'attachments.store.sessionIdLookup'); /* fall through */
+  }
   return '';
 }
 
@@ -183,11 +205,15 @@ export function waitForAttachmentsReady(list?: PendingAttachment[] | null, timeo
   }
   if (!waits.length) return Promise.resolve();
   const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : ATTACHMENT_READY_TIMEOUT_MS;
-  let timer: number|null|undefined = null;
+  let timer: number | null | undefined = null;
   return Promise.race([
     Promise.allSettled(waits).then(() => undefined),
-    new Promise((resolve) => { timer = setTimeout(resolve, ms); }),
-  ]).finally(() => { if (timer) clearTimeout(timer); });
+    new Promise((resolve) => {
+      timer = setTimeout(resolve, ms);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 /** Generate a short id for chip keying. */
@@ -198,7 +224,9 @@ function shortId() {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return 'att-' + crypto.randomUUID().slice(0, 8);
     }
-  } catch (e) { reportSwallow(e, 'attachments.shortId.cryptoRandomUUID'); /* fall through */ }
+  } catch (e) {
+    reportSwallow(e, 'attachments.shortId.cryptoRandomUUID'); /* fall through */
+  }
   return 'att-' + Math.random().toString(36).slice(2, 10);
 }
 
@@ -213,7 +241,12 @@ function shortId() {
  * abort handle on the entry — removing a chip (or a send-time
  * timeout) must actually cancel the transfer, not just orphan it.
  */
-function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (xhr: XMLHttpRequest) => void, onProcessing?: () => void): Promise<UploadOutcome> {
+function uploadAttachmentFile(
+  file: File,
+  onProgress?: UploadProgress,
+  onXhr?: (xhr: XMLHttpRequest) => void,
+  onProcessing?: () => void,
+): Promise<UploadOutcome> {
   return new Promise<UploadOutcome>((resolve) => {
     const fd = new FormData();
     fd.append('file', file, file.name || 'file');
@@ -224,7 +257,7 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
     if (sid) fd.append('sessionId', sid);
     const csrf = getCsrfToken() || '';
     const xhr = new XMLHttpRequest();
-    let idleTimer: number|undefined;
+    let idleTimer: number | undefined;
     const finish = (outcome: UploadOutcome) => {
       clearTimeout(idleTimer);
       resolve(outcome);
@@ -249,9 +282,10 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
         pending = null;
         if (sample) onProgress(sample.percent, sample.loaded, sample.total);
       };
-      const scheduleFrame = typeof requestAnimationFrame === 'function'
-        ? requestAnimationFrame
-        : (cb: FrameRequestCallback) => setTimeout(cb, 16);
+      const scheduleFrame =
+        typeof requestAnimationFrame === 'function'
+          ? requestAnimationFrame
+          : (cb: FrameRequestCallback) => setTimeout(cb, 16);
       xhr.upload.onprogress = (e) => {
         touch();
         if (!e.lengthComputable) return;
@@ -263,14 +297,19 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
         if (!frame) frame = scheduleFrame(flush) as unknown as number;
       };
     }
-    if (xhr.upload) xhr.upload.onload = () => {
-      touch();
-      if (onProcessing) onProcessing();
-    };
+    if (xhr.upload)
+      xhr.upload.onload = () => {
+        touch();
+        if (onProcessing) onProcessing();
+      };
     xhr.onprogress = touch;
     xhr.onload = function () {
       let data = null;
-      try { data = JSON.parse(xhr.responseText || '{}'); } catch (e) { reportSwallow(e, 'attachments.csrf.parseResponse'); /* non-JSON error page */ }
+      try {
+        data = JSON.parse(xhr.responseText || '{}');
+      } catch (e) {
+        reportSwallow(e, 'attachments.csrf.parseResponse'); /* non-JSON error page */
+      }
       if (xhr.status >= 200 && xhr.status < 300 && data && data.id) {
         finish({
           fileId: String(data.id),
@@ -279,11 +318,14 @@ function uploadAttachmentFile(file: File, onProgress?: UploadProgress, onXhr?: (
           size: typeof data.size === 'number' ? data.size : undefined,
         });
       } else {
-        const msg = (data && (data.message || data.error || data.detail)) || ('Upload failed (' + xhr.status + ')');
+        const msg =
+          (data && (data.message || data.error || data.detail)) ||
+          'Upload failed (' + xhr.status + ')';
         finish({ error: String(msg) });
       }
     };
-    xhr.onerror = () => finish({ error: _t('chat.attach.networkError', 'Network error during upload') });
+    xhr.onerror = () =>
+      finish({ error: _t('chat.attach.networkError', 'Network error during upload') });
     xhr.ontimeout = () => finish({ error: _t('chat.attach.uploadTimeout', 'Upload timed out') });
     /* Aborted by removeAttachment / the send-time straggler cutoff —
        settle quietly; the entry is already gone or flagged. */
@@ -315,13 +357,18 @@ function waitForAttachmentPaint() {
 function abortHandleForXhr(entry: PendingAttachment, xhr: XMLHttpRequest) {
   entry._abort = () => {
     entry._cancelled = true;
-    try { xhr.abort(); }
-    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.xhrAbort'); }
+    try {
+      xhr.abort();
+    } catch (error) {
+      reportSwallow(error, 'attachments.prepareAttachment.xhrAbort');
+    }
   };
 }
 
 async function loadInlineImageData(file: File) {
-  const progress = () => { /* noop: network progress owns the displayed percentage */ };
+  const progress = () => {
+    /* noop: network progress owns the displayed percentage */
+  };
   try {
     /* RN-13 — image re-encoding only runs when an image is attached, so it
        is fetched then instead of riding in the entry closure. */
@@ -331,16 +378,17 @@ async function loadInlineImageData(file: File) {
     }
     const read = await readFileAsDataUrl(file, progress);
     return read.dataUrl;
-  } catch (_) { /* empty-catch: intentional — inline image data fallback */
+  } catch (_) {
+    /* empty-catch: intentional — inline image data fallback */
     return '';
   }
 }
 
 async function prepareInlineImage(entry: PendingAttachment, file: File) {
   const dataUrl = await loadInlineImageData(file);
-  if (entry._cancelled || !entry.pending || !dataUrl || dataUrl.length > MAX_IMAGE_DATAURL_CHARS) return;
+  if (entry._cancelled || !entry.pending || !dataUrl || dataUrl.length > MAX_IMAGE_DATAURL_CHARS)
+    return;
   entry.dataUrl = dataUrl;
-
 }
 
 async function boundedInlineImage(entry: PendingAttachment, file: File) {
@@ -348,7 +396,9 @@ async function boundedInlineImage(entry: PendingAttachment, file: File) {
   try {
     await Promise.race([
       prepareInlineImage(entry, file),
-      new Promise((resolve) => { timer = setTimeout(resolve, 10_000); }),
+      new Promise((resolve) => {
+        timer = setTimeout(resolve, 10_000);
+      }),
     ]);
   } finally {
     clearTimeout(timer);
@@ -368,8 +418,11 @@ function finalizeAttachment(entry: PendingAttachment, uploadOutcome: UploadOutco
   entry.stage = usable ? 'done' : 'error';
   /* Keep failed-upload thumbnails so the error chip still shows the file. */
   if (usable && entry.thumbnailUrl) {
-    try { URL.revokeObjectURL(entry.thumbnailUrl); }
-    catch (error) { reportSwallow(error, 'attachments.prepareAttachment.revokeThumbnail'); }
+    try {
+      URL.revokeObjectURL(entry.thumbnailUrl);
+    } catch (error) {
+      reportSwallow(error, 'attachments.prepareAttachment.revokeThumbnail');
+    }
     entry.thumbnailUrl = undefined;
   }
   if (uploadOutcome && uploadOutcome.fileId) {
@@ -381,30 +434,33 @@ function finalizeAttachment(entry: PendingAttachment, uploadOutcome: UploadOutco
   return { ok: false, error: (uploadOutcome && uploadOutcome.error) || 'Upload failed' };
 }
 
-async function prepareAttachment(entry: PendingAttachment, file: File, reportProgress: UploadProgress = () => undefined): Promise<UploadOutcome> {
-  const wantsInlineImage = entry.kind === 'image'
-    && activeProviderSupportsImages()
-    && file.size <= MAX_IMAGE_BYTES;
+async function prepareAttachment(
+  entry: PendingAttachment,
+  file: File,
+  reportProgress: UploadProgress = () => undefined,
+): Promise<UploadOutcome> {
+  const wantsInlineImage =
+    entry.kind === 'image' && activeProviderSupportsImages() && file.size <= MAX_IMAGE_BYTES;
   /* Queued by the concurrency gate — this assignment is the visible
      "uploading" transition for a stub that may have waited. */
   entry.stage = 'uploading';
   try {
     await waitForAttachmentPaint();
-    if (entry._cancelled) return { error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true };
+    if (entry._cancelled)
+      return { error: _t('chat.attach.cancelled', 'Upload cancelled'), cancelled: true };
     let uploadOutcome = null;
     const uploadJob = uploadAttachmentFile(
       file,
-      (percent: number, loaded?: number, total?: number) => reportProgress(
-        Math.min(99, percent),
-        loaded,
-        total,
-      ),
+      (percent: number, loaded?: number, total?: number) =>
+        reportProgress(Math.min(99, percent), loaded, total),
       (xhr: XMLHttpRequest) => abortHandleForXhr(entry, xhr),
       () => {
         entry.stage = 'processing';
         reportProgress(99);
       },
-    ).then((outcome) => { uploadOutcome = outcome; });
+    ).then((outcome) => {
+      uploadOutcome = outcome;
+    });
     const jobs = [uploadJob];
     if (entry.kind === 'image' && wantsInlineImage) {
       // Optional vision encoding must not hold a durable upload indefinitely.
@@ -457,17 +513,21 @@ function createRejectReporter(result: AddFilesResult, onRejected?: (message: str
   return (message: string) => {
     result.rejected.push(message);
     if (!onRejected) return;
-    try { onRejected(message); }
-    catch (error) { reportSwallow(error, 'attachments.reject.onRejected'); }
+    try {
+      onRejected(message);
+    } catch (error) {
+      reportSwallow(error, 'attachments.reject.onRejected');
+    }
   };
 }
 
 function createProgressNotifier(onUpdate?: () => void, onProgress?: () => void) {
   /* Coalesce frequent upload progress events into at most one render per frame. */
   let pendingFrame = 0;
-  const scheduleFrame = typeof requestAnimationFrame === 'function'
-    ? requestAnimationFrame
-    : (callback: TimerHandler) => setTimeout(callback, 16);
+  const scheduleFrame =
+    typeof requestAnimationFrame === 'function'
+      ? requestAnimationFrame
+      : (callback: TimerHandler) => setTimeout(callback, 16);
   return () => {
     if (pendingFrame) return;
     pendingFrame = scheduleFrame(() => {
@@ -480,7 +540,9 @@ function createProgressNotifier(onUpdate?: () => void, onProgress?: () => void) 
 
 function inspectFile(file: File, reject: (message: string) => void) {
   if (attachments.length >= MAX_TOTAL_ATTACHMENTS) {
-    reject(`${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`);
+    reject(
+      `${file.name || 'file'}: ${_t('chat.attach.maxReached', `max ${MAX_TOTAL_ATTACHMENTS} attachments per turn`)}`,
+    );
     return null;
   }
   const signature = `${file.name || ''}|${file.size}`;
@@ -494,19 +556,29 @@ function inspectFile(file: File, reject: (message: string) => void) {
     return null;
   }
   if (file.size > MAX_FILE_BYTES) {
-    reject(`${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`);
+    reject(
+      `${file.name}: ${_t('chat.attach.fileTooLarge', `file exceeds ${MAX_FILE_BYTES / 1024 / 1024} MB limit`)}`,
+    );
     return null;
   }
   return { kind, signature };
 }
 
-function createPendingEntry(file: File, { kind, signature }: { kind: AttachmentClassification; signature: string }): PendingAttachment {
+function createPendingEntry(
+  file: File,
+  { kind, signature }: { kind: AttachmentClassification; signature: string },
+): PendingAttachment {
   const entry: PendingAttachment = {
-    id: shortId(), kind, pending: true, progress: 0,
+    id: shortId(),
+    kind,
+    pending: true,
+    progress: 0,
     /* Visible upload state for the chip: 'queued' (waiting for a
        concurrency slot) → 'uploading' → 'done' / 'error'. loaded/total
        carry byte counts when the XHR reports length-computable progress. */
-    stage: 'queued', loaded: 0, total: file.size,
+    stage: 'queued',
+    loaded: 0,
+    total: file.size,
     name: file.name || 'file',
     mime: file.type || 'application/octet-stream',
     size: file.size,
@@ -515,15 +587,24 @@ function createPendingEntry(file: File, { kind, signature }: { kind: AttachmentC
     _file: file,
   };
   if (kind === 'document') entry.docKind = docKindFromFile(file);
-  if (kind === 'image'
-      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    try { entry.thumbnailUrl = URL.createObjectURL(file); }
-    catch (error) { reportSwallow(error, 'attachments.addFiles.createThumbnail'); }
+  if (kind === 'image' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try {
+      entry.thumbnailUrl = URL.createObjectURL(file);
+    } catch (error) {
+      reportSwallow(error, 'attachments.addFiles.createThumbnail');
+    }
   }
   return entry;
 }
 
-function trackAttachmentJob(entry: PendingAttachment, file: File, result: AddFilesResult, notifyProgress: () => void, onUpdate: (() => void) | undefined, reject: (message: string) => void) {
+function trackAttachmentJob(
+  entry: PendingAttachment,
+  file: File,
+  result: AddFilesResult,
+  notifyProgress: () => void,
+  onUpdate: (() => void) | undefined,
+  reject: (message: string) => void,
+) {
   const onFileProgress = (percent: number, loaded?: number, total?: number) => {
     entry.progress = Math.max(entry.progress || 0, percent);
     if (typeof loaded === 'number') entry.loaded = loaded;
@@ -533,31 +614,41 @@ function trackAttachmentJob(entry: PendingAttachment, file: File, result: AddFil
   };
   /* Concurrency-gated: beyond MAX_CONCURRENT_UPLOADS the job waits as a
      visible queued stub instead of opening another XHR + encoder loop. */
-  const job = enqueueUploadJob(
-    entry,
-    () => prepareAttachment(entry, file, onFileProgress),
-  ).then((outcome) => {
-    if (outcome && outcome.error) {
-      /* A job cancelled while still queued never ran finalizeAttachment,
+  const job = enqueueUploadJob(entry, () => prepareAttachment(entry, file, onFileProgress)).then(
+    (outcome) => {
+      if (outcome && outcome.error) {
+        /* A job cancelled while still queued never ran finalizeAttachment,
          so settle its stub here (usually already detached by removal). */
-      if (entry.pending) {
-        entry.pending = false;
-        entry.progress = 100;
-        entry.stage = 'error';
+        if (entry.pending) {
+          entry.pending = false;
+          entry.progress = 100;
+          entry.stage = 'error';
+        }
+        entry.error = outcome.error;
+        /* A removed chip is deliberate cancellation, not a user rejection. */
+        if (attachments.includes(entry) && !outcome.cancelled)
+          reject(`${file.name}: ${outcome.error}`);
+      } else {
+        result.added += 1;
       }
-      entry.error = outcome.error;
-      /* A removed chip is deliberate cancellation, not a user rejection. */
-      if (attachments.includes(entry) && !outcome.cancelled) reject(`${file.name}: ${outcome.error}`);
-    } else {
-      result.added += 1;
-    }
-    if (onUpdate) onUpdate();
-  });
-  READY_PROMISES.set(entry.id, job.finally(() => { READY_PROMISES.delete(entry.id); }));
+      if (onUpdate) onUpdate();
+    },
+  );
+  READY_PROMISES.set(
+    entry.id,
+    job.finally(() => {
+      READY_PROMISES.delete(entry.id);
+    }),
+  );
   return job;
 }
 
-export async function addFiles(fileList: FileList | File[] | null | undefined, onUpdate?: () => void, onProgress?: () => void, onRejected?: (message: string) => void) {
+export async function addFiles(
+  fileList: FileList | File[] | null | undefined,
+  onUpdate?: () => void,
+  onProgress?: () => void,
+  onRejected?: (message: string) => void,
+) {
   const result: AddFilesResult = { added: 0, rejected: [] };
   const reject = createRejectReporter(result, onRejected);
   const notifyProgress = createProgressNotifier(onUpdate, onProgress);
@@ -579,7 +670,11 @@ function _revokeBlobUrls(list: PendingAttachment[]) {
   for (let i = 0; i < list.length; i++) {
     const url = list[i].thumbnailUrl;
     if (url) {
-      try { URL.revokeObjectURL(url); } catch (e) { reportSwallow(e, 'attachments._revokeBlobUrls.one'); /* noop */ }
+      try {
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        reportSwallow(e, 'attachments._revokeBlobUrls.one'); /* noop */
+      }
     }
   }
 }
@@ -616,14 +711,19 @@ export function removeAttachment(id: string) {
   if (idx === -1) return false;
   const entry = attachments[idx];
   if (entry && entry.pending && typeof entry._abort === 'function') {
-    try { entry._abort(); } catch (e) { reportSwallow(e, 'attachments.removeAttachment.abort'); /* noop */ }
+    try {
+      entry._abort();
+    } catch (e) {
+      reportSwallow(e, 'attachments.removeAttachment.abort'); /* noop */
+    }
   }
   if (entry && entry.fileId && !entry.sent) {
     /* Fire-and-forget — the chip is already gone; a failed delete just
        leaves the row for the usual orphan-adoption path. apiFetch adds
        the /api/v2 prefix, credentials, and CSRF header itself. */
-    apiFetch(`/api/files/${encodeURIComponent(entry.fileId)}`, { method: 'DELETE' })
-      .catch((error) => reportSwallow(error, 'attachments.removeAttachment.deleteOrphan'));
+    apiFetch(`/api/files/${encodeURIComponent(entry.fileId)}`, { method: 'DELETE' }).catch(
+      (error) => reportSwallow(error, 'attachments.removeAttachment.deleteOrphan'),
+    );
   }
   _revokeBlobUrls([entry]);
   attachments.splice(idx, 1);
@@ -643,15 +743,22 @@ export function retryAttachment(id: string, onUpdate?: () => void) {
   entry.progress = 0;
   entry.stage = 'queued';
   entry.loaded = 0;
-  if (entry.kind === 'image' && !entry.thumbnailUrl
-      && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    try { entry.thumbnailUrl = URL.createObjectURL(entry._file); } catch (e) { reportSwallow(e, 'attachments.retryAttachment.createThumbUrl'); /* noop */ }
+  if (
+    entry.kind === 'image' &&
+    !entry.thumbnailUrl &&
+    typeof URL !== 'undefined' &&
+    typeof URL.createObjectURL === 'function'
+  ) {
+    try {
+      entry.thumbnailUrl = URL.createObjectURL(entry._file);
+    } catch (e) {
+      reportSwallow(e, 'attachments.retryAttachment.createThumbUrl'); /* noop */
+    }
   }
   if (onUpdate) onUpdate();
   const notifyProgress = createProgressNotifier(onUpdate);
-  const job = enqueueUploadJob(
-    entry,
-    () => prepareAttachment(entry, entry._file!, function (pct: number, loaded?: number, total?: number) {
+  const job = enqueueUploadJob(entry, () =>
+    prepareAttachment(entry, entry._file!, function (pct: number, loaded?: number, total?: number) {
       entry.progress = Math.max(entry.progress || 0, pct);
       if (typeof loaded === 'number') entry.loaded = loaded;
       if (typeof total === 'number') entry.total = total;
@@ -669,7 +776,12 @@ export function retryAttachment(id: string, onUpdate?: () => void) {
     }
     if (onUpdate) onUpdate();
   });
-  READY_PROMISES.set(entry.id, job.finally(function () { READY_PROMISES.delete(entry.id); }));
+  READY_PROMISES.set(
+    entry.id,
+    job.finally(function () {
+      READY_PROMISES.delete(entry.id);
+    }),
+  );
   return true;
 }
 

@@ -21,8 +21,11 @@ export function cancelComposerNotification(editor: Editor): void {
 
 export function scheduleComposerNotification(editor: Editor, notify: () => void): void {
   cancelComposerNotification(editor);
-  pending.set(editor, requestAnimationFrame(() => {
-    pending.delete(editor);
-    if (!editor.isDestroyed) notify();
-  }));
+  pending.set(
+    editor,
+    requestAnimationFrame(() => {
+      pending.delete(editor);
+      if (!editor.isDestroyed) notify();
+    }),
+  );
 }

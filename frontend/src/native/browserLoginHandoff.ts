@@ -11,24 +11,48 @@ const STORAGE_KEY = 'socrates.android.browser-login.v1';
 const TTL_MS = 10 * 60 * 1000;
 const HEX = /^[a-f0-9]{64}$/;
 const CHALLENGE = /^[A-Za-z0-9_-]{43}$/;
-export interface BrowserLoginRequest { state: string; codeChallenge: string; createdAt: number }
-
-export function parseBrowserLoginRequest(url: URL, now = Date.now()): BrowserLoginRequest | null {
-  if (url.origin !== ORIGIN || url.pathname !== '/' || url.searchParams.getAll('native_login').length !== 1
-    || url.searchParams.get('native_login') !== '1' || url.searchParams.getAll('state').length !== 1
-    || url.searchParams.getAll('code_challenge').length !== 1) return null;
-  const state = url.searchParams.get('state') || '';
-  const codeChallenge = url.searchParams.get('code_challenge') || '';
-  return HEX.test(state) && CHALLENGE.test(codeChallenge) ? { state, codeChallenge, createdAt: now } : null;
+export interface BrowserLoginRequest {
+  state: string;
+  codeChallenge: string;
+  createdAt: number;
 }
 
-export function readBrowserLoginRequest(storage: Storage, now = Date.now()): BrowserLoginRequest | null {
+export function parseBrowserLoginRequest(url: URL, now = Date.now()): BrowserLoginRequest | null {
+  if (
+    url.origin !== ORIGIN ||
+    url.pathname !== '/' ||
+    url.searchParams.getAll('native_login').length !== 1 ||
+    url.searchParams.get('native_login') !== '1' ||
+    url.searchParams.getAll('state').length !== 1 ||
+    url.searchParams.getAll('code_challenge').length !== 1
+  )
+    return null;
+  const state = url.searchParams.get('state') || '';
+  const codeChallenge = url.searchParams.get('code_challenge') || '';
+  return HEX.test(state) && CHALLENGE.test(codeChallenge)
+    ? { state, codeChallenge, createdAt: now }
+    : null;
+}
+
+export function readBrowserLoginRequest(
+  storage: Storage,
+  now = Date.now(),
+): BrowserLoginRequest | null {
   try {
     const value = JSON.parse(storage.getItem(STORAGE_KEY) || 'null') as BrowserLoginRequest | null;
-    if (value && HEX.test(value.state) && CHALLENGE.test(value.codeChallenge)
-      && Number.isFinite(value.createdAt) && value.createdAt <= now && now - value.createdAt < TTL_MS) return value;
+    if (
+      value &&
+      HEX.test(value.state) &&
+      CHALLENGE.test(value.codeChallenge) &&
+      Number.isFinite(value.createdAt) &&
+      value.createdAt <= now &&
+      now - value.createdAt < TTL_MS
+    )
+      return value;
     storage.removeItem(STORAGE_KEY);
-  } catch { /* empty-catch: intentional — unavailable or corrupt session storage fails closed */ }
+  } catch {
+    /* empty-catch: intentional — unavailable or corrupt session storage fails closed */
+  }
   return null;
 }
 
@@ -37,46 +61,81 @@ export function validateBrowserLoginCallback(value: unknown, state: string): str
   try {
     const url = new URL(value);
     const params = new URLSearchParams(url.hash.slice(1));
-    if (url.origin !== ORIGIN || url.pathname !== CALLBACK_PATH || url.search || url.username || url.password
-      || params.size !== 2 || params.getAll('code').length !== 1 || params.getAll('state').length !== 1
-      || params.get('state') !== state || !HEX.test(params.get('code') || '')) return null;
+    if (
+      url.origin !== ORIGIN ||
+      url.pathname !== CALLBACK_PATH ||
+      url.search ||
+      url.username ||
+      url.password ||
+      params.size !== 2 ||
+      params.getAll('code').length !== 1 ||
+      params.getAll('state').length !== 1 ||
+      params.get('state') !== state ||
+      !HEX.test(params.get('code') || '')
+    )
+      return null;
     return url.href;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function clearPending(): void {
-  try { sessionStorage.removeItem(STORAGE_KEY); }
-  catch { /* empty-catch: intentional — no handoff is allowed without usable tab storage */ }
+  try {
+    sessionStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* empty-catch: intentional — no handoff is allowed without usable tab storage */
+  }
 }
 
-function isValidAuthorizationResponse(callback: string | null, expiresAt: number): callback is string {
-  return Boolean(callback) && Number.isFinite(expiresAt) && expiresAt > Date.now()
-    && expiresAt <= Date.now() + 5 * 60 * 1000 + 10000;
+function isValidAuthorizationResponse(
+  callback: string | null,
+  expiresAt: number,
+): callback is string {
+  return (
+    Boolean(callback) &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > Date.now() &&
+    expiresAt <= Date.now() + 5 * 60 * 1000 + 10000
+  );
 }
 
-async function authorizeBrowserLogin(request: BrowserLoginRequest, userId: unknown, signal: AbortSignal) {
-  if (Date.now() - request.createdAt >= TTL_MS || request.createdAt > Date.now()) throw new Error('expired');
+async function authorizeBrowserLogin(
+  request: BrowserLoginRequest,
+  userId: unknown,
+  signal: AbortSignal,
+) {
+  if (Date.now() - request.createdAt >= TTL_MS || request.createdAt > Date.now())
+    throw new Error('expired');
   // No automatic retry after an ambiguous response, no Authorization header,
   // and no configurable host: only the current origin's HttpOnly sid is used.
   const csrfResponse = await fetch('/api/v2/auth/csrf-token', {
-    credentials: 'same-origin', cache: 'no-store', signal,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    signal,
   });
   if (!csrfResponse.ok) throw new Error('csrf');
   const csrf = document.cookie.match(/(?:^|;\s*)csrf=([^;]+)/)?.[1];
   if (!csrf) throw new Error('csrf');
   const meResponse = await fetch('/api/v2/auth/me', {
-    credentials: 'same-origin', cache: 'no-store', signal,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    signal,
   });
   if (!meResponse.ok) throw new Error('session');
-  const me = await meResponse.json() as { user?: { id?: unknown } };
+  const me = (await meResponse.json()) as { user?: { id?: unknown } };
   if (typeof userId !== 'string' || me.user?.id !== userId) throw new Error('account changed');
   const response = await fetch('/api/v2/auth/mobile/browser/authorize', {
-    method: 'POST', credentials: 'same-origin', cache: 'no-store', referrerPolicy: 'no-referrer',
+    method: 'POST',
+    credentials: 'same-origin',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-    body: JSON.stringify({ state: request.state, codeChallenge: request.codeChallenge }), signal,
+    body: JSON.stringify({ state: request.state, codeChallenge: request.codeChallenge }),
+    signal,
   });
   if (!response.ok) throw new Error('authorize');
-  const data = await response.json() as { url?: unknown; expiresAt?: unknown };
+  const data = (await response.json()) as { url?: unknown; expiresAt?: unknown };
   const callback = validateBrowserLoginCallback(data.url, request.state);
   const expiresAt = typeof data.expiresAt === 'string' ? Date.parse(data.expiresAt) : NaN;
   if (!isValidAuthorizationResponse(callback, expiresAt)) throw new Error('invalid response');
@@ -95,22 +154,32 @@ export function captureBrowserLoginRequest(): void {
     const dialog = document.createElement('dialog');
     dialog.className = 'browser-login-handoff';
     let root: OwnedRootHandle | null = null;
-    const dismiss = () => { dialog.close(); root?.destroy(); dialog.remove(); };
-    dialog.addEventListener('cancel', (event) => { event.preventDefault(); dismiss(); });
+    const dismiss = () => {
+      dialog.close();
+      root?.destroy();
+      dialog.remove();
+    };
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      dismiss();
+    });
     document.body.append(dialog);
     const props: BrowserLoginDialogProps = {
       mode: 'fallback',
-      description: '未能自动打开 Android 应用。请在系统设置中允许 Socrates 打开支持的链接，然后从应用重新发起登录。',
+      description:
+        '未能自动打开 Android 应用。请在系统设置中允许 Socrates 打开支持的链接，然后从应用重新发起登录。',
       onCancel: dismiss,
     };
-    void import('../react/browserLogin/browserLoginDialogHost').then(({ mountBrowserLoginDialog }) => {
-      if (!dialog.isConnected) return;
-      root = mountBrowserLoginDialog(dialog, props);
-      dialog.showModal();
-    }).catch((error) => {
-      reportSwallow(error, 'native/browserLoginHandoff:capture');
-      dismiss();
-    });
+    void import('../react/browserLogin/browserLoginDialogHost')
+      .then(({ mountBrowserLoginDialog }) => {
+        if (!dialog.isConnected) return;
+        root = mountBrowserLoginDialog(dialog, props);
+        dialog.showModal();
+      })
+      .catch((error) => {
+        reportSwallow(error, 'native/browserLoginHandoff:capture');
+        dismiss();
+      });
     return;
   }
   if (!url.searchParams.has('native_login')) return;
@@ -121,8 +190,11 @@ export function captureBrowserLoginRequest(): void {
   url.searchParams.delete('code_challenge');
   history.replaceState(null, '', url.pathname + url.search + url.hash);
   if (pending) {
-    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pending)); }
-    catch { /* empty-catch: intentional — fail closed when the browser refuses tab storage */ }
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
+    } catch {
+      /* empty-catch: intentional — fail closed when the browser refuses tab storage */
+    }
   }
 }
 
@@ -130,8 +202,11 @@ export function captureBrowserLoginRequest(): void {
 export function offerBrowserLoginHandoff(): void {
   if (location.origin !== ORIGIN || document.getElementById('androidLoginHandoff')) return;
   let pending: BrowserLoginRequest | null;
-  try { pending = readBrowserLoginRequest(sessionStorage); }
-  catch { return; }
+  try {
+    pending = readBrowserLoginRequest(sessionStorage);
+  } catch {
+    return;
+  }
   if (!pending) return;
   const request = pending;
   const dialog = document.createElement('dialog');
@@ -161,7 +236,8 @@ export function offerBrowserLoginHandoff(): void {
     onCancel: dismiss,
     onLinkClick: () => {
       clearPending();
-      status = '正在打开应用。如果仍停留在 Chrome，请检查系统的“打开支持的链接”设置，并从应用重新登录。';
+      status =
+        '正在打开应用。如果仍停留在 Chrome，请检查系统的“打开支持的链接”设置，并从应用重新登录。';
       render();
     },
   });
@@ -201,15 +277,20 @@ export function offerBrowserLoginHandoff(): void {
       render();
     }
   }
-  dialog.addEventListener('cancel', (event) => { event.preventDefault(); dismiss(); });
-  document.body.append(dialog);
-  void import('../react/browserLogin/browserLoginDialogHost').then((host) => {
-    if (cancelled || !dialog.isConnected) return;
-    updateDialog = host.renderBrowserLoginDialog;
-    root = host.mountBrowserLoginDialog(dialog, getDialogProps());
-    dialog.showModal();
-  }).catch((error) => {
-    reportSwallow(error, 'native/browserLoginHandoff:offer');
+  dialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
     dismiss();
   });
+  document.body.append(dialog);
+  void import('../react/browserLogin/browserLoginDialogHost')
+    .then((host) => {
+      if (cancelled || !dialog.isConnected) return;
+      updateDialog = host.renderBrowserLoginDialog;
+      root = host.mountBrowserLoginDialog(dialog, getDialogProps());
+      dialog.showModal();
+    })
+    .catch((error) => {
+      reportSwallow(error, 'native/browserLoginHandoff:offer');
+      dismiss();
+    });
 }

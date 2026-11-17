@@ -1,14 +1,27 @@
 /* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
 import '../rn/rnwGlobal';
-import { useEffect, useLayoutEffect, useReducer, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useReducer,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { NativeControl } from '../ui/NativeControl';
 import { ComposerFrame } from '@socrates/ui/composer';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { i18n } from '../legacy/gateway';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
 import { useAttachments } from '../attachments/attachments.store';
-import { useChatConfigurationSnapshot, openChatConfiguration } from '../chat-configuration/chatConfiguration.bridge';
-import { useActiveModelLabel, useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
+import {
+  useChatConfigurationSnapshot,
+  openChatConfiguration,
+} from '../chat-configuration/chatConfiguration.bridge';
+import {
+  useActiveModelLabel,
+  useStoredReasoningEffort,
+} from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { RichComposer } from './RichComposer';
 import { useComposerSurface } from './useComposerSurface';
@@ -108,36 +121,49 @@ function useControlTitles(tools: string, effort: string, voice: string, primary:
  * document so the landing/chat transition can move it without rebuilding the
  * editor; legacy controllers keep targeting the same ids inside this tree.
  */
-export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, onEscape }: ComposerShellProps) {
+export function ComposerShell({
+  placeholder,
+  onSubmit,
+  onPrimarySubmit,
+  onStop,
+  onEscape,
+}: ComposerShellProps) {
   const primaryClickGuard = useRef(false);
   const [languageRevision, refreshLanguage] = useReducer((value: number) => value + 1, 0);
   const composerTools = useComposerToolsSnapshot();
   const surface = useComposerSurface();
-  const hasDraft = useStore(composerLifecycleStore, (state) => Boolean(state.drafts[surface].trim()));
+  const hasDraft = useStore(composerLifecycleStore, (state) =>
+    Boolean(state.drafts[surface].trim()),
+  );
   const attachments = useAttachments();
   const streaming = useIsChatStreaming();
   const sending = useSendGlyphStore((state) => state.isSending);
   const voicePhaseRaw = useVoiceInputStore((state) => state.phase);
   const voiceSeconds = useVoiceInputStore((state) => state.elapsedSeconds);
   const voiceAnalyser = useVoiceInputStore((state) => state.analyser);
-  const voicePhase: 'idle' | 'recording' | 'transcribing' = voicePhaseRaw === 'idle'
-    ? 'idle'
-    : voicePhaseRaw === 'processing' ? 'transcribing' : 'recording';
+  const voicePhase: 'idle' | 'recording' | 'transcribing' =
+    voicePhaseRaw === 'idle'
+      ? 'idle'
+      : voicePhaseRaw === 'processing'
+        ? 'transcribing'
+        : 'recording';
   const voiceActive = voicePhase !== 'idle';
   const voiceRecording = voicePhase === 'recording';
   const voiceUnavailable = voiceInputUnavailableReason();
-  const voiceLabel = voiceUnavailable === 'https'
-    ? i18n('voice.requiresHttps', 'Voice input requires HTTPS')
-    : voiceUnavailable === 'unsupported'
-      ? i18n('voice.unsupported', 'Voice input is not supported in this browser.')
-      : voicePhase === 'recording'
-        ? i18n('voice.stop', 'Stop voice input')
-        : voicePhase === 'transcribing'
-          ? i18n('voice.cancel', 'Cancel voice input')
-          : i18n('chrome.voiceInput', 'Voice input');
-  const voiceTimerLabel = voicePhase === 'recording'
-    ? i18n('voice.timer', 'Recording {seconds}s').replace('{seconds}', String(voiceSeconds))
-    : '';
+  const voiceLabel =
+    voiceUnavailable === 'https'
+      ? i18n('voice.requiresHttps', 'Voice input requires HTTPS')
+      : voiceUnavailable === 'unsupported'
+        ? i18n('voice.unsupported', 'Voice input is not supported in this browser.')
+        : voicePhase === 'recording'
+          ? i18n('voice.stop', 'Stop voice input')
+          : voicePhase === 'transcribing'
+            ? i18n('voice.cancel', 'Cancel voice input')
+            : i18n('chrome.voiceInput', 'Voice input');
+  const voiceTimerLabel =
+    voicePhase === 'recording'
+      ? i18n('voice.timer', 'Recording {seconds}s').replace('{seconds}', String(voiceSeconds))
+      : '';
   const phone = useComposerPhone();
   const focused = useEditorFocus();
   const configuration = useChatConfigurationSnapshot();
@@ -149,9 +175,10 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
      control and cannot submit a half-transcribed turn. */
   const canSend = !voiceActive && (hasDraft || attachments.length > 0);
   const { primaryLabel, toolsLabel } = controlLabels(streaming);
-  const composerLabel = surface === 'chat'
-    ? i18n('chat.placeholder', 'Ask Socrates')
-    : i18n('topic.inputPlaceholder', placeholder);
+  const composerLabel =
+    surface === 'chat'
+      ? i18n('chat.placeholder', 'Ask Socrates')
+      : i18n('topic.inputPlaceholder', placeholder);
   const handlePrimaryClick = () => {
     if (streaming) {
       onStop();
@@ -159,7 +186,9 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
     }
     if (!canSend || primaryClickGuard.current) return;
     primaryClickGuard.current = true;
-    const release = () => { primaryClickGuard.current = false; };
+    const release = () => {
+      primaryClickGuard.current = false;
+    };
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(release);
     else setTimeout(release, 16);
     onPrimarySubmit();
@@ -214,18 +243,26 @@ export function ComposerShell({ placeholder, onSubmit, onPrimarySubmit, onStop, 
           compact={phone}
           shadows={FIELD_SHADOWS}
           topVisible={attachments.length > 0}
-          top={(
+          top={
             <div className="attachment-chips hidden" id="composerAttachmentChips">
               <ComposerAttachmentChips />
             </div>
-          )}
-          body={(
+          }
+          body={
             <div id="composerRoot" className="composer-editor-root" aria-label={composerLabel}>
               {phone && voiceRecording ? <VoiceSpectrum analyser={voiceAnalyser} /> : null}
               <RichComposer placeholder={placeholder} onSubmit={onSubmit} onEscape={onEscape} />
             </div>
-          )}
-          hidden={<NativeControl type="file" id="composerAttachInput" multiple accept={FILE_ACCEPT} hidden />}
+          }
+          hidden={
+            <NativeControl
+              type="file"
+              id="composerAttachInput"
+              multiple
+              accept={FILE_ACCEPT}
+              hidden
+            />
+          }
           controls={{
             tools: {
               label: toolsLabel,

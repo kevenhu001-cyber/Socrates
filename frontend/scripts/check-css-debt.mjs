@@ -178,7 +178,9 @@ function hasStyleRules(key) {
   try {
     const ast = postcss.parse(readFileSync(file, 'utf8'), { from: file });
     let found = false;
-    ast.walkRules(() => { found = true; });
+    ast.walkRules(() => {
+      found = true;
+    });
     return found;
   } catch {
     return false;
@@ -200,22 +202,33 @@ function walkCss(dir) {
 }
 
 function themeOwnershipProblems() {
-  const paletteDeclaration = /--(?:ui-(?:bg|text|border|shadow|composer|sidebar|accent|danger|success|link|backdrop|on-accent)|cg-|cgv-|chatgpt-|conversation-|bg-|text-|border-)[\w-]*\s*:/g;
-  const semanticDeclaration = /--(?:background|foreground|card(?:-foreground)?|popover(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?|muted(?:-foreground)?|accent(?:-foreground)?|destructive(?:-foreground)?|border|input|ring|sidebar(?:-(?:foreground|primary(?:-foreground)?|accent(?:-foreground)?|border|ring))?|chart-[1-5])\s*:/g;
+  const paletteDeclaration =
+    /--(?:ui-(?:bg|text|border|shadow|composer|sidebar|accent|danger|success|link|backdrop|on-accent)|cg-|cgv-|chatgpt-|conversation-|bg-|text-|border-)[\w-]*\s*:/g;
+  const semanticDeclaration =
+    /--(?:background|foreground|card(?:-foreground)?|popover(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?|muted(?:-foreground)?|accent(?:-foreground)?|destructive(?:-foreground)?|border|input|ring|sidebar(?:-(?:foreground|primary(?:-foreground)?|accent(?:-foreground)?|border|ring))?|chart-[1-5])\s*:/g;
   const problems = [];
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
     const top = rel.split('/')[0];
     if (rel === 'themes.css' || rel === 'tokens.css' || FROZEN_DIRS.has(top)) continue;
     const text = stripComments(readFileSync(file, 'utf8'));
-    for (const match of [...text.matchAll(paletteDeclaration), ...text.matchAll(semanticDeclaration)]) {
+    for (const match of [
+      ...text.matchAll(paletteDeclaration),
+      ...text.matchAll(semanticDeclaration),
+    ]) {
       // Tailwind's --text-* names are type sizes, not legacy text colors.
       // Only aliases onto the existing font-size scale qualify; literal
       // values and any other text-family declaration remain forbidden.
       const declaration = text.slice(match.index, text.indexOf(';', match.index) + 1).trim();
-      if (rel === 'foundations/shadcn.css' && /^--text-(?:xs|sm|base|lg|xl|2xl)\s*:\s*var\(--ui-font-size-[\w-]+\);$/.test(declaration)) continue;
+      if (
+        rel === 'foundations/shadcn.css' &&
+        /^--text-(?:xs|sm|base|lg|xl|2xl)\s*:\s*var\(--ui-font-size-[\w-]+\);$/.test(declaration)
+      )
+        continue;
       const line = text.slice(0, match.index).split('\n').length;
-      problems.push(`${rel}:${line} palette declaration outside themes.css: ${match[0].slice(0, -1)}`);
+      problems.push(
+        `${rel}:${line} palette declaration outside themes.css: ${match[0].slice(0, -1)}`,
+      );
     }
   }
   return problems;
@@ -244,7 +257,10 @@ function countStackedIdSelectors(text) {
       counts.set(id, (counts.get(id) || 0) + 1);
     }
     for (const c of counts.values()) {
-      if (c >= 3) { n += 1; break; }
+      if (c >= 3) {
+        n += 1;
+        break;
+      }
     }
   }
   return n;
@@ -306,7 +322,8 @@ const METRICS = {
    * publishes one family in terms of the other. Baseline records the 2026-11-04
    * starting count (see docs/plans/2026-11-04-sidebar-ui-consistency.md, Pass 3).
    */
-  shadcnVarReads: /var\(--(?:card-foreground|card|popover-foreground|popover|primary-foreground|secondary-foreground|muted-foreground|accent-foreground|destructive-foreground|background|foreground|primary|secondary|muted|accent|destructive|border|input|ring)(?![\w-])/g,
+  shadcnVarReads:
+    /var\(--(?:card-foreground|card|popover-foreground|popover|primary-foreground|secondary-foreground|muted-foreground|accent-foreground|destructive-foreground|background|foreground|primary|secondary|muted|accent|destructive|border|input|ring)(?![\w-])/g,
 };
 
 /* ---------- 1. cascade order ---------- */
@@ -315,8 +332,13 @@ function checkCascadeOrder() {
   const tierOf = (spec) => {
     if (spec === './tokens.css') return 1;
     if (spec.startsWith('./legacy/')) return 2;
-    if (spec.startsWith('./foundations/') || spec.startsWith('./layout/')
-      || spec.startsWith('./components/') || spec.startsWith('./features/')) return 3;
+    if (
+      spec.startsWith('./foundations/') ||
+      spec.startsWith('./layout/') ||
+      spec.startsWith('./components/') ||
+      spec.startsWith('./features/')
+    )
+      return 3;
     if (spec.startsWith('./restore/')) return 3.5;
     if (spec.startsWith('./parity/')) return 4;
     if (spec.startsWith('./polish/')) return 5;
@@ -331,23 +353,32 @@ function checkCascadeOrder() {
     // nested order lives inside those index files. Here we only check the
     // top-level manifest.
     if (tiers[i] < tiers[i - 1]) {
-      problems.push(`tier regression: '${imports[i]}' (tier ${tiers[i]}) imported after '${imports[i - 1]}' (tier ${tiers[i - 1]})`);
+      problems.push(
+        `tier regression: '${imports[i]}' (tier ${tiers[i]}) imported after '${imports[i - 1]}' (tier ${tiers[i - 1]})`,
+      );
     }
   }
   const themeImports = imports.filter((spec) => spec === './themes.css');
-  if (themeImports.length !== 1) problems.push(`themes.css must be imported exactly once (found ${themeImports.length})`);
-  if (imports[imports.length - 1] !== './themes.css') problems.push('themes.css must be the final import');
-  if (!imports.includes('./polish/index.css')) problems.push('polish/index.css missing from styles/index.css');
+  if (themeImports.length !== 1)
+    problems.push(`themes.css must be imported exactly once (found ${themeImports.length})`);
+  if (imports[imports.length - 1] !== './themes.css')
+    problems.push('themes.css must be the final import');
+  if (!imports.includes('./polish/index.css'))
+    problems.push('polish/index.css missing from styles/index.css');
 
   for (const [manifest, expected] of Object.entries(ORDERED_MANIFESTS)) {
     const actual = importsIn(join(STYLES, manifest));
     if (actual.length !== expected.length) {
-      problems.push(`${manifest} import count changed (expected ${expected.length}, found ${actual.length})`);
+      problems.push(
+        `${manifest} import count changed (expected ${expected.length}, found ${actual.length})`,
+      );
     }
     const length = Math.max(actual.length, expected.length);
     for (let i = 0; i < length; i += 1) {
       if (actual[i] !== expected[i]) {
-        problems.push(`${manifest} import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`);
+        problems.push(
+          `${manifest} import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`,
+        );
       }
     }
   }
@@ -360,12 +391,16 @@ function checkCascadeOrder() {
   for (const [manifest, expected] of Object.entries(NESTED_MANIFESTS)) {
     const actual = importsIn(join(STYLES, manifest));
     if (actual.length !== expected.length) {
-      problems.push(`${manifest} nested import count changed (expected ${expected.length}, found ${actual.length})`);
+      problems.push(
+        `${manifest} nested import count changed (expected ${expected.length}, found ${actual.length})`,
+      );
     }
     const length = Math.max(actual.length, expected.length);
     for (let i = 0; i < length; i += 1) {
       if (actual[i] !== expected[i]) {
-        problems.push(`${manifest} nested import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`);
+        problems.push(
+          `${manifest} nested import #${i + 1} must be '${expected[i] ?? '(none)'}' (found '${actual[i] ?? '(none)'}')`,
+        );
       }
     }
   }
@@ -384,9 +419,9 @@ function checkHtmlLoadOrder() {
   /* The expected side comes from the pinned manifests; the actual side from
    * the files themselves. Both are flattened recursively, so a nested import
    * is tracked in the cascade instead of dropping out of the proof. */
-  const flatExpected = flattenImports('index.css', (key) => (
-    key === 'index.css' ? importsIn(join(STYLES, key)) : pinnedChildren(key)
-  ));
+  const flatExpected = flattenImports('index.css', (key) =>
+    key === 'index.css' ? importsIn(join(STYLES, key)) : pinnedChildren(key),
+  );
   const html = readFileSync(join(FRONTEND, 'index.html'), 'utf8');
   const linkRe = /<link\s+rel="stylesheet"\s+href="\/src\/styles\/([^"]+)"([^>]*)>/g;
   const flatActual = [];
@@ -401,14 +436,18 @@ function checkHtmlLoadOrder() {
      * or a self-contained leaf (no @import — the below-fold files). Both
      * contribute their files in document order. */
     const isManifest = manifest !== 'themes.css' && importsIn(join(STYLES, manifest)).length > 0;
-    const isDeferred = !isManifest && manifest !== 'themes.css' || /^deferred-/.test(manifest);
+    const isDeferred = (!isManifest && manifest !== 'themes.css') || /^deferred-/.test(manifest);
     if (isDeferred) {
       deferredCount += 1;
       if (!/media="print"/.test(attrs) || !/onload="this\.media='all'"/.test(attrs)) {
-        problems.push(`<link> #${linkIndex} (${manifest}) must load non-blocking via media="print" onload="this.media='all'"`);
+        problems.push(
+          `<link> #${linkIndex} (${manifest}) must load non-blocking via media="print" onload="this.media='all'"`,
+        );
       }
     } else if (/media=/.test(attrs)) {
-      problems.push(`<link> #${linkIndex} (${manifest}) is a critical slice and must stay render-blocking (no media=)`);
+      problems.push(
+        `<link> #${linkIndex} (${manifest}) is a critical slice and must stay render-blocking (no media=)`,
+      );
     }
     if (manifest === 'themes.css') {
       flatActual.push('themes.css');
@@ -421,7 +460,9 @@ function checkHtmlLoadOrder() {
        * their imports, which would ship raw @import text to the browser. */
       const leafText = stripComments(readFileSync(join(STYLES, manifest), 'utf8'));
       if (/@import\s+['"]/.test(leafText)) {
-        problems.push(`${manifest} is linked directly but contains @import — only slice manifests may carry imports`);
+        problems.push(
+          `${manifest} is linked directly but contains @import — only slice manifests may carry imports`,
+        );
       } else {
         flatActual.push(manifest);
       }
@@ -429,19 +470,26 @@ function checkHtmlLoadOrder() {
       flatActual.push(...flattenImports(manifest, (key) => importsIn(join(STYLES, key))));
     }
   }
-  if (deferredCount === 0) problems.push('no below-fold stylesheet links found in index.html — the css split regressed to a single blocking bundle');
+  if (deferredCount === 0)
+    problems.push(
+      'no below-fold stylesheet links found in index.html — the css split regressed to a single blocking bundle',
+    );
   if (flatActual.filter((f) => f === 'themes.css').length !== 1) {
     problems.push('themes.css must close the cascade exactly once as the final <link>');
   } else if (flatActual[flatActual.length - 1] !== 'themes.css') {
     problems.push('themes.css must be the final stylesheet <link>');
   }
   if (flatActual.length !== flatExpected.length) {
-    problems.push(`split-bundle file count changed (expected ${flatExpected.length}, found ${flatActual.length}) — styles/index.css and the index.html slices drifted`);
+    problems.push(
+      `split-bundle file count changed (expected ${flatExpected.length}, found ${flatActual.length}) — styles/index.css and the index.html slices drifted`,
+    );
   }
   const length = Math.max(flatActual.length, flatExpected.length);
   for (let i = 0; i < length; i += 1) {
     if (flatActual[i] !== flatExpected[i]) {
-      problems.push(`cascade position #${i + 1} must be '${flatExpected[i] ?? '(none)'}' (found '${flatActual[i] ?? '(none)'}')`);
+      problems.push(
+        `cascade position #${i + 1} must be '${flatExpected[i] ?? '(none)'}' (found '${flatActual[i] ?? '(none)'}')`,
+      );
     }
   }
   return problems;
@@ -450,7 +498,8 @@ function checkHtmlLoadOrder() {
 /* ---------- 2. debt ratchet ---------- */
 function collectCounts() {
   const totals = { live: {}, frozen: {} };
-  for (const dir of ['live', 'frozen']) totals[dir] = Object.fromEntries(Object.keys(METRICS).map((k) => [k, 0]));
+  for (const dir of ['live', 'frozen'])
+    totals[dir] = Object.fromEntries(Object.keys(METRICS).map((k) => [k, 0]));
   const perFile = {};
   for (const file of walkCss(STYLES)) {
     const rel = relative(STYLES, file).split(sep).join('/');
@@ -524,9 +573,16 @@ function main() {
   ];
 
   if (!baseline) {
-    writeFileSync(BASELINE, JSON.stringify({ totals, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n');
-    console.log('css-debt: no baseline found — wrote scripts/css-debt.baseline.json from current counts.');
-    console.log('Review the numbers, commit the baseline, and re-run. Growth beyond it will now fail.');
+    writeFileSync(
+      BASELINE,
+      JSON.stringify({ totals, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n',
+    );
+    console.log(
+      'css-debt: no baseline found — wrote scripts/css-debt.baseline.json from current counts.',
+    );
+    console.log(
+      'Review the numbers, commit the baseline, and re-run. Growth beyond it will now fail.',
+    );
   } else if (UPDATE) {
     const shrunk = {};
     for (const zone of Object.keys(totals)) {
@@ -538,16 +594,25 @@ function main() {
         shrunk[zone][metric] = Math.min(cur, base);
       }
     }
-    writeFileSync(BASELINE, JSON.stringify({ totals: shrunk, generatedBy: 'check-css-debt.mjs --update' }, null, 2) + '\n');
+    writeFileSync(
+      BASELINE,
+      JSON.stringify({ totals: shrunk, generatedBy: 'check-css-debt.mjs --update' }, null, 2) +
+        '\n',
+    );
     console.log('css-debt: baseline updated (counts only ever shrink).');
   } else {
     for (const zone of ['live', 'frozen']) {
       for (const metric of Object.keys(METRICS)) {
         const cur = totals[zone][metric];
         const base = baseline?.totals?.[zone]?.[metric];
-        if (base == null) { failures.push(`baseline missing ${zone}.${metric}`); continue; }
+        if (base == null) {
+          failures.push(`baseline missing ${zone}.${metric}`);
+          continue;
+        }
         if (cur > base) {
-          failures.push(`${zone}.${metric}: ${cur} > baseline ${base} (+${cur - base}). Design debt may only shrink — revert the additions or, if intentional, migrate the rule into an existing token/layer.`);
+          failures.push(
+            `${zone}.${metric}: ${cur} > baseline ${base} (+${cur - base}). Design debt may only shrink — revert the additions or, if intentional, migrate the rule into an existing token/layer.`,
+          );
         }
       }
     }
@@ -560,7 +625,13 @@ function main() {
   } else if (!baseline || UPDATE) {
     // informational paths above already printed; exit 0
   } else {
-    console.log('css-debt check passed (live:', JSON.stringify(totals.live), '| frozen:', JSON.stringify(totals.frozen), ')');
+    console.log(
+      'css-debt check passed (live:',
+      JSON.stringify(totals.live),
+      '| frozen:',
+      JSON.stringify(totals.frozen),
+      ')',
+    );
   }
 }
 

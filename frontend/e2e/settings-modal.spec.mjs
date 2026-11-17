@@ -9,16 +9,41 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test.beforeEach(async ({ page }, testInfo) => {
   const hydrateSettings = testInfo.title.includes('restore server preferences');
-  const apiKeys = testInfo.title.includes('provider activation failure') || testInfo.title.includes('provider update patches existing')
-    ? { providers: [
-      { id: 'provider-one', label: 'First provider', url: 'https://first.example.test/v1', model: 'first', hasKey: true, isActive: true },
-      { id: 'provider-two', label: 'Second provider', url: 'https://second.example.test/v1', model: 'second', hasKey: true, isActive: false },
-    ] }
+  const apiKeys =
+    testInfo.title.includes('provider activation failure') ||
+    testInfo.title.includes('provider update patches existing')
+      ? {
+          providers: [
+            {
+              id: 'provider-one',
+              label: 'First provider',
+              url: 'https://first.example.test/v1',
+              model: 'first',
+              hasKey: true,
+              isActive: true,
+            },
+            {
+              id: 'provider-two',
+              label: 'Second provider',
+              url: 'https://second.example.test/v1',
+              model: 'second',
+              hasKey: true,
+              isActive: false,
+            },
+          ],
+        }
+      : undefined;
+  const user = hydrateSettings
+    ? {
+        customInstructions: 'Use my saved account instructions.',
+        preferences: {
+          theme: 'dark',
+          language: 'en',
+          imageModel: 'gpt-image-2',
+          voiceLanguage: 'en-US',
+        },
+      }
     : undefined;
-  const user = hydrateSettings ? {
-    customInstructions: 'Use my saved account instructions.',
-    preferences: { theme: 'dark', language: 'en', imageModel: 'gpt-image-2', voiceLanguage: 'en-US' },
-  } : undefined;
   await mockAuthedApp(page, { apiKeys, user, lang: hydrateSettings ? false : undefined });
   await gotoAndSettle(page, '/');
   await login(page);
@@ -34,7 +59,9 @@ async function openModelsPane(page) {
   return overlay;
 }
 
-test('tone choices have separate readable labels and expose the selected state', async ({ page }) => {
+test('tone choices have separate readable labels and expose the selected state', async ({
+  page,
+}) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
@@ -68,18 +95,38 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   let serverMemories = [];
   await page.route(/\/api\/(?:v2\/)?memory(?:\/[^?]*)?(?:\?.*)?$/, async (route) => {
     const request = route.request();
-    memoryRequests.push({ method: request.method(), url: request.url(), body: request.postDataJSON() });
+    memoryRequests.push({
+      method: request.method(),
+      url: request.url(),
+      body: request.postDataJSON(),
+    });
     if (request.method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ memories: serverMemories }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ memories: serverMemories }),
+      });
     } else if (request.method() === 'POST') {
-      const entry = { id: serverMemoryId, text: request.postDataJSON().text, createdAt: new Date().toISOString() };
+      const entry = {
+        id: serverMemoryId,
+        text: request.postDataJSON().text,
+        createdAt: new Date().toISOString(),
+      };
       serverMemories = [...serverMemories, entry];
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(entry) });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(entry),
+      });
     } else if (request.method() === 'PATCH') {
-      serverMemories = serverMemories.map((entry) => entry.id === serverMemoryId
-        ? { ...entry, text: request.postDataJSON().text }
-        : entry);
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: serverMemoryId }) });
+      serverMemories = serverMemories.map((entry) =>
+        entry.id === serverMemoryId ? { ...entry, text: request.postDataJSON().text } : entry,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: serverMemoryId }),
+      });
     } else {
       serverMemories = serverMemories.filter((entry) => !request.url().includes(entry.id));
       await route.fulfill({ status: 204 });
@@ -101,7 +148,9 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   await expect(overlay.locator('#providerList')).toBeVisible();
   const builtInRow = overlay.locator('#providerList .provider-row.built-in-row');
   await expect(builtInRow).toContainText('Built-in · Active');
-  await expect(builtInRow).not.toContainText(/settings\.(builtInTag|builtInHint|noCustomProviders)/);
+  await expect(builtInRow).not.toContainText(
+    /settings\.(builtInTag|builtInHint|noCustomProviders)/,
+  );
 
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
   const toneOptions = overlay.locator('#tonePresetOptions');
@@ -109,11 +158,18 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   const friendlyTone = toneOptions.locator('.tone-preset-btn[data-tone="friendly"]');
   await friendlyTone.click();
   await expect(friendlyTone).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-tone'))).toBe('friendly');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-tone')))
+    .toBe('friendly');
 
   const instructions = overlay.locator('.settings-textarea');
   await instructions.fill('Use concise examples.');
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response))
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response,
+      ),
+    )
     .toBe('Use concise examples.');
 
   await overlay.locator('.settings-memory-key-input').fill('preference');
@@ -123,27 +179,47 @@ test('settings modal opens with React-owned providers and tones, and closes', as
   await expect(memory).toContainText('preference');
   await expect(memory).toContainText('prefers TypeScript');
   await expect.poll(() => memoryRequests.some((request) => request.method === 'POST')).toBe(true);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find((item) => item.key === 'preference')?.id)).toBe(serverMemoryId);
-  expect(memoryRequests.find((request) => request.method === 'POST')?.body).toEqual({ text: 'preference: prefers TypeScript' });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find(
+            (item) => item.key === 'preference',
+          )?.id,
+      ),
+    )
+    .toBe(serverMemoryId);
+  expect(memoryRequests.find((request) => request.method === 'POST')?.body).toEqual({
+    text: 'preference: prefers TypeScript',
+  });
 
   await overlay.locator('.settings-memory-key-input').fill('preference');
   await overlay.locator('.settings-memory-val-input').fill('prefers Python');
   await overlay.locator('.settings-memory-add-form button[type="submit"]').click();
   await expect(memory).toContainText('prefers Python');
   await expect.poll(() => memoryRequests.some((request) => request.method === 'PATCH')).toBe(true);
-  expect(memoryRequests.find((request) => request.method === 'PATCH')?.body).toEqual({ text: 'preference: prefers Python' });
+  expect(memoryRequests.find((request) => request.method === 'PATCH')?.body).toEqual({
+    text: 'preference: prefers Python',
+  });
 
   await overlay.locator('#settingsCloseBtn').click();
   await page.reload();
   await waitForAppShell(page);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]')
-    .find((item) => item.key === 'preference'))).toEqual({
-    id: serverMemoryId,
-    key: 'preference',
-    value: 'prefers Python',
-    createdAt: expect.any(Number),
-    updatedAt: expect.any(Number),
-  });
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find(
+          (item) => item.key === 'preference',
+        ),
+      ),
+    )
+    .toEqual({
+      id: serverMemoryId,
+      key: 'preference',
+      value: 'prefers Python',
+      createdAt: expect.any(Number),
+      updatedAt: expect.any(Number),
+    });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const reloadedOverlay = page.locator('#settingsOverlay');
   await reloadedOverlay.locator('.settings-nav [data-section="personalization"]').click();
@@ -151,36 +227,58 @@ test('settings modal opens with React-owned providers and tones, and closes', as
 
   await reloadedOverlay.locator('.settings-memory-item .settings-memory-del-btn').click();
   await expect(reloadedOverlay.locator('.settings-memory-item')).toHaveCount(0);
-  await expect.poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length).toBe(1);
-  expect(memoryRequests.find((request) => request.method === 'DELETE')?.url).toContain(serverMemoryId);
+  await expect
+    .poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length)
+    .toBe(1);
+  expect(memoryRequests.find((request) => request.method === 'DELETE')?.url).toContain(
+    serverMemoryId,
+  );
 
   await reloadedOverlay.locator('.settings-memory-key-input').fill('clear-target');
   await reloadedOverlay.locator('.settings-memory-val-input').fill('remove from all devices');
   await reloadedOverlay.locator('.settings-memory-add-form button[type="submit"]').click();
   await expect(reloadedOverlay.locator('.settings-memory-item')).toContainText('clear-target');
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find((item) => item.key === 'clear-target')?.id)).toBe(serverMemoryId);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('socrates-memory-store') || '[]').find(
+            (item) => item.key === 'clear-target',
+          )?.id,
+      ),
+    )
+    .toBe(serverMemoryId);
   await reloadedOverlay.getByRole('button', { name: 'Clear all', exact: true }).click();
   const memoryConfirm = page.getByRole('alertdialog', { name: 'Clear all memories?' });
   await expect(memoryConfirm).toBeVisible();
   await memoryConfirm.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(reloadedOverlay.locator('.settings-memory-item')).toHaveCount(0);
-  await expect.poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length).toBe(2);
+  await expect
+    .poll(() => memoryRequests.filter((request) => request.method === 'DELETE').length)
+    .toBe(2);
 
   // Close via the React close button.
   await reloadedOverlay.locator('#settingsCloseBtn').click();
   await expect(reloadedOverlay).toBeHidden();
 });
 
-test('all settings categories render their own pane and mobile search reaches hidden categories', async ({ page }) => {
+test('all settings categories render their own pane and mobile search reaches hidden categories', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay).toBeVisible();
   const sections = [
-    ['general', 'General'], ['display', 'Display'], ['notifications', 'Notifications'],
-    ['personalization', 'Personalization'], ['models', 'Models & voice'],
-    ['apps', 'Apps & connections'], ['data', 'Data controls'], ['account', 'Account'],
+    ['general', 'General'],
+    ['display', 'Display'],
+    ['notifications', 'Notifications'],
+    ['personalization', 'Personalization'],
+    ['models', 'Models & voice'],
+    ['apps', 'Apps & connections'],
+    ['data', 'Data controls'],
+    ['account', 'Account'],
   ];
   for (const [key, title] of sections) {
     await overlay.locator(`.settings-nav [data-section="${key}"]`).click();
@@ -193,9 +291,15 @@ test('all settings categories render their own pane and mobile search reaches hi
   const categories = overlay.locator('.settings-nav-categories');
   await expect(overlay.locator('.settings-nav')).toBeVisible();
   await expect(overlay.locator('.settings-body')).toBeHidden();
-  expect(await categories.evaluate((element) => getComputedStyle(element).flexDirection)).toBe('column');
-  expect(await categories.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
-  expect(await categories.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+  expect(await categories.evaluate((element) => getComputedStyle(element).flexDirection)).toBe(
+    'column',
+  );
+  expect(await categories.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+    true,
+  );
+  expect(await categories.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(
+    true,
+  );
   await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(8);
   await overlay.locator('.settings-nav [data-section="general"]').click();
   await expect(overlay.locator('.settings-body')).toBeVisible();
@@ -227,7 +331,10 @@ test('model provider actions stay inside the settings pane on mobile', async ({ 
   await actions.scrollIntoViewIfNeeded();
   const bounds = await overlay.locator('.settings-provider-actions').evaluate((element) => {
     const body = element.closest('.settings-body').getBoundingClientRect();
-    const controls = [document.getElementById('addProviderBtn'), ...element.querySelectorAll('button')].filter(Boolean);
+    const controls = [
+      document.getElementById('addProviderBtn'),
+      ...element.querySelectorAll('button'),
+    ].filter(Boolean);
     const buttons = controls.map((button) => {
       const rect = button.getBoundingClientRect();
       return { left: rect.left, right: rect.right };
@@ -267,7 +374,9 @@ test('model menu opens the model settings detail directly on mobile', async ({ p
   await expect(search).toHaveValue('');
 });
 
-test('account menu opens personalization and returns focus to the account trigger', async ({ page }) => {
+test('account menu opens personalization and returns focus to the account trigger', async ({
+  page,
+}) => {
   const trigger = page.locator('.sidebar-account-trigger');
   await trigger.click();
   await page.getByRole('menuitem', { name: 'Personalization', exact: true }).click();
@@ -283,19 +392,31 @@ test('account menu opens personalization and returns focus to the account trigge
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 
-test('display settings persist text size, content width, grid, and background colors', async ({ page }) => {
+test('display settings persist text size, content width, grid, and background colors', async ({
+  page,
+}) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await overlay.locator('.settings-nav [data-section="display"]').click();
 
   const fontGroup = overlay.locator('.settings-choice--segmented').filter({ hasText: 'Text size' });
   await fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
-  const widthGroup = overlay.locator('.settings-choice--segmented').filter({ hasText: 'Content width' });
+  const widthGroup = overlay
+    .locator('.settings-choice--segmented')
+    .filter({ hasText: 'Content width' });
   await widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }).click();
-  await expect.poll(() => page.evaluate(() => ({
-    font: getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale').trim(),
-    width: getComputedStyle(document.documentElement).getPropertyValue('--app-width-scale').trim(),
-  }))).toEqual({ font: '1.375', width: '1.7' });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        font: getComputedStyle(document.documentElement)
+          .getPropertyValue('--app-font-scale')
+          .trim(),
+        width: getComputedStyle(document.documentElement)
+          .getPropertyValue('--app-width-scale')
+          .trim(),
+      })),
+    )
+    .toEqual({ font: '1.375', width: '1.7' });
 
   const grid = overlay.getByRole('switch', { name: 'Conversation grid' });
   await overlay.getByText('Conversation grid', { exact: true }).click();
@@ -318,13 +439,21 @@ test('display settings persist text size, content width, grid, and background co
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
-    .toMatchObject({ font: 1.375, width: 1.7, showGrid: true, darkBg: '#123456', lightBg: '#eeeeee' });
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+    .toMatchObject({
+      font: 1.375,
+      width: 1.7,
+      showGrid: true,
+      darkBg: '#123456',
+      lightBg: '#eeeeee',
+    });
 
   const resetButtons = overlay.getByRole('button', { name: 'Reset', exact: true });
   await resetButtons.nth(0).click();
   await resetButtons.nth(1).click();
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
     .toMatchObject({ darkBg: '', lightBg: '' });
 
   await overlay.locator('#settingsCloseBtn').click();
@@ -340,10 +469,13 @@ test('display settings persist text size, content width, grid, and background co
   await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
 });
 
-test('custom instructions save once after typing and sync through the account endpoint', async ({ page }) => {
+test('custom instructions save once after typing and sync through the account endpoint', async ({
+  page,
+}) => {
   const requests = [];
   page.on('request', (request) => {
-    if (request.method() !== 'PATCH' || !/\/api\/(?:v2\/)?users\/me(?:\?|$)/.test(request.url())) return;
+    if (request.method() !== 'PATCH' || !/\/api\/(?:v2\/)?users\/me(?:\?|$)/.test(request.url()))
+      return;
     requests.push({ url: request.url(), body: request.postDataJSON() });
   });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
@@ -354,16 +486,28 @@ test('custom instructions save once after typing and sync through the account en
   await instructions.fill('Use concise examples and clear steps.');
   await expect.poll(() => requests.length, { timeout: 3000 }).toBe(1);
   expect(new URL(requests[0].url).pathname).toMatch(/\/api\/(?:v2\/)?users\/me$/);
-  expect(requests[0].body).toEqual({ customInstructions: '[How to respond]\nUse concise examples and clear steps.' });
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response))
+  expect(requests[0].body).toEqual({
+    customInstructions: '[How to respond]\nUse concise examples and clear steps.',
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem('socrates-custom-instructions') || '{}').response,
+      ),
+    )
     .toBe('Use concise examples and clear steps.');
   await expect(overlay.locator('.settings-save-error')).toHaveCount(0);
 });
 
-test('general and model preferences update the app and sync supported account fields', async ({ page }) => {
+test('general and model preferences update the app and sync supported account fields', async ({
+  page,
+}) => {
   const preferencePatches = [];
   page.on('request', (request) => {
-    if (request.method() === 'PATCH' && /\/api\/(?:v2\/)?users\/me\/preferences(?:\?|$)/.test(request.url())) {
+    if (
+      request.method() === 'PATCH' &&
+      /\/api\/(?:v2\/)?users\/me\/preferences(?:\?|$)/.test(request.url())
+    ) {
       preferencePatches.push(request.postDataJSON());
     }
   });
@@ -384,17 +528,27 @@ test('general and model preferences update the app and sync supported account fi
 
   await overlay.locator('#settings-voice-language').click();
   await page.getByRole('option', { name: '中文', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-voice-language'))).toBe('zh-CN');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-voice-language')))
+    .toBe('zh-CN');
   await overlay.locator('#settings-image-model').fill('gpt-image-2');
   await overlay.getByRole('button', { name: '同步图片模型', exact: true }).click();
-  await expect.poll(() => preferencePatches.some((patch) => patch.imageModel === 'gpt-image-2')).toBe(true);
-  await expect.poll(() => preferencePatches.some((patch) => patch.voiceLanguage === 'zh-CN')).toBe(true);
+  await expect
+    .poll(() => preferencePatches.some((patch) => patch.imageModel === 'gpt-image-2'))
+    .toBe(true);
+  await expect
+    .poll(() => preferencePatches.some((patch) => patch.voiceLanguage === 'zh-CN'))
+    .toBe(true);
   expect(preferencePatches).toContainEqual({ theme: 'dark' });
   expect(preferencePatches).toContainEqual({ language: 'zh' });
-  await expect.poll(() => page.evaluate(() => localStorage.getItem('socrates-image-model'))).toBe('gpt-image-2');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('socrates-image-model')))
+    .toBe('gpt-image-2');
 });
 
-test('settings restore server preferences when this browser has no local values', async ({ page }) => {
+test('settings restore server preferences when this browser has no local values', async ({
+  page,
+}) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
@@ -406,10 +560,14 @@ test('settings restore server preferences when this browser has no local values'
   await expect(overlay.locator('#settings-voice-language')).toContainText('English');
 
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
-  await expect(overlay.locator('#settings-custom-instructions')).toHaveValue('Use my saved account instructions.');
+  await expect(overlay.locator('#settings-custom-instructions')).toHaveValue(
+    'Use my saved account instructions.',
+  );
 });
 
-test('settings utility links reach Plugins and Library, while account actions stay guarded', async ({ page }) => {
+test('settings utility links reach Plugins and Library, while account actions stay guarded', async ({
+  page,
+}) => {
   const requests = [];
   page.on('request', (request) => {
     if (request.method() === 'PATCH' || request.method() === 'DELETE') {
@@ -435,16 +593,34 @@ test('settings utility links reach Plugins and Library, while account actions st
   const displayName = overlay.getByRole('textbox', { name: 'Display name' });
   await displayName.fill('Settings QA learner');
   await displayName.press('Enter');
-  await expect.poll(() => requests.filter((request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url)).length).toBe(1);
-  expect(requests.find((request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url))?.body)
-    .toMatchObject({ displayName: 'Settings QA learner' });
+  await expect
+    .poll(
+      () =>
+        requests.filter(
+          (request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url),
+        ).length,
+    )
+    .toBe(1);
+  expect(
+    requests.find(
+      (request) => request.method === 'PATCH' && /\/users\/me(?:\?|$)/.test(request.url),
+    )?.body,
+  ).toMatchObject({ displayName: 'Settings QA learner' });
 
-  await overlay.locator('.settings-choice').filter({ hasText: 'Token usage' }).getByRole('button', { name: 'View' }).click();
+  await overlay
+    .locator('.settings-choice')
+    .filter({ hasText: 'Token usage' })
+    .getByRole('button', { name: 'View' })
+    .click();
   await expect(page.locator('#usageOverlay')).toBeVisible();
   await page.locator('#usageOverlay .usage-close').click();
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await overlay.locator('.settings-nav [data-section="account"]').click();
-  await overlay.locator('.settings-choice').filter({ hasText: 'Archived sessions' }).getByRole('button', { name: 'Manage' }).click();
+  await overlay
+    .locator('.settings-choice')
+    .filter({ hasText: 'Archived sessions' })
+    .getByRole('button', { name: 'Manage' })
+    .click();
   await expect(page.locator('#storageModalOverlay')).toBeVisible();
   await page.locator('#storageModalOverlay').getByRole('button', { name: 'Close' }).click();
 
@@ -455,10 +631,11 @@ test('settings utility links reach Plugins and Library, while account actions st
   await expect(deleteConfirm).toBeVisible();
   await deleteConfirm.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(deleteConfirm).toHaveCount(0);
-  expect(requests.some((request) => request.method === 'DELETE' && /\/auth\/account/.test(request.url))).toBe(false);
+  expect(
+    requests.some((request) => request.method === 'DELETE' && /\/auth\/account/.test(request.url)),
+  ).toBe(false);
   await expect(overlay).toBeVisible();
 });
-
 
 test('settings modal closes on backdrop click and via Esc', async ({ page }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
@@ -476,7 +653,9 @@ test('settings modal closes on backdrop click and via Esc', async ({ page }) => 
   await expect(overlay).toBeHidden();
 });
 
-test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({ page }) => {
+test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({
+  page,
+}) => {
   const trigger = page.locator('#apiSettingsBtn');
   await trigger.click();
   const overlay = page.locator('#settingsOverlay');
@@ -499,7 +678,7 @@ test('settings switch toggles by its label and persists', async ({ page }) => {
   const overlay = await openModelsPane(page);
   const track = overlay.getByRole('switch', { name: 'Use External API' });
 
-  const initialOn = await track.getAttribute('aria-checked') === 'true';
+  const initialOn = (await track.getAttribute('aria-checked')) === 'true';
   const expectedState = initialOn ? 'false' : 'true';
   await overlay.locator('#stgToggle').click();
   await expect(track).toHaveAttribute('aria-checked', expectedState);
@@ -512,7 +691,9 @@ test('settings switch toggles by its label and persists', async ({ page }) => {
 
 test('clear API settings confirms before clearing provider configuration', async ({ page }) => {
   const overlay = await openModelsPane(page);
-  await expect(overlay.getByRole('button', { name: 'Clear API settings', exact: true })).toBeVisible();
+  await expect(
+    overlay.getByRole('button', { name: 'Clear API settings', exact: true }),
+  ).toBeVisible();
   await overlay.locator('#clearSettingsBtn').click();
   const confirmation = page.getByRole('alertdialog', { name: 'Clear API settings?' });
   await expect(confirmation).toBeVisible();
@@ -522,7 +703,9 @@ test('clear API settings confirms before clearing provider configuration', async
   await expect(overlay).toBeVisible();
 });
 
-test('React-owned provider rows stay synchronized with provider configuration', async ({ page }) => {
+test('React-owned provider rows stay synchronized with provider configuration', async ({
+  page,
+}) => {
   const overlay = await openModelsPane(page);
 
   // With no custom provider, the built-in model is the provider-list empty state.
@@ -536,9 +719,13 @@ test('React-owned provider rows stay synchronized with provider configuration', 
   await expect(firstNewRow.locator('input[data-field="label"]')).toHaveValue('');
   await expect(firstNewRow.locator('input[data-field="label"]')).toBeFocused();
   const firstProviderId = await firstNewRow.getAttribute('data-id');
-  const firstProviderRow = overlay.locator(`#providerList .provider-row[data-id="${firstProviderId}"]`);
+  const firstProviderRow = overlay.locator(
+    `#providerList .provider-row[data-id="${firstProviderId}"]`,
+  );
   await firstNewRow.locator('input[data-field="label"]').fill('React-owned provider');
-  await expect(firstNewRow.locator('input[data-field="label"]')).toHaveValue('React-owned provider');
+  await expect(firstNewRow.locator('input[data-field="label"]')).toHaveValue(
+    'React-owned provider',
+  );
   await firstNewRow.locator('input[data-field="key"]').fill('test-secret-value');
   await expect(firstNewRow.locator('input[data-field="key"]')).toHaveValue('test-secret-value');
   expect(await page.evaluate(() => 'apiConfig' in window)).toBe(false);
@@ -562,8 +749,8 @@ test('provider save submits the configured fields and secret to the API', async 
   await row.locator('input[data-field="url"]').fill('https://models.example.test/v1');
   await row.locator('input[data-field="model"]').fill('model-v1');
   await row.locator('input[data-field="key"]').fill('secret-value-123');
-  const requestPromise = page.waitForRequest((request) =>
-    request.method() === 'POST' && request.url().includes('/api-key'),
+  const requestPromise = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().includes('/api-key'),
   );
   await overlay.locator('#saveSettingsBtn').click();
   const request = await requestPromise;
@@ -573,7 +760,9 @@ test('provider save submits the configured fields and secret to the API', async 
     model: 'model-v1',
     key: 'secret-value-123',
   });
-  await expect.poll(() => page.evaluate(() => 'apiConfig' in window || 'renderProviderList' in window)).toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => 'apiConfig' in window || 'renderProviderList' in window))
+    .toBe(false);
 });
 
 test('provider update patches existing fields and a replacement key', async ({ page }) => {
@@ -583,10 +772,16 @@ test('provider update patches existing fields and a replacement key', async ({ p
   await row.locator('input[data-field="model"]').fill('updated-model');
   await row.locator('input[data-field="key"]').fill('replacement-secret-123');
   await page.route(/\/api\/(v2\/)?api-key\/provider-one(?:\?|$)/, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
   });
-  const patch = page.waitForRequest((request) =>
-    request.method() === 'PATCH' && /\/api\/(v2\/)?api-key\/provider-one(?:\?|$)/.test(request.url()),
+  const patch = page.waitForRequest(
+    (request) =>
+      request.method() === 'PATCH' &&
+      /\/api\/(v2\/)?api-key\/provider-one(?:\?|$)/.test(request.url()),
   );
 
   await overlay.locator('#saveSettingsBtn').click();
@@ -606,7 +801,9 @@ test('provider validation errors render from React-owned state', async ({ page }
   await expect(row).toBeVisible();
   await row.locator('input[data-field="url"]').fill('ftp://example.test');
   await overlay.locator('#saveSettingsBtn').click();
-  await expect(row.locator('[data-slot="field-error"]')).toContainText('URL must start with http:// or https://');
+  await expect(row.locator('[data-slot="field-error"]')).toContainText(
+    'URL must start with http:// or https://',
+  );
 });
 
 test('provider activation failure restores the previous active selection', async ({ page }) => {
@@ -615,17 +812,25 @@ test('provider activation failure restores the previous active selection', async
   const second = overlay.locator('#providerList .provider-row[data-id="provider-two"]');
   await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'true');
   await page.route(/\/api\/(v2\/)?api-key\/provider-two(?:\?|$)/, async (route) => {
-    await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'activation unavailable' }) });
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'activation unavailable' }),
+    });
   });
 
   await second.locator('.provider-active-btn').click();
 
   await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'true');
   await expect(second.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'false');
-  await expect(page.locator('.msg-toast').filter({ hasText: 'Failed to activate provider' })).toBeVisible();
+  await expect(
+    page.locator('.msg-toast').filter({ hasText: 'Failed to activate provider' }),
+  ).toBeVisible();
 });
 
-test('provider save keeps successful rows when another provider request fails', async ({ page }) => {
+test('provider save keeps successful rows when another provider request fails', async ({
+  page,
+}) => {
   const overlay = await openModelsPane(page);
   await overlay.locator('#addProviderBtn').click();
   await overlay.locator('#addProviderBtn').click();
@@ -634,28 +839,47 @@ test('provider save keeps successful rows when another provider request fails', 
   for (const [index, label] of ['Saved row', 'Failed row'].entries()) {
     const row = rows.nth(index);
     await row.locator('input[data-field="label"]').fill(label);
-    await row.locator('input[data-field="url"]').fill(`https://${index ? 'failed' : 'saved'}.example.test/v1`);
+    await row
+      .locator('input[data-field="url"]')
+      .fill(`https://${index ? 'failed' : 'saved'}.example.test/v1`);
     await row.locator('input[data-field="model"]').fill(`model-${index}`);
     await row.locator('input[data-field="key"]').fill(`secret-value-${index}-123`);
   }
   await page.route(/\/api\/(v2\/)?api-key(?:\?|$)/, async (route) => {
-    if (route.request().method() !== 'POST') { await route.fallback(); return; }
-    const body = route.request().postDataJSON();
-    if (body.label === 'Failed row') {
-      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'provider unavailable' }) });
+    if (route.request().method() !== 'POST') {
+      await route.fallback();
       return;
     }
-    await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ id: 'provider-saved' }) });
+    const body = route.request().postDataJSON();
+    if (body.label === 'Failed row') {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'provider unavailable' }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: 'provider-saved' }),
+    });
   });
 
   await overlay.locator('#saveSettingsBtn').click();
 
-  await expect(overlay.locator('#providerList .provider-row[data-id="provider-saved"]')).toBeVisible();
+  await expect(
+    overlay.locator('#providerList .provider-row[data-id="provider-saved"]'),
+  ).toBeVisible();
   await expect(overlay.locator('#providerList .provider-row[data-id^="new-"]')).toHaveCount(1);
-  await expect(page.locator('.msg-toast').filter({ hasText: 'Saved 1 provider(s), but 1 failed' })).toBeVisible();
+  await expect(
+    page.locator('.msg-toast').filter({ hasText: 'Saved 1 provider(s), but 1 failed' }),
+  ).toBeVisible();
 });
 
-test('settings mounts only visited categories and preserves provider drafts across navigation and reopen', async ({ page }) => {
+test('settings mounts only visited categories and preserves provider drafts across navigation and reopen', async ({
+  page,
+}) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   const overlay = page.locator('#settingsOverlay');
   await expect(overlay.locator('.settings-pane')).toHaveCount(1);
@@ -676,14 +900,20 @@ test('settings mounts only visited categories and preserves provider drafts acro
   await expect(draft).toHaveValue('Keep this draft');
   await overlay.locator('.settings-nav input').fill('Account');
   await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
-  await expect(overlay.locator('.settings-nav button .settings-category-name')).toHaveText('Account');
+  await expect(overlay.locator('.settings-nav button .settings-category-name')).toHaveText(
+    'Account',
+  );
 });
 
 test('settings category load failure stays local and can be retried', async ({ page }) => {
   const { readFileSync } = await import('node:fs');
   const { resolve } = await import('node:path');
-  const report = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const pane = report.modules.find((module) => module.id === 'src/react/settings/DisplaySettingsPane.tsx');
+  const report = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
+  const pane = report.modules.find(
+    (module) => module.id === 'src/react/settings/DisplaySettingsPane.tsx',
+  );
   let failures = 0;
   await page.route(`**/${pane.chunk}*`, async (route) => {
     failures++;

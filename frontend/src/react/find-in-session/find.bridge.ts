@@ -1,10 +1,7 @@
 /** Module-owned find state, shared by actions and React subscribers. */
 
 import { createImmutableBridge, useBridge } from '../../store/index.ts';
-import type {
-  FindInSessionBridge,
-  FindInSessionSnapshot,
-} from './types';
+import type { FindInSessionBridge, FindInSessionSnapshot } from './types';
 
 const CLOSED: FindInSessionSnapshot = {
   isOpen: false,

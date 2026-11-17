@@ -39,12 +39,13 @@ function walk(dir, out = []) {
 
 function unwrapExpression(node) {
   while (
-    ts.isParenthesizedExpression(node)
-    || ts.isAsExpression(node)
-    || ts.isTypeAssertionExpression(node)
-    || ts.isSatisfiesExpression(node)
-    || ts.isNonNullExpression(node)
-  ) node = node.expression;
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isTypeAssertionExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isNonNullExpression(node)
+  )
+    node = node.expression;
   return node;
 }
 
@@ -77,9 +78,11 @@ function flattenPathExpression(node, parts = []) {
 
 function isEncodedFragment(node) {
   node = unwrapExpression(node);
-  return ts.isCallExpression(node)
-    && ts.isIdentifier(node.expression)
-    && node.expression.text === 'encodeURIComponent';
+  return (
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    node.expression.text === 'encodeURIComponent'
+  );
 }
 
 function safePathExpression(node) {
@@ -106,15 +109,16 @@ function safePathExpression(node) {
   }
 
   if (segments.length < 2 || segments[0].text !== 'test-results') return false;
-  return segments.every((segment) => segment.text.length > 0
-    && segment.text !== '.'
-    && segment.text !== '..');
+  return segments.every(
+    (segment) => segment.text.length > 0 && segment.text !== '.' && segment.text !== '..',
+  );
 }
 
 function propertyName(node) {
   if (ts.isIdentifier(node)) return node.text;
   if (ts.isStringLiteralLike(node) || ts.isNumericLiteral(node)) return node.text;
-  if (ts.isComputedPropertyName(node) && isTextLiteral(node.expression)) return node.expression.text;
+  if (ts.isComputedPropertyName(node) && isTextLiteral(node.expression))
+    return node.expression.text;
   return null;
 }
 
@@ -144,9 +148,11 @@ function isScreenshotCall(node) {
   const expression = node.expression;
   if (ts.isPropertyAccessExpression(expression)) return expression.name.text === 'screenshot';
   if (ts.isElementAccessExpression(expression)) {
-    return expression.argumentExpression
-      && isTextLiteral(expression.argumentExpression)
-      && expression.argumentExpression.text === 'screenshot';
+    return (
+      expression.argumentExpression &&
+      isTextLiteral(expression.argumentExpression) &&
+      expression.argumentExpression.text === 'screenshot'
+    );
   }
   return ts.isIdentifier(expression) && expression.text === 'screenshot';
 }
@@ -162,7 +168,9 @@ function collect() {
     function visit(node) {
       if (isScreenshotCall(node) && !screenshotPathIsSafe(node)) {
         const line = source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
-        offenders.push(`${rel}:${line}: screenshot path is outside or cannot be proven under ${ALLOWED_ROOT}`);
+        offenders.push(
+          `${rel}:${line}: screenshot path is outside or cannot be proven under ${ALLOWED_ROOT}`,
+        );
       }
       ts.forEachChild(node, visit);
     }
@@ -176,26 +184,36 @@ function main() {
   if (UPDATE || !existsSync(BASELINE)) {
     /* Ratchet in the same direction as the other checks: the baseline may
        only shrink. */
-    const previous = existsSync(BASELINE)
-      ? JSON.parse(readFileSync(BASELINE, 'utf8'))
-      : null;
-    const count = previous && typeof previous.count === 'number'
-      ? Math.min(previous.count, offenders.length)
-      : offenders.length;
-    writeFileSync(BASELINE, JSON.stringify({
-      count,
-      note: `e2e screenshots with paths outside or not provably under ${ALLOWED_ROOT}. May only go down.`,
-      generatedBy: 'check-e2e-artifacts.mjs --update',
-    }, null, 2) + '\n');
+    const previous = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : null;
+    const count =
+      previous && typeof previous.count === 'number'
+        ? Math.min(previous.count, offenders.length)
+        : offenders.length;
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          count,
+          note: `e2e screenshots with paths outside or not provably under ${ALLOWED_ROOT}. May only go down.`,
+          generatedBy: 'check-e2e-artifacts.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
     console.log(`e2e-artifacts: baseline ${previous ? 'updated' : 'written'} (count=${count}).`);
     return;
   }
 
   const allowed = JSON.parse(readFileSync(BASELINE, 'utf8')).count;
   if (offenders.length > allowed) {
-    console.error(`e2e-artifacts FAILED: ${offenders.length} unsafe or unverifiable screenshot paths, ${allowed} allowed.`);
+    console.error(
+      `e2e-artifacts FAILED: ${offenders.length} unsafe or unverifiable screenshot paths, ${allowed} allowed.`,
+    );
     for (const offender of offenders) console.error(`  - ${offender}`);
-    console.error(`Use a path under ${ALLOWED_ROOT}, or omit the path to let Playwright manage the artifact.`);
+    console.error(
+      `Use a path under ${ALLOWED_ROOT}, or omit the path to let Playwright manage the artifact.`,
+    );
     process.exit(1);
   }
   console.log(`e2e-artifacts check passed (${offenders.length}/${allowed} allowed).`);

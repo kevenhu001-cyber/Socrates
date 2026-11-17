@@ -2,7 +2,7 @@
 // Spec 4/6: typing into the topic input enables the Start button; clicking it
 // transitions the app out of the topic-setup view.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -37,7 +37,9 @@ async function composerSignature(page, selector) {
   });
 }
 
-test('typing into topic input enables the Start button; clicking does not throw', async ({ page }) => {
+test('typing into topic input enables the Start button; clicking does not throw', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -54,7 +56,9 @@ test('typing into topic input enables the Start button; clicking does not throw'
   // Capture console errors during the click.
   const consoleErrors = [];
   page.on('pageerror', (e) => consoleErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text());
+  });
 
   await topicInput.fill('quick smoke topic test');
   await page.waitForTimeout(200); // allow the composer editor and state snapshot to settle
@@ -63,9 +67,10 @@ test('typing into topic input enables the Start button; clicking does not throw'
   await page.waitForTimeout(1_500);
 
   // Filter out network errors (the dialog may open, look fine), keep real JS errors.
-  const realErrors = consoleErrors.filter((e) =>
-    /ReferenceError|TypeError|SyntaxError|Reference to undeclared/.test(e) &&
-    !/fetch|network|api\/|\b401\b|\b503\b|csrf/i.test(e),
+  const realErrors = consoleErrors.filter(
+    (e) =>
+      /ReferenceError|TypeError|SyntaxError|Reference to undeclared/.test(e) &&
+      !/fetch|network|api\/|\b401\b|\b503\b|csrf/i.test(e),
   );
   expect(realErrors, `startSession() threw:\n${realErrors.join('\n')}`).toEqual([]);
 });
@@ -77,7 +82,14 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        choices: [{ message: { content: '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]' } }],
+        choices: [
+          {
+            message: {
+              content:
+                '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]',
+            },
+          },
+        ],
       }),
     });
   });
@@ -85,38 +97,39 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.getActiveProvider = () => ({
-      id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
+      id: 'test-provider',
+      label: 'Test',
+      model: 'test-model',
+      isBuiltIn: true,
+      key: 'test-key',
     });
   });
   await page.locator('#topModeTutor').click();
   await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
 
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error)));
   const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await topicInput.fill('Foundations of linear algebra');
   await topicInput.press('Enter');
 
-  const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(String(error)));
   const explorationDialog = page.locator('#tutorExplorationDialog');
   await expect(explorationDialog).toBeVisible();
   await explorationDialog.locator('.tutor-explore-skip').click();
-  const startupState = await page.evaluate(() => ({
-    mode: document.body.dataset.appMode,
-    phase: window.stateStore.read('phase'),
-    mainView: document.documentElement.dataset.mainView,
-    visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
-      .filter((id) => !document.getElementById(id)?.classList.contains('hidden')),
-  }));
-  expect(startupState, `Tutor startup failed: ${pageErrors.join('\n')}`).toMatchObject({ mode: 'tutor' });
-  expect(['diagnosticView', 'chatView']).toContain(startupState.mainView);
-  await expect(page.locator('#chatView'), `Tutor startup errors: ${pageErrors.join('\n')}`)
-    .toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-main-view',
+    /^(diagnosticView|chatView)$/,
+  );
+  await expect(
+    page.locator('#chatView'),
+    `Tutor startup errors: ${pageErrors.join('\n')}`,
+  ).toBeVisible({ timeout: 15_000 });
 
   const session = await page.evaluate(() => ({
     mode: document.body.dataset.appMode,
-    topic: window.stateStore.read('topic'),
-    phase: window.stateStore.read('phase'),
-    sessionId: window.stateStore.read('currentSessionId'),
+    topic: window.__socratesTestState.session().topic,
+    phase: window.__socratesTestState.session().phase,
+    sessionId: window.__socratesTestState.session().currentSessionId,
   }));
   expect(session).toMatchObject({
     mode: 'tutor',
@@ -126,17 +139,28 @@ test('Tutor start can skip boundary questions and enter the teaching chat', asyn
   expect(session.sessionId).toBeTruthy();
 });
 
-test('canceling Tutor topic analysis prevents the pending start from entering chat', async ({ page }) => {
+test('canceling Tutor topic analysis prevents the pending start from entering chat', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   let releaseModelResponse;
-  const modelResponseGate = new Promise((resolve) => { releaseModelResponse = resolve; });
+  const modelResponseGate = new Promise((resolve) => {
+    releaseModelResponse = resolve;
+  });
   await page.route('**/api/v2/minimax/v1/chat/completions', async (route) => {
     await modelResponseGate;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        choices: [{ message: { content: '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]' } }],
+        choices: [
+          {
+            message: {
+              content:
+                '["Linear algebra concepts","Vector spaces","Matrices","Linear transformations","Applications"]',
+            },
+          },
+        ],
       }),
     });
   });
@@ -144,7 +168,11 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   await waitForAppShell(page);
   await page.evaluate(() => {
     window.getActiveProvider = () => ({
-      id: 'test-provider', label: 'Test', model: 'test-model', isBuiltIn: true, key: 'test-key',
+      id: 'test-provider',
+      label: 'Test',
+      model: 'test-model',
+      isBuiltIn: true,
+      key: 'test-key',
     });
   });
   await page.locator('#topModeTutor').click();
@@ -159,15 +187,9 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   const explorationDialog = page.locator('#tutorExplorationDialog');
   await expect(explorationDialog).toBeVisible();
   await explorationDialog.locator('.tutor-explore-skip').click();
-  const diagnosticState = await page.evaluate(() => ({
-    mode: document.body.dataset.appMode,
-    mainView: document.documentElement.dataset.mainView,
-    visibleViews: ['topicSetup', 'diagnosticView', 'chatView']
-      .filter((id) => !document.getElementById(id)?.classList.contains('hidden')),
-  }));
-  expect(diagnosticState, `unexpected Tutor state; model requests: ${modelRequests.join(', ')}`)
-    .toMatchObject({ mode: 'tutor', mainView: 'diagnosticView' });
-  expect(modelRequests, 'Tutor topic analysis should be waiting on the mocked model response').not.toHaveLength(0);
+  await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');
+  await expect(page.locator('html')).toHaveAttribute('data-main-view', 'diagnosticView');
+  await expect.poll(() => modelRequests.length).toBeGreaterThan(0);
   /* The diagnostic is the RN panel (packages/ui/src/study); its cancel pill
      carries `data-diag-command`, the legacy `.diag-cancel-btn` class is gone. */
   const cancelDiagnostic = page.locator('#diagnosticView [data-diag-command="cancel"]');
@@ -178,14 +200,18 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   releaseModelResponse();
   await page.waitForTimeout(250);
   const state = await page.evaluate(() => ({
-    phase: window.stateStore.read('phase'),
-    topic: window.stateStore.read('topic'),
-    sessionId: window.stateStore.read('currentSessionId'),
+    phase: window.__socratesTestState.session().phase,
+    topic: window.__socratesTestState.session().topic,
+    sessionId: window.__socratesTestState.session().currentSessionId,
     mainView: document.documentElement.dataset.mainView,
-    diagCancel: window.stateStore.read('diagCancel'),
+    diagCancel: window.__socratesTestState.session().diagCancel,
   }));
   expect(state).toEqual({
-    phase: 'topic', topic: '', sessionId: null, mainView: 'topicSetup', diagCancel: true,
+    phase: 'topic',
+    topic: '',
+    sessionId: null,
+    mainView: 'topicSetup',
+    diagCancel: true,
   });
 
   const nextTopic = 'A fresh tutor session after cancel';
@@ -195,11 +221,13 @@ test('canceling Tutor topic analysis prevents the pending start from entering ch
   await expect(nextExplorationDialog).toBeVisible();
   await nextExplorationDialog.locator('.tutor-explore-skip').click();
   await expect(page.locator('#chatView')).toBeVisible({ timeout: 15_000 });
-  expect(await page.evaluate(() => ({
-    phase: window.stateStore.read('phase'),
-    topic: window.stateStore.read('topic'),
-    diagCancel: window.stateStore.read('diagCancel'),
-  }))).toEqual({ phase: 'chat', topic: nextTopic, diagCancel: false });
+  expect(
+    await page.evaluate(() => ({
+      phase: window.__socratesTestState.session().phase,
+      topic: window.__socratesTestState.session().topic,
+      diagCancel: window.__socratesTestState.session().diagCancel,
+    })),
+  ).toEqual({ phase: 'chat', topic: nextTopic, diagCancel: false });
 });
 
 test('the first prompt is saved under a short title in Recents', async ({ page }) => {
@@ -234,17 +262,21 @@ test('the first prompt is saved under a short title in Recents', async ({ page }
         body: JSON.stringify({ sessions: savedSession ? [savedSession] : [] }),
       });
     }
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
   });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(async (firstPrompt) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'topic', value: firstPrompt });
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
-    window.stateStore.dispatch({ type: 'state/set', key: 'sessionTitle', value: null });
-    window.stateStore.dispatch({
+    window.__socratesTestState.patch({ session: { topic: firstPrompt } });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: null } });
+    window.__socratesTestState.patch({ session: { sessionTitle: null } });
+    window.__socratesTestState.dispatchSession({
       type: 'session/replace-messages',
       payload: [{ clientId: 'first-prompt', role: 'user', rawText: firstPrompt, html: null }],
     });
@@ -274,7 +306,9 @@ for (const [name, viewport] of [
   ['desktop', { width: 1280, height: 800 }],
   ['mobile', { width: 390, height: 844 }],
 ]) {
-  test(`${name} composer keeps the landing UI after the first message is sent`, async ({ page }) => {
+  test(`${name} composer keeps the landing UI after the first message is sent`, async ({
+    page,
+  }) => {
     await page.setViewportSize(viewport);
     await mockAuthedApp(page);
     await gotoAndSettle(page, '/');
@@ -295,15 +329,19 @@ for (const [name, viewport] of [
     expect(after.width).toBe(before.width);
     expect(after.height).toBe(before.height);
     expect(after.radius).toBe(before.radius);
-    await expect(page.locator('#composerRoot .rich-composer-editor'))
-      .toHaveAttribute('aria-label', 'Ask Socrates');
+    await expect(page.locator('#composerRoot .rich-composer-editor')).toHaveAttribute(
+      'aria-label',
+      'Ask Socrates',
+    );
   });
 }
 
 // Regression (P_deep-research-view): selecting Deep Research in the composer
 // and starting from the landing screen must switch to #chatView, commit the
 // user bubble, and submit one durable server-side research job.
-test('Deep Research extension: Start on landing enters chat and runs research', async ({ page }) => {
+test('Deep Research extension: Start on landing enters chat and runs research', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   const submissions = [];
   await page.route('**/api/**/research-jobs**', async (route) => {
@@ -316,21 +354,46 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
       await route.fulfill({
         status: 202,
         contentType: 'application/json',
-        body: JSON.stringify({ job: {
-          id: 'deep-research-session-start', sessionId: body.sessionId, projectId: null,
-          query: body.query, focus: null, status: 'queued', eventSequence: 1,
-          plan: ['Clarify the research question', 'Compare relevant sources', 'Write a sourced report'],
-          searched: 0, sourceCount: 0, resultArtifactId: null, error: null,
-          attempts: 0, createdAt: now, updatedAt: now, completedAt: null,
-        } }),
+        body: JSON.stringify({
+          job: {
+            id: 'deep-research-session-start',
+            sessionId: body.sessionId,
+            projectId: null,
+            query: body.query,
+            focus: null,
+            status: 'queued',
+            eventSequence: 1,
+            plan: [
+              'Clarify the research question',
+              'Compare relevant sources',
+              'Write a sourced report',
+            ],
+            searched: 0,
+            sourceCount: 0,
+            resultArtifactId: null,
+            error: null,
+            attempts: 0,
+            createdAt: now,
+            updatedAt: now,
+            completedAt: null,
+          },
+        }),
       });
       return;
     }
     if (url.pathname.endsWith('/events')) {
-      await route.fulfill({ status: 200, contentType: 'text/event-stream', body: ': keepalive\n\n' });
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: ': keepalive\n\n',
+      });
       return;
     }
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ jobs: [] }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ jobs: [] }),
+    });
   });
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -339,8 +402,14 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   const topicInput = page.locator('#composerRoot .rich-composer-editor').first();
   await topicInput.fill('history of the printing press');
   await page.locator('#composerToolsBtn').click();
-  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="deepResearch"]').click();
-  await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('deepResearch');
+  await page
+    .locator(
+      '#composerToolsMenu .composer-tools-desktop-items [data-composer-action="deepResearch"]',
+    )
+    .click();
+  await expect
+    .poll(() => page.evaluate(() => window._activeTemplate?.extensionKey))
+    .toBe('deepResearch');
   expect(await page.evaluate(() => typeof window.deepResearchOn)).toBe('undefined');
 
   await page.locator('[data-composer-control=send]').first().click();
@@ -352,5 +421,11 @@ test('Deep Research extension: Start on landing enters chat and runs research', 
   await expect.poll(() => submissions).toHaveLength(1);
   expect(submissions[0]).toMatchObject({ query: 'history of the printing press' });
   expect(submissions[0].sessionId).toBeTruthy();
-  expect(await page.evaluate(() => window.stateStore.read('messages').filter((message) => message.type === 'streaming'))).toEqual([]);
+  expect(
+    await page.evaluate(() =>
+      window.__socratesTestState
+        .session()
+        .messages.filter((message) => message.type === 'streaming'),
+    ),
+  ).toEqual([]);
 });

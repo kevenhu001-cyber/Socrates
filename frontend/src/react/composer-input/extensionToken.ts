@@ -84,24 +84,28 @@ export const ExtensionToken = Node.create<ExtensionTokenOptions>({
       removeHost.className = 'composer-extension-token-remove-host';
       let removeRoot!: OwnedRootHandle;
       flushSync(() => {
-        removeRoot = mountOwnedRoot(removeHost, 'composer-extension-token-remove', createElement(Button, {
-          type: 'button',
-          variant: 'ghost',
-          size: 'icon-xs',
-          className: 'composer-extension-token-remove',
-          'aria-label': `Remove ${attrs.title} workflow`,
-          title: 'Remove workflow',
-          onMouseDown: (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-          },
-          onClick: (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            this.options.onRemove(attrs.key);
-          },
-          children: '×',
-        }));
+        removeRoot = mountOwnedRoot(
+          removeHost,
+          'composer-extension-token-remove',
+          createElement(Button, {
+            type: 'button',
+            variant: 'ghost',
+            size: 'icon-xs',
+            className: 'composer-extension-token-remove',
+            'aria-label': `Remove ${attrs.title} workflow`,
+            title: 'Remove workflow',
+            onMouseDown: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            },
+            onClick: (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              this.options.onRemove(attrs.key);
+            },
+            children: '×',
+          }),
+        );
       });
 
       token.append(icon, label, removeHost);

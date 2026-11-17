@@ -36,10 +36,7 @@ export function RichComposer({
   const webSearchOn = useWebSearchOn();
   const activePlaceholder = webSearchOn
     ? i18n('composer.webSearch.placeholder', 'Search the web')
-    : i18n(
-      surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder',
-      placeholder,
-    );
+    : i18n(surface === 'chat' ? 'chat.inputPlaceholder' : 'topic.inputPlaceholder', placeholder);
   const shape = useComposerShape(surface);
   const editor = useRichComposerEditor({
     activePlaceholder,
@@ -50,7 +47,7 @@ export function RichComposer({
   });
 
   useComposerShapeObserver(
-    editor ? editor.view.dom as HTMLElement : null,
+    editor ? (editor.view.dom as HTMLElement) : null,
     shape.syncComposerShape,
     shape.isShapeAnimating,
     shape.cacheSettledShapeHeight,

@@ -38,7 +38,10 @@ export function createMessageOwnership(
     return ownsMessageSlot();
   }
 
-  function patchOwnedMessage(patch: Record<string, unknown>, deferNotify?: boolean): TurnMessage | null {
+  function patchOwnedMessage(
+    patch: Record<string, unknown>,
+    deferNotify?: boolean,
+  ): TurnMessage | null {
     if (!ownsMessageSlot()) return null;
     return store.dispatch({
       type: 'session/update-message',

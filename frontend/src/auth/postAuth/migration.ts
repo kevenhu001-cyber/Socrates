@@ -9,7 +9,9 @@ export interface MigrateLegacyStorageOptions {
 }
 
 /** Move local-only account data to the server once a new session is active. */
-export async function migrateLegacyStorage(options: MigrateLegacyStorageOptions = {}): Promise<boolean> {
+export async function migrateLegacyStorage(
+  options: MigrateLegacyStorageOptions = {},
+): Promise<boolean> {
   const storage = options.storage || localStorage;
   const post = options.post || apiFetch;
   const report: MigrationReport = options.report || reportSwallow;
@@ -32,9 +34,15 @@ export async function migrateLegacyStorage(options: MigrateLegacyStorageOptions 
     return false;
   }
 
-  try { storage.removeItem('socrates-sessions-v2'); }
-  catch (error) { report(error, 'auth/postAuth.migrate.clearSessions', 'expected'); }
-  try { storage.removeItem('socrates-api'); }
-  catch (error) { report(error, 'auth/postAuth.migrate.clearApi', 'expected'); }
+  try {
+    storage.removeItem('socrates-sessions-v2');
+  } catch (error) {
+    report(error, 'auth/postAuth.migrate.clearSessions', 'expected');
+  }
+  try {
+    storage.removeItem('socrates-api');
+  } catch (error) {
+    report(error, 'auth/postAuth.migrate.clearApi', 'expected');
+  }
   return true;
 }

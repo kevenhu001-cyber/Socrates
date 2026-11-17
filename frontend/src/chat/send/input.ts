@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { turnState } from '../turn/state.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { showToast } from '../../ui/toast.js';
@@ -6,17 +6,18 @@ import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { attachments, buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments/index.ts';
+import {
+  attachments,
+  buildMessageContent,
+  resetAttachments,
+  snapshotAttachments,
+} from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
 import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';
-import {
-  addStreamingMessage,
-  askChatTurn,
-  getAppMode,
-  isDeepResearchOn,
-  translate,
-} from './runtime.ts';
+import { askChatTurn } from '../turn/controller.ts';
+import { addStreamingMessage } from '../turn/loadStreamingTurn.ts';
+import { getAppMode, isDeepResearchOn, translate } from './runtime.ts';
 import type { StreamingTurnController } from '../turn/state.ts';
 
 /** The composer snapshot a send is built from, captured before the clear. */
@@ -24,6 +25,7 @@ export interface SendInput {
   text: string;
   textForModel: string;
   isComposerSubmit: boolean;
+  deepResearchOn: boolean;
   turnAttachments: import('../../attachments/types.ts').PendingAttachment[];
   immediateAttachments: unknown[];
 }
@@ -63,8 +65,11 @@ export function captureSendInput(textOverride?: string | null): SendInput | null
   if ((window as SendInputWindow)._activeTemplate && textOverride == null) {
     text = stripTemplateBodyPrefix(rawText).trim();
     if (!text) {
-      try { showToast(translate('toast.typeTextFirst')); }
-      catch (error) { reportSwallow(error, 'sendPipeline.typeTextFirst'); }
+      try {
+        showToast(translate('toast.typeTextFirst'));
+      } catch (error) {
+        reportSwallow(error, 'sendPipeline.typeTextFirst');
+      }
       return null;
     }
   }
@@ -72,16 +77,29 @@ export function captureSendInput(textOverride?: string | null): SendInput | null
   const hasAttachments = attachments.length > 0;
   if (!text && !hasAttachments) return null;
 
-  const textForModel = serializeSelectedPluginContext(selectedComposerPlugins('chat').slice(), text);
+  const textForModel = serializeSelectedPluginContext(
+    selectedComposerPlugins('chat').slice(),
+    text,
+  );
   const isComposerSubmit = textOverride == null;
-  const turnAttachments: import('../../attachments/types.ts').PendingAttachment[] = isComposerSubmit ? snapshotAttachments() : [];
-  const immediateAttachments = turnAttachments.slice(0, 20)
+  const turnAttachments: import('../../attachments/types.ts').PendingAttachment[] = isComposerSubmit
+    ? snapshotAttachments()
+    : [];
+  const immediateAttachments = turnAttachments
+    .slice(0, 20)
     .map((attachment) => Object.assign({}, attachment));
-  return { text, textForModel, isComposerSubmit, turnAttachments, immediateAttachments };
+  return {
+    text,
+    textForModel,
+    isComposerSubmit,
+    deepResearchOn: isDeepResearchOn(),
+    turnAttachments,
+    immediateAttachments,
+  };
 }
 
 async function createPrecreatedTurn(input: SendInput): Promise<PrecreatedTurn | null> {
-  if (getAppMode() !== 'chat' || isDeepResearchOn()) return null;
+  if (getAppMode() !== 'chat' || input.deepResearchOn) return null;
   const supersededController = turnState.activeChatCtl;
   let retryTarget = (): unknown => askChatTurn(input.text, input.textForModel);
   let controller: StreamingTurnController | null;
@@ -90,14 +108,22 @@ async function createPrecreatedTurn(input: SendInput): Promise<PrecreatedTurn | 
   } catch {
     controller = null;
   }
-  if (supersededController && supersededController !== controller
-      && typeof supersededController.abort === 'function') {
-    try { supersededController.abort(); }
-    catch (error) { reportSwallow(error, 'sendPipeline.precreate.abortSuperseded'); }
+  if (
+    supersededController &&
+    supersededController !== controller &&
+    typeof supersededController.abort === 'function'
+  ) {
+    try {
+      supersededController.abort();
+    } catch (error) {
+      reportSwallow(error, 'sendPipeline.precreate.abortSuperseded');
+    }
   }
   return {
     controller,
-    setRetryTarget(target) { retryTarget = target; },
+    setRetryTarget(target) {
+      retryTarget = target;
+    },
   };
 }
 
@@ -125,12 +151,12 @@ export function commitSendInput(input: SendInput, options: CommitSendOptions): C
 
 function patchCommittedAttachments(userClientId: string | null, attachments: unknown[]): void {
   if (!userClientId) return;
-  const messages = stateStore.read('messages');
+  const messages = sessionStore.getState().messages;
   if (!Array.isArray(messages)) return;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index] as { clientId?: string } | null | undefined;
     if (!message || message.clientId !== userClientId) continue;
-    stateStore.dispatch({
+    dispatchSession({
       type: 'session/update-message',
       index,
       clientId: userClientId,
@@ -141,7 +167,9 @@ function patchCommittedAttachments(userClientId: string | null, attachments: unk
       if (typeof win.publishReactChatRuntime === 'function') {
         win.publishReactChatRuntime({ type: 'state-synced', reason: 'send-attachment-patch' });
       }
-    } catch (error) { reportSwallow(error, 'sendPipeline.publishAttachmentPatch'); }
+    } catch (error) {
+      reportSwallow(error, 'sendPipeline.publishAttachmentPatch');
+    }
     break;
   }
 }

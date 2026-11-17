@@ -5,7 +5,7 @@
 // the same node renders the same DOM shape, class vocabulary, computed
 // geometry and paint in its new slot — on desktop and phone, in light and
 // dark themes.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -31,7 +31,7 @@ async function enterChat(page) {
   /* Production flip path (hidden swap + composer move), not a manual
      class toggle — the move logic under test lives in activateMainView. */
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
@@ -42,79 +42,119 @@ async function enterChat(page) {
    JS that targets one surface) or transient state; everything else is shared
    vocabulary and must be identical. */
 const SURFACE_OR_STATE = new Set([
-  'topic-input-wrap', 'chat-input-wrap', 'start-btn', 'send-btn',
-  'hidden', 'composer-multiline', 'is-empty', 'is-focused', 'has-draft',
-  'is-streaming', 'is-recording', 'voice-recording-active', 'has-text', 'active', 'composer-focused',
+  'topic-input-wrap',
+  'chat-input-wrap',
+  'start-btn',
+  'send-btn',
+  'hidden',
+  'composer-multiline',
+  'is-empty',
+  'is-focused',
+  'has-draft',
+  'is-streaming',
+  'is-recording',
+  'voice-recording-active',
+  'has-text',
+  'active',
+  'composer-focused',
 ]);
 
 function describe(page, sel) {
-  return page.evaluate(({ sel, skip }) => {
-    const wrap = document.querySelector(sel);
-    if (!wrap) return null;
-    const skipSet = new Set(skip);
-    /* DOM shape: depth + shared classes of every element down to the
+  return page.evaluate(
+    ({ sel, skip }) => {
+      const wrap = document.querySelector(sel);
+      if (!wrap) return null;
+      const skipSet = new Set(skip);
+      /* DOM shape: depth + shared classes of every element down to the
        controls, stopping at the editor root (its inside is TipTap's) and svg. */
-    const shape = [];
-    const walk = (el, depth) => {
-      for (const child of el.children) {
-        if (child.tagName === 'INPUT' && child.type === 'file') continue;
-        const cls = [...child.classList].filter((c) => !skipSet.has(c)).sort().join('.');
-        shape.push(`${depth}:${child.tagName.toLowerCase()}.${cls}`);
-        if (child.tagName === 'svg' || child.classList.contains('composer-editor-root')) continue;
-        if (child.id === 'composerPrimaryBtnContent' || child.id === 'composerPrimaryBtnContent') continue;
-        walk(child, depth + 1);
-      }
-    };
-    walk(wrap, 0);
-
-    const px = (v) => Math.round(parseFloat(v) * 10) / 10;
-    const box = (el) => {
-      if (!el || !el.getClientRects().length) return { visible: false };
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      return {
-        visible: cs.visibility !== 'hidden' && cs.display !== 'none' && r.width > 0,
-        w: Math.round(r.width), h: Math.round(r.height),
-        radius: cs.borderTopLeftRadius, bg: cs.backgroundColor, color: cs.color,
+      const shape = [];
+      const walk = (el, depth) => {
+        for (const child of el.children) {
+          if (child.tagName === 'INPUT' && child.type === 'file') continue;
+          const cls = [...child.classList]
+            .filter((c) => !skipSet.has(c))
+            .sort()
+            .join('.');
+          shape.push(`${depth}:${child.tagName.toLowerCase()}.${cls}`);
+          if (child.tagName === 'svg' || child.classList.contains('composer-editor-root')) continue;
+          if (child.id === 'composerPrimaryBtnContent' || child.id === 'composerPrimaryBtnContent')
+            continue;
+          walk(child, depth + 1);
+        }
       };
-    };
-    const ws = getComputedStyle(wrap);
-    const wr = wrap.getBoundingClientRect();
-    const editor = wrap.querySelector('.rich-composer-editor');
-    const es = editor ? getComputedStyle(editor) : null;
-    /* RN-7: the sheet is the shared RN frame inside the moving host. */
-    const frame = wrap.querySelector('[data-composer-frame]');
-    const fs = frame ? getComputedStyle(frame) : null;
-    const fr = frame ? frame.getBoundingClientRect() : null;
-    return {
-      shape,
-      shell: {
-        h: Math.round(wr.height), w: Math.round(wr.width),
-        padding: ws.padding, display: ws.display,
-      },
-      frame: fs ? {
-        h: Math.round(fr.height), w: Math.round(fr.width), padding: fs.padding,
-        radius: fs.borderTopLeftRadius, bg: fs.backgroundColor, shadow: fs.boxShadow,
-      } : null,
-      editor: es ? { fontSize: es.fontSize, lineHeight: es.lineHeight, padding: es.padding, color: es.color } : null,
-      plus: box(wrap.querySelector('#composerToolsBtn')),
-      effort: box(wrap.querySelector('#effortTrigger')),
-      mic: box(wrap.querySelector('#composerMicBtn')),
-      primary: box(wrap.querySelector('#composerPrimaryBtn')),
-    };
-  }, { sel, skip: [...SURFACE_OR_STATE] });
+      walk(wrap, 0);
+
+      const px = (v) => Math.round(parseFloat(v) * 10) / 10;
+      const box = (el) => {
+        if (!el || !el.getClientRects().length) return { visible: false };
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        return {
+          visible: cs.visibility !== 'hidden' && cs.display !== 'none' && r.width > 0,
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          radius: cs.borderTopLeftRadius,
+          bg: cs.backgroundColor,
+          color: cs.color,
+        };
+      };
+      const ws = getComputedStyle(wrap);
+      const wr = wrap.getBoundingClientRect();
+      const editor = wrap.querySelector('.rich-composer-editor');
+      const es = editor ? getComputedStyle(editor) : null;
+      /* RN-7: the sheet is the shared RN frame inside the moving host. */
+      const frame = wrap.querySelector('[data-composer-frame]');
+      const fs = frame ? getComputedStyle(frame) : null;
+      const fr = frame ? frame.getBoundingClientRect() : null;
+      return {
+        shape,
+        shell: {
+          h: Math.round(wr.height),
+          w: Math.round(wr.width),
+          padding: ws.padding,
+          display: ws.display,
+        },
+        frame: fs
+          ? {
+              h: Math.round(fr.height),
+              w: Math.round(fr.width),
+              padding: fs.padding,
+              radius: fs.borderTopLeftRadius,
+              bg: fs.backgroundColor,
+              shadow: fs.boxShadow,
+            }
+          : null,
+        editor: es
+          ? {
+              fontSize: es.fontSize,
+              lineHeight: es.lineHeight,
+              padding: es.padding,
+              color: es.color,
+            }
+          : null,
+        plus: box(wrap.querySelector('#composerToolsBtn')),
+        effort: box(wrap.querySelector('#effortTrigger')),
+        mic: box(wrap.querySelector('#composerMicBtn')),
+        primary: box(wrap.querySelector('#composerPrimaryBtn')),
+      };
+    },
+    { sel, skip: [...SURFACE_OR_STATE] },
+  );
 }
 
 function diff(a, b, path = '') {
   if (a === b) return [];
-  if (typeof a !== 'object' || typeof b !== 'object' || !a || !b) return [`${path}: topic=${JSON.stringify(a)} chat=${JSON.stringify(b)}`];
+  if (typeof a !== 'object' || typeof b !== 'object' || !a || !b)
+    return [`${path}: topic=${JSON.stringify(a)} chat=${JSON.stringify(b)}`];
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   return [...keys].flatMap((k) => diff(a[k], b[k], path ? `${path}.${k}` : k));
 }
 
 for (const vp of VIEWPORTS) {
   for (const theme of THEMES) {
-    test(`single composer shell across the landing → chat flip (${vp.name}, ${theme})`, async ({ page }) => {
+    test(`single composer shell across the landing → chat flip (${vp.name}, ${theme})`, async ({
+      page,
+    }) => {
       await boot(page, { ...vp, theme });
       const topic = await describe(page, '#composerInputWrap');
       expect(topic, 'landing composer present').not.toBeNull();
@@ -128,7 +168,8 @@ for (const vp of VIEWPORTS) {
         return {
           sameNode: shell && shell.__composerSingleMark === 1,
           inChatSlot: !!document.getElementById('chatComposerSlot')?.contains(shell),
-          topicSlotEmpty: (document.getElementById('topicComposerSlot')?.childElementCount ?? -1) === 0,
+          topicSlotEmpty:
+            (document.getElementById('topicComposerSlot')?.childElementCount ?? -1) === 0,
         };
       });
       expect(moved.sameNode, 'same shell node after the flip (moved, not rebuilt)').toBe(true);
@@ -143,7 +184,9 @@ for (const vp of VIEWPORTS) {
       /* The desktop rail leaves effort to the top-bar configuration. The
          phone rail follows the reference and always shows the effort pill
          (「中 ⌄」), which is the phone's entry to model and effort settings. */
-      expect(chat.effort.visible, 'effort pill: phone always, desktop in the header').toBe(vp.name === 'phone');
+      expect(chat.effort.visible, 'effort pill: phone always, desktop in the header').toBe(
+        vp.name === 'phone',
+      );
     });
   }
 }

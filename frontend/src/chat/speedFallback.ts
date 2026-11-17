@@ -16,7 +16,9 @@ function _t(key: string, fallback: string): string {
 export function notifySpeedFallbackOnce(): void {
   if (notified) return;
   notified = true;
-  showToast(_t('toast.speedFallback', "This model doesn't support fast mode — used standard speed"));
+  showToast(
+    _t('toast.speedFallback', "This model doesn't support fast mode — used standard speed"),
+  );
 }
 
 export function resetSpeedFallbackNoticeForTest(): void {

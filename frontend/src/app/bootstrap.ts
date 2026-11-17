@@ -3,7 +3,6 @@ import { mountAuthGate } from '../react/auth/authGateHost.tsx';
 import { bootstrapOutbox } from '../session/mutationOutbox.ts';
 import { installExtensions } from '../extensions/index.ts';
 
-
 /**
  * Functions required by the legacy shell and the React compatibility gateway.
  * Keeping this contract at the composition root makes boot ordering explicit

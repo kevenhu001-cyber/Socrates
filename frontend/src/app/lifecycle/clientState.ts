@@ -11,10 +11,16 @@ import { clearUserMemories } from './userMemory.ts';
 import { resetExamSaveStateIfLoaded } from './examSaveReset.ts';
 import { renderRecents } from '../../ui/recentsView.ts';
 
-
-function attemptCleanup(context: string, cleanup: () => unknown, severity?: Parameters<typeof reportSwallow>[2]) {
-  try { cleanup(); }
-  catch (error) { reportSwallow(error, context, severity); }
+function attemptCleanup(
+  context: string,
+  cleanup: () => unknown,
+  severity?: Parameters<typeof reportSwallow>[2],
+) {
+  try {
+    cleanup();
+  } catch (error) {
+    reportSwallow(error, context, severity);
+  }
 }
 
 function clearStorageKey(key: string, context: string) {
@@ -26,8 +32,11 @@ function clearExamSaveState() {
 }
 
 function renderUserLists() {
-  try { renderRecents(); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.clearPerUser.renderRecents'); }
+  try {
+    renderRecents();
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.clearPerUser.renderRecents');
+  }
 }
 
 /** Clear user-owned caches before a new user can see the application shell. */
@@ -38,7 +47,9 @@ export function clearPerUserClientState() {
   attemptCleanup('app/lifecycle.clearPerUser.serverCache', () => {
     if (Array.isArray(serverCache.sessions)) serverCache.sessions.length = 0;
   });
-  attemptCleanup('app/lifecycle.clearPerUser.fetchFailed', () => { serverCache.fetchFailed = false; });
+  attemptCleanup('app/lifecycle.clearPerUser.fetchFailed', () => {
+    serverCache.fetchFailed = false;
+  });
   attemptCleanup('app/lifecycle.clearPerUser.providerConfig', resetProviderConfigForUser);
   attemptCleanup('app/lifecycle.clearPerUser.cmdKIndex', resetCmdKSearchState);
   attemptCleanup('app/lifecycle.clearPerUser.examSave', clearExamSaveState);

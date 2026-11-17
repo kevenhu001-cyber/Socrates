@@ -14,7 +14,6 @@
 import { showToast } from './ui/toast.js';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
-
 let _batchStoragePending: Record<string, string> | null = null;
 let _storageBlockedNotified = false;
 let _storageBlocked = false;
@@ -26,17 +25,22 @@ let _memStorage: Map<string, string> | null = null;
 let _memSessionStorage: Map<string, string> | null = null;
 
 function _detectStorageBlocked(err: unknown) {
-  if (!err || typeof err !== "object" || !("name" in err)) return false;
+  if (!err || typeof err !== 'object' || !('name' in err)) return false;
   const name = err && err.name;
-  return name === "SecurityError" || name === "QuotaExceededError";
+  return name === 'SecurityError' || name === 'QuotaExceededError';
 }
 
 function _notifyStorageBlockedOnce() {
   if (_storageBlockedNotified) return;
   _storageBlockedNotified = true;
   try {
-    showToast("Browser tracking prevention blocked session storage — your chat won't persist across reloads. Open this site in a regular tab to save sessions.", 12000);
-  } catch (_) { /* empty-catch: intentional — a failed toast must not block the storage fallback. */ }
+    showToast(
+      "Browser tracking prevention blocked session storage — your chat won't persist across reloads. Open this site in a regular tab to save sessions.",
+      12000,
+    );
+  } catch (_) {
+    /* empty-catch: intentional — a failed toast must not block the storage fallback. */
+  }
 }
 
 /* P_storage-shim — Replace `window.localStorage` and `window.sessionStorage`
@@ -54,16 +58,35 @@ function _overrideStorageInstances() {
   _storageBlocked = true;
   _memStorage = new Map();
   _memSessionStorage = new Map();
-  try { if (typeof window !== 'undefined') (window as unknown as { SOCRATES_STORAGE_BLOCKED?: boolean }).SOCRATES_STORAGE_BLOCKED = true; } catch (_) { /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */ }
+  try {
+    if (typeof window !== 'undefined')
+      (window as unknown as { SOCRATES_STORAGE_BLOCKED?: boolean }).SOCRATES_STORAGE_BLOCKED = true;
+  } catch (_) {
+    /* empty-catch: intentional — the diagnostic flag is optional outside a writable browser global. */
+  }
   function _makeShim(bag: Map<string, string>) {
     return {
-      setItem: function (k: string, v: string) { bag.set(k, v); },
-      getItem: function (k: string) { return bag.has(k) ? bag.get(k) ?? null : null; },
-      removeItem: function (k: string) { bag.delete(k); },
-      clear: function () { bag.clear(); },
-      key: function (i: number) { return Array.from(bag.keys())[i] || null; },
-      get length() { return bag.size; },
-      [Symbol.iterator]: function () { return bag.entries(); },
+      setItem: function (k: string, v: string) {
+        bag.set(k, v);
+      },
+      getItem: function (k: string) {
+        return bag.has(k) ? (bag.get(k) ?? null) : null;
+      },
+      removeItem: function (k: string) {
+        bag.delete(k);
+      },
+      clear: function () {
+        bag.clear();
+      },
+      key: function (i: number) {
+        return Array.from(bag.keys())[i] || null;
+      },
+      get length() {
+        return bag.size;
+      },
+      [Symbol.iterator]: function () {
+        return bag.entries();
+      },
     };
   }
   const localShim = _makeShim(_memStorage);
@@ -71,55 +94,75 @@ function _overrideStorageInstances() {
   try {
     if (typeof window !== 'undefined') {
       Object.defineProperty(window, 'localStorage', {
-        value: localShim, writable: false, configurable: true,
+        value: localShim,
+        writable: false,
+        configurable: true,
       });
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: batchStorage.ts:71');
+    reportEmptyCatch(_, 'empty catch: batchStorage.ts');
     /* some hosts forbid redefining localStorage */
   }
   try {
     if (typeof window !== 'undefined') {
       Object.defineProperty(window, 'sessionStorage', {
-        value: sessionShim, writable: false, configurable: true,
+        value: sessionShim,
+        writable: false,
+        configurable: true,
       });
     }
-  } catch (_) { /* empty-catch: intentional — a host may forbid replacing sessionStorage; the prototype fallback still runs. */ }
+  } catch (_) {
+    /* empty-catch: intentional — a host may forbid replacing sessionStorage; the prototype fallback still runs. */
+  }
   /* Prototype fallback — captures of the old localStorage / sessionStorage
      (taken before the defineProperty ran) still need to hit our shim. */
   try {
     Storage.prototype.setItem = function (k, v) {
-      const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
+      const bag = this === sessionShim ? _memSessionStorage : _memStorage;
       bag!.set(String(k), String(v));
     };
     Storage.prototype.getItem = function (k) {
-      const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
+      const bag = this === sessionShim ? _memSessionStorage : _memStorage;
       return bag!.get(String(k)) ?? null;
     };
     Storage.prototype.removeItem = function (k) {
-      const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
+      const bag = this === sessionShim ? _memSessionStorage : _memStorage;
       bag!.delete(String(k));
     };
     Storage.prototype.clear = function () {
-      const bag = (this === sessionShim) ? _memSessionStorage : _memStorage;
+      const bag = this === sessionShim ? _memSessionStorage : _memStorage;
       bag!.clear();
     };
-  } catch (_) { /* empty-catch: intentional — some hosts freeze Storage.prototype; instance shims remain active where supported. */ }
+  } catch (_) {
+    /* empty-catch: intentional — some hosts freeze Storage.prototype; instance shims remain active where supported. */
+  }
 }
 
 (function _probeStorage() {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   let inIframe;
-  try { inIframe = window.self !== window.top; } catch (_) { inIframe = true; }
-  if (inIframe) { _overrideStorageInstances(); _notifyStorageBlockedOnce(); return; }
-  const probeKey = "__socrates_probe__";
   try {
-    window.localStorage.setItem(probeKey, "1");
+    inIframe = window.self !== window.top;
+  } catch (_) {
+    inIframe = true;
+  }
+  if (inIframe) {
+    _overrideStorageInstances();
+    _notifyStorageBlockedOnce();
+    return;
+  }
+  const probeKey = '__socrates_probe__';
+  try {
+    window.localStorage.setItem(probeKey, '1');
     const v = window.localStorage.getItem(probeKey);
     window.localStorage.removeItem(probeKey);
-    if (v !== "1") { _overrideStorageInstances(); _notifyStorageBlockedOnce();  }
+    if (v !== '1') {
+      _overrideStorageInstances();
+      _notifyStorageBlockedOnce();
+    }
   } catch {
-    _overrideStorageInstances(); _notifyStorageBlockedOnce();
+    _overrideStorageInstances();
+    _notifyStorageBlockedOnce();
   }
 })();
 
@@ -130,8 +173,9 @@ export function batchSetItem(key: string, value: string) {
       const batch = _batchStoragePending;
       _batchStoragePending = null;
       for (const k in batch) {
-        try { localStorage.setItem(k, batch[k]); }
-        catch (err) {
+        try {
+          localStorage.setItem(k, batch[k]);
+        } catch (err) {
           if (_detectStorageBlocked(err)) {
             _overrideStorageInstances();
             _notifyStorageBlockedOnce();
@@ -151,8 +195,11 @@ export function batchPeek(key: string) {
   if (_batchStoragePending && Object.prototype.hasOwnProperty.call(_batchStoragePending, key)) {
     return _batchStoragePending[key];
   }
-  try { return typeof localStorage === 'undefined' ? null : localStorage.getItem(key); }
-  catch { return null; }
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
 export function batchRemoveItem(key: string) {
@@ -161,8 +208,9 @@ export function batchRemoveItem(key: string) {
   if (_batchStoragePending && Object.prototype.hasOwnProperty.call(_batchStoragePending, key)) {
     delete _batchStoragePending[key];
   }
-  try { localStorage.removeItem(key); }
-  catch (err) {
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
     if (_detectStorageBlocked(err)) {
       _overrideStorageInstances();
       _notifyStorageBlockedOnce();

@@ -1,11 +1,13 @@
-import { stateStore } from '../../state/store.ts';
+import { callStore, dispatchPatches, dispatchSession, sessionStore } from '../../store/index.ts';
 import { hasUsableActive } from '../../config/providers.ts';
 import { _origGenerateFollowUp } from '../mocks.ts';
 import { notifyMockFallbackOnce } from '../mockFallbackNotice.ts';
 import { generateFollowUpStream } from '../../tutor/socraticTurn.ts';
 import { toolCallbacksForStream } from '../toolCallbacks.ts';
 import { isExpectedTurnAbort } from '../turn/ui.ts';
-import { addAnchoredAssistant, addStreamingMessage, askChatTurn, reportTurnFailure } from './runtime.ts';
+import { askChatTurn } from '../turn/controller.ts';
+import { addStreamingMessage } from '../turn/loadStreamingTurn.ts';
+import { addAnchoredAssistant, reportTurnFailure } from './runtime.ts';
 import { advanceTutorNodeIfReady, recordTutorProgress } from './tutorProgress.ts';
 import type { SubmitChatMessage, TutorTurnOptions } from './tutorPolicy.ts';
 import type { KbNode } from '../teachingPlan.ts';
@@ -19,8 +21,9 @@ export interface DispatchTutorTurnInput {
 }
 
 async function runChatFallback(text: string, chatContent: unknown): Promise<void> {
-  try { await askChatTurn(text, chatContent); }
-  catch (error) {
+  try {
+    await askChatTurn(text, chatContent);
+  } catch (error) {
     if (!isExpectedTurnAbort(error)) reportTurnFailure(error, 'sendPipeline.tutorFallback');
   }
 }
@@ -35,10 +38,10 @@ async function runTutorFollowUp(
 ): Promise<void> {
   if (!node) {
     await runChatFallback(text, chatContent);
-    stateStore.dispatch({
-      type: 'state/set',
+    dispatchSession({
+      type: 'session/set',
       key: 'totalQ',
-      value: stateStore.read('totalQ') + 1,
+      value: sessionStore.getState().totalQ + 1,
     });
     return;
   }
@@ -50,7 +53,7 @@ async function runTutorFollowUp(
     const response = await generateFollowUpStream(
       text,
       node,
-      stateStore.read('domain') || '',
+      sessionStore.getState().domain || '',
       (delta: string) => streamController.append(delta),
       (thinking: string) => streamController.appendThinking(thinking),
       toolCallbacksForStream(streamController),
@@ -61,28 +64,25 @@ async function runTutorFollowUp(
     }
     if (response != null) {
       streamController.finish();
-    } else if (stateStore.read('lastCallError')) {
-      streamController.replaceWithError(
-        'No response: ' + stateStore.read('lastCallError'),
-        () => submitChatMessage(text, options),
+    } else if (callStore.getState().lastCallError) {
+      streamController.replaceWithError('No response: ' + callStore.getState().lastCallError, () =>
+        submitChatMessage(text, options),
       );
     } else {
       streamController.abort();
       notifyMockFallbackOnce();
-      addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain') || ''));
+      addAnchoredAssistant(_origGenerateFollowUp(text, node, sessionStore.getState().domain || ''));
     }
   } else {
     notifyMockFallbackOnce();
-    addAnchoredAssistant(_origGenerateFollowUp(text, node, stateStore.read('domain') || ''));
+    addAnchoredAssistant(_origGenerateFollowUp(text, node, sessionStore.getState().domain || ''));
   }
 
-  stateStore.dispatch({
-    type: 'state/batch',
-    patch: {
-      stuckCount: (isSubstantive || options.origin === 'quiz')
-        ? 0
-        : stateStore.read('stuckCount'),
-      totalQ: stateStore.read('totalQ') + 1,
+  dispatchPatches({
+    session: {
+      stuckCount:
+        isSubstantive || options.origin === 'quiz' ? 0 : sessionStore.getState().stuckCount,
+      totalQ: sessionStore.getState().totalQ + 1,
     },
   });
 }

@@ -19,13 +19,19 @@ async function prep(p) {
     document.getElementById('appShell')?.classList.remove('hidden');
     document.documentElement.dataset.bootState = 'app';
     document.documentElement.dataset.showGrid = 'false';
-    document.querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent').forEach(e => e.remove());
+    document
+      .querySelectorAll('#socratesCookieConsent,.socrates-cookie-consent')
+      .forEach((e) => e.remove());
   });
   await p.waitForTimeout(700);
 }
 
 // ---- mobile ----
-const m = await b.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+const m = await b.newPage({
+  viewport: { width: 390, height: 844 },
+  isMobile: true,
+  hasTouch: true,
+});
 await prep(m);
 await m.evaluate(() => document.getElementById('sidebar')?.classList.add('collapsed'));
 await m.waitForTimeout(400);

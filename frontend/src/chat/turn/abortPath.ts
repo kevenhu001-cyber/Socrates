@@ -17,7 +17,8 @@ import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
-import { setChatStopState, markTurnEnded, resendLastUserMessage } from '../turn/ui.ts';
+import { setChatStopState, markTurnEnded } from './ui.ts';
+import { resendLastUserMessage } from './resend.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
 import { turnState } from '../turn/state.ts';
 import { removeSupersededStub } from './anchor/stub.ts';
@@ -38,9 +39,11 @@ function readAbortedMessage(state: TurnRuntimeState): TurnMessage | null {
 }
 
 function hasVisibleAbortContent(message: TurnMessage | null, visibleText: string): boolean {
-  return !!(message && (
-    visibleText || message.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed')
-  ));
+  return !!(
+    message &&
+    (visibleText ||
+      message.turnRuntime?.uiSurfaces.some((surface) => surface.phase === 'committed'))
+  );
 }
 
 function preserveEmptyAbortStub(state: TurnRuntimeState, message: TurnMessage | null): void {
@@ -52,33 +55,45 @@ function preserveEmptyAbortStub(state: TurnRuntimeState, message: TurnMessage | 
     _supersededStub: true,
   });
   setTimeout(function () {
-    try { removeSupersededStub(state.clientId); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:55', 'expected');
+    try {
+      removeSupersededStub(state.clientId);
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts', 'expected');
       /* already gone */
     }
   }, 700);
 }
 
-function renderStoppedHtml(state: TurnRuntimeState, stoppedRaw: string, visibleStoppedRaw: string): string {
+function renderStoppedHtml(
+  state: TurnRuntimeState,
+  stoppedRaw: string,
+  visibleStoppedRaw: string,
+): string {
   try {
     const html = buildAssistantHtml(stoppedRaw);
     return /scaffold-stream-unclosed/.test(html) ? formatMsgProgressive(stoppedRaw) : html;
   } catch {
-    try { return formatMsgProgressive(stoppedRaw); }
-    catch { return '<p>' + esc(visibleStoppedRaw) + '</p>'; }
+    try {
+      return formatMsgProgressive(stoppedRaw);
+    } catch {
+      return '<p>' + esc(visibleStoppedRaw) + '</p>';
+    }
   }
 }
 
 function bindStoppedResend(state: TurnRuntimeState): void {
   claimLiveRetry(state.ret, function () {
-    try { resendLastUserMessage(); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:71');
+    try {
+      resendLastUserMessage();
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts');
       /* resend handler threw */
     }
   });
-  try { saveCurrentSession(); }
-  catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:74');
+  try {
+    saveCurrentSession();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts');
     /* save failed */
   }
 }
@@ -90,17 +105,22 @@ function finalizeStoppedMessage(
   visibleStoppedRaw: string,
 ): void {
   const stoppedHtml = renderStoppedHtml(state, stoppedRaw, visibleStoppedRaw);
-  const resendHtml = '<div class="msg-error msg-resend" style="margin-top:8px">' +
-    '<span class="msg-error-text">' + esc(state.t('chat.stopped') || 'Response stopped') + '</span>' +
+  const resendHtml =
+    '<div class="msg-error msg-resend" style="margin-top:8px">' +
+    '<span class="msg-error-text">' +
+    esc(state.t('chat.stopped') || 'Response stopped') +
+    '</span>' +
     '</div>';
-  const finalized = state.patchOwnedMessage({
-    rawText: stoppedRaw,
-    html: stoppedHtml + resendHtml,
-    type: 'assistant',
-    state: 'stopped',
-  }) || message;
+  const finalized =
+    state.patchOwnedMessage({
+      rawText: stoppedRaw,
+      html: stoppedHtml + resendHtml,
+      type: 'assistant',
+      state: 'stopped',
+    }) || message;
   setReactLiveStatus(finalized, {
-    phase: 'stopped', label: state.t('chat.stopped') || 'Response stopped',
+    phase: 'stopped',
+    label: state.t('chat.stopped') || 'Response stopped',
   });
   bindStoppedResend(state);
 }
@@ -108,12 +128,16 @@ function finalizeStoppedMessage(
 function releaseActiveAbortTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
-  try { setChatStopState(false); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:113');
+  try {
+    setChatStopState(false);
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts');
     /* stop state already cleared */
   }
-  try { markTurnEnded(); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts:114');
+  try {
+    markTurnEnded();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/abortPath.ts');
     /* turn already ended */
   }
 }
@@ -154,7 +178,9 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
     /* Stop the independent execution stream and any queued delta
        frame before this message can lose ownership of its slot. */
     state.toolRuntime.cancel();
-    state.patchOwnedMessage({ turnRuntime: settleTurnRuntime(readTurnMessage(state.msgIdx)?.turnRuntime, 'stopped') });
+    state.patchOwnedMessage({
+      turnRuntime: settleTurnRuntime(readTurnMessage(state.msgIdx)?.turnRuntime, 'stopped'),
+    });
     /* A user stop is an intentional end state. Keep any visible text as a
      * normal assistant message so it remains on screen and can be saved.
      * P_session-cross-talk — verify the slot still holds OUR placeholder
@@ -164,7 +190,9 @@ export function createAbortPath(state: TurnRuntimeState): AbortPath {
      * message. The abandoned placeholder is harmless (it's not in the
      * new session's array), so just skip the splice. */
     const abortedMessage = readAbortedMessage(state);
-    const stoppedRaw = abortedMessage ? String(state.full || abortedMessage.rawText || '') : String(state.full || '');
+    const stoppedRaw = abortedMessage
+      ? String(state.full || abortedMessage.rawText || '')
+      : String(state.full || '');
     const visibleStoppedRaw = stripChatArtifacts(stoppedRaw)
       .replace(/<think>[\s\S]*?<\/think>/gi, '')
       .replace(/<think>[\s\S]*$/gi, '')

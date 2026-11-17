@@ -2,7 +2,7 @@
 // Spec: the Composer "+" tools menu, including disclosure state, dismissal,
 // placement and action dispatch, is owned by React.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -24,19 +24,43 @@ test('Composer tools menu React mode hydrates #composerToolsMenu eagerly', async
   /* Scoped to the desktop list: the menu renders both item sets and lets CSS
      pick one per breakpoint, so an unscoped query also returns the mobile
      rows. */
-  const actions = await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]').evaluateAll((els) =>
-    els.map((el) => el.getAttribute('data-composer-action')),
-  );
-  expect(actions).toEqual(['upload', 'webSearch', 'explore', 'deepResearch', 'write', 'analyze', 'createImage', 'createSite', 'exam', 'skills']);
-  const mobileActions = await page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]').evaluateAll((els) =>
-    els.map((el) => el.getAttribute('data-composer-action')),
-  );
+  const actions = await page
+    .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('data-composer-action')));
+  expect(actions).toEqual([
+    'upload',
+    'webSearch',
+    'explore',
+    'deepResearch',
+    'write',
+    'analyze',
+    'createImage',
+    'createSite',
+    'exam',
+    'skills',
+  ]);
+  const mobileActions = await page
+    .locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action]')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('data-composer-action')));
   /* The phone sheet mirrors the reference's flat ordering: media/context
      first (camera, photos, upload, createImage), then search, then the
      remaining workflows. */
   expect(mobileActions).toEqual([
-    'camera', 'photos', 'upload', 'wechatFiles', 'managePlugins', 'skills', 'webSearch',
-    'createImage', 'explore', 'deepResearch', 'write', 'analyze', 'createSite', 'exam', 'extensiveThinking',
+    'camera',
+    'photos',
+    'upload',
+    'wechatFiles',
+    'managePlugins',
+    'skills',
+    'webSearch',
+    'createImage',
+    'explore',
+    'deepResearch',
+    'write',
+    'analyze',
+    'createSite',
+    'exam',
+    'extensiveThinking',
   ]);
 });
 
@@ -77,8 +101,9 @@ test('Composer tools menu opens and dismisses from React controls', async ({ pag
      nothing can be narrowed away. */
   await expect(menu.locator('.composer-tools-footer-search')).toHaveCount(0);
   await expect(desktopItems.filter({ hasText: 'Generate exam' })).toHaveCount(1);
-  await expect(menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first())
-    .toContainText(/Add context|添加资料/);
+  await expect(
+    menu.locator('.composer-tools-desktop-items .composer-tools-group-label').first(),
+  ).toContainText(/Add context|添加资料/);
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflows-menu.png',
     fullPage: true,
@@ -100,14 +125,17 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await page.evaluate(() => {
     window.__composerCalls = [];
     window.__socratesLegacy.composer.composeAction = () => window.__composerCalls.push('write');
-    window.__socratesLegacy.composer.openAttachmentPicker = () => window.__composerCalls.push('upload');
-    window.__socratesLegacy.composer.toggleExtensionByKey = (key) => window.__composerCalls.push(key);
-    window.__socratesLegacy.navigation.openPromptTemplatesModal = () => window.__composerCalls.push('skills');
+    window.__socratesLegacy.composer.openAttachmentPicker = () =>
+      window.__composerCalls.push('upload');
+    window.__socratesLegacy.composer.toggleExtensionByKey = (key) =>
+      window.__composerCalls.push(key);
+    window.__socratesLegacy.navigation.openPromptTemplatesModal = () =>
+      window.__composerCalls.push('skills');
   });
 
   // Open the menu from a live chat composer.
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   await page.locator('#composerToolsBtn').click();
@@ -115,13 +143,17 @@ test('Composer tools menu items dispatch through legacy window.* actions', async
   await expect(menu).not.toHaveClass(/hidden/);
 
   // Click the "write" item (React closes before dispatching the action).
-  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
+  await page
+    .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]')
+    .click();
   await expect(menu).toHaveClass(/hidden/);
 
   // Re-open and click the "exam" item.
   await page.locator('#composerToolsBtn').click();
   await expect(menu).not.toHaveClass(/hidden/);
-  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="exam"]').click();
+  await page
+    .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="exam"]')
+    .click();
   await expect(menu).toHaveClass(/hidden/);
 
   const calls = await page.evaluate(() => window.__composerCalls);
@@ -135,13 +167,15 @@ test('React composer selection activates the registered extension', async ({ pag
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
-  await page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]').click();
+  await page
+    .locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action="write"]')
+    .click();
   await expect(menu).toHaveClass(/hidden/);
   await expect.poll(() => page.evaluate(() => window._activeTemplate?.extensionKey)).toBe('write');
 });
@@ -156,7 +190,9 @@ test('Composer tools menu React mode always loads (no ?react=1 flag needed)', as
   await expect(menu).toBeAttached();
   await expect(menu).not.toHaveAttribute('data-mounted-by', /.+/);
 
-  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(10);
+  await expect(menu.locator('.composer-tools-desktop-items [data-composer-action]')).toHaveCount(
+    10,
+  );
 });
 
 test('mobile plus menu opens without expanding the chat composer', async ({ page }) => {
@@ -167,7 +203,7 @@ test('mobile plus menu opens without expanding the chat composer', async ({ page
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 
@@ -222,19 +258,24 @@ test('mobile photo action uses the typed composer media picker', async ({ page }
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.__mediaPickerCalls = [];
-    window.__socratesLegacy.composer.openMediaPicker = (kind) => window.__mediaPickerCalls.push(kind);
+    window.__socratesLegacy.composer.openMediaPicker = (kind) =>
+      window.__mediaPickerCalls.push(kind);
   });
   await page.locator('#composerToolsBtn').click();
-  const photos = page.locator('#composerToolsMenu .composer-tools-mobile-items [data-composer-action="photos"]');
+  const photos = page.locator(
+    '#composerToolsMenu .composer-tools-mobile-items [data-composer-action="photos"]',
+  );
   await expect(photos).toBeVisible();
   await photos.click();
   await expect.poll(() => page.evaluate(() => window.__mediaPickerCalls)).toEqual(['photos']);
 });
 
-test('desktop workflow selection embeds a themed token in the editable content', async ({ page }) => {
+test('desktop workflow selection embeds a themed token in the editable content', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await gotoAndSettle(page, '/');
@@ -259,7 +300,11 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await expect(token.locator('.composer-extension-token-icon')).toHaveCSS('color', /rgb/);
   await expect(token.locator('.composer-extension-token-label')).toHaveCSS('color', /rgb/);
   // The workflow token is an inline node inside the editable content.
-  expect(await token.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
+  expect(
+    await token.evaluate((element) =>
+      element.closest('.rich-composer-editor')?.getAttribute('contenteditable'),
+    ),
+  ).toBe('true');
   // Dismissing the token clears the workflow itself, not just its styling.
   await token.locator('.composer-extension-token-remove').click();
   await expect(editor.locator('.composer-extension-token')).toHaveCount(0);
@@ -268,13 +313,17 @@ test('desktop workflow selection embeds a themed token in the editable content',
   await menu.locator('.composer-tools-desktop-items [data-composer-action="write"]').click();
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   const chatEditor = page.locator('#composerRoot .rich-composer-editor');
   const chatToken = chatEditor.locator('.composer-extension-token');
   await expect(chatToken).toBeVisible();
-  expect(await chatToken.evaluate((element) => element.closest('.rich-composer-editor')?.getAttribute('contenteditable'))).toBe('true');
+  expect(
+    await chatToken.evaluate((element) =>
+      element.closest('.rich-composer-editor')?.getAttribute('contenteditable'),
+    ),
+  ).toBe('true');
   await page.screenshot({
     path: 'test-results/visual-qa/composer-workflow-selected-desktop.png',
     fullPage: true,
@@ -291,8 +340,24 @@ test('composer plus menu lists only connected plugins', async ({ page }) => {
         mode: 'oomol-project-connector',
         configured: true,
         connectors: [
-          { id: 'github', name: 'GitHub', description: 'Repos.', capabilities: ['Repos'], authType: 'oauth', configured: true, connection: { status: 'connected' } },
-          { id: 'notion', name: 'Notion', description: 'Pages.', capabilities: ['Pages'], authType: 'oauth', configured: true, connection: null },
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Repos.',
+            capabilities: ['Repos'],
+            authType: 'oauth',
+            configured: true,
+            connection: { status: 'connected' },
+          },
+          {
+            id: 'notion',
+            name: 'Notion',
+            description: 'Pages.',
+            capabilities: ['Pages'],
+            authType: 'oauth',
+            configured: true,
+            connection: null,
+          },
         ],
       }),
     });
@@ -332,7 +397,11 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
   await page.route(/\/api\/(?:v2\/)?project-connectors(?:\?|$)/, async (route) => {
     requestCount += 1;
     if (requestCount === 1) {
-      await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'offline' }) });
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'offline' }),
+      });
       return;
     }
     await route.fulfill({
@@ -341,7 +410,15 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
       body: JSON.stringify({
         configured: true,
         connectors: [
-          { id: 'github', name: 'GitHub', description: 'Repository context.', capabilities: ['Repositories'], authType: 'oauth', configured: true, connection: { status: 'connected' } },
+          {
+            id: 'github',
+            name: 'GitHub',
+            description: 'Repository context.',
+            capabilities: ['Repositories'],
+            authType: 'oauth',
+            configured: true,
+            connection: { status: 'connected' },
+          },
         ],
       }),
     });
@@ -352,7 +429,9 @@ test('composer plugin catalog exposes a retry after a failed request', async ({ 
   await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu');
-  await expect(menu.locator('.composer-tools-plugin-state')).toContainText(/could not be loaded|加载失败/);
+  await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
+    /could not be loaded|加载失败/,
+  );
   await menu.getByRole('menuitem', { name: /Try again|重试/ }).click();
   await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
   expect(requestCount).toBe(2);
@@ -362,7 +441,9 @@ test('a pending plugin retry survives closing and reopening the tools menu', asy
   await mockAuthedApp(page);
   let requestCount = 0;
   let releaseRetry;
-  const retryGate = new Promise((resolve) => { releaseRetry = resolve; });
+  const retryGate = new Promise((resolve) => {
+    releaseRetry = resolve;
+  });
   await page.route(/\/api\/(?:v2\/)?project-connectors(?:\?|$)/, async (route) => {
     requestCount += 1;
     if (requestCount === 1) {
@@ -370,10 +451,12 @@ test('a pending plugin retry survives closing and reopening the tools menu', asy
       return;
     }
     await retryGate;
-    await route.fulfill({ json: {
-      configured: true,
-      connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
-    } });
+    await route.fulfill({
+      json: {
+        configured: true,
+        connectors: [{ id: 'github', name: 'GitHub', connection: { status: 'connected' } }],
+      },
+    });
   });
   try {
     await gotoAndSettle(page, '/');
@@ -386,7 +469,9 @@ test('a pending plugin retry survives closing and reopening the tools menu', asy
     await trigger.click();
     await expect(menu).toBeHidden();
     await trigger.click();
-    await expect(menu.locator('.composer-tools-plugin-state')).toContainText(/Loading connected apps|正在加载/);
+    await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
+      /Loading connected apps|正在加载/,
+    );
     releaseRetry();
     await expect(menu.locator('[data-composer-plugin="github"]')).toBeVisible();
     expect(requestCount).toBe(2);
@@ -401,7 +486,9 @@ test('compact menu supports keyboard navigation and returns focus on Escape', as
   await waitForAppShell(page);
   const trigger = page.locator('#composerToolsBtn');
   await trigger.click();
-  const rows = page.locator('#composerToolsMenu .composer-tools-desktop-items [data-composer-action]');
+  const rows = page.locator(
+    '#composerToolsMenu .composer-tools-desktop-items [data-composer-action]',
+  );
   await page.keyboard.press('ArrowDown');
   await expect(rows.first()).toBeFocused();
   await page.keyboard.press('ArrowDown');

@@ -1,4 +1,4 @@
-import { stateStore } from '../../state/store.ts';
+import { dispatchPatches, dispatchSession, kbBridge, sessionBridge } from '../../store/index.ts';
 import { askNextQuestion } from '../../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { addAnchoredAssistant } from './runtime.ts';
@@ -15,39 +15,40 @@ export function recordTutorProgress(
   text: string,
   options: TutorTurnOptions,
 ): { node: KbNode | null; isSubstantive: boolean } {
-  const currentNode = stateStore.read('currentNode') as number;
-  const node = (stateStore.read('kbNodes') as KbNode[])[currentNode] || null;
-  stateStore.dispatch({
-    type: 'state/set',
+  const currentNode = kbBridge.getSnapshot().currentNode as number;
+  const node = (kbBridge.getSnapshot().kbNodes as KbNode[])[currentNode] || null;
+  dispatchSession({
+    type: 'session/set',
     key: 'stuckCount',
-    value: stateStore.read('stuckCount') + 1,
+    value: sessionBridge.getSnapshot().stuckCount + 1,
   });
 
-  if (stateStore.read('teachingStage') === 'exercise') {
-    stateStore.dispatch({
-      type: 'state/set',
+  if (sessionBridge.getSnapshot().teachingStage === 'exercise') {
+    dispatchSession({
+      type: 'session/set',
       key: 'practiceAttempts',
-      value: (stateStore.read('practiceAttempts') || 0) + 1,
+      value: (sessionBridge.getSnapshot().practiceAttempts || 0) + 1,
     });
   }
 
   const isSubstantive = isSubstantiveTutorAnswer(text);
   if (countsTowardTutorProgress(text, options.origin)) {
-    stateStore.dispatch({
-      type: 'state/set',
+    dispatchSession({
+      type: 'session/set',
       key: 'substantiveCount',
-      value: stateStore.read('substantiveCount') + 1,
+      value: sessionBridge.getSnapshot().substantiveCount + 1,
     });
   }
 
-  const nextStage = nextTutorStage(stateStore.read('teachingStage'), isSubstantive, options.origin);
+  const nextStage = nextTutorStage(
+    sessionBridge.getSnapshot().teachingStage,
+    isSubstantive,
+    options.origin,
+  );
   if (nextStage) {
-    stateStore.dispatch({ type: 'state/set', key: 'teachingStage', value: nextStage });
+    dispatchSession({ type: 'session/set', key: 'teachingStage', value: nextStage });
     if (nextStage === 'exercise') {
-      stateStore.dispatch({
-        type: 'state/batch',
-        patch: { practiceAttempts: 0, practicePhase: 'foundation' },
-      });
+      dispatchPatches({ session: { practiceAttempts: 0, practicePhase: 'foundation' } });
     }
   }
 
@@ -56,28 +57,27 @@ export function recordTutorProgress(
 
 function findNextNodeIndex(node: KbNode): number {
   let nextNodeIndex = -1;
-  const plan = stateStore.read('teachingPlan') as TeachingPlan | null;
+  const plan = sessionBridge.getSnapshot().teachingPlan as TeachingPlan | null;
   const planSubtopics = (plan && plan.subtopics) || [];
   if (planSubtopics.length) {
     const currentPlanIndex = planSubtopics.findIndex((subtopic) => subtopic.name === node.name);
-    const nextPlanIndex = planSubtopics.findIndex((subtopic, index) => (
-      index > currentPlanIndex && subtopic.status !== 'internalized'
-    ));
+    const nextPlanIndex = planSubtopics.findIndex(
+      (subtopic, index) => index > currentPlanIndex && subtopic.status !== 'internalized',
+    );
     if (nextPlanIndex >= 0) {
       const nextSubtopic = planSubtopics[nextPlanIndex]!;
-      const nodes = stateStore.read('kbNodes') as KbNode[];
+      const nodes = kbBridge.getSnapshot().kbNodes as KbNode[];
       nextNodeIndex = nodes.findIndex((candidate) => candidate.name === nextSubtopic.name);
-      stateStore.dispatch({
-        type: 'state/set',
-        key: 'session.teachingPlan.currentSubtopicIdx',
-        value: nextPlanIndex,
+      dispatchSession({
+        type: 'session/patch',
+        patch: { teachingPlan: { ...(plan as TeachingPlan), currentSubtopicIdx: nextPlanIndex } },
       });
     }
   }
 
   if (nextNodeIndex < 0) {
-    const currentIndex = stateStore.read('currentNode') as number;
-    const nodes = stateStore.read('kbNodes') as KbNode[];
+    const currentIndex = kbBridge.getSnapshot().currentNode as number;
+    const nodes = kbBridge.getSnapshot().kbNodes as KbNode[];
     for (let index = currentIndex + 1; index < nodes.length; index += 1) {
       const candidate = nodes[index];
       if (candidate && candidate.status !== 'internalized') {
@@ -90,37 +90,43 @@ function findNextNodeIndex(node: KbNode): number {
 }
 
 export function advanceTutorNodeIfReady(node: KbNode | null, origin?: string | null): boolean {
-  if (!node || !tutorNodeProgressDecision({
-    node,
-    substantiveCount: stateStore.read('substantiveCount'),
-    teachingStage: stateStore.read('teachingStage'),
-    origin,
-  })) return false;
+  if (
+    !node ||
+    !tutorNodeProgressDecision({
+      node,
+      substantiveCount: sessionBridge.getSnapshot().substantiveCount,
+      teachingStage: sessionBridge.getSnapshot().teachingStage,
+      origin,
+    })
+  )
+    return false;
 
   /* This threshold advances the lesson sequence; message length and turn
      count are not evidence of mastery. Leave the KB status and assessed
      question count unchanged until a learning check records that evidence. */
-  stateStore.dispatch({ type: 'state/set', key: 'substantiveCount', value: 0 });
+  dispatchSession({ type: 'session/set', key: 'substantiveCount', value: 0 });
 
   const nextNodeIndex = findNextNodeIndex(node);
   if (nextNodeIndex < 0) {
     addAnchoredAssistant(
-      "Nice work — you've worked through the current learning path for " + stateStore.read('domain')
-        + '. Revisit any idea or use a practice check to see what you can recall independently.',
+      "Nice work — you've worked through the current learning path for " +
+        sessionBridge.getSnapshot().domain +
+        '. Revisit any idea or use a practice check to see what you can recall independently.',
     );
   } else {
-    stateStore.dispatch({
-      type: 'state/batch',
-      patch: {
-        currentNode: nextNodeIndex,
+    dispatchPatches({
+      kb: { currentNode: nextNodeIndex },
+      session: {
         stuckCount: 0,
         teachingStage: 'motivate',
         currentExampleIdx: 0,
         practiceAttempts: 0,
       },
     });
-    const nextNode = (stateStore.read('kbNodes') as KbNode[])[nextNodeIndex]!;
-    addAnchoredAssistant('Good work on **' + node.name + '**. Let\'s move to the next area: **' + nextNode.name + '**.');
+    const nextNode = (kbBridge.getSnapshot().kbNodes as KbNode[])[nextNodeIndex]!;
+    addAnchoredAssistant(
+      'Good work on **' + node.name + "**. Let's move to the next area: **" + nextNode.name + '**.',
+    );
     setTimeout(() => askNextQuestion(), 900);
   }
   saveCurrentSession();

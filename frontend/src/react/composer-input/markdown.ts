@@ -3,11 +3,9 @@ import type { JSONContent } from '@tiptap/react';
 /* Inside a code span a backslash is literal, so it has to be doubled before
    the backtick escapes are added — otherwise a trailing backslash lets the
    closing fence end the span early and the rest is parsed as markdown. */
-const escapeCodeSpan = (value: string): string =>
-  value.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+const escapeCodeSpan = (value: string): string => value.replace(/\\/g, '\\\\').replace(/`/g, '\\`');
 
-const escapeText = (value: string): string =>
-  value.replace(/([\\`*_{}[\]()#+.!>|~-])/g, '\\$1');
+const escapeText = (value: string): string => value.replace(/([\\`*_{}[\]()#+.!>|~-])/g, '\\$1');
 
 function renderMarks(text: string, marks: JSONContent['marks'] = []): string {
   let output = escapeText(text);
@@ -40,7 +38,10 @@ function indent(value: string, prefix: string): string {
 type NodeRenderer = (node: JSONContent, depth: number) => string;
 
 function renderDocument(node: JSONContent, depth: number): string {
-  return (node.content ?? []).map((child) => renderNode(child, depth)).filter(Boolean).join('\n\n');
+  return (node.content ?? [])
+    .map((child) => renderNode(child, depth))
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 function renderParagraph(node: JSONContent): string {
@@ -72,17 +73,20 @@ function renderList(node: JSONContent, depth: number): string {
 function renderOrderedList(node: JSONContent, depth: number): string {
   const start = Number(node.attrs?.start ?? 1);
   return (node.content ?? [])
-    .map((child, index) => renderNode({ ...child, attrs: { ...child.attrs, ordinal: start + index } }, depth))
+    .map((child, index) =>
+      renderNode({ ...child, attrs: { ...child.attrs, ordinal: start + index } }, depth),
+    )
     .join('\n');
 }
 
 function renderListItem(node: JSONContent, depth: number): string {
   const body = (node.content ?? []).map((child) => renderNode(child, depth + 1)).join('\n');
-  const prefix = node.type === 'taskItem'
-    ? `- [${node.attrs?.checked ? 'x' : ' '}] `
-    : node.attrs?.ordinal
-      ? `${node.attrs.ordinal}. `
-      : '- ';
+  const prefix =
+    node.type === 'taskItem'
+      ? `- [${node.attrs?.checked ? 'x' : ' '}] `
+      : node.attrs?.ordinal
+        ? `${node.attrs.ordinal}. `
+        : '- ';
   return indent(body, `${'  '.repeat(depth)}${prefix}`);
 }
 
@@ -108,6 +112,7 @@ function renderNode(node: JSONContent, depth = 0): string {
 
 export function tiptapJSONToMarkdown(doc: JSONContent | null | undefined): string {
   if (!doc) return '';
-  return renderNode(doc).replace(/\n{3,}/g, '\n\n').trim();
+  return renderNode(doc)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
-

@@ -142,11 +142,10 @@ function replayPendingDeltas<TEntry extends ToolUseEntry, TMessage extends ToolU
   options.notifyToolRun(message);
 }
 
-function replayPendingProgress<TEntry extends ToolUseEntry, TMessage extends ToolUseMessage<TEntry>>(
-  options: ToolUseRuntimeOptions<TEntry, TMessage>,
-  message: TMessage,
-  entry: TEntry,
-): void {
+function replayPendingProgress<
+  TEntry extends ToolUseEntry,
+  TMessage extends ToolUseMessage<TEntry>,
+>(options: ToolUseRuntimeOptions<TEntry, TMessage>, message: TMessage, entry: TEntry): void {
   const queued = entry._pendingProgress?.splice(0) || [];
   const orphaned = message._orphanProgress?.[entry.id];
   if (orphaned) delete message._orphanProgress![entry.id];
@@ -174,7 +173,7 @@ export function createToolUseRuntime<
     options.onToolActivity(call.name);
     const message = options.activeMessage();
     if (!message) return null;
-    const id = String(call.id || ('tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8)));
+    const id = String(call.id || 'tc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
     const existing = options.findEntry(message, id);
     if (existing) {
       updateExistingEntry(options, message, existing, call);

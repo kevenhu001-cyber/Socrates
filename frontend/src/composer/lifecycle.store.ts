@@ -26,13 +26,16 @@ export const composerLifecycleStore = Object.freeze({
 
 function publish(patch: Partial<Omit<ComposerLifecycleSnapshot, 'revision'>>): void {
   const current = internalStore.getState();
-  internalStore.setState(Object.freeze({
-    ...current,
-    ...patch,
-    drafts: Object.freeze({ ...current.drafts, ...patch.drafts }),
-    extensionTokens: Object.freeze({ ...current.extensionTokens, ...patch.extensionTokens }),
-    revision: current.revision + 1,
-  }), true);
+  internalStore.setState(
+    Object.freeze({
+      ...current,
+      ...patch,
+      drafts: Object.freeze({ ...current.drafts, ...patch.drafts }),
+      extensionTokens: Object.freeze({ ...current.extensionTokens, ...patch.extensionTokens }),
+      revision: current.revision + 1,
+    }),
+    true,
+  );
 }
 
 export function writeComposerDraft(surface: ComposerSurface, value: string): void {
@@ -41,12 +44,25 @@ export function writeComposerDraft(surface: ComposerSurface, value: string): voi
   publish({ drafts: { ...current.drafts, [surface]: value } });
 }
 
-export function writeComposerExtensionToken(surface: ComposerSurface, token: ComposerExtensionToken | null): void {
+export function writeComposerExtensionToken(
+  surface: ComposerSurface,
+  token: ComposerExtensionToken | null,
+): void {
   const current = internalStore.getState();
   const previous = current.extensionTokens[surface];
-  if (previous === token || (previous && token && previous.key === token.key
-    && previous.title === token.title && previous.icon === token.icon && previous.hint === token.hint)) return;
-  publish({ extensionTokens: { ...current.extensionTokens, [surface]: token ? { ...token } : null } });
+  if (
+    previous === token ||
+    (previous &&
+      token &&
+      previous.key === token.key &&
+      previous.title === token.title &&
+      previous.icon === token.icon &&
+      previous.hint === token.hint)
+  )
+    return;
+  publish({
+    extensionTokens: { ...current.extensionTokens, [surface]: token ? { ...token } : null },
+  });
 }
 
 export function writeComposerSurface(surface: ComposerSurface): void {

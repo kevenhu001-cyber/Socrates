@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -6,77 +6,117 @@ import { expectNoGlobalError, prepareChatWorkbench } from './_chat-workbench.mjs
 import { publishChatRuntime } from './_lib.mjs';
 
 for (const fixture of [
-  { name: 'desktop-light', viewport: { width: 1280, height: 800 }, mode: 'light', lang: 'en', retry: 'Try again', status: 'basic editor' },
-  { name: 'phone-dark-zh', viewport: { width: 390, height: 844 }, mode: 'dark', lang: 'zh', retry: '重试', status: '简易编辑器' },
+  {
+    name: 'desktop-light',
+    viewport: { width: 1280, height: 800 },
+    mode: 'light',
+    lang: 'en',
+    retry: 'Try again',
+    status: 'basic editor',
+  },
+  {
+    name: 'phone-dark-zh',
+    viewport: { width: 390, height: 844 },
+    mode: 'dark',
+    lang: 'zh',
+    retry: '重试',
+    status: '简易编辑器',
+  },
 ]) {
-test(`a failed composer chunk recovers locally without reloading (${fixture.name})`, async ({ page }) => {
-  const graph = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const composer = graph.modules.find((entry) => entry.id === 'src/react/composer-input/index.ts');
-  expect(composer, 'the editor must remain a lazy module').toBeTruthy();
-  await page.setViewportSize(fixture.viewport);
-  await mockAuthedApp(page, { lang: fixture.lang });
-  await page.addInitScript((mode) => localStorage.setItem('socrates-theme', mode), fixture.mode);
-  let blocked = true;
-  let failures = 0;
-  const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  await page.route(`**/${composer.chunk}*`, (route) => {
-    if (blocked) {
-      failures++;
-      return route.abort('failed');
-    }
-    return route.continue();
-  });
-  await page.goto('/');
-  await waitForAppShell(page);
-  const notice = page.locator('#composerInputWrap [data-mount-recovery="composer-shell"]');
-  await expect(notice).toBeVisible();
-  await expect(notice.getByRole('status')).toContainText(fixture.status);
-  const retryButton = notice.getByRole('button', { name: fixture.retry, exact: true });
-  await expect(retryButton).toHaveAttribute('type', 'button');
-  await expect(page.locator('#sidebarNav')).toBeAttached();
-  await expect(page.locator('#topModelSwitcher')).toBeVisible();
-  expect(failures).toBeGreaterThan(0);
-  await retryButton.focus();
-  await expect(retryButton).toBeFocused();
-  await page.screenshot({ path: 'test-results/composer-load-recovery-' + encodeURIComponent(fixture.name) + '.png' });
+  test(`a failed composer chunk recovers locally without reloading (${fixture.name})`, async ({
+    page,
+  }) => {
+    const graph = JSON.parse(
+      readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+    );
+    const composer = graph.modules.find(
+      (entry) => entry.id === 'src/react/composer-input/index.ts',
+    );
+    expect(composer, 'the editor must remain a lazy module').toBeTruthy();
+    await page.setViewportSize(fixture.viewport);
+    await mockAuthedApp(page, { lang: fixture.lang });
+    await page.addInitScript((mode) => localStorage.setItem('socrates-theme', mode), fixture.mode);
+    let blocked = true;
+    let failures = 0;
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.route(`**/${composer.chunk}*`, (route) => {
+      if (blocked) {
+        failures++;
+        return route.abort('failed');
+      }
+      return route.continue();
+    });
+    await page.goto('/');
+    await waitForAppShell(page);
+    const notice = page.locator('#composerInputWrap [data-mount-recovery="composer-shell"]');
+    await expect(notice).toBeVisible();
+    await expect(notice.getByRole('status')).toContainText(fixture.status);
+    const retryButton = notice.getByRole('button', { name: fixture.retry, exact: true });
+    await expect(retryButton).toHaveAttribute('type', 'button');
+    await expect(page.locator('#sidebarNav')).toBeAttached();
+    await expect(page.locator('#topModelSwitcher')).toBeVisible();
+    expect(failures).toBeGreaterThan(0);
+    await retryButton.focus();
+    await expect(retryButton).toBeFocused();
+    await page.screenshot({
+      path: 'test-results/composer-load-recovery-' + encodeURIComponent(fixture.name) + '.png',
+    });
 
-  const bootId = await page.evaluate(() => {
-    document.documentElement.dataset.recoveryBoot = 'original';
-    return performance.timeOrigin;
+    const bootId = await page.evaluate(() => {
+      document.documentElement.dataset.recoveryBoot = 'original';
+      return performance.timeOrigin;
+    });
+    const fallback = page.locator('[data-basic-composer]');
+    await fallback.fill('Draft typed during network failure');
+    blocked = false;
+    if (fixture.lang === 'zh') await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    else await retryButton.click();
+    await expect(page.locator('#composerRoot .rich-composer-editor').first()).toBeVisible();
+    await expect(notice).toHaveCount(0);
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(bootId);
+    await expect(page.locator('html')).toHaveAttribute('data-recovery-boot', 'original');
+    const editor = page.locator('#composerRoot .rich-composer-editor').first();
+    await expect(editor).toHaveText('Draft typed during network failure');
+    await editor.fill('Draft after recovery');
+    await page.evaluate(() => window.__socratesMountReactCompatibility());
+    await expect(editor).toHaveText('Draft after recovery');
+    await expect(page.locator('#composerRoot')).toHaveCount(1);
+    expect(pageErrors).toEqual([]);
   });
-  const fallback = page.locator('[data-basic-composer]');
-  await fallback.fill('Draft typed during network failure');
-  blocked = false;
-  if (fixture.lang === 'zh') await page.evaluate(() => window.dispatchEvent(new Event('online')));
-  else await retryButton.click();
-  await expect(page.locator('#composerRoot .rich-composer-editor').first()).toBeVisible();
-  await expect(notice).toHaveCount(0);
-  expect(await page.evaluate(() => performance.timeOrigin)).toBe(bootId);
-  await expect(page.locator('html')).toHaveAttribute('data-recovery-boot', 'original');
-  const editor = page.locator('#composerRoot .rich-composer-editor').first();
-  await expect(editor).toHaveText('Draft typed during network failure');
-  await editor.fill('Draft after recovery');
-  await page.evaluate(() => window.__socratesMountReactCompatibility());
-  await expect(editor).toHaveText('Draft after recovery');
-  await expect(page.locator('#composerRoot')).toHaveCount(1);
-  expect(pageErrors).toEqual([]);
-});
 }
 
-test('a failed transcript chunk recovers stored messages without changing the composer draft', async ({ page }) => {
-  const graph = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
-  const transcript = graph.modules.find((entry) => entry.id === 'src/react/message-list/MessageList.tsx');
+test('a failed transcript chunk recovers stored messages without changing the composer draft', async ({
+  page,
+}) => {
+  const graph = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
+  const transcript = graph.modules.find(
+    (entry) => entry.id === 'src/react/message-list/MessageList.tsx',
+  );
   expect(graph.chunks.find((chunk) => chunk.file === transcript.chunk).eager).toBe(false);
   let blocked = true;
-  await page.route(`**/${transcript.chunk}*`, (route) => blocked ? route.abort('failed') : route.continue());
+  await page.route(`**/${transcript.chunk}*`, (route) =>
+    blocked ? route.abort('failed') : route.continue(),
+  );
   // This scenario intentionally blocks the transcript; the shared helper
   // otherwise waits for the very messages whose renderer cannot load yet.
   await prepareChatWorkbench(page, { messages: [] });
-  await page.evaluate(() => window.stateStore.dispatch({
-    type: 'state/set', key: 'messages',
-    value: [{ id: 'recovery-answer', role: 'assistant', rawText: 'Preserved answer', text: 'Preserved answer' }],
-  }));
+  await page.evaluate(() =>
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          {
+            id: 'recovery-answer',
+            role: 'assistant',
+            rawText: 'Preserved answer',
+            text: 'Preserved answer',
+          },
+        ],
+      },
+    }),
+  );
   await publishChatRuntime(page, { type: 'state-synced', reason: 'recovery-fixture' });
   const notice = page.locator('#msgList [data-mount-recovery="msg-list"]');
   await expect(notice).toBeVisible();
@@ -92,12 +132,18 @@ test('a failed transcript chunk recovers stored messages without changing the co
   await expectNoGlobalError(page);
 });
 
-test('a failed navigation chunk remains locally retryable while the composer boots', async ({ page }) => {
-  const graph = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+test('a failed navigation chunk remains locally retryable while the composer boots', async ({
+  page,
+}) => {
+  const graph = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
   const navigation = graph.modules.find((entry) => entry.id === 'src/react/sidebar/SidebarNav.tsx');
   let blocked = true;
   await mockAuthedApp(page);
-  await page.route(`**/${navigation.chunk}*`, (route) => blocked ? route.abort('failed') : route.continue());
+  await page.route(`**/${navigation.chunk}*`, (route) =>
+    blocked ? route.abort('failed') : route.continue(),
+  );
   await page.goto('/');
   const editor = page.locator('#composerRoot .rich-composer-editor').first();
   await expect(editor).toBeVisible();
@@ -114,24 +160,41 @@ test('a failed navigation chunk remains locally retryable while the composer boo
 });
 
 test('a transient composer fetch failure retries before showing recovery UI', async ({ page }) => {
-  const graph = JSON.parse(readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'));
+  const graph = JSON.parse(
+    readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
+  );
   const composer = graph.modules.find((entry) => entry.id === 'src/react/composer-input/index.ts');
   await mockAuthedApp(page);
   let requests = 0;
-  await page.route(`**/${composer.chunk}*`, (route) => ++requests === 1 ? route.abort('failed') : route.continue());
+  await page.route(`**/${composer.chunk}*`, (route) =>
+    ++requests === 1 ? route.abort('failed') : route.continue(),
+  );
   await page.goto('/');
   await expect(page.locator('#composerRoot .rich-composer-editor').first()).toBeVisible();
   expect(requests).toBeGreaterThan(1);
   await expect(page.locator('[data-mount-recovery="composer-shell"]')).toHaveCount(0);
 });
 
-test('a failed static editor dependency can recover in a fresh document with its draft', async ({ page }) => {
+test('a failed static editor dependency can recover in a fresh document with its draft', async ({
+  page,
+}) => {
   const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-  const session = { id, title: 'Editor recovery fixture', kind: 'chat', mode: 'chat', phase: 'chat', messages: [] };
+  const session = {
+    id,
+    title: 'Editor recovery fixture',
+    kind: 'chat',
+    mode: 'chat',
+    phase: 'chat',
+    messages: [],
+  };
   await mockAuthedApp(page, { sessions: { sessions: [session] } });
-  await page.route(new RegExp(`/api/(?:v2/)?sessions/${id}(?:\\?|$)`), (route) => route.fulfill({ json: session }));
+  await page.route(new RegExp(`/api/(?:v2/)?sessions/${id}(?:\\?|$)`), (route) =>
+    route.fulfill({ json: session }),
+  );
   let blocked = true;
-  await page.route('**/assets/vendor-editor-*.js', (route) => blocked ? route.abort('failed') : route.continue());
+  await page.route('**/assets/vendor-editor-*.js', (route) =>
+    blocked ? route.abort('failed') : route.continue(),
+  );
   await page.goto(`/?chat=${id}`);
   await expect(page.locator('#chatView')).toBeVisible();
   const notice = page.locator('[data-mount-recovery="composer-shell"]');

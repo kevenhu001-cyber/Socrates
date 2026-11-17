@@ -52,7 +52,10 @@ export function useAdminConfigActions({
     if (!embeddingForm) return;
     publishAdminPatch({ savingEmbedding: true, error: null });
     try {
-      const saved = await saveEmbeddingProvider(embeddingForm, embeddingKey, { includeToken, includeKeyHint });
+      const saved = await saveEmbeddingProvider(embeddingForm, embeddingKey, {
+        includeToken,
+        includeKeyHint,
+      });
       setEmbeddingForm(saved);
       setEmbeddingKey('');
       publishAdminPatch({ savingEmbedding: false, embedding: saved, error: null });

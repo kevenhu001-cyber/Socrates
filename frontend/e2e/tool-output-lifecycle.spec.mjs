@@ -15,7 +15,7 @@
 // `.visualization-card`) where mount counts matter; the invalid-spec and
 // mobile-overflow cases use the real renderer too, but assert layout.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { installVizProbe, readVizProbe } from './_viz-probe.mjs';
@@ -76,9 +76,9 @@ function vizCall(id, title) {
   return {
     id,
     name: 'render_intelligent_ui',
-    input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]},
+    input: { version: 1, nodes: [{ ...spec, id: 'visual', type: 'visualization' }] },
     output: 'Visualization ready',
-    visualizations: [{...spec,nodeId:'visual',index:0}],
+    visualizations: [{ ...spec, nodeId: 'visual', index: 0 }],
     durationMs: 400,
     status: 'completed',
     textOffset: 0,
@@ -108,14 +108,15 @@ function assistantMessage(toolCalls, rawText = RAW) {
 async function openAssistantFixture(page, messages, options = {}) {
   const sessionId = options.sessionId || SESSION_ID;
   await mockAuthedApp(page);
-  await page.route('**/api/files/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'image/png',
-    body: PNG_1PX,
-  }));
-  await page.route(
-    new RegExp('/api/(?:v2/)?sessions/' + sessionId + '(?:\\?.*)?$'),
-    (route) => route.fulfill({
+  await page.route('**/api/files/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: PNG_1PX,
+    }),
+  );
+  await page.route(new RegExp('/api/(?:v2/)?sessions/' + sessionId + '(?:\\?.*)?$'), (route) =>
+    route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
@@ -136,7 +137,9 @@ async function openAssistantFixture(page, messages, options = {}) {
   await waitForAppShell(page);
   if (options.probe !== false) await installVizProbe(page);
   if (options.beforeLoadSession) await options.beforeLoadSession(page);
-  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, {
+    timeout: 15_000,
+  });
   await page.evaluate((id) => window.loadSession(id), sessionId);
   return page.locator('#msgList .msg.assistant').last().locator('.msg-body');
 }
@@ -159,7 +162,10 @@ test('a settled visualization beside visible tool activities stays on screen', a
 
   const group = body.locator('.rn-turn-activity');
   await expect(group).toHaveCount(1);
-  await expect(group.locator('[data-testid="turn-activity-toggle"]')).toHaveAttribute('aria-expanded', 'false');
+  await expect(group.locator('[data-testid="turn-activity-toggle"]')).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
 
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
@@ -251,7 +257,9 @@ test('a generated image stays hidden until assistant prose references it', async
   await expect(group.locator('.exec-artifact')).toHaveCount(0);
 });
 
-test('an explicit markdown reference renders the generated image in assistant prose', async ({ page }) => {
+test('an explicit markdown reference renders the generated image in assistant prose', async ({
+  page,
+}) => {
   const code = {
     id: 'code-1',
     name: 'code_interpreter',
@@ -264,7 +272,10 @@ test('an explicit markdown reference renders the generated image in assistant pr
   };
   const body = await openAssistantFixture(page, [
     userMessage(),
-    assistantMessage([code], 'The trend is clearer in the plot.\n\n![Generated plot](/api/files/file-1/raw)'),
+    assistantMessage(
+      [code],
+      'The trend is clearer in the plot.\n\n![Generated plot](/api/files/file-1/raw)',
+    ),
   ]);
 
   const image = body.locator('.tool-run-prose img[src="/api/files/file-1/raw"]');
@@ -312,20 +323,26 @@ test('a visualization stays visible across the running → result transition', a
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     let push = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
         start(controller) {
           push = (text) => controller.enqueue(encoder.encode(text));
           window.__outPushFrame = (event, data) => push(frame(event, data));
-          window.__outText = (content) => push('data: ' + JSON.stringify({ choices: [{ delta: { content } }] }) + '\n\n');
-          window.__outFinish = () => { push('data: [DONE]\n\n'); controller.close(); };
+          window.__outText = (content) =>
+            push('data: ' + JSON.stringify({ choices: [{ delta: { content } }] }) + '\n\n');
+          window.__outFinish = () => {
+            push('data: [DONE]\n\n');
+            controller.close();
+          };
         },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page);
@@ -334,36 +351,54 @@ test('a visualization stays visible across the running → result transition', a
   await installVizProbe(page);
   await page.evaluate(() => {
     const sessionId = '77777777-7777-4777-8777-777777777777';
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({
-      type: 'state/set',
-      key: 'messages',
-      value: [{ clientId: 'lifecycle-live-user', role: 'user', rawText: 'Run both', html: null }],
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'lifecycle-live-user', role: 'user', rawText: 'Run both', html: null },
+        ],
+      },
     });
     window.__testActivateMainView('chatView');
     window.__turnPromise = window.askChatTurn('Run both');
   });
-  await page.waitForFunction(() => typeof window.__outPushFrame === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.__outPushFrame === 'function', null, {
+    timeout: 15_000,
+  });
 
-  await page.evaluate(() => window.__outPushFrame('tool_use', [
-    { id: 'search-1', name: 'web_search', input: { query: 'parabola' } },
-  ]));
-  await page.evaluate((results) => window.__outPushFrame('tool_result', {
-    id: 'search-1',
-    ok: true,
-    status: 'completed',
-    output: '2 results',
-    results,
-    durationMs: 100,
-  }), SEARCH_RESULTS);
+  await page.evaluate(() =>
+    window.__outPushFrame('tool_use', [
+      { id: 'search-1', name: 'web_search', input: { query: 'parabola' } },
+    ]),
+  );
+  await page.evaluate(
+    (results) =>
+      window.__outPushFrame('tool_result', {
+        id: 'search-1',
+        ok: true,
+        status: 'completed',
+        output: '2 results',
+        results,
+        durationMs: 100,
+      }),
+    SEARCH_RESULTS,
+  );
 
   /* The chart mounts while its call is still in flight (the spec is already
      in the arguments) and must not vanish when the result lands. */
   const spec = vizSpec('Probe transition');
-  await page.evaluate((input) => window.__outPushFrame('tool_use', [
-    { id: 'viz-1', name: 'render_intelligent_ui', input: {version:1,nodes:[{...input,id:'visual',type:'visualization'}]} },
-  ]), spec);
+  await page.evaluate(
+    (input) =>
+      window.__outPushFrame('tool_use', [
+        {
+          id: 'viz-1',
+          name: 'render_intelligent_ui',
+          input: { version: 1, nodes: [{ ...input, id: 'visual', type: 'visualization' }] },
+        },
+      ]),
+    spec,
+  );
   const message = page.locator('.msg.assistant').last();
   /* RN-2 / OpenUI: while the turn is live the card's exact footprint is a
      skeleton (mounting a half-streamed payload would draw wrong values).
@@ -372,16 +407,23 @@ test('a visualization stays visible across the running → result transition', a
   await expect(skeleton).toBeVisible();
   await expect(skeleton).toContainText('Probe transition');
 
-  await page.evaluate((visualization) => window.__outPushFrame('tool_result', {
-    id: 'viz-1',
-    ok: true,
-    status: 'completed',
-    output: 'Visualization ready',
-    visualization,
-    durationMs: 100,
-  }), spec);
+  await page.evaluate(
+    (visualization) =>
+      window.__outPushFrame('tool_result', {
+        id: 'viz-1',
+        ok: true,
+        status: 'completed',
+        output: 'Visualization ready',
+        visualization,
+        durationMs: 100,
+      }),
+    spec,
+  );
 
-  await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
+  await expect(message.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute(
+    'data-state',
+    'done',
+  );
   const card = message.locator('.visualization-card').last();
   await expect(card).toBeVisible();
   await expect(card).toContainText('Probe transition');
@@ -400,7 +442,10 @@ test('a visualization stays visible across the running → result transition', a
   expect(probe.removed).toEqual([]);
   expect(probe.disposeCalls.every((call) => call.cardIds.length === 0)).toBe(true);
 
-  await page.evaluate(() => { window.__outText('All done.'); window.__outFinish(); });
+  await page.evaluate(() => {
+    window.__outText('All done.');
+    window.__outFinish();
+  });
 });
 
 /* ── stability and history ────────────────────────────────────────────── */
@@ -439,14 +484,22 @@ test('expanding and collapsing a tool ten times never remounts its chart', async
   expect(probe.disposeCalls.every((call) => call.cardIds.length === 0)).toBe(true);
 });
 
-test('history restore reuses the declarative host instead of mounting a second card', async ({ page }) => {
+test('history restore reuses the declarative host instead of mounting a second card', async ({
+  page,
+}) => {
   const body = await openAssistantFixture(page, [
     userMessage(),
     assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Probe restored')]),
   ]);
 
-  await expect(body.locator('.rn-tool-row[data-tcid="search-1"]')).toHaveAttribute('data-state', 'done');
-  await expect(body.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute('data-state', 'done');
+  await expect(body.locator('.rn-tool-row[data-tcid="search-1"]')).toHaveAttribute(
+    'data-state',
+    'done',
+  );
+  await expect(body.locator('.rn-tool-row[data-tcid="viz-1"]')).toHaveAttribute(
+    'data-state',
+    'done',
+  );
   await expect(body.locator('.visualization-card')).toHaveCount(1);
   await expect(body.locator('.tool-inline-attachments')).toHaveCount(1);
   await expect(body.locator('.agent-tool-card')).toHaveCount(0);
@@ -478,17 +531,17 @@ test('a call persisted with the outputs protocol renders the same', async ({ pag
   const viz = {
     id: 'viz-proto',
     name: 'render_intelligent_ui',
-    input: {version:1,nodes:[{...{ note: 'protocol only' },id:'visual',type:'visualization'}]},
+    input: {
+      version: 1,
+      nodes: [{ ...{ note: 'protocol only' }, id: 'visual', type: 'visualization' }],
+    },
     output: 'Visualization ready',
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
     outputs: [{ kind: 'visualization', spec: protocolSpec }],
   };
-  const body = await openAssistantFixture(page, [
-    userMessage(),
-    assistantMessage([code, viz]),
-  ]);
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([code, viz])]);
 
   const card = body.locator('.visualization-card');
   await expect(card).toHaveCount(1);
@@ -509,7 +562,9 @@ test('HTML artifacts render in React with a sandboxed preview action', async ({ 
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
-    outputs: [{ kind: 'artifact', fileId: 'html-report', mimeType: 'text/html', name: 'report.html' }],
+    outputs: [
+      { kind: 'artifact', fileId: 'html-report', mimeType: 'text/html', name: 'report.html' },
+    ],
   };
   const body = await openAssistantFixture(page, [userMessage(), assistantMessage([artifact])], {
     beforeLoadSession: recordLegacyArtifactAppender,
@@ -519,7 +574,10 @@ test('HTML artifacts render in React with a sandboxed preview action', async ({ 
   await expect(frame).toHaveCount(1);
   await expect(frame).toHaveAttribute('src', '/api/files/html-report/raw');
   await expect(frame).toHaveAttribute('title', 'report.html');
-  await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+  await expect(frame).toHaveAttribute(
+    'sandbox',
+    'allow-scripts allow-forms allow-modals allow-popups',
+  );
   await expect(body.locator('[data-artifact-id="html-report"]')).toHaveCount(1);
   await body.locator('.exec-artifact-open').click();
   await expect(page.locator('[data-detail-owner="artifact"]')).toBeVisible();
@@ -550,7 +608,9 @@ test('download artifacts use a React-owned link for legacy saved calls', async (
   expect(await page.evaluate(() => window.__legacyArtifactAppenderPresent)).toBe(false);
 });
 
-test('a missing download shows a local error and retries its availability check', async ({ page }) => {
+test('a missing download shows a local error and retries its availability check', async ({
+  page,
+}) => {
   let headAttempts = 0;
   const artifact = {
     id: 'broken-call',
@@ -560,7 +620,9 @@ test('a missing download shows a local error and retries its availability check'
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
-    outputs: [{ kind: 'artifact', fileId: 'retry-file', mimeType: 'application/pdf', name: 'report.pdf' }],
+    outputs: [
+      { kind: 'artifact', fileId: 'retry-file', mimeType: 'application/pdf', name: 'report.pdf' },
+    ],
   };
   const body = await openAssistantFixture(page, [userMessage(), assistantMessage([artifact])], {
     beforeLoadSession: async () => {
@@ -580,17 +642,24 @@ test('a missing download shows a local error and retries its availability check'
   await error.getByRole('button', { name: 'Retry' }).click();
   await expect.poll(() => headAttempts).toBe(2);
   await expect(error).toHaveCount(0);
-  await expect(body.locator('.exec-artifact-link')).toHaveAttribute('data-artifact-id', 'retry-file');
+  await expect(body.locator('.exec-artifact-link')).toHaveAttribute(
+    'data-artifact-id',
+    'retry-file',
+  );
 });
 
 /* ── real renderer cases ──────────────────────────────────────────────── */
 
 test('visible activities with a real chart do not overflow a 390px viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  const body = await openAssistantFixture(page, [
-    userMessage(),
-    assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Real parabola')]),
-  ], { probe: false });
+  const body = await openAssistantFixture(
+    page,
+    [
+      userMessage(),
+      assistantMessage([searchCall('search-1', 'parabola'), vizCall('viz-1', 'Real parabola')]),
+    ],
+    { probe: false },
+  );
 
   const card = body.locator('.visualization-card');
   await expect(card).toBeVisible();
@@ -605,17 +674,18 @@ test('a broken spec falls back alone and does not take the turn down', async ({ 
   const bad = {
     id: 'bad-viz',
     name: 'render_intelligent_ui',
-    input: {version:1,nodes:[{...BAD_SPEC,id:'visual',type:'visualization'}]},
+    input: { version: 1, nodes: [{ ...BAD_SPEC, id: 'visual', type: 'visualization' }] },
     output: 'Visualization ready',
-    visualizations: [{...BAD_SPEC,nodeId:'visual',index:0}],
+    visualizations: [{ ...BAD_SPEC, nodeId: 'visual', index: 0 }],
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
   };
-  const body = await openAssistantFixture(page, [
-    userMessage(),
-    assistantMessage([bad, vizCall('viz-good', 'Probe good')]),
-  ], { probe: false });
+  const body = await openAssistantFixture(
+    page,
+    [userMessage(), assistantMessage([bad, vizCall('viz-good', 'Probe good')])],
+    { probe: false },
+  );
 
   await expect(body.locator('.visualization-card')).toHaveCount(2);
   await expect(body.locator('.visualization-fallback')).toHaveCount(1);
@@ -625,18 +695,23 @@ test('a broken spec falls back alone and does not take the turn down', async ({ 
   await expect(body.locator('.tool-run-prose')).toContainText('Lead paragraph.');
 });
 
-test('a rejected visualization shows the tool error without mounting its input spec', async ({ page }) => {
+test('a rejected visualization shows the tool error without mounting its input spec', async ({
+  page,
+}) => {
   const rejected = {
     id: 'bad-viz',
     name: 'render_intelligent_ui',
-    input: {version:1,nodes:[{...BAD_SPEC,id:'visual',type:'visualization'}]},
+    input: { version: 1, nodes: [{ ...BAD_SPEC, id: 'visual', type: 'visualization' }] },
     output: 'Invalid visualization spec',
     isError: true,
     status: 'failed',
     textOffset: 0,
   };
   const body = await openAssistantFixture(page, [userMessage(), assistantMessage([rejected])]);
-  await expect(body.locator('.rn-tool-row[data-tcid="bad-viz"]')).toHaveAttribute('data-error', '1');
+  await expect(body.locator('.rn-tool-row[data-tcid="bad-viz"]')).toHaveAttribute(
+    'data-error',
+    '1',
+  );
   await expect(body.locator('.visualization-card')).toHaveCount(0);
 });
 
@@ -653,33 +728,38 @@ test('switching sessions disposes the mounted renderer', async ({ page }) => {
 
   await page.route(
     new RegExp('/api/(?:v2/)?sessions/' + SECOND_SESSION_ID + '(?:\\?.*)?$'),
-    (route) => route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        id: SECOND_SESSION_ID,
-        topic: 'Empty',
-        title: 'Empty',
-        domain: 'math',
-        mode: 'chat',
-        kind: 'chat',
-        phase: 'chat',
-        messages: [],
-        kbNodes: [],
-        mistakes: [],
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: SECOND_SESSION_ID,
+          topic: 'Empty',
+          title: 'Empty',
+          domain: 'math',
+          mode: 'chat',
+          kind: 'chat',
+          phase: 'chat',
+          messages: [],
+          kbNodes: [],
+          mistakes: [],
+        }),
       }),
-    }),
   );
   await page.evaluate((id) => window.loadSession(id), SECOND_SESSION_ID);
 
   await expect(page.locator('#msgList .visualization-card')).toHaveCount(0);
-  await expect.poll(async () => {
-    const probe = await readVizProbe(page);
-    return probe.disposedCards.length > 0 || probe.disposeCalls.length > 0;
-  }).toBe(true);
+  await expect
+    .poll(async () => {
+      const probe = await readVizProbe(page);
+      return probe.disposedCards.length > 0 || probe.disposeCalls.length > 0;
+    })
+    .toBe(true);
 });
 
-test('a failed GeoGebra load is retried locally instead of replaying the rejection', async ({ page }) => {
+test('a failed GeoGebra load is retried locally instead of replaying the rejection', async ({
+  page,
+}) => {
   let scriptRequests = 0;
   await page.route('**/deployggb.js', (route) => {
     scriptRequests += 1;
@@ -696,17 +776,16 @@ test('a failed GeoGebra load is retried locally instead of replaying the rejecti
   const geo = {
     id: 'geo-1',
     name: 'render_intelligent_ui',
-    input: {version:1,nodes:[{...geoSpec,id:'visual',type:'visualization'}]},
+    input: { version: 1, nodes: [{ ...geoSpec, id: 'visual', type: 'visualization' }] },
     output: 'Visualization ready',
-    visualizations: [{...geoSpec,nodeId:'visual',index:0}],
+    visualizations: [{ ...geoSpec, nodeId: 'visual', index: 0 }],
     durationMs: 10,
     status: 'completed',
     textOffset: 0,
   };
-  const body = await openAssistantFixture(page, [
-    userMessage(),
-    assistantMessage([geo]),
-  ], { probe: false });
+  const body = await openAssistantFixture(page, [userMessage(), assistantMessage([geo])], {
+    probe: false,
+  });
 
   const fallback = body.locator('.visualization-fallback');
   await expect(fallback).toBeVisible();

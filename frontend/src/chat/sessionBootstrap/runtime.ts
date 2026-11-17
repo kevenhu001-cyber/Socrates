@@ -12,7 +12,9 @@ export function translate(key: string, fallback?: string): string {
     }
     const val = t(key);
     if (val && val !== key) return val;
-  } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.translate'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/sessionBootstrap.translate');
+  }
   return fallback != null ? fallback : key;
 }
 

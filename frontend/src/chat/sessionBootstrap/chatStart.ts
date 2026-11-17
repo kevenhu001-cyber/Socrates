@@ -1,9 +1,10 @@
-import { stateStore } from '../../state/store.ts';
+import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { turnState, type StreamingTurnController } from '../turn/state.ts';
 import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
-import { askChatTurn } from '../turn/controller.js';
+import { askChatTurn } from '../turn/controller.ts';
+import { addStreamingMessage, prefetchStreamingTurn } from '../turn/loadStreamingTurn.ts';
 import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
@@ -16,12 +17,6 @@ import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { SessionStartContext } from './input.ts';
 
-/** Legacy bridges read while booting the first chat turn. */
-interface ChatStartWindow extends Window {
-  __loadStreamingTurn?: () => void;
-  addStreamingMessage?: (options: { onRetry?: () => void }) => StreamingTurnController;
-}
-
 /** Resolved value of the first-turn content build. */
 interface BuiltMessageContent {
   parts: unknown;
@@ -30,10 +25,10 @@ interface BuiltMessageContent {
 
 function patchFirstTurnAttachments(clientId: string, topic: string, attachments: unknown[]): void {
   if (!attachments.length || !clientId) return;
-  const messages = stateStore.read('messages') as Array<{ clientId?: string }>;
+  const messages = sessionStore.getState().messages as Array<{ clientId?: string }>;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     if (!messages[index] || messages[index].clientId !== clientId) continue;
-    stateStore.dispatch({
+    dispatchSession({
       type: 'session/update-message',
       index,
       clientId,
@@ -59,8 +54,11 @@ async function assembleAndSendFirstTurn(
 
   let savePromise = initialSave;
   if (!savePromise) {
-    try { savePromise = saveCurrentSession(); }
-    catch (error) { reportSwallow(error, 'chat/sessionBootstrap.initialSave'); }
+    try {
+      savePromise = saveCurrentSession();
+    } catch (error) {
+      reportSwallow(error, 'chat/sessionBootstrap.initialSave');
+    }
   }
   // A persistence failure must not discard successfully prepared attachments.
   const [built] = await Promise.all([
@@ -71,7 +69,7 @@ async function assembleAndSendFirstTurn(
   ]);
 
   const chatContent = built.parts || context.topicForModel;
-  const topic = stateStore.read('topic');
+  const topic = sessionStore.getState().topic;
   const attachments = Array.isArray(built.attachmentList) ? built.attachmentList : [];
   turnState.pendingChatContent = chatContent;
   turnState.pendingAttachments = attachments;
@@ -86,26 +84,29 @@ async function assembleAndSendFirstTurn(
     await askChatTurn(topic, chatContent);
   } catch (error) {
     if (!isExpectedTurnAbort(error)) {
-      try { console.error('[chat] start turn failed:', error); }
-      catch (caught) { reportSwallow(caught, 'chat/sessionBootstrap.firstTurn.logFailure'); }
+      try {
+        console.error('[chat] start turn failed:', error);
+      } catch (caught) {
+        reportSwallow(caught, 'chat/sessionBootstrap.firstTurn.logFailure');
+      }
     }
   }
 }
 
 export async function startChatSession(context: SessionStartContext): Promise<void> {
-  const win = window as ChatStartWindow;
   activateMainView('chatView', document);
-  try { clearComposer('topic'); }
-  catch (error) { reportSwallow(error, 'chat/sessionBootstrap.clearTopicComposer'); }
+  try {
+    clearComposer('topic');
+  } catch (error) {
+    reportSwallow(error, 'chat/sessionBootstrap.clearTopicComposer');
+  }
   clearLegacyMsgListChildren();
 
-  try {
-    if (typeof win.__loadStreamingTurn === 'function') win.__loadStreamingTurn();
-  } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.prefetchStreamingTurn'); }
+  prefetchStreamingTurn();
 
   const userClientId = addMessage(
     'user',
-    stateStore.read('topic'),
+    sessionStore.getState().topic,
     null,
     null,
     context.immediateAttachments,
@@ -116,25 +117,29 @@ export async function startChatSession(context: SessionStartContext): Promise<vo
   renderAttachmentChips();
   // Prepare attachments while the streaming chunk loads; retries share the
   // immutable payload instead of reading the next draft or redoing uploads.
-  const contentPromise: Promise<BuiltMessageContent> = buildMessageContent(context.topicForModel, context.startAttachments)
-    .catch((error) => {
-      reportSwallow(error, 'chat/sessionBootstrap.buildFirstContent');
-      return { parts: context.topicForModel, attachmentList: context.immediateAttachments };
-    });
+  const contentPromise: Promise<BuiltMessageContent> = buildMessageContent(
+    context.topicForModel,
+    context.startAttachments,
+  ).catch((error) => {
+    reportSwallow(error, 'chat/sessionBootstrap.buildFirstContent');
+    return { parts: context.topicForModel, attachmentList: context.immediateAttachments };
+  });
 
-  let syncController: StreamingTurnController | null = null;
-  if (!context.deepResearchOn && typeof win.addStreamingMessage === 'function') {
+  let firstTurnController: StreamingTurnController | null = null;
+  if (!context.deepResearchOn) {
     try {
-      syncController = await win.addStreamingMessage({
+      firstTurnController = await addStreamingMessage({
         async onRetry() {
           const built = await contentPromise;
           return askChatTurn(context.topic, built.parts);
         },
       });
-    } catch (error) { reportSwallow(error, 'chat/sessionBootstrap.createFirstPlaceholder'); }
+    } catch (error) {
+      reportSwallow(error, 'chat/sessionBootstrap.createFirstPlaceholder');
+    }
   }
-  if (syncController) {
-    turnState.pendingFirstTurnController = syncController;
+  if (firstTurnController) {
+    turnState.pendingFirstTurnController = firstTurnController;
   }
 
   setTimeout(() => assembleAndSendFirstTurn(context, userClientId, initialSave, contentPromise), 0);

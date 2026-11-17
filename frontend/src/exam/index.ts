@@ -1,8 +1,7 @@
 /* Exam route and lifecycle commands. The screen itself is rendered by the
    single React root in react/exam/ExamView.tsx. */
 
-import { stateStore } from '../state/store.ts';
-import { dispatchExam, dispatchUi } from '../store/index.ts';
+import { dispatchExam, dispatchUi, examBridge, sessionBridge } from '../store/index.ts';
 import { pushChatIdToURL, setExamIdInURL } from '../session/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
@@ -29,20 +28,35 @@ export async function openExamPanel() {
 }
 
 export function closeExamView() {
-  const readOnly = stateStore.read('examReadOnly');
-  dispatchExam({ type: 'exam/patch', patch: {
-    examCancel: true,
-    examReadOnly: false,
-  } });
+  const readOnly = examBridge.getSnapshot().examReadOnly;
+  dispatchExam({
+    type: 'exam/patch',
+    patch: {
+      examCancel: true,
+      examReadOnly: false,
+    },
+  });
   dispatchUi({ type: 'ui/set', key: '_examInView', value: false });
-  try { restoreExamActiveProvider(); } catch (error) { reportSwallow(error, 'exam.closeExamView.restoreProvider'); }
+  try {
+    restoreExamActiveProvider();
+  } catch (error) {
+    reportSwallow(error, 'exam.closeExamView.restoreProvider');
+  }
 
-  if (readOnly || stateStore.read('currentSessionId')) {
+  if (readOnly || sessionBridge.getSnapshot().currentSessionId) {
     activateMainView('chatView', document);
-    try { pushChatIdToURL(stateStore.read('currentSessionId')); } catch (error) { reportSwallow(error, 'exam.closeExamView.pushChatId'); }
+    try {
+      pushChatIdToURL(sessionBridge.getSnapshot().currentSessionId);
+    } catch (error) {
+      reportSwallow(error, 'exam.closeExamView.pushChatId');
+    }
   } else {
     activateMainView('topicSetup', document);
-    try { setExamIdInURL(null); } catch (error) { reportSwallow(error, 'exam.closeExamView.clearExamId'); }
+    try {
+      setExamIdInURL(null);
+    } catch (error) {
+      reportSwallow(error, 'exam.closeExamView.clearExamId');
+    }
   }
 }
 
@@ -52,15 +66,18 @@ export function renderExamForm(draft: Partial<ExamFormDraft> = {}) {
     model: providerConfig.activeId || '',
     ...draft,
   });
-  dispatchExam({ type: 'exam/patch', patch: {
-    examViewMode: 'form',
-    examFormDraft: formDraft,
-    examCancel: false,
-    examQuestions: [],
-    examAnswers: {},
-    examSubmitted: false,
-    examReadOnly: false,
-    examStatusMessage: '',
-    examStatusDetail: '',
-  } });
+  dispatchExam({
+    type: 'exam/patch',
+    patch: {
+      examViewMode: 'form',
+      examFormDraft: formDraft,
+      examCancel: false,
+      examQuestions: [],
+      examAnswers: {},
+      examSubmitted: false,
+      examReadOnly: false,
+      examStatusMessage: '',
+      examStatusDetail: '',
+    },
+  });
 }

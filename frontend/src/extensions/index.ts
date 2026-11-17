@@ -67,11 +67,21 @@ export function dispatchExtension(key: string): boolean {
   return true;
 }
 
-export function composeAction(): void { dispatchExtension('write'); }
-export function researchAction(): void { dispatchExtension('webSearch'); }
-export function exploreAction(): void { dispatchExtension('explore'); }
-export function deepResearchAction(): void { dispatchExtension('deepResearch'); }
-export function analyzeAction(): void { dispatchExtension('analyze'); }
+export function composeAction(): void {
+  dispatchExtension('write');
+}
+export function researchAction(): void {
+  dispatchExtension('webSearch');
+}
+export function exploreAction(): void {
+  dispatchExtension('explore');
+}
+export function deepResearchAction(): void {
+  dispatchExtension('deepResearch');
+}
+export function analyzeAction(): void {
+  dispatchExtension('analyze');
+}
 
 function createContextForKey() {
   return buildExtensionContext(getVisibleComposerSurface());

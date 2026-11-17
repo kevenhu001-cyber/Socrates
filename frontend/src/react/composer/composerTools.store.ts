@@ -1,6 +1,10 @@
 /** React hooks and action routing for the composer tools menu. */
 
-import { getComposerToolsSnapshot as readComposerToolsSnapshot, publishComposerToolsState, useComposerToolsState } from './composerTools.state';
+import {
+  getComposerToolsSnapshot as readComposerToolsSnapshot,
+  publishComposerToolsState,
+  useComposerToolsState,
+} from './composerTools.state';
 import { getLegacyActions, t as legacyT } from '../legacy/gateway.ts';
 import { loadPluginCatalog, normalisePluginId } from '../../composer/pluginCatalog.ts';
 import type { ComposerMode, ComposerToolsAction, ComposerToolsSnapshot } from './types';
@@ -68,7 +72,9 @@ const COMPOSER_ACTION_HANDLERS: Partial<Record<ComposerToolsAction, ComposerActi
 function isMobileAttachmentAction(
   action: ComposerToolsAction,
 ): action is 'camera' | 'photos' | 'upload' | 'wechatFiles' {
-  return action === 'camera' || action === 'photos' || action === 'upload' || action === 'wechatFiles';
+  return (
+    action === 'camera' || action === 'photos' || action === 'upload' || action === 'wechatFiles'
+  );
 }
 
 function startImageCreation(actions: LegacyActionContext): void {
@@ -76,14 +82,16 @@ function startImageCreation(actions: LegacyActionContext): void {
     actions.navigation.openNav('plugins');
     showImageConnectionRequired();
   };
-  void loadPluginCatalog(true).then((plugins) => {
-    const jimeng = plugins.find((plugin) => normalisePluginId(plugin.id).includes('jimengai'));
-    if (jimeng?.connectionStatus === 'connected') {
-      actions.composer.toggleExtensionByKey('createImage');
-      return;
-    }
-    showPlugins();
-  }).catch(showPlugins);
+  void loadPluginCatalog(true)
+    .then((plugins) => {
+      const jimeng = plugins.find((plugin) => normalisePluginId(plugin.id).includes('jimengai'));
+      if (jimeng?.connectionStatus === 'connected') {
+        actions.composer.toggleExtensionByKey('createImage');
+        return;
+      }
+      showPlugins();
+    })
+    .catch(showPlugins);
 }
 
 function showImageConnectionRequired(): void {

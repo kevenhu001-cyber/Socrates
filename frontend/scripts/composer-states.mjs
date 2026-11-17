@@ -4,6 +4,7 @@
 //   node scripts/composer-states.mjs <tag> [--width=1440] [--mode=dark|light]
 // Output: debug/parity/composer-<tag>-<surface>-<state>-<w>-<mode>.png and
 //         debug/parity/composer-<tag>.json
+import { enableTestState } from '../e2e/_state-init.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -31,42 +32,79 @@ const ROLES = {
 };
 
 async function geometry(page, wrapSel) {
-  return page.evaluate(({ roles, wrapSel }) => {
-    const out = {};
-    for (const [k, tpl] of Object.entries(roles)) {
-      const el = document.querySelector(tpl.replaceAll('{w}', wrapSel));
-      if (!el) { out[k] = null; continue; }
-      const r = el.getBoundingClientRect();
-      const c = getComputedStyle(el);
-      out[k] = { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height),
-        display: c.display, bg: c.backgroundColor, color: c.color, radius: c.borderRadius,
-        border: `${c.borderTopWidth} ${c.borderTopColor}`, shadow: c.boxShadow, font: `${c.fontSize}/${c.lineHeight} ${c.fontFamily.split(',')[0]}` };
-    }
-    return out;
-  }, { roles: ROLES, wrapSel });
+  return page.evaluate(
+    ({ roles, wrapSel }) => {
+      const out = {};
+      for (const [k, tpl] of Object.entries(roles)) {
+        const el = document.querySelector(tpl.replaceAll('{w}', wrapSel));
+        if (!el) {
+          out[k] = null;
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        const c = getComputedStyle(el);
+        out[k] = {
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          display: c.display,
+          bg: c.backgroundColor,
+          color: c.color,
+          radius: c.borderRadius,
+          border: `${c.borderTopWidth} ${c.borderTopColor}`,
+          shadow: c.boxShadow,
+          font: `${c.fontSize}/${c.lineHeight} ${c.fontFamily.split(',')[0]}`,
+        };
+      }
+      return out;
+    },
+    { roles: ROLES, wrapSel },
+  );
 }
 
 const STATES = {
   empty: async () => {},
-  text: async (page, s) => { await page.locator(`${s.wrap} .tiptap`).click(); await page.keyboard.type('Explain Bayes theorem with an example'); },
+  text: async (page, s) => {
+    await page.locator(`${s.wrap} .tiptap`).click();
+    await page.keyboard.type('Explain Bayes theorem with an example');
+  },
   multiline: async (page, s) => {
     await page.locator(`${s.wrap} .tiptap`).click();
     await page.keyboard.type('Line one');
-    for (let i = 0; i < 3; i += 1) { await page.keyboard.press('Shift+Enter'); await page.keyboard.type(`line ${i + 2}`); }
+    for (let i = 0; i < 3; i += 1) {
+      await page.keyboard.press('Shift+Enter');
+      await page.keyboard.type(`line ${i + 2}`);
+    }
   },
-  chip: async (page) => { await page.evaluate(() => { if (!window.webSearchOn) window.toggleWebSearch(); }); },
+  chip: async (page) => {
+    await page.evaluate(() => {
+      if (!window.webSearchOn) window.toggleWebSearch();
+    });
+  },
   chipText: async (page, s) => {
-    await page.evaluate(() => { if (!window.webSearchOn) window.toggleWebSearch(); });
+    await page.evaluate(() => {
+      if (!window.webSearchOn) window.toggleWebSearch();
+    });
     await page.locator(`${s.wrap} .tiptap`).click();
     await page.keyboard.type('latest research on Bayesian inference');
   },
   attachment: async (page, s) => {
-    await page.locator(s.file).setInputFiles({ name: 'notes.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+    await page.locator(s.file).setInputFiles({
+      name: 'notes.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 test'),
+    });
   },
   stop: async (page, s) => {
-    await page.evaluate((id) => { const b = document.getElementById(id); b?.classList.add('chat-stop'); }, s.send);
+    await page.evaluate((id) => {
+      const b = document.getElementById(id);
+      b?.classList.add('chat-stop');
+    }, s.send);
   },
-  focus: async (page, s) => { await page.locator(`${s.wrap} .tiptap`).click(); },
+  focus: async (page, s) => {
+    await page.locator(`${s.wrap} .tiptap`).click();
+  },
 };
 
 const SURFACES = {
@@ -77,38 +115,48 @@ const SURFACES = {
 const browser = await chromium.launch();
 const result = {};
 try {
-  for (const mode of modes) for (const [surface, s] of Object.entries(SURFACES)) for (const [state, run] of Object.entries(STATES)) {
-    if (surface === 'topic' && state === 'stop') continue;
-    const ctx = await browser.newContext({ viewport: { width, height: 900 } });
-    const page = await ctx.newPage();
-    await page.addInitScript((m) => {
-      localStorage.setItem('socrates-theme', m);
-      localStorage.setItem('socrates-websearch', 'false');
-    }, mode);
-    await mockAuthedApp(page, { lang: 'zh' });
-    await gotoAndSettle(page, 'http://127.0.0.1:4173/');
-    await waitForAppShell(page);
-    if (surface === 'chat') {
-      await page.evaluate(() => {
-        window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-        document.getElementById('topicSetup')?.classList.add('hidden');
-        document.getElementById('mainInner')?.classList.add('hidden');
-        document.getElementById('chatView')?.classList.remove('hidden');
-        document.body.dataset.conversationActive = 'true';
-      });
-      await page.waitForTimeout(300);
-    }
-    await run(page, s);
-    await page.waitForTimeout(450);
-    const key = `${surface}-${state}-${width}-${mode}`;
-    result[key] = await geometry(page, s.wrap);
-    const box = await page.locator(s.wrap).boundingBox();
-    if (box) {
-      await page.screenshot({ path: `${OUT}composer-${tag}-${key}.png`,
-        clip: { x: Math.max(0, box.x - 24), y: Math.max(0, box.y - 24), width: box.width + 48, height: box.height + 48 } });
-    }
-    await ctx.close();
-  }
+  for (const mode of modes)
+    for (const [surface, s] of Object.entries(SURFACES))
+      for (const [state, run] of Object.entries(STATES)) {
+        if (surface === 'topic' && state === 'stop') continue;
+        const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+        const page = await ctx.newPage();
+        await enableTestState(page);
+        await page.addInitScript((m) => {
+          localStorage.setItem('socrates-theme', m);
+          localStorage.setItem('socrates-websearch', 'false');
+        }, mode);
+        await mockAuthedApp(page, { lang: 'zh' });
+        await gotoAndSettle(page, 'http://127.0.0.1:4173/');
+        await waitForAppShell(page);
+        if (surface === 'chat') {
+          await page.evaluate(() => {
+            window.__socratesTestState.patch({ session: { phase: 'chat' } });
+            document.getElementById('topicSetup')?.classList.add('hidden');
+            document.getElementById('mainInner')?.classList.add('hidden');
+            document.getElementById('chatView')?.classList.remove('hidden');
+            document.body.dataset.conversationActive = 'true';
+          });
+          await page.waitForTimeout(300);
+        }
+        await run(page, s);
+        await page.waitForTimeout(450);
+        const key = `${surface}-${state}-${width}-${mode}`;
+        result[key] = await geometry(page, s.wrap);
+        const box = await page.locator(s.wrap).boundingBox();
+        if (box) {
+          await page.screenshot({
+            path: `${OUT}composer-${tag}-${key}.png`,
+            clip: {
+              x: Math.max(0, box.x - 24),
+              y: Math.max(0, box.y - 24),
+              width: box.width + 48,
+              height: box.height + 48,
+            },
+          });
+        }
+        await ctx.close();
+      }
 } finally {
   await browser.close();
 }

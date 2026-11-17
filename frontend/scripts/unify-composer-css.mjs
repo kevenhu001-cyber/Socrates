@@ -44,7 +44,9 @@ for (const file of walk(STYLES)) {
   const root = postcss.parse(src, { from: file });
   let removed = 0;
   const rules = [];
-  root.walkRules((r) => { rules.push(r); });
+  root.walkRules((r) => {
+    rules.push(r);
+  });
   for (const rule of rules) {
     if (inKeyframes(rule)) continue;
     const sels = rule.selectors;
@@ -57,7 +59,10 @@ for (const file of walk(STYLES)) {
     else rule.remove();
   }
   // Drop at-rules left empty (repeat: nested media).
-  for (let i = 0; i < 3; i++) root.walkAtRules((a) => { if (a.nodes && a.nodes.length === 0) a.remove(); });
+  for (let i = 0; i < 3; i++)
+    root.walkAtRules((a) => {
+      if (a.nodes && a.nodes.length === 0) a.remove();
+    });
   if (removed) {
     total += removed;
     console.log(`${relative(FRONTEND, file)}: removed ${removed} selectors`);

@@ -58,7 +58,12 @@ export function injectTemplateSystemPrompt(messages: PromptMessage[]): PromptMes
      duplicate system messages. */
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i];
-    if (m && m.role === 'system' && typeof m.content === 'string' && m.content.indexOf(marker) >= 0) {
+    if (
+      m &&
+      m.role === 'system' &&
+      typeof m.content === 'string' &&
+      m.content.indexOf(marker) >= 0
+    ) {
       return messages;
     }
   }

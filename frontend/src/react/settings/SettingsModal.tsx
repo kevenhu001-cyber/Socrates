@@ -50,17 +50,39 @@ function SettingsModal() {
   };
 
   const changeQuery = (next: string) => {
-    settings.publish({ query: next, section: isMobile && !mobileDetail ? section : navigation.sectionForQuery(next) });
+    settings.publish({
+      query: next,
+      section: isMobile && !mobileDetail ? section : navigation.sectionForQuery(next),
+    });
   };
 
   return (
-    <Dialog open={snapshot.open} onOpenChange={(open) => { if (!open) closeSettings(); }}>
-      <DialogContent layout="settings" keepMounted showCloseButton={false}
+    <Dialog
+      open={snapshot.open}
+      onOpenChange={(open) => {
+        if (!open) closeSettings();
+      }}
+    >
+      <DialogContent
+        layout="settings"
+        keepMounted
+        showCloseButton={false}
         className="settings-modal settings-modal--full"
         data-mobile-index={isMobile ? String(!mobileDetail) : undefined}
-        backdropProps={{ id: 'settingsOverlay', className: cn('settings-overlay', !snapshot.open && 'hidden') }}
-        initialFocus={() => document.getElementById(isMobile && mobileDetail ? 'settingsMobileBack' : 'settingsCloseBtn')}
-        finalFocus={() => { setModalOpen('settingsOverlay', false); return getSettingsReturnFocus() || false; }}>
+        backdropProps={{
+          id: 'settingsOverlay',
+          className: cn('settings-overlay', !snapshot.open && 'hidden'),
+        }}
+        initialFocus={() =>
+          document.getElementById(
+            isMobile && mobileDetail ? 'settingsMobileBack' : 'settingsCloseBtn',
+          )
+        }
+        finalFocus={() => {
+          setModalOpen('settingsOverlay', false);
+          return getSettingsReturnFocus() || false;
+        }}
+      >
         <SettingsHeader label={preferences.label} />
         <div className="settings-shell">
           <SettingsNavigation
@@ -73,11 +95,14 @@ function SettingsModal() {
           />
           <div className="settings-body">
             <SettingsMobileBack label={preferences.label} onBack={backToIndex} />
-            {navigation.hasNoSearchResults
-              ? <p className="settings-search-empty" role="status">
-                {preferences.label('没有匹配的设置，请尝试其他关键词。', 'No matching settings. Try another keyword.')}
+            {navigation.hasNoSearchResults ? (
+              <p className="settings-search-empty" role="status">
+                {preferences.label(
+                  '没有匹配的设置，请尝试其他关键词。',
+                  'No matching settings. Try another keyword.',
+                )}
               </p>
-              : null}
+            ) : null}
             <SettingsPanes
               open={snapshot.open}
               section={section}
@@ -90,9 +115,11 @@ function SettingsModal() {
               onLanguageChange={preferences.changeLanguage}
             />
           </div>
-          {preferences.saveError
-            ? <p className="settings-save-error" role="status">{preferences.saveError}</p>
-            : null}
+          {preferences.saveError ? (
+            <p className="settings-save-error" role="status">
+              {preferences.saveError}
+            </p>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

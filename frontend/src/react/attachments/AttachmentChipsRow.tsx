@@ -46,7 +46,7 @@ function ChipsRow({ targetId }: ChipsRowProps) {
         if (fallback) syncComposerShellFlags(fallback);
       }
     } catch (_) {
-      reportEmptyCatch(_, 'empty catch: react/attachments/AttachmentChipsRow.tsx:47');
+      reportEmptyCatch(_, 'empty catch: react/attachments/AttachmentChipsRow.tsx');
       /* detached shell */
     }
   }, [attachments.length, targetId]);

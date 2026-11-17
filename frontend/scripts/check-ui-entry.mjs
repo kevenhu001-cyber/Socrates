@@ -29,14 +29,20 @@ for (const file of files) {
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, scriptKind);
   const visit = (node) => {
     let specifier;
-    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-        node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
       specifier = node.moduleSpecifier.text;
     } else if (ts.isCallExpression(node)) {
       const callee = node.expression;
-      if ((callee.kind === ts.SyntaxKind.Identifier && callee.text === 'require' ||
-           callee.kind === ts.SyntaxKind.ImportKeyword) &&
-          node.arguments.length && ts.isStringLiteral(node.arguments[0])) {
+      if (
+        ((callee.kind === ts.SyntaxKind.Identifier && callee.text === 'require') ||
+          callee.kind === ts.SyntaxKind.ImportKeyword) &&
+        node.arguments.length &&
+        ts.isStringLiteral(node.arguments[0])
+      ) {
         specifier = node.arguments[0].text;
       }
     }
@@ -50,7 +56,9 @@ for (const file of files) {
 }
 
 if (findings.length) {
-  console.error('[check-ui-entry] frontend/src must use @socrates/ui/* subpaths, never the root barrel:');
+  console.error(
+    '[check-ui-entry] frontend/src must use @socrates/ui/* subpaths, never the root barrel:',
+  );
   for (const f of findings) console.error(`  ${f}`);
   process.exit(1);
 }

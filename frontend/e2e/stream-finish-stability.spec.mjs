@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -55,40 +55,49 @@ function chunk(text, size) {
 /* Streams `deltas`, then holds [DONE] for `finishDelay` ms so the fully
    painted live turn can be measured before finish() replaces it. */
 async function startStream(page, deltas, { delay = 25, finishDelay = 2600 } = {}) {
-  await page.evaluate(async ({ deltas, delay, finishDelay }) => {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = function (input, init) {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
-      const encoder = new TextEncoder();
-      let timer = null;
-      const stream = new ReadableStream({
-        start(controller) {
-          let index = 0;
-          const push = () => {
-            if (index < deltas.length) {
-              const payload = { choices: [{ delta: { content: deltas[index++] } }] };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-              timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
-              return;
-            }
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            controller.close();
-          };
-          timer = setTimeout(push, delay);
-        },
-        cancel() { if (timer) clearTimeout(timer); },
+  await page.evaluate(
+    async ({ deltas, delay, finishDelay }) => {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
+        const encoder = new TextEncoder();
+        let timer = null;
+        const stream = new ReadableStream({
+          start(controller) {
+            let index = 0;
+            const push = () => {
+              if (index < deltas.length) {
+                const payload = { choices: [{ delta: { content: deltas[index++] } }] };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
+                return;
+              }
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              controller.close();
+            };
+            timer = setTimeout(push, delay);
+          },
+          cancel() {
+            if (timer) clearTimeout(timer);
+          },
+        });
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          }),
+        );
+      };
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({
+        session: { currentSessionId: '66666666-6666-4666-8666-666666666666' },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
-    };
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '66666666-6666-4666-8666-666666666666' });
-    window.__testActivateMainView('chatView');
-    window.__finishStabilityTurn = window.askChatTurn('讲讲判别式');
-  }, { deltas, delay, finishDelay });
+      window.__testActivateMainView('chatView');
+      window.__finishStabilityTurn = window.askChatTurn('讲讲判别式');
+    },
+    { deltas, delay, finishDelay },
+  );
 }
 
 async function measure(page) {
@@ -159,42 +168,68 @@ async function openChat(page, viewport) {
 
 /* Desktop is where settled rows get content-visibility:auto; the phone
    layout keeps rows visible but shares the prose, seam, and cursor rules. */
-for (const [label, viewport] of [['desktop', null], ['mobile', { width: 390, height: 844 }]]) test(`finishing a stream does not move any block of the answer (${label})`, async ({ page }) => {
-  await openChat(page, viewport);
-  await startStream(page, chunk(ANSWER, 18));
-  const bubble = page.locator('#msgList .msg.assistant').last();
-  /* The whole answer is painted live, last characters included, while
+for (const [label, viewport] of [
+  ['desktop', null],
+  ['mobile', { width: 390, height: 844 }],
+])
+  test(`finishing a stream does not move any block of the answer (${label})`, async ({ page }) => {
+    await openChat(page, viewport);
+    await startStream(page, chunk(ANSWER, 18));
+    const bubble = page.locator('#msgList .msg.assistant').last();
+    /* The whole answer is painted live, last characters included, while
      [DONE] is still pending. */
-  await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('即可快速判断。');
-  await expect(bubble.locator('.tool-run-prose.is-settled .katex-display')).toHaveCount(1);
-  const live = await measure(page);
-  await expect(bubble.locator('.msg-toolbar')).toBeHidden();
-  await expect(bubble.locator('.msg-toolbar button')).toHaveCount(0);
-  await trackFinishMotion(page);
-  await page.screenshot({ path: `test-results/stream-finish-${encodeURIComponent(label)}-before.png` });
+    await expect(bubble.locator('.tool-run-prose.is-live')).toContainText('即可快速判断。');
+    await expect(bubble.locator('.tool-run-prose.is-settled .katex-display')).toHaveCount(1);
+    const live = await measure(page);
+    await expect(bubble.locator('.msg-toolbar')).toBeHidden();
+    await expect(bubble.locator('.msg-toolbar button')).toHaveCount(0);
+    await trackFinishMotion(page);
+    await page.screenshot({
+      path: `test-results/stream-finish-${encodeURIComponent(label)}-before.png`,
+    });
 
-  await waitForSettledTurn(page);
-  const done = await measure(page);
-  const frames = await finishMotion(page);
-  await expect(bubble.locator('.msg-toolbar button').first()).toBeVisible();
-  await page.screenshot({ path: `test-results/stream-finish-${encodeURIComponent(label)}-after.png` });
-  for (const frame of frames) {
-    expect(Math.abs(frame.top - live.bodyOffset), '正文在结束过程中的任意一帧都不能跳动').toBeLessThanOrEqual(2);
-    expect(Math.abs(frame.bodyHeight - live.bodyHeight), '末段间距不能在结束时短暂变高').toBeLessThanOrEqual(1);
-    expect(Math.abs(frame.scrollTop - live.scrollTop), '结束时不能主动拉到底部').toBeLessThanOrEqual(2);
-  }
+    await waitForSettledTurn(page);
+    const done = await measure(page);
+    const frames = await finishMotion(page);
+    await expect(bubble.locator('.msg-toolbar button').first()).toBeVisible();
+    await page.screenshot({
+      path: `test-results/stream-finish-${encodeURIComponent(label)}-after.png`,
+    });
+    for (const frame of frames) {
+      expect(
+        Math.abs(frame.top - live.bodyOffset),
+        '正文在结束过程中的任意一帧都不能跳动',
+      ).toBeLessThanOrEqual(2);
+      expect(
+        Math.abs(frame.bodyHeight - live.bodyHeight),
+        '末段间距不能在结束时短暂变高',
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(frame.scrollTop - live.scrollTop),
+        '结束时不能主动拉到底部',
+      ).toBeLessThanOrEqual(2);
+    }
 
-  expect(done.blocks.map((b) => b.tag)).toEqual(live.blocks.map((b) => b.tag));
-  for (let i = 0; i < live.blocks.length; i += 1) {
-    const a = live.blocks[i];
-    const b = done.blocks[i];
-    expect(Math.abs(b.top - a.top), `block #${i} <${a.tag}> "${a.text}" moved at finish`).toBeLessThanOrEqual(1);
-    expect(Math.abs(b.height - a.height), `block #${i} <${a.tag}> "${a.text}" resized at finish`).toBeLessThanOrEqual(1);
-  }
-  expect(Math.abs(done.bodyHeight - live.bodyHeight)).toBeLessThanOrEqual(1);
-  expect(Math.abs(done.bodyOffset - live.bodyOffset), 'the answer moved in the viewport').toBeLessThanOrEqual(2);
-  expect(Math.abs(done.scrollHeight - live.scrollHeight)).toBeLessThanOrEqual(2);
-});
+    expect(done.blocks.map((b) => b.tag)).toEqual(live.blocks.map((b) => b.tag));
+    for (let i = 0; i < live.blocks.length; i += 1) {
+      const a = live.blocks[i];
+      const b = done.blocks[i];
+      expect(
+        Math.abs(b.top - a.top),
+        `block #${i} <${a.tag}> "${a.text}" moved at finish`,
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(b.height - a.height),
+        `block #${i} <${a.tag}> "${a.text}" resized at finish`,
+      ).toBeLessThanOrEqual(1);
+    }
+    expect(Math.abs(done.bodyHeight - live.bodyHeight)).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(done.bodyOffset - live.bodyOffset),
+      'the answer moved in the viewport',
+    ).toBeLessThanOrEqual(2);
+    expect(Math.abs(done.scrollHeight - live.scrollHeight)).toBeLessThanOrEqual(2);
+  });
 
 test('a long answer stays fully reachable after finish', async ({ page }) => {
   await openChat(page, null);
@@ -220,11 +255,15 @@ test('a long answer stays fully reachable after finish', async ({ page }) => {
       lastPHit: Boolean(hit && lastP.contains(hit)),
     };
   });
-  expect(res.rowHeight, 'the row must not be squeezed below its content').toBeGreaterThanOrEqual(res.bodyHeight);
+  expect(res.rowHeight, 'the row must not be squeezed below its content').toBeGreaterThanOrEqual(
+    res.bodyHeight,
+  );
   expect(res.lastPBottom).toBeLessThanOrEqual(res.listBottom + 1);
-  expect(res.lastPHit, 'the last paragraph is painted and not covered after scrolling to the end').toBe(true);
+  expect(
+    res.lastPHit,
+    'the last paragraph is painted and not covered after scrolling to the end',
+  ).toBe(true);
 });
-
 
 test('finish keeps the streamed prose nodes and tail formatting', async ({ page }) => {
   await openChat(page, null);
@@ -235,8 +274,10 @@ test('finish keeps the streamed prose nodes and tail formatting', async ({ page 
   await expect(bubble.locator('.tool-run-prose.is-live .katex')).toHaveCount(1);
   await page.evaluate(() => {
     const body = document.querySelector('#msgList .msg.assistant:last-child .msg-body');
-    window.__streamProse = Array.from(body.querySelectorAll('.tool-run-prose')).map(node => ({
-      node, children: Array.from(node.childNodes), html: node.innerHTML,
+    window.__streamProse = Array.from(body.querySelectorAll('.tool-run-prose')).map((node) => ({
+      node,
+      children: Array.from(node.childNodes),
+      html: node.innerHTML,
     }));
   });
   await waitForSettledTurn(page);
@@ -244,12 +285,15 @@ test('finish keeps the streamed prose nodes and tail formatting', async ({ page 
     const body = document.querySelector('#msgList .msg.assistant:last-child .msg-body');
     const nodes = Array.from(body.querySelectorAll('.tool-run-prose'));
     return {
-      unchanged: window.__streamProse.every((saved, i) => saved.node === nodes[i]
-        && saved.html === nodes[i].innerHTML
-        && saved.children.every((child, j) => child === nodes[i].childNodes[j])),
+      unchanged: window.__streamProse.every(
+        (saved, i) =>
+          saved.node === nodes[i] &&
+          saved.html === nodes[i].innerHTML &&
+          saved.children.every((child, j) => child === nodes[i].childNodes[j]),
+      ),
       count: nodes.length,
       originalCount: window.__streamProse.length,
-      storedHtml: window.stateStore.read('messages').at(-1).html,
+      storedHtml: window.__socratesTestState.session().messages.at(-1).html,
     };
   });
   expect(result.unchanged).toBe(true);

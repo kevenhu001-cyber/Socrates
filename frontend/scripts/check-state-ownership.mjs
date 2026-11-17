@@ -69,24 +69,36 @@ function main() {
     if (error?.code !== 'ENOENT') throw error;
   }
   const previous = baseline?.directDispatches;
-  const limit = typeof previous === 'number'
-    ? Math.min(previous, directDispatches.length)
-    : directDispatches.length;
+  const limit =
+    typeof previous === 'number'
+      ? Math.min(previous, directDispatches.length)
+      : directDispatches.length;
 
   if (!baseline || UPDATE) {
-    writeFileSync(BASELINE, JSON.stringify({
-      directDispatches: limit,
-      note: 'React-side direct writes through the string-keyed stateStore facade. May only go down. Run with --update after an intentional reduction.',
-      generatedBy: 'check-state-ownership.mjs --update',
-    }, null, 2) + '\n');
-    console.log(`state-ownership: baseline ${baseline ? 'updated' : 'written'} (directDispatches=${limit}).`);
+    writeFileSync(
+      BASELINE,
+      JSON.stringify(
+        {
+          directDispatches: limit,
+          note: 'React-side direct writes through the string-keyed stateStore facade. May only go down. Run with --update after an intentional reduction.',
+          generatedBy: 'check-state-ownership.mjs --update',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+    console.log(
+      `state-ownership: baseline ${baseline ? 'updated' : 'written'} (directDispatches=${limit}).`,
+    );
     for (const item of directDispatches) console.log(`  - ${item.file}:${item.line}`);
     return;
   }
 
   if (directDispatches.length > limit) {
     console.error('state-ownership check FAILED:');
-    console.error(`  directDispatches: ${directDispatches.length} > baseline ${limit} (+${directDispatches.length - limit}).`);
+    console.error(
+      `  directDispatches: ${directDispatches.length} > baseline ${limit} (+${directDispatches.length - limit}).`,
+    );
     for (const item of directDispatches) console.error(`  - ${item.file}:${item.line}`);
     console.error('  Route state access through the typed hooks in src/store/index.ts.');
     process.exitCode = 1;

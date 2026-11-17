@@ -1,4 +1,13 @@
-import { createElement, useCallback, useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from 'react';
 import { focusComposer, setComposerMarkdown } from '../../composer/controller.ts';
 import { dispatchExtension } from '../../extensions/index.ts';
 import { closeDetailSurface, openDetailSurface } from '../../ui/detailSurface.ts';
@@ -51,7 +60,9 @@ function useCreationItems(name: CreationName) {
     }
   }, [name]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function deleteCreation(item: CreationItem) {
     if (typeof window !== 'undefined' && !window.confirm(currentCopy().confirmDelete)) return;
@@ -81,7 +92,7 @@ function useCreationEditor(
       setDraft((previous) => ({ ...previous, visibility }));
       return;
     }
-    setDraft((previous) => ({ ...previous, [field]: value } as EditorDraft));
+    setDraft((previous) => ({ ...previous, [field]: value }) as EditorDraft);
   }
 
   function openEditor(type: CreationName, item: CreationItem | null) {
@@ -101,7 +112,12 @@ function useCreationEditor(
       sandbox: '',
       srcDoc: source,
     });
-    void openDetailSurface({ owner: 'site-preview', title, closeLabel: currentCopy().cancel, content: frame });
+    void openDetailSurface({
+      owner: 'site-preview',
+      title,
+      closeLabel: currentCopy().cancel,
+      content: frame,
+    });
   }
 
   async function generateSite() {
@@ -109,7 +125,10 @@ function useCreationEditor(
     if (!prompt) return;
     setGeneratingSite(true);
     try {
-      const result = await api<{ source?: string }>('/api/creations/sites/generate', { method: 'POST', body: { prompt } });
+      const result = await api<{ source?: string }>('/api/creations/sites/generate', {
+        method: 'POST',
+        body: { prompt },
+      });
       setDraft((previous) => ({ ...previous, source: result.source || '' }));
     } catch (cause) {
       notice((cause as Error)?.message || currentCopy().error);
@@ -119,7 +138,10 @@ function useCreationEditor(
   }
 
   async function publishSite(saved: CreationItem) {
-    const published = await api<{ url?: string | null }>(`/api/creations/sites/${saved.id}/publish`, { method: 'POST', body: { visibility: draft.visibility } });
+    const published = await api<{ url?: string | null }>(
+      `/api/creations/sites/${saved.id}/publish`,
+      { method: 'POST', body: { visibility: draft.visibility } },
+    );
     if (!published.url) return;
     const publishedUrl = new URL(published.url, location.origin).href;
     let copied = false;
@@ -139,17 +161,31 @@ function useCreationEditor(
     try {
       const item = editor?.item || null;
       const title = draft.title.trim();
-      const source = name === 'assistants'
-        ? JSON.stringify({ description: draft.description.trim(), instructions: draft.instructions.trim(), starter: draft.starter.trim() })
-        : draft.source;
+      const source =
+        name === 'assistants'
+          ? JSON.stringify({
+              description: draft.description.trim(),
+              instructions: draft.instructions.trim(),
+              starter: draft.starter.trim(),
+            })
+          : draft.source;
       const url = `/api/creations/items/${name}${item ? `/${item.id}` : ''}`;
-      const saved = normalizeCreationItem(await api<CreationApiItem>(url, { method: item ? 'PATCH' : 'POST', body: { title, source } }));
+      const saved = normalizeCreationItem(
+        await api<CreationApiItem>(url, {
+          method: item ? 'PATCH' : 'POST',
+          body: { title, source },
+        }),
+      );
       if (name === 'sites') await publishSite(saved);
       closeEditor();
       await load();
     } catch (cause) {
       const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
-      notice(code === 'IMAGE_PROVIDER_NOT_CONFIGURED' ? currentCopy().imageUnavailable : (cause as Error)?.message || currentCopy().error);
+      notice(
+        code === 'IMAGE_PROVIDER_NOT_CONFIGURED'
+          ? currentCopy().imageUnavailable
+          : (cause as Error)?.message || currentCopy().error,
+      );
     } finally {
       setBusy(false);
     }
@@ -169,7 +205,10 @@ function useCreationEditor(
   };
 }
 
-export function useCreationSurfaceController(name: CreationName, preferences: CreationSurfacePreferences) {
+export function useCreationSurfaceController(
+  name: CreationName,
+  preferences: CreationSurfacePreferences,
+) {
   const { items, loading, error, load, deleteCreation } = useCreationItems(name);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -200,8 +239,11 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
     if (didReset === false) return;
     sessionStorage.setItem('socrates-active-assistant', item.id);
     let starter = '';
-    try { starter = JSON.parse(item.source || '{}').starter || ''; }
-    catch (cause) { reportSwallow(cause, 'creation.startAssistantChat.parseStarter'); }
+    try {
+      starter = JSON.parse(item.source || '{}').starter || '';
+    } catch (cause) {
+      reportSwallow(cause, 'creation.startAssistantChat.parseStarter');
+    }
     if (starter) setComposerMarkdown('topic', starter);
     focusComposer('topic');
   }
@@ -223,19 +265,32 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
     if (['close', 'edit', 'new'].includes(action)) closeDetailSurface('site-preview');
     const item = items.find((entry) => entry.id === id);
     const handlers: Record<string, () => void | Promise<void>> = {
-      retry: () => { void load(); },
+      retry: () => {
+        void load();
+      },
       new: startNewCreation,
       close: closeEditor,
-      edit: () => { if (item) openEditor(name, item); },
+      edit: () => {
+        if (item) openEditor(name, item);
+      },
       'edit-image': () => {
         if (!item) return;
         openEditor('images', item);
         imagePromptRef.current?.focus();
       },
-      delete: () => { if (item) void deleteCreation(item); },
-      use: () => { if (item) void startAssistantChat(item); },
-      preview: () => { if (item) previewSite(item.source || '', item.title || ''); },
-      'view-image': () => { if (item && typeof window !== 'undefined') window.open(imageUrl(item.id), '_blank', 'noopener'); },
+      delete: () => {
+        if (item) void deleteCreation(item);
+      },
+      use: () => {
+        if (item) void startAssistantChat(item);
+      },
+      preview: () => {
+        if (item) previewSite(item.source || '', item.title || '');
+      },
+      'view-image': () => {
+        if (item && typeof window !== 'undefined')
+          window.open(imageUrl(item.id), '_blank', 'noopener');
+      },
     };
     return handlers[action]?.();
   }
@@ -243,11 +298,17 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
   async function submitImage() {
     const text = currentCopy();
     const prompt = preferences.imagePrompt.trim();
-    if (!prompt) { notice(text.noPrompt); return; }
+    if (!prompt) {
+      notice(text.noPrompt);
+      return;
+    }
     const model = preferences.imageModel.trim();
     if (model) {
-      try { localStorage.setItem('socrates-image-model', model); }
-      catch (cause) { reportSwallow(cause, 'creation.saveImageModel'); }
+      try {
+        localStorage.setItem('socrates-image-model', model);
+      } catch (cause) {
+        reportSwallow(cause, 'creation.saveImageModel');
+      }
     }
     const reference = editor?.type === 'images' ? editor.item : null;
     const url = reference ? `/api/creations/images/${reference.id}/edit` : '/api/creations/images';
@@ -258,18 +319,41 @@ export function useCreationSurfaceController(name: CreationName, preferences: Cr
       await load();
     } catch (cause) {
       const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
-      notice(code === 'IMAGE_PROVIDER_NOT_CONFIGURED' ? text.imageUnavailable : (cause as Error)?.message || text.error);
+      notice(
+        code === 'IMAGE_PROVIDER_NOT_CONFIGURED'
+          ? text.imageUnavailable
+          : (cause as Error)?.message || text.error,
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return {
-    items, loading, error, editor, draft, busy, generatingSite, query, setQuery,
+    items,
+    loading,
+    error,
+    editor,
+    draft,
+    busy,
+    generatingSite,
+    query,
+    setQuery,
     ...preferences,
-    imagePromptRef, setDraftField, closeEditor, handleAction, load, generateSite,
-    submitImageForm: (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void submitImage(); },
-    submitEditorForm: (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); void submitEditor(); },
+    imagePromptRef,
+    setDraftField,
+    closeEditor,
+    handleAction,
+    load,
+    generateSite,
+    submitImageForm: (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      void submitImage();
+    },
+    submitEditorForm: (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      void submitEditor();
+    },
     previewDraft,
   };
 }

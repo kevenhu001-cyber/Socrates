@@ -117,11 +117,21 @@ function findDashInStrings(text) {
       for (let k = 0; k < strippedLine.length; k++) {
         const ch = strippedLine[k];
         if (inStr) {
-          if (ch === '\\') { k++; continue; }
-          if (ch === q) { inStr = false; q = ''; }
+          if (ch === '\\') {
+            k++;
+            continue;
+          }
+          if (ch === q) {
+            inStr = false;
+            q = '';
+          }
           continue;
         }
-        if (ch === '"' || ch === "'" || ch === '`') { inStr = true; q = ch; continue; }
+        if (ch === '"' || ch === "'" || ch === '`') {
+          inStr = true;
+          q = ch;
+          continue;
+        }
         if (ch === '/' && strippedLine[k + 1] === '/') return k;
       }
       return -1;
@@ -140,11 +150,20 @@ function findDashInStrings(text) {
       for (let k = 0; k < prefix.length; k++) {
         const ch = prefix[k];
         if (inStr) {
-          if (ch === '\\') { k++; continue; }
-          if (ch === q) { inStr = false; q = ''; }
+          if (ch === '\\') {
+            k++;
+            continue;
+          }
+          if (ch === q) {
+            inStr = false;
+            q = '';
+          }
           continue;
         }
-        if (ch === '"' || ch === "'" || ch === '`') { inStr = true; q = ch; }
+        if (ch === '"' || ch === "'" || ch === '`') {
+          inStr = true;
+          q = ch;
+        }
       }
       if (inStr) {
         hits.push({ line: i + 1, snippet: line.trim().slice(0, 160) });
@@ -207,8 +226,12 @@ function main() {
         2,
       ) + '\n',
     );
-    console.log(`prompt-dashes: no baseline found — wrote ${violations.length} baseline entries to scripts/prompt-dashes.baseline.json.`);
-    console.log('Review the entries, commit the baseline, and re-run. Any new entry not in the baseline will now fail.');
+    console.log(
+      `prompt-dashes: no baseline found — wrote ${violations.length} baseline entries to scripts/prompt-dashes.baseline.json.`,
+    );
+    console.log(
+      'Review the entries, commit the baseline, and re-run. Any new entry not in the baseline will now fail.',
+    );
     if (violations.length) {
       console.log('\nBaseline entries:');
       for (const v of violations) console.log(`  ${v.file}:${v.line}: ${v.snippet}`);
@@ -240,7 +263,9 @@ function main() {
         2,
       ) + '\n',
     );
-    console.log(`prompt-dashes: baseline updated to ${shrunk.length} entries (from ${baseKeys.size}).`);
+    console.log(
+      `prompt-dashes: baseline updated to ${shrunk.length} entries (from ${baseKeys.size}).`,
+    );
     if (removed.length) {
       console.log('Entries removed because they no longer appear in the source:');
       for (const r of removed) console.log(r);
@@ -250,13 +275,19 @@ function main() {
 
   const newViolations = violations.filter((v) => !baseKeys.has(keyOf(v)));
   if (newViolations.length) {
-    console.error(`prompt-dashes: ${newViolations.length} new dash-in-string violation(s) (baseline has ${baseKeys.size}).`);
+    console.error(
+      `prompt-dashes: ${newViolations.length} new dash-in-string violation(s) (baseline has ${baseKeys.size}).`,
+    );
     for (const v of newViolations) console.error(`  ${v.file}:${v.line}: ${v.snippet}`);
-    console.error('\nThe server "minimize dash punctuation" rule applies to the final assistant message; injected prompts must not contradict it.');
+    console.error(
+      '\nThe server "minimize dash punctuation" rule applies to the final assistant message; injected prompts must not contradict it.',
+    );
     console.error('Remove the dash, or rephrase the sentence so it no longer needs one.');
     process.exit(1);
   }
-  console.log(`prompt-dashes: ok (${violations.length} baseline entries, all present, no new hits).`);
+  console.log(
+    `prompt-dashes: ok (${violations.length} baseline entries, all present, no new hits).`,
+  );
 }
 
 main();

@@ -14,15 +14,21 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('sidebar exposes the primary destinations', async ({ page }) => {
-  expect(await page.evaluate(() => ({
-    ensure: 'ensureConnectorIcons' in window,
-    hydrate: 'hydrateConnectorIcons' in window,
-    setActiveNav: 'setActiveNav' in window,
-  }))).toEqual({ ensure: false, hydrate: false, setActiveNav: false });
+  expect(
+    await page.evaluate(() => ({
+      ensure: 'ensureConnectorIcons' in window,
+      hydrate: 'hydrateConnectorIcons' in window,
+      setActiveNav: 'setActiveNav' in window,
+    })),
+  ).toEqual({ ensure: false, hydrate: false, setActiveNav: false });
 
-  const visibleIds = await page.locator('#sidebarNav .sidebar-nav-btn').evaluateAll((buttons) =>
-    buttons.filter((button) => getComputedStyle(button).display !== 'none').map((button) => button.id),
-  );
+  const visibleIds = await page
+    .locator('#sidebarNav .sidebar-nav-btn')
+    .evaluateAll((buttons) =>
+      buttons
+        .filter((button) => getComputedStyle(button).display !== 'none')
+        .map((button) => button.id),
+    );
   expect(visibleIds).toEqual([
     'navNew',
     'navLibrary',
@@ -95,11 +101,16 @@ test('direct workspace routes restore navigation and browser history', async ({ 
   await expect(page.locator('#navLibrary')).toHaveClass(NAV_ACTIVE);
 });
 
-test('workspace destinations replace the chat landing instead of stacking under it', async ({ page }) => {
+test('workspace destinations replace the chat landing instead of stacking under it', async ({
+  page,
+}) => {
   /* Regression: the forced `#topicSetup { display:flex !important }` landing
      rules used to outrank `.hidden`, so selecting a sidebar page left the
      greeting/composer on screen and pushed the panel below the fold. */
-  for (const [navId, panelId] of [['navPlugins', '#pluginsPanel'], ['navProjects', '#spacesPanel']]) {
+  for (const [navId, panelId] of [
+    ['navPlugins', '#pluginsPanel'],
+    ['navProjects', '#spacesPanel'],
+  ]) {
     await page.locator(`#${navId}`).click();
     await expect(page.locator(`#${navId}`)).toHaveClass(NAV_ACTIVE);
     await expect(page.locator(panelId)).toBeInViewport();
@@ -128,7 +139,8 @@ test('Projects has one keyboard action and keeps creation in its directory', asy
 test('phone workspace destinations hide the landing too', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
-    if (document.getElementById('sidebar')?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar();
+    if (document.getElementById('sidebar')?.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
   await page.locator('#navPlugins').click();
@@ -192,7 +204,9 @@ test('More menu closes on Escape and outside click', async ({ page }) => {
 
   await trigger.click();
   await expect(menu).toBeVisible();
-  await page.evaluate(() => document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  await page.evaluate(() =>
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true })),
+  );
   await expect(menu).toBeHidden();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 });
@@ -212,16 +226,29 @@ test('account row exposes profile and settings through its menu', async ({ page 
   await expect(row.locator('.user-avatar')).toBeVisible();
   await expect(row.locator('.tier-badge')).toBeVisible();
   await expect(row).toHaveAttribute('title', name);
-  await expect(row).toHaveAttribute('aria-label', new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  await expect(row).toHaveAttribute(
+    'aria-label',
+    new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+  );
   const geo = await row.evaluate((el) => {
-    const c = (sel) => { const r = el.querySelector(sel).getBoundingClientRect(); return { w: r.width, h: r.height, cy: r.top + r.height / 2 }; };
-    return { avatar: c('.user-avatar'), identity: c('.user-identity'), radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius };
+    const c = (sel) => {
+      const r = el.querySelector(sel).getBoundingClientRect();
+      return { w: r.width, h: r.height, cy: r.top + r.height / 2 };
+    };
+    return {
+      avatar: c('.user-avatar'),
+      identity: c('.user-identity'),
+      radius: getComputedStyle(el.querySelector('.user-avatar')).borderTopLeftRadius,
+    };
   });
   expect(Math.round(geo.avatar.w)).toBe(28);
   expect(Math.round(geo.avatar.h)).toBe(28);
   expect(geo.radius).toBe('50%');
   expect(Math.abs(geo.avatar.cy - geo.identity.cy)).toBeLessThanOrEqual(1);
-  await page.screenshot({ path: 'test-results/visual-qa/sidebar-account-row.png', clip: await page.locator('#sidebarFooter').boundingBox() });
+  await page.screenshot({
+    path: 'test-results/visual-qa/sidebar-account-row.png',
+    clip: await page.locator('#sidebarFooter').boundingBox(),
+  });
   await row.click();
   await expect(page.locator('.sidebar-account-menu')).toBeInViewport();
   await page.keyboard.press('Escape');
@@ -237,7 +264,8 @@ test('account row exposes profile and settings through its menu', async ({ page 
 test('collapsed sidebar rail keeps only the avatar of the account row', async ({ page }) => {
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
   const row = page.locator('#sidebarUserRow');
@@ -246,7 +274,10 @@ test('collapsed sidebar rail keeps only the avatar of the account row', async ({
   const fit = await page.evaluate(() => {
     const rail = document.getElementById('sidebar').getBoundingClientRect();
     const a = document.querySelector('#sidebarUserRow .user-avatar').getBoundingClientRect();
-    return { inside: a.left >= rail.left && a.right <= rail.right, offCentre: Math.abs((a.left + a.right) / 2 - (rail.left + rail.right) / 2) };
+    return {
+      inside: a.left >= rail.left && a.right <= rail.right,
+      offCentre: Math.abs((a.left + a.right) / 2 - (rail.left + rail.right) / 2),
+    };
   });
   expect(fit.inside).toBe(true);
   expect(fit.offCentre).toBeLessThanOrEqual(4);
@@ -260,15 +291,22 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar?.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar?.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
-  const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) => buttons.map((button) => {
-    const row = button.getBoundingClientRect();
-    const glyph = button.querySelector('svg')?.getBoundingClientRect();
-    const label = button.querySelector('[data-i18n-key]')?.getBoundingClientRect();
-    return { height: row.height, glyphCenter: glyph && glyph.y + glyph.height / 2, labelCenter: label && label.y + label.height / 2 };
-  }));
+  const rows = await page.locator('#sidebarNav .sidebar-nav-btn:visible').evaluateAll((buttons) =>
+    buttons.map((button) => {
+      const row = button.getBoundingClientRect();
+      const glyph = button.querySelector('svg')?.getBoundingClientRect();
+      const label = button.querySelector('[data-i18n-key]')?.getBoundingClientRect();
+      return {
+        height: row.height,
+        glyphCenter: glyph && glyph.y + glyph.height / 2,
+        labelCenter: label && label.y + label.height / 2,
+      };
+    }),
+  );
   expect(rows).toHaveLength(7);
   for (const row of rows) {
     // Reference drawer density: 36px navigation/history pitch at 390px
@@ -303,9 +341,9 @@ test('Admin page hides the conversation top-bar controls', async ({ page }) => {
   await page.evaluate(() => window.__testShowConversationActions(true));
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('admin'));
   await expect(page.locator('#adminPanel')).toBeVisible();
-  const displays = await page.locator('#shareBtn, #findBtn, #topModelSwitcher').evaluateAll((els) =>
-    els.map((el) => getComputedStyle(el).display),
-  );
+  const displays = await page
+    .locator('#shareBtn, #findBtn, #topModelSwitcher')
+    .evaluateAll((els) => els.map((el) => getComputedStyle(el).display));
   expect(displays).toEqual(['none', 'none', 'none']);
   // Leaving the console drops the admin body class and restores chrome.
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
@@ -333,16 +371,24 @@ test('history home restores the landing and More preserves the selected page', a
 
 test('every routed destination restores its page host after a direct visit', async ({ page }) => {
   for (const [destination, host] of [
-    ['library', 'libraryPanel'], ['projects', 'spacesPanel'], ['scheduled', 'scheduledPanel'],
-    ['plugins', 'pluginsPanel'], ['images', 'imagesPanel'], ['assistants', 'assistantsPanel'],
-    ['sites', 'sitesPanel'], ['exam', 'examView'], ['admin', 'adminPanel'],
+    ['library', 'libraryPanel'],
+    ['projects', 'spacesPanel'],
+    ['scheduled', 'scheduledPanel'],
+    ['plugins', 'pluginsPanel'],
+    ['images', 'imagesPanel'],
+    ['assistants', 'assistantsPanel'],
+    ['sites', 'sitesPanel'],
+    ['exam', 'examView'],
+    ['admin', 'adminPanel'],
   ]) {
     await page.goto('/' + destination);
     await waitForAppShell(page);
     await expect(page.locator('#' + host)).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-main-view', host);
     if (destination !== 'admin') {
-      await expect(page.locator('#nav' + destination[0].toUpperCase() + destination.slice(1))).toHaveClass(NAV_ACTIVE);
+      await expect(
+        page.locator('#nav' + destination[0].toUpperCase() + destination.slice(1)),
+      ).toHaveClass(NAV_ACTIVE);
     }
     await expect(page.locator('#topicSetup')).toBeHidden();
   }

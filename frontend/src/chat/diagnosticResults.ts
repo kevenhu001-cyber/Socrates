@@ -35,14 +35,17 @@ export interface DiagnosticState {
 }
 
 export function applyDiagnosticResults(state: DiagnosticState): DiagnosticKbNode[] {
-  const kbNodes: DiagnosticKbNode[] = (state.kbNodes || []).map((node) => Object.assign({}, node, {
-    history: Array.isArray(node.history) ? node.history.slice() : node.history,
-  }));
+  const kbNodes: DiagnosticKbNode[] = (state.kbNodes || []).map((node) =>
+    Object.assign({}, node, {
+      history: Array.isArray(node.history) ? node.history.slice() : node.history,
+    }),
+  );
   state.diagQuestions.forEach((q, i) => {
     const ans = state.diagAnswers[i];
     if (ans === undefined || ans === -1) return;
     const level = q.opts[ans].level;
-    const nodeIdx = typeof q.nodeIdx === 'number' ? Math.max(0, Math.min(q.nodeIdx, kbNodes.length - 1)) : i;
+    const nodeIdx =
+      typeof q.nodeIdx === 'number' ? Math.max(0, Math.min(q.nodeIdx, kbNodes.length - 1)) : i;
     const node = kbNodes[nodeIdx];
     if (!node) return;
     const newStatus = level === 'blank' ? 'blank' : 'fuzzy';
@@ -57,10 +60,16 @@ export function applyDiagnosticResults(state: DiagnosticState): DiagnosticKbNode
       node.status = newStatus;
     }
     if (q.knowledgePoint) {
-      const kpNote = 'Tested knowledge point: ' + q.knowledgePoint + ' (baseline: ' + newStatus + '). ';
+      const kpNote =
+        'Tested knowledge point: ' + q.knowledgePoint + ' (baseline: ' + newStatus + '). ';
       node.system_note = (node.system_note || '') + kpNote;
     }
-    if (q.subarea && i < 2 && node.name.indexOf(q.subarea) === -1 && q.subarea !== 'Sub-area ' + (i + 1)) {
+    if (
+      q.subarea &&
+      i < 2 &&
+      node.name.indexOf(q.subarea) === -1 &&
+      q.subarea !== 'Sub-area ' + (i + 1)
+    ) {
       node.system_note = (node.system_note || '') + 'Sub-area: ' + q.subarea + '. ';
     }
   });

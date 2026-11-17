@@ -34,25 +34,35 @@ export function ScheduledPage() {
   }
 
   if (snap.error) {
-    return <Alert variant="destructive" className="scheduled-empty"><AlertDescription>{snap.error}</AlertDescription></Alert>;
+    return (
+      <Alert variant="destructive" className="scheduled-empty">
+        <AlertDescription>{snap.error}</AlertDescription>
+      </Alert>
+    );
   }
 
   const searching = query.trim().length > 0;
   const createTask = (initialPrompt?: string) => openScheduledTaskForm(undefined, initialPrompt);
 
   return (
-    <section className="workspace-surface scheduled-directory" aria-labelledby="scheduled-directory-title">
+    <section
+      className="workspace-surface scheduled-directory"
+      aria-labelledby="scheduled-directory-title"
+    >
       <ScheduledPageHeader query={query} onQueryChange={setQuery} onCreate={() => createTask()} />
 
       <Tabs value={scope} onValueChange={(value) => setScope(value as typeof scope)}>
-      <TabsList className="scheduled-filter-tabs" aria-label={scheduledText('scheduled.filter', 'Task filter')}>
-        <TabsTrigger type="button" value="all" className={cn(scope === 'all' && 'active')}>
-          {scheduledText('scheduled.all', 'All')}
-        </TabsTrigger>
-        <TabsTrigger type="button" value="active" className={cn(scope === 'active' && 'active')}>
-          {scheduledText('scheduled.activeOnly', 'Active')}
-        </TabsTrigger>
-      </TabsList>
+        <TabsList
+          className="scheduled-filter-tabs"
+          aria-label={scheduledText('scheduled.filter', 'Task filter')}
+        >
+          <TabsTrigger type="button" value="all" className={cn(scope === 'all' && 'active')}>
+            {scheduledText('scheduled.all', 'All')}
+          </TabsTrigger>
+          <TabsTrigger type="button" value="active" className={cn(scope === 'active' && 'active')}>
+            {scheduledText('scheduled.activeOnly', 'Active')}
+          </TabsTrigger>
+        </TabsList>
       </Tabs>
 
       {!searching ? <ScheduledRecommendations onSelect={(prompt) => createTask(prompt)} /> : null}
@@ -63,9 +73,15 @@ export function ScheduledPage() {
         <ScheduledTaskList
           tasks={visibleTasks}
           onEdit={(id) => openScheduledTaskForm(id)}
-          onRun={(id) => { void runScheduledTask(id); }}
-          onToggle={(id, active) => { void toggleScheduledTask(id, active); }}
-          onRemove={(id) => { void deleteScheduledTask(id); }}
+          onRun={(id) => {
+            void runScheduledTask(id);
+          }}
+          onToggle={(id, active) => {
+            void toggleScheduledTask(id, active);
+          }}
+          onRemove={(id) => {
+            void deleteScheduledTask(id);
+          }}
         />
       )}
     </section>
@@ -76,7 +92,10 @@ const rootSlot = createRootSlot('scheduled-page');
 
 export function mountScheduledPage(): void {
   const panel = document.getElementById(PANEL_ID);
-  if (!panel) { rootSlot.destroy(); return; }
+  if (!panel) {
+    rootSlot.destroy();
+    return;
+  }
 
   rootSlot.mount(panel, <ScheduledPage />);
 }

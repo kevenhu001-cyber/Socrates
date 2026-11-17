@@ -35,15 +35,21 @@ declare global {
 
 /** Read the optional <head> prefetch installed by index.html. */
 export function readBootPreflight(): BootPreflight | null {
-  try { return window.__bootApi || null; }
-  catch { return null; }
+  try {
+    return window.__bootApi || null;
+  } catch {
+    return null;
+  }
 }
 
 /** Start CSRF warming immediately, even when a later URL route exits early. */
 export function startCsrfBootstrap(preflight: BootPreflight | null): Promise<unknown> {
-  return (preflight && preflight.csrf)
-    || fetch('/api/v2/auth/csrf-token', { credentials: 'include' })
-      .catch((error) => reportSwallow(error, 'auth/boot.csrfPreflight'));
+  return (
+    (preflight && preflight.csrf) ||
+    fetch('/api/v2/auth/csrf-token', { credentials: 'include' }).catch((error) =>
+      reportSwallow(error, 'auth/boot.csrfPreflight'),
+    )
+  );
 }
 
 /** A promise that does not start its work until something awaits it. */
@@ -61,16 +67,28 @@ export interface LazyCsrfBootstrap extends PromiseLike<unknown> {
  * still overlaps the rest of startup exactly as before. */
 export function lazyCsrfBootstrap(preflight: BootPreflight | null): LazyCsrfBootstrap {
   let started: Promise<unknown> | null = null;
-  const start = () => { started ||= startCsrfBootstrap(preflight); return started; };
+  const start = () => {
+    started ||= startCsrfBootstrap(preflight);
+    return started;
+  };
   return {
-    then(onFulfilled, onRejected) { return start().then(onFulfilled, onRejected); },
-    catch(onRejected) { return start().catch(onRejected); },
-    finally(onFinally) { return start().finally(onFinally); },
+    then(onFulfilled, onRejected) {
+      return start().then(onFulfilled, onRejected);
+    },
+    catch(onRejected) {
+      return start().catch(onRejected);
+    },
+    finally(onFinally) {
+      return start().finally(onFinally);
+    },
   };
 }
 
 /** Convert the early raw fetch result into the apiFetch error contract. */
-export function adoptPreflight(promise: Promise<BootPreflightResponse>, label: string): Promise<unknown> {
+export function adoptPreflight(
+  promise: Promise<BootPreflightResponse>,
+  label: string,
+): Promise<unknown> {
   return Promise.resolve(promise).then((response) => {
     if (!response || response.failed) {
       throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
@@ -79,7 +97,13 @@ export function adoptPreflight(promise: Promise<BootPreflightResponse>, label: s
       throw makeApiError(401, 'Unauthorized', null, 'UNAUTHORIZED', 0);
     }
     if (response.status < 200 || response.status >= 300) {
-      throw makeApiError(response.status, 'request failed: ' + label, null, 'HTTP_' + response.status, 0);
+      throw makeApiError(
+        response.status,
+        'request failed: ' + label,
+        null,
+        'HTTP_' + response.status,
+        0,
+      );
     }
     return response.json;
   });
@@ -98,36 +122,37 @@ export interface AuthRequests {
 
 /** Start /me and public config requests together after URL-only routes. */
 export function startAuthRequests(preflight: BootPreflight | null): AuthRequests {
-  const meRequest: Promise<unknown> = preflight && preflight.me
-    ? adoptPreflight(preflight.me, '/api/auth/me')
-    : apiFetch('/api/auth/me', { _authEndpoint: true });
+  const meRequest: Promise<unknown> =
+    preflight && preflight.me
+      ? adoptPreflight(preflight.me, '/api/auth/me')
+      : apiFetch('/api/auth/me', { _authEndpoint: true });
   const settled: Promise<AuthMeResult> = meRequest.then(
     (value) => ({ value }),
     (error) => ({ error }),
   );
 
-  const configRequest: Promise<unknown> = preflight && preflight.config
-    ? Promise.resolve(preflight.config).then((response) => (
-      response && !response.failed && response.json ? response.json : {}
-    ))
-    : fetch('/api/v2/config', { credentials: 'include' })
-      .then((response) => response.json())
-      .catch(() => ({}));
+  const configRequest: Promise<unknown> =
+    preflight && preflight.config
+      ? Promise.resolve(preflight.config).then((response) =>
+          response && !response.failed && response.json ? response.json : {},
+        )
+      : fetch('/api/v2/config', { credentials: 'include' })
+          .then((response) => response.json())
+          .catch(() => ({}));
 
   return { meRequest: settled, configRequest };
 }
 
-export function shouldGateForInitialUnauthorized(initialMe: AuthMeResult, isInGraceWindow: () => boolean): boolean {
+export function shouldGateForInitialUnauthorized(
+  initialMe: AuthMeResult,
+  isInGraceWindow: () => boolean,
+): boolean {
   const error = initialMe.error as { status?: number } | null | undefined;
-  return !!(error
-    && error.status === 401
-    && !isInGraceWindow());
+  return !!(error && error.status === 401 && !isInGraceWindow());
 }
 
 export type AuthMeOutcome =
-  | { kind: 'resolved'; me: unknown }
-  | { kind: 'unauthorized' }
-  | { kind: 'unavailable' };
+  { kind: 'resolved'; me: unknown } | { kind: 'unauthorized' } | { kind: 'unavailable' };
 
 export interface RetryAuthMeOptions {
   fetchMe?: () => Promise<unknown>;
@@ -136,11 +161,15 @@ export interface RetryAuthMeOptions {
 }
 
 /** Retry transient /me failures without turning network outages into logout. */
-export async function retryAuthMe(initialMe: AuthMeResult, options: RetryAuthMeOptions = {}): Promise<AuthMeOutcome> {
+export async function retryAuthMe(
+  initialMe: AuthMeResult,
+  options: RetryAuthMeOptions = {},
+): Promise<AuthMeOutcome> {
   const fetchMe = options.fetchMe || (() => apiFetch('/api/auth/me', { _authEndpoint: true }));
-  const isInGraceWindow = options.isInGraceWindow
-    || getIsInAuthGraceWindow;
-  const wait = options.wait || ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const isInGraceWindow = options.isInGraceWindow || getIsInAuthGraceWindow;
+  const wait =
+    options.wait ||
+    ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {

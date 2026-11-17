@@ -15,7 +15,13 @@ function fitTextarea(textarea: HTMLTextAreaElement): void {
   textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_EDITOR_HEIGHT)}px`;
 }
 
-export function MessageEditForm({ initialText, cancelLabel, submitLabel, onCancel, onCommit }: {
+export function MessageEditForm({
+  initialText,
+  cancelLabel,
+  submitLabel,
+  onCancel,
+  onCommit,
+}: {
   initialText: string;
   cancelLabel: string;
   submitLabel: string;

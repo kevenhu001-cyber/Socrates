@@ -11,6 +11,7 @@
 //   node e2e/dist-server.mjs &           # serve dist/
 //   node scripts/parity-audit.mjs [--quick] [--only=home,chat]
 // ChatGPT reference values come from scripts/chatgpt-ref.mjs.
+import { enableTestState } from '../e2e/_state-init.mjs';
 import { chromium } from 'playwright';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -18,10 +19,12 @@ import { mockAuthedApp, waitForAppShell } from '../e2e/_mock-api.mjs';
 import { gotoAndSettle } from '../e2e/_lib.mjs';
 import { writeValidatedBaseline } from './parity-baseline.mjs';
 
-const args = Object.fromEntries(process.argv.slice(2).map((a) => {
-  const [k, v] = a.replace(/^--/, '').split('=');
-  return [k, v ?? true];
-}));
+const args = Object.fromEntries(
+  process.argv.slice(2).map((a) => {
+    const [k, v] = a.replace(/^--/, '').split('=');
+    return [k, v ?? true];
+  }),
+);
 const BASE = args.base || 'http://127.0.0.1:4173';
 const OUT = fileURLToPath(new URL('../debug/parity/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
@@ -61,34 +64,58 @@ const SOCRATES_ROLES = {
   dialog: '[role="dialog"]',
 };
 
-
 const STYLE_KEYS = [
-  'display', 'color', 'backgroundColor', 'fontFamily', 'fontSize', 'fontWeight',
-  'lineHeight', 'letterSpacing', 'borderRadius', 'borderTopWidth', 'borderTopColor',
-  'boxShadow', 'padding', 'gap', 'maxWidth', 'transitionProperty',
-  'transitionDuration', 'transitionTimingFunction', 'animationName', 'animationDuration',
+  'display',
+  'color',
+  'backgroundColor',
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'lineHeight',
+  'letterSpacing',
+  'borderRadius',
+  'borderTopWidth',
+  'borderTopColor',
+  'boxShadow',
+  'padding',
+  'gap',
+  'maxWidth',
+  'transitionProperty',
+  'transitionDuration',
+  'transitionTimingFunction',
+  'animationName',
+  'animationDuration',
 ];
 
 async function measure(page, roles) {
-  return page.evaluate(({ roles, keys }) => {
-    const out = {};
-    for (const [role, sel] of Object.entries(roles)) {
-      const el = [...document.querySelectorAll(sel)].find((n) => {
-        const r = n.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      });
-      if (!el) { out[role] = null; continue; }
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      const style = {};
-      for (const k of keys) style[k] = cs[k];
-      out[role] = {
-        x: Math.round(r.x), y: Math.round(r.y),
-        w: Math.round(r.width), h: Math.round(r.height), style,
-      };
-    }
-    return out;
-  }, { roles, keys: STYLE_KEYS });
+  return page.evaluate(
+    ({ roles, keys }) => {
+      const out = {};
+      for (const [role, sel] of Object.entries(roles)) {
+        const el = [...document.querySelectorAll(sel)].find((n) => {
+          const r = n.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        if (!el) {
+          out[role] = null;
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        const cs = getComputedStyle(el);
+        const style = {};
+        for (const k of keys) style[k] = cs[k];
+        out[role] = {
+          x: Math.round(r.x),
+          y: Math.round(r.y),
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          style,
+        };
+      }
+      return out;
+    },
+    { roles, keys: STYLE_KEYS },
+  );
 }
 
 // Layout defects that indicate "错乱": CJK labels wrapped one glyph per line,
@@ -102,10 +129,13 @@ async function detectDefects(page) {
       const cs = getComputedStyle(n);
       return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none';
     };
-    const label = (n) => n.id ? `#${n.id}` : `${n.tagName.toLowerCase()}.${[...n.classList].slice(0, 2).join('.')}`;
+    const label = (n) =>
+      n.id ? `#${n.id}` : `${n.tagName.toLowerCase()}.${[...n.classList].slice(0, 2).join('.')}`;
 
     // 1. Buttons / chips whose text wrapped (height >> line-height).
-    for (const n of document.querySelectorAll('button, [role="button"], [role="menuitem"], .chip, a')) {
+    for (const n of document.querySelectorAll(
+      'button, [role="button"], [role="menuitem"], .chip, a',
+    )) {
       if (!visible(n)) continue;
       const text = (n.innerText || '').trim();
       if (!text || text.length > 40) continue;
@@ -114,8 +144,14 @@ async function detectDefects(page) {
       const r = n.getBoundingClientRect();
       const range = document.createRange();
       range.selectNodeContents(n);
-      const tops = [...range.getClientRects()].filter((q) => q.width > 0).map((q) => q.top).sort((a, b) => a - b);
-      const lines = tops.reduce((acc, t) => (acc.length && t - acc[acc.length - 1] < lh * 0.6 ? acc : [...acc, t]), []).length;
+      const tops = [...range.getClientRects()]
+        .filter((q) => q.width > 0)
+        .map((q) => q.top)
+        .sort((a, b) => a - b);
+      const lines = tops.reduce(
+        (acc, t) => (acc.length && t - acc[acc.length - 1] < lh * 0.6 ? acc : [...acc, t]),
+        [],
+      ).length;
       if (lines > 1 && r.height > lh * 1.8 && !text.includes('\n')) {
         defects.push({ kind: 'text-wrap', el: label(n), text, lines, h: Math.round(r.height) });
       }
@@ -125,16 +161,21 @@ async function detectDefects(page) {
     for (const wrap of document.querySelectorAll('#composerInputWrap')) {
       if (!visible(wrap)) continue;
       if (wrap.classList.contains('composer-multiline')) continue;
-      const ctrls = [...wrap.querySelectorAll('button, .composer-editor-root')]
-        .filter((n) => visible(n) && !n.closest('[role="menu"], .attachment-chips'));
+      const ctrls = [...wrap.querySelectorAll('button, .composer-editor-root')].filter(
+        (n) => visible(n) && !n.closest('[role="menu"], .attachment-chips'),
+      );
       const centres = ctrls.map((n) => {
         const r = n.getBoundingClientRect();
         return { el: label(n), c: Math.round(r.top + r.height / 2) };
       });
       const cs = centres.map((c) => c.c);
       if (cs.length && Math.max(...cs) - Math.min(...cs) > 6) {
-        defects.push({ kind: 'composer-misaligned', el: label(wrap), centres,
-          wrapH: Math.round(wrap.getBoundingClientRect().height) });
+        defects.push({
+          kind: 'composer-misaligned',
+          el: label(wrap),
+          centres,
+          wrapH: Math.round(wrap.getBoundingClientRect().height),
+        });
       }
     }
 
@@ -168,29 +209,36 @@ async function detectDefects(page) {
 
 const FIXTURE_MESSAGES = [
   { role: 'user', content: '用苏格拉底的方式帮我理解贝叶斯定理' },
-  { role: 'assistant', content: [
-    '## 先从一个例子开始',
-    '',
-    '假设某种病的患病率是 **1%**，检测准确率是 *99%*。你拿到阳性结果，真正患病的概率是多少？',
-    '',
-    '- 先验：$P(D)=0.01$',
-    '- 似然：$P(+\\mid D)=0.99$',
-    '',
-    '$$P(D\\mid +)=\\frac{P(+\\mid D)P(D)}{P(+)}$$',
-    '',
-    '```python',
-    'def posterior(prior, sens, fpr):',
-    '    return sens * prior / (sens * prior + fpr * (1 - prior))',
-    '```',
-    '',
-    '| 量 | 值 |',
-    '| --- | --- |',
-    '| 先验 | 0.01 |',
-    '',
-    '> 换个角度想想：100 个人里有几个真的患病？',
-  ].join('\n') },
+  {
+    role: 'assistant',
+    content: [
+      '## 先从一个例子开始',
+      '',
+      '假设某种病的患病率是 **1%**，检测准确率是 *99%*。你拿到阳性结果，真正患病的概率是多少？',
+      '',
+      '- 先验：$P(D)=0.01$',
+      '- 似然：$P(+\\mid D)=0.99$',
+      '',
+      '$$P(D\\mid +)=\\frac{P(+\\mid D)P(D)}{P(+)}$$',
+      '',
+      '```python',
+      'def posterior(prior, sens, fpr):',
+      '    return sens * prior / (sens * prior + fpr * (1 - prior))',
+      '```',
+      '',
+      '| 量 | 值 |',
+      '| --- | --- |',
+      '| 先验 | 0.01 |',
+      '',
+      '> 换个角度想想：100 个人里有几个真的患病？',
+    ].join('\n'),
+  },
   { role: 'user', content: 'I think it is around 50%?' },
-  { role: 'assistant', content: 'Good guess — let\'s count it out. Out of 10,000 people, how many are sick *and* test positive?' },
+  {
+    role: 'assistant',
+    content:
+      "Good guess — let's count it out. Out of 10,000 people, how many are sick *and* test positive?",
+  },
 ];
 
 const SCENARIOS = {
@@ -199,11 +247,12 @@ const SCENARIOS = {
   },
   async chat(page) {
     await page.evaluate((raw) => {
-      const s = window.stateStore;
-      s.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-      s.dispatch({ type: 'state/set', key: 'topic', value: '贝叶斯定理' });
-      s.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' });
-      s.dispatch({ type: 'state/set', key: 'messages', value: [] });
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({ session: { topic: '贝叶斯定理' } });
+      window.__socratesTestState.patch({
+        session: { currentSessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' },
+      });
+      window.__socratesTestState.patch({ session: { messages: [] } });
       raw.forEach((message) => window.addMessage(message.role, message.content));
       window.__testActivateMainView('chatView');
     }, FIXTURE_MESSAGES);
@@ -215,7 +264,11 @@ const SCENARIOS = {
     await page.waitForTimeout(400);
   },
   async effortMenu(page) {
-    await page.locator('.effort-trigger:visible').first().click().catch(() => {});
+    await page
+      .locator('.effort-trigger:visible')
+      .first()
+      .click()
+      .catch(() => {});
     await page.waitForTimeout(400);
   },
   async cmdk(page) {
@@ -232,28 +285,37 @@ async function runSocrates(browser) {
   const only = typeof args.only === 'string' ? args.only.split(',') : Object.keys(SCENARIOS);
   const metrics = {};
   const defects = {};
-  for (const w of WIDTHS) for (const mode of MODES) for (const lang of LANGS) {
-    for (const name of only) {
-      const ctx = await browser.newContext({ viewport: { width: w, height: 900 }, deviceScaleFactor: 1 });
-      const page = await ctx.newPage();
-      await page.addInitScript((m) => { try { localStorage.setItem('socrates-theme', m); } catch (_) {} }, mode);
-      await mockAuthedApp(page, { lang });
-      await gotoAndSettle(page, BASE + '/');
-      await waitForAppShell(page);
-      await SCENARIOS[name](page);
-      const key = `${name}-${w}-${mode}-${lang}`;
-      await page.screenshot({ path: `${OUT}${key}.png` });
-      metrics[key] = await measure(page, SOCRATES_ROLES);
-      const d = await detectDefects(page);
-      if (d.length) defects[key] = d;
-      await ctx.close();
-      process.stdout.write(`${key}: ${d.length} defects\n`);
-    }
-  }
+  for (const w of WIDTHS)
+    for (const mode of MODES)
+      for (const lang of LANGS) {
+        for (const name of only) {
+          const ctx = await browser.newContext({
+            viewport: { width: w, height: 900 },
+            deviceScaleFactor: 1,
+          });
+          const page = await ctx.newPage();
+          await enableTestState(page);
+          await page.addInitScript((m) => {
+            try {
+              localStorage.setItem('socrates-theme', m);
+            } catch (_) {}
+          }, mode);
+          await mockAuthedApp(page, { lang });
+          await gotoAndSettle(page, BASE + '/');
+          await waitForAppShell(page);
+          await SCENARIOS[name](page);
+          const key = `${name}-${w}-${mode}-${lang}`;
+          await page.screenshot({ path: `${OUT}${key}.png` });
+          metrics[key] = await measure(page, SOCRATES_ROLES);
+          const d = await detectDefects(page);
+          if (d.length) defects[key] = d;
+          await ctx.close();
+          process.stdout.write(`${key}: ${d.length} defects\n`);
+        }
+      }
   writeFileSync(`${OUT}metrics.json`, JSON.stringify(metrics, null, 1));
   writeFileSync(`${OUT}defects.json`, JSON.stringify(defects, null, 1));
 }
-
 
 /* ── Gate ────────────────────────────────────────────────────────────────
  * `--check` turns the audit from a diagnostic into a CI gate. Two rules:
@@ -308,9 +370,14 @@ function findUnresolvedRoles(actual, written) {
   for (const role of Object.keys(GATE_FIELDS)) {
     const resolvedSomewhere = Object.keys(actual).some((key) => actual[key] && actual[key][role]);
     if (resolvedSomewhere) continue;
-    const selector = typeof SOCRATES_ROLES[role] === 'string' ? SOCRATES_ROLES[role] : '(computed selector)';
+    const selector =
+      typeof SOCRATES_ROLES[role] === 'string' ? SOCRATES_ROLES[role] : '(computed selector)';
     const measured = Object.entries(written).filter(([, perRole]) => perRole[role]);
-    unresolved.push({ role, selector, resolvedIn: `${measured.length}/${Object.keys(written).length} scenarios` });
+    unresolved.push({
+      role,
+      selector,
+      resolvedIn: `${measured.length}/${Object.keys(written).length} scenarios`,
+    });
   }
   return unresolved;
 }
@@ -321,8 +388,12 @@ function pick(entry, fields) {
   const out = {};
   for (const f of fields) {
     const v = f.startsWith('style.')
-      ? entry && entry.style ? entry.style[f.slice(6)] : undefined
-      : entry ? entry[f] : undefined;
+      ? entry && entry.style
+        ? entry.style[f.slice(6)]
+        : undefined
+      : entry
+        ? entry[f]
+        : undefined;
     if (v !== undefined && v !== null && v !== '') out[f] = v;
   }
   return out;
@@ -353,11 +424,17 @@ function compareGated(actual, expected) {
       const a = actual[key][role] || {};
       const e = expected[key][role];
       for (const field of Object.keys(e)) {
-        if (!(field in a)) { problems.push(`${key}/${role}.${field}: missing in run (baseline ${e[field]})`); continue; }
-        const av = a[field]; const ev = e[field];
+        if (!(field in a)) {
+          problems.push(`${key}/${role}.${field}: missing in run (baseline ${e[field]})`);
+          continue;
+        }
+        const av = a[field];
+        const ev = e[field];
         if (typeof ev === 'number' && typeof av === 'number') {
           if (Math.abs(av - ev) > GEOM_TOLERANCE_PX) {
-            problems.push(`${key}/${role}.${field}: ${av} vs baseline ${ev} (Δ${av - ev}, tol ${GEOM_TOLERANCE_PX})`);
+            problems.push(
+              `${key}/${role}.${field}: ${av} vs baseline ${ev} (Δ${av - ev}, tol ${GEOM_TOLERANCE_PX})`,
+            );
           }
         } else if (String(av) !== String(ev)) {
           problems.push(`${key}/${role}.${field}: "${av}" vs baseline "${ev}"`);
@@ -404,14 +481,18 @@ if (args.update || args.check) {
     const failures = [];
     const unresolved = findUnresolvedRoles(gated, written);
     if (unresolved.length) {
-      failures.push(`${unresolved.length} gated role(s) never resolved — a stale selector measures nothing and fails nothing:`);
-      for (const u of unresolved) failures.push(`  ${u.role} → "${u.selector}" resolved in ${u.resolvedIn}`);
+      failures.push(
+        `${unresolved.length} gated role(s) never resolved — a stale selector measures nothing and fails nothing:`,
+      );
+      for (const u of unresolved)
+        failures.push(`  ${u.role} → "${u.selector}" resolved in ${u.resolvedIn}`);
     }
     const defectCount = Object.values(writtenDefects).reduce((n, d) => n + d.length, 0);
     if (defectCount) {
       failures.push(`${defectCount} layout defect(s):`);
       for (const [key, list] of Object.entries(writtenDefects)) {
-        for (const d of list) failures.push(`  ${key}: ${d.kind} ${JSON.stringify(d).slice(0, 160)}`);
+        for (const d of list)
+          failures.push(`  ${key}: ${d.kind} ${JSON.stringify(d).slice(0, 160)}`);
       }
     }
     if (existsSync(BASELINE_PATH)) {
@@ -419,7 +500,9 @@ if (args.update || args.check) {
       failures.push(...compareGated(gated, expected.scenarios || {}));
       const skipped = Object.keys(expected.scenarios || {}).filter((k) => !(k in gated));
       if (skipped.length) {
-        console.log(`parity gate: ${skipped.length} baseline scenario(s) not in this run (partial --only?): ${skipped.join(', ')}`);
+        console.log(
+          `parity gate: ${skipped.length} baseline scenario(s) not in this run (partial --only?): ${skipped.join(', ')}`,
+        );
       }
     } else {
       failures.push(`no baseline at ${BASELINE_PATH} — run \`npm run parity:update\` first`);

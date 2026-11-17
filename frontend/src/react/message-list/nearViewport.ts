@@ -23,9 +23,15 @@ const NEAR_MARGIN = '1200px 0px';
 const IDLE_TIMEOUT_MS = 120;
 const SLICE_BUDGET_MS = 8;
 
-interface IdleDeadlineLike { timeRemaining(): number; didTimeout?: boolean }
+interface IdleDeadlineLike {
+  timeRemaining(): number;
+  didTimeout?: boolean;
+}
 type IdleWindow = Window & {
-  requestIdleCallback?: (callback: (deadline: IdleDeadlineLike) => void, options?: { timeout: number }) => number;
+  requestIdleCallback?: (
+    callback: (deadline: IdleDeadlineLike) => void,
+    options?: { timeout: number },
+  ) => number;
 };
 
 let observer: IntersectionObserver | null = null;

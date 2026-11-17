@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { publishChatRuntime } from './_lib.mjs';
 
@@ -7,26 +7,49 @@ test('whiteboard roots render and dispose with their message output', async ({ p
   const externalRequests = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
-    if (/^https?:$/.test(url.protocol) && url.origin !== 'http://127.0.0.1:4173') externalRequests.push(url.href);
+    if (/^https?:$/.test(url.protocol) && url.origin !== 'http://127.0.0.1:4173')
+      externalRequests.push(url.href);
   });
   page.on('pageerror', (error) => errors.push(error.message));
   const spec = {
-    version: 1, template: 'whiteboard', title: 'Lifecycle whiteboard', accessibilitySummary: 'One note in a whiteboard.',
+    version: 1,
+    template: 'whiteboard',
+    title: 'Lifecycle whiteboard',
+    accessibilitySummary: 'One note in a whiteboard.',
     payload: { nodes: [{ id: 'first', label: 'Shared root lifecycle' }] },
   };
-  await prepareChatWorkbench(page, { messages: [{
-    clientId: 'whiteboard-turn', role: 'assistant', type: 'assistant', rawText: 'A note for this conversation.',
-    toolCalls: [{ id: 'whiteboard-tool', name: 'render_intelligent_ui', input: {version:1,nodes:[{...spec,id:'visual',type:'visualization'}]}, status: 'completed', textOffset: 0, output: 'Ready' }],
-  }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'whiteboard-turn',
+        role: 'assistant',
+        type: 'assistant',
+        rawText: 'A note for this conversation.',
+        toolCalls: [
+          {
+            id: 'whiteboard-tool',
+            name: 'render_intelligent_ui',
+            input: { version: 1, nodes: [{ ...spec, id: 'visual', type: 'visualization' }] },
+            status: 'completed',
+            textOffset: 0,
+            output: 'Ready',
+          },
+        ],
+      },
+    ],
+  });
   const card = page.locator('.visualization-card');
   await expect(card.locator('.tl-container')).toBeVisible({ timeout: 20000 });
   await expect(card).toContainText('Shared root lifecycle');
   const note = page.getByTestId('canvas').getByText('Shared root lifecycle', { exact: true });
-  const ink = await note.evaluate((node) => ({ paragraph: getComputedStyle(node).color, editor: getComputedStyle(node.parentElement).color }));
+  const ink = await note.evaluate((node) => ({
+    paragraph: getComputedStyle(node).color,
+    editor: getComputedStyle(node.parentElement).color,
+  }));
   expect(ink.paragraph).toBe(ink.editor);
   await card.screenshot({ path: 'test-results/whiteboard-palette-owner.png' });
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { messages: [] } });
   });
   await publishChatRuntime(page, { type: 'state-synced', reason: 'whiteboard-release' });
   await expect(page.locator('.tl-container')).toHaveCount(0);

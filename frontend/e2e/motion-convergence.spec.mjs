@@ -10,7 +10,9 @@ test.beforeEach(async ({ page }) => {
   await waitForAppShell(page);
 });
 
-test('desktop sidebar commits layout once and animates the main surface with transform', async ({ page }) => {
+test('desktop sidebar commits layout once and animates the main surface with transform', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 800 });
 
   const result = await page.evaluate(() => {
@@ -29,9 +31,10 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     const mainTransition = getComputedStyle(main).transitionDuration;
     const animations = main.getAnimations().map((animation) => ({
       duration: Number(animation.effect?.getTiming().duration || 0),
-      keyframes: animation.effect instanceof KeyframeEffect
-        ? animation.effect.getKeyframes().map((frame) => String(frame.transform || ''))
-        : [],
+      keyframes:
+        animation.effect instanceof KeyframeEffect
+          ? animation.effect.getKeyframes().map((frame) => String(frame.transform || ''))
+          : [],
     }));
 
     return { beforeInset, afterInset, sidebarTransition, mainTransition, animations };
@@ -41,12 +44,16 @@ test('desktop sidebar commits layout once and animates the main surface with tra
   expect(result.beforeInset - result.afterInset).toBeGreaterThan(100);
   expect(result.sidebarTransition).toMatch(/^0s(?:, 0s)*$/);
   expect(result.mainTransition).toMatch(/^0s(?:, 0s)*$/);
-  const spatial = result.animations.find((animation) => animation.keyframes.join(' ').includes('translateX'));
+  const spatial = result.animations.find((animation) =>
+    animation.keyframes.join(' ').includes('translateX'),
+  );
   expect(spatial).toBeTruthy();
   expect(spatial.duration).toBe(180);
 });
 
-test('rapid sidebar reversal preserves the visible position and reduced motion snaps', async ({ page }) => {
+test('rapid sidebar reversal preserves the visible position and reduced motion snaps', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const result = await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
@@ -56,19 +63,24 @@ test('rapid sidebar reversal preserves the visible position and reduced motion s
     const motion = main.getAnimations()[0];
     motion.pause();
     motion.currentTime = 60;
-    const visibleInset = parseFloat(getComputedStyle(main).paddingLeft)
-      + new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
+    const visibleInset =
+      parseFloat(getComputedStyle(main).paddingLeft) +
+      new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
     window.__socratesLegacy.navigation.toggleSidebar();
     const next = main.getAnimations()[0];
     next.pause();
     next.currentTime = 0;
-    const reversedInset = parseFloat(getComputedStyle(main).paddingLeft)
-      + new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
+    const reversedInset =
+      parseFloat(getComputedStyle(main).paddingLeft) +
+      new DOMMatrixReadOnly(getComputedStyle(main).transform).m41;
     next.finish();
     return { visibleInset, reversedInset };
   });
   expect(Math.abs(result.visibleInset - result.reversedInset)).toBeLessThan(1);
-  await page.screenshot({ path: 'test-results/motion-sidebar-settled.png', animations: 'disabled' });
+  await page.screenshot({
+    path: 'test-results/motion-sidebar-settled.png',
+    animations: 'disabled',
+  });
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const count = await page.evaluate(() => {
@@ -105,7 +117,10 @@ test('button hover colors keep their transition through press and release', asyn
     button.className = 'btn';
     button.textContent = 'Press feedback';
     document.body.append(button);
-    const read = () => getComputedStyle(button).transitionProperty.split(',').map((value) => value.trim());
+    const read = () =>
+      getComputedStyle(button)
+        .transitionProperty.split(',')
+        .map((value) => value.trim());
     const idle = read();
     button.classList.add('is-pressed');
     const pressed = read();
@@ -115,12 +130,16 @@ test('button hover colors keep their transition through press and release', asyn
     return [idle, pressed, released];
   });
   for (const properties of phases) {
-    expect(properties).toEqual(expect.arrayContaining(['opacity', 'background-color', 'color', 'border-color']));
+    expect(properties).toEqual(
+      expect.arrayContaining(['opacity', 'background-color', 'color', 'border-color']),
+    );
     expect(properties).not.toContain('all');
   }
 });
 
-test('focus outlines use a color and the account input retains its separate halo', async ({ page }) => {
+test('focus outlines use a color and the account input retains its separate halo', async ({
+  page,
+}) => {
   const focus = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);
     const input = document.createElement('input');
@@ -147,8 +166,13 @@ test('composer menu opens crisply without a competing entrance animation', async
   const motion = await menu.evaluate((node) => {
     const style = getComputedStyle(node);
     const frames = node.getAnimations().flatMap((animation) => animation.effect.getKeyframes());
-    return { name: style.animationName, duration: style.animationDuration, easing: style.animationTimingFunction,
-      radius: style.borderTopLeftRadius, hasFilter: frames.some((frame) => 'filter' in frame) };
+    return {
+      name: style.animationName,
+      duration: style.animationDuration,
+      easing: style.animationTimingFunction,
+      radius: style.borderTopLeftRadius,
+      hasFilter: frames.some((frame) => 'filter' in frame),
+    };
   });
   /* The reference tools card appears on the anchor without an entrance
      animation; the shadow carries the elevation instead. */

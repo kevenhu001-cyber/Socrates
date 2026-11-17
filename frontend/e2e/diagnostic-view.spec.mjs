@@ -23,18 +23,34 @@ test('diagnostic view: failure, built-in questions and results', async ({ page }
       return;
     }
     if (url.includes('/api/config')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
       return;
     }
     if (url.includes('/api/sessions') && method === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sessions: [], total: 0 }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ sessions: [], total: 0 }),
+      });
       return;
     }
     if (url.includes('/api/projects')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ projects: [] }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ projects: [] }),
+      });
       return;
     }
-    await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'no provider' }) });
+    await route.fulfill({
+      status: 500,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'no provider' }),
+    });
   });
 
   await page.goto('/');

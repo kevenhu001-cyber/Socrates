@@ -27,12 +27,15 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
   return (
     <div className="admin-login">
       <h2>Admin console</h2>
-      <p className="admin-hint">Enter the operator password to manage the system model and embedding provider.</p>
+      <p className="admin-hint">
+        Enter the operator password to manage the system model and embedding provider.
+      </p>
       <form onSubmit={submit}>
-          <FieldGroup>
+        <FieldGroup>
           <Field>
-              <FieldLabel htmlFor="admin-loginpage-1">Admin password</FieldLabel>
-              <ShadcnInput id="admin-loginpage-1"
+            <FieldLabel htmlFor="admin-loginpage-1">Admin password</FieldLabel>
+            <ShadcnInput
+              id="admin-loginpage-1"
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -40,13 +43,22 @@ export function LoginPage({ onReady }: { onReady: () => void }) {
               autoFocus
               required
             />
-            </Field>
-          {error && <div className="admin-error" role="alert">{error}</div>}
-          <UiButton variant="default" type="submit" className="admin-save" disabled={busy || !password}>
+          </Field>
+          {error && (
+            <div className="admin-error" role="alert">
+              {error}
+            </div>
+          )}
+          <UiButton
+            variant="default"
+            type="submit"
+            className="admin-save"
+            disabled={busy || !password}
+          >
             {busy ? 'Signing in…' : 'Sign in'}
           </UiButton>
-          </FieldGroup>
-        </form>
+        </FieldGroup>
+      </form>
     </div>
   );
 }

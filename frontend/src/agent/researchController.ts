@@ -1,7 +1,22 @@
-import type { Message, ResearchJob, ResearchJobEvent, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
+import type {
+  Message,
+  ResearchJob,
+  ResearchJobEvent,
+  ResearchJobRefineResult,
+  ResearchJobRequest,
+} from '@socrates/contracts';
 
-export interface ResearchScope { userId: string; sessionId: string; projectId: string | null }
-export interface ResearchView { job: ResearchJob; stage: string; reconnecting: boolean; busy: boolean }
+export interface ResearchScope {
+  userId: string;
+  sessionId: string;
+  projectId: string | null;
+}
+export interface ResearchView {
+  job: ResearchJob;
+  stage: string;
+  reconnecting: boolean;
+  busy: boolean;
+}
 export interface ResearchSnapshot {
   scope: ResearchScope | null;
   jobs: ResearchView[];
@@ -15,11 +30,19 @@ export interface ResearchClientPorts {
   get(id: string, signal: AbortSignal): Promise<ResearchJob>;
   control(id: string, action: 'cancel' | 'retry', signal: AbortSignal): Promise<ResearchJob>;
   refine(id: string, instruction: string, signal: AbortSignal): Promise<ResearchJobRefineResult>;
-  watch(id: string, after: number, signal: AbortSignal, event: (event: ResearchJobEvent) => Promise<void>): Promise<void>;
+  watch(
+    id: string,
+    after: number,
+    signal: AbortSignal,
+    event: (event: ResearchJobEvent) => Promise<void>,
+  ): Promise<void>;
   hasReport(job: ResearchJob): boolean;
   report(job: ResearchJob, signal: AbortSignal): Promise<Message | null>;
   deliver(job: ResearchJob, message: Message): void;
-  pending(scope: ResearchScope, body: ResearchJobRequest | null | undefined): ResearchJobRequest | null;
+  pending(
+    scope: ResearchScope,
+    body: ResearchJobRequest | null | undefined,
+  ): ResearchJobRequest | null;
   key(): string;
   delay(ms: number, signal: AbortSignal): Promise<void>;
 }
@@ -43,11 +66,15 @@ interface ResearchControllerRuntime {
 
 function upsertResearchView(snapshot: ResearchSnapshot, view: ResearchView): ResearchView[] {
   return snapshot.jobs.some((entry) => entry.job.id === view.job.id)
-    ? snapshot.jobs.map((entry) => entry.job.id === view.job.id ? view : entry)
+    ? snapshot.jobs.map((entry) => (entry.job.id === view.job.id ? view : entry))
     : [...snapshot.jobs, view];
 }
 
-async function deliverResearchReport(job: ResearchJob, epoch: number, runtime: ResearchControllerRuntime) {
+async function deliverResearchReport(
+  job: ResearchJob,
+  epoch: number,
+  runtime: ResearchControllerRuntime,
+) {
   if (job.status !== 'succeeded' || !job.resultArtifactId || runtime.ports.hasReport(job)) return;
   try {
     const message = await runtime.ports.report(job, runtime.signal());
@@ -62,7 +89,12 @@ function createResearchAcceptor(runtime: ResearchControllerRuntime): ResearchAcc
     if (!runtime.current(epoch) || job.sessionId !== runtime.snapshot().scope?.sessionId) return;
     const previous = runtime.snapshot().jobs.find((view) => view.job.id === job.id);
     if (previous && previous.job.eventSequence > job.eventSequence) return;
-    const view: ResearchView = { job, stage: stage || researchStage(job), reconnecting: false, busy: previous?.busy || false };
+    const view: ResearchView = {
+      job,
+      stage: stage || researchStage(job),
+      reconnecting: false,
+      busy: previous?.busy || false,
+    };
     runtime.emit({ jobs: upsertResearchView(runtime.snapshot(), view) });
     await deliverResearchReport(job, epoch, runtime);
   };
@@ -91,7 +123,11 @@ function startResearchWatcher(job: ResearchJob, epoch: number, deps: ResearchWat
         await deps.ports.watch(job.id, cursor, signal, async (event) => {
           if (!deps.current(epoch) || event.jobId !== job.id || event.sequence <= cursor) return;
           const latest = await deps.ports.get(job.id, signal);
-          await deps.accept(latest, epoch, latest.eventSequence === event.sequence ? event.stage : undefined);
+          await deps.accept(
+            latest,
+            epoch,
+            latest.eventSequence === event.sequence ? event.stage : undefined,
+          );
           cursor = event.sequence;
           failures = 0;
         });
@@ -106,17 +142,28 @@ function startResearchWatcher(job: ResearchJob, epoch: number, deps: ResearchWat
       deps.patchView(job.id, { reconnecting: true });
       await deps.ports.delay(Math.min(15_000, 1000 * 2 ** Math.min(failures++, 4)), signal);
     }
-  })().catch(() => { /* Scope cancellation ends the reconnect delay. */ }).finally(() => {
-    ownedWatchers.delete(job.id);
-    const latest = deps.snapshot().jobs.find((view) => view.job.id === job.id)?.job;
-    if (deps.current(epoch) && latest && active(latest)) startResearchWatcher(latest, epoch, deps);
-  });
+  })()
+    .catch(() => {
+      /* Scope cancellation ends the reconnect delay. */
+    })
+    .finally(() => {
+      ownedWatchers.delete(job.id);
+      const latest = deps.snapshot().jobs.find((view) => view.job.id === job.id)?.job;
+      if (deps.current(epoch) && latest && active(latest))
+        startResearchWatcher(latest, epoch, deps);
+    });
 }
 
 /** Owns subscriptions for one account/session. Every async completion checks
  * its captured generation before changing UI or delivering a report. */
 export function createResearchController(ports: ResearchClientPorts) {
-  let snapshot: ResearchSnapshot = { scope: null, jobs: [], pending: null, submitting: false, issue: null };
+  let snapshot: ResearchSnapshot = {
+    scope: null,
+    jobs: [],
+    pending: null,
+    submitting: false,
+    issue: null,
+  };
   let generation = 0;
   let abort = new AbortController();
   let watching = new Set<string>();
@@ -126,12 +173,28 @@ export function createResearchController(ports: ResearchClientPorts) {
     listeners.forEach((listener) => listener());
   };
   const current = (epoch: number) => epoch === generation && !abort.signal.aborted;
-  const patchView = (id: string, patch: Partial<ResearchView>) => emit({ jobs: snapshot.jobs.map((view) => view.job.id === id ? { ...view, ...patch } : view) });
-  const runtime: ResearchControllerRuntime = { ports, snapshot: () => snapshot, signal: () => abort.signal, current, emit };
+  const patchView = (id: string, patch: Partial<ResearchView>) =>
+    emit({
+      jobs: snapshot.jobs.map((view) => (view.job.id === id ? { ...view, ...patch } : view)),
+    });
+  const runtime: ResearchControllerRuntime = {
+    ports,
+    snapshot: () => snapshot,
+    signal: () => abort.signal,
+    current,
+    emit,
+  };
   const accept = createResearchAcceptor(runtime);
-  const watch = (job: ResearchJob, epoch: number) => startResearchWatcher(job, epoch, {
-    ports, snapshot: () => snapshot, signal: () => abort.signal, current, patchView, watching, accept,
-  });
+  const watch = (job: ResearchJob, epoch: number) =>
+    startResearchWatcher(job, epoch, {
+      ports,
+      snapshot: () => snapshot,
+      signal: () => abort.signal,
+      current,
+      patchView,
+      watching,
+      accept,
+    });
 
   async function refresh() {
     const epoch = generation;
@@ -145,7 +208,9 @@ export function createResearchController(ports: ResearchClientPorts) {
         await accept(job, epoch);
         watch(job, epoch);
       }
-    } catch { if (current(epoch)) emit({ issue: 'load' }); }
+    } catch {
+      if (current(epoch)) emit({ issue: 'load' });
+    }
   }
 
   function open(scope: ResearchScope | null) {
@@ -154,21 +219,37 @@ export function createResearchController(ports: ResearchClientPorts) {
     abort = new AbortController();
     generation++;
     watching = new Set();
-    emit({ scope, jobs: [], pending: scope ? ports.pending(scope, undefined) : null, submitting: false, issue: null });
+    emit({
+      scope,
+      jobs: [],
+      pending: scope ? ports.pending(scope, undefined) : null,
+      submitting: false,
+      issue: null,
+    });
     if (scope) {
       const epoch = generation;
-      void refresh().then(() => { if (current(epoch) && snapshot.pending) void submit(); });
+      void refresh().then(() => {
+        if (current(epoch) && snapshot.pending) void submit();
+      });
     }
   }
 
   async function submit(query?: string) {
     const scope = snapshot.scope;
     if (!scope || snapshot.submitting) return;
-    if (query && snapshot.pending && snapshot.pending.query !== query.trim()) { emit({ issue: 'submit' }); return; }
+    if (query && snapshot.pending && snapshot.pending.query !== query.trim()) {
+      emit({ issue: 'submit' });
+      return;
+    }
     const epoch = generation;
     // A response lost after acceptance retains the original key, including
     // across reload. Never silently replace an unresolved submission.
-    const body = snapshot.pending || { query: (query || '').trim(), sessionId: scope.sessionId, projectId: scope.projectId, idempotencyKey: ports.key() };
+    const body = snapshot.pending || {
+      query: (query || '').trim(),
+      sessionId: scope.sessionId,
+      projectId: scope.projectId,
+      idempotencyKey: ports.key(),
+    };
     if (!body.query) return;
     ports.pending(scope, body);
     emit({ pending: body, submitting: true, issue: null });
@@ -194,8 +275,11 @@ export function createResearchController(ports: ResearchClientPorts) {
       const job = await ports.control(id, action, abort.signal);
       await accept(job, epoch);
       watch(job, epoch);
-    } catch { if (current(epoch)) emit({ issue: 'action' }); }
-    finally { if (current(epoch)) patchView(id, { busy: false }); }
+    } catch {
+      if (current(epoch)) emit({ issue: 'action' });
+    } finally {
+      if (current(epoch)) patchView(id, { busy: false });
+    }
   }
 
   async function refine(id: string, instruction: string) {
@@ -209,14 +293,26 @@ export function createResearchController(ports: ResearchClientPorts) {
       await accept(result.job, epoch);
       watch(result.job, epoch);
       return result.job;
-    } catch { if (current(epoch)) emit({ issue: 'action' }); }
-    finally { if (current(epoch)) patchView(id, { busy: false }); }
+    } catch {
+      if (current(epoch)) emit({ issue: 'action' });
+    } finally {
+      if (current(epoch)) patchView(id, { busy: false });
+    }
   }
 
   return {
     getSnapshot: () => snapshot,
-    subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    open, refresh, submit, control, refine,
+    subscribe: (listener: () => void) => {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    open,
+    refresh,
+    submit,
+    control,
+    refine,
     discardPending: () => {
       if (snapshot.submitting || !snapshot.scope) return;
       ports.pending(snapshot.scope, null);

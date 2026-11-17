@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp } from './_mock-api.mjs';
 
-test('React auth gate owns view transitions, form feedback, and submit actions', async ({ page }) => {
+test('React auth gate owns view transitions, form feedback, and submit actions', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   const apiKeyRefreshes = [];
   page.on('request', (request) => {
@@ -57,7 +59,9 @@ test('React auth gate owns view transitions, form feedback, and submit actions',
   await page.locator('#authSigninView').evaluate((form) => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   });
-  await expect(page.locator('#authSigninError')).toHaveText('Please enter your email and password.');
+  await expect(page.locator('#authSigninError')).toHaveText(
+    'Please enter your email and password.',
+  );
 
   await page.locator('#authSigninTab').focus();
   await page.locator('#authSigninTab').press('ArrowRight');

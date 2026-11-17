@@ -20,7 +20,12 @@ export async function installVizProbe(page) {
 
   await page.evaluate(() => {
     if (window.__vizProbe) return;
-    const stats = window.__vizProbe = { created: [], removed: [], disposeCalls: [], disposedCards: [] };
+    const stats = (window.__vizProbe = {
+      created: [],
+      removed: [],
+      disposeCalls: [],
+      disposedCards: [],
+    });
 
     /* Count host teardown without touching the real implementation: the
        gateway caches the postRender OBJECT, so wrapping the property is
@@ -32,8 +37,9 @@ export async function installVizProbe(page) {
         stats.disposeCalls.push({
           at: Date.now(),
           cardIds: host
-            ? Array.from(host.querySelectorAll('.visualization-card'))
-              .map((card) => card.dataset.visualizationId || '')
+            ? Array.from(host.querySelectorAll('.visualization-card')).map(
+                (card) => card.dataset.visualizationId || '',
+              )
             : [],
         });
         return realDispose.call(this, host);

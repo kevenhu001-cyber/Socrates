@@ -38,7 +38,9 @@ export function MenuItem({
       </span>
       {spec.shortcut ? <kbd>{spec.shortcut}</kbd> : null}
       {/* RN-7: an active tool reads as a check, like a selected plugin — never a dot. */}
-      {active ? <Icon name="check" className="composer-tools-check composer-tools-active-check" /> : null}
+      {active ? (
+        <Icon name="check" className="composer-tools-check composer-tools-active-check" />
+      ) : null}
     </Button>
   );
 }
@@ -70,10 +72,10 @@ export function MobileMenuItem({
       }}
     >
       <span className="composer-tools-icon" dangerouslySetInnerHTML={{ __html: icon }} />
-      <span className="composer-tools-copy"><span>{text}</span></span>
-      {active ? (
-        <Icon name="check" className="composer-tools-check" />
-      ) : null}
+      <span className="composer-tools-copy">
+        <span>{text}</span>
+      </span>
+      {active ? <Icon name="check" className="composer-tools-check" /> : null}
     </Button>
   );
 }
@@ -105,7 +107,10 @@ export function MobileTileItem({
         onPick(action);
       }}
     >
-      <span className="composer-tools-tile-icon" dangerouslySetInnerHTML={{ __html: interfaceIcon(iconName, 26) }} />
+      <span
+        className="composer-tools-tile-icon"
+        dangerouslySetInnerHTML={{ __html: interfaceIcon(iconName, 26) }}
+      />
       <span className="composer-tools-tile-label">{text}</span>
     </Button>
   );
@@ -145,13 +150,18 @@ export function MobileToolRow({
         onPick(action);
       }}
     >
-      <span className="composer-tools-icon composer-tools-row-icon" dangerouslySetInnerHTML={{ __html: iconHtml }} />
+      <span
+        className="composer-tools-icon composer-tools-row-icon"
+        dangerouslySetInnerHTML={{ __html: iconHtml }}
+      />
       <span className="composer-tools-copy composer-tools-row-copy">
         <span className="composer-tools-row-title">{title}</span>
         {subtitle ? <span className="composer-tools-row-subtitle">{subtitle}</span> : null}
       </span>
       <span className="composer-tools-row-right">
-        {rightText && !active ? <span className="composer-tools-row-status">{rightText}</span> : null}
+        {rightText && !active ? (
+          <span className="composer-tools-row-status">{rightText}</span>
+        ) : null}
         {active ? (
           <Icon name="check" className="composer-tools-check composer-tools-active-check" />
         ) : (

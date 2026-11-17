@@ -51,22 +51,31 @@ function asFailure(value: unknown): RequestFailure {
 }
 
 async function readResponseText(response: Response): Promise<string> {
-  try { return await response.text(); }
-  catch (error) {
+  try {
+    return await response.text();
+  } catch (error) {
     reportSwallow(error, 'chat/api.builtIn.readResponse');
     return '';
   }
 }
 
 function parseResponseBody(text: string): unknown {
-  try { return JSON.parse(text); }
-  catch { return null; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function isChatCompletion(body: unknown): body is ChatCompletion {
   const candidate = body as ChatCompletion | null;
-  return !!(candidate && candidate.choices && candidate.choices[0]
-    && candidate.choices[0].message && typeof candidate.choices[0].message.content === 'string');
+  return !!(
+    candidate &&
+    candidate.choices &&
+    candidate.choices[0] &&
+    candidate.choices[0].message &&
+    typeof candidate.choices[0].message.content === 'string'
+  );
 }
 
 function builtInResponseError(response: Response, text: string): ChatApiError {
@@ -85,8 +94,11 @@ function interpretBuiltInResponse(response: Response, text: string): BuiltInOutc
   if (!isChatCompletion(body)) {
     return { kind: 'failure', error: makeAIError('malformed response') };
   }
-  if (body.meta && body.meta.response_speed_applied === 'standard'
-      && getStoredResponseSpeed() === 'fast') {
+  if (
+    body.meta &&
+    body.meta.response_speed_applied === 'standard' &&
+    getStoredResponseSpeed() === 'fast'
+  ) {
     notifySpeedFallbackOnce();
   }
   return { kind: 'success', content: body.choices[0].message.content };
@@ -101,7 +113,9 @@ function normalizeBuiltInFailure(
   const reason = String(controller.signal.reason || '');
   const aborted = isAbortError(caught);
   const message = aborted
-    ? (isUserAbort(caught, controller.signal) ? 'request cancelled' : 'request interrupted')
+    ? isUserAbort(caught, controller.signal)
+      ? 'request cancelled'
+      : 'request interrupted'
     : String(failure.message || caught);
   const error = makeAIError(message, failure.status, failure.body);
   error.code = failure.code;
@@ -109,7 +123,8 @@ function normalizeBuiltInFailure(
   return {
     kind: 'failure',
     error,
-    userCancelled: isUserAbort(caught, retryOptions.signal) || isUserAbort(caught, controller.signal),
+    userCancelled:
+      isUserAbort(caught, retryOptions.signal) || isUserAbort(caught, controller.signal),
   };
 }
 

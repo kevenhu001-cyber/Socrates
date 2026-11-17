@@ -32,7 +32,12 @@ test('tag editor adds, removes and closes', async ({ page }) => {
   const now = Date.now();
   const sessions = [
     session(SESSION_ID, 'Tag editor target', ['philosophy'], new Date(now).toISOString()),
-    session('bbbbbbbb-0000-4000-8000-000000000001', 'Second session', [], new Date(now - 60_000).toISOString()),
+    session(
+      'bbbbbbbb-0000-4000-8000-000000000001',
+      'Second session',
+      [],
+      new Date(now - 60_000).toISOString(),
+    ),
   ];
   const tagWrites = [];
 
@@ -48,12 +53,20 @@ test('tag editor adds, removes and closes', async ({ page }) => {
       return;
     }
     if (url.includes('/api/config')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
       return;
     }
     if (url.includes('/tags') && method === 'PUT') {
       tagWrites.push(JSON.parse(route.request().postData() || '{}'));
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
       return;
     }
     if (url.includes('/api/sessions') && method === 'GET') {
@@ -65,7 +78,11 @@ test('tag editor adds, removes and closes', async ({ page }) => {
       return;
     }
     if (url.includes('/api/projects')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ projects: [] }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ projects: [] }),
+      });
       return;
     }
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) });

@@ -1,6 +1,11 @@
-import { stateStore } from '../../state/store.ts';
+import { dispatchSession } from '../../store/index.ts';
 import { drainMessageOutbox } from '../../session/mutationOutbox.ts';
-import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../../session/store.ts';
+import {
+  getChatIdFromURL,
+  getExamIdFromURL,
+  setChatIdInURL,
+  setExamIdInURL,
+} from '../../session/store.ts';
 import { loadSession } from '../../session/loader.ts';
 import { loadUserMemories, publishSidebarChrome } from '../../ui/profile.ts';
 import { refreshApiConfig, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
@@ -23,19 +28,29 @@ interface PostAuthLegacyWindow extends Window {
 }
 
 function clearPreviousUserState(): void {
-  try { clearPerUserClientState(); }
-  catch (error) { reportSwallow(error, 'auth/postAuth.clearPreviousUserState'); }
+  try {
+    clearPerUserClientState();
+  } catch (error) {
+    reportSwallow(error, 'auth/postAuth.clearPreviousUserState');
+  }
 }
 
 function replayQueuedMessageEdits(): void {
   try {
-    Promise.resolve(drainMessageOutbox()).then((count) => {
-      if (count > 0) {
-        try { saveCurrentSession(); }
-        catch (error) { reportSwallow(error, 'auth/postAuth.drainOutbox.saveCurrentSession'); }
-      }
-    }).catch((error) => reportSwallow(error, 'auth/postAuth.drainOutbox'));
-  } catch (error) { reportSwallow(error, 'auth/postAuth.drainOutbox.start'); }
+    Promise.resolve(drainMessageOutbox())
+      .then((count) => {
+        if (count > 0) {
+          try {
+            saveCurrentSession();
+          } catch (error) {
+            reportSwallow(error, 'auth/postAuth.drainOutbox.saveCurrentSession');
+          }
+        }
+      })
+      .catch((error) => reportSwallow(error, 'auth/postAuth.drainOutbox'));
+  } catch (error) {
+    reportSwallow(error, 'auth/postAuth.drainOutbox.start');
+  }
 }
 
 async function fetchBootstrapData(): Promise<void> {
@@ -50,8 +65,11 @@ async function fetchBootstrapData(): Promise<void> {
 
 function refreshAuthenticatedUi(): void {
   publishSidebarChrome();
-  try { renderGreeting(); }
-  catch (error) { reportSwallow(error, 'auth/postAuth.greeting'); }
+  try {
+    renderGreeting();
+  } catch (error) {
+    reportSwallow(error, 'auth/postAuth.greeting');
+  }
   renderRecents();
   syncAppModeUI();
   syncSidebarForMode();
@@ -63,13 +81,13 @@ async function restoreSessionFromCurrentUrl(): Promise<void> {
     examId: getExamIdFromURL(),
     loadSession,
     onChatFailure: () => {
-      stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
+      dispatchSession({ type: 'session/set', key: 'currentSessionId', value: null });
       setChatIdInURL(null);
       document.documentElement.removeAttribute('data-routed-session');
       activateMainView('topicSetup', document);
     },
     onExamFailure: () => {
-      stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: null });
+      dispatchSession({ type: 'session/set', key: 'currentSessionId', value: null });
       setExamIdInURL(null);
       document.documentElement.removeAttribute('data-routed-session');
       activateMainView('topicSetup', document);
@@ -95,15 +113,19 @@ export async function afterAuthEnter(): Promise<void> {
   const chatId = getChatIdFromURL();
   const examId = getExamIdFromURL();
   if (chatId) {
-    try { activateMainView('chatView', document); }
-    catch (e) { reportSwallow(e, 'auth/postAuth.activateChatView'); }
+    try {
+      activateMainView('chatView', document);
+    } catch (e) {
+      reportSwallow(e, 'auth/postAuth.activateChatView');
+    }
   } else if (examId) {
     try {
       const { mountExamView } = await import('../../react/exam/mount.tsx');
       mountExamView();
       activateMainView('examView', document);
+    } catch (e) {
+      reportSwallow(e, 'auth/postAuth.activateExamView');
     }
-    catch (e) { reportSwallow(e, 'auth/postAuth.activateExamView'); }
   }
   const restorePromise = restoreSessionFromCurrentUrl();
   await fetchBootstrapData();

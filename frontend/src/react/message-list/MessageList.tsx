@@ -6,13 +6,23 @@ import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { ChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { claimReactMessageList, isMsgListMounted, isSharedMessageList, registerSharedMessageListRestorer, takeOverSharedMessageList } from '../../ui/msgListMount.ts';
+import {
+  claimReactMessageList,
+  isMsgListMounted,
+  isSharedMessageList,
+  registerSharedMessageListRestorer,
+  takeOverSharedMessageList,
+} from '../../ui/msgListMount.ts';
 import { entryId } from './messageIdentity';
 import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';
 import { getVisibleMessagesSnapshot } from './visibleMessages';
 import { getMathRenderRevision } from '../../render/mathRevision.ts';
-import { getHistoryPagingSnapshot, subscribeHistoryPaging, type HistoryPagingSnapshot } from '../../session/historyPagingState.ts';
+import {
+  getHistoryPagingSnapshot,
+  subscribeHistoryPaging,
+  type HistoryPagingSnapshot,
+} from '../../session/historyPagingState.ts';
 import { i18n } from '../legacy/gateway';
 
 /* RN-13 — the row renderer (toolbar, attachments, edit form, tool-run models,
@@ -30,7 +40,9 @@ function preloadMessageItem(): Promise<typeof import('./MessageItem')> {
   return itemModule;
 }
 
-const MessageItem = lazy(() => preloadMessageItem().then(({ MessageItem: Item }) => ({ default: Item })));
+const MessageItem = lazy(() =>
+  preloadMessageItem().then(({ MessageItem: Item }) => ({ default: Item })),
+);
 
 function warmMessageItem(): void {
   preloadMessageItem().catch((error: unknown) => reportSwallow(error, 'MessageList.preload'));
@@ -43,8 +55,13 @@ const MSG_LIST_ID = 'msgList';
    flight) so its height never appears or disappears above the reader:
    #msgList disables native scroll anchoring. Text only, no animated dots. */
 function historyStatusText(paging: HistoryPagingSnapshot): string {
-  if (paging.failed) return i18n('chat.history.loadFailed', 'Couldn’t load earlier messages. Scroll up to try again.');
-  if (paging.hasMore) return paging.loading ? i18n('chat.history.loadingEarlier', 'Loading earlier messages') : '';
+  if (paging.failed)
+    return i18n(
+      'chat.history.loadFailed',
+      'Couldn’t load earlier messages. Scroll up to try again.',
+    );
+  if (paging.hasMore)
+    return paging.loading ? i18n('chat.history.loadingEarlier', 'Loading earlier messages') : '';
   return i18n('chat.history.start', 'Beginning of conversation');
 }
 
@@ -64,7 +81,11 @@ function HistoryPageStatus({ paging }: { paging: HistoryPagingSnapshot }) {
   );
 }
 
-function showsHistoryStatus(paging: HistoryPagingSnapshot, start: number, readOnly: boolean): boolean {
+function showsHistoryStatus(
+  paging: HistoryPagingSnapshot,
+  start: number,
+  readOnly: boolean,
+): boolean {
   return !readOnly && start === 0 && (paging.hasMore || paging.pagedBack);
 }
 
@@ -75,7 +96,11 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
     getVisibleMessagesSnapshot,
   );
   const { mounted, start } = useProgressiveMessageMount(visibleMessages);
-  const paging = useSyncExternalStore(subscribeHistoryPaging, getHistoryPagingSnapshot, getHistoryPagingSnapshot);
+  const paging = useSyncExternalStore(
+    subscribeHistoryPaging,
+    getHistoryPagingSnapshot,
+    getHistoryPagingSnapshot,
+  );
 
   useEffect(() => {
     const list = document.getElementById(MSG_LIST_ID);
@@ -87,10 +112,13 @@ function MessageList({ readOnly = false }: { readOnly?: boolean }) {
       /* The header hairline is drawn only while content passes under it (see
          parity/topbar.css), so an empty canvas is not split by a rule. */
       const scrolled = list.scrollTop > 2 ? 'true' : 'false';
-      if (document.body.dataset.transcriptScrolled !== scrolled) document.body.dataset.transcriptScrolled = scrolled;
+      if (document.body.dataset.transcriptScrolled !== scrolled)
+        document.body.dataset.transcriptScrolled = scrolled;
     };
     // Scroll and resize may arrive together; read geometry once per frame.
-    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
     update();
     list.addEventListener('scroll', onScroll, { passive: true });
     let ro: ResizeObserver | null = null;
@@ -139,22 +167,38 @@ const sharedRootSlot = createRootSlot('shared-msg-list');
 /** Mount React rows without replacing the transcript shell or a shared view. */
 export function mountMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
-  if (!container) { rootSlot.destroy(); return { root: null }; }
+  if (!container) {
+    rootSlot.destroy();
+    return { root: null };
+  }
   if (isMsgListMounted() || isSharedMessageList(container)) return { root: null };
   warmMessageItem();
-  const handle = rootSlot.mount(container, <ErrorBoundary><MessageList /></ErrorBoundary>, () =>
-    claimReactMessageList(container, releaseMessageList));
+  const handle = rootSlot.mount(
+    container,
+    <ErrorBoundary>
+      <MessageList />
+    </ErrorBoundary>,
+    () => claimReactMessageList(container, releaseMessageList),
+  );
   return { root: handle.root };
 }
 
 /** React owns public shared transcripts too; their rows omit live actions. */
 export function mountSharedMessageList(): { root: Root | null } {
   const container = document.getElementById(MSG_LIST_ID);
-  if (!container) { sharedRootSlot.destroy(); return { root: null }; }
+  if (!container) {
+    sharedRootSlot.destroy();
+    return { root: null };
+  }
   takeOverSharedMessageList(container);
   if (!isSharedMessageList(container)) return { root: null };
   warmMessageItem();
-  const handle = sharedRootSlot.mount(container, <ErrorBoundary><MessageList readOnly /></ErrorBoundary>);
+  const handle = sharedRootSlot.mount(
+    container,
+    <ErrorBoundary>
+      <MessageList readOnly />
+    </ErrorBoundary>,
+  );
   return { root: handle.root };
 }
 
@@ -165,8 +209,11 @@ registerSharedMessageListRestorer((host) => {
 });
 
 function releaseMessageList(): void {
-  try { rootSlot.destroy(); }
-  catch (error) { reportSwallow(error, 'MessageList.release'); }
+  try {
+    rootSlot.destroy();
+  } catch (error) {
+    reportSwallow(error, 'MessageList.release');
+  }
 }
 
 export { MessageList };

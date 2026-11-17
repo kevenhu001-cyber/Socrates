@@ -3,7 +3,14 @@ import { getLegacyActions } from '../../legacy/gateway.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { patchLibraryData, useWorkspaceStore } from './workspace.store';
 import type { WorkspacePage } from '../../../sidebar/navigation.destinations';
-import { openArxivSearch, openLibraryItem, openProjectConnectorForm, openProjectForm, openProjectWorkspace, openZoteroLibrary } from './workspace.dialogs';
+import {
+  openArxivSearch,
+  openLibraryItem,
+  openProjectConnectorForm,
+  openProjectForm,
+  openProjectWorkspace,
+  openZoteroLibrary,
+} from './workspace.dialogs';
 import {
   deleteLibraryFile,
   connectProjectPlugin,
@@ -18,18 +25,25 @@ import {
 } from './workspace.service';
 
 export function useWorkspaceSnapshot(page: WorkspacePage) {
-  return useWorkspaceStore(useShallow((state) => {
-    const loading = state.loadingByPage[page];
-    switch (page) {
-      case 'library': return { page, loading, data: state.libraryData };
-      case 'projects': return { page, loading, data: state.projectsData };
-      case 'plugins': return {
-        page, loading, data: state.pluginsData,
-        configured: state.projectConnectorConfigured,
-        openConnectorAvailable: state.openConnectorAvailable,
-      };
-    }
-  }));
+  return useWorkspaceStore(
+    useShallow((state) => {
+      const loading = state.loadingByPage[page];
+      switch (page) {
+        case 'library':
+          return { page, loading, data: state.libraryData };
+        case 'projects':
+          return { page, loading, data: state.projectsData };
+        case 'plugins':
+          return {
+            page,
+            loading,
+            data: state.pluginsData,
+            configured: state.projectConnectorConfigured,
+            openConnectorAvailable: state.openConnectorAvailable,
+          };
+      }
+    }),
+  );
 }
 
 const workspaceActions = {
@@ -43,15 +57,28 @@ const workspaceActions = {
     const ids = Object.keys(data.selection);
     if (!ids.length) return;
     const label = data.tab === 'files' ? 'files' : 'artifacts';
-    const confirmed = await getLegacyActions().confirm.showConfirm(`Delete ${ids.length} ${label}?`, 'This cannot be undone.', true);
+    const confirmed = await getLegacyActions().confirm.showConfirm(
+      `Delete ${ids.length} ${label}?`,
+      'This cannot be undone.',
+      true,
+    );
     if (confirmed === false) return;
     await removeLibraryItems(ids, data.tab);
   },
   startRename: (id: string, _key: string) => updateLibraryRename(id),
   cancelRename: () => updateLibraryRename(null),
-  saveRename: (input: HTMLInputElement) => saveLibraryItemRename(input.dataset.renameId || '', input.dataset.renameKey === 'artifacts' ? 'artifacts' : 'files', input.value),
+  saveRename: (input: HTMLInputElement) =>
+    saveLibraryItemRename(
+      input.dataset.renameId || '',
+      input.dataset.renameKey === 'artifacts' ? 'artifacts' : 'files',
+      input.value,
+    ),
   deleteFile: async (id: string) => {
-    const confirmed = await getLegacyActions().confirm.showConfirm('Delete this file?', 'It will be removed from your library.', true);
+    const confirmed = await getLegacyActions().confirm.showConfirm(
+      'Delete this file?',
+      'It will be removed from your library.',
+      true,
+    );
     if (confirmed === false) return;
     await deleteLibraryFile(id);
   },

@@ -23,7 +23,13 @@ function isInstalled(plugin: PluginItem): boolean {
   return plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
 }
 
-export function PluginDirectory({ plugins, configured, openConnectorAvailable, dispatch, onSelectPlugin }: PluginDirectoryProps) {
+export function PluginDirectory({
+  plugins,
+  configured,
+  openConnectorAvailable,
+  dispatch,
+  onSelectPlugin,
+}: PluginDirectoryProps) {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<'public' | 'personal'>('public');
   const catalog = useMemo(() => dedupePlugins(plugins), [plugins]);
@@ -48,16 +54,27 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
   const searchLabel = i18n('plugins.search', 'Search plugins');
 
   return (
-    <section className="workspace-surface plugin-directory" aria-labelledby="plugin-directory-title">
+    <section
+      className="workspace-surface plugin-directory"
+      aria-labelledby="plugin-directory-title"
+    >
       <div className="plugin-directory-head">
         <div className="plugin-directory-heading">
           <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
-          <p className="plugin-directory-desc">{i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}</p>
+          <p className="plugin-directory-desc">
+            {i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
+          </p>
         </div>
         <div className="plugin-directory-tools">
           <ShadcnLabel className="plugin-directory-search">
             <SearchIcon />
-            <ShadcnInput type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchLabel} aria-label={searchLabel} />
+            <ShadcnInput
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={searchLabel}
+              aria-label={searchLabel}
+            />
           </ShadcnLabel>
           <Button
             type="button"
@@ -82,12 +99,26 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
         onShowPersonal={() => setScope('personal')}
       />
 
-      <ToggleGroup className="plugin-directory-tabs w-full min-w-0" value={[scope]} aria-label={i18n('plugins.allPlugins', 'All plugins')}
-        onValueChange={(values) => { if (values[0] === 'public' || values[0] === 'personal') setScope(values[0]); }}>
-        <ToggleGroupItem type="button" value="public" className={scope === 'public' ? 'active' : ''}>
+      <ToggleGroup
+        className="plugin-directory-tabs w-full min-w-0"
+        value={[scope]}
+        aria-label={i18n('plugins.allPlugins', 'All plugins')}
+        onValueChange={(values) => {
+          if (values[0] === 'public' || values[0] === 'personal') setScope(values[0]);
+        }}
+      >
+        <ToggleGroupItem
+          type="button"
+          value="public"
+          className={scope === 'public' ? 'active' : ''}
+        >
           {i18n('plugins.public', 'Public')}
         </ToggleGroupItem>
-        <ToggleGroupItem type="button" value="personal" className={scope === 'personal' ? 'active' : ''}>
+        <ToggleGroupItem
+          type="button"
+          value="personal"
+          className={scope === 'personal' ? 'active' : ''}
+        >
           {i18n('plugins.personal', 'Personal')}
         </ToggleGroupItem>
       </ToggleGroup>
@@ -103,7 +134,15 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
           <section className="plugin-directory-section">
             <h3>{i18n('plugins.popular', 'Popular')}</h3>
             <div className="plugin-directory-list">
-              {popularPlugins.map((plugin) => <PluginDirectoryCard key={plugin.id} plugin={plugin} configured={configured} dispatch={dispatch} onSelect={onSelectPlugin} />)}
+              {popularPlugins.map((plugin) => (
+                <PluginDirectoryCard
+                  key={plugin.id}
+                  plugin={plugin}
+                  configured={configured}
+                  dispatch={dispatch}
+                  onSelect={onSelectPlugin}
+                />
+              ))}
             </div>
           </section>
         ) : null}
@@ -111,12 +150,24 @@ export function PluginDirectory({ plugins, configured, openConnectorAvailable, d
           <section className="plugin-directory-section">
             <h3>{i18n('plugins.new', 'New and notable')}</h3>
             <div className="plugin-directory-list">
-              {newPlugins.map((plugin) => <PluginDirectoryCard key={plugin.id} plugin={plugin} configured={configured} dispatch={dispatch} onSelect={onSelectPlugin} />)}
+              {newPlugins.map((plugin) => (
+                <PluginDirectoryCard
+                  key={plugin.id}
+                  plugin={plugin}
+                  configured={configured}
+                  dispatch={dispatch}
+                  onSelect={onSelectPlugin}
+                />
+              ))}
             </div>
           </section>
         ) : null}
       </div>
-      {!configured && !openConnectorAvailable && plugins.length > 0 ? <p className="plugin-directory-note">{i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}</p> : null}
+      {!configured && !openConnectorAvailable && plugins.length > 0 ? (
+        <p className="plugin-directory-note">
+          {i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}
+        </p>
+      ) : null}
     </section>
   );
 }

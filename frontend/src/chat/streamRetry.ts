@@ -7,12 +7,12 @@ export interface StreamRetryDecision {
 
 /** A full SSE request may be replayed only before visible/semantic output. */
 export function shouldRetryInterruptedStream(decision: StreamRetryDecision): boolean {
-  return decision.isHeartbeat
-    && !decision.semanticActivity
-    && decision.attempt < decision.maxAttempts;
+  return (
+    decision.isHeartbeat && !decision.semanticActivity && decision.attempt < decision.maxAttempts
+  );
 }
 
-import { stateStore } from '../state/store.ts';
+import { dispatchSession, dispatchUi, sessionStore, uiStore } from '../store/index.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { smoothScrollToBottom } from '../ui/scroll.ts';
 
@@ -138,20 +138,25 @@ function prepareRetryViewport(
   state.retryPressViewport = null;
   state.stableViewport = null;
   const row = findMessageRow(list, clientId);
-  const offset = pressed && pressed.clientId === clientId && pressed.expiresAt >= Date.now()
-    ? pressed.offset
-    : measureRowOffset(list, row, 24);
+  const offset =
+    pressed && pressed.clientId === clientId && pressed.expiresAt >= Date.now()
+      ? pressed.offset
+      : measureRowOffset(list, row, 24);
   state.pendingViewport = { offset, expiresAt: Date.now() + 15000 };
 
-  const messages = stateStore.read('messages') as Array<{ clientId?: string } | null>;
+  const messages = sessionStore.getState().messages as Array<{ clientId?: string } | null>;
   const currentIndex = messages.findIndex((message) => message && message.clientId === clientId);
   if (currentIndex >= 0) {
-    stateStore.dispatch({ type: 'session/remove-message-at', index: currentIndex, clientId });
+    dispatchSession({ type: 'session/remove-message-at', index: currentIndex, clientId });
   }
   // React owns its rows through the state update above. Removing one here
   // makes the next React commit throw NotFoundError and lose the transcript.
   if (row && row.parentNode === list && !row.hasAttribute('data-react-owned')) row.remove();
-  publishReactChatRuntime({ type: 'stream-retry-replaced', messageId: clientId, messageIndex: msgIdx });
+  publishReactChatRuntime({
+    type: 'stream-retry-replaced',
+    messageId: clientId,
+    messageIndex: msgIdx,
+  });
 }
 
 function measureRowOffset(list: HTMLElement, row: Element | null, fallback: number): number {
@@ -185,7 +190,7 @@ function settleErrorViewport(
   onOffset: (offset: number) => void,
 ): void {
   if (!list || typeof onOffset !== 'function') return;
-  const keepPinned = !stateStore.read('_userScrolledAway');
+  const keepPinned = !uiStore.getState()._userScrolledAway;
   const intent = watchViewportIntent();
   let frames = 0;
   const settle = (): void => {
@@ -195,7 +200,7 @@ function settleErrorViewport(
     }
     if (keepPinned) {
       smoothScrollToBottom(list, { smooth: false, owner: 'retry' });
-      stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+      dispatchUi({ type: 'ui/set', key: '_userScrolledAway', value: false });
     }
     const row = findMessageRow(list, clientId);
     if (row) onOffset(measureRowOffset(list, row, 0));
@@ -216,9 +221,12 @@ export function createStreamRetryViewport(): StreamRetryViewport {
     consumeViewport: () => consumeRetryViewport(state),
     measureViewport: measureRetryViewport,
     captureViewport: (list, clientId) => captureRetryViewport(state, list, clientId),
-    prepareViewport: (list, msgIdx, clientId) => prepareRetryViewport(state, list, msgIdx, clientId),
+    prepareViewport: (list, msgIdx, clientId) =>
+      prepareRetryViewport(state, list, msgIdx, clientId),
     settleErrorViewport,
-    clearPendingViewport: () => { state.pendingViewport = null; },
+    clearPendingViewport: () => {
+      state.pendingViewport = null;
+    },
     rememberStableViewport: (clientId, offset, ttlMs = 60000) => {
       state.stableViewport = { clientId, offset, expiresAt: Date.now() + ttlMs };
     },

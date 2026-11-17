@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('profile modal renders account, subscription, preferences, and data sections', async ({ page }) => {
+test('profile modal renders account, subscription, preferences, and data sections', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -22,7 +24,9 @@ test('profile modal renders account, subscription, preferences, and data section
   await expect(webSearchToggle).toHaveAttribute('aria-checked', 'true');
   await expect(profile.locator('#profileInstResponse')).toBeVisible();
   await expect(profile.locator('#profileInstAbout')).toBeVisible();
-  await expect(profile.locator('.profile-section').nth(3).locator('.profile-action-row')).toHaveCount(5);
+  await expect(
+    profile.locator('.profile-section').nth(3).locator('.profile-action-row'),
+  ).toHaveCount(5);
 
   await profile.locator('#profileLangZh').click();
   await expect(profile.locator('#profileLangZh')).toHaveClass(/active/);

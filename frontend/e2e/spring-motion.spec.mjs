@@ -11,7 +11,7 @@
 // it is overdamped, so the thing worth pinning there is that the panel
 // converges without ever passing its target.
 
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -31,9 +31,11 @@ async function bootWithAssistantReply(page) {
     window.__testActivateMainView('chatView');
   });
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('assistant', 'A reply worth reacting to.');
   });
 

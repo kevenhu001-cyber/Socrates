@@ -27,11 +27,7 @@
 import type { ChatRuntimeEvent } from '../../react/types/domain';
 
 import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
-import {
-  TOOL_RUN_PHASES,
-  isTerminalToolPhase,
-  transitionToolRun,
-} from '../toolRunState.ts';
+import { TOOL_RUN_PHASES, isTerminalToolPhase, transitionToolRun } from '../toolRunState.ts';
 import type { ToolRun } from '../toolRunState.ts';
 import type { LiveOutputBufferHandle } from '../liveOutput.ts';
 import { copyToolData, mergeToolCalls } from './projection.ts';
@@ -208,7 +204,7 @@ function translate(key: string, fallback: string): string {
       return translated && translated !== key ? translated : fallback;
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:222', 'expected');
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts', 'expected');
     /* ignore */
   }
   return fallback;
@@ -232,15 +228,24 @@ function setRun(
   patch?: Partial<ToolRun>,
 ): ToolRun | null {
   if (!entry) return null;
-  const next = transitionToolRun(getRun(entry) || {
-    id: entry.id,
-    tool: entry.name,
-    phase: TOOL_RUN_PHASES.preparing,
-    startedAt: Date.now(),
-  }, phase, patch);
+  const next = transitionToolRun(
+    getRun(entry) || {
+      id: entry.id,
+      tool: entry.name,
+      phase: TOOL_RUN_PHASES.preparing,
+      startedAt: Date.now(),
+    },
+    phase,
+    patch,
+  );
   // Runtime metadata must not leak into the persisted `toolCalls` schema.
   if (!Object.prototype.hasOwnProperty.call(entry, '_run')) {
-    Object.defineProperty(entry, '_run', { value: next, writable: true, configurable: true, enumerable: false });
+    Object.defineProperty(entry, '_run', {
+      value: next,
+      writable: true,
+      configurable: true,
+      enumerable: false,
+    });
   } else {
     entry._run = next;
   }
@@ -265,7 +270,9 @@ function createToolRuntimeMessageReader(options: ToolRuntimeOptions): ToolRuntim
     if (!current) return null;
     if (!draft) {
       draft = {
-        clientId: current.clientId, id: current.id, _toolRunRev: current._toolRunRev,
+        clientId: current.clientId,
+        id: current.id,
+        _toolRunRev: current._toolRunRev,
         toolCalls: (current.toolCalls || []).map((entry) => {
           const copy = copyToolData(entry);
           if (entry._run) setRun(copy, entry._run.phase, copyToolData(entry._run));
@@ -273,7 +280,8 @@ function createToolRuntimeMessageReader(options: ToolRuntimeOptions): ToolRuntim
         }),
       };
     }
-    if (String(current.clientId || current.id || '') !== String(draft.clientId || draft.id || '')) return null;
+    if (String(current.clientId || current.id || '') !== String(draft.clientId || draft.id || ''))
+      return null;
     return draft;
   }
   return { readMessage, getMessage };
@@ -294,7 +302,8 @@ function createToolRuntimePublisher(
   lifecycle: ToolRuntimeLifecycle,
 ): ToolRuntimePublisher {
   const { readMessage, getMessage } = createToolRuntimeMessageReader(options);
-  const requestFrame = options.requestAnimationFrame || ((callback: () => void) => requestAnimationFrame(callback));
+  const requestFrame =
+    options.requestAnimationFrame || ((callback: () => void) => requestAnimationFrame(callback));
   const cancelFrame = options.cancelAnimationFrame || ((id: number) => cancelAnimationFrame(id));
   let toolPublishFrame: number | null = null;
   let pendingToolPublish: ToolMessage | null = null;
@@ -305,7 +314,11 @@ function createToolRuntimePublisher(
       const current = getMessage();
       if (!current) return null;
       /* Store updates replace the object; ids preserve the turn's ownership. */
-      const pinned = String(lifecycle.postFinishApprovalMessage.clientId || lifecycle.postFinishApprovalMessage.id || '');
+      const pinned = String(
+        lifecycle.postFinishApprovalMessage.clientId ||
+          lifecycle.postFinishApprovalMessage.id ||
+          '',
+      );
       const now = String(current.clientId || current.id || '');
       return pinned && pinned === now ? current : null;
     }
@@ -343,8 +356,9 @@ function createToolRuntimePublisher(
 
   function notifyToolRun(message: ToolMessage | null, defer = false): void {
     if (!message) return;
-    const canSchedule = typeof options.requestAnimationFrame === 'function'
-      || typeof requestAnimationFrame === 'function';
+    const canSchedule =
+      typeof options.requestAnimationFrame === 'function' ||
+      typeof requestAnimationFrame === 'function';
     if (!defer || !canSchedule) {
       if (toolPublishFrame !== null) cancelFrame(toolPublishFrame);
       toolPublishFrame = null;
@@ -386,7 +400,11 @@ const ORPHAN_KEY_CAP = 50;
 const ORPHAN_LIST_CAP = 50;
 const PENDING_LIST_CAP = 200;
 
-function pushPending(entry: ToolCallEntry, key: '_pendingDeltas' | '_pendingProgress', value: never): void {
+function pushPending(
+  entry: ToolCallEntry,
+  key: '_pendingDeltas' | '_pendingProgress',
+  value: never,
+): void {
   const list = (entry[key] || (entry[key] = [] as never)) as unknown as never[];
   list.push(value);
   if (list.length > PENDING_LIST_CAP) list.splice(0, list.length - PENDING_LIST_CAP);
@@ -399,7 +417,8 @@ function pushOrphan(
   value: never,
 ): void {
   const store = message as unknown as Record<string, Record<string, never[]>>;
-  if (!store[bucket] || typeof store[bucket] !== 'object' || Array.isArray(store[bucket])) store[bucket] = {};
+  if (!store[bucket] || typeof store[bucket] !== 'object' || Array.isArray(store[bucket]))
+    store[bucket] = {};
   const map = store[bucket];
   if (!Array.isArray(map[id])) {
     if (Object.keys(map).length >= ORPHAN_KEY_CAP) {
@@ -459,8 +478,10 @@ function closeExecutionConnection(
 ): void {
   if (!connection) return;
   clearTimeout(connection.timer);
-  try { connection.source.close(); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:471');
+  try {
+    connection.source.close();
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts');
     /* A closed source is already settled. */
   }
   connections.delete(connection.key);
@@ -476,21 +497,43 @@ interface ExecutionConnectorContext {
   renderProgress: (progress: ToolProgress) => void;
 }
 
-function createExecutionConnector(context: ExecutionConnectorContext): (executionId: string, toolCallId: string) => void {
+function createExecutionConnector(
+  context: ExecutionConnectorContext,
+): (executionId: string, toolCallId: string) => void {
   return function connectExecution(executionId: string, toolCallId: string): void {
-    if (!context.enabled || !executionId || !toolCallId || context.isDisposed() || !context.EventSourceImpl) return;
+    if (
+      !context.enabled ||
+      !executionId ||
+      !toolCallId ||
+      context.isDisposed() ||
+      !context.EventSourceImpl
+    )
+      return;
     const connectionKey = toolCallId + ':' + executionId;
     if (context.connections.has(connectionKey)) return;
     try {
-      const source = new context.EventSourceImpl('/api/executions/' + encodeURIComponent(executionId) + '/stream');
-      const connection: ExecutionConnection = { key: connectionKey, source, timer: null as unknown as ReturnType<typeof setTimeout> };
+      const source = new context.EventSourceImpl(
+        '/api/executions/' + encodeURIComponent(executionId) + '/stream',
+      );
+      const connection: ExecutionConnection = {
+        key: connectionKey,
+        source,
+        timer: null as unknown as ReturnType<typeof setTimeout>,
+      };
       context.connections.set(connectionKey, connection);
       connection.timer = setTimeout(() => {
         if (!context.isDisposed()) {
           context.recordToolResult({
-            id: toolCallId, ok: false, status: 'failed', output: '', stderr: '',
+            id: toolCallId,
+            ok: false,
+            status: 'failed',
+            output: '',
+            stderr: '',
             error: 'execution_sse_timeout: backend did not respond within 150s',
-            artifacts: [], durationMs: 150000, executionId, name: 'code_interpreter',
+            artifacts: [],
+            durationMs: 150000,
+            executionId,
+            name: 'code_interpreter',
           });
         }
         context.closeConnection(connection);
@@ -501,7 +544,7 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
           data.id = toolCallId;
           context.renderProgress(data);
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:509', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts', 'expected');
           /* Ignore malformed execution progress. */
         }
       });
@@ -514,7 +557,7 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
             status: data.status,
             output: data.output || '(no output)',
             stderr: data.stderr || '',
-            error: data.status !== 'completed' ? (data.error || data.status) : undefined,
+            error: data.status !== 'completed' ? data.error || data.status : undefined,
             errorCode: data.errorCode || null,
             artifacts: (data as unknown as { artifactFileIds?: unknown[] }).artifactFileIds || [],
             durationMs: data.durationMs || 0,
@@ -522,21 +565,26 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
             name: 'code_interpreter',
           });
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:527', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts', 'expected');
           /* Ignore malformed execution results. */
         }
         context.closeConnection(connection);
       });
       source.addEventListener('error', (event: MessageEvent) => {
         try {
-          const data = event.data ? JSON.parse(event.data) as { error?: string } : null;
+          const data = event.data ? (JSON.parse(event.data) as { error?: string }) : null;
           if (data && data.error) {
             context.recordToolResult({
-              id: toolCallId, ok: false, status: 'failed', output: '', error: data.error, artifacts: [],
+              id: toolCallId,
+              ok: false,
+              status: 'failed',
+              output: '',
+              error: data.error,
+              artifacts: [],
             });
           }
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:538', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts', 'expected');
           /* Ignore malformed execution errors. */
         }
         context.closeConnection(connection);
@@ -570,12 +618,18 @@ function createToolRuntimeHandlers(context: {
   recordRowOffset: (entry: ToolCallEntry) => number | null;
   notifyToolRun: (message: ToolMessage | null, defer?: boolean) => void;
 }): ToolRuntimeHandlers {
-  const onToolActivity = context.options.onToolActivity || (() => { /* no-op */ });
-  const EventSourceImpl = context.options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
+  const onToolActivity =
+    context.options.onToolActivity ||
+    (() => {
+      /* no-op */
+    });
+  const EventSourceImpl =
+    context.options.EventSource || (typeof EventSource !== 'undefined' ? EventSource : null);
   const progressRuntime = createProgressRuntime({
     activeMessage: context.activeMessage,
     findEntry,
-    pushOrphan: (message, id, progress) => pushOrphan(message, '_orphanProgress', id, progress as never),
+    pushOrphan: (message, id, progress) =>
+      pushOrphan(message, '_orphanProgress', id, progress as never),
     setRun: (entry, phase, patch) => setRun(entry, phase, patch),
     notifyToolRun: context.notifyToolRun,
   });
@@ -598,7 +652,9 @@ function createToolRuntimeHandlers(context: {
     executionConnections: context.executionConnections,
     closeConnection,
     findEntry,
-    setPreparing: (entry) => { setRun(entry, TOOL_RUN_PHASES.preparing); },
+    setPreparing: (entry) => {
+      setRun(entry, TOOL_RUN_PHASES.preparing);
+    },
     recordRowOffset: context.recordRowOffset,
     getRun,
     isTerminalToolPhase,
@@ -629,7 +685,9 @@ function createToolRuntimeHandlers(context: {
     copyToolData,
     getRun,
     isTerminalToolPhase,
-    setPreparing: (entry) => { setRun(entry, TOOL_RUN_PHASES.preparing); },
+    setPreparing: (entry) => {
+      setRun(entry, TOOL_RUN_PHASES.preparing);
+    },
     pendingDeltas: context.pendingDeltas,
     pushPending: (entry, key, value) => pushPending(entry, key, value as never),
     recordRowOffset: context.recordRowOffset,
@@ -639,7 +697,15 @@ function createToolRuntimeHandlers(context: {
     connectExecution,
     notifyToolRun: context.notifyToolRun,
   });
-  return { renderProgress, resultRuntime, agentFrames, approvalRuntime, toolUseRuntime, closeConnection, connectExecution };
+  return {
+    renderProgress,
+    resultRuntime,
+    agentFrames,
+    approvalRuntime,
+    toolUseRuntime,
+    closeConnection,
+    connectExecution,
+  };
 }
 
 function createExecutionStartHandler(
@@ -670,12 +736,20 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   const lifecycle: ToolRuntimeLifecycle = { disposed: false, postFinishApprovalMessage: null };
   const publisher = createToolRuntimePublisher(options, stillOwnsSlot, lifecycle);
   const {
-    getMessage, requestFrame, cancelFrame, activeMessage,
-    flushPendingToolPublish, notifyToolRun,
+    getMessage,
+    requestFrame,
+    cancelFrame,
+    activeMessage,
+    flushPendingToolPublish,
+    notifyToolRun,
   } = publisher;
   /* Split-point chooser. A null row means "record the offset only", which
      is the only mode this runtime operates in. */
-  const onInlineTool = options.onInlineTool || (function (): number | null { return null; });
+  const onInlineTool =
+    options.onInlineTool ||
+    function (): number | null {
+      return null;
+    };
 
   const pendingDeltas: ToolCallDelta[] = [];
   let deltaFrame: number | null = null;
@@ -690,8 +764,10 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
    */
   function recordRowOffset(entry: ToolCallEntry): number | null {
     let offset: number | null = null;
-    try { offset = onInlineTool({ id: entry.id, name: entry.name }, null); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:690');
+    try {
+      offset = onInlineTool({ id: entry.id, name: entry.name }, null);
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts');
       /* no host */
     }
     if (typeof offset === 'number') entry.textOffset = offset;
@@ -718,15 +794,22 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     notifyToolRun,
   });
   const {
-    renderProgress, resultRuntime, agentFrames, approvalRuntime,
-    toolUseRuntime, closeConnection, connectExecution,
+    renderProgress,
+    resultRuntime,
+    agentFrames,
+    approvalRuntime,
+    toolUseRuntime,
+    closeConnection,
+    connectExecution,
   } = handlers;
 
   function flushDeltas(): void {
     flushToolCallDeltas({
       activeMessage,
       pendingDeltas,
-      clearFrame: () => { deltaFrame = null; },
+      clearFrame: () => {
+        deltaFrame = null;
+      },
       notifyToolRun,
     });
   }
@@ -742,7 +825,11 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     if (deltaFrame == null) deltaFrame = requestFrame(flushDeltas);
   }
 
-  const recordExecutionStart = createExecutionStartHandler(activeMessage, connectExecution, notifyToolRun);
+  const recordExecutionStart = createExecutionStartHandler(
+    activeMessage,
+    connectExecution,
+    notifyToolRun,
+  );
 
   function dispose(): void {
     if (lifecycle.disposed) return;
@@ -750,9 +837,18 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
        latest draft before finishRender reads the session snapshot. */
     flushPendingToolPublish();
     const message = getMessage();
-    const hasPendingApproval = !!(message && Array.isArray(message.toolCalls) && message.toolCalls.some((entry) => (
-      !!(entry && entry.approval && (!entry.approval.status || entry.approval.status === 'pending'))
-    )));
+    const hasPendingApproval = !!(
+      message &&
+      Array.isArray(message.toolCalls) &&
+      message.toolCalls.some(
+        (entry) =>
+          !!(
+            entry &&
+            entry.approval &&
+            (!entry.approval.status || entry.approval.status === 'pending')
+          ),
+      )
+    );
     if (hasPendingApproval) {
       /* The stream can finish while a Codex turn is paused for approval.
        * Keep the runtime state alive so the declarative approval row stays
@@ -776,7 +872,9 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   /* Text streaming after a tool row used to break live grouping. Grouping is
      derived by the declarative renderer from adjacency in rawText, so this
      is a no-op kept for the public interface. */
-  function noteTextDelta(): void { /* no-op */ }
+  function noteTextDelta(): void {
+    /* no-op */
+  }
 
   function cancel(): void {
     const message = stillOwnsSlot() ? getMessage() : null;
@@ -785,7 +883,6 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
         const entry = message.toolCalls[i];
         if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
         setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
-
       }
       /* Runs settle as stopped, not spinning: the declarative renderer reads
          run.phase off the entry, so the cancel has to publish. */

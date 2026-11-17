@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -35,24 +35,31 @@ test('exam UI follows language changes without losing form values or answers', a
   await expect(page.locator('#examInstructions')).toHaveValue('Focus on eigenvalues');
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "examQuestions", value: [
-      { type: 'fill-blank', q: 'A matrix with a nonzero determinant is ____.' },
-    ] });
-    window.stateStore.dispatch({ type: "state/set", key: "examAnswers", value: { 0: 'invertible' } });
-    window.stateStore.dispatch({ type: "state/set", key: "examTopic", value: 'Linear algebra' });
+    window.__socratesTestState.patch({
+      exam: {
+        examQuestions: [{ type: 'fill-blank', q: 'A matrix with a nonzero determinant is ____.' }],
+      },
+    });
+    window.__socratesTestState.patch({ exam: { examAnswers: { 0: 'invertible' } } });
+    window.__socratesTestState.patch({ exam: { examTopic: 'Linear algebra' } });
   });
   await expect(page.locator('[data-exam-hero]')).toHaveCount(0);
 
   await expect(page.locator('[data-exam-q-num]')).toContainText('题目 1 / 1');
   await expect(page.locator('[data-exam-q-type]')).toHaveText('填空题');
   await expect(page.locator('[data-exam-answer="0"]')).toHaveValue('invertible');
-  await expect(page.locator('[data-exam-answer="0"]')).toHaveAttribute('placeholder', '输入你的答案…');
+  await expect(page.locator('[data-exam-answer="0"]')).toHaveAttribute(
+    'placeholder',
+    '输入你的答案…',
+  );
   await expect(page.locator('#examViewFooter')).toContainText('提交批改');
   await page.locator('[data-exam-answer="0"]').fill('nonsingular');
-  await expect.poll(() => page.evaluate(() => window.stateStore.read('examAnswers')[0])).toBe('nonsingular');
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.exam().examAnswers[0]))
+    .toBe('nonsingular');
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "examSubmitted", value: true });
+    window.__socratesTestState.patch({ exam: { examSubmitted: true } });
   });
   await expect(page.locator('#examViewReactBody [data-exam-results]')).toBeVisible();
   await expect(page.locator('[data-exam-score]')).toBeVisible();
@@ -72,14 +79,16 @@ test('submitting with a missing answer scrolls to the first unanswered card', as
     }));
     const answers = {};
     for (let index = 0; index < 5; index += 1) answers[index] = `answer ${index + 1}`;
-    window.stateStore.dispatch({ type: 'state/set', key: 'examQuestions', value: questions });
-    window.stateStore.dispatch({ type: 'state/set', key: 'examAnswers', value: answers });
-    window.stateStore.dispatch({ type: 'state/set', key: 'examTopic', value: 'Scroll check' });
+    window.__socratesTestState.patch({ exam: { examQuestions: questions } });
+    window.__socratesTestState.patch({ exam: { examAnswers: answers } });
+    window.__socratesTestState.patch({ exam: { examTopic: 'Scroll check' } });
   });
 
   await expect(page.locator('[data-exam-q="7"]')).toHaveCount(1);
   await page.getByRole('button', { name: 'Submit for Grading' }).click();
 
-  await expect.poll(() => page.evaluate(() => !!window.stateStore.read('examSubmitted'))).toBe(false);
+  await expect
+    .poll(() => page.evaluate(() => !!window.__socratesTestState.exam().examSubmitted))
+    .toBe(false);
   await expect(page.locator('[data-exam-q="5"]')).toBeInViewport();
 });

@@ -20,9 +20,12 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const feedbackTimer = useRef<number | null>(null);
 
-  useEffect(() => () => {
-    if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current);
+    },
+    [],
+  );
 
   async function copyCode() {
     const text = codeElement.querySelector('code')?.textContent || '';
@@ -58,19 +61,42 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
     openVizModalRaw(html, `${language || 'code'} source`);
   }
 
-  const copyLabel = copyState === 'copied'
-    ? translate('tool.copied', 'Copied')
-    : copyState === 'failed'
-      ? translate('tool.copyFailed', 'Copy failed')
-      : translate('tool.copyCode', 'Copy');
+  const copyLabel =
+    copyState === 'copied'
+      ? translate('tool.copied', 'Copied')
+      : copyState === 'failed'
+        ? translate('tool.copyFailed', 'Copy failed')
+        : translate('tool.copyCode', 'Copy');
 
   return (
     <>
-      <Button variant="ghost" size="icon-xs" className="code-block-expand" aria-label="Expand code" title="Expand" onClick={expandCode}>
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className="code-block-expand"
+        aria-label="Expand code"
+        title="Expand"
+        onClick={expandCode}
+      >
         <Expand aria-hidden="true" />
       </Button>
-      <Button variant={copyState === 'failed' ? 'destructive' : copyState === 'copied' ? 'secondary' : 'ghost'} size="xs" className={`code-block-copy${copyState === 'copied' ? ' copied' : ''}${copyState === 'failed' ? ' copy-failed' : ''}`} aria-label={copyLabel} title={copyLabel} onClick={copyCode}>
-        {copyState === 'copied' ? <Check aria-hidden="true" /> : copyState === 'failed' ? <ClipboardX aria-hidden="true" /> : <Copy aria-hidden="true" />}
+      <Button
+        variant={
+          copyState === 'failed' ? 'destructive' : copyState === 'copied' ? 'secondary' : 'ghost'
+        }
+        size="xs"
+        className={`code-block-copy${copyState === 'copied' ? ' copied' : ''}${copyState === 'failed' ? ' copy-failed' : ''}`}
+        aria-label={copyLabel}
+        title={copyLabel}
+        onClick={copyCode}
+      >
+        {copyState === 'copied' ? (
+          <Check aria-hidden="true" />
+        ) : copyState === 'failed' ? (
+          <ClipboardX aria-hidden="true" />
+        ) : (
+          <Copy aria-hidden="true" />
+        )}
         <span className="code-block-copy-label">{copyLabel}</span>
       </Button>
       <Textarea
@@ -79,7 +105,17 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
         tabIndex={-1}
         readOnly
         className="code-block-clipboard-fallback"
-        style={{ position: 'fixed', left: '-9999px', top: 0, width: '1px', height: '1px', minHeight: 0, opacity: 0, padding: 0, border: 0 }}
+        style={{
+          position: 'fixed',
+          left: '-9999px',
+          top: 0,
+          width: '1px',
+          height: '1px',
+          minHeight: 0,
+          opacity: 0,
+          padding: 0,
+          border: 0,
+        }}
       />
     </>
   );

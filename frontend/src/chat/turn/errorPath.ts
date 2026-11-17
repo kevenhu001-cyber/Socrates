@@ -31,19 +31,18 @@ function makeRetryHandler(state: TurnRuntimeState, onRetry: () => unknown): () =
       streamRetryViewport.prepareViewport(state.list, state.msgIdx, state.clientId);
       const result = onRetry();
       if (result && typeof (result as PromiseLike<unknown>).then === 'function') {
-        (result as PromiseLike<unknown>).then(undefined, function () { /* retry async handler failed */ });
+        (result as PromiseLike<unknown>).then(undefined, function () {
+          /* retry async handler failed */
+        });
       }
     } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:37');
+      reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts');
       /* retry handler threw */
     }
   };
 }
 
-function bindRetryAffordance(
-  state: TurnRuntimeState,
-  onRetry: (() => unknown) | undefined,
-): void {
+function bindRetryAffordance(state: TurnRuntimeState, onRetry: (() => unknown) | undefined): void {
   if (typeof onRetry !== 'function') return;
   const retryHandler = makeRetryHandler(state, onRetry);
   claimLiveRetry(state.ret, retryHandler);
@@ -56,18 +55,27 @@ function renderErrorMessage(
 ): void {
   let partialHtml = '';
   if (state.full.trim()) {
-    try { partialHtml = buildAssistantHtml(state.full); }
-    catch { partialHtml = '<p>' + esc(state.full) + '</p>'; }
+    try {
+      partialHtml = buildAssistantHtml(state.full);
+    } catch {
+      partialHtml = '<p>' + esc(state.full) + '</p>';
+    }
   }
   const errorText = String(errMsg || 'Generation failed');
-  const errorHtml = partialHtml + '<div class="msg-error">' +
-    '<span class="msg-error-text">' + esc(errorText) + '</span>' +
+  const errorHtml =
+    partialHtml +
+    '<div class="msg-error">' +
+    '<span class="msg-error-text">' +
+    esc(errorText) +
+    '</span>' +
     '</div>';
   if (state.ownsMessageSlot()) {
     const message = state.patchOwnedMessage({ html: errorHtml, type: 'assistant' });
     if (message) {
       setReactLiveStatus(message, {
-        phase: 'error', label: errorText, error: errorText,
+        phase: 'error',
+        label: errorText,
+        error: errorText,
         retryable: typeof onRetry === 'function',
       });
     }
@@ -78,12 +86,16 @@ function renderErrorMessage(
 function releaseFailedTurn(state: TurnRuntimeState): void {
   if (turnState.activeChatCtl !== state.ret) return;
   turnState.chatStreaming = false;
-  try { setChatStopState(false); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:105');
+  try {
+    setChatStopState(false);
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts');
     /* stop state already cleared */
   }
-  try { markTurnEnded(); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts:106');
+  try {
+    markTurnEnded();
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/turn/errorPath.ts');
     /* turn already ended */
   }
   turnState.activeChatCtl = null;
@@ -112,13 +124,18 @@ export function createErrorPath(state: TurnRuntimeState): ErrorPath {
        late natural finish callback finds _disposed/finished flipped. */
     state.finished = true;
     state.toolRuntime.cancel();
-    state.patchOwnedMessage({ turnRuntime: settleTurnRuntime(readTurnMessage(state.msgIdx)?.turnRuntime, 'failed') });
+    state.patchOwnedMessage({
+      turnRuntime: settleTurnRuntime(readTurnMessage(state.msgIdx)?.turnRuntime, 'failed'),
+    });
     if (state._elapsedTick) clearInterval(state._elapsedTick);
     state.cancelScheduledRender();
     try {
       renderErrorMessage(state, errMsg, onRetry);
     } catch {
-      state.patchOwnedMessage({ html: '<p>' + esc(errMsg || 'Generation failed') + '</p>', type: 'assistant' });
+      state.patchOwnedMessage({
+        html: '<p>' + esc(errMsg || 'Generation failed') + '</p>',
+        type: 'assistant',
+      });
     }
     /* Restore the send button — even error paths end the stream.
      * Guarded on the active controller so a new stream that

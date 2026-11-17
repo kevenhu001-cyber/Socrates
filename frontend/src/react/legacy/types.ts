@@ -8,7 +8,6 @@
 // Each domain should be migrated out of this file as its functions are
 // extracted into standalone TypeScript modules (C5).
 
-
 export interface LegacyMessages {
   regenerateAssistantMessage(messageId: string): void;
   switchMessageBranch(messageId: string, targetIndex: number): void;
@@ -26,7 +25,7 @@ export interface LegacyMessages {
 export interface LegacyNavigation {
   resetApp(options?: { confirmActiveSession?: boolean; projectId?: string }): Promise<boolean>;
   startNewChat(): Promise<boolean>;
-  toggleAppMode: typeof import('../../app/lifecycle/mode.ts')['toggleAppMode'];
+  toggleAppMode: (typeof import('../../app/lifecycle/mode.ts'))['toggleAppMode'];
   toggleSidebar(): void;
   openNav(key: string): void;
   openSettings(): Promise<void> | void;
@@ -57,8 +56,11 @@ export interface LegacyConfirm {
 
 export interface LegacySessions {
   flushRecentsReconcile(): Promise<unknown> | void;
-  getArchivedSessions: typeof import('../../session/recents.ts')['getArchivedSessions'];
-  updateSessionMetadata(id: string, patch: { title?: string; pinned?: boolean; projectId?: string }): Promise<void>;
+  getArchivedSessions: (typeof import('../../session/recents.ts'))['getArchivedSessions'];
+  updateSessionMetadata(
+    id: string,
+    patch: { title?: string; pinned?: boolean; projectId?: string },
+  ): Promise<void>;
   loadSession(sessionId: string): Promise<void> | void;
   setRecentsSearch(query: string): void;
   retryRecentsFetch(): void;
@@ -88,7 +90,10 @@ export interface LegacyComposer {
   retryAttachment?(id: string): void;
   renderAttachmentChips?(): void;
   startSession(): Promise<void> | void;
-  submitChatMessage(textOverride?: string | null, options?: { blurAfterSend?: boolean }): Promise<void> | void;
+  submitChatMessage(
+    textOverride?: string | null,
+    options?: { blurAfterSend?: boolean },
+  ): Promise<void> | void;
   stopChatResponse(): void;
   clearActiveTemplate?(): void;
 }

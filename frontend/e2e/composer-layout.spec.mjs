@@ -3,13 +3,15 @@
 // (packages/ui/src/composer/ComposerFrame.tsx) — one white 24px sheet, two
 // storeys always: the editor on top, the control rail underneath, the 36px
 // controls inset 8px so they sit concentric with the corner.
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function boot(page, { lang = 'zh', width = 1440 } = {}) {
   await page.setViewportSize({ width, height: 900 });
-  await page.addInitScript(() => { localStorage.setItem('socrates-websearch', 'false'); });
+  await page.addInitScript(() => {
+    localStorage.setItem('socrates-websearch', 'false');
+  });
   await mockAuthedApp(page, { lang });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -20,15 +22,35 @@ function measure(page, wrapSel) {
   return page.evaluate((wrapSel) => {
     const wrap = document.querySelector(wrapSel);
     const frame = wrap.querySelector('[data-composer-frame]');
-    const box = (n) => { const r = n.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, h: r.height, w: r.width, cy: r.top + r.height / 2 }; };
-    const controls = [...wrap.querySelectorAll('#composerToolsBtn, #effortTrigger, #composerMicBtn, #composerPrimaryBtn')]
-      .filter((n) => n.getClientRects().length);
+    const box = (n) => {
+      const r = n.getBoundingClientRect();
+      return {
+        top: r.top,
+        bottom: r.bottom,
+        left: r.left,
+        right: r.right,
+        h: r.height,
+        w: r.width,
+        cy: r.top + r.height / 2,
+      };
+    };
+    const controls = [
+      ...wrap.querySelectorAll(
+        '#composerToolsBtn, #effortTrigger, #composerMicBtn, #composerPrimaryBtn',
+      ),
+    ].filter((n) => n.getClientRects().length);
     const range = document.createRange();
     const lineCount = (n) => {
       range.selectNodeContents(n);
       // Cluster rect tops: inline spans/icons on one line differ by a few px.
-      const tops = [...range.getClientRects()].filter((r) => r.width > 0).map((r) => r.top).sort((a, b) => a - b);
-      return tops.reduce((acc, t) => (acc.length && t - acc[acc.length - 1] < 10 ? acc : [...acc, t]), []).length;
+      const tops = [...range.getClientRects()]
+        .filter((r) => r.width > 0)
+        .map((r) => r.top)
+        .sort((a, b) => a - b);
+      return tops.reduce(
+        (acc, t) => (acc.length && t - acc[acc.length - 1] < 10 ? acc : [...acc, t]),
+        [],
+      ).length;
     };
     return {
       wrap: box(wrap),
@@ -38,7 +60,9 @@ function measure(page, wrapSel) {
       editor: box(wrap.querySelector('.rich-composer-editor')),
       rail: box(wrap.querySelector('[data-composer-slot="rail"]')),
       controls: controls.map((n) => ({ id: n.id || n.className, ...box(n), lines: lineCount(n) })),
-      chip: wrap.querySelector('.composer-tool-chip') ? box(wrap.querySelector('.composer-tool-chip')) : null,
+      chip: wrap.querySelector('.composer-tool-chip')
+        ? box(wrap.querySelector('.composer-tool-chip'))
+        : null,
       legacyToggle: document.querySelectorAll('.composer-search-toggle-btn').length,
     };
   }, wrapSel);
@@ -64,7 +88,9 @@ function expectAskBox(m) {
 const RESTING_HEIGHT = 94; // 16 + 26 (one line) + 8 + 36 (rail) + 8
 
 for (const lang of ['zh', 'en']) {
-  test(`landing composer is the two-storey ask-box with centred, unwrapped controls (${lang})`, async ({ page }) => {
+  test(`landing composer is the two-storey ask-box with centred, unwrapped controls (${lang})`, async ({
+    page,
+  }) => {
     await boot(page, { lang });
     const m = await measure(page, '#composerInputWrap');
     expect(m.legacyToggle).toBe(0);
@@ -78,7 +104,7 @@ for (const width of [1024, 1280]) {
   test(`in-session composer keeps the resting ask-box geometry at ${width}px`, async ({ page }) => {
     await boot(page, { width });
     await page.evaluate(() => {
-      window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
       window.__testActivateMainView('chatView');
       document.body.dataset.conversationActive = 'true';
     });
@@ -89,11 +115,16 @@ for (const width of [1024, 1280]) {
   });
 }
 
-test('web search is picked from the + menu, shows a removable chip, and clears', async ({ page }) => {
+test('web search is picked from the + menu, shows a removable chip, and clears', async ({
+  page,
+}) => {
   await boot(page, { lang: 'en' });
   const wrap = page.locator('#composerInputWrap');
   await page.locator('#composerToolsBtn').click();
-  await page.locator('#composerToolsMenu [data-composer-action="webSearch"]:visible').first().click();
+  await page
+    .locator('#composerToolsMenu [data-composer-action="webSearch"]:visible')
+    .first()
+    .click();
 
   const chip = wrap.locator('.composer-tool-chip[data-tool="webSearch"]');
   await expect(chip).toBeVisible();

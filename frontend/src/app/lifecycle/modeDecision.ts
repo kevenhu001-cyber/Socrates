@@ -12,9 +12,16 @@ export function resolveNextAppMode(targetMode: unknown, currentMode: AppMode): A
   return currentMode === 'tutor' ? 'chat' : 'tutor';
 }
 
-export function hasActiveModeSession({ topic, knowledgeNodes, phase, hasRealMessages }: ActiveModeSession): boolean {
-  return Boolean(topic)
-    || Boolean(knowledgeNodes && knowledgeNodes.length > 0)
-    || phase === 'chat'
-    || Boolean(hasRealMessages);
+export function hasActiveModeSession({
+  topic,
+  knowledgeNodes,
+  phase,
+  hasRealMessages,
+}: ActiveModeSession): boolean {
+  return (
+    Boolean(topic) ||
+    Boolean(knowledgeNodes && knowledgeNodes.length > 0) ||
+    phase === 'chat' ||
+    Boolean(hasRealMessages)
+  );
 }

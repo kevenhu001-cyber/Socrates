@@ -59,7 +59,10 @@ function clampDesktopMenuTop(
   menuHeight: number,
   fallbackHeight: number,
 ): number {
-  return Math.max(viewportTop + 8, Math.min(viewportBottom - (menuHeight || fallbackHeight) - 8, top));
+  return Math.max(
+    viewportTop + 8,
+    Math.min(viewportBottom - (menuHeight || fallbackHeight) - 8, top),
+  );
 }
 
 /**
@@ -71,15 +74,25 @@ export function positionComposerToolsMenu(
   trigger: HTMLElement,
   _mode: 'topic' | 'chat' | null,
 ): void {
-  for (const prop of ['top', 'bottom', 'left', 'right', 'width', 'max-width', 'max-height']) menu.style.removeProperty(prop);
+  for (const prop of ['top', 'bottom', 'left', 'right', 'width', 'max-width', 'max-height'])
+    menu.style.removeProperty(prop);
   const rect = restingRect(trigger);
   const viewport = typeof window !== 'undefined' ? window.visualViewport : null;
   const viewportTop = viewport ? Math.max(0, viewport.offsetTop || 0) : 0;
-  const viewportBottom = viewport ? viewportTop + viewport.height : (typeof window !== 'undefined' ? window.innerHeight : 800);
-  const viewportWidth = viewport ? viewport.width : (typeof window !== 'undefined' ? window.innerWidth : 1024);
-  const menuHeightCap = viewportWidth > 768
-    ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
-    : Math.max(120, (viewportBottom - viewportTop) / 2);
+  const viewportBottom = viewport
+    ? viewportTop + viewport.height
+    : typeof window !== 'undefined'
+      ? window.innerHeight
+      : 800;
+  const viewportWidth = viewport
+    ? viewport.width
+    : typeof window !== 'undefined'
+      ? window.innerWidth
+      : 1024;
+  const menuHeightCap =
+    viewportWidth > 768
+      ? Math.max(120, Math.min(560, (viewportBottom - viewportTop) * 0.62))
+      : Math.max(120, (viewportBottom - viewportTop) / 2);
 
   if (viewportWidth <= 768) {
     positionMobileMenu(menu);
@@ -94,10 +107,20 @@ export function positionComposerToolsMenu(
   const height = menu.offsetHeight || 300;
   const left = Math.max(8, Math.min(rect.left - 5, viewportWidth - width - 8));
   const placement = chooseDesktopMenuPosition(
-    menu, rect.top, rect.bottom, viewportTop, viewportBottom, height, menuHeightCap,
+    menu,
+    rect.top,
+    rect.bottom,
+    viewportTop,
+    viewportBottom,
+    height,
+    menuHeightCap,
   );
   const top = clampDesktopMenuTop(
-    placement.top, viewportTop, viewportBottom, menu.offsetHeight, height,
+    placement.top,
+    viewportTop,
+    viewportBottom,
+    menu.offsetHeight,
+    height,
   );
   menu.style.left = `${left}px`;
   menu.style.top = `${top}px`;

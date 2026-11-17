@@ -38,15 +38,34 @@ export function SidebarNav() {
           />
         );
         if (button.key !== 'projects') return navigation;
-        return <div className="sidebar-project-nav" key={button.key}>
-          {navigation}
-          <Button variant="ghost" className="sidebar-project-create active:not-aria-[haspopup]:translate-y-0" data-i18n-aria="projects.create" data-i18n-title="projects.create" aria-label={i18n('projects.create', 'Create project')}
-            title={i18n('projects.create', 'Create project')} onClick={() => {
-              openNav('projects');
-              void import('../pages/workspace/workspace.dialogs').then(({ openProjectForm }) => openProjectForm())
-                .catch(() => getLegacyActions().messages.showToast?.(i18n('sidebar.projectOpenFailed', 'Could not open the project form. Please try again.')));
-            }}><Icon name="plus" /></Button>
-        </div>;
+        return (
+          <div className="sidebar-project-nav" key={button.key}>
+            {navigation}
+            <Button
+              variant="ghost"
+              className="sidebar-project-create active:not-aria-[haspopup]:translate-y-0"
+              data-i18n-aria="projects.create"
+              data-i18n-title="projects.create"
+              aria-label={i18n('projects.create', 'Create project')}
+              title={i18n('projects.create', 'Create project')}
+              onClick={() => {
+                openNav('projects');
+                void import('../pages/workspace/workspace.dialogs')
+                  .then(({ openProjectForm }) => openProjectForm())
+                  .catch(() =>
+                    getLegacyActions().messages.showToast?.(
+                      i18n(
+                        'sidebar.projectOpenFailed',
+                        'Could not open the project form. Please try again.',
+                      ),
+                    ),
+                  );
+              }}
+            >
+              <Icon name="plus" />
+            </Button>
+          </div>
+        );
       })}
     </WebUiTheme>
   );

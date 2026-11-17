@@ -49,7 +49,10 @@ function captureActiveTemplate(): Record<string, unknown> | null {
   return activeTemplate;
 }
 
-async function captureTutorExploration(language: string, deepResearchOn: boolean): Promise<{ enabled: boolean; count: number } | null> {
+async function captureTutorExploration(
+  language: string,
+  deepResearchOn: boolean,
+): Promise<{ enabled: boolean; count: number } | null> {
   if (getAppMode() !== 'tutor' || deepResearchOn) return { enabled: false, count: 0 };
   return requestTutorExploration({
     isZh: getCurrentLanguage() === 'zh' || language === 'zh',
@@ -65,7 +68,8 @@ export async function captureSessionStart(): Promise<SessionStartContext | null>
   const plugins = selectedComposerPlugins('topic').slice();
   const topicForModel = serializeSelectedPluginContext(plugins, topic);
   const startAttachments = snapshotAttachments();
-  const immediateAttachments = startAttachments.slice(0, 20)
+  const immediateAttachments = startAttachments
+    .slice(0, 20)
     .map((attachment) => Object.assign({}, attachment));
 
   const deepResearchOn = isDeepResearchEnabled();

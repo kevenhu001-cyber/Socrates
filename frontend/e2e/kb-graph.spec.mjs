@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -13,32 +13,40 @@ const KB_NODES = [
   { name: 'Derivatives', status: 'fuzzy', questions: 4, confidence_score: 2 },
   { name: 'Chain Rule', status: 'fuzzy', questions: 1, confidence_score: 1 },
   { name: 'Integrals', status: 'blank', questions: 0, confidence_score: 0 },
-  { name: 'A very long node name that should be truncated', status: 'internalized', questions: 16, confidence_score: 4 },
+  {
+    name: 'A very long node name that should be truncated',
+    status: 'internalized',
+    questions: 16,
+    confidence_score: 4,
+  },
 ];
 
 async function renderGraph(page, { currentNode = -1 } = {}) {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.evaluate(({ nodes, currentNode }) => {
-    window.stateStore.dispatch({ type: "state/set", key: "kbNodes", value: nodes });
-    if (currentNode >= 0) window.stateStore.dispatch({ type: "state/set", key: "currentNode", value: currentNode });
-    // The KB panel is a `tutor-only` element hidden in chat mode
-    // (body[data-app-mode="chat"] .tutor-only{display:none !important}).
-    // The app's syncAppModeUI keeps re-stamping data-app-mode from the
-    // internal appMode var, so instead of fighting it we force the panel
-    // visible with an !important inline display that beats the sheet rule.
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.remove('collapsed');
-    const panel = document.getElementById('knowledgePanel');
-    if (panel) {
-      panel.classList.remove('hidden');
-      panel.style.setProperty('display', 'flex', 'important');
-    }
-    // Hide the sibling recents panel so the knowledge panel takes the slot.
-    const recents = document.getElementById('recentsPanel');
-    if (recents) recents.classList.add('hidden');
-  }, { nodes: KB_NODES, currentNode });
+  await page.evaluate(
+    ({ nodes, currentNode }) => {
+      window.__socratesTestState.patch({ kb: { kbNodes: nodes } });
+      if (currentNode >= 0) window.__socratesTestState.patch({ kb: { currentNode: currentNode } });
+      // The KB panel is a `tutor-only` element hidden in chat mode
+      // (body[data-app-mode="chat"] .tutor-only{display:none !important}).
+      // The app's syncAppModeUI keeps re-stamping data-app-mode from the
+      // internal appMode var, so instead of fighting it we force the panel
+      // visible with an !important inline display that beats the sheet rule.
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.classList.remove('collapsed');
+      const panel = document.getElementById('knowledgePanel');
+      if (panel) {
+        panel.classList.remove('hidden');
+        panel.style.setProperty('display', 'flex', 'important');
+      }
+      // Hide the sibling recents panel so the knowledge panel takes the slot.
+      const recents = document.getElementById('recentsPanel');
+      if (recents) recents.classList.add('hidden');
+    },
+    { nodes: KB_NODES, currentNode },
+  );
 }
 
 const NODE = '#kbContent [data-kb-graph-node]';
@@ -58,20 +66,30 @@ test('mastery is encoded per node and long names are truncated', async ({ page }
   await expect(page.locator(`${NODE}[data-kb-status="blank"]`)).toHaveCount(1);
   const long = page.locator(`${NODE}[data-kb-graph-node="4"]`);
   await expect(long).toContainText('…');
-  await expect(long).toHaveAttribute('aria-label', /A very long node name that should be truncated/);
+  await expect(long).toHaveAttribute(
+    'aria-label',
+    /A very long node name that should be truncated/,
+  );
   await expect(long).toHaveAttribute('data-kb-questions', '16');
 });
 
 test('pills do not overlap', async ({ page }) => {
   await renderGraph(page);
-  const boxes = await page.locator(NODE).evaluateAll((nodes) => nodes.map((node) => {
-    const rect = node.getBoundingClientRect();
-    return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
-  }));
+  const boxes = await page.locator(NODE).evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, w: rect.width, h: rect.height };
+    }),
+  );
   for (let a = 0; a < boxes.length; a += 1) {
     for (let b = a + 1; b < boxes.length; b += 1) {
-      const p = boxes[a]; const q = boxes[b];
-      const overlap = p.x < q.x + q.w - 0.5 && q.x < p.x + p.w - 0.5 && p.y < q.y + q.h - 0.5 && q.y < p.y + p.h - 0.5;
+      const p = boxes[a];
+      const q = boxes[b];
+      const overlap =
+        p.x < q.x + q.w - 0.5 &&
+        q.x < p.x + p.w - 0.5 &&
+        p.y < q.y + q.h - 0.5 &&
+        q.y < p.y + p.h - 0.5;
       expect(overlap, `node ${a} overlaps node ${b}`).toBe(false);
     }
   }

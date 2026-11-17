@@ -14,7 +14,13 @@ interface SettledBlockProps {
   source?: string;
 }
 
-const SettledBlock = memo(function SettledBlock({ html, live = false, tail = false, last = false, source = '' }: SettledBlockProps) {
+const SettledBlock = memo(function SettledBlock({
+  html,
+  live = false,
+  tail = false,
+  last = false,
+  source = '',
+}: SettledBlockProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const paintedMarkupRef = useRef<string | null>(null);
   const revealRef = useRef<ReturnType<typeof createStreamReveal> | null>(null);
@@ -70,7 +76,11 @@ export function LiveTextSegment({ text, live = true, settled, tail }: LiveTextSe
   const splitter = splitterRef.current;
   const { blocks, tailBox, tailSource } = useMemo(() => {
     const split = splitter.push(text);
-    return { blocks: prefixCache(split.blocks, settled), tailBox: tail(split.tail), tailSource: split.tail };
+    return {
+      blocks: prefixCache(split.blocks, settled),
+      tailBox: tail(split.tail),
+      tailSource: split.tail,
+    };
   }, [prefixCache, splitter, text, settled, tail]);
 
   // One keyed sequence owns both phases of each source block. Keeping the

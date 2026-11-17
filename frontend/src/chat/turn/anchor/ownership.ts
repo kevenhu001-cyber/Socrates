@@ -36,7 +36,8 @@ export function markTurnViewportOwner(list: HTMLElement | null): void {
 export function clearTurnViewportOwner(list: HTMLElement | null): void {
   if (!list) return;
   if (list.dataset) delete list.dataset.turnViewportOwner;
-  if ('__socratesTurnViewportOwner' in list) delete (list as TurnAnchorList).__socratesTurnViewportOwner;
+  if ('__socratesTurnViewportOwner' in list)
+    delete (list as TurnAnchorList).__socratesTurnViewportOwner;
 }
 
 /* The submitted prompt's own top offset inside the transcript viewport.
@@ -75,7 +76,6 @@ export function turnAnchorReserve(
 
 let anchorDeps: TurnAnchorDeps = { isMsgListMounted: () => false };
 
-
 /** Provide the React-ownership reader owned by main.js. */
 export function configureTurnAnchor(next: TurnAnchorDeps): void {
   anchorDeps = next;
@@ -101,9 +101,7 @@ export function turnRowFor(
   const id = String(clientId || '');
   if (!id) return null;
   const esc =
-    typeof CSS !== 'undefined' && CSS.escape
-      ? CSS.escape(id)
-      : id.replace(/["\\]/g, '\\$&');
+    typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(id) : id.replace(/["\\]/g, '\\$&');
   return list.querySelector('.msg[data-client-id="' + esc + '"]');
 }
 

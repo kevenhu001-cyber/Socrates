@@ -4,7 +4,11 @@
    mounts it into its panel (which React owns outright). */
 
 import { loadPage } from './pageLoader.ts';
-import { DESTINATIONS, isWorkspacePage, type WorkspacePage } from '../../../sidebar/navigation.destinations';
+import {
+  DESTINATIONS,
+  isWorkspacePage,
+  type WorkspacePage,
+} from '../../../sidebar/navigation.destinations';
 
 export function mountWorkspacePage(page: WorkspacePage): void {
   if (!isWorkspacePage(page)) return;
@@ -15,10 +19,14 @@ export function mountWorkspacePage(page: WorkspacePage): void {
 }
 
 export function mountScheduledPage(afterMount?: () => void): void {
-  void loadPage('scheduledPanel', async () => {
-    const { mountScheduledPage: mount } = await import('../../pages/scheduled/ScheduledPage');
-    return () => mount();
-  }, afterMount);
+  void loadPage(
+    'scheduledPanel',
+    async () => {
+      const { mountScheduledPage: mount } = await import('../../pages/scheduled/ScheduledPage');
+      return () => mount();
+    },
+    afterMount,
+  );
 }
 
 export function mountAdminPage(): void {

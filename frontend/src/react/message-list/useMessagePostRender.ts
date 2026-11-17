@@ -6,8 +6,10 @@ import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 import { isOffscreenMount, runWhenNearViewport } from './nearViewport';
 
 function runOptionalPostRender(action: (() => void) | undefined): void {
-  try { action?.(); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: react/message-list/useMessagePostRender.ts:7', 'expected');
+  try {
+    action?.();
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: react/message-list/useMessagePostRender.ts', 'expected');
     /* optional legacy renderer unavailable */
   }
 }

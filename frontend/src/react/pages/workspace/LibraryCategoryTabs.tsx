@@ -19,22 +19,25 @@ export function LibraryCategoryTabs({ chip, onChipChange, dispatch }: LibraryCat
   ] as const;
 
   return (
-    <Tabs value={chip} onValueChange={(value) => {
-      onChipChange(value as LibraryCategoryTabsProps['chip']);
-      if (value === 'images') dispatch.switchTab('files');
-    }}>
-    <TabsList className="library-chips-bar" aria-label={i18n('sidebar.library.title', '资料库')}>
-      {categories.map((category) => (
-        <TabsTrigger
-          key={category.id}
-          type="button"
-          value={category.id}
-          className={cn('library-chip', chip === category.id && 'active')}
-        >
-          {category.label}
-        </TabsTrigger>
-      ))}
-    </TabsList>
+    <Tabs
+      value={chip}
+      onValueChange={(value) => {
+        onChipChange(value as LibraryCategoryTabsProps['chip']);
+        if (value === 'images') dispatch.switchTab('files');
+      }}
+    >
+      <TabsList className="library-chips-bar" aria-label={i18n('sidebar.library.title', '资料库')}>
+        {categories.map((category) => (
+          <TabsTrigger
+            key={category.id}
+            type="button"
+            value={category.id}
+            className={cn('library-chip', chip === category.id && 'active')}
+          >
+            {category.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
     </Tabs>
   );
 }

@@ -41,9 +41,18 @@ interface MessageBranchSwitcherProps {
   onNext: () => void;
 }
 
-function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageBranchSwitcherProps): React.ReactElement {
+function MessageBranchSwitcher({
+  currentIndex,
+  total,
+  onPrev,
+  onNext,
+}: MessageBranchSwitcherProps): React.ReactElement {
   return (
-    <div className="msg-branch-switcher" role="group" aria-label={i18n('message.branch.navigation', 'Message versions')}>
+    <div
+      className="msg-branch-switcher"
+      role="group"
+      aria-label={i18n('message.branch.navigation', 'Message versions')}
+    >
       <Button
         variant="ghost"
         size="icon-sm"
@@ -53,7 +62,18 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
         aria-label={i18n('message.branch.prev', 'Previous version')}
         title={i18n('message.branch.prev', 'Previous version')}
       >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          shapeRendering="geometricPrecision"
+          aria-hidden="true"
+        >
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </Button>
@@ -69,7 +89,18 @@ function MessageBranchSwitcher({ currentIndex, total, onPrev, onNext }: MessageB
         aria-label={i18n('message.branch.next', 'Next version')}
         title={i18n('message.branch.next', 'Next version')}
       >
-        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" shapeRendering="geometricPrecision" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="12"
+          height="12"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          shapeRendering="geometricPrecision"
+          aria-hidden="true"
+        >
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </Button>
@@ -115,28 +146,71 @@ function MessageToolbarActions({
   const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
 
   /* Reuse the same actions for the latest toolbar and history menu. */
-  const primaryActions: OverflowAction[] = role === 'user'
-    ? [
-        { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
-        { label: i18n('message.edit', 'Edit message'), icon: EditIcon, onClick: () => callbacks.onEdit?.() },
-        { label: i18n('message.delete', 'Delete message'), icon: TrashIcon, onClick: () => callbacks.onDelete?.() },
-      ]
-    : [
-        { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
-        { label: i18n('message.delete', 'Delete message'), icon: TrashIcon, onClick: () => callbacks.onDelete?.() },
-        { label: i18n('message.regenerate', 'Regenerate response'), icon: RegenerateIcon, onClick: () => callbacks.onRegenerate?.() },
-        { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, onClick: onThumbsUp },
-        { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, onClick: () => callbacks.onThumbsDown?.() },
-      ];
+  const primaryActions: OverflowAction[] =
+    role === 'user'
+      ? [
+          { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
+          {
+            label: i18n('message.edit', 'Edit message'),
+            icon: EditIcon,
+            onClick: () => callbacks.onEdit?.(),
+          },
+          {
+            label: i18n('message.delete', 'Delete message'),
+            icon: TrashIcon,
+            onClick: () => callbacks.onDelete?.(),
+          },
+        ]
+      : [
+          { label: copyLabel, icon: copied ? CheckIcon : CopyIcon, onClick: onCopy },
+          {
+            label: i18n('message.delete', 'Delete message'),
+            icon: TrashIcon,
+            onClick: () => callbacks.onDelete?.(),
+          },
+          {
+            label: i18n('message.regenerate', 'Regenerate response'),
+            icon: RegenerateIcon,
+            onClick: () => callbacks.onRegenerate?.(),
+          },
+          { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, onClick: onThumbsUp },
+          {
+            label: i18n('message.notHelpful', 'Not helpful'),
+            icon: ThumbsDownIcon,
+            onClick: () => callbacks.onThumbsDown?.(),
+          },
+        ];
 
   const secondaryActions: OverflowAction[] = [
-    { label: i18n('message.share', 'Share conversation'), icon: ShareIcon, onClick: () => callbacks.onShare?.() },
-    { label: i18n('message.branch', 'Branch from here'), icon: BranchIcon, onClick: () => callbacks.onBranch?.() },
-    { label: i18n('message.readAloud', 'Read aloud'), icon: ReadAloudIcon, onClick: (event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event) },
-    { label: i18n('message.reExplain', 'Re-explain from a different angle'), icon: ReExplainIcon, onClick: () => callbacks.onReExplain?.() },
+    {
+      label: i18n('message.share', 'Share conversation'),
+      icon: ShareIcon,
+      onClick: () => callbacks.onShare?.(),
+    },
+    {
+      label: i18n('message.branch', 'Branch from here'),
+      icon: BranchIcon,
+      onClick: () => callbacks.onBranch?.(),
+    },
+    {
+      label: i18n('message.readAloud', 'Read aloud'),
+      icon: ReadAloudIcon,
+      onClick: (event: React.MouseEvent<HTMLButtonElement>) => callbacks.onReadAloud?.(event),
+    },
+    {
+      label: i18n('message.reExplain', 'Re-explain from a different angle'),
+      icon: ReExplainIcon,
+      onClick: () => callbacks.onReExplain?.(),
+    },
   ];
 
-  if (compact) return <MessageOverflow actions={[...primaryActions, ...secondaryActions]} contextMenu={contextMenu} />;
+  if (compact)
+    return (
+      <MessageOverflow
+        actions={[...primaryActions, ...secondaryActions]}
+        contextMenu={contextMenu}
+      />
+    );
 
   return (
     <>
@@ -149,17 +223,26 @@ function MessageToolbarActions({
       </ToolButton>
       {role === 'user' && (
         <>
-          <ToolButton label={i18n('message.edit', 'Edit message')} onClick={() => callbacks.onEdit?.()}>
+          <ToolButton
+            label={i18n('message.edit', 'Edit message')}
+            onClick={() => callbacks.onEdit?.()}
+          >
             {toolbarIcon('edit')}
           </ToolButton>
-          <ToolButton label={i18n('message.delete', 'Delete message')} onClick={() => callbacks.onDelete?.()}>
+          <ToolButton
+            label={i18n('message.delete', 'Delete message')}
+            onClick={() => callbacks.onDelete?.()}
+          >
             {toolbarIcon('trash')}
           </ToolButton>
         </>
       )}
       {role === 'assistant' && (
         <>
-          <ToolButton label={i18n('message.regenerate', 'Regenerate response')} onClick={() => callbacks.onRegenerate?.()}>
+          <ToolButton
+            label={i18n('message.regenerate', 'Regenerate response')}
+            onClick={() => callbacks.onRegenerate?.()}
+          >
             {toolbarIcon('regenerate')}
           </ToolButton>
           <span className="msg-toolbar-feedback">
@@ -172,22 +255,43 @@ function MessageToolbarActions({
             >
               {toolbarIcon('thumbsUp')}
             </ToolButton>
-            <ToolButton label={i18n('message.notHelpful', 'Not helpful')} onClick={() => callbacks.onThumbsDown?.()}>
+            <ToolButton
+              label={i18n('message.notHelpful', 'Not helpful')}
+              onClick={() => callbacks.onThumbsDown?.()}
+            >
               {toolbarIcon('thumbsDown')}
             </ToolButton>
           </span>
-          <MessageOverflow actions={[
-            ...secondaryActions,
-            { label: i18n('message.helpful', 'Helpful'), icon: ThumbsUpIcon, mobileOnly: true, onClick: () => callbacks.onThumbsUp?.() },
-            { label: i18n('message.notHelpful', 'Not helpful'), icon: ThumbsDownIcon, mobileOnly: true, onClick: () => callbacks.onThumbsDown?.() },
-          ]} />
+          <MessageOverflow
+            actions={[
+              ...secondaryActions,
+              {
+                label: i18n('message.helpful', 'Helpful'),
+                icon: ThumbsUpIcon,
+                mobileOnly: true,
+                onClick: () => callbacks.onThumbsUp?.(),
+              },
+              {
+                label: i18n('message.notHelpful', 'Not helpful'),
+                icon: ThumbsDownIcon,
+                mobileOnly: true,
+                onClick: () => callbacks.onThumbsDown?.(),
+              },
+            ]}
+          />
         </>
       )}
     </>
   );
 }
 
-function MessageToolbar({ message, role, onEdit, pending = false, contextMenu }: MessageToolbarProps): React.ReactElement | null {
+function MessageToolbar({
+  message,
+  role,
+  onEdit,
+  pending = false,
+  contextMenu,
+}: MessageToolbarProps): React.ReactElement | null {
   const legacyCallbacks = useMessageToolbarCallbacks(message);
   const callbacks = onEdit ? { ...legacyCallbacks, onEdit } : legacyCallbacks;
   const [copied, setCopied] = React.useState(false);
@@ -199,10 +303,18 @@ function MessageToolbar({ message, role, onEdit, pending = false, contextMenu }:
     document.addEventListener('socrates:langchange', refreshLanguage);
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
-  React.useEffect(() => () => { likeAnimationRef.current?.cancel(); }, []);
-  const id = typeof message.id === 'string' ? message.id
-    : typeof message.clientId === 'string' ? message.clientId
-    : '';
+  React.useEffect(
+    () => () => {
+      likeAnimationRef.current?.cancel();
+    },
+    [],
+  );
+  const id =
+    typeof message.id === 'string'
+      ? message.id
+      : typeof message.clientId === 'string'
+        ? message.clientId
+        : '';
 
   const handleCopy = () => {
     callbacks.onCopy?.();
@@ -245,16 +357,33 @@ function MessageToolbar({ message, role, onEdit, pending = false, contextMenu }:
   // Reserve the same toolbar geometry during playback without mounting any
   // actionable controls. Completion reveals actions without growing the row.
   if (pending) {
-    return <div className="msg-toolbar" data-role={role} data-message-id={id}
-      aria-hidden="true" inert style={{ visibility: 'hidden' }} />;
+    return (
+      <div
+        className="msg-toolbar"
+        data-role={role}
+        data-message-id={id}
+        aria-hidden="true"
+        inert
+        style={{ visibility: 'hidden' }}
+      />
+    );
   }
 
   const branchInfo = message.branchInfo;
-  const hasBranches = !!(branchInfo && Array.isArray(branchInfo.variants) && branchInfo.variants.length > 1);
+  const hasBranches = !!(
+    branchInfo &&
+    Array.isArray(branchInfo.variants) &&
+    branchInfo.variants.length > 1
+  );
   const compact = Boolean(contextMenu);
 
   return (
-    <div className={contextMenu ? 'msg-context-actions' : 'msg-toolbar'} data-role={role} data-message-id={id} data-compact={compact ? 'true' : undefined}>
+    <div
+      className={contextMenu ? 'msg-context-actions' : 'msg-toolbar'}
+      data-role={role}
+      data-message-id={id}
+      data-compact={compact ? 'true' : undefined}
+    >
       {!contextMenu && hasBranches && callbacks.onSwitchBranch && (
         <MessageBranchSwitcher
           currentIndex={branchInfo.currentIndex}

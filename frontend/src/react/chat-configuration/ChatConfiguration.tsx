@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
+import {
+  saveChatPreferences,
+  type ReasoningEffort,
+  type ResponseSpeed,
+} from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { setActiveProvider } from '../../config/providerConfig.service.ts';
 import { i18n } from '../legacy/gateway.ts';
@@ -35,7 +39,11 @@ function popoverStyle(anchor: ChatConfigurationAnchor | null): CSSProperties {
     return { left, bottom: Math.max(8, viewportBottom - anchor.top + 8), width };
   }
   if (anchor.left < viewportWidth / 2 && anchor.top - viewportTop < 80) {
-    return { left: Math.max(8, Math.min(anchor.left, viewportWidth - width - 8)), top: anchor.bottom + 6, width };
+    return {
+      left: Math.max(8, Math.min(anchor.left, viewportWidth - width - 8)),
+      top: anchor.bottom + 6,
+      width,
+    };
   }
   return { left, top: anchor.bottom + 8, width };
 }
@@ -72,7 +80,9 @@ export function ChatConfiguration() {
   useEffect(() => {
     if (!snapshot.open) return;
     const frame = window.requestAnimationFrame(() => {
-      popRef.current?.querySelector<HTMLElement>('[data-initial-focus]')?.focus({ preventScroll: true });
+      popRef.current
+        ?.querySelector<HTMLElement>('[data-initial-focus]')
+        ?.focus({ preventScroll: true });
     });
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
@@ -117,7 +127,13 @@ export function ChatConfiguration() {
   };
 
   return (
-    <div ref={popRef} className="chat-config-pop" role="dialog" aria-label={i18n('chatconfig.title', 'Chat settings')} style={popoverStyle(snapshot.anchorRect)}>
+    <div
+      ref={popRef}
+      className="chat-config-pop"
+      role="dialog"
+      aria-label={i18n('chatconfig.title', 'Chat settings')}
+      style={popoverStyle(snapshot.anchorRect)}
+    >
       {view === 'main' ? (
         <ModelPickerPanel
           providers={snapshot.providers}

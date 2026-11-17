@@ -256,18 +256,27 @@ function stripComments(text) {
 }
 
 /* Extract the body of a top-level CSS rule whose selector matches. */
+/* Attribute selectors may be written with either quote style; Prettier
+ * normalizes CSS to one of them depending on config. Rewrite quotes inside
+ * `[...]` (length-preserving) so the selectors this guard looks for match
+ * regardless of formatting. */
+function normalizeAttributeQuotes(css) {
+  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replace(/'/g, '"'));
+}
+
 function ruleBody(css, selector) {
+  const normalized = normalizeAttributeQuotes(css);
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp('(^|[}\\n])\\s*' + escaped + '\\s*\\{', 'm');
-  const match = pattern.exec(css);
+  const match = pattern.exec(normalized);
   if (!match) return null;
-  const start = css.indexOf('{', match.index);
+  const start = normalized.indexOf('{', match.index);
   let depth = 0;
-  for (let i = start; i < css.length; i += 1) {
-    if (css[i] === '{') depth += 1;
-    else if (css[i] === '}') {
+  for (let i = start; i < normalized.length; i += 1) {
+    if (normalized[i] === '{') depth += 1;
+    else if (normalized[i] === '}') {
       depth -= 1;
-      if (depth === 0) return css.slice(start + 1, i);
+      if (depth === 0) return normalized.slice(start + 1, i);
     }
   }
   return null;
@@ -331,7 +340,7 @@ function rgbToHex(rgb) {
 function lightness(hex) {
   const rgb = hexToRgb(hex);
   if (!rgb) return null;
-  return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255 * 100;
+  return ((0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255) * 100;
 }
 
 /* HSL lightness as a percentage — (max + min) / 2, which is what
@@ -356,12 +365,25 @@ function hslToHex(value) {
   const x = chroma * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = lightnessRatio - chroma / 2;
   const sector = Math.floor(h / 60);
-  const [r, g, b] = sector === 0 ? [chroma, x, 0]
-    : sector === 1 ? [x, chroma, 0]
-    : sector === 2 ? [0, chroma, x]
-    : sector === 3 ? [0, x, chroma]
-    : sector === 4 ? [x, 0, chroma] : [chroma, 0, x];
-  return `#${[r, g, b].map((channel) => Math.round((channel + m) * 255).toString(16).padStart(2, '0')).join('')}`;
+  const [r, g, b] =
+    sector === 0
+      ? [chroma, x, 0]
+      : sector === 1
+        ? [x, chroma, 0]
+        : sector === 2
+          ? [0, chroma, x]
+          : sector === 3
+            ? [0, x, chroma]
+            : sector === 4
+              ? [x, 0, chroma]
+              : [chroma, 0, x];
+  return `#${[r, g, b]
+    .map((channel) =>
+      Math.round((channel + m) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 }
 
 /* Read the `bg` group out of a `darkPalette` / `lightPalette` declaration. */
@@ -381,7 +403,9 @@ function parseRnPalette(source, constName) {
   const block = new RegExp(`const ${constName}[^=]*= \\{([\\s\\S]*?)\\n\\};`).exec(source);
   if (!block) return {};
   const out = {};
-  for (const match of block[1].matchAll(/^\s*(page|raised|overlay|hover|sunken):\s*'(#[0-9a-fA-F]{6})'/gm)) {
+  for (const match of block[1].matchAll(
+    /^\s*(page|raised|overlay|hover|sunken):\s*'(#[0-9a-fA-F]{6})'/gm,
+  )) {
     out[match[1]] = match[2];
   }
   return out;
@@ -391,7 +415,9 @@ function parseRnSurfaces(source, constName) {
   const block = new RegExp(`const ${constName}[^=]*= \\{([\\s\\S]*?)\\n\\};`).exec(source);
   if (!block) return {};
   const out = {};
-  for (const match of block[1].matchAll(/^\s*(sidebar|control|surface|composer|bubble):\s*'(#[0-9a-fA-F]{6})'/gm)) {
+  for (const match of block[1].matchAll(
+    /^\s*(sidebar|control|surface|composer|bubble):\s*'(#[0-9a-fA-F]{6})'/gm,
+  )) {
     out[match[1]] = match[2];
   }
   return out;
@@ -400,7 +426,8 @@ function parseRnSurfaces(source, constName) {
 /* Every `html[data-theme="X"]` in themes.css is a theme. */
 function discoverThemes(css) {
   const ids = new Set();
-  for (const match of css.matchAll(/html\[data-theme="([^"]+)"\]/g)) ids.add(match[1]);
+  for (const match of normalizeAttributeQuotes(css).matchAll(/html\[data-theme="([^"]+)"\]/g))
+    ids.add(match[1]);
   return [...ids].sort();
 }
 
@@ -409,7 +436,10 @@ function discoverThemes(css) {
 function runtimeThemes(source) {
   const match = /THEME_STYLES\s*=\s*\[([^\]]*)\]/.exec(source);
   if (!match) return null;
-  return match[1].split(',').map((part) => part.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+  return match[1]
+    .split(',')
+    .map((part) => part.trim().replace(/^["']|["']$/g, ''))
+    .filter(Boolean);
 }
 
 function main() {
@@ -423,20 +453,28 @@ function main() {
 
   const themes = discoverThemes(css);
   if (themes.length === 0) {
-    failures.push('themes.css: no html[data-theme="..."] rules found — the theme registry is empty');
+    failures.push(
+      'themes.css: no html[data-theme="..."] rules found — the theme registry is empty',
+    );
   }
 
   const runtime = runtimeThemes(readFileSync(DISPLAY_PREFS, 'utf8'));
   if (!runtime) {
-    failures.push('src/displayPrefs.ts: THEME_STYLES not found — cannot cross-check the theme registry');
+    failures.push(
+      'src/displayPrefs.ts: THEME_STYLES not found — cannot cross-check the theme registry',
+    );
   } else {
     const missing = themes.filter((theme) => !runtime.includes(theme));
     const extra = runtime.filter((theme) => !themes.includes(theme));
     for (const theme of missing) {
-      failures.push(`themes.css: theme "${theme}" has no runtime registration in src/displayPrefs.ts THEME_STYLES`);
+      failures.push(
+        `themes.css: theme "${theme}" has no runtime registration in src/displayPrefs.ts THEME_STYLES`,
+      );
     }
     for (const theme of extra) {
-      failures.push(`src/displayPrefs.ts: THEME_STYLES registers "${theme}" but themes.css has no html[data-theme="${theme}"] rule`);
+      failures.push(
+        `src/displayPrefs.ts: THEME_STYLES registers "${theme}" but themes.css has no html[data-theme="${theme}"] rule`,
+      );
     }
   }
 
@@ -462,13 +500,17 @@ function main() {
       for (const rung of RUNGS) {
         const raw = vars.get(`--ui-bg-${rung}`);
         if (!raw) {
-          failures.push(`themes.css: theme "${theme}" [data-mode="${mode}"] is missing --ui-bg-${rung}`);
+          failures.push(
+            `themes.css: theme "${theme}" [data-mode="${mode}"] is missing --ui-bg-${rung}`,
+          );
           continue;
         }
         const resolved = resolveValue(raw, vars).trim();
         const rgb = parseColor(resolved);
         if (!rgb) {
-          failures.push(`themes.css: theme "${theme}" --ui-bg-${rung} resolves to "${resolved}", expected a hex or rgb() colour`);
+          failures.push(
+            `themes.css: theme "${theme}" --ui-bg-${rung} resolves to "${resolved}", expected a hex or rgb() colour`,
+          );
           continue;
         }
         rungHex[rung] = rgbToHex(rgb).toLowerCase();
@@ -513,8 +555,13 @@ function main() {
 
       /* Paper canvas: the light page shares the elevated rung's white. */
       const paperCanvas = mode === 'light' && policy.paperCanvas === true;
-      const paperTint = paperCanvas && typeof policy.paperTint === 'string' ? policy.paperTint.toLowerCase() : null;
-      if (paperCanvas && ladder.rungHex.page !== ladder.rungHex.elevated && ladder.rungHex.page !== paperTint) {
+      const paperTint =
+        paperCanvas && typeof policy.paperTint === 'string' ? policy.paperTint.toLowerCase() : null;
+      if (
+        paperCanvas &&
+        ladder.rungHex.page !== ladder.rungHex.elevated &&
+        ladder.rungHex.page !== paperTint
+      ) {
         failures.push(
           `themes.css: theme "${theme}" light ladder declares paperCanvas but page (${ladder.rungHex.page}) is neither the elevated paper (${ladder.rungHex.elevated})${paperTint ? ` nor the declared paperTint (${paperTint})` : ''}`,
         );
@@ -529,11 +576,19 @@ function main() {
         }
       }
       const rungs = paperCanvas
-        ? [...new Set(RUNGS.filter((rung) => rung !== 'page').map((rung) => ladder.rungHex[rung]).filter(Boolean))]
+        ? [
+            ...new Set(
+              RUNGS.filter((rung) => rung !== 'page')
+                .map((rung) => ladder.rungHex[rung])
+                .filter(Boolean),
+            ),
+          ]
         : allRungs;
       const expectedDistinct = paperCanvas ? RUNGS.length - 1 : RUNGS.length;
       if (new Set(rungs).size !== expectedDistinct || rungs.length !== expectedDistinct) {
-        failures.push(`themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${allRungs.join(', ')}`);
+        failures.push(
+          `themes.css: theme "${theme}" ${mode} ladder has duplicate rungs — ${allRungs.join(', ')}`,
+        );
       }
       const blackCanvas = mode === 'dark' && policy.blackCanvas === true;
       if (blackCanvas && ladder.rungHex.page !== '#000000') {
@@ -543,7 +598,9 @@ function main() {
       }
       const blackRungs = blackCanvas ? rungs.filter((rung) => rung !== ladder.rungHex.page) : rungs;
       if (blackRungs.includes('#000000')) {
-        failures.push(`themes.css: theme "${theme}" ${mode} ladder uses pure black #000000 — only a blackCanvas page may be #000`);
+        failures.push(
+          `themes.css: theme "${theme}" ${mode} ladder uses pure black #000000 — only a blackCanvas page may be #000`,
+        );
       }
 
       /* A scale-based theme's rungs must be tones the Geist scale actually
@@ -570,7 +627,9 @@ function main() {
           }
         }
       } else if (policy.scale !== null && policy.scale !== undefined) {
-        failures.push(`scripts/surface-ladder.baseline.json: theme "${theme}" has an unknown scale "${policy.scale}"`);
+        failures.push(
+          `scripts/surface-ladder.baseline.json: theme "${theme}" has an unknown scale "${policy.scale}"`,
+        );
       }
 
       /* The roles keep their meaning: the elevated rung is always the
@@ -682,11 +741,14 @@ function main() {
           }
         }
 
-        const nativeHex = target.group === 'surfaces'
-          ? rnSurfaces[mode][target.role]
-          : rnPalette[mode][target.role];
+        const nativeHex =
+          target.group === 'surfaces'
+            ? rnSurfaces[mode][target.role]
+            : rnPalette[mode][target.role];
         if (!nativeHex) {
-          failures.push(`packages/theme/src/rn.ts: ${mode} ${target.group}.${target.role} is missing`);
+          failures.push(
+            `packages/theme/src/rn.ts: ${mode} ${target.group}.${target.role} is missing`,
+          );
         } else if (nativeHex.toLowerCase() !== webHex) {
           failures.push(
             `packages/theme/src/rn.ts: ${mode} ${target.group}.${target.role} is ${nativeHex} but the web ladder uses ${webHex}`,
@@ -805,7 +867,10 @@ function main() {
   const summary = themes
     .map((theme) => {
       const modes = ['dark', 'light']
-        .map((mode) => `${mode}: ${RUNGS.map((rung) => `${rung} ${ladders[theme]?.[mode]?.rungHex[rung]} ${lightness(ladders[theme]?.[mode]?.rungHex[rung]).toFixed(2)}%`).join(' → ')}`)
+        .map(
+          (mode) =>
+            `${mode}: ${RUNGS.map((rung) => `${rung} ${ladders[theme]?.[mode]?.rungHex[rung]} ${lightness(ladders[theme]?.[mode]?.rungHex[rung]).toFixed(2)}%`).join(' → ')}`,
+        )
         .join(' | ');
       return `${theme} { ${modes} }`;
     })

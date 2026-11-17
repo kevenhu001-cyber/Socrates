@@ -4,10 +4,7 @@ import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { installModalA11y } from '../../ui/modalA11y.ts';
 
-import {
-  useCmdKCommands,
-  useCmdKSnapshot,
-} from './cmdk.store';
+import { useCmdKCommands, useCmdKSnapshot } from './cmdk.store';
 import { CmdKSearchInput } from './CmdKSearchInput';
 import { CommandPaletteResults } from './CommandPaletteResults';
 import { t } from './text';
@@ -87,7 +84,12 @@ export function CommandPalette() {
       >
         {open ? (
           <>
-            <CmdKSearchInput key={String(open)} inputRef={inputRef} onInput={commands.input} onKey={commands.key} />
+            <CmdKSearchInput
+              key={String(open)}
+              inputRef={inputRef}
+              onInput={commands.input}
+              onKey={commands.key}
+            />
             <div className="cmd-k-results" id={RESULTS_ID}>
               <CommandPaletteResults
                 query={snapshot.query}

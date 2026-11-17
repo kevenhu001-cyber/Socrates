@@ -1,6 +1,11 @@
-import type { ExamQuestion } from "./types.ts";
-import { stateStore } from '../state/store.ts';
-import { dispatchExam } from '../store/index.ts';
+import type { ExamQuestion } from './types.ts';
+import {
+  dispatchExam,
+  dispatchSession,
+  examBridge,
+  sessionBridge,
+  uiBridge,
+} from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { pushExamIdToURL } from '../session/store.ts';
 import { toggleShareBtn } from '../ui/share.ts';
@@ -11,13 +16,12 @@ import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 
-
-let _examAnswerSaveTimer: number|null|undefined = null;
+let _examAnswerSaveTimer: number | null | undefined = null;
 let _examSaveInFlight: Promise<void> | null = null;
 let _examSaveDirty = false;
 
 export function setExamAnswer(index: number, value: string | number | undefined) {
-  const answers = Object.assign({}, stateStore.read('examAnswers') || {});
+  const answers = Object.assign({}, examBridge.getSnapshot().examAnswers || {});
   answers[index] = value;
   dispatchExam({ type: 'exam/set', key: 'examAnswers', value: answers });
 }
@@ -38,18 +42,28 @@ export function scheduleExamAnswerSave() {
 }
 
 export function submitExam() {
-  const qs = stateStore.read("examQuestions") as ExamQuestion[];
-  const ans = stateStore.read("examAnswers") as Record<number, string | number | undefined>;
-  const validQs = qs.filter(function (q: { type: string; }) { return q.type !== "error"; });
+  const exam = examBridge.getSnapshot();
+  const qs = exam.examQuestions as ExamQuestion[];
+  const ans = exam.examAnswers as Record<number, string | number | undefined>;
+  const validQs = qs.filter(function (q: { type: string }) {
+    return q.type !== 'error';
+  });
   if (!validQs.length) return;
   const missing: number[] = [];
-  validQs.forEach(function (q: { type: string; }, i: number) {
-    if (q.type === "multiple-choice" && ans[i] === undefined) missing.push(i + 1);
-    if ((q.type === "fill-blank" || q.type === "short-answer") && (!ans[i] || String(ans[i]).trim() === "")) missing.push(i + 1);
+  validQs.forEach(function (q: { type: string }, i: number) {
+    if (q.type === 'multiple-choice' && ans[i] === undefined) missing.push(i + 1);
+    if (
+      (q.type === 'fill-blank' || q.type === 'short-answer') &&
+      (!ans[i] || String(ans[i]).trim() === '')
+    )
+      missing.push(i + 1);
   });
   if (missing.length) {
-    const el = document.querySelector('#examQ' + (missing[0] - 1) + ', [data-exam-q="' + (missing[0] - 1) + '"]');
-    if (el) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
+    const el = document.querySelector(
+      '#examQ' + (missing[0] - 1) + ', [data-exam-q="' + (missing[0] - 1) + '"]',
+    );
+    if (el)
+      el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
     return;
   }
   dispatchExam({ type: 'exam/patch', patch: { examSubmitted: true } });
@@ -58,9 +72,10 @@ export function submitExam() {
 
 export function saveExamSession() {
   if (!getCurrentUser()) return;
-  if (!stateStore.read("examTopic")) return;
-  if (!stateStore.read("_examInView")) return;
-  if (stateStore.read("examReadOnly")) return;
+  const exam = examBridge.getSnapshot();
+  if (!exam.examTopic) return;
+  if (!uiBridge.getSnapshot()._examInView) return;
+  if (exam.examReadOnly) return;
   if (_examSaveInFlight) {
     _examSaveDirty = true;
     return;
@@ -70,51 +85,69 @@ export function saveExamSession() {
 }
 
 export function doSaveExamSession() {
+  const exam = examBridge.getSnapshot();
   const body: { id?: string; [key: string]: unknown } = {
-    kind: "exam",
-    topic: stateStore.read("examTopic"),
-    title: stateStore.read("examTopic"),
-    domain: stateStore.read("examTopic"),
+    kind: 'exam',
+    topic: exam.examTopic,
+    title: exam.examTopic,
+    domain: exam.examTopic,
     /* Preserve the mode that originated the exam session. */
     mode: getAppMode(),
-    phase: "chat",
+    phase: 'chat',
     examData: {
-      topic: stateStore.read("examTopic"),
-      difficulty: stateStore.read("examDifficulty") || "intermediate",
-      count: stateStore.read("examCount"),
-      lang: stateStore.read("examLang") || "English",
-      types: Array.isArray(stateStore.read("examTypes")) ? stateStore.read("examTypes") : [],
-      questions: (stateStore.read("examQuestions") as ExamQuestion[]).map(function (q) {
-        const c: ExamQuestion = { q: q.q, type: q.type, explanation: q.explanation || "" };
+      topic: exam.examTopic,
+      difficulty: exam.examDifficulty || 'intermediate',
+      count: exam.examCount,
+      lang: exam.examLang || 'English',
+      types: Array.isArray(exam.examTypes) ? exam.examTypes : [],
+      questions: (exam.examQuestions as ExamQuestion[]).map(function (q) {
+        const c: ExamQuestion = { q: q.q, type: q.type, explanation: q.explanation || '' };
         if (q.opts) c.opts = q.opts;
         if (q.answer !== undefined) c.answer = q.answer;
         if (q.answers) c.answers = q.answers;
         return c;
       }),
-      answers: stateStore.read("examAnswers") || {},
-      submitted: !!stateStore.read("examSubmitted"),
+      answers: exam.examAnswers || {},
+      submitted: !!exam.examSubmitted,
       generatedAt: Date.now(),
     },
   };
-  const currentSessionId = stateStore.read("currentSessionId");
+  const currentSessionId = sessionBridge.getSnapshot().currentSessionId;
   if (currentSessionId) body.id = currentSessionId;
-  _examSaveInFlight = apiFetch("/api/sessions", { method: "POST", body: body })
+  _examSaveInFlight = apiFetch('/api/sessions', { method: 'POST', body: body })
     .then(function (response: unknown) {
-      const id = response !== null && typeof response === 'object' && 'id' in response
-        && typeof response.id === 'string' ? response.id : null;
+      const id =
+        response !== null &&
+        typeof response === 'object' &&
+        'id' in response &&
+        typeof response.id === 'string'
+          ? response.id
+          : null;
       if (id) {
-        stateStore.dispatch({type:'state/set',key:'currentSessionId',value:id});
-        try { pushExamIdToURL(id) } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.pushExamId'); }
+        dispatchSession({ type: 'session/set', key: 'currentSessionId', value: id });
+        try {
+          pushExamIdToURL(id);
+        } catch (e) {
+          reportSwallow(e, 'exam.doSaveExamSession.pushExamId');
+        }
       }
       /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
       return flushRecentsReconcile().then(function () {
-        try { renderRecents() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.renderRecents'); }
-        try { toggleShareBtn() } catch (e) { reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn'); }
+        try {
+          renderRecents();
+        } catch (e) {
+          reportSwallow(e, 'exam.doSaveExamSession.renderRecents');
+        }
+        try {
+          toggleShareBtn();
+        } catch (e) {
+          reportSwallow(e, 'exam.doSaveExamSession.toggleShareBtn');
+        }
       });
     })
     .catch(function (error: unknown) {
-      console.warn("[exam] save failed:", error instanceof Error ? error.message : String(error));
+      console.warn('[exam] save failed:', error instanceof Error ? error.message : String(error));
     })
     .then(function () {
       _examSaveInFlight = null;

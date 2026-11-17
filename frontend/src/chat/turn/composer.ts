@@ -1,14 +1,14 @@
-import { turnState } from './state.ts';
-import { stateStore } from '../../state/store.ts';
-import { clearPendingTurn, interruptChatTurn, loadPendingTurn } from './client.ts';
-import { reportSwallow } from '../../util/reportSwallow.ts';
+import { cancelActiveTurn } from './cancelActiveTurn.ts';
 
 export interface ComposerSendOptions {
   blurAfterSend?: boolean;
 }
 
 interface ComposerTurnWindow extends Window {
-  submitChatMessage?: (textOverride?: string | null, options?: ComposerSendOptions) => void | Promise<unknown>;
+  submitChatMessage?: (
+    textOverride?: string | null,
+    options?: ComposerSendOptions,
+  ) => void | Promise<unknown>;
 }
 
 function legacyTurnActions(): ComposerTurnWindow {
@@ -44,33 +44,5 @@ export function handleSendClick(): void {
 }
 
 export function stopChatResponse(): void {
-  try { interruptPendingTurn(); }
-  catch (error) { reportSwallow(error, 'chat/turn/composer.stop.interruptPendingTurn'); }
-  const activeChatCtl = turnState.activeChatCtl;
-  if (activeChatCtl) activeChatCtl.abort();
-  try { turnState.activeChatAbort?.('user-stop'); }
-  catch (error) { reportSwallow(error, 'chat/turn/composer.stop.abortActive'); }
-}
-
-/** Tell a bound server turn to stop before detaching the local stream. */
-export function interruptPendingTurn(): void {
-  let sessionId: string | null = null;
-  try { sessionId = stateStore.read('currentSessionId') || null; }
-  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.session'); }
-  if (!sessionId) return;
-
-  let pending: { turnId?: string } | null = null;
-  try { pending = loadPendingTurn(sessionId); }
-  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.pending'); }
-  if (!pending?.turnId) return;
-
-  try { clearPendingTurn(sessionId); }
-  catch (error) { reportSwallow(error, 'chat/turn/composer.interrupt.clear'); }
-  try {
-    void interruptChatTurn(pending.turnId).catch((error) => {
-      reportSwallow(error, 'chat/turn/composer.interrupt.server');
-    });
-  } catch (error) {
-    reportSwallow(error, 'chat/turn/composer.interrupt.serverCall');
-  }
+  cancelActiveTurn('user-stop');
 }

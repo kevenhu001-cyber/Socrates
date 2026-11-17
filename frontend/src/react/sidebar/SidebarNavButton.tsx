@@ -61,7 +61,11 @@ export function SidebarNavButton({
       badge={item.badgeKey ? i18n(item.badgeKey, 'New') : undefined}
       badgeI18nKey={item.badgeKey}
       active={active}
-      menu={item.key === 'more' ? { expanded: Boolean(expanded), controls: 'moreNavPopover' } : undefined}
+      menu={
+        item.key === 'more'
+          ? { expanded: Boolean(expanded), controls: 'moreNavPopover' }
+          : undefined
+      }
       activeShadow="var(--ui-elevation-raised)"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}

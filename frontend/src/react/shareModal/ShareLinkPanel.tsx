@@ -22,9 +22,12 @@ export function ShareLinkPanel({
   const [copyState, setCopyState] = useState<'copied' | 'failed' | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   /* Copying belongs to the panel: it renders the link field, so it can
      select it for the legacy selection-copy fallback when the async
@@ -51,11 +54,12 @@ export function ShareLinkPanel({
     timer.current = setTimeout(() => setCopyState(null), 1200);
   }, [shareUrl]);
 
-  const copyLabel = copyState === 'copied'
-    ? shareText('tool.copied', 'Copied')
-    : copyState === 'failed'
-      ? shareText('tool.copyFailed', 'Copy failed')
-      : shareText('share.copy', 'Copy');
+  const copyLabel =
+    copyState === 'copied'
+      ? shareText('tool.copied', 'Copied')
+      : copyState === 'failed'
+        ? shareText('tool.copyFailed', 'Copy failed')
+        : shareText('share.copy', 'Copy');
 
   return (
     <>
@@ -71,7 +75,14 @@ export function ShareLinkPanel({
           aria-label={shareText('sidebar.shareLink', 'Share link')}
           value={shareUrl}
         />
-        <UiButton type="button" className="share-copy-btn" id="shareCopyBtn" onClick={() => { void handleCopy(); }}>
+        <UiButton
+          type="button"
+          className="share-copy-btn"
+          id="shareCopyBtn"
+          onClick={() => {
+            void handleCopy();
+          }}
+        >
           {copyLabel}
         </UiButton>
       </div>
@@ -86,11 +97,16 @@ export function ShareLinkPanel({
         </UiButton>
       </div>
 
-      <div className={`share-error${error ? '' : ' hidden'}`} id="shareError">{error}</div>
-      <div className={`share-status${status ? '' : ' hidden'}`} id="shareStatus">{status}</div>
+      <div className={`share-error${error ? '' : ' hidden'}`} id="shareError">
+        {error}
+      </div>
+      <div className={`share-status${status ? '' : ' hidden'}`} id="shareStatus">
+        {status}
+      </div>
 
       <div id="shareCreateArea" style={{ textAlign: 'center', marginTop: 4 }}>
-        <UiButton variant="outline"
+        <UiButton
+          variant="outline"
           type="button"
           className="btn"
           id="shareCreateBtn"

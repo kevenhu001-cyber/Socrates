@@ -30,7 +30,20 @@ const TIME_GROUP_KEYS: Record<string, string> = {
   'Previous 7 days': 'recents.group.previous7',
   'Previous 30 days': 'recents.group.previous30',
 };
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 function localizeTimeGroup(group: string): string {
   const key = TIME_GROUP_KEYS[group];
@@ -59,7 +72,11 @@ export function SessionTimeline({
   onDragEnd,
 }: SessionTimelineProps) {
   const organization = useSessionOrganization((state) => state.organization);
-  const projects = useSyncExternalStore(subscribeToProjectCache, getCachedProjects, getCachedProjects);
+  const projects = useSyncExternalStore(
+    subscribeToProjectCache,
+    getCachedProjects,
+    getCachedProjects,
+  );
   const [languageRevision, refreshLanguage] = useReducer((value: number) => value + 1, 0);
   useEffect(() => {
     document.addEventListener('socrates:langchange', refreshLanguage);
@@ -71,20 +88,27 @@ export function SessionTimeline({
   const entries = useMemo(() => {
     // Language is supplied by the existing global i18n bridge.
     void languageRevision;
-    const groups = organization === 'projects' ? groupSessionsByProject(sessions, projects, {
-      pinned: i18n('sidebar.organize.pinned', 'Pinned'),
-      other: i18n('sidebar.organize.other', 'Other chats'),
-      project: i18n('sidebar.organize.project', 'Project'),
-    }) : [{ id: 'timeline', name: '', sessions }];
+    const groups =
+      organization === 'projects'
+        ? groupSessionsByProject(sessions, projects, {
+            pinned: i18n('sidebar.organize.pinned', 'Pinned'),
+            other: i18n('sidebar.organize.other', 'Other chats'),
+            project: i18n('sidebar.organize.project', 'Project'),
+          })
+        : [{ id: 'timeline', name: '', sessions }];
     const result: TimelineEntry[] = [];
     let previousGroup: string | null = null;
     const today = new Date(day);
     for (const section of groups) {
-      if (section.name) result.push({ key: 'project-' + section.id, heading: section.name, project: true });
+      if (section.name)
+        result.push({ key: 'project-' + section.id, heading: section.name, project: true });
       for (const session of section.sessions) {
         const group = timeGroupLabel(session, today);
         if (organization === 'list' && group !== previousGroup) {
-          result.push({ key: 'group-' + group + '-' + session.id, heading: localizeTimeGroup(group) });
+          result.push({
+            key: 'group-' + group + '-' + session.id,
+            heading: localizeTimeGroup(group),
+          });
         }
         previousGroup = group;
         result.push({ key: session.id, session });
@@ -92,23 +116,43 @@ export function SessionTimeline({
     }
     return result;
   }, [sessions, projects, organization, day, languageRevision]);
-  const renderSession = (session: SessionItem, onRetentionChange?: (id: string, active: boolean) => void) => <SessionRow
-    session={session}
-    isActive={session.id === currentSessionId}
-    timeLabel={formatRelativeTime(session.updatedAt || session.createdAt)}
-    onPick={onPick}
-    onTag={onTag}
-    onArchive={onArchive}
-    onDelete={onDelete}
-    onDragStart={onDragStart}
-    onDragEnd={onDragEnd}
-    onRetentionChange={onRetentionChange}
-  />;
+  const renderSession = (
+    session: SessionItem,
+    onRetentionChange?: (id: string, active: boolean) => void,
+  ) => (
+    <SessionRow
+      session={session}
+      isActive={session.id === currentSessionId}
+      timeLabel={formatRelativeTime(session.updatedAt || session.createdAt)}
+      onPick={onPick}
+      onTag={onTag}
+      onArchive={onArchive}
+      onDelete={onDelete}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onRetentionChange={onRetentionChange}
+    />
+  );
   /* RN-10: rows and headings are shared RN shell parts; they read the web theme. */
-  if (entries.length > 80) return <WebUiTheme><VirtualSessionTimeline entries={entries} renderSession={renderSession} /></WebUiTheme>;
-  return <WebUiTheme><div className="recents-list-content">
-    {entries.map((entry) => <React.Fragment key={entry.key}>
-      {entry.session ? renderSession(entry.session) : <SessionGroupHeading label={entry.heading ?? ''} project={entry.project} />}
-    </React.Fragment>)}
-  </div></WebUiTheme>;
+  if (entries.length > 80)
+    return (
+      <WebUiTheme>
+        <VirtualSessionTimeline entries={entries} renderSession={renderSession} />
+      </WebUiTheme>
+    );
+  return (
+    <WebUiTheme>
+      <div className="recents-list-content">
+        {entries.map((entry) => (
+          <React.Fragment key={entry.key}>
+            {entry.session ? (
+              renderSession(entry.session)
+            ) : (
+              <SessionGroupHeading label={entry.heading ?? ''} project={entry.project} />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    </WebUiTheme>
+  );
 }

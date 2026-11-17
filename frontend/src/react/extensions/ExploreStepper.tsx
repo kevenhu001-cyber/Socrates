@@ -1,10 +1,7 @@
 import { useEffect, useReducer, useSyncExternalStore } from 'react';
 
 import type { AgentRunEvent } from '../../extensions/types';
-import {
-  getAgentRunSnapshot,
-  subscribeToAgentRuns,
-} from '../../extensions/agentRunStore';
+import { getAgentRunSnapshot, subscribeToAgentRuns } from '../../extensions/agentRunStore';
 import { t } from '../legacy/gateway';
 
 export type WorkflowStage = 'planning' | 'searching' | 'reading' | 'synthesizing';
@@ -63,7 +60,9 @@ export function ExploreStepper({ event: supplied }: { event?: AgentRunEvent } = 
     return () => document.removeEventListener('socrates:langchange', refreshLanguage);
   }, []);
   const event = supplied || snapshot.lastEvent;
-  const done = !!event && (event.stage === 'completed' || event.stage === 'failed' || event.stage === 'cancelled');
+  const done =
+    !!event &&
+    (event.stage === 'completed' || event.stage === 'failed' || event.stage === 'cancelled');
   const failed = !!event && event.stage === 'failed';
 
   return (
@@ -78,13 +77,18 @@ export function ExploreStepper({ event: supplied }: { event?: AgentRunEvent } = 
           <small className="agent-stepper-kicker">{workflowLabel(event?.workflow)}</small>
           <span>{statusLabel(event)}</span>
         </span>
-        <span className="agent-stepper-workflow">
-          {workflowLabel(event?.workflow)}
-        </span>
+        <span className="agent-stepper-workflow">{workflowLabel(event?.workflow)}</span>
       </div>
       {event?.current && event.total ? (
-        <div className="agent-stepper-progress" aria-label={t('research.progress').replace('{current}', String(event.current)).replace('{total}', String(event.total))}>
-          <span style={{ width: `${Math.min(100, Math.round((event.current / event.total) * 100))}%` }} />
+        <div
+          className="agent-stepper-progress"
+          aria-label={t('research.progress')
+            .replace('{current}', String(event.current))
+            .replace('{total}', String(event.total))}
+        >
+          <span
+            style={{ width: `${Math.min(100, Math.round((event.current / event.total) * 100))}%` }}
+          />
         </div>
       ) : null}
       <ol className="agent-stepper-stages">

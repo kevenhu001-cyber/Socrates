@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle, rgbChannels } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('light conversation home has a neutral readable palette and balanced composer position', async ({ page }) => {
+test('light conversation home has a neutral readable palette and balanced composer position', async ({
+  page,
+}) => {
   const consoleErrors = [];
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
@@ -29,7 +31,9 @@ test('light conversation home has a neutral readable palette and balanced compos
     return {
       title: rect('#topicTitle'),
       composer: rect('#composerInputWrap'),
-      topicFontSize: parseFloat(getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize),
+      topicFontSize: parseFloat(
+        getComputedStyle(document.querySelector('#composerRoot .rich-composer-editor')).fontSize,
+      ),
       pageBackground: rgb('.main-bg'),
       sidebarBackground: rgb('#appShell'),
       composerBackground: rgb('#composerInputWrap [data-composer-frame]'),
@@ -76,7 +80,9 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(geometry.pageBackground).toBe('rgb(252, 252, 252)');
   expect(geometry.sidebarBackground).toBe('rgb(243, 243, 243)');
   expect(luminance(geometry.sidebarBackground)).toBeLessThan(luminance(geometry.pageBackground));
-  expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(luminance(geometry.pageBackground));
+  expect(luminance(geometry.composerBackground)).toBeGreaterThanOrEqual(
+    luminance(geometry.pageBackground),
+  );
   expect(contrast(geometry.titleColor, geometry.pageBackground)).toBeGreaterThan(10);
 
   const editor = page.locator('#composerRoot .rich-composer-editor');
@@ -98,12 +104,16 @@ test('light conversation home has a neutral readable palette and balanced compos
   expect(Math.abs((afterFocus?.y ?? 0) - (beforeFocus?.y ?? 0))).toBeLessThanOrEqual(1);
   expect(consoleErrors).toEqual([]);
 
-  await page.screenshot({ path: 'test-results/socrates-landing-light-desktop.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/socrates-landing-light-desktop.png',
+    fullPage: true,
+  });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const setup = document.getElementById('topicSetup');
     if (setup) setup.scrollTop = 0;

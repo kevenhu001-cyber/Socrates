@@ -25,7 +25,14 @@ const metrics = await page.evaluate(() => {
     if (!el) return null;
     const b = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
-    return { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width), h: Math.round(b.height), radius: cs.borderRadius, bg: cs.backgroundColor };
+    return {
+      x: Math.round(b.x),
+      y: Math.round(b.y),
+      w: Math.round(b.width),
+      h: Math.round(b.height),
+      radius: cs.borderRadius,
+      bg: cs.backgroundColor,
+    };
   };
   return {
     boot: document.documentElement.dataset.bootState,

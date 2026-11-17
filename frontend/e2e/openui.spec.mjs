@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
 
 const PROGRAM = `root = Col([Card([Title("Study planner", "lg"), Caption("Adjust your daily practice and see the weekly total."), hours, result, reset]), chart, flash, form])
@@ -13,15 +13,26 @@ $subject = "Geometry"
 form = Form([Input($subject, "Subject"), Button("Make a plan", @ToAssistant("Create a study plan"))])`;
 
 function message(source, id = 'openui-history') {
-  return { clientId: id, role: 'assistant', type: 'assistant', rawText: `Here is your interactive planner.\n\n\`\`\`openui\n${source}\n\`\`\`\nContinue with the practice.`, html: '<p>Here is your interactive planner.</p>' };
+  return {
+    clientId: id,
+    role: 'assistant',
+    type: 'assistant',
+    rawText: `Here is your interactive planner.\n\n\`\`\`openui\n${source}\n\`\`\`\nContinue with the practice.`,
+    html: '<p>Here is your interactive planner.</p>',
+  };
 }
 
 for (const mode of ['light', 'dark', 'mobile']) {
-  test(`OpenUI history renders working controls, charts and flashcards (${mode})`, async ({ page }) => {
+  test(`OpenUI history renders working controls, charts and flashcards (${mode})`, async ({
+    page,
+  }) => {
     const theme = mode === 'dark' ? 'dark' : 'light';
     await page.emulateMedia({ colorScheme: theme });
     await page.addInitScript((theme) => localStorage.setItem('socrates-theme', theme), theme);
-    await prepareChatWorkbench(page, { messages: [message(PROGRAM)], viewport: mode === 'mobile' ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop });
+    await prepareChatWorkbench(page, {
+      messages: [message(PROGRAM)],
+      viewport: mode === 'mobile' ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop,
+    });
     await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
     const ui = page.locator('.intui-openui');
     await expect(ui).toBeVisible();
@@ -39,10 +50,15 @@ for (const mode of ['light', 'dark', 'mobile']) {
     await expect(ui.locator('p[role="status"]')).toHaveCount(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `test-results/openui-${encodeURIComponent(mode)}.png`, fullPage: true });
+    await page.screenshot({
+      path: `test-results/openui-${encodeURIComponent(mode)}.png`,
+      fullPage: true,
+    });
     await page.evaluate(() => {
       window.__openuiRequests = [];
-      document.addEventListener('tool-retry', (event) => window.__openuiRequests.push(event.detail));
+      document.addEventListener('tool-retry', (event) =>
+        window.__openuiRequests.push(event.detail),
+      );
     });
     await ui.getByRole('textbox', { name: 'Subject' }).fill('Algebra');
     await ui.getByRole('button', { name: 'Make a plan' }).click();
@@ -53,11 +69,17 @@ for (const mode of ['light', 'dark', 'mobile']) {
   });
 }
 
-test('OpenUI streams incrementally and preserves local state through the final fence', async ({ page }) => {
+test('OpenUI streams incrementally and preserves local state through the final fence', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
-    window.__openuiTurn = await window.addStreamingMessage({ userPrompt: 'Build an interactive study planner.' });
-    window.__openuiTurn.append('Your planner:\n\n```openui\nroot = Col([hours, result, note])\n$hours = 2\nhours = Slider($hours, 1, 8, 1, "Hours per day")\nresult = Text("Weekly hours: " + ($hours * 7))\n');
+    window.__openuiTurn = await window.addStreamingMessage({
+      userPrompt: 'Build an interactive study planner.',
+    });
+    window.__openuiTurn.append(
+      'Your planner:\n\n```openui\nroot = Col([hours, result, note])\n$hours = 2\nhours = Slider($hours, 1, 8, 1, "Hours per day")\nresult = Text("Weekly hours: " + ($hours * 7))\n',
+    );
   });
   const ui = page.locator('.intui-openui');
   await expect(ui).toContainText('Weekly hours: 14');
@@ -66,27 +88,55 @@ test('OpenUI streams incrementally and preserves local state through the final f
   await slider.press('ArrowRight');
   await expect(ui).toContainText('Weekly hours: 21');
   await page.evaluate(() => {
-    window.__openuiTurn.append('note = Caption("A little practice every day.")\n```\nThe planner is ready.');
+    window.__openuiTurn.append(
+      'note = Caption("A little practice every day.")\n```\nThe planner is ready.',
+    );
     window.__openuiTurn.finish();
   });
   await expect(ui).toHaveAttribute('data-openui-streaming', 'false');
   await expect(ui).toContainText('A little practice every day.');
   await expect(ui).toContainText('Weekly hours: 21');
-  await expect(page.locator('#msgList .msg.assistant').last()).toContainText('The planner is ready.');
+  await expect(page.locator('#msgList .msg.assistant').last()).toContainText(
+    'The planner is ready.',
+  );
 });
 
-test('the native UI tool renders OpenUI, applies source patches and restores from persisted tool arguments', async ({ page }) => {
+test('the native UI tool renders OpenUI, applies source patches and restores from persisted tool arguments', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async (program) => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Build my planner.' });
     window.__nativeOpenUi = ctl;
     let seq = 0;
-    window.__nativeUiEvent = (payload) => ctl.recordTurnEvent({ version: 1, turnId: 'openui-native', seq: ++seq, at: Date.now(), ...payload });
+    window.__nativeUiEvent = (payload) =>
+      ctl.recordTurnEvent({
+        version: 1,
+        turnId: 'openui-native',
+        seq: ++seq,
+        at: Date.now(),
+        ...payload,
+      });
     const node = { id: 'planner', type: 'openui', source: program };
-    window.__nativeUiEvent({ type: 'ui.begin', surfaceId: 'openui-tool', toolCallId: 'openui-tool', textOffset: 0 });
+    window.__nativeUiEvent({
+      type: 'ui.begin',
+      surfaceId: 'openui-tool',
+      toolCallId: 'openui-tool',
+      textOffset: 0,
+    });
     window.__nativeUiEvent({ type: 'ui.commit', surfaceId: 'openui-tool', nodes: [node] });
-    ctl.recordToolUse({ id: 'openui-tool', name: 'render_intelligent_ui', input: { version: 1, nodes: [node] } });
-    ctl.recordToolResult({ id: 'openui-tool', name: 'render_intelligent_ui', ok: true, status: 'completed', output: 'Rendered 1 UI nodes' });
+    ctl.recordToolUse({
+      id: 'openui-tool',
+      name: 'render_intelligent_ui',
+      input: { version: 1, nodes: [node] },
+    });
+    ctl.recordToolResult({
+      id: 'openui-tool',
+      name: 'render_intelligent_ui',
+      ok: true,
+      status: 'completed',
+      output: 'Rendered 1 UI nodes',
+    });
     ctl.append('Your planner is ready.');
   }, PROGRAM);
   const ui = page.locator('.intui-openui');
@@ -95,24 +145,47 @@ test('the native UI tool renders OpenUI, applies source patches and restores fro
   await page.keyboard.press('ArrowRight');
   await expect(ui).toContainText('Weekly hours: 21');
   await page.evaluate((source) => {
-    window.__nativeUiEvent({ type: 'ui.edit', surfaceId: 'openui-tool', baseRevision: 0, operations: [{ op: 'patch', nodeId: 'planner', props: { source: source.replace('Study planner', 'Updated planner') } }] });
+    window.__nativeUiEvent({
+      type: 'ui.edit',
+      surfaceId: 'openui-tool',
+      baseRevision: 0,
+      operations: [
+        {
+          op: 'patch',
+          nodeId: 'planner',
+          props: { source: source.replace('Study planner', 'Updated planner') },
+        },
+      ],
+    });
     window.__nativeOpenUi.finish();
   }, PROGRAM);
   await expect(ui).toContainText('Updated planner');
   await expect(ui).toContainText('Weekly hours: 21');
-  const saved = await page.evaluate(() => JSON.parse(JSON.stringify(window.stateStore.read('messages'))));
+  const saved = await page.evaluate(() =>
+    JSON.parse(JSON.stringify(window.__socratesTestState.session().messages)),
+  );
   await prepareChatWorkbench(page, { messages: saved });
   await expect(page.locator('.intui-openui')).toContainText('Weekly hours: 14');
-  await expect(page.locator('.tool-inline-attachments[data-tool-anchor="openui-tool"] .intui-openui')).toHaveCount(1);
+  await expect(
+    page.locator('.tool-inline-attachments[data-tool-anchor="openui-tool"] .intui-openui'),
+  ).toHaveCount(1);
 });
 
-test('unsafe media, unknown components and malformed programs stay isolated from prose', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [
-    message('root = Col([Text("Safe text"), Image("javascript:alert(1)", "Unsafe image"), Link("Unsafe link", "javascript:alert(1)"), HtmlView("<script>bad()</script>")])'),
-    message('this is not a program', 'invalid-openui'),
-  ] });
+test('unsafe media, unknown components and malformed programs stay isolated from prose', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: [
+      message(
+        'root = Col([Text("Safe text"), Image("javascript:alert(1)", "Unsafe image"), Link("Unsafe link", "javascript:alert(1)"), HtmlView("<script>bad()</script>")])',
+      ),
+      message('this is not a program', 'invalid-openui'),
+    ],
+  });
   await expect(page.locator('.intui-openui')).toHaveCount(2);
-  await expect(page.locator('.intui-openui').last().locator('p[role="status"]')).toContainText('could not be displayed');
+  await expect(page.locator('.intui-openui').last().locator('p[role="status"]')).toContainText(
+    'could not be displayed',
+  );
   await expect(page.locator('.intui-openui').first()).toContainText('Safe text');
   await expect(page.locator('.intui-openui img')).toHaveCount(0);
   await expect(page.locator('.intui-openui a')).toHaveCount(0);
@@ -120,35 +193,48 @@ test('unsafe media, unknown components and malformed programs stay isolated from
   await expect(page.locator('#msgList')).toContainText('Continue with the practice.');
 });
 
-
 test('the production bundle keeps OpenUI and its library out of the eager graph', () => {
-  const report = JSON.parse(readFileSync(new URL('../dist/.vite/entry-graph.json', import.meta.url), 'utf8'));
+  const report = JSON.parse(
+    readFileSync(new URL('../dist/.vite/entry-graph.json', import.meta.url), 'utf8'),
+  );
   const eager = new Set(report.chunks.filter((chunk) => chunk.eager).map((chunk) => chunk.file));
-  const modules = report.modules.filter((module) => module.id.includes('@openuidev/') || module.id.includes('/openui/'));
+  const modules = report.modules.filter(
+    (module) => module.id.includes('@openuidev/') || module.id.includes('/openui/'),
+  );
   expect(modules.length).toBeGreaterThan(10);
   for (const module of modules) expect(eager.has(module.chunk), module.id).toBe(false);
 });
 
 for (const viewport of ['desktop', 'mobile']) {
-  test(`calculator performs local arithmetic without sending chat (${viewport})`, async ({ page }) => {
+  test(`calculator performs local arithmetic without sending chat (${viewport})`, async ({
+    page,
+  }) => {
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await prepareChatWorkbench(page, { messages: [message('root = Col([Calculator("计算器")])')], viewport: WORKBENCH_VIEWPORTS[viewport] });
+    await prepareChatWorkbench(page, {
+      messages: [message('root = Col([Calculator("计算器")])')],
+      viewport: WORKBENCH_VIEWPORTS[viewport],
+    });
     await expect(page).toHaveTitle(/Socrates/i);
     const calculator = page.getByRole('group', { name: '计算器', exact: true });
     await expect(calculator).toBeVisible();
     await page.evaluate(() => {
       window.__localUiRequests = [];
-      document.addEventListener('tool-retry', (event) => window.__localUiRequests.push(event.detail));
+      document.addEventListener('tool-retry', (event) =>
+        window.__localUiRequests.push(event.detail),
+      );
     });
     for (const [keys, result] of [
-      [['2', '+', '3', '='], '5'], [['9', '−', '4', '='], '5'],
-      [['6', '×', '7', '='], '42'], [['8', '÷', '2', '='], '4'],
+      [['2', '+', '3', '='], '5'],
+      [['9', '−', '4', '='], '5'],
+      [['6', '×', '7', '='], '42'],
+      [['8', '÷', '2', '='], '4'],
       [['0', '.', '1', '+', '0', '.', '2', '='], '0.3'],
       [['8', '÷', '0', '='], 'Error'],
     ]) {
       await calculator.getByRole('button', { name: 'C', exact: true }).click();
-      for (const key of keys) await calculator.getByRole('button', { name: key, exact: true }).click();
+      for (const key of keys)
+        await calculator.getByRole('button', { name: key, exact: true }).click();
       await expect(calculator.locator('output')).toHaveText(result);
     }
     await calculator.focus();
@@ -158,33 +244,57 @@ for (const viewport of ['desktop', 'mobile']) {
     await expect(calculator.locator('output')).toHaveText('15');
     expect(await page.evaluate(() => window.__localUiRequests)).toEqual([]);
     expect(errors).toEqual([]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `test-results/openui-calculator-${encodeURIComponent(viewport)}.png`, fullPage: true });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+    ).toBeLessThanOrEqual(1);
+    await page.screenshot({
+      path: `test-results/openui-calculator-${encodeURIComponent(viewport)}.png`,
+      fullPage: true,
+    });
   });
 }
 
 test('OpenUI inputs update the native visualization in place', async ({ page }) => {
-  const source = 'root = Col([Slider($n, 1, 8, 1, "Amount"), Text("Amount: " + $n), Visualization("bar", "Linked visual", {categories:["A"],series:[{name:"Amount",data:[$n]}]}, "Amount controlled by the slider")])\n$n = 2';
+  const source =
+    'root = Col([Slider($n, 1, 8, 1, "Amount"), Text("Amount: " + $n), Visualization("bar", "Linked visual", {categories:["A"],series:[{name:"Amount",data:[$n]}]}, "Amount controlled by the slider")])\n$n = 2';
   await prepareChatWorkbench(page, { messages: [message(source)] });
   const ui = page.locator('.intui-openui');
   const card = ui.locator('.visualization-card');
   await expect(card).toHaveAttribute('data-visualization-renderer', 'echarts');
   await expect(card.locator('.visualization-data')).toContainText('2');
-  await card.evaluate((element) => { element.dataset.mountIdentity = 'original'; });
+  await card.evaluate((element) => {
+    element.dataset.mountIdentity = 'original';
+  });
   const slider = ui.getByRole('slider', { name: 'Amount' });
   await slider.focus();
   await slider.press('ArrowRight');
   await expect(ui).toContainText('Amount: 3');
   await expect(card.locator('.visualization-data')).toContainText('3');
   await expect(card).toHaveAttribute('data-mount-identity', 'original');
-  await expect.poll(() => card.locator('.visualization-stage').evaluate((stage) => window.echarts.getInstanceByDom(stage).getOption().series[0].data[0])).toBe(3);
+  await expect
+    .poll(() =>
+      card
+        .locator('.visualization-stage')
+        .evaluate((stage) => window.echarts.getInstanceByDom(stage).getOption().series[0].data[0]),
+    )
+    .toBe(3);
   await expect(ui.locator('p[role="status"]')).toHaveCount(0);
-  await expect.poll(() => card.locator('.visualization-stage').evaluate((stage) => window.echarts.getInstanceByDom(stage).getZr().animation.isFinished())).toBe(true);
+  await expect
+    .poll(() =>
+      card
+        .locator('.visualization-stage')
+        .evaluate((stage) => window.echarts.getInstanceByDom(stage).getZr().animation.isFinished()),
+    )
+    .toBe(true);
   await page.screenshot({ path: 'test-results/openui-linked-visual.png', fullPage: true });
 });
 
 test('the slider draws its own rail and keeps the knob on the value', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [message('root = Col([Slider($n, 1, 8, 1, "Amount"), Text("Amount: " + $n)])\n$n = 2')] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      message('root = Col([Slider($n, 1, 8, 1, "Amount"), Text("Amount: " + $n)])\n$n = 2'),
+    ],
+  });
   const ui = page.locator('.intui-openui');
   const track = ui.locator('.iui-slider-track');
   const knob = ui.locator('.iui-slider-thumb');
@@ -206,8 +316,12 @@ test('the slider draws its own rail and keeps the knob on the value', async ({ p
   await expect.poll(() => knob.evaluate((el) => getComputedStyle(el).boxShadow)).not.toBe('none');
 });
 
-test('buttons without actions cannot accidentally send chat and offer explicit repair', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [message('root = Col([Title("Incomplete calculator"), Button("=")])')] });
+test('buttons without actions cannot accidentally send chat and offer explicit repair', async ({
+  page,
+}) => {
+  await prepareChatWorkbench(page, {
+    messages: [message('root = Col([Title("Incomplete calculator"), Button("=")])')],
+  });
   const ui = page.locator('.intui-openui');
   await expect(ui.getByRole('button', { name: '=', exact: true })).toBeDisabled();
   await expect(ui.locator('p[role="status"]')).toBeVisible();
@@ -217,19 +331,31 @@ test('buttons without actions cannot accidentally send chat and offer explicit r
   });
   await ui.getByRole('button', { name: 'Fix with AI' }).click();
   await expect.poll(() => page.evaluate(() => window.__repairRequests.length)).toBe(1);
-  expect(await page.evaluate(() => window.__repairRequests[0].prompt)).toContain('Button requires an explicit action');
+  expect(await page.evaluate(() => window.__repairRequests[0].prompt)).toContain(
+    'Button requires an explicit action',
+  );
 });
 
 for (const viewport of ['desktop', 'mobile']) {
-  test(`OpenUI card titles retain readable width without nested card frames (${viewport})`, async ({ page }) => {
-    const source = 'root = Col([Grid([Card([Title("学习计划","lg"),Text("每日练习")]),Card([Title("复习安排","lg"),Text("温故知新")]),Card([Title("学习成果","lg"),Text("记录进步")])],3),Row([Title("课程说明","lg"),Text("通过每日练习和及时复习逐步掌握知识，调整学习节奏并记录自己的进步。")])])';
-    await prepareChatWorkbench(page, { messages: [message(source)], viewport: WORKBENCH_VIEWPORTS[viewport] });
+  test(`OpenUI card titles retain readable width without nested card frames (${viewport})`, async ({
+    page,
+  }) => {
+    const source =
+      'root = Col([Grid([Card([Title("学习计划","lg"),Text("每日练习")]),Card([Title("复习安排","lg"),Text("温故知新")]),Card([Title("学习成果","lg"),Text("记录进步")])],3),Row([Title("课程说明","lg"),Text("通过每日练习和及时复习逐步掌握知识，调整学习节奏并记录自己的进步。")])])';
+    await prepareChatWorkbench(page, {
+      messages: [message(source)],
+      viewport: WORKBENCH_VIEWPORTS[viewport],
+    });
     const ui = page.locator('.intui-openui');
     await expect(ui.locator('.iui-card')).toHaveCount(3);
     for (const title of await ui.getByRole('heading').all()) {
       const geometry = await title.evaluate((el) => {
         const style = getComputedStyle(el);
-        return { height: el.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), paddingRight: parseFloat(style.paddingRight) };
+        return {
+          height: el.getBoundingClientRect().height,
+          lineHeight: parseFloat(style.lineHeight),
+          paddingRight: parseFloat(style.paddingRight),
+        };
       });
       expect(geometry.height).toBeLessThanOrEqual(geometry.lineHeight + 1);
       expect(geometry.paddingRight).toBe(0);
@@ -241,12 +367,19 @@ for (const viewport of ['desktop', 'mobile']) {
     const document = await ui.locator('.iui-card').first().locator('..').boundingBox();
     const firstCard = await ui.locator('.iui-card').first().boundingBox();
     expect(firstCard.y).toBeGreaterThanOrEqual(document.y);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-    await page.screenshot({ path: `test-results/openui-card-layout-${encodeURIComponent(viewport)}.png`, fullPage: true });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+    ).toBeLessThanOrEqual(1);
+    await page.screenshot({
+      path: `test-results/openui-card-layout-${encodeURIComponent(viewport)}.png`,
+      fullPage: true,
+    });
   });
 }
 
-test('correcting an initially invalid input clears diagnostics and never displays a fabricated result', async ({ page }) => {
+test('correcting an initially invalid input clears diagnostics and never displays a fabricated result', async ({
+  page,
+}) => {
   const source = 'root = Col([Input($n,"N","number"),Text("Result: " + (10 / $n))])\n$n = 0';
   await prepareChatWorkbench(page, { messages: [message(source)] });
   const ui = page.locator('.intui-openui');
@@ -262,22 +395,31 @@ test('correcting an initially invalid input clears diagnostics and never display
   await expect(ui.locator('.iui-text')).toBeHidden();
 });
 
-const AVERAGES = 'Visualization("bar", "Midterm averages", {"categories":["Class A","Class B","Class C"],"series":[{"name":"Average","data":[82,76,88]}]}, "Average score by class")';
+const AVERAGES =
+  'Visualization("bar", "Midterm averages", {"categories":["Class A","Class B","Class C"],"series":[{"name":"Average","data":[82,76,88]}]}, "Average score by class")';
 
 for (const viewport of ['desktop', 'mobile']) {
-  test(`a streamed chart keeps its card footprint from the first token to the drawn card (${viewport})`, async ({ page }) => {
+  test(`a streamed chart keeps its card footprint from the first token to the drawn card (${viewport})`, async ({
+    page,
+  }) => {
     await prepareChatWorkbench(page, { viewport: WORKBENCH_VIEWPORTS[viewport] });
     await page.evaluate(async (chart) => {
       window.__openuiTurn = await window.addStreamingMessage({ userPrompt: 'Chart the averages.' });
-      window.__openuiTurn.append(`Scores:\n\n\`\`\`openui\nroot = Col([title, chart])\ntitle = Title("Midterm review", "lg")\nchart = ${chart}\n`);
+      window.__openuiTurn.append(
+        `Scores:\n\n\`\`\`openui\nroot = Col([title, chart])\ntitle = Title("Midterm review", "lg")\nchart = ${chart}\n`,
+      );
     }, AVERAGES);
     const viz = page.locator('.intui-openui [data-openui-visualization]').last();
     await expect(viz.locator('.viz-state-skeleton')).toBeVisible();
-    const box = () => viz.evaluate((el) => {
-      const shown = [...el.querySelectorAll('h3')].find((h) => h.getClientRects().length);
-      const rect = el.getBoundingClientRect();
-      return { height: Math.round(rect.height), titleLeft: Math.round(shown.getBoundingClientRect().left - rect.left) };
-    });
+    const box = () =>
+      viz.evaluate((el) => {
+        const shown = [...el.querySelectorAll('h3')].find((h) => h.getClientRects().length);
+        const rect = el.getBoundingClientRect();
+        return {
+          height: Math.round(rect.height),
+          titleLeft: Math.round(shown.getBoundingClientRect().left - rect.left),
+        };
+      });
     const streaming = await box();
     /* Sample every frame across the end of the stream and the renderer load:
        the block must never collapse while the engine card replaces the skeleton. */
@@ -285,7 +427,10 @@ for (const viewport of ['desktop', 'mobile']) {
       const el = document.querySelectorAll('.intui-openui [data-openui-visualization]');
       const target = el[el.length - 1];
       window.__vizHeights = [];
-      const tick = () => { window.__vizHeights.push(Math.round(target.getBoundingClientRect().height)); window.__vizRaf = requestAnimationFrame(tick); };
+      const tick = () => {
+        window.__vizHeights.push(Math.round(target.getBoundingClientRect().height));
+        window.__vizRaf = requestAnimationFrame(tick);
+      };
       tick();
       window.__openuiTurn.append('```\nDone.');
       window.__openuiTurn.finish();
@@ -294,7 +439,10 @@ for (const viewport of ['desktop', 'mobile']) {
     await expect(viz.locator('.visualization-card')).toBeVisible();
     await expect(viz.locator('.viz-state-skeleton')).toHaveCount(0);
     const drawn = await box();
-    const heights = await page.evaluate(() => { cancelAnimationFrame(window.__vizRaf); return window.__vizHeights; });
+    const heights = await page.evaluate(() => {
+      cancelAnimationFrame(window.__vizRaf);
+      return window.__vizHeights;
+    });
     expect(drawn.height).toBe(streaming.height);
     expect(Math.min(...heights)).toBe(streaming.height);
     /* The chart title shares the answer's left edge in both states. */
@@ -304,19 +452,26 @@ for (const viewport of ['desktop', 'mobile']) {
 }
 
 test('a small heatmap is drawn as SVG, not as a canvas bitmap', async ({ page }) => {
-  const heat = 'Visualization("heatmap", "Practice by slot", {"xCategories":["Mon","Tue","Wed"],"yCategories":["AM","PM"],"values":[[1,3,2],[4,2,5]]}, "Practice sessions per slot")';
-  await prepareChatWorkbench(page, { messages: [message(`root = Col([heat])\nheat = ${heat}`, 'openui-heatmap')] });
+  const heat =
+    'Visualization("heatmap", "Practice by slot", {"xCategories":["Mon","Tue","Wed"],"yCategories":["AM","PM"],"values":[[1,3,2],[4,2,5]]}, "Practice sessions per slot")';
+  await prepareChatWorkbench(page, {
+    messages: [message(`root = Col([heat])\nheat = ${heat}`, 'openui-heatmap')],
+  });
   const card = page.locator('.intui-openui .visualization-card').first();
   await expect(card).toHaveAttribute('data-visualization-renderer', 'echarts');
   await expect(card.locator('.visualization-stage svg').first()).toBeVisible();
   await expect(card.locator('canvas')).toHaveCount(0);
 });
 
-test('an OpenUI chart waits for complete rows before drawing, inside a stable frame', async ({ page }) => {
+test('an OpenUI chart waits for complete rows before drawing, inside a stable frame', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     window.__openuiTurn = await window.addStreamingMessage({ userPrompt: 'Plot practice hours.' });
-    window.__openuiTurn.append('Hours:\n\n```openui\nroot = Col([chart])\nchart = Chart("bar", [{day:"Mon",hours:2},{day:"Tue",hours:3}');
+    window.__openuiTurn.append(
+      'Hours:\n\n```openui\nroot = Col([chart])\nchart = Chart("bar", [{day:"Mon",hours:2},{day:"Tue",hours:3}',
+    );
   });
   const figure = page.locator('.intui-openui .iui-chart').last();
   await expect(figure.locator('.iui-chart-pending')).toBeVisible();
@@ -331,26 +486,43 @@ test('an OpenUI chart waits for complete rows before drawing, inside a stable fr
   expect(drawn).toBe(pending);
 });
 
-
-test('chart labels and multiple-choice options typeset LaTeX without remounting controls', async ({ page }) => {
-  const source = 'root = Col([Title("$f(x)=x^2$"), Chart("line", [{x:"$x=0$", "$f(x)$":0, "$g(x)$":1},{x:"$x=1$", "$f(x)$":1, "$g(x)$":2}], "x", ["$f(x)$", "$g(x)$"]), RadioGroup($answer, [{value:"a",label:"$x^2$"},{value:"b",label:"$x^3$"}], "$f(x)$"), Text("Selected: " + $answer)])\n$answer = "a"';
+test('chart labels and multiple-choice options typeset LaTeX without remounting controls', async ({
+  page,
+}) => {
+  const source =
+    'root = Col([Title("$f(x)=x^2$"), Chart("line", [{x:"$x=0$", "$f(x)$":0, "$g(x)$":1},{x:"$x=1$", "$f(x)$":1, "$g(x)$":2}], "x", ["$f(x)$", "$g(x)$"]), RadioGroup($answer, [{value:"a",label:"$x^2$"},{value:"b",label:"$x^3$"}], "$f(x)$"), Text("Selected: " + $answer)])\n$answer = "a"';
   await prepareChatWorkbench(page, { messages: [message(source)] });
   const ui = page.locator('.intui-openui');
   await expect(ui.locator('.iui-chart-legend .katex')).toHaveCount(2);
   await expect(ui.locator('.iui-radio-group .katex')).toHaveCount(3);
   await expect(ui.locator('foreignObject .katex').first()).toBeVisible();
   await expect(ui.locator('.iui-notice')).toHaveCount(0);
-  expect(await ui.locator('.iui-chart-legend .katex-html').first().evaluate(el => getComputedStyle(el).display)).not.toBe('flex');
+  expect(
+    await ui
+      .locator('.iui-chart-legend .katex-html')
+      .first()
+      .evaluate((el) => getComputedStyle(el).display),
+  ).not.toBe('flex');
   await ui.locator('input[type="radio"]').nth(1).check();
   await expect(ui.locator('input[type="radio"]').nth(1)).toBeChecked();
   await expect(ui.getByText('Selected: b', { exact: true })).toBeVisible();
-  expect(await ui.locator('.iui-radio-group .is-selected').evaluate(el => getComputedStyle(el.querySelector('.katex .mord')).color === getComputedStyle(el).color)).toBe(true);
+  expect(
+    await ui
+      .locator('.iui-radio-group .is-selected')
+      .evaluate(
+        (el) =>
+          getComputedStyle(el.querySelector('.katex .mord')).color === getComputedStyle(el).color,
+      ),
+  ).toBe(true);
   await expect(ui.locator('.iui-notice')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/latex-chart-choices.png' });
 });
 
-test('native function graph typesets legend and axes after lazy renderer load', async ({ page }) => {
-  const source = 'root = Visualization("function", "$f(x)=x^2$", {functions:[{expression:"x^2",label:"$f(x)=x^2$",domain:[-2,2]},{expression:"x",label:"$g(x)=x$",domain:[-2,2]}],xLabel:"$x$",yLabel:"$y$"}, "Two curves")';
+test('native function graph typesets legend and axes after lazy renderer load', async ({
+  page,
+}) => {
+  const source =
+    'root = Visualization("function", "$f(x)=x^2$", {functions:[{expression:"x^2",label:"$f(x)=x^2$",domain:[-2,2]},{expression:"x",label:"$g(x)=x$",domain:[-2,2]}],xLabel:"$x$",yLabel:"$y$"}, "Two curves")';
   await prepareChatWorkbench(page, { messages: [message(source)] });
   const card = page.locator('.visualization-card');
   await expect(card.locator('svg foreignObject .katex').first()).toBeVisible();

@@ -22,8 +22,12 @@ function _t(key: string, fallback: string): string {
 export function notifyMockFallbackOnce(): void {
   if (notified) return;
   notified = true;
-  showToast(_t('toast.mockFallback',
-    'No model is configured — showing sample prompts instead of AI replies. Add a model in Settings.'));
+  showToast(
+    _t(
+      'toast.mockFallback',
+      'No model is configured — showing sample prompts instead of AI replies. Add a model in Settings.',
+    ),
+  );
 }
 
 export function resetMockFallbackNoticeForTest(): void {

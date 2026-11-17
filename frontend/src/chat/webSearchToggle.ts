@@ -1,5 +1,5 @@
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
-import { stateStore } from '../state/store.ts';
+import { dispatchSearch, searchBridge, sessionBridge } from '../store/index.ts';
 import { loadWebSearch } from './webSearchLoader.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -12,15 +12,18 @@ function fetchSearchContext(topic: string): void {
 /** Toggle the web-search preference and keep active search context in sync. */
 export function toggleWebSearch(): void {
   const next = setWebSearchOn(!webSearchOn);
-  const topic = stateStore.read('topic');
+  const topic = sessionBridge.getSnapshot().topic;
   if (!next) {
-    stateStore.dispatch({ type: 'state/batch', patch: {
-      searchContext: '',
-      searchContextAt: 0,
-      searchContextCount: 0,
-      searchContextError: null,
-      searchContextQuery: null,
-    } });
+    dispatchSearch({
+      type: 'search/patch',
+      patch: {
+        searchContext: '',
+        searchContextAt: 0,
+        searchContextCount: 0,
+        searchContextError: null,
+        searchContextQuery: null,
+      },
+    });
   } else if (topic) {
     fetchSearchContext(topic);
   }
@@ -28,8 +31,8 @@ export function toggleWebSearch(): void {
 
 /** Restore search context after boot or auth refresh when the preference is on. */
 export function syncWebSearchUI(): void {
-  const topic = stateStore.read('topic');
-  if (webSearchOn && topic && !stateStore.read('searchContext')) {
+  const topic = sessionBridge.getSnapshot().topic;
+  if (webSearchOn && topic && !searchBridge.getSnapshot().searchContext) {
     fetchSearchContext(topic);
   }
 }

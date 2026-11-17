@@ -68,12 +68,22 @@ function mountRoot(
 }
 
 /** Ordinary roots replace fallback children on their first render. */
-export function mountOwnedRoot(host: HTMLElement, label: string, content: ReactNode, install?: () => unknown): OwnedRootHandle {
+export function mountOwnedRoot(
+  host: HTMLElement,
+  label: string,
+  content: ReactNode,
+  install?: () => unknown,
+): OwnedRootHandle {
   return mountRoot(host, label, content, install, false);
 }
 
 /** Hydration adopts existing shell nodes and shares ordinary root cleanup. */
-export function hydrateOwnedRoot(host: HTMLElement, label: string, content: ReactNode, install?: () => unknown): OwnedRootHandle {
+export function hydrateOwnedRoot(
+  host: HTMLElement,
+  label: string,
+  content: ReactNode,
+  install?: () => unknown,
+): OwnedRootHandle {
   return mountRoot(host, label, content, install, true);
 }
 
@@ -87,7 +97,10 @@ export function createRootGroup(label: string) {
   return {
     render(host: HTMLElement, content: ReactNode): OwnedRootHandle {
       const existing = members.get(host);
-      if (existing) { existing.render(content); return existing; }
+      if (existing) {
+        existing.render(content);
+        return existing;
+      }
       const handle = mountOwnedRoot(host, label, content, () => () => members.delete(host));
       members.set(host, handle);
       return handle;
@@ -95,8 +108,11 @@ export function createRootGroup(label: string) {
     release,
     releaseAll(): void {
       for (const host of [...members.keys()]) {
-        try { release(host); }
-        catch (error) { reportSwallow(error, `react:release:${label}`); }
+        try {
+          release(host);
+        } catch (error) {
+          reportSwallow(error, `react:release:${label}`);
+        }
       }
     },
   };

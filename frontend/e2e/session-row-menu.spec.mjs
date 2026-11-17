@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSION_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -14,7 +14,9 @@ test.afterEach(({ page }) => expect(errorsByPage.get(page)).toEqual([]));
 
 function gate() {
   let release;
-  const promise = new Promise((resolve) => { release = resolve; });
+  const promise = new Promise((resolve) => {
+    release = resolve;
+  });
   return { promise, release };
 }
 
@@ -22,24 +24,51 @@ async function boot(page, { mobile = false, theme = 'light' } = {}) {
   await page.setViewportSize(mobile ? { width: 390, height: 640 } : { width: 1440, height: 900 });
   await mockAuthedApp(page);
   await page.addInitScript((theme) => localStorage.setItem('socrates-theme', theme), theme);
-  const session = { id: SESSION_ID, title: 'Menu fixture', mode: 'chat', phase: 'chat', kind: 'chat',
-    updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(), pinned: false, tags: [] };
-  const fixture = { projects: [{ id: 'alpha', name: 'Project Alpha' }, { id: 'beta', name: 'Project Beta' }],
-    projectStatus: 200, saveStatus: 200, projectGate: null, saveGate: null, patches: [] };
-  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) => route.fulfill({ json: { sessions: [session] } }));
+  const session = {
+    id: SESSION_ID,
+    title: 'Menu fixture',
+    mode: 'chat',
+    phase: 'chat',
+    kind: 'chat',
+    updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    pinned: false,
+    tags: [],
+  };
+  const fixture = {
+    projects: [
+      { id: 'alpha', name: 'Project Alpha' },
+      { id: 'beta', name: 'Project Beta' },
+    ],
+    projectStatus: 200,
+    saveStatus: 200,
+    projectGate: null,
+    saveGate: null,
+    patches: [],
+  };
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) =>
+    route.fulfill({ json: { sessions: [session] } }),
+  );
   await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?|$)`), async (route) => {
-    if (route.request().method() !== 'PATCH') return route.fulfill({ json: { ...session, messages: [] } });
+    if (route.request().method() !== 'PATCH')
+      return route.fulfill({ json: { ...session, messages: [] } });
     const patch = route.request().postDataJSON();
     fixture.patches.push(patch);
     if (fixture.saveGate) await fixture.saveGate.promise;
-    if (fixture.saveStatus !== 200) return route.fulfill({ status: fixture.saveStatus, json: { error: 'Save failed' } });
+    if (fixture.saveStatus !== 200)
+      return route.fulfill({ status: fixture.saveStatus, json: { error: 'Save failed' } });
     Object.assign(session, patch);
     return route.fulfill({ json: { session } });
   });
   await page.route(/\/api\/(?:v2\/)?projects(?:\?|$)/, async (route) => {
     if (fixture.projectGate) await fixture.projectGate.promise;
-    return route.fulfill({ status: fixture.projectStatus, json: fixture.projectStatus === 200
-      ? { projects: fixture.projects } : { error: 'Projects unavailable' } });
+    return route.fulfill({
+      status: fixture.projectStatus,
+      json:
+        fixture.projectStatus === 200
+          ? { projects: fixture.projects }
+          : { error: 'Projects unavailable' },
+    });
   });
   const initialProjects = page.waitForResponse(/\/api\/(?:v2\/)?projects(?:\?|$)/);
   await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -48,12 +77,19 @@ async function boot(page, { mobile = false, theme = 'light' } = {}) {
   if (mobile) await page.locator('#sidebarOpenBtn').click();
   const row = page.locator(`.recent-item[data-recent-actual="${SESSION_ID}"]`);
   await expect(row).toBeVisible();
-  return { fixture, row, trigger: row.locator('.recent-item-overflow'), menu: page.locator('.recent-item-menu[role="menu"]') };
+  return {
+    fixture,
+    row,
+    trigger: row.locator('.recent-item-overflow'),
+    menu: page.locator('.recent-item-menu[role="menu"]'),
+  };
 }
 
-test('keyboard opening, project navigation and dismissal preserve the session and focus', async ({ page }) => {
+test('keyboard opening, project navigation and dismissal preserve the session and focus', async ({
+  page,
+}) => {
   const { trigger, menu } = await boot(page);
-  const current = await page.evaluate(() => window.stateStore.read('currentSessionId'));
+  const current = await page.evaluate(() => window.__socratesTestState.session().currentSessionId);
   await trigger.focus();
   await page.keyboard.press('ArrowUp');
   await expect(menu.locator('.recent-item-project')).toBeFocused();
@@ -66,7 +102,9 @@ test('keyboard opening, project navigation and dismissal preserve the session an
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  expect(await page.evaluate(() => window.stateStore.read('currentSessionId'))).toBe(current);
+  expect(await page.evaluate(() => window.__socratesTestState.session().currentSessionId)).toBe(
+    current,
+  );
   await trigger.click();
   await expect(menu.locator('.recent-item-share')).toBeFocused();
   await page.keyboard.press('Tab');
@@ -97,7 +135,9 @@ for (const action of ['Escape', 'Back']) {
       }
       await expect(menu.locator('.recent-item-project')).toBeVisible();
       await expect(menu.getByRole('menuitem', { name: 'Back', exact: true })).toHaveCount(0);
-    } finally { loading.release(); }
+    } finally {
+      loading.release();
+    }
   });
 }
 
@@ -117,7 +157,9 @@ test('project lookup failure offers retry and an empty list retains Back', async
   await expect(menu.locator('.recent-item-project')).toBeFocused();
 });
 
-test('project save remains open and disables choices until persistence succeeds', async ({ page }) => {
+test('project save remains open and disables choices until persistence succeeds', async ({
+  page,
+}) => {
   const { fixture, trigger, menu } = await boot(page);
   const saving = gate();
   fixture.saveGate = saving;
@@ -140,7 +182,9 @@ test('project save remains open and disables choices until persistence succeeds'
     await expect(trigger).toBeFocused();
     await trigger.click();
     await expect(menu.locator('.recent-item-share')).toBeFocused();
-  } finally { saving.release(); }
+  } finally {
+    saving.release();
+  }
 });
 
 test('failed project save keeps the picker usable for another choice', async ({ page }) => {
@@ -158,7 +202,9 @@ test('failed project save keeps the picker usable for another choice', async ({ 
   expect(fixture.patches).toEqual([{ projectId: 'alpha' }, { projectId: 'beta' }]);
 });
 
-test('rename keeps focus in the editor after menu exit and persists the new title', async ({ page }) => {
+test('rename keeps focus in the editor after menu exit and persists the new title', async ({
+  page,
+}) => {
   const { fixture, row, trigger, menu } = await boot(page);
   await trigger.click();
   await menu.locator('.recent-item-rename').click();
@@ -172,11 +218,18 @@ test('rename keeps focus in the editor after menu exit and persists the new titl
 });
 
 for (const variant of ['desktop', 'phone']) {
-  test(`session menu and project picker stay within the ${variant} viewport`, async ({ page }, testInfo) => {
-    const { trigger, menu } = await boot(page, { mobile: variant === 'phone', theme: variant === 'phone' ? 'dark' : 'light' });
+  test(`session menu and project picker stay within the ${variant} viewport`, async ({
+    page,
+  }, testInfo) => {
+    const { trigger, menu } = await boot(page, {
+      mobile: variant === 'phone',
+      theme: variant === 'phone' ? 'dark' : 'light',
+    });
     await trigger.click();
     await expect(menu).toBeInViewport();
-    await menu.evaluate((node) => Promise.all(node.getAnimations().map((animation) => animation.finished)));
+    await menu.evaluate((node) =>
+      Promise.all(node.getAnimations().map((animation) => animation.finished)),
+    );
     const checkBounds = async () => {
       const rect = await menu.boundingBox();
       const viewport = page.viewportSize();
@@ -187,13 +240,19 @@ for (const variant of ['desktop', 'phone']) {
     };
     await checkBounds();
     await testInfo.attach(`session-menu-${variant}`, {
-      body: await page.screenshot({ path: `test-results/session-menu-${encodeURIComponent(variant)}.png` }), contentType: 'image/png',
+      body: await page.screenshot({
+        path: `test-results/session-menu-${encodeURIComponent(variant)}.png`,
+      }),
+      contentType: 'image/png',
     });
     await menu.locator('.recent-item-project').click();
     await expect(menu.getByRole('menuitem', { name: 'Project Alpha' })).toBeVisible();
     await checkBounds();
     await testInfo.attach(`project-picker-${variant}`, {
-      body: await page.screenshot({ path: `test-results/project-picker-${encodeURIComponent(variant)}.png` }), contentType: 'image/png',
+      body: await page.screenshot({
+        path: `test-results/project-picker-${encodeURIComponent(variant)}.png`,
+      }),
+      contentType: 'image/png',
     });
   });
 }

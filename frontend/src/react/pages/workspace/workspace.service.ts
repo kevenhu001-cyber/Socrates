@@ -1,7 +1,20 @@
 import { getApiFetch, getLegacyActions } from '../../legacy/gateway.ts';
-import { getCachedProjects, hasCachedProjects, refreshCachedProjects, setCachedProjects, type CachedProject } from '../../../projects/projectCache.ts';
+import {
+  getCachedProjects,
+  hasCachedProjects,
+  refreshCachedProjects,
+  setCachedProjects,
+  type CachedProject,
+} from '../../../projects/projectCache.ts';
 import { rememberConnectorReturnContext } from '../../../sidebar/nav.ts';
-import { patchLibraryData, setWorkspaceLoading, setLibraryCollections, setWorkspacePlugins, setWorkspaceProjects, useWorkspaceStore } from './workspace.store';
+import {
+  patchLibraryData,
+  setWorkspaceLoading,
+  setLibraryCollections,
+  setWorkspacePlugins,
+  setWorkspaceProjects,
+  useWorkspaceStore,
+} from './workspace.store';
 import type { LibraryItem, PluginItem } from './types';
 
 type ApiResponse<T> = T & { error?: string };
@@ -19,7 +32,8 @@ function toast(message: string): void {
 
 export async function loadLibraryData(): Promise<void> {
   const state = useWorkspaceStore.getState();
-  if (!state.libraryData.files.length && !state.libraryData.artifacts.length) setWorkspaceLoading('library', true);
+  if (!state.libraryData.files.length && !state.libraryData.artifacts.length)
+    setWorkspaceLoading('library', true);
   try {
     const request = api();
     const [files, artifacts] = await Promise.all([
@@ -31,8 +45,13 @@ export async function loadLibraryData(): Promise<void> {
   } catch (error) {
     setLibraryCollections([], []);
     setWorkspaceLoading('library', false);
-    const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
-    toast(status === 401 ? 'Sign in to upload files and create artifacts.' : 'Your library could not be loaded. Try again.');
+    const status =
+      error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
+    toast(
+      status === 401
+        ? 'Sign in to upload files and create artifacts.'
+        : 'Your library could not be loaded. Try again.',
+    );
   }
 }
 
@@ -46,28 +65,34 @@ export async function loadProjectsData(): Promise<void> {
     // Preserve the last successful list while reporting the failed refresh.
     setWorkspaceProjects(getCachedProjects());
     setWorkspaceLoading('projects', false);
-    const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
-    toast(status === 401 ? 'Sign in to create projects.' : 'Projects could not be loaded. Try again.');
+    const status =
+      error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
+    toast(
+      status === 401 ? 'Sign in to create projects.' : 'Projects could not be loaded. Try again.',
+    );
   }
 }
 
 export async function loadPluginsData(): Promise<void> {
   if (!useWorkspaceStore.getState().pluginsData.length) setWorkspaceLoading('plugins', true);
   try {
-    const result = await api()('/api/project-connectors') as ApiResponse<{
+    const result = (await api()('/api/project-connectors')) as ApiResponse<{
       connectors?: PluginItem[];
       configured?: boolean;
       openConnector?: { available?: boolean; cloud?: boolean };
     }>;
     setWorkspacePlugins(result.connectors || [], {
       projectConnectorConfigured: Boolean(result.configured),
-      openConnectorAvailable: Boolean(result.openConnector?.available || result.openConnector?.cloud),
+      openConnectorAvailable: Boolean(
+        result.openConnector?.available || result.openConnector?.cloud,
+      ),
     });
     setWorkspaceLoading('plugins', false);
   } catch (error) {
     setWorkspacePlugins([], { projectConnectorConfigured: false, openConnectorAvailable: false });
     setWorkspaceLoading('plugins', false);
-    const status = error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
+    const status =
+      error && typeof error === 'object' ? (error as { status?: number }).status : undefined;
     toast(status === 401 ? 'Sign in to connect apps.' : 'Apps could not be loaded. Try again.');
   }
 }
@@ -83,7 +108,10 @@ export function toggleLibrarySelectionForCurrentTab(checked: boolean): void {
   const { libraryData } = useWorkspaceStore.getState();
   const items = libraryData[libraryData.tab];
   const selection = { ...libraryData.selection };
-  items.forEach((item) => { if (checked) selection[item.id] = true; else delete selection[item.id]; });
+  items.forEach((item) => {
+    if (checked) selection[item.id] = true;
+    else delete selection[item.id];
+  });
   patchLibraryData({ selection });
 }
 
@@ -105,10 +133,15 @@ export function getWorkspaceLibraryItem(id: string, collection: string): Library
   return rows.find((item) => item.id === id) || null;
 }
 
-export async function removeLibraryItems(ids: string[], collection: 'files' | 'artifacts'): Promise<void> {
+export async function removeLibraryItems(
+  ids: string[],
+  collection: 'files' | 'artifacts',
+): Promise<void> {
   const label = collection;
   try {
-    await Promise.all(ids.map((id) => api()(`/api/${label}/${encodeURIComponent(id)}`, { method: 'DELETE' })));
+    await Promise.all(
+      ids.map((id) => api()(`/api/${label}/${encodeURIComponent(id)}`, { method: 'DELETE' })),
+    );
     patchLibraryData({ selection: {} });
     toast(ids.length + ' ' + label + ' deleted');
     await loadLibraryData();
@@ -117,18 +150,29 @@ export async function removeLibraryItems(ids: string[], collection: 'files' | 'a
   }
 }
 
-export async function saveLibraryItemRename(id: string, collection: 'files' | 'artifacts', name: string): Promise<void> {
+export async function saveLibraryItemRename(
+  id: string,
+  collection: 'files' | 'artifacts',
+  name: string,
+): Promise<void> {
   const rows = useWorkspaceStore.getState().libraryData[collection];
   const item = rows.find((entry) => entry.id === id);
-  const oldName = item ? (item.name || item.title || '') : '';
+  const oldName = item ? item.name || item.title || '' : '';
   const newName = name.trim();
   updateLibraryRename(null);
   if (!newName || newName === oldName) return;
   try {
     await api()('/api/' + collection + '/' + encodeURIComponent(id), {
-      method: 'PATCH', body: collection === 'files' ? { name: newName } : { title: newName },
+      method: 'PATCH',
+      body: collection === 'files' ? { name: newName } : { title: newName },
     });
-    const updated = rows.map((entry) => entry.id !== id ? entry : collection === 'files' ? { ...entry, name: newName } : { ...entry, title: newName });
+    const updated = rows.map((entry) =>
+      entry.id !== id
+        ? entry
+        : collection === 'files'
+          ? { ...entry, name: newName }
+          : { ...entry, title: newName },
+    );
     patchLibraryData(collection === 'files' ? { files: updated } : { artifacts: updated });
     toast('Renamed');
   } catch {
@@ -145,7 +189,9 @@ export async function uploadLibraryFiles(files: FileList | File[]): Promise<void
       body.append('file', file);
       await api()('/api/files', { method: 'POST', body });
     }
-    toast(selected.length === 1 ? 'File added to Library' : selected.length + ' files added to Library');
+    toast(
+      selected.length === 1 ? 'File added to Library' : selected.length + ' files added to Library',
+    );
     await loadLibraryData();
   } catch {
     toast('Some files could not be uploaded');
@@ -162,15 +208,30 @@ export async function deleteLibraryFile(id: string): Promise<void> {
   }
 }
 
-export async function saveProjectRecord(projectId: string | null, data: Record<string, unknown>): Promise<void> {
+export async function saveProjectRecord(
+  projectId: string | null,
+  data: Record<string, unknown>,
+): Promise<void> {
   try {
     const request = api();
     const saved = projectId
-      ? await request<CachedProject | { project: CachedProject }>('/api/projects/' + encodeURIComponent(projectId), { method: 'PATCH', body: data })
-      : await request<CachedProject | { project: CachedProject }>('/api/projects', { method: 'POST', body: data });
+      ? await request<CachedProject | { project: CachedProject }>(
+          '/api/projects/' + encodeURIComponent(projectId),
+          { method: 'PATCH', body: data },
+        )
+      : await request<CachedProject | { project: CachedProject }>('/api/projects', {
+          method: 'POST',
+          body: data,
+        });
     const current = [...getCachedProjects()];
-    const record = saved && typeof saved === 'object' && 'project' in saved ? (saved as { project: CachedProject }).project : saved;
-    if (projectId) setCachedProjects(current.map((project) => project.id === projectId ? { ...project, ...record } : project));
+    const record =
+      saved && typeof saved === 'object' && 'project' in saved
+        ? (saved as { project: CachedProject }).project
+        : saved;
+    if (projectId)
+      setCachedProjects(
+        current.map((project) => (project.id === projectId ? { ...project, ...record } : project)),
+      );
     else if (record && typeof record.id === 'string') setCachedProjects([...current, record]);
     setWorkspaceProjects(getCachedProjects());
     toast(projectId ? 'Project updated' : 'Project created');
@@ -194,7 +255,10 @@ export async function deleteProjectRecord(id: string): Promise<void> {
 export async function connectProjectPlugin(id: string): Promise<void> {
   try {
     const request = api();
-    const result = await request<{ status?: string; authorizationUrl?: string }>('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST' });
+    const result = await request<{ status?: string; authorizationUrl?: string }>(
+      '/api/project-connectors/' + encodeURIComponent(id) + '/connect',
+      { method: 'POST' },
+    );
     if (result && result.status === 'connected') {
       await loadPluginsData();
       toast('App connected');
@@ -217,11 +281,18 @@ export async function refreshProjectPlugin(id: string): Promise<void> {
   }
 }
 
-export async function submitProjectPluginCredentials(id: string, body: Record<string, unknown>): Promise<void> {
+export async function submitProjectPluginCredentials(
+  id: string,
+  body: Record<string, unknown>,
+): Promise<void> {
   try {
     const request = api();
-    const result = await request<{ status?: string; error?: string }>('/api/project-connectors/' + encodeURIComponent(id) + '/connect', { method: 'POST', body });
-    if (!result || result.status !== 'connected') throw new Error(result?.error || 'Could not connect.');
+    const result = await request<{ status?: string; error?: string }>(
+      '/api/project-connectors/' + encodeURIComponent(id) + '/connect',
+      { method: 'POST', body },
+    );
+    if (!result || result.status !== 'connected')
+      throw new Error(result?.error || 'Could not connect.');
     await loadPluginsData();
   } catch (error) {
     toast(error instanceof Error ? error.message : 'Could not connect this app');
@@ -230,10 +301,16 @@ export async function submitProjectPluginCredentials(id: string, body: Record<st
 }
 
 export async function disconnectProjectPlugin(id: string, closeDialog?: () => void): Promise<void> {
-  const confirmed = await getLegacyActions().confirm.showConfirm('Disconnect this app?', 'Socrates will remove the stored connection.', true);
+  const confirmed = await getLegacyActions().confirm.showConfirm(
+    'Disconnect this app?',
+    'Socrates will remove the stored connection.',
+    true,
+  );
   if (confirmed === false) return;
   try {
-    await api()('/api/project-connectors/' + encodeURIComponent(id) + '/connection', { method: 'DELETE' });
+    await api()('/api/project-connectors/' + encodeURIComponent(id) + '/connection', {
+      method: 'DELETE',
+    });
     await loadPluginsData();
     closeDialog?.();
     toast('App disconnected');

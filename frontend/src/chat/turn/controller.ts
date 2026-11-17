@@ -1,8 +1,10 @@
 /* Single-turn chat orchestration. Prompt assembly, linked-page preparation,
    and shared stream callbacks live in focused modules beside this entry. */
-import { stateStore } from '../../state/store.ts';
+import { kbStore, sessionStore } from '../../store/index.ts';
+import { addStreamingMessage } from './loadStreamingTurn.ts';
 import { turnState, type StreamingTurnController } from './state.ts';
-import { interruptPendingTurn, quietTurn } from './ui.ts';
+import { quietTurn } from './ui.ts';
+import { cancelActiveTurn } from './cancelActiveTurn.ts';
 import { hasUsableActive } from '../../config/providers.ts';
 import { extractHistory, type HistoryEntry } from '../history.ts';
 import { callAPIStream, type StreamResult } from '../stream.ts';
@@ -21,16 +23,6 @@ import { prepareTurnPageContext } from './pageContext.ts';
 /** Max tokens stays omitted so the backend uses the active model's limit. */
 const MAX_TOKENS_CHAT: undefined = undefined;
 
-interface StreamingMessageOptions {
-  userPrompt?: string;
-  onRetry?: () => unknown;
-}
-
-interface TurnControllerWindow extends Window {
-  addStreamingMessage?: (options: StreamingMessageOptions) =>
-    StreamingTurnController | Promise<StreamingTurnController>;
-}
-
 interface ClientTurnPayload {
   id: string;
   userClientId: string | null;
@@ -44,12 +36,6 @@ interface PendingClientTurn {
   onTurnBound: (turnId: string) => void;
 }
 
-async function addStreamingMessage(options: StreamingMessageOptions): Promise<StreamingTurnController> {
-  const bridge = (window as TurnControllerWindow).addStreamingMessage;
-  if (typeof bridge === 'function') return await bridge(options);
-  throw new Error('addStreamingMessage bridge missing');
-}
-
 function addAnchoredAssistant(text: string): string {
   const clientId = addMessage('assistant', text);
   const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
@@ -57,41 +43,34 @@ function addAnchoredAssistant(text: string): string {
   return clientId;
 }
 
-function claimPrecreatedController(explicit?: StreamingTurnController | null): StreamingTurnController | null {
+function claimPrecreatedController(
+  explicit?: StreamingTurnController | null,
+): StreamingTurnController | null {
   if (explicit) return explicit;
   const controller = turnState.pendingFirstTurnController;
   turnState.pendingFirstTurnController = null;
   return controller;
 }
 
-function abortSupersededTurn(precreated: StreamingTurnController | null): void {
-  const active = turnState.activeChatCtl;
-  if (active && active !== precreated) {
-    try { active.abort(); }
-    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#2'); }
-  }
-  try { interruptPendingTurn(); }
-  catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#3'); }
-  const abort = turnState.activeChatAbort;
-  if (abort) {
-    try { abort('superseded'); }
-    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#4'); }
-  }
-}
-
 function consumePendingContent(hasOverride: boolean, override: unknown): unknown {
   const pending = hasOverride ? override : turnState.pendingChatContent;
-  try { turnState.pendingChatContent = null; }
-  catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#5'); }
+  try {
+    turnState.pendingChatContent = null;
+  } catch (error) {
+    reportSwallow(error, 'chat/turn/controller.askChatTurn#5');
+  }
   return pending;
 }
 
 function showNoProviderReply(userText: string, precreated: StreamingTurnController | null): void {
   if (precreated) {
-    try { precreated.abort(); }
-    catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#6'); }
+    try {
+      precreated.abort();
+    } catch (error) {
+      reportSwallow(error, 'chat/turn/controller.askChatTurn#6');
+    }
   }
-  const topic = String(stateStore.read('topic'));
+  const topic = String(sessionStore.getState().topic);
   const fallback = userText
     ? `You said: "${userText}". I can't actually reply yet because no model is configured — open Settings and add a provider to enable Chat mode.`
     : `I'm in Chat mode but no model is configured. Open Settings to add a provider, and I'll be able to talk about "${topic}" for real.`;
@@ -102,24 +81,26 @@ async function showOfflineReply(
   precreated: StreamingTurnController | null,
   retryTurn: () => Promise<void>,
 ): Promise<void> {
-  const retry = () => { quietTurn(retryTurn()); };
-  const controller = precreated || await addStreamingMessage({ onRetry: retry });
+  const retry = () => {
+    quietTurn(retryTurn());
+  };
+  const controller = precreated || (await addStreamingMessage({ onRetry: retry }));
   controller.replaceWithError('You appear to be offline — check your connection and retry.', retry);
 }
 
 function turnWasCancelled(ownerSessionId: unknown, controller: StreamingTurnController): boolean {
-  return stateStore.read('currentSessionId') !== ownerSessionId
-    || (typeof controller.isFinished === 'function' && controller.isFinished());
+  return (
+    sessionStore.getState().currentSessionId !== ownerSessionId ||
+    (typeof controller.isFinished === 'function' && controller.isFinished())
+  );
 }
 
 async function createTurnController(
-  userMessage: string,
   retryTurn: () => Promise<void>,
   precreated: StreamingTurnController | null,
 ): Promise<StreamingTurnController> {
   if (precreated) return precreated;
   return addStreamingMessage({
-    userPrompt: userMessage,
     onRetry() {
       /* Replay the captured content so attachments cannot come from a newer draft. */
       quietTurn(retryTurn());
@@ -128,35 +109,50 @@ async function createTurnController(
 }
 
 function readHistory(): HistoryEntry[] {
-  const messages = stateStore.read('messages') as unknown[];
+  const messages = sessionStore.getState().messages as unknown[];
   return messages.length === 0 ? [] : extractHistory();
 }
 
-function createPendingClientTurn(userText: string, controller: StreamingTurnController): PendingClientTurn {
-  const sessionId = (stateStore.read('currentSessionId') as string | null) || null;
+function createPendingClientTurn(
+  userText: string,
+  controller: StreamingTurnController,
+): PendingClientTurn {
+  const sessionId = (sessionStore.getState().currentSessionId as string | null) || null;
   const clientTurn: ClientTurnPayload = {
     id: newClientTurnId(),
     userClientId: null,
-    assistantClientId: typeof controller.getClientId === 'function' ? controller.getClientId() : null,
+    assistantClientId:
+      typeof controller.getClientId === 'function' ? controller.getClientId() : null,
     input: { text: String(userText || '').slice(0, 20_000) },
   };
   try {
-    const messages = (stateStore.read('messages') || []) as Array<{ role?: string; clientId?: string | null }>;
+    const messages = (sessionStore.getState().messages || []) as Array<{
+      role?: string;
+      clientId?: string | null;
+    }>;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
       if (messages[index] && messages[index].role === 'user') {
         clientTurn.userClientId = messages[index].clientId || null;
         break;
       }
     }
-  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#10'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/turn/controller.askChatTurn#10');
+  }
   try {
-    if (sessionId) savePendingTurn(sessionId, { turnId: '', clientTurnId: clientTurn.id, lastSeq: 0 });
-  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#11'); }
+    if (sessionId)
+      savePendingTurn(sessionId, { turnId: '', clientTurnId: clientTurn.id, lastSeq: 0 });
+  } catch (error) {
+    reportSwallow(error, 'chat/turn/controller.askChatTurn#11');
+  }
   const onTurnBound = (turnId: string): void => {
     if (!turnId) return;
     try {
-      if (sessionId) savePendingTurn(sessionId, { turnId, clientTurnId: clientTurn.id, lastSeq: 0 });
-    } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#12'); }
+      if (sessionId)
+        savePendingTurn(sessionId, { turnId, clientTurnId: clientTurn.id, lastSeq: 0 });
+    } catch (error) {
+      reportSwallow(error, 'chat/turn/controller.askChatTurn#12');
+    }
   };
   return { sessionId, clientTurn, onTurnBound };
 }
@@ -172,7 +168,9 @@ function runChatTurnStream(
     (delta) => controller.append(delta),
     (reasoning) => controller.appendThinking(reasoning),
     {
-      ...toolCallbacksForStream(controller, { workspaceRunFinishedMessage: 'Workspace run finished' }),
+      ...toolCallbacksForStream(controller, {
+        workspaceRunFinishedMessage: 'Workspace run finished',
+      }),
       onRetry: (notice) => controller.setRetryStatus?.(notice),
       clientTurn: pending.clientTurn,
       onTurnBound: pending.onTurnBound,
@@ -194,7 +192,9 @@ function finishChatTurn(
     if (pending.sessionId && result && (result.text || result.cancelled)) {
       clearPendingTurn(pending.sessionId, pending.clientTurn.id);
     }
-  } catch (error) { reportSwallow(error, 'chat/turn/controller.askChatTurn#13'); }
+  } catch (error) {
+    reportSwallow(error, 'chat/turn/controller.askChatTurn#13');
+  }
   finishTurnFeedback(result);
   saveSessionAfterTurn(controller);
 }
@@ -205,9 +205,9 @@ function finishTurnFeedback(result: StreamResult | null): void {
 
 function saveSessionAfterTurn(controller: StreamingTurnController): void {
   if (typeof controller.isFinished === 'function' && controller.isFinished()) return;
-  const topic = stateStore.read('topic');
-  const nodes = stateStore.read('kbNodes') as unknown[];
-  if (stateStore.read('phase') === 'chat' || (topic && nodes.length)) saveCurrentSession();
+  const topic = sessionStore.getState().topic;
+  const nodes = kbStore.getState().kbNodes as unknown[];
+  if (sessionStore.getState().phase === 'chat' || (topic && nodes.length)) saveCurrentSession();
 }
 
 export async function askChatTurn(
@@ -215,9 +215,9 @@ export async function askChatTurn(
   pendingOverride?: unknown,
   precreatedController?: StreamingTurnController | null,
 ): Promise<void> {
-  const ownerSessionId = stateStore.read('currentSessionId');
+  const ownerSessionId = sessionStore.getState().currentSessionId;
   const precreated = claimPrecreatedController(precreatedController);
-  abortSupersededTurn(precreated);
+  cancelActiveTurn('superseded', precreated);
   const pendingContent = consumePendingContent(arguments.length > 1, pendingOverride);
   const retryTurn = () => askChatTurn(userText, pendingContent);
 
@@ -231,11 +231,12 @@ export async function askChatTurn(
   }
 
   const history = readHistory();
-  const topicValue = stateStore.read('topic');
+  const topicValue = sessionStore.getState().topic;
   const topic = topicValue ? String(topicValue) : '';
   const userMessage = userText || `Let's talk about ${String(topicValue)}.`;
-  const userContent = pendingContent !== undefined && pendingContent !== null ? pendingContent : userMessage;
-  const controller = await createTurnController(userMessage, retryTurn, precreated);
+  const userContent =
+    pendingContent !== undefined && pendingContent !== null ? pendingContent : userMessage;
+  const controller = await createTurnController(retryTurn, precreated);
   const isCancelled = () => turnWasCancelled(ownerSessionId, controller);
   if (isCancelled()) return;
 

@@ -17,9 +17,12 @@ function i18n(key: string, fallback: string): string {
   return value !== key ? value : fallback;
 }
 
-const REMOVE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-const RETRY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
-const ERROR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><path d="M12 16.8v.2"/></svg>';
+const REMOVE_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+const RETRY_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>';
+const ERROR_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v6"/><path d="M12 16.8v.2"/></svg>';
 /* Long enough for the exit transition in parity/composer-unified.css, short
    enough that removing a chip still feels immediate. */
 const CHIP_EXIT_MS = 140;
@@ -46,8 +49,26 @@ const DOC_EXTS = new Set(['doc', 'docx', 'rtf', 'odt', 'pages']);
 const SHEET_EXTS = new Set(['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers']);
 const SLIDE_EXTS = new Set(['ppt', 'pptx', 'odp', 'keynote']);
 const CODE_EXTS = new Set([
-  'py', 'js', 'jsx', 'ts', 'tsx', 'html', 'css', 'json', 'yaml', 'yml',
-  'c', 'cpp', 'rs', 'go', 'java', 'sh', 'sql', 'toml', 'md', 'xml',
+  'py',
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'html',
+  'css',
+  'json',
+  'yaml',
+  'yml',
+  'c',
+  'cpp',
+  'rs',
+  'go',
+  'java',
+  'sh',
+  'sql',
+  'toml',
+  'md',
+  'xml',
 ]);
 const TEXT_EXTS = new Set(['txt', 'log']);
 
@@ -159,7 +180,13 @@ function UploadSpinner() {
   return <span className="attachment-chip-spinner" aria-hidden="true" />;
 }
 
-function AttachmentChipVisual({ entry, imageSrc, isImage, canRetry, onImageError }: AttachmentChipVisualProps) {
+function AttachmentChipVisual({
+  entry,
+  imageSrc,
+  isImage,
+  canRetry,
+  onImageError,
+}: AttachmentChipVisualProps) {
   const failed = Boolean(entry.error) && !entry.pending;
   return (
     <span className="attachment-chip-visual" data-kind={entry.docKind || entry.kind || 'file'}>
@@ -172,9 +199,15 @@ function AttachmentChipVisual({ entry, imageSrc, isImage, canRetry, onImageError
           onError={onImageError}
         />
       ) : failed && canRetry ? null : entry.pending ? (
-        <span className="attachment-chip-icon" aria-hidden="true"><UploadSpinner /></span>
+        <span className="attachment-chip-icon" aria-hidden="true">
+          <UploadSpinner />
+        </span>
       ) : (
-        <span className="attachment-chip-icon" aria-hidden="true" dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }} />
+        <span
+          className="attachment-chip-icon"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: getAttachmentIcon(entry) }}
+        />
       )}
       {entry.pending && isImage ? (
         <span className="attachment-chip-veil" aria-hidden="true">
@@ -182,7 +215,11 @@ function AttachmentChipVisual({ entry, imageSrc, isImage, canRetry, onImageError
         </span>
       ) : null}
       {failed && !canRetry && isImage ? (
-        <span className="attachment-chip-error-badge" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ERROR_ICON }} />
+        <span
+          className="attachment-chip-error-badge"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: ERROR_ICON }}
+        />
       ) : null}
     </span>
   );
@@ -204,8 +241,16 @@ function AttachmentChipActions({ onRemove }: { onRemove: () => void }) {
 function DocumentAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
   const [leaving, setLeaving] = useState(false);
   const canRetry = Boolean(entry.error) && !entry.pending;
-  const status: 'uploading' | 'done' | 'error' = entry.pending ? 'uploading' : entry.error ? 'error' : 'done';
-  const subCaption = entry.pending ? attachmentMeta(entry) : entry.error ? displayError(entry) : fileSubCaption(entry);
+  const status: 'uploading' | 'done' | 'error' = entry.pending
+    ? 'uploading'
+    : entry.error
+      ? 'error'
+      : 'done';
+  const subCaption = entry.pending
+    ? attachmentMeta(entry)
+    : entry.error
+      ? displayError(entry)
+      : fileSubCaption(entry);
 
   const removeWithExit = () => {
     if (leaving) return;
@@ -230,8 +275,9 @@ function DocumentAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProp
 function ImageAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) {
   const fileUrl = entry.fileId ? `/api/v2/files/${entry.fileId}/raw` : undefined;
   const [badSources, setBadSources] = useState<string[]>([]);
-  const imageSrc = [entry.thumbnailUrl, fileUrl, entry.dataUrl]
-    .find((source) => !!source && !badSources.includes(source));
+  const imageSrc = [entry.thumbnailUrl, fileUrl, entry.dataUrl].find(
+    (source) => !!source && !badSources.includes(source),
+  );
   const canRetry = Boolean(entry.error) && !entry.pending;
   const [leaving, setLeaving] = useState(false);
 
@@ -245,7 +291,7 @@ function ImageAttachmentChip({ entry, onRemove, onRetry }: AttachmentChipProps) 
     <div
       className={`attachment-chip is-image${entry.error ? ' error' : ''}${entry.pending ? ' pending' : ''}${leaving ? ' is-leaving' : ''}`}
       data-id={entry.id}
-      data-stage={entry.pending ? (entry.stage || 'uploading') : entry.error ? 'error' : 'ready'}
+      data-stage={entry.pending ? entry.stage || 'uploading' : entry.error ? 'error' : 'ready'}
       title={entry.error ? displayError(entry) : entry.name || undefined}
       aria-label={`${entry.name ?? 'Image'} — ${attachmentMeta(entry)}`}
       aria-busy={entry.pending ? true : undefined}

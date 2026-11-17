@@ -74,7 +74,9 @@ export function SessionList() {
   }, []);
 
   if (!sessions.length) {
-    return <SessionListEmptyState searchQuery={searchQuery} filter={filter} fetchFailed={fetchFailed} />;
+    return (
+      <SessionListEmptyState searchQuery={searchQuery} filter={filter} fetchFailed={fetchFailed} />
+    );
   }
 
   return (

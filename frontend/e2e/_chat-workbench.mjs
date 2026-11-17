@@ -8,7 +8,11 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 export const GLOBAL_ERROR_BANNER = '#__socrates_global_err_banner';
 
 function inTest() {
-  try { return Boolean(test.info()); } catch { return false; }
+  try {
+    return Boolean(test.info());
+  } catch {
+    return false;
+  }
 }
 
 function flagWorkbenchError(page, kind, detail) {
@@ -33,7 +37,9 @@ async function watchGlobalErrors(page) {
     if (!/^https?:/.test(page.url())) return;
     flagWorkbenchError(page, 'pageerror', error.stack || error.message);
   });
-  await page.exposeBinding('__workbenchBanner', (_source, text) => flagWorkbenchError(page, 'error-banner', text));
+  await page.exposeBinding('__workbenchBanner', (_source, text) =>
+    flagWorkbenchError(page, 'error-banner', text),
+  );
   await page.addInitScript((selector) => {
     const report = () => {
       const banner = document.querySelector(selector);
@@ -42,7 +48,8 @@ async function watchGlobalErrors(page) {
       window.__workbenchBanner(banner.textContent || '');
     };
     const start = () => new MutationObserver(report).observe(document.body, { childList: true });
-    if (document.body) start(); else document.addEventListener('DOMContentLoaded', start, { once: true });
+    if (document.body) start();
+    else document.addEventListener('DOMContentLoaded', start, { once: true });
   }, GLOBAL_ERROR_BANNER);
 }
 
@@ -79,18 +86,22 @@ export async function prepareChatWorkbench(page, options = {}) {
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
-  await page.evaluate(({ sessionId, messages }) => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Workbench fixture' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    if (window.stateStore.read("session")) window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: Array.isArray(messages) ? messages : [] });
-    window.__testActivateMainView('chatView');
-    document.body.dataset.conversationActive = 'true';
-  }, {
-    sessionId: options.sessionId || 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-    messages: options.messages || [],
-  });
+  await page.evaluate(
+    ({ sessionId, messages }) => {
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({ session: { topic: 'Workbench fixture' } });
+      window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+      window.__socratesTestState.patch({
+        session: { messages: Array.isArray(messages) ? messages : [] },
+      });
+      window.__testActivateMainView('chatView');
+      document.body.dataset.conversationActive = 'true';
+    },
+    {
+      sessionId: options.sessionId || 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      messages: options.messages || [],
+    },
+  );
   await publishChatRuntime(page, { type: 'state-synced', reason: 'workbench-fixture' });
   /* Messages are dispatched into the store above and rendered by a React
      root; wait for the first row so a spec's first measurement never sees

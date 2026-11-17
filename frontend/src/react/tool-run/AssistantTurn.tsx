@@ -75,16 +75,26 @@ function segmentKey(segment: TurnSegment): string {
 }
 
 function callsForMessage(message: ChatMessage): ToolCallRecord[] {
-  const storedCalls = Array.isArray(message.toolCalls) ? message.toolCalls as ToolCallRecord[] : [];
+  const storedCalls = Array.isArray(message.toolCalls)
+    ? (message.toolCalls as ToolCallRecord[])
+    : [];
   const surfaces = message.turnRuntime?.uiSurfaces || [];
   const calls = storedCalls.map((call) => {
     const uiSurface = surfaces.find((surface) => surface.toolCallId === call.id);
-    return uiSurface ? { ...call, textOffset: uiSurface.textOffset, _run: call._run, uiSurface } : call;
+    return uiSurface
+      ? { ...call, textOffset: uiSurface.textOffset, _run: call._run, uiSurface }
+      : call;
   });
   for (const surface of surfaces) {
-    if (surface.phase === 'aborted' || calls.some((call) => call.id === surface.toolCallId)) continue;
-    calls.push({ id: surface.toolCallId, name: 'render_intelligent_ui', textOffset: surface.textOffset,
-      status: surface.phase === 'committed' ? 'completed' : 'running', uiSurface: surface });
+    if (surface.phase === 'aborted' || calls.some((call) => call.id === surface.toolCallId))
+      continue;
+    calls.push({
+      id: surface.toolCallId,
+      name: 'render_intelligent_ui',
+      textOffset: surface.textOffset,
+      status: surface.phase === 'committed' ? 'completed' : 'running',
+      uiSurface: surface,
+    });
   }
   return calls;
 }
@@ -95,14 +105,18 @@ function storedProseFor(rawText: string, html: string, calls: ToolCallRecord[]):
 }
 
 function hasRunningToolRow(segments: TurnSegment[]): boolean {
-  return segments.some((segment) => segment.kind === 'group'
-    ? segment.running.length > 0
-    : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)));
+  return segments.some((segment) =>
+    segment.kind === 'group'
+      ? segment.running.length > 0
+      : segment.kind === 'tool' && ['running', 'awaiting'].includes(toolRunStateOf(segment.call)),
+  );
 }
 
 function hasAnswerText(segments: TurnSegment[], storedProse: string): boolean {
-  return segments.some((segment) => segment.kind === 'text' && segment.text.trim().length > 0)
-    || Boolean(storedProse.trim());
+  return (
+    segments.some((segment) => segment.kind === 'text' && segment.text.trim().length > 0) ||
+    Boolean(storedProse.trim())
+  );
 }
 
 function useStreamSettling(isLive: boolean): boolean {
@@ -125,9 +139,13 @@ function useStreamSettling(isLive: boolean): boolean {
 
 /** Activity-layer calls in transcript order (group members, then lone calls). */
 function activityCallsOf(segments: TurnSegment[]): ToolCallRecord[] {
-  return segments.flatMap((segment) => segment.kind === 'group'
-    ? groupOutputCalls(segment)
-    : segment.kind === 'tool' ? [segment.call] : []);
+  return segments.flatMap((segment) =>
+    segment.kind === 'group'
+      ? groupOutputCalls(segment)
+      : segment.kind === 'tool'
+        ? [segment.call]
+        : [],
+  );
 }
 
 function TurnSegmentsView({
@@ -189,14 +207,21 @@ function TurnIndicators({
   const showCursor = presentation.showCursor || (isSettling && !status && !hasRunningRow);
   return (
     <>
-      {showStatus && status ? <TurnStatus status={status} messageId={messageId} readOnly={readOnly} /> : null}
+      {showStatus && status ? (
+        <TurnStatus status={status} messageId={messageId} readOnly={readOnly} />
+      ) : null}
       {showCursor ? <StreamCursor state={playbackState} settling={!isLive && isSettling} /> : null}
     </>
   );
 }
 
-function settledProseFor(status: ReturnType<typeof deriveTurnPresentationState>['status'], prose: string): string {
-  return status && ['error', 'stopped'].includes(status.phase) ? stripLegacyTerminalHtml(prose) : prose;
+function settledProseFor(
+  status: ReturnType<typeof deriveTurnPresentationState>['status'],
+  prose: string,
+): string {
+  return status && ['error', 'stopped'].includes(status.phase)
+    ? stripLegacyTerminalHtml(prose)
+    : prose;
 }
 
 export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnProps) {
@@ -216,11 +241,12 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   /* Tool-call states ride on the message snapshot (see above); the layout is
      pure, so it only needs recomputing when the row or its liveness flips. */
   const segments = useMemo(
-    () => buildTurnLayout(rawText, calls, {
-      inlineThink: false,
-      deferOpenParagraph: isLive,
-      restoredFromHistory: Boolean(message.restoredFromHistory),
-    }),
+    () =>
+      buildTurnLayout(rawText, calls, {
+        inlineThink: false,
+        deferOpenParagraph: isLive,
+        restoredFromHistory: Boolean(message.restoredFromHistory),
+      }),
     [rawText, calls, isLive, message.restoredFromHistory],
   );
   const storedProse = storedProseFor(rawText, storedHtml, calls);
@@ -231,7 +257,11 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const turnProse = useProseRenderer(streamedRef.current);
   const prose = useScaffoldTurnProse(turnProse, rawText);
   const textIdx = lastTextIndex(segments);
-  const growingIndex = isLive ? (textIdx !== -1 ? textIdx : segments.findIndex((s) => s.kind === 'think')) : -1;
+  const growingIndex = isLive
+    ? textIdx !== -1
+      ? textIdx
+      : segments.findIndex((s) => s.kind === 'think')
+    : -1;
   const hasRunningRow = hasRunningToolRow(segments);
   /* One stable array per layout: the activity strip memoizes its rows on this
      identity, and a fresh array on every parent render would rebuild them all
@@ -244,7 +274,12 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
   const hasAnswerProse = hasAnswerText(segments, storedProse);
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
   const activeTool = calls.find((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)));
-  const presentation = deriveTurnPresentationState(message, { live: isLive, hasRunningRow, hasSettledTool, activeTool });
+  const presentation = deriveTurnPresentationState(message, {
+    live: isLive,
+    hasRunningRow,
+    hasSettledTool,
+    activeTool,
+  });
   const liveStatus = presentation.status;
   const legacyHtml = settledProseFor(liveStatus, storedProse);
   const messageId = String(message.clientId || message.id || '');

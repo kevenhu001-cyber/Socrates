@@ -7,9 +7,14 @@ import { DemoIssue } from './DemonstrationIssue';
 type Domain = [number, number];
 type FieldStats = { failed: number; evaluated: number; firstError: string };
 
-const message = (error: unknown) => error instanceof Error ? error.message : String(error);
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-function settingValue(runtime: DemonstrationRuntime, expression: string | number | undefined, time: number, fallback: number): number {
+function settingValue(
+  runtime: DemonstrationRuntime,
+  expression: string | number | undefined,
+  time: number,
+  fallback: number,
+): number {
   if (expression === undefined) return fallback;
   try {
     const value = runtime.evaluate(expression, time);
@@ -19,22 +24,39 @@ function settingValue(runtime: DemonstrationRuntime, expression: string | number
   }
 }
 
-function fieldColor(value: number, palette: string | undefined, gamma: number, exposure: number, tint: number[]): number[] {
+function fieldColor(
+  value: number,
+  palette: string | undefined,
+  gamma: number,
+  exposure: number,
+  tint: number[],
+): number[] {
   if (palette === 'signed') {
     const weight = Math.tanh(Math.abs(value) * exposure);
-    const hue = value >= 0 ? [1, .67, .27] : [.22, .59, 1];
-    return hue.map((channel, index) => ([.025, .035, .06][index] + weight * channel) * 255);
+    const hue = value >= 0 ? [1, 0.67, 0.27] : [0.22, 0.59, 1];
+    return hue.map((channel, index) => ([0.025, 0.035, 0.06][index] + weight * channel) * 255);
   }
   if (palette === 'heat') {
     const scaled = Math.max(0, Math.min(1, value * exposure));
-    return [Math.min(1, scaled * 3), Math.max(0, Math.min(1, scaled * 3 - 1)), Math.max(0, scaled * 3 - 2)]
-      .map((channel) => channel * 255);
+    return [
+      Math.min(1, scaled * 3),
+      Math.max(0, Math.min(1, scaled * 3 - 1)),
+      Math.max(0, scaled * 3 - 2),
+    ].map((channel) => channel * 255);
   }
   const scaled = Math.max(0, Math.min(1, value * exposure)) ** gamma;
   return tint.map((channel) => 255 * scaled * channel);
 }
 
-function paintBlock(pixels: ImageData, width: number, height: number, x: number, y: number, stride: number, color: number[]): void {
+function paintBlock(
+  pixels: ImageData,
+  width: number,
+  height: number,
+  x: number,
+  y: number,
+  stride: number,
+  color: number[],
+): void {
   for (let row = y; row < Math.min(height, y + stride); row++) {
     for (let column = x; column < Math.min(width, x + stride); column++) {
       const offset = (row * width + column) * 4;
@@ -80,10 +102,18 @@ function renderGrid(
   const stats: FieldStats = { failed: 0, evaluated: 0, firstError: '' };
   for (let y = 0; y < height; y += stride) {
     for (let x = 0; x < width; x += stride) {
-      const worldX = xDomain[0] + x / (width - 1) * (xDomain[1] - xDomain[0]);
-      const worldY = yDomain[1] - y / (height - 1) * (yDomain[1] - yDomain[0]);
+      const worldX = xDomain[0] + (x / (width - 1)) * (xDomain[1] - xDomain[0]);
+      const worldY = yDomain[1] - (y / (height - 1)) * (yDomain[1] - yDomain[0]);
       const value = sampleValue(runtime, view.expression, time, worldX, worldY, stats);
-      paintBlock(pixels, width, height, x, y, stride, fieldColor(value, view.palette, gamma, exposure, tint));
+      paintBlock(
+        pixels,
+        width,
+        height,
+        x,
+        y,
+        stride,
+        fieldColor(value, view.palette, gamma, exposure, tint),
+      );
     }
   }
   return stats;
@@ -107,7 +137,20 @@ function renderFieldPixels(
   for (const stride of [1, 2, 4, 8]) {
     runtime.resetBudget();
     try {
-      stats = renderGrid(pixels, view, runtime, time, xDomain, yDomain, width, height, stride, gamma, exposure, tint);
+      stats = renderGrid(
+        pixels,
+        view,
+        runtime,
+        time,
+        xDomain,
+        yDomain,
+        width,
+        height,
+        stride,
+        gamma,
+        exposure,
+        tint,
+      );
       break;
     } catch (error) {
       if (stride === 8 || !isDemonstrationBudgetError(error)) throw error;
@@ -117,13 +160,19 @@ function renderFieldPixels(
   context.putImageData(pixels, 0, 0);
 }
 
-function drawVectorArrow(context: CanvasRenderingContext2D, x: number, y: number, dx: number, dy: number): void {
+function drawVectorArrow(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+): void {
   context.beginPath();
   context.moveTo(x - dx, y - dy);
   context.lineTo(x + dx, y + dy);
-  context.lineTo(x + dx - dx * .5 - dy * .4, y + dy - dy * .5 + dx * .4);
+  context.lineTo(x + dx - dx * 0.5 - dy * 0.4, y + dy - dy * 0.5 + dx * 0.4);
   context.moveTo(x + dx, y + dy);
-  context.lineTo(x + dx - dx * .5 + dy * .4, y + dy - dy * .5 - dx * .4);
+  context.lineTo(x + dx - dx * 0.5 + dy * 0.4, y + dy - dy * 0.5 - dx * 0.4);
   context.stroke();
 }
 
@@ -139,11 +188,11 @@ function drawVectors(
 ): void {
   if (!view.vector) return;
   context.strokeStyle = 'rgba(255,255,255,.72)';
-  context.lineWidth = .7;
+  context.lineWidth = 0.7;
   for (let y = 9; y < height; y += 16) {
     for (let x = 9; x < width; x += 16) {
-      const worldX = xDomain[0] + x / width * (xDomain[1] - xDomain[0]);
-      const worldY = yDomain[1] - y / height * (yDomain[1] - yDomain[0]);
+      const worldX = xDomain[0] + (x / width) * (xDomain[1] - xDomain[0]);
+      const worldY = yDomain[1] - (y / height) * (yDomain[1] - yDomain[0]);
       let vx = Number.NaN;
       let vy = Number.NaN;
       try {
@@ -154,12 +203,17 @@ function drawVectors(
       }
       const magnitude = Math.hypot(vx, vy);
       if (!Number.isFinite(magnitude) || magnitude < 1e-9) continue;
-      drawVectorArrow(context, x, y, vx / magnitude * 5, -vy / magnitude * 5);
+      drawVectorArrow(context, x, y, (vx / magnitude) * 5, (-vy / magnitude) * 5);
     }
   }
 }
 
-function drawField(canvas: HTMLCanvasElement, view: DemonstrationField, runtime: DemonstrationRuntime, time: number): void {
+function drawField(
+  canvas: HTMLCanvasElement,
+  view: DemonstrationField,
+  runtime: DemonstrationRuntime,
+  time: number,
+): void {
   runtime.resetBudget();
   const context = canvas.getContext('2d');
   if (!context) throw Error('Canvas unavailable');
@@ -168,16 +222,34 @@ function drawField(canvas: HTMLCanvasElement, view: DemonstrationField, runtime:
   const pixels = context.createImageData(width, height);
   const xDomain = demonstrationDomain(view.x, runtime, time);
   const yDomain = demonstrationDomain(view.y, runtime, time);
-  const gamma = Math.max(.1, Math.min(3, settingValue(runtime, view.gamma, time, .6)));
-  const exposure = Math.max(.01, Math.min(20, settingValue(runtime, view.exposure, time, 1)));
-  const tint = view.tint ?? [1, .96, .82];
+  const gamma = Math.max(0.1, Math.min(3, settingValue(runtime, view.gamma, time, 0.6)));
+  const exposure = Math.max(0.01, Math.min(20, settingValue(runtime, view.exposure, time, 1)));
+  const tint = view.tint ?? [1, 0.96, 0.82];
 
-  renderFieldPixels(context, pixels, view, runtime, time, xDomain, yDomain, width, height, gamma, exposure, tint);
+  renderFieldPixels(
+    context,
+    pixels,
+    view,
+    runtime,
+    time,
+    xDomain,
+    yDomain,
+    width,
+    height,
+    gamma,
+    exposure,
+    tint,
+  );
   runtime.resetBudget();
   drawVectors(context, view, runtime, time, width, height, xDomain, yDomain);
 }
 
-export function DemoField({ view, runtime, time, onError }: {
+export function DemoField({
+  view,
+  runtime,
+  time,
+  onError,
+}: {
   view: DemonstrationField;
   runtime: DemonstrationRuntime;
   time: number;
@@ -201,9 +273,21 @@ export function DemoField({ view, runtime, time, onError }: {
   const headline = view.label
     ? i18n('intui.demo.failedNamed', 'Could not compute “{name}”').replace('{name}', view.label)
     : i18n('intui.demo.failedView', 'This view could not be computed');
-  return <figure className="demo-field">
-    {view.label ? <figcaption>{view.label}</figcaption> : null}
-    <canvas ref={canvas} width={320} height={Math.round(view.height ?? 160)} role="img" aria-label={view.label || i18n('intui.surface', 'Interactive result')} />
-    {problem ? <div className="demo-note" role="status"><DemoIssue headline={headline} details={[problem]} /></div> : null}
-  </figure>;
+  return (
+    <figure className="demo-field">
+      {view.label ? <figcaption>{view.label}</figcaption> : null}
+      <canvas
+        ref={canvas}
+        width={320}
+        height={Math.round(view.height ?? 160)}
+        role="img"
+        aria-label={view.label || i18n('intui.surface', 'Interactive result')}
+      />
+      {problem ? (
+        <div className="demo-note" role="status">
+          <DemoIssue headline={headline} details={[problem]} />
+        </div>
+      ) : null}
+    </figure>
+  );
 }

@@ -7,12 +7,24 @@
 //   - the in-session composer keeps a visible outline;
 //   - the enabled send control is blue with a legible white arrow in both modes.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { WORKBENCH_VIEWPORTS, prepareChatWorkbench } from './_chat-workbench.mjs';
 
 const BASE_MESSAGES = [
-  { clientId: 'fixture-user', role: 'user', rawText: '你好啊', html: '<p>你好啊</p>', type: 'user' },
-  { clientId: 'fixture-assistant', role: 'assistant', rawText: 'Hello!', html: '<p>Hello!</p>', type: 'assistant' },
+  {
+    clientId: 'fixture-user',
+    role: 'user',
+    rawText: '你好啊',
+    html: '<p>你好啊</p>',
+    type: 'user',
+  },
+  {
+    clientId: 'fixture-assistant',
+    role: 'assistant',
+    rawText: 'Hello!',
+    html: '<p>Hello!</p>',
+    type: 'assistant',
+  },
 ];
 
 function parseRgb(value) {
@@ -20,7 +32,9 @@ function parseRgb(value) {
   if (channels.length !== 3) return null;
   /* A color-mix() surface (the light bubble) computes to `color(srgb r g b)`
      with 0–1 channels; bring it onto the 0–255 scale the checks use. */
-  return /^color\(srgb\b/.test(value.trim()) ? channels.map((channel) => Math.round(channel * 255)) : channels;
+  return /^color\(srgb\b/.test(value.trim())
+    ? channels.map((channel) => Math.round(channel * 255))
+    : channels;
 }
 
 function luminance(rgb) {
@@ -64,9 +78,14 @@ async function snapshotPalette(page) {
 test('light conversation surface keeps readable brand and action colours', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-theme', 'light'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-theme', 'light');
+    } catch (_) {}
   });
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.desktop,
+  });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
   await expect(page.locator('#msgList .msg.user .msg-body')).toBeVisible();
   await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
@@ -76,7 +95,14 @@ test('light conversation surface keeps readable brand and action colours', async
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
   /* The disc cross-fades from the disabled fill role to the action colour;
      poll until the transition settles so the snapshot is not mid-blend. */
-  await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
+  await expect
+    .poll(async () =>
+      parseRgb(
+        await page
+          .locator('#composerPrimaryBtn')
+          .evaluate((el) => getComputedStyle(el).backgroundColor),
+      ),
+    )
     .toEqual([61, 102, 192]);
 
   const palette = await snapshotPalette(page);
@@ -114,14 +140,26 @@ test('light conversation surface keeps readable brand and action colours', async
 test('dark conversation surface retains the blue send control', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-theme', 'dark'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-theme', 'dark');
+    } catch (_) {}
   });
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.desktop });
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.desktop,
+  });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await expect(page.locator('#msgList .msg.user .msg-body')).toBeVisible();
   await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-ready', 'true');
-  await expect.poll(async () => parseRgb(await page.locator('#composerPrimaryBtn').evaluate((el) => getComputedStyle(el).backgroundColor)))
+  await expect
+    .poll(async () =>
+      parseRgb(
+        await page
+          .locator('#composerPrimaryBtn')
+          .evaluate((el) => getComputedStyle(el).backgroundColor),
+      ),
+    )
     .toEqual([61, 102, 192]);
 
   const palette = await snapshotPalette(page);
@@ -141,9 +179,14 @@ test('dark conversation surface retains the blue send control', async ({ page })
 test('mobile light conversation inverts header controls and the canvas fade', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => {
-    try { localStorage.setItem('socrates-theme', 'light'); } catch (_) {}
+    try {
+      localStorage.setItem('socrates-theme', 'light');
+    } catch (_) {}
   });
-  await prepareChatWorkbench(page, { messages: BASE_MESSAGES, viewport: WORKBENCH_VIEWPORTS.mobile });
+  await prepareChatWorkbench(page, {
+    messages: BASE_MESSAGES,
+    viewport: WORKBENCH_VIEWPORTS.mobile,
+  });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
 
   const mobile = await page.evaluate(() => {

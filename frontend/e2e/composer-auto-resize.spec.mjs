@@ -29,19 +29,22 @@ async function settle(locator) {
 }
 
 async function sampleDuring(page, wrapSelector, action, duration = 450) {
-  await page.evaluate(({ selector, durationMs }) => {
-    const wrap = document.querySelector(selector);
-    window.__composerHeightSamples = [];
-    const startedAt = performance.now();
-    const sample = () => {
-      window.__composerHeightSamples.push({
-        t: performance.now() - startedAt,
-        height: wrap.getBoundingClientRect().height,
-      });
-      if (performance.now() - startedAt < durationMs) requestAnimationFrame(sample);
-    };
-    requestAnimationFrame(sample);
-  }, { selector: wrapSelector, durationMs: duration });
+  await page.evaluate(
+    ({ selector, durationMs }) => {
+      const wrap = document.querySelector(selector);
+      window.__composerHeightSamples = [];
+      const startedAt = performance.now();
+      const sample = () => {
+        window.__composerHeightSamples.push({
+          t: performance.now() - startedAt,
+          height: wrap.getBoundingClientRect().height,
+        });
+        if (performance.now() - startedAt < durationMs) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    },
+    { selector: wrapSelector, durationMs: duration },
+  );
   await action();
   await page.waitForTimeout(duration + 30);
   return page.evaluate(() => window.__composerHeightSamples);
@@ -77,8 +80,10 @@ test('topic composer changes geometry only after a second rendered line', async 
   let consecutiveDips = 0;
   for (const { height } of growth) {
     consecutiveDips = height < baseline - 16 ? consecutiveDips + 1 : 0;
-    expect(consecutiveDips, `wrap height must not stay below baseline mid-fill (${JSON.stringify(growth)})`)
-      .toBeLessThan(2);
+    expect(
+      consecutiveDips,
+      `wrap height must not stay below baseline mid-fill (${JSON.stringify(growth)})`,
+    ).toBeLessThan(2);
   }
 
   /* The collapse probe measures at the *collapsed* row width — with the
@@ -97,7 +102,9 @@ test('topic composer changes geometry only after a second rendered line', async 
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
   const shrinkValues = shrink.map(({ height }) => height);
-  const shrinkBounces = shrinkValues.slice(1).filter((height, index) => height - shrinkValues[index] > 6);
+  const shrinkBounces = shrinkValues
+    .slice(1)
+    .filter((height, index) => height - shrinkValues[index] > 6);
   expect(shrinkBounces, JSON.stringify(shrink)).toEqual([]);
 
   await editor.blur();
@@ -132,8 +139,10 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   let consecutiveDips = 0;
   for (const { height } of growth) {
     consecutiveDips = height < baseline - 16 ? consecutiveDips + 1 : 0;
-    expect(consecutiveDips, `wrap height must not stay below baseline mid-paste (${JSON.stringify(growth)})`)
-      .toBeLessThan(2);
+    expect(
+      consecutiveDips,
+      `wrap height must not stay below baseline mid-paste (${JSON.stringify(growth)})`,
+    ).toBeLessThan(2);
   }
 
   await settle(wrap);
@@ -146,11 +155,15 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   /* Shrinking glides from the tall two-tier height down to the one-row
      baseline — it must never bounce back upward on the way down. */
   const shrinkValues = shrink.map(({ height }) => height);
-  const shrinkBounces = shrinkValues.slice(1).filter((height, index) => height - shrinkValues[index] > 6);
+  const shrinkBounces = shrinkValues
+    .slice(1)
+    .filter((height, index) => height - shrinkValues[index] > 6);
   expect(shrinkBounces, JSON.stringify(shrink)).toEqual([]);
 
   await page.setViewportSize({ width: 320, height: 844 });
-  await editor.fill('This text stays stable while the narrower container wraps it onto additional rendered lines.');
+  await editor.fill(
+    'This text stays stable while the narrower container wraps it onto additional rendered lines.',
+  );
   /* The resize + rewrap needs a layout pass before the wrap grows — poll
      for it instead of sampling the first frame after fill. */
   await expect.poll(() => heightOf(wrap)).toBeGreaterThan(baseline);
@@ -159,7 +172,9 @@ test('chat composer stays continuous through paste, rapid delete and resize', as
   await expect.poll(() => heightOf(wrap)).toBe(baseline);
 });
 
-test('desktop composers stay compact single-row and return to their exact baseline', async ({ page }) => {
+test('desktop composers stay compact single-row and return to their exact baseline', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');

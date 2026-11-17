@@ -28,7 +28,7 @@ const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
     const m = /^--([^=]+)(?:=(.*))?$/.exec(a);
     return m ? [m[1], m[2] ?? true] : [a, true];
-  })
+  }),
 );
 const MATCH = args.match;
 const PROP = args.prop;
@@ -36,7 +36,9 @@ const SEL = args.sel ? new RegExp(args.sel) : null;
 const EL = args.el ? parseSig(args.el) : null;
 const ANC = args.anc ? args.anc.split('|').map(parseSig) : null;
 if (!MATCH && !EL) {
-  console.error('usage: node scripts/css-war-audit.mjs (--match=<selector-substr> | --el=<tag#id.cls[attr=v]>) [--anc="<anc sig> <anc sig> ..."] [--sel=<regex>] [--prop=<css-prop>]');
+  console.error(
+    'usage: node scripts/css-war-audit.mjs (--match=<selector-substr> | --el=<tag#id.cls[attr=v]>) [--anc="<anc sig> <anc sig> ..."] [--sel=<regex>] [--prop=<css-prop>]',
+  );
   process.exit(2);
 }
 
@@ -79,9 +81,7 @@ function specificity(sel) {
     .replace(/\[[^\]]*\]/g, ' ')
     .replace(/::?[\w-]+(?:\([^)]*\))?/g, ' ')
     .replace(/\*/g, ' ');
-  const elements = cleaned
-    .split(/[\s>+~,]+/)
-    .filter((t) => /^[a-zA-Z][\w-]*$/.test(t)).length;
+  const elements = cleaned.split(/[\s>+~,]+/).filter((t) => /^[a-zA-Z][\w-]*$/.test(t)).length;
   const flat = inner; // inner contributions
   const a = ids + Math.floor(flat / 1e6);
   const b = classes + Math.floor((flat % 1e6) / 1e3);
@@ -112,10 +112,21 @@ function parseSig(sig) {
 
 function parseCompound(c) {
   const out = { tag: null, ids: [], classes: [], attrs: [], not: [], state: false, pseudo: false };
-  if (/::[\w-]+|:(?:before|after|first-line|first-letter|backdrop|marker|placeholder|selection|cue|file-selector-button|-webkit-scrollbar[\w-]*)/i.test(c)) out.pseudo = true;
+  if (
+    /::[\w-]+|:(?:before|after|first-line|first-letter|backdrop|marker|placeholder|selection|cue|file-selector-button|-webkit-scrollbar[\w-]*)/i.test(
+      c,
+    )
+  )
+    out.pseudo = true;
   c = c.replace(/::[\w-]+(?:\([^)]*\))?/g, '');
-  c = c.replace(/:not\(([^()]*)\)/g, (_, inner) => { out.not.push(parseCompound(inner)); return ' '; });
-  c = c.replace(/:(?:is|has|where)\([^()]*\)/g, () => { out.state = true; return ' '; });
+  c = c.replace(/:not\(([^()]*)\)/g, (_, inner) => {
+    out.not.push(parseCompound(inner));
+    return ' ';
+  });
+  c = c.replace(/:(?:is|has|where)\([^()]*\)/g, () => {
+    out.state = true;
+    return ' ';
+  });
   const re = /\[[^\]]*\]|#[\w-]+|\.[\w-]+|:(?!:)[\w-]+(?:\([^)]*\))?|[a-zA-Z][\w-]*|\*/g;
   for (const m of c.matchAll(re)) {
     const tok = m[0];
@@ -150,7 +161,10 @@ function compoundMatch(comp, sig) {
   }
   for (const a of comp.attrs) {
     const m = /\[([\w-]+)(?:=["']?([^"'\]]+)["']?)?\]/.exec(a);
-    if (!m) { cond = true; continue; }
+    if (!m) {
+      cond = true;
+      continue;
+    }
     if (sig.attrs.has(m[1])) {
       if (m[2] !== undefined && String(sig.attrs.get(m[1])) !== m[2]) return false;
     } else cond = true; // attribute may still be set at runtime
@@ -199,12 +213,19 @@ function selectorApplies(sel) {
   if (last === 'cond') verdict = 'cond';
   let ai = 0;
   for (let i = 0; i < comps.length - 1; i++) {
-    if (!ANC) { verdict = 'cond'; continue; }
+    if (!ANC) {
+      verdict = 'cond';
+      continue;
+    }
     const comp = parseCompound(comps[i]);
     let hit = null;
     for (; ai < ANC.length; ai++) {
       const r = compoundMatch(comp, ANC[ai]);
-      if (r !== false) { hit = r; ai++; break; }
+      if (r !== false) {
+        hit = r;
+        ai++;
+        break;
+      }
     }
     if (hit === null) return 'no';
     if (hit === 'cond') verdict = 'cond';
@@ -213,7 +234,8 @@ function selectorApplies(sel) {
 }
 
 /* ---------- state-dependent selector detection ---------- */
-const STATEFUL = /:(?:not|is|has)\([^)]*(?:\[data-|\[aria-|\.|:)|\[data-|\[aria-|:(?:hover|focus|active|focus-visible|focus-within|checked|disabled|placeholder-shown|first-child|last-child|nth-|only-child|empty|link|visited|target|lang|dir|root|not)/;
+const STATEFUL =
+  /:(?:not|is|has)\([^)]*(?:\[data-|\[aria-|\.|:)|\[data-|\[aria-|:(?:hover|focus|active|focus-visible|focus-within|checked|disabled|placeholder-shown|first-child|last-child|nth-|only-child|empty|link|visited|target|lang|dir|root|not)/;
 
 /* ---------- @media evaluation ---------- */
 // returns 'yes' | 'no' | 'cond' (non-width condition we can't evaluate)
@@ -238,7 +260,10 @@ function mediaVerdict(params, viewportWidth) {
         conditional = true; // state/media-feature we can't resolve
       }
       // unknown conditions: treat as satisfied-but-flagged? keep conditional
-      if (!mm && !/prefers-|orientation|color-scheme|hover|pointer|aspect-ratio|height/.test(cond)) {
+      if (
+        !mm &&
+        !/prefers-|orientation|color-scheme|hover|pointer|aspect-ratio|height/.test(cond)
+      ) {
         conditional = true;
       }
     }
@@ -277,7 +302,9 @@ files.forEach((file, fileIdx) => {
     // the same decl counted once per matching selector in a selector list —
     // keep only the strongest selector's entry so a rule never "loses to
     // itself" (e.g. `#msgList,.msg-list` on a `div#msgList.msg-list`)
-    let bestSel = null, bestSpec = null, bestCond = false;
+    let bestSel = null,
+      bestSpec = null,
+      bestCond = false;
     for (const sel of rule.selectors) {
       if (SEL && !SEL.test(sel)) continue;
       let elCond = false;
@@ -287,8 +314,14 @@ files.forEach((file, fileIdx) => {
         elCond = v === 'cond';
       } else if (!sel.includes(MATCH)) continue;
       const s = specificity(sel);
-      if (!bestSpec || specCmp(s, bestSpec) > 0 || (specCmp(s, bestSpec) === 0 && bestCond && !elCond)) {
-        bestSpec = s; bestSel = sel; bestCond = elCond;
+      if (
+        !bestSpec ||
+        specCmp(s, bestSpec) > 0 ||
+        (specCmp(s, bestSpec) === 0 && bestCond && !elCond)
+      ) {
+        bestSpec = s;
+        bestSel = sel;
+        bestCond = elCond;
       }
     }
     if (bestSel === null) return;
@@ -337,7 +370,8 @@ function applies(c, ctx) {
 
 const score = (c) => [c.important ? 1 : 0, ...c.spec, c.order];
 const cmp = (a, b) => {
-  const sa = score(a), sb = score(b);
+  const sa = score(a),
+    sb = score(b);
   for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i];
   return 0;
 };
@@ -354,36 +388,110 @@ const UNPIN = !!args.unpin;
 /* Shorthand → longhand expansion so a flagged shorthand is counted as a
    competitor of every longhand it covers (and vice versa). */
 const SHORTHANDS = {
-  padding: ['padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'padding-inline', 'padding-block'],
+  padding: [
+    'padding-top',
+    'padding-right',
+    'padding-bottom',
+    'padding-left',
+    'padding-inline',
+    'padding-block',
+  ],
   'padding-inline': ['padding-left', 'padding-right'],
   'padding-block': ['padding-top', 'padding-bottom'],
-  margin: ['margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'margin-inline', 'margin-block'],
+  margin: [
+    'margin-top',
+    'margin-right',
+    'margin-bottom',
+    'margin-left',
+    'margin-inline',
+    'margin-block',
+  ],
   'margin-inline': ['margin-left', 'margin-right'],
   'margin-block': ['margin-top', 'margin-bottom'],
   inset: ['top', 'right', 'bottom', 'left', 'inset-inline', 'inset-block'],
   'inset-inline': ['left', 'right'],
   'inset-block': ['top', 'bottom'],
-  'border-radius': ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius'],
-  border: ['border-width', 'border-style', 'border-color', 'border-top', 'border-right', 'border-bottom', 'border-left', 'border-inline', 'border-block'],
-  'border-width': ['border-top-width', 'border-right-width', 'border-bottom-width', 'border-left-width'],
-  'border-style': ['border-top-style', 'border-right-style', 'border-bottom-style', 'border-left-style'],
-  'border-color': ['border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'],
+  'border-radius': [
+    'border-top-left-radius',
+    'border-top-right-radius',
+    'border-bottom-left-radius',
+    'border-bottom-right-radius',
+  ],
+  border: [
+    'border-width',
+    'border-style',
+    'border-color',
+    'border-top',
+    'border-right',
+    'border-bottom',
+    'border-left',
+    'border-inline',
+    'border-block',
+  ],
+  'border-width': [
+    'border-top-width',
+    'border-right-width',
+    'border-bottom-width',
+    'border-left-width',
+  ],
+  'border-style': [
+    'border-top-style',
+    'border-right-style',
+    'border-bottom-style',
+    'border-left-style',
+  ],
+  'border-color': [
+    'border-top-color',
+    'border-right-color',
+    'border-bottom-color',
+    'border-left-color',
+  ],
   'border-top': ['border-top-width', 'border-top-style', 'border-top-color'],
   'border-right': ['border-right-width', 'border-right-style', 'border-right-color'],
   'border-bottom': ['border-bottom-width', 'border-bottom-style', 'border-bottom-color'],
   'border-left': ['border-left-width', 'border-left-style', 'border-left-color'],
-  'border-inline': ['border-left-width', 'border-right-width', 'border-left-style', 'border-right-style', 'border-left-color', 'border-right-color'],
+  'border-inline': [
+    'border-left-width',
+    'border-right-width',
+    'border-left-style',
+    'border-right-style',
+    'border-left-color',
+    'border-right-color',
+  ],
   flex: ['flex-grow', 'flex-shrink', 'flex-basis'],
   'flex-flow': ['flex-direction', 'flex-wrap'],
   gap: ['row-gap', 'column-gap'],
   overflow: ['overflow-x', 'overflow-y'],
   font: ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height'],
-  background: ['background-color', 'background-image', 'background-position', 'background-size', 'background-repeat', 'background-attachment', 'background-clip', 'background-origin'],
+  background: [
+    'background-color',
+    'background-image',
+    'background-position',
+    'background-size',
+    'background-repeat',
+    'background-attachment',
+    'background-clip',
+    'background-origin',
+  ],
   'place-items': ['align-items', 'justify-items'],
   'place-content': ['align-content', 'justify-content'],
   'place-self': ['align-self', 'justify-self'],
-  transition: ['transition-property', 'transition-duration', 'transition-timing-function', 'transition-delay'],
-  animation: ['animation-name', 'animation-duration', 'animation-timing-function', 'animation-delay', 'animation-iteration-count', 'animation-direction', 'animation-fill-mode', 'animation-play-state'],
+  transition: [
+    'transition-property',
+    'transition-duration',
+    'transition-timing-function',
+    'transition-delay',
+  ],
+  animation: [
+    'animation-name',
+    'animation-duration',
+    'animation-timing-function',
+    'animation-delay',
+    'animation-iteration-count',
+    'animation-direction',
+    'animation-fill-mode',
+    'animation-play-state',
+  ],
   outline: ['outline-width', 'outline-style', 'outline-color'],
   'text-decoration': ['text-decoration-line', 'text-decoration-color', 'text-decoration-style'],
 };
@@ -400,7 +508,8 @@ if (UNPIN) {
   }
   const scoreNoImp = (c) => [...c.spec, c.order];
   const cmpNoImp = (a, b) => {
-    const sa = scoreNoImp(a), sb = scoreNoImp(b);
+    const sa = scoreNoImp(a),
+      sb = scoreNoImp(b);
     for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return sa[i] - sb[i];
     return 0;
   };
@@ -417,16 +526,22 @@ if (UNPIN) {
           if (o === c || applies(o, ctx) === 'no') continue;
           // a flagged competitor wins once the flag is gone; a stronger
           // (spec, order) competitor takes over too.
-          if (o.important || cmpNoImp(o, c) > 0) { safe = false; break outer; }
+          if (o.important || cmpNoImp(o, c) > 0) {
+            safe = false;
+            break outer;
+          }
         }
       }
     }
     if (safe) {
-      console.log(`UNPIN\t${c.prop}\t${c.file}:${c.line}\t${c.value}\t${c.selector.replace(/\s+/g, ' ').slice(0, 80)}`);
+      console.log(
+        `UNPIN\t${c.prop}\t${c.file}:${c.line}\t${c.value}\t${c.selector.replace(/\s+/g, ' ').slice(0, 80)}`,
+      );
     }
   }
 }
-const fmt = (c) => `${c.file}:${c.line} [${c.spec.join(',')}]${c.important ? ' !' : ''}${c.stateful ? ' (stateful)' : ''}`;
+const fmt = (c) =>
+  `${c.file}:${c.line} [${c.spec.join(',')}]${c.important ? ' !' : ''}${c.stateful ? ' (stateful)' : ''}`;
 
 for (const [prop, list] of byProp) {
   if (!LOSERS) console.log(`\n=== ${prop} ===`);
@@ -461,7 +576,9 @@ for (const [prop, list] of byProp) {
         // designed to be overridden — losing is their job, not debt.
         const isReset = c.spec[0] === 0 && c.spec[1] === 0 && c.spec[2] <= 1;
         if (!stillAlive && !c.stateful && !conditionalOutranks && !isReset) {
-          console.log(`${ctx.name}\t${prop}\t${c.file}:${c.line}\t${c.value}\t<- loses to ${winner.file}:${winner.line}`);
+          console.log(
+            `${ctx.name}\t${prop}\t${c.file}:${c.line}\t${c.value}\t<- loses to ${winner.file}:${winner.line}`,
+          );
         }
       }
       continue;
@@ -472,7 +589,9 @@ for (const [prop, list] of byProp) {
     const beatsWinner = condWinner && cmp(condWinner, winner) > 0;
     console.log(
       `  ${ctx.name.padEnd(7)} winner: ${fmt(winner)}  = ${winner.value}` +
-        (beatsWinner ? `  ⚠ conditional override possible: ${fmt(condWinner)} = ${condWinner.value}` : '')
+        (beatsWinner
+          ? `  ⚠ conditional override possible: ${fmt(condWinner)} = ${condWinner.value}`
+          : ''),
     );
   }
   // losers carrying !important or sitting in live files are the actionable rows

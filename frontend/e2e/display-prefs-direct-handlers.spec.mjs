@@ -14,7 +14,9 @@ test('display preferences own their controls without data-action delegation', as
   await expect(page.locator('#displayPrefsBtn')).not.toHaveAttribute('data-action', /.+/);
   /* The accent-colour picker is gone: the app ships a fixed
      black/white/gray palette. */
-  await expect(popover.locator('#displayAccentColors, .color-swatch, #accentCustomInput')).toHaveCount(0);
+  await expect(
+    popover.locator('#displayAccentColors, .color-swatch, #accentCustomInput'),
+  ).toHaveCount(0);
 
   await page.locator('#displayPrefsBtn').click();
   await expect(popover).toBeVisible();
@@ -37,27 +39,35 @@ test('display preferences own their controls without data-action delegation', as
   await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
   await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
   await expect(page.locator('#gridToggle')).toHaveClass(/on/);
-  await expect.poll(() => page.evaluate(() => ({
-    display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),
-    accentHue: localStorage.getItem('socrates-accent-hue'),
-    accentHex: localStorage.getItem('socrates-accent-hex'),
-  }))).toMatchObject({
-    display: { font: 1.375, width: 1.7, darkBg: '#123456', lightBg: '#eeeeee', showGrid: true },
-    accentHue: null,
-    accentHex: null,
-  });
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        display: JSON.parse(localStorage.getItem('socrates-display') || '{}'),
+        accentHue: localStorage.getItem('socrates-accent-hue'),
+        accentHex: localStorage.getItem('socrates-accent-hex'),
+      })),
+    )
+    .toMatchObject({
+      display: { font: 1.375, width: 1.7, darkBg: '#123456', lightBg: '#eeeeee', showGrid: true },
+      accentHue: null,
+      accentHex: null,
+    });
 
   await page.locator('#displayPrefsBgDarkReset').click();
   await page.locator('#displayPrefsBgLightReset').click();
-  await expect.poll(() => page.evaluate(() =>
-    JSON.parse(localStorage.getItem('socrates-display') || '{}'))).toMatchObject({
-    darkBg: '',
-    lightBg: '',
-  });
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+    .toMatchObject({
+      darkBg: '',
+      lightBg: '',
+    });
 
   const modeBefore = await page.locator('html').getAttribute('data-mode');
   await page.locator('#themeToggle').click();
-  await expect(page.locator('html')).toHaveAttribute('data-mode', modeBefore === 'dark' ? 'light' : 'dark');
+  await expect(page.locator('html')).toHaveAttribute(
+    'data-mode',
+    modeBefore === 'dark' ? 'light' : 'dark',
+  );
   await expect(popover).toBeHidden();
 
   await page.locator('#displayPrefsBtn').click();

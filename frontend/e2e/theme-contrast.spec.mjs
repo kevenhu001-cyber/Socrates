@@ -17,8 +17,18 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSION_ID = '77777777-7777-4777-8777-777777777777';
 const RECENTS = [
-  { id: SESSION_ID, title: 'Bayes', updatedAt: new Date().toISOString(), createdAt: new Date().toISOString() },
-  { id: 's-older', title: 'Older', updatedAt: new Date(Date.now() - 3 * 86400e3).toISOString(), createdAt: new Date().toISOString() },
+  {
+    id: SESSION_ID,
+    title: 'Bayes',
+    updatedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 's-older',
+    title: 'Older',
+    updatedAt: new Date(Date.now() - 3 * 86400e3).toISOString(),
+    createdAt: new Date().toISOString(),
+  },
 ];
 
 function rgb(value) {
@@ -60,16 +70,37 @@ function contrast(fg, bg) {
 async function openApp(page, { mode, viewport = { width: 1440, height: 900 }, session } = {}) {
   await page.setViewportSize(viewport);
   await page.emulateMedia({ colorScheme: mode });
-  await page.addInitScript((m) => { try { localStorage.setItem('socrates-theme', m); } catch (_) {} }, mode);
+  await page.addInitScript((m) => {
+    try {
+      localStorage.setItem('socrates-theme', m);
+    } catch (_) {}
+  }, mode);
   await mockAuthedApp(page);
-  await page.route(/\/api\/(?:v2\/)?sessions(?:\?.*)?$/, (route) => (route.request().method() === 'GET'
-    ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: RECENTS }) })
-    : route.fallback()));
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?.*)?$/, (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ sessions: RECENTS }),
+        })
+      : route.fallback(),
+  );
   if (session) {
-    await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?.*)?$`), (route) => route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({ id: SESSION_ID, topic: 'Bayes', title: 'Bayes', mode: 'chat', kind: 'chat', phase: 'chat', kbNodes: [], mistakes: [], ...session }),
-    }));
+    await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?.*)?$`), (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: SESSION_ID,
+          topic: 'Bayes',
+          title: 'Bayes',
+          mode: 'chat',
+          kind: 'chat',
+          phase: 'chat',
+          kbNodes: [],
+          mistakes: [],
+          ...session,
+        }),
+      }),
+    );
   }
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -77,12 +108,16 @@ async function openApp(page, { mode, viewport = { width: 1440, height: 900 }, se
 }
 
 async function loadSession(page) {
-  await page.waitForFunction(() => typeof window.loadSession === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.loadSession === 'function', null, {
+    timeout: 15_000,
+  });
   await page.evaluate((id) => window.loadSession(id), SESSION_ID);
   await expect(page.locator('#msgList .msg.assistant').first()).toBeVisible();
 }
 
-test('light muted labels clear AA and the placeholder keeps its reference tone', async ({ page }) => {
+test('light muted labels clear AA and the placeholder keeps its reference tone', async ({
+  page,
+}) => {
   await openApp(page, { mode: 'light' });
   const probe = await page.evaluate(() => {
     const pick = (selector) => {
@@ -159,18 +194,31 @@ test('light palette roles clear AA on every light surface they sit on', async ({
   };
 
   for (const [name, value] of Object.entries(probe.text)) {
-    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    expect
+      .soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`)
+      .toBeGreaterThanOrEqual(4.5);
     for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
-      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-text-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(
+          contrast(rgb(value), rgb(surfaceValue)),
+          `--ui-text-${name} on --ui-bg-${surfaceName}`,
+        )
+        .toBeGreaterThanOrEqual(4.5);
     }
   }
   for (const [name, value] of Object.entries(probe.tone)) {
-    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    expect
+      .soft(contrast(rgb(value), rgb(probe.page)), `--ui-${name} on the page`)
+      .toBeGreaterThanOrEqual(4.5);
     for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
-      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-${name} on --ui-bg-${surfaceName}`)
+        .toBeGreaterThanOrEqual(4.5);
     }
     const onTint = tint(value, 16, probe.page);
-    expect.soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`).toBeGreaterThanOrEqual(4.5);
+    expect
+      .soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`)
+      .toBeGreaterThanOrEqual(4.5);
   }
 
   /* "muted" is an alias of "tertiary" — one de-emphasised text colour, not
@@ -233,9 +281,16 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
      apart. That is a surface-to-surface relationship, not a text one: every
      text role still has to clear AA on every rung of the ladder. */
   for (const [name, value] of Object.entries(probe.text)) {
-    expect.soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`).toBeGreaterThanOrEqual(4.5);
+    expect
+      .soft(contrast(rgb(value), rgb(probe.page)), `--ui-text-${name} on the page`)
+      .toBeGreaterThanOrEqual(4.5);
     for (const [surfaceName, surfaceValue] of Object.entries(probe.surfaces)) {
-      expect.soft(contrast(rgb(value), rgb(surfaceValue)), `--ui-text-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(
+          contrast(rgb(value), rgb(surfaceValue)),
+          `--ui-text-${name} on --ui-bg-${surfaceName}`,
+        )
+        .toBeGreaterThanOrEqual(4.5);
     }
   }
 
@@ -251,10 +306,17 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
   };
   for (const [name, value] of Object.entries(probe.tone)) {
     for (const surfaceName of ['page', 'rail', 'panel', 'elevated']) {
-      expect.soft(contrast(rgb(value), rgb(probe.surfaces[surfaceName])), `--ui-${name} on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(
+          contrast(rgb(value), rgb(probe.surfaces[surfaceName])),
+          `--ui-${name} on --ui-bg-${surfaceName}`,
+        )
+        .toBeGreaterThanOrEqual(4.5);
     }
     const onTint = tint(value, 16, probe.surfaces.page);
-    expect.soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`).toBeGreaterThanOrEqual(4.5);
+    expect
+      .soft(contrast(rgb(value), onTint), `--ui-${name} on its own 16% tint`)
+      .toBeGreaterThanOrEqual(4.5);
   }
 
   /* Non-text: the focus ring is the one boundary that must read as a
@@ -263,7 +325,12 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
   const ring = parseColor(probe.focusRing);
   for (const surfaceName of ['page', 'elevated']) {
     const composited = over(ring, rgb(probe.surfaces[surfaceName]));
-    expect.soft(contrast(composited, rgb(probe.surfaces[surfaceName])), `--ui-focus-ring on --ui-bg-${surfaceName}`).toBeGreaterThanOrEqual(3);
+    expect
+      .soft(
+        contrast(composited, rgb(probe.surfaces[surfaceName])),
+        `--ui-focus-ring on --ui-bg-${surfaceName}`,
+      )
+      .toBeGreaterThanOrEqual(3);
   }
 
   /* Muted labels clear AA on the dark canvas and the dark rail. */
@@ -280,7 +347,9 @@ test('dark dialogs are elevated cards over a flat token scrim', async ({ page })
   await expect(page.locator('#settingsOverlay')).toBeVisible();
   const settings = await page.evaluate(() => {
     const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
-    const card = document.querySelector('#settingsOverlay .settings-modal, #settingsOverlay .modal, #settingsOverlay [role="dialog"]');
+    const card = document.querySelector(
+      '#settingsOverlay .settings-modal, #settingsOverlay .modal, #settingsOverlay [role="dialog"]',
+    );
     return {
       scrim: overlay.backgroundColor,
       blur: overlay.backdropFilter,
@@ -310,7 +379,9 @@ test('light dialogs are white cards over a flat token scrim', async ({ page }) =
 
   await page.keyboard.press('Control+k');
   await expect(page.locator('#cmdKOverlay')).toBeVisible();
-  const palette = await page.evaluate(() => getComputedStyle(document.getElementById('cmdKOverlay')).backdropFilter);
+  const palette = await page.evaluate(
+    () => getComputedStyle(document.getElementById('cmdKOverlay')).backdropFilter,
+  );
   expect(palette).toBe('none');
 });
 
@@ -319,14 +390,17 @@ test('phone light code blocks are light cards', async ({ page }) => {
   await openApp(page, {
     mode: 'light',
     viewport: { width: 390, height: 844 },
-    session: { messages: [
-      { id: 'u1', role: 'user', rawText: 'hi', html: '<p>hi</p>' },
-      { id: 'a1', role: 'assistant', rawText: rich, html: '' },
-    ] },
+    session: {
+      messages: [
+        { id: 'u1', role: 'user', rawText: 'hi', html: '<p>hi</p>' },
+        { id: 'a1', role: 'assistant', rawText: rich, html: '' },
+      ],
+    },
   });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await loadSession(page);
   const code = await page.evaluate(() => {
@@ -348,19 +422,31 @@ test('phone light tools menu keeps light icon chips', async ({ page }) => {
   await openApp(page, { mode: 'light', viewport: { width: 390, height: 844 } });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   await page.locator('#composerToolsBtn').click();
   const menu = page.locator('#composerToolsMenu');
   await expect(menu).toBeVisible();
-  const chips = await menu.locator('.composer-tools-mobile-items .composer-tools-icon').evaluateAll((nodes) => nodes
-    .filter((node) => node.getBoundingClientRect().width > 0)
-    .map((node) => ({ bg: getComputedStyle(node).backgroundColor, color: getComputedStyle(node).color })));
+  const chips = await menu
+    .locator('.composer-tools-mobile-items .composer-tools-icon')
+    .evaluateAll((nodes) =>
+      nodes
+        .filter((node) => node.getBoundingClientRect().width > 0)
+        .map((node) => ({
+          bg: getComputedStyle(node).backgroundColor,
+          color: getComputedStyle(node).color,
+        })),
+    );
   expect(chips.length).toBeGreaterThan(0);
   for (const chip of chips) {
     // Translucent chip token: composite it on the white sheet.
     const c = rgb(chip.bg);
-    const onWhite = { r: c.r * c.a + 255 * (1 - c.a), g: c.g * c.a + 255 * (1 - c.a), b: c.b * c.a + 255 * (1 - c.a) };
+    const onWhite = {
+      r: c.r * c.a + 255 * (1 - c.a),
+      g: c.g * c.a + 255 * (1 - c.a),
+      b: c.b * c.a + 255 * (1 - c.a),
+    };
     expect(luminance(onWhite)).toBeGreaterThan(0.8);
     expect(contrast(rgb(chip.color), onWhite)).toBeGreaterThanOrEqual(4.5);
   }
@@ -373,14 +459,22 @@ test('history rows do not replay the reveal and boot spinners stop', async ({ pa
     messages.push({ id: `a${i}`, role: 'assistant', rawText: `answer ${i}`, html: '' });
   }
   await openApp(page, { mode: 'light', session: { messages } });
-  const bootAnimations = await page.evaluate(() => document.getAnimations()
-    .filter((animation) => animation.animationName === 'bootSpin' && animation.playState === 'running').length);
+  const bootAnimations = await page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter(
+          (animation) =>
+            animation.animationName === 'bootSpin' && animation.playState === 'running',
+        ).length,
+  );
   expect(bootAnimations).toBe(0);
   await expect(page.locator('#bootLoading')).toHaveCSS('visibility', 'hidden');
 
   await loadSession(page);
-  const rows = await page.locator('#msgList .msg.assistant[data-stream-settled]').evaluateAll((nodes) => nodes
-    .map((node) => getComputedStyle(node).animationName));
+  const rows = await page
+    .locator('#msgList .msg.assistant[data-stream-settled]')
+    .evaluateAll((nodes) => nodes.map((node) => getComputedStyle(node).animationName));
   expect(rows.length).toBeGreaterThan(0);
   for (const name of rows) expect(name).toBe('none');
 });
@@ -388,16 +482,46 @@ test('history rows do not replay the reveal and boot spinners stop', async ({ pa
 test('plotly charts follow a theme switch after mounting', async ({ page }) => {
   await openApp(page, {
     mode: 'dark',
-    session: { messages: [
-      { id: 'u1', role: 'user', rawText: 'plot', html: '<p>plot</p>' },
-      { id: 'a1', role: 'assistant', rawText: 'Here.', html: '', toolCalls: [{
-        id: 'viz-1',
-        name: 'render_intelligent_ui',
-        input: {version:1,nodes:[{...{ version: 1, template: 'function', title: 'Parabola', caption: 'y = x²', accessibilitySummary: 'A parabola.', payload: { functions: [{ expression: 'x^2', label: 'y' }], xLabel: 'x', yLabel: 'y' } },id:'visual',type:'visualization'}]},
-        output: 'ok',
-        artifacts: [],
-      }] },
-    ] },
+    session: {
+      messages: [
+        { id: 'u1', role: 'user', rawText: 'plot', html: '<p>plot</p>' },
+        {
+          id: 'a1',
+          role: 'assistant',
+          rawText: 'Here.',
+          html: '',
+          toolCalls: [
+            {
+              id: 'viz-1',
+              name: 'render_intelligent_ui',
+              input: {
+                version: 1,
+                nodes: [
+                  {
+                    ...{
+                      version: 1,
+                      template: 'function',
+                      title: 'Parabola',
+                      caption: 'y = x²',
+                      accessibilitySummary: 'A parabola.',
+                      payload: {
+                        functions: [{ expression: 'x^2', label: 'y' }],
+                        xLabel: 'x',
+                        yLabel: 'y',
+                      },
+                    },
+                    id: 'visual',
+                    type: 'visualization',
+                  },
+                ],
+              },
+              output: 'ok',
+              artifacts: [],
+            },
+          ],
+        },
+      ],
+    },
   });
   await loadSession(page);
   const tick = page.locator('.visualization-card .xtick text').first();
@@ -406,9 +530,15 @@ test('plotly charts follow a theme switch after mounting', async ({ page }) => {
   expect(luminance(rgb(darkFill))).toBeGreaterThan(0.5);
 
   await page.evaluate(() => document.documentElement.setAttribute('data-mode', 'light'));
-  await expect.poll(async () => luminance(rgb(await tick.evaluate((node) => getComputedStyle(node).fill))), { timeout: 5_000 })
+  await expect
+    .poll(async () => luminance(rgb(await tick.evaluate((node) => getComputedStyle(node).fill))), {
+      timeout: 5_000,
+    })
     .toBeLessThan(0.2);
-  const modebar = await page.locator('.visualization-card .modebar-group').first()
-    .evaluate((node) => getComputedStyle(node).backgroundColor).catch(() => null);
+  const modebar = await page
+    .locator('.visualization-card .modebar-group')
+    .first()
+    .evaluate((node) => getComputedStyle(node).backgroundColor)
+    .catch(() => null);
   if (modebar) expect(rgb(modebar).a).toBe(0);
 });

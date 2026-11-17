@@ -8,7 +8,7 @@
 // trailer (no orphaned stream cursor, daylight between prose and status),
 // then completes the paragraph and pins the handoff (row mounts once,
 // behind the paragraph, status retires, cursor returns).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -23,30 +23,38 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     let ref = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
         start(controller) {
           ref = controller;
-          controller.enqueue(encoder.encode(
-            `data: ${JSON.stringify({ choices: [{ delta: { content: preamble } }] })}\n\n`,
-          ));
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ choices: [{ delta: { content: preamble } }] })}\n\n`,
+            ),
+          );
         },
       });
       window.__pushToolUse = () => {
-        ref.enqueue(encoder.encode(frame('tool_use', [
-          { id: 'w-defer', name: 'Write', input: { file_path: 'demo.txt', content: 'hello' } },
-        ])));
+        ref.enqueue(
+          encoder.encode(
+            frame('tool_use', [
+              { id: 'w-defer', name: 'Write', input: { file_path: 'demo.txt', content: 'hello' } },
+            ]),
+          ),
+        );
       };
       window.__pushText = (content) => {
-        ref.enqueue(encoder.encode(
-          `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`,
-        ));
+        ref.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`),
+        );
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   }, PREAMBLE);
   await mockAuthedApp(page, { lang: 'zh' });
@@ -54,11 +62,12 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '66666666-6666-4666-8666-666666666666';
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({
-      type: 'state/set', key: 'messages',
-      value: [{ clientId: 'user-defer', role: 'user', rawText: '演示一下', html: null }],
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-defer', role: 'user', rawText: '演示一下', html: null }],
+      },
     });
     window.__testActivateMainView('chatView');
     window.__deferPromise = window.askChatTurn('演示一下');
@@ -75,7 +84,9 @@ test('deferred tool shows a clean single status line, no orphan dots', async ({ 
   await expect(bubble.locator('[data-testid="turn-activity-indicator"]')).toHaveCount(1);
   await expect(bubble.locator('[data-testid="thinking-step-spinner"]')).toHaveCount(0);
   await expect(bubble.locator('[data-testid="thinking-step-title"]')).toHaveCount(0);
-  await expect(bubble.locator('[data-testid="turn-activity-label"]')).toContainText(/更新文件|更新|文件|工具/);
+  await expect(bubble.locator('[data-testid="turn-activity-label"]')).toContainText(
+    /更新文件|更新|文件|工具/,
+  );
 
   // No orphaned stream cursor next to the status icon: while the live
   // status line shows, it owns the "alive" signal.
@@ -106,25 +117,33 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     let ref = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
-        start(controller) { ref = controller; },
+        start(controller) {
+          ref = controller;
+        },
       });
       window.__pushText = (content) => {
-        ref.enqueue(encoder.encode(
-          `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`,
-        ));
+        ref.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`),
+        );
       };
       window.__pushToolUse = () => {
-        ref.enqueue(encoder.encode(frame('tool_use', [
-          { id: 'w-tail', name: 'Write', input: { file_path: 'tail.txt', content: 'hello' } },
-        ])));
+        ref.enqueue(
+          encoder.encode(
+            frame('tool_use', [
+              { id: 'w-tail', name: 'Write', input: { file_path: 'tail.txt', content: 'hello' } },
+            ]),
+          ),
+        );
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await mockAuthedApp(page, { lang: 'zh' });
@@ -132,20 +151,22 @@ test('an active tool at the turn tail owns progress without an extra cursor', as
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '77777777-7777-4777-8777-777777777777';
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({
-      type: 'state/set', key: 'messages',
-      value: [{ clientId: 'user-tail', role: 'user', rawText: '写文件', html: null }],
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'user-tail', role: 'user', rawText: '写文件', html: null }],
+      },
     });
     window.__testActivateMainView('chatView');
     window.__tailPromise = window.askChatTurn('写文件');
   });
 
-  await page.waitForFunction(() => (
-    typeof window.__pushText === 'function'
-    && typeof window.__pushToolUse === 'function'
-  ), null, { timeout: 15_000 });
+  await page.waitForFunction(
+    () => typeof window.__pushText === 'function' && typeof window.__pushToolUse === 'function',
+    null,
+    { timeout: 15_000 },
+  );
   const bubble = page.locator('.msg.assistant').last().locator('.msg-body');
   // Finish the paragraph before the tool fires, then keep the stream open:
   // the row mounts at the turn tail, so its cursor must follow it.

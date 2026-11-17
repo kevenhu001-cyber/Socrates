@@ -16,14 +16,14 @@ const apiPort = Number(process.env.SMOKE_API_PORT || 4176);
 
 const types = {
   '.html': 'text/html; charset=utf-8',
-  '.js':   'application/javascript; charset=utf-8',
-  '.mjs':  'application/javascript; charset=utf-8',
-  '.css':  'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.png':  'image/png',
-  '.svg':  'image/svg+xml',
-  '.ico':  'image/x-icon',
-  '.jpg':  'image/jpeg',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
 };
 
@@ -69,7 +69,10 @@ function serveStatic(req, res) {
     const pathname = decodeURIComponent((req.url || '/').split('?')[0]);
     let fp = resolve(distDir, '.' + pathname);
     if (pathname === '/' || pathname === '') fp = resolve(distDir, 'index.html');
-    if (!fp.startsWith(distDir)) { res.writeHead(403).end('forbidden'); return; }
+    if (!fp.startsWith(distDir)) {
+      res.writeHead(403).end('forbidden');
+      return;
+    }
     if (!fs.existsSync(fp) || !fs.statSync(fp).isFile()) {
       // SPA fallback to index.html so history-routed paths resolve
       fp = resolve(distDir, 'index.html');
@@ -89,16 +92,19 @@ function serveStatic(req, res) {
 }
 
 function proxyApiRequest(req, res) {
-  const upstream = http.request({
-    hostname: '127.0.0.1',
-    port: apiPort,
-    path: req.url,
-    method: req.method,
-    headers: { ...req.headers, host: `127.0.0.1:${apiPort}` },
-  }, (apiRes) => {
-    res.writeHead(apiRes.statusCode || 502, apiRes.headers);
-    apiRes.pipe(res);
-  });
+  const upstream = http.request(
+    {
+      hostname: '127.0.0.1',
+      port: apiPort,
+      path: req.url,
+      method: req.method,
+      headers: { ...req.headers, host: `127.0.0.1:${apiPort}` },
+    },
+    (apiRes) => {
+      res.writeHead(apiRes.statusCode || 502, apiRes.headers);
+      apiRes.pipe(res);
+    },
+  );
   upstream.on('error', () => {
     // Specs without a mock API keep the static server's previous SPA fallback.
     if (!res.headersSent) serveStatic(req, res);

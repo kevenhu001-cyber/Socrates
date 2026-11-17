@@ -32,7 +32,9 @@ composer
   └─ chat/sendPipeline.ts
       ├─ chat/send/input.ts        capture + commit composer state
       ├─ chat/send/dispatch.ts     queue or start
-      └─ chat/turn/controller.ts
+      └─ chat/turn/controller.ts   askChatTurn, called through module imports
+          ├─ chat/turn/loadStreamingTurn.ts  lazy streaming renderer and placeholder
+          ├─ chat/turn/cancelActiveTurn.ts   explicit cancellation and local session exit
           ├─ chat/streamAttempt.ts         POST /api/chat/stream
           │   ├─ chat/streamFrameProcessor.ts
           │   └─ chat/turn/streaming.ts → chat/turn/finish*.ts
@@ -52,6 +54,15 @@ The live SSE request is the primary path. Durable turns exist for reload /
 connection-loss recovery; they are not a second primary transport. Agent runs
 are a separate workspace feature, not a chat transport.
 
+Stop, supersession, edit and regenerate capture the active renderer and request
+handles before interrupting a bound server turn. Each renderer still guards
+its own message slot, and late cleanup from an older renderer cannot clear the
+new renderer's Stop control. Resend rebuilds model content from the most recent
+user message and its stored attachments, then calls the turn controller.
+Session exits release browser-side handles without sending the server
+interrupt used by Stop. Archive and delete completions check the current
+session ID before leaving its view.
+
 ## 3. State ownership
 
 `frontend/src/store/` is the single state factory:
@@ -65,9 +76,11 @@ are a separate workspace feature, not a chat transport.
 
 Rules:
 
-- New React code reads/writes through `store/index.ts`.
-- `state/store.ts` is the legacy Proxy facade for old DOM modules. Do not add
-  new React imports of it.
+- Application code reads and writes through `store/index.ts`. Use the domain
+  hooks in React and the typed snapshot readers and dispatch functions in
+  event handlers and other imperative code.
+- Browser fixtures opt in before navigation to typed snapshot reads and state
+  patches. Normal application boot publishes no state global.
 - Feature-local state lives next to the feature (`*.store.ts`, `ui/*State.ts`);
   it is not a second global store. If two surfaces must share it, promote it to
   `store/` with a typed domain action.

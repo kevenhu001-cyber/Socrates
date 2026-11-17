@@ -32,7 +32,7 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
 
   function liveMessage(): TurnMessage | null {
     const message = readTurnMessage(state.msgIdx);
-    return (message && message.clientId === state.clientId) ? message : null;
+    return message && message.clientId === state.clientId ? message : null;
   }
 
   function setLiveStatus(status: LiveStatus | null): void {
@@ -49,7 +49,10 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
   function statusIsBusy(): boolean {
     const msg = liveMessage();
     const prev = msg && msg._liveStatus;
-    return !!(prev && (prev.phase === 'error' || prev.phase === 'retrying' || prev.phase === 'tool-running'));
+    return !!(
+      prev &&
+      (prev.phase === 'error' || prev.phase === 'retrying' || prev.phase === 'tool-running')
+    );
   }
 
   function clearLiveStatus(): void {
@@ -70,7 +73,9 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
     /* The elapsed cue is quantized to 5s steps so the pill's width only
        changes rarely and predictably, instead of ticking every second. */
     setLiveStatus({
-      phase: 'waiting', label: _waitingLabel, mode: state.appMode(),
+      phase: 'waiting',
+      label: _waitingLabel,
+      mode: state.appMode(),
       elapsedSec: sec > 0 ? sec : undefined,
     });
   }
@@ -78,8 +83,13 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
   function stampThinking(sec?: number): void {
     const _owner = liveMessage();
     const _prev = _owner && _owner._liveStatus;
-    if (_prev && (_prev.phase === 'error' || _prev.phase === 'retrying' || _prev.phase === 'tool-running')) return;
-    const curSec = typeof sec === 'number' && sec >= 0 ? sec : (_prev && _prev.elapsedSec) ?? undefined;
+    if (
+      _prev &&
+      (_prev.phase === 'error' || _prev.phase === 'retrying' || _prev.phase === 'tool-running')
+    )
+      return;
+    const curSec =
+      typeof sec === 'number' && sec >= 0 ? sec : ((_prev && _prev.elapsedSec) ?? undefined);
     setLiveStatus({
       phase: 'thinking',
       label: state.t('think.thinking', '正在思考…'),

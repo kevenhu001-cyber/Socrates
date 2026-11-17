@@ -25,7 +25,12 @@ function findOnPathOrCargoBin(name) {
     execFileSync(which, [name], { stdio: 'ignore' });
     return name;
   } catch {
-    const cargoBin = path.join(os.homedir(), '.cargo', 'bin', process.platform === 'win32' ? `${name}.exe` : name);
+    const cargoBin = path.join(
+      os.homedir(),
+      '.cargo',
+      'bin',
+      process.platform === 'win32' ? `${name}.exe` : name,
+    );
     if (existsSync(cargoBin)) return cargoBin;
     return null;
   }
@@ -39,10 +44,14 @@ if (!wasmBindgen) {
 }
 
 console.log('[build-wasm] building socrates-wasm (release, wasm32-unknown-unknown)…');
-execFileSync('cargo', ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'socrates-wasm'], {
-  cwd: toolsRustDir,
-  stdio: 'inherit',
-});
+execFileSync(
+  'cargo',
+  ['build', '--release', '--target', 'wasm32-unknown-unknown', '-p', 'socrates-wasm'],
+  {
+    cwd: toolsRustDir,
+    stdio: 'inherit',
+  },
+);
 
 const wasmFile = path.join(
   toolsRustDir,

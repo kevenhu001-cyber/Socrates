@@ -15,12 +15,15 @@ export function canReloadComposer(): boolean {
 export function reloadWithComposerDrafts(): boolean {
   if (!canReloadComposer()) return false;
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
-      userId: getCurrentUser()?.id,
-      url: location.href,
-      topic: getComposerMarkdown('topic'),
-      chat: getComposerMarkdown('chat'),
-    }));
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        userId: getCurrentUser()?.id,
+        url: location.href,
+        topic: getComposerMarkdown('topic'),
+        chat: getComposerMarkdown('chat'),
+      }),
+    );
     location.reload();
     return true;
   } catch (error) {
@@ -35,11 +38,22 @@ export function restoreComposerReloadDrafts(): void {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     sessionStorage.removeItem(STORAGE_KEY);
-    const draft = JSON.parse(raw) as { userId?: unknown; url?: unknown; topic?: unknown; chat?: unknown };
-    if (draft?.userId !== getCurrentUser()?.id || draft?.url !== location.href || !canReloadComposer()) return;
+    const draft = JSON.parse(raw) as {
+      userId?: unknown;
+      url?: unknown;
+      topic?: unknown;
+      chat?: unknown;
+    };
+    if (
+      draft?.userId !== getCurrentUser()?.id ||
+      draft?.url !== location.href ||
+      !canReloadComposer()
+    )
+      return;
     for (const surface of SURFACES) {
       const text = draft[surface];
-      if (typeof text === 'string' && text && !getComposerMarkdown(surface)) setComposerMarkdown(surface, text);
+      if (typeof text === 'string' && text && !getComposerMarkdown(surface))
+        setComposerMarkdown(surface, text);
     }
   } catch (error) {
     reportSwallow(error, 'composer:restore-reload-drafts');

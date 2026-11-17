@@ -31,7 +31,11 @@ export class ExtensionRegistry {
         throw new Error(`[extensions] Template "${def.key}" requires a string systemPrompt.`);
       }
     }
-    if (def.kind === 'toggle' && typeof def.onActivate !== 'function' && typeof def.onDeactivate !== 'function') {
+    if (
+      def.kind === 'toggle' &&
+      typeof def.onActivate !== 'function' &&
+      typeof def.onDeactivate !== 'function'
+    ) {
       throw new Error(`[extensions] Toggle "${def.key}" should declare onActivate/onDeactivate.`);
     }
   }

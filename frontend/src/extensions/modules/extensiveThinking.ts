@@ -32,7 +32,9 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
     ew().extensiveThinkingOn = true;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(true));
-    } catch (error) { reportSwallow(error, 'extensions/modules/extensiveThinking.ts:34', 'expected'); }
+    } catch (error) {
+      reportSwallow(error, 'extensions/modules/extensiveThinking.ts:34', 'expected');
+    }
     ctx.setTemplate({
       key: 'extensiveThinking',
       title: ctx.t('effort.high.note', 'Extensive thinking'),
@@ -46,7 +48,9 @@ export const extensiveThinkingExtension: ExtensionDefinition = {
     ew().extensiveThinkingOn = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(false));
-    } catch (error) { reportSwallow(error, 'extensions/modules/extensiveThinking.ts:48', 'expected'); }
+    } catch (error) {
+      reportSwallow(error, 'extensions/modules/extensiveThinking.ts:48', 'expected');
+    }
     const active = ew()._activeTemplate;
     if (active && active.extensionKey === 'extensiveThinking') {
       ctx.clearTemplate();

@@ -24,9 +24,12 @@ export function PersonalizationInstructionsSection({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveQueue = useRef<Promise<void>>(Promise.resolve());
 
-  useEffect(() => () => {
-    if (saveTimer.current !== null) clearTimeout(saveTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (saveTimer.current !== null) clearTimeout(saveTimer.current);
+    },
+    [],
+  );
 
   const handleChange = (nextValue: string) => {
     onChange(nextValue);
@@ -48,25 +51,33 @@ export function PersonalizationInstructionsSection({
     <section className="settings-section">
       <div className="settings-section-head">
         <h3>{label('自定义指令', 'Custom instructions')}</h3>
-        <p id="settings-custom-instructions-description">{label(
-          '希望助手了解你什么，或者以怎样的风格与格式回答。',
-          'What would you like the assistant to know about you to provide better responses.',
-        )}</p>
+        <p id="settings-custom-instructions-description">
+          {label(
+            '希望助手了解你什么，或者以怎样的风格与格式回答。',
+            'What would you like the assistant to know about you to provide better responses.',
+          )}
+        </p>
       </div>
-      <FieldGroup><Field>
-        <FieldLabel className="sr-only" htmlFor="settings-custom-instructions">{label('自定义指令', 'Custom instructions')}</FieldLabel>
-        <ShadcnTextarea
-          id="settings-custom-instructions"
-          aria-describedby="settings-custom-instructions-description"
-          className="settings-textarea"
-          rows={3}
-          value={value}
-          placeholder={language === 'zh'
-            ? '例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。'
-            : 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.'}
-          onChange={(event) => handleChange(event.target.value)}
-        />
-      </Field></FieldGroup>
+      <FieldGroup>
+        <Field>
+          <FieldLabel className="sr-only" htmlFor="settings-custom-instructions">
+            {label('自定义指令', 'Custom instructions')}
+          </FieldLabel>
+          <ShadcnTextarea
+            id="settings-custom-instructions"
+            aria-describedby="settings-custom-instructions-description"
+            className="settings-textarea"
+            rows={3}
+            value={value}
+            placeholder={
+              language === 'zh'
+                ? '例如：我是高中物理老师，喜欢结构化、带有举例说明的清晰回答。'
+                : 'e.g. I am a physics student; prefer concise, step-by-step explanations with examples.'
+            }
+            onChange={(event) => handleChange(event.target.value)}
+          />
+        </Field>
+      </FieldGroup>
     </section>
   );
 }

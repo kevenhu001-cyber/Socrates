@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -8,65 +8,75 @@ async function prepareStream(page, options = {}) {
   const delay = options.delay || 100;
   const finishDelay = options.finishDelay || 600;
   const deltas = options.deltas;
-  await page.evaluate(async ({ delay, finishDelay, deltas }) => {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
-      const encoder = new TextEncoder();
-      let timer = null;
-      const stream = new ReadableStream({
-        start(controller) {
-          let index = 0;
-          const push = () => {
-            if (index < deltas.length) {
-              const payload = { choices: [{ delta: { content: deltas[index++] } }] };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
-              timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
-              return;
-            }
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            controller.close();
-          };
-          timer = setTimeout(push, delay);
-        },
-        cancel() { if (timer) clearTimeout(timer); },
+  await page.evaluate(
+    async ({ delay, finishDelay, deltas }) => {
+      const originalFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
+        const encoder = new TextEncoder();
+        let timer = null;
+        const stream = new ReadableStream({
+          start(controller) {
+            let index = 0;
+            const push = () => {
+              if (index < deltas.length) {
+                const payload = { choices: [{ delta: { content: deltas[index++] } }] };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+                timer = setTimeout(push, index === deltas.length ? finishDelay : delay);
+                return;
+              }
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+              controller.close();
+            };
+            timer = setTimeout(push, delay);
+          },
+          cancel() {
+            if (timer) clearTimeout(timer);
+          },
+        });
+        return Promise.resolve(
+          new Response(stream, {
+            status: 200,
+            headers: { 'Content-Type': 'text/event-stream' },
+          }),
+        );
+      };
+
+      window.__socratesTestState.patch({ session: { phase: 'chat' } });
+      window.__socratesTestState.patch({
+        session: { currentSessionId: '77777777-7777-4777-8777-777777777777' },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
-    };
+      window.__socratesTestState.patch({ session: { messages: [] } });
+      window.__testActivateMainView('chatView');
 
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '77777777-7777-4777-8777-777777777777' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
-    window.__testActivateMainView('chatView');
+      for (let i = 0; i < 10; i += 1) {
+        window.addMessage(
+          i % 2 ? 'assistant' : 'user',
+          `Earlier message ${i}: ${'context '.repeat(20)}`,
+        );
+      }
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const list = document.getElementById('msgList');
+      list.scrollTop = list.scrollHeight;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
 
-    for (let i = 0; i < 10; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Earlier message ${i}: ${'context '.repeat(20)}`);
-    }
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    const list = document.getElementById('msgList');
-    list.scrollTop = list.scrollHeight;
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
-
-    // instrumentation: record every scroll position change
-    window.__scrollLog = [];
-    list.addEventListener('scroll', () => {
-      window.__scrollLog.push({
-        t: Math.round(performance.now()),
-        top: Math.round(list.scrollTop),
-        dfb: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
-        away: window.stateStore.read("_userScrolledAway"),
+      // instrumentation: record every scroll position change
+      window.__scrollLog = [];
+      list.addEventListener('scroll', () => {
+        window.__scrollLog.push({
+          t: Math.round(performance.now()),
+          top: Math.round(list.scrollTop),
+          dfb: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
+          away: window.__socratesTestState.ui()._userScrolledAway,
+        });
       });
-    });
-    // track flag flips
-    window.__awayLog = [];
-    let _away = window.stateStore.read("_userScrolledAway");
-    window.stateStore.subscribe(() => {
-        const v = window.stateStore.read("_userScrolledAway");
+      // track flag flips
+      window.__awayLog = [];
+      let _away = window.__socratesTestState.ui()._userScrolledAway;
+      window.__socratesTestState.subscribe(() => {
+        const v = window.__socratesTestState.ui()._userScrolledAway;
         if (v !== _away) {
           window.__awayLog.push({
             t: Math.round(performance.now()),
@@ -77,28 +87,34 @@ async function prepareStream(page, options = {}) {
           });
         }
         _away = v;
-    });
-    // track programmatic scrollTop writes on the list
-    window.__setLog = [];
-    const proto = Object.getPrototypeOf(list);
-    const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
-    Object.defineProperty(list, 'scrollTop', {
-      get() { return desc.get.call(list); },
-      set(v) {
-        window.__setLog.push({
-          t: Math.round(performance.now()),
-          v: Math.round(v),
-          sh: list.scrollHeight,
-          stack: new Error().stack.split('\n').slice(1, 5).join(' | '),
-        });
-        desc.set.call(list, v);
-      },
-      configurable: true,
-    });
-  }, { delay, finishDelay, deltas });
+      });
+      // track programmatic scrollTop writes on the list
+      window.__setLog = [];
+      const proto = Object.getPrototypeOf(list);
+      const desc = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+      Object.defineProperty(list, 'scrollTop', {
+        get() {
+          return desc.get.call(list);
+        },
+        set(v) {
+          window.__setLog.push({
+            t: Math.round(performance.now()),
+            v: Math.round(v),
+            sh: list.scrollHeight,
+            stack: new Error().stack.split('\n').slice(1, 5).join(' | '),
+          });
+          desc.set.call(list, v);
+        },
+        configurable: true,
+      });
+    },
+    { delay, finishDelay, deltas },
+  );
 }
 
-test('instrumented: new turn anchors the question near the top after finish (think + long answer)', async ({ page }) => {
+test('instrumented: new turn anchors the question near the top after finish (think + long answer)', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -106,7 +122,9 @@ test('instrumented: new turn anchors the question near the top after finish (thi
 
   const paragraphs = [];
   for (let i = 0; i < 14; i++) {
-    paragraphs.push(` Paragraph ${i}: this is a long streamed answer body that keeps growing with plenty of text so the answer is taller than the viewport.\n\n`);
+    paragraphs.push(
+      ` Paragraph ${i}: this is a long streamed answer body that keeps growing with plenty of text so the answer is taller than the viewport.\n\n`,
+    );
   }
   const deltas = [
     '<think>Let me think about this question carefully',
@@ -136,7 +154,10 @@ test('instrumented: new turn anchors the question near the top after finish (thi
     let topEl = null;
     for (const row of list.querySelectorAll('.msg')) {
       const r = row.getBoundingClientRect();
-      if (r.bottom > lr.top + 1) { topEl = row.className + ' :: ' + (row.textContent || '').slice(0, 60); break; }
+      if (r.bottom > lr.top + 1) {
+        topEl = row.className + ' :: ' + (row.textContent || '').slice(0, 60);
+        break;
+      }
     }
     // scheduleActiveTurnToTop pins the newest user question near the top
     // of the scroller; measure its offset from the scroller viewport top.
@@ -155,7 +176,7 @@ test('instrumented: new turn anchors the question near the top after finish (thi
       setLog: (window.__setLog || []).slice(-12),
       fullScrollLog: (window.__scrollLog || []).slice(-10),
       topEl,
-      userScrolledAway: window.stateStore.read("_userScrolledAway"),
+      userScrolledAway: window.__socratesTestState.ui()._userScrolledAway,
     };
   }, tFinish);
 

@@ -21,7 +21,11 @@ import { retryImport } from './retryImport';
    rendering trees load, independently of authentication/config requests. */
 import { hydrateRecentsFilterChips } from '../../sidebar/RecentsFilterChips';
 import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
-import { handleComposerEscape, submitComposer, submitPrimaryComposer } from '../../composer-input/lifecycle';
+import {
+  handleComposerEscape,
+  submitComposer,
+  submitPrimaryComposer,
+} from '../../composer-input/lifecycle';
 
 import { NewReplyPill } from './indicatorComponents';
 
@@ -57,11 +61,15 @@ function workspacePageSpecs(): MountSpec[] {
   return [
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
     { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
-    { hostId: 'libraryUploadReactRoot', label: 'library-upload-input', mount: (host) => {
-      return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
-        mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
-      });
-    } },
+    {
+      hostId: 'libraryUploadReactRoot',
+      label: 'library-upload-input',
+      mount: (host) => {
+        return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
+          mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
+        });
+      },
+    },
     { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
     { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
     { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },
@@ -70,28 +78,44 @@ function workspacePageSpecs(): MountSpec[] {
 
 function lazyPortalSpecs(): MountSpec[] {
   return [
-    { hostId: 'storageModalReactRoot', label: 'storage-modal',
+    {
+      hostId: 'storageModalReactRoot',
+      label: 'storage-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'storageModalReactRoot'),
-      mount: () => import('../../storageModal').then((m) => m.mountStorageModal()) },
-    { hostId: 'cheatsheetReactRoot', label: 'cheatsheet',
+      mount: () => import('../../storageModal').then((m) => m.mountStorageModal()),
+    },
+    {
+      hostId: 'cheatsheetReactRoot',
+      label: 'cheatsheet',
       ensureHost: (doc) => ensureBodyChild(doc, 'cheatsheetReactRoot'),
-      mount: () => import('../../cheatsheet').then((m) => m.mountCheatsheet()) },
-    { hostId: 'promptTemplatesReactRoot', label: 'prompt-templates',
+      mount: () => import('../../cheatsheet').then((m) => m.mountCheatsheet()),
+    },
+    {
+      hostId: 'promptTemplatesReactRoot',
+      label: 'prompt-templates',
       ensureHost: (doc) => ensureBodyChild(doc, 'promptTemplatesReactRoot'),
-      mount: () => import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()) },
-    { hostId: 'confirmDialogReactRoot', label: 'confirm-dialog',
+      mount: () => import('../../promptTemplatesModal').then((m) => m.mountPromptTemplatesModal()),
+    },
+    {
+      hostId: 'confirmDialogReactRoot',
+      label: 'confirm-dialog',
       ensureHost: (doc) => ensureBodyChild(doc, 'confirmDialogReactRoot'),
-      mount: () => import('../../confirm').then((m) => m.mountConfirmDialog()) },
-    { hostId: 'chatConfigurationReactRoot', label: 'chat-configuration',
+      mount: () => import('../../confirm').then((m) => m.mountConfirmDialog()),
+    },
+    {
+      hostId: 'chatConfigurationReactRoot',
+      label: 'chat-configuration',
       ensureHost: (doc) => ensureBodyChild(doc, 'chatConfigurationReactRoot'),
-      mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()) },
+      mount: () => import('../../chat-configuration').then((m) => m.mountChatConfiguration()),
+    },
   ];
 }
 
 /** Resolve once the main thread is idle (bounded), for roots off the first-paint path. */
 function whenIdle(timeout = 1200): Promise<void> {
   return new Promise((resolve) => {
-    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(() => resolve(), { timeout });
+    if (typeof window.requestIdleCallback === 'function')
+      window.requestIdleCallback(() => resolve(), { timeout });
     else window.setTimeout(resolve, 200);
   });
 }
@@ -101,51 +125,94 @@ export function mountRegistryList(): MountSpec[] {
   return [
     /* 1. Bootstrap seeds the chat runtime store before this registry
        runs, so every root can subscribe during mount. */
-    { hostId: 'msgList', label: 'msg-list', mount: (host) =>
-      import('../../message-list/MessageList').then(({ mountMessageList }) => {
-        // A read-only shared transcript intentionally retains its own owner.
-        return document.getElementById('msgList') === host && mountMessageList().root !== null;
-      }) },
-    { hostId: 'newReplyPill', label: 'new-reply-pill', mount: (host) => {
-      hydrateOwnedRoot(host, 'new-reply-pill', <StrictMode><NewReplyPill host={host} /></StrictMode>);
-    } },
+    {
+      hostId: 'msgList',
+      label: 'msg-list',
+      mount: (host) =>
+        import('../../message-list/MessageList').then(({ mountMessageList }) => {
+          // A read-only shared transcript intentionally retains its own owner.
+          return document.getElementById('msgList') === host && mountMessageList().root !== null;
+        }),
+    },
+    {
+      hostId: 'newReplyPill',
+      label: 'new-reply-pill',
+      mount: (host) => {
+        hydrateOwnedRoot(
+          host,
+          'new-reply-pill',
+          <StrictMode>
+            <NewReplyPill host={host} />
+          </StrictMode>,
+        );
+      },
+    },
     /* 2. Overlays / modals / popovers */
-    { hostId: 'cookieConsentReactRoot', label: 'cookie-consent', mount: (host) => {
-      return import('../../cookieConsent/CookieConsent').then(({ CookieConsent }) => {
-        mountOwnedRoot(host, 'cookie-consent', <CookieConsent />);
-      });
-    } },
-    { hostId: 'cmdKReactRoot', label: 'cmd-k',
+    {
+      hostId: 'cookieConsentReactRoot',
+      label: 'cookie-consent',
+      mount: (host) => {
+        return import('../../cookieConsent/CookieConsent').then(({ CookieConsent }) => {
+          mountOwnedRoot(host, 'cookie-consent', <CookieConsent />);
+        });
+      },
+    },
+    {
+      hostId: 'cmdKReactRoot',
+      label: 'cmd-k',
       ensureHost: (doc) => ensureBodyChild(doc, 'cmdKReactRoot'),
-      mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()) },
-    { hostId: 'findBar', label: 'find-in-session',
-      mount: () => import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()) },
-    { hostId: 'sidebarNav', label: 'sidebar-nav', mount: (host) =>
-      import('../../sidebar/SidebarNav').then(({ mountSidebarNav }) => {
-        return document.getElementById('sidebarNav') === host && mountSidebarNav();
-      }) },
-    { hostId: 'sidebarSearchRow', label: 'sidebar-search-row', mount: (host) => {
-      return import('../../sidebar-chrome/SidebarSearchRow').then(({ SidebarSearchRow }) => {
-        mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
-      });
-    } },
+      mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()),
+    },
+    {
+      hostId: 'findBar',
+      label: 'find-in-session',
+      mount: () =>
+        import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()),
+    },
+    {
+      hostId: 'sidebarNav',
+      label: 'sidebar-nav',
+      mount: (host) =>
+        import('../../sidebar/SidebarNav').then(({ mountSidebarNav }) => {
+          return document.getElementById('sidebarNav') === host && mountSidebarNav();
+        }),
+    },
+    {
+      hostId: 'sidebarSearchRow',
+      label: 'sidebar-search-row',
+      mount: (host) => {
+        return import('../../sidebar-chrome/SidebarSearchRow').then(({ SidebarSearchRow }) => {
+          mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
+        });
+      },
+    },
     /* RN-1 — the landing empty state is React Native (packages/ui/src/home)
        rendered through react-native-web; the lazy import keeps RNW out of
        the entry chunk. */
-    { hostId: 'homeHero', label: 'home-hero', mount: (host) => {
-      return import('../../home/HomeStartComponents').then(({ HomeHeroRoot }) => {
-        mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
-      });
-    } },
+    {
+      hostId: 'homeHero',
+      label: 'home-hero',
+      mount: (host) => {
+        return import('../../home/HomeStartComponents').then(({ HomeHeroRoot }) => {
+          mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
+        });
+      },
+    },
     /* The landing entries below the composer (chat shortcuts, learning-mode
        capsule, tutor starters) were removed on 2026-11-16: the landing is
        the greeting plus the composer, nothing else. Their specs are gone
        with the host nodes in index.html. */
-    { hostId: 'learningModeBar', label: 'learning-mode-bar', mount: (host) => {
-      return whenIdle().then(() => import('../../tutor/QuestionChainRoot')).then(({ SessionLearningModes }) => {
-        mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
-      });
-    } },
+    {
+      hostId: 'learningModeBar',
+      label: 'learning-mode-bar',
+      mount: (host) => {
+        return whenIdle()
+          .then(() => import('../../tutor/QuestionChainRoot'))
+          .then(({ SessionLearningModes }) => {
+            mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
+          });
+      },
+    },
     /* The header chrome — one root renders every control inside
        `<div class="top-bar" id="topBar">`. Its ids are the shell
        contract for the legacy runtime, so the React tree owns the
@@ -153,50 +220,95 @@ export function mountRegistryList(): MountSpec[] {
        P_perf-static-closure — dynamically imported: the header is not on
        the first-paint path either, and the primitive it pulls in would
        otherwise grow the entry chunk past its gzip budget. */
-    { hostId: 'topBar', label: 'top-bar',
-      mount: () => import('../../topbar/TopBar').then((m) => m.mountTopBar()) },
-    { hostId: 'recentsFilterChips', label: 'recents-filter-chips', mount: () => hydrateRecentsFilterChips() },
-    { hostId: 'mistakesPanel', label: 'mistakes-panel', mount: (host) => {
-      return import('../../tutor/MistakeBookPanel').then(({ MistakeBookPanel }) => {
-        mountOwnedRoot(host, 'mistakes-panel', <MistakeBookPanel />);
-      });
-    } },
-    { hostId: 'teachingPlanContent', label: 'teaching-plan', mount: (host) => {
-      return import('../../tutor/KnowledgePanel').then(({ TeachingPlanPanel }) => {
-        mountOwnedRoot(host, 'teaching-plan', <TeachingPlanPanel />);
-      });
-    } },
-    { hostId: 'kbContent', label: 'knowledge-map', mount: (host) => {
-      return import('../../tutor/KnowledgePanel').then(({ KnowledgeMapPanel }) => {
-        mountOwnedRoot(host, 'knowledge-map', <KnowledgeMapPanel />);
-      });
-    } },
-    { hostId: 'composerToolsRoot', label: 'composer-tools-menu',
+    {
+      hostId: 'topBar',
+      label: 'top-bar',
+      mount: () => import('../../topbar/TopBar').then((m) => m.mountTopBar()),
+    },
+    {
+      hostId: 'recentsFilterChips',
+      label: 'recents-filter-chips',
+      mount: () => hydrateRecentsFilterChips(),
+    },
+    {
+      hostId: 'mistakesPanel',
+      label: 'mistakes-panel',
+      mount: (host) => {
+        return import('../../tutor/MistakeBookPanel').then(({ MistakeBookPanel }) => {
+          mountOwnedRoot(host, 'mistakes-panel', <MistakeBookPanel />);
+        });
+      },
+    },
+    {
+      hostId: 'teachingPlanContent',
+      label: 'teaching-plan',
+      mount: (host) => {
+        return import('../../tutor/KnowledgePanel').then(({ TeachingPlanPanel }) => {
+          mountOwnedRoot(host, 'teaching-plan', <TeachingPlanPanel />);
+        });
+      },
+    },
+    {
+      hostId: 'kbContent',
+      label: 'knowledge-map',
+      mount: (host) => {
+        return import('../../tutor/KnowledgePanel').then(({ KnowledgeMapPanel }) => {
+          mountOwnedRoot(host, 'knowledge-map', <KnowledgeMapPanel />);
+        });
+      },
+    },
+    {
+      hostId: 'composerToolsRoot',
+      label: 'composer-tools-menu',
       ensureHost: (doc) => ensureBodyChild(doc, 'composerToolsRoot'),
-      mount: (host) => import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu(host)) },
-    { hostId: 'moreNavPopoverRoot', label: 'more-popover',
-      mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()) },
-    { hostId: 'shareModalReactRoot', label: 'share-modal',
+      mount: (host) =>
+        import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu(host)),
+    },
+    {
+      hostId: 'moreNavPopoverRoot',
+      label: 'more-popover',
+      mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()),
+    },
+    {
+      hostId: 'shareModalReactRoot',
+      label: 'share-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'shareModalReactRoot'),
-      mount: () => import('../../shareModal').then((m) => m.mountShareModal()) },
-    { hostId: 'profileModalReactRoot', label: 'profile-modal',
+      mount: () => import('../../shareModal').then((m) => m.mountShareModal()),
+    },
+    {
+      hostId: 'profileModalReactRoot',
+      label: 'profile-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'profileModalReactRoot'),
-      mount: () => import('../../profileModal').then((m) => m.mountProfileModal()) },
-    { hostId: 'usageModalReactRoot', label: 'usage-modal',
+      mount: () => import('../../profileModal').then((m) => m.mountProfileModal()),
+    },
+    {
+      hostId: 'usageModalReactRoot',
+      label: 'usage-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'usageModalReactRoot'),
-      mount: () => import('../../usageModal').then((m) => m.mountUsageModal()) },
+      mount: () => import('../../usageModal').then((m) => m.mountUsageModal()),
+    },
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
-    { hostId: 'sidebarHeader', label: 'sidebar-chrome', mount: (host) =>
-      import('../../sidebar-chrome/mount').then(({ mountSidebarChrome }) => {
-        if (document.getElementById('sidebarHeader') !== host) return false;
-        mountSidebarChrome();
-      }) },
-    { hostId: 'sidebarFooterActions', label: 'sidebar-footer-actions', mount: (host) => {
-      return import('../../sidebar-chrome/SidebarFooterActions').then(({ SidebarFooterActions }) => {
-        mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);
-      });
-    } },
+    {
+      hostId: 'sidebarHeader',
+      label: 'sidebar-chrome',
+      mount: (host) =>
+        import('../../sidebar-chrome/mount').then(({ mountSidebarChrome }) => {
+          if (document.getElementById('sidebarHeader') !== host) return false;
+          mountSidebarChrome();
+        }),
+    },
+    {
+      hostId: 'sidebarFooterActions',
+      label: 'sidebar-footer-actions',
+      mount: (host) => {
+        return import('../../sidebar-chrome/SidebarFooterActions').then(
+          ({ SidebarFooterActions }) => {
+            mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);
+          },
+        );
+      },
+    },
     /* 4. Workspace pages */
     ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
@@ -204,11 +316,15 @@ export function mountRegistryList(): MountSpec[] {
     /* P_perf-session-list — its shared RN shell pulls React Native Web's
        virtual-list and animation code. Reserve the host while the feature
        chunk loads so legacy rendering cannot race the React owner. */
-    { hostId: 'recentsList', label: 'session-list',
-      mount: (host) => import('../../session-list').then(({ mountSessionList }) => {
-        if (document.getElementById('recentsList') !== host) return false;
-        mountSessionList();
-      }) },
+    {
+      hostId: 'recentsList',
+      label: 'session-list',
+      mount: (host) =>
+        import('../../session-list').then(({ mountSessionList }) => {
+          if (document.getElementById('recentsList') !== host) return false;
+          mountSessionList();
+        }),
+    },
     /* 6. Global React roots — composer, message list, workflow layer.
        P_perf-composer-lazy — RichComposer pulls the whole tiptap/prosemirror
        editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
@@ -220,23 +336,42 @@ export function mountRegistryList(): MountSpec[] {
        mounted, preserving each draft, token, focus and chip. The typed
        lifecycle commands branch on the live surface, so the editor does not
        remount when the view flips. */
-    { hostId: 'composerInputWrap', label: 'composer-shell', mount: (host) => {
-      return retryImport(() => import('../../composer-input')).then(({ ComposerShell }) => {
-        mountOwnedRoot(host, 'composer-shell', <ErrorBoundary><ComposerShell
-          placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
-          onSubmit={() => submitComposer(legacyComposer)}
-          onPrimarySubmit={() => submitPrimaryComposer(legacyComposer)}
-          onStop={() => legacyComposer.stopChatResponse()}
-          onEscape={() => handleComposerEscape(legacyComposer)} /></ErrorBoundary>);
-      });
-    } },
-    { hostId: 'workflowLayerReactRoot', label: 'workflow-layer',
+    {
+      hostId: 'composerInputWrap',
+      label: 'composer-shell',
+      mount: (host) => {
+        return retryImport(() => import('../../composer-input')).then(({ ComposerShell }) => {
+          mountOwnedRoot(
+            host,
+            'composer-shell',
+            <ErrorBoundary>
+              <ComposerShell
+                placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
+                onSubmit={() => submitComposer(legacyComposer)}
+                onPrimarySubmit={() => submitPrimaryComposer(legacyComposer)}
+                onStop={() => legacyComposer.stopChatResponse()}
+                onEscape={() => handleComposerEscape(legacyComposer)}
+              />
+            </ErrorBoundary>,
+          );
+        });
+      },
+    },
+    {
+      hostId: 'workflowLayerReactRoot',
+      label: 'workflow-layer',
       ensureHost: ensureWorkflowHost,
       mount: (host) => {
         return import('../../extensions/WorkflowLayer').then(({ WorkflowLayer }) => {
-          mountOwnedRoot(host, 'workflow-layer', <ErrorBoundary><WorkflowLayer /></ErrorBoundary>);
+          mountOwnedRoot(
+            host,
+            'workflow-layer',
+            <ErrorBoundary>
+              <WorkflowLayer />
+            </ErrorBoundary>,
+          );
         });
-      } },
-
+      },
+    },
   ];
 }

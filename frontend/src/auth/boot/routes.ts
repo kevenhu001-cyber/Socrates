@@ -1,9 +1,19 @@
 import { apiFetch } from '../../util/api/index.ts';
-import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../config/providerConfig.service.ts';
+import {
+  setBuiltInProviderModel,
+  setServerBuiltInKeyAvailable,
+} from '../../config/providerConfig.service.ts';
 import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { clearAuthTabSelection, showAuthView, showAuthSignin, showGate, submitAuthVerify, revealAppAndHydrate } from '../index.ts';
+import {
+  clearAuthTabSelection,
+  showAuthView,
+  showAuthSignin,
+  showGate,
+  submitAuthVerify,
+  revealAppAndHydrate,
+} from '../index.ts';
 import { selectAuthUrlRoute } from './routeSelector.ts';
 import { recordBootedRouteKind } from './routeState.ts';
 import { setAuthField } from '../uiState.ts';
@@ -27,17 +37,26 @@ export async function handleAuthUrlRoutes(
   }
 
   switch (route.kind) {
-    case 'local-dev': return handleLocalDevRoute(params, csrfReady);
-    case 'oauth-error': return handleOAuthErrorRoute(params);
-    case 'share': return handleSharedSessionRoute(params);
-    case 'verify': return handleVerificationRoute(params, csrfReady);
-    case 'password-reset': return handlePasswordResetRoute(params);
-    default: return false;
+    case 'local-dev':
+      return handleLocalDevRoute(params, csrfReady);
+    case 'oauth-error':
+      return handleOAuthErrorRoute(params);
+    case 'share':
+      return handleSharedSessionRoute(params);
+    case 'verify':
+      return handleVerificationRoute(params, csrfReady);
+    case 'password-reset':
+      return handlePasswordResetRoute(params);
+    default:
+      return false;
   }
 }
 
 /** Resolve route precedence without touching browser state. */
-async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLike<unknown>): Promise<boolean> {
+async function handleLocalDevRoute(
+  params: URLSearchParams,
+  csrfReady: PromiseLike<unknown>,
+): Promise<boolean> {
   await csrfReady;
   const next = params.get('next');
   const search = next ? '?next=' + encodeURIComponent(next) : '';
@@ -45,8 +64,16 @@ async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLi
   try {
     setBuiltInProviderModel('local');
     setServerBuiltInKeyAvailable(true);
-  } catch (error) { reportSwallow(error, 'auth/boot.localDev.config'); }
-  const user = { id: 'local-dev', name: 'Local Dev', email: 'dev@local', plan: 'local', isLocal: true };
+  } catch (error) {
+    reportSwallow(error, 'auth/boot.localDev.config');
+  }
+  const user = {
+    id: 'local-dev',
+    name: 'Local Dev',
+    email: 'dev@local',
+    plan: 'local',
+    isLocal: true,
+  };
   setCurrentUser(user as import('../../app/lifecycle/index.ts').UserRecord);
   markAuthSuccess();
   revealAppAndHydrate();
@@ -60,8 +87,11 @@ function handleOAuthErrorRoute(params: URLSearchParams): boolean {
   showSigninGate();
   const message = 'GitHub login failed: ' + decodeURIComponent(oauthError) + '.';
   setTimeout(() => {
-    try { showToast(message, 5000); }
-    catch (error) { reportSwallow(error, 'auth/boot.oauthError.toast'); }
+    try {
+      showToast(message, 5000);
+    } catch (error) {
+      reportSwallow(error, 'auth/boot.oauthError.toast');
+    }
   }, 500);
   return true;
 }
@@ -74,16 +104,26 @@ function handlePlainErrorRoute(): void {
 async function handleSharedSessionRoute(params: URLSearchParams): Promise<boolean> {
   const shareToken = params.get('share') || '';
   history.replaceState(null, '', location.pathname);
-  try { await loadSharedSession(shareToken); }
-  catch (error) { reportSwallow(error, 'auth/boot.shareSession'); }
+  try {
+    await loadSharedSession(shareToken);
+  } catch (error) {
+    reportSwallow(error, 'auth/boot.shareSession');
+  }
   return true;
 }
 
-async function handleVerificationRoute(params: URLSearchParams, csrfReady: PromiseLike<unknown>): Promise<boolean> {
+async function handleVerificationRoute(
+  params: URLSearchParams,
+  csrfReady: PromiseLike<unknown>,
+): Promise<boolean> {
   const token = params.get('token') || '';
   await csrfReady;
   const redirect = params.get('redirect');
-  history.replaceState(null, '', location.pathname + (redirect ? '?redirect=' + encodeURIComponent(redirect) : ''));
+  history.replaceState(
+    null,
+    '',
+    location.pathname + (redirect ? '?redirect=' + encodeURIComponent(redirect) : ''),
+  );
   showGate();
   if (typeof submitAuthVerify === 'function') await submitAuthVerify(token);
   return true;
@@ -102,9 +142,13 @@ function handlePasswordResetRoute(params: URLSearchParams): boolean {
 
 async function prefillResetEmail(token: string): Promise<void> {
   try {
-    const info = await apiFetch<{ email?: string }>('/api/auth/reset-info?token=' + encodeURIComponent(token));
+    const info = await apiFetch<{ email?: string }>(
+      '/api/auth/reset-info?token=' + encodeURIComponent(token),
+    );
     if (info && info.email) setAuthField('authResetEmail', info.email);
-  } catch (error) { reportSwallow(error, 'auth/boot.passwordReset.prefillEmail'); }
+  } catch (error) {
+    reportSwallow(error, 'auth/boot.passwordReset.prefillEmail');
+  }
 }
 
 function showSigninGate(): void {

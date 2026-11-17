@@ -9,25 +9,40 @@
 // Nothing asserted on the rendered copy, so a locale switch left the
 // whole panel half-translated.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const MISTAKES = [
   {
-    id: 'm1', type: 'quiz', topic: '导数', q: 'd/dx (x²) = ?',
-    options: [{ letter: 'A', text: '2x' }, { letter: 'B', text: 'x' }],
-    correct: 'A', userAnswer: 'B', timestamp: Date.now() - 60_000,
-    redoCount: 3, resolved: true,
+    id: 'm1',
+    type: 'quiz',
+    topic: '导数',
+    q: 'd/dx (x²) = ?',
+    options: [
+      { letter: 'A', text: '2x' },
+      { letter: 'B', text: 'x' },
+    ],
+    correct: 'A',
+    userAnswer: 'B',
+    timestamp: Date.now() - 60_000,
+    redoCount: 3,
+    resolved: true,
   },
   {
-    id: 'm2', type: 'practice', topic: '积分', q: '∫x dx = ?',
-    options: [], correct: 'x²/2', userAnswer: 'x', timestamp: Date.now() - 120_000,
+    id: 'm2',
+    type: 'practice',
+    topic: '积分',
+    q: '∫x dx = ?',
+    options: [],
+    correct: 'x²/2',
+    userAnswer: 'x',
+    timestamp: Date.now() - 120_000,
     redoCount: 1,
   },
 ];
 
-async function openMistakeBook(page, mistakes) {
+async function openMistakeBookPanel(page) {
   await mockAuthedApp(page, { lang: 'zh' });
   await page.setViewportSize({ width: 1280, height: 1200 });
   await gotoAndSettle(page, '/');
@@ -36,10 +51,16 @@ async function openMistakeBook(page, mistakes) {
   await expect(page.locator('#topModeTutor')).toHaveAttribute('aria-selected', 'true');
   await page.locator('#tabMistakes').click();
   await expect(page.locator('#mistakesPanel')).toBeVisible();
+}
+
+async function openMistakeBook(page, mistakes) {
+  await openMistakeBookPanel(page);
   await page.evaluate((list) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'mistakes', value: list });
+    window.__socratesTestState.patch({ kb: { mistakes: list } });
   }, mistakes);
-  await expect(page.locator('#mistakesTabBadge')).toHaveText(mistakes.length ? String(mistakes.length) : '');
+  await expect(page.locator('#mistakesTabBadge')).toHaveText(
+    mistakes.length ? String(mistakes.length) : '',
+  );
 }
 
 async function activateTranscript(page) {
@@ -89,18 +110,32 @@ test('expanding a card shows where it went wrong and the right way', async ({ pa
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(first.locator('[data-mistake-cause]')).toContainText('B · x');
   await expect(first.locator('[data-mistake-right]')).toContainText('A · 2x');
-  await expect(first.locator('[data-mistake-tag="correct"]')).toHaveAttribute('data-mistake-opt', 'A');
-  await expect(first.locator('[data-mistake-tag="wrong"]')).toHaveAttribute('data-mistake-opt', 'B');
+  await expect(first.locator('[data-mistake-tag="correct"]')).toHaveAttribute(
+    'data-mistake-opt',
+    'A',
+  );
+  await expect(first.locator('[data-mistake-tag="wrong"]')).toHaveAttribute(
+    'data-mistake-opt',
+    'B',
+  );
   /* Two topics → two groups. */
   await expect(page.locator('#mistakesList [data-mistake-group]')).toHaveCount(2);
 });
 
 test('practice redo appends a React-owned assistant widget', async ({ page }) => {
-  await openMistakeBook(page, [{
-    id: 'redo-practice', type: 'practice', topic: '代数', q: '解释为什么 x = 4。',
-    options: [], correct: '因为两边同时减去 2。', userAnswer: null,
-    timestamp: Date.now(), redoCount: 0,
-  }]);
+  await openMistakeBook(page, [
+    {
+      id: 'redo-practice',
+      type: 'practice',
+      topic: '代数',
+      q: '解释为什么 x = 4。',
+      options: [],
+      correct: '因为两边同时减去 2。',
+      userAnswer: null,
+      timestamp: Date.now(),
+      redoCount: 0,
+    },
+  ]);
   await activateTranscript(page);
 
   await page.locator('[data-redo="redo-practice"]').click();
@@ -109,19 +144,34 @@ test('practice redo appends a React-owned assistant widget', async ({ page }) =>
   await expect(message).toContainText('重做做错的题目');
   const widget = message.locator('.sc-host[data-scaffold="practice"]');
   await expect(widget).toHaveCount(1);
-  await expect(widget.locator('[data-part="practice-problem"]')).toContainText('解释为什么 x = 4。');
+  await expect(widget.locator('[data-part="practice-problem"]')).toContainText(
+    '解释为什么 x = 4。',
+  );
 
   await widget.getByTestId('practice-reveal').click();
   await expect(widget.getByTestId('practice-feedback')).toHaveText('因为两边同时减去 2。');
 });
 
-test('quiz redo appends a React-owned widget and resolves the current mistake slot', async ({ page }) => {
-  await openMistakeBook(page, [{
-    id: 'redo-quiz', type: 'quiz', topic: '算术', q: '2 + 2 = ?',
-    options: [{ letter: 'A', text: '4' }, { letter: 'B', text: '5' }],
-    correct: 'A', userAnswer: 'B', quizSlotId: 'original-quiz-slot',
-    timestamp: Date.now(), redoCount: 0,
-  }]);
+test('quiz redo appends a React-owned widget and resolves the current mistake slot', async ({
+  page,
+}) => {
+  await openMistakeBook(page, [
+    {
+      id: 'redo-quiz',
+      type: 'quiz',
+      topic: '算术',
+      q: '2 + 2 = ?',
+      options: [
+        { letter: 'A', text: '4' },
+        { letter: 'B', text: '5' },
+      ],
+      correct: 'A',
+      userAnswer: 'B',
+      quizSlotId: 'original-quiz-slot',
+      timestamp: Date.now(),
+      redoCount: 0,
+    },
+  ]);
   await activateTranscript(page);
 
   await page.locator('[data-redo="redo-quiz"]').click();
@@ -130,9 +180,13 @@ test('quiz redo appends a React-owned widget and resolves the current mistake sl
   const widget = message.locator('.sc-host[data-scaffold="quiz"]');
   await expect(widget).toHaveCount(1);
   await expect(widget.locator('[data-part="quiz-q"]')).toContainText('2 + 2 = ?');
-  const redoSlotId = await page.evaluate(() => window.stateStore.read('mistakes')[0].quizSlotId);
+  const redoSlotId = await page.evaluate(
+    () => window.__socratesTestState.kb().mistakes[0].quizSlotId,
+  );
   expect(redoSlotId).toMatch(/^redo-quiz-/);
-  const rawText = await page.evaluate(() => window.stateStore.read('messages').at(-1).rawText);
+  const rawText = await page.evaluate(
+    () => window.__socratesTestState.session().messages.at(-1).rawText,
+  );
   expect(rawText).toContain(`data-quiz-id="${redoSlotId}"`);
 
   await widget.locator('[data-letter="A"]').click();
@@ -141,26 +195,53 @@ test('quiz redo appends a React-owned widget and resolves the current mistake sl
   await expect(page.locator('#mistakesList [data-mistake-id="redo-quiz"]')).toHaveCount(0);
 });
 
-/* RN-14: the book gathers every session's mistakes, so the home page's
-   "mistakes into next questions" never opens onto an empty book when an
-   earlier session left mistakes behind. */
-test('home mistakes mode shows mistakes from earlier sessions', async ({ page }) => {
+test('the mistake book shows mistakes from earlier sessions', async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem('socrates-mistake-archive-v1:u-test-1', JSON.stringify({ v: 1, sessions: {
-      's-calculus': { label: '导数入门', at: Date.now() - 60_000, mistakes: [
-        { id: 'arch-1', type: 'quiz', topic: '导数', q: 'd/dx (x³) = ?', options: [{ letter: 'A', text: '3x²' }, { letter: 'B', text: 'x²' }], correct: 'A', userAnswer: 'B', timestamp: Date.now() - 60_000 },
-      ] },
-      's-integral': { label: '积分', at: Date.now() - 120_000, mistakes: [
-        { id: 'arch-2', type: 'practice', topic: '', q: '∫2x dx = ?', options: [], correct: 'x² + C', userAnswer: '2', timestamp: Date.now() - 120_000 },
-      ] },
-    } }));
+    localStorage.setItem(
+      'socrates-mistake-archive-v1:u-test-1',
+      JSON.stringify({
+        v: 1,
+        sessions: {
+          's-calculus': {
+            label: '导数入门',
+            at: Date.now() - 60_000,
+            mistakes: [
+              {
+                id: 'arch-1',
+                type: 'quiz',
+                topic: '导数',
+                q: 'd/dx (x³) = ?',
+                options: [
+                  { letter: 'A', text: '3x²' },
+                  { letter: 'B', text: 'x²' },
+                ],
+                correct: 'A',
+                userAnswer: 'B',
+                timestamp: Date.now() - 60_000,
+              },
+            ],
+          },
+          's-integral': {
+            label: '积分',
+            at: Date.now() - 120_000,
+            mistakes: [
+              {
+                id: 'arch-2',
+                type: 'practice',
+                topic: '',
+                q: '∫2x dx = ?',
+                options: [],
+                correct: 'x² + C',
+                userAnswer: '2',
+                timestamp: Date.now() - 120_000,
+              },
+            ],
+          },
+        },
+      }),
+    );
   });
-  await mockAuthedApp(page, { lang: 'zh' });
-  await page.setViewportSize({ width: 1280, height: 1000 });
-  await gotoAndSettle(page, '/');
-  await waitForAppShell(page);
-  await page.locator('[data-testid="learning-mode-mistakes"]').click();
-  await expect(page.locator('#mistakesPanel')).toBeVisible();
+  await openMistakeBookPanel(page);
   await expect(page.locator('#mistakesList [data-mistake-empty]')).toHaveCount(0);
   await expect(page.locator('#mistakesList [data-mistake-id="arch-1"]')).toHaveCount(1);
   await expect(page.locator('#mistakesList [data-mistake-id="arch-2"]')).toHaveCount(1);

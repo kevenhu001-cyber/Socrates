@@ -29,9 +29,12 @@ function sessionFixture() {
 
 async function seedOneSession(page) {
   const session = sessionFixture();
-  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) => route.fulfill({ json: { sessions: [session] } }));
-  await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?|$)`),
-    (route) => route.fulfill({ json: { ...session, messages: [] } }));
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) =>
+    route.fulfill({ json: { sessions: [session] } }),
+  );
+  await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?|$)`), (route) =>
+    route.fulfill({ json: { ...session, messages: [] } }),
+  );
   return session;
 }
 
@@ -59,7 +62,8 @@ test('first-visit consent never covers the phone composer', async ({ page }) => 
   await expect(banner).toHaveCount(0);
   await expect(page.locator('html')).not.toHaveClass(/has-cookie-consent/);
   const reserved = await page.evaluate(() =>
-    document.documentElement.style.getPropertyValue('--cookie-consent-space'));
+    document.documentElement.style.getPropertyValue('--cookie-consent-space'),
+  );
   expect(reserved).toBe('');
 });
 

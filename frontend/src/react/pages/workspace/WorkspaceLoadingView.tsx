@@ -16,7 +16,9 @@ function PluginSkeleton() {
       <div className="workspace-skeleton-strip">
         <SkeletonBlock className="workspace-skeleton-pill workspace-skeleton-pill-sm" />
         <div className="workspace-skeleton-icons">
-          {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonBlock key={i} className="workspace-skeleton-squircle" />)}
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <SkeletonBlock key={i} className="workspace-skeleton-squircle" />
+          ))}
         </div>
       </div>
       <div className="workspace-skeleton-tabs">
@@ -71,7 +73,9 @@ function LibrarySkeleton() {
         <SkeletonBlock className="workspace-skeleton-search" />
       </div>
       <div className="workspace-skeleton-chips">
-        {[1, 2, 3, 4, 5].map((i) => <SkeletonBlock key={i} className="workspace-skeleton-pill workspace-skeleton-pill-chip" />)}
+        {[1, 2, 3, 4, 5].map((i) => (
+          <SkeletonBlock key={i} className="workspace-skeleton-pill workspace-skeleton-pill-chip" />
+        ))}
       </div>
       <div className="workspace-skeleton-list">
         {[1, 2, 3, 4, 5].map((i) => (
@@ -143,9 +147,16 @@ const PAGE_LOADING_COPY = new Map<string, { title: string; label: string }>([
 ]);
 
 export function WorkspaceLoadingView({ page }: WorkspaceLoadingViewProps) {
-  const { title, label } = PAGE_LOADING_COPY.get(page) || { title: '工作区', label: '正在载入工作区…' };
+  const { title, label } = PAGE_LOADING_COPY.get(page) || {
+    title: '工作区',
+    label: '正在载入工作区…',
+  };
   return (
-    <div className={`workspace-surface workspace-loading-surface workspace-loading-${page}`} aria-busy="true" aria-live="polite">
+    <div
+      className={`workspace-surface workspace-loading-surface workspace-loading-${page}`}
+      aria-busy="true"
+      aria-live="polite"
+    >
       <div className="workspace-loading-banner">
         <div className="workspace-loading-spinner-box">
           {/* Keep the page-level loading affordance as a rotating ring. The

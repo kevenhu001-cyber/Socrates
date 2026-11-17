@@ -10,17 +10,27 @@ function installFakeVisualViewport(page) {
   return page.addInitScript(() => {
     const listeners = { resize: new Set(), scroll: new Set() };
     const fake = {
-      width: 390, height: 844, offsetTop: 0, offsetLeft: 0,
-      pageTop: 0, pageLeft: 0, scale: 1,
-      addEventListener(type, fn) { (listeners[type] || (listeners[type] = new Set())).add(fn); },
-      removeEventListener(type, fn) { if (listeners[type]) listeners[type].delete(fn); },
+      width: 390,
+      height: 844,
+      offsetTop: 0,
+      offsetLeft: 0,
+      pageTop: 0,
+      pageLeft: 0,
+      scale: 1,
+      addEventListener(type, fn) {
+        (listeners[type] || (listeners[type] = new Set())).add(fn);
+      },
+      removeEventListener(type, fn) {
+        if (listeners[type]) listeners[type].delete(fn);
+      },
       dispatchEvent(event) {
         const type = event && event.type;
         if (listeners[type]) listeners[type].forEach((fn) => fn(event));
         return true;
       },
       __resize({ height, offsetTop = 0 }) {
-        fake.height = height; fake.offsetTop = offsetTop;
+        fake.height = height;
+        fake.offsetTop = offsetTop;
         fake.dispatchEvent(new Event('resize'));
       },
     };
@@ -31,8 +41,10 @@ function installFakeVisualViewport(page) {
 
 async function seedChat(page, count = 30) {
   await page.evaluate((n) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '99999999-9999-4999-8999-999999999999' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '99999999-9999-4999-8999-999999999999' },
+    });
     window.__testActivateMainView('chatView');
     window.addMessage('user', `History 1: ${'content '.repeat(8)}`);
   }, count);
@@ -60,7 +72,7 @@ async function snapshot(page, label) {
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
       lastMsgBottomVsListBottom: lastRect ? Math.round(lastRect.bottom - listRect.bottom) : null,
       lastMsgBottomVsBarTop: lastRect ? Math.round(lastRect.bottom - bar.top) : null,
-      away: Boolean(window.stateStore.read('_userScrolledAway')),
+      away: Boolean(window.__socratesTestState.ui()._userScrolledAway),
       hold: list.dataset.turnAnchorHold || null,
       inset: document.documentElement.style.getPropertyValue('--keyboard-inset'),
     };
@@ -80,7 +92,10 @@ test.beforeEach(async ({ page }) => {
 
 test('A: clean focus at bottom', async ({ page }) => {
   await seedChat(page);
-  await page.evaluate(() => { const l = document.getElementById('msgList'); l.scrollTop = l.scrollHeight; });
+  await page.evaluate(() => {
+    const l = document.getElementById('msgList');
+    l.scrollTop = l.scrollHeight;
+  });
   await page.waitForTimeout(150);
   await snapshot(page, 'A before-focus');
   await page.locator('#composerRoot .rich-composer-editor').first().focus();
@@ -92,19 +107,25 @@ test('A: clean focus at bottom', async ({ page }) => {
 
 test('B: sloppy tap (touchmove drift) then focus', async ({ page }) => {
   await seedChat(page);
-  await page.evaluate(() => { const l = document.getElementById('msgList'); l.scrollTop = l.scrollHeight; });
+  await page.evaluate(() => {
+    const l = document.getElementById('msgList');
+    l.scrollTop = l.scrollHeight;
+  });
   await page.waitForTimeout(150);
   await snapshot(page, 'B before-focus');
   await page.evaluate(() => {
     const el = document.querySelector('#composerRoot .rich-composer-editor');
     const r = el.getBoundingClientRect();
-    const x = r.left + r.width / 2, y = r.top + 10;
+    const x = r.left + r.width / 2,
+      y = r.top + 10;
     const t = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
     document.dispatchEvent(new TouchEvent('touchstart', { touches: [t], bubbles: true }));
     const t2 = new Touch({ identifier: 1, target: el, clientX: x, clientY: y + 8 });
     document.dispatchEvent(new TouchEvent('touchmove', { touches: [t2], bubbles: true }));
     const t3 = new Touch({ identifier: 1, target: el, clientX: x, clientY: y + 8 });
-    document.dispatchEvent(new TouchEvent('touchend', { touches: [], changedTouches: [t3], bubbles: true }));
+    document.dispatchEvent(
+      new TouchEvent('touchend', { touches: [], changedTouches: [t3], bubbles: true }),
+    );
     el.focus();
   });
   await page.waitForTimeout(100);
@@ -113,7 +134,9 @@ test('B: sloppy tap (touchmove drift) then focus', async ({ page }) => {
   await snapshot(page, 'B after-kb');
 });
 
-test('C: wheel-up (scrolledAway) then back to bottom WITHOUT new scroll, then focus', async ({ page }) => {
+test('C: wheel-up (scrolledAway) then back to bottom WITHOUT new scroll, then focus', async ({
+  page,
+}) => {
   await seedChat(page);
   await page.evaluate(() => {
     const list = document.getElementById('msgList');

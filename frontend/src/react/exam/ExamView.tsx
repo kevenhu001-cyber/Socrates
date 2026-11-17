@@ -10,7 +10,13 @@ import { cancelExamGeneration, runExamGeneration, selectExamOpt } from '../../ex
 import { closeExamView, renderExamForm } from '../../exam/index.ts';
 import { scheduleExamAnswerSave, setExamAnswer, submitExam } from '../../exam/persistence.ts';
 import { buildExamChrome, buildExamStrings } from '../../exam/copy.ts';
-import { examActionsOf, examModeOf, examScreenOf, examTitleOf, type ExamSnapshot } from '../../exam/screen.ts';
+import {
+  examActionsOf,
+  examModeOf,
+  examScreenOf,
+  examTitleOf,
+  type ExamSnapshot,
+} from '../../exam/screen.ts';
 import { useInlineMath } from '../rn/useInlineMath';
 import { WebUiTheme } from '../rn/WebUiTheme';
 
@@ -28,14 +34,20 @@ const EXAM_IDS = {
 function getExamProviders(): { id: string; label: string }[] {
   const snapshot = getProviderConfigSnapshot();
   return Array.isArray(snapshot.providers)
-    ? snapshot.providers.filter((provider) => provider?.id).map((provider) => ({
-      id: provider.id,
-      label: provider.label || provider.model || provider.id,
-    }))
+    ? snapshot.providers
+        .filter((provider) => provider?.id)
+        .map((provider) => ({
+          id: provider.id,
+          label: provider.label || provider.model || provider.id,
+        }))
     : [];
 }
 
-function useExamScrollSync(isInView: boolean, questions: unknown[], setCurrentIndex: (index: number) => void) {
+function useExamScrollSync(
+  isInView: boolean,
+  questions: unknown[],
+  setCurrentIndex: (index: number) => void,
+) {
   useEffect(() => {
     if (!isInView) return;
     let frame = 0;
@@ -47,7 +59,8 @@ function useExamScrollSync(isInView: boolean, questions: unknown[], setCurrentIn
       });
     };
     const body = document.getElementById('examViewBody');
-    const scroller = document.getElementById('scrollContainer') || document.getElementById('msgScroll');
+    const scroller =
+      document.getElementById('scrollContainer') || document.getElementById('msgScroll');
     body?.addEventListener('scroll', syncCurrent, { passive: true });
     scroller?.addEventListener('scroll', syncCurrent, { passive: true });
     return () => {
@@ -59,7 +72,12 @@ function useExamScrollSync(isInView: boolean, questions: unknown[], setCurrentIn
 }
 
 /** Host actions stay separate from the shared exam presentation. */
-function createExamHandlers(draft: ExamSnapshot['draft'], readOnly: boolean, currentIndex: number, setCurrentIndex: (index: number) => void) {
+function createExamHandlers(
+  draft: ExamSnapshot['draft'],
+  readOnly: boolean,
+  currentIndex: number,
+  setCurrentIndex: (index: number) => void,
+) {
   function generateFromDraft() {
     if (!draft.topic.trim()) {
       (document.getElementById('examTopic') as HTMLElement | null)?.focus();
@@ -147,9 +165,16 @@ export function ExamView() {
     localeRevision: snapshot.examLocaleRevision,
   }));
   const isInView = useUiStore((snapshot) => snapshot._examInView);
-  const [navigationPosition, setNavigationPosition] = useState<{ questions: typeof exam.questions; index: number }>({ questions: [], index: 0 });
-  const currentIndex = navigationPosition.questions === exam.questions ? navigationPosition.index : 0;
-  const setCurrentIndex = useCallback((index: number) => setNavigationPosition({ questions: exam.questions, index }), [exam.questions]);
+  const [navigationPosition, setNavigationPosition] = useState<{
+    questions: typeof exam.questions;
+    index: number;
+  }>({ questions: [], index: 0 });
+  const currentIndex =
+    navigationPosition.questions === exam.questions ? navigationPosition.index : 0;
+  const setCurrentIndex = useCallback(
+    (index: number) => setNavigationPosition({ questions: exam.questions, index }),
+    [exam.questions],
+  );
   const renderText = useInlineMath();
 
   useExamScrollSync(isInView, exam.questions, setCurrentIndex);
@@ -175,13 +200,24 @@ export function ExamView() {
   const screen = examScreenOf(snapshot, chrome);
   const actions = examActionsOf(snapshot, chrome);
   const title = examTitleOf(snapshot, chrome);
-  const showNav = examModeOf(snapshot) === 'questions' && !exam.submitted && !exam.readOnly && exam.questions.length > 0;
+  const showNav =
+    examModeOf(snapshot) === 'questions' &&
+    !exam.submitted &&
+    !exam.readOnly &&
+    exam.questions.length > 0;
 
-  const { onCommand, onAnswer, onDraftChange } = createExamHandlers(exam.draft, exam.readOnly, currentIndex, setCurrentIndex);
+  const { onCommand, onAnswer, onDraftChange } = createExamHandlers(
+    exam.draft,
+    exam.readOnly,
+    currentIndex,
+    setCurrentIndex,
+  );
 
   return (
     <WebUiTheme>
-      <h2 className="sr-only" id="examViewTitle">{title}</h2>
+      <h2 className="sr-only" id="examViewTitle">
+        {title}
+      </h2>
       <div className="exam-view-body" id="examViewBody">
         {showNav && screen.kind === 'questions' ? (
           <div className="exam-root-slot" id="examViewReactNav">

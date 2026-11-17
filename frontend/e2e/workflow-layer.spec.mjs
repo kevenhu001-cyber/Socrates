@@ -2,7 +2,7 @@
 // inside #chatView, immediately before the composer, so its height remains
 // part of the normal chat layout.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -17,7 +17,7 @@ async function activateExtension(page, actionName) {
 
 async function enterChat(page) {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 }
@@ -48,34 +48,46 @@ test('stepper advances through searching and hides after completed', async ({ pa
     const encoder = new TextEncoder();
     let controller;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
         start(nextController) {
           controller = nextController;
-          nextController.enqueue(encoder.encode(
-            `event: tool_use\ndata: ${JSON.stringify([{ id: 'research-web', name: 'web_search', input: { query: 'test' } }])}\n\n`,
-          ));
+          nextController.enqueue(
+            encoder.encode(
+              `event: tool_use\ndata: ${JSON.stringify([{ id: 'research-web', name: 'web_search', input: { query: 'test' } }])}\n\n`,
+            ),
+          );
         },
       });
       window.__finishResearchStream = () => {
-        controller.enqueue(encoder.encode('data: {"choices":[{"delta":{"content":"Research is complete."}}]}\n\ndata: [DONE]\n\n'));
+        controller.enqueue(
+          encoder.encode(
+            'data: {"choices":[{"delta":{"content":"Research is complete."}}]}\n\ndata: [DONE]\n\n',
+          ),
+        );
         controller.close();
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
   await prepareChatWorkbench(page);
   await activateExtension(page, 'exploreAction');
-  await page.evaluate(() => { window.askChatTurn('Research the sample topic.'); });
+  await page.evaluate(() => {
+    window.askChatTurn('Research the sample topic.');
+  });
 
   await expect(page.locator('.agent-stepper-stage-active')).toHaveText(/Search/);
   await page.evaluate(() => window.__finishResearchStream());
   await expect(page.locator('.workflow-layer')).toHaveClass(/workflow-layer-done/);
-  await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.locator('#workflowLayerReactRoot .workflow-layer')).toHaveCount(0, {
+    timeout: 5000,
+  });
 });
 
 test('analyze planning does not render a separate analysis workbench', async ({ page }) => {

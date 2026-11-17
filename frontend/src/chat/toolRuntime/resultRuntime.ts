@@ -43,7 +43,10 @@ interface ToolResultRuntimeOptions<
   recordRowOffset: (entry: TEntry) => number | null;
   getRun: (entry: TEntry | null) => ToolRun | null;
   isTerminalToolPhase: (phase: string) => boolean;
-  renderProgress: (progress: { id: string; phase: string; elapsedMs?: number; chunk?: string }, skipQueuedDrain?: boolean) => void;
+  renderProgress: (
+    progress: { id: string; phase: string; elapsedMs?: number; chunk?: string },
+    skipQueuedDrain?: boolean,
+  ) => void;
   setRun: (entry: TEntry, phase: string, patch?: Partial<ToolRun>) => ToolRun | null;
 
   notifyToolRun: (message: TMessage | null) => void;
@@ -58,7 +61,8 @@ export function createToolResultRuntime<
 >(options: ToolResultRuntimeOptions<TEntry, TMessage, TConnection>) {
   function closeResultConnections(toolCallId: string): void {
     for (const connection of Array.from(options.executionConnections.values())) {
-      if (connection.key.indexOf(String(toolCallId) + ':') === 0) options.closeConnection(connection);
+      if (connection.key.indexOf(String(toolCallId) + ':') === 0)
+        options.closeConnection(connection);
     }
   }
 

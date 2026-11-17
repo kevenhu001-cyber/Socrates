@@ -19,10 +19,18 @@ function readString(source: string, start: number): { value: string; end: number
   let value = '';
   for (let index = start + 1; index < source.length; index++) {
     const char = source[index];
-    if (char === '\\') { value += source[index + 1] ?? ''; index++; continue; }
+    if (char === '\\') {
+      value += source[index + 1] ?? '';
+      index++;
+      continue;
+    }
     if (char === quote) {
       if (quote === '"') {
-        try { return { value: JSON.parse(source.slice(start, index + 1)) as string, end: index + 1 }; } catch { /* empty-catch: intentional — fall back to the raw scan */ }
+        try {
+          return { value: JSON.parse(source.slice(start, index + 1)) as string, end: index + 1 };
+        } catch {
+          /* empty-catch: intentional — fall back to the raw scan */
+        }
       }
       return { value, end: index + 1 };
     }
@@ -38,11 +46,17 @@ function readBalanced(source: string, start: number): { text: string; end: numbe
   for (let index = start; index < source.length; index++) {
     const char = source[index];
     if (quote) {
-      if (char === '\\') { index++; continue; }
+      if (char === '\\') {
+        index++;
+        continue;
+      }
       if (char === quote) quote = '';
       continue;
     }
-    if (char === '"' || char === "'") { quote = char; continue; }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
     if (char === '{' || char === '[') depth++;
     else if (char === '}' || char === ']') {
       depth--;
@@ -62,8 +76,12 @@ function readVisualizationPayload(source: string, start: number): Record<string,
   if (!literal) return null;
   try {
     const parsed: unknown = JSON.parse(literal.text.replace(/,\s*([}\]])/g, '$1'));
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
-  } catch { return null; /* Non-JSON expressions have no static table. */ }
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null; /* Non-JSON expressions have no static table. */
+  }
 }
 
 function readVisualizationCall(source: string, start: number): VisualizationCallSource {
@@ -98,7 +116,11 @@ function sourcesFromBrokenJson(text: string): string[] {
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(text)) && sources.length < 8) {
     const body = match[1].replace(/\\$/, '');
-    try { sources.push(JSON.parse(`"${body}"`) as string); } catch { /* empty-catch: intentional — unreadable fragment */ }
+    try {
+      sources.push(JSON.parse(`"${body}"`) as string);
+    } catch {
+      /* empty-catch: intentional — unreadable fragment */
+    }
   }
   return sources;
 }
@@ -107,7 +129,11 @@ function sourcesFromBrokenJson(text: string): string[] {
 export function openUiSourcesOf(input: unknown): string[] {
   let value: unknown = input;
   if (typeof input === 'string') {
-    try { value = JSON.parse(input); } catch { return sourcesFromBrokenJson(input); }
+    try {
+      value = JSON.parse(input);
+    } catch {
+      return sourcesFromBrokenJson(input);
+    }
   }
   if (!value || typeof value !== 'object') return [];
   const record = value as Record<string, unknown>;
@@ -115,6 +141,8 @@ export function openUiSourcesOf(input: unknown): string[] {
   if (!Array.isArray(record.nodes) && typeof raw === 'string') return openUiSourcesOf(raw);
   if (!Array.isArray(record.nodes)) return [];
   return record.nodes
-    .map((node) => (node && typeof node === 'object' ? (node as Record<string, unknown>).source : null))
+    .map((node) =>
+      node && typeof node === 'object' ? (node as Record<string, unknown>).source : null,
+    )
     .filter((item): item is string => typeof item === 'string');
 }

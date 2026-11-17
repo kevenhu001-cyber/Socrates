@@ -26,23 +26,30 @@ function pendingOpenTagLength(text: string): number {
   return 0;
 }
 
-export function createInlineThinkScanner({ onVisibleText, onThinking }: InlineThinkHandlers): InlineThinkScanner {
+export function createInlineThinkScanner({
+  onVisibleText,
+  onThinking,
+}: InlineThinkHandlers): InlineThinkScanner {
   let thinkOpen = false;
   let thinkTail = '';
   let thinkBuffer = '';
 
   function emitVisible(text: string): void {
     if (!text) return;
-    try { onVisibleText(text); }
-    catch (error) {
+    try {
+      onVisibleText(text);
+    } catch (error) {
       console.warn('[API stream] onDelta threw:', (error as { message?: string } | null)?.message);
     }
   }
 
   function emitThinking(text: string): void {
     if (!text || typeof onThinking !== 'function') return;
-    try { onThinking(text); }
-    catch (error) { reportSwallow(error, 'chat/inlineThinkScanner.onThinking'); }
+    try {
+      onThinking(text);
+    } catch (error) {
+      reportSwallow(error, 'chat/inlineThinkScanner.onThinking');
+    }
   }
 
   function flushVisibleTail(): void {
@@ -117,7 +124,11 @@ export function createInlineThinkScanner({ onVisibleText, onThinking }: InlineTh
     push,
     flushVisibleTail,
     finish,
-    get isOpen() { return thinkOpen; },
-    get hasPendingThought() { return thinkBuffer.length > 0; },
+    get isOpen() {
+      return thinkOpen;
+    },
+    get hasPendingThought() {
+      return thinkBuffer.length > 0;
+    },
   };
 }

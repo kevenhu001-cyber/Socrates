@@ -2,7 +2,7 @@
  * Extracted from main.js. Zero-behavior-change lift. Template state reads via
  * window._activeTemplate (mirrored by setActiveTemplate in main.js).
  */
-import { stateStore } from '../state/store.ts';
+import { callBridge } from '../store/index.ts';
 import { publishAgentRun } from '../extensions/agentRunStore.ts';
 import type { AgentRunEvent } from '../extensions/types.ts';
 import type { StreamingTurnController } from './turn/state.ts';
@@ -17,15 +17,19 @@ function activeTemplate(): { runId?: string; workflow?: string } | null {
   try {
     if (typeof window === 'undefined') return null;
     return (window as ToolCallbacksWindow)._activeTemplate || null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 function publishEvent(event: AgentRunEvent, extra?: Partial<AgentRunEvent> | null): void {
   const merged: AgentRunEvent = extra ? Object.assign({}, event, extra) : event;
   // empty-catch: intentional — a progress-reporting failure must never break
   // the stream it reports on.
-  try { publishAgentRun(merged); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: chat/toolCallbacks.ts:27', 'expected');
+  try {
+    publishAgentRun(merged);
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: chat/toolCallbacks.ts', 'expected');
     /* progress is best-effort */
   }
 }
@@ -41,20 +45,21 @@ export function publishActiveWorkflowEvent(
   if (!tmpl || !tmpl.runId || !tmpl.workflow) return;
   /* Template-authored workflow strings feed this event; the bridge union
      covers the known workflows and unknown ones stay a runtime value. */
-  publishEvent({
-    runId: tmpl.runId,
-    workflow: tmpl.workflow as AgentRunEvent['workflow'],
-    stage,
-    status,
-  }, extra);
+  publishEvent(
+    {
+      runId: tmpl.runId,
+      workflow: tmpl.workflow as AgentRunEvent['workflow'],
+      stage,
+      status,
+    },
+    extra,
+  );
 }
 
 export function publishActiveWorkflowFinish(ok: boolean): void {
-  publishActiveWorkflowEvent(
-    ok ? 'completed' : 'failed',
-    ok ? 'succeeded' : 'failed',
-    { message: ok ? 'Done' : (stateStore.read('lastCallError') || 'No response') },
-  );
+  publishActiveWorkflowEvent(ok ? 'completed' : 'failed', ok ? 'succeeded' : 'failed', {
+    message: ok ? 'Done' : callBridge.getSnapshot().lastCallError || 'No response',
+  });
 }
 
 /* P_codex-agent-store — Codex runs use the same lightweight agent-run
@@ -104,8 +109,10 @@ export function toolCallbacksForStream(
         const call = list[i];
         ctl.recordToolUse(call);
         if (call && call.name === 'web_search') {
-          publishActiveWorkflowEvent('searching', 'running',
-            { message: 'Searching sources…', toolCallIds: call.id ? [call.id] : [] });
+          publishActiveWorkflowEvent('searching', 'running', {
+            message: 'Searching sources…',
+            toolCallIds: call.id ? [call.id] : [],
+          });
         }
       }
     },
@@ -115,25 +122,31 @@ export function toolCallbacksForStream(
         const agentWaiting = result.status === 'awaiting_approval';
         publishWorkspaceAgentEvent(
           result.runId,
-          agentWaiting ? 'awaiting_approval' : (result.ok === false ? 'failed' : 'completed'),
-          agentWaiting ? 'running' : (result.ok === false ? 'failed' : 'succeeded'),
+          agentWaiting ? 'awaiting_approval' : result.ok === false ? 'failed' : 'completed',
+          agentWaiting ? 'running' : result.ok === false ? 'failed' : 'succeeded',
           {
-            message: result.error
-              || (agentWaiting ? 'Approval required' : (options.workspaceRunFinishedMessage || 'Codex workspace run finished')),
+            message:
+              result.error ||
+              (agentWaiting
+                ? 'Approval required'
+                : options.workspaceRunFinishedMessage || 'Codex workspace run finished'),
           },
         );
       }
       const tmpl = activeTemplate();
       if (result && result.id && tmpl && tmpl.runId) {
-        publishActiveWorkflowEvent('reading', 'running',
-          { message: 'Reading results…', toolCallIds: [result.id] });
+        publishActiveWorkflowEvent('reading', 'running', {
+          message: 'Reading results…',
+          toolCallIds: [result.id],
+        });
       }
     },
     onToolApproval(approval: { runId?: string } | null | undefined): void {
       if (ctl.recordToolApproval) ctl.recordToolApproval(approval);
       if (approval && approval.runId) {
-        publishWorkspaceAgentEvent(approval.runId, 'awaiting_approval', 'running',
-          { message: 'Approval required' });
+        publishWorkspaceAgentEvent(approval.runId, 'awaiting_approval', 'running', {
+          message: 'Approval required',
+        });
       }
     },
     onToolProgress(progress: ToolProgressFrame | null | undefined): void {
@@ -173,7 +186,7 @@ export function toolCallbacksForStream(
       if (ctl.recordTurnActivity) ctl.recordTurnActivity(activity);
     },
     onTurnSummary(payload: TurnSummaryFrame): void {
-      const text = typeof payload === 'string' ? payload : (payload && payload.summary);
+      const text = typeof payload === 'string' ? payload : payload && payload.summary;
       if (!text || typeof ctl.recordTurnSummary !== 'function') return;
       const phase = payload && typeof payload !== 'string' ? payload.phase : undefined;
       ctl.recordTurnSummary(String(text), phase);

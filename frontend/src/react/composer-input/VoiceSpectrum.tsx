@@ -67,10 +67,10 @@ export function VoiceSpectrum({ analyser }: { analyser: AnalyserNode | null }) {
     const draw = () => {
       frame = requestAnimationFrame(draw);
       const usable = Boolean(
-        analyser
-        && typeof analyser.getFloatFrequencyData === 'function'
-        && analyser.context
-        && analyser.frequencyBinCount > 0,
+        analyser &&
+        typeof analyser.getFloatFrequencyData === 'function' &&
+        analyser.context &&
+        analyser.frequencyBinCount > 0,
       );
       if (analyser && usable) {
         if (data.length !== analyser.frequencyBinCount) {

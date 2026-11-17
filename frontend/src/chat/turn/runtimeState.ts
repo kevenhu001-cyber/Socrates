@@ -10,7 +10,7 @@
  * The type is declared here rather than in `streamingTurn.js` so the helpers
  * can be typed before the owner is converted.
  */
-import { stateStore } from '../../state/store.ts';
+import { sessionBridge } from '../../store/index.ts';
 import type { ActiveChatController } from '../turn/state.ts';
 import type { ToolRuntime } from '../toolRuntime/index.ts';
 import type { StreamPlayer } from '../../render/streamPlayer.ts';
@@ -110,7 +110,7 @@ export interface TurnRuntimeState {
  */
 export function readTurnMessage(index: number): TurnMessage | null {
   if (index < 0) return null;
-  const messages = stateStore.read('messages');
+  const messages = sessionBridge.getSnapshot().messages;
   if (!Array.isArray(messages)) return null;
   const message = messages[index];
   return (message as TurnMessage | null | undefined) || null;

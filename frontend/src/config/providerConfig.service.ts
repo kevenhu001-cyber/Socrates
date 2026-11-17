@@ -43,7 +43,8 @@ function toast(key: string, fallback: string, vars?: Record<string, string | num
   const text = i18n(key, fallback);
   if (!vars) return text;
   return text.replace(/\{(\w+)\}/g, (match, name: string) =>
-    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match);
+    Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : match,
+  );
 }
 
 const BUILT_IN_ID = 'beagle-built-in';
@@ -70,7 +71,7 @@ export function saveLastActiveId(id: string | null | undefined): void {
     if (!id || id === 'null' || id === 'undefined') localStorage.removeItem(LAST_ACTIVE_ID_KEY);
     else localStorage.setItem(LAST_ACTIVE_ID_KEY, String(id));
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:64', 'expected');
+    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts', 'expected');
     /* Storage is optional; the in-memory selection remains authoritative. */
   }
 }
@@ -87,9 +88,9 @@ export function loadLastActiveId(): string | null {
 export function setBuiltInProviderModel(model: string | null | undefined): void {
   if (typeof model === 'string' && model.trim()) builtInModel = model.trim();
   const current = getProviderConfigSnapshot();
-  const providers = current.providers.map((provider) => provider.id === BUILT_IN_ID
-    ? { ...provider, model: builtInModel }
-    : provider);
+  const providers = current.providers.map((provider) =>
+    provider.id === BUILT_IN_ID ? { ...provider, model: builtInModel } : provider,
+  );
   publishProviderConfig({ providers });
 }
 
@@ -116,7 +117,9 @@ function normalizeCapabilities(raw: unknown): ProviderCapabilities | undefined {
  * malformed row cannot make the browser send an unknown encoding. */
 function normalizeInstantEncoding(raw: unknown): InstantEncoding | null {
   if (typeof raw !== 'string') return null;
-  return (INSTANT_ENCODING_OPTIONS as readonly string[]).includes(raw) ? raw as InstantEncoding : null;
+  return (INSTANT_ENCODING_OPTIONS as readonly string[]).includes(raw)
+    ? (raw as InstantEncoding)
+    : null;
 }
 
 function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
@@ -135,7 +138,11 @@ function normalizeProvider(row: Record<string, unknown>): ProviderConfig {
   };
 }
 
-function publishSelectionAndProviders(providers: readonly ProviderConfig[], activeId: string | null, fetched = true): void {
+function publishSelectionAndProviders(
+  providers: readonly ProviderConfig[],
+  activeId: string | null,
+  fetched = true,
+): void {
   publishProviderConfig({ providers, activeId, fetched });
 }
 
@@ -160,7 +167,9 @@ export async function refreshProviderConfig(): Promise<ProviderConfigSnapshot> {
   }
 
   try {
-    const result = await apiFetch<{ providers?: unknown; builtInCapabilities?: unknown }>('/api/api-key');
+    const result = await apiFetch<{ providers?: unknown; builtInCapabilities?: unknown }>(
+      '/api/api-key',
+    );
     const rows = Array.isArray(result?.providers)
       ? (result.providers as Record<string, unknown>[]).map(normalizeProvider)
       : [];
@@ -205,7 +214,11 @@ function clearProviderError(id: string, field?: ProviderErrorField): void {
   publishProviderConfig({ errors });
 }
 
-export function updateProviderField(id: string, field: ProviderField, value: ProviderFieldValue): void {
+export function updateProviderField(
+  id: string,
+  field: ProviderField,
+  value: ProviderFieldValue,
+): void {
   const state = getProviderConfigSnapshot();
   const provider = state.providers.find((item) => item.id === id);
   if (!provider) return;
@@ -215,19 +228,25 @@ export function updateProviderField(id: string, field: ProviderField, value: Pro
     if (key === '') credentialDrafts.delete(id);
     else credentialDrafts.set(id, key);
   } else {
-    const providers = state.providers.map((item) => item.id !== id ? item : {
-      ...item,
-      [field]: field === 'vision'
-        ? Boolean(value)
-        : field === 'instantEncoding'
-          /* P_provider-capability-override — the empty string is the UI's
-           * "Automatic" choice and means "no override". */
-          ? normalizeInstantEncoding(value === '' ? null : value)
-          : String(value),
-    });
+    const providers = state.providers.map((item) =>
+      item.id !== id
+        ? item
+        : {
+            ...item,
+            [field]:
+              field === 'vision'
+                ? Boolean(value)
+                : field === 'instantEncoding'
+                  ? /* P_provider-capability-override — the empty string is the UI's
+                     * "Automatic" choice and means "no override". */
+                    normalizeInstantEncoding(value === '' ? null : value)
+                  : String(value),
+          },
+    );
     publishProviderConfig({ providers });
   }
-  if (field !== 'vision' && field !== 'key' && field !== 'instantEncoding') clearProviderError(id, field);
+  if (field !== 'vision' && field !== 'key' && field !== 'instantEncoding')
+    clearProviderError(id, field);
   if (field === 'key') clearProviderError(id, 'key');
 }
 
@@ -238,15 +257,28 @@ export function addProvider(): string | null {
   const current = getProviderConfigSnapshot();
   const custom = current.providers.filter((provider) => !provider.isBuiltIn);
   if (custom.length >= limit) {
-    showToast(toast('toast.providerLimit', 'API provider limit reached ({limit}) for your plan.', { limit }));
+    showToast(
+      toast('toast.providerLimit', 'API provider limit reached ({limit}) for your plan.', {
+        limit,
+      }),
+    );
     return null;
   }
   const id = `new-${Date.now().toString(36)}`;
   publishProviderConfig({
-    providers: [...current.providers, {
-      id, label: '', url: '', model: '', vision: false, isBuiltIn: false, hasKey: false,
-      instantEncoding: null,
-    }],
+    providers: [
+      ...current.providers,
+      {
+        id,
+        label: '',
+        url: '',
+        model: '',
+        vision: false,
+        isBuiltIn: false,
+        hasKey: false,
+        instantEncoding: null,
+      },
+    ],
   });
   return id;
 }
@@ -257,7 +289,11 @@ export async function removeProvider(id: string): Promise<boolean> {
       await apiFetch(`/api/api-key/${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'server error';
-      showToast(toast('toast.providerRemoveFailed', 'Failed to remove provider: {message}. Try again.', { message }));
+      showToast(
+        toast('toast.providerRemoveFailed', 'Failed to remove provider: {message}. Try again.', {
+          message,
+        }),
+      );
       return false;
     }
   }
@@ -278,9 +314,13 @@ export async function setActiveProvider(id: string): Promise<void> {
 
   if (id === BUILT_IN_ID) {
     if (previous && previous !== BUILT_IN_ID) {
-      try { await apiFetch(`/api/api-key/${encodeURIComponent(previous)}`, { method: 'PATCH', body: { isActive: false } }); }
-      catch (error) {
-        reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:257');
+      try {
+        await apiFetch(`/api/api-key/${encodeURIComponent(previous)}`, {
+          method: 'PATCH',
+          body: { isActive: false },
+        });
+      } catch (error) {
+        reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts');
         /* non-critical; next refresh reconciles the server flag */
       }
     }
@@ -288,18 +328,31 @@ export async function setActiveProvider(id: string): Promise<void> {
   }
 
   try {
-    await apiFetch(`/api/api-key/${encodeURIComponent(id)}`, { method: 'PATCH', body: { isActive: true } });
+    await apiFetch(`/api/api-key/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: { isActive: true },
+    });
   } catch {
     publishProviderConfig({ activeId: previous });
     saveLastActiveId(previous);
-    showToast(toast('toast.providerActivateFailed', 'Failed to activate provider on server. Changes reverted.'));
+    showToast(
+      toast(
+        'toast.providerActivateFailed',
+        'Failed to activate provider on server. Changes reverted.',
+      ),
+    );
   }
 }
 
 function validateUrl(value: string): string | null {
   if (!value.trim()) return null;
   if (!/^https?:\/\//i.test(value.trim())) return 'URL must start with http:// or https://';
-  try { new URL(value.trim()); return null; } catch { return 'Invalid URL format'; }
+  try {
+    new URL(value.trim());
+    return null;
+  } catch {
+    return 'Invalid URL format';
+  }
 }
 
 function collectErrors(providers: readonly ProviderConfig[]): ProviderConfigErrors {
@@ -307,7 +360,8 @@ function collectErrors(providers: readonly ProviderConfig[]): ProviderConfigErro
   providers.forEach((provider) => {
     const providerErrors: Partial<Record<ProviderErrorField, string>> = {};
     const urlError = validateUrl(provider.url);
-    if (urlError) providerErrors.url = `${urlError} for "${provider.label || provider.model || provider.id}"`;
+    if (urlError)
+      providerErrors.url = `${urlError} for "${provider.label || provider.model || provider.id}"`;
     const key = credentialDrafts.get(provider.id) || '';
     if (key.trim() && key.trim().length < 8) {
       providerErrors.key = `Key is too short (min 8 characters) for "${provider.label || provider.model || provider.id}"`;
@@ -321,14 +375,19 @@ export function setSaving(saving: boolean): void {
   publishProviderConfig({ saving });
 }
 
-async function persistProvider(provider: ProviderConfig): Promise<{ originalId: string; id: string; label: string }> {
+async function persistProvider(
+  provider: ProviderConfig,
+): Promise<{ originalId: string; id: string; label: string }> {
   const key = credentialDrafts.get(provider.id) || '';
   if (provider.id.startsWith('new-')) {
     const response = await apiFetch<{ id?: unknown }>('/api/api-key', {
       method: 'POST',
       body: {
-        label: provider.label || '', url: provider.url || '', key,
-        model: provider.model || '', isMultimodal: provider.vision,
+        label: provider.label || '',
+        url: provider.url || '',
+        key,
+        model: provider.model || '',
+        isMultimodal: provider.vision,
         /* P_provider-capability-override — null clears the override. */
         instantEncoding: provider.instantEncoding,
       },
@@ -337,12 +396,22 @@ async function persistProvider(provider: ProviderConfig): Promise<{ originalId: 
     return { originalId: provider.id, id, label: provider.label || provider.model || id };
   }
   const update: Record<string, unknown> = {
-    label: provider.label, url: provider.url, model: provider.model, isMultimodal: provider.vision,
+    label: provider.label,
+    url: provider.url,
+    model: provider.model,
+    isMultimodal: provider.vision,
     instantEncoding: provider.instantEncoding,
   };
   if (key.trim()) update.key = key;
-  await apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'PATCH', body: update });
-  return { originalId: provider.id, id: provider.id, label: provider.label || provider.model || provider.id };
+  await apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, {
+    method: 'PATCH',
+    body: update,
+  });
+  return {
+    originalId: provider.id,
+    id: provider.id,
+    label: provider.label || provider.model || provider.id,
+  };
 }
 
 export async function saveProviderConfig(): Promise<ProviderSaveResult> {
@@ -350,9 +419,11 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   if (state.saving) return { savedIds: [], failedIds: [] };
   const rows = state.providers.filter((provider) => !provider.isBuiltIn);
   if (!rows.length) {
-    showToast(state.providers.some((provider) => provider.isBuiltIn)
-      ? toast('toast.providerBuiltInActive', 'Built-in AI is already active.')
-      : toast('toast.providerAddOne', 'Add at least one provider'));
+    showToast(
+      state.providers.some((provider) => provider.isBuiltIn)
+        ? toast('toast.providerBuiltInActive', 'Built-in AI is already active.')
+        : toast('toast.providerAddOne', 'Add at least one provider'),
+    );
     return { savedIds: [], failedIds: [] };
   }
 
@@ -365,25 +436,34 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   }
 
   publishProviderConfig({ errors: {}, saving: true });
-  const lastSuccessful: { value: { originalId: string; id: string; label: string } | null } = { value: null };
-  const settled = await Promise.allSettled(rows.map(async (provider) => {
-    const result = await persistProvider(provider);
-    lastSuccessful.value = result;
-    return result;
-  }));
+  const lastSuccessful: { value: { originalId: string; id: string; label: string } | null } = {
+    value: null,
+  };
+  const settled = await Promise.allSettled(
+    rows.map(async (provider) => {
+      const result = await persistProvider(provider);
+      lastSuccessful.value = result;
+      return result;
+    }),
+  );
   const saved: Array<{ originalId: string; id: string; label: string }> = [];
   const failedIds: string[] = [];
   let lastError: unknown = null;
   settled.forEach((result, index) => {
     if (result.status === 'fulfilled') saved.push(result.value);
-    else { failedIds.push(rows[index].id); lastError = result.reason; }
+    else {
+      failedIds.push(rows[index].id);
+      lastError = result.reason;
+    }
   });
 
   const current = getProviderConfigSnapshot();
   const idMap = new Map(saved.map((item) => [item.originalId, item.id]));
   const nextProviders = current.providers.map((provider) => {
     const id = idMap.get(provider.id);
-    return id ? { ...provider, id, hasKey: provider.hasKey || Boolean(credentialDrafts.get(provider.id)) } : provider;
+    return id
+      ? { ...provider, id, hasKey: provider.hasKey || Boolean(credentialDrafts.get(provider.id)) }
+      : provider;
   });
   saved.forEach((item) => {
     const key = credentialDrafts.get(item.originalId);
@@ -402,15 +482,23 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
   const result = { savedIds, failedIds };
   if (failedIds.length && saved.length) {
     const message = lastError instanceof Error ? lastError.message : 'unknown error';
-    showToast(toast('toast.providerPartialSave', 'Saved {saved} provider(s), but {failed} failed: {message}. Try saving again.', {
-      saved: saved.length,
-      failed: failedIds.length,
-      message,
-    }));
+    showToast(
+      toast(
+        'toast.providerPartialSave',
+        'Saved {saved} provider(s), but {failed} failed: {message}. Try saving again.',
+        {
+          saved: saved.length,
+          failed: failedIds.length,
+          message,
+        },
+      ),
+    );
   } else if (failedIds.length) {
-    showToast(toast('toast.providerSaveFailed', 'Save failed: {message}', {
-      message: lastError instanceof Error ? lastError.message : 'unknown error',
-    }));
+    showToast(
+      toast('toast.providerSaveFailed', 'Save failed: {message}', {
+        message: lastError instanceof Error ? lastError.message : 'unknown error',
+      }),
+    );
   } else if (nextActiveId) {
     const activeLabel = lastSuccessful.value?.label || nextActiveId;
     showToast(toast('toast.providerSaved', 'Saved — {label}', { label: activeLabel }));
@@ -421,11 +509,21 @@ export async function saveProviderConfig(): Promise<ProviderSaveResult> {
 export async function clearProviderConfig(): Promise<void> {
   if (!getCurrentUser()) return;
   const state = getProviderConfigSnapshot();
-  const savedProviders = state.providers.filter((provider) => !provider.isBuiltIn && !provider.id.startsWith('new-'));
-  await Promise.all(savedProviders.map((provider) => apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }).catch(() => undefined)));
+  const savedProviders = state.providers.filter(
+    (provider) => !provider.isBuiltIn && !provider.id.startsWith('new-'),
+  );
+  await Promise.all(
+    savedProviders.map((provider) =>
+      apiFetch(`/api/api-key/${encodeURIComponent(provider.id)}`, { method: 'DELETE' }).catch(
+        () => undefined,
+      ),
+    ),
+  );
   credentialDrafts.clear();
-  try { localStorage.removeItem('socrates-provider-keys'); } catch (error) {
-    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts:396');
+  try {
+    localStorage.removeItem('socrates-provider-keys');
+  } catch (error) {
+    reportEmptyCatch(error, 'empty catch: config/providerConfig.service.ts');
     /* legacy preference may not exist */
   }
   saveLastActiveId(null);
@@ -442,4 +540,11 @@ export function setActiveProviderLocal(id: string | null): void {
   publishProviderConfig({ activeId: id });
 }
 
-export type { ProviderConfig, ProviderConfigSnapshot, ProviderField, ProviderFieldValue, ProviderErrorField, ProviderSaveResult };
+export type {
+  ProviderConfig,
+  ProviderConfigSnapshot,
+  ProviderField,
+  ProviderFieldValue,
+  ProviderErrorField,
+  ProviderSaveResult,
+};

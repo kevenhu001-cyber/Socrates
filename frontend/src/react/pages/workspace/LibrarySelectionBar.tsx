@@ -12,7 +12,12 @@ interface LibrarySelectionBarProps {
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }
 
-export function LibrarySelectionBar({ items, chip, selection, dispatch }: LibrarySelectionBarProps) {
+export function LibrarySelectionBar({
+  items,
+  chip,
+  selection,
+  dispatch,
+}: LibrarySelectionBarProps) {
   const allSelected = items.length > 0 && items.every((item) => !!selection[item.id]);
   const selectedCount = items.filter((item) => !!selection[item.id]).length;
 
@@ -29,9 +34,16 @@ export function LibrarySelectionBar({ items, chip, selection, dispatch }: Librar
           }}
           aria-label={i18n('library.selectAll', 'Select all')}
         />
-        <span>{i18n('library.selectedCount', '{n} selected').replace('{n}', String(selectedCount))}</span>
+        <span>
+          {i18n('library.selectedCount', '{n} selected').replace('{n}', String(selectedCount))}
+        </span>
       </ShadcnLabel>
-      <UiButton type="submit" className="workspace-row-action library-bulk-delete" onClick={() => dispatch.deleteSelected()} disabled={selectedCount === 0}>
+      <UiButton
+        type="submit"
+        className="workspace-row-action library-bulk-delete"
+        onClick={() => dispatch.deleteSelected()}
+        disabled={selectedCount === 0}
+      >
         {i18n('library.deleteSelected', 'Delete selected')}
       </UiButton>
     </div>

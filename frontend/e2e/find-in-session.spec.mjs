@@ -4,7 +4,7 @@
 // counter + active highlight track navigation, and that closing the bar
 // unwinds every <mark> cleanly.
 //
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -82,7 +82,9 @@ test('find bar sits above the top bar and keeps every typed character', async ({
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     const list = document.getElementById('msgList');
-    if (list) list.innerHTML = '<div class="msg assistant"><div class="msg-body">导数描述函数的变化率。</div></div>';
+    if (list)
+      list.innerHTML =
+        '<div class="msg assistant"><div class="msg-body">导数描述函数的变化率。</div></div>';
   });
   await page.keyboard.press('Control+f');
   await expect(page.locator('#findInput')).toBeFocused();
@@ -121,7 +123,10 @@ test('find flushes deferred history rows before searching the transcript', async
       configurable: true,
       value: () => {},
     });
-    window.stateStore.dispatch({ type: 'session/replace-messages', payload: history });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/replace-messages',
+      payload: history,
+    });
     window.__testActivateMainView('chatView');
   }, messages);
   await publishChatRuntime(page, { type: 'state-synced', reason: 'find-deferred-test' });

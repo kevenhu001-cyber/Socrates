@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -19,22 +19,42 @@ function streamBody(text) {
   return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n\n`;
 }
 
-for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light' }, { width: 390, height: 844, mode: 'dark' }]) {
-  test(`inline tutor widgets retain feedback and reveal state at ${width} ${mode}`, async ({ page }) => {
-    const errors = [], modelRequests = [];
+for (const { width, height, mode } of [
+  { width: 1440, height: 900, mode: 'light' },
+  { width: 390, height: 844, mode: 'dark' },
+]) {
+  test(`inline tutor widgets retain feedback and reveal state at ${width} ${mode}`, async ({
+    page,
+  }) => {
+    const errors = [],
+      modelRequests = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    page.on('request', (request) => { if (/\/chat\/stream$/.test(new URL(request.url()).pathname)) modelRequests.push(request.url()); });
+    page.on('request', (request) => {
+      if (/\/chat\/stream$/.test(new URL(request.url()).pathname))
+        modelRequests.push(request.url());
+    });
     await page.setViewportSize({ width, height });
     await page.addInitScript((mode) => localStorage.setItem('socrates-theme', mode), mode);
     await mockAuthedApp(page, { lang: 'zh' });
     await gotoAndSettle(page);
     await waitForAppShell(page);
     await page.evaluate((rawText) => {
-      const message = { clientId: 'tutor-widgets-answer', role: 'assistant', type: 'assistant', _streamSettled: true, rawText };
-      for (const [key, value] of Object.entries({ phase: 'chat', teachingStage: 'exercise', practiceAttempts: 2,
-        currentSessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', messages: [message] })) {
-        window.stateStore.dispatch({ type: 'state/set', key, value });
-      }
+      const message = {
+        clientId: 'tutor-widgets-answer',
+        role: 'assistant',
+        type: 'assistant',
+        _streamSettled: true,
+        rawText,
+      };
+      window.__socratesTestState.patch({
+        session: {
+          phase: 'chat',
+          teachingStage: 'exercise',
+          practiceAttempts: 2,
+          currentSessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          messages: [message],
+        },
+      });
       window.__testActivateMainView('chatView');
       document.body.dataset.conversationActive = 'true';
     }, SOURCE);
@@ -52,7 +72,9 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     const practice = card('practice');
 
     await expect(definition.locator('[data-part="definition-term"]')).toHaveText('函数定义');
-    await expect(definition.locator('[data-part="definition-body"]')).toContainText('输入对应唯一输出');
+    await expect(definition.locator('[data-part="definition-body"]')).toContainText(
+      '输入对应唯一输出',
+    );
     await expect(steps.locator('[data-part="step-step"]')).toHaveCount(2);
     await steps.getByTestId('step-step-mode').click();
     await expect(steps.locator('[data-part="step-step"]')).toHaveCount(1);
@@ -61,7 +83,9 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     await expect(proof.locator('[data-part="proof-body"]')).toContainText('由定义直接得出');
     await expect(proof.getByTestId('proof-qed')).toBeVisible();
     await expect(derivation.locator('[data-part="derivation-step"]')).toHaveCount(2);
-    await expect(derivation.locator('[data-part="derivation-step"]').first()).toContainText('x + 1');
+    await expect(derivation.locator('[data-part="derivation-step"]').first()).toContainText(
+      'x + 1',
+    );
     await expect(keyPoint.getByText('要点', { exact: true })).toBeVisible();
     await expect(keyPoint.locator('[data-part="key-point-body"]')).toContainText('答案为 2');
     await expect(body.locator('.sc-live')).toHaveCount(0);
@@ -76,7 +100,9 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     await expect(quiz.getByTestId('quiz-option-explanation-B')).toContainText('五比两个二的和多一');
     await expect(quiz.getByTestId('quiz-option-explanation-A')).toContainText('两个二相加得到四');
     expect(modelRequests).toEqual([]);
-    await page.screenshot({ path: `test-results/quiz-inline-wrong-${encodeURIComponent(width)}.png` });
+    await page.screenshot({
+      path: `test-results/quiz-inline-wrong-${encodeURIComponent(width)}.png`,
+    });
     await quiz.getByTestId('quiz-retry').click();
     await quiz.locator('[data-letter="A"]').click();
     await quiz.getByTestId('quiz-submit').click();
@@ -91,12 +117,18 @@ for (const { width, height, mode } of [{ width: 1440, height: 900, mode: 'light'
     await expect(practice.getByTestId('practice-submit')).toBeDisabled();
     expect(modelRequests).toEqual([]);
     expect(errors).toEqual([]);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
-    await page.screenshot({ path: `test-results/warning-cleanup-2/${encodeURIComponent(width)}-${encodeURIComponent(mode)}-tutor.png` });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+    ).toBeLessThanOrEqual(0);
+    await page.screenshot({
+      path: `test-results/warning-cleanup-2/${encodeURIComponent(width)}-${encodeURIComponent(mode)}-tutor.png`,
+    });
   });
 }
 
-test('an unsupported algebraic form is sent for tutor review, not locally marked wrong', async ({ page }) => {
+test('an unsupported algebraic form is sent for tutor review, not locally marked wrong', async ({
+  page,
+}) => {
   const streams = [];
   page.on('request', (request) => {
     if (/\/chat\/stream$/.test(new URL(request.url()).pathname)) streams.push(request.url());
@@ -105,21 +137,35 @@ test('an unsupported algebraic form is sent for tutor review, not locally marked
   await page.addInitScript(() => localStorage.setItem('socrates-theme', 'light'));
   await mockAuthedApp(page, { lang: 'zh' });
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
-    await route.fulfill({ contentType: 'text/event-stream', body: streamBody('我们再检查方程的解集。') });
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: streamBody('我们再检查方程的解集。'),
+    });
   });
   await gotoAndSettle(page);
   await waitForAppShell(page);
   await page.locator('#topModeTutor').click();
   await page.evaluate(() => {
     const message = {
-      clientId: 'ambiguous-practice-answer', role: 'assistant', type: 'assistant', _streamSettled: true,
+      clientId: 'ambiguous-practice-answer',
+      role: 'assistant',
+      type: 'assistant',
+      _streamSettled: true,
       rawText: '<practice correct="x=2"><problem>方程 $x^2=4$ 的解集是什么？</problem></practice>',
     };
-    window.stateStore.dispatch({ type: 'state/batch', patch: {
-      phase: 'chat', currentSessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
-      teachingStage: 'exercise', currentNode: 0, kbNodes: [{ name: 'Quadratic equations', status: 'fuzzy' }],
-      messages: [message], mistakes: [],
-    } });
+    window.__socratesTestState.patch({
+      session: {
+        phase: 'chat',
+        currentSessionId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        teachingStage: 'exercise',
+        messages: [message],
+      },
+      kb: {
+        currentNode: 0,
+        kbNodes: [{ name: 'Quadratic equations', status: 'fuzzy' }],
+        mistakes: [],
+      },
+    });
     window.__testActivateMainView('chatView');
     document.body.dataset.conversationActive = 'true';
   });
@@ -130,11 +176,12 @@ test('an unsupported algebraic form is sent for tutor review, not locally marked
   await expect(practice.getByTestId('practice-feedback')).toHaveAttribute('data-state', 'recorded');
   await expect(practice.getByTestId('practice-feedback')).toContainText('已发送，等待 AI 点评。');
   await expect.poll(() => streams.length).toBe(1);
-  expect(await page.evaluate(() => window.stateStore.read('mistakes'))).toEqual([]);
+  expect(await page.evaluate(() => window.__socratesTestState.kb().mistakes)).toEqual([]);
 });
 
-
-test('widget scheduling retains a late slot without remounting an earlier quiz', async ({ page }) => {
+test('widget scheduling retains a late slot without remounting an earlier quiz', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page);
   await waitForAppShell(page);
@@ -142,7 +189,8 @@ test('widget scheduling retains a late slot without remounting an earlier quiz',
     window.__testActivateMainView('chatView');
     const host = document.createElement('div');
     host.id = 'late-widget-fixture';
-    const source = '<quiz><q>First question</q><o letter="A">Yes</o><o letter="B">No</o><correct>A</correct></quiz>\n\n<example><problem>Late problem</problem><solution>Late solution</solution></example>';
+    const source =
+      '<quiz><q>First question</q><o letter="A">Yes</o><o letter="B">No</o><correct>A</correct></quiz>\n\n<example><problem>Late problem</problem><solution>Late solution</solution></example>';
     host.innerHTML = window.renderAssistantHTML(source);
     const late = host.querySelector('.example-slot');
     late.remove();

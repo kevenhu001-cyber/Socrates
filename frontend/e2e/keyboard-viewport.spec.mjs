@@ -1,6 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
-import { getKeyboardInset, isTrackedInputFocused, measureKeyboard } from '../src/ui/keyboard/geometry.ts';
+import {
+  getKeyboardInset,
+  isTrackedInputFocused,
+  measureKeyboard,
+} from '../src/ui/keyboard/geometry.ts';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('normalizes virtual-keyboard measurements without double-counting layout resize', () => {
@@ -32,14 +36,20 @@ test('measures against the app shell bottom so every keyboard mode gets the exac
 test('recognizes focus inside the nested rich-composer editor', () => {
   const nestedEditor = {};
   const composerRoot = {
-    contains(node) { return node === nestedEditor; },
-    matches() { return false; },
+    contains(node) {
+      return node === nestedEditor;
+    },
+    matches() {
+      return false;
+    },
   };
   expect(isTrackedInputFocused([composerRoot], nestedEditor)).toBe(true);
   expect(isTrackedInputFocused([composerRoot], {})).toBe(false);
 });
 
-test('in-flow composer and transcript follow the normalized keyboard inset on mobile', async ({ page }) => {
+test('in-flow composer and transcript follow the normalized keyboard inset on mobile', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -48,7 +58,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await expect(page.locator('#agentModeBtn')).toHaveCount(0);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 
@@ -69,7 +79,7 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
   await page.waitForTimeout(350);
@@ -98,8 +108,9 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
       barTop: Math.round(barRect.top),
       barPosition: getComputedStyle(bar).position,
       appVh: document.documentElement.style.getPropertyValue('--app-vh'),
-      measuredBarHeight: getComputedStyle(document.getElementById('chatView'))
-        .getPropertyValue('--chat-input-bar-height'),
+      measuredBarHeight: getComputedStyle(document.getElementById('chatView')).getPropertyValue(
+        '--chat-input-bar-height',
+      ),
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
     };
   });
@@ -117,7 +128,9 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   await page.evaluate(() => {
     window.addMessage('assistant', 'The final answer line must remain fully above the composer.');
   });
-  await expect(messages).toContainText('The final answer line must remain fully above the composer.');
+  await expect(messages).toContainText(
+    'The final answer line must remain fully above the composer.',
+  );
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
@@ -133,14 +146,16 @@ test('in-flow composer and transcript follow the normalized keyboard inset on mo
   expect(clearance).toBeGreaterThanOrEqual(8);
 });
 
-test('mobile composer follows a keyboard inset continuously without a position flash', async ({ page }) => {
+test('mobile composer follows a keyboard inset continuously without a position flash', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
@@ -177,14 +192,16 @@ test('mobile composer follows a keyboard inset continuously without a position f
    real focus path with a shrunken browser viewport standing in for the
    IME (the real keyboard changes innerHeight/visualViewport.height the
    same way). */
-test('resize-mode keyboard follows the native layout reflow with no JS compensation', async ({ page }) => {
+test('resize-mode keyboard follows the native layout reflow with no JS compensation', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     document.documentElement.style.setProperty('--keyboard-inset', '0px');
   });
@@ -238,7 +255,7 @@ test('resize-mode keyboard restores exactly with no stuck inset or height', asyn
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 
@@ -269,14 +286,16 @@ test('resize-mode keyboard restores exactly with no stuck inset or height', asyn
   expect(restored.phase).toBe('closed');
 });
 
-test('a second input line expands the mobile composer and keeps the latest message unobscured', async ({ page }) => {
+test('a second input line expands the mobile composer and keeps the latest message unobscured', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     for (let index = 0; index < 18; index += 1) {
       window.addMessage(
@@ -291,7 +310,7 @@ test('a second input line expands the mobile composer and keeps the latest messa
     const list = document.getElementById('msgList');
     const bar = document.getElementById('chatInputBar');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
     return { barHeight: bar.getBoundingClientRect().height };
   });
 
@@ -299,7 +318,9 @@ test('a second input line expands the mobile composer and keeps the latest messa
   await editor.focus();
   await editor.fill('First line');
   await page.waitForTimeout(80);
-  const focusedSingleLine = await page.locator('#chatInputBar').evaluate((node) => node.getBoundingClientRect().height);
+  const focusedSingleLine = await page
+    .locator('#chatInputBar')
+    .evaluate((node) => node.getBoundingClientRect().height);
   expect(Math.abs(focusedSingleLine - before.barHeight)).toBeLessThanOrEqual(2);
   await editor.press('Shift+Enter');
   await editor.type('Second line');
@@ -314,7 +335,9 @@ test('a second input line expands the mobile composer and keeps the latest messa
       barHeight: bar.getBoundingClientRect().height,
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
-      clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+      clearance: Math.round(
+        bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom,
+      ),
       listBottom: Math.round(list.getBoundingClientRect().bottom),
       barTop: Math.round(bar.getBoundingClientRect().top),
     };
@@ -335,7 +358,7 @@ test('desktop answer bottom remains above the composer', async ({ page }) => {
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.addMessage(
       'assistant',
@@ -377,7 +400,7 @@ test('conversation transcript remains independently scrollable', async ({ page }
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
     window.addMessage('user', `Scrollable history 1: ${'conversation content '.repeat(8)}`);
   });
@@ -416,11 +439,14 @@ test('conversation transcript remains independently scrollable', async ({ page }
 
   await transcript.hover();
   await page.mouse.wheel(0, -500);
-  await expect.poll(() => transcript.evaluate((list) => list.scrollTop))
+  await expect
+    .poll(() => transcript.evaluate((list) => list.scrollTop))
     .toBeLessThan(geometry.bottomScrollTop);
 });
 
-test('a growing composer keeps the latest message visible and the transcript pinned', async ({ page }) => {
+test('a growing composer keeps the latest message visible and the transcript pinned', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await gotoAndSettle(page, '/');
@@ -428,9 +454,12 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
-    window.addMessage('user', 'Composer resize history 1: enough content to keep the transcript scrollable.');
+    window.addMessage(
+      'user',
+      'Composer resize history 1: enough content to keep the transcript scrollable.',
+    );
   });
   await expect(page.locator('#msgList .msg').first()).toContainText('Composer resize history 1:');
   await page.evaluate(() => {
@@ -445,7 +474,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
   });
 
   await page.evaluate(() => {
@@ -454,10 +483,14 @@ test('a growing composer keeps the latest message visible and the transcript pin
   /* The composer→transcript re-pin runs through a ResizeObserver + rAF
      follow sequence in ui/scroll.ts — poll for the settled state instead
      of racing a fixed delay on slower runners. */
-  await expect.poll(() => page.evaluate(() => {
-    const list = document.getElementById('msgList');
-    return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
-  })).toBeLessThanOrEqual(2);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const list = document.getElementById('msgList');
+        return Math.round(list.scrollHeight - list.scrollTop - list.clientHeight);
+      }),
+    )
+    .toBeLessThanOrEqual(2);
 
   const geometry = await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -465,7 +498,9 @@ test('a growing composer keeps the latest message visible and the transcript pin
     const bar = document.getElementById('chatInputBar');
     return {
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
-      clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+      clearance: Math.round(
+        bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom,
+      ),
       paddingBottom: Number.parseFloat(getComputedStyle(list).paddingBottom),
       barHeight: Math.round(bar.getBoundingClientRect().height),
       listBottom: Math.round(list.getBoundingClientRect().bottom),
@@ -479,7 +514,9 @@ test('a growing composer keeps the latest message visible and the transcript pin
   expect(geometry.clearance, JSON.stringify(geometry)).toBeGreaterThanOrEqual(8);
 });
 
-test('late growth in the latest answer follows pinned readers but preserves manual scroll', async ({ page }) => {
+test('late growth in the latest answer follows pinned readers but preserves manual scroll', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 1280, height: 800 });
   await gotoAndSettle(page, '/');
@@ -487,9 +524,12 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
-    window.addMessage('user', 'Late layout history 1: async rich content may change this answer height.');
+    window.addMessage(
+      'user',
+      'Late layout history 1: async rich content may change this answer height.',
+    );
   });
   await expect(page.locator('#msgList .msg').first()).toContainText('Late layout history 1:');
   await page.evaluate(() => {
@@ -504,7 +544,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = list.scrollHeight;
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: false });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
     const body = list.querySelector('.msg:last-child .msg-body');
     const lateContent = document.createElement('div');
     lateContent.dataset.testLateContent = '1';
@@ -522,7 +562,7 @@ test('late growth in the latest answer follows pinned readers but preserves manu
   const awayTop = await page.evaluate(() => {
     const list = document.getElementById('msgList');
     list.scrollTop = Math.max(0, list.scrollTop - 240);
-    window.stateStore.dispatch({ type: "state/set", key: "_userScrolledAway", value: true });
+    window.__socratesTestState.patch({ ui: { _userScrolledAway: true } });
     const top = list.scrollTop;
     const lateContent = list.querySelector('[data-test-late-content="1"]');
     lateContent.style.height = '420px';
@@ -539,7 +579,9 @@ test('late growth in the latest answer follows pinned readers but preserves manu
     const bar = document.getElementById('chatInputBar');
     return {
       distanceFromBottom: Math.round(list.scrollHeight - list.scrollTop - list.clientHeight),
-      clearance: Math.round(bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom),
+      clearance: Math.round(
+        bar.getBoundingClientRect().top - lastBody.getBoundingClientRect().bottom,
+      ),
     };
   });
   expect(finalGeometry.distanceFromBottom).toBeLessThanOrEqual(2);

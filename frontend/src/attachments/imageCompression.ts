@@ -16,11 +16,15 @@ export function scaledImageDimensions(width: number, height: number, maxEdge: nu
   };
 }
 
-function reportCompressionProgress(onProgress: ProgressCallback | undefined, edgeIndex: number, qualityIndex: number) {
+function reportCompressionProgress(
+  onProgress: ProgressCallback | undefined,
+  edgeIndex: number,
+  qualityIndex: number,
+) {
   if (typeof onProgress !== 'function') return;
   const completed = edgeIndex * QUALITY_STEPS.length + qualityIndex + 1;
   const total = EDGE_STEPS.length * QUALITY_STEPS.length;
-  onProgress(Math.min(90, 20 + Math.round(completed * 70 / total)));
+  onProgress(Math.min(90, 20 + Math.round((completed * 70) / total)));
 }
 
 /** Read an image into a data URL through FileReader. */
@@ -43,7 +47,10 @@ export function readFileAsDataUrl(file: Blob, onProgress?: ProgressCallback) {
  * Decode/encode off the main thread when supported, with an Image/canvas
  * fallback for browsers without OffscreenCanvas.
  */
-export async function compressImageFile(file: Blob | null | undefined, onProgress?: ProgressCallback) {
+export async function compressImageFile(
+  file: Blob | null | undefined,
+  onProgress?: ProgressCallback,
+) {
   if (!file) return null;
   if (typeof OffscreenCanvas !== 'undefined' && typeof createImageBitmap === 'function') {
     const offscreen = await compressWithOffscreenCanvas(file, onProgress);
@@ -66,11 +73,15 @@ async function compressWithOffscreenCanvas(file: Blob, onProgress?: ProgressCall
     return null;
   }
 
-  const maxBlobBytes = Math.floor((MAX_IMAGE_DATAURL_CHARS - 64) * 3 / 4);
+  const maxBlobBytes = Math.floor(((MAX_IMAGE_DATAURL_CHARS - 64) * 3) / 4);
 
   try {
     for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex += 1) {
-      const { width, height } = scaledImageDimensions(sourceWidth, sourceHeight, EDGE_STEPS[edgeIndex]);
+      const { width, height } = scaledImageDimensions(
+        sourceWidth,
+        sourceHeight,
+        EDGE_STEPS[edgeIndex],
+      );
       const canvas = new OffscreenCanvas(width, height);
       const context = canvas.getContext('2d');
       if (!context) continue;
@@ -80,7 +91,10 @@ async function compressWithOffscreenCanvas(file: Blob, onProgress?: ProgressCall
 
       for (let qualityIndex = 0; qualityIndex < QUALITY_STEPS.length; qualityIndex += 1) {
         try {
-          const blob = await canvas.convertToBlob({ type: 'image/webp', quality: QUALITY_STEPS[qualityIndex] });
+          const blob = await canvas.convertToBlob({
+            type: 'image/webp',
+            quality: QUALITY_STEPS[qualityIndex],
+          });
           if (blob && blob.size <= maxBlobBytes) {
             const dataUrl = await blobToDataUrl(blob, onProgress);
             if (dataUrl && dataUrl.length <= MAX_IMAGE_DATAURL_CHARS) return dataUrl;
@@ -98,8 +112,12 @@ async function compressWithOffscreenCanvas(file: Blob, onProgress?: ProgressCall
 }
 
 async function decodeLegacyImage(file: Blob) {
-  if (typeof document === 'undefined' || typeof Image === 'undefined'
-      || typeof document.createElement !== 'function') return null;
+  if (
+    typeof document === 'undefined' ||
+    typeof Image === 'undefined' ||
+    typeof document.createElement !== 'function'
+  )
+    return null;
 
   let sourceUrl = '';
   try {
@@ -120,15 +138,31 @@ async function decodeLegacyImage(file: Blob) {
 
 function dataUrlForLegacyCanvas(canvas: HTMLCanvasElement, quality: number) {
   let dataUrl;
-  try { dataUrl = canvas.toDataURL('image/webp', quality); } catch (_) { dataUrl = ''; }
+  try {
+    dataUrl = canvas.toDataURL('image/webp', quality);
+  } catch (_) {
+    dataUrl = '';
+  }
   if (dataUrl.startsWith('data:image/webp')) return dataUrl;
-  try { return canvas.toDataURL('image/jpeg', quality); }
-  catch (_) { return ''; }
+  try {
+    return canvas.toDataURL('image/jpeg', quality);
+  } catch (_) {
+    return '';
+  }
 }
 
-function encodeLegacyImage(image: HTMLImageElement, sourceWidth: number, sourceHeight: number, onProgress?: ProgressCallback) {
+function encodeLegacyImage(
+  image: HTMLImageElement,
+  sourceWidth: number,
+  sourceHeight: number,
+  onProgress?: ProgressCallback,
+) {
   for (let edgeIndex = 0; edgeIndex < EDGE_STEPS.length; edgeIndex += 1) {
-    const { width, height } = scaledImageDimensions(sourceWidth, sourceHeight, EDGE_STEPS[edgeIndex]);
+    const { width, height } = scaledImageDimensions(
+      sourceWidth,
+      sourceHeight,
+      EDGE_STEPS[edgeIndex],
+    );
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -163,8 +197,11 @@ async function compressWithLegacyCanvas(file: Blob, onProgress?: ProgressCallbac
 
 function revokeSourceUrl(sourceUrl: string) {
   if (!sourceUrl) return;
-  try { URL.revokeObjectURL(sourceUrl); }
-  catch (error) { reportSwallow(error, 'attachments.compressWithLegacyCanvas.revokeSourceUrl'); }
+  try {
+    URL.revokeObjectURL(sourceUrl);
+  } catch (error) {
+    reportSwallow(error, 'attachments.compressWithLegacyCanvas.revokeSourceUrl');
+  }
 }
 
 function blobToDataUrl(blob: Blob, onProgress?: ProgressCallback) {
@@ -174,7 +211,8 @@ function blobToDataUrl(blob: Blob, onProgress?: ProgressCallback) {
     reader.onerror = () => reject(reader.error || new Error('blobToDataUrl failed'));
     if (typeof onProgress === 'function') {
       reader.onprogress = (event) => {
-        if (event.lengthComputable) onProgress(Math.min(99, 90 + Math.round((event.loaded / event.total) * 9)));
+        if (event.lengthComputable)
+          onProgress(Math.min(99, 90 + Math.round((event.loaded / event.total) * 9)));
       };
     }
     reader.readAsDataURL(blob);

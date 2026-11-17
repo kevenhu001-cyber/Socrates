@@ -24,6 +24,10 @@ export interface UploadOutcome {
   size?: number;
   kind?: string;
 }
-export interface AddFilesResult { added: number; rejected: string[] }
+export interface AddFilesResult {
+  added: number;
+  rejected: string[];
+}
 export type UploadProgress = (percent: number, loaded?: number, total?: number) => void;
-export type MessageContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
+export type MessageContentPart =
+  { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };

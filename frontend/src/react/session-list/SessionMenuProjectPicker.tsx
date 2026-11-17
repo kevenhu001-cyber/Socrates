@@ -26,24 +26,36 @@ export function SessionMenuProjectPicker({
   onBack,
   onChoose,
 }: SessionMenuProjectPickerProps) {
-  const copy = (zh: string, en: string) => getCurrentLang() === 'zh' ? zh : en;
+  const copy = (zh: string, en: string) => (getCurrentLang() === 'zh' ? zh : en);
   return (
     <>
-      <Item ref={focusRef} className="recent-item-menu-row" closeOnClick={false} onClick={onBack}>{copy('返回', 'Back')}</Item>
-      {loading ? <span role="status">{copy('正在加载项目…', 'Loading projects…')}</span> : projects.length
-        ? projects.map((project) => (
+      <Item ref={focusRef} className="recent-item-menu-row" closeOnClick={false} onClick={onBack}>
+        {copy('返回', 'Back')}
+      </Item>
+      {loading ? (
+        <span role="status">{copy('正在加载项目…', 'Loading projects…')}</span>
+      ) : projects.length ? (
+        projects.map((project) => (
           <Item
             key={project.id}
             className="recent-item-menu-row"
             closeOnClick={false}
             disabled={saving}
             onClick={() => onChoose(project.id)}
-          ><span className="recent-item-action-text">{project.name}</span></Item>
+          >
+            <span className="recent-item-action-text">{project.name}</span>
+          </Item>
         ))
-        : !error && <span>{copy('暂无项目，请先创建项目', 'Create a project first')}</span>}
+      ) : (
+        !error && <span>{copy('暂无项目，请先创建项目', 'Create a project first')}</span>
+      )}
       {error && <span role="alert">{error}</span>}
       {saving && <span role="status">{copy('正在保存…', 'Saving…')}</span>}
-      {onRetry && <Item className="recent-item-menu-row" closeOnClick={false} onClick={onRetry}>{copy('重试', 'Retry')}</Item>}
+      {onRetry && (
+        <Item className="recent-item-menu-row" closeOnClick={false} onClick={onRetry}>
+          {copy('重试', 'Retry')}
+        </Item>
+      )}
     </>
   );
 }

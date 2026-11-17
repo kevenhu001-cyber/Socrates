@@ -11,7 +11,7 @@
 // a transport error ends a request.
 //
 /* Six attempts = the initial request plus five fixed-delay retries. */
-export const STREAM_MAX_ATTEMPTS  = 6;
+export const STREAM_MAX_ATTEMPTS = 6;
 
 /* Returns true if we know the network is unreachable. Callers should
    short-circuit their fetch attempts in that case (no point waiting

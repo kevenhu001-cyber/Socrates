@@ -1,6 +1,15 @@
 import type { SessionStartContext } from './input.ts';
 type TutorStartContext = SessionStartContext & { sessionId: string | null };
-import { stateStore } from '../../state/store.ts';
+import {
+  callBridge,
+  dispatchCall,
+  dispatchKb,
+  dispatchPatches,
+  dispatchSearch,
+  dispatchSession,
+  kbBridge,
+  sessionBridge,
+} from '../../store/index.ts';
 import { saveState, rememberDeletedSession } from '../../session/saveState.ts';
 import { setCurrentSessionId } from '../../session/loader.ts';
 import { setChatIdInURL } from '../../session/store.ts';
@@ -20,15 +29,22 @@ import { generateDiagnosticQuestions, type DiagQuestion } from '../diagnosticGen
 import { aiGenerate } from '../mockDiagnostic.ts';
 import { renderDiagQuestion, proceedToTeaching } from '../../tutor/diagnosticFlow.ts';
 import { buildFallbackDiagnosticQuestions, shouldAutoSearchTutor } from '../../tutor/policy.ts';
-import { clearDiagnosticScreen, showDiagnosticError, showDiagnosticLoading, updateDiagnosticProgress } from '../../ui/diagnosticScreen.ts';
+import {
+  clearDiagnosticScreen,
+  showDiagnosticError,
+  showDiagnosticLoading,
+  updateDiagnosticProgress,
+} from '../../ui/diagnosticScreen.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
 import { registerDiagnosticActions } from '../../tutor/diagnosticRegistry.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 
-
 function isCurrentTutorSession(context: TutorStartContext) {
-  return stateStore.read('currentSessionId') === context.sessionId && !stateStore.read('diagCancel');
+  return (
+    sessionBridge.getSnapshot().currentSessionId === context.sessionId &&
+    !sessionBridge.getSnapshot().diagCancel
+  );
 }
 
 function prepareTutorAttachments(context: TutorStartContext) {
@@ -36,9 +52,8 @@ function prepareTutorAttachments(context: TutorStartContext) {
   renderAttachmentChips();
 
   if (typeof buildMessageContent !== 'function') {
-    stateStore.dispatch({
-      type: 'state/batch',
-      patch: { tutorAttachments: [], tutorPartsTemplate: context.topic },
+    dispatchPatches({
+      session: { tutorAttachments: [], tutorPartsTemplate: context.topic },
     });
     return;
   }
@@ -46,9 +61,8 @@ function prepareTutorAttachments(context: TutorStartContext) {
   buildMessageContent(context.topic, context.startAttachments)
     .then((built) => {
       if (!isCurrentTutorSession(context)) return;
-      stateStore.dispatch({
-        type: 'state/batch',
-        patch: {
+      dispatchPatches({
+        session: {
           tutorAttachments: (built && built.attachmentList) || [],
           tutorPartsTemplate: (built && built.parts) || context.topic,
         },
@@ -56,21 +70,29 @@ function prepareTutorAttachments(context: TutorStartContext) {
     })
     .catch(() => {
       if (!isCurrentTutorSession(context)) return;
-      stateStore.dispatch({
-        type: 'state/batch',
-        patch: { tutorAttachments: [], tutorPartsTemplate: context.topic },
+      dispatchPatches({
+        session: { tutorAttachments: [], tutorPartsTemplate: context.topic },
       });
     });
 }
 
 function cancelDiagnostic() {
-  stateStore.dispatch({ type: 'state/set', key: 'diagCancel', value: true });
-  const cancelledSessionId = stateStore.read('currentSessionId');
-  stateStore.dispatch({ type: 'state/batch', patch: {
-    topic: '', domain: null, phase: 'topic', kbNodes: [], currentNode: 0,
-    teachingPlan: null, diagQuestions: [], diagAnswers: [], diagIndex: 0,
-    tutorAttachments: [], tutorPartsTemplate: null,
-  } });
+  dispatchSession({ type: 'session/set', key: 'diagCancel', value: true });
+  const cancelledSessionId = sessionBridge.getSnapshot().currentSessionId;
+  dispatchPatches({
+    session: {
+      topic: '',
+      domain: null,
+      phase: 'topic',
+      teachingPlan: null,
+      diagQuestions: [],
+      diagAnswers: [],
+      diagIndex: 0,
+      tutorAttachments: [],
+      tutorPartsTemplate: null,
+    },
+    kb: { kbNodes: [], currentNode: 0 },
+  });
   setCurrentSessionId(null);
   setChatIdInURL(null);
 
@@ -78,7 +100,9 @@ function cancelDiagnostic() {
     rememberDeletedSession(cancelledSessionId);
     Promise.resolve(saveState.saveInFlight)
       .catch((error) => reportSwallow(error, 'chat/sessionBootstrap.deleteSession.saveInFlight'))
-      .then(() => apiFetch('/api/sessions/' + encodeURIComponent(cancelledSessionId), { method: 'DELETE' }))
+      .then(() =>
+        apiFetch('/api/sessions/' + encodeURIComponent(cancelledSessionId), { method: 'DELETE' }),
+      )
       .then(() => flushRecentsReconcile())
       .then(() => renderRecents())
       .catch((error) => reportSwallow(error, 'chat/sessionBootstrap.deleteSession.recentsChain'));
@@ -94,32 +118,37 @@ function cancelDiagnostic() {
 
 function renderDiagnosticFailure(fallbackError: unknown) {
   if (!document.getElementById('diagnosticView')) return;
-  const reason = stateStore.read('lastCallError') || fallbackError || '';
+  const reason = callBridge.getSnapshot().lastCallError || fallbackError || '';
   showDiagnosticError(String(reason));
 }
 
 function completeDiagnosticQuestions(questions: DiagQuestion[] | null) {
   if (!questions || !questions.length) return false;
-  stateStore.dispatch({ type: 'state/set', key: 'diagQuestions', value: questions });
-  stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'real' });
+  dispatchSession({ type: 'session/set', key: 'diagQuestions', value: questions });
+  dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'real' });
   updateDiagnosticProgress(100, translate('diag.ready'));
   renderDiagQuestion();
   return true;
 }
 
 function recordDiagnosticFailureReason() {
-  if (stateStore.read('lastCallError')) return;
+  if (callBridge.getSnapshot().lastCallError) return;
   const provider = getActiveProvider();
   let message = 'no provider configured';
   if (provider && !provider.model) message = 'active provider missing model';
-  else if (provider && provider.isBuiltIn) message = 'built-in provider call failed (network or server error)';
-  else if (provider) message = "active provider '" + (provider.label || provider.id) + "' call failed";
-  stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: message });
+  else if (provider && provider.isBuiltIn)
+    message = 'built-in provider call failed (network or server error)';
+  else if (provider)
+    message = "active provider '" + (provider.label || provider.id) + "' call failed";
+  dispatchCall({ type: 'call/set', key: 'lastCallError', value: message });
 }
 
 async function runDiagnosticGeneration(context: TutorStartContext, reinjectLoading: boolean) {
-  if (!isCurrentTutorSession(context) || stateStore.read('phase') !== 'diagnostic') return;
-  stateStore.dispatch({ type: 'state/batch', patch: { diagIndex: 0, diagAnswers: [], lastCallError: null } });
+  if (!isCurrentTutorSession(context) || sessionBridge.getSnapshot().phase !== 'diagnostic') return;
+  dispatchPatches({
+    session: { diagIndex: 0, diagAnswers: [] },
+    call: { lastCallError: null },
+  });
   if (reinjectLoading) showDiagnosticLoading();
   updateDiagnosticProgress(20, translate('chat.generatingQuestions'));
 
@@ -131,7 +160,7 @@ async function runDiagnosticGeneration(context: TutorStartContext, reinjectLoadi
       context.language,
       (step, total, question) => {
         if (!isCurrentTutorSession(context)) return;
-        const percent = 20 + Math.round(75 * step / total);
+        const percent = 20 + Math.round((75 * step) / total);
         const label = question ? 'chat.generatedQ' : 'chat.generatingQ';
         updateDiagnosticProgress(
           percent,
@@ -155,10 +184,11 @@ function installDiagnosticActions(context: TutorStartContext) {
   registerDiagnosticActions({
     retry: () => runDiagnosticGeneration(context, true),
     builtin: () => {
-      if (!isCurrentTutorSession(context) || stateStore.read('phase') !== 'diagnostic') return;
-      stateStore.dispatch({ type: 'state/batch', patch: { diagIndex: 0, diagAnswers: [] } });
-      stateStore.dispatch({
-        type: 'state/set',
+      if (!isCurrentTutorSession(context) || sessionBridge.getSnapshot().phase !== 'diagnostic')
+        return;
+      dispatchPatches({ session: { diagIndex: 0, diagAnswers: [] } });
+      dispatchSession({
+        type: 'session/set',
         key: 'diagQuestions',
         value: buildFallbackDiagnosticQuestions(
           context.topic,
@@ -166,9 +196,13 @@ function installDiagnosticActions(context: TutorStartContext) {
           getCurrentLanguage() === 'zh' || context.language === 'zh',
         ),
       });
-      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'mock' });
-      if (!stateStore.read('lastCallError')) {
-        stateStore.dispatch({ type: 'state/set', key: 'lastCallError', value: 'Using built-in questions' });
+      dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'mock' });
+      if (!callBridge.getSnapshot().lastCallError) {
+        dispatchCall({
+          type: 'call/set',
+          key: 'lastCallError',
+          value: 'Using built-in questions',
+        });
       }
       renderDiagQuestion();
     },
@@ -182,30 +216,46 @@ async function prepareKnowledgeNodes(context: TutorStartContext) {
     if (!isCurrentTutorSession(context)) return;
     const topicNodes = generated ? generated.names.slice() : null;
     if (generated && topicNodes && topicNodes.length >= 3) {
-      while (topicNodes.length < stateStore.read('kbNodes').length) {
-        topicNodes.push(stateStore.read('kbNodes')[topicNodes.length].name);
+      while (topicNodes.length < kbBridge.getSnapshot().kbNodes.length) {
+        topicNodes.push(kbBridge.getSnapshot().kbNodes[topicNodes.length].name);
       }
-      const namedNodes = stateStore.read('kbNodes').map((node, index) => (
-        topicNodes[index] ? Object.assign({}, node, { name: topicNodes[index] }) : node
-      ));
+      const namedNodes = kbBridge
+        .getSnapshot()
+        .kbNodes.map((node, index) =>
+          topicNodes[index] ? Object.assign({}, node, { name: topicNodes[index] }) : node,
+        );
       /* RN-6: the same call wrote each node's definition and the links
          between them; apply them by position (names were just set). */
-      const withConcepts = generated.map.status === 'ok'
-        ? applyConceptMap(namedNodes, normalizeConceptMap({
-          nodes: generated.map.nodes.map((node) => ({ name: node.name, definition: node.definition })),
-          links: generated.map.links.map((link) => ({ ...link, why: link.why })),
-        }, namedNodes.map((node) => node.name)))
-        : namedNodes;
-      stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: withConcepts });
-      const count = stateStore.read('kbNodes').length;
-      updateDiagnosticProgress(15, getCurrentLanguage() === 'zh'
-        ? '已识别 ' + count + ' 个知识点'
-        : 'Identified ' + count + ' knowledge points');
+      const withConcepts =
+        generated.map.status === 'ok'
+          ? applyConceptMap(
+              namedNodes,
+              normalizeConceptMap(
+                {
+                  nodes: generated.map.nodes.map((node) => ({
+                    name: node.name,
+                    definition: node.definition,
+                  })),
+                  links: generated.map.links.map((link) => ({ ...link, why: link.why })),
+                },
+                namedNodes.map((node) => node.name),
+              ),
+            )
+          : namedNodes;
+      dispatchKb({ type: 'kb/set', key: 'kbNodes', value: withConcepts });
+      const count = kbBridge.getSnapshot().kbNodes.length;
+      updateDiagnosticProgress(
+        15,
+        getCurrentLanguage() === 'zh'
+          ? '已识别 ' + count + ' 个知识点'
+          : 'Identified ' + count + ' knowledge points',
+      );
       return;
     }
     updateDiagnosticProgress(15, translate('chat.knowledgeReady'));
   } catch {
-    if (isCurrentTutorSession(context)) updateDiagnosticProgress(15, translate('chat.knowledgeReady'));
+    if (isCurrentTutorSession(context))
+      updateDiagnosticProgress(15, translate('chat.knowledgeReady'));
   }
 }
 
@@ -216,8 +266,8 @@ function startTutorWebSearch(context: TutorStartContext) {
       .then(({ fetchWebContext }) => fetchWebContext(context.topic, {}))
       .then((result) => {
         if (!isCurrentTutorSession(context)) return;
-        stateStore.dispatch({
-          type: 'state/set',
+        dispatchSearch({
+          type: 'search/set',
           key: 'searchContext',
           value: result.context || '',
         });
@@ -229,9 +279,16 @@ function startTutorWebSearch(context: TutorStartContext) {
 }
 
 export async function startTutorSession(input: SessionStartContext) {
-  const context: TutorStartContext = { ...input, sessionId: stateStore.read('currentSessionId') };
+  const context: TutorStartContext = {
+    ...input,
+    sessionId: sessionBridge.getSnapshot().currentSessionId,
+  };
   // Topic generation renames this skeleton; it must also exist on API failure.
-  stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: aiGenerate(context.topic).nodes });
+  dispatchKb({
+    type: 'kb/set',
+    key: 'kbNodes',
+    value: aiGenerate(context.topic).nodes,
+  });
   activateMainView('diagnosticView', document);
   prepareTutorAttachments(context);
   registerDiagnosticActions({

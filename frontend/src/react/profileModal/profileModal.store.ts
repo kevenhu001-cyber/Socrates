@@ -13,7 +13,8 @@ export function useProfileDispatch(): ProfileDispatch {
   return {
     close: () => nav.closeProfile(),
     saveName: (name: string) => profile.saveProfileName(name),
-    onInstChange: (response: string, about: string) => profile.onCustomInstructionsChange(response, about),
+    onInstChange: (response: string, about: string) =>
+      profile.onCustomInstructionsChange(response, about),
     toggleWebSearch: () => profile.toggleProfileWebSearch(),
     openUsage: () => nav.openUsageModal(),
     openStorage: () => nav.openStorageModal(),

@@ -1,8 +1,10 @@
-import { test, gotoAndSettle } from './_lib.mjs';
-import { expect } from '@playwright/test';
+import { gotoAndSettle } from './_lib.mjs';
+import { test, expect } from '@playwright/test';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('storage fallback runs before bundled consumers read blocked localStorage', async ({ page }) => {
+test('storage fallback runs before bundled consumers read blocked localStorage', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await mockAuthedApp(page);
@@ -15,7 +17,9 @@ test('storage fallback runs before bundled consumers read blocked localStorage',
            shim replaced the accessor, so a failure names the module to fix. */
         const stack = new Error().stack || '';
         const frame = /\/assets\/[^\s)]+/.exec(stack);
-        window.__blockedStorageReads.push(String(frame ? frame[0] : stack.split('\n')[1] || 'unknown'));
+        window.__blockedStorageReads.push(
+          String(frame ? frame[0] : stack.split('\n')[1] || 'unknown'),
+        );
         throw new DOMException('Storage blocked for this test', 'SecurityError');
       },
     });
@@ -29,6 +33,7 @@ test('storage fallback runs before bundled consumers read blocked localStorage',
     return {
       blocked: window.SOCRATES_STORAGE_BLOCKED,
       value: localStorage.getItem('bootstrap-proof'),
+      stateGlobals: ['stateStore', '__socratesTestState'].filter((key) => key in window),
       bundledReads: window.__blockedStorageReads.filter((stack) => /\/assets\//.test(stack)).length,
       readSites: window.__blockedStorageReads.filter((stack) => /\/assets\//.test(stack)),
     };
@@ -40,6 +45,7 @@ test('storage fallback runs before bundled consumers read blocked localStorage',
   expect(storage).toEqual({
     blocked: true,
     value: 'ready',
+    stateGlobals: [],
     bundledReads: 1,
     readSites: [expect.stringMatching(/\/assets\//)],
   });

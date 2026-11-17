@@ -35,27 +35,59 @@ export interface ToolResultProjection {
 
 function normalizeArtifacts(artifacts: unknown): ArtifactSummary[] {
   if (!Array.isArray(artifacts)) return [];
-  return artifacts.slice(0, 20).map(function (artifact: unknown) {
-    if (typeof artifact === 'string') return { id: artifact, mimeType: null, name: null };
-    const value = artifact as { id?: string; mimeType?: string; name?: string } | null;
-    return {
-      id: String((value && value.id) || ''),
-      mimeType: (value && value.mimeType) || null,
-      name: (value && value.name) || null,
-    };
-  }).filter(function (artifact) { return !!artifact.id; });
+  return artifacts
+    .slice(0, 20)
+    .map(function (artifact: unknown) {
+      if (typeof artifact === 'string') return { id: artifact, mimeType: null, name: null };
+      const value = artifact as { id?: string; mimeType?: string; name?: string } | null;
+      return {
+        id: String((value && value.id) || ''),
+        mimeType: (value && value.mimeType) || null,
+        name: (value && value.name) || null,
+      };
+    })
+    .filter(function (artifact) {
+      return !!artifact.id;
+    });
 }
 
 const PYTHON_ERROR_HINTS = [
-  { pattern: /SyntaxError|IndentationError/i, hint: 'Python refused to parse the source — fix the syntax / indentation in the same run, no need to retry the whole flow.' },
-  { pattern: /ModuleNotFoundError/i, hint: "packages in the Pyodide distribution (scipy, sympy, scikit-learn, networkx, pillow…) auto-install on `import` — just import them. For a PyPI-only wheel use `import micropip, asyncio; asyncio.run(micropip.install('pkg'))` in the same run." },
-  { pattern: /FileNotFoundError|No such file or directory/i, hint: 'the scratch dir is session-scoped and persists across every code call in this conversation. Each run prints a `[scratch]` header listing the files currently in /artifacts — read it before guessing a path.' },
-  { pattern: /PermissionError|IsADirectoryError|NotADirectoryError/i, hint: 'the path is a directory or not writable. Write to a fresh filename inside /artifacts.' },
-  { pattern: /NameError/i, hint: 'a variable / function name is not defined. Either import it or define it earlier in the same run.' },
-  { pattern: /TypeError/i, hint: 'a value was passed to an operation with the wrong type. Check the call signature before retrying.' },
-  { pattern: /ValueError/i, hint: 'the value passed to a function is the right type but out of range or the wrong shape.' },
-  { pattern: /IndexError/i, hint: 'list/sequence index is out of range. Guard with `if i < len(xs):` or use a try/except.' },
-  { pattern: /KeyError/i, hint: 'dict lookup failed. Use `.get(key, default)` or `if key in d:` before indexing.' },
+  {
+    pattern: /SyntaxError|IndentationError/i,
+    hint: 'Python refused to parse the source — fix the syntax / indentation in the same run, no need to retry the whole flow.',
+  },
+  {
+    pattern: /ModuleNotFoundError/i,
+    hint: "packages in the Pyodide distribution (scipy, sympy, scikit-learn, networkx, pillow…) auto-install on `import` — just import them. For a PyPI-only wheel use `import micropip, asyncio; asyncio.run(micropip.install('pkg'))` in the same run.",
+  },
+  {
+    pattern: /FileNotFoundError|No such file or directory/i,
+    hint: 'the scratch dir is session-scoped and persists across every code call in this conversation. Each run prints a `[scratch]` header listing the files currently in /artifacts — read it before guessing a path.',
+  },
+  {
+    pattern: /PermissionError|IsADirectoryError|NotADirectoryError/i,
+    hint: 'the path is a directory or not writable. Write to a fresh filename inside /artifacts.',
+  },
+  {
+    pattern: /NameError/i,
+    hint: 'a variable / function name is not defined. Either import it or define it earlier in the same run.',
+  },
+  {
+    pattern: /TypeError/i,
+    hint: 'a value was passed to an operation with the wrong type. Check the call signature before retrying.',
+  },
+  {
+    pattern: /ValueError/i,
+    hint: 'the value passed to a function is the right type but out of range or the wrong shape.',
+  },
+  {
+    pattern: /IndexError/i,
+    hint: 'list/sequence index is out of range. Guard with `if i < len(xs):` or use a try/except.',
+  },
+  {
+    pattern: /KeyError/i,
+    hint: 'dict lookup failed. Use `.get(key, default)` or `if key in d:` before indexing.',
+  },
   { pattern: /ZeroDivisionError/i, hint: 'division by zero. Add a guard for the denominator.' },
 ] as const;
 
@@ -73,10 +105,12 @@ function formatDisplay(
     return translate('tool.codexApprovalCopy', 'Review the action before it continues.');
   }
   if (result.ok === false) {
-    const errorMessage = result.userMessage || result.error || result.errorCode || result.output || 'failed';
-    const hint = (result.name || entryName) === 'code_interpreter'
-      ? pythonErrorHint(String(result.stderr || '') + String(result.error || ''))
-      : '';
+    const errorMessage =
+      result.userMessage || result.error || result.errorCode || result.output || 'failed';
+    const hint =
+      (result.name || entryName) === 'code_interpreter'
+        ? pythonErrorHint(String(result.stderr || '') + String(result.error || ''))
+        : '';
     return errorMessage + hint;
   }
   return (result.output || '(no output)') + (result.stderr ? '\n[stderr]\n' + result.stderr : '');
@@ -102,7 +136,8 @@ function optionalResultFields(result: ToolResultInput): Record<string, unknown> 
   if (result.errorCode !== undefined) fields.errorCode = result.errorCode ?? null;
   if (result.detail !== undefined) fields.detail = result.detail ?? null;
   if (typeof result.retryable === 'boolean') fields.retryable = result.retryable;
-  if (Array.isArray(result.visualizations)) fields.visualizations = result.visualizations.slice(0, 8);
+  if (Array.isArray(result.visualizations))
+    fields.visualizations = result.visualizations.slice(0, 8);
   return fields;
 }
 
@@ -122,7 +157,9 @@ function appendArtifactFields(
       const mimeType = artifact.mimeType || 'application/octet-stream';
       artifactLines.push('- ' + name + ' (' + mimeType + ', id=' + artifact.id + ')');
     }
-    entryPatch.output = display ? display + '\n\n' + artifactLines.join('\n') : artifactLines.join('\n');
+    entryPatch.output = display
+      ? display + '\n\n' + artifactLines.join('\n')
+      : artifactLines.join('\n');
   }
 }
 

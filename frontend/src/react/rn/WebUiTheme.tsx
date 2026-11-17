@@ -35,5 +35,9 @@ export function useLocaleRefresh(): void {
 
 export function WebUiTheme({ children }: { children: ReactNode }) {
   const typeScale = useTypeScale();
-  return <UiThemeProvider colors={uiColorsCssVars} typeScale={typeScale} iconRenderer={WebIconRenderer}>{children}</UiThemeProvider>;
+  return (
+    <UiThemeProvider colors={uiColorsCssVars} typeScale={typeScale} iconRenderer={WebIconRenderer}>
+      {children}
+    </UiThemeProvider>
+  );
 }

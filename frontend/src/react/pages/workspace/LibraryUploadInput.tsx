@@ -9,5 +9,7 @@ export function LibraryUploadInput() {
     input.value = '';
   };
 
-  return <NativeControl id="libraryUploadInput" type="file" multiple hidden onChange={handleChange} />;
+  return (
+    <NativeControl id="libraryUploadInput" type="file" multiple hidden onChange={handleChange} />
+  );
 }

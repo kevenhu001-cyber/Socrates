@@ -50,7 +50,9 @@ export function useProviderConfigStore<T>(selector: (snapshot: ProviderConfigSna
   return useStoreWithEqualityFn(providerConfigStore, selector, shallow);
 }
 
-export function publishProviderConfig(patch: Partial<Omit<ProviderConfigSnapshot, 'revision'>>): void {
+export function publishProviderConfig(
+  patch: Partial<Omit<ProviderConfigSnapshot, 'revision'>>,
+): void {
   const current = internalStore.getState();
   const next: ProviderConfigSnapshot = Object.freeze({
     ...current,

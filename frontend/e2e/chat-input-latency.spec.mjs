@@ -15,7 +15,7 @@
 // to stay robust on CI, and is backstopped by a bounded functional assertion
 // that the composer accepts and displays the typed text.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -44,17 +44,23 @@ function installHeldStream(page) {
           controllerRef = controller;
           // Emit an initial assistant delta so the turn is visibly streaming,
           // but do NOT close the stream — it stays in progress until finished.
-          controller.enqueue(encoder.encode(
-            'data: {"choices":[{"delta":{"content":"Streaming a long answer while you keep typing"}}]}\n\n',
-          ));
+          controller.enqueue(
+            encoder.encode(
+              'data: {"choices":[{"delta":{"content":"Streaming a long answer while you keep typing"}}]}\n\n',
+            ),
+          );
         },
-        cancel() { controllerRef = null; },
+        cancel() {
+          controllerRef = null;
+        },
       });
       window.__pushLatencyDelta = (text) => {
         if (!controllerRef) return;
-        controllerRef.enqueue(encoder.encode(
-          'data: {"choices":[{"delta":{"content":' + JSON.stringify(String(text)) + '}}]}\n\n',
-        ));
+        controllerRef.enqueue(
+          encoder.encode(
+            'data: {"choices":[{"delta":{"content":' + JSON.stringify(String(text)) + '}}]}\n\n',
+          ),
+        );
       };
       window.__finishLatencyStream = () => {
         if (!controllerRef) return;
@@ -62,10 +68,12 @@ function installHeldStream(page) {
         controllerRef.close();
         controllerRef = null;
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
 }
@@ -77,18 +85,26 @@ async function bootChat(page) {
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '10101010-1010-4101-8101-101010101010';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Input latency during streaming' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-latency', role: 'user', rawText: 'Keep me responsive', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Input latency during streaming' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [
+          { clientId: 'user-latency', role: 'user', rawText: 'Keep me responsive', html: null },
+        ],
+      },
+    });
     window.__testActivateMainView('chatView');
     // Kick off a turn; the held stub keeps it streaming.
     window.__latencyTurnPromise = window.askChatTurn('Keep me responsive');
   });
 }
 
-test('composer stays responsive and reflects typed input within the latency budget while streaming', async ({ page }) => {
+test('composer stays responsive and reflects typed input within the latency budget while streaming', async ({
+  page,
+}) => {
   await installHeldStream(page);
   await bootChat(page);
 
@@ -124,34 +140,39 @@ test('composer stays responsive and reflects typed input within the latency budg
   // Measure elapsed time from the keystroke burst until the composer reflects
   // the text. We type, then poll for the value with a short interval and
   // capture how long it took to appear.
-  const elapsedMs = await page.evaluate(async ({ text, budget, tolerance }) => {
-    const root = document.getElementById('composerRoot');
-    const el = root && root.querySelector('.rich-composer-editor');
-    if (!el) return -1;
-    el.focus();
+  const elapsedMs = await page.evaluate(
+    async ({ text, budget, tolerance }) => {
+      const root = document.getElementById('composerRoot');
+      const el = root && root.querySelector('.rich-composer-editor');
+      if (!el) return -1;
+      el.focus();
 
-    const readValue = () => (el.innerText || el.textContent || '').trim();
+      const readValue = () => (el.innerText || el.textContent || '').trim();
 
-    const start = performance.now();
-    // Drive input the way the editor observes it: insert text + fire an input
-    // event so the rich composer's model updates as it would for keystrokes.
-    if (document.execCommand) document.execCommand('insertText', false, text);
-    if (readValue().indexOf(text) === -1) {
-      // Fallback for editors that ignore execCommand: set text directly and
-      // dispatch a real input event so listeners run.
-      el.textContent = text;
-      el.dispatchEvent(new InputEvent('input', { bubbles: true, data: text, inputType: 'insertText' }));
-    }
+      const start = performance.now();
+      // Drive input the way the editor observes it: insert text + fire an input
+      // event so the rich composer's model updates as it would for keystrokes.
+      if (document.execCommand) document.execCommand('insertText', false, text);
+      if (readValue().indexOf(text) === -1) {
+        // Fallback for editors that ignore execCommand: set text directly and
+        // dispatch a real input event so listeners run.
+        el.textContent = text;
+        el.dispatchEvent(
+          new InputEvent('input', { bubbles: true, data: text, inputType: 'insertText' }),
+        );
+      }
 
-    // Poll until the composer reflects the typed text, bounded well beyond the
-    // budget so a genuinely starved input still resolves (and fails the assert).
-    const deadline = start + budget + tolerance + 1000;
-    while (performance.now() < deadline) {
-      if (readValue().indexOf(text) !== -1) break;
-      await new Promise((r) => setTimeout(r, 5));
-    }
-    return performance.now() - start;
-  }, { text: typed, budget: INPUT_LATENCY_BUDGET_MS, tolerance: LATENCY_TOLERANCE_MS });
+      // Poll until the composer reflects the typed text, bounded well beyond the
+      // budget so a genuinely starved input still resolves (and fails the assert).
+      const deadline = start + budget + tolerance + 1000;
+      while (performance.now() < deadline) {
+        if (readValue().indexOf(text) !== -1) break;
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      return performance.now() - start;
+    },
+    { text: typed, budget: INPUT_LATENCY_BUDGET_MS, tolerance: LATENCY_TOLERANCE_MS },
+  );
 
   expect(elapsedMs, 'composer must exist to measure latency').toBeGreaterThanOrEqual(0);
 

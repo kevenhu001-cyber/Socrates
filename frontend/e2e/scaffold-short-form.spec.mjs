@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, expectNoGlobalError } from './_chat-workbench.mjs';
 
 const rawText = [
@@ -13,13 +13,34 @@ const rawText = [
 ].join('\n\n');
 
 for (const mobile of [false, true]) {
-  test(`short-form cards from history render content and accept a written answer (${mobile ? 'mobile' : 'desktop'})`, async ({ page }) => {
-    await prepareChatWorkbench(page, { lang: 'zh', viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 },
-      messages: [{ clientId: 'short-cards', role: 'assistant', type: 'assistant', restoredFromHistory: true, _streamSettled: true, rawText }],
+  test(`short-form cards from history render content and accept a written answer (${mobile ? 'mobile' : 'desktop'})`, async ({
+    page,
+  }) => {
+    await prepareChatWorkbench(page, {
+      lang: 'zh',
+      viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 },
+      messages: [
+        {
+          clientId: 'short-cards',
+          role: 'assistant',
+          type: 'assistant',
+          restoredFromHistory: true,
+          _streamSettled: true,
+          rawText,
+        },
+      ],
     });
     const body = page.locator('#msgList .msg.assistant .msg-body');
     await expect(body.locator('.inline-block-fallback')).toHaveCount(0);
-    for (const kind of ['definition', 'example', 'theorem', 'proof', 'derivation', 'quiz', 'practice']) {
+    for (const kind of [
+      'definition',
+      'example',
+      'theorem',
+      'proof',
+      'derivation',
+      'quiz',
+      'practice',
+    ]) {
       await expect(body.locator(`.sc-host[data-scaffold="${kind}"]`)).toHaveCount(1);
     }
     await expect(body.locator('[data-part="definition-body"]')).toContainText('瑞利判据');
@@ -32,28 +53,49 @@ for (const mobile of [false, true]) {
     await expect(question).not.toContainText('选择题');
     await expect(question.getByTestId('practice-reveal')).toHaveCount(0);
     await question.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: `test-results/scaffold-short-form-${encodeURIComponent(mobile ? 'mobile' : 'desktop')}.png` });
-    await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, route => route.fulfill({ contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({ choices: [{ delta: { content: '我们一起核对计算过程。' } }] })}\n\ndata: [DONE]\n\n`,
-    }));
+    await page.screenshot({
+      path: `test-results/scaffold-short-form-${encodeURIComponent(mobile ? 'mobile' : 'desktop')}.png`,
+    });
+    await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: `data: ${JSON.stringify({ choices: [{ delta: { content: '我们一起核对计算过程。' } }] })}\n\ndata: [DONE]\n\n`,
+      }),
+    );
     await question.locator('textarea').fill('约为 0.75 角秒');
     await question.getByTestId('practice-submit').click();
-    await expect(question.getByTestId('practice-feedback')).toHaveAttribute('data-state', 'recorded');
-    await expect(page.locator('#msgList .msg.assistant').last()).toContainText('我们一起核对计算过程。');
+    await expect(question.getByTestId('practice-feedback')).toHaveAttribute(
+      'data-state',
+      'recorded',
+    );
+    await expect(page.locator('#msgList .msg.assistant').last()).toContainText(
+      '我们一起核对计算过程。',
+    );
     await expectNoGlobalError(page);
   });
 }
 
-test('plain definition content remains visible during streaming and mounts as a card when finished', async ({ page }) => {
+test('plain definition content remains visible during streaming and mounts as a card when finished', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
-    window.__shortCardTurn = await window.addStreamingMessage({ userPrompt: 'Explain the definition.' });
+    window.__shortCardTurn = await window.addStreamingMessage({
+      userPrompt: 'Explain the definition.',
+    });
     window.__shortCardTurn.append('Definition:\n<definition>Resolution depends on the aperture.');
   });
   const body = page.locator('#msgList .msg.assistant .msg-body');
-  await expect(body.locator('[data-scaffold-live="definition"]')).toContainText('Resolution depends on the aperture.');
-  await page.evaluate(() => { window.__shortCardTurn.append('</definition>'); window.__shortCardTurn.finish(); });
-  await expect(body.locator('.sc-host[data-scaffold="definition"] [data-part="definition-body"]')).toHaveText('Resolution depends on the aperture.');
+  await expect(body.locator('[data-scaffold-live="definition"]')).toContainText(
+    'Resolution depends on the aperture.',
+  );
+  await page.evaluate(() => {
+    window.__shortCardTurn.append('</definition>');
+    window.__shortCardTurn.finish();
+  });
+  await expect(
+    body.locator('.sc-host[data-scaffold="definition"] [data-part="definition-body"]'),
+  ).toHaveText('Resolution depends on the aperture.');
   await expect(body.locator('.inline-block-fallback')).toHaveCount(0);
   await expectNoGlobalError(page);
 });

@@ -50,22 +50,32 @@ export function VisualizationOutput({ output, host }: VisualizationOutputProps) 
           signal: controller.signal,
         }) as Promise<unknown> | null | undefined;
         if (mounted && typeof (mounted as Promise<unknown>).then === 'function') {
-          (mounted as Promise<unknown>).then((card) => {
-            if (!card) return;
-            if (cancelled) {
-              try { pr.disposeVisualization?.(card); } catch (_) {
-                reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:55', 'expected');
-                /* already gone */
+          (mounted as Promise<unknown>)
+            .then((card) => {
+              if (!card) return;
+              if (cancelled) {
+                try {
+                  pr.disposeVisualization?.(card);
+                } catch (_) {
+                  reportEmptyCatch(
+                    _,
+                    'empty catch: react/tool-output/VisualizationOutput.tsx',
+                    'expected',
+                  );
+                  /* already gone */
+                }
+              } else {
+                mountedCard = card;
               }
-            } else {
-              mountedCard = card;
-            }
-          }).catch(() => { /* mount failure rendered its own fallback */ });
+            })
+            .catch(() => {
+              /* mount failure rendered its own fallback */
+            });
         } else if (mounted) {
           mountedCard = mounted;
         }
       } catch (_) {
-        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:63', 'expected');
+        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx', 'expected');
         /* malformed spec — the boundary owns the fallback */
       }
     });
@@ -73,15 +83,19 @@ export function VisualizationOutput({ output, host }: VisualizationOutputProps) 
       cancelled = true;
       controller.abort();
       if (mountedCard) {
-        try { pr.disposeVisualization?.(mountedCard); } catch (_) {
-          reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:69', 'expected');
+        try {
+          pr.disposeVisualization?.(mountedCard);
+        } catch (_) {
+          reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx', 'expected');
           /* best effort */
         }
       }
       /* Abort covers a mount still in flight; the host pass covers a card the
          tracked reference missed (e.g. a history-recovery mount). */
-      try { pr.disposeVisualizations?.(host); } catch (_) {
-        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx:73', 'expected');
+      try {
+        pr.disposeVisualizations?.(host);
+      } catch (_) {
+        reportEmptyCatch(_, 'empty catch: react/tool-output/VisualizationOutput.tsx', 'expected');
         /* best effort */
       }
     };

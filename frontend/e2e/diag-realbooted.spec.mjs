@@ -58,7 +58,9 @@ async function seedSixMessages(page) {
      transcript ends up scrolled ~90px short of the true bottom, which
      looks exactly like the composer covering the last message. */
   await page.evaluate(async () => {
-    try { await document.fonts.ready; } catch (_) {}
+    try {
+      await document.fonts.ready;
+    } catch (_) {}
   });
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
@@ -76,9 +78,14 @@ async function seedSixMessages(page) {
    transcript's last visible row must always end above the composer —
    no gap is acceptable while there is at least one message, and the
    composer must never sit on top of message content. */
-for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 700 }]) {
+for (const viewport of [
+  { width: 1280, height: 800 },
+  { width: 375, height: 700 },
+]) {
   const tag = viewport.width < 500 ? 'mobile' : 'desktop';
-  test(`composer does not cover last message - ${tag} ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`composer does not cover last message - ${tag} ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
     await mockAuthedApp(page);
     await page.setViewportSize(viewport);
     await page.goto('/', { waitUntil: 'commit', timeout: 60000 });
@@ -100,7 +107,10 @@ for (const viewport of [{ width: 1280, height: 800 }, { width: 375, height: 700 
     await seedSixMessages(page);
     const r2 = await measureCover(page);
     console.log(`[${tag} focused]`, JSON.stringify(r2));
-    expect(r2.cover, `composer should not cover last visible message while focused`).toBeGreaterThanOrEqual(0);
+    expect(
+      r2.cover,
+      `composer should not cover last visible message while focused`,
+    ).toBeGreaterThanOrEqual(0);
 
     // scroll away from bottom and re-check (the bar must not visually
     // overlap content that the user has scrolled to — the bar lives in

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle, publishChatRuntime } from './_lib.mjs';
 
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
@@ -23,7 +23,7 @@ test('React compatibility mode preserves the legacy application shell', async ({
   /* Text in the chat composer arms the arrow (legacy updateSendBtn
      toggles #composerPrimaryBtn.active; React's SendButtonContent reads it). */
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
   await page.locator('#composerRoot .rich-composer-editor').first().fill('compat arrow');
@@ -40,7 +40,9 @@ test('React compatibility mode preserves the legacy application shell', async ({
     window.setChatStopState(false);
   });
   await publishChatRuntime(page, {
-    type: 'stream-finished', messageId: 'compat-send-button', textLength: 0,
+    type: 'stream-finished',
+    messageId: 'compat-send-button',
+    textLength: 0,
   });
   await expect(page.locator('#composerPrimaryBtnContent path')).toHaveCount(1);
 });
@@ -63,7 +65,7 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
   await waitForAppShell(page);
 
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
   });
 
   await page.evaluate(() => {
@@ -73,12 +75,14 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
     };
     window.addEventListener('socrates:chat-runtime-changed', window.__reactChatRuntimeListener);
 
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: '88888888-8888-4888-8888-888888888888' });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [] });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '88888888-8888-4888-8888-888888888888' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Observe the compatibility bridge.');
 
     const originalFetch = window.fetch.bind(window);
-    window.fetch = function(input, init) {
+    window.fetch = function (input, init) {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return originalFetch(input, init);
 
@@ -91,10 +95,12 @@ test('React chat store observes legacy message and stream lifecycle', async ({ p
           controller.close();
         },
       });
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
 
     window.__reactChatStreamPromise = window.askChatTurn('Observe the compatibility bridge.');

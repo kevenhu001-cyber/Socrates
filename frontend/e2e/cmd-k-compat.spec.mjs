@@ -31,15 +31,23 @@ test('Cmd-K React mode opens from the keyboard and React renders the modal', asy
   await page.waitForLoadState('domcontentloaded');
   await waitForAppShell(page);
 
-  expect(await page.evaluate(() => ({
-    onCmdKInput: typeof window.onCmdKInput,
-    onCmdKKey: typeof window.onCmdKKey,
-  }))).toEqual({ onCmdKInput: 'undefined', onCmdKKey: 'undefined' });
+  expect(
+    await page.evaluate(() => ({
+      onCmdKInput: typeof window.onCmdKInput,
+      onCmdKKey: typeof window.onCmdKKey,
+    })),
+  ).toEqual({ onCmdKInput: 'undefined', onCmdKKey: 'undefined' });
 
   // Return a server result so the shared state publication is observable in React.
-  await page.route('**/search**', (route) => route.fulfill({
-    json: { hits: [{ id: 'cmdk-e2e-result', title: 'React search result', snippet: 'module store result' }] },
-  }));
+  await page.route('**/search**', (route) =>
+    route.fulfill({
+      json: {
+        hits: [
+          { id: 'cmdk-e2e-result', title: 'React search result', snippet: 'module store result' },
+        ],
+      },
+    }),
+  );
 
   await page.keyboard.press('Control+k');
 

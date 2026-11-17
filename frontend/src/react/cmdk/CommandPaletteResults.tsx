@@ -42,13 +42,21 @@ function escapeAttribute(value: string): string {
     .replace(/>/g, '&gt;');
 }
 
-function RecentSection({ recent, onPickRecent }: Pick<CommandPaletteResultsProps, 'recent' | 'onPickRecent'>) {
+function RecentSection({
+  recent,
+  onPickRecent,
+}: Pick<CommandPaletteResultsProps, 'recent' | 'onPickRecent'>) {
   const label = t('chrome.cmdkRecent', 'Recent');
   return (
     <div className="cmd-k-section">
       <div className="cmd-k-section-label">{label}</div>
       {recent.slice(0, 5).map((item) => (
-        <div key={item} className="cmd-k-row" data-recent={escapeAttribute(item)} onClick={() => onPickRecent(item)}>
+        <div
+          key={item}
+          className="cmd-k-row"
+          data-recent={escapeAttribute(item)}
+          onClick={() => onPickRecent(item)}
+        >
           <div className="cmd-k-row-title">{item}</div>
           <div className="cmd-k-row-meta">{label}</div>
         </div>
@@ -66,23 +74,33 @@ export function CommandPaletteResults({
   onActivate,
 }: CommandPaletteResultsProps) {
   const hasQuery = query.trim().length > 0;
-  const hitViews = useMemo(() => results.map((hit, idx): { view: CmdKDocView | null; idx: number } => {
-    const doc = docFromHit(hit);
-    if (!doc) return { view: null, idx };
-    return {
-      view: {
-        kind: doc.kind,
-        meta: metaFor(doc),
-        title: doc.title ?? '',
-        snippet: doc.snippet ?? '',
-        id: doc.id ?? '',
-      },
-      idx,
-    };
-  }), [results]);
+  const hitViews = useMemo(
+    () =>
+      results.map((hit, idx): { view: CmdKDocView | null; idx: number } => {
+        const doc = docFromHit(hit);
+        if (!doc) return { view: null, idx };
+        return {
+          view: {
+            kind: doc.kind,
+            meta: metaFor(doc),
+            title: doc.title ?? '',
+            snippet: doc.snippet ?? '',
+            id: doc.id ?? '',
+          },
+          idx,
+        };
+      }),
+    [results],
+  );
 
-  if (!hasQuery && recent.length > 0) return <RecentSection recent={recent} onPickRecent={onPickRecent} />;
-  if (!hasQuery) return <div className="cmd-k-empty">{t('chrome.cmdkEmpty', 'Type to search across all your sessions.')}</div>;
+  if (!hasQuery && recent.length > 0)
+    return <RecentSection recent={recent} onPickRecent={onPickRecent} />;
+  if (!hasQuery)
+    return (
+      <div className="cmd-k-empty">
+        {t('chrome.cmdkEmpty', 'Type to search across all your sessions.')}
+      </div>
+    );
   if (hitViews.length === 0) {
     return (
       <div className="cmd-k-empty">
@@ -102,21 +120,23 @@ export function CommandPaletteResults({
               query: `“${query}”`,
             })}
       </div>
-      {hitViews.map(({ view, idx }) => view === null ? null : (
-        <div
-          key={`${view.kind}:${view.id}:${idx}`}
-          className={'cmd-k-row' + (idx === selectedIndex ? ' selected' : '')}
-          data-idx={idx}
-          data-kind={view.kind}
-          data-id={view.id}
-          onClick={() => onActivate(idx)}
-          onMouseEnter={() => onActivate(idx)}
-        >
-          <div className="cmd-k-row-title">{view.title}</div>
-          <div className="cmd-k-row-snippet">{view.snippet}</div>
-          <div className="cmd-k-row-meta">{view.meta}</div>
-        </div>
-      ))}
+      {hitViews.map(({ view, idx }) =>
+        view === null ? null : (
+          <div
+            key={`${view.kind}:${view.id}:${idx}`}
+            className={'cmd-k-row' + (idx === selectedIndex ? ' selected' : '')}
+            data-idx={idx}
+            data-kind={view.kind}
+            data-id={view.id}
+            onClick={() => onActivate(idx)}
+            onMouseEnter={() => onActivate(idx)}
+          >
+            <div className="cmd-k-row-title">{view.title}</div>
+            <div className="cmd-k-row-snippet">{view.snippet}</div>
+            <div className="cmd-k-row-meta">{view.meta}</div>
+          </div>
+        ),
+      )}
     </div>
   );
 }

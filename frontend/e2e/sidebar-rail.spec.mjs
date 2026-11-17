@@ -7,16 +7,25 @@ import { gotoAndSettle, setLang } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const SESSIONS = ['贝叶斯定理', '导数的几何意义', '光合作用'].map((title, i) => ({
-  id: `s${i}`, title, messageCount: 4,
-  updatedAt: new Date(Date.now() - i * 3600e3).toISOString(), createdAt: new Date().toISOString(),
+  id: `s${i}`,
+  title,
+  messageCount: 4,
+  updatedAt: new Date(Date.now() - i * 3600e3).toISOString(),
+  createdAt: new Date().toISOString(),
 }));
 
 async function boot(page, mode = 'dark') {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.addInitScript((m) => { localStorage.setItem('socrates-theme', m); localStorage.setItem('socrates-sb', '1'); }, mode);
+  await page.addInitScript((m) => {
+    localStorage.setItem('socrates-theme', m);
+    localStorage.setItem('socrates-sb', '1');
+  }, mode);
   await mockAuthedApp(page, { lang: 'zh' });
-  await page.route('**/api/**/sessions**', (r) => (r.request().method() === 'GET'
-    ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: SESSIONS }) }) : r.fallback()));
+  await page.route('**/api/**/sessions**', (r) =>
+    r.request().method() === 'GET'
+      ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: SESSIONS }) })
+      : r.fallback(),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await expect(page.locator('#recentsList .recent-item')).toHaveCount(SESSIONS.length);
@@ -70,20 +79,33 @@ test('open sidebar uses quiet 36px rows, compact chrome and one-line history', a
   await expect(page.locator('#navProjects')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0.04)');
 });
 
-test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({ page }) => {
+test('collapsing keeps a 52px icon rail with named buttons and reopens from it', async ({
+  page,
+}) => {
   await boot(page);
   await page.locator('#sidebarCloseBtn').click();
   await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
-  await expect.poll(() => page.evaluate(() => Math.round(document.getElementById('sidebar').getBoundingClientRect().width))).toBe(52);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Math.round(document.getElementById('sidebar').getBoundingClientRect().width),
+      ),
+    )
+    .toBe(52);
 
   const rail = await page.evaluate(() => ({
     left: Math.round(document.getElementById('sidebar').getBoundingClientRect().left),
-    mainPad: Math.round(parseFloat(getComputedStyle(document.querySelector('#appShell .main')).paddingLeft)),
+    mainPad: Math.round(
+      parseFloat(getComputedStyle(document.querySelector('#appShell .main')).paddingLeft),
+    ),
     openerHidden: getComputedStyle(document.getElementById('sidebarOpenBtn')).display === 'none',
     recentsHidden: getComputedStyle(document.getElementById('recentsPanel')).display === 'none',
     nav: [...document.querySelectorAll('#sidebarNav .sidebar-nav-btn')]
       .filter((n) => n.getClientRects().length)
-      .map((n) => { const r = n.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.left) }; }),
+      .map((n) => {
+        const r = n.getBoundingClientRect();
+        return { w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.left) };
+      }),
   }));
   expect(rail.left).toBe(0);
   expect(rail.mainPad).toBe(52);
@@ -100,9 +122,11 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   // Each visible nav button exposes its label via `title` so the CSS
   // rail-tooltip (`::after` with `content: attr(title)`) has text to show
   // and screen readers announce a useful name on hover/focus.
-  const railIds = await page.locator('#sidebarNav .sidebar-nav-btn').evaluateAll((buttons) =>
-    buttons.filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.id),
-  );
+  const railIds = await page
+    .locator('#sidebarNav .sidebar-nav-btn')
+    .evaluateAll((buttons) =>
+      buttons.filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.id),
+    );
   expect(railIds.length).toBeGreaterThan(0);
   for (const id of railIds) {
     await expect(page.locator(`#${id}`)).toHaveAttribute('aria-label', /\S+/);
@@ -113,20 +137,43 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
   await expect(page.locator('#sidebar')).not.toHaveClass(/collapsed/);
-  await expect.poll(() => page.evaluate(() => Math.round(document.getElementById('sidebar').getBoundingClientRect().width))).toBe(260);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Math.round(document.getElementById('sidebar').getBoundingClientRect().width),
+      ),
+    )
+    .toBe(260);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
 });
 
 test('lazy session list mounts and time groups follow English and Chinese', async ({ page }) => {
   const today = new Date();
   const sessions = [
-    { id: 'locale-today', title: 'Today session', updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).toISOString(), createdAt: today.toISOString() },
-    { id: 'locale-yesterday', title: 'Yesterday session', updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 12).toISOString(), createdAt: today.toISOString() },
+    {
+      id: 'locale-today',
+      title: 'Today session',
+      updatedAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).toISOString(),
+      createdAt: today.toISOString(),
+    },
+    {
+      id: 'locale-yesterday',
+      title: 'Yesterday session',
+      updatedAt: new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() - 1,
+        12,
+      ).toISOString(),
+      createdAt: today.toISOString(),
+    },
   ];
   await mockAuthedApp(page, { lang: 'en' });
-  await page.route('**/api/**/sessions**', (route) => (route.request().method() === 'GET'
-    ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions }) })
-    : route.fallback()));
+  await page.route('**/api/**/sessions**', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions }) })
+      : route.fallback(),
+  );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 

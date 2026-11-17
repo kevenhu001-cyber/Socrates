@@ -33,15 +33,33 @@ const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await page.addInitScript(() => {
   try {
     localStorage.setItem('socrates-lang-app', 'zh');
-    localStorage.setItem('socrates-cookie-consent', JSON.stringify({ v: 1, choice: 'accept', nonEssential: true, updatedAt: new Date().toISOString() }));
+    localStorage.setItem(
+      'socrates-cookie-consent',
+      JSON.stringify({
+        v: 1,
+        choice: 'accept',
+        nonEssential: true,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
   } catch (_) {}
 });
 
 await page.route('**/api/**', async (route) => {
   const req = route.request();
   const url = req.url().replace('/api/v2/', '/api/');
-  const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-  if (url.includes('/api/auth/me')) return json({ user: { id: 'u1', email: 'a@b.c', name: 'Adex Hu', plan: 'plus', verifiedAt: '2026-01-01T00:00:00Z' } });
+  const json = (body, status = 200) =>
+    route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+  if (url.includes('/api/auth/me'))
+    return json({
+      user: {
+        id: 'u1',
+        email: 'a@b.c',
+        name: 'Adex Hu',
+        plan: 'plus',
+        verifiedAt: '2026-01-01T00:00:00Z',
+      },
+    });
   if (url.includes('/api/sessions')) {
     if (req.method() === 'GET') return json(SESSIONS);
     return json({ session: { id: 'smoke-saved-1' } });
@@ -52,16 +70,27 @@ await page.route('**/api/**', async (route) => {
 });
 
 await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-await page.waitForFunction(() => document.documentElement.dataset.bootState === 'app', null, { timeout: 20000 }).catch(() => {});
+await page
+  .waitForFunction(() => document.documentElement.dataset.bootState === 'app', null, {
+    timeout: 20000,
+  })
+  .catch(() => {});
 await page.waitForTimeout(1200);
 
-const shot = (name) => page.screenshot({ path: resolve(OUT_DIR, `${label}-${name}.jpg`), type: 'jpeg', quality: 92 });
+const shot = (name) =>
+  page.screenshot({ path: resolve(OUT_DIR, `${label}-${name}.jpg`), type: 'jpeg', quality: 92 });
 await shot('m1-landing');
 
-await page.evaluate(() => { if (window.toggleSidebar) window.toggleSidebar(); else document.getElementById('sidebarOpenBtn')?.click(); });
+await page.evaluate(() => {
+  if (window.toggleSidebar) window.toggleSidebar();
+  else document.getElementById('sidebarOpenBtn')?.click();
+});
 await page.waitForTimeout(450);
 await shot('m2-sidebar');
-await page.evaluate(() => { if (window.toggleSidebar) window.toggleSidebar(); else document.getElementById('sidebarCloseBtn')?.click(); });
+await page.evaluate(() => {
+  if (window.toggleSidebar) window.toggleSidebar();
+  else document.getElementById('sidebarCloseBtn')?.click();
+});
 await page.waitForTimeout(400);
 
 await page.locator('#topicComposerToolsBtn').click();
@@ -70,7 +99,10 @@ await shot('m3-tools');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(250);
 
-await page.locator('#topicComposerRoot .tiptap').click().catch(() => {});
+await page
+  .locator('#topicComposerRoot .tiptap')
+  .click()
+  .catch(() => {});
 await page.waitForTimeout(400);
 await shot('m4-focused');
 

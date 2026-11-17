@@ -18,7 +18,9 @@ function CheatsheetSection({ title, rows }: { title: string; rows: Array<[string
       {rows.map(([desc, keys], i) => (
         <div className="cheatsheet-row" key={i}>
           {keys.map((k, j) => (
-            <kbd className="cheatsheet-kbd" key={j}>{k}</kbd>
+            <kbd className="cheatsheet-kbd" key={j}>
+              {k}
+            </kbd>
           ))}
           <span className="cheatsheet-desc">{desc}</span>
         </div>
@@ -28,33 +30,43 @@ function CheatsheetSection({ title, rows }: { title: string; rows: Array<[string
 }
 
 const SECTIONS: Array<[string, Array<[string, string[]]>]> = [
-  ['Navigation', [
-    ['Open search', ['⌘', 'K']],
-    ['Keyboard shortcuts', ['⌘', '/']],
-    ['Toggle sidebar', ['⌘', 'B']],
-    ['Toggle sidebar (alt)', ['Ctrl', '\\']],
-    ['Open settings', ['⌘', '.']],
-    ['New chat', ['⌘', '⇧', 'O']],
-    ['Cycle project', ['⌘', '⇧', 'P']],
-  ]],
-  ['Sharing & search', [
-    ['Share current chat', ['⌘', '⇧', 'S']],
-    ['Open project picker', ['⌘', '⇧', 'A']],
-    ['Find in conversation', ['⌘', 'F']],
-  ]],
-  ['Toggles', [
-    ['Toggle theme', ['⌘', '⇧', 'T']],
-    ['Toggle web search', ['⌘', '⇧', 'F']],
-    ['Toggle thinking pill', ['⌘', '⇧', 'M']],
-  ]],
-  ['Composing', [
-    ['Send (alternative)', ['⌘', '⏎']],
-    ['Edit last prompt', ['↑', '(empty input)']],
-    ['New line', ['⇧', '⏎']],
-  ]],
-  ['General', [
-    ['Close dialog', ['Esc']],
-  ]],
+  [
+    'Navigation',
+    [
+      ['Open search', ['⌘', 'K']],
+      ['Keyboard shortcuts', ['⌘', '/']],
+      ['Toggle sidebar', ['⌘', 'B']],
+      ['Toggle sidebar (alt)', ['Ctrl', '\\']],
+      ['Open settings', ['⌘', '.']],
+      ['New chat', ['⌘', '⇧', 'O']],
+      ['Cycle project', ['⌘', '⇧', 'P']],
+    ],
+  ],
+  [
+    'Sharing & search',
+    [
+      ['Share current chat', ['⌘', '⇧', 'S']],
+      ['Open project picker', ['⌘', '⇧', 'A']],
+      ['Find in conversation', ['⌘', 'F']],
+    ],
+  ],
+  [
+    'Toggles',
+    [
+      ['Toggle theme', ['⌘', '⇧', 'T']],
+      ['Toggle web search', ['⌘', '⇧', 'F']],
+      ['Toggle thinking pill', ['⌘', '⇧', 'M']],
+    ],
+  ],
+  [
+    'Composing',
+    [
+      ['Send (alternative)', ['⌘', '⏎']],
+      ['Edit last prompt', ['↑', '(empty input)']],
+      ['New line', ['⇧', '⏎']],
+    ],
+  ],
+  ['General', [['Close dialog', ['Esc']]]],
 ];
 
 function Cheatsheet() {
@@ -77,7 +89,11 @@ function Cheatsheet() {
         <FoundationDialogTitle ref={titleRef} tabIndex={-1} className="modal-title">
           Keyboard shortcuts
         </FoundationDialogTitle>
-        <FoundationDialogClose className="modal-close" onClick={() => dispatch.close()} aria-label="Close">
+        <FoundationDialogClose
+          className="modal-close"
+          onClick={() => dispatch.close()}
+          aria-label="Close"
+        >
           ×
         </FoundationDialogClose>
       </div>

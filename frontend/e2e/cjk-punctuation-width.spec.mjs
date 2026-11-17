@@ -50,7 +50,10 @@ test('Chinese punctuation renders full width instead of Latin metrics', async ({
   // Every Chinese punctuation mark takes one full em, exactly like a Han
   // character — not the narrow Latin advance.
   for (const ch of ['，', '。', '！', '？', '；', '：', '（', '）', '、']) {
-    expect(Math.abs(widths[ch] - han), `${ch} must advance one em like a Han character`).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(widths[ch] - han),
+      `${ch} must advance one em like a Han character`,
+    ).toBeLessThanOrEqual(1);
     expect(widths[ch], `${ch} must be wider than the ASCII comma`).toBeGreaterThan(widths[','] + 4);
   }
 

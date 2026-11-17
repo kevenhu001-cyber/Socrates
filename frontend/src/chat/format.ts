@@ -2,7 +2,7 @@
  * Three chat-formatting helpers extracted from main.js region 13.
  */
 
-import { stateStore } from '../state/store.ts';
+import { callBridge, dispatchCall } from '../store/index.ts';
 import { scheduleTurnToTopForMessage } from './turn/anchor/schedule.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
@@ -23,7 +23,12 @@ type ParsedToolCall = { tool: string; query: string };
 function normalizeJsonToolCall(value: unknown): ParsedToolCall | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as { tool?: unknown; query?: unknown };
-  if (candidate.tool !== 'web_search' || typeof candidate.query !== 'string' || !candidate.query.trim()) return null;
+  if (
+    candidate.tool !== 'web_search' ||
+    typeof candidate.query !== 'string' ||
+    !candidate.query.trim()
+  )
+    return null;
   return { tool: 'web_search', query: candidate.query.trim().slice(0, 200) };
 }
 
@@ -31,7 +36,7 @@ function parseJsonToolCall(value: string): ParsedToolCall | null {
   try {
     return normalizeJsonToolCall(JSON.parse(value));
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/format.ts:32');
+    reportEmptyCatch(_, 'empty catch: chat/format.ts');
     /* not JSON */
   }
   return null;
@@ -43,10 +48,14 @@ function parseMatchedJsonToolCall(text: string, pattern: RegExp): ParsedToolCall
 }
 
 function parseLooseToolCall(text: string): ParsedToolCall | null {
-  const bare = text.match(/\{\s*["']tool["']\s*:\s*["']web_search["']\s*,\s*["']query["']\s*:\s*["']([^"']+)["']\s*\}/i);
+  const bare = text.match(
+    /\{\s*["']tool["']\s*:\s*["']web_search["']\s*,\s*["']query["']\s*:\s*["']([^"']+)["']\s*\}/i,
+  );
   if (bare) return { tool: 'web_search', query: bare[1].slice(0, 200) };
 
-  const lenient = text.match(/\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'}\s][^"'}]*?)["']?\s*\}/i);
+  const lenient = text.match(
+    /\{\s*["']?tool["']?\s*:\s*["']?web_search["']?\s*,\s*["']?query["']?\s*:\s*["']?([^"'}\s][^"'}]*?)["']?\s*\}/i,
+  );
   if (lenient) return { tool: 'web_search', query: lenient[1].slice(0, 200) };
   return null;
 }
@@ -54,15 +63,32 @@ function parseLooseToolCall(text: string): ParsedToolCall | null {
 function parseToolCall(text: string): ParsedToolCall | null {
   if (typeof text !== 'string' || !text) return null;
   const trimmed = text.trim();
-  return parseJsonToolCall(trimmed)
-    || parseMatchedJsonToolCall(text, /```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"web_search"[\s\S]*?\})\s*```/i)
-    || parseMatchedJsonToolCall(text, /\[TOOL_CALL\]\s*(\{[\s\S]*?["']tool["']\s*:\s*["']web_search["'][\s\S]*?\})\s*\[\/TOOL_CALL\]/i)
-    || parseLooseToolCall(text);
+  return (
+    parseJsonToolCall(trimmed) ||
+    parseMatchedJsonToolCall(
+      text,
+      /```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"web_search"[\s\S]*?\})\s*```/i,
+    ) ||
+    parseMatchedJsonToolCall(
+      text,
+      /\[TOOL_CALL\]\s*(\{[\s\S]*?["']tool["']\s*:\s*["']web_search["'][\s\S]*?\})\s*\[\/TOOL_CALL\]/i,
+    ) ||
+    parseLooseToolCall(text)
+  );
 }
 
 /* Format the search results into the same [Web research] block the
    system used to inject. Used by the round-2 message. */
-function formatSourcesBlock(sources: Array<{ title?: string; snippet?: string; url?: string; matchedQuery?: string; fullContent?: string }>, query: string): string {
+function formatSourcesBlock(
+  sources: Array<{
+    title?: string;
+    snippet?: string;
+    url?: string;
+    matchedQuery?: string;
+    fullContent?: string;
+  }>,
+  query: string,
+): string {
   function stripEmoji(s: string | undefined): string {
     if (!s) return '';
     return String(s)
@@ -79,23 +105,30 @@ function formatSourcesBlock(sources: Array<{ title?: string; snippet?: string; u
   const lines = sources.map(function (x, i) {
     const title = stripEmoji(x.title || '') || x.title || '';
     let head = '[' + (i + 1) + '] ' + title;
-    if (x.snippet) { const snip = stripEmoji(x.snippet); if (snip) head += ' — ' + snip; }
+    if (x.snippet) {
+      const snip = stripEmoji(x.snippet);
+      if (snip) head += ' — ' + snip;
+    }
     head += ' ( ' + (x.url || '') + ' )';
     if (x.matchedQuery) head += '\n    Source query: "' + x.matchedQuery + '"';
     if (x.fullContent) {
       const fc = stripEmoji(x.fullContent);
-      const trimmed = (fc.length > 3000) ? fc.slice(0, 3000) + '…' : fc;
+      const trimmed = fc.length > 3000 ? fc.slice(0, 3000) + '…' : fc;
       head += '\n    Full text: ' + trimmed;
     } else {
       head += '\n    (snippet only — full text unavailable)';
     }
     return head;
   });
-  return '[Web research] — query: "' + query + '". ' +
+  return (
+    '[Web research] — query: "' +
+    query +
+    '". ' +
     'Each result below was retrieved live from the web. ' +
     'Weave the facts into your reply as natural prose. Do NOT add [1]/[2] citation markers or append a "Sources:"/"References:" list. Attribute claims supported only by these snippets with a Markdown link to the source URL when no tool source card covers them. ' +
     'Do NOT invent facts not supported by the results; if a result is irrelevant, ignore it.\n' +
-    lines.join('\n');
+    lines.join('\n')
+  );
 }
 
 interface StreamController {
@@ -118,48 +151,67 @@ function handleChatApiResult(
     ctl.abort();
     return;
   }
-  if (result && (result.semanticActivity === true || (typeof result.text === 'string' && result.text.trim()))) {
-    stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'api' });
+  if (
+    result &&
+    (result.semanticActivity === true || (typeof result.text === 'string' && result.text.trim()))
+  ) {
+    dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'api' });
     ctl.finish();
   } else {
-    const lastCallError = stateStore.read('lastCallError') as string | null;
-    const isClaimConflict = !!(lastCallError && /already been claimed|already bound/i.test(lastCallError));
+    const lastCallError = callBridge.getSnapshot().lastCallError as string | null;
+    const isClaimConflict = !!(
+      lastCallError && /already been claimed|already bound/i.test(lastCallError)
+    );
     const sanitizedError = isClaimConflict
       ? 'Turn execution conflict. Please click Retry to create a new turn.'
       : lastCallError;
     const reason: string = sanitizedError || 'empty response (no error detail)';
-    const isCancel = /cancel|user-stop|superseded|new-session|session-switch|session-expired|session-deleted|session-purged|session-reset|archived-session|msg-edit|msg-regen|signout/i.test(reason);
+    const isCancel =
+      /cancel|user-stop|superseded|new-session|session-switch|session-expired|session-deleted|session-purged|session-reset|archived-session|msg-edit|msg-regen|signout/i.test(
+        reason,
+      );
     if (isCancel) {
-      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'cancelled' });
+      dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'cancelled' });
       ctl.abort();
     } else if (sanitizedError) {
-      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
+      dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'error' });
       ctl.replaceWithError(sanitizedError, function () {
         /* P_turn-abort-quiet — the retried turn can itself abort
            (session-expired races the retry click); guard the promise so
            it never becomes an unhandledrejection + red banner. */
         try {
-          const p = (typeof retry === 'function'
-            ? retry()
-            : (window as unknown as ChatResultWindow).askChatTurn(userText)) as Promise<unknown> | undefined;
+          const p = (
+            typeof retry === 'function'
+              ? retry()
+              : (window as unknown as ChatResultWindow).askChatTurn(userText)
+          ) as Promise<unknown> | undefined;
           if (p && typeof p.catch === 'function') {
             p.catch((e: unknown) => {
               const quiet = (window as unknown as ChatResultWindow).isExpectedTurnAbort;
-              if (typeof quiet === 'function' ? !quiet(e) : true) console.error('[chat] retry turn failed:', e);
+              if (typeof quiet === 'function' ? !quiet(e) : true)
+                console.error('[chat] retry turn failed:', e);
             });
           }
         } catch (error) {
-          reportEmptyCatch(error, 'empty catch: chat/format.ts:147');
+          reportEmptyCatch(error, 'empty catch: chat/format.ts');
           /* retry dispatch failed — bubble already shows the error */
         }
       });
     } else {
-      stateStore.dispatch({ type: 'state/set', key: 'lastCallSource', value: 'error' });
+      dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'error' });
       ctl.abort();
-      console.warn('[chat] stream returned no result with no error. result=', result, 'lastCallError=', lastCallError);
+      console.warn(
+        '[chat] stream returned no result with no error. result=',
+        result,
+        'lastCallError=',
+        lastCallError,
+      );
       const runtime = window as unknown as ChatResultWindow;
       if (runtime.addMessage) {
-        const clientId = runtime.addMessage('assistant', '(response interrupted — no content received)');
+        const clientId = runtime.addMessage(
+          'assistant',
+          '(response interrupted — no content received)',
+        );
         const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
         scheduleTurnToTopForMessage(list, clientId);
       }

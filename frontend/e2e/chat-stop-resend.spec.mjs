@@ -10,8 +10,7 @@
 //      bubble grows a Resend control:
 //         <button class="msg-retry-btn chat-resend-btn" data-chat-resend>
 //      inside a .msg-error.msg-resend block.  [Req 2.6]
-//   3. Click Resend → window.resendLastUserMessage() starts a NEW turn from the
-//      latest user message via window.askChatTurn(text).  [Req 2.7]
+//   3. Click Resend to start a new turn using the latest user message. [Req 2.7]
 //
 // The chat stream is stubbed so it emits one content delta (so the bubble has
 // visible partial text — the source only offers Resend when a partial answer
@@ -30,9 +29,11 @@ import { gotoAndSettle } from './_lib.mjs';
 function installOpenStream(page) {
   return page.addInitScript(() => {
     const nativeFetch = window.fetch.bind(window);
+    window.__stopStreamRequests = [];
     window.fetch = (input, init) => {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return nativeFetch(input, init);
+      window.__stopStreamRequests.push(JSON.parse(init.body));
       const encoder = new TextEncoder();
       let controllerRef = null;
       const body = new ReadableStream({
@@ -40,11 +41,15 @@ function installOpenStream(page) {
           controllerRef = controller;
           // One content delta so the bubble has visible partial text; then
           // the stream stays open (no [DONE]) so the turn is in-progress.
-          controller.enqueue(encoder.encode(
-            'data: {"choices":[{"delta":{"content":"Partial answer while streaming."}}]}\n\n',
-          ));
+          controller.enqueue(
+            encoder.encode(
+              'data: {"choices":[{"delta":{"content":"Partial answer while streaming."}}]}\n\n',
+            ),
+          );
         },
-        cancel() { controllerRef = null; },
+        cancel() {
+          controllerRef = null;
+        },
       });
       window.__finishStopStream = () => {
         try {
@@ -52,10 +57,12 @@ function installOpenStream(page) {
           controllerRef.close();
         } catch (_) {}
       };
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
 }
@@ -67,10 +74,21 @@ async function bootChatTurn(page) {
   await waitForAppShell(page);
   await page.evaluate(() => {
     const sessionId = '88888888-8888-4888-8888-888888888888';
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: sessionId });
-    window.stateStore.dispatch({ type: "state/set", key: "messages", value: [{ clientId: 'user-stop', role: 'user', rawText: 'Stop me mid-stream', html: null }] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.dispatchSession({
+      type: 'session/replace-messages',
+      payload: [
+        { clientId: 'user-old', role: 'user', rawText: 'An older question' },
+        {
+          clientId: 'user-stop',
+          role: 'user',
+          rawText: 'Stop me mid-stream',
+          content: 'Rendered preview',
+          attachments: [{ kind: 'text', name: 'notes.txt', fileId: 'stop-notes' }],
+        },
+      ],
+    });
     window.__testActivateMainView('chatView');
     window.__stopTurnPromise = window.askChatTurn('Stop me mid-stream');
   });
@@ -85,10 +103,12 @@ test('clicking Stop mid-stream halts the turn and surfaces Resend', async ({ pag
 
   // The send button morphs into Stop while the turn streams (Req 2.5).
   await expect
-    .poll(() => page.evaluate(() => {
-      const b = document.getElementById('composerPrimaryBtn');
-      return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
-    }))
+    .poll(() =>
+      page.evaluate(() => {
+        const b = document.getElementById('composerPrimaryBtn');
+        return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
+      }),
+    )
     .toBe(true);
 
   // Partial streamed text is visible before we stop. The typewriter may
@@ -102,10 +122,12 @@ test('clicking Stop mid-stream halts the turn and surfaces Resend', async ({ pag
 
   // The stream halts: the button returns to its non-stop (send) state.
   await expect
-    .poll(() => page.evaluate(() => {
-      const b = document.getElementById('composerPrimaryBtn');
-      return Boolean(b && b.dataset.stop !== '1' && !b.classList.contains('chat-stop'));
-    }))
+    .poll(() =>
+      page.evaluate(() => {
+        const b = document.getElementById('composerPrimaryBtn');
+        return Boolean(b && b.dataset.stop !== '1' && !b.classList.contains('chat-stop'));
+      }),
+    )
     .toBe(true);
 
   // A Resend control appears on the stopped bubble (Req 2.6).
@@ -120,10 +142,12 @@ test('clicking Resend starts a new turn from the latest user message', async ({ 
 
   const sendBtn = page.locator('#composerPrimaryBtn');
   await expect
-    .poll(() => page.evaluate(() => {
-      const b = document.getElementById('composerPrimaryBtn');
-      return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
-    }))
+    .poll(() =>
+      page.evaluate(() => {
+        const b = document.getElementById('composerPrimaryBtn');
+        return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
+      }),
+    )
     .toBe(true);
 
   await expect(page.locator('.msg.assistant').last()).toContainText('Partial answer');
@@ -133,51 +157,50 @@ test('clicking Resend starts a new turn from the latest user message', async ({ 
   const resend = page.locator('[data-chat-resend]');
   await expect(resend).toBeVisible();
 
-  // Spy on askChatTurn so we can assert Resend starts a NEW turn from the
-  // most recent user message (resendLastUserMessage → askChatTurn(text)).
-  await page.evaluate(() => {
-    window.__resendCalls = [];
-    const orig = window.askChatTurn;
-    window.askChatTurn = function (text) {
-      window.__resendCalls.push(text);
-      return orig.apply(this, arguments);
-    };
-  });
-
   await resend.click();
 
-  // A new turn was started from the latest user message text (Req 2.7):
-  // resendLastUserMessage() calls askChatTurn(text) with the most recent
-  // user message.
-  await expect
-    .poll(() => page.evaluate(() => (window.__resendCalls || [])[0] || null))
-    .toBe('Stop me mid-stream');
+  await expect.poll(() => page.evaluate(() => window.__stopStreamRequests.length)).toBe(2);
+  const resentContent = await page.evaluate(
+    () =>
+      window.__stopStreamRequests[1].messages.filter((message) => message.role === 'user').pop()
+        ?.content,
+  );
+  expect(resentContent).toEqual(
+    expect.arrayContaining([
+      { type: 'text', text: 'Stop me mid-stream' },
+      { type: 'text', text: expect.stringContaining('notes.txt') },
+    ]),
+  );
 
   // The resent turn is in progress again: the send button morphs back into
   // Stop, confirming a fresh streaming turn started from that message.
   await expect
-    .poll(() => page.evaluate(() => {
-      const b = document.getElementById('composerPrimaryBtn');
-      return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
-    }))
+    .poll(() =>
+      page.evaluate(() => {
+        const b = document.getElementById('composerPrimaryBtn');
+        return Boolean(b && (b.dataset.stop === '1' || b.classList.contains('chat-stop')));
+      }),
+    )
     .toBe(true);
 });
 
-test('editing a frozen user message saves the new text and starts a replacement answer', async ({ page }) => {
+test('editing a frozen user message saves the new text and starts a replacement answer', async ({
+  page,
+}) => {
   const errors = [];
   const patches = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', (error) => errors.push(error.message));
   await installOpenStream(page);
   await bootChatTurn(page);
   await expect(page.locator('.msg.assistant').last()).toContainText('Partial answer');
   await page.locator('#composerPrimaryBtn').click();
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '0');
-  await page.route('**/api/v2/messages/user-stop?*', async route => {
+  await page.route('**/api/v2/messages/user-stop?*', async (route) => {
     patches.push(route.request().postDataJSON());
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
   });
   await page.evaluate(() => {
-    window.__beforeEditSnapshot = window.stateStore.read('messages');
+    window.__beforeEditSnapshot = window.__socratesTestState.session().messages;
   });
   const user = page.locator('[data-client-id="user-stop"]');
   await user.hover();
@@ -189,30 +212,48 @@ test('editing a frozen user message saves the new text and starts a replacement 
   await expect(page.locator('#composerPrimaryBtn')).toHaveAttribute('data-stop', '1');
   await expect(page.locator('.msg.assistant')).toHaveCount(1);
   await expect(page.locator('.msg.assistant')).toContainText('Partial answer');
-  expect(patches).toEqual([{
-    content: 'Updated question after editing', regenerate: false, discardFollowing: true,
-  }]);
-  expect(await page.evaluate(() => ({
-    originalText: window.__beforeEditSnapshot[0].rawText,
-    currentText: window.stateStore.read('messages')[0].rawText,
-    replaced: window.__beforeEditSnapshot[0] !== window.stateStore.read('messages')[0],
-  }))).toEqual({
-    originalText: 'Stop me mid-stream', currentText: 'Updated question after editing', replaced: true,
+  expect(patches).toEqual([
+    {
+      content: 'Updated question after editing',
+      regenerate: false,
+      discardFollowing: true,
+    },
+  ]);
+  expect(
+    await page.evaluate(() => {
+      const isEditedMessage = (message) => message.clientId === 'user-stop';
+      const original = window.__beforeEditSnapshot.find(isEditedMessage);
+      const current = window.__socratesTestState.session().messages.find(isEditedMessage);
+      return {
+        originalText: original?.rawText,
+        currentText: current?.rawText,
+        replaced: original !== current,
+      };
+    }),
+  ).toEqual({
+    originalText: 'Stop me mid-stream',
+    currentText: 'Updated question after editing',
+    replaced: true,
   });
   expect(errors).toEqual([]);
   await page.locator('#composerPrimaryBtn').click();
 });
 
 for (const ending of ['abort', 'error']) {
-  test(`a late ${ending} from the old turn preserves the new turn's Stop control`, async ({ page }) => {
+  test(`a late ${ending} from the old turn preserves the new turn's Stop control`, async ({
+    page,
+  }) => {
     await mockAuthedApp(page);
     await gotoAndSettle(page, '/');
     await waitForAppShell(page);
     await page.evaluate(async () => {
-      window.stateStore.dispatch({ type: 'state/batch', patch: {
-        phase: 'chat', currentSessionId: '88888888-8888-4888-8888-888888888888',
-        messages: [{ clientId: 'owner-user', role: 'user', rawText: 'Keep the new turn active' }],
-      } });
+      window.__socratesTestState.patch({
+        session: {
+          phase: 'chat',
+          currentSessionId: '88888888-8888-4888-8888-888888888888',
+          messages: [{ clientId: 'owner-user', role: 'user', rawText: 'Keep the new turn active' }],
+        },
+      });
       window.__testActivateMainView('chatView');
       window.__oldOwner = await window.addStreamingMessage({ clientId: 'owner-old' });
       window.__newOwner = await window.addStreamingMessage({ clientId: 'owner-new' });
@@ -232,7 +273,9 @@ for (const ending of ['abort', 'error']) {
   });
 }
 
-test('caught failures report safely in the production bundle without opening an error banner', async ({ page }) => {
+test('caught failures report safely in the production bundle without opening an error banner', async ({
+  page,
+}) => {
   const reports = [];
   const seenPaths = new Set();
   await mockAuthedApp(page);
@@ -249,7 +292,9 @@ test('caught failures report safely in the production bundle without opening an 
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;
     try {
-      Storage.prototype.setItem = () => { throw new TypeError('DO_NOT_SEND_PRIVATE_CONTENT'); };
+      Storage.prototype.setItem = () => {
+        throw new TypeError('DO_NOT_SEND_PRIVATE_CONTENT');
+      };
       window.__socratesLegacy.profile.setLang('en');
       window.__socratesLegacy.profile.setLang('en');
     } finally {

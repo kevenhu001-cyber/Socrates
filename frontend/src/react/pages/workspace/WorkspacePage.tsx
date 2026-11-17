@@ -4,7 +4,11 @@ import { WorkspaceLoadingView } from './WorkspaceLoadingView';
 import { LibraryView } from './LibraryView';
 import { ProjectsView } from './ProjectsView';
 import { PluginsView } from './PluginsView';
-import { DESTINATIONS, isWorkspacePage, type WorkspacePage as WorkspacePageKey } from '../../../sidebar/navigation.destinations';
+import {
+  DESTINATIONS,
+  isWorkspacePage,
+  type WorkspacePage as WorkspacePageKey,
+} from '../../../sidebar/navigation.destinations';
 
 export function WorkspacePage({ page }: { page: WorkspacePageKey }) {
   const snap = useWorkspaceSnapshot(page);
@@ -20,7 +24,14 @@ export function WorkspacePage({ page }: { page: WorkspacePageKey }) {
     case 'projects':
       return <ProjectsView projects={snap.data} dispatch={dispatch} />;
     case 'plugins':
-      return <PluginsView plugins={snap.data} configured={snap.configured} openConnectorAvailable={snap.openConnectorAvailable} dispatch={dispatch} />;
+      return (
+        <PluginsView
+          plugins={snap.data}
+          configured={snap.configured}
+          openConnectorAvailable={snap.openConnectorAvailable}
+          dispatch={dispatch}
+        />
+      );
     default:
       return null;
   }
@@ -36,7 +47,10 @@ export function mountWorkspacePage(page: WorkspacePageKey): void {
   if (!isWorkspacePage(page)) return;
   const panelId = DESTINATIONS[page].host;
   const panel = document.getElementById(panelId);
-  if (!panel) { unmountWorkspacePage(page); return; }
+  if (!panel) {
+    unmountWorkspacePage(page);
+    return;
+  }
 
   let root = roots.get(page);
   if (!root) {

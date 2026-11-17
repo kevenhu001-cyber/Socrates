@@ -20,13 +20,19 @@ export function submitComposer(actions: LegacyComposer, surface = readComposerSu
 }
 
 /** The pointer Send action also collapses mobile focus after committing a turn. */
-export function submitPrimaryComposer(actions: LegacyComposer, surface = readComposerSurface()): void {
+export function submitPrimaryComposer(
+  actions: LegacyComposer,
+  surface = readComposerSurface(),
+): void {
   if (surface === 'chat') actions.submitChatMessage(null, { blurAfterSend: true });
   else actions.startSession();
 }
 
 /** Escape is a Stop shortcut only while the chat composer is active. */
-export function handleComposerEscape(actions: LegacyComposer, surface = readComposerSurface()): void {
+export function handleComposerEscape(
+  actions: LegacyComposer,
+  surface = readComposerSurface(),
+): void {
   if (surface === 'chat') actions.stopChatResponse();
 }
 
@@ -43,8 +49,16 @@ export function resetComposerForNewSession(): void {
 }
 
 export function focusComposerForNewSession(): void {
-  try { focusComposer('topic'); } catch (error) { reportSwallow(error, 'composer.lifecycle.focusImmediate'); }
+  try {
+    focusComposer('topic');
+  } catch (error) {
+    reportSwallow(error, 'composer.lifecycle.focusImmediate');
+  }
   requestAnimationFrame(() => {
-    try { focusComposer('topic'); } catch (error) { reportSwallow(error, 'composer.lifecycle.focusFrame'); }
+    try {
+      focusComposer('topic');
+    } catch (error) {
+      reportSwallow(error, 'composer.lifecycle.focusFrame');
+    }
   });
 }

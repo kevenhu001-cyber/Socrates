@@ -64,7 +64,8 @@ export function createApprovalRuntime<
     const message = options.activeMessage();
     const calls = message && Array.isArray(message.toolCalls) ? message.toolCalls : [];
     for (const entry of calls) {
-      if (!entry || !entry.approval || String(entry.approval.approvalId) !== String(approvalId)) continue;
+      if (!entry || !entry.approval || String(entry.approval.approvalId) !== String(approvalId))
+        continue;
       entry.approval = { ...entry.approval, ui: { text, state, disabled } };
     }
     if (message) options.notifyToolRun(message);
@@ -76,17 +77,33 @@ export function createApprovalRuntime<
     decision: string,
   ): Promise<void> {
     if (!approval || !approval.runId || !approval.approvalId) return;
-    setApprovalUi(approval.approvalId, options.translate('tool.sendingApproval', 'Saving your decision…'));
+    setApprovalUi(
+      approval.approvalId,
+      options.translate('tool.sendingApproval', 'Saving your decision…'),
+    );
     try {
       if (decision === 'stop') {
-        await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/interrupt', { method: 'POST', body: {} });
-        setApprovalUi(approval.approvalId, options.translate('tool.runStopped', 'Stop requested'), 'stopped');
+        await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/interrupt', {
+          method: 'POST',
+          body: {},
+        });
+        setApprovalUi(
+          approval.approvalId,
+          options.translate('tool.runStopped', 'Stop requested'),
+          'stopped',
+        );
         return;
       }
-      await apiFetch('/api/agent-runs/' + encodeURIComponent(approval.runId) + '/approvals/' + encodeURIComponent(approval.approvalId), {
-        method: 'POST',
-        body: { decision },
-      });
+      await apiFetch(
+        '/api/agent-runs/' +
+          encodeURIComponent(approval.runId) +
+          '/approvals/' +
+          encodeURIComponent(approval.approvalId),
+        {
+          method: 'POST',
+          body: { decision },
+        },
+      );
       setApprovalUi(
         approval.approvalId,
         decision === 'decline'
@@ -103,9 +120,14 @@ export function createApprovalRuntime<
         const poll = async (): Promise<void> => {
           if (Date.now() - startedAt > 120_000) return;
           try {
-            const response = await apiFetch<AgentRunPollResponse>('/api/agent-runs/' + encodeURIComponent(approval.runId));
+            const response = await apiFetch<AgentRunPollResponse>(
+              '/api/agent-runs/' + encodeURIComponent(approval.runId),
+            );
             const run = response && response.run;
-            if (run && ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))) {
+            if (
+              run &&
+              ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))
+            ) {
               options.recordToolResult({
                 id: entryId,
                 name: entry ? entry.name : 'workspace_agent',
@@ -118,17 +140,22 @@ export function createApprovalRuntime<
               return;
             }
           } catch (_) {
-            reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts:114');
+            reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts');
             /* a refresh/reconnect can retry on the next tick */
           }
-          window.setTimeout(() => { void poll(); }, 900);
+          window.setTimeout(() => {
+            void poll();
+          }, 900);
         };
-        window.setTimeout(() => { void poll(); }, 900);
+        window.setTimeout(() => {
+          void poll();
+        }, 900);
       }
     } catch (err) {
       setApprovalUi(
         approval.approvalId,
-        (err as Error).message || options.translate('tool.approvalFailed', 'Could not save the decision. Try again.'),
+        (err as Error).message ||
+          options.translate('tool.approvalFailed', 'Could not save the decision. Try again.'),
         undefined,
         false,
       );
@@ -150,7 +177,10 @@ export function createApprovalRuntime<
     if (!entry) {
       /* Keep a fallback for adapters that provide only runId/requestId. */
       const calls = Array.isArray(message.toolCalls) ? message.toolCalls : [];
-      entry = calls.find((candidate) => candidate.approval && candidate.approval.runId === approval.runId) || null;
+      entry =
+        calls.find(
+          (candidate) => candidate.approval && candidate.approval.runId === approval.runId,
+        ) || null;
     }
     if (!entry) return;
     entry.approval = { ...approval, status: approval.status || 'pending' };
@@ -173,7 +203,12 @@ export function createApprovalRuntime<
       }
     }
     if (!entry) {
-      options.pushOrphan(message, '_orphanApprovals', String(approval.id || approval.runId), approval as never);
+      options.pushOrphan(
+        message,
+        '_orphanApprovals',
+        String(approval.id || approval.runId),
+        approval as never,
+      );
       return;
     }
     const normalized = { ...approval, id: entry.id };

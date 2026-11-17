@@ -35,7 +35,9 @@ const SCHEDULED_TASKS = [
   },
 ];
 
-test('scheduled task list searches, filters active tasks, and dispatches row actions', async ({ page }) => {
+test('scheduled task list searches, filters active tasks, and dispatches row actions', async ({
+  page,
+}) => {
   await mockAuthedApp(page, { lang: 'en' });
   let tasks = SCHEDULED_TASKS.map((task) => ({ ...task }));
   const runRequests = [];
@@ -44,20 +46,34 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/v2/', '/api/');
     if (path === '/api/scheduled-tasks' && request.method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tasks }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ tasks }),
+      });
       return;
     }
     const runMatch = path.match(/\/api\/scheduled-tasks\/([^/]+)\/run$/);
     if (runMatch && request.method() === 'POST') {
       runRequests.push(decodeURIComponent(runMatch[1]));
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
       return;
     }
     const taskMatch = path.match(/\/api\/scheduled-tasks\/([^/]+)$/);
     if (taskMatch && request.method() === 'PATCH') {
       const patch = request.postDataJSON();
-      tasks = tasks.map((task) => task.id === decodeURIComponent(taskMatch[1]) ? { ...task, ...patch } : task);
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      tasks = tasks.map((task) =>
+        task.id === decodeURIComponent(taskMatch[1]) ? { ...task, ...patch } : task,
+      );
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
       return;
     }
     await route.fallback();
@@ -79,8 +95,10 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
   await expect(page.locator('.task-row')).toHaveCount(1);
   await expect(page.locator('.task-row')).toContainText('Morning briefing');
 
-  const runRequest = page.waitForRequest((request) =>
-    request.method() === 'POST' && /\/api\/(v2\/)?scheduled-tasks\/task-active\/run(?:\?|$)/.test(request.url()),
+  const runRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' &&
+      /\/api\/(v2\/)?scheduled-tasks\/task-active\/run(?:\?|$)/.test(request.url()),
   );
   await page.getByRole('button', { name: 'Run task now' }).click();
   await runRequest;
@@ -94,14 +112,20 @@ test('scheduled task list searches, filters active tasks, and dispatches row act
 test('scheduled page uses shimmer skeletons while tasks are loading', async ({ page }) => {
   await mockAuthedApp(page, { lang: 'en' });
   let releaseTasks;
-  const tasksResponse = new Promise((resolve) => { releaseTasks = resolve; });
+  const tasksResponse = new Promise((resolve) => {
+    releaseTasks = resolve;
+  });
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname.replace('/api/v2/', '/api/');
     if (path === '/api/scheduled-tasks' && request.method() === 'GET') {
       await tasksResponse;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ tasks: [] }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ tasks: [] }),
+      });
       return;
     }
     await route.fallback();
@@ -114,7 +138,10 @@ test('scheduled page uses shimmer skeletons while tasks are loading', async ({ p
   const loading = page.locator('.workspace-loading-scheduled');
   await expect(loading).toBeVisible();
   await expect(loading.locator('.workspace-loading-spinner-ring')).toBeVisible();
-  await expect(loading.locator('.workspace-loading-spinner-ring')).toHaveCSS('animation-name', 'workspaceLoadingSpin');
+  await expect(loading.locator('.workspace-loading-spinner-ring')).toHaveCSS(
+    'animation-name',
+    'workspaceLoadingSpin',
+  );
   await expect(loading.locator('.workspace-skeleton-shimmer')).toHaveCount(30);
   await expect(loading.locator('.shimmer-text')).toHaveCount(2);
 

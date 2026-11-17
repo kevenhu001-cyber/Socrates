@@ -35,46 +35,101 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
       <section className="settings-section">
         <div className="settings-section-head">
           <h3>{label('阅读与版式', 'Reading & layout')}</h3>
-          <p>{label('调整对话文字大小、内容宽度和背景。', 'Adjust conversation text size, content width, and background.')}</p>
+          <p>
+            {label(
+              '调整对话文字大小、内容宽度和背景。',
+              'Adjust conversation text size, content width, and background.',
+            )}
+          </p>
         </div>
         <div className="settings-choice settings-choice--segmented">
-          <span className="settings-choice-label" id="settings-font-size-label">{label('文字大小', 'Text size')}</span>
-          <ToggleGroup variant="outline" value={[String(display.font)]}
-            onValueChange={(values) => { if (values[0]) settingsPreferenceActions.setFont(Number(values[0])); }}
-            aria-labelledby="settings-font-size-label">
+          <span className="settings-choice-label" id="settings-font-size-label">
+            {label('文字大小', 'Text size')}
+          </span>
+          <ToggleGroup
+            variant="outline"
+            value={[String(display.font)]}
+            onValueChange={(values) => {
+              if (values[0]) settingsPreferenceActions.setFont(Number(values[0]));
+            }}
+            aria-labelledby="settings-font-size-label"
+          >
             {DISPLAY_FONT_STEPS.map((step, index) => (
-              <ToggleGroupItem key={step} type="button" value={String(step)}>{FONT_LABELS[index]}</ToggleGroupItem>
+              <ToggleGroupItem key={step} type="button" value={String(step)}>
+                {FONT_LABELS[index]}
+              </ToggleGroupItem>
             ))}
           </ToggleGroup>
         </div>
         <div className="settings-choice settings-choice--segmented">
-          <span className="settings-choice-label" id="settings-content-width-label">{label('内容宽度', 'Content width')}</span>
-          <ToggleGroup variant="outline" value={[String(display.width)]}
-            onValueChange={(values) => { if (values[0]) settingsPreferenceActions.setWidth(Number(values[0])); }}
-            aria-labelledby="settings-content-width-label">
+          <span className="settings-choice-label" id="settings-content-width-label">
+            {label('内容宽度', 'Content width')}
+          </span>
+          <ToggleGroup
+            variant="outline"
+            value={[String(display.width)]}
+            onValueChange={(values) => {
+              if (values[0]) settingsPreferenceActions.setWidth(Number(values[0]));
+            }}
+            aria-labelledby="settings-content-width-label"
+          >
             {DISPLAY_WIDTH_STEPS.map((step, index) => (
-              <ToggleGroupItem key={step} type="button" value={String(step)}>{WIDTH_LABELS[index]}</ToggleGroupItem>
+              <ToggleGroupItem key={step} type="button" value={String(step)}>
+                {WIDTH_LABELS[index]}
+              </ToggleGroupItem>
             ))}
           </ToggleGroup>
         </div>
-        <ShadcnLabel className="settings-choice">{gridLabel}
+        <ShadcnLabel className="settings-choice">
+          {gridLabel}
           <WebUiTheme>
-            <SettingsSwitch control={WebSwitch} label={gridLabel} value={display.showGrid} onValueChange={settingsPreferenceActions.setGrid} />
+            <SettingsSwitch
+              control={WebSwitch}
+              label={gridLabel}
+              value={display.showGrid}
+              onValueChange={settingsPreferenceActions.setGrid}
+            />
           </WebUiTheme>
         </ShadcnLabel>
         <div className="settings-choice settings-choice--color">
-          <span className="settings-choice-label">{label('自定义背景色', 'Custom background')}</span>
+          <span className="settings-choice-label">
+            {label('自定义背景色', 'Custom background')}
+          </span>
           <div className="settings-bg-pickers">
             <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl type="color" value={display.darkBg || '#09090b'} onChange={(event) => settingsPreferenceActions.setDarkBackground(event.target.value)} />
+              <ShadcnNativeControl
+                type="color"
+                value={display.darkBg || '#09090b'}
+                onChange={(event) =>
+                  settingsPreferenceActions.setDarkBackground(event.target.value)
+                }
+              />
               <span>{label('深色', 'Dark')}</span>
             </ShadcnLabel>
-            <Button variant="outline" type="button" onClick={() => settingsPreferenceActions.resetDarkBackground()}>{label('重置', 'Reset')}</Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => settingsPreferenceActions.resetDarkBackground()}
+            >
+              {label('重置', 'Reset')}
+            </Button>
             <ShadcnLabel className="settings-bg-picker">
-              <ShadcnNativeControl type="color" value={display.lightBg || '#ffffff'} onChange={(event) => settingsPreferenceActions.setLightBackground(event.target.value)} />
+              <ShadcnNativeControl
+                type="color"
+                value={display.lightBg || '#ffffff'}
+                onChange={(event) =>
+                  settingsPreferenceActions.setLightBackground(event.target.value)
+                }
+              />
               <span>{label('浅色', 'Light')}</span>
             </ShadcnLabel>
-            <Button variant="outline" type="button" onClick={() => settingsPreferenceActions.resetLightBackground()}>{label('重置', 'Reset')}</Button>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => settingsPreferenceActions.resetLightBackground()}
+            >
+              {label('重置', 'Reset')}
+            </Button>
           </div>
         </div>
       </section>

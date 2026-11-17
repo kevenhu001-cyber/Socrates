@@ -1,9 +1,9 @@
 import {
-  displayIntelligenceUiValue,
-  isSafeIntelligenceUiStateKey,
-  resolveIntelligenceUiValue,
-  type IntelligenceUiNode,
-  type IntelligenceUiState,
+  displayIntelligentUiValue,
+  isSafeIntelligentUiStateKey,
+  resolveIntelligentUiValue,
+  type IntelligentUiNode,
+  type IntelligentUiState,
 } from '@socrates/core';
 import type { MouseEvent } from 'react';
 
@@ -13,9 +13,9 @@ import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 /** Shared state and callbacks consumed by every node renderer. */
 export interface RenderContext {
-  state: IntelligenceUiState;
-  setState: (updater: (previous: IntelligenceUiState) => IntelligenceUiState) => void;
-  children: Map<string, IntelligenceUiNode[]>;
+  state: IntelligentUiState;
+  setState: (updater: (previous: IntelligentUiState) => IntelligentUiState) => void;
+  children: Map<string, IntelligentUiNode[]>;
   tools: ReadonlyArray<ToolCallRecord>;
   readOnly: boolean;
   streaming?: boolean;
@@ -41,7 +41,7 @@ export function asNumber(value: unknown, fallback: number): number {
 }
 
 export function asText(value: unknown): string {
-  return displayIntelligenceUiValue(value);
+  return displayIntelligentUiValue(value);
 }
 
 /** Display labels only. Actions, bindings and data values still use asText. */
@@ -49,8 +49,10 @@ export function asProse(value: unknown): string {
   return normalizeChineseProse(asText(value));
 }
 
-export function childMap(nodes: ReadonlyArray<IntelligenceUiNode>): Map<string, IntelligenceUiNode[]> {
-  const map = new Map<string, IntelligenceUiNode[]>();
+export function childMap(
+  nodes: ReadonlyArray<IntelligentUiNode>,
+): Map<string, IntelligentUiNode[]> {
+  const map = new Map<string, IntelligentUiNode[]>();
   for (const node of nodes) {
     if (!node.parent) continue;
     const list = map.get(node.parent) || [];
@@ -60,7 +62,10 @@ export function childMap(nodes: ReadonlyArray<IntelligenceUiNode>): Map<string, 
   return map;
 }
 
-export function mergeDefaults(previous: IntelligenceUiState, defaults: IntelligenceUiState): IntelligenceUiState {
+export function mergeDefaults(
+  previous: IntelligentUiState,
+  defaults: IntelligentUiState,
+): IntelligentUiState {
   let changed = false;
   const next = { ...previous };
   for (const [key, value] of Object.entries(defaults)) {
@@ -73,25 +78,29 @@ export function mergeDefaults(previous: IntelligenceUiState, defaults: Intellige
 }
 
 export function resolve(value: unknown, context: RenderContext): unknown {
-  return resolveIntelligenceUiValue(value, { state: context.state, tools: context.tools });
+  return resolveIntelligentUiValue(value, { state: context.state, tools: context.tools });
 }
 
-export function resolveVisible(node: IntelligenceUiNode, context: RenderContext): boolean {
+export function resolveVisible(node: IntelligentUiNode, context: RenderContext): boolean {
   if (!('when' in node)) return true;
   return Boolean(resolve(node.when, context));
 }
 
 export function setBoundValue(context: RenderContext, key: string, value: unknown): void {
-  if (!isSafeIntelligenceUiStateKey(key)) return;
-  context.setState((previous) => previous[key] === value ? previous : { ...previous, [key]: value });
+  if (!isSafeIntelligentUiStateKey(key)) return;
+  context.setState((previous) =>
+    previous[key] === value ? previous : { ...previous, [key]: value },
+  );
 }
 
 function dispatchPrompt(event: MouseEvent<HTMLButtonElement>, prompt: string): void {
   if (!prompt.trim()) return;
-  event.currentTarget.dispatchEvent(new CustomEvent('tool-retry', {
-    bubbles: true,
-    detail: { tool: 'intelligent_ui', prompt: prompt.trim() },
-  }));
+  event.currentTarget.dispatchEvent(
+    new CustomEvent('tool-retry', {
+      bubbles: true,
+      detail: { tool: 'intelligent_ui', prompt: prompt.trim() },
+    }),
+  );
 }
 
 function openSafeUrl(rawUrl: string): void {
@@ -100,18 +109,26 @@ function openSafeUrl(rawUrl: string): void {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
     window.open(url.href, '_blank', 'noopener,noreferrer');
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/intelligence-ui/renderRuntime.ts:101');
+    reportEmptyCatch(error, 'empty catch: react/intelligent-ui/renderRuntime.ts');
     /* Invalid model-provided URLs are inert by design. */
   }
 }
 
-export function executeAction(action: UiAction, context: RenderContext, event: MouseEvent<HTMLButtonElement>): void {
+export function executeAction(
+  action: UiAction,
+  context: RenderContext,
+  event: MouseEvent<HTMLButtonElement>,
+): void {
   const type = typeof action.type === 'string' ? action.type : '';
   if (type === 'set' && typeof action.key === 'string') {
     setBoundValue(context, action.key, resolve(action.value, context));
     return;
   }
-  if (type === 'increment' && typeof action.key === 'string' && isSafeIntelligenceUiStateKey(action.key)) {
+  if (
+    type === 'increment' &&
+    typeof action.key === 'string' &&
+    isSafeIntelligentUiStateKey(action.key)
+  ) {
     const current = asNumber(context.state[action.key], 0);
     const amount = asNumber(resolve(action.amount, context), 1);
     setBoundValue(context, action.key, current + amount);

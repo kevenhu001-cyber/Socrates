@@ -1,10 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 async function enterChat(page) {
   await page.evaluate(() => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
     window.__testActivateMainView('chatView');
   });
 }
@@ -21,26 +21,38 @@ test('mobile composer groups tools and reflects the active tool', async ({ page 
   const menu = page.locator('#composerToolsMenu');
   await page.locator('#composerToolsBtn').click();
   await expect(menu).toBeVisible();
-  await expect(menu.locator('.composer-tools-mobile-items .composer-tools-group-label').first())
-    .toContainText(/Add context|添加资料/);
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
+  await expect(
+    menu.locator('.composer-tools-mobile-items .composer-tools-group-label').first(),
+  ).toContainText(/Add context|添加资料/);
+  await expect(
+    menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'),
+  ).toBeVisible();
 
   /* The plus menu carries no filter field any more: every action stays on
      screen, so the roster never depends on a search box that is not there. */
   await expect(menu.locator('.composer-tools-footer-search')).toHaveCount(0);
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="write"]')).toBeVisible();
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]')).toBeVisible();
+  await expect(
+    menu.locator('.composer-tools-mobile-items [data-composer-action="write"]'),
+  ).toBeVisible();
+  await expect(
+    menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'),
+  ).toBeVisible();
 
   await menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]').click();
   await expect(menu).toHaveClass(/hidden/);
 
   await page.locator('#composerToolsBtn').click();
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'))
-    .toHaveAttribute('aria-checked', 'true');
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'))
-    .toHaveAttribute('role', 'menuitemcheckbox');
-  await expect(menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"] .composer-tools-active-check'))
-    .toBeVisible();
+  await expect(
+    menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'),
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(
+    menu.locator('.composer-tools-mobile-items [data-composer-action="webSearch"]'),
+  ).toHaveAttribute('role', 'menuitemcheckbox');
+  await expect(
+    menu.locator(
+      '.composer-tools-mobile-items [data-composer-action="webSearch"] .composer-tools-active-check',
+    ),
+  ).toBeVisible();
   await menu.screenshot({ path: 'test-results/visual-qa/mobile-composer-tools.png' });
 
   await page.keyboard.press('Escape');
@@ -48,7 +60,9 @@ test('mobile composer groups tools and reflects the active tool', async ({ page 
   await expect(page.locator('#composerToolsBtn')).toBeFocused();
 });
 
-test('mobile plugin status explains the empty state and opens the connector directory', async ({ page }) => {
+test('mobile plugin status explains the empty state and opens the connector directory', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -58,8 +72,9 @@ test('mobile plugin status explains the empty state and opens the connector dire
   await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu');
-  await expect(menu.locator('.composer-tools-plugin-state'))
-    .toContainText(/No connected apps yet|还没有已连接应用/);
+  await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
+    /No connected apps yet|还没有已连接应用/,
+  );
   await menu.getByRole('menuitem', { name: /Manage apps|管理应用/ }).click();
   await expect(page.locator('#pluginsPanel')).toBeVisible();
   await expect(menu).toHaveClass(/hidden/);

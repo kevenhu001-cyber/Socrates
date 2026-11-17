@@ -26,7 +26,12 @@ export function useSessionRowActions(sessionId: string, onClose: () => void) {
   const [projectError, setProjectError] = useState('');
   const projectRequest = useRef(0);
 
-  useEffect(() => () => { projectRequest.current += 1; }, [sessionId]);
+  useEffect(
+    () => () => {
+      projectRequest.current += 1;
+    },
+    [sessionId],
+  );
 
   const resetProjects = useCallback(() => {
     projectRequest.current += 1;
@@ -40,20 +45,23 @@ export function useSessionRowActions(sessionId: string, onClose: () => void) {
     onClose();
   }, [onClose, resetProjects]);
 
-  const update = useCallback(async (patch: SessionRowUpdate) => {
-    if (saving) return;
-    setSaving(true);
-    setError('');
-    try {
-      await getLegacyActions().sessions.updateSessionMetadata(sessionId, patch);
-      setRenaming(false);
-      closeMenu();
-    } catch {
-      setError(copy('保存失败，请重试', 'Could not save. Try again.'));
-    } finally {
-      setSaving(false);
-    }
-  }, [closeMenu, saving, sessionId]);
+  const update = useCallback(
+    async (patch: SessionRowUpdate) => {
+      if (saving) return;
+      setSaving(true);
+      setError('');
+      try {
+        await getLegacyActions().sessions.updateSessionMetadata(sessionId, patch);
+        setRenaming(false);
+        closeMenu();
+      } catch {
+        setError(copy('保存失败，请重试', 'Could not save. Try again.'));
+      } finally {
+        setSaving(false);
+      }
+    },
+    [closeMenu, saving, sessionId],
+  );
 
   const loadProjects = useCallback(() => {
     const request = ++projectRequest.current;
@@ -71,7 +79,8 @@ export function useSessionRowActions(sessionId: string, onClose: () => void) {
         if (projectRequest.current === request) setProjects([...rows]);
       })
       .catch(() => {
-        if (projectRequest.current === request) setProjectError(copy('项目加载失败，请重试', 'Could not load projects. Try again.'));
+        if (projectRequest.current === request)
+          setProjectError(copy('项目加载失败，请重试', 'Could not load projects. Try again.'));
       })
       .finally(() => {
         if (projectRequest.current === request) setLoadingProjects(false);

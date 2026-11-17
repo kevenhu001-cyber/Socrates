@@ -1,41 +1,91 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
 import { TURN, toolRow } from './_turn-ui.mjs';
 
 const nodes = [
   { id: 'panel', type: 'panel', title: 'Estimate', state: { count: 2 } },
   { id: 'count', type: 'metric', parent: 'panel', label: 'Count', value: { state: 'count' } },
-  { id: 'add', type: 'button', parent: 'panel', label: 'Add one', action: { type: 'increment', key: 'count', amount: 1 } },
-  { id: 'tabs', type: 'tabs', parent: 'panel', tabs: [{ id: 'first', label: 'First' }, { id: 'second', label: 'Second' }] },
+  {
+    id: 'add',
+    type: 'button',
+    parent: 'panel',
+    label: 'Add one',
+    action: { type: 'increment', key: 'count', amount: 1 },
+  },
+  {
+    id: 'tabs',
+    type: 'tabs',
+    parent: 'panel',
+    tabs: [
+      { id: 'first', label: 'First' },
+      { id: 'second', label: 'Second' },
+    ],
+  },
   { id: 'first-text', type: 'text', parent: 'tabs', tab: 'first', text: 'First view' },
   { id: 'second-text', type: 'text', parent: 'tabs', tab: 'second', text: 'Second view' },
 ];
 const message = {
-  clientId: 'unified-ui', role: 'assistant', rawText: 'The answer stays the primary content.',
+  clientId: 'unified-ui',
+  role: 'assistant',
+  rawText: 'The answer stays the primary content.',
   summary: 'An observation that should not duplicate the answer.',
-  toolCalls: [{ id: 'ui', name: 'render_intelligent_ui', status: 'completed', textOffset: 0, input: { version: 1, nodes } }],
-  turnRuntime: { version: 1, turnId: 'unified-ui', seq: 1, lifecycle: 'done', generation: 'done', uiSurfaces: [], activities: [
-    { id: 'public', kind: 'reasoning_summary', text: 'Checked the assumptions.', phase: 'done', startedAt: 100, endedAt: 12100 },
-  ] },
+  toolCalls: [
+    {
+      id: 'ui',
+      name: 'render_intelligent_ui',
+      status: 'completed',
+      textOffset: 0,
+      input: { version: 1, nodes },
+    },
+  ],
+  turnRuntime: {
+    version: 1,
+    turnId: 'unified-ui',
+    seq: 1,
+    lifecycle: 'done',
+    generation: 'done',
+    uiSurfaces: [],
+    activities: [
+      {
+        id: 'public',
+        kind: 'reasoning_summary',
+        text: 'Checked the assumptions.',
+        phase: 'done',
+        startedAt: 100,
+        endedAt: 12100,
+      },
+    ],
+  },
 };
 
-test('one process disclosure contains public summaries and tools while results stay visible', async ({ page }) => {
+test('one process disclosure contains public summaries and tools while results stay visible', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page, { messages: [message] });
   const activity = page.locator(TURN.surface);
   const toggle = activity.locator(TURN.toggle);
   await expect(activity).toHaveCount(1);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.intui')).toBeVisible();
-  const widths = await page.locator('.intui').evaluate((node) => ({ ui: node.clientWidth, host: node.parentElement.clientWidth }));
-  expect(widths.ui).toBeGreaterThan(widths.host * .9);
+  const widths = await page
+    .locator('.intui')
+    .evaluate((node) => ({ ui: node.clientWidth, host: node.parentElement.clientWidth }));
+  expect(widths.ui).toBeGreaterThan(widths.host * 0.9);
   await expect(page.locator('.tool-run-prose')).toContainText(message.rawText);
   await expect(page.locator('.msg-body')).not.toContainText(message.summary);
   await toggle.click();
   await expect(activity.getByText('Checked the assumptions.')).toBeVisible();
   await expect(toolRow(activity, 'ui')).toBeVisible();
   /* Row text sits on the same small label step as the thinking line. */
-  const type = await toolRow(activity, 'ui').locator(TURN.stepTitle).evaluate((node) => ({ size: parseFloat(getComputedStyle(node).fontSize), line: parseFloat(getComputedStyle(node).lineHeight) }));
-  const labelSize = await activity.locator(TURN.label).evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+  const type = await toolRow(activity, 'ui')
+    .locator(TURN.stepTitle)
+    .evaluate((node) => ({
+      size: parseFloat(getComputedStyle(node).fontSize),
+      line: parseFloat(getComputedStyle(node).lineHeight),
+    }));
+  const labelSize = await activity
+    .locator(TURN.label)
+    .evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
   expect(type.size).toBe(labelSize);
   expect(type.line).toBeGreaterThanOrEqual(type.size);
   await toggle.click();
@@ -45,11 +95,18 @@ test('one process disclosure contains public summaries and tools while results s
 });
 
 for (const mobile of [false, true]) {
-  test(`${mobile ? 'mobile' : 'desktop'} toolbar keeps secondary actions in a keyboard accessible overflow`, async ({ page }) => {
-    await prepareChatWorkbench(page, { messages: [message], viewport: mobile ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop });
+  test(`${mobile ? 'mobile' : 'desktop'} toolbar keeps secondary actions in a keyboard accessible overflow`, async ({
+    page,
+  }) => {
+    await prepareChatWorkbench(page, {
+      messages: [message],
+      viewport: mobile ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop,
+    });
     const toolbar = page.locator('.msg-toolbar[data-role="assistant"]');
     await expect(toolbar.locator(':scope > button')).toHaveCount(3);
-    await expect(toolbar.getByRole('button', { name: 'Helpful', exact: true })).toHaveCount(mobile ? 0 : 1);
+    await expect(toolbar.getByRole('button', { name: 'Helpful', exact: true })).toHaveCount(
+      mobile ? 0 : 1,
+    );
     const more = toolbar.getByRole('button', { name: 'More actions', exact: true });
     await more.click();
     const menu = page.getByRole('menu');
@@ -84,7 +141,9 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   const secondTab = page.getByRole('tab', { name: 'Second', exact: true });
   await expect(secondTab).toHaveCount(1);
   await expect(page.getByText('First view', { exact: true })).toBeVisible();
-  await count.evaluate((node) => { window.__originalMetricNode = node; });
+  await count.evaluate((node) => {
+    window.__originalMetricNode = node;
+  });
   await secondTab.click();
   await expect(secondTab).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByText('Second view', { exact: true })).toBeVisible();
@@ -94,13 +153,22 @@ test('inline results preserve node identity, edited values and tabs', async ({ p
   await page.screenshot({ path: 'test-results/intelligent-ui-inline-tabs.png' });
 });
 
-test('a live turn names its action, separates run time and spins exactly one running step', async ({ page }) => {
+test('a live turn names its action, separates run time and spins exactly one running step', async ({
+  page,
+}) => {
   await prepareChatWorkbench(page);
   await page.evaluate(async () => {
     const ctl = await window.addStreamingMessage({ userPrompt: 'Check assumptions.' });
     window.__unifiedController = ctl;
-    ctl.recordTurnActivity({ type: 'public_reasoning_summary', text: 'Compared the official specifications.' });
-    ctl.recordToolUse({ id: 'search', name: 'web_search', input: { query: 'official specifications' } });
+    ctl.recordTurnActivity({
+      type: 'public_reasoning_summary',
+      text: 'Compared the official specifications.',
+    });
+    ctl.recordToolUse({
+      id: 'search',
+      name: 'web_search',
+      input: { query: 'official specifications' },
+    });
   });
   const activity = page.locator(TURN.surface);
   await expect(activity).toHaveCount(1);
@@ -113,14 +181,17 @@ test('a live turn names its action, separates run time and spins exactly one run
   await expect(activity.locator(TURN.duration)).toContainText(/\d/);
   await expect(activity.locator(TURN.duration)).toHaveAttribute('aria-live', 'off');
   await expect(activity.locator(TURN.indicator)).toHaveCount(1);
-  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('ui-shimmer-sweep');
+  expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe(
+    'ui-shimmer-sweep',
+  );
   const spinner = activity.locator(TURN.spinner);
   await expect(spinner).toHaveCount(1);
   await activity.locator(TURN.toggle).click();
-  const pose = () => spinner.evaluate((node) => {
-    const computed = getComputedStyle(node).transform;
-    return computed && computed !== 'none' ? computed : node.style.transform;
-  });
+  const pose = () =>
+    spinner.evaluate((node) => {
+      const computed = getComputedStyle(node).transform;
+      return computed && computed !== 'none' ? computed : node.style.transform;
+    });
   const firstPose = await pose();
   await expect.poll(pose, { timeout: 5_000 }).not.toBe(firstPose);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -133,7 +204,13 @@ test('a live turn names its action, separates run time and spins exactly one run
   expect(await label.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
   await page.evaluate(() => {
     const ctl = window.__unifiedController;
-    ctl.recordToolResult({ id: 'search', name: 'web_search', ok: true, status: 'completed', output: 'Checked.' });
+    ctl.recordToolResult({
+      id: 'search',
+      name: 'web_search',
+      ok: true,
+      status: 'completed',
+      output: 'Checked.',
+    });
     ctl.append('The answer.');
     ctl.finish();
   });
@@ -142,12 +219,35 @@ test('a live turn names its action, separates run time and spins exactly one run
 });
 
 test('pending approvals remain visible with activity collapsed', async ({ page }) => {
-  await prepareChatWorkbench(page, { messages: [{ ...message, turnRuntime: undefined, toolCalls: [{
-    id: 'approval-tool', name: 'workspace_agent', status: 'running', textOffset: 0,
-    approval: { runId: 'run-1', approvalId: 'approval-1', status: 'pending', kind: 'commandExecution', reason: 'Run the verification command' },
-  }] }] });
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        ...message,
+        turnRuntime: undefined,
+        toolCalls: [
+          {
+            id: 'approval-tool',
+            name: 'workspace_agent',
+            status: 'running',
+            textOffset: 0,
+            approval: {
+              runId: 'run-1',
+              approvalId: 'approval-1',
+              status: 'pending',
+              kind: 'commandExecution',
+              reason: 'Run the verification command',
+            },
+          },
+        ],
+      },
+    ],
+  });
   await expect(page.locator(TURN.toggle)).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator(TURN.approval)).toBeVisible();
   await expect(page.locator('[data-approval-action="accept"]')).toBeVisible();
-  expect(await page.locator(TURN.approval).evaluate((node) => Boolean(node.closest('[data-testid="turn-activity"]')))).toBe(false);
+  expect(
+    await page
+      .locator(TURN.approval)
+      .evaluate((node) => Boolean(node.closest('[data-testid="turn-activity"]'))),
+  ).toBe(false);
 });

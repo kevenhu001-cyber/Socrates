@@ -1,5 +1,12 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
-import { useCallback, useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+  type KeyboardEvent,
+} from 'react';
 
 import type { ProfileUserSnapshot } from './types';
 
@@ -26,17 +33,22 @@ export function ProfileHeader({
     if (event.key === 'Enter') event.currentTarget.blur();
   }, []);
 
-  const handleNameBlur = useCallback((event: FocusEvent<HTMLInputElement>) => {
-    const value = event.currentTarget.value;
-    if (value === confirmed.current) return;
-    void onSaveName(value).then((saved) => {
-      if (!saved) setDraft(confirmed.current);
-    });
-  }, [onSaveName]);
+  const handleNameBlur = useCallback(
+    (event: FocusEvent<HTMLInputElement>) => {
+      const value = event.currentTarget.value;
+      if (value === confirmed.current) return;
+      void onSaveName(value).then((saved) => {
+        if (!saved) setDraft(confirmed.current);
+      });
+    },
+    [onSaveName],
+  );
 
   return (
     <div className="profile-header">
-      <div className="profile-avatar" id="profileAvatar">{user.initials}</div>
+      <div className="profile-avatar" id="profileAvatar">
+        {user.initials}
+      </div>
       <ShadcnInput
         className="profile-name-input"
         id="profileName"
@@ -47,7 +59,9 @@ export function ProfileHeader({
         onBlur={handleNameBlur}
         onKeyDown={handleNameKeyDown}
       />
-      <div className="profile-email" id="profileEmail">{user.email}</div>
+      <div className="profile-email" id="profileEmail">
+        {user.email}
+      </div>
     </div>
   );
 }

@@ -27,7 +27,16 @@ function artifactName(fileId: string): string {
 }
 
 const ArtifactErrorIcon = (
-  <svg className="artifact-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    className="artifact-error-icon"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <circle cx="9" cy="9" r="2" />
     <path d="m21 15-5-5L5 21" />
@@ -50,15 +59,17 @@ function useArtifactAvailability(url: string, skipCheck: boolean) {
         method: 'HEAD',
         credentials: 'same-origin',
         signal: controller.signal,
-      }).then((response) => {
-        if (!controller.signal.aborted) {
-          setFailure(response.ok ? null : `HTTP ${response.status}`);
-        }
-      }).catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          reportSwallow(error, 'react/tool-output/ArtifactOutput.probeDownload', 'expected');
-        }
-      });
+      })
+        .then((response) => {
+          if (!controller.signal.aborted) {
+            setFailure(response.ok ? null : `HTTP ${response.status}`);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!controller.signal.aborted) {
+            reportSwallow(error, 'react/tool-output/ArtifactOutput.probeDownload', 'expected');
+          }
+        });
     } catch (error) {
       reportSwallow(error, 'react/tool-output/ArtifactOutput.probeDownload', 'expected');
     }
@@ -86,7 +97,9 @@ function ArtifactErrorView({
   return (
     <div className="artifact-error" data-artifact-id={output.fileId} role="status">
       {ArtifactErrorIcon}
-      <span className="artifact-error-text">{i18n('artifact.loadFailed', 'This file is temporarily unavailable.')}</span>
+      <span className="artifact-error-text">
+        {i18n('artifact.loadFailed', 'This file is temporarily unavailable.')}
+      </span>
       <a className="artifact-error-open" href={url} target="_blank" rel="noopener" download>
         {i18n('artifact.openFile', 'Open file')}
       </a>
@@ -143,8 +156,10 @@ export function ArtifactOutput({ output }: ArtifactOutputProps) {
     return <ArtifactErrorView output={output} url={url} failure={failure} onRetry={retry} />;
   }
 
-  const downloadText = i18n('common.downloadFile', '[download {type}]')
-    .replace('{type}', mimeType || 'file');
+  const downloadText = i18n('common.downloadFile', '[download {type}]').replace(
+    '{type}',
+    mimeType || 'file',
+  );
   return (
     <a
       className="exec-artifact-link"

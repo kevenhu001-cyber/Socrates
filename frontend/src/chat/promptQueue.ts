@@ -22,20 +22,26 @@ let queuedPrompts: QueuedPrompt[] = [];
 function emit(): void {
   const snapshot = queuedPrompts.slice();
   for (const listener of listeners) {
-    try { listener(snapshot); } catch (error) {
-      reportEmptyCatch(error, 'empty catch: chat/promptQueue.ts:23');
+    try {
+      listener(snapshot);
+    } catch (error) {
+      reportEmptyCatch(error, 'empty catch: chat/promptQueue.ts');
       /* swallow */
     }
   }
   if (typeof document !== 'undefined') {
-    document.dispatchEvent(new CustomEvent('socrates:promptqueuechange', { detail: { count: queuedPrompts.length } }));
+    document.dispatchEvent(
+      new CustomEvent('socrates:promptqueuechange', { detail: { count: queuedPrompts.length } }),
+    );
   }
 }
 
 export function subscribePromptQueue(listener: QueueListener): () => void {
   listeners.add(listener);
   listener(queuedPrompts.slice());
-  return () => { listeners.delete(listener); };
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 export function getQueuedPrompts(): ReadonlyArray<QueuedPrompt> {

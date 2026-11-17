@@ -31,7 +31,7 @@ export interface PromptSuffixDeps {
 
 import { getTonePreset, getToneVoice } from '../config/tonePresets.ts';
 import { injectMemoryContext } from '../storage/memoryStore.ts';
-import { stateStore } from '../state/store.ts';
+import { searchBridge, sessionBridge } from '../store/index.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
 
 let userMemoriesReader: () => unknown = () => [];
@@ -50,7 +50,7 @@ export function memoriesSuffix(): string {
   /* Project chats rely on the server's project-aware memory selection.
      The browser cache contains personal and memories from every project, so
      forwarding it here would bypass the project's memory scope. */
-  if (!stateStore.read('currentProjectId')) {
+  if (!sessionBridge.getSnapshot().currentProjectId) {
     const cached = userMemoriesReader() as ArrayLike<unknown> | null | undefined;
     if (cached && cached.length) {
       s +=
@@ -78,7 +78,7 @@ export function memoriesSuffix(): string {
 
 /** Return the active-project context block, or empty when not in a project. */
 export function projectContextSuffix(): string {
-  const currentProjectId = stateStore.read('currentProjectId');
+  const currentProjectId = sessionBridge.getSnapshot().currentProjectId;
   if (typeof currentProjectId !== 'string') return '';
   const project = getCachedProjects().find((candidate) => candidate.id === currentProjectId);
   if (!project) return '';
@@ -101,7 +101,7 @@ export function appendClientContextMessages(
   const project = projectContextSuffix();
   if (memories && memories.trim()) out.push({ role: 'system', content: memories });
   if (project && project.trim()) out.push({ role: 'system', content: project });
-  const searchContext = stateStore.read('searchContext') as string | null | undefined;
+  const searchContext = searchBridge.getSnapshot().searchContext as string | null | undefined;
   if (includeSearchContext && searchContext && searchContext.trim()) {
     out.push({
       role: 'system',

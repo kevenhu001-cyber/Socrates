@@ -2,7 +2,7 @@
  * Widget/mistake-book runtime wiring. Zero-behavior-change lift.
  * Called once from main.js at the original position to preserve eval order.
  */
-import { stateStore } from '../state/store.ts';
+import { dispatchKb, dispatchSession, kbStore, sessionStore } from '../store/index.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.ts';
@@ -17,8 +17,7 @@ import { t } from '../i18n/index.ts';
 import { addAssistantUiMessage } from '../chat/messages.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-
-type MistakeBook = ReturnType<typeof import('../ui/mistakeBook.ts')['createMistakeBook']>;
+type MistakeBook = ReturnType<(typeof import('../ui/mistakeBook.ts'))['createMistakeBook']>;
 type MistakeRecord = Parameters<MistakeBook['recordMistake']>[0];
 let _installedBook: MistakeBook | null = null;
 let _bookLoad: Promise<MistakeBook> | null = null;
@@ -30,24 +29,35 @@ let _facadeInstalled = false;
    every call runs synchronously as before. Calls made while the module is
    in flight are replayed in order on the same promise. */
 function loadMistakeBook(): Promise<MistakeBook> {
-  _bookLoad ??= import('../ui/mistakeBook.ts').then(({ createMistakeBook }) => {
-    _installedBook = createMistakeBook({
-      stateStore: stateStore,
-      apiFetch: apiFetch,
-      saveCurrentSession: saveCurrentSession,
-      appendAssistantMessage: addAssistantUiMessage,
+  _bookLoad ??= import('../ui/mistakeBook.ts')
+    .then(({ createMistakeBook }) => {
+      _installedBook = createMistakeBook({
+        state: {
+          getSession: sessionStore.getState,
+          getKnowledge: kbStore.getState,
+          setMistakes: (value) => dispatchKb({ type: 'kb/set', key: 'mistakes', value }),
+        },
+        apiFetch: apiFetch,
+        saveCurrentSession: saveCurrentSession,
+        appendAssistantMessage: addAssistantUiMessage,
+      });
+      return _installedBook;
+    })
+    .catch((error: unknown) => {
+      _bookLoad = null;
+      throw error;
     });
-    return _installedBook;
-  }).catch((error: unknown) => {
-    _bookLoad = null;
-    throw error;
-  });
   return _bookLoad;
 }
 
 function withMistakeBook(label: string, run: (book: MistakeBook) => void): void {
-  if (_installedBook) { run(_installedBook); return; }
-  loadMistakeBook().then(run).catch((error: unknown) => reportSwallow(error, label));
+  if (_installedBook) {
+    run(_installedBook);
+    return;
+  }
+  loadMistakeBook()
+    .then(run)
+    .catch((error: unknown) => reportSwallow(error, label));
 }
 
 function recordMistake(record: MistakeRecord): void {
@@ -55,7 +65,9 @@ function recordMistake(record: MistakeRecord): void {
 }
 
 function removeMistakeForQuizSlot(slotId: string): void {
-  withMistakeBook('widgetSetup.removeMistakeForQuizSlot', (book) => book.removeMistakeForQuizSlot(slotId));
+  withMistakeBook('widgetSetup.removeMistakeForQuizSlot', (book) =>
+    book.removeMistakeForQuizSlot(slotId),
+  );
 }
 
 function redoMistake(mistakeId: string): void {
@@ -75,7 +87,10 @@ export function installWidgetRuntime() {
     formatMsg: formatMsg,
     t: t,
     submitChatMessage: submitChatMessage,
-    stateStore: stateStore,
+    teachingProgress: {
+      getState: sessionStore.getState,
+      patch: (patch) => dispatchSession({ type: 'session/patch', patch }),
+    },
     recordMistake: recordMistake,
     removeMistakeForQuizSlot: removeMistakeForQuizSlot,
     handleQuizPick: handleQuizPick,

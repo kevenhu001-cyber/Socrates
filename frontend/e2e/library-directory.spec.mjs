@@ -12,10 +12,34 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const FILES = {
   files: [
-    { id: 'f1', name: 'country_risk_data.csv', kind: 'text', size: 1024, uploadedAt: '2026-08-18T18:59:37.981Z' },
-    { id: 'f2', name: 'grid_mapping.png', kind: 'image', size: 82944, uploadedAt: '2026-08-15T13:05:29.226Z' },
-    { id: 'f3', name: 'lecture_notes.pdf', kind: 'pdf', size: 240000, uploadedAt: '2026-08-13T10:00:00.000Z' },
-    { id: 'f4', name: 'lab_report.docx', kind: 'docx', size: 45000, uploadedAt: '2026-08-12T10:00:00.000Z' },
+    {
+      id: 'f1',
+      name: 'country_risk_data.csv',
+      kind: 'text',
+      size: 1024,
+      uploadedAt: '2026-08-18T18:59:37.981Z',
+    },
+    {
+      id: 'f2',
+      name: 'grid_mapping.png',
+      kind: 'image',
+      size: 82944,
+      uploadedAt: '2026-08-15T13:05:29.226Z',
+    },
+    {
+      id: 'f3',
+      name: 'lecture_notes.pdf',
+      kind: 'pdf',
+      size: 240000,
+      uploadedAt: '2026-08-13T10:00:00.000Z',
+    },
+    {
+      id: 'f4',
+      name: 'lab_report.docx',
+      kind: 'docx',
+      size: 45000,
+      uploadedAt: '2026-08-12T10:00:00.000Z',
+    },
   ],
   hasMore: false,
 };
@@ -26,7 +50,11 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(FILES) });
   });
   await page.route(/\/api\/(v2\/)?artifacts(\?|$)/, (route) => {
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ artifacts: [] }) });
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ artifacts: [] }),
+    });
   });
   await page.setViewportSize({ width: 1440, height: 900 });
   await gotoAndSettle(page, '/');
@@ -38,9 +66,13 @@ test.beforeEach(async ({ page }) => {
 
 const row = (page, name) => page.locator('.library-row', { hasText: name });
 
-test('file previews share the detail shell and ignore stale content responses', async ({ page }) => {
+test('file previews share the detail shell and ignore stale content responses', async ({
+  page,
+}) => {
   let releaseFirst;
-  const firstResponse = new Promise((resolve) => { releaseFirst = resolve; });
+  const firstResponse = new Promise((resolve) => {
+    releaseFirst = resolve;
+  });
   await page.route(/\/files\/f1\/content/, async (route) => {
     await firstResponse;
     await route.fulfill({ json: { ok: true, text: 'Old file response' } });
@@ -51,7 +83,9 @@ test('file previews share the detail shell and ignore stale content responses', 
   /* Dispatch the row icon click directly so the test can focus on detail
      ownership and the stale-response race rather than row hit testing. */
   const openRow = (name) =>
-    row(page, name).locator('.library-file-icon').evaluate((el) => el.click());
+    row(page, name)
+      .locator('.library-file-icon')
+      .evaluate((el) => el.click());
   await openRow('country_risk_data.csv');
   await expect(page.locator('.detail-surface')).toBeVisible();
   await expect(page.locator('.detail-heading h2')).toHaveText('country_risk_data.csv');
@@ -67,7 +101,9 @@ test('file previews share the detail shell and ignore stale content responses', 
   await expect(page.locator('.detail-root')).toBeHidden();
 });
 
-test('directory headings and actions align without occupying the phone app bar', async ({ page }) => {
+test('directory headings and actions align without occupying the phone app bar', async ({
+  page,
+}) => {
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await page.evaluate(() => window.__socratesLegacy.navigation.openNav('plugins'));
@@ -96,7 +132,10 @@ test('directory headings and actions align without occupying the phone app bar',
     expect(actions.x).toBeGreaterThan(title.x + title.width);
     expect(actions.x + actions.width).toBeLessThanOrEqual(width - 16);
   }
-  await page.evaluate(() => { if (!document.querySelector('#sidebar').classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar(); });
+  await page.evaluate(() => {
+    if (!document.querySelector('#sidebar').classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar();
+  });
   await page.locator('.library-new-pill').click();
   await expect(page.locator('.library-new-menu')).toBeInViewport();
   await page.locator('.library-new-pill').click();
@@ -121,7 +160,10 @@ test('library filters and view mode use shadcn stateful controls', async ({ page
   await gridView.click();
   await expect(gridView).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('.library-list')).toHaveClass(/view-grid/);
-  await page.screenshot({ path: 'test-results/shadcn-library-controls-desktop.png', fullPage: true });
+  await page.screenshot({
+    path: 'test-results/shadcn-library-controls-desktop.png',
+    fullPage: true,
+  });
 });
 
 test('selection checkbox only appears on hover, selection or focus', async ({ page }) => {
@@ -145,7 +187,9 @@ test('selection checkbox only appears on hover, selection or focus', async ({ pa
   // Keyboard focus also reveals it again after deselection.
   await csv.locator('.library-checkbox').click();
   await expect(csv.locator('.library-checkbox')).not.toBeChecked();
-  await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+  await page.evaluate(() =>
+    document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined,
+  );
   await page.mouse.move(720, 40);
   await expect(label).toHaveCSS('opacity', '0');
   await csv.locator('.library-checkbox').focus();
@@ -154,11 +198,13 @@ test('selection checkbox only appears on hover, selection or focus', async ({ pa
 
 test('thumbnail box renders a file-type glyph', async ({ page }) => {
   const shapes = (name) =>
-    row(page, name).locator('.library-file-icon svg').evaluate((svg) => ({
-      rect: svg.querySelectorAll('rect').length,
-      circle: svg.querySelectorAll('circle').length,
-      path: svg.querySelectorAll('path').length,
-    }));
+    row(page, name)
+      .locator('.library-file-icon svg')
+      .evaluate((svg) => ({
+        rect: svg.querySelectorAll('rect').length,
+        circle: svg.querySelectorAll('circle').length,
+        path: svg.querySelectorAll('path').length,
+      }));
 
   // Spreadsheet/CSV → grid: outer rect + grid lines, no circle.
   const csv = await shapes('country_risk_data.csv');
@@ -176,7 +222,9 @@ test('thumbnail box renders a file-type glyph', async ({ page }) => {
   expect(docx).toEqual({ rect: 0, circle: 0, path: 3 });
 });
 
-test('partial selection exposes a mixed Checkbox and keyboard select-all is reversible', async ({ page }) => {
+test('partial selection exposes a mixed Checkbox and keyboard select-all is reversible', async ({
+  page,
+}) => {
   await row(page, 'country_risk_data.csv').getByRole('checkbox').check();
   const all = page.locator('.library-select-all').getByRole('checkbox');
   await expect(all).toHaveAttribute('aria-checked', 'mixed');
@@ -184,22 +232,31 @@ test('partial selection exposes a mixed Checkbox and keyboard select-all is reve
   await page.keyboard.press('Space');
   await expect(all).toBeChecked();
   await expect(page.locator('.library-selection-bar')).toContainText('4 selected');
-  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(4);
+  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(
+    4,
+  );
   await page.keyboard.press('Space');
   await expect(page.locator('.library-selection-bar')).toBeHidden();
-  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(0);
+  await expect(page.locator('.library-row').getByRole('checkbox', { checked: true })).toHaveCount(
+    0,
+  );
 });
 
 test('phone library filters actual images and selects only visible rows', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 769 });
   await page.evaluate(() => {
     const sidebar = document.getElementById('sidebar');
-    if (sidebar && !sidebar.classList.contains('collapsed')) window.__socratesLegacy.navigation.toggleSidebar?.();
+    if (sidebar && !sidebar.classList.contains('collapsed'))
+      window.__socratesLegacy.navigation.toggleSidebar?.();
   });
   // The reference phone drawer is 65vw capped at 280px: 253.5px at 390px.
-  await expect.poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0)).toBe(Math.round(-390 * 0.65));
+  await expect
+    .poll(async () => Math.round((await page.locator('#sidebar').boundingBox())?.x ?? 0))
+    .toBe(Math.round(-390 * 0.65));
   await expect(page.locator('.library-directory')).toBeVisible();
-  await page.screenshot({ path: 'test-results/socrates-reference-mobile-library-list-390x769.png' });
+  await page.screenshot({
+    path: 'test-results/socrates-reference-mobile-library-list-390x769.png',
+  });
   await page.getByRole('tab', { name: 'Images' }).click();
   await expect(page.locator('.library-row')).toHaveCount(1);
   await expect(page.locator('.library-row')).toContainText('grid_mapping.png');
@@ -207,5 +264,7 @@ test('phone library filters actual images and selects only visible rows', async 
   await expect(page.locator('.library-selection-bar')).toContainText('1 selected');
   await page.locator('.library-select-all .library-checkbox').click();
   await expect(page.locator('.library-selection-bar')).toBeHidden();
-  await page.screenshot({ path: 'test-results/socrates-reference-mobile-library-images-390x769.png' });
+  await page.screenshot({
+    path: 'test-results/socrates-reference-mobile-library-images-390x769.png',
+  });
 });

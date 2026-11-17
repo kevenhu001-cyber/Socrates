@@ -7,9 +7,11 @@ import type { MessageItemProps } from './types';
  * mutable revision counters.
  */
 export function areMessageItemsEqual(prev: MessageItemProps, next: MessageItemProps): boolean {
-  return prev.mathRevision === next.mathRevision
-    && prev.message === next.message
-    && prev.isLatest === next.isLatest
-    && prev.isLatestOfRole === next.isLatestOfRole
-    && prev.readOnly === next.readOnly;
+  return (
+    prev.mathRevision === next.mathRevision &&
+    prev.message === next.message &&
+    prev.isLatest === next.isLatest &&
+    prev.isLatestOfRole === next.isLatestOfRole &&
+    prev.readOnly === next.readOnly
+  );
 }

@@ -1,28 +1,72 @@
 import { useEffect, useRef, useState } from 'react';
 import { getApiFetch, i18n } from '../legacy/gateway.ts';
 import { Button } from '../ui/Button';
-import type { DocumentPreviewSource, PreviewEngine, PreviewEngineCallbacks, PreviewEngineState, PreviewKind } from './types.ts';
+import type {
+  DocumentPreviewSource,
+  PreviewEngine,
+  PreviewEngineCallbacks,
+  PreviewEngineState,
+  PreviewKind,
+} from './types.ts';
 
 const PREV_ICON = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="m15 18-6-6 6-6" />
   </svg>
 );
 
 const NEXT_ICON = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="m9 18 6-6-6-6" />
   </svg>
 );
 
 const MINUS_ICON = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
     <path d="M5 12h14" />
   </svg>
 );
 
 const PLUS_ICON = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="16"
+    height="16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
     <path d="M12 5v14M5 12h14" />
   </svg>
 );
@@ -40,8 +84,15 @@ interface PdfCounter {
   zoomLabel: string;
 }
 
-function PdfToolbar({ counter, engineRef }: { counter: PdfCounter; engineRef: React.RefObject<PreviewEngine | null> }) {
-  const pageAria = i18n('docPreview.pageAriaPrefix', 'Page') + ` ${counter.page} / ${counter.pages}`;
+function PdfToolbar({
+  counter,
+  engineRef,
+}: {
+  counter: PdfCounter;
+  engineRef: React.RefObject<PreviewEngine | null>;
+}) {
+  const pageAria =
+    i18n('docPreview.pageAriaPrefix', 'Page') + ` ${counter.page} / ${counter.pages}`;
   return (
     <div className="doc-preview-toolbar" role="toolbar" aria-label="PDF">
       <Button
@@ -92,9 +143,13 @@ function PdfToolbar({ counter, engineRef }: { counter: PdfCounter; engineRef: Re
 }
 
 function PreviewStatus({ phase, statusText }: { phase: PreviewPhase; statusText: string }) {
-  const message = phase === 'password'
-    ? i18n('docPreview.pdfPassword', 'This PDF is password-protected, so it cannot be previewed here.')
-    : statusText || i18n('docPreview.loadFailed', 'Could not load this file for preview.');
+  const message =
+    phase === 'password'
+      ? i18n(
+          'docPreview.pdfPassword',
+          'This PDF is password-protected, so it cannot be previewed here.',
+        )
+      : statusText || i18n('docPreview.loadFailed', 'Could not load this file for preview.');
   return (
     <div className="doc-preview-status" role={phase === 'loading' ? 'status' : undefined}>
       {phase === 'loading' ? <span className="file-card-spinner" aria-hidden="true" /> : null}
@@ -107,9 +162,12 @@ function PreviewStatus({ phase, statusText }: { phase: PreviewPhase; statusText:
 async function loadServerText(fileId: string): Promise<TextPayload> {
   const request = getApiFetch();
   if (!request) throw new Error('unavailable');
-  const result = await request<{ ok?: boolean; error?: string; text?: string; truncated?: boolean }>(
-    '/api/files/' + encodeURIComponent(fileId) + '/content',
-  );
+  const result = await request<{
+    ok?: boolean;
+    error?: string;
+    text?: string;
+    truncated?: boolean;
+  }>('/api/files/' + encodeURIComponent(fileId) + '/content');
   if (!result || result.ok === false) throw new Error(result?.error || 'unavailable');
   return { text: result.text ?? '', truncated: Boolean(result.truncated) };
 }
@@ -119,7 +177,13 @@ async function loadServerText(fileId: string): Promise<TextPayload> {
  * pdf/docx/pptx/xlsx, to the server text reader for the parsed formats, or
  * to a failure notice that keeps the download action reachable.
  */
-export function DocumentPreviewView({ source, kind }: { source: DocumentPreviewSource; kind: PreviewKind }) {
+export function DocumentPreviewView({
+  source,
+  kind,
+}: {
+  source: DocumentPreviewSource;
+  kind: PreviewKind;
+}) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<PreviewEngine | null>(null);
   const [phase, setPhase] = useState<PreviewPhase>('loading');
@@ -143,7 +207,12 @@ export function DocumentPreviewView({ source, kind }: { source: DocumentPreviewS
 
     const run = async () => {
       if (kind === 'unsupported') {
-        fail(i18n('docPreview.unsupported', 'This file type cannot be previewed here. Download the original instead.'));
+        fail(
+          i18n(
+            'docPreview.unsupported',
+            'This file type cannot be previewed here. Download the original instead.',
+          ),
+        );
         return;
       }
       if (!source.fileId) {
@@ -171,7 +240,9 @@ export function DocumentPreviewView({ source, kind }: { source: DocumentPreviewS
         const data = await response.arrayBuffer();
         if (cancelled) return;
         const callbacks: PreviewEngineCallbacks = {
-          onReady: () => { if (!cancelled) setPhase('ready'); },
+          onReady: () => {
+            if (!cancelled) setPhase('ready');
+          },
           onState: (patch: PreviewEngineState) => {
             if (cancelled) return;
             setCounter((previous) => ({
@@ -227,7 +298,9 @@ export function DocumentPreviewView({ source, kind }: { source: DocumentPreviewS
         <div className="doc-preview-content doc-preview-content--text">
           <pre className="doc-preview-text">{text.text}</pre>
           {text.truncated ? (
-            <p className="doc-preview-note">{i18n('library.preview.truncated', 'Only the first part of this file is shown.')}</p>
+            <p className="doc-preview-note">
+              {i18n('library.preview.truncated', 'Only the first part of this file is shown.')}
+            </p>
           ) : null}
         </div>
       ) : kind === 'text' ? null : (

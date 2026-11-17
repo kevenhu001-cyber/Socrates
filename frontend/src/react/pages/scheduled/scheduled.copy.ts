@@ -11,10 +11,18 @@ export function formatScheduledTime(value: string | null): string {
   if (Number.isNaN(date.getTime())) return value;
   const diff = date.getTime() - Date.now();
   if (diff > 0 && diff < 86400000) {
-    return scheduledText('scheduled.today', 'Today') + ' ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return (
+      scheduledText('scheduled.today', 'Today') +
+      ' ' +
+      date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    );
   }
   if (diff > 0 && diff < 172800000) {
-    return scheduledText('scheduled.tomorrow', 'Tomorrow') + ' ' + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return (
+      scheduledText('scheduled.tomorrow', 'Tomorrow') +
+      ' ' +
+      date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    );
   }
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
@@ -23,6 +31,7 @@ export function scheduledStatusLabel(status: string, active: boolean): string {
   if (status === 'failed') return scheduledText('scheduled.failed', 'Failed');
   if (status === 'completed') return scheduledText('scheduled.completed', 'Complete');
   if (status === 'paused') return scheduledText('scheduled.paused', 'Paused');
-  if (status === 'awaiting_approval') return scheduledText('scheduled.awaitingApproval', 'Needs approval');
+  if (status === 'awaiting_approval')
+    return scheduledText('scheduled.awaitingApproval', 'Needs approval');
   return active ? scheduledText('scheduled.active', 'Active') : status;
 }

@@ -108,18 +108,26 @@ export function declarations(body) {
 }
 
 /* Extract the body of a top-level rule whose selector matches. */
+/* Attribute selectors may be written with either quote style; normalize the
+ * quotes inside `[...]` so the selectors this guard looks for match
+ * regardless of how the stylesheet was formatted. */
+export function normalizeAttributeQuotes(css) {
+  return css.replace(/\[[^\]]*\]/g, (selector) => selector.replace(/'/g, '"'));
+}
+
 export function ruleBody(css, selector) {
+  const normalized = normalizeAttributeQuotes(css);
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pattern = new RegExp('(^|[}\\n])\\s*' + escaped + '\\s*\\{', 'm');
-  const match = pattern.exec(css);
+  const match = pattern.exec(normalized);
   if (!match) return null;
-  const start = css.indexOf('{', match.index);
+  const start = normalized.indexOf('{', match.index);
   let depth = 0;
-  for (let i = start; i < css.length; i += 1) {
-    if (css[i] === '{') depth += 1;
-    else if (css[i] === '}') {
+  for (let i = start; i < normalized.length; i += 1) {
+    if (normalized[i] === '{') depth += 1;
+    else if (normalized[i] === '}') {
       depth -= 1;
-      if (depth === 0) return css.slice(start + 1, i);
+      if (depth === 0) return normalized.slice(start + 1, i);
     }
   }
   return null;
@@ -174,7 +182,11 @@ export function scanCss(raw) {
        * or the weight, so it is left alone.
        */
       for (const weight of value.matchAll(/(?:^|\s)(bold|bolder|lighter)(?=\s)/gi)) {
-        literals.push({ line: lineOf(match.index), value: weight[1], kind: 'font shorthand keyword' });
+        literals.push({
+          line: lineOf(match.index),
+          value: weight[1],
+          kind: 'font shorthand keyword',
+        });
       }
       for (const ref of value.matchAll(/var\(\s*(--ui-font-weight-[\w-]+)\s*\)/g)) {
         references.push({ line: lineOf(match.index), token: ref[1] });

@@ -23,7 +23,10 @@ interface ProgressMessage<TEntry extends ProgressEntry> {
   toolCalls?: TEntry[];
 }
 
-interface ProgressRuntimeOptions<TEntry extends ProgressEntry, TMessage extends ProgressMessage<TEntry>> {
+interface ProgressRuntimeOptions<
+  TEntry extends ProgressEntry,
+  TMessage extends ProgressMessage<TEntry>,
+> {
   activeMessage: () => TMessage | null;
   findEntry: (message: TMessage | null, id: string) => TEntry | null;
   pushOrphan: (message: TMessage, id: string, progress: ToolProgress) => void;
@@ -34,7 +37,9 @@ interface ProgressRuntimeOptions<TEntry extends ProgressEntry, TMessage extends 
 function appendLiveOutput(entry: ProgressEntry, progress: ToolProgress): void {
   if (!progress.chunk || !['stdout', 'stderr', 'timeout_warning'].includes(progress.phase)) return;
   const buffer = entry._liveBuffer || (entry._liveBuffer = createLiveOutputBuffer());
-  buffer.push(progress.phase === 'timeout_warning' ? '\n[' + progress.chunk + ']\n' : progress.chunk);
+  buffer.push(
+    progress.phase === 'timeout_warning' ? '\n[' + progress.chunk + ']\n' : progress.chunk,
+  );
   entry._liveOutput = renderLivePreview(buffer.preview());
 }
 

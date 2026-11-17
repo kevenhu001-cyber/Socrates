@@ -44,9 +44,15 @@ test('static shell chrome localizes to Chinese', async ({ page }) => {
   expect(await attr(page, '#shareOverlay', 'aria-label')).toBe('分享对话');
 
   // Display popover section labels are translated text nodes, not attributes.
-  await expect(page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]')).toHaveText('文字大小');
-  await expect(page.locator('.display-prefs-label span[data-i18n-key="sidebar.contentWidth"]')).toHaveText('内容宽度');
-  await expect(page.locator('.display-prefs-label span[data-i18n-key="chrome.backgroundGrid"]')).toHaveText('背景网格');
+  await expect(
+    page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]'),
+  ).toHaveText('文字大小');
+  await expect(
+    page.locator('.display-prefs-label span[data-i18n-key="sidebar.contentWidth"]'),
+  ).toHaveText('内容宽度');
+  await expect(
+    page.locator('.display-prefs-label span[data-i18n-key="chrome.backgroundGrid"]'),
+  ).toHaveText('背景网格');
 });
 
 test('static shell chrome localizes back to English', async ({ page }) => {
@@ -58,7 +64,9 @@ test('static shell chrome localizes back to English', async ({ page }) => {
   expect(await attr(page, '#displayPrefsBtn', 'title')).toBe('Display settings');
   expect(await attr(page, '#composerToolsBtn', 'title')).toBe('Add tools and files');
   expect(await attr(page, '#cmdKOverlay', 'aria-label')).toBe('Command palette');
-  await expect(page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]')).toHaveText('Text size');
+  await expect(
+    page.locator('.display-prefs-label span[data-i18n-key="sidebar.textSize"]'),
+  ).toHaveText('Text size');
 });
 
 test('auth gate default views localize', async ({ page }) => {
@@ -99,9 +107,7 @@ test('sidebar toggle copy localizes from React state', async ({ page }) => {
   // State-dependent labels are rendered by React and retain their language
   // hooks so a locale switch refreshes the visible sidebar controls.
   await setLang(page, 'zh');
-  await expect
-    .poll(() => attr(page, '#sidebarCloseBtn', 'title'))
-    .toMatch(/关闭侧栏|打开侧栏/);
+  await expect.poll(() => attr(page, '#sidebarCloseBtn', 'title')).toMatch(/关闭侧栏|打开侧栏/);
   expect(await attr(page, '#sidebarCloseBtn', 'title')).not.toMatch(/Close|Open|Collapse|Expand/);
 
   await setLang(page, 'en');

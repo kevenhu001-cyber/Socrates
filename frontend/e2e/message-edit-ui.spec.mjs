@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -6,7 +6,9 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
  * reference): one bordered surface, the draft inside it, and Cancel / Send
  * in the lower-right corner. This spec pins the structure and the keyboard
  * contract so the card-style header/toggles cannot quietly return. */
-test('editing a user message uses the inline bubble editor and its keyboard contract', async ({ page }) => {
+test('editing a user message uses the inline bubble editor and its keyboard contract', async ({
+  page,
+}) => {
   await mockAuthedApp(page);
   await page.route('**/api/v2/messages/**', (route) => {
     if (route.request().method() !== 'PATCH') return route.fallback();
@@ -18,9 +20,11 @@ test('editing a user message uses the inline bubble editor and its keyboard cont
 
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('user', 'Original prompt');
     window.askChatTurn = () => {};
     window.addStreamingMessage = () => ({ isFinished: () => true });

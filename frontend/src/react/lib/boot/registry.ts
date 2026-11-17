@@ -32,7 +32,12 @@
  */
 
 import { reportSwallow } from '../../../util/reportSwallow';
-import { clearHostMounted, hostIsMounted, hostIsMountedBy as ownsHost, markHostMountedBy as markOwnership } from './ownership.ts';
+import {
+  clearHostMounted,
+  hostIsMounted,
+  hostIsMountedBy as ownsHost,
+  markHostMountedBy as markOwnership,
+} from './ownership.ts';
 import { hasOwnedRoot } from './ownedRoot';
 
 export type EnsureHostFn = (document: Document) => HTMLElement | null;
@@ -146,10 +151,21 @@ function runMountSpecs(
       if (document.getElementById(spec.hostId) !== host || hostIsMounted(host)) return;
       try {
         clearRecovery(host);
-        const dispose = options.onFailure?.({ spec, host, error, retry: () => {
-          if (!mountRegistry.includes(spec) || document.getElementById(spec.hostId) !== host || hostIsMounted(host) || hasOwnedRoot(host)) return;
-          return runMountSpecs(document, [spec], options);
-        } });
+        const dispose = options.onFailure?.({
+          spec,
+          host,
+          error,
+          retry: () => {
+            if (
+              !mountRegistry.includes(spec) ||
+              document.getElementById(spec.hostId) !== host ||
+              hostIsMounted(host) ||
+              hasOwnedRoot(host)
+            )
+              return;
+            return runMountSpecs(document, [spec], options);
+          },
+        });
         if (dispose) recoveries.set(host, dispose);
       } catch (recoveryError) {
         reportSwallow(recoveryError, `react:mount-recovery:${spec.label}`);
@@ -166,16 +182,20 @@ function runMountSpecs(
       // write into them while their React chunk is loading.
       markHostMountedBy(host, spec.label);
       if (result instanceof Promise) {
-        pending.push(result.then((value) => {
-          if (value === false) {
-            if (!hasOwnedRoot(host) && ownsHost(host, spec.label)) clearHostMounted(host);
-            clearRecovery(host);
-            skipped.push(spec);
-          } else {
-            clearRecovery(host);
-            mounted.push(spec);
-          }
-        }).catch(fail));
+        pending.push(
+          result
+            .then((value) => {
+              if (value === false) {
+                if (!hasOwnedRoot(host) && ownsHost(host, spec.label)) clearHostMounted(host);
+                clearRecovery(host);
+                skipped.push(spec);
+              } else {
+                clearRecovery(host);
+                mounted.push(spec);
+              }
+            })
+            .catch(fail),
+        );
       } else {
         clearRecovery(host);
         mounted.push(spec);
@@ -193,11 +213,7 @@ function runMountSpecs(
  * Convenience helper for the `main.js` style `reactOwnsXxx()` probes
  * that need to decide whether React owns a legacy host.
  */
-export function hostIsMountedBy(
-  document: Document,
-  hostId: string,
-  label: string,
-): boolean {
+export function hostIsMountedBy(document: Document, hostId: string, label: string): boolean {
   const host = document.getElementById(hostId);
   return ownsHost(host, label);
 }

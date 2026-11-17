@@ -57,9 +57,10 @@ function requestProjects(fetcher: ProjectFetcher): Promise<ProjectList> {
          Keep that newer typed cache value instead of replacing it with the
          stale response that started before the mutation. */
       if (projectsRevision !== requestRevision) return getCachedProjects();
-      const rows = result && typeof result === 'object' && 'projects' in result
-        ? (result as { projects?: unknown }).projects
-        : undefined;
+      const rows =
+        result && typeof result === 'object' && 'projects' in result
+          ? (result as { projects?: unknown }).projects
+          : undefined;
       return setCachedProjects(rows ?? []);
     })
     .finally(() => {

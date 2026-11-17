@@ -14,9 +14,9 @@ export const WRITE_EDIT_SYSTEM_PROMPT =
   'Tools:\n' +
   '- When native web_search is supplied, you may call it to verify facts, gather current information, or find references when the writing depends on real-world accuracy. Cite sources briefly only when a search actually succeeds.\n\n' +
   'Output rules:\n' +
-  '- Always match the user\'s language.\n' +
+  "- Always match the user's language.\n" +
   '- Use Markdown for structure (headings, lists, short paragraphs) when the piece is long.\n' +
-  '- Return the requested writing with minimal framing \u2014 no \'Here is your text:\' preambles.';
+  "- Return the requested writing with minimal framing \u2014 no 'Here is your text:' preambles.";
 
 export const writeExtension: ExtensionDefinition = {
   key: 'write',

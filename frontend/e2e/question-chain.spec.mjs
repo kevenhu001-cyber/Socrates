@@ -11,13 +11,23 @@ async function shot(locator, name) {
   if (!SHOTS) return;
   await locator.page().mouse.move(0, 0);
   await locator.page().waitForTimeout(450);
-  await locator.screenshot({ path: `test-results/rn4-shots/${encodeURIComponent(name)}.png`, animations: 'disabled' });
+  await locator.screenshot({
+    path: `test-results/rn4-shots/${encodeURIComponent(name)}.png`,
+    animations: 'disabled',
+  });
 }
 
 const NODES = ['Limits', 'Derivatives', 'Applications', 'Pitfalls', 'Connections'];
 /* RN-6: the next questions come from the reply's own <next-questions> block. */
-const NEXT = ['「瞬时」能不能理解成时间间隔为零？', '平均速度和瞬时速度差在哪一步？', '没有极限的话还能定义导数吗？'];
-const LESSON = '导数描述的是函数在某一点附近的瞬时变化率。你觉得「瞬时」这个词在这里意味着什么？\n\n<next-questions>' + JSON.stringify(NEXT) + '</next-questions>';
+const NEXT = [
+  '「瞬时」能不能理解成时间间隔为零？',
+  '平均速度和瞬时速度差在哪一步？',
+  '没有极限的话还能定义导数吗？',
+];
+const LESSON =
+  '导数描述的是函数在某一点附近的瞬时变化率。你觉得「瞬时」这个词在这里意味着什么？\n\n<next-questions>' +
+  JSON.stringify(NEXT) +
+  '</next-questions>';
 
 async function setupTutor(page, width) {
   await page.setViewportSize({ width, height: 900 });
@@ -28,21 +38,28 @@ async function setupTutor(page, width) {
   });
   const streams = [];
   await mockAuthedApp(page, { lang: 'zh' });
-  await page.route(/\/api\/(?:v2\/)?(?:minimax\/v1\/chat\/completions|chat)(?:\?|$)/, async (route) => {
-    const body = route.request().postDataJSON();
-    const curriculum = body.messages.some((message) => String(message.content).includes('curriculum designer'));
-    const content = curriculum ? JSON.stringify(NODES) : JSON.stringify({
-      q: 'Which statement describes your understanding?',
-      knowledgePoint: 'Rate of change',
-      opts: [
-        { text: 'New to me', level: 'blank' },
-        { text: 'Some gaps', level: 'fuzzy' },
-        { text: 'Can explain it', level: 'internalized' },
-        { text: 'Need examples', level: 'blank' },
-      ],
-    });
-    await route.fulfill({ json: { choices: [{ message: { content } }] } });
-  });
+  await page.route(
+    /\/api\/(?:v2\/)?(?:minimax\/v1\/chat\/completions|chat)(?:\?|$)/,
+    async (route) => {
+      const body = route.request().postDataJSON();
+      const curriculum = body.messages.some((message) =>
+        String(message.content).includes('curriculum designer'),
+      );
+      const content = curriculum
+        ? JSON.stringify(NODES)
+        : JSON.stringify({
+            q: 'Which statement describes your understanding?',
+            knowledgePoint: 'Rate of change',
+            opts: [
+              { text: 'New to me', level: 'blank' },
+              { text: 'Some gaps', level: 'fuzzy' },
+              { text: 'Can explain it', level: 'internalized' },
+              { text: 'Need examples', level: 'blank' },
+            ],
+          });
+      await route.fulfill({ json: { choices: [{ message: { content } }] } });
+    },
+  );
   await page.route(/\/api\/(?:v2\/)?chat\/stream(?:\?|$)/, async (route) => {
     streams.push(route.request().postDataJSON());
     await route.fulfill({
@@ -88,9 +105,13 @@ for (const width of [1440, 390]) {
     const streams = await setupTutor(page, width);
     await startLesson(page);
     await expect(chain(page)).toBeVisible();
-    await expect(page.locator('#msgList .msg.assistant').last().locator('[data-testid="question-chain"]')).toBeVisible();
+    await expect(
+      page.locator('#msgList .msg.assistant').last().locator('[data-testid="question-chain"]'),
+    ).toBeVisible();
     await expect(page.locator('#chatInputBar [data-testid="question-chain"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="question-chain-current"]')).toContainText('为什么导数能表示变化率');
+    await expect(page.locator('[data-testid="question-chain-current"]')).toContainText(
+      '为什么导数能表示变化率',
+    );
     await expect(nextQuestions(page)).toHaveCount(3);
     await expect(nextQuestions(page).first()).toContainText(NEXT[0]);
     expect(streams.at(-1).learningMode).toBe('think');
@@ -102,7 +123,9 @@ for (const width of [1440, 390]) {
     await nextQuestions(page).first().click();
     await expect.poll(() => streams.length).toBe(before + 1);
     await expect(chain(page)).toHaveAttribute('data-steps', '2');
-    await expect(page.locator('[data-testid="question-chain-current"]')).toContainText(first.replace('→', '').trim());
+    await expect(page.locator('[data-testid="question-chain-current"]')).toContainText(
+      first.replace('→', '').trim(),
+    );
     /* A question already on the chain is not offered again. */
     await expect(nextQuestions(page)).toHaveCount(2);
 
@@ -117,7 +140,9 @@ for (const width of [1440, 390]) {
   });
 }
 
-test('RN-14: a question the learner types joins the chain as "You asked"; an answer does not', async ({ page }) => {
+test('RN-14: a question the learner types joins the chain as "You asked"; an answer does not', async ({
+  page,
+}) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   const streams = await setupTutor(page, 1440);
@@ -154,7 +179,10 @@ test('RN-14: a question the learner types joins the chain as "You asked"; an ans
   const walked = page.locator('[data-testid="question-chain-walked-2"]');
   await expect(walked).toHaveAttribute('data-origin', 'own');
   await expect(walked.getByTestId('question-chain-own-tag')).toHaveText('自己问的');
-  await expect(page.locator('[data-testid="question-chain-current"]')).not.toHaveAttribute('data-origin', 'own');
+  await expect(page.locator('[data-testid="question-chain-current"]')).not.toHaveAttribute(
+    'data-origin',
+    'own',
+  );
   expect(errors).toEqual([]);
 });
 
@@ -167,8 +195,12 @@ test('conversation learning-mode menu opens inline and keeps the chain', async (
   await trigger.click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await expect(page.locator('#learningModeBar [role="radio"]')).toHaveCount(5);
-  await expect(page.locator('#learningModeBar [data-testid="learning-mode-recall"]')).toContainText('生成回忆卡');
-  await expect(page.locator('#learningModeBar [data-testid="learning-mode-diagnose"]')).toContainText('开始理解检查');
+  await expect(page.locator('#learningModeBar [data-testid="learning-mode-recall"]')).toContainText(
+    '生成回忆卡',
+  );
+  await expect(
+    page.locator('#learningModeBar [data-testid="learning-mode-diagnose"]'),
+  ).toContainText('开始理解检查');
   await shot(page.locator('#chatInputBar'), 'session-modes-open');
   await page.locator('#learningModeBar [data-testid="learning-mode-think"]').click();
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -186,6 +218,8 @@ test('reduced motion: a new step joins the chain in place', async ({ page }) => 
   await startLesson(page);
   await nextQuestions(page).first().click();
   await expect(chain(page)).toHaveAttribute('data-steps', '2');
-  const opacity = await page.locator('[data-testid="question-chain-current"]').evaluate((node) => getComputedStyle(node).opacity);
+  const opacity = await page
+    .locator('[data-testid="question-chain-current"]')
+    .evaluate((node) => getComputedStyle(node).opacity);
   expect(opacity).toBe('1');
 });

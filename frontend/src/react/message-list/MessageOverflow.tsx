@@ -22,28 +22,83 @@ function subscribeMobile(onChange: () => void) {
 
 /** The shared primitive owns navigation and placement. Hidden phone actions are
  * excluded from its item collection, including when an open menu is resized. */
-export function MessageOverflow({ actions, contextMenu }: { actions: OverflowAction[]; contextMenu?: { open: boolean; setOpen: (open: boolean) => void } }) {
+export function MessageOverflow({
+  actions,
+  contextMenu,
+}: {
+  actions: OverflowAction[];
+  contextMenu?: { open: boolean; setOpen: (open: boolean) => void };
+}) {
   const [localOpen, setLocalOpen] = useState(false);
   const open = contextMenu?.open ?? localOpen;
   const setOpen = contextMenu?.setOpen ?? setLocalOpen;
   const trigger = useRef<HTMLButtonElement>(null);
   const mobile = useSyncExternalStore(open ? subscribeMobile : subscribeClosed, readMobile);
   const label = i18n('message.moreActions', 'More actions');
-  return <DeferredMenu open={open} onOpenChange={setOpen} className="msg-action-menu" label={label} align="start"
-    trigger={<ToolButton ref={trigger} label={label} tabIndex={contextMenu ? -1 : undefined}
-      style={contextMenu ? { position: 'absolute', width: 0, height: 0, padding: 0, opacity: 0, pointerEvents: 'none' } : undefined}><Icon name="more" size={18} className="msg-more-glyph" shapeRendering="geometricPrecision" /></ToolButton>}>
-    {({ FoundationMenuItem }) => actions.filter((action) => mobile || !action.mobileOnly).map((action) =>
-      <FoundationMenuItem key={action.label} className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
-        onClick={(event) => {
-          // Match hidePopover's synchronous return to the toolbar before an
-          // action opens a modal and captures its own focus-return target.
-          setOpen(false);
-          trigger.current?.focus({ preventScroll: true });
-          action.onClick?.(event);
-        }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={INTERFACE_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{action.icon}</svg>
-        {action.label}
-      </FoundationMenuItem>,
-    )}
-  </DeferredMenu>;
+  return (
+    <DeferredMenu
+      open={open}
+      onOpenChange={setOpen}
+      className="msg-action-menu"
+      label={label}
+      align="start"
+      trigger={
+        <ToolButton
+          ref={trigger}
+          label={label}
+          tabIndex={contextMenu ? -1 : undefined}
+          style={
+            contextMenu
+              ? {
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  padding: 0,
+                  opacity: 0,
+                  pointerEvents: 'none',
+                }
+              : undefined
+          }
+        >
+          <Icon
+            name="more"
+            size={18}
+            className="msg-more-glyph"
+            shapeRendering="geometricPrecision"
+          />
+        </ToolButton>
+      }
+    >
+      {({ FoundationMenuItem }) =>
+        actions
+          .filter((action) => mobile || !action.mobileOnly)
+          .map((action) => (
+            <FoundationMenuItem
+              key={action.label}
+              className={action.mobileOnly ? 'msg-action-mobile-only' : undefined}
+              onClick={(event) => {
+                // Match hidePopover's synchronous return to the toolbar before an
+                // action opens a modal and captures its own focus-return target.
+                setOpen(false);
+                trigger.current?.focus({ preventScroll: true });
+                action.onClick?.(event);
+              }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={INTERFACE_ICON_STROKE}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {action.icon}
+              </svg>
+              {action.label}
+            </FoundationMenuItem>
+          ))
+      }
+    </DeferredMenu>
+  );
 }

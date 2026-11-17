@@ -76,6 +76,16 @@ SPA 通过 react-native-web 就地挂载。2026-11-16 删除了 Expo Universal A
 
 网格开关沿用设置行的公共几何，供其它设置项使用。涉及确认框或选择浮层的实现在有对应回归后再移交。
 
+### 下一批执行清单（2026-11-17）
+
+本地基线为 `79967f4e`，比当前本地记录的 `origin/main` 多一笔设置提交。设置分类直达和背景网格已经接入，相关用例已随提交更新。这轮梳理仅核对了代码和用例，测试执行结果待验收。
+
+1. **先定行为。** 在 [显示设置面板](../../frontend/src/react/settings/DisplaySettingsPane.tsx) 复核字号和内容宽度的分组标签、单选态、Tab 进入和离开分组、方向键、Space / Enter，以及重复点选当前项时的行为。现有 [设置回归](../../frontend/e2e/settings-modal.spec.mjs) 通过 `data-slot` 点击两个分组的 XL 项，并校验即时 CSS 变量与本地存储。补上语义定位、键盘操作和重开／刷新后的分组选中态断言。
+2. **只移交这两个控件。** 共享控件接收标签、选项、当前值和回调，经 `@socrates/ui/settings` 与 `WebUiTheme` 挂载。SPA 继续用 `displayPrefs.ts` 提供选项，通过 `settingsPreferenceActions.setFont` 和 `setWidth` 写入现有偏好。保留弹窗的焦点管理和分类懒加载。检查 [设置样式](../../frontend/src/styles/polish/overlays.css) 中依赖 ToggleGroup 插槽的选择器，重点对照窄屏等分布局。
+3. **集中验收。** 完成整批实现后，运行前端 lint、生产构建、包体预算检查，以及设置和焦点相关 Playwright 用例。检查桌面与 390px 手机宽度下的中英文和浅深色截图。两个分组都应支持键盘操作，改变后立即生效，重开和刷新后选中态与实际排版一致。对照网格开关、颜色重置和关闭后焦点恢复的已有用例，验收后再清理失去消费者的样式并更新 UI 结构索引。
+
+这批通过后，下一批从现有设置行中挑选无需弹层的低耦合偏好。涉及 `PreferenceSelect` 的分类另行验证关闭与焦点恢复，再决定如何移交。
+
 ## 6. 每轮的执行与验收
 
 1. 在 `packages/ui/<域>/` 写 RN 组件，DOM-free，经 `check-packages-dom`。

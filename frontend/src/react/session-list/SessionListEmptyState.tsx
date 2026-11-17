@@ -28,21 +28,36 @@ export function SessionListEmptyState({
     const [before, after] = t('session.noSearchMatch').split('{query}');
     content = (
       <>
-        {before}<strong>&ldquo;{searchQuery}&rdquo;</strong>{after}<br />
-        <a href="#" onClick={(event) => {
-          event.preventDefault();
-          sessionActions.setRecentsSearch('');
-        }}>{t('session.clearSearch')}</a> {t('session.showAllHint')}
+        {before}
+        <strong>&ldquo;{searchQuery}&rdquo;</strong>
+        {after}
+        <br />
+        <a
+          href="#"
+          onClick={(event) => {
+            event.preventDefault();
+            sessionActions.setRecentsSearch('');
+          }}
+        >
+          {t('session.clearSearch')}
+        </a>{' '}
+        {t('session.showAllHint')}
       </>
     );
   } else if (fetchFailed && !filter) {
     content = (
       <>
-        {t('session.loadListFailed')}<br />
-        <a href="#" onClick={(event) => {
-          event.preventDefault();
-          sessionActions.retryRecentsFetch();
-        }}>{t('session.retry')}</a>
+        {t('session.loadListFailed')}
+        <br />
+        <a
+          href="#"
+          onClick={(event) => {
+            event.preventDefault();
+            sessionActions.retryRecentsFetch();
+          }}
+        >
+          {t('session.retry')}
+        </a>
       </>
     );
   } else if (filter) {
@@ -50,16 +65,35 @@ export function SessionListEmptyState({
     const [before, after] = t('session.noFilterMatch').split('{filter}');
     content = (
       <>
-        {before}<strong>{filterLabel}</strong>{after}<br />
-        <a href="#" onClick={(event) => {
-          event.preventDefault();
-          clearRecentsFilter();
-        }}>{t('session.clearFilter')}</a> {t('session.showAllHint')}
+        {before}
+        <strong>{filterLabel}</strong>
+        {after}
+        <br />
+        <a
+          href="#"
+          onClick={(event) => {
+            event.preventDefault();
+            clearRecentsFilter();
+          }}
+        >
+          {t('session.clearFilter')}
+        </a>{' '}
+        {t('session.showAllHint')}
       </>
     );
   } else {
-    content = <>{t('session.empty')}<br />{t('session.emptyHint')}</>;
+    content = (
+      <>
+        {t('session.empty')}
+        <br />
+        {t('session.emptyHint')}
+      </>
+    );
   }
 
-  return <div className="recents-list-content"><EmptyState>{content}</EmptyState></div>;
+  return (
+    <div className="recents-list-content">
+      <EmptyState>{content}</EmptyState>
+    </div>
+  );
 }

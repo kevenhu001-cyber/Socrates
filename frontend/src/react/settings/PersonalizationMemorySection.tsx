@@ -1,6 +1,12 @@
 import { Button } from '../ui/shadcn/button';
 import { getApiFetch } from '../legacy/gateway.ts';
-import { clearAllMemories, getAllMemories, removeMemory, replaceMemoryId, setMemory } from '../../storage/memoryStore.ts';
+import {
+  clearAllMemories,
+  getAllMemories,
+  removeMemory,
+  replaceMemoryId,
+  setMemory,
+} from '../../storage/memoryStore.ts';
 import { showConfirm } from '../../ui/confirm.ts';
 import type { SettingsLabel, SettingsMemory } from './settings.types';
 import { PersonalizationMemoryAddForm } from './PersonalizationMemoryAddForm';
@@ -27,17 +33,21 @@ export function PersonalizationMemorySection({
       const result = request();
       if (result) {
         void result.catch(() => {
-          reportSaveError(label(
-            '记忆已保存在此设备；账户同步暂不可用。',
-            'Memory saved on this device; account sync is unavailable.',
-          ));
+          reportSaveError(
+            label(
+              '记忆已保存在此设备；账户同步暂不可用。',
+              'Memory saved on this device; account sync is unavailable.',
+            ),
+          );
         });
       }
     } catch {
-      reportSaveError(label(
-        '记忆已保存在此设备；账户同步暂不可用。',
-        'Memory saved on this device; account sync is unavailable.',
-      ));
+      reportSaveError(
+        label(
+          '记忆已保存在此设备；账户同步暂不可用。',
+          'Memory saved on this device; account sync is unavailable.',
+        ),
+      );
     }
   };
 
@@ -76,9 +86,13 @@ export function PersonalizationMemorySection({
     clearAllMemories();
     onChange([]);
     const api = getApiFetch();
-    const serverIds = current.filter((memory) => isServerMemoryId(memory.id)).map((memory) => memory.id);
+    const serverIds = current
+      .filter((memory) => isServerMemoryId(memory.id))
+      .map((memory) => memory.id);
     if (api && serverIds.length > 0) {
-      syncMemoryChange(() => Promise.all(serverIds.map((id) => api('/api/memory/' + id, { method: 'DELETE' }))));
+      syncMemoryChange(() =>
+        Promise.all(serverIds.map((id) => api('/api/memory/' + id, { method: 'DELETE' }))),
+      );
     }
   };
 
@@ -87,20 +101,33 @@ export function PersonalizationMemorySection({
       <div className="settings-section-head settings-memory-head">
         <div>
           <h3>{label('跨会话记忆', 'Memory')}</h3>
-          <p>{label('助手在对话中自动沉淀的关于你的背景与偏好。', 'Things the assistant has learned about you across conversations.')}</p>
+          <p>
+            {label(
+              '助手在对话中自动沉淀的关于你的背景与偏好。',
+              'Things the assistant has learned about you across conversations.',
+            )}
+          </p>
         </div>
         {memories.length > 0 && (
-          <Button variant="destructive"
+          <Button
+            variant="destructive"
             type="button"
             className="settings-btn-mini"
             onClick={() => {
               void showConfirm(
                 label('清空全部记忆？', 'Clear all memories?'),
-                label('这会从此设备和账户中删除已保存的记忆。', 'This removes saved memories from this device and your account.'),
+                label(
+                  '这会从此设备和账户中删除已保存的记忆。',
+                  'This removes saved memories from this device and your account.',
+                ),
                 true,
-              ).then((confirmed) => { if (confirmed) void clearMemories(); });
+              ).then((confirmed) => {
+                if (confirmed) void clearMemories();
+              });
             }}
-          >{label('清空全部', 'Clear all')}</Button>
+          >
+            {label('清空全部', 'Clear all')}
+          </Button>
         )}
       </div>
       <PersonalizationMemoryList memories={memories} label={label} onDelete={deleteMemory} />

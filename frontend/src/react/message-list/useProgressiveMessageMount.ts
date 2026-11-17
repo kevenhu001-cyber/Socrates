@@ -27,17 +27,18 @@ import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
 import { setOffscreenMount } from './nearViewport';
 import { useAboveViewportResizeCompensation } from './aboveViewportResize';
-import { canLoadOlderHistory, registerBeforeOlderRows, requestOlderHistory } from '../../session/historyPagingState.ts';
+import {
+  canLoadOlderHistory,
+  registerBeforeOlderRows,
+  requestOlderHistory,
+} from '../../session/historyPagingState.ts';
 
 function sameWindow(track: MountTrack, next: MountWindowState): boolean {
-  return track.floor === next.floor
-    && track.ceiling === next.ceiling
-    && track.full === next.full;
+  return track.floor === next.floor && track.ceiling === next.ceiling && track.full === next.full;
 }
 
 export function turnOwnsMountViewport(host: Pick<HTMLElement, 'dataset'>): boolean {
-  return host.dataset.turnAnchorSettling === 'true'
-    || host.dataset.turnViewportOwner === 'turn';
+  return host.dataset.turnAnchorSettling === 'true' || host.dataset.turnViewportOwner === 'turn';
 }
 
 /* R7 phase 2 — older history pages are prepended to the store. Right before
@@ -50,14 +51,18 @@ function useHistoryPrepend(
   trackRef: RefObject<MountTrack>,
   anchorRef: RefObject<ScrollAnchor | null>,
 ): void {
-  useEffect(() => registerBeforeOlderRows(() => {
-    const track = trackRef.current;
-    const host = scrollHost();
-    anchorRef.current = host ? captureScrollAnchor(host) : null;
-    if (!track.full && track.floor === null && track.items.length) {
-      trackRef.current = { ...track, floor: entryId(track.items[0], 'idx-0') };
-    }
-  }), [anchorRef, trackRef]);
+  useEffect(
+    () =>
+      registerBeforeOlderRows(() => {
+        const track = trackRef.current;
+        const host = scrollHost();
+        anchorRef.current = host ? captureScrollAnchor(host) : null;
+        if (!track.full && track.floor === null && track.items.length) {
+          trackRef.current = { ...track, floor: entryId(track.items[0], 'idx-0') };
+        }
+      }),
+    [anchorRef, trackRef],
+  );
 }
 
 /* R7 phase 2 — once the oldest loaded row is mounted (and the transcript is
@@ -84,13 +89,18 @@ function useOlderHistoryTrigger(atOldestRow: boolean, itemCount: number): void {
     host.addEventListener('scroll', onScroll, { passive: true });
     host.addEventListener('wheel', onUpwardIntent, { passive: true });
     host.addEventListener('touchmove', onUpwardIntent, { passive: true });
-    const idle = (window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number }).requestIdleCallback;
-    const fillTimer = host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
-      ? window.setTimeout(() => {
-        if (typeof idle === 'function') idle.call(window, loadOlder, { timeout: 200 });
-        else loadOlder();
-      }, 0)
-      : null;
+    const idle = (
+      window as Window & {
+        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    const fillTimer =
+      host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
+        ? window.setTimeout(() => {
+            if (typeof idle === 'function') idle.call(window, loadOlder, { timeout: 200 });
+            else loadOlder();
+          }, 0)
+        : null;
     return () => {
       if (fillTimer !== null) window.clearTimeout(fillTimer);
       host.removeEventListener('scroll', onScroll);
@@ -105,36 +115,43 @@ function useDeferredFlusherRegistration(
   anchorRef: React.MutableRefObject<ScrollAnchor | null>,
   rerender: () => void,
 ) {
-  useEffect(() => registerDeferredMessageRowsFlusher(
-    () => {
-      const track = trackRef.current;
-      if (track.full) return;
-      flushSync(() => {
-        const host = scrollHost();
-        anchorRef.current = host ? captureScrollAnchor(host) : null;
-        const next = fullMountWindow();
-        trackRef.current = { ...track, ...next };
-        setOffscreenMount(true);
-        rerender();
-      });
-      setOffscreenMount(false);
-    },
-    () => {
-      const track = trackRef.current;
-      if (!track.full) return;
-      flushSync(() => {
-        const host = scrollHost();
-        const anchor = host ? captureScrollAnchor(host) : null;
-        anchorRef.current = anchor;
-        const anchorIndex = anchor?.clientId
-          ? indexOfId(track.items, anchor.clientId)
-          : track.items.length - 1;
-        const next = windowAroundIndex(track.items, anchorIndex >= 0 ? anchorIndex : track.items.length - 1);
-        trackRef.current = { ...track, ...next };
-        rerender();
-      });
-    },
-  ), [anchorRef, rerender, trackRef]);
+  useEffect(
+    () =>
+      registerDeferredMessageRowsFlusher(
+        () => {
+          const track = trackRef.current;
+          if (track.full) return;
+          flushSync(() => {
+            const host = scrollHost();
+            anchorRef.current = host ? captureScrollAnchor(host) : null;
+            const next = fullMountWindow();
+            trackRef.current = { ...track, ...next };
+            setOffscreenMount(true);
+            rerender();
+          });
+          setOffscreenMount(false);
+        },
+        () => {
+          const track = trackRef.current;
+          if (!track.full) return;
+          flushSync(() => {
+            const host = scrollHost();
+            const anchor = host ? captureScrollAnchor(host) : null;
+            anchorRef.current = anchor;
+            const anchorIndex = anchor?.clientId
+              ? indexOfId(track.items, anchor.clientId)
+              : track.items.length - 1;
+            const next = windowAroundIndex(
+              track.items,
+              anchorIndex >= 0 ? anchorIndex : track.items.length - 1,
+            );
+            trackRef.current = { ...track, ...next };
+            rerender();
+          });
+        },
+      ),
+    [anchorRef, rerender, trackRef],
+  );
 }
 
 export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
@@ -228,9 +245,9 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
        scrollable. The previous implementation kept expanding every idle frame
        until the entire transcript lived in the DOM. */
     if (
-      start > 0
-      && mounted.length < MAX_MOUNTED_ROWS
-      && host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
+      start > 0 &&
+      mounted.length < MAX_MOUNTED_ROWS &&
+      host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
     ) {
       const fill = () => {
         if (!turnOwnsMountViewport(host)) shift('older');
@@ -245,7 +262,8 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
     return () => {
       cancelled = true;
       if (idleHandle !== null) {
-        if (typeof browser.cancelIdleCallback === 'function') browser.cancelIdleCallback(idleHandle);
+        if (typeof browser.cancelIdleCallback === 'function')
+          browser.cancelIdleCallback(idleHandle);
         else window.clearTimeout(idleHandle);
       }
       host.removeEventListener('scroll', onScroll);

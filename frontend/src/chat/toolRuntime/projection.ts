@@ -13,7 +13,9 @@ interface ProjectableToolEntry {
 export function copyToolData<T>(value: T): T {
   if (Array.isArray(value)) return value.map(copyToolData) as T;
   if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, copyToolData(item)])) as T;
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, copyToolData(item)]),
+    ) as T;
   }
   return value;
 }
@@ -82,7 +84,8 @@ function projectToolEntry(entry: ProjectableToolEntry): Projection {
   const snapshot = copyToolData(visible) as ProjectableToolEntry;
   if (entry._run) {
     Object.defineProperty(snapshot, '_run', {
-      value: Object.freeze(copyToolData(entry._run)), enumerable: false,
+      value: Object.freeze(copyToolData(entry._run)),
+      enumerable: false,
     });
   }
   const source: Record<string, unknown> = {};
@@ -99,8 +102,11 @@ function projectToolEntry(entry: ProjectableToolEntry): Projection {
     record.run = entry._run;
   } else {
     projections.set(entry, {
-      snapshot, source, keyCount,
-      committed: null as unknown as ProjectableToolEntry, run: entry._run,
+      snapshot,
+      source,
+      keyCount,
+      committed: null as unknown as ProjectableToolEntry,
+      run: entry._run,
     });
   }
   return { snapshot, reused: false };
@@ -124,9 +130,13 @@ function projectToolEntry(entry: ProjectableToolEntry): Projection {
  * still holds is returned by identity: that is what lets the store's freeze
  * memo skip an entire subtree on every idle frame.
  */
-export function mergeToolCalls<T extends ProjectableToolEntry>(base: T[] | undefined, mine: T[]): T[] {
+export function mergeToolCalls<T extends ProjectableToolEntry>(
+  base: T[] | undefined,
+  mine: T[],
+): T[] {
   const projected = new Map<string, { entry: T; projection: Projection }>();
-  for (const entry of mine) projected.set(String(entry.id), { entry, projection: projectToolEntry(entry) });
+  for (const entry of mine)
+    projected.set(String(entry.id), { entry, projection: projectToolEntry(entry) });
   if (!base || base.length === 0) {
     return [...projected.values()].map(({ entry, projection }) => {
       const record = projections.get(entry);
@@ -151,7 +161,10 @@ export function mergeToolCalls<T extends ProjectableToolEntry>(base: T[] | undef
       next.textOffset = existing.textOffset;
     }
     if (pair.projection.snapshot._run) {
-      Object.defineProperty(next, '_run', { value: pair.projection.snapshot._run, enumerable: false });
+      Object.defineProperty(next, '_run', {
+        value: pair.projection.snapshot._run,
+        enumerable: false,
+      });
     }
     if (record) record.committed = next;
     return next;

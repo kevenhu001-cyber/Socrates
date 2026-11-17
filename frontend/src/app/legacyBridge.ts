@@ -6,16 +6,34 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  * all entries resolve to direct imports (no window-read ordering hazards
  * except the documented optional surfaces that remain window.* reads).
  */
-import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turn/ui.ts';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle/index.ts';
+import { setChatStopState, handleSendClick, stopChatResponse } from '../chat/turn/composer.ts';
+import { resendLastUserMessage } from '../chat/turn/resend.ts';
+import {
+  setCurrentUser,
+  markAuthSuccess,
+  isInAuthGraceWindow,
+  clearPerUserClientState,
+  toggleAppMode,
+  resetApp,
+  startNewChat,
+  signOut,
+  toggleIncognito,
+} from './lifecycle/index.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { openTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
 import { askChatTurn } from '../chat/turn/controller.js';
-/* chat/turn/streaming.ts (~65KB) is lazy — window.addStreamingMessage is
-   an async proxy below; all call sites sit inside async send/restore
-   paths and await the controller. */
+import { addStreamingMessage } from '../chat/turn/loadStreamingTurn.ts';
 import { loadSession } from '../session/loader.ts';
-import { refreshServerSessions, retryRecentsFetch, actuallyDeleteSession, archiveSession, restoreSession, confirmPurgeSession, getArchivedSessions, flushRecentsReconcile } from '../session/recents.ts';
+import {
+  refreshServerSessions,
+  retryRecentsFetch,
+  actuallyDeleteSession,
+  archiveSession,
+  restoreSession,
+  confirmPurgeSession,
+  getArchivedSessions,
+  flushRecentsReconcile,
+} from '../session/recents.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { closeConfirm, showConfirm } from '../ui/confirm.js';
@@ -27,15 +45,43 @@ import { askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 /* chat/webSearch.ts (~16KB) is lazy — the window.fetchWebContext proxy
    below returns a promise, which every caller already awaits. */
-import { openAttachmentPicker, openMediaPicker, renderAttachmentChips, retryComposerAttachment } from '../attachments/render.ts';
+import {
+  openAttachmentPicker,
+  openMediaPicker,
+  renderAttachmentChips,
+  retryComposerAttachment,
+} from '../attachments/render.ts';
 import { removeAttachment } from '../attachments/index.ts';
-import { saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
-import { regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
+import {
+  saveProfileName,
+  onCustomInstructionsChange,
+  toggleProfileWebSearch,
+  openProfile,
+  closeProfile,
+} from '../ui/profile.ts';
+import {
+  regenerateAssistantMessage,
+  branchFromMessage,
+  switchMessageBranch,
+} from '../chat/editBranch.ts';
 import { toggleReadAloud } from '../ui/readAloud.ts';
-import { selectShareVis, openShareModal, closeShareModal, createShareLink, revokeShareLink } from '../ui/share.ts';
+import {
+  selectShareVis,
+  openShareModal,
+  closeShareModal,
+  createShareLink,
+  revokeShareLink,
+} from '../ui/share.ts';
 import { openCheatsheet, closeCheatsheet } from '../ui/cheatsheet.js';
 import { closeMorePopover } from '../sidebar/morePopover.ts';
-import { composeAction, researchAction, exploreAction, deepResearchAction, analyzeAction, dispatchExtension } from '../extensions/index.ts';
+import {
+  composeAction,
+  researchAction,
+  exploreAction,
+  deepResearchAction,
+  analyzeAction,
+  dispatchExtension,
+} from '../extensions/index.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
 import { toggleSidebarView } from '../ui/sidebarChrome.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
@@ -45,9 +91,19 @@ import { toggleWebSearch } from '../chat/webSearchToggle.ts';
 import { openCmdK, closeCmdK, onCmdKInput, onCmdKKey, openCmdKResult } from '../ui/cmdK.ts';
 import { loadWebSearch } from '../chat/webSearchLoader.ts';
 /* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
-import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePendingMermaid, processPendingVizActions } from '../render/vizStubs.ts';
+import {
+  processPendingMermaid,
+  processPendingViz,
+  reclaimVizCards,
+  schedulePendingMermaid,
+  processPendingVizActions,
+} from '../render/vizStubs.ts';
 import { wireCodeBlockHeaders } from '../render/postRender.ts';
-import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.ts';
+import {
+  mountVisualization,
+  disposeVisualizations,
+  disposeVisualization,
+} from '../render/vizStubs.ts';
 import { formatMsgProgressive } from '../render/markdown.ts';
 import { stripCitationMarkers } from '../render/text.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
@@ -58,20 +114,10 @@ import { setRecentsSearch } from '../ui/recentsView.ts';
 import { setLang } from '../i18n/index.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 import { setLegacyActions } from '../react/legacy/gateway.ts';
-import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";
-
+import { runtimeWindow as browserWindow } from '../types/runtimeWindow.ts';
 
 browserWindow.askChatTurn = askChatTurn;
-/* Warm path returns the controller synchronously — callers that read
-   state.messages right after askChatTurn() (the placeholder is pushed
-   inside addStreamingMessage) depend on it. The cold path returns a
-   Promise; every internal call site awaits either way. */
-browserWindow.__loadStreamingTurn = _loadStreamingTurn;
-type StreamingTurnModule = typeof import('../chat/turn/streaming.ts');
-browserWindow.addStreamingMessage = function (opts: Parameters<StreamingTurnModule['addStreamingMessage']>[0]) {
-  if (_streamingModule) return _streamingModule.addStreamingMessage(opts);
-  return _loadStreamingTurn().then(function (m) { return m.addStreamingMessage(opts); });
-};
+browserWindow.addStreamingMessage = addStreamingMessage;
 browserWindow.toggleSidebarView = toggleSidebarView;
 browserWindow.loadSession = loadSession;
 browserWindow.refreshServerSessions = refreshServerSessions;
@@ -79,19 +125,6 @@ browserWindow.renderRecents = renderRecents;
 browserWindow.resendLastUserMessage = resendLastUserMessage;
 browserWindow.setChatStopState = setChatStopState;
 browserWindow.handleSendClick = handleSendClick;
-let _streamingImport: Promise<StreamingTurnModule> | null = null;
-let _streamingModule: StreamingTurnModule | null = null;
-function _loadStreamingTurn() {
-  if (!_streamingImport) {
-    _streamingImport = import('../chat/turn/streaming.ts');
-    _streamingImport.then(function (m) { _streamingModule = m; });
-    _streamingImport.catch(function (err) {
-      _streamingImport = null;
-      console.error('[stream] failed to load', err);
-    });
-  }
-  return _streamingImport;
-}
 type DangerConfirmsModule = typeof import('../ui/dangerConfirms.js');
 let _dangerImport: Promise<DangerConfirmsModule> | null = null;
 function _loadDangerConfirms() {
@@ -113,10 +146,12 @@ browserWindow.addMessage = addMessage;
 browserWindow.askNextQuestion = askNextQuestion;
 browserWindow.saveCurrentSession = saveCurrentSession;
 browserWindow.fetchWebContext = function (
-  query: Parameters<typeof import('../chat/webSearch.ts')['fetchWebContext']>[0],
-  opts?: Parameters<typeof import('../chat/webSearch.ts')['fetchWebContext']>[1],
+  query: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[0],
+  opts?: Parameters<(typeof import('../chat/webSearch.ts'))['fetchWebContext']>[1],
 ) {
-  return loadWebSearch().then(function (m) { return m.fetchWebContext(query, opts); });
+  return loadWebSearch().then(function (m) {
+    return m.fetchWebContext(query, opts);
+  });
 };
 browserWindow.openAttachmentPicker = openAttachmentPicker;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
@@ -147,8 +182,10 @@ browserWindow.__socratesLegacy = {
     toggleAppMode,
     toggleSidebar,
     openNav,
-    openSettings: () => import('../react/settings/settings.service.ts').then((module) => module.openSettings()),
-    closeSettings: () => import('../react/settings/settings.service.ts').then((module) => module.closeSettings()),
+    openSettings: () =>
+      import('../react/settings/settings.service.ts').then((module) => module.openSettings()),
+    closeSettings: () =>
+      import('../react/settings/settings.service.ts').then((module) => module.closeSettings()),
     openProfile,
     closeProfile,
     openUsageModal: () => import('../ui/usage.ts').then((module) => module.openUsageModal()),
@@ -175,11 +212,17 @@ browserWindow.__socratesLegacy = {
     loadSession,
     setRecentsSearch,
     retryRecentsFetch,
-    openTagEditor: (sessionId, event) => openTagEditor(sessionId, event ? {
-      stopPropagation: () => event.stopPropagation(),
-      preventDefault: () => event.preventDefault(),
-      currentTarget: event.currentTarget instanceof Element ? event.currentTarget : null,
-    } : null),
+    openTagEditor: (sessionId, event) =>
+      openTagEditor(
+        sessionId,
+        event
+          ? {
+              stopPropagation: () => event.stopPropagation(),
+              preventDefault: () => event.preventDefault(),
+              currentTarget: event.currentTarget instanceof Element ? event.currentTarget : null,
+            }
+          : null,
+      ),
     deleteSession: actuallyDeleteSession,
     archiveSession,
     onSessionDragStart,
@@ -196,7 +239,9 @@ browserWindow.__socratesLegacy = {
     researchAction,
     deepResearchAction,
     analyzeAction,
-    toggleExtensionByKey: (key) => { dispatchExtension(key); },
+    toggleExtensionByKey: (key) => {
+      dispatchExtension(key);
+    },
     removeAttachment,
     retryAttachment: retryComposerAttachment,
     renderAttachmentChips,
@@ -222,9 +267,21 @@ browserWindow.__socratesLegacy = {
     saveProfileName,
     onCustomInstructionsChange,
     toggleProfileWebSearch,
-    confirmClearCache: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearCache(); }); },
-    confirmClearSettings: function () { return _loadDangerConfirms().then(function (m) { return m.confirmClearSettings(); }); },
-    confirmDeleteAccount: function () { return _loadDangerConfirms().then(function (m) { return m.confirmDeleteAccount(); }); },
+    confirmClearCache: function () {
+      return _loadDangerConfirms().then(function (m) {
+        return m.confirmClearCache();
+      });
+    },
+    confirmClearSettings: function () {
+      return _loadDangerConfirms().then(function (m) {
+        return m.confirmClearSettings();
+      });
+    },
+    confirmDeleteAccount: function () {
+      return _loadDangerConfirms().then(function (m) {
+        return m.confirmDeleteAccount();
+      });
+    },
     setLang,
   },
   postRender: {
@@ -238,7 +295,8 @@ browserWindow.__socratesLegacy = {
        the React attachment owns the renderer host and its effect lifecycle. */
     mountVisualization: function (spec, host, options) {
       return typeof mountVisualization === 'function'
-        ? mountVisualization(spec, host, options) : null;
+        ? mountVisualization(spec, host, options)
+        : null;
     },
     /* React host teardown: dispose every card (and its renderer resources)
        in the host when the owning component unmounts or remounts. */
@@ -257,7 +315,9 @@ browserWindow.__socratesLegacy = {
      AssistantTurn calls renderAssistantHTML per prose segment, so the answer
      text keeps formatting exactly as before. */
   render: {
-    renderAssistantHTML: function (rawText) { return renderAssistantHTML(rawText); },
+    renderAssistantHTML: function (rawText) {
+      return renderAssistantHTML(rawText);
+    },
     /* P_tool-live-turn — the streaming-safe renderer, same one the old
        imperative doRender painted with. formatMsg assumes closed pairs, so
        feeding it a half-arrived `$$…$$` or an open fence leaks raw LaTeX into
@@ -268,7 +328,10 @@ browserWindow.__socratesLegacy = {
          marker never flashes in the live tail and then vanishes at finish.
          `opts.complete` marks text that can no longer grow (a settled
          block): it renders exactly as renderAssistantHTML will at finish. */
-      return formatMsgProgressive(stripCitationMarkers(stripChatArtifacts(String(rawText || ''))), opts);
+      return formatMsgProgressive(
+        stripCitationMarkers(stripChatArtifacts(String(rawText || ''))),
+        opts,
+      );
     },
   },
   /* Live controls remain owned by the streaming pipeline. */

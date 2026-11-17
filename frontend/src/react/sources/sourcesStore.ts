@@ -31,7 +31,8 @@ function emit(): void {
 }
 
 export function openSources(entry: SourcesPanelEntry, trigger?: HTMLElement | null): void {
-  opener = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  opener =
+    trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
   state = { isOpen: true, entry };
   emit();
 }

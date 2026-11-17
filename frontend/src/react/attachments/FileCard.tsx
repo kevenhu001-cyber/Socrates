@@ -31,13 +31,33 @@ export function formatFileSize(bytes?: number): string {
 }
 
 const REMOVE_ICON = (
-  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="12"
+    height="12"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M18 6L6 18M6 6l12 12" />
   </svg>
 );
 
 const RETRY_ICON = (
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+  <svg
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
     <path d="M21 12a9 9 0 1 1-2.64-6.36" />
     <path d="M21 3v6h-6" />
   </svg>
@@ -65,7 +85,12 @@ function renderIconNode(ext: string, status?: string, onRetry?: () => void): Rea
   return <FileIcon ext={ext} />;
 }
 
-function resolveCardClasses(editable: boolean, status: string, clickable: boolean, extra: string): string {
+function resolveCardClasses(
+  editable: boolean,
+  status: string,
+  clickable: boolean,
+  extra: string,
+): string {
   return [
     'file-card',
     'attachment-chip',
@@ -75,7 +100,9 @@ function resolveCardClasses(editable: boolean, status: string, clickable: boolea
     status === 'uploading' ? 'uploading pending' : '',
     clickable ? 'clickable' : '',
     extra,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 function FileCardBody({
@@ -93,8 +120,12 @@ function FileCardBody({
     <>
       <div className="file-card-icon">{iconNode}</div>
       <div className="file-card-content">
-        <div className="file-card-caption" title={name}>{name}</div>
-        <div className="file-card-subcaption" title={description}>{description}</div>
+        <div className="file-card-caption" title={name}>
+          {name}
+        </div>
+        <div className="file-card-subcaption" title={description}>
+          {description}
+        </div>
       </div>
       {onRemove ? (
         <Button
@@ -144,7 +175,9 @@ export function FileCard({
   };
 
   const cardClasses = resolveCardClasses(Boolean(onRemove), status, isClickable, className);
-  const body = <FileCardBody iconNode={iconNode} name={name} description={description} onRemove={onRemove} />;
+  const body = (
+    <FileCardBody iconNode={iconNode} name={name} description={description} onRemove={onRemove} />
+  );
   /* The reference card is titled by its file name; only a failure swaps the
      title for the reason so the retry affordance explains itself. */
   const cardTitle = status === 'error' && description ? description : name;
@@ -171,7 +204,16 @@ export function FileCard({
       onClick={isClickable ? handleClick : undefined}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      onKeyDown={isClickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(e as unknown as React.MouseEvent); } } : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleClick(e as unknown as React.MouseEvent);
+              }
+            }
+          : undefined
+      }
     >
       {body}
     </div>

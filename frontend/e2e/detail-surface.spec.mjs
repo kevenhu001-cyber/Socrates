@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 
@@ -15,9 +15,11 @@ async function boot(page, width = 1440) {
 async function openArtifact(page) {
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: 'a1111111-1111-4111-8111-111111111111' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'messages', value: [] });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: 'a1111111-1111-4111-8111-111111111111' },
+    });
+    window.__socratesTestState.patch({ session: { messages: [] } });
     window.addMessage('assistant', '![Logo](/logo.png)');
   });
   await expect(page.locator('.msg.assistant .msg-body img')).toBeVisible();
@@ -31,7 +33,10 @@ test('artifact preview uses the docked detail shell without covering chat', asyn
   await expect(page.locator('.detail-surface')).toHaveCount(1);
   await expect(page.locator('.artifact-preview-image')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-detail-layout', 'docked');
-  const bounds = await page.evaluate(() => ({ main: document.querySelector('.main').getBoundingClientRect().right, detail: document.querySelector('.detail-surface').getBoundingClientRect().left }));
+  const bounds = await page.evaluate(() => ({
+    main: document.querySelector('.main').getBoundingClientRect().right,
+    detail: document.querySelector('.detail-surface').getBoundingClientRect().left,
+  }));
   expect(bounds.main).toBeLessThanOrEqual(bounds.detail + 1);
   const transcript = await page.locator('#msgList').boundingBox();
   expect(transcript.x + transcript.width).toBeLessThanOrEqual(bounds.detail + 1);
@@ -67,14 +72,28 @@ test('mobile detail fills one viewport and traps focus until dismissed', async (
   await expect(page.locator('.detail-root')).toBeHidden();
 });
 
-test('site draft preview shares the detail shell and preserves the page editor', async ({ page }) => {
+test('site draft preview shares the detail shell and preserves the page editor', async ({
+  page,
+}) => {
   await boot(page);
   const runtimeErrors = [];
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/v2/', '/api/');
-    if (path !== '/api/creations/items/sites' || route.request().method() !== 'GET') return route.fallback();
-    await route.fulfill({ json: { items: [{ id: 'draft-site', title: 'Draft site', source: '<h1>Original</h1>', visibility: 'private' }] } });
+    if (path !== '/api/creations/items/sites' || route.request().method() !== 'GET')
+      return route.fallback();
+    await route.fulfill({
+      json: {
+        items: [
+          {
+            id: 'draft-site',
+            title: 'Draft site',
+            source: '<h1>Original</h1>',
+            visibility: 'private',
+          },
+        ],
+      },
+    });
   });
   await page.locator('#navSites').click();
   await page.locator('#sitesPanel [data-action="edit"]').first().click();
@@ -84,7 +103,10 @@ test('site draft preview shares the detail shell and preserves the page editor',
   await page.locator('[data-action="preview-draft"]').click();
   await expect(page.locator('.detail-surface')).toBeVisible();
   await expect(page.locator('.creation-preview-overlay, .creation-editor-backdrop')).toHaveCount(0);
-  await expect(page.locator('.creation-preview-frame')).toHaveAttribute('srcdoc', '<h1>Revised draft</h1>');
+  await expect(page.locator('.creation-preview-frame')).toHaveAttribute(
+    'srcdoc',
+    '<h1>Revised draft</h1>',
+  );
   await page.locator('.detail-close').click();
   await expect(source).toHaveValue('<h1>Revised draft</h1>');
   expect(runtimeErrors).toEqual([]);

@@ -6,6 +6,8 @@ export function translateLifecycleText(key: string, fallback?: null) {
   try {
     const value = t(key);
     if (value && value !== key) return value;
-  } catch (error) { reportSwallow(error, 'app/lifecycle.translate'); }
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.translate');
+  }
   return fallback != null ? fallback : key;
 }

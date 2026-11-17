@@ -45,13 +45,21 @@ function installControllableStream(page) {
     window.fetch = (input, init) => {
       const url = typeof input === 'string' ? input : (input && input.url) || '';
       if (!/\/api\/(?:v2\/)?chat\/stream/.test(url)) return nativeFetch(input, init);
-      try { window.__streamRequests.push(JSON.parse(init.body)); } catch (_) { window.__streamRequests.push(init.body); }
+      try {
+        window.__streamRequests.push(JSON.parse(init.body));
+      } catch (_) {
+        window.__streamRequests.push(init.body);
+      }
       const encoder = new TextEncoder();
       let controllerRef;
       let closed = false;
       const body = new ReadableStream({
-        start(controller) { controllerRef = controller; },
-        cancel() { closed = true; },
+        start(controller) {
+          controllerRef = controller;
+        },
+        cancel() {
+          closed = true;
+        },
       });
       /* Behave like a real fetch: a superseded turn aborts its request
          (chat/turnController.js), which errors the body and stops deltas. */
@@ -60,14 +68,22 @@ function installControllableStream(page) {
         signal.addEventListener('abort', () => {
           if (closed) return;
           closed = true;
-          try { controllerRef.error(new DOMException('Aborted', 'AbortError')); } catch (_) { /* already closed */ }
+          try {
+            controllerRef.error(new DOMException('Aborted', 'AbortError'));
+          } catch (_) {
+            /* already closed */
+          }
         });
       }
       const handle = {
         push(text) {
           if (closed) return;
           const payload = { choices: [{ delta: { content: text } }] };
-          try { controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)); } catch (_) { closed = true; }
+          try {
+            controllerRef.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+          } catch (_) {
+            closed = true;
+          }
         },
         finish() {
           if (closed) return;
@@ -75,27 +91,36 @@ function installControllableStream(page) {
           try {
             controllerRef.enqueue(encoder.encode('data: [DONE]\n\n'));
             controllerRef.close();
-          } catch (_) { /* aborted by a newer turn */ }
+          } catch (_) {
+            /* aborted by a newer turn */
+          }
         },
       };
       window.__streams.push(handle);
       window.__pushDelta = handle.push;
       window.__finishStream = handle.finish;
-      return Promise.resolve(new Response(body, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   });
 }
 
 async function bootChat(page, messageCount) {
   await page.evaluate((count) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: '77777777-7777-4777-8777-777777777777' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({
+      session: { currentSessionId: '77777777-7777-4777-8777-777777777777' },
+    });
     window.__testActivateMainView('chatView');
     for (let i = 0; i < count; i += 1) {
-      window.addMessage(i % 2 ? 'assistant' : 'user', `Glide history ${i + 1}: ${'context '.repeat(i % 2 ? 40 : 10)}`);
+      window.addMessage(
+        i % 2 ? 'assistant' : 'user',
+        `Glide history ${i + 1}: ${'context '.repeat(i % 2 ? 40 : 10)}`,
+      );
     }
   }, messageCount);
   if (messageCount) await expect(page.locator('#msgList .msg')).not.toHaveCount(0);
@@ -124,11 +149,16 @@ async function readHistory(page, expectedCount) {
     expect(state.mounted.length, 'resident transcript rows stay bounded').toBeLessThanOrEqual(60);
     if (state.top <= 0) break;
     await page.mouse.wheel(0, -1200);
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
   }
   const finalState = await page.evaluate(() => {
     const node = document.getElementById('msgList');
-    return { top: node.scrollTop, mounted: [...node.querySelectorAll('.msg')].map((row) => row.textContent || '') };
+    return {
+      top: node.scrollTop,
+      mounted: [...node.querySelectorAll('.msg')].map((row) => row.textContent || ''),
+    };
   });
   for (const text of finalState.mounted) {
     const match = text.match(/Glide history (\d+):/);
@@ -136,11 +166,18 @@ async function readHistory(page, expectedCount) {
   }
   expect(finalState.top).toBe(0);
   expect(finalState.mounted.length).toBeLessThanOrEqual(60);
-  expect(seen.size, 'the reader actually traversed the complete historical transcript').toBe(expectedCount);
-  const storedHistory = await page.evaluate(() => window.stateStore.read('messages')
-    .filter((message) => /^Glide history \d+:/.test(message.rawText || ''))
-    .map((message) => message.rawText.match(/^Glide history (\d+):/)[1]));
-  expect(storedHistory).toEqual(Array.from({ length: expectedCount }, (_, index) => String(index + 1)));
+  expect(seen.size, 'the reader actually traversed the complete historical transcript').toBe(
+    expectedCount,
+  );
+  const storedHistory = await page.evaluate(() =>
+    window.__socratesTestState
+      .session()
+      .messages.filter((message) => /^Glide history \d+:/.test(message.rawText || ''))
+      .map((message) => message.rawText.match(/^Glide history (\d+):/)[1]),
+  );
+  expect(storedHistory).toEqual(
+    Array.from({ length: expectedCount }, (_, index) => String(index + 1)),
+  );
 }
 
 /* Put the reader where the scenario says. */
@@ -149,10 +186,10 @@ async function placeReader(page, where) {
     const list = document.getElementById('msgList');
     if (position === 'history') {
       list.scrollTop = 0;
-      window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: true });
+      window.__socratesTestState.patch({ ui: { _userScrolledAway: true } });
     } else {
       list.scrollTop = list.scrollHeight;
-      window.stateStore.dispatch({ type: 'state/set', key: '_userScrolledAway', value: false });
+      window.__socratesTestState.patch({ ui: { _userScrolledAway: false } });
     }
   }, where);
   await page.waitForTimeout(250);
@@ -163,9 +200,11 @@ async function placeReader(page, where) {
 async function startBackgroundAnswer(page) {
   await page.evaluate(() => window.submitChatMessage('An answer that is still streaming'));
   await expect.poll(() => page.evaluate(() => window.__streams.length)).toBeGreaterThan(0);
-  await expect.poll(() => page.evaluate(
-    () => document.getElementById('msgList').dataset.turnAnchorSettling === 'true',
-  )).toBe(false);
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.getElementById('msgList').dataset.turnAnchorSettling === 'true'),
+    )
+    .toBe(false);
   await page.evaluate(() => {
     const stream = window.__streams[window.__streams.length - 1];
     let n = 0;
@@ -182,40 +221,57 @@ async function startBackgroundAnswer(page) {
 /* Submit and sample every frame until the send anchor lets go, plus a
    20-frame tail so a late correction after the release is caught too. */
 async function beginGlideSampling(page, text) {
-  return page.evaluate((expectedText) => new Promise((resolve) => {
-    const list = document.getElementById('msgList');
-    const initialIds = new Set(window.stateStore.read('messages').map((message) => message.clientId));
-    const offsets = [];
-    const times = [];
-    let sawSettling = false;
-    let tail = 0;
-    const deadline = performance.now() + 3500;
-    const tick = () => {
-      /* A send from old history moves the bounded window to the live tail:
+  return page.evaluate(
+    (expectedText) =>
+      new Promise((resolve) => {
+        const list = document.getElementById('msgList');
+        const initialIds = new Set(
+          window.__socratesTestState.session().messages.map((message) => message.clientId),
+        );
+        const offsets = [];
+        const times = [];
+        let sawSettling = false;
+        let tail = 0;
+        const deadline = performance.now() + 3500;
+        const tick = () => {
+          /* A send from old history moves the bounded window to the live tail:
          DOM user counts may shrink, even though a new user was appended. */
-      const message = window.stateStore.read('messages').find((entry) => (
-        entry.role === 'user' && entry.rawText === expectedText && !initialIds.has(entry.clientId)
-      ));
-      const prompt = message && [...list.querySelectorAll('.msg.user')].find((row) => row.dataset.clientId === message.clientId);
-      if (prompt) {
-        offsets.push(prompt.getBoundingClientRect().top - list.getBoundingClientRect().top);
-        times.push(performance.now());
-      }
-      if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
-      if (sawSettling && list.dataset.turnAnchorSettling !== 'true') tail += 1;
-      if (tail > 20 || performance.now() > deadline) {
-        resolve({ offsets, times, sawSettling });
-        return;
-      }
-      requestAnimationFrame(tick);
-    };
-    tick();
-  }), text);
+          const message = window.__socratesTestState
+            .session()
+            .messages.find(
+              (entry) =>
+                entry.role === 'user' &&
+                entry.rawText === expectedText &&
+                !initialIds.has(entry.clientId),
+            );
+          const prompt =
+            message &&
+            [...list.querySelectorAll('.msg.user')].find(
+              (row) => row.dataset.clientId === message.clientId,
+            );
+          if (prompt) {
+            offsets.push(prompt.getBoundingClientRect().top - list.getBoundingClientRect().top);
+            times.push(performance.now());
+          }
+          if (list.dataset.turnAnchorSettling === 'true') sawSettling = true;
+          if (sawSettling && list.dataset.turnAnchorSettling !== 'true') tail += 1;
+          if (tail > 20 || performance.now() > deadline) {
+            resolve({ offsets, times, sawSettling });
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+    text,
+  );
 }
 
 async function sendAndSample(page, text) {
   const samples = beginGlideSampling(page, text);
-  await page.evaluate((prompt) => { void window.submitChatMessage(prompt); }, text);
+  await page.evaluate((prompt) => {
+    void window.submitChatMessage(prompt);
+  }, text);
   return samples;
 }
 
@@ -249,7 +305,9 @@ function assertGlide({ offsets, times, sawSettling }, { expectMotion }) {
   expect(sawSettling, 'the send took scroll ownership').toBe(true);
   expect(offsets.length, 'the new prompt was sampled').toBeGreaterThan(0);
   for (let i = 1; i < offsets.length; i += 1) {
-    expect(offsets[i], `frame ${i} pushed the prompt back down: ${trace}`).toBeLessThanOrEqual(offsets[i - 1] + 2);
+    expect(offsets[i], `frame ${i} pushed the prompt back down: ${trace}`).toBeLessThanOrEqual(
+      offsets[i - 1] + 2,
+    );
   }
   if (expectMotion) {
     const start = offsets[0];
@@ -295,15 +353,32 @@ for (const vp of VIEWPORTS) {
 
         let result;
         if (streaming) {
-          const priorUsers = await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length);
+          const priorUsers = await page.evaluate(
+            () =>
+              window.__socratesTestState.session().messages.filter((entry) => entry.role === 'user')
+                .length,
+          );
           await page.evaluate(() => {
             window.__queueChanges = [];
-            document.addEventListener('socrates:promptqueuechange', (event) => window.__queueChanges.push(event.detail.count));
+            document.addEventListener('socrates:promptqueuechange', (event) =>
+              window.__queueChanges.push(event.detail.count),
+            );
             void window.submitChatMessage('Take me to the newest prompt');
           });
-          await expect.poll(() => page.evaluate(() => window.__queueChanges.includes(1))).toBe(true);
-          expect(await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length)).toBe(priorUsers);
-          await expect(page.locator('#msgList .msg.user').filter({ hasText: 'Take me to the newest prompt' })).toHaveCount(0);
+          await expect
+            .poll(() => page.evaluate(() => window.__queueChanges.includes(1)))
+            .toBe(true);
+          expect(
+            await page.evaluate(
+              () =>
+                window.__socratesTestState
+                  .session()
+                  .messages.filter((entry) => entry.role === 'user').length,
+            ),
+          ).toBe(priorUsers);
+          await expect(
+            page.locator('#msgList .msg.user').filter({ hasText: 'Take me to the newest prompt' }),
+          ).toHaveCount(0);
           const priorStreams = await page.evaluate(() => window.__streams.length);
           const priorRequests = await page.evaluate(() => window.__streamRequests.length);
           const samples = beginGlideSampling(page, 'Take me to the newest prompt');
@@ -312,11 +387,34 @@ for (const vp of VIEWPORTS) {
             window.__streams[window.__streams.length - 1].finish();
           });
           result = await samples;
-          await expect.poll(() => page.evaluate(() => window.__queueChanges.includes(0))).toBe(true);
-          await expect.poll(() => page.evaluate((count) => window.__streams.length > count, priorStreams)).toBe(true);
-          await expect.poll(() => page.evaluate((count) => window.__streamRequests.slice(count).some((body) => JSON.stringify(body).includes('Take me to the newest prompt')), priorRequests)).toBe(true);
-          expect(await page.evaluate(() => window.stateStore.read('messages').filter((entry) => entry.role === 'user').length)).toBe(priorUsers + 1);
-          await expect(page.locator('#msgList .msg.user').last()).toContainText('Take me to the newest prompt');
+          await expect
+            .poll(() => page.evaluate(() => window.__queueChanges.includes(0)))
+            .toBe(true);
+          await expect
+            .poll(() => page.evaluate((count) => window.__streams.length > count, priorStreams))
+            .toBe(true);
+          await expect
+            .poll(() =>
+              page.evaluate(
+                (count) =>
+                  window.__streamRequests
+                    .slice(count)
+                    .some((body) => JSON.stringify(body).includes('Take me to the newest prompt')),
+                priorRequests,
+              ),
+            )
+            .toBe(true);
+          expect(
+            await page.evaluate(
+              () =>
+                window.__socratesTestState
+                  .session()
+                  .messages.filter((entry) => entry.role === 'user').length,
+            ),
+          ).toBe(priorUsers + 1);
+          await expect(page.locator('#msgList .msg.user').last()).toContainText(
+            'Take me to the newest prompt',
+          );
         } else {
           result = await sendAndSample(page, 'Take me to the newest prompt');
         }
@@ -325,17 +423,21 @@ for (const vp of VIEWPORTS) {
         const offset = await promptOffset(page);
         expect(offset).toBeGreaterThanOrEqual(10);
         expect(offset).toBeLessThanOrEqual(14);
-        const away = await page.evaluate(() => window.stateStore.read('_userScrolledAway'));
+        const away = await page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway);
         expect(away).toBe(false);
 
-        await page.evaluate(() => { for (const s of window.__streams) s.finish(); });
+        await page.evaluate(() => {
+          for (const s of window.__streams) s.finish();
+        });
         await page.waitForTimeout(150);
       });
     }
   }
 }
 
-test('reduced motion: a send from deep history lands on the prompt without animating', async ({ page }) => {
+test('reduced motion: a send from deep history lands on the prompt without animating', async ({
+  page,
+}) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
@@ -349,5 +451,7 @@ test('reduced motion: a send from deep history lands on the prompt without anima
   const offset = await promptOffset(page);
   expect(offset).toBeGreaterThanOrEqual(10);
   expect(offset).toBeLessThanOrEqual(14);
-  await page.evaluate(() => { for (const s of window.__streams) s.finish(); });
+  await page.evaluate(() => {
+    for (const s of window.__streams) s.finish();
+  });
 });

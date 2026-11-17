@@ -4,9 +4,13 @@ import { linkAbortSignal } from '../util/api/request.ts';
 export const CHAT_PAGE_CONTEXT_TIMEOUT_MS = 2500;
 // Research workflows allow the server's existing eight-second page timeout.
 const PAGE_CONTEXT_TIMEOUT_MS = 10_000;
-const FILE_EXTENSIONS = new Set(("pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz " +
-  "jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso " +
-  "txt md rtf csv json xml html htm").split(" "));
+const FILE_EXTENSIONS = new Set(
+  (
+    'pdf doc docx xls xlsx ppt pptx zip rar 7z tar gz ' +
+    'jpg jpeg png gif webp svg mp3 mp4 mov avi mkv exe dmg iso ' +
+    'txt md rtf csv json xml html htm'
+  ).split(' '),
+);
 
 function isValidBareUrl(domain: string | undefined): boolean {
   if (!domain || domain.indexOf('.') === -1) return false;
@@ -24,14 +28,20 @@ function isValidBareUrl(domain: string | undefined): boolean {
    "看看/visit/check/打开" near a domain-shaped word. Conservative
    enough to avoid false positives in pure conceptual Q&A. */
 export function looksLikeUserMentionedSite(text: string): boolean {
-  if(!text)return false;
-  if(/网站|网址|网页|主页|站点|官网|链接|URL|url|site|website|homepage/i.test(text))return true;
-  if(/\b(visit|open|check|go to|browse|look at|see|read|fetch)\b/i.test(text)
-     && /\b[a-z0-9-]+\.[a-z]{2,}\b/i.test(text))return true;
+  if (!text) return false;
+  if (/网站|网址|网页|主页|站点|官网|链接|URL|url|site|website|homepage/i.test(text)) return true;
+  if (
+    /\b(visit|open|check|go to|browse|look at|see|read|fetch)\b/i.test(text) &&
+    /\b[a-z0-9-]+\.[a-z]{2,}\b/i.test(text)
+  )
+    return true;
   /* "看看 xxx" / "看一下 xxx" / "了解下 xxx" style — but only if there's
      a domain-shaped token in the sentence. */
-  if(/(看看|看一下|了解下|了解|查阅|访问|打开|浏览|读一读|读一下)/.test(text)
-     && /\b[a-z0-9-]+\.[a-z]{2,}\b/i.test(text))return true;
+  if (
+    /(看看|看一下|了解下|了解|查阅|访问|打开|浏览|读一读|读一下)/.test(text) &&
+    /\b[a-z0-9-]+\.[a-z]{2,}\b/i.test(text)
+  )
+    return true;
   return false;
 }
 
@@ -48,41 +58,42 @@ export function looksLikeUserMentionedSite(text: string): boolean {
    at least one dot and the TLD looks plausible (≥ 2 alpha chars). This
    avoids grabbing every word like "github" in prose. */
 export function extractHttpUrls(text: string): string[] {
-  if(!text)return[];
+  if (!text) return [];
   const seen = Object.create(null) as Record<string, number>;
   const out: string[] = [];
 
   function add(u: string | undefined): void {
-    if(!u)return;
+    if (!u) return;
     /* Strip common trailing punctuation. */
-    u=u.replace(/[.,;:!?\]）】」』)]+$/,"");
+    u = u.replace(/[.,;:!?\]）】」』)]+$/, '');
     /* Drop anchor-only fragments the user didn't intend to send. */
-    if(!u||u==="#")return;
-    if(seen[u])return;
-    seen[u]=1;
+    if (!u || u === '#') return;
+    if (seen[u]) return;
+    seen[u] = 1;
     out.push(u);
   }
 
   /* (1) http(s)://... */
-  const re1=/https?:\/\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]+/gi;
+  const re1 = /https?:\/\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]+/gi;
   let m: RegExpExecArray | null;
-  while((m=re1.exec(text))!==null){
+  while ((m = re1.exec(text)) !== null) {
     add(m[0]);
-    if(out.length>=3)break;
+    if (out.length >= 3) break;
   }
-  if(out.length>=3)return out;
+  if (out.length >= 3) return out;
 
   /* (2) Bare domains / domain+path. We anchor on a word boundary,
      require at least one dot, and only accept character classes that
      are valid in a URL host or path. We allow an optional path/query
      so things like "example.com/about" or "news.ycombinator.com/item?id=1"
      are picked up. */
-  const re2=/(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
-  while((m=re2.exec(text))!==null){
+  const re2 =
+    /(?:^|[^\w一-鿿＠@])([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:\/[^\s一-鿿\u3000-〿＀-￯"'<>)\]】」』]*)?)/gi;
+  while ((m = re2.exec(text)) !== null) {
     const d = m[1];
     if (!isValidBareUrl(d)) continue;
-    add("https://"+d);
-    if(out.length>=3)break;
+    add('https://' + d);
+    if (out.length >= 3) break;
   }
   return out;
 }
@@ -107,10 +118,14 @@ export interface ReferencedPageBlocks {
 
 function formatReferencedPage(url: string, page: FetchedPage | undefined): string {
   if (page && page.ok && page.content) {
-    return '[Referenced page] ' + url + '\n'
-      + (page.title ? 'Title: ' + page.title + '\n' : '')
-      + (page.truncated ? '(truncated excerpt)\n' : '')
-      + page.content;
+    return (
+      '[Referenced page] ' +
+      url +
+      '\n' +
+      (page.title ? 'Title: ' + page.title + '\n' : '') +
+      (page.truncated ? '(truncated excerpt)\n' : '') +
+      page.content
+    );
   }
   const reason = (page && page.reason) || 'fetch failed';
   return '[Referenced page] ' + url + '\n(could not retrieve: ' + reason + ')';
@@ -127,7 +142,9 @@ function formatReferencedPages(urls: string[], results: FetchedPage[]): string[]
 function failedPageContext(urls: string[], error: unknown): ReferencedPageBlocks {
   const message = (error as { message?: string })?.message || String(error);
   return {
-    blocks: urls.map((url) => '[Referenced page] ' + url + '\n(could not retrieve: ' + message + ')'),
+    blocks: urls.map(
+      (url) => '[Referenced page] ' + url + '\n(could not retrieve: ' + message + ')',
+    ),
     results: urls.map(() => ({ ok: false, reason: message })),
   };
 }
@@ -136,12 +153,13 @@ export async function fetchPagesForContext(
   urls: string[],
   options: { signal?: AbortSignal | null; timeoutMs?: number } = {},
 ): Promise<ReferencedPageBlocks> {
-  if(!Array.isArray(urls)||!urls.length)return{blocks:[],results:[]};
+  if (!Array.isArray(urls) || !urls.length) return { blocks: [], results: [] };
   const linked = linkAbortSignal(options.signal, 'chat.webLinks');
   let timedOut = false;
   let rejectOnAbort!: () => void;
   const aborted = new Promise((_, reject) => {
-    rejectOnAbort = () => reject(new Error(timedOut ? 'page retrieval timed out' : 'page retrieval cancelled'));
+    rejectOnAbort = () =>
+      reject(new Error(timedOut ? 'page retrieval timed out' : 'page retrieval cancelled'));
     if (linked.controller.signal.aborted) rejectOnAbort();
     else linked.controller.signal.addEventListener('abort', rejectOnAbort, { once: true });
   });
@@ -149,16 +167,20 @@ export async function fetchPagesForContext(
     timedOut = true;
     linked.controller.abort();
   }, options.timeoutMs ?? PAGE_CONTEXT_TIMEOUT_MS);
-  try{
+  try {
     // Race the full JSON operation as well as aborting transport: a stalled
     // response body or fetch mock must not hold the chat preparation open.
-    const r = await Promise.race([
-      apiFetch("/api/fetch-batch",{method:"POST",body:{urls:urls},signal:linked.controller.signal}),
+    const r = (await Promise.race([
+      apiFetch('/api/fetch-batch', {
+        method: 'POST',
+        body: { urls: urls },
+        signal: linked.controller.signal,
+      }),
       aborted,
-    ]) as { results?: FetchedPage[] } | null;
+    ])) as { results?: FetchedPage[] } | null;
     const results = (r && r.results) || [];
     return { blocks: formatReferencedPages(urls, results), results };
-  }catch(e){
+  } catch (e) {
     return failedPageContext(urls, e);
   } finally {
     clearTimeout(timer);

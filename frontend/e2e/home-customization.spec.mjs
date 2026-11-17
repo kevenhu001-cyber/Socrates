@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle, sameRgb } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -35,11 +35,17 @@ test('greeting keeps its size and stays visible when the composer is focused', a
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const read = () => page.locator('#topicTitle').evaluate((el) => {
-    const style = getComputedStyle(el);
-    const box = el.getBoundingClientRect();
-    return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, height: box.height };
-  });
+  const read = () =>
+    page.locator('#topicTitle').evaluate((el) => {
+      const style = getComputedStyle(el);
+      const box = el.getBoundingClientRect();
+      return {
+        fontSize: style.fontSize,
+        opacity: style.opacity,
+        display: style.display,
+        height: box.height,
+      };
+    });
   const before = await read();
   await page.locator('#composerInputWrap .tiptap').click();
   await expect(page.locator('#composerInputWrap .tiptap')).toBeFocused();
@@ -56,10 +62,16 @@ test('mobile greeting keeps its size and stays visible while typing', async ({ p
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
 
-  const read = () => page.locator('#topicTitle').evaluate((el) => {
-    const style = getComputedStyle(el);
-    return { fontSize: style.fontSize, opacity: style.opacity, display: style.display, visibility: style.visibility };
-  });
+  const read = () =>
+    page.locator('#topicTitle').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        fontSize: style.fontSize,
+        opacity: style.opacity,
+        display: style.display,
+        visibility: style.visibility,
+      };
+    });
   const before = await read();
   await page.locator('#composerInputWrap .tiptap').click();
   await expect(page.locator('#composerInputWrap .tiptap')).toBeFocused();
@@ -78,7 +90,9 @@ test('display settings change theme, text scale, and content width', async ({ pa
   await waitForAppShell(page);
 
   const before = await page.locator('#composerInputWrap').boundingBox();
-  const beforeTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+  const beforeTitleSize = await page
+    .locator('#topicTitle')
+    .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   await page.locator('#displayPrefsBtn').click();
   await page.locator('#displayPrefsFontSegs [data-font="1.375"]').click();
   await page.locator('#displayPrefsWidthSegs [data-width="1.7"]').click();
@@ -90,13 +104,17 @@ test('display settings change theme, text scale, and content width', async ({ pa
   await expect(page.locator('#displayPrefsFontSegs [aria-checked="true"]')).toHaveText('XL');
   await expect(page.locator('#displayPrefsWidthSegs [aria-checked="true"]')).toHaveText('XL');
   const after = await page.locator('#composerInputWrap').boundingBox();
-  const afterTitleSize = await page.locator('#topicTitle').evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+  const afterTitleSize = await page
+    .locator('#topicTitle')
+    .evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
   expect(after?.width ?? 0).toBeGreaterThan((before?.width ?? 0) + 250);
   expect(afterTitleSize).toBeGreaterThan(beforeTitleSize * 1.2);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}'))).toMatchObject({
-    font: 1.375,
-    width: 1.7,
-  });
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
+    .toMatchObject({
+      font: 1.375,
+      width: 1.7,
+    });
 });
 
 test('light conversation is readable and find opens at the upper right', async ({ page }) => {
@@ -109,9 +127,9 @@ test('light conversation is readable and find opens at the upper right', async (
   await page.evaluate(() => {
     window.__testActivateMainView('chatView');
     window.__testShowConversationActions(true);
-    window.stateStore.dispatch({ type: "state/set", key: "phase", value: 'chat' });
-    window.stateStore.dispatch({ type: "state/set", key: "topic", value: 'Readability check' });
-    window.stateStore.dispatch({ type: "state/set", key: "currentSessionId", value: 'light-conversation-test' });
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { topic: 'Readability check' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: 'light-conversation-test' } });
     window.addMessage('user', 'Hello');
     window.addMessage('assistant', 'A readable answer with strong contrast.');
   });
@@ -119,7 +137,8 @@ test('light conversation is readable and find opens at the upper right', async (
   await expect(page.locator('#msgList .msg.assistant')).toContainText('strong contrast');
 
   const colors = await page.evaluate(() => {
-    const value = (selector, property) => getComputedStyle(document.querySelector(selector))[property];
+    const value = (selector, property) =>
+      getComputedStyle(document.querySelector(selector))[property];
     return {
       page: value('.main-content', 'backgroundColor'),
       topBar: value('.top-bar', 'backgroundColor'),

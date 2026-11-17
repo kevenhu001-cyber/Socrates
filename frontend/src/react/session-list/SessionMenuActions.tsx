@@ -14,7 +14,14 @@ const CHEVRON_RIGHT = sidebarIcons.chevronRight;
 
 type SessionMenuActionsProps = Pick<
   SessionRowMenuProps,
-  'session' | 'onClose' | 'onRename' | 'onTag' | 'onPin' | 'onArchive' | 'onDelete' | 'onMoveToProject'
+  | 'session'
+  | 'onClose'
+  | 'onRename'
+  | 'onTag'
+  | 'onPin'
+  | 'onArchive'
+  | 'onDelete'
+  | 'onMoveToProject'
 > & { Item: typeof FoundationMenuItem; focusRef: RefObject<HTMLElement | null> };
 
 export function SessionMenuActions({
@@ -37,12 +44,26 @@ export function SessionMenuActions({
 
   return (
     <>
-      <Item className="btn-icon recent-item-menu-row recent-item-share" title={t('session.ctxShare')} onClick={share}>
-        <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: SHARE_ICON }} />
+      <Item
+        className="btn-icon recent-item-menu-row recent-item-share"
+        title={t('session.ctxShare')}
+        onClick={share}
+      >
+        <span
+          className="recent-item-action-icon"
+          dangerouslySetInnerHTML={{ __html: SHARE_ICON }}
+        />
         <span className="recent-item-action-text">{t('session.ctxShare')}</span>
       </Item>
-      <Item className="btn-icon recent-item-menu-row recent-item-rename" title={t('session.ctxRename')} onClick={onRename}>
-        <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: RENAME_ICON }} />
+      <Item
+        className="btn-icon recent-item-menu-row recent-item-rename"
+        title={t('session.ctxRename')}
+        onClick={onRename}
+      >
+        <span
+          className="recent-item-action-icon"
+          dangerouslySetInnerHTML={{ __html: RENAME_ICON }}
+        />
         <span className="recent-item-action-text">{t('session.ctxRename')}</span>
       </Item>
       <Item
@@ -51,11 +72,17 @@ export function SessionMenuActions({
         aria-label={t('session.editTags')}
         onClick={onTag}
       >
-        <span className="recent-item-action-icon"><Icon name="tag" /></span>
+        <span className="recent-item-action-icon">
+          <Icon name="tag" />
+        </span>
         <span className="recent-item-action-text">{t('session.editTags')}</span>
       </Item>
       <div className="recent-item-menu-divider" />
-      <Item className="btn-icon recent-item-menu-row recent-item-pin" title={t(pinLabel)} onClick={onPin}>
+      <Item
+        className="btn-icon recent-item-menu-row recent-item-pin"
+        title={t(pinLabel)}
+        onClick={onPin}
+      >
         <span className="recent-item-action-icon">
           <Icon name="pin" />
         </span>
@@ -70,8 +97,13 @@ export function SessionMenuActions({
         data-i18n-aria="session.ctxArchive"
         onClick={onArchive}
       >
-        <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: ARCHIVE_ICON }} />
-        <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">{t('session.ctxArchive')}</span>
+        <span
+          className="recent-item-action-icon"
+          dangerouslySetInnerHTML={{ __html: ARCHIVE_ICON }}
+        />
+        <span className="recent-item-action-text" data-i18n-key="session.ctxArchive">
+          {t('session.ctxArchive')}
+        </span>
       </Item>
       <Item
         className="btn-icon recent-item-menu-row recent-item-del"
@@ -81,14 +113,31 @@ export function SessionMenuActions({
         data-i18n-aria="session.ctxDelete"
         onClick={onDelete}
       >
-        <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: DELETE_ICON }} />
-        <span className="recent-item-action-text" data-i18n-key="session.ctxDelete">{t('session.ctxDelete')}</span>
+        <span
+          className="recent-item-action-icon"
+          dangerouslySetInnerHTML={{ __html: DELETE_ICON }}
+        />
+        <span className="recent-item-action-text" data-i18n-key="session.ctxDelete">
+          {t('session.ctxDelete')}
+        </span>
       </Item>
       <div className="recent-item-menu-divider" />
-      <Item ref={focusRef} closeOnClick={false} className="btn-icon recent-item-menu-row recent-item-project" title={t('session.ctxMoveToProject')} onClick={onMoveToProject}>
-        <span className="recent-item-action-icon" dangerouslySetInnerHTML={{ __html: PROJECT_ICON }} />
+      <Item
+        ref={focusRef}
+        closeOnClick={false}
+        className="btn-icon recent-item-menu-row recent-item-project"
+        title={t('session.ctxMoveToProject')}
+        onClick={onMoveToProject}
+      >
+        <span
+          className="recent-item-action-icon"
+          dangerouslySetInnerHTML={{ __html: PROJECT_ICON }}
+        />
         <span className="recent-item-action-text">{t('session.ctxMoveToProject')}</span>
-        <span className="recent-item-action-trailing" dangerouslySetInnerHTML={{ __html: CHEVRON_RIGHT }} />
+        <span
+          className="recent-item-action-trailing"
+          dangerouslySetInnerHTML={{ __html: CHEVRON_RIGHT }}
+        />
       </Item>
     </>
   );

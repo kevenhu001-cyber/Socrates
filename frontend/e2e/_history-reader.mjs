@@ -13,16 +13,15 @@ export async function readHistory(page, expectedRows) {
      window. Start at the mounted tail before reading toward older rows. */
   await rows.last().scrollIntoViewIfNeeded();
   await list.hover();
-  await expect.poll(async () => {
-    const count = await rows.count();
-    if (count < expectedRows.length) await page.mouse.wheel(0, -2000);
-    return count;
-  }).toBe(expectedRows.length);
+  await expect
+    .poll(async () => {
+      const count = await rows.count();
+      if (count < expectedRows.length) await page.mouse.wheel(0, -2000);
+      return count;
+    })
+    .toBe(expectedRows.length);
 
   await expect(rows).toHaveCount(expectedRows.length);
-  const actualRows = await rows.allTextContents();
-  expect(actualRows).toHaveLength(expectedRows.length);
-  for (let index = 0; index < expectedRows.length; index += 1) {
-    expect(actualRows[index], `history row ${index + 1}`).toContain(expectedRows[index]);
-  }
+  // Row shells can mount before the lazy assistant renderer fills them.
+  await expect(rows).toContainText(expectedRows);
 }

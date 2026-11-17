@@ -43,8 +43,10 @@ interface AuthLegacyWindow extends Window {
 function isEmbeddedNativeWebView(): boolean {
   try {
     const bridge = (window as AuthLegacyWindow).ReactNativeWebView;
-    return !!(bridge && typeof bridge.postMessage === "function");
-  } catch { return false; }
+    return !!(bridge && typeof bridge.postMessage === 'function');
+  } catch {
+    return false;
+  }
 }
 
 /* ── Gate display helpers ──
@@ -57,7 +59,11 @@ export function hideGate(root?: AuthRoot): void {
   /* P0.6 — also flip the pre-boot data attribute so the CSS rules
      in <head> take over. From this point on, showGate()/hideGate()
      are the single source of truth for which view is on top. */
-  try { setBootState(r, "app"); } catch (e) { reportSwallow(e, 'auth/index.hideGate.bootState'); }
+  try {
+    setBootState(r, 'app');
+  } catch (e) {
+    reportSwallow(e, 'auth/index.hideGate.bootState');
+  }
   syncCookieConsentPlacement(false);
 }
 
@@ -65,7 +71,11 @@ export function showGate(root?: AuthRoot): void {
   const r = root || document;
   /* Flip bootState first so the CSS rule hiding #authGate while
      data-boot-state="checking" is removed before we try to show it. */
-  try { setBootState(r, "auth"); } catch (e) { reportSwallow(e, 'auth/index.showGate.bootState'); }
+  try {
+    setBootState(r, 'auth');
+  } catch (e) {
+    reportSwallow(e, 'auth/index.showGate.bootState');
+  }
   setGateVisible(r, false);
   syncCookieConsentPlacement(true);
   /* A normal browser reaches the auth gate during first paint and during
@@ -79,8 +89,12 @@ export function showAuthView(id: string, root?: AuthRoot): void {
   showView(root || document, id);
 }
 
-export function showAuthSignin(): void { switchAuthTab("signin"); }
-export function showAuthRegister(): void { switchAuthTab("register"); }
+export function showAuthSignin(): void {
+  switchAuthTab('signin');
+}
+export function showAuthRegister(): void {
+  switchAuthTab('register');
+}
 
 export function switchAuthTab(tab: string, root?: AuthRoot): void {
   shellSwitchTab(root || document, tab);
@@ -90,7 +104,11 @@ export function switchAuthTab(tab: string, root?: AuthRoot): void {
  * bridge action so the declarative event map and the runtime window surface
  * share one implementation. */
 export function focusAuthTab(el: Element, e: KeyboardEvent, root?: AuthRoot): void {
-  if (!e || ["ArrowLeft", "ArrowUp", "ArrowRight", "ArrowDown", "Home", "End"].indexOf(e.key) === -1) return;
+  if (
+    !e ||
+    ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'Home', 'End'].indexOf(e.key) === -1
+  )
+    return;
   if (focusTab(root || document, el, e.key)) e.preventDefault();
 }
 
@@ -106,20 +124,20 @@ export function setAuthError(viewId: string, msg: string, root?: AuthRoot): void
 
 export function showAuthForgotPassword(root?: AuthRoot): void {
   const r = root || document;
-  setValue(r, "authForgotEmail", getValue(r, "authSigninEmail"));
-  showAuthView("authForgotPasswordView", r);
+  setValue(r, 'authForgotEmail', getValue(r, 'authSigninEmail'));
+  showAuthView('authForgotPasswordView', r);
   clearAuthTabSelection(r);
 }
 
 export function showAuthCodeLogin(root?: AuthRoot): void {
   const r = root || document;
-  setValue(r, "authCodeEmail", getValue(r, "authSigninEmail"));
-  setVisible(r, "authCodeCodeWrap", false);
-  setVisible(r, "authCodeSendBtn", true);
-  setVisible(r, "authCodeLoginBtn", false);
-  setVisible(r, "authCodeResendWrap", false);
-  setAuthError("authCodeError", "", r);
-  showAuthView("authCodeLoginView", r);
+  setValue(r, 'authCodeEmail', getValue(r, 'authSigninEmail'));
+  setVisible(r, 'authCodeCodeWrap', false);
+  setVisible(r, 'authCodeSendBtn', true);
+  setVisible(r, 'authCodeLoginBtn', false);
+  setVisible(r, 'authCodeResendWrap', false);
+  setAuthError('authCodeError', '', r);
+  showAuthView('authCodeLoginView', r);
   clearAuthTabSelection(r);
 }
 
@@ -137,7 +155,11 @@ export function showAuthCodeLogin(root?: AuthRoot): void {
    or failure) — the mobile hand-off target needs hydrated lists. */
 export function revealAppAndHydrate(onHydrated?: () => void): void {
   let hydration: Promise<void>;
-  try { hydration = afterAuthEnter(); } catch (err) { hydration = Promise.reject(err); }
+  try {
+    hydration = afterAuthEnter();
+  } catch (err) {
+    hydration = Promise.reject(err);
+  }
   hideGate();
   offerBrowserLoginHandoff();
   /* React's compatibility registry is intentionally deferred until the app
@@ -146,14 +168,27 @@ export function revealAppAndHydrate(onHydrated?: () => void): void {
      and keep using the lightweight assistant-turn entry point above. */
   try {
     const win = window as AuthLegacyWindow;
-    if (typeof win.__socratesMountReactCompatibility === "function") {
+    if (typeof win.__socratesMountReactCompatibility === 'function') {
       win.__socratesMountReactCompatibility();
     }
-  } catch (e) { reportSwallow(e, 'auth/index.mountReactCompatibility'); }
+  } catch (e) {
+    reportSwallow(e, 'auth/index.mountReactCompatibility');
+  }
   Promise.resolve(hydration)
-    .catch(function (err) { try { console.error("[auth] post-auth hydration failed", err); } catch (e) { reportSwallow(e, 'auth/index.hydrate.log'); } })
+    .catch(function (err) {
+      try {
+        console.error('[auth] post-auth hydration failed', err);
+      } catch (e) {
+        reportSwallow(e, 'auth/index.hydrate.log');
+      }
+    })
     .then(function () {
-      if (typeof onHydrated === "function") try { onHydrated(); } catch (e) { reportSwallow(e, 'auth/index.hydrate.onHydrated'); }
+      if (typeof onHydrated === 'function')
+        try {
+          onHydrated();
+        } catch (e) {
+          reportSwallow(e, 'auth/index.hydrate.onHydrated');
+        }
       const question = consumeMarketingQuestion();
       if (!question) return;
       const surface = getVisibleComposerSurface();

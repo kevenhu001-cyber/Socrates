@@ -1,7 +1,18 @@
-import { stateStore, resetState } from '../../state/store.ts';
+import {
+  dispatchSession,
+  examStore,
+  kbStore,
+  resetDomains,
+  sessionStore,
+  uiStore,
+} from '../../store/index.ts';
 import { turnState } from '../../chat/turn/state.ts';
+import { detachActiveTurn } from '../../chat/turn/cancelActiveTurn.ts';
 import { showConfirm } from '../../ui/confirm.js';
-import { resetComposerForNewSession, focusComposerForNewSession } from '../../react/composer-input/lifecycle.ts';
+import {
+  resetComposerForNewSession,
+  focusComposerForNewSession,
+} from '../../react/composer-input/lifecycle.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { resetShareToken, toggleShareBtn } from '../../ui/share.ts';
@@ -20,20 +31,19 @@ import { shouldConfirmReset } from './resetDecision.ts';
 import { clearActiveTemplate } from '../../chat/templateSlash.ts';
 import { renderRecents } from '../../ui/recentsView.ts';
 
-
 function readResetDecision(options?: ResetOptions) {
-  const examWasOpen = Boolean(stateStore.read('_examInView'))
-    || document.body.classList.contains('exam-active');
+  const examWasOpen =
+    Boolean(uiStore.getState()._examInView) || document.body.classList.contains('exam-active');
   return {
     examWasOpen,
     requiresConfirmation: shouldConfirmReset({
       examWasOpen,
-      examTopic: stateStore.read('examTopic'),
-      examQuestions: stateStore.read('examQuestions'),
-      examSubmitted: stateStore.read('examSubmitted'),
-      topic: stateStore.read('topic'),
-      knowledgeNodes: stateStore.read('kbNodes'),
-      messages: stateStore.read('messages'),
+      examTopic: examStore.getState().examTopic,
+      examQuestions: examStore.getState().examQuestions,
+      examSubmitted: examStore.getState().examSubmitted,
+      topic: sessionStore.getState().topic,
+      knowledgeNodes: kbStore.getState().kbNodes,
+      messages: sessionStore.getState().messages,
       confirmActiveSession: !(options && options.confirmActiveSession === false),
       chatStreaming: turnState.chatStreaming,
     }),
@@ -52,36 +62,31 @@ async function confirmResetIfRequired(requiresConfirmation: boolean) {
 function clearActivePromptTemplate() {
   try {
     clearActiveTemplate();
-  } catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearActiveTemplate'); }
-}
-
-function abortActiveChat() {
-  if (turnState.activeChatAbort) {
-    try { turnState.activeChatAbort('session-reset'); }
-    catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.abortActive'); }
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.clearActiveTemplate');
   }
-  if (turnState.activeChatCtl) {
-    try { turnState.activeChatCtl.abort(); }
-    catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.abortTurnState'); }
-  }
-  turnState.activeChatCtl = null;
-  turnState.activeChatAbort = null;
-  turnState.chatStreaming = false;
-  turnState.chatStopMode = false;
 }
 
 function prepareCurrentSessionForReset() {
-
   saveSessionBeforeReset();
-  try { sessionStorage.removeItem('socrates-active-assistant'); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearActiveAssistant'); }
+  try {
+    sessionStorage.removeItem('socrates-active-assistant');
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.clearActiveAssistant');
+  }
   clearActivePromptTemplate();
-  abortActiveChat();
+  detachActiveTurn('session-reset');
   resetShareToken();
-  try { turnState.pendingChatContent = null; }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearPendingChat'); }
-  try { turnState.pendingAttachments = null; }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.clearPendingAttachments'); }
+  try {
+    turnState.pendingChatContent = null;
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.clearPendingChat');
+  }
+  try {
+    turnState.pendingAttachments = null;
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.clearPendingAttachments');
+  }
 }
 
 function renderTopicSetupAfterReset() {
@@ -89,15 +94,21 @@ function renderTopicSetupAfterReset() {
   clearSessionRouteInURL();
   activateMainView('topicSetup', document);
   setActiveNav(null);
-  try { renderGreeting(); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderGreeting'); }
+  try {
+    renderGreeting();
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.renderGreeting');
+  }
   clearLegacyMsgListChildren();
   resetComposerForNewSession();
 }
 
 function renderListsAfterReset() {
-  try { renderRecents(); }
-  catch (error) { reportSwallow(error, 'app/lifecycle.resetApp.renderRecents'); }
+  try {
+    renderRecents();
+  } catch (error) {
+    reportSwallow(error, 'app/lifecycle.resetApp.renderRecents');
+  }
   const sc = scrollContainer();
   if (sc) sc.scrollTop = 0;
 }
@@ -116,19 +127,22 @@ function publishResetState() {
   focusComposerForNewSession();
 }
 
-export interface ResetOptions { confirmActiveSession?: boolean; projectId?: string }
+export interface ResetOptions {
+  confirmActiveSession?: boolean;
+  projectId?: string;
+}
 
 /** Save, clear and return the app to topic setup while respecting live work. */
 export async function resetApp(options?: ResetOptions) {
   const decision = readResetDecision(options);
-  if (!await confirmResetIfRequired(decision.requiresConfirmation)) {
+  if (!(await confirmResetIfRequired(decision.requiresConfirmation))) {
     return false;
   }
 
   prepareCurrentSessionForReset();
-  resetState();
+  resetDomains();
   if (options?.projectId) {
-    stateStore.dispatch({ type: 'state/set', key: 'currentProjectId', value: options.projectId });
+    dispatchSession({ type: 'session/set', key: 'currentProjectId', value: options.projectId });
   }
   renderTopicSetupAfterReset();
   renderListsAfterReset();

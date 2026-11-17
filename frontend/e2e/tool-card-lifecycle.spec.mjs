@@ -12,7 +12,7 @@
 // rather than a synthetic DOM tree, so the assertions cover the same path the
 // server drives.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
@@ -30,36 +30,52 @@ async function installToolStream(page) {
     const frame = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
     let ref = null;
     window.fetch = (input, init) => {
-      const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+      const url = typeof input === 'string' ? input : input && input.url ? input.url : '';
       if (!url.includes('/chat/stream')) return nativeFetch(input, init);
       const stream = new ReadableStream({
-        start(controller) { ref = controller; },
+        start(controller) {
+          ref = controller;
+        },
       });
       window.__pushText = (content) => {
-        ref.enqueue(encoder.encode(
-          `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`,
-        ));
+        ref.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`),
+        );
       };
       window.__pushToolUse = () => {
-        ref.enqueue(encoder.encode(frame('tool_use', [
-          { id: toolId, name: 'code_interpreter', input: { code: 'print(1)', language: 'python' } },
-        ])));
+        ref.enqueue(
+          encoder.encode(
+            frame('tool_use', [
+              {
+                id: toolId,
+                name: 'code_interpreter',
+                input: { code: 'print(1)', language: 'python' },
+              },
+            ]),
+          ),
+        );
       };
       window.__pushToolResult = () => {
-        ref.enqueue(encoder.encode(frame('tool_result', {
-          id: toolId,
-          name: 'code_interpreter',
-          ok: true,
-          status: 'completed',
-          output: '1',
-          stderr: '',
-          artifacts: [],
-        })));
+        ref.enqueue(
+          encoder.encode(
+            frame('tool_result', {
+              id: toolId,
+              name: 'code_interpreter',
+              ok: true,
+              status: 'completed',
+              output: '1',
+              stderr: '',
+              artifacts: [],
+            }),
+          ),
+        );
       };
-      return Promise.resolve(new Response(stream, {
-        status: 200,
-        headers: { 'Content-Type': 'text/event-stream' },
-      }));
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      );
     };
   }, TOOL_ID);
 }
@@ -70,16 +86,19 @@ async function startTurn(page) {
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate((sessionId) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'phase', value: 'chat' });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentSessionId', value: sessionId });
-    window.stateStore.dispatch({
-      type: 'state/set', key: 'messages',
-      value: [{ clientId: 'lifecycle-user', role: 'user', rawText: 'run it', html: null }],
+    window.__socratesTestState.patch({ session: { phase: 'chat' } });
+    window.__socratesTestState.patch({ session: { currentSessionId: sessionId } });
+    window.__socratesTestState.patch({
+      session: {
+        messages: [{ clientId: 'lifecycle-user', role: 'user', rawText: 'run it', html: null }],
+      },
     });
     window.__testActivateMainView('chatView');
     window.__lifecyclePromise = window.askChatTurn('run it');
   }, SESSION_ID);
-  await page.waitForFunction(() => typeof window.__pushToolUse === 'function', null, { timeout: 15_000 });
+  await page.waitForFunction(() => typeof window.__pushToolUse === 'function', null, {
+    timeout: 15_000,
+  });
   return page.locator('.msg.assistant').last().locator('.msg-body');
 }
 
@@ -104,7 +123,8 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   // Only the secondary duration ticks; the current-action label is stable.
   await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
   const meta = bubble.getByTestId('turn-activity-duration');
-  const readMeta = async () => (await meta.count()) ? (await meta.first().innerText()).trim() : '';
+  const readMeta = async () =>
+    (await meta.count()) ? (await meta.first().innerText()).trim() : '';
   await expect.poll(readMeta, { timeout: 10_000 }).toMatch(/\d/);
   const firstReading = await readMeta();
   await expect.poll(readMeta, { timeout: 10_000 }).not.toBe(firstReading);

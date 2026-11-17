@@ -1,11 +1,18 @@
 // Knowledge-map React ownership and store-driven rendering, from the entry point a user actually goes through.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 const NODES = [
-  { name: '导数', status: 'internalized', confidence_score: 5, questions: 12, system_note: '核心', user_note: '链式法则' },
+  {
+    name: '导数',
+    status: 'internalized',
+    confidence_score: 5,
+    questions: 12,
+    system_note: '核心',
+    user_note: '链式法则',
+  },
   { name: '积分', status: 'fuzzy', confidence_score: 3, questions: 6 },
   { name: '级数', status: 'fuzzy', confidence_score: 2, questions: 3 },
   { name: '向量', status: 'blank', confidence_score: 0, questions: 0 },
@@ -26,12 +33,19 @@ async function openPanel(page) {
   await page.locator('#tabKnowledge').click();
   await expect(page.locator('#knowledgePanel')).toBeVisible();
   await page.evaluate((nodes) => {
-    window.stateStore.dispatch({ type: 'state/set', key: 'kbNodes', value: nodes });
-    window.stateStore.dispatch({ type: 'state/set', key: 'currentNode', value: 0 });
-    window.stateStore.dispatch({
-      type: 'state/set',
-      key: 'boundariesHistory',
-      value: [{ date: '2026-09-20', at: 1789000000000, summary: 'I 1 · F 2 · B 2', counts: { internalized: 1, fuzzy: 2, blank: 2 } }],
+    window.__socratesTestState.patch({ kb: { kbNodes: nodes } });
+    window.__socratesTestState.patch({ kb: { currentNode: 0 } });
+    window.__socratesTestState.patch({
+      kb: {
+        boundariesHistory: [
+          {
+            date: '2026-09-20',
+            at: 1789000000000,
+            summary: 'I 1 · F 2 · B 2',
+            counts: { internalized: 1, fuzzy: 2, blank: 2 },
+          },
+        ],
+      },
     });
   }, NODES);
 }
@@ -78,7 +92,9 @@ test('confidence steps carry their ordinal and toggle', async ({ page }) => {
   await expect(steps.nth(2)).toHaveAttribute('aria-label', '将置信度设为 3');
   await expect(steps.nth(2)).toHaveAttribute('aria-pressed', 'true');
   await steps.nth(3).click();
-  await expect.poll(() => page.evaluate(() => window.stateStore.read('kbNodes')[1].confidence_score)).toBe(4);
+  await expect
+    .poll(() => page.evaluate(() => window.__socratesTestState.kb().kbNodes[1].confidence_score))
+    .toBe(4);
 });
 
 test('snapshot history renders the shape the writer actually produces', async ({ page }) => {

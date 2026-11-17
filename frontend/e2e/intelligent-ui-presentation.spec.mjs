@@ -1,14 +1,51 @@
-import { expect, test } from '@playwright/test';
+import { test, expect } from './_state-fixture.mjs';
 import { prepareChatWorkbench, WORKBENCH_VIEWPORTS } from './_chat-workbench.mjs';
 
 const nativeNodes = [
-  { id: 'plan', type: 'panel', title: '本周学习计划', description: '每天前进一步，让知识慢慢积累。', state: { hours: 2 } },
+  {
+    id: 'plan',
+    type: 'panel',
+    title: '本周学习计划',
+    description: '每天前进一步，让知识慢慢积累。',
+    state: { hours: 2 },
+  },
   { id: 'stats', type: 'grid', parent: 'plan', columns: 2 },
-  { id: 'weekly', type: 'metric', parent: 'stats', label: '每周学习时长（包含复习与练习）', value: 14, suffix: ' 小时', delta: '+2 小时' },
+  {
+    id: 'weekly',
+    type: 'metric',
+    parent: 'stats',
+    label: '每周学习时长（包含复习与练习）',
+    value: 14,
+    suffix: ' 小时',
+    delta: '+2 小时',
+  },
   { id: 'complete', type: 'metric', parent: 'stats', label: '已完成章节', value: '8 / 12' },
-  { id: 'hours', type: 'slider', parent: 'plan', label: '每日学习时长', bind: 'hours', min: 1, max: 6, step: 1 },
-  { id: 'progress', type: 'progress', parent: 'plan', label: '本周学习进度', value: 67, tone: 'success' },
-  { id: 'tip', type: 'callout', parent: 'plan', title: '循序渐进', text: '建议：先回顾概念，再完成练习。', tone: 'info' },
+  {
+    id: 'hours',
+    type: 'slider',
+    parent: 'plan',
+    label: '每日学习时长',
+    bind: 'hours',
+    min: 1,
+    max: 6,
+    step: 1,
+  },
+  {
+    id: 'progress',
+    type: 'progress',
+    parent: 'plan',
+    label: '本周学习进度',
+    value: 67,
+    tone: 'success',
+  },
+  {
+    id: 'tip',
+    type: 'callout',
+    parent: 'plan',
+    title: '循序渐进',
+    text: '建议：先回顾概念，再完成练习。',
+    tone: 'info',
+  },
 ];
 const program = `root = Card([Title("本周学习计划", "lg"), Caption("调整每天的投入，找到适合自己的学习节奏。"), hours, result, reset])
 $hours = 2
@@ -17,21 +54,35 @@ result = Title("每周学习：" + ($hours * 7) + " 小时", "xl")
 reset = Button("重置计划", @Reset($hours), "outline")`;
 
 function message(format) {
-  const source = format === 'native' ? nativeNodes.map((node) => JSON.stringify(node)).join('\n') : program;
+  const source =
+    format === 'native' ? nativeNodes.map((node) => JSON.stringify(node)).join('\n') : program;
   const fence = format === 'native' ? 'socrates-ui' : 'openui';
-  return { clientId: 'presentation', role: 'assistant', type: 'assistant', rawText: `这是你的学习安排。\n\n\`\`\`${fence}\n${source}\n\`\`\`` };
+  return {
+    clientId: 'presentation',
+    role: 'assistant',
+    type: 'assistant',
+    rawText: `这是你的学习安排。\n\n\`\`\`${fence}\n${source}\n\`\`\``,
+  };
 }
 
 for (const format of ['native', 'openui']) {
   for (const mode of ['desktop', 'dark', 'mobile']) {
-    test(`${format} presentation stays readable and retains edits inline (${mode})`, async ({ page }) => {
+    test(`${format} presentation stays readable and retains edits inline (${mode})`, async ({
+      page,
+    }) => {
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
-      page.on('console', (entry) => { if (entry.type() === 'error') errors.push(entry.text()); });
+      page.on('console', (entry) => {
+        if (entry.type() === 'error') errors.push(entry.text());
+      });
       const theme = mode === 'dark' ? 'dark' : 'light';
       await page.emulateMedia({ colorScheme: theme });
       await page.addInitScript((value) => localStorage.setItem('socrates-theme', value), theme);
-      await prepareChatWorkbench(page, { lang: 'zh', messages: [message(format)], viewport: mode === 'mobile' ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop });
+      await prepareChatWorkbench(page, {
+        lang: 'zh',
+        messages: [message(format)],
+        viewport: mode === 'mobile' ? WORKBENCH_VIEWPORTS.mobile : WORKBENCH_VIEWPORTS.desktop,
+      });
       expect(page.url()).toContain('http://127.0.0.1:4173');
       await expect(page).toHaveTitle(/Socrates/);
       await expect(page.locator('html')).toHaveAttribute('data-mode', theme);
@@ -39,7 +90,9 @@ for (const format of ['native', 'openui']) {
       const shell = page.locator('.intui-surface-shell');
       await expect(shell).toBeVisible();
       if (format === 'native') {
-        await expect(shell.getByRole('heading', { name: '本周学习计划', exact: true })).toHaveCount(1);
+        await expect(shell.getByRole('heading', { name: '本周学习计划', exact: true })).toHaveCount(
+          1,
+        );
         await expect(shell).toHaveAccessibleName('本周学习计划');
       } else await expect(shell).toHaveAccessibleName('交互结果');
       await expect(shell).toContainText('本周学习计划');
@@ -60,8 +113,12 @@ for (const format of ['native', 'openui']) {
       await expect(shell).toHaveAttribute('data-display-mode', 'inline');
       await expect(shell.locator('.intui-surface-toolbar')).toHaveCount(0);
       await expect(shell.locator('.intui-surface-expand')).toHaveCount(0);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
-      await page.screenshot({ path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}.png` });
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(1);
+      await page.screenshot({
+        path: `test-results/intui-${encodeURIComponent(format)}-${encodeURIComponent(mode)}.png`,
+      });
       /* An inline result must not capture the composer underneath it. */
       const editor = page.locator('#composerRoot .rich-composer-editor');
       await editor.fill('根据当前计划，帮我调整下一步。');
@@ -75,10 +132,14 @@ for (const format of ['native', 'openui']) {
       // entry that is actually on screen.
       const tool = tools.getByRole('menuitem').filter({ visible: true }).first();
       await expect(tool).toBeVisible();
-      expect(await tool.evaluate((node) => {
-        const rect = node.getBoundingClientRect();
-        return node.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2));
-      })).toBe(true);
+      expect(
+        await tool.evaluate((node) => {
+          const rect = node.getBoundingClientRect();
+          return node.contains(
+            document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2),
+          );
+        }),
+      ).toBe(true);
       await page.keyboard.press('Escape');
       await expect(tools).toBeHidden();
       await expect(slider).toHaveValue('3');
