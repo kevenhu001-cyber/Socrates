@@ -1,6 +1,6 @@
 /** Module-owned admin state shared with the admin service and React. */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import type { AdminBridge, AdminSnapshot } from './types';
 
 type Action = Omit<AdminSnapshot, 'revision'>;

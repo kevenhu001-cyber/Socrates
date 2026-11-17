@@ -29,7 +29,7 @@
  *   that works across all browsers under that sandbox.
  */
 
-import { esc } from './helpers.ts';
+import { esc } from './text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createElement, ReactNode } from 'react';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';

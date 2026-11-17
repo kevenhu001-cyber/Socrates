@@ -19,7 +19,7 @@ describe('production prompt contracts', () => {
     assert.match(prompt, /`tools` array supplied by the server/i);
     assert.doesNotMatch(prompt, /MiniMax|deny it if directly asked|web_search|web_fetch|code_interpreter|render_visualization|create_plan|create_spec/);
     /* Tool-calling protocol and global writing rules live only in
-       SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); minimaxProxy always
+       SERVER_SYSTEM_POLICY (routes/chat/prepare/prompts.ts); minimaxProxy always
        applies enforceServerSystemBoundary before injecting this file, so a
        second copy here would just drift and contradict. */
     for (const serverOwnedRule of [
@@ -63,13 +63,13 @@ describe('production prompt contracts', () => {
     assert.match(prompt, /begin\{aligned\}/);
     assert.match(prompt, /One practice or quiz per reply/);
     /* Visualization routing is owned once by the server's
-       appendToolRoutingHints helper (routes/chat/helpers.ts) and is appended
+       appendToolRoutingHints helper (routes/chat/prepare/prompts.ts) and is appended
        only when the matching native tool is available. teacher-mode must not
        restate the render_visualization/Mermaid/SVG/ASCII guidance, or the two
        copies would drift. */
     assert.equal(prompt.includes('render_visualization'), false, 'viz routing duplicated in teacher-mode');
     /* Global response-format guidance is owned once by
-       SERVER_SYSTEM_POLICY (routes/chat/helpers.ts); teacher-mode must not
+       SERVER_SYSTEM_POLICY (routes/chat/prepare/prompts.ts); teacher-mode must not
        restate the full rule here, or the two copies would drift. */
     assert.equal(prompt.includes('默认不要把正文写成项目符号'), false, 'global prose default duplicated in teacher-mode');
     assert.equal(prompt.includes('只有当顺序、检查清单'), false, 'global prose default duplicated in teacher-mode');

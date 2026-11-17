@@ -8,7 +8,7 @@ import { openChatConfiguration, useChatConfigurationSnapshot } from '../chat-con
 import { useActiveModelLabel, useStoredReasoningEffort } from '../chat-configuration/useChatConfigurationLabels';
 import { effortLabel } from '../chat-configuration/ChatConfigurationPanels';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat, toggleIncognito } from '../../app/lifecycle.ts';
+import { startNewChat, toggleIncognito } from '../../app/lifecycle/index.ts';
 import { toggleAppMode } from '../../app/lifecycle/mode.ts';
 import { openFindInSession } from '../find-in-session/findInSession.actions.ts';
 import { openShareModal } from '../../ui/share.ts';

@@ -24,7 +24,7 @@ interface StreamRead { gotAnyData: boolean; bytesReceived: number; error: unknow
 /* Execute one /api/chat/stream attempt. Request errors, stream errors, and
  * successful results use the same small outcome shape so the caller can own
  * the global retry budget and final cleanup. */
-import { apiFetchRaw } from '../util/api.ts';
+import { apiFetchRaw } from '../util/api/index.ts';
 import { buildChatRequestBody, ChatRequestMessage } from './api/requestBody.ts';
 import { consumeSseBuffer } from '@socrates/core/sse';
 import { createChatTurn, newClientTurnId } from './turnClient.ts';
@@ -35,7 +35,7 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { providerErrorMessage } from './providerErrorMessage.ts';
 import { ChatApiError } from './api/shared.ts';
 import { turnState } from './turnState.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 function failureMessage(error: ChatApiError | null) {
   return providerErrorMessage({ message: error?.message, status: error?.status, code: error?.code || undefined, body: error?.body }, t);

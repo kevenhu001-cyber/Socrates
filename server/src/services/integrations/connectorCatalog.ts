@@ -20,7 +20,7 @@ import {
   ZOTERO_TOOL,
 } from './connectorTools.js';
 import { PROJECT_CONNECTOR_TOOLS, PROJECT_CONNECTOR_TOOL_NAMES } from './projectConnectorTools.js';
-import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatTools.js';
+import { OPEN_CONNECTOR_CHAT_TOOLS } from './openConnectorChatToolCatalog.js';
 
 export type ConnectorFamily = 'personal' | 'project' | 'open';
 

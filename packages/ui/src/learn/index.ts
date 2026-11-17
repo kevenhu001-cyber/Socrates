@@ -1,6 +1,6 @@
 /**
  * RN-3 learning scaffolds, DOM-free. The web shell mounts them through
- * react-native-web (frontend/src/react/tutor-widgets); apps/socrates can
+ * react-native-web (frontend/src/react/tutor-widgets); another React Native host can
  * reuse them with its own `renderRich`.
  */
 export { LearnHostProvider, useLearnHost, type LearnHost } from './host';

@@ -214,15 +214,22 @@ builds and copies the bundle into the nginx web root.
 
 ## Architecture
 
-The repository keeps the existing single-page web app as the regression
-baseline while a React Native application talks to the same Node API and
-shares protocol/session logic across Android and Web.
+The repository has one production web client (`frontend/`, React + TypeScript)
+and one standalone Android client (`apps/socrates-android/`, Kotlin + Compose).
+Both talk to the same `/api/v2` API and share protocol/session types through
+`packages/contracts` and `packages/core`. React Native components in
+`packages/ui/` are mounted inside the SPA through `react-native-web`; there is
+no separate Expo/Universal App shell.
+
+For the composition roots, state ownership, one-turn flow, and "where does
+new code go", start with
+[`docs/architecture/mental-model.md`](docs/architecture/mental-model.md).
 
 ```mermaid
 flowchart LR
   subgraph Client["Client"]
     SPA["Web SPA<br/>(React + TypeScript)"]
-    APK["Android / Web<br/>(React Native + Expo)"]
+    APK["Android<br/>(Kotlin + Compose)"]
   end
 
   subgraph Edge["nginx (topodrive.top)"]
@@ -328,11 +335,11 @@ Socrates/
 │   │   │                   #  legacy/ slices, parity/ surface owners
 │   │   ├── state/          # Domain state bridges (session, kb, ui, ...)
 │   │   ├── store/          # createDomainStore factory + index hooks
-│   │   ├── i18n.ts         # I18N dictionary (en) + language switching
-│   │   ├── i18n/zh.ts      # zh dictionary (split out of i18n.ts)
+│   │   ├── i18n/index.ts   # language switching + lazy locale tables
+│   │   ├── i18n/{en,zh}.ts # locale dictionaries
 │   │   ├── types/          # TypeScript type definitions
 │   │   │                   #  (runtimeWindow.ts — typed window.* bridge)
-│   │   ├── react/          # React/TS UI layers (~34 modules)
+│   │   ├── react/          # React/TS UI layers (islands + pages)
 │   │   │   ├── bootstrap.tsx
 │   │   │   ├── useChatRuntime.ts
 │   │   │   ├── message-list/
@@ -346,7 +353,6 @@ Socrates/
 │   │   │   └── ...
 │   │   ├── app/            # Boot wiring + legacyBridge.ts (window.* bridges)
 │   │   ├── ui/             # Typed UI runtime modules
-│   │   │   ├── legacyShellListeners.ts # Explicit shell element map
 │   │   │   └── ...
 │   │   ├── render/         # Markdown renderers (markdown.ts hosts
 │   │   │                   #  formatMsg / formatMsgProgressive)

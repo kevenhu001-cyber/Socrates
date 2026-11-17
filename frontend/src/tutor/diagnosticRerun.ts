@@ -12,7 +12,7 @@ import { registerDiagnosticActions } from './diagnosticRegistry.ts';
 import { renderDiagQuestion } from './diagnosticFlow.ts';
 import { buildFallbackDiagnosticQuestions } from './policy.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 const RERUN_QUESTION_COUNT = 5;

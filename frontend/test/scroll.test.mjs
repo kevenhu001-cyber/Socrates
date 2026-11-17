@@ -246,7 +246,7 @@ test('velocityScrollTo with a live target follows a retarget without moving back
   const stub = makeFrameStub();
   try {
     const mod = await import('../src/ui/scroll.ts');
-    const motion = await import('../src/ui/motion.ts');
+    const motion = await import('../src/ui/motion/index.ts');
     let target = 20000;
     const plan = motion.planSendGlide(20000, 800);
     const done = mod.velocityScrollTo(stub.list, target, { target: () => target, plan });

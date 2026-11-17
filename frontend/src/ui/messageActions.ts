@@ -7,7 +7,7 @@
  */
 
 import { stateStore } from '../state/store.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import { showToast } from './toast.js';
 import { publishReactChatRuntime } from './reactBridge.ts';

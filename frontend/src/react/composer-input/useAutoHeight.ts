@@ -7,7 +7,7 @@
  */
 
 import { useEffect } from 'react';
-import { planMotionForUser } from '../../ui/motion.ts';
+import { planMotionForUser } from '../../ui/motion/index.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 interface AutoHeightMotion {

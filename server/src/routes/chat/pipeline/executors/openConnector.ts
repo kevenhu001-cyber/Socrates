@@ -7,7 +7,8 @@
  * pipeline treats both connector families identically.
  */
 
-import { executeOpenConnectorTool, getOpenConnectorChatTool } from '../../../../services/integrations/openConnectorChatTools.js';
+import { executeOpenConnectorTool } from '../../../../services/integrations/openConnectorChatTools.js';
+import { getOpenConnectorChatTool } from '../../../../services/integrations/openConnectorChatToolCatalog.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
 import { normalizeToolResultRetryability, recordToolResultAndBoundRetryability } from '../toolResultPolicy.js';

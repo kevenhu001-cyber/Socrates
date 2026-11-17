@@ -1,6 +1,6 @@
-import { apiFetch, makeApiError } from '../../util/api.ts';
+import { apiFetch, makeApiError } from '../../util/api/index.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { isInAuthGraceWindow as getIsInAuthGraceWindow } from '../../app/lifecycle.ts';
+import { isInAuthGraceWindow as getIsInAuthGraceWindow } from '../../app/lifecycle/index.ts';
 
 /** The shape index.html's <head> prefetch resolves to. */
 export interface BootPreflightResponse {

@@ -1,6 +1,6 @@
 import type { TurnRuntimeState } from './turn/runtimeState.ts';
 import type { MessageOwnership } from './turn/messageOwnership.ts';
-import type { ToolRuntime } from './toolRuntime.ts';
+import type { ToolRuntime } from './toolRuntime/index.ts';
 interface StreamingOptions { clientId?: string; onRetry?: (() => unknown) | null }
 interface StreamingState extends TurnRuntimeState {
   firstDelta: boolean;
@@ -52,7 +52,7 @@ import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
 import { createStreamPlayer } from '../render/streamPlayer.js';
 import { scheduleActiveTurnToTop, turnAnchorReserve, TURN_ANCHOR_TOP_OFFSET, RetryViewportOffset } from './turnAnchor.ts';
-import { createToolRuntime } from './toolRuntime.ts';
+import { createToolRuntime } from './toolRuntime/index.ts';
 import { createStatusChrome, StatusChrome } from './turn/statusChrome.ts';
 import { createFinishRender } from './turn/finishRender.ts';
 import { createFinishViewport } from './turn/finishViewport.ts';
@@ -63,7 +63,7 @@ import { createFinishLifecycle } from './turn/finishLifecycle.ts';
 import { toolRunLabel } from '../ui/toolPresentationModel';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { addMessage } from './messages.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { askChatTurn } from './turnController.ts';
 import { getAppMode } from '../config/providers.ts';
 

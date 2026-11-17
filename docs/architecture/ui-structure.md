@@ -200,7 +200,7 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 ## 状态更新（2026-10-30）
 
 - `frontend/src` 的 JavaScript → TypeScript 迁移已签收；不要再把 10 月 26 日记录的 109 个遗留 JS 当作当前数量。
-- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`ui/legacyShellListeners.ts`、`window.stateStore` 和认证后的 `__socratesMountReactCompatibility` 仍服务旧 DOM 与 React 边界。应用状态 store 已不再发布为 `window.__socrates*Bridge`；迁移到 TypeScript 也不代表 SPA 兼容层整体已退役。
+- 类型化兼容入口仍然存在：`app/legacyBridge.ts`、`window.stateStore` 和认证后的 `__socratesMountReactCompatibility` 仍服务旧 DOM 与 React 边界。应用状态 store 已不再发布为 `window.__socrates*Bridge`；迁移到 TypeScript 也不代表 SPA 兼容层整体已退役。
 - 命名 SSE `error` 帧现在把状态码、错误码、是否可重试及限流等待提示一路保留到共享 API 的 `ApiError`。旧式只带消息的帧仍按 `502` 处理。
 - 未埋点空 catch 已清零：170 个调用点接入内容不外发、全局限流的 `reportSwallow`；76 个明确的可选能力、清理或最佳努力场景仅计入开发期预期吞错计数，其余异常按可恢复故障报告。剩下一处遥测初始化的 Vite 元数据回退有理由豁免。
 - 生产数据库迁移、Expo CLI 上游依赖修复、仍在使用的 SPA 兼容边界与跨端功能签收继续单独跟踪；

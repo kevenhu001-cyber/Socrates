@@ -1,5 +1,5 @@
 /* KaTeX heuristics and tolerant render helpers shared by Markdown passes. */
-import { KATEX_MACROS, _looksLikeLatex } from './helpers.ts';
+import { KATEX_MACROS, _looksLikeLatex } from './latex.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 

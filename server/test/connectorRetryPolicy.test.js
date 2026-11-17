@@ -6,10 +6,8 @@ import {
   connectorErrorPayload,
   isRetryableConnectorStatus,
 } from '../src/services/integrations/oomolProjectConnector.js';
-import {
-  getOpenConnectorChatTool,
-  isOpenConnectorActionRetryable,
-} from '../src/services/integrations/openConnectorChatTools.js';
+import { isOpenConnectorActionRetryable } from '../src/services/integrations/openConnectorChatTools.js';
+import { getOpenConnectorChatTool } from '../src/services/integrations/openConnectorChatToolCatalog.js';
 
 test('connector retry policy distinguishes transient HTTP failures from configuration errors', () => {
   for (const status of [408, 425, 429, 500, 502, 503, 504]) {

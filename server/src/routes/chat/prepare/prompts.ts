@@ -1,0 +1,241 @@
+/**
+ * Prompt assembly blocks for a chat request.
+ *
+ * Owns the server-owned mode prompts, assistant instructions, the native
+ * tool contract, and routing hints. Context retrieval (RAG/memory) lives in
+ * context.ts; the request orchestrator lives in request.ts.
+ */
+import { appendServerPolicy, FINAL_OUTPUT_CONSTRAINTS_MARKER } from '../../../lib/chatPolicy.js';
+import { getCodeInterpreterPrompt, getTeacherModePrompt } from '../../../lib/prompts.js';
+import { MAX_VISUALIZATION_POINTS } from '../../../services/visualization.js';
+import { getDb } from '../../../db/index.js';
+import { artifacts, sessions } from '../../../db/schema/index.js';
+import { and, eq } from 'drizzle-orm';
+import { NotFound } from '../../../lib/errors.js';
+import type { ChatMessage } from '../../../lib/chatMessageSchema.js';
+
+
+export const TEACHER_MODE_MARKER = '[Server policy: teacher-mode]';
+
+/* P_prep-parallel — every context step below is split into a `resolve…`
+   half (the I/O: DB reads, embedding call, prompt file) and the
+   appendServerPolicy half that folds its text into the system message.
+   prepareChatRequest runs the resolve halves concurrently and applies them in
+   the documented order, so the assembled prompt is byte-identical to the old
+   one-after-another chain while the first token waits for the slowest step
+   instead of the sum of all of them. The append… wrappers keep the original
+   call shape for other callers and tests. */
+export interface PolicyBlock { marker: string; prompt: string | null }
+
+export function applyPolicyBlock(messages: ChatMessage[], block: PolicyBlock | null): ChatMessage[] {
+  return block ? appendServerPolicy(messages, block.marker, block.prompt) : messages;
+}
+
+export async function appendAssistantInstructions(
+  messages: ChatMessage[], assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+): Promise<ChatMessage[]> {
+  return applyPolicyBlock(messages, await resolveAssistantInstructions(assistantId, sessionId, userId));
+}
+
+export async function resolveAssistantInstructions(
+  assistantId: string | undefined, sessionId: string | undefined, userId: string | undefined,
+): Promise<PolicyBlock | null> {
+  if (!userId) return null;
+  let selectedId = assistantId;
+  if (!selectedId && sessionId) {
+    const [session] = await getDb().select({ assistantId: sessions.assistantId }).from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId))).limit(1);
+    selectedId = session?.assistantId || undefined;
+  }
+  if (!selectedId) return null;
+  const [assistant] = await getDb().select({ source: artifacts.source }).from(artifacts)
+    .where(and(eq(artifacts.id, selectedId), eq(artifacts.userId, userId), eq(artifacts.type, 'assistant'))).limit(1);
+  if (!assistant) throw new NotFound('Assistant not found');
+  try {
+    const config = JSON.parse(assistant.source) as { instructions?: string };
+    return { marker: '[User-selected assistant]', prompt: String(config.instructions || '').slice(0, 12000) };
+  } catch { return null; }
+}
+
+/* Server-owned mode prompts are appended to the canonical first system
+   message. Keeping one authoritative system message prevents client-supplied
+   system blocks from interleaving with or outranking server tool policy. */
+export async function prependTeacherModePrompt(messages: ChatMessage[]): Promise<ChatMessage[]> {
+  const prompt = await getTeacherModePrompt();
+  return appendServerPolicy(messages, TEACHER_MODE_MARKER, prompt);
+}
+
+/* Some OpenAI-compatible providers truncate function descriptions. Keep a
+ * compact server-owned routing/runtime appendix, but inject it only on a
+ * request that actually contains code_interpreter in its native tool list. */
+const CODE_INTERPRETER_PROMPT_MARKER = '[Server policy: code-interpreter]';
+export async function prependCodeInterpreterPrompt<T extends { role: string; content?: unknown }>(messages: T[]): Promise<T[]> {
+  const prompt = await getCodeInterpreterPrompt();
+  if (!prompt) return messages;
+  return appendAppendix(
+    messages,
+    CODE_INTERPRETER_PROMPT_MARKER,
+    `${CODE_INTERPRETER_PROMPT_MARKER}\n${prompt}`,
+  );
+}
+
+
+/* P_native-tool-contract — the provider's `tools` array is the executable
+ * contract.  This small server-owned appendix is generated from the exact
+ * definitions attached to the request, so prompt guidance cannot drift when
+ * a tool is enabled or removed.  It is inserted before the final hard rule,
+ * preserving the documented prompt assembly order.
+ *
+ * The appendix is regenerated on every provider hop from the untouched
+ * conversation, so it also carries per-hop state: the live iteration and
+ * retry budget from toolTurnPolicy, one canonical example per callable tool
+ * (same source as the correction text a rejected call receives), and the
+ * tools that have stepped aside after repeated failures. Callers must keep
+ * passing the original messages array — appendAppendix returns a clone, so
+ * the running conversation is never mutated and the appendix can change
+ * from hop to hop. */
+const NATIVE_TOOL_CONTRACT_MARKER = '[Server policy: native-tool-contract]';
+
+export interface NativeToolContractOptions {
+  /** Live budget for this turn, from `toolTurnPolicy.snapshot()`. */
+  limits?: {
+    maxIterations?: number;
+    iterationsUsed?: number;
+    maxCallsPerIteration?: number;
+    maxTotalCalls?: number;
+    callsUsed?: number;
+    perToolFailureLimit?: number;
+  } | null;
+  /** Tools withdrawn for the rest of the turn, with the reason. */
+  disabledTools?: ReadonlyArray<{ name: string; reason: string }> | null;
+  /** `name → one-line JSON example`, rendered under the tool list. */
+  examples?: Readonly<Record<string, string>> | null;
+  /** Calls dropped by the per-iteration cap on the previous hop. */
+  droppedCalls?: number;
+}
+
+export function appendNativeToolContract<T extends { role: string; content?: unknown }>(
+  messages: T[],
+  toolNames: string[],
+  options: NativeToolContractOptions = {},
+): T[] {
+  const names = [...new Set(toolNames.filter((name): name is string => typeof name === 'string' && name.length > 0))];
+  const availability = names.length > 0 ? names.map((name) => `\`${name}\``).join(', ') : 'none';
+  const sections = [
+    NATIVE_TOOL_CONTRACT_MARKER,
+    `The native tools available for this turn are exactly: ${availability}.`,
+    'Invoke a tool only through the provider\'s native function-calling channel. Each call argument must be one JSON object matching that function\'s supplied `parameters` schema exactly and any per-kind shape rules in the tool-routing hints above. Never emit a legacy text marker, Markdown tool block, `{"tool":...}` object, or an extra `input`/`arguments` wrapper. If no native tool is supplied, do not invent or imitate one.',
+  ];
+
+  const examples = options.examples || null;
+  if (names.length > 0 && examples) {
+    const lines = names
+      .map((name) => (examples[name] ? `- ${name}: ${examples[name]}` : ''))
+      .filter(Boolean);
+    if (lines.length > 0) {
+      sections.push(['A minimal correct argument object for each callable tool:', ...lines].join('\n'));
+    }
+  }
+
+  const limits = options.limits || null;
+  if (limits) {
+    const budget: string[] = [];
+    if (limits.maxIterations) {
+      const used = Math.max(0, Number(limits.iterationsUsed || 0));
+      budget.push(`This turn allows up to ${limits.maxIterations} tool rounds (${used} used so far).`);
+    }
+    if (limits.maxCallsPerIteration) budget.push(`Emit at most ${limits.maxCallsPerIteration} tool calls per round.`);
+    if (limits.perToolFailureLimit) {
+      budget.push(`A tool that fails ${limits.perToolFailureLimit} times in a row becomes unavailable for the rest of this turn, so make each corrected call materially different.`);
+    }
+    if (budget.length > 0) sections.push(budget.join(' '));
+  }
+
+  const disabled = (options.disabledTools || []).filter((entry) => entry && entry.name);
+  if (disabled.length > 0) {
+    sections.push([
+      'Withdrawn for the rest of this turn after repeated failures; do not call these again:',
+      ...disabled.map((entry) => `- ${entry.name} (${entry.reason})`),
+    ].join('\n'));
+  }
+
+  if (options.droppedCalls && options.droppedCalls > 0) {
+    sections.push(
+      `Your previous round emitted ${options.droppedCalls} tool call(s) over the per-round limit; ` +
+      'those calls were discarded and never ran. Re-issue only the calls that still matter, within the per-round limit.',
+    );
+  }
+
+  return appendAppendix(messages, NATIVE_TOOL_CONTRACT_MARKER, sections.join('\n'));
+}
+
+/* P_tool_routing_hints — append concise per-tool routing guidance only
+ * when the matching tool is actually present in this turn's tool set.
+ * The previous client-side implementation prepended visual and planning
+ * routing prompts unconditionally, even on turns that had no matching
+ * visualization or document tool — wasting tokens
+ * and inviting weaker models to fabricate unsupported calls. The server
+ * now gates these appendices on the live tool list, so a turn without
+ * visualization capability gets zero visualization prompt and vice
+ * versa. Each block is gated by its own marker so calling this twice
+ * with overlapping tool sets is idempotent. */
+const TOOL_ROUTING_HINTS_MARKER = '[Server policy: tool-routing-hints]';
+
+const INTELLIGENT_UI_VISUALIZATION_HINT = `## Unified visual tool
+Use \`render_intelligent_ui\` for every explicitly requested static or interactive chart, function graph, diagram, timeline, comparison, simulation, illustration, or learning card. Use \`code_interpreter\` first only when data must be calculated, read from files, transformed, or exported. All components are declarative JSON nodes inside {version: 1, nodes: [...]}.
+
+Per-node fields, per-kind contracts, and every template's payload shape live in the \`template\` and \`payload\` parameter descriptions of \`render_intelligent_ui\`; read those before choosing a template. Use LaTeX for EVERY displayed formula in titles, axes, legends, annotations, and question text ($...$ inline, $$...$$ display). Keep executable expressions and numeric data in their required machine syntax. Each series stays at or below ${MAX_VISUALIZATION_POINTS} points; downsample longer data first. Static rows of facts belong in Markdown tables; use a table node only for interactive data bound to declared local state. If validation returns field errors, correct exactly those fields once and retry.`;
+
+const READ_ATTACHMENT_ROUTING_HINT = `## Reading file attachments
+When a user message contains \`[Attached file: "name" (mime, size), fileId: <uuid>]\` pointers, those files are stored on the server. Call \`read_attachment\` with the pointer's fileId to read a file on demand: documents return extracted text page by page (page forward with \`offset\` until hasMore is false), image attachments return a visual description (optionally focused by \`question\`), and media/binary files return metadata. Always read an attachment before answering questions about its contents; never guess from the filename. If the message also contains native image content, prefer it; use \`read_attachment\` for a second look or for files with no inline preview.`;
+
+const WORKSPACE_AGENT_ROUTING_HINT = `## Workspace agent (Pi)
+Choose \`workspace_agent\` automatically whenever the user's intent requires touching the project workspace: creating, editing, or reviewing files; implementing, fixing, or refactoring code; inspecting a repository; running commands or tests; performing an experiment; using project workspace context; or doing work that should be resumed later. This includes a request that changes only one file. Call \`initialize_workspace\` first when the user wants an explicit or clean workspace. Do not wait for the user to enable Agent, start a worker, or provide a special mode. Include the concrete desired outcome and constraints in \`task\`, then let the workspace agent perform the work instead of returning an imagined patch or merely describing commands. Ordinary explanations, short calculations, and a single quick lookup belong in the native response path. The server owns the workspace, model, sandbox, and resource limits. Never ask for or invent an absolute workspace path. While the agent works, the interface streams each step it takes (commands run, files edited, files read) directly into the conversation, so do not narrate those steps yourself or paste raw command output. After the tool returns, summarize what changed, tests run, and created artifacts. In Tutor mode, preserve the explanation and add a short learning takeaway or follow-up exercise.`;
+
+const WEB_SEARCH_ROUTING_HINT = `## Web search
+When \`web_search\` is supplied, call it for real-time information, current facts, or looking up URLs. The required parameter is \`query\` (a concise search string, 1-6 words). Do not use \`q\` or \`keyword\`. An optional \`count\` (1-12, default 8) may be provided.`;
+
+const WEB_FETCH_ROUTING_HINT = `## Web fetch
+When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs).`;
+
+const CONNECTOR_DISCOVERY_ROUTING_HINT = `## Connected app connectors
+When the request needs data or actions from a connected app (email, calendar, GitHub, Notion, Zotero, Todoist, and similar), call \`search_connectors\` with a short English query. Then call \`get_connector_spec\` with the exact tool name to read its arguments; that tool becomes callable on the next step. Never guess a connector tool name or call one before reading its spec. If no match appears, use the connected services list in the result to refine the query.`;
+
+export function appendToolRoutingHints<T extends { role: string; content?: unknown }>(messages: T[], toolNames: string[]): T[] {
+  const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
+  const blocks: string[] = [];
+  if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
+  if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
+  if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
+  if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);
+  if (nameSet.has('create_document')) {
+    blocks.push('## Structured documents\nUse create_document with {kind: \"plan\"|\"spec\", content: {...}}. For plan content send title, optional goal, and 1-30 ordered steps ({title, detail?, status?: todo|in_progress|done}). For spec content send title, optional summary, 1-40 requirements and optional acceptanceCriteria, constraints, outOfScope. Use the user’s language. Do not add input/arguments wrappers or repeat the resulting card in prose.');
+  }
+  if (nameSet.has('read_attachment')) blocks.push(READ_ATTACHMENT_ROUTING_HINT);
+  if (nameSet.has('workspace_agent')) blocks.push(WORKSPACE_AGENT_ROUTING_HINT);
+  if (blocks.length === 0) return messages;
+  const hint = `${TOOL_ROUTING_HINTS_MARKER}\n${blocks.join('\n\n')}`;
+  return appendAppendix(messages, TOOL_ROUTING_HINTS_MARKER, hint);
+}
+
+/* Internal helper shared by appendNativeToolContract and
+ * appendToolRoutingHints: insert `appendix` into the first system
+ * message just before the FINAL_OUTPUT_CONSTRAINTS marker (so the
+ * final hard rule always remains the last block). Idempotent via
+ * the supplied `marker` so repeat calls do not stack duplicates. */
+function appendAppendix<T extends { role: string; content?: unknown }>(messages: T[], marker: string, appendix: string): T[] {
+  const first = messages[0];
+  if (!first || first.role !== 'system' || typeof first.content !== 'string') return messages;
+  if (first.content.includes(marker)) return messages;
+  const cloned = messages.slice();
+  const finalRuleIndex = first.content.indexOf(FINAL_OUTPUT_CONSTRAINTS_MARKER);
+  const insertion = `${appendix}\n\n`;
+  cloned[0] = {
+    ...first,
+    content: finalRuleIndex >= 0
+      ? `${first.content.slice(0, finalRuleIndex)}${insertion}${first.content.slice(finalRuleIndex)}`
+      : `${first.content}\n\n${appendix}`,
+  } as T;
+  return cloned;
+}
+

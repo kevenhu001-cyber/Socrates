@@ -5,7 +5,7 @@ import { getThemePaletteHex, getUiSurfaceHex } from '@socrates/theme';
  *
  * This used to freeze a second copy of the old ChatGPT-derived neutral ramp.
  * Socrates Design System v2 keeps the Tutor surface shape for compatibility,
- * but every value now resolves from `@socrates/theme` so Web and Universal App
+ * but every value now resolves from `@socrates/theme` so Web and React Native host
  * cannot drift when the foundation palette changes.
  */
 export function getTutorLegacyPalette(mode: 'light' | 'dark') {

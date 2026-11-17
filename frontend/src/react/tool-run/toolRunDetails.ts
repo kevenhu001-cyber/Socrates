@@ -379,7 +379,7 @@ export function toolRunView(call: ToolCallRecord): ToolRunView {
 }
 
 /**
- * The approval prompt, projected from the data `chat/toolRuntime.ts` records on
+ * The approval prompt, projected from the data `chat/toolRuntime/index.ts` records on
  * `call.approval`. Previously this was built only as DOM by `renderApproval`,
  * which meant a decision card vanished whenever the row it hung from was
  * re-rendered. `approval.ui` is the runtime's own status line ("Saving your

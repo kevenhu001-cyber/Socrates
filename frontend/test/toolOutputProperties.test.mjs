@@ -21,7 +21,7 @@ import { JSDOM } from 'jsdom';
 import fc from 'fast-check';
 
 import { formatToolOutput } from '../src/render/toolOutput.ts';
-import { decodeEntities } from '../src/render/helpers.ts';
+import { decodeEntities } from '../src/render/text.ts';
 
 const RUNS = 200;
 

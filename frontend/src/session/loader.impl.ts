@@ -11,7 +11,7 @@ import { saveState } from './saveState.ts';
 import { serverCache } from './serverCache.ts';
 import { archiveSessionMistakes } from '../tutor/mistakeArchive.ts';
 import { turnState } from '../chat/turnState.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { refreshCachedProjects } from '../projects/projectCache.ts';
 import { appMode, ensureSessionShape, setAppMode, syncAppModeUI, syncSidebarForMode, type AppMode } from '../config/providers.ts';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
@@ -41,7 +41,7 @@ import { dispatchExam, dispatchSession, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { renderRecents } from '../ui/recentsView.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 export { reattachPendingTurn };
 

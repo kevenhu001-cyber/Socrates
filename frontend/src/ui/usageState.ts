@@ -1,4 +1,4 @@
-import { createImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
+import { createImmutableBridge } from '../store/bridge.ts';
 import type { UsageEntry, UsageLimits, UsagePeriod } from './usageModel.ts';
 
 export type UsageStatus = 'idle' | 'loading' | 'loaded' | 'error';

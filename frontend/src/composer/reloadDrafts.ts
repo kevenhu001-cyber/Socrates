@@ -1,4 +1,4 @@
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
 import { isBrowserStorageBlocked } from '../batchStorage.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';

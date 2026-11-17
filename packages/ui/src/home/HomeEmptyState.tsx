@@ -9,7 +9,7 @@
  *
  * The module owns layout and look only. Copy, behaviour and persistence stay
  * with the host, which passes strings and callbacks — so the same component
- * mounts in the web shell and, later, in apps/socrates.
+ * mounts in the web shell and, later, in another React Native host.
  *
  * Motion: the suggestions rise in once, staggered, when they first appear or
  * when the mode swaps their content. That is the only movement; it tells the

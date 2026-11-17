@@ -1,8 +1,8 @@
-import { apiFetch, type ApiError } from '../util/api.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { getValue, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from './shell.ts';
-import { adoptAuthenticatedUser } from './forms/sessionAdoption.ts';
-import { markAuthSuccess, setCurrentUser, getCurrentUser } from '../app/lifecycle.ts';
+import { apiFetch, type ApiError } from '../../util/api/index.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { getValue, setValue, setText, setVisible, focusId, setButton, type AuthRoot } from '../shell.ts';
+import { adoptAuthenticatedUser } from './sessionAdoption.ts';
+import { markAuthSuccess, setCurrentUser, getCurrentUser } from '../../app/lifecycle/index.ts';
 
 /** The user record these flows carry between login, /me, and the window. */
 interface AuthUser {

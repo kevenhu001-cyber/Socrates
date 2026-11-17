@@ -3,7 +3,7 @@
  * document.
  *
  * The web baseline renders specs with ECharts / Mermaid / Plotly / GeoGebra
- * / Three.js in the shared document. The Universal App must not pull those
+ * / Three.js in the shared document. The React Native host must not pull those
  * into shared core, so ordinary charts and structured templates are rendered
  * as self-contained inline SVG / HTML here and the whole document runs inside
  * the sandboxed `ArtifactIsland`. `svg_illustration` and

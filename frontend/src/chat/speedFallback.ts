@@ -1,5 +1,5 @@
 import { showToast } from '../ui/toast.js';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 let notified = false;
 

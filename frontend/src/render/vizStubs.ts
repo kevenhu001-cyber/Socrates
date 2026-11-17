@@ -42,7 +42,7 @@ export const VIZ_THEME_RESET =
     'code{font-family:"JetBrains Mono","Cascadia Code",ui-monospace,monospace;font-size:.92em}' +
   '</style>';
 
-import { esc, escAttr } from './helpers.ts';
+import { esc, escAttr } from './text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { stateStore } from '../state/store.ts';
 

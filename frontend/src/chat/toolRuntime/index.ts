@@ -1,5 +1,5 @@
 /**
- * chat/toolRuntime.ts — per-message tool-call state.
+ * chat/toolRuntime/index.ts — per-message tool-call state.
  *
  * Data-only orchestrator for the tool lifecycle:
  *   tool_call_delta -> tool_use -> tool_progress -> tool_result
@@ -24,27 +24,27 @@
  */
 /* Type-only: the stream controller injects the runtime event publisher so
    this data orchestrator does not depend on a browser global or React tree. */
-import type { ChatRuntimeEvent } from '../react/types/domain';
+import type { ChatRuntimeEvent } from '../../react/types/domain';
 
-import type { AgentPlanData, AgentStepData } from '../ui/agentSteps.ts';
+import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
 import {
   TOOL_RUN_PHASES,
   isTerminalToolPhase,
   transitionToolRun,
-} from './toolRunState.ts';
-import type { ToolRun } from './toolRunState.ts';
-import type { LiveOutputBufferHandle } from './liveOutput.ts';
-import { copyToolData, mergeToolCalls } from './toolRuntime/projection.ts';
-import { createAgentFrameRuntime } from './toolRuntime/agentFrames.ts';
-import type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.ts';
-import { createApprovalRuntime } from './toolRuntime/approvals.ts';
-import type { ToolApproval } from './toolRuntime/approvals.ts';
-import { createToolUseRuntime } from './toolRuntime/toolUse.ts';
-import { createToolResultRuntime } from './toolRuntime/resultRuntime.ts';
-import type { ToolResultInput } from './toolRuntime/resultProjection.ts';
-import { createProgressRuntime } from './toolRuntime/progress.ts';
-import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-export type { AgentPlanFrame, AgentStepFrame } from './toolRuntime/agentFrames.ts';
+} from '../toolRunState.ts';
+import type { ToolRun } from '../toolRunState.ts';
+import type { LiveOutputBufferHandle } from '../liveOutput.ts';
+import { copyToolData, mergeToolCalls } from './projection.ts';
+import { createAgentFrameRuntime } from './agentFrames.ts';
+import type { AgentPlanFrame, AgentStepFrame } from './agentFrames.ts';
+import { createApprovalRuntime } from './approvals.ts';
+import type { ToolApproval } from './approvals.ts';
+import { createToolUseRuntime } from './toolUse.ts';
+import { createToolResultRuntime } from './resultRuntime.ts';
+import type { ToolResultInput } from './resultProjection.ts';
+import { createProgressRuntime } from './progress.ts';
+import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
+export type { AgentPlanFrame, AgentStepFrame } from './agentFrames.ts';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -208,7 +208,7 @@ function translate(key: string, fallback: string): string {
       return translated && translated !== key ? translated : fallback;
     }
   } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:222', 'expected');
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:222', 'expected');
     /* ignore */
   }
   return fallback;
@@ -460,7 +460,7 @@ function closeExecutionConnection(
   if (!connection) return;
   clearTimeout(connection.timer);
   try { connection.source.close(); } catch (_) {
-    reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:471');
+    reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:471');
     /* A closed source is already settled. */
   }
   connections.delete(connection.key);
@@ -501,7 +501,7 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
           data.id = toolCallId;
           context.renderProgress(data);
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:509', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:509', 'expected');
           /* Ignore malformed execution progress. */
         }
       });
@@ -522,7 +522,7 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
             name: 'code_interpreter',
           });
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:527', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:527', 'expected');
           /* Ignore malformed execution results. */
         }
         context.closeConnection(connection);
@@ -536,7 +536,7 @@ function createExecutionConnector(context: ExecutionConnectorContext): (executio
             });
           }
         } catch (_) {
-          reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:538', 'expected');
+          reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:538', 'expected');
           /* Ignore malformed execution errors. */
         }
         context.closeConnection(connection);
@@ -691,7 +691,7 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
   function recordRowOffset(entry: ToolCallEntry): number | null {
     let offset: number | null = null;
     try { offset = onInlineTool({ id: entry.id, name: entry.name }, null); } catch (_) {
-      reportEmptyCatch(_, 'empty catch: chat/toolRuntime.ts:690');
+      reportEmptyCatch(_, 'empty catch: chat/toolRuntime/index.ts:690');
       /* no host */
     }
     if (typeof offset === 'number') entry.textOffset = offset;

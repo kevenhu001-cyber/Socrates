@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
 import { users, sessions, apiKeys } from '../src/db/schema/index.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { prepareChatRequest } from '../src/routes/chat/helpers.js';
+import { prepareChatRequest } from '../src/routes/chat/prepare/request.js';
 import { invalidateApiKeyCache } from '../src/services/core/apiKey.js';
 
 /**

@@ -1,20 +1,17 @@
 /**
- * Domain store hooks — the public state API for React code (M1 of the
- * LobeHub-alignment plan, ADR 0001).
+ * Public state API for React code.
  *
- * LobeHub organizes app state as per-domain stores (`src/store/<domain>`)
- * consumed through store hooks + selectors. Socrates now mirrors that
- * shape: the six state namespaces (session/kb/search/call/ui/exam) are
- * Zustand stores; this module exposes the typed selector hooks.
+ * `store/bridge.ts` is the single snapshot/reducer/RAF implementation.
+ * `store/createDomainStore.ts` adds a read-only Zustand reader; this module
+ * exposes the typed hooks and the transition types.
  *
- * Legacy JS keeps writing through the `stateStore` facade /
- * `window.stateStore` — the bridges adapt both worlds onto the same
- * snapshot stores, so reads are always consistent regardless of which
- * API wrote last.
+ * Legacy DOM modules keep writing through the `state/store.ts` facade. The
+ * bridges adapt both worlds onto the same snapshot stores, so reads stay
+ * consistent regardless of which API wrote last.
  *
  * New React code should use these hooks:
  *
- *   import { useSessionStore } from '../../store/index.ts';
+ *   import { useSessionStore } from '../store/index.ts';
  *   const topic = useSessionStore((s) => s.topic);
  *
  * Re-renders are keyed on the selector's return value (identity or
@@ -53,7 +50,16 @@ import {
   type UiSnapshot,
 } from '../state/bridges.ts';
 import { notifyLegacyListeners } from '../state/store.ts';
-import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
+import type { RevisionedSnapshot } from './bridge.ts';
+
+export {
+  createBridge,
+  createImmutableBridge,
+  type Bridge,
+  type BridgeFreezeMode,
+  type CreateBridgeOptions,
+} from './bridge.ts';
+export { useBridge, useBridgeSelector } from './useBridge.ts';
 
 type DomainSnapshot =
   | SessionSnapshot

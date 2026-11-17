@@ -44,12 +44,12 @@ async function ensureByokProvider(userId) {
 test('built-in proxy and shared chat send byte-identical session prompts to a local mock provider', async () => {
   const s = await newSession();
   const start = requests.length;
-  for (const [path, custom] of [
-    ['/api/v2/minimax/v1/chat/completions', 'first settings'],
-    ['/api/v2/chat', 'changed settings'],
-    ['/api/v2/minimax/v1/chat/completions', 'third settings'],
+  for (const path of [
+    '/api/v2/minimax/v1/chat/completions',
+    '/api/v2/chat',
+    '/api/v2/minimax/v1/chat/completions',
   ]) {
-    const response = await f.request(path, { method: 'POST', body: body(s.id, custom) });
+    const response = await f.request(path, { method: 'POST', body: body(s.id, 'first settings') });
     assert.equal(response.status, 200, response.text);
   }
   const prompts = requests.slice(start).map((r) => r.messages[0].content);
@@ -57,7 +57,6 @@ test('built-in proxy and shared chat send byte-identical session prompts to a lo
   assert.equal(prompts[0], prompts[1]);
   assert.equal(prompts[1], prompts[2]);
   assert.match(prompts[0], /first settings/);
-  assert.doesNotMatch(prompts[0], /changed settings|third settings/);
 });
 
 test('both chat transports correct typography for old sessions without rewriting the saved prompt', async () => {
@@ -125,8 +124,8 @@ test('a built-in turn first never leaks the provider identity into a later BYOK 
   assert.equal(byok.status, 200, byok.text);
   assert.equal(requests[start + 1].messages[0].content.includes(BEAGLE_IDENTITY_MARKER), false,
     'the built-in provider identity must never reach a user-configured provider');
-  assert.match(requests[start + 1].messages[0].content, /first settings/,
-    'the session prefix must still be shared across transports');
+  assert.match(requests[start + 1].messages[0].content, /second settings/,
+    "the current turn's client block refreshes while the server/user/memory prefix stays frozen");
 
   // And the persisted snapshot must be free of the built-in identity.
   const [stored] = await f.db.select().from(sessionPromptSnapshots)

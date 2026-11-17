@@ -48,7 +48,7 @@ function openPlugins(): void {
 }
 
 function openExam(): void {
-  void import('../exam.ts').then((module) => module.openExamPanel()).catch((error) => {
+  void import('../exam/index.ts').then((module) => module.openExamPanel()).catch((error) => {
     reportSwallow(error, 'sidebar/navigation.openExam');
   });
 }

@@ -1,5 +1,5 @@
 import { showToast } from '../ui/toast.js';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 /* Tutor/Socratic turns fall back to canned strings from `chat/mocks.ts`
    when no usable model is configured (or a turn returns nothing). Those

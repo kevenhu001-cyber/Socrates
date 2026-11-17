@@ -6,7 +6,7 @@ import { stateStore } from '../../state/store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 
 function runExamCommand(command: 'openExamPanel' | 'closeExamView') {
-  void import('../../exam.ts').then((module) => module[command]()).catch((error) => {
+  void import('../../exam/index.ts').then((module) => module[command]()).catch((error) => {
     reportSwallow(error, `extensions.exam.${command}`);
   });
 }

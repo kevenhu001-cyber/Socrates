@@ -2,7 +2,7 @@ type FeatureRuntime = typeof import("./share.impl.ts");
 
 
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { stateStore } from '../state/store.ts';
 

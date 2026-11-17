@@ -9,7 +9,7 @@ globalThis.document = dom.window.document;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.CSS = dom.window.CSS;
 
-const { createToolRuntime: createRuntime } = await import('../src/chat/toolRuntime.ts');
+const { createToolRuntime: createRuntime } = await import('../src/chat/toolRuntime/index.ts');
 const { toolRunLabel } = await import('../src/ui/toolPresentationModel.ts');
 
 function makeBody() {

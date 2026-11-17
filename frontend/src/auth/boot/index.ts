@@ -1,17 +1,17 @@
 /* Auth boot coordinator. URL-only routes, preflight requests, and /me retry
    policy live in ./boot/ so this module only sequences the startup flow. */
 
-import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../config/providerConfig.service.ts';
-import { showToast } from '../ui/toast.js';
-import { i18n } from '../react/legacy/gateway.ts';
-import { openMobileTargetFromUrl } from '../native/mobileWebSessionBridge.ts';
-import { captureBrowserLoginRequest } from '../native/browserLoginHandoff.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { publishSidebarChrome } from '../ui/profile.ts';
-import { revealAppAndHydrate, showGate, showAuthSignin } from './index.ts';
-import { captureMarketingQuestion } from './marketingHandoff.ts';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../app/lifecycle.ts';
-import { handleAuthUrlRoutes } from './boot/routes.ts';
+import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../config/providerConfig.service.ts';
+import { showToast } from '../../ui/toast.js';
+import { i18n } from '../../react/legacy/gateway.ts';
+import { openMobileTargetFromUrl } from '../../native/mobileWebSessionBridge.ts';
+import { captureBrowserLoginRequest } from '../../native/browserLoginHandoff.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { publishSidebarChrome } from '../../ui/profile.ts';
+import { revealAppAndHydrate, showGate, showAuthSignin } from '../index.ts';
+import { captureMarketingQuestion } from '../marketingHandoff.ts';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../../app/lifecycle/index.ts';
+import { handleAuthUrlRoutes } from './routes.ts';
 import {
   readBootPreflight,
   retryAuthMe,
@@ -19,7 +19,7 @@ import {
   startAuthRequests,
   lazyCsrfBootstrap,
   type AuthMeResult,
-} from './boot/requests.ts';
+} from './requests.ts';
 
 interface BootLegacyWindow extends Window {
   __i18nReady?: Promise<unknown>;
@@ -68,7 +68,7 @@ async function showSigninGate(): Promise<void> {
 
 async function finishAuthenticatedBoot(user: unknown, csrfReady: PromiseLike<unknown>): Promise<void> {
   await Promise.all([csrfReady, i18nSettled()]);
-  setCurrentUser(user as import('../app/lifecycle.ts').UserRecord);
+  setCurrentUser(user as import('../../app/lifecycle/index.ts').UserRecord);
   markAuthSuccess();
   /* Consume the allow-listed mobile target after normal hydration. */
   revealAppAndHydrate(openMobileTargetFromUrl);

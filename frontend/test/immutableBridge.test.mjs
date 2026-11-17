@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createImmutableBridge } from '../src/lib/bridge/createImmutableBridge.ts';
+import { createImmutableBridge } from '../src/store/bridge.ts';
 
 function createFrameHarness() {
   const frames = new Map();

@@ -1,4 +1,4 @@
-import { useBridgeSelector } from '../../lib/bridge/useBridge.ts';
+import { useBridgeSelector } from '../../store/useBridge.ts';
 import { sidebarUserState } from '../../ui/sidebarUserState.ts';
 
 export function useUserInfo() {

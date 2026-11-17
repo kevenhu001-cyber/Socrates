@@ -1,7 +1,7 @@
 /**
  * RN-2 turn module: thinking line + tool rows, DOM-free. The web shell
  * mounts these through react-native-web (frontend/src/react/tool-run);
- * apps/socrates can reuse them as-is.
+ * other React Native hosts can reuse them as-is.
  */
 export { ThinkingSurface, ThinkingTimeline, ActivityStep, type ThinkingSurfaceProps, type ActivityStepProps } from './ThinkingSurface';
 export {

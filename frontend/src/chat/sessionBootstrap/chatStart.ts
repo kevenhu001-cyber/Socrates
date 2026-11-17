@@ -10,7 +10,7 @@ import { addMessage } from '../messages.ts';
 import { activateMainView } from '../../ui/mainViewController.ts';
 import { clearComposer } from '../../composer/controller.ts';
 import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
-import { buildMessageContent, resetAttachments } from '../../attachments.ts';
+import { buildMessageContent, resetAttachments } from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
 import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';

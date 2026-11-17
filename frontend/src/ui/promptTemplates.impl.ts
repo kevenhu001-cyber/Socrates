@@ -2,7 +2,7 @@ import { deleteCustomTemplate, findTemplateByShortcut, loadPromptTemplates, upse
 import type { PromptTemplate } from '../chat/promptTemplates.ts';
 import { showToast } from './toast.js';
 import { showConfirm } from './confirm.js';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { publishPromptTemplatesState, type PromptTemplateData } from './promptTemplatesState.ts';
 

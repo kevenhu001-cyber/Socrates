@@ -6,7 +6,7 @@
  * `ui/diagnosticResults.ts`. This module keeps the two transient screens plus
  * the clear path, and owns the progress state the generator reports into. */
 import { clearDiagnostic, renderDiagnostic } from '../react/tutor/diagnosticHost.tsx';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 function _t(key: string, fallback: string): string {
   try {

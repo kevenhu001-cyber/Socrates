@@ -7,7 +7,7 @@ import { workspaceForPath, replaceRoute } from "../app/router.ts";
 import { openNav } from "./navigation.service.ts";
 import { reportSwallow } from "../util/reportSwallow.ts";
 import { refreshProjectPlugin } from "../react/pages/workspace/workspace.service.ts";
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import type { ComposerSurface } from '../composer/types.ts';
 
 

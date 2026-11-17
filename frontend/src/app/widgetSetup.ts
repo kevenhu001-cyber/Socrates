@@ -3,7 +3,7 @@
  * Called once from main.js at the original position to preserve eval order.
  */
 import { stateStore } from '../state/store.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { configureWidgetRuntimeEarly, handleQuizPick } from '../render/widgetScheduler.ts';
 import { formatMsg } from '../render/markdown.ts';
@@ -13,7 +13,7 @@ import { configureTurnAnchor } from '../chat/turnAnchor.ts';
 import { isMsgListMounted } from '../ui/msgListMount.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { registerMistakeRedoAction } from '../ui/mistakeBookCommands.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { addAssistantUiMessage } from '../chat/messages.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

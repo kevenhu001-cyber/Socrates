@@ -5,23 +5,21 @@
  * Slimmed down in July 2026. The original 1158-line file held two
  * endpoints (POST / sync, POST /stream SSE) plus nine helpers and
  * three Zod schemas. After the split:
- *   - helpers (schemas, prep, transforms) → ./chat/helpers.js
- *   - SSE /stream handler → ./chat/stream.js
+ *   - request assembly (schema, prep, transforms) → ./prepare/
+ *   - SSE /stream handler → ./stream.js
  *   - this file owns only the sync handler + the router export.
  */
 
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
-import { resourceScope } from '../middleware/scopes.js';
-import { audit } from '../middleware/audit.js';
-import { callChatCompletion } from '../services/core/llm.js';
-import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../services/core/usageTracker.js';
+import { requireAuth } from '../../middleware/auth.js';
+import { resourceScope } from '../../middleware/scopes.js';
+import { audit } from '../../middleware/audit.js';
+import { callChatCompletion } from '../../services/core/llm.js';
+import { estimateMessageTokens, estimateTokens, recordUsage, resolveUsage } from '../../services/core/usageTracker.js';
 
-import {
-  prepareChatRequest,
-  chatRateLimitDispatch,
-} from './chat/helpers.js';
-import { registerStreamRoute } from './chat/stream.js';
+import { prepareChatRequest } from './prepare/request.js';
+import { chatRateLimitDispatch } from './prepare/rates.js';
+import { registerStreamRoute } from './stream.js';
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 /* Tutor scaffold side effects: quiz grading + mistake book + teaching stage,
  * practice self-check + chat submission. Kept apart from the RN mounts in
  * widgets.ts so the behaviour stays unit-testable without a renderer. */
-import { esc } from './helpers.ts';
+import { esc } from './text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { evaluatePracticeAnswer, formatAnswerKey, parseAnswerKey, type ParsedQuiz, type ParsedPractice } from '@socrates/ui/learn-model';
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { users, projects, memories } from '../src/db/schema/index.js';
-import { appendMemoryContext } from '../src/routes/chat/helpers.js';
+import { appendMemoryContext } from '../src/routes/chat/prepare/context.js';
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 

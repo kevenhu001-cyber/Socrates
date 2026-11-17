@@ -8,7 +8,7 @@ import { extractHistory } from '../chat/history.ts';
 import type { HistoryEntry } from '../chat/history.ts';
 import type { PromptMessage } from '../chat/promptSuffixes.ts';
 import type { ChatRequestMessage } from '../chat/api/requestBody.ts';
-import { callAPI } from '../chat/api.ts';
+import { callAPI } from '../chat/api/index.ts';
 import { callAPIStream, StreamThinkingHandler, StreamDeltaHandler, StreamCallOptions } from '../chat/stream.ts';
 import { buildSocraticMessages, buildFollowUpMessages, buildLearningModeMessages, buildSocraticPrompt, TutorNode } from './flow.ts';
 import { learningTurnOptions, type LearningTurnOptions } from './learningModeState.ts';

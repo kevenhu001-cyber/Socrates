@@ -2,9 +2,9 @@
    React owns auth views, tabs, form values, errors, and interaction handlers.
    This module provides the state bridge and form request actions.
 
-   Extracted from main.js. Reads main.js globals via window (state,
-   markAuthSuccess, CURRENT_USER, apiFetch, etc.) so this module
-   remains independent.
+   The auth shell owns form state and interaction; request and route work
+   lives in ./boot/ and ./postAuth/, and the app lifecycle owns session
+   teardown after a 401.
 
    The initial /api/auth/me sequence lives in ./boot.js; the auth-expired
    callback stays with the application lifecycle because it coordinates
@@ -14,9 +14,9 @@ import { notifyEmbeddedAuthExpired } from '../native/mobileWebSessionBridge.ts';
 import { offerBrowserLoginHandoff } from '../native/browserLoginHandoff.ts';
 import { syncCookieConsentPlacement } from '../cookieConsent.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { afterAuthEnter } from './postAuth.ts';
-import { createAuthFormHandlers } from './forms.ts';
-import { t } from '../i18n.ts';
+import { afterAuthEnter } from './postAuth/index.ts';
+import { createAuthFormHandlers } from './forms/index.ts';
+import { t } from '../i18n/index.ts';
 import { consumeMarketingQuestion } from './marketingHandoff.ts';
 import { getVisibleComposerSurface, setComposerMarkdown } from '../composer/controller.ts';
 import {

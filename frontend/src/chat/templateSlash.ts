@@ -10,7 +10,7 @@ import { webSearchOn, extensiveThinkingOn, setExtensiveThinkingOn } from '../con
 import { focusComposer, getComposerMarkdown, getVisibleComposerSurface, setComposerExtensionToken, setComposerMarkdown, subscribeComposer } from '../composer/controller.ts';
 import { loadPromptTemplates } from './promptTemplates.ts';
 import type { PromptTemplate } from './promptTemplates.ts';
-import { esc } from '../render/helpers.ts';
+import { esc } from '../render/text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { setDeepResearchEnabled } from '../config/deepResearchMode.ts';
 import { batchSetItem } from '../batchStorage.ts';

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useBridge, useBridgeSelector } from '../../lib/bridge';
+import { useBridge, useBridgeSelector } from '../../store/index.ts';
 import { cmdKState } from '../../ui/cmdKState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { CmdKHit, CmdKSnapshot } from '../../ui/cmdKState.ts';

@@ -1,6 +1,6 @@
 /** Settings-only presentation state. Provider configuration has its own domain store. */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import type { SettingsBridge, SettingsSnapshot } from './types';
 
 type Action = Partial<Omit<SettingsSnapshot, 'revision'>>;

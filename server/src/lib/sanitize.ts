@@ -46,7 +46,7 @@ const ALLOWED_EXTRA_BODY_KEYS = new Set([
    * single canonical whitelist for every LLM route (/api/chat,
    * /api/chat/stream, minimax proxy) — previously the chat route kept
    * a wider duplicate list and the proxy silently dropped this key,
-   * hiding built-in thinking. See routes/chat/helpers.ts. */
+   * hiding built-in thinking. See routes/chat/prepare/wire.ts. */
   'reasoning_split',
 ]);
 

@@ -1,9 +1,9 @@
 import { consumeResearchStream } from './researchStream.ts';
 import type { Message, ResearchJob, ResearchJobRefineResult, ResearchJobRequest } from '@socrates/contracts';
-import { apiFetch, apiFetchRaw } from '../util/api.ts';
+import { apiFetch, apiFetchRaw } from '../util/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { isIncognitoOn } from '../app/lifecycle/incognitoState.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { restoreSessionMessage } from '../session/historyRestore.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';

@@ -44,7 +44,7 @@ export interface OpenUiInspection {
 
 /** Parse and validate OpenUI once, returning native Visualization specs that
  * can be consumed by clients without an OpenUI runtime (for example the
- * Universal App). Dynamic values are evaluated from the program's declared
+ * React Native host). Dynamic values are evaluated from the program's declared
  * initial state; unresolved client-only values stay in the OpenUI document. */
 export function inspectOpenUiProgram(source: string): OpenUiInspection {
   try {

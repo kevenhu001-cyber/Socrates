@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from '../ui/motion.ts';
+import { prefersReducedMotion } from '../ui/motion/index.ts';
 import { stateStore } from '../state/store.ts';
 
 export function examNavCurrentIdx() {

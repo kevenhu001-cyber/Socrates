@@ -4,7 +4,7 @@ import { createSessionPromptResolver, createDegradableResolver } from '../src/se
 import { splitPromptContext, appendTurnContext } from '../src/lib/chatPromptContext.js';
 import { injectUserContext, SERVER_SYSTEM_POLICY, appendFinalOutputConstraints, insertProviderIdentity, BEAGLE_IDENTITY_MARKER, FINAL_OUTPUT_CONSTRAINTS_MARKER, FINAL_OUTPUT_CONSTRAINTS } from '../src/lib/chatPolicy.js';
 import { NotFound } from '../src/lib/errors.js';
-import { appendNativeToolContract, appendToolRoutingHints } from '../src/routes/chat/helpers.js';
+import { appendNativeToolContract, appendToolRoutingHints } from '../src/routes/chat/prepare/prompts.js';
 
 function store() {
   const prompts = new Map();

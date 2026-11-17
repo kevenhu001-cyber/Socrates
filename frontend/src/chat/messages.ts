@@ -9,7 +9,7 @@ import { hideNewReplyPill } from '../ui/scrollPill.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { stripCitationMarkers } from '../render/helpers.ts';
+import { stripCitationMarkers } from '../render/text.ts';
 import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { generateId } from '../util/ids.ts';
 import { streamRetryViewport } from './turnState.ts';

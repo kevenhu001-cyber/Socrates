@@ -2,7 +2,7 @@
  * Shell icons — the React Native port of the baseline SPA's inline SVGs.
  *
  * Every shape below is copied verbatim from the frontend sources so the
- * Universal App draws the same glyph geometry as the SPA:
+ * React Native host draws the same glyph geometry as the SPA:
  *   - `frontend/src/react/sidebar/SidebarNav.tsx` (nav rows)
  *   - `frontend/src/react/sidebar-chrome/SidebarHeader.tsx` (new chat / toggle / search)
  *   - `frontend/src/react/message-list/MessageToolbar.tsx` (message toolbar)

@@ -1,3 +1,11 @@
+/**
+ * Legacy state facade.
+ *
+ * Exposes the historical `stateStore.read(key)` / `stateStore.dispatch(action)`
+ * API and the `window.stateStore` alias used by DOM modules. New React code
+ * must use the typed hooks in `store/index.ts`; this facade exists only to keep
+ * unmigrated callers on the same committed snapshots.
+ */
 import type { AppState, NamespaceBridge } from './index.ts';
 import type { ChatMessageShape } from './session.ts';
 const namespaceBridges = typedNamespaceBridges as unknown as Record<string, NamespaceBridge>;

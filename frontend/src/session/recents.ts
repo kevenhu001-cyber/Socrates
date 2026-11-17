@@ -9,8 +9,8 @@ import { saveState, rememberDeletedSession, forgetDeletedSession } from './saveS
 import { getVisibleSessions, getArchivedSessionsFrom, sweepExpiredArchivesFrom, setChatIdInURL, type SessionRow } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
 import { readBootSessions } from './bootSessions.ts';
-import { getKnownTagsFromSessions } from '../ui/recentsHelpers.ts';
-import { apiFetch } from '../util/api.ts';
+import { getKnownTagsFromSessions } from '../ui/recentsModel.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
 import { clearLocalMemory } from '../storage/localMemory.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
@@ -23,8 +23,8 @@ import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
 import { turnState } from '../chat/turnState.ts';
 import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
-import { t } from '../i18n.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
+import { t } from '../i18n/index.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { renderArchivedList } from '../ui/storage.ts';
 

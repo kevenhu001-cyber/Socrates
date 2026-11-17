@@ -1,6 +1,6 @@
 import { normalizeConceptMap, type ConceptMapResult } from '@socrates/core/learningBlocks';
-import { callAPI } from './api.ts';
-import type { ChatRequestMessage } from './api.ts';
+import { callAPI } from './api/index.ts';
+import type { ChatRequestMessage } from './api/index.ts';
 import { CONCEPT_MAP_FORMAT, languageName } from '../tutor/conceptMap.ts';
 
 export interface TopicKnowledgeMap {

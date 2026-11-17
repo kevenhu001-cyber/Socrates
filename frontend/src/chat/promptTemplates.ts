@@ -6,7 +6,7 @@ export interface PromptTemplate {
  [key: string]: unknown;
 }
 
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 /* chat/promptTemplates.ts — built-in and user-defined prompt templates. */
 
 const ICON_SUMMARIZE='<svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="3" cy="4" r="1.1"/><circle cx="3" cy="8" r="1.1"/><circle cx="3" cy="12" r="1.1"/><rect x="5.5" y="3.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="7.4" width="8" height="1.2" rx="0.6"/><rect x="5.5" y="11.4" width="6" height="1.2" rx="0.6"/></svg>';

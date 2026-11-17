@@ -1,17 +1,17 @@
 /* Exam route and lifecycle commands. The screen itself is rendered by the
    single React root in react/exam/ExamView.tsx. */
 
-import { stateStore } from './state/store.ts';
-import { dispatchExam, dispatchUi } from './store/index.ts';
-import { pushChatIdToURL, setExamIdInURL } from './session/store.ts';
-import { reportSwallow } from './util/reportSwallow.ts';
-import { activateMainView } from './ui/mainViewController.ts';
-import { getProviderConfigSnapshot } from './config/providerConfig.service.ts';
-import { parseExamArrayJSON, parseSingleExamQuestion } from './exam/parsing.ts';
-import { restoreExamActiveProvider } from './exam/generation.ts';
-import { resetExamSaveState } from './exam/persistence.ts';
-import { createExamFormDraft, type ExamFormDraft } from './state/exam.ts';
-import { registerExamSaveReset } from './app/lifecycle/examSaveReset.ts';
+import { stateStore } from '../state/store.ts';
+import { dispatchExam, dispatchUi } from '../store/index.ts';
+import { pushChatIdToURL, setExamIdInURL } from '../session/store.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
+import { activateMainView } from '../ui/mainViewController.ts';
+import { getProviderConfigSnapshot } from '../config/providerConfig.service.ts';
+import { parseExamArrayJSON, parseSingleExamQuestion } from './parsing.ts';
+import { restoreExamActiveProvider } from './generation.ts';
+import { resetExamSaveState } from './persistence.ts';
+import { createExamFormDraft, type ExamFormDraft } from '../state/exam.ts';
+import { registerExamSaveReset } from '../app/lifecycle/examSaveReset.ts';
 
 export { parseExamArrayJSON, parseSingleExamQuestion };
 
@@ -22,7 +22,7 @@ export function prepareExamView() {
   dispatchUi({ type: 'ui/set', key: '_examInView', value: true });
 }
 export async function openExamPanel() {
-  const { mountExamView } = await import('./react/exam/mount.tsx');
+  const { mountExamView } = await import('../react/exam/mount.tsx');
   mountExamView();
   prepareExamView();
   renderExamForm();

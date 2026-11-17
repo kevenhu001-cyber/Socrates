@@ -6,7 +6,7 @@ import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { attachments, buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments.ts';
+import { attachments, buildMessageContent, resetAttachments, snapshotAttachments } from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
 import { addMessage } from '../messages.ts';
 import { playSendGlyph } from '../../ui/sendGlyph.js';

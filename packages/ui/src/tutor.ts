@@ -23,7 +23,7 @@
  * - tutor voice (`buildTutorVoice`) — the Socratic system prompt for one
  *   teaching turn. The web-only suffix chain (template system prompt,
  *   search policy, beagle/thinking suffixes) stays on the web; the
- *   Universal App already leads with the tone voice, so this supplies
+ *   React Native host already leads with the tone voice, so this supplies
  *   the stage/foundation half only.
  *
  * Everything here is pure: generation I/O lives in the host app. */

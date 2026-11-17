@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 import { MistakeBook, defaultMistakeStrings, type MistakeStrings } from '@socrates/ui/study';
 import { dispatchKb, useKbStore } from '../../store/index.ts';
-import { formatRelativeTime } from '../../ui/recentsHelpers.ts';
+import { formatRelativeTime } from '../../ui/recentsModel.ts';
 import { getPendingNextQuestion, subscribePendingNextQuestion } from '../../tutor/mistakeAnalysis.ts';
 import { nextQuestionFromAnyMistake, redoAnyMistake } from '../../tutor/mistakeCrossSession.ts';
 import { useAllSessionMistakes } from './useAllSessionMistakes';

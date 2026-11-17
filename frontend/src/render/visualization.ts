@@ -6,7 +6,7 @@ import type { ChartInstance } from '../types/vendorRuntime.ts';
 /* Native visual cards. The model provides semantic data only; this module
  * owns Socrates styling, responsive layout, interaction, and export. */
 import { mountSpecializedVisualization, usesSpecializedRenderer } from './visualizationAdapters.ts';
-import { whenFontsReady } from './helpers.ts';
+import { whenFontsReady } from './fonts.ts';
 import { ensureEcharts } from '../vendor/lazy.ts';
 import { parseFunctionExpression, sampleFunction } from '@socrates/core/visualizationMath';
 import { categoryAxisLayout, formatCategoryLabel, truncateLabel } from './visualizationLabels.ts';
@@ -22,7 +22,7 @@ import { flushSync } from 'react-dom';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
 import { VisualizationFallbackActions } from '../react/visualization/VisualizationActions.tsx';
 import { Button } from '../react/ui/shadcn/button';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 export { parseFunctionExpression, sampleFunction, categoryAxisLayout, formatCategoryLabel };
 
@@ -188,7 +188,7 @@ function mountFallbackActions(card: VisualizationCard, host: HTMLElement, spec: 
 
 /* P_viz-i18n — read a translation key with an English fallback.
    Falls through to the fallback when:
-   - `t` is missing (i18n.ts hasn't loaded yet);
+   - `t` is missing (i18n/index.ts hasn't loaded yet);
    - the key returns the key itself (untranslated);
    - any lookup throws. */
 function vizT(key: string, fallback?: string) {

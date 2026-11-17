@@ -1,17 +1,17 @@
 /* Chat API facade: preserve stable imports while transport details live in
    focused request-body, probe, and provider modules under ./api/. */
 
-import { callBuiltInAPI } from './api/builtIn.ts';
-import { callCustomAPI } from './api/custom.ts';
-import { setLastCallError } from './api/shared.ts';
-import { getActiveProvider } from '../config/providerConfig.service.ts';
-import { apiFetch } from '../util/api.ts';
-import type { ChatRequestMessage } from './api/requestBody.ts';
-import type { AIRequestOptions } from './retryPolicy.ts';
+import { callBuiltInAPI } from './builtIn.ts';
+import { callCustomAPI } from './custom.ts';
+import { setLastCallError } from './shared.ts';
+import { getActiveProvider } from '../../config/providerConfig.service.ts';
+import { apiFetch } from '../../util/api/index.ts';
+import type { ChatRequestMessage } from './requestBody.ts';
+import type { AIRequestOptions } from '../retryPolicy.ts';
 
-export { buildChatRequestBody } from './api/requestBody.ts';
-export type { ChatRequestBody, ChatRequestMessage } from './api/requestBody.ts';
-export { callAPIChat } from './api/probe.ts';
+export { buildChatRequestBody } from './requestBody.ts';
+export type { ChatRequestBody, ChatRequestMessage } from './requestBody.ts';
+export { callAPIChat } from './probe.ts';
 
 /* Route a non-streaming call by provider type. Each provider module owns its
    endpoint, response parsing, and retry cleanup. */

@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict';
 import test, { after } from 'node:test';
 
-import { sanitizeSessionPayload, SessionPayloadSchema } from '../src/routes/sessions.ts';
+import { sanitizeSessionPayload, SessionPayloadSchema } from '../src/routes/sessions/payload.ts';
 
 /* routes/sessions.ts pulls in lib/pubsub, which opens a long-lived
    pg.Client LISTEN connection. That handle keeps the event loop alive, so

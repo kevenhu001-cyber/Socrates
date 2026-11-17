@@ -7,7 +7,9 @@
    All three exported for use by main.js / doRender / streaming. */
 
 import { stripNextQuestions } from '@socrates/core/learningBlocks';
-import { esc, escAttr, escHTML, KATEX_MACROS, safeHljsLang } from './helpers.ts';
+import { esc, escAttr, escHTML } from './text.ts';
+import { KATEX_MACROS } from './latex.ts';
+import { safeHljsLang } from './code.ts';
 import { renderMermaid, renderViz, renderVizLoading, renderPlot } from './vizStubs.ts';
 import { preprocessMarkdown, preprocessMarkdownForStreaming, type StreamingPreprocessOptions } from './preprocess.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';

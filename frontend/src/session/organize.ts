@@ -6,11 +6,11 @@ import { stateStore } from '../state/store.ts';
 import { serverCache } from './serverCache.ts';
 import { findServerSessionIndex, getKnownTags, flushRecentsReconcile } from './recents.ts';
 import { getCachedProjects } from '../projects/projectCache.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { showToast } from '../ui/toast.js';
 import { renderTagEditor } from '../react/session-tags/tagEditorHost.tsx';
 import type { TagEditorLabels, TagEditorPopoverProps } from '../react/session-tags/TagEditorPopover.tsx';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 
 /** The subset of an event the tag popover consumes. */

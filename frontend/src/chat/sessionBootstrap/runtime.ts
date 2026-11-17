@@ -1,6 +1,6 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { appMode, webSearchOn } from '../../config/providers.ts';
-import { t } from '../../i18n.ts';
+import { t } from '../../i18n/index.ts';
 
 export { renderRecents } from '../../ui/recentsView.ts';
 

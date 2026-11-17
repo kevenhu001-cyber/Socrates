@@ -1,4 +1,4 @@
-import { useBridge } from '../../lib/bridge/useBridge.ts';
+import { useBridge } from '../../store/useBridge.ts';
 import { confirmState, getConfirmReturnFocus } from '../../ui/confirmState.ts';
 import type { ConfirmSnapshot } from '../../ui/confirmState.ts';
 

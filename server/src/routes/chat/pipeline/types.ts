@@ -82,7 +82,7 @@ export interface ChatStreamPipelineContext {
   req: Request & { userId?: string; user?: { tier?: string } | null };
   res: import('express').Response;
   /** The successful prepareChatRequest result. */
-  prep: Exclude<Awaited<ReturnType<typeof import('../helpers.js').prepareChatRequest>>, { ok: false }>;
+  prep: Exclude<Awaited<ReturnType<typeof import('../prepare/request.js').prepareChatRequest>>, { ok: false }>;
   sessionIdFromQuery: string | null;
   projectIdFromBody: string | null;
   /**

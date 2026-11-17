@@ -16,7 +16,7 @@ globalThis.window = {
   appMode: 'chat',
 };
 
-const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api.ts');
+const { callAPI, callAPIChat, buildChatRequestBody } = await import('../src/chat/api/index.ts');
 const { stateStore } = await import('../src/state/store.ts');
 const { setAppMode } = await import('../src/config/providers.ts');
 const { publishProviderConfig } = await import('../src/config/providerConfig.store.ts');

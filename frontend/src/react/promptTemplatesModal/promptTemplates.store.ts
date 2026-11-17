@@ -1,4 +1,4 @@
-import { useBridge } from '../../lib/bridge/useBridge.ts';
+import { useBridge } from '../../store/useBridge.ts';
 import { promptTemplatesState } from '../../ui/promptTemplatesState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { PromptTemplatesSnapshot } from '../../ui/promptTemplatesState.ts';

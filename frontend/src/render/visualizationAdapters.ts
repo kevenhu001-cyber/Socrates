@@ -1,4 +1,4 @@
-import { whenFontsReady } from './helpers.ts';
+import { whenFontsReady } from './fonts.ts';
 import { truncateLabel } from './visualizationLabels.ts';
 import { VIZ_FONT_FAMILY } from './visualizationOptions.ts';
 import { ensureMermaid, ensurePlotly } from '../vendor/lazy.ts';

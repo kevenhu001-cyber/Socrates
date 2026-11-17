@@ -1,6 +1,6 @@
 /**
  * RN-4 — pure model for the question chain ("Think out loud") and the five
- * learning modes. DOM-free and React-free so the web shell, apps/socrates
+ * learning modes. DOM-free and React-free so the web shell, another React Native host
  * and the node:test suite share one source of truth.
  */
 

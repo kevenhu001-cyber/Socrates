@@ -1,6 +1,6 @@
 /** Module-owned find state, shared by actions and React subscribers. */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import type {
   FindInSessionBridge,
   FindInSessionSnapshot,

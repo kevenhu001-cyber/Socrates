@@ -2,7 +2,7 @@ import type { VoiceSession, SpeechRecognitionRuntime, SpeechResultEvent } from "
 import { getComposerMarkdown, insertComposerText } from '../composer/controller.ts';
 import { showToast } from './toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { useVoiceInputStore } from './voiceInput.store.ts';
 
 

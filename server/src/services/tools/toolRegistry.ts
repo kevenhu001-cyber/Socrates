@@ -15,7 +15,7 @@ import {
   ZOTERO_TOOL,
 } from '../integrations/connectorTools.js';
 import {PROJECT_CONNECTOR_TOOL_NAMES, PROJECT_CONNECTOR_TOOLS} from '../integrations/projectConnectorTools.js';
-import {OPEN_CONNECTOR_CHAT_TOOLS} from '../integrations/openConnectorChatTools.js';
+import {OPEN_CONNECTOR_CHAT_TOOLS} from '../integrations/openConnectorChatToolCatalog.js';
 import {GET_CONNECTOR_SPEC_TOOL, SEARCH_CONNECTORS_TOOL} from '../integrations/connectorDiscovery.js';
 import {INITIALIZE_WORKSPACE_TOOL, WORKSPACE_AGENT_TOOL} from './agentRuntime.js';
 import {PI_AGENT_ENABLED} from './piAgent.js';

@@ -20,7 +20,7 @@
 import { appMode } from '../config/providers.ts';
 import { stateStore } from '../state/store.ts';
 import { wrapForCanvas } from './canvasWrap.ts';
-import { decodeEntities, esc, stripCitationMarkers, stripTags } from './helpers.ts';
+import { decodeEntities, esc, stripCitationMarkers, stripTags } from './text.ts';
 import { formatMsg } from './markdown.ts';
 import { extractScaffoldWidgets, type ScaffoldWidgets } from './scaffoldPipeline.ts';
 import { scheduleWidgetMounts } from './widgetScheduler.ts';

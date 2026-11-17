@@ -7,7 +7,7 @@ import { saveExamSession, setExamAnswer } from './persistence.ts';
 import { dispatchExam } from '../store/index.ts';
 import { examUiL as _examUiL } from './ui.ts';
 import type { ExamProgress, ExamFormDraft } from '../state/exam.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { stateStore } from '../state/store.ts';
 
 function updateExamProgress(index: number, total: number, step: ExamProgress['step']) {

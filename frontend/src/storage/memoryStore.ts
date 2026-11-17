@@ -1,5 +1,5 @@
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 
 /* storage/memoryStore.ts — Cross-session memory.
  *
@@ -211,7 +211,7 @@ function injectMemoryContext(): string {
   return "\n\n## MEMORY (things I know about the user)\n" + lines.join("\n") + "\n";
 }
 
-/* Export for use in main.js and window exports. */
+/* Exported for legacy bridge consumers. */
 const memoryStore = {
   loadMemories: loadMemories,
   setMemory: setMemory,

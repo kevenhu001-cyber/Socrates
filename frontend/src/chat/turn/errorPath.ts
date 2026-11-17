@@ -10,7 +10,7 @@
  * affordance, send-button restore, and stream-failed runtime publish.
  */
 import { settleTurnRuntime } from '@socrates/core/turnRuntime';
-import { esc } from '../../render/helpers.ts';
+import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded } from '../turnUi.ts';

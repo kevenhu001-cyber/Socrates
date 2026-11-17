@@ -15,7 +15,7 @@ import test from 'node:test';
  * suite.
  */
 
-import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion.ts';
+import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion/index.ts';
 
 test('A8: easeOutQuint is the easing the scroll/inset rAF loops consume', () => {
   /* The closed form 1-(1-t)^5 must match what scroll.js and

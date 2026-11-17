@@ -4,7 +4,7 @@ import { showConfirm } from '../../ui/confirm.js';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { resetApp } from './reset.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { translateLifecycleText } from './helpers.ts';
+import { translateLifecycleText } from './translate.ts';
 import { hasActiveModeSession, resolveNextAppMode } from './modeDecision.ts';
 import type { AppMode } from '../../config/providers.ts';
 

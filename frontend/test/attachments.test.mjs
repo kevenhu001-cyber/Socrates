@@ -23,7 +23,7 @@ import {
   attachments,
   attachmentPointerLine,
   buildMessageContent,
-} from '../src/attachments.ts';
+} from '../src/attachments/index.ts';
 import { buildUserContentParts } from '../src/chat/history.ts';
 import { getProviderConfigSnapshot, publishProviderConfig } from '../src/config/providerConfig.store.ts';
 

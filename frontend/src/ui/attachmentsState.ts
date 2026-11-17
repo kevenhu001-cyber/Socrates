@@ -1,4 +1,4 @@
-import { createImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
+import { createImmutableBridge } from '../store/bridge.ts';
 
 export type AttachmentKind = 'image' | 'text' | 'document' | 'file' | 'pdf' | 'unknown';
 

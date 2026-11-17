@@ -57,8 +57,8 @@ import {
   appendNativeToolContract,
   appendToolRoutingHints,
   prependCodeInterpreterPrompt,
-  SSE_PRIME,
-} from '../helpers.js';
+} from '../prepare/prompts.js';
+import { SSE_PRIME } from '../prepare/sse.js';
 import {SseEmitter} from './sseEmitter.js';
 import {createToolRunner} from './toolExecutors.js';
 import {createStreamToolContext} from './toolContext.js';

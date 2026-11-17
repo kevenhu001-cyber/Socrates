@@ -22,7 +22,7 @@ import {
 } from './send/runtime.ts';
 import { enqueuePrompt } from './promptQueue.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { resetAttachments } from '../attachments.ts';
+import { resetAttachments } from '../attachments/index.ts';
 import { renderAttachmentChips } from '../attachments/render.ts';
 
 /* RN-14: a question the learner typed joins the question chain ("You

@@ -7,7 +7,7 @@ import { dispatchExam, useExamStore, useUiStore } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.service.ts';
 import { examNavCurrentIdx, examNavJump, examNavStep } from '../../exam/navigation.ts';
 import { cancelExamGeneration, runExamGeneration, selectExamOpt } from '../../exam/generation.ts';
-import { closeExamView, renderExamForm } from '../../exam.ts';
+import { closeExamView, renderExamForm } from '../../exam/index.ts';
 import { scheduleExamAnswerSave, setExamAnswer, submitExam } from '../../exam/persistence.ts';
 import { buildExamChrome, buildExamStrings } from '../../exam/copy.ts';
 import { examActionsOf, examModeOf, examScreenOf, examTitleOf, type ExamSnapshot } from '../../exam/screen.ts';

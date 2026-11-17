@@ -12,7 +12,7 @@ import { mergeSessionMistakes, type SessionMistake } from '@socrates/ui/study-mo
 import { useKbStore } from '../../store/index.ts';
 import { getMistakeArchiveVersion, loadServerMistakes, otherSessionMistakes, subscribeMistakeArchive } from '../../tutor/mistakeArchive.ts';
 import { useCurrentSessionId, useSessions } from '../session-list/sessionList.store.ts';
-import { apiFetch } from '../../util/api.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import type { MistakeStateEntry } from '../../state/kb.ts';
 import { getCurrentUser } from '../legacy/gateway';
 

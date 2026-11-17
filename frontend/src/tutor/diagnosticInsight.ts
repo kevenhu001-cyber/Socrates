@@ -6,7 +6,7 @@
  * when it fails, the results screen shows its computed copy as before.
  */
 import { normalizeDiagnosticInsight, type DiagnosticInsightResult } from '@socrates/core/learningBlocks';
-import { callAPI, type ChatRequestMessage } from '../chat/api.ts';
+import { callAPI, type ChatRequestMessage } from '../chat/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { languageName } from './conceptMap.ts';

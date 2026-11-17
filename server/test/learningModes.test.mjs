@@ -8,7 +8,8 @@ import {
   parseLearningModeSections,
 } from '../src/lib/prompts.js';
 import { appendTurnContext } from '../src/lib/chatPromptContext.js';
-import { ChatPayloadSchema, buildLearningModeTurn } from '../src/routes/chat/helpers.js';
+import { ChatPayloadSchema } from '../src/routes/chat/prepare/wire.js';
+import { buildLearningModeTurn } from '../src/routes/chat/prepare/context.js';
 
 describe('RN-6 learning-mode prompts', () => {
   test('every mode gets autonomous learning and inline feedback instructions', async () => {

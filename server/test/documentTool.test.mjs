@@ -7,7 +7,7 @@ import { DOCUMENT_TOOL, executeDocument, validateDocumentArgs } from '../src/ser
 import { createToolRegistry } from '../src/services/tools/toolRegistry.ts';
 import { createToolExecutorRegistry } from '../src/routes/chat/pipeline/executors/registry.ts';
 import { resolveToolName } from '../src/services/tools/toolCallSafety.ts';
-import { appendToolRoutingHints } from '../src/routes/chat/helpers.ts';
+import { appendToolRoutingHints } from '../src/routes/chat/prepare/prompts.js';
 
 test('one document capability exposes two strictly discriminated content contracts', () => {
   const names = createToolRegistry({}).definitions.map(tool => tool.function.name);

@@ -3,7 +3,7 @@ import { Check, ClipboardX, Copy, Expand } from 'lucide-react';
 import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
 import { openVizModalRaw } from '../../render/vizStubs.ts';
-import { esc } from '../../render/helpers.ts';
+import { esc } from '../../render/text.ts';
 import { i18n } from '../legacy/gateway.ts';
 
 export interface CodeBlockActionsProps {

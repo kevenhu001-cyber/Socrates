@@ -12,7 +12,7 @@
  * M1 ships the client only; turnController switches to it in M2.
  */
 
-import { apiFetch, apiFetchRaw } from '../util/api.ts';
+import { apiFetch, apiFetchRaw } from '../util/api/index.ts';
 import { batchPeek, batchRemoveItem, batchSetItem } from '../batchStorage.ts';
 import { consumeSseBuffer } from '@socrates/core/sse';
 import { reportSwallow } from '../util/reportSwallow.ts';

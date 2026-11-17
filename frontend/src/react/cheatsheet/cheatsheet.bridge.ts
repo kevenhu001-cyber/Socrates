@@ -1,6 +1,6 @@
 /** Module-owned cheatsheet state shared with the UI facade and React. */
 
-import { createImmutableBridge, useBridge } from '../../lib/bridge';
+import { createImmutableBridge, useBridge } from '../../store/index.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { CheatsheetBridge, CheatsheetSnapshot } from './types';
 

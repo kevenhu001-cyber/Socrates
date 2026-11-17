@@ -20,12 +20,12 @@ import { buildDeltaPayload, commitSynced, createFingerprintCache, seedSynced, st
 import { generateSessionTitle } from '../chat/sessionTitle.ts';
 import { markCmdKIndexDirty } from '../ui/cmdK.ts';
 import { toggleShareBtn } from '../ui/share.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { showToast } from '../ui/toast.js';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
 import { appMode } from '../config/providers.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { renderRecents } from '../ui/recentsView.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -694,7 +694,7 @@ function postSession(payload: SessionPostPayload): Promise<unknown> {
 export function installUnloadSave(): void {
   /* P_save-unload-ref — read CSRF token synchronously from the cookie
      (available during page teardown). Same pattern as getCsrfToken in
-     util/api.ts but inlined to avoid an import dependency. */
+     util/api/index.ts but inlined to avoid an import dependency. */
   function _beaconCsrf(): string | null {
     const m = document.cookie.match(/\bcsrf=([^;]+)/);
     return m ? m[1] : null;

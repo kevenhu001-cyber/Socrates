@@ -80,7 +80,7 @@ export function retryRecoveredTurn(messageId: string): boolean {
 
 /* P_react-live-turn — a declarative row answers a Codex approval through
    __socratesLegacy.liveTurn, and the only code that can POST a decision lives
-   inside the runtime that recorded it (chat/toolRuntime.ts needs the message
+   inside the runtime that recorded it (chat/toolRuntime/index.ts needs the message
    closure to write the outcome back onto toolCalls[].approval). */
 export function registerLiveTurnRuntime(messageId: string | null | undefined, runtime: LiveTurnRuntime | null | undefined): void {
   if (!messageId || !runtime) return;

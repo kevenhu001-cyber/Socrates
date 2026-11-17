@@ -12,7 +12,7 @@
  */
 import { stateStore } from '../../state/store.ts';
 import type { ActiveChatController } from '../turnState.ts';
-import type { ToolRuntime } from '../toolRuntime.ts';
+import type { ToolRuntime } from '../toolRuntime/index.ts';
 import type { StreamPlayer } from '../../render/streamPlayer.ts';
 import type { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 

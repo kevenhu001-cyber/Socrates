@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createToolRuntime } from '../src/chat/toolRuntime.ts';
+import { createToolRuntime } from '../src/chat/toolRuntime/index.ts';
 globalThis.window = {};
 globalThis.document = {cookie: ''};
 const {stateStore} = await import('../src/state/store.ts');

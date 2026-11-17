@@ -22,7 +22,7 @@ import {
   MAX_CONCURRENT_UPLOADS,
   removeAttachment,
   retryAttachment,
-} from '../src/attachments.ts';
+} from '../src/attachments/index.ts';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

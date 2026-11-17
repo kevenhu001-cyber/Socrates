@@ -1,7 +1,7 @@
 // Usage modal data and request lifecycle. The React usage modal owns all markup
 // and interaction state; this module only controls the API and typed snapshot.
 
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import {
   publishUsageData,
   publishUsageError,

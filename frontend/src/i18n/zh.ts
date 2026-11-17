@@ -1,4 +1,4 @@
-/* zh locale table — extracted from src/i18n.ts (P_perf-i18n-split).
+/* zh locale table — extracted from src/i18n/index.ts (P_perf-i18n-split).
    Loaded on demand: it ships as its own async chunk so en users never
    pay for it, and zh users fetch it in parallel with the auth boot
    fetches while the boot-loading screen is still up. */

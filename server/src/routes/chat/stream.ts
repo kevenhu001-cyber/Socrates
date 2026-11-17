@@ -24,13 +24,10 @@ import { Conflict, NotFound } from '../../lib/errors.js';
 import { getDb } from '../../db/index.js';
 import { chatTurns } from '../../db/schema/index.js';
 import { and, eq } from 'drizzle-orm';
-import {
-  chatRateLimitDispatch,
-  endSseWithError,
-  prepareChatRequest,
-  writeSsePrime,
-  ChatPayloadSchema,
-} from './helpers.js';
+import { chatRateLimitDispatch } from './prepare/rates.js';
+import { endSseWithError, writeSsePrime } from './prepare/sse.js';
+import { prepareChatRequest } from './prepare/request.js';
+import { ChatPayloadSchema } from './prepare/wire.js';
 import { runChatStreamPipeline } from './pipeline/runChatStreamPipeline.js';
 import { createStreamToolContext } from './pipeline/toolContext.js';
 import { createChatTurn, withChatTurnExecution } from '../../services/core/chatTurns.js';

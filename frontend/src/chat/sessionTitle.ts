@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { hasUsableActive } from '../config/providers.ts';
 import { stateStore } from '../state/store.ts';
 import { stripHtmlTags } from '../util/stripHtml.ts';

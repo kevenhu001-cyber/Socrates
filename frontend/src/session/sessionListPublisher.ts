@@ -2,7 +2,7 @@ import { stateStore } from '../state/store.ts';
 import { getRecents } from './recents.ts';
 import type { SessionRow } from './store.ts';
 import { getRecentsFilter } from '../sidebar/sidebar.service.ts';
-import { filterRecentsByChip } from '../ui/recentsHelpers.ts';
+import { filterRecentsByChip } from '../ui/recentsModel.ts';
 import type { SessionItem } from '../ui/sessionListState.ts';
 import { sameSessionRow, sessionRowFields } from './sessionRowModel.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';

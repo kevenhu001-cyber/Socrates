@@ -11,7 +11,7 @@
  * remains the owner of share actions and API requests.
  */
 
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.ts';
@@ -20,14 +20,14 @@ import { registerSharedViewCleanup } from './msgListMount.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
 import type { MessageEntry } from './messageActions.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { readTopbarState, setTopbarState } from '../react/topbar/topbarStore.ts';
 import { hideGate } from '../auth/index.ts';
 import { dispatchExam, dispatchUi } from '../store/index.ts';
 import type { ExamQuestion } from '../exam/types.ts';
 import { renderRecents } from './recentsView.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 interface SharedMessage extends MessageEntry {
   role: string;

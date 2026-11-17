@@ -1,6 +1,6 @@
-import { esc, escAttr } from '../render/helpers.ts';
+import { esc, escAttr } from '../render/text.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { t as i18nT } from '../i18n.ts';
+import { t as i18nT } from '../i18n/index.ts';
 
 interface MistakeOption { letter: string; text: string }
 interface MistakeEntry {
@@ -90,7 +90,7 @@ export function findSameMistake(
 type MistakeStore = typeof import('../state/store.ts')['stateStore'];
 interface MistakeBookOptions {
   stateStore: MistakeStore;
-  apiFetch: typeof import('../util/api.ts')['apiFetch'];
+  apiFetch: typeof import('../util/api/index.ts')['apiFetch'];
   saveCurrentSession: typeof import('../session/persistence.ts')['saveCurrentSession'];
   appendAssistantMessage: typeof import('../chat/messages.ts')['addAssistantUiMessage'];
 }
@@ -98,7 +98,7 @@ interface MistakeBookOptions {
 
 /* P_mistakes-i18n — this panel shipped raw English literals while zh is
    the default locale, and echoed the internal mistake.type enum straight
-   into the card meta. i18n.ts's t() does no interpolation, so {n} is
+   into the card meta. i18n/index.ts's t() does no interpolation, so {n} is
    substituted here, matching the convention in ui/diagnosticQuestion.ts. */
 function t(key: string, vars?: Record<string, string | number> | undefined) {
   const v = i18nT(key);

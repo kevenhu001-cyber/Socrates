@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { linkAbortSignal } from '../util/api/request.ts';
 
 export const CHAT_PAGE_CONTEXT_TIMEOUT_MS = 2500;

@@ -19,7 +19,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { useInlineMath } from '../rn/useInlineMath';
 import { formatMsg } from '../../render/markdown.ts';
-import { esc } from '../../render/helpers.ts';
+import { esc } from '../../render/text.ts';
 import { renderInlineMathHtml } from '../../render/inlineMath.ts';
 import { onKatexReady } from '../../vendor/lazy.ts';
 

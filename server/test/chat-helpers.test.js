@@ -3,7 +3,7 @@ import { shutdownPubsub } from '../src/lib/pubsub.js';
 after(async () => { await shutdownPubsub(); });
 // @ts-check
 /**
- * Unit tests for src/routes/chat/helpers.js — the pure functions
+ * Unit tests for src/routes/chat/prepare/* — the pure functions
  * extracted from the old monolithic routes/chat.js in July 2026.
  *
  * Most of these helpers are prompt-injection defence layers:
@@ -21,27 +21,31 @@ import { drizzle } from 'drizzle-orm/pg-proxy';
 
 import {
   enforceServerSystemBoundary,
-  injectUserContext,
+  classifyClientSystemMessages,
+  renderClientBlocks,
+} from '../src/routes/chat/prepare/clientSystem.js';
+import { appendMemoryContext } from '../src/routes/chat/prepare/context.js';
+import {
+  prependCodeInterpreterPrompt,
+  appendNativeToolContract,
+  appendToolRoutingHints,
+} from '../src/routes/chat/prepare/prompts.js';
+import {
   sanitizeExtraBody,
   transformContentForModel,
   transformMessagesForModel,
   containsImageUrlParts,
-  prependCodeInterpreterPrompt,
-  appendFinalOutputConstraints,
-  appendNativeToolContract,
-  appendToolRoutingHints,
-  FINAL_OUTPUT_CONSTRAINTS,
   ChatPayloadSchema,
-  appendMemoryContext,
-  classifyClientSystemMessages,
-  renderClientBlocks,
-} from '../src/routes/chat/helpers.js';
+} from '../src/routes/chat/prepare/wire.js';
 import {
   refreshServerPrompt,
   SERVER_SYSTEM_POLICY,
+  FINAL_OUTPUT_CONSTRAINTS,
   FINAL_OUTPUT_CONSTRAINTS_MARKER,
   REASONING_EFFORT_MARKER,
   HIGH_EFFORT_OUTPUT_RULE,
+  injectUserContext,
+  appendFinalOutputConstraints,
 } from '../src/lib/chatPolicy.js';
 import { DEMONSTRATION_GUIDANCE } from '../src/services/demonstrationGuide.js';
 

@@ -1,7 +1,7 @@
 import type { OwnedRootHandle } from '../react/lib/boot/ownedRoot';
 import type { BrowserLoginDialogProps } from '../react/browserLogin/BrowserLoginDialog';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
 
 /* Chrome keeps its HttpOnly sid. Only a short-lived, PKCE-bound code leaves
  * the browser, after an explicit account confirmation and link click. */

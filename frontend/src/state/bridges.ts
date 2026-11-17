@@ -1,27 +1,17 @@
 /**
- * Per-namespace immutable bridges for the M3 state refactor.
+ * The six domain namespaces (session / kb / search / call / ui / exam).
  *
- * Each namespace (session / kb / search / call / ui / exam) owns its
- * own `createImmutableBridge` instance. `state/store.ts` exposes a thin
- * facade (`stateStore`) that forwards actions to the correct bridge,
- * aggregates snapshots into the legacy `state` shape, and forwards
- * subscriptions to all bridges.
+ * Each namespace owns one `createDomainStore` instance. The legacy
+ * `state/store.ts` facade forwards string-keyed actions here, while React
+ * reads through the typed hooks in `store/index.ts`.
  *
- * Why split into per-namespace bridges?
- *  - The session namespace changes a lot (every chat turn) while
- *    `ui` and `call` change rarely. Independent bridges let
- *    `useSyncExternalStore` subscribers re-render only when their
- *    namespace actually changed.
- *  - Each reducer is small and pure — easy to unit-test in isolation.
- *  - Future M4 work can replace the Proxy shim with direct bridge
- *    reads without touching this file.
+ * Independent namespaces keep unrelated commits from re-rendering every
+ * subscriber: the session changes on every chat turn, while `ui` and `call`
+ * change rarely. Each reducer is pure and unit-tested in isolation.
  */
 
-import {
-  createDomainStore,
-  type DomainBridge,
-} from '../store/createDomainStore.ts';
-import type { RevisionedSnapshot } from '../lib/bridge/createImmutableBridge.ts';
+import { createDomainStore } from '../store/createDomainStore.ts';
+import type { Bridge, RevisionedSnapshot } from '../store/bridge.ts';
 import {
   createInitialKbState,
   type KbState,
@@ -150,7 +140,7 @@ export const sessionDomain = createDomainStore<SessionSnapshot, SessionAction>({
   reducer: sessionReducer,
 });
 
-export const sessionBridge: DomainBridge<SessionSnapshot, SessionAction> = sessionDomain.bridge;
+export const sessionBridge: Bridge<SessionSnapshot, SessionAction> = sessionDomain.bridge;
 export const sessionStore = sessionDomain.store;
 
 /* ────────────────────────── KB ─────────────────────────────── */
@@ -197,7 +187,7 @@ export const kbDomain = createDomainStore<KbSnapshot, KbAction>({
   reducer: kbReducer,
 });
 
-export const kbBridge: DomainBridge<KbSnapshot, KbAction> = kbDomain.bridge;
+export const kbBridge: Bridge<KbSnapshot, KbAction> = kbDomain.bridge;
 export const kbStore = kbDomain.store;
 
 /* ────────────────────────── Search ─────────────────────────── */
@@ -233,7 +223,7 @@ export const searchDomain = createDomainStore<SearchSnapshot, SearchAction>({
   reducer: searchReducer,
 });
 
-export const searchBridge: DomainBridge<SearchSnapshot, SearchAction> = searchDomain.bridge;
+export const searchBridge: Bridge<SearchSnapshot, SearchAction> = searchDomain.bridge;
 export const searchStore = searchDomain.store;
 
 /* ────────────────────────── Call ───────────────────────────── */
@@ -266,7 +256,7 @@ export const callDomain = createDomainStore<CallSnapshot, CallAction>({
   reducer: callReducer,
 });
 
-export const callBridge: DomainBridge<CallSnapshot, CallAction> = callDomain.bridge;
+export const callBridge: Bridge<CallSnapshot, CallAction> = callDomain.bridge;
 export const callStore = callDomain.store;
 
 /* ────────────────────────── UI ─────────────────────────────── */
@@ -299,7 +289,7 @@ export const uiDomain = createDomainStore<UiSnapshot, UiAction>({
   reducer: uiReducer,
 });
 
-export const uiBridge: DomainBridge<UiSnapshot, UiAction> = uiDomain.bridge;
+export const uiBridge: Bridge<UiSnapshot, UiAction> = uiDomain.bridge;
 export const uiStore = uiDomain.store;
 
 /* ────────────────────────── Exam ───────────────────────────── */
@@ -332,7 +322,7 @@ export const examDomain = createDomainStore<ExamSnapshot, ExamAction>({
   reducer: examReducer,
 });
 
-export const examBridge: DomainBridge<ExamSnapshot, ExamAction> = examDomain.bridge;
+export const examBridge: Bridge<ExamSnapshot, ExamAction> = examDomain.bridge;
 export const examStore = examDomain.store;
 
 /* ────────────────────────── Aggregate ──────────────────────── */

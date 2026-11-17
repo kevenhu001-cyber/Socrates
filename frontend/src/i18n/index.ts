@@ -1,8 +1,8 @@
-import { reportSwallow } from './util/reportSwallow.ts';
-import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
-import { publishLocale } from './i18n/localeRevision.ts';
-import { dispatchExam, examStore } from './store/index.ts';
-import { stateStore } from './state/store.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
+import { getCurrentLanguage, setCurrentLanguage } from './languageState.ts';
+import { publishLocale } from './localeRevision.ts';
+import { dispatchExam, examStore } from '../store/index.ts';
+import { stateStore } from '../state/store.ts';
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
@@ -20,14 +20,14 @@ const LANG_OPTION_IDS=["profileLangEn","profileLangZh"];
 function ensureZh(){
   if(I18N.zh)return Promise.resolve();
   if(!_zhReady){
-    _zhReady=import("./i18n/zh.ts").then(function(m){I18N.zh=m.zh;}).catch(function(err){_zhReady=null;try{console.error("[i18n] zh locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureZh.logError'); /* ignore */}});
+    _zhReady=import("./zh.ts").then(function(m){I18N.zh=m.zh;}).catch(function(err){_zhReady=null;try{console.error("[i18n] zh locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureZh.logError'); /* ignore */}});
   }
   return _zhReady;
 }
 function ensureEn(){
   if(I18N.en)return Promise.resolve();
   if(!_enReady){
-    _enReady=import("./i18n/en.ts").then(function(m){I18N.en=m.en;}).catch(function(err){_enReady=null;try{console.error("[i18n] en locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureEn.logError'); /* ignore */}});
+    _enReady=import("./en.ts").then(function(m){I18N.en=m.en;}).catch(function(err){_enReady=null;try{console.error("[i18n] en locale failed to load",err)}catch(e){reportSwallow(e, 'i18n.ensureEn.logError'); /* ignore */}});
   }
   return _enReady;
 }

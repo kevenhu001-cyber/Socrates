@@ -23,9 +23,9 @@ import { getComposerMarkdown, setComposerMarkdown, focusComposer } from '../comp
 import { cycleActiveProject, closeTagEditor } from '../session/organizeRuntime.ts';
 import { findLastUserMessage } from '../render/markdown.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { t } from '../i18n.ts';
-import { startNewChat } from '../app/lifecycle.ts';
-import { startSession } from '../chat/sessionBootstrap.ts';
+import { t } from '../i18n/index.ts';
+import { startNewChat } from '../app/lifecycle/index.ts';
+import { startSession } from '../chat/sessionBootstrap/index.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 
 

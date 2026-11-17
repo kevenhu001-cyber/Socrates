@@ -1,11 +1,11 @@
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { authExpiryIsSuppressed, notifyUnauthorized, refreshCsrfToken } from './api/auth.ts';
-import { createRetryApiFetch } from './api/retry.ts';
-import { linkAbortSignal, prepareApiRequest, type ApiRequestOptions } from './api/request.ts';
+import { reportSwallow } from '../reportSwallow.ts';
+import { authExpiryIsSuppressed, notifyUnauthorized, refreshCsrfToken } from './auth.ts';
+import { createRetryApiFetch } from './retry.ts';
+import { linkAbortSignal, prepareApiRequest, type ApiRequestOptions } from './request.ts';
 
-export { installAuthHooks } from './api/auth.ts';
-export { getCsrfToken } from './api/request.ts';
-export type { ApiRequestOptions } from './api/request.ts';
+export { installAuthHooks } from './auth.ts';
+export { getCsrfToken } from './request.ts';
+export type { ApiRequestOptions } from './request.ts';
 
 /**
  * ApiError shape shared by JSON and streaming calls:

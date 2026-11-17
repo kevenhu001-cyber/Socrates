@@ -12,7 +12,7 @@
  * rows never deletes older ones, and older pages are added to the save
  * watermark as they arrive so they are not re-uploaded.
  */
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { dispatchSession } from '../store/index.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';

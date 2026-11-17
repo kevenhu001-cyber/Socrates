@@ -18,7 +18,7 @@ import { updateMessageSnapshot } from '../ui/messageSnapshot.ts';
 import { velocityScrollTo, cancelScrollAnimation } from '../ui/scroll.ts';
 import { writeScrollTop } from '../ui/scrollCoordinator.ts';
 import { suppressScrollPositionIntent, hideNewReplyPill } from '../ui/scrollPill.ts';
-import { planSendGlide } from '../ui/motion.ts';
+import { planSendGlide } from '../ui/motion/index.ts';
 import { getKeyboardLift } from '../ui/keyboard/index.ts';
 import type { MessageEntry } from '../ui/messageActions.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';

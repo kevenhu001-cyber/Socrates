@@ -1,7 +1,7 @@
 /* examModel — DOM-free parsing/grading for the exam surface. The web
  * baseline generates questions client-side and stores them on the session
  * (`examData`); grading is also client-side. This module ports that exact
- * contract so the Universal App can render, answer, save and grade an exam
+ * contract so the React Native host can render, answer, save and grade an exam
  * without any additional server round-trip. */
 
 import type { ExamData, JsonValue } from '@socrates/contracts';

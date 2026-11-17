@@ -10,7 +10,7 @@
  *    it joins the question chain and goes out as the next turn.
  */
 import { extractNextQuestions, normalizeMistakeAnalysis } from '@socrates/core/learningBlocks';
-import { callAPI, type ChatRequestMessage } from '../chat/api.ts';
+import { callAPI, type ChatRequestMessage } from '../chat/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { saveCurrentSession } from '../session/persistence.ts';

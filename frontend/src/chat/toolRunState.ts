@@ -6,12 +6,12 @@
  * M3 (LobeHub alignment): the contract itself now lives in
  * `@socrates/core` (packages/core/src/toolRun.ts) so the RN client and the
  * server share it. This module injects the desktop WASM mechanism library
- * (tools-rust, compiled to WASM — see lib/socratesWasm.js) into the shared
+ * (tools-rust, compiled to WASM — see util/socratesWasm.ts) into the shared
  * factory; the pure-TS path inside the factory remains the fallback and
  * the parity reference for tests (test/wasmParity.test.mjs).
  */
 
-import { getSocratesWasm } from '../lib/socratesWasm.ts';
+import { getSocratesWasm } from '../util/socratesWasm.ts';
 import { createToolRunApi } from '@socrates/core/toolRun';
 
 export type { ToolRun, ToolRunSummary } from '@socrates/core/toolRun';

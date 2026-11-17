@@ -1,5 +1,5 @@
 /* artifacts — descriptor collection + bridge message parsing for the
- * Universal App's isolated artifact islands.
+ * React Native host's isolated artifact islands.
  *
  * A message can carry heavy content two ways:
  *   - a native visualization tool result (the v1 specs extracted from Intelligent UI source), and

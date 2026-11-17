@@ -2,7 +2,7 @@ import { requestTutorExploration } from '../../tutor/policy.ts';
 import { getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
 import { serializeSelectedPluginContext } from '../../composer/pluginCatalog.ts';
-import { attachments, snapshotAttachments } from '../../attachments.ts';
+import { attachments, snapshotAttachments } from '../../attachments/index.ts';
 import { detectLanguage } from '../lang.ts';
 import { isSlashCommandPaletteOpen } from '../templateSlash.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';

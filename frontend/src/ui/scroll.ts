@@ -34,7 +34,7 @@ interface ScrollAnimation extends Omit<ScrollSetup, 'options' | 'plan'> {
  promise: Promise<void>; resolvePromise: () => void; direction: number; startedAt: number;
  handle: number; cancelled: boolean; lastWrittenTop: number; stop: () => void; onScroll: () => void;
 }
-import { planMotionForUser, easeOutHouse } from './motion.ts';
+import { planMotionForUser, easeOutHouse } from './motion/index.ts';
 import { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK } from './scrollDecision.ts';
 import { beginScrollOwner, endScrollOwner, writeScrollTop } from './scrollCoordinator.ts';
 import { stateStore } from '../state/store.ts';
@@ -57,7 +57,7 @@ export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 //
 // velocityScrollTo() is the lower-level primitive: it scrolls an
 // arbitrary target in `distance` px using the velocity-based duration
-// planner in ui/motion.ts. smoothScrollToBottom() is layered on top of
+// planner in ui/motion/index.ts. smoothScrollToBottom() is layered on top of
 // velocityScrollTo() so the data-auto-scrolling flag and cancellation
 // semantics are written once. Keyboard geometry itself is handled by
 // ui/keyboard/index.ts; this module only re-anchors a pinned transcript
@@ -139,13 +139,13 @@ export function cancelScrollAnimation(list: TurnAnchorList){
   cancelScrollAnimationFor(list);
 }
 
-/* `easeOutQuint` lives in ui/motion.ts alongside the velocity planner
+/* `easeOutQuint` lives in ui/motion/index.ts alongside the velocity planner
    so the per-frame interpolation matches the curve used by scroll
    consumers. */
 
 /* Glide the chat container from its current `scrollTop` to
    `targetTop` using the velocity-based duration planner from
-   ui/motion.ts. Honours prefers-reduced-motion (snaps) and
+   ui/motion/index.ts. Honours prefers-reduced-motion (snaps) and
    `opts.smooth:false` (snaps). Returns a Promise that resolves when
    the animation settles, or immediately when snapping.
 

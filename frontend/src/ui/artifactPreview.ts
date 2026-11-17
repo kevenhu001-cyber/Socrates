@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from 'react';
 import { STROKE_ICONS } from './icons/toolIcons.ts';
 import { openDetailSurface, closeDetailSurface } from './detailSurface.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 /* Artifact URLs come from API payloads. Only our own origin, or a plain
    https host, may reach an <img src>, an <iframe src> or an <a href>:

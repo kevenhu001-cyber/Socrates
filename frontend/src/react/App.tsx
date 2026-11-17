@@ -1,6 +1,10 @@
 /**
  * Root React application container for Socrates.
- * Consolidates the multi-root architecture into a single coherent React tree.
+ *
+ * Experimental single-tree entry: it is loaded only when a `#root` host
+ * exists (see `react/bootstrap.tsx`). `index.html` still ships the host-based
+ * shell, so production currently mounts the registry in `lib/boot/specs.tsx`.
+ * Fold the remaining host specs into this tree before adding `#root`.
  */
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';

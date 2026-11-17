@@ -6,18 +6,18 @@ import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 import { stateStore } from '../state/store.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turnUi.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { loadLocalMemory, LOCAL_MEMORY_MAX, _memKey } from '../storage/localMemory.ts';
 import { batchSetItem } from '../batchStorage.ts';
 import { formatMsg } from '../render/markdown.ts';
-import { esc } from '../render/helpers.ts';
+import { esc } from '../render/text.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { generateId } from '../util/ids.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { registerRecoveredTurnRetry } from '../chat/liveTurn.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 /** A persisted message row from GET /api/sessions/:id. */
 export interface PersistedMessage {

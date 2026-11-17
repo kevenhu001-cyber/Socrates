@@ -42,7 +42,7 @@ test('reset re-arms the notice for the next session', () => {
 });
 
 test('the notice resolves a localized string through window.t', async () => {
-  const { setLang } = await import('../src/i18n.ts');
+  const { setLang } = await import('../src/i18n/index.ts');
   await window.__i18nReady;
   const en = window.t('toast.mockFallback');
   assert.ok(en && en !== 'toast.mockFallback', 'English dictionary defines toast.mockFallback');

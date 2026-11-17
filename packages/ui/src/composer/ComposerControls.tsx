@@ -2,7 +2,7 @@
  * RN-7 — the composer's control rail: tools (+), reasoning effort, dictation
  * and the primary send / stop disc. DOM-free; the web shell renders it
  * through react-native-web inside the composer grid
- * (frontend/src/react/composer-input/ComposerShell.tsx) and apps/socrates
+ * (frontend/src/react/composer-input/ComposerShell.tsx) and another React Native host
  * can reuse it.
  *
  * The component draws and reports; it decides nothing. Every control keeps

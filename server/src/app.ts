@@ -17,14 +17,14 @@ import {
 } from './middleware/clientError.js';
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
-import sessionRouter from './routes/sessions.js';
+import sessionRouter from './routes/sessions/index.js';
 /* P_suggestions-ai — landing-page starter prompts, derived from the
    user's recent sessions via the LLM. Mounted before /api/chat so its
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
 import intelligentUiMediaRouter from './routes/intelligentUiMedia.js';
 import faviconRouter from './routes/favicons.js';
-import chatRouter from './routes/chat.js';
+import chatRouter from './routes/chat/index.js';
 import chatTurnsRouter from './routes/chatTurns.js';
 import ttsRouter from './routes/tts.js';
 import ragRouter from './routes/rag.js';
@@ -265,7 +265,7 @@ app.use(helmet({
   // cdn.jsdelivr.net scripts, which no longer exist — and the SPA reaches
   // the API same-origin through the nginx /api/v2 reverse proxy, so that
   // rationale never applied either. The honest reason to keep it wide is
-  // that the non-browser clients (Expo web build) have not been audited for
+  // that the non-browser clients have not been audited for
   // no-cors subresource loads against the API host; narrowing this is a
   // separate, testable change. (The Capacitor shell that used to be the
   // second such client was removed 2026-10-15 — ADR 0016.)

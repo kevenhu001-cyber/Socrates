@@ -27,7 +27,7 @@ import {
   removeMessageChunks,
   sessionOwnedBy,
 } from '../src/services/embeddings/chunkIndex.js';
-import { appendRagContext } from '../src/routes/chat/helpers.js';
+import { appendRagContext } from '../src/routes/chat/prepare/context.js';
 
 let dbAvailable = false;
 const TEST_USER_ID = '00000000-0000-0000-0000-0000000000a3';

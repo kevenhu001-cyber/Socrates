@@ -15,7 +15,7 @@ import { projectSidebarOpen } from '../../sidebar/sidebar.service.ts';
 import { isMobileViewport } from '../../sidebar/breakpoints.ts';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { translateLifecycleText } from './helpers.ts';
+import { translateLifecycleText } from './translate.ts';
 import { shouldConfirmReset } from './resetDecision.ts';
 import { clearActiveTemplate } from '../../chat/templateSlash.ts';
 import { renderRecents } from '../../ui/recentsView.ts';

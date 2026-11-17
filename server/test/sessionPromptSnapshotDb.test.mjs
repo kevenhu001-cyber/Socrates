@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { initDb, closeDb } from '../src/db/index.js';
 import { users, sessions, apiKeys, memories, sessionPromptSnapshots } from '../src/db/schema/index.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
-import { prepareChatRequest } from '../src/routes/chat/helpers.js';
+import { prepareChatRequest } from '../src/routes/chat/prepare/request.js';
 import { resolveSessionPrompt } from '../src/services/core/sessionPromptSnapshot.js';
 
 const enabled = Boolean(process.env.DATABASE_URL);
@@ -32,7 +32,7 @@ async function prepare(s, custom, user = owner, extra = {}) {
   return prepareChatRequest(req, res);
 }
 
-test('real prelude freezes user/custom/memory context and refreshes it only for a new session', { skip: !enabled }, async () => {
+test('real prelude freezes user/memory context and refreshes client instructions per turn', { skip: !enabled }, async () => {
   const s = await session();
   const [memory] = await db.insert(memories).values({ userId: owner.id, text: 'original durable fact', scope: 'global', enabled: true }).returning();
   const first = await prepare(s, 'original custom instructions');
@@ -43,9 +43,14 @@ test('real prelude freezes user/custom/memory context and refreshes it only for 
   await db.update(memories).set({ text: 'new durable fact' }).where(eq(memories.id, memory.id));
   const changedOwner = { ...owner, displayName: 'Changed name' };
   const second = await prepare(s, 'changed custom instructions', changedOwner);
-  assert.equal(second.payload.messages[0].content, frozen);
+  /* User context and saved memories are session state; client application
+     instructions are turn state and refresh on every request. */
+  assert.match(second.payload.messages[0].content, /Original name/);
+  assert.match(second.payload.messages[0].content, /original durable fact/);
+  assert.match(second.payload.messages[0].content, /changed custom instructions/);
+  assert.doesNotMatch(second.payload.messages[0].content, /original custom instructions/);
   assert.equal(second.payload.messages.filter((m) => m.role === 'system').length, 1);
-  assert.equal(second.payload.messages.at(-1).content, 'latest user question');
+  assert.match(second.payload.messages.at(-1).content, /^latest user question/);
   const fresh = await prepare(await session(), 'changed custom instructions', changedOwner);
   assert.match(fresh.payload.messages[0].content, /Changed name/);
   assert.match(fresh.payload.messages[0].content, /new durable fact/);

@@ -6,7 +6,7 @@
 import { publishSessionList } from '../session/sessionListPublisher.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';
 import { refreshRecentsFilterChipData } from '../sidebar/sidebar.service.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { setSessionListSearchQuery } from './sessionListState.ts';
 
 

@@ -3,6 +3,7 @@ node_modules/
 .env
 *.env.local
 *.env.*
+!server/.env.example
 server/secrets/
 *.pem
 server.log

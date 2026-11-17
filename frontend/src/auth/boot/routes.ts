@@ -1,4 +1,4 @@
-import { apiFetch } from '../../util/api.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { setBuiltInProviderModel, setServerBuiltInKeyAvailable } from '../../config/providerConfig.service.ts';
 import { showToast } from '../../ui/toast.js';
 import { loadSharedSession } from '../../ui/share.ts';
@@ -7,7 +7,7 @@ import { clearAuthTabSelection, showAuthView, showAuthSignin, showGate, submitAu
 import { selectAuthUrlRoute } from './routeSelector.ts';
 import { recordBootedRouteKind } from './routeState.ts';
 import { setAuthField } from '../uiState.ts';
-import { setCurrentUser, markAuthSuccess } from '../../app/lifecycle.ts';
+import { setCurrentUser, markAuthSuccess } from '../../app/lifecycle/index.ts';
 
 /** Auth-view hooks still published on the window by the legacy shell. */
 interface BootRoutesWindow extends Window {
@@ -47,7 +47,7 @@ async function handleLocalDevRoute(params: URLSearchParams, csrfReady: PromiseLi
     setServerBuiltInKeyAvailable(true);
   } catch (error) { reportSwallow(error, 'auth/boot.localDev.config'); }
   const user = { id: 'local-dev', name: 'Local Dev', email: 'dev@local', plan: 'local', isLocal: true };
-  setCurrentUser(user as import('../../app/lifecycle.ts').UserRecord);
+  setCurrentUser(user as import('../../app/lifecycle/index.ts').UserRecord);
   markAuthSuccess();
   revealAppAndHydrate();
   return true;

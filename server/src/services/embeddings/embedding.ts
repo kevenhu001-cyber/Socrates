@@ -54,7 +54,7 @@ export function __resetEmbeddingConfigCache(): void {
 }
 
 /* P_embed-killswitch — the vector layer costs one remote embedding call on
-   the retrieval path of every turn (chat/helpers.ts races it against a 2s
+   the retrieval path of every turn (chat/prepare/context.ts races it against a 2s
    budget before the first token), so operators can disable it without a
    migration or a DB write. Set EMBEDDING_DISABLED=1 to short-circuit to
    null — the hybrid search then falls back to BM25 keyword retrieval,

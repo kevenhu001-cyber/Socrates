@@ -1,5 +1,5 @@
 import { loadLocalMemory } from '../storage/localMemory.ts';
-import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments.ts';
+import { attachmentPointerLine, activeProviderSupportsImages } from '../attachments/index.ts';
 import { sanitizeHtml } from '../render/sanitizeHtml.ts';
 
 type HistoryRole = 'system' | 'user' | 'assistant';

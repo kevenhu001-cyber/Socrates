@@ -1,4 +1,4 @@
-import { createImmutableBridge } from '../lib/bridge/createImmutableBridge.ts';
+import { createImmutableBridge } from '../store/bridge.ts';
 import type { ComposerSurface } from './types.ts';
 import type { PluginCatalogEntry } from './pluginCatalog.ts';
 

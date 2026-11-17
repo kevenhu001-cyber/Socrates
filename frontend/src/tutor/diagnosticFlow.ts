@@ -16,7 +16,7 @@ import { activateMainView } from '../ui/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { askNextQuestion } from './socraticTurn.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { cancelDiagnosticAction, retryDiagnosticAction, useBuiltinDiagnosticAction } from './diagnosticRegistry.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 

@@ -1,4 +1,4 @@
-import { useBridge, useBridgeSelector } from '../lib/bridge/useBridge';
+import { useBridge, useBridgeSelector } from '../store/useBridge.ts';
 import {
   chatRuntimeStore,
   getChatRuntimeSnapshot,

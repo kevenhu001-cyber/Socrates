@@ -1,5 +1,5 @@
 /* Incremental previews and plugin registry for Tutor scaffolds during streaming. */
-import { decodeEntities, escAttr, escHTML } from './helpers.ts';
+import { decodeEntities, escAttr, escHTML } from './text.ts';
 import {
   fieldMatches,
   plainScaffoldBody,

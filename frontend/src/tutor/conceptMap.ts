@@ -15,7 +15,7 @@
  * Old sessions have neither and the map shows what it showed before.
  */
 import { normalizeConceptMap, stripNextQuestions, type ConceptMapResult } from '@socrates/core/learningBlocks';
-import { callAPI, type ChatRequestMessage } from '../chat/api.ts';
+import { callAPI, type ChatRequestMessage } from '../chat/api/index.ts';
 import { stateStore } from '../state/store.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { saveCurrentSession } from '../session/persistence.ts';

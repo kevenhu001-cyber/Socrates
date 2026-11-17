@@ -7,7 +7,12 @@ import { chatLimiter } from '../middleware/rateLimit.js';
 import { sanitizeExtraBody } from '../lib/sanitize.js';
 import { trackSseConnection, startSseKeepalive } from '../lib/sse.js';
 import { getBeagleSystemPrompt } from '../lib/prompts.js';
-import { enforceServerSystemBoundary, appendAssistantInstructions, appendMemoryContext, prependTeacherModePrompt, appendFinalOutputConstraints, injectUserContext, transformMessagesForModel, SSE_PRIME, classifyClientSystemMessages, renderClientBlocks, hasClientSystemPrefix } from './chat/helpers.js';
+import { appendAssistantInstructions, prependTeacherModePrompt } from './chat/prepare/prompts.js';
+import { appendMemoryContext } from './chat/prepare/context.js';
+import { enforceServerSystemBoundary, classifyClientSystemMessages, renderClientBlocks, hasClientSystemPrefix } from './chat/prepare/clientSystem.js';
+import { transformMessagesForModel } from './chat/prepare/wire.js';
+import { SSE_PRIME } from './chat/prepare/sse.js';
+import { appendFinalOutputConstraints, injectUserContext } from '../lib/chatPolicy.js';
 import { isUuid } from '../lib/validate.js';
 import { BadRequest } from '../lib/errors.js';
 import { resolveSessionPromptOrAssemble } from '../services/core/sessionPromptSnapshot.js';
@@ -118,7 +123,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         'X-Accel-Buffering': 'no',
       });
 
-      /* Prime the stream — see chat/helpers.js SSE_PRIME for the full
+      /* Prime the stream — see chat/prepare/sse.ts SSE_PRIME for the full
          rationale. 32 KB of `:` comment lines overflows EdgeOne's
          ~8 KB first-chunk buffer and Safari's ~1 KB fetch ReadableStream
          buffer so deltas reach the browser as soon as the upstream

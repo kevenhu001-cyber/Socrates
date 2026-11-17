@@ -3,7 +3,7 @@
  * scripts/check-prompt-dashes.mjs — em/en-dash ratchet for injected prompts.
  *
  * The server's "minimize dash punctuation" rule is the single authoritative
- * dash rule for the final assistant message (server/src/routes/chat/helpers.ts
+ * dash rule for the final assistant message (server/src/routes/chat/prepare/prompts.ts
  * — FINAL_OUTPUT_CONSTRAINTS). The injected system/user prompts must not
  * contradict it, so this script refuses new em-dash (`—`, U+2014) or
  * en-dash (`–`, U+2013) characters inside prompt text. Code comments are
@@ -16,7 +16,9 @@
  *   - frontend/src/tutor/{flow,policy}.ts
  *   - frontend/src/config/tonePresets.ts
  *   - packages/ui/src/tutor.ts                     (DOM-free copy for Universal App)
- *   - server/src/routes/chat/helpers.ts            (tool hints + tool contracts)
+ *   - server/src/routes/chat/prepare/prompts.ts     (tool hints + tool contracts)
+ *   - server/src/routes/chat/prepare/clientSystem.ts (client-system boundary)
+ *   - server/src/routes/chat/prepare/context.ts      (learning-mode block)
  *   - server/src/lib/chatPolicy.ts                 (SERVER_SYSTEM_POLICY + response defaults)
  *
  * The ratchet baseline lives at scripts/prompt-dashes.baseline.json. Each
@@ -65,7 +67,9 @@ const PROMPT_FILES = [
   /* DOM-free copy for the Universal App */
   'packages/ui/src/tutor.ts',
   /* server-side prompt assembly */
-  'server/src/routes/chat/helpers.ts',
+  'server/src/routes/chat/prepare/prompts.ts',
+  'server/src/routes/chat/prepare/clientSystem.ts',
+  'server/src/routes/chat/prepare/context.ts',
   'server/src/lib/chatPolicy.ts',
 ];
 

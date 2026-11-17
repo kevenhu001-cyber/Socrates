@@ -10,7 +10,8 @@
  * KaTeX is not loaded yet: `getKatex` starts the lazy load and
  * `onKatexReady` tells the caller to paint again. With a mark it paints the
  * marks right away and leaves a not-yet-typeset formula as escaped source. */
-import { KATEX_MACROS, esc } from './helpers.ts';
+import { KATEX_MACROS } from './latex.ts';
+import { esc } from './text.ts';
 import { getKatex, hasMathDelimiters, replaceInlineDollarMath } from './markdownMath.ts';
 
 const TOKEN = '\u0000';

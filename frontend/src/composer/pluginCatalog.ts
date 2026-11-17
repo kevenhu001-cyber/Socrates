@@ -1,4 +1,4 @@
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 
 export type PluginConnectionStatus =
   | 'connected'

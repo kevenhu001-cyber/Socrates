@@ -1,4 +1,4 @@
-import { useBridge } from '../../lib/bridge/useBridge.ts';
+import { useBridge } from '../../store/useBridge.ts';
 import { shareState, type ShareVisibility } from '../../ui/shareState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 

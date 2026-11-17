@@ -10,9 +10,9 @@ import { resetState, stateStore } from '../state/store.ts';
 import { showConfirm } from './confirm.ts';
 import { clearProviderConfig } from '../config/providerConfig.service.ts';
 import { publishSidebarChrome, closeProfile } from './profile.ts';
-import { apiFetch } from '../util/api.ts';
-import { t } from '../i18n.ts';
-import { resetApp, setCurrentUser } from '../app/lifecycle.ts';
+import { apiFetch } from '../util/api/index.ts';
+import { t } from '../i18n/index.ts';
+import { resetApp, setCurrentUser } from '../app/lifecycle/index.ts';
 import { renderRecents } from './recentsView.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 

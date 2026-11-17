@@ -27,7 +27,7 @@ import {executeOpenConnector} from './openConnector.js';
 import {executeGetConnectorSpec, executeSearchConnectors} from './connectorDiscovery.js';
 import {CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/connectorTools.js';
 import {PROJECT_CONNECTOR_TOOL_NAMES} from '../../../../services/integrations/projectConnectorTools.js';
-import {getOpenConnectorChatTool} from '../../../../services/integrations/openConnectorChatTools.js';
+import {getOpenConnectorChatTool} from '../../../../services/integrations/openConnectorChatToolCatalog.js';
 
 export interface ToolExecutorRegistry {
   /** Exact-name executor map. */

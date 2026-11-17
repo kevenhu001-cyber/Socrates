@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from '../motion.ts';
+import { prefersReducedMotion } from './index.ts';
 
 let active: { host: HTMLElement; animation: Animation } | null = null;
 

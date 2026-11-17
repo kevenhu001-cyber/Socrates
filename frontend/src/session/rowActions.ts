@@ -1,7 +1,7 @@
 /* Session metadata edits share one persistence path. Reconcile only after the
  * server accepts the change; never mutate immutable React bridge snapshots. */
 import { keepSessionTitle } from '../chat/sessionTitle.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { serverCache } from './serverCache.ts';
 import { stateStore } from '../state/store.ts';
 import { detailCache } from './detailCache.ts';

@@ -111,7 +111,7 @@ export async function getBeagleSystemPrompt() {
 
 /**
  * Same loader, exposed for any future caller that needs teacher-mode.
- * The chat route (server/src/routes/chat/helpers.ts) is the current
+ * The chat route (server/src/routes/chat/prepare/prompts.ts) is the current
  * sole consumer; this stays here so future prompt files have a
  * single place to register their loader.
  */

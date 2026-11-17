@@ -1,4 +1,4 @@
-import { apiFetchRaw } from '../../util/api.ts';
+import { apiFetchRaw } from '../../util/api/index.ts';
 import { getActiveProvider } from '../../config/providerConfig.service.ts';
 import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
 import type { AIRequestOptions } from '../retryPolicy.ts';

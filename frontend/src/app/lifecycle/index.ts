@@ -1,26 +1,26 @@
-/* app/lifecycle.ts — application lifecycle entrypoint.
+/* app/lifecycle/index.ts — application lifecycle entrypoint.
  * Incognito, auth expiry and sign-out live here; reset, user-scoped cleanup,
  * and Chat/Tutor transitions are delegated to focused modules below.
  * Render/list surfaces still owned by the legacy shell resolve via window.*.
  */
-import { resetState } from '../state/store.ts';
-import { turnState } from '../chat/turnState.ts';
-import { saveState } from '../session/saveState.ts';
-import { apiFetch } from '../util/api.ts';
-import { showGate, showAuthSignin } from '../auth/index.ts';
-import { showToast } from '../ui/toast.js';
-import { startNewComposerSession } from '../react/composer-input/lifecycle.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { resetShareToken } from '../ui/share.ts';
-import { saveCurrentSession } from '../session/persistence.ts';
-import { publishSidebarChrome } from '../ui/profile.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { isIncognitoOn, setIncognitoOn } from './lifecycle/incognitoState.ts';
-import { resetApp } from './lifecycle/reset.ts';
-import { clearPerUserClientState } from './lifecycle/clientState.ts';
-import { clearUserMemories, getUserMemories } from './lifecycle/userMemory.ts';
-import { translateLifecycleText as _t } from './lifecycle/helpers.ts';
-import { toggleAppMode } from './lifecycle/mode.ts';
+import { resetState } from '../../state/store.ts';
+import { turnState } from '../../chat/turnState.ts';
+import { saveState } from '../../session/saveState.ts';
+import { apiFetch } from '../../util/api/index.ts';
+import { showGate, showAuthSignin } from '../../auth/index.ts';
+import { showToast } from '../../ui/toast.js';
+import { startNewComposerSession } from '../../react/composer-input/lifecycle.ts';
+import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { resetShareToken } from '../../ui/share.ts';
+import { saveCurrentSession } from '../../session/persistence.ts';
+import { publishSidebarChrome } from '../../ui/profile.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { isIncognitoOn, setIncognitoOn } from './incognitoState.ts';
+import { resetApp } from './reset.ts';
+import { clearPerUserClientState } from './clientState.ts';
+import { clearUserMemories, getUserMemories } from './userMemory.ts';
+import { translateLifecycleText as _t } from './translate.ts';
+import { toggleAppMode } from './mode.ts';
 
 export { resetApp, clearPerUserClientState, clearUserMemories, getUserMemories, toggleAppMode };
 

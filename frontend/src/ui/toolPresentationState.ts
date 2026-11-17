@@ -50,7 +50,7 @@ function persistedStateOf(call: ToolStateRecord, status: string): ToolRunState {
 
 /**
  * Collapse the two representations of a run's progress into one: the live
- * `_run.phase` written by chat/toolRuntime.ts while streaming, and the
+ * `_run.phase` written by chat/toolRuntime/index.ts while streaming, and the
  * persisted terminal flags (isError / status / output) present in history.
  *
  * A call with no terminal marker at all is still in flight. That is the whole

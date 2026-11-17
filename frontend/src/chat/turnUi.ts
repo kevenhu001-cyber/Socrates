@@ -9,7 +9,7 @@ import { showToast } from '../ui/toast.js';
 import { turnState } from './turnState.ts';
 import { buildUserContentParts } from './history.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 export { setChatStopState, handleSendClick, stopChatResponse, interruptPendingTurn } from './composerTurn.ts';
 
 /** The chat entry point published by the legacy shell. */

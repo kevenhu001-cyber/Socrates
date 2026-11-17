@@ -18,11 +18,13 @@ import {
   ocStubCatalogItem,
 } from '../src/services/integrations/openConnectorCatalog.js';
 import {
-  OPEN_CONNECTOR_CHAT_TOOLS,
   executeOpenConnectorTool,
-  getOpenConnectorChatTool,
   validateOpenConnectorToolArguments,
 } from '../src/services/integrations/openConnectorChatTools.js';
+import {
+  OPEN_CONNECTOR_CHAT_TOOLS,
+  getOpenConnectorChatTool,
+} from '../src/services/integrations/openConnectorChatToolCatalog.js';
 
 test('Inventory covers every screenshot app exactly once', () => {
   assert.equal(OPEN_CONNECTOR_APP_INVENTORY.length, 162);

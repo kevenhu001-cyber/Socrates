@@ -11,12 +11,12 @@
 //   const label = t('settings.title');
 
 import type { LegacyActions } from './types';
-import { apiFetch } from '../../util/api.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
-import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle.ts';
-import { t as appT } from '../../i18n.ts';
+import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle/index.ts';
+import { t as appT } from '../../i18n/index.ts';
 
 /** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */

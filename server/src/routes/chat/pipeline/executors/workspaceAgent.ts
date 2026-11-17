@@ -14,7 +14,7 @@
 import { getWorkspaceContext } from '../../../../services/tools/agentRuntime.js';
 import { runPiAgentTask, type PiAgentEvent, type PiAgentProvider } from '../../../../services/tools/piAgent.js';
 import { getActiveApiKey } from '../../../../services/core/apiKey.js';
-import { checkBeagleMonthlyLimit } from '../../helpers.js';
+import { checkBeagleMonthlyLimit } from '../../prepare/rates.js';
 import type {
   ToolExecutor,
   ToolExecutionResult,

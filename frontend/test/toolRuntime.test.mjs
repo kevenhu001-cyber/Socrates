@@ -13,7 +13,7 @@ globalThis.document = dom.window.document;
 globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.CSS = dom.window.CSS;
 
-import { createToolRuntime as createRuntime } from '../src/chat/toolRuntime.ts';
+import { createToolRuntime as createRuntime } from '../src/chat/toolRuntime/index.ts';
 
 function makeBody() {
   return {

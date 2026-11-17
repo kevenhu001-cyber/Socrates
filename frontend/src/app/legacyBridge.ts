@@ -7,7 +7,7 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  * except the documented optional surfaces that remain window.* reads).
  */
 import { resendLastUserMessage, setChatStopState, handleSendClick, stopChatResponse } from '../chat/turnUi.ts';
-import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle.ts';
+import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow, clearPerUserClientState, toggleAppMode, resetApp, startNewChat, signOut, toggleIncognito } from './lifecycle/index.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
 import { openTagEditor, onSessionDragStart, onSessionDragEnd } from '../session/organizeRuntime.ts';
 import { askChatTurn } from '../chat/turnController.js';
@@ -28,7 +28,7 @@ import { saveCurrentSession } from '../session/persistence.ts';
 /* chat/webSearch.ts (~16KB) is lazy — the window.fetchWebContext proxy
    below returns a promise, which every caller already awaits. */
 import { openAttachmentPicker, openMediaPicker, renderAttachmentChips, retryComposerAttachment } from '../attachments/render.ts';
-import { removeAttachment } from '../attachments.ts';
+import { removeAttachment } from '../attachments/index.ts';
 import { saveProfileName, onCustomInstructionsChange, toggleProfileWebSearch, openProfile, closeProfile } from '../ui/profile.ts';
 import { regenerateAssistantMessage, branchFromMessage, switchMessageBranch } from '../chat/editBranch.ts';
 import { toggleReadAloud } from '../ui/readAloud.ts';
@@ -49,13 +49,13 @@ import { processPendingMermaid, processPendingViz, reclaimVizCards, schedulePend
 import { wireCodeBlockHeaders } from '../render/postRender.ts';
 import { mountVisualization, disposeVisualizations, disposeVisualization } from '../render/vizStubs.ts';
 import { formatMsgProgressive } from '../render/markdown.ts';
-import { stripCitationMarkers } from '../render/helpers.ts';
+import { stripCitationMarkers } from '../render/text.ts';
 import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { decideLiveApproval } from '../chat/liveTurn.ts';
-import { startSession } from '../chat/sessionBootstrap.ts';
+import { startSession } from '../chat/sessionBootstrap/index.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
 import { setRecentsSearch } from '../ui/recentsView.ts';
-import { setLang } from '../i18n.ts';
+import { setLang } from '../i18n/index.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 import { setLegacyActions } from '../react/legacy/gateway.ts';
 import { runtimeWindow as browserWindow } from "../types/runtimeWindow.ts";

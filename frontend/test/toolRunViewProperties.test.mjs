@@ -4,7 +4,7 @@
  * Covers `toolRunStateOf`, `runStartedAt` and `durationOf` from
  * src/ui/toolPresentationState.ts plus `formatSeconds` from
  * src/ui/toolPresentationModel.ts — the pure derivation that maps a tool call
- * (chat/toolRuntime.ts writes `_run` while streaming) into the state and the
+ * (chat/toolRuntime/index.ts writes `_run` while streaming) into the state and the
  * duration the React row reads.
  *
  * Property 13 mirrors the design's tool-row invariant: the row reflects the

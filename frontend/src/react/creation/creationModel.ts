@@ -1,5 +1,5 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { apiFetch } from '../../util/api.ts';
+import { apiFetch } from '../../util/api/index.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 

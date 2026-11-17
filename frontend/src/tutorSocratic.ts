@@ -3,7 +3,7 @@ import { addMessage } from './chat/messages.ts';
 import { scheduleTurnToTopForMessage } from './chat/turnAnchor.ts';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage } from './i18n/languageState.ts';
-import { t } from './i18n.ts';
+import { t } from './i18n/index.ts';
 
 /* =====================================================================
  * tutorSocratic.js
@@ -56,7 +56,7 @@ const tutorSocraticRuntime = (function () {
   function currentLang() {
     return getCurrentLanguage();
   }
-  /* i18n lookup that prefers t() (i18n.ts) but falls back to
+  /* i18n lookup that prefers t() (i18n/index.ts) but falls back to
      inline bilingual copy if the key is missing — keeps the
      module self-contained during incremental rollout. */
   function ti(key: string, fallback: string) {

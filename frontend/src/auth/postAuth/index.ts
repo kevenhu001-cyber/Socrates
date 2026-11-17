@@ -1,20 +1,20 @@
-import { stateStore } from '../state/store.ts';
-import { drainMessageOutbox } from '../session/mutationOutbox.ts';
-import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../session/store.ts';
-import { loadSession } from '../session/loader.ts';
-import { loadUserMemories, publishSidebarChrome } from '../ui/profile.ts';
-import { refreshApiConfig, syncAppModeUI, syncSidebarForMode } from '../config/providers.ts';
-import { syncWorkspaceRoute } from '../sidebar/navigation.service.ts';
-import { toggleShareBtn } from '../ui/share.ts';
-import { renderGreeting } from '../ui/greeting.js';
-import { activateMainView } from '../ui/mainViewController.ts';
-import { reportSwallow } from '../util/reportSwallow.ts';
-import { clearPerUserClientState, isInAuthGraceWindow } from '../app/lifecycle.ts';
-import { saveCurrentSession } from '../session/persistence.ts';
-import { fetchWithAuthGraceRetry, restoreRoutedSession } from './postAuth/flow.ts';
-import { migrateLegacyStorage } from './postAuth/migration.ts';
-import { renderRecents } from '../ui/recentsView.ts';
-import { restoreComposerReloadDrafts } from '../composer/reloadDrafts.ts';
+import { stateStore } from '../../state/store.ts';
+import { drainMessageOutbox } from '../../session/mutationOutbox.ts';
+import { getChatIdFromURL, getExamIdFromURL, setChatIdInURL, setExamIdInURL } from '../../session/store.ts';
+import { loadSession } from '../../session/loader.ts';
+import { loadUserMemories, publishSidebarChrome } from '../../ui/profile.ts';
+import { refreshApiConfig, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
+import { syncWorkspaceRoute } from '../../sidebar/navigation.service.ts';
+import { toggleShareBtn } from '../../ui/share.ts';
+import { renderGreeting } from '../../ui/greeting.js';
+import { activateMainView } from '../../ui/mainViewController.ts';
+import { reportSwallow } from '../../util/reportSwallow.ts';
+import { clearPerUserClientState, isInAuthGraceWindow } from '../../app/lifecycle/index.ts';
+import { saveCurrentSession } from '../../session/persistence.ts';
+import { fetchWithAuthGraceRetry, restoreRoutedSession } from './flow.ts';
+import { migrateLegacyStorage } from './migration.ts';
+import { renderRecents } from '../../ui/recentsView.ts';
+import { restoreComposerReloadDrafts } from '../../composer/reloadDrafts.ts';
 
 /** Legacy boot hooks still published on the window by main.js. */
 interface PostAuthLegacyWindow extends Window {
@@ -99,7 +99,7 @@ export async function afterAuthEnter(): Promise<void> {
     catch (e) { reportSwallow(e, 'auth/postAuth.activateChatView'); }
   } else if (examId) {
     try {
-      const { mountExamView } = await import('../react/exam/mount.tsx');
+      const { mountExamView } = await import('../../react/exam/mount.tsx');
       mountExamView();
       activateMainView('examView', document);
     }

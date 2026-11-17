@@ -4,7 +4,7 @@ import { AI_MAX_ATTEMPTS, isUserAbort } from '../retryPolicy.ts';
 import type { AIRequestOptions } from '../retryPolicy.ts';
 import { buildChatRequestBody } from './requestBody.ts';
 import type { ChatRequestMessage } from './requestBody.ts';
-import type { ApiRequestOptions } from '../../util/api.ts';
+import type { ApiRequestOptions } from '../../util/api/index.ts';
 import {
   attemptLimit,
   bindAbortSignal,

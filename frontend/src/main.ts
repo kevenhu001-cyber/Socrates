@@ -1,6 +1,6 @@
 /* P_storage-shim — first side-effect import, so the in-memory
    localStorage/sessionStorage shim is installed before the app modules
-   below it (state/store.ts, i18n.ts, providers.js, displayPrefs.js, …)
+   below it (state/store.ts, i18n/index.ts, providers.js, displayPrefs.js, …)
    evaluate and touch storage. Without this ordering, first-party storage
    calls made during module evaluation can fire one
    "Tracking Prevention blocked access to storage" warning each
@@ -18,7 +18,7 @@
 import './batchStorage.ts';
 import './vendor/init.ts';
 /* Auth boot owns the preflight → reveal sequence. */
-import './auth/boot.ts';
+import './auth/boot/index.ts';
 /* Register page adapters before bootstrap publishes the active destination. */
 import './sidebar/navigation.adapters.ts';
 import './tutorSocratic.ts';
@@ -42,7 +42,7 @@ import { loadMemories } from './storage/memoryStore.ts';
 import { initLinkFavicons } from './ui/linkFavicons.ts';
 import { installLayoutStateMirror } from './ui/layoutStateMirror.ts';
 import { installDiagnosticFlowActions } from './tutor/diagnosticFlow.ts';
-import { isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle.ts';
+import { isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle/index.ts';
 import { installLiveTurnRetryListener } from './chat/liveTurn.ts';
 import { configurePromptSuffixes } from './chat/promptSuffixes.ts';
 import { initTheme, loadDisplayPrefs } from './displayPrefs.ts';
@@ -50,7 +50,7 @@ import { syncWebSearchUI } from './chat/webSearchToggle.ts';
 import { bootstrapApp } from './app/bootstrap.ts';
 import { installWidgetRuntime } from './app/widgetSetup.ts';
 import { loadTonePreset } from './config/tonePresets.ts';
-import { installAuthHooks } from './util/api.ts';
+import { installAuthHooks } from './util/api/index.ts';
 import { syncAppModeUI, syncSidebarForMode } from './config/providers.ts';
 
 

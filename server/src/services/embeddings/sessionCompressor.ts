@@ -14,7 +14,7 @@
  * discarded: every save of a long session paid a synchronous LLM call
  * and added a summary row that then rendered next to the full transcript
  * it claimed to replace. That call has been removed; the single live
- * caller is routes/chat/helpers.ts, which compresses the messages handed
+ * caller is routes/chat/prepare/context.ts, which compresses the messages handed
  * to the model. Persisting a conversation is lossless.
  *
  * Design rules:
@@ -92,7 +92,7 @@ const SUMMARY_SYSTEM_PROMPT =
   '(3) what was already taught/explained and the user\'s mastery signals, (4) open questions or unfinished work. ' +
   'Be dense but complete. No preamble, no markdown headings — plain paragraphs and short bullets only.';
 
-/* P_compress-memo — the model-input path (routes/chat/helpers.ts) can
+/* P_compress-memo — the model-input path (routes/chat/prepare/context.ts) can
    ask for the same conversation more than once (a retried turn, a
    regenerate that re-sends the same prefix). Each of those re-derives an
    identical head and therefore an identical summary — a full LLM round

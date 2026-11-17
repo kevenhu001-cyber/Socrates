@@ -1,5 +1,5 @@
 /**
- * useBridge — React hooks for the `createImmutableBridge` factory.
+ * React hooks for the state bridges.
  *
  * `useBridge(bridge)` returns the entire snapshot via React's
  * `useSyncExternalStore`. The subscription contract matches React's
@@ -16,9 +16,9 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { useSyncExternalStoreWithSelector } from 'use-sync-external-store/with-selector.js';
 
-import type { ImmutableBridge } from './createImmutableBridge';
+import type { Bridge } from './bridge.ts';
 
-export function useBridge<Snapshot>(bridge: ImmutableBridge<Snapshot, unknown>): Snapshot {
+export function useBridge<Snapshot>(bridge: Bridge<Snapshot, unknown>): Snapshot {
   const subscribe = useCallback(
     (listener: () => void) => bridge.subscribe(listener),
     [bridge],
@@ -28,7 +28,7 @@ export function useBridge<Snapshot>(bridge: ImmutableBridge<Snapshot, unknown>):
 }
 
 export function useBridgeSelector<Snapshot, Slice>(
-  bridge: ImmutableBridge<Snapshot, unknown>,
+  bridge: Bridge<Snapshot, unknown>,
   selector: (snapshot: Snapshot) => Slice,
   isEqual?: (a: Slice, b: Slice) => boolean,
 ): Slice {

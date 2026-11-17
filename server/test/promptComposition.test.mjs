@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { appendFinalOutputConstraints, appendServerPolicy, FINAL_OUTPUT_CONSTRAINTS } from '../src/lib/chatPolicy.js';
-import { enforceServerSystemBoundary } from '../src/routes/chat/helpers.js';
+import { enforceServerSystemBoundary } from '../src/routes/chat/prepare/clientSystem.js';
 import { getTeacherModePrompt, getLearningModePrompt, LEARNING_MODE_IDS } from '../src/lib/prompts.js';
 import { CHAT_SYSTEM_PROMPT, CHAT_CONCISE_PROMPT } from '../../frontend/src/chat/systemPrompts.ts';
 import { SOCRATIC_SYSTEM_PROMPT } from '../../frontend/src/prompts/socratic.ts';

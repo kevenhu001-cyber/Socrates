@@ -4,7 +4,7 @@ import { useUserInfo } from './sidebarChrome.store';
 import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat } from '../../app/lifecycle.ts';
+import { startNewChat } from '../../app/lifecycle/index.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';

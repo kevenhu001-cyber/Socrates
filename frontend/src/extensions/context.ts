@@ -31,7 +31,7 @@ import { setActiveTemplate, clearActiveTemplate } from '../chat/templateSlash.ts
 import { showToast } from '../ui/toast.ts';
 import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
 import { openAttachmentPicker } from '../attachments/render.ts';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 
 type SetActiveTemplateSpec = TemplateChipSpec & {
   systemPrompt: string;

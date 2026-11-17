@@ -9,7 +9,7 @@
  * test/wasmParity.test.mjs).
  */
 
-import { getSocratesWasm } from '../lib/socratesWasm.ts';
+import { getSocratesWasm } from '../util/socratesWasm.ts';
 
 export interface LivePreview {
   head: string[];

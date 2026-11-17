@@ -1,5 +1,5 @@
 import { scrollContainer } from './scroll.js';
-import { t } from '../i18n.ts';
+import { t } from '../i18n/index.ts';
 import { renderDiagnostic } from '../react/tutor/diagnosticHost.tsx';
 import type { DiagnosticInsight } from '@socrates/ui/study';
 

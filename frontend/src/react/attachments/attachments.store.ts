@@ -1,4 +1,4 @@
-import { useBridge, useBridgeSelector } from '../../lib/bridge';
+import { useBridge, useBridgeSelector } from '../../store/index.ts';
 import { attachmentsState } from '../../ui/attachmentsState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { AttachmentEntry, AttachmentsSnapshot } from '../../ui/attachmentsState.ts';

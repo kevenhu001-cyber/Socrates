@@ -13,7 +13,7 @@
  * superseded-stub retirement all keep their original sequencing.
  */
 import { settleTurnRuntime } from '@socrates/core/turnRuntime';
-import { esc } from '../../render/helpers.ts';
+import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
 import { formatMsgProgressive } from '../../render/markdown.ts';
 import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';

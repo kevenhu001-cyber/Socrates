@@ -10,14 +10,14 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { findMessageIndex, messageApiPath, MessageEntry, rollbackMessagesAfter } from '../ui/messageActions.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { buildUserContentParts } from '../chat/history.ts';
-import { apiFetch } from '../util/api.ts';
+import { apiFetch } from '../util/api/index.ts';
 import { showToast } from '../ui/toast.js';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import { prepareUserEditBranch, prepareAssistantRegenerateBranch, switchMessageBranch } from './branchManager.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
-import { t } from '../i18n.ts';
-import { resetApp } from '../app/lifecycle.ts';
+import { t } from '../i18n/index.ts';
+import { resetApp } from '../app/lifecycle/index.ts';
 import { askChatTurn } from './turnController.ts';
 
 function _t(key: string) {

@@ -8,7 +8,7 @@
 //
 // Application callers use direct module imports; React attachment actions
 // use the typed legacy composer gateway.
-import { attachments, addFiles, retryAttachment } from '../attachments.ts';
+import { attachments, addFiles, retryAttachment } from '../attachments/index.ts';
 import { showToast } from '../ui/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createAttachmentMediaInput } from '../react/attachments/mediaPickerInputHost.tsx';

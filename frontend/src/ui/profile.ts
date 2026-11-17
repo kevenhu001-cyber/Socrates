@@ -18,8 +18,8 @@ import { getCurrentLanguage } from '../i18n/languageState.ts';
 import { publishProfileState } from './profileState.ts';
 import { publishSidebarUser } from './sidebarUserState.ts';
 import { setUserMemories } from '../app/lifecycle/userMemory.ts';
-import { getCurrentUser } from '../app/lifecycle.ts';
-import { apiFetch } from '../util/api.ts';
+import { getCurrentUser } from '../app/lifecycle/index.ts';
+import { apiFetch } from '../util/api/index.ts';
 import {
   buildCustomInstructionsString,
   loadCustomInstructions,
@@ -40,7 +40,7 @@ function joinedDate(createdAt: string|number|Date|null|undefined) {
   catch { return String(createdAt); }
 }
 
-function profileUserSnapshot(user: NonNullable<import("../app/lifecycle.ts").UserRecord>) {
+function profileUserSnapshot(user: NonNullable<import("../app/lifecycle/index.ts").UserRecord>) {
   return {
     initials: userInitials(user.displayName || user.email || "?"),
     displayName: user.displayName || "",
@@ -72,7 +72,7 @@ function _publishProfileState() {
    the React side reads; the legacy DOM mutations are dropped. */
 
 /* The sidebar footer React component reads this normalized account view. */
-function sidebarUserSnapshot(user: import("../app/lifecycle.ts").UserRecord) {
+function sidebarUserSnapshot(user: import("../app/lifecycle/index.ts").UserRecord) {
   if (!user) return { initials: "?", displayName: "Guest", email: "", tier: "diophantus", tierLabel: "Free", isSignedIn: false };
   /* P_cowork-landing — the footer row is ~150px wide once the avatar and
      the three icon buttons take their share, so a full address ellipsised
@@ -91,7 +91,7 @@ function sidebarUserSnapshot(user: import("../app/lifecycle.ts").UserRecord) {
   };
 }
 
-function syncDocumentTier(user: import("../app/lifecycle.ts").UserRecord) {
+function syncDocumentTier(user: import("../app/lifecycle/index.ts").UserRecord) {
   try { document.documentElement.dataset.userTier = user?.tier || "diophantus"; }
   catch (_) {
     reportSwallow(_, 'empty catch: ui/profile.ts:97');

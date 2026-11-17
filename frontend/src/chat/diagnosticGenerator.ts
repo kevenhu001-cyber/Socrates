@@ -1,4 +1,4 @@
-import { callAPI } from './api.ts';
+import { callAPI } from './api/index.ts';
 import { parseOneDiagResponse } from './diagnosticParser.ts';
 import { stateStore } from '../state/store.ts';
 
