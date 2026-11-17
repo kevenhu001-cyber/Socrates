@@ -91,7 +91,7 @@ describe('codeInterpreter.execute — input guard rails', () => {
   });
 
   test('the service passes original source to the worker without a Python preamble', async () => {
-    const source = new URL('../src/services/codeInterpreter.ts', import.meta.url);
+    const source = new URL('../src/services/codeInterpreter/execute.ts', import.meta.url);
     const serviceSource = await fsPromises.readFile(source, 'utf8');
     // The worker owns the scratch listing. Inserting Python ahead of user
     // code rejects future imports and shifts every traceback line by one.
