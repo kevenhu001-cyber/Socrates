@@ -15,7 +15,7 @@ function ensureMathDelimiters(text: string): string {
 type Typeset = (source: string) => string | null;
 
 function elementFor(node: Node): Element | null {
-  return node.nodeType === Node.ELEMENT_NODE ? node as Element : node.parentElement;
+  return node.nodeType === 1 ? (node as Element) : node.parentElement;
 }
 
 function attributeChangesText(record: MutationRecord, element: Element | null): boolean {
@@ -62,7 +62,7 @@ function typesetTextLeaves(host: Node, render: Typeset): void {
   const walker = host.ownerDocument!.createTreeWalker(host, NodeFilter.SHOW_TEXT);
   const leaves: Text[] = [];
   let leaf: Text | null;
-  if (host.nodeType === Node.TEXT_NODE) leaves.push(host as Text);
+  if (host.nodeType === 3) leaves.push(host as Text);
   while ((leaf = walker.nextNode() as Text | null)) {
     if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
     if (MATH_TRIGGER.test(leaf.data)) leaves.push(leaf);
@@ -117,7 +117,7 @@ export function installVisualizationMath(host: HTMLElement): () => void {
       const element = elementFor(root);
       const label = element?.closest<SVGTextElement>('text');
       if (label?.namespaceURI === SVG) texts.add(label);
-      if (root.nodeType === Node.ELEMENT_NODE) {
+      if (root.nodeType === 1) {
         for (const text of (root as Element).querySelectorAll<SVGTextElement>('svg text, text')) texts.add(text);
       }
     }

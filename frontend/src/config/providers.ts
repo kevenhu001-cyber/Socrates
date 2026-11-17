@@ -112,6 +112,12 @@ function syncSidebarForMode(): void {
   tutorOnly.forEach(function (el) { el.style.display = appMode === "tutor" ? "" : "none"; });
 }
 
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('socrates:langchange', () => {
+    syncAppModeUI();
+  });
+}
+
 const refreshApiConfig = refreshProviderConfig;
 
 export {

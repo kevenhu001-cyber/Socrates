@@ -1,11 +1,8 @@
-import {renderGreeting} from './ui/greeting.js';
-import {syncThemeUI} from './displayPrefs.js';
 import { reportSwallow } from './util/reportSwallow.ts';
 import { getCurrentLanguage, setCurrentLanguage } from './i18n/languageState.ts';
 import { publishLocale } from './i18n/localeRevision.ts';
 import { dispatchExam, examStore } from './store/index.ts';
 import { stateStore } from './state/store.ts';
-import { appMode, syncAppModeUI } from './config/providers.ts';
 
 // These hooks are published by the existing shell; keep their contract local.
 interface I18nWindow extends Window {
@@ -60,11 +57,7 @@ export function setLang(lang: string){
   try{document.documentElement.lang=lang==="zh"?"zh":"en";}catch(e){reportSwallow(e, 'i18n.setLang.documentLang'); }
   try{localStorage.setItem("socrates-lang-app",lang)}catch(e){reportSwallow(e, 'i18n.setLang.persist'); }
   applyI18n();
-  /* P_tutor-leak — applyI18n() rewrites #topicTitle / #topicSub using the
-     current appMode. Without this call the topic-setup copy could drift if
-     anything else touched those elements between mode-sync ticks. Cheap and
-     idempotent. */
-  try{syncAppModeUI()}catch(e){reportSwallow(e, 'i18n.setLang.syncAppModeUI'); }
+
   /* Update language toggle active state. Only en + zh are supported;
      removing ja/ko from this iteration avoids keeping dead UI states
      if the toggle HTML reverts. */
@@ -108,9 +101,6 @@ function translateAttribute(selector: string,keyAttribute: string,targetAttribut
 }
 
 function refreshThemeLabel(){
-  if(typeof syncThemeUI === "function"){
-    try{syncThemeUI()}catch(e){reportSwallow(e, 'i18n.applyI18n.syncThemeUI'); /* theme UI may not be mounted yet */ }
-  }
 }
 
 function updateComposerLabels(){
@@ -120,15 +110,11 @@ function updateComposerLabels(){
 
 function updateTopicSetupCopy(){
   const tt=document.getElementById("topicTitle");
-  if(tt){
-    if(typeof renderGreeting==="function")renderGreeting();
-    else tt.textContent=t(appMode==="chat"?"topic.titleChat":"topic.title");
+  if(tt && tt.hasAttribute("data-greeting-static")){
+    tt.textContent=t("topic.title");
   }
   const ts=document.getElementById("topicSub");
-  if(ts)ts.textContent=t(appMode==="chat"?"topic.subChat":"topic.subtitle");
-  /* The landing disclaimer (#topicDisclaimer) was removed together with the
-     other under-composer entries on 2026-11-16; there is no footer line to
-     keep in sync any more. */
+  if(ts)ts.textContent=t("topic.subtitle");
 }
 
 function refreshDynamicSurfaces(){

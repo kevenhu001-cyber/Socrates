@@ -53,3 +53,9 @@ export function renderGreeting(): void {
   const el = document.getElementById('topicTitle');
   if (el?.hasAttribute('data-greeting-static')) el.textContent = text;
 }
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('socrates:langchange', () => {
+    renderGreeting();
+  });
+}

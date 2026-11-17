@@ -16,7 +16,6 @@ import { stateStore } from '../state/store.ts';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
-import { mountSharedMessageList } from '../react/message-list/MessageList.tsx';
 import { registerSharedViewCleanup } from './msgListMount.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
@@ -225,7 +224,9 @@ async function revokeShareLink() {
 
 function _renderSharedMessageList() {
   publishReactChatRuntime({ type: 'state-synced', reason: 'shared-session-loaded' });
-  mountSharedMessageList();
+  import('../react/message-list/MessageList.tsx').then(({ mountSharedMessageList }) => {
+    mountSharedMessageList();
+  }).catch((err) => reportSwallow(err, 'share._renderSharedMessageList'));
 }
 function displayReadOnlyBanner(banner: HTMLElement | null): void {
   if (!banner) return;

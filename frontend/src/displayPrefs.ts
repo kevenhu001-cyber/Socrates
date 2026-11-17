@@ -320,10 +320,15 @@ export function toggleDisplayPrefs() {
   document.dispatchEvent(new Event(DISPLAY_PREFS_TOGGLE_EVENT));
 }
 
-/* ── theme (tied to display prefs because theme changes update custom BG) ── */
 export function toggleTheme() {
   const html = document.documentElement;
   const mode = html.getAttribute("data-mode");
   const next = mode === "dark" ? "light" : "dark";
   setThemePreference(next);
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('socrates:langchange', () => {
+    syncThemeUI();
+  });
 }
