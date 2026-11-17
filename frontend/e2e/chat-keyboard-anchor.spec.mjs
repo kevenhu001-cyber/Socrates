@@ -11,7 +11,7 @@
 //      anchor is abandoned instead of fighting the user.
 //
 // The measured path is driven through a fake window.visualViewport so the
-// real ui/keyboard/index.ts rAF interpolation runs in Chromium.
+// real legacy/keyboard/index.ts rAF interpolation runs in Chromium.
 
 import { test } from './_lib.mjs';
 import { expect } from '@playwright/test';
@@ -21,7 +21,7 @@ import { readHistory } from './_history-reader.mjs';
 
 /* Install a controllable visual viewport before the bundle loads. The app
    shims must not use the real browser property, so every module that
-   reads it (ui/keyboard, composer popovers) sees this object. */
+   reads it (legacy/keyboard, composer popovers) sees this object. */
 function installFakeVisualViewport(page) {
   return page.addInitScript(() => {
     const listeners = { resize: new Set(), scroll: new Set() };

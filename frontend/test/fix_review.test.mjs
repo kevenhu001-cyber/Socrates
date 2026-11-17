@@ -3,7 +3,7 @@ import test from 'node:test';
 
 /*
  * Tests for the fixes flagged in the skeptical review:
- *   - A1: ui/keyboard/index.ts inset rAF loop now has a real cancel
+ *   - A1: legacy/keyboard/index.ts inset rAF loop now has a real cancel
  *   - A4: the motion planner clamps `natural` to the CSS max-height so we
  *     do not animate past the cap
  *
@@ -13,11 +13,11 @@ import test from 'node:test';
  * suite.
  */
 
-import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/ui/motion/index.ts';
+import { planMotionForUser, easeOutQuint, MOTION_EASING } from '../src/legacy/motion/index.ts';
 
 test('A8: easeOutQuint is the easing the scroll/inset rAF loops consume', () => {
   /* The closed form 1-(1-t)^5 must match what scroll.js and
-     ui/keyboard/index.ts use for manual rAF interpolation. Three
+     legacy/keyboard/index.ts use for manual rAF interpolation. Three
      samples are enough to lock the shape. */
   assert.equal(easeOutQuint(0), 0);
   assert.equal(easeOutQuint(1), 1);
@@ -68,7 +68,7 @@ test('A4 / planner cap semantics: honours caller maxDuration for short distances
 test('A1 / A3 contract: planMotionForUser returns a Promise-resolvable plan', () => {
   /* The keyboard inset animation and the scroll follow share one
      plan. The plan's `duration` must be a finite non-negative number
-     that scroll.js and ui/keyboard/index.ts can both consume
+     that scroll.js and legacy/keyboard/index.ts can both consume
      without extra parsing. */
   const plan = planMotionForUser(300);
   assert.ok(Number.isFinite(plan.duration));
@@ -83,7 +83,7 @@ test('scrollToBottomIfPinned is preserved (regression)', async () => {
      font-size and content-width changes — these run after the
      velocity-based rAF path, so the snap path must NOT have been
      removed. */
-  const mod = await import('../src/ui/scroll.ts');
+  const mod = await import('../src/legacy/scroll.ts');
   assert.equal(typeof mod.scrollToBottomIfPinned, 'function');
 });
 
@@ -92,7 +92,7 @@ test('velocityScrollTo cancels an in-flight chain when called twice in a row (mo
      verify that the function returns a Promise and that the
      dataset auto-scrolling flag is set immediately, which is the
      contract callers depend on for cancel timing. */
-  const mod = await import('../src/ui/scroll.ts');
+  const mod = await import('../src/legacy/scroll.ts');
   const stub = {
     scrollHeight: 5000,
     scrollTop: 0,

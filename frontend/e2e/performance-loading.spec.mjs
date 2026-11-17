@@ -197,10 +197,10 @@ test('production entry keeps the static closure gzip transfer under budget', () 
     'src/react/extensions/WorkflowLayer.tsx',
     'src/react/find-in-session/FindInSession.tsx',
     'src/chat/streamAttempt.ts',
-    'src/ui/share.impl.ts',
+    'src/legacy/share.impl.ts',
     'src/react/cheatsheet/Cheatsheet.tsx',
     'src/react/storageModal/StorageModal.tsx',
-    'src/ui/promptTemplates.impl.ts',
+    'src/legacy/promptTemplates.impl.ts',
     'src/react/settings/GeneralSettingsPane.tsx',
     'src/react/settings/ModelsSettingsPane.tsx',
     'src/react/settings/DisplaySettingsPane.tsx',
@@ -409,7 +409,7 @@ test('late creation imports cannot replace a newer navigation destination', asyn
   const report = JSON.parse(
     readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
   );
-  const creation = report.modules.find((module) => module.id === 'src/ui/creationSurfaces.ts');
+  const creation = report.modules.find((module) => module.id === 'src/legacy/creationSurfaces.ts');
   let release;
   const gate = new Promise((resolve) => {
     release = resolve;

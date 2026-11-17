@@ -5,12 +5,12 @@ import {
   setBuiltInProviderModel,
   setServerBuiltInKeyAvailable,
 } from '../../config/providerConfig.service.ts';
-import { showToast } from '../../ui/toast.js';
+import { showToast } from '../../legacy/toast.js';
 import { i18n } from '../../react/legacy/gateway.ts';
 import { openMobileTargetFromUrl } from '../../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { publishSidebarChrome } from '../../ui/profile.ts';
+import { publishSidebarChrome } from '../../legacy/profile.ts';
 import { revealAppAndHydrate, showGate, showAuthSignin } from '../index.ts';
 import { captureMarketingQuestion } from '../marketingHandoff.ts';
 import { setCurrentUser, markAuthSuccess, isInAuthGraceWindow } from '../../app/lifecycle/index.ts';

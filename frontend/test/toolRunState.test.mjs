@@ -7,7 +7,7 @@ import {
   summarizeToolRuns,
   transitionToolRun,
 } from '../src/chat/toolRunState.ts';
-import { agentRunStateOf } from '../src/ui/toolPresentationState.ts';
+import { agentRunStateOf } from '../src/legacy/toolPresentationState.ts';
 
 test('tool run state keeps the first terminal SSE result', () => {
   const running = { id: 'run-1', phase: TOOL_RUN_PHASES.running };

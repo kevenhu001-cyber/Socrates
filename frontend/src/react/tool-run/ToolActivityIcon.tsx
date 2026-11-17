@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { toolIcon } from '../../ui/icons/toolIcons.ts';
-import { connectorToolIdOf } from '../../ui/toolActivity.ts';
+import { toolIcon } from '../../legacy/icons/toolIcons.ts';
+import { connectorToolIdOf } from '../../legacy/toolActivity.ts';
 
 // Reuse local vendor marks, loaded only for connector activity.
 const marks = new Map<string, string>();

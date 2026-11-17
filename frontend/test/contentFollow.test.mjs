@@ -125,7 +125,7 @@ function makeHarness({ away = false, turnHold = false, turnSettling = false, ret
 test('ResizeObserver follows a pinned reader when the newest message grows without a mutation', async () => {
   const h = makeHarness();
   try {
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.fireGrowth();
@@ -141,7 +141,7 @@ test('ResizeObserver follows a pinned reader when the newest message grows witho
 test('a queued scroll event cannot consume growth before ResizeObserver sees it', async () => {
   const h = makeHarness();
   try {
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.fireGrowth({ grow: false });
@@ -158,7 +158,7 @@ test('a queued scroll event cannot consume growth before ResizeObserver sees it'
 test('coalesced resize notifications follow the final height using one content frame', async () => {
   const h = makeHarness();
   try {
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.fireGrowth({ grow: false });
@@ -185,7 +185,7 @@ test('ResizeObserver content growth does not follow when user intent or an ancho
     await t.test(name, async () => {
       const h = makeHarness(options);
       try {
-        const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+        const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
         const dispose = initChatComposerReserve({ list: h.list });
         try {
           h.fireGrowth();
@@ -204,7 +204,7 @@ test('ResizeObserver content growth does not follow when user intent or an ancho
 test('ResizeObserver does not follow when the newest message did not grow', async () => {
   const h = makeHarness();
   try {
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.fireGrowth({ grow: false });
@@ -228,7 +228,7 @@ test('a first bottom scroll delivered after viewport shrink retains the pre-resi
         top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
       },
     });
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.list.scrollTop = h.list.scrollHeight;
@@ -251,7 +251,7 @@ test('a viewport shrink overlapping a genuine upward scroll never restores the b
     await t.test(`user intent flag: ${away}`, async () => {
       const h = makeHarness({ away });
       try {
-        const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+        const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
         const dispose = initChatComposerReserve({ list: h.list });
         try {
           h.list.scrollTop -= 240;
@@ -280,7 +280,7 @@ test('a composer shrink re-pins a reader whose transcript height settled after t
         top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
       },
     });
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       /* The transcript is sampled while the reader still sits at the top. */
@@ -318,7 +318,7 @@ test('a composer shrink re-pins a reader even when a later sample replaced the p
         top = Math.max(0, Math.min(value, h.list.scrollHeight - h.list.clientHeight));
       },
     });
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       /* The observer's first delivery records the viewport height it saw
@@ -348,7 +348,7 @@ test('a downward scroll that was not pinned before viewport shrink keeps its rea
   const h = makeHarness();
   try {
     h.list.scrollTop = 0;
-    const { initChatComposerReserve } = await import('../src/ui/scroll.ts');
+    const { initChatComposerReserve } = await import('../src/legacy/scroll.ts');
     const dispose = initChatComposerReserve({ list: h.list });
     try {
       h.list.scrollTop = 200;

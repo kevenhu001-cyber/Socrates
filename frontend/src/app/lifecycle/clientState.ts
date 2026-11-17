@@ -5,11 +5,11 @@ import { turnState } from '../../chat/turn/state.ts';
 import { serverCache } from '../../session/serverCache.ts';
 import { setAppMode, LAST_ACTIVE_ID_KEY } from '../../config/providers.ts';
 import { resetProviderConfigForUser } from '../../config/providerConfig.service.ts';
-import { resetCmdKSearchState } from '../../ui/cmdK.ts';
+import { resetCmdKSearchState } from '../../legacy/cmdK.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { clearUserMemories } from './userMemory.ts';
 import { resetExamSaveStateIfLoaded } from './examSaveReset.ts';
-import { renderRecents } from '../../ui/recentsView.ts';
+import { renderRecents } from '../../legacy/recentsView.ts';
 
 function attemptCleanup(
   context: string,

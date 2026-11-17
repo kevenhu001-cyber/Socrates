@@ -1,7 +1,7 @@
 import React from 'react';
-import { Icon } from '../../ui/Icon';
-import { getIconDescriptor, type IconName } from '../../ui/iconRegistry';
-import { animateSpring, readScale } from '../../ui/motion/spring';
+import { Icon } from '../../legacy/Icon';
+import { getIconDescriptor, type IconName } from '../../legacy/iconRegistry';
+import { animateSpring, readScale } from '../../legacy/motion/spring';
 import { SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { MessageOverflow, type OverflowAction } from './MessageOverflow';
 import type { ChatMessage } from '../types/domain';

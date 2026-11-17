@@ -1,5 +1,5 @@
 import { useBridge } from '../../store/useBridge.ts';
-import { profileState } from '../../ui/profileState.ts';
+import { profileState } from '../../legacy/profileState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import type { ProfileDispatch } from './types';
 

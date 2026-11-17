@@ -7,7 +7,7 @@ import {
   useAttachmentsSnapshot,
 } from './attachments.store';
 import { AttachmentChip } from './AttachmentChip';
-import { syncComposerShellFlags } from '../../ui/composerShape.ts';
+import { syncComposerShellFlags } from '../../legacy/composerShape.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
 const CHIPS_ID = 'composerAttachmentChips';

@@ -1365,7 +1365,7 @@ export const en = {
   'kb.yourNote': 'Your note',
   'kb.history': 'Snapshot history',
   'kb.noHistory': 'No snapshots yet.',
-  /* mistakeBook.js (ui/) had the same gap as the
+  /* mistakeBook.js (legacy/) had the same gap as the
    * knowledge detail panel: raw English literals plus the internal
    * mistake.type enum echoed straight into the card meta. The mistake
    * book is one of the four structural moat features, so it ships in

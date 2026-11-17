@@ -1,0 +1,74 @@
+/* legacy/sidebarChrome.ts — extracted from legacy entry.
+ * Sidebar chrome: mobile drawer dismissal and the native view-switch adapter.
+ * React owns the search row, panel selection, and panel visibility.
+ */
+import { toggleSidebar, projectSidebarOpen } from '../sidebar/sidebar.service.ts';
+import { isMobileViewport } from '../sidebar/breakpoints.ts';
+import { toggleSidebarPanelView } from '../sidebar/sidebar.store.ts';
+import { renderRecents } from './recentsView.ts';
+import { reportSwallow } from '../util/reportSwallow.ts';
+
+/* Mobile viewport predicate lives in sidebar/breakpoints.ts so the drawer
+   dismissal, the resize auto-collapse and the React chrome all share the
+   shell's one breakpoint encoding (max-width: 768px, inclusive). */
+
+/* Native web session bridge compatibility action. React owns the selected
+   panel and its visibility; this adapter only updates the shared store. */
+export function toggleSidebarView(view: string) {
+  const next = toggleSidebarPanelView(view === 'knowledge' ? 'knowledge' : 'mistakes');
+  if (next === 'recents') renderRecents();
+}
+
+function isInteractiveControl(target: Element): boolean {
+  return Boolean(
+    target.closest('#sidebar') ||
+    target.closest('.toggle-sidebar') ||
+    target.closest('#sessionContextMenu') ||
+    target.closest('input, textarea, select, button, a, [role=button], [role=option]'),
+  );
+}
+
+/* Sidebar persisted state + mobile drawer listeners. Called once from app entry at the same position the inline block used to run, so eval
+   order is unchanged. */
+export function initSidebarChrome() {
+  const sidebar = document.getElementById('sidebar');
+  try {
+    const sbPref = localStorage.getItem('socrates-sb');
+    /* Tablets and landscape phones sit between the phone drawer and a
+       desktop rail: 769–1024px used to open with a 278px sidebar, leaving a
+       509px conversation column. Default them to the 52px rail so the
+       content keeps the width, and keep honouring an explicit preference. */
+    const wantsCollapsed =
+      sbPref === '0' ||
+      (sbPref === null && (typeof window !== 'undefined' ? window.innerWidth : 1024) < 1025);
+    /* Store-first hydration: the projection writes the collapsed class and
+       syncs the zustand store from the same value, so boot cannot leave the
+       two truths disagreeing. */
+    projectSidebarOpen(!wantsCollapsed);
+  } catch (error) {
+    reportSwallow(error, 'legacy/sidebarChrome.ts:111', 'expected');
+  }
+
+  document.addEventListener('click', function (e) {
+    const sbEl = sidebar ?? document.getElementById('sidebar');
+    if (!sbEl || sbEl.classList.contains('collapsed') || sbEl.classList.contains('ctx-menu-block'))
+      return;
+    const target = (e.target as Element)?.closest
+      ? (e.target as Element)
+      : ((e.target as Node)?.parentElement as Element | null);
+    if (!target?.closest || isInteractiveControl(target)) return;
+    if (isMobileViewport()) toggleSidebar();
+  });
+  /* Backdrop tap on mobile also closes. The document-level handler above
+     already handles backdrop clicks (the backdrop is outside #sidebar, not
+     a form control, and is inside the mobile viewport's click region), so
+     this listener is intentionally a no-op for non-backdrop targets and
+     simply guarded against double-firing. */
+  const sbBackdrop = document.getElementById('sidebarBackdrop');
+  if (sbBackdrop)
+    sbBackdrop.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const sbEl = sidebar ?? document.getElementById('sidebar');
+      if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar();
+    });
+}

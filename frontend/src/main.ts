@@ -7,7 +7,7 @@
    before the shim's IIFE kicks in.
 
    The guarantee is RELATIVE, not absolute: `batchStorage.js` itself imports
-   `ui/toast.js`, and ES modules evaluate a module's dependencies before the
+   `legacy/toast.js`, and ES modules evaluate a module's dependencies before the
    module, so anything reaching storage from inside that transitive graph runs
    before the shim is in place. What protects the ordering is the bundler
    honoring declaration order for side-effect-only imports — which is exactly
@@ -27,20 +27,20 @@ import './app/errorGuard.ts';
 import './render/katexRefresh.js';
 import { preloadRenderRuntime } from './render/preloadRuntime.ts';
 import { initCookieConsent } from './cookieConsent.ts';
-import { initChatComposerReserve } from './ui/scroll.ts';
-import { initKeyboardLift } from './ui/keyboard/index.ts';
+import { initChatComposerReserve } from './legacy/scroll.ts';
+import { initKeyboardLift } from './legacy/keyboard/index.ts';
 import { initAndroidBridge } from './native/androidBridge.ts';
-import { initTopicFocusAssist } from './ui/topicFocusAssist.ts';
-import './ui/composerAnim.js';
-import { installComposerShapeMirror } from './ui/composerShape.ts';
-import { installKeyboardShortcuts } from './ui/keyboardShortcuts.ts';
-import { initSidebarDrag } from './ui/sidebarResize.ts';
-import { initSidebarChrome } from './ui/sidebarChrome.ts';
-import { wireScrollPill } from './ui/scrollPill.ts';
-import { wirePressFeedback } from './ui/pressFeedback.ts';
+import { initTopicFocusAssist } from './legacy/topicFocusAssist.ts';
+import './legacy/composerAnim.js';
+import { installComposerShapeMirror } from './legacy/composerShape.ts';
+import { installKeyboardShortcuts } from './legacy/keyboardShortcuts.ts';
+import { initSidebarDrag } from './legacy/sidebarResize.ts';
+import { initSidebarChrome } from './legacy/sidebarChrome.ts';
+import { wireScrollPill } from './legacy/scrollPill.ts';
+import { wirePressFeedback } from './legacy/pressFeedback.ts';
 import { loadMemories } from './storage/memoryStore.ts';
-import { initLinkFavicons } from './ui/linkFavicons.ts';
-import { installLayoutStateMirror } from './ui/layoutStateMirror.ts';
+import { initLinkFavicons } from './legacy/linkFavicons.ts';
+import { installLayoutStateMirror } from './legacy/layoutStateMirror.ts';
 import { installDiagnosticFlowActions } from './tutor/diagnosticFlow.ts';
 import { isInAuthGraceWindow, handleAuthExpired, getUserMemories } from './app/lifecycle/index.ts';
 import { installLiveTurnRetryListener } from './chat/liveTurn.ts';

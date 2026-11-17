@@ -2,7 +2,7 @@ import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { i18n } from '../legacy/gateway';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
-import { renderRecents, setRecentsSearch } from '../../ui/recentsView.ts';
+import { renderRecents, setRecentsSearch } from '../../legacy/recentsView.ts';
 import {
   setSidebarPanelView,
   toggleSidebarPanelView,

@@ -34,12 +34,12 @@ import {
   getArchivedSessions,
   flushRecentsReconcile,
 } from '../session/recents.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
-import { closeConfirm, showConfirm } from '../ui/confirm.js';
-import { deleteUserMessage, sendFeedback } from '../ui/messageActions.ts';
+import { closeConfirm, showConfirm } from '../legacy/confirm.js';
+import { deleteUserMessage, sendFeedback } from '../legacy/messageActions.ts';
 import { buildAssistantHtml as renderAssistantHTML } from '../render/assistantHtml.ts';
-import { showToast } from '../ui/toast.ts';
+import { showToast } from '../legacy/toast.ts';
 import { addMessage } from '../chat/messages.ts';
 import { askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
@@ -58,21 +58,21 @@ import {
   toggleProfileWebSearch,
   openProfile,
   closeProfile,
-} from '../ui/profile.ts';
+} from '../legacy/profile.ts';
 import {
   regenerateAssistantMessage,
   branchFromMessage,
   switchMessageBranch,
 } from '../chat/editBranch.ts';
-import { toggleReadAloud } from '../ui/readAloud.ts';
+import { toggleReadAloud } from '../legacy/readAloud.ts';
 import {
   selectShareVis,
   openShareModal,
   closeShareModal,
   createShareLink,
   revokeShareLink,
-} from '../ui/share.ts';
-import { openCheatsheet, closeCheatsheet } from '../ui/cheatsheet.js';
+} from '../legacy/share.ts';
+import { openCheatsheet, closeCheatsheet } from '../legacy/cheatsheet.js';
 import { closeMorePopover } from '../sidebar/morePopover.ts';
 import {
   composeAction,
@@ -83,14 +83,14 @@ import {
   dispatchExtension,
 } from '../extensions/index.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
-import { toggleSidebarView } from '../ui/sidebarChrome.ts';
+import { toggleSidebarView } from '../legacy/sidebarChrome.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
-import { openStorageModal, closeStorageModal } from '../ui/storage.js';
-import { openPromptTemplatesModal, closePromptTemplatesModal } from '../ui/promptTemplates.ts';
+import { openStorageModal, closeStorageModal } from '../legacy/storage.js';
+import { openPromptTemplatesModal, closePromptTemplatesModal } from '../legacy/promptTemplates.ts';
 import { toggleWebSearch } from '../chat/webSearchToggle.ts';
-import { openCmdK, closeCmdK, onCmdKInput, onCmdKKey, openCmdKResult } from '../ui/cmdK.ts';
+import { openCmdK, closeCmdK, onCmdKInput, onCmdKKey, openCmdKResult } from '../legacy/cmdK.ts';
 import { loadWebSearch } from '../chat/webSearchLoader.ts';
-/* ui/dangerConfirms.js is lazy — confirm actions import it on demand. */
+/* legacy/dangerConfirms.js is lazy — confirm actions import it on demand. */
 import {
   processPendingMermaid,
   processPendingViz,
@@ -110,7 +110,7 @@ import { stripChatArtifacts } from '../util/stripChatArtifacts.ts';
 import { decideLiveApproval } from '../chat/liveTurn.ts';
 import { startSession } from '../chat/sessionBootstrap/index.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
-import { setRecentsSearch } from '../ui/recentsView.ts';
+import { setRecentsSearch } from '../legacy/recentsView.ts';
 import { setLang } from '../i18n/index.ts';
 import { showGate, showAuthSignin } from '../auth/index.ts';
 import { setLegacyActions } from '../react/legacy/gateway.ts';
@@ -125,11 +125,11 @@ browserWindow.renderRecents = renderRecents;
 browserWindow.resendLastUserMessage = resendLastUserMessage;
 browserWindow.setChatStopState = setChatStopState;
 browserWindow.handleSendClick = handleSendClick;
-type DangerConfirmsModule = typeof import('../ui/dangerConfirms.js');
+type DangerConfirmsModule = typeof import('../legacy/dangerConfirms.js');
 let _dangerImport: Promise<DangerConfirmsModule> | null = null;
 function _loadDangerConfirms() {
   if (!_dangerImport) {
-    _dangerImport = import('../ui/dangerConfirms.js');
+    _dangerImport = import('../legacy/dangerConfirms.js');
     _dangerImport.catch(function (err) {
       _dangerImport = null;
       console.error('[dangerConfirms] failed to load', err);
@@ -188,8 +188,8 @@ browserWindow.__socratesLegacy = {
       import('../react/settings/settings.service.ts').then((module) => module.closeSettings()),
     openProfile,
     closeProfile,
-    openUsageModal: () => import('../ui/usage.ts').then((module) => module.openUsageModal()),
-    closeUsageModal: () => import('../ui/usage.ts').then((module) => module.closeUsageModal()),
+    openUsageModal: () => import('../legacy/usage.ts').then((module) => module.openUsageModal()),
+    closeUsageModal: () => import('../legacy/usage.ts').then((module) => module.closeUsageModal()),
     openStorageModal,
     closeStorageModal,
     openPromptTemplatesModal,

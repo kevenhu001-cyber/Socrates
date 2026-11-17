@@ -9,7 +9,7 @@ import {
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import type { ConfirmSnapshot } from './types';
 import { getConfirmReturnFocus } from './confirm.hooks';
-import { setModalOpen } from '../../ui/modalA11y.ts';
+import { setModalOpen } from '../../legacy/modalA11y.ts';
 
 function restoreConfirmFocus(): HTMLElement | null {
   // Base UI resolves finalFocus as the confirm popup closes. Release its modal

@@ -1,4 +1,4 @@
-export type { ProfileSnapshot, ProfileUserSnapshot } from '../../ui/profileState.ts';
+export type { ProfileSnapshot, ProfileUserSnapshot } from '../../legacy/profileState.ts';
 
 export interface ProfileDispatch {
   close: () => void;

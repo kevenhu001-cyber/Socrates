@@ -10,14 +10,14 @@ import { formatMsg } from '../render/markdown.ts';
 import { shouldRequestTutorAfterQuiz } from '../tutor/policy.ts';
 import { configureAssistantHtml } from '../render/assistantHtml.ts';
 import { configureTurnAnchor } from '../chat/turn/anchor/ownership.ts';
-import { isMsgListMounted } from '../ui/msgListMount.ts';
+import { isMsgListMounted } from '../legacy/msgListMount.ts';
 import { submitChatMessage } from '../chat/sendPipeline.ts';
-import { registerMistakeRedoAction } from '../ui/mistakeBookCommands.ts';
+import { registerMistakeRedoAction } from '../legacy/mistakeBookCommands.ts';
 import { t } from '../i18n/index.ts';
 import { addAssistantUiMessage } from '../chat/messages.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
-type MistakeBook = ReturnType<(typeof import('../ui/mistakeBook.ts'))['createMistakeBook']>;
+type MistakeBook = ReturnType<(typeof import('../legacy/mistakeBook.ts'))['createMistakeBook']>;
 type MistakeRecord = Parameters<MistakeBook['recordMistake']>[0];
 let _installedBook: MistakeBook | null = null;
 let _bookLoad: Promise<MistakeBook> | null = null;
@@ -29,7 +29,7 @@ let _facadeInstalled = false;
    every call runs synchronously as before. Calls made while the module is
    in flight are replayed in order on the same promise. */
 function loadMistakeBook(): Promise<MistakeBook> {
-  _bookLoad ??= import('../ui/mistakeBook.ts')
+  _bookLoad ??= import('../legacy/mistakeBook.ts')
     .then(({ createMistakeBook }) => {
       _installedBook = createMistakeBook({
         state: {

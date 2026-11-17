@@ -28,13 +28,13 @@ import { useComposerSurface } from './useComposerSurface';
 import { readComposerSurface } from '../../composer/controller.ts';
 import { composerLifecycleStore } from '../../composer/lifecycle.store.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { useSendGlyphStore } from '../../ui/sendGlyph.store.ts';
+import { useSendGlyphStore } from '../../legacy/sendGlyph.store.ts';
 import { toggleComposerTools, useComposerToolsSnapshot } from '../composer/composerTools.store';
 import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
-import { useVoiceInputStore } from '../../ui/voiceInput.store.ts';
-import { voiceInputUnavailableReason } from '../../ui/voiceInputAvailability.ts';
+import { useVoiceInputStore } from '../../legacy/voiceInput.store.ts';
+import { voiceInputUnavailableReason } from '../../legacy/voiceInputAvailability.ts';
 
 interface ComposerShellProps {
   placeholder: string;
@@ -298,7 +298,7 @@ export function ComposerShell({
               disabled: voiceUnavailable !== null,
               onPress: () => {
                 const target = readComposerSurface();
-                void import('../../ui/voiceInput.ts')
+                void import('../../legacy/voiceInput.ts')
                   .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
                   .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
               },

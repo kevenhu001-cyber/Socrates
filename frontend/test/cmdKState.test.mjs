@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { cmdKState, publishCmdKState } = await import('../src/ui/cmdKState.ts');
+const { cmdKState, publishCmdKState } = await import('../src/legacy/cmdKState.ts');
 
 test('Cmd-K state publishes immutable result and recent-query snapshots', () => {
   cmdKState.__resetForTests();

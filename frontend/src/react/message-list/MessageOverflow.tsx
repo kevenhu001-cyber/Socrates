@@ -1,5 +1,5 @@
-import { Icon } from '../../ui/Icon';
-import { INTERFACE_ICON_STROKE } from '../../ui/icons/interfaceIcons';
+import { Icon } from '../../legacy/Icon';
+import { INTERFACE_ICON_STROKE } from '../../legacy/icons/interfaceIcons';
 import { useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
 import { i18n } from '../legacy/gateway';
 import { DeferredMenu } from '../menu/DeferredMenu';

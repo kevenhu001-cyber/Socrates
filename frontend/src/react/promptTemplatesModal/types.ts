@@ -1,4 +1,7 @@
-export type { PromptTemplateData, PromptTemplatesSnapshot } from '../../ui/promptTemplatesState.ts';
+export type {
+  PromptTemplateData,
+  PromptTemplatesSnapshot,
+} from '../../legacy/promptTemplatesState.ts';
 
 declare global {
   interface Window {

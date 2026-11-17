@@ -1,5 +1,5 @@
 import { apiFetch } from '../util/api/index.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { i18n } from '../react/legacy/gateway.ts';
 import type { ProviderCapabilities } from '@socrates/contracts';

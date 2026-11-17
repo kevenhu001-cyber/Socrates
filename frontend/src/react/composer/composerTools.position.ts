@@ -1,4 +1,4 @@
-import { restingRect } from '../../ui/pressFeedback.ts';
+import { restingRect } from '../../legacy/pressFeedback.ts';
 
 /* Phone bottom sheet, matching the mobile drawer reference (screenshot 1000038600.jpg):
    it slides up from the bottom of the viewport, spans full width, with rounded top corners. */

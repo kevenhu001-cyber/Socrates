@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, MouseEvent as ReactMouseEvent, ReactElement } from 'react';
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 
 export interface SessionProjectOption {
   id: string;

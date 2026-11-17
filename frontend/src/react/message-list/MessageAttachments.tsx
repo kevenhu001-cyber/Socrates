@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FileCard, getFileExtension, formatFileSize } from '../attachments/FileCard';
 import { t } from '../legacy/gateway.ts';
-import { canPreviewDocument, openDocumentPreview } from '../../ui/docPreview.ts';
+import { canPreviewDocument, openDocumentPreview } from '../../legacy/docPreview.ts';
 import type { ChatMessage } from '../types/domain';
 
 type MessageAttachment = NonNullable<ChatMessage['attachments']>[number];

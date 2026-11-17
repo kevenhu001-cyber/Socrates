@@ -13,8 +13,8 @@ export function shouldRetryInterruptedStream(decision: StreamRetryDecision): boo
 }
 
 import { dispatchSession, dispatchUi, sessionStore, uiStore } from '../store/index.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { smoothScrollToBottom } from '../ui/scroll.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
+import { smoothScrollToBottom } from '../legacy/scroll.ts';
 
 /** A captured viewport offset for one message row. */
 export interface RetryViewportSnapshot {

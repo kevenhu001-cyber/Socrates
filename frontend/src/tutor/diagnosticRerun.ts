@@ -6,13 +6,13 @@
  * unlike the cold-start diagnostic it never deletes the session.
  */
 import { callBridge, dispatchPatches, dispatchSession, sessionBridge } from '../store/index.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import {
   clearDiagnosticScreen,
   showDiagnosticError,
   showDiagnosticLoading,
   updateDiagnosticProgress,
-} from '../ui/diagnosticScreen.ts';
+} from '../legacy/diagnosticScreen.ts';
 import { registerDiagnosticActions } from './diagnosticRegistry.ts';
 import { renderDiagQuestion } from './diagnosticFlow.ts';
 import { buildFallbackDiagnosticQuestions } from './policy.ts';

@@ -17,7 +17,7 @@ import {
   StepListScaffold,
   TheoremScaffold,
 } from '../react/tutor-widgets/LearnScaffolds.tsx';
-import { isSharedMessageList } from '../ui/msgListMount.ts';
+import { isSharedMessageList } from '../legacy/msgListMount.ts';
 import type {
   ParsedDefinition,
   ParsedDerivation,

@@ -4,7 +4,7 @@ import {
   getKeyboardInset,
   isTrackedInputFocused,
   measureKeyboard,
-} from '../src/ui/keyboard/geometry.ts';
+} from '../src/legacy/keyboard/geometry.ts';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
 test('normalizes virtual-keyboard measurements without double-counting layout resize', () => {
@@ -481,7 +481,7 @@ test('a growing composer keeps the latest message visible and the transcript pin
     document.getElementById('composerInputWrap').style.minHeight = '240px';
   });
   /* The composer→transcript re-pin runs through a ResizeObserver + rAF
-     follow sequence in ui/scroll.ts — poll for the settled state instead
+     follow sequence in legacy/scroll.ts — poll for the settled state instead
      of racing a fixed delay on slower runners. */
   await expect
     .poll(() =>

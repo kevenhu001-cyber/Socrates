@@ -28,7 +28,7 @@ Use `feature/index.ts` for the public entry instead of `feature.ts` +
 - One turn: `Turn` is the durable unit; `TurnEvent` is its streamed record;
   `ChatStreamFrame` is the live SSE frame. Do not call all three "event".
 - One UI layer name: `react/` is React DOM, `packages/ui/` is RN-Web shared
-  presentation, `frontend/src/ui/` is legacy DOM adapters (not components).
+  presentation, `frontend/src/legacy/` is legacy DOM adapters (not components).
 - One intelligent-UI vocabulary: `intelligent-ui/` is the feature (the turn UI
   blocks), `openui/` inside it is the renderer and grammar, and `intui.*` is
   only an i18n key prefix kept for compatibility. Never write `intelligence`

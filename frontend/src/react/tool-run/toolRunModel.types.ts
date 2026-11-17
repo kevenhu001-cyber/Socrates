@@ -1,5 +1,5 @@
-import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
-import type { ToolCallLike } from '../../ui/toolPresentationModel.ts';
+import type { AgentPlanData, AgentStepData } from '../../legacy/agentSteps.ts';
+import type { ToolCallLike } from '../../legacy/toolPresentationModel.ts';
 
 export type ToolRunState = 'running' | 'done' | 'error' | 'stopped' | 'awaiting';
 

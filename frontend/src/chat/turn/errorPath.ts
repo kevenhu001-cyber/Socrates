@@ -12,11 +12,11 @@
 import { settleTurnRuntime } from '@socrates/core/turnRuntime';
 import { esc } from '../../render/text.ts';
 import { buildAssistantHtml } from '../../render/assistantHtml.ts';
-import { setReactLiveStatus } from '../../ui/messageSnapshot.ts';
+import { setReactLiveStatus } from '../../legacy/messageSnapshot.ts';
 import { setChatStopState, markTurnEnded } from '../turn/ui.ts';
 import { claimLiveRetry } from '../liveTurn.ts';
 import { turnState, streamRetryViewport } from '../turn/state.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';

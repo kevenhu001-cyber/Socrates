@@ -13,16 +13,16 @@
  */
 
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
-import { closeCmdK } from '../ui/cmdK.ts';
-import { closeStorageModal } from '../ui/storage.ts';
-import { closePromptTemplatesModal } from '../ui/promptTemplates.ts';
-import { closeProfile } from '../ui/profile.ts';
-import { closeCheatsheet } from '../ui/cheatsheet.ts';
-import { closeShareModal } from '../ui/share.ts';
+import { closeCmdK } from '../legacy/cmdK.ts';
+import { closeStorageModal } from '../legacy/storage.ts';
+import { closePromptTemplatesModal } from '../legacy/promptTemplates.ts';
+import { closeProfile } from '../legacy/profile.ts';
+import { closeCheatsheet } from '../legacy/cheatsheet.ts';
+import { closeShareModal } from '../legacy/share.ts';
 import { closeTagEditor } from '../session/organizeRuntime.ts';
-import { closeConfirm } from '../ui/confirm.ts';
+import { closeConfirm } from '../legacy/confirm.ts';
 import { isFindOpen, closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
-import { getKeyboardLift } from '../ui/keyboard/index.ts';
+import { getKeyboardLift } from '../legacy/keyboard/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 export interface SystemInsets {
@@ -128,7 +128,7 @@ export function handleBackPress(): boolean {
     return true;
   }
   if (isElementVisible('usageOverlay')) {
-    void import('../ui/usage.ts')
+    void import('../legacy/usage.ts')
       .then((m) => m.closeUsageModal())
       .catch((err) => reportSwallow(err, 'androidBridge.closeUsageModal'));
     return true;

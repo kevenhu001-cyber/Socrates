@@ -1,5 +1,5 @@
 import { toggleMorePopover } from './morePopover.ts';
-import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
+import { openPromptTemplatesModal } from '../legacy/promptTemplates.ts';
 import {
   mountAdminPage,
   mountScheduledPage,
@@ -16,7 +16,7 @@ import { loadScheduledTasks } from '../react/pages/scheduled/scheduled.service';
 import { ensureConnectorIcons, restoreConnectorReturnContext } from './nav.ts';
 import { getActiveDestination } from './navigation.store';
 import { setSidebarPanelView } from './sidebar.store';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { DESTINATIONS } from './navigation.destinations';
 
 function closeAllPanels(): void {
@@ -24,7 +24,7 @@ function closeAllPanels(): void {
 }
 
 function openCreation(name: 'images' | 'assistants' | 'sites'): void {
-  void import('../ui/creationSurfaces.ts')
+  void import('../legacy/creationSurfaces.ts')
     .then(async (module) => {
       if (getActiveDestination() !== name) return;
       await module.openCreationSurface(name);

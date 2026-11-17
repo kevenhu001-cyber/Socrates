@@ -2,7 +2,7 @@ import { memo, useRef, useState, type RefObject } from 'react';
 
 import { hasTurnStructure, type ToolCallRecord } from '../tool-run/toolRunModel';
 import type { ChatMessage } from '../types/domain';
-import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
+import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useMessageContextMenu } from './useMessageContextMenu';
 import { TutorMessageActions } from './TutorMessageActions';
 import { MessageToolbar } from './MessageToolbar';

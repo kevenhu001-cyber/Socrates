@@ -7,9 +7,9 @@ import {
 } from '../../legacy/gateway.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
-import { openLibraryDetail } from '../../../ui/libraryDetail.ts';
+import { openLibraryDetail } from '../../../legacy/libraryDetail.ts';
 import { mountDialogCard, unmountDialogCard } from './workspace.dialogHost';
-import { renderActionButton } from '../../../ui/actionButton.ts';
+import { renderActionButton } from '../../../legacy/actionButton.ts';
 import {
   AgentRunView,
   ArxivSearchView,

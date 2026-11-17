@@ -12,7 +12,7 @@ import { ProfileHeader } from './ProfileHeader';
 import { ProfilePreferencesSection } from './ProfilePreferencesSection';
 import { profileText } from './profileText';
 import { i18n } from '../legacy/gateway';
-import { installModalA11y } from '../../ui/modalA11y.ts';
+import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 const OVERLAY_ID = 'profileOverlay';
 

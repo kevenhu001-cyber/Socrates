@@ -1,6 +1,6 @@
 import { useBridge, useBridgeSelector } from '../../store/index.ts';
-import { sessionListState, setCurrentSessionId } from '../../ui/sessionListState.ts';
-import type { SessionItem, SessionListSnapshot } from '../../ui/sessionListState.ts';
+import { sessionListState, setCurrentSessionId } from '../../legacy/sessionListState.ts';
+import type { SessionItem, SessionListSnapshot } from '../../legacy/sessionListState.ts';
 
 export { setCurrentSessionId };
 
@@ -24,9 +24,9 @@ export function useCurrentSessionId(): string | null {
   return useBridgeSelector(sessionListState, (snapshot) => snapshot.currentSessionId);
 }
 
-/* Canonical relative-time formatter lives in ui/recentsModel.ts so the
+/* Canonical relative-time formatter lives in legacy/recentsModel.ts so the
    sidebar list and the mistake book share one output contract. */
-export { formatRelativeTime } from '../../ui/recentsModel.ts';
+export { formatRelativeTime } from '../../legacy/recentsModel.ts';
 
 export function useSessionListSearchQuery(): string {
   return useBridgeSelector(sessionListState, (snapshot) => snapshot.searchQuery);

@@ -32,11 +32,11 @@ import {
   type AppMode,
 } from '../config/providers.ts';
 import { pushChatIdToURL, pushExamIdToURL } from './store.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
+import { clearLegacyMsgListChildren } from '../legacy/messageListDom.ts';
 import { buildTeachingPlanFromKB, syncCurrentNodeFromTeachingPlan } from '../chat/teachingPlan.ts';
 import { stateView } from '../tutor/diagnosticFlow.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { showToast } from '../ui/toast.js';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
+import { showToast } from '../legacy/toast.js';
 import { detailCache, type CacheEntry } from './detailCache.ts';
 import {
   restoreSessionMessage,
@@ -49,14 +49,14 @@ import { reattachPendingTurn } from './pendingTurnRestore.ts';
 import { beginHistoryPaging, endHistoryPaging } from './historyPaging.ts';
 import { normalizeDetailPage, olderRowCount, sessionDetailPath } from './historyPagingState.ts';
 import { flushDeferredSessionSave, seedSyncedMessages } from './persistence.ts';
-import { toggleShareBtn } from '../ui/share.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { toggleShareBtn } from '../legacy/share.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { clearComposer } from '../composer/controller.ts';
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type { ExamQuestion } from '../exam/types.ts';
 import { clearActiveTemplate } from '../chat/templateSlash.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 import { t } from '../i18n/index.ts';
 
 export { reattachPendingTurn };

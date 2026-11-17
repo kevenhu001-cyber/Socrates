@@ -14,7 +14,7 @@
 
 /* ChatGPT-like empty state: quiet background, centered greeting, and a
    single broad composer that reads as the primary action. */
-/* P_has-invalidation — see ui/layoutStateMirror.js. */
+/* P_has-invalidation — see legacy/layoutStateMirror.js. */
 :where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg {
   opacity: 0.1;
 }

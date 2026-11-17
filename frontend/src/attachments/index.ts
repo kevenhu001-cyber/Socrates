@@ -49,7 +49,7 @@ import {
   XHR_TIMEOUT_MS,
   UPLOAD_IDLE_TIMEOUT_MS,
 } from './limits.ts';
-import { publishAttachmentsState } from '../ui/attachmentsState.ts';
+import { publishAttachmentsState } from '../legacy/attachmentsState.ts';
 import { sessionBridge } from '../store/index.ts';
 import { t } from '../i18n/index.ts';
 
@@ -68,7 +68,7 @@ export { attachmentPointerLine, formatAttachmentSize } from './messageContent.ts
 
 /* Pending attachments for the current turn. This remains the mutable upload
  * source for legacy callers; UI snapshots are published separately through
- * ui/attachmentsState.ts when the renderer runs. */
+ * legacy/attachmentsState.ts when the renderer runs. */
 export const attachments: PendingAttachment[] = [];
 
 /* Per-entry readiness jobs: attachment id → Promise that settles when

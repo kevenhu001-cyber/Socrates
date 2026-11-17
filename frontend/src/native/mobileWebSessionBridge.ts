@@ -1,7 +1,7 @@
-import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
+import { openPromptTemplatesModal } from '../legacy/promptTemplates.ts';
 import { openNav } from '../sidebar/navigation.service.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
-import { openCheatsheet } from '../ui/cheatsheet.js';
+import { openCheatsheet } from '../legacy/cheatsheet.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /*

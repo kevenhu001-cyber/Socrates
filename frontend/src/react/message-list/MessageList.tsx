@@ -2,7 +2,7 @@ import type { Root } from 'react-dom/client';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 
-import { subscribeToChatRuntime } from '../../ui/chatRuntimeStore';
+import { subscribeToChatRuntime } from '../../legacy/chatRuntimeStore';
 import { ErrorBoundary } from '../ErrorBoundary';
 import type { ChatMessage } from '../types/domain';
 import { reportSwallow } from '../../util/reportSwallow.ts';
@@ -12,7 +12,7 @@ import {
   isSharedMessageList,
   registerSharedMessageListRestorer,
   takeOverSharedMessageList,
-} from '../../ui/msgListMount.ts';
+} from '../../legacy/msgListMount.ts';
 import { entryId } from './messageIdentity';
 import { updateScrollFadeMask } from './messageScroll';
 import { useProgressiveMessageMount } from './useProgressiveMessageMount';

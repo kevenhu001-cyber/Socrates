@@ -3,8 +3,8 @@ import {
   setBuiltInProviderModel,
   setServerBuiltInKeyAvailable,
 } from '../../config/providerConfig.service.ts';
-import { showToast } from '../../ui/toast.js';
-import { loadSharedSession } from '../../ui/share.ts';
+import { showToast } from '../../legacy/toast.js';
+import { loadSharedSession } from '../../legacy/share.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {
   clearAuthTabSelection,

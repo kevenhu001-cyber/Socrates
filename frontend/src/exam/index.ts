@@ -4,7 +4,7 @@
 import { dispatchExam, dispatchUi, examBridge, sessionBridge } from '../store/index.ts';
 import { pushChatIdToURL, setExamIdInURL } from '../session/store.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { getProviderConfigSnapshot } from '../config/providerConfig.service.ts';
 import { parseExamArrayJSON, parseSingleExamQuestion } from './parsing.ts';
 import { restoreExamActiveProvider } from './generation.ts';

@@ -44,15 +44,15 @@ interface StreamingContext {
  *   replaceWithError body — chat/turn/errorPath.js
  */
 import { normalizeTurnRuntime, reduceTurnEvent } from '@socrates/core/turnRuntime';
-import { normalizePublicTurnActivity } from '../../ui/turnActivityModel';
+import { normalizePublicTurnActivity } from '../../legacy/turnActivityModel';
 import { dispatchBatch, sessionBridge, updateSessionMessage } from '../../store/index.ts';
 import { turnState, streamRetryViewport } from './state.ts';
 import { setChatStopState, markTurnInProgress, quietTurn } from './ui.ts';
 import { registerLiveTurnRuntime, claimLiveSearchRetry } from '../liveTurn.ts';
 import { generateId } from '../../util/ids.ts';
-import { hideNewReplyPill } from '../../ui/scrollPill.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
+import { hideNewReplyPill } from '../../legacy/scrollPill.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
+import { updateMessageSnapshot } from '../../legacy/messageSnapshot.ts';
 import { createStreamPlayer } from '../../render/streamPlayer.js';
 import { scheduleActiveTurnToTop } from './anchor/schedule.ts';
 import {
@@ -68,7 +68,7 @@ import { createAbortPath } from './abortPath.ts';
 import { createErrorPath } from './errorPath.ts';
 import { createMessageOwnership } from './messageOwnership.ts';
 import { createFinishLifecycle } from './finishLifecycle.ts';
-import { toolRunLabel } from '../../ui/toolPresentationModel';
+import { toolRunLabel } from '../../legacy/toolPresentationModel';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { addMessage } from '../messages.ts';
 import { t } from '../../i18n/index.ts';

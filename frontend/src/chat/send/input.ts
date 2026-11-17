@@ -1,7 +1,7 @@
 import { dispatchSession, sessionStore } from '../../store/index.ts';
 import { turnState } from '../turn/state.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { showToast } from '../../ui/toast.js';
+import { showToast } from '../../legacy/toast.js';
 import { stripTemplateBodyPrefix, blurChatComposer } from '../templateSlash.ts';
 import { clearComposer, focusComposer, getComposerMarkdown } from '../../composer/controller.ts';
 import { selectedComposerPlugins } from '../../composer/pluginSelection.ts';
@@ -14,7 +14,7 @@ import {
 } from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
 import { addMessage } from '../messages.ts';
-import { playSendGlyph } from '../../ui/sendGlyph.js';
+import { playSendGlyph } from '../../legacy/sendGlyph.js';
 import { askChatTurn } from '../turn/controller.ts';
 import { addStreamingMessage } from '../turn/loadStreamingTurn.ts';
 import { getAppMode, isDeepResearchOn, translate } from './runtime.ts';

@@ -13,9 +13,9 @@ import { formatMsg } from '../render/markdown.ts';
 import { esc } from '../render/text.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { generateId } from '../util/ids.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { registerRecoveredTurnRetry } from '../chat/liveTurn.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { t } from '../i18n/index.ts';
 

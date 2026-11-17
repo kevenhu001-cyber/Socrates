@@ -8,7 +8,7 @@
  *
  * Why the mirrored class:
  *   Native :active can disappear within one frame on a fast touch tap.
- *   ui/pressFeedback.js mirrors it to .is-pressed for at least 90ms so the
+ *   legacy/pressFeedback.js mirrors it to .is-pressed for at least 90ms so the
  *   paint-only acknowledgement remains visible without introducing motion.
  *
  * States:

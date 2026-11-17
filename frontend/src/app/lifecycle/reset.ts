@@ -8,19 +8,19 @@ import {
 } from '../../store/index.ts';
 import { turnState } from '../../chat/turn/state.ts';
 import { detachActiveTurn } from '../../chat/turn/cancelActiveTurn.ts';
-import { showConfirm } from '../../ui/confirm.js';
+import { showConfirm } from '../../legacy/confirm.js';
 import {
   resetComposerForNewSession,
   focusComposerForNewSession,
 } from '../../react/composer-input/lifecycle.ts';
-import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
-import { resetShareToken, toggleShareBtn } from '../../ui/share.ts';
+import { clearLegacyMsgListChildren } from '../../legacy/messageListDom.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
+import { resetShareToken, toggleShareBtn } from '../../legacy/share.ts';
 import { clearSessionRouteInURL } from '../../session/store.ts';
-import { scrollContainer } from '../../ui/scroll.ts';
+import { scrollContainer } from '../../legacy/scroll.ts';
 import { saveSessionBeforeReset } from '../../session/persistence.ts';
-import { renderGreeting } from '../../ui/greeting.js';
-import { activateMainView } from '../../ui/mainViewController.ts';
+import { renderGreeting } from '../../legacy/greeting.js';
+import { activateMainView } from '../../legacy/mainViewController.ts';
 import { setActiveNav } from '../../sidebar/navigation.service.ts';
 import { projectSidebarOpen } from '../../sidebar/sidebar.service.ts';
 import { isMobileViewport } from '../../sidebar/breakpoints.ts';
@@ -29,7 +29,7 @@ import { reportSwallow } from '../../util/reportSwallow.ts';
 import { translateLifecycleText } from './translate.ts';
 import { shouldConfirmReset } from './resetDecision.ts';
 import { clearActiveTemplate } from '../../chat/templateSlash.ts';
-import { renderRecents } from '../../ui/recentsView.ts';
+import { renderRecents } from '../../legacy/recentsView.ts';
 
 function readResetDecision(options?: ResetOptions) {
   const examWasOpen =

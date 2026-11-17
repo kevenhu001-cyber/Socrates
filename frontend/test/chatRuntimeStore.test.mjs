@@ -26,7 +26,8 @@ const { dispatchPatches, dispatchSession, updateSessionMessage } =
   await import('../src/store/index.ts');
 dispatchPatches({ session: { currentSessionId: 's-1', phase: 'chat' } });
 
-const { chatRuntimeStore, getChatRuntimeSnapshot } = await import('../src/ui/chatRuntimeStore.ts');
+const { chatRuntimeStore, getChatRuntimeSnapshot } =
+  await import('../src/legacy/chatRuntimeStore.ts');
 
 function runFrames() {
   const pending = [...frames.values()];
@@ -284,7 +285,7 @@ test('retry replacement removes the failed row and clears its terminal stream st
 });
 
 test('the module store is a singleton shared by publishers and React adapters', async () => {
-  const again = (await import('../src/ui/chatRuntimeStore.ts')).chatRuntimeStore;
+  const again = (await import('../src/legacy/chatRuntimeStore.ts')).chatRuntimeStore;
   assert.equal(again, chatRuntimeStore);
   assert.equal(getChatRuntimeSnapshot(), again.getSnapshot());
 });

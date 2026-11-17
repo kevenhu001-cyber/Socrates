@@ -1,6 +1,6 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 import { getLegacyActions, i18n } from '../legacy/gateway';
 import { DeferredMenu } from '../menu/DeferredMenu';

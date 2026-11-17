@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { sidebarUserState, publishSidebarUser } = await import('../src/ui/sidebarUserState.ts');
+const { sidebarUserState, publishSidebarUser } = await import('../src/legacy/sidebarUserState.ts');
 
 test('sidebar user publisher shares the current account identity', () => {
   sidebarUserState.__resetForTests();

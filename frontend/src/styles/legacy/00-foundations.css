@@ -17,7 +17,7 @@
   --app-width-scale: 1;
 }
 /* Shared timing tokens for composer focus expansion. Keyboard avoidance is
-   deliberately not part of this CSS timeline: ui/keyboard/index.ts owns the
+   deliberately not part of this CSS timeline: legacy/keyboard/index.ts owns the
    inset animation frame by frame so a browser resize cannot drop the input
    straight onto its final position. --composer-motion-duration and
    --composer-motion-ease remain aliases for the existing composer rules. */
@@ -27,7 +27,7 @@
   --composer-motion-duration: var(--chat-motion-duration);
   --composer-motion-ease: var(--chat-motion-ease);
 }
-/* Keyboard inset motion is driven by ui/keyboard/index.ts; the browser only
+/* Keyboard inset motion is driven by legacy/keyboard/index.ts; the browser only
    consumes the interpolated value below. */
 html[data-mode='dark'] {
   color-scheme: dark;
@@ -272,7 +272,7 @@ html.vt-scoped-swap::view-transition-group(*) {
   display: flex;
   height: 100dvh;
   /* The dynamic viewport is allowed to follow the browser's native resize.
-     ui/keyboard/index.ts adds only the measured overlay inset when a browser
+     legacy/keyboard/index.ts adds only the measured overlay inset when a browser
      keeps the layout viewport unchanged. */
   overflow: hidden;
   overscroll-behavior: none;

@@ -9,7 +9,7 @@ globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
 const { deleteUserMessage, findMessageIndex, reseatSavedArtifact, rollbackMessagesAfter } =
-  await import('../src/ui/messageActions.ts');
+  await import('../src/legacy/messageActions.ts');
 const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
 
 function appendMessage(clientId, role, rawText) {

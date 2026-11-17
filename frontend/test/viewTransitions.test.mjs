@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { hasViewTransitions, withViewTransition } from '../src/ui/viewTransitions.ts';
+import { hasViewTransitions, withViewTransition } from '../src/legacy/viewTransitions.ts';
 
 function setDocument(value) {
   if (value === undefined) {

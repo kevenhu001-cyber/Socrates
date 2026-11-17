@@ -15,17 +15,17 @@ export type RuntimeWindow = Window & {
   openAttachmentPicker: (typeof import('../attachments/render'))['openAttachmentPicker'];
   refreshServerSessions: (typeof import('../session/recents'))['refreshServerSessions'];
   renderAssistantHTML: (typeof import('../render/assistantHtml'))['buildAssistantHtml'];
-  renderRecents: (typeof import('../ui/recentsView'))['renderRecents'];
+  renderRecents: (typeof import('../legacy/recentsView'))['renderRecents'];
   resendLastUserMessage: (typeof import('../chat/turn/resend'))['resendLastUserMessage'];
   resetApp: (typeof import('../app/lifecycle'))['resetApp'];
   saveCurrentSession: (typeof import('../session/persistence'))['saveCurrentSession'];
   setChatStopState: (typeof import('../chat/turn/composer'))['setChatStopState'];
   setCurrentUser: (typeof import('../app/lifecycle'))['setCurrentUser'];
-  showToast: (typeof import('../ui/toast'))['showToast'];
+  showToast: (typeof import('../legacy/toast'))['showToast'];
   startNewChat: (typeof import('../app/lifecycle'))['startNewChat'];
   startSession: (typeof import('../chat/sessionBootstrap'))['startSession'];
   submitChatMessage: (typeof import('../chat/sendPipeline'))['submitChatMessage'];
-  toggleSidebarView: (typeof import('../ui/sidebarChrome'))['toggleSidebarView'];
+  toggleSidebarView: (typeof import('../legacy/sidebarChrome'))['toggleSidebarView'];
 };
 
 function currentRuntimeWindow(): RuntimeWindow | undefined {

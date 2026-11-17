@@ -12,7 +12,7 @@ import { getExplanation, askNextQuestion } from '../tutor/socraticTurn.ts';
 import { saveCurrentSession } from '../session/persistence.ts';
 import { addMessage } from './messages.ts';
 import { translate } from './send/runtime.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import type { ChatMessageShape } from '../state/session.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
 

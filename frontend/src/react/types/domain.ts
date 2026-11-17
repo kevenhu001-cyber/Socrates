@@ -115,7 +115,7 @@ export interface ChatMessage extends Omit<
   }> | null;
   attachments?: ReadonlyArray<ChatAttachment>;
   /** Ephemeral preview cards for links fetched from the just-sent user turn. */
-  pageLinkPreviews?: ReadonlyArray<import('../../ui/linkPreviews.ts').LinkPreviewItem>;
+  pageLinkPreviews?: ReadonlyArray<import('../../legacy/linkPreviews.ts').LinkPreviewItem>;
   /** The user mentioned a site but did not include a fetchable URL. */
   pageLinkHint?: boolean;
   modelInfo?: { label?: string; model?: string } | null;

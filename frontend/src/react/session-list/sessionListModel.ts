@@ -1,4 +1,4 @@
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 import { formatRelativeTime } from './sessionList.store';
 
 const MONTH_NAMES = [

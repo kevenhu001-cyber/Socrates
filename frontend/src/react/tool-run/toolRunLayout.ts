@@ -6,7 +6,7 @@ import {
   toolRowAnchorOffset,
 } from '../../render/streaming.ts';
 import { summarizeToolRuns, type ToolRun } from '../../chat/toolRunState.ts';
-import { toolRunStateOf } from '../../ui/toolPresentationState.ts';
+import { toolRunStateOf } from '../../legacy/toolPresentationState.ts';
 import type {
   ToolCallRecord,
   ToolRunState,

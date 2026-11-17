@@ -587,7 +587,7 @@ html[data-show-grid='false'] .main-bg {
   transform: translateY(8px) scale(0.96);
   pointer-events: none;
   /* No `bottom` transition: the value embeds --keyboard-inset, which
-     ui/keyboard/index.ts already eases — a second easing on top would make
+     legacy/keyboard/index.ts already eases — a second easing on top would make
      the pill trail the composer for the whole lift. */
   transition:
     opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),

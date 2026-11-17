@@ -1,6 +1,6 @@
 import { kbBridge, sessionBridge } from '../../store/index.ts';
 import { appMode, setAppMode, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
-import { showConfirm } from '../../ui/confirm.js';
+import { showConfirm } from '../../legacy/confirm.js';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { resetApp } from './reset.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';

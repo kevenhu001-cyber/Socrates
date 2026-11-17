@@ -5,8 +5,8 @@ import {
 } from './lib/boot/registry';
 import { mountRegistryList } from './lib/boot/specs';
 import { mountAssistantTurn, releaseAssistantTurns } from './tool-run/mountTurn';
-import { registerAssistantTurnRenderer } from '../ui/assistantTurnRenderer';
-import { publishReactChatRuntime } from '../ui/reactBridge';
+import { registerAssistantTurnRenderer } from '../legacy/assistantTurnRenderer';
+import { publishReactChatRuntime } from '../legacy/reactBridge';
 import { mountBasicComposer } from './ui/composerRecovery';
 import { showMountRecovery } from './ui/mountRecovery';
 import { i18n } from './legacy/gateway';

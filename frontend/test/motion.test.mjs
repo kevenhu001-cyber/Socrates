@@ -13,7 +13,7 @@ import {
   easeInOutQuad,
   easeInOutCubic,
   smoothDampStep,
-} from '../src/ui/motion/index.ts';
+} from '../src/legacy/motion/index.ts';
 
 test('planMotion returns a snap for sub-perceptual distances', () => {
   const plan = planMotion(0);
@@ -242,7 +242,7 @@ test('planMotion round-trips: duration is reproducible for the same distance', (
 /* ── planSendGlide ─────────────────────────────────────────────── */
 
 test('planSendGlide snaps sub-perceptual distances and invalid input', async () => {
-  const { planSendGlide } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide } = await import('../src/legacy/motion/index.ts');
   assert.equal(planSendGlide(0, 800).snap, true);
   assert.equal(planSendGlide(MOTION_SNAP_DISTANCE_PX, 800).snap, true);
   assert.equal(planSendGlide(NaN, 800).snap, true);
@@ -251,7 +251,7 @@ test('planSendGlide snaps sub-perceptual distances and invalid input', async () 
 
 test('planSendGlide duration grows monotonically with distance and stays within bounds', async () => {
   const { planSendGlide, SEND_GLIDE_MIN_MS, SEND_GLIDE_MAX_MS } =
-    await import('../src/ui/motion/index.ts');
+    await import('../src/legacy/motion/index.ts');
   let prev = 0;
   for (const d of [30, 100, 400, 800, 1600, 4000, 12000, 40000, 400000]) {
     const plan = planSendGlide(d, 800);
@@ -266,7 +266,7 @@ test('planSendGlide duration grows monotonically with distance and stays within 
 });
 
 test('planSendGlide keeps send acknowledgement inside the interaction-time envelope', async () => {
-  const { planSendGlide, SEND_GLIDE_MAX_MS } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide, SEND_GLIDE_MAX_MS } = await import('../src/legacy/motion/index.ts');
   const oneScreen = planSendGlide(800, 800);
   const far = planSendGlide(20000, 800);
   assert.ok(
@@ -283,7 +283,8 @@ test('planSendGlide keeps send acknowledgement inside the interaction-time envel
 });
 
 test('planSendGlide chooses ease-out for short hops and ease-in-out for long glides', async () => {
-  const { planSendGlide, SEND_GLIDE_LONG_VIEWPORTS } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide, SEND_GLIDE_LONG_VIEWPORTS } =
+    await import('../src/legacy/motion/index.ts');
   const short = planSendGlide(800 * SEND_GLIDE_LONG_VIEWPORTS, 800);
   assert.equal(short.long, false);
   assert.equal(short.ease, easeOutQuint);
@@ -293,13 +294,13 @@ test('planSendGlide chooses ease-out for short hops and ease-in-out for long gli
 });
 
 test('planSendGlide falls back to a default viewport for invalid heights', async () => {
-  const { planSendGlide } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide } = await import('../src/legacy/motion/index.ts');
   assert.deepEqual(planSendGlide(2000, 0), planSendGlide(2000, 800));
   assert.deepEqual(planSendGlide(2000, NaN), planSendGlide(2000, 800));
 });
 
 test('planSendGlide snaps under prefers-reduced-motion', async () => {
-  const { planSendGlide } = await import('../src/ui/motion/index.ts');
+  const { planSendGlide } = await import('../src/legacy/motion/index.ts');
   const previous = globalThis.matchMedia;
   globalThis.matchMedia = (q) => ({ matches: q.includes('reduce'), media: q });
   try {

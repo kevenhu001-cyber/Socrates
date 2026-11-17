@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Root } from 'react-dom/client';
 import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
-import { installModalA11y } from '../../ui/modalA11y.ts';
+import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 import { useCmdKCommands, useCmdKSnapshot } from './cmdk.store';
 import { CmdKSearchInput } from './CmdKSearchInput';

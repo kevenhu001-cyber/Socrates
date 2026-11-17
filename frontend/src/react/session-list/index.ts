@@ -8,4 +8,4 @@ export {
   useCurrentSessionId,
   formatRelativeTime,
 } from './sessionList.store';
-export type { SessionListSnapshot, SessionItem } from '../../ui/sessionListState.ts';
+export type { SessionListSnapshot, SessionItem } from '../../legacy/sessionListState.ts';

@@ -8,7 +8,7 @@ import {
   DialogDescription,
   DialogClose,
 } from '../ui/shadcn/dialog';
-import { setModalOpen } from '../../ui/modalA11y';
+import { setModalOpen } from '../../legacy/modalA11y';
 
 /** Socrates keeps overlay geometry and motion. Base UI owns modal interaction;
  * the legacy registry only coordinates shell inertness with unmigrated modals. */

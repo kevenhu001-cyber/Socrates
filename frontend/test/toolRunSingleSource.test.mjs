@@ -10,7 +10,7 @@ globalThis.HTMLElement = dom.window.HTMLElement;
 globalThis.CSS = dom.window.CSS;
 
 const { createToolRuntime: createRuntime } = await import('../src/chat/toolRuntime/index.ts');
-const { toolRunLabel } = await import('../src/ui/toolPresentationModel.ts');
+const { toolRunLabel } = await import('../src/legacy/toolPresentationModel.ts');
 
 function makeBody() {
   return {

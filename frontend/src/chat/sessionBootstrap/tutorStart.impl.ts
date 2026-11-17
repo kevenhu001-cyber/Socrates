@@ -15,7 +15,7 @@ import { setCurrentSessionId } from '../../session/loader.ts';
 import { setChatIdInURL } from '../../session/store.ts';
 import { flushRecentsReconcile } from '../../session/recents.ts';
 import { apiFetch } from '../../util/api/index.ts';
-import { activateMainView } from '../../ui/mainViewController.ts';
+import { activateMainView } from '../../legacy/mainViewController.ts';
 import { focusComposer } from '../../composer/controller.ts';
 import { clearComposerPlugins } from '../../composer/pluginSelection.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments/index.ts';
@@ -34,7 +34,7 @@ import {
   showDiagnosticError,
   showDiagnosticLoading,
   updateDiagnosticProgress,
-} from '../../ui/diagnosticScreen.ts';
+} from '../../legacy/diagnosticScreen.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { isWebSearchOn, renderRecents, translate } from './runtime.ts';
 import { registerDiagnosticActions } from '../../tutor/diagnosticRegistry.ts';

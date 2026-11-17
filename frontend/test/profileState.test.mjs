@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { profileState, publishProfileState } = await import('../src/ui/profileState.ts');
+const { profileState, publishProfileState } = await import('../src/legacy/profileState.ts');
 
 test('profile publisher shares account and preference state with React subscribers', () => {
   profileState.__resetForTests();
