@@ -7,7 +7,6 @@
 
 import { closeDb } from '../db/index.js';
 import { stopExpiredCleanup } from '../services/util/cleanupDb.js';
-import { stopRustFetchWorker } from '../services/rustFetchWorker.js';
 import type { Server } from 'node:http';
 
 /** Graceful shutdown — stop accepting connections, drain, close handles.
@@ -33,7 +32,6 @@ export function installShutdown(server: Server): void {
         const { stopStatusMonitor } = await import('../services/util/statusMonitor.js');
         stopStatusMonitor();
       } catch {}
-      await stopRustFetchWorker().catch(() => {});
       /* Pi agent runs are per-turn child processes; nothing to stop here. */
       // Pubsub holds its own long-lived LISTEN connection (not from the
       // pool), so closeDb() below does not reach it. Without this the

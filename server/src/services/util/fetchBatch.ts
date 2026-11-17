@@ -1,10 +1,5 @@
 import { createPinnedAgent, resolveAndPin } from '../../lib/publicHttp.js';
 import { extractArticle } from '../embeddings/contentExtractor.js';
-import {
-  fetchWithRust,
-  rustExtractionEnabled,
-  type RustFetchResponse,
-} from '../rustFetchWorker.js';
 import * as urlCache from '../../lib/urlCache.js';
 
 interface ExtractedArticle {
@@ -34,8 +29,7 @@ interface ExtractedArticle {
  *     on the redirect-limit knob to bound the chain.)
  *
  * Content extraction:
- *   - The native canary may return a bounded Rust text-density extraction;
- *     otherwise run each page through `extractArticle` (Mozilla Readability
+ *   - Run each page through `extractArticle` (Mozilla Readability
  *     with a text-density fallback). The returned `content` field is
  *     boilerplate-cleaned text, not raw HTML. The LLM context builder can
  *     pass it straight into the prompt.
@@ -49,132 +43,6 @@ interface ExtractedArticle {
  *   - Cache TTL is implicit (LRU + 50 MB byte cap), not time-based.
  *     Acceptable staleness window: topic-refresh within ~6 hours.
  */
-/**
- * Convert the native worker's bounded raw response into the legacy
- * fetchBatch shape. Keeping extraction and URL-cache ownership in Node makes
- * the Rust cutover reversible and preserves the existing Readability output.
- */
-async function materializeRustResponse(
-  url: string,
-  cached: urlCache.CacheEntry | null,
-  raw: RustFetchResponse,
-  maxChars: number,
-) {
-  if (!raw.ok) {
-    return {
-      ok: false,
-      url,
-      code: raw.code || (raw.status ? 'http_status' : 'fetch_failed'),
-      reason: raw.reason || (raw.status ? `HTTP ${raw.status}` : 'Fetch failed'),
-    };
-  }
-
-  if (raw.status === 304) {
-    if (!cached)
-      return { ok: false, url, code: 'cache_miss', reason: 'HTTP 304 without a cached response' };
-    let extracted: ExtractedArticle | null = null;
-    try {
-      extracted = (await extractArticle(
-        cached.html,
-        raw.finalUrl || url,
-        maxChars > 200_000 ? { maxChars } : {},
-      )) as unknown as ExtractedArticle;
-    } catch {
-      extracted = null;
-    }
-    if (extracted) {
-      return {
-        ok: true,
-        url,
-        title: extracted.title || '',
-        content: extracted.content,
-        excerpt: extracted.excerpt,
-        wordCount: extracted.length,
-        pageDate: extracted.date,
-        method: extracted.method,
-        rawHtml: cached.html,
-        truncated: Boolean(cached.truncated || extracted.truncated),
-        chars: cached.html.length,
-        fromCache: true,
-      };
-    }
-    return {
-      ok: true,
-      url,
-      title: '',
-      content: cached.html,
-      truncated: cached.truncated || false,
-      chars: cached.html.length,
-      fromCache: true,
-    };
-  }
-
-  const text = String(raw.body || '');
-  const truncated = Boolean(raw.truncated);
-  const contentType = raw.headers?.['content-type'] || '';
-  const etag = raw.headers?.etag || undefined;
-  const lastModified = raw.headers?.['last-modified'] || undefined;
-  if (etag || lastModified) {
-    urlCache.set(url, {
-      url,
-      status: raw.status,
-      etag,
-      lastModified,
-      contentType,
-      html: text,
-      bytes: text.length,
-      fetchedAt: Date.now(),
-      truncated,
-    });
-  }
-
-  let title = '';
-  const titleMatch = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch) title = titleMatch[1].trim();
-
-  const extractionUrl = raw.finalUrl || url;
-  if (raw.article) {
-    return {
-      ok: true,
-      url,
-      title: raw.article.title || title,
-      content: raw.article.content || text,
-      excerpt: raw.article.excerpt,
-      wordCount: raw.article.length,
-      pageDate: raw.article.date || undefined,
-      method: raw.article.method,
-      rawHtml: text,
-      truncated,
-      chars: text.length,
-    };
-  }
-  let extracted: ExtractedArticle | null = null;
-  try {
-    extracted = (await extractArticle(
-      text,
-      extractionUrl,
-      maxChars > 200_000 ? { maxChars } : {},
-    )) as unknown as ExtractedArticle;
-  } catch {
-    extracted = null;
-  }
-  if (extracted) {
-    return {
-      ok: true,
-      url,
-      title: extracted.title || title,
-      content: extracted.content,
-      excerpt: extracted.excerpt,
-      wordCount: extracted.length,
-      pageDate: extracted.date,
-      method: extracted.method,
-      rawHtml: text,
-      truncated: Boolean(truncated || extracted.truncated),
-      chars: text.length,
-    };
-  }
-  return { ok: true, url, title, content: text, truncated, chars: text.length };
-}
 
 /** True when the response advertises a PDF body. `octet-stream` +
     a .pdf path covers servers that mislabel downloads. */
@@ -307,27 +175,6 @@ export async function fetchBatch(urls: string[], options: { maxBytes?: number } 
       if (reusableCache) {
         if (reusableCache.etag) headers['If-None-Match'] = reusableCache.etag;
         if (reusableCache.lastModified) headers['If-Modified-Since'] = reusableCache.lastModified;
-      }
-
-      // The native worker is opt-in in tests and automatically falls back
-      // when its binary is absent. It owns DNS/HTTP/redirect policy; Node
-      // continues to own extraction, cache semantics, and the public shape.
-      const rustResponse = await fetchWithRust({
-        url,
-        headers,
-        maxBytes: maxSize,
-        maxRedirects: 10,
-        timeoutMs: timeout,
-        extract: rustExtractionEnabled() && maxSize <= 200_000,
-      });
-      if (rustResponse) {
-        /* PDF bodies are binary — the worker decodes them as UTF-8 text,
-           which corrupts the bytes before pdf-parse can see them. Fall
-           through to the Node path, which reads bytes for PDFs. */
-        const rustContentType = String(rustResponse.headers?.['content-type'] || '');
-        if (!isPdfContent(rustContentType, url)) {
-          return materializeRustResponse(url, reusableCache, rustResponse, maxSize);
-        }
       }
 
       // Resolve DNS and pin the IP to prevent DNS rebinding.

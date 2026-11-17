@@ -291,7 +291,7 @@ function createVisualizationCard(
     esc(spec.title) +
     '</h3></div></header><div class="visualization-summary sr-only">' +
     esc(spec.accessibilitySummary) +
-    '</div><figure class="visualization-figure"><div class="visualization-stage"><p class="visualization-stage-progress" role="status">' +
+    '</div><figure class="visualization-figure"><div class="visualization-stage skeleton-shimmer"><p class="visualization-stage-progress" role="status">' +
     esc(vizT('viz.state.loadingRenderer', 'Loading the chart renderer…')) +
     '</p></div>' +
     (spec.caption
@@ -482,6 +482,7 @@ function chartOptionIsEmpty(spec: VizSpec, chartOptions: Record<string, unknown>
 }
 
 function clearStageProgress(stage: HTMLElement) {
+  stage.classList.remove('skeleton-shimmer');
   stage.querySelectorAll('.visualization-stage-progress').forEach(function (node) {
     node.remove();
   });

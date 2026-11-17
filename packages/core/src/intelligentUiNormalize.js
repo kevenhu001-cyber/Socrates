@@ -49,6 +49,32 @@ export function normalizeIntelligentUiNode(raw) {
   if (typeof node.parent === 'string') node.parent = node.parent.trim();
   if (typeof node.type === 'string') node.type = node.type.trim().toLowerCase();
 
+  // If node type is missing, infer from properties
+  if (!node.type) {
+    if (
+      node.template ||
+      node.chart ||
+      node.chartType ||
+      node.payload ||
+      isRecord(node.data) ||
+      isRecord(node.series) ||
+      Array.isArray(node.series)
+    ) {
+      node.type = 'visualization';
+    } else if (node.program) {
+      node.type = 'demonstration';
+    } else if (node.scene) {
+      node.type = 'physics';
+    } else if (node.source) {
+      node.type = 'openui';
+    } else if (
+      typeof node.kind === 'string' &&
+      ['quiz', 'practice', 'definition', 'flashcard', 'example', 'theorem'].includes(node.kind)
+    ) {
+      node.type = 'learning';
+    }
+  }
+
   if (node.type === 'demonstration' && node.program !== undefined) {
     node.program = normalizeDemonstrationProgram(node.program);
   }
@@ -61,17 +87,31 @@ export function normalizeIntelligentUiNode(raw) {
   }
 
   if (node.type === 'visualization') {
+    if (!node.id) node.id = 'vis_' + Math.random().toString(36).slice(2, 8);
     if (typeof node.template !== 'string') {
       if (typeof node.kind === 'string') node.template = node.kind.trim();
       else if (typeof node.chartType === 'string') node.template = node.chartType.trim();
+      else if (typeof node.chart === 'string') node.template = node.chart.trim();
+      else node.template = 'bar';
     }
-    if (node.payload === undefined && isRecord(node.data)) {
-      node.payload = node.data;
+    if (node.payload === undefined) {
+      if (isRecord(node.data)) node.payload = node.data;
+      else if (isRecord(node.series) || Array.isArray(node.series))
+        node.payload = { series: node.series, categories: node.categories };
+      else if (Array.isArray(node.categories))
+        node.payload = { categories: node.categories, series: node.series || [] };
+      else if (Array.isArray(node.functions)) node.payload = { functions: node.functions };
+      else if (Array.isArray(node.nodes) && Array.isArray(node.edges))
+        node.payload = { nodes: node.nodes, edges: node.edges };
+    }
+    if (typeof node.title !== 'string') {
+      node.title = typeof node.template === 'string' ? node.template : 'Visualization';
     }
     if (typeof node.accessibilitySummary !== 'string') {
       if (typeof node.accessibility_summary === 'string')
         node.accessibilitySummary = node.accessibility_summary;
       else if (typeof node.summary === 'string') node.accessibilitySummary = node.summary;
+      else node.accessibilitySummary = `${node.title || node.template || 'Data'} visualization`;
     }
   }
 
@@ -109,7 +149,42 @@ export function normalizeIntelligentUiNode(raw) {
 /** Normalize a whole `render_intelligent_ui` document. */
 export function normalizeIntelligentUiArgs(value) {
   if (!isRecord(value)) return value;
-  const nodes = asArray(value.nodes);
+
+  // Handle direct visualization call: e.g. { template: "bar", title: "Sales", payload: { ... } }
+  // or { type: "visualization", ... } or { chart: "line", ... }
+  if (
+    !value.nodes &&
+    (value.template !== undefined ||
+      value.chart !== undefined ||
+      value.chartType !== undefined ||
+      value.type === 'visualization' ||
+      (value.payload !== undefined && (value.title !== undefined || value.data !== undefined)))
+  ) {
+    const singleNode = normalizeIntelligentUiNode({
+      id: value.id || 'vis_1',
+      type: 'visualization',
+      ...value,
+    });
+    return {
+      version: 1,
+      nodes: [singleNode],
+    };
+  }
+
+  // Handle { node: { ... } }
+  if (!value.nodes && isRecord(value.node)) {
+    return {
+      version: value.version === undefined ? 1 : numberLike(value.version),
+      nodes: [normalizeIntelligentUiNode(value.node)],
+    };
+  }
+
+  // Handle { nodes: { ... } } (single node passed as object instead of array)
+  let rawNodes = value.nodes;
+  if (isRecord(rawNodes)) {
+    rawNodes = [rawNodes];
+  }
+  const nodes = asArray(rawNodes);
   if (!Array.isArray(nodes)) return value;
   return {
     ...value,

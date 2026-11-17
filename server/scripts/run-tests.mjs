@@ -37,7 +37,7 @@ for (const testFile of testFiles) {
   //
   // `dotenv/config` must come first so DATABASE_URL is present before any
   // module reads it.  Without it the DB-backed suites (oauthFlow,
-  // middleware-auth, loginLockout, agentKeys, codexHarness, rustFetchWorker)
+  // middleware-auth, loginLockout, agentKeys, codexHarness)
   // silently skip, leaving the OAuth and auth-middleware paths uncovered.
   // dotenv never overrides variables already present in the environment, so
   // CI can still pin NODE_ENV/DATABASE_URL explicitly.

@@ -569,19 +569,43 @@ function cartesianChartOption(
   };
 }
 
+function chartAnimationOptions(): ChartOption {
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (prefersReduced) {
+    return {
+      animation: false,
+    };
+  }
+  return {
+    animation: true,
+    animationDuration: 450,
+    animationDurationUpdate: 350,
+    animationEasing: 'cubicOut',
+    animationEasingUpdate: 'cubicOut',
+    animationThreshold: 2000,
+  };
+}
+
 export function optionForChart(spec: VizSpec, colors: VizColors): ChartOption {
   const chartType = spec.template === 'area' ? 'line' : spec.template;
   const fontFamily = VIZ_FONT_FAMILY;
   const textStyle = { fontFamily };
   const tooltipBase = chartTooltipBase(colors, fontFamily);
+  let baseOption: ChartOption;
   if (spec.template === 'function')
-    return functionChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'pie') return pieChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'heatmap')
-    return heatmapChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'radar')
-    return radarChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  if (chartType === 'scatter')
-    return scatterChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  return cartesianChartOption(spec, colors, fontFamily, textStyle, tooltipBase, chartType);
+    baseOption = functionChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else if (chartType === 'pie')
+    baseOption = pieChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else if (chartType === 'heatmap')
+    baseOption = heatmapChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else if (chartType === 'radar')
+    baseOption = radarChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else if (chartType === 'scatter')
+    baseOption = scatterChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else
+    baseOption = cartesianChartOption(spec, colors, fontFamily, textStyle, tooltipBase, chartType);
+
+  return Object.assign({}, chartAnimationOptions(), baseOption);
 }

@@ -168,12 +168,23 @@ export function VisualizationSkeleton({
       data-renderer={visualizationRendererKind(template)}
     >
       <header className="viz-skeleton-header">
-        <h3 className="viz-skeleton-title">{title || '\u00a0'}</h3>
+        {title ? (
+          <h3 className="viz-skeleton-title">{title}</h3>
+        ) : (
+          <span className="viz-skeleton-title-bar skeleton-shimmer" aria-hidden="true" />
+        )}
       </header>
-      <div className="viz-skeleton-stage">
+      <div className="viz-skeleton-stage skeleton-shimmer">
         <p className="viz-skeleton-progress" role="status">
           {label}
         </p>
+        <div className="viz-skeleton-bars" aria-hidden="true">
+          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '42%' }} />
+          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '68%' }} />
+          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '36%' }} />
+          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '82%' }} />
+          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '54%' }} />
+        </div>
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />
