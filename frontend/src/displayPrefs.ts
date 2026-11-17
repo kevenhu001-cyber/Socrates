@@ -309,10 +309,14 @@ export function resetBackgroundLight() {
 }
 
 /* ── grid ── */
-export function toggleGrid() {
-  displayPrefs.showGrid = displayPrefs.showGrid === false;
+export function setGrid(showGrid: boolean): void {
+  displayPrefs.showGrid = showGrid;
   applyDisplayPrefs();
   saveDisplayPrefs();
+}
+
+export function toggleGrid(): void {
+  setGrid(displayPrefs.showGrid === false);
 }
 
 /* ── popover ── */

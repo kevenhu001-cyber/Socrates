@@ -1,22 +1,31 @@
 /** Settings-only presentation state. Provider configuration has its own domain store. */
 
-import { createImmutableBridge, useBridge } from '../../store/index.ts';
+import { createStore, useStore } from 'zustand';
 import type { SettingsBridge, SettingsSnapshot } from './types';
 
 type Action = Partial<Omit<SettingsSnapshot, 'revision'>>;
 
-const factoryBridge = createImmutableBridge<SettingsSnapshot, Action>({
-  initial: {
-    open: false,
-    externalApiOn: true,
-    revision: 0,
-  },
-  reducer: (state, action) => ({ ...state, ...action }),
+const initial: SettingsSnapshot = Object.freeze({
+  open: false,
+  section: 'general',
+  query: '',
+  mobileDetail: false,
+  externalApiOn: true,
+  revision: 0,
 });
+const store = createStore(() => initial);
 
-const bridge: SettingsBridge = Object.assign(factoryBridge, {
-  publish: factoryBridge.dispatch,
-}) as SettingsBridge;
+const bridge = {
+  getSnapshot: store.getState,
+  subscribe: store.subscribe,
+  publish(patch: Action): void {
+    // Controlled search input needs the new value within the input event.
+    store.setState((state) => Object.freeze({ ...state, ...patch, revision: state.revision + 1 }), true);
+  },
+  __resetForTests(): void {
+    store.setState(initial, true);
+  },
+};
 
 export function installSettingsBridge(): SettingsBridge {
   return bridge;
@@ -31,5 +40,5 @@ export function subscribeToSettings(listener: () => void): () => void {
 }
 
 export function useSettingsSnapshot(): SettingsSnapshot {
-  return useBridge(factoryBridge);
+  return useStore(store);
 }

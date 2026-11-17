@@ -205,6 +205,9 @@ test('all settings categories render their own pane and mobile search reaches hi
   await accountTab.click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
   await overlay.locator('#settingsMobileBack').click();
+  await search.pressSequentially('content width');
+  await expect(search).toHaveValue('content width');
+  await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
   await search.fill('字号');
   await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
   await expect(overlay.locator('.settings-nav [data-section="display"]')).toBeVisible();
@@ -239,15 +242,45 @@ test('model provider actions stay inside the settings pane on mobile', async ({ 
 
 test('model menu opens the model settings detail directly on mobile', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('#topModelSwitcher').click();
+  const trigger = page.locator('#topModelSwitcher');
   const menu = page.locator('.chat-config-pop');
-  await menu.getByRole('button', { name: 'Manage models', exact: true }).click();
-
   const overlay = page.locator('#settingsOverlay');
-  await expect(overlay).toBeVisible();
-  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Models & voice');
-  await expect(overlay.locator('#settingsMobileBack')).toBeVisible();
-  await expect(overlay.locator('#addProviderBtn')).toBeVisible();
+  const back = overlay.locator('#settingsMobileBack');
+  const openModels = async () => {
+    await trigger.click();
+    await menu.getByRole('button', { name: 'Manage models', exact: true }).click();
+    await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Models & voice');
+    await expect(overlay.locator('#addProviderBtn')).toBeVisible();
+    await expect(back).toBeFocused();
+  };
+  await openModels();
+  await expect(overlay.locator('.settings-pane')).toHaveCount(1);
+  await back.click();
+  const search = overlay.getByRole('searchbox', { name: 'Search settings' });
+  await expect(search).toBeFocused();
+  await search.fill('no matching category');
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await openModels();
+  await back.click();
+  await expect(search).toHaveValue('');
+});
+
+test('account menu opens personalization and returns focus to the account trigger', async ({ page }) => {
+  const trigger = page.locator('.sidebar-account-trigger');
+  await trigger.click();
+  await page.getByRole('menuitem', { name: 'Personalization', exact: true }).click();
+  const overlay = page.locator('#settingsOverlay');
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Personalization');
+  await expect(overlay.locator('.settings-pane')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await expect(overlay).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  await trigger.click();
+  await page.getByRole('menuitem', { name: 'Settings', exact: true }).click();
+  await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 
 test('display settings persist text size, content width, grid, and background colors', async ({ page }) => {
@@ -265,8 +298,14 @@ test('display settings persist text size, content width, grid, and background co
   }))).toEqual({ font: '1.375', width: '1.7' });
 
   const grid = overlay.getByRole('switch', { name: 'Conversation grid' });
-  await grid.click();
-  await expect(grid).toHaveAttribute('aria-checked', 'true');
+  await overlay.getByText('Conversation grid', { exact: true }).click();
+  await expect(grid).toBeChecked();
+  await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
+  await grid.press('Space');
+  await expect(grid).not.toBeChecked();
+  await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'false');
+  await grid.press('Space');
+  await expect(grid).toBeChecked();
 
   const colors = overlay.locator('.settings-bg-pickers input[type="color"]');
   await colors.nth(0).evaluate((input) => {
@@ -287,6 +326,18 @@ test('display settings persist text size, content width, grid, and background co
   await resetButtons.nth(1).click();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display') || '{}')))
     .toMatchObject({ darkBg: '', lightBg: '' });
+
+  await overlay.locator('#settingsCloseBtn').click();
+  await expect(overlay).toBeHidden();
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await expect(grid).toBeChecked();
+
+  await page.reload();
+  await waitForAppShell(page);
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.locator('.settings-nav [data-section="display"]').click();
+  await expect(grid).toBeChecked();
+  await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
 });
 
 test('custom instructions save once after typing and sync through the account endpoint', async ({ page }) => {

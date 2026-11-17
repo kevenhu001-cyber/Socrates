@@ -4,8 +4,10 @@ import { i18n } from '../legacy/gateway';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 import { loadSettingsModal } from './settings.preload';
+import type { SettingsSection } from './settings.types';
 
 let settingsReturnFocus: HTMLElement | null = null;
+let pendingOpen: symbol | undefined;
 
 export function getSettingsReturnFocus(): HTMLElement | null {
   return settingsReturnFocus?.isConnected ? settingsReturnFocus : null;
@@ -31,23 +33,37 @@ export function initializeSettingsService(): void {
      preload it on pointer/focus intent, which is the moment that matters. */
 }
 
-export async function openSettings(): Promise<void> {
-  if (!getSettingsSnapshot().open) {
-    const active = document.activeElement;
-    settingsReturnFocus = active instanceof HTMLElement && active !== document.body ? active : null;
-  }
+export async function openSettings({ section, mobileIndex = false, returnFocus }: {
+  section?: SettingsSection;
+  mobileIndex?: boolean;
+  returnFocus?: HTMLElement | null;
+} = {}): Promise<void> {
+  const active = document.activeElement;
+  const trigger = returnFocus ?? (active instanceof HTMLElement && active !== document.body ? active : null);
+  const request = Symbol();
+  pendingOpen = request;
   try {
     const { mountSettingsModal } = await loadSettingsModal();
+    if (pendingOpen !== request) return;
     mountSettingsModal();
   } catch {
-    showToast(i18n('toast.settingsLoadFailed', 'Could not load settings. Please try again.'));
+    if (pendingOpen === request) {
+      showToast(i18n('toast.settingsLoadFailed', 'Could not load settings. Please try again.'));
+    }
     return;
+  } finally {
+    if (pendingOpen === request) pendingOpen = undefined;
   }
-  installSettingsBridge().publish({ open: true });
+  const current = getSettingsSnapshot();
+  if (!current.open) settingsReturnFocus = trigger;
+  installSettingsBridge().publish(section
+    ? { open: true, section, query: '', mobileDetail: !mobileIndex }
+    : { open: true, mobileDetail: current.open && current.mobileDetail });
   publishProfileSnapshot();
 }
 
 export function closeSettings(): void {
+  pendingOpen = undefined;
   installSettingsBridge().publish({ open: false });
 }
 

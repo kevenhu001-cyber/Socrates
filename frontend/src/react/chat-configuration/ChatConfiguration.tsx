@@ -4,8 +4,9 @@ import type { CSSProperties } from 'react';
 import { saveChatPreferences, type ReasoningEffort, type ResponseSpeed } from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { setActiveProvider } from '../../config/providerConfig.service.ts';
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import { openSettings } from '../settings/settings.service.ts';
 import {
   closeChatConfiguration,
   installChatConfigurationBridge,
@@ -109,10 +110,10 @@ export function ChatConfiguration() {
     closeChatConfiguration();
   };
 
-  const openSettings = async () => {
+  const openModelSettings = () => {
+    const returnFocus = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
     closeChatConfiguration(false);
-    await getLegacyActions().navigation.openSettings();
-    document.dispatchEvent(new CustomEvent('socrates:settings-section', { detail: 'models' }));
+    void openSettings({ section: 'models', returnFocus });
   };
 
   return (
@@ -126,7 +127,7 @@ export function ChatConfiguration() {
           onPickModel={pickModel}
           onOpenEffort={() => setView('effort')}
           onOpenSpeed={() => setView('speed')}
-          onOpenSettings={openSettings}
+          onOpenSettings={openModelSettings}
         />
       ) : null}
       {view === 'effort' ? (

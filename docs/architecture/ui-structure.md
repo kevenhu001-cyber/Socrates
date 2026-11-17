@@ -1,6 +1,6 @@
 # UI 结构与迁移边界
 
-更新：2026-11-05；2026-11-16 改为 SPA-only。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
+更新：2026-11-17。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 2026-11-16：Expo Universal App（`apps/socrates/`）及其专属包、barrel、CI lane 已删除；
@@ -45,7 +45,7 @@ index.html                         静态 shell / 挂载宿主 / CSP
 - React 从 `store/`、功能 store 或类型化 bridge 读取状态；旧全局动作经
   `react/legacy/gateway.ts` 访问，不在组件里扩散任意 `window.*`。
 - 六个 `state/` 命名空间 store 仅保留模块导出；已删除无消费者的 `window.__socrates{Session,Kb,Search,Call,Ui,Exam}Bridge` 别名。
-  旧 DOM 的 `window.stateStore` facade 仍保留，供现有兼容调用使用。
+  `state/store.ts` 仍安装 `window.stateStore` facade。聊天历史、诊断生成、搜索刷新策略和图表预热仍读取它，浏览器回归也使用它设置和读取状态。
 - `chat/` 不依赖 React 实现；共享类型可来自 `react/types/`，宿主状态与展示模型留在 ui。
   不通过新增 re-export shim 延长旧路径寿命。
 - 首轮发送时预先创建的 streaming placeholder controller 暂存于 `chat/turnState.ts`，由 `askChatTurn()`
@@ -108,7 +108,8 @@ index.html                         静态 shell / 挂载宿主 / CSP
 
 所有模式最终都由 `ownedRoot.ts` 创建 / hydrate。`handle.render` 显式更新已有树，
 `handle.destroy` 释放 root、installer 返回的 disposer 和宿主所有权。
-settings 的首次挂载继续使用 `flushSync`；普通页面仍在导航时挂载。
+设置服务一次提交打开状态和目标分类。分类加载等到打开状态提交才启动，已访问的分类保留到下次重开。
+普通页面仍在导航时挂载。
 
 `lint:react-roots` 已接入 frontend lint。它通过 AST 检查直接 import（含 alias / namespace）、
 dynamic import 与退役全局字段；类型 import、注释和字符串不计。
@@ -171,12 +172,17 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 
 ## 剩余债务与处理顺序
 
-| 顺序 | 债务 | 处理边界 |
+以 2026-11-17 的设置收敛批次为基准。
+
+| 领域 | 当前进度 | 下一步 |
 |---|---|---|
-| 1 | 旧 DOM 页面、消息 fallback 与 React 并存 | 按功能转移 DOM 写入者，保留老消息兼容读取和回归；继续缩减仍有消费者的兼容壳 |
-| 2 | 部分领域仍使用 window bridge / 自定义事件 | 逐领域换成类型化模块接口，保留认证恢复和启动顺序；不一次重写 main.ts |
-| 3 | legacy / restore 仍有兼容几何 | 证实 selector 无消费者后删除，缩减 CSS debt，不新增竞争 palette / surface owner |
-| 4 | SPA 各表面的 RN 化签收 | 依据收敛方案逐模块验收；截图 fixture 不能替代全部语言与浏览器验证 |
+| 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
+| window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` 与认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 分域迁移聊天历史与诊断／搜索的状态读取。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
+| `legacy/` / `restore/` | `lint:css-debt` 实测冻结区 `!important` 388、硬编码半径 166、硬编码字号 336、legacy 通道 768。对应的已提交上限是 389／166／337／769。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
+| RN 化签收 | 考试已签收。设置「对话背景网格」使用共享 RN 开关，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。 | 复核字号和内容宽度的分组语义和键盘导航，再逐项迁移。宿主分工、批次和验收范围见 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。 |
+
+DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，共 242 处、105 个文件。这个计数包含
+读取和挂载宿主的查找。`window.stateStore` 的清退还涵盖直接引用它的 100 个 Playwright 文件，按实际场景替换测试夹具后再停止发布全局。
 
 ## 验证记录与入口
 
@@ -349,7 +355,5 @@ exports。`frontend/scripts/check-ui-entry.mjs` 在 lint 中禁止 SPA 引用根
 
 **下一步顺序**
 
-1. 方向已定：[SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。
-   SPA 是唯一生产客户端，按表面清单逐个替换，旧 DOM 实现签收后再删。
-2. 设置面板是建议的下一个目标（先定 shadcn/FoundationDialog 与 RN 控件的关系）。
-3. 共享件只服务 SPA 与原生 Android；跨端改动只需兼顾这两端。
+设置分类导航和显示页网格开关已接入，后续从字号和内容宽度的分组控件继续。执行细节见
+[SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。独立 Android 客户端继续使用 Compose，并共享 API 与核心逻辑。

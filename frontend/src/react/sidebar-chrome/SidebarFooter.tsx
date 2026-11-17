@@ -1,23 +1,24 @@
 import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../ui/Icon';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useUserInfo } from './sidebarChrome.store';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { preloadSettingsModal } from '../settings/settings.preload.ts';
+import { openSettings } from '../settings/settings.service.ts';
 
 export function SidebarFooter() {
   const user = useUserInfo();
   const [open, setOpen] = useState(false);
+  const accountTrigger = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => setOpen(false), []);
   const free = user.tier === 'diophantus' || user.tier === 'free';
   const tier = free ? (getCurrentLang() === 'zh' ? '免费版' : 'Free') : user.tierLabel;
   const label = (zh: string, en: string) => getCurrentLang() === 'zh' ? zh : en;
-  const navigate = async (section: string) => {
+  const navigate = (section: 'general' | 'personalization') => {
     close();
-    await getLegacyActions().navigation.openSettings();
-    document.dispatchEvent(new CustomEvent('socrates:settings-section', { detail: section }));
+    void openSettings({ section, mobileIndex: section === 'general', returnFocus: accountTrigger.current });
   };
   const identity = <><span className="user-avatar" aria-hidden="true">{user.initials}</span>
     <span className="user-identity"><span className="user-name">{user.displayName}</span>
@@ -25,7 +26,7 @@ export function SidebarFooter() {
   return <div className="sidebar-footer-account-wrap">
     <DeferredMenu open={open} onOpenChange={setOpen} above className="sidebar-account-menu"
       label={label('账户', 'Account')}
-      trigger={<Button variant="ghost" type="button"
+      trigger={<Button ref={accountTrigger} variant="ghost" type="button"
         className="sidebar-account-trigger active:not-aria-[haspopup]:translate-y-0"
         title={user.displayName} aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}>{identity}</Button>}>
       {({ FoundationMenuItem }) => <>

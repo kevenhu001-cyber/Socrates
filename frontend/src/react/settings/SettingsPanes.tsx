@@ -76,14 +76,15 @@ function SettingsPaneLoader({ section, ...props }: PaneProps & { section: Settin
   </section>;
 }
 
-export function SettingsPanes({ section, hideAll = false, ...props }: SettingsPanesProps) {
-  const [visited, setVisited] = useState<SettingsSection[]>([section]);
-  // Keep visited panes at stable keys so drafts and focusable controls survive
-  // category switches. No extra DOM wrapper is needed around loaded panes.
+export function SettingsPanes({ open, section, hideAll = false, ...props }: SettingsPanesProps & { open: boolean }) {
+  const [visited, setVisited] = useState<SettingsSection[]>(() => open ? [section] : []);
+  // Record visits only after the open request commits. Keep visited panes
+  // mounted at stable keys so drafts survive section changes and reopening.
   useEffect(() => {
+    if (!open) return;
     setVisited((current) => current.includes(section) ? current : [...current, section]);
-  }, [section]);
-  const renderedSections = visited.includes(section) ? visited : [...visited, section];
+  }, [open, section]);
+  const renderedSections = open && !visited.includes(section) ? [...visited, section] : visited;
   return <>{renderedSections.map((key) =>
     <SettingsPaneLoader key={key} section={key} hidden={hideAll || section !== key} {...props} />,
   )}</>;

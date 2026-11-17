@@ -1,5 +1,4 @@
-import { flushSync } from 'react-dom';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent } from '../ui/shadcn/dialog';
 import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
@@ -9,10 +8,12 @@ import { setModalOpen } from '../../ui/modalA11y.ts';
 import { SettingsHeader, SettingsMobileBack, SettingsNavigation } from './SettingsModalChrome';
 import { SettingsPanes } from './SettingsPanes';
 import { useSettingsDialogA11y } from './useSettingsDialogA11y';
-import { useSettingsNavigation } from './useSettingsNavigation';
+import { getSettingsNavigation } from './settingsNavigation';
+import type { SettingsSection } from './settings.types';
 import { useSettingsPreferences } from './useSettingsPreferences';
 
 const MOBILE_SETTINGS_QUERY = '(max-width: 720px)';
+const settings = installSettingsBridge();
 
 function matchesMobileSettings(): boolean {
   return typeof window !== 'undefined' && window.matchMedia(MOBILE_SETTINGS_QUERY).matches;
@@ -21,61 +22,52 @@ function matchesMobileSettings(): boolean {
 function SettingsModal() {
   const snapshot = useSettingsSnapshot();
   const preferences = useSettingsPreferences();
-  const navigation = useSettingsNavigation(preferences.label);
+  const { section, query, mobileDetail } = snapshot;
+  const navigation = getSettingsNavigation(preferences.label, section, query);
   const [isMobile, setIsMobile] = useState(matchesMobileSettings);
-  const [mobileIndexOpen, setMobileIndexOpen] = useState(matchesMobileSettings);
-  const previousSection = useRef(navigation.section);
   useSettingsDialogA11y(snapshot.open);
 
   useEffect(() => {
     const media = window.matchMedia(MOBILE_SETTINGS_QUERY);
-    const update = () => {
-      setIsMobile(media.matches);
-      if (snapshot.open) setMobileIndexOpen(media.matches);
+    const update = (event: MediaQueryListEvent) => {
+      setIsMobile(event.matches);
+      if (settings.getSnapshot().mobileDetail) settings.publish({ mobileDetail: false });
     };
-    update();
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
-  }, [snapshot.open]);
+  }, []);
 
-  useEffect(() => {
-    if (snapshot.open && isMobile && previousSection.current !== navigation.section) {
-      setMobileIndexOpen(false);
-      window.requestAnimationFrame(() => document.getElementById('settingsMobileBack')?.focus());
-    }
-    previousSection.current = navigation.section;
-  }, [isMobile, navigation.section, snapshot.open]);
-
-  const selectSection = (section: typeof navigation.section) => {
-    navigation.setSection(section);
+  const selectSection = (next: SettingsSection) => {
+    settings.publish({ section: next, mobileDetail: isMobile });
     if (isMobile) {
-      setMobileIndexOpen(false);
       window.requestAnimationFrame(() => document.getElementById('settingsMobileBack')?.focus());
     }
   };
 
   const backToIndex = () => {
-    setMobileIndexOpen(true);
+    settings.publish({ mobileDetail: false });
     window.requestAnimationFrame(() => document.getElementById('settingsSearchInput')?.focus());
   };
 
-  const changeQuery = isMobile && mobileIndexOpen ? navigation.setQueryOnly : navigation.setQuery;
+  const changeQuery = (next: string) => {
+    settings.publish({ query: next, section: isMobile && !mobileDetail ? section : navigation.sectionForQuery(next) });
+  };
 
   return (
     <Dialog open={snapshot.open} onOpenChange={(open) => { if (!open) closeSettings(); }}>
       <DialogContent layout="settings" keepMounted showCloseButton={false}
         className="settings-modal settings-modal--full"
-        data-mobile-index={isMobile ? String(mobileIndexOpen) : undefined}
+        data-mobile-index={isMobile ? String(!mobileDetail) : undefined}
         backdropProps={{ id: 'settingsOverlay', className: cn('settings-overlay', !snapshot.open && 'hidden') }}
-        initialFocus={() => document.getElementById('settingsCloseBtn')}
+        initialFocus={() => document.getElementById(isMobile && mobileDetail ? 'settingsMobileBack' : 'settingsCloseBtn')}
         finalFocus={() => { setModalOpen('settingsOverlay', false); return getSettingsReturnFocus() || false; }}>
         <SettingsHeader label={preferences.label} />
         <div className="settings-shell">
           <SettingsNavigation
             categories={navigation.categories}
             label={preferences.label}
-            query={navigation.query}
-            section={navigation.section}
+            query={query}
+            section={section}
             onQueryChange={changeQuery}
             onSectionChange={selectSection}
           />
@@ -87,7 +79,8 @@ function SettingsModal() {
               </p>
               : null}
             <SettingsPanes
-              section={navigation.section}
+              open={snapshot.open}
+              section={section}
               hideAll={navigation.hasNoSearchResults}
               language={preferences.language}
               externalApiOn={snapshot.externalApiOn}
@@ -106,10 +99,6 @@ function SettingsModal() {
   );
 }
 
-/**
- * Mount the React-owned settings surface. The legacy settings module only
- * publishes open state and provider configuration through the typed bridge.
- */
 const rootSlot = createRootSlot('settings-modal');
 
 export function mountSettingsModal(): void {
@@ -119,9 +108,5 @@ export function mountSettingsModal(): void {
     container.id = 'settingsModalReactRoot';
     document.body.appendChild(container);
   }
-  /* Synchronous mount: callers dispatch `socrates:settings-section` right
-     after `openSettings()` resolves, and the navigation listener only exists
-     once the tree has committed. The chunk itself is preloaded while idle, so
-     this is a render of already-loaded code, not a network wait. */
-  flushSync(() => rootSlot.mount(container, <SettingsModal />, installSettingsBridge));
+  rootSlot.mount(container, <SettingsModal />);
 }

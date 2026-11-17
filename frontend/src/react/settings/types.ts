@@ -5,6 +5,7 @@ import type {
   ProviderField,
   ProviderSaveResult,
 } from '../../config/providerConfig.types';
+import type { SettingsSection } from './settings.types';
 
 export type SettingsProviderField = ProviderField;
 export type SettingsProviderErrorField = ProviderErrorField;
@@ -27,6 +28,9 @@ export interface ProviderListProps {
 
 export interface SettingsSnapshot {
   open: boolean;
+  section: SettingsSection;
+  query: string;
+  mobileDetail: boolean;
   externalApiOn: boolean;
   revision: number;
 }

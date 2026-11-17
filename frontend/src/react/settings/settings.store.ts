@@ -12,7 +12,7 @@ import {
   setDisplayWidth,
   setThemePreference,
   setThemeStyle,
-  toggleGrid,
+  setGrid,
 } from '../../displayPrefs.ts';
 import { getCurrentLanguage, type AppLanguage } from '../../i18n/languageState.ts';
 
@@ -83,7 +83,7 @@ export const settingsPreferenceActions = {
   setThemeStyle(style: string): void { setThemeStyle(style); sync(); },
   setFont(step: number): void { setDisplayFont(step); sync(); },
   setWidth(step: number): void { setDisplayWidth(step); sync(); },
-  toggleGrid(): void { toggleGrid(); sync(); },
+  setGrid(show: boolean): void { setGrid(show); sync(); },
   setDarkBackground(hex: string): void { setBackgroundDark(hex); sync(); },
   setLightBackground(hex: string): void { setBackgroundLight(hex); sync(); },
   resetDarkBackground(): void { resetBackgroundDark(); sync(); },

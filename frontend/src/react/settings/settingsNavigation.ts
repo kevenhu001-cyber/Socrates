@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { SETTINGS_SECTIONS, type SettingsLabel, type SettingsSection } from './settings.types';
+import type { SettingsLabel, SettingsSection } from './settings.types';
 
 const SETTINGS_SEARCH_TERMS: Record<SettingsSection, readonly string[]> = {
   general: [
@@ -51,18 +50,7 @@ function searchCategories(categories: SettingsCategory[], query: string): Settin
   );
 }
 
-export function useSettingsNavigation(label: SettingsLabel) {
-  const [section, setSection] = useState<SettingsSection>('general');
-  const [query, setQuery] = useState('');
-  useEffect(() => {
-    const selectSection = (event: Event) => {
-      const value = (event as CustomEvent<SettingsSection>).detail;
-      if (SETTINGS_SECTIONS.includes(value)) setSection(value);
-    };
-    document.addEventListener('socrates:settings-section', selectSection);
-    return () => document.removeEventListener('socrates:settings-section', selectSection);
-  }, []);
-
+export function getSettingsNavigation(label: SettingsLabel, section: SettingsSection, query: string) {
   const categories: SettingsCategory[] = [
     { key: 'general', name: label('通用', 'General'), description: label('主题与语言', 'Theme and language') },
     { key: 'display', name: label('显示', 'Display'), description: label('字号、宽度和背景', 'Text size and width') },
@@ -73,26 +61,16 @@ export function useSettingsNavigation(label: SettingsLabel) {
     { key: 'data', name: label('数据管理', 'Data controls'), description: label('文件和资料库', 'Files and library') },
     { key: 'account', name: label('账户', 'Account'), description: label('资料与安全', 'Profile and security') },
   ];
-  const normalizedQuery = normalizeQuery(query);
   const matchingCategories = searchCategories(categories, query);
-  const changeQuery = (nextQuery: string) => {
-    setQuery(nextQuery);
-    if (!normalizeQuery(nextQuery)) return;
+  const sectionForQuery = (nextQuery: string) => {
+    if (!normalizeQuery(nextQuery)) return section;
     const matches = searchCategories(categories, nextQuery);
-    if (matches.length > 0 && !matches.some((category) => category.key === section)) {
-      setSection(matches[0].key);
-    }
+    return matches.some((category) => category.key === section) ? section : matches[0]?.key ?? section;
   };
 
-  const setQueryOnly = (nextQuery: string) => setQuery(nextQuery);
-
   return {
-    section,
-    setSection,
-    query,
-    setQuery: changeQuery,
-    setQueryOnly,
+    sectionForQuery,
     categories: matchingCategories,
-    hasNoSearchResults: normalizedQuery.length > 0 && matchingCategories.length === 0,
+    hasNoSearchResults: matchingCategories.length === 0,
   };
 }

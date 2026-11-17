@@ -1,8 +1,10 @@
+import { Switch, type SwitchProps } from 'react-native';
+import { SettingsSwitch } from '@socrates/ui/settings';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
-import { Switch } from '../ui/shadcn/switch';
+import { WebUiTheme } from '../rn/WebUiTheme';
 import {
   DISPLAY_FONT_STEPS,
   DISPLAY_WIDTH_STEPS,
@@ -12,6 +14,12 @@ import {
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SettingsPaneProps } from './settings.types';
 
+function WebSwitch({ thumbColor, ...props }: SwitchProps) {
+  // RN Web exposes a separate thumb color for the checked state.
+  const webProps = { activeThumbColor: thumbColor };
+  return <Switch {...props} thumbColor={thumbColor} {...webProps} />;
+}
+
 /**
  * Display: text size, content width, grid and background. Every control writes
  * through `settingsPreferenceActions`, so the value comes back from one store
@@ -19,6 +27,7 @@ import type { SettingsPaneProps } from './settings.types';
  */
 export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
   const display = useSettingsPreferencesStore((state) => state);
+  const gridLabel = label('对话背景网格', 'Conversation grid');
 
   return (
     <section className="settings-pane" hidden={hidden}>
@@ -48,8 +57,10 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
             ))}
           </ToggleGroup>
         </div>
-        <ShadcnLabel className="settings-choice">{label('对话背景网格', 'Conversation grid')}
-          <Switch checked={display.showGrid !== false} onCheckedChange={() => settingsPreferenceActions.toggleGrid()} />
+        <ShadcnLabel className="settings-choice">{gridLabel}
+          <WebUiTheme>
+            <SettingsSwitch control={WebSwitch} label={gridLabel} value={display.showGrid} onValueChange={settingsPreferenceActions.setGrid} />
+          </WebUiTheme>
         </ShadcnLabel>
         <div className="settings-choice settings-choice--color">
           <span className="settings-choice-label">{label('自定义背景色', 'Custom background')}</span>

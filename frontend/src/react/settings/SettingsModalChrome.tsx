@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { cn } from 'cn';
 import type { SettingsLabel, SettingsSection } from './settings.types';
-import type { SettingsCategory } from './useSettingsNavigation';
+import type { SettingsCategory } from './settingsNavigation';
 
 const categoryIcons: Record<SettingsSection, LucideIcon> = {
   general: Settings2Icon,

@@ -17,6 +17,7 @@
     "./study-model": "./src/study/model.ts",
     "./composer": "./src/composer/index.ts",
     "./shell": "./src/shell/index.ts",
+    "./settings": "./src/settings/index.tsx",
     "./exam": "./src/exam/index.ts",
     "./exam-model": "./src/examModel.ts",
     "./package.json": "./package.json"

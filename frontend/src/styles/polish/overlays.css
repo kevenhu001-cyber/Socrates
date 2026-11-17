@@ -460,6 +460,7 @@ body.composer-tools-open.composer-tools-open::after {
 }
 .settings-modal--full .settings-choice { display:flex; align-items:center; justify-content:space-between; gap:20px; min-height:48px; padding-block:6px; border-bottom:1px solid var(--ui-border-subtle); color:var(--foreground); font-size:var(--ui-font-size-sm); }
 .settings-modal--full .settings-choice:last-child { border-bottom:0; }
+.settings-modal--full .settings-choice input[role="switch"] { border-radius:var(--ui-radius-pill); }
 .settings-modal--full .settings-choice--segmented > [data-slot="toggle-group"] { flex:none; }
 .settings-modal--full .settings-choice--color { padding-block:12px; }
 .settings-modal--full .settings-choice-label { color:var(--foreground); font-size:var(--ui-font-size-sm); }
@@ -542,7 +543,7 @@ body.composer-tools-open.composer-tools-open::after {
     padding-inline:8px; color:var(--ui-text-secondary); font-size:var(--ui-font-size-sm);
   }
   .settings-modal--full .settings-body button,
-  .settings-modal--full .settings-body :is(input:not([type="hidden"]), select) { min-height:var(--ui-control-touch); }
+  .settings-modal--full .settings-body :is(input:not([type="hidden"], [role="switch"]), select) { min-height:var(--ui-control-touch); }
   .settings-modal--full .settings-bg-picker input[type="color"] { width:var(--ui-control-touch); height:var(--ui-control-touch); }
   .settings-modal--full .settings-pane { gap:16px; max-width:none; }
   .settings-modal--full .settings-pane > h2 { font-size:var(--ui-font-size-lg); }
