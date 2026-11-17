@@ -1,4 +1,4 @@
-// src/storage/localMemory.ts — Phase 1.5 extraction (main.js A.5)
+// src/storage/localMemory.ts — Phase 1.5 extraction (app entrypoint A.5)
 // Per-session localStorage mirror of conversation messages. The server
 // stores the rendered HTML of each message, but on a hard refresh the
 // assistant text can drift (formatting changes, code-block re-render,
@@ -70,7 +70,7 @@ export function appendLocalMemory(role: string, content: string | null | undefin
       rec.messages = rec.messages.slice(-LOCAL_MEMORY_MAX);
     }
     memoryCache.set(sid, rec);
-    /* P_context-race — re-read the session ID right before writing to
+    /* re-read the session ID right before writing to
        localStorage. If the user switched sessions between the initial
        `sid` read and this write, we'd be appending to the OLD session's
        cache — the next load of the old session would show messages from

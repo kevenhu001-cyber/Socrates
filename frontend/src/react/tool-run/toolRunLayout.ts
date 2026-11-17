@@ -88,7 +88,7 @@ export function restoredToolCalls(
 }
 
 /**
- * P_tool-order-mount — may a row mount at `offset` right now? A paragraph
+ * may a row mount at `offset` right now? A paragraph
  * start is always safe (the block before it is finished — this also covers
  * headings and other unterminated blocks that no sentence test accepts).
  * Otherwise the row must sit behind a real sentence ending (CJK/Latin
@@ -101,7 +101,7 @@ export function isRowMountableAt(rawText: string, offset: number): boolean {
 }
 
 /**
- * P_tool-order-strict — is the prose at `offset` a finished sentence?
+ * is the prose at `offset` a finished sentence?
  * A tool row may only mount behind a REAL ending (CJK/Latin terminator
  * or newline). Colons/semicolons do not count: "原因有三：" promises a
  * continuation, and a row parked there reads as an interruption.
@@ -139,7 +139,7 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
  * open think tag into the same collapsible "思考中" block the legacy pipeline
  * painted, and only the finalized pass strips scratch work for good.
  *
- * P_tool-order-defer — with `deferOpenParagraph` (live turns only), a tool
+ * with `deferOpenParagraph` (live turns only), a tool
  * whose paragraph has not finished yet is LEFT OUT of the layout entirely:
  * its data stays in toolCalls[] and the turn status line keeps showing
  * "running", but no row mounts until the paragraph completes. The row then
@@ -165,7 +165,7 @@ export function buildTurnLayout(
     if (!defer) return true;
     /* Approvals need a human decision: never hide them behind prose. */
     if (call.approval && call.approval.approvalId) return true;
-    /* P_tool-order-defer — mount only behind a finished paragraph. */
+    /* mount only behind a finished paragraph. */
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(raw, rowAnchor(raw, persistedOffset));
     return isRowMountableAt(raw, visual);

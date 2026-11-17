@@ -1,4 +1,4 @@
-/* zh locale table — extracted from src/i18n/index.ts (P_perf-i18n-split).
+/* zh locale table — extracted from src/i18n/index.ts ().
    Loaded on demand: it ships as its own async chunk so en users never
    pay for it, and zh users fetch it in parallel with the auth boot
    fetches while the boot-loading screen is still up. */
@@ -336,13 +336,13 @@ export const zh = {
   'chat.history.loadFailed': '更早的消息加载失败，向上滚动可重试。',
   'chat.history.start': '已到对话开头',
   'chat.send': '发送',
-  /* P_composer-primary-split — see matching en block. */
+  /* see matching en block. */
   'chat.stop': '停止生成',
   'chat.followUp.example': '举一个具体例子',
   'chat.followUp.deepen': '深入解释核心原理',
   'chat.followUp.summary': '一句话总结要点',
   'chat.followUp.quiz': '考考我的理解',
-  /* P_attachments — see matching en block. */
+  /* see matching en block. */
   'chat.attach': '附加文件',
   'chat.attach.aria': '附加文件',
   'chat.attach.remove.aria': '移除附件',
@@ -372,16 +372,16 @@ export const zh = {
   'chat.attach.type.image': '图片',
   'chat.attach.type.media': '媒体',
   'chat.attach.type.file': '文件',
-  /* P_attachments-multimodal — see matching en block. */
+  /* see matching en block. */
   'provider.multimodal': '多模态（支持图像理解）',
   'provider.multimodalHint': '允许将图片附件发送给此模型',
   'attach.notMultimodal': '当前模型无法理解图像。请添加多模态提供方或移除图片附件。',
-  /* P_provider-capability-override — see matching en block. */
+  /* see matching en block. */
   'provider.instantEncoding': '即时模式编码',
   'provider.instantEncodingAuto': '自动',
   'provider.instantEncodingHint':
     '该接口如何表达「不思考」。除非模型忽略即时模式，否则保持自动即可。',
-  /* P_lang-slogans — Tutor-mode hero was pinned English before; now
+  /* Tutor-mode hero was pinned English before; now
        translated so the whole app reads consistently in 中文.
        The chat-mode equivalents (`topic.titleChat` / `topic.subChat`)
        above are already localized, so Tutor now mirrors that. */
@@ -392,7 +392,7 @@ export const zh = {
   'topic.hint': '描述越具体效果越好',
   'topic.model': '模型',
   'topic.extensions': '扩展',
-  /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
+  /* ChatGPT-style main page (2026-07-20) */
   /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
@@ -543,7 +543,7 @@ export const zh = {
   'sidebar.plugins.uninstall': '卸载',
   'sidebar.plugins.enabled': '已启用',
   'sidebar.plugins.disabled': '已禁用',
-  /* P_composer-primary-split — 见英文对应注释。 */
+  /* 见英文对应注释。 */
   'voice.listening': '正在聆听…',
   'voice.processing': '正在处理语音…',
   'voice.stop': '停止语音输入',
@@ -1296,7 +1296,7 @@ export const zh = {
   'tag.done': '完成',
   'tag.remove': '移除',
   'kb.placeholderNote': '写下你对本主题想记住的任何内容……',
-  /* P_kb-i18n — see matching en block. Reuse the conservative tutor status
+  /* see matching en block. Reuse the conservative tutor status
        labels; a diagnostic self-report is not presented as verified mastery. */
   'kb.questions': '{n} 问',
   'kb.go': '→ 进入',
@@ -1308,7 +1308,7 @@ export const zh = {
   'kb.yourNote': '我的笔记',
   'kb.history': '存档历史',
   'kb.noHistory': '暂无存档。',
-  /* P_mistakes-i18n — see matching en block. */
+  /* see matching en block. */
   'mistakes.empty': '还没有错题。',
   'mistakes.emptyHint': '测验选错和练习答错的题目会收集到这里，供你回看。',
   'mistakes.filterEmptyResolved': '还没有已攻克的错题。重做一次，答对后即可标记为攻克。',
@@ -1506,7 +1506,7 @@ export const zh = {
   'tool.actionRead': '正在读取文件',
   'tool.actionWrite': '正在更新文件',
   'tool.actionDefault': '正在使用工具',
-  /* P_search-status (zh) — see en block for context. */
+  /*  (zh) — see en block for context. */
   'tool.searchDone': '已找到 {n} 条搜索结果',
   'tool.searchEmpty': '未找到相关搜索结果',
   'tool.searchFailed': '网络搜索失败',
@@ -1563,7 +1563,7 @@ export const zh = {
   'tool.groupVisualDone': '已生成 {m} 个图表',
   'tool.groupDone': '使用了 {m} 个工具',
   'tool.failedCount': '{n} 个失败',
-  /* P_declarative-tool-run — 与 en 段一一对应，见上方注释。 */
+  /* 与 en 段一一对应，见上方注释。 */
   'tool.searchingFor': '正在搜索「{query}」…',
   'tool.searchedFor': '已搜索「{query}」',
   'tool.searchFailedFor': '搜索失败：{query}',
@@ -1596,7 +1596,7 @@ export const zh = {
   'tool.readAttachment': '已读取附件 {file}',
   'tool.creatingChart': '正在生成{type}…',
   'tool.createdChart': '已生成{type}',
-  /* P_cowork-landing — clause set for a mixed tool run. */
+  /* clause set for a mixed tool run. */
   'tool.clauseJoin': '、',
   'tool.clauseRanCommands': '运行 {n} 条命令',
   'tool.clauseRanCommandOne': '运行 1 条命令',
@@ -1621,7 +1621,7 @@ export const zh = {
   'tool.showAll': '显示全部（{n} 字符）',
   'tool.showLess': '收起',
   'tool.copy': '复制',
-  /* P_viz-actions (zh) — see en block for context. */
+  /*  (zh) — see en block for context. */
   'viz.action.table': '数据',
   'viz.table.item': '项目',
   'viz.table.value': '数值',

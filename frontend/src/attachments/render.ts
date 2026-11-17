@@ -4,7 +4,7 @@
 // array) lives in src/attachments.ts; this module just mirrors it
 // into the DOM and wires the paperclip button + drag/drop + paste.
 // The composer shell moves between the landing slot and the chat slot
-// (P_composer-single) but stays one node, so one wiring covers both.
+// () but stays one node, so one wiring covers both.
 //
 // Application callers use direct module imports; React attachment actions
 // use the typed legacy composer gateway.
@@ -41,7 +41,7 @@ function dedupToast(msg: string) {
   showToast(text);
 }
 
-/* P_multi-input-attachment — every composer that wants attachments
+/* every composer that wants attachments
    registers itself here. setupAttachmentInput pushes onto the list;
    document-level drag/drop iterates over the list to decide which
    wrap (if any) the user dropped onto, and renderAttachmentChips()
@@ -395,7 +395,7 @@ function autoWire() {
     return;
   booted = true;
   wireDocumentDrag();
-  /* P_composer-single — one shell, one wiring. barId names both view
+  /* one shell, one wiring. barId names both view
      containers; only the visible one paints the drop hint. The React tools
      button owns its click handler; this wiring owns the hidden file input,
      drop and paste only. */
@@ -407,7 +407,7 @@ function autoWire() {
     chipsId: 'composerAttachmentChips',
   });
 }
-/* P_timing-DCL — the Vite IIFE evaluates before the DOM is ready,
+/* the Vite IIFE evaluates before the DOM is ready,
  * so any module-level code that queries getElementById returns null.
  * The only reliable way to wire DOM-dependent behaviour is
  * DOMContentLoaded, which fires once after the document is fully

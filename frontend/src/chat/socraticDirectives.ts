@@ -24,7 +24,7 @@ export function stageInstruction(stage: string): string {
    the wording stays identical. The cold-start diagnostic only sets
    DEPTH (how much prerequisite support is needed). The current stage
    decides whether to establish intuition or introduce the definition.
-   Reference: P_teaching-plan, P_level-consistency, P_knowledge-point. */
+   Reference: , , . */
 export const BASELINE_LEVEL =
   'baseline (not mastery), depth cue only; establish foundations within the current teaching stage';
 

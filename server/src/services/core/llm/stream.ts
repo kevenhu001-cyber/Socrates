@@ -58,7 +58,7 @@ export async function streamChatCompletion(
 
   try {
     if (Array.isArray(tools) && tools.length > 0) {
-      /* P_privacy-leak — don't log the upstream model name. The
+      /* don't log the upstream model name. The
        * provider-agnostic tool names are enough to confirm what
        * capabilities we're sending; the model identity stays in the
        * DB only. */
@@ -70,7 +70,7 @@ export async function streamChatCompletion(
       );
     }
     let response: Response | undefined;
-    /* P_llm-retry — rate limits (429 rpm exhausted) and transient 5xx
+    /* rate limits (429 rpm exhausted) and transient 5xx
        errors kill the stream instantly. Retry the initial POST with
        exponential backoff BEFORE any byte is streamed downstream, so a
        rate-limited request gets a second chance instead of ending the
@@ -217,7 +217,7 @@ export async function streamChatCompletion(
     const _toolSlotById = new Map<string, number>();
     let _nextToolSlot = 0;
     let _lastToolSlot = -1;
-    /* P_tool_stream_emit — throttle the tool_call_delta emission so a
+    /* throttle the tool_call_delta emission so a
        high-frequency upstream doesn't flood the SSE channel. We coalesce
        the per-delta callbacks to at most one per ~30 ms (or every 64
        bytes of accumulated arguments) so the client gets a smooth
@@ -356,7 +356,7 @@ export async function streamChatCompletion(
             if (finalChoice && finalChoice.finish_reason) finishReason = finalChoice.finish_reason;
             continue;
           }
-          /* P_deepseek-mode — reasoning_content arrives on a separate
+          /* reasoning_content arrives on a separate
              field on DeepSeek-family models when the request included
              `extra_body.thinking.type: enabled`. Surface it through a
              dedicated callback so the client can render it as a
@@ -467,7 +467,7 @@ export async function streamChatCompletion(
       id: entry.id || (shouldDispatchTools ? `call_${randomUUID()}` : undefined),
     }));
 
-    /* P_tool_stream_finalize — emit a final tool_call_delta so the
+    /* emit a final tool_call_delta so the
        client gets the last few bytes that were throttled out by
        _emitToolDelta's time/size guard. Without this, the UI may
        show a code body that's 1-3 characters short of the final

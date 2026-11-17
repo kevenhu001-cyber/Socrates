@@ -1,7 +1,7 @@
-/* ui/recentsView.ts — extracted from main.js (B6 batch).
+/* ui/recentsView.ts — extracted from legacy entry.
  * Recents list rendering (rAF throttle + module-state publish + filter chips).
  * Zero-behavior-change lift. Session list data comes from session modules;
- * the window.renderRecents bridge in main.js stays as the public entry.
+ * the window.renderRecents bridge in app entry stays as the public entry.
  */
 import { publishSessionList } from '../session/sessionListPublisher.ts';
 import { hasCachedProjects, loadCachedProjects } from '../projects/projectCache.ts';

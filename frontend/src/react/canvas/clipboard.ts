@@ -1,6 +1,6 @@
 import { reportSwallow } from '../../util/reportSwallow.ts';
 /**
- * P_canvas-mode — write-to-clipboard helper used by CanvasBlock's Copy
+ * write-to-clipboard helper used by CanvasBlock's Copy
  * and Iterate actions. Tries navigator.clipboard first, falls back to a
  * hidden textarea + execCommand("copy") for older browsers / restricted
  * contexts (the same pattern used by useMessageActions.ts).

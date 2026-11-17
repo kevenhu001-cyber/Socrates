@@ -4,7 +4,7 @@
    formatMsg — final one-shot renderer (called when the message is
      complete or during typeTick animation).
    formatTickSlice — convenience wrapper for the type-tick slider.
-   All three exported for use by main.js / doRender / streaming. */
+   All three exported for use by app entry / doRender / streaming. */
 
 import { stripNextQuestions } from '@socrates/core/learningBlocks';
 import { esc, escAttr, escHTML } from './text.ts';

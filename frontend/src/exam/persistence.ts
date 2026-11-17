@@ -131,7 +131,7 @@ export function doSaveExamSession() {
           reportSwallow(e, 'exam.doSaveExamSession.pushExamId');
         }
       }
-      /* P_recents-amplify — flush(), not schedule(): a brand-new exam row has
+      /* flush(), not schedule(): a brand-new exam row has
          to be in the sidebar the moment the save returns. */
       return flushRecentsReconcile().then(function () {
         try {

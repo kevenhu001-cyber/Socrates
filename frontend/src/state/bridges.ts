@@ -120,7 +120,7 @@ export const sessionStore = sessionDomain.store;
 export type KbAction =
   | { type: 'kb/set'; key: keyof KbState; value: unknown }
   | { type: 'kb/patch'; patch: Partial<KbState> }
-  /* P_kb-patch-node — touch a single kbNodes slot in place. The previous
+  /* touch a single kbNodes slot in place. The previous
      .map-everything path cost O(N) Object.assign on every user answer in
      tutor mode; this one still clones the array (one allocation) but
      touches only the changed row. Out-of-range indices are a no-op so

@@ -132,7 +132,7 @@ function appendStoredAttachmentParts(
   appendUnviewableImage(parts, att, multimodal);
 }
 
-/* P_file-attachments — rebuild a content-parts array from a user
+/* rebuild a content-parts array from a user
    message's stored attachments so a resend / regenerate / history turn
    carries the file to the model:
      - images → native image_url parts, but ONLY when the active
@@ -350,7 +350,7 @@ export function extractHistory(): HistoryEntry[] {
        but the in-memory list hasn't been hydrated yet) */
   const inMemory = historyFromStateMessages(sessionStore.getState().messages);
   if (inMemory) return inMemory;
-  /* P_context-race — if currentSessionId is null (state was reset
+  /* if currentSessionId is null (state was reset
      but no session loaded yet), skip the localStorage fallback.
      _memKey(null) resolves to "socrates-memory-default" which is a
      shared key that may contain stale messages from a previous

@@ -74,7 +74,7 @@ export async function submitChatMessage(
     return;
   }
 
-  /* P_send-prefetch-defer — prefetchStreamingTurn() warms the
+  /* prefetchStreamingTurn() warms the
      dynamic import for the streaming turn module so the first
      click doesn't pay the parse cost. Calling it on every click
      frame is wasted work after the first call (the import is

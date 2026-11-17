@@ -1,4 +1,4 @@
-/* ui/sidebarChrome.ts — extracted from main.js (B6 batch).
+/* ui/sidebarChrome.ts — extracted from legacy entry.
  * Sidebar chrome: mobile drawer dismissal and the native view-switch adapter.
  * React owns the search row, panel selection, and panel visibility.
  */
@@ -28,8 +28,7 @@ function isInteractiveControl(target: Element): boolean {
   );
 }
 
-/* Sidebar persisted state + mobile drawer listeners. Called once from
-   main.js at the same position the inline block used to run, so eval
+/* Sidebar persisted state + mobile drawer listeners. Called once from app entry at the same position the inline block used to run, so eval
    order is unchanged. */
 export function initSidebarChrome() {
   const sidebar = document.getElementById('sidebar');

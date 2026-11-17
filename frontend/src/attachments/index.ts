@@ -2,7 +2,7 @@ import type { PendingAttachment, UploadOutcome, AddFilesResult, UploadProgress }
 /**
  * attachments.js — pending-attachment store for the chat composer.
  *
- * P_file-attachments — every accepted file is uploaded to
+ * every accepted file is uploaded to
  * POST /api/v2/files (a durable `files` row) and the outgoing turn only
  * persists a reference: {id, kind, name, mime, size, fileId}. The model
  * then reads the file on demand through the server-side
@@ -251,7 +251,7 @@ function uploadAttachmentFile(
     const fd = new FormData();
     fd.append('file', file, file.name || 'file');
     /* Best-effort session link — the server re-validates ownership and
-       adopts orphans at session save (P_file-session-link), so a null
+       adopts orphans at session save (), so a null
        or draft id here is fine. */
     const sid = currentSessionId();
     if (sid) fd.append('sessionId', sid);
@@ -480,7 +480,7 @@ async function prepareAttachment(
  * one to the pending list. Returns a { added, rejected } summary so the
  * UI can toast a status.
  *
- * P_pending-feedback — each file pushes a pending stub into the
+ * each file pushes a pending stub into the
  * attachments[] array BEFORE any async work so the UI chip appears
  * immediately. The stub's `pending:true` and `progress:0-100` fields
  * drive a spinner + progress bar in renderAttachmentChips(). Once the
@@ -488,13 +488,13 @@ async function prepareAttachment(
  * in-place and onUpdate fires so the renderer swaps the spinner for
  * the final chip.
  *
- * P_upload-concurrency — at most MAX_CONCURRENT_UPLOADS jobs run at
+ * at most MAX_CONCURRENT_UPLOADS jobs run at
  * once; the rest wait as `stage:'queued'` stubs. This bounds parallel
  * XHRs and main-thread image encodes so a multi-file drop cannot
  * freeze the composer, and a removed queued chip is dequeued without
  * ever opening a request.
  *
- * P_attachments-ready — every file's async job is also tracked in
+ * every file's async job is also tracked in
  * READY_PROMISES so a send that happens while an upload is still in
  * flight can wait for it (waitForAttachmentsReady) instead of losing
  * the fileId the model needs.

@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm';
  * The stored hash covers the FULL credential string so the keyId cannot be
  * separated from the secret when verifying.
  *
- * P_agent-key-vs-mobile-bearer — the grammar is deliberately disjoint from
+ * the grammar is deliberately disjoint from
  * mobile tokens ("ma.<hex>.<hex>") so requestCredential can route the two
  * without ambiguity, and so an agent key can never be mistaken for (or
  * replayed as) a mobile access token. */

@@ -210,7 +210,7 @@ export function _looksLikeInlineMath(s: string): boolean {
   );
 }
 
-/* P_numeric-math — letter-free formulas: `$1/2$`, `$3+4=7$`, `$2^{10}$`,
+/* letter-free formulas: `$1/2$`, `$3+4=7$`, `$2^{10}$`,
    `$-1$`, `$0.5$`, `$5$`. The letter-based heuristics above reject them all,
    yet Chinese-model output writes plain numbers and fractions in dollars
    constantly. Currency is the risk (`$5 到 $10`, `$5-$10`, `$1,000`), so this
@@ -355,7 +355,7 @@ function looksLikeSpacedMathTail(trimmed: string): boolean {
 }
 
 function looksLikeNumericMathTail(trimmed: string): boolean {
-  /* P_numeric-math — an unclosed letter-free formula renders live only when a
+  /* an unclosed letter-free formula renders live only when a
      fraction / power / equation operator already marks it (`$1/2`, `$3+4=7`);
      a bare amount (`$5`, `$1,000`) waits for its closing `$`, so currency on
      the live tail never flashes as math.

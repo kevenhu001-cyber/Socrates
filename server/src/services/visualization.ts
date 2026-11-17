@@ -876,7 +876,7 @@ export function validateVisualizationSpec(input: unknown) {
     };
   if (['svg_illustration', 'interactive_simulation'].includes(parsed.data.template)) {
     const source = (data as z.infer<typeof extensionPayload>).source;
-    /* P_interactive-sim-scripts — match the frontend's
+    /* match the frontend's
        extensionIsSafe() split exactly. `interactive_simulation`
        allows inline <script> and event handlers: the extension
        iframe runs opaque-origin under CSP `connect-src 'none'`

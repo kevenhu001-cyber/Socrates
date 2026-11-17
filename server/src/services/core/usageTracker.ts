@@ -75,7 +75,7 @@ export function normalizeProviderUsage(raw: unknown): NormalizedUsage | null {
   return { promptTokens, completionTokens, totalTokens };
 }
 
-/* P_attachments — rough token estimate for a single image part.
+/* rough token estimate for a single image part.
  *
  * OpenAI's documented cost for `gpt-4o` image inputs is "765 tokens
  * for low-detail, ~85 tokens per 512px tile at high-detail". The
@@ -130,7 +130,7 @@ function countMessageTokens(messages: unknown, countText: (text: unknown) => num
         if (typeof typedPart.text === 'string') {
           total += countText(typedPart.text);
         } else if (typedPart.type === 'image_url') {
-          /* P_attachments — count each image_url part as ~765
+          /* count each image_url part as ~765
            * tokens so the heatmap accurately reflects the cost of
            * multimodal messages. If the upstream degraded the
            * image to a textual placeholder (see

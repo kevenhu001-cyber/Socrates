@@ -35,7 +35,7 @@ export function aiGenerate(topic: string): {
 
   /* Fixed 5-node KB skeleton, each carries the rich metadata consumed by
      the React knowledge map and node-detail components.
-     P_cold-start-coverage — the five nodes map 1:1 to DIAG_ASPECTS:
+     the five nodes map 1:1 to DIAG_ASPECTS:
      0. Basic concepts (基础概念)
      1. Core principles (核心原理)
      2. Practical applications (应用场景)
@@ -100,7 +100,7 @@ export function aiGenerate(topic: string): {
 export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
   /* The 5 fixed mock KB node names — used both to name the subareas and
      to seed the KB so the question's nodeIdx actually lines up.
-     P_cold-start-coverage — aligned with the 5 knowledge dimensions. */
+     aligned with the 5 knowledge dimensions. */
   const subareaNames = [
     'Basic concepts of ' + domain,
     'Core principles of ' + domain,

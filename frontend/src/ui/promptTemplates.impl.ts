@@ -12,9 +12,9 @@ import { t } from '../i18n/index.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 import { publishPromptTemplatesState, type PromptTemplateData } from './promptTemplatesState.ts';
 
-/* ui/promptTemplates.ts — Wave 1d of main-js-split plan.
+/* ui/promptTemplates.ts
  * Prompt-templates modal: lists built-in and user templates, with edit and
- * delete actions. Extracted from main.js (post-Wave-1b): L9890-L10010.
+ * delete actions. extracted from legacy entry (post-Wave-1b): L9890-L10010.
  *
  * The module owns prompt-template actions and publishes its view data through
  * the shared state store. React owns the modal UI and subscribes to that store.

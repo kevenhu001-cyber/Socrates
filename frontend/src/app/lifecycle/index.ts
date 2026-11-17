@@ -126,7 +126,7 @@ export function isInAuthGraceWindow() {
 export function handleAuthExpired(cause: unknown) {
   console.log('[auth] handleAuthExpired called, cause=' + (cause ? String(cause) : 'apiFetch-401'));
   try {
-    /* P_bleed-auth-expired — same per-user cache wipe as signOut().
+    /* same per-user cache wipe as signOut().
        A 401 may fire mid-session while the user is still on the
        screen; without clearing cached user memories / geo info, the
        signin-gate UI would briefly show the previous user's
@@ -143,7 +143,7 @@ export function handleAuthExpired(cause: unknown) {
     } catch (e) {
       reportSwallow(e, 'app/lifecycle.handleAuthExpired.clearPendingChat');
     }
-    /* P_bleed-auth-expired — same comprehensive wipe as signOut(). A
+    /* same comprehensive wipe as signOut(). A
        401 may fire mid-session; without clearing serverCache.sessions /
        providerConfig / _cmdKIndex, the sign-in gate's flash of
        stale sidebar or provider selection could briefly show the
@@ -151,7 +151,7 @@ export function handleAuthExpired(cause: unknown) {
        resolves. */
     clearPerUserClientState();
     clearCurrentUserMirror();
-    /* P_bleed-auth-expired-v2 — reset state so React components
+    /* reset state so React components
        reading from state don't see the previous user's data after
        the gate shows. Without this, state.session, sessionBridge.getSnapshot().messages,
        sessionBridge.getSnapshot().topic etc. remain dirty until the next session load,
@@ -246,7 +246,7 @@ export async function signOut() {
   } catch (e) {
     reportSwallow(e, 'app/lifecycle.signOut.csrfRefresh');
   }
-  /* P_bleed-signout — drain any in-flight save first, so the
+  /* drain any in-flight save first, so the
      subsequent saveCurrentSession doesn't cascade into a stale
      saveState.saveDirty chain. */
   if (saveState.saveInFlight) {
@@ -256,7 +256,7 @@ export async function signOut() {
       reportSwallow(e, 'app/lifecycle.signOut.drainInFlight1');
     }
   }
-  /* P_bleed-signout-v2 — save the current session BEFORE clearing
+  /* save the current session BEFORE clearing
      any caches or state. Previously (Bug 1&2), clearPerUserClientState
      + CURRENT_USER=null + resetState ran before resetApp's internal
      saveCurrentSession(), causing doSave() to bail because CURRENT_USER
@@ -270,7 +270,7 @@ export async function signOut() {
       reportSwallow(e, 'app/lifecycle.signOut.drainInFlight2');
     }
   }
-  /* P_bleed-signout — wipe every per-user cache so the next user on
+  /* wipe every per-user cache so the next user on
       this browser starts from a clean slate. Clears cached user memories /
       geo info / turnState.pendingChatContent (in-memory) AND the full module-
       level set (serverCache.sessions, providerConfig, _cmdKIndex, …)

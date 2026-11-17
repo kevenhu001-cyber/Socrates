@@ -14,7 +14,7 @@ function getTransporter() {
   const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    // P_email-fallback-leak — H2 audit fix. In production we MUST NOT
+    // H2 audit fix. In production we MUST NOT
     // fall back to console.log: tokens (verify/reset/login codes) would
     // land in journalctl, which has broader read access than intended.
     // Surface a startup-time error instead; developers must configure

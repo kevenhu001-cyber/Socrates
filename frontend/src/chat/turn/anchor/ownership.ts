@@ -2,7 +2,7 @@
  * Turn viewport ownership, reserve math, and the public anchor config.
  */
 export interface TurnAnchorDeps {
-  /** Live reader for React ownership of #msgList, owned by main.js. */
+  /** Live reader for React ownership of #msgList, owned by application bootstrap. */
   isMsgListMounted: () => boolean;
 }
 
@@ -76,7 +76,7 @@ export function turnAnchorReserve(
 
 let anchorDeps: TurnAnchorDeps = { isMsgListMounted: () => false };
 
-/** Provide the React-ownership reader owned by main.js. */
+/** Provide the React-ownership reader owned by application bootstrap. */
 export function configureTurnAnchor(next: TurnAnchorDeps): void {
   anchorDeps = next;
 }

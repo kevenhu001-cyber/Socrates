@@ -86,7 +86,7 @@ export function openVizModal(srcdoc: string | null | undefined, title?: string):
   actions.querySelector('button')?.focus();
 }
 
-/* P_modal-raw — like openVizModal but the body is raw HTML, not a
+/* like openVizModal but the body is raw HTML, not a
    sandboxed iframe. Used by the image lightbox (matplotlib output)
    and the code-block fullscreen view where we don't need sandboxing
    — the content is our own, not user-input. Shares the same shell,

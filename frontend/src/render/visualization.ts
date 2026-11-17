@@ -49,7 +49,7 @@ let visualCounter = 0;
  * on the first mount so this module stays side-effect-free when unused. */
 const _liveCharts: LiveChart[] = [];
 let _themeObserver: MutationObserver | null = null;
-/* P_viz-mount-dedup — per-host map of card IDs currently being mounted.
+/* per-host map of card IDs currently being mounted.
  * Guards against concurrent mountVisualization calls that pass the DOM
  * check (querySelector returns null) before the first call's
  * host.appendChild() runs. Cleared after appendChild. Keyed on the host
@@ -128,7 +128,7 @@ function disposeCard(card: VisualizationCard) {
 
 async function loadEcharts() {
   if (!echartsPromise) {
-    /* P_perf-self-host — echarts UMD is copied as a static asset and
+    /* echarts UMD is copied as a static asset and
        injected only when a viz card mounts. The full bundle registers
        every chart / component / renderer, so no core.use([...]) step. */
     echartsPromise = ensureEcharts().catch((error: unknown) => {
@@ -176,7 +176,7 @@ function palette(): VizColors {
   };
 }
 
-/* P_viz-retry — mountVisualization has a dedup path keyed on
+/* mountVisualization has a dedup path keyed on
    `data-visualization-id`. The previous retry button just called
    `mountVisualization(spec, host, options)` which short-circuited
    and returned the existing card. Now we explicitly remove any
@@ -260,7 +260,7 @@ function mountFallbackActions(
   );
 }
 
-/* P_viz-i18n — read a translation key with an English fallback.
+/* read a translation key with an English fallback.
    Falls through to the fallback when:
    - `t` is missing (i18n/index.ts hasn't loaded yet);
    - the key returns the key itself (untranslated);
@@ -965,7 +965,7 @@ function _refreshCharts() {
       continue;
     }
     try {
-      /* P_viz-theme-animation — setOption with {notMerge: true} triggers
+      /* setOption with {notMerge: true} triggers
        * ECharts' internal transition (entrance) animation pipeline that
        * calls _executeOneToOne → _update → childAt on old views that have
        * already been disposed by notMerge. The crash surfaces in a later
@@ -978,7 +978,7 @@ function _refreshCharts() {
         entry.chart.setOption(chartOpts, { notMerge: true });
       }
       /* Do NOT call resize() here. The ResizeObserver attached during
-       * mount (P_viz-resize-guard) already handles container-size changes
+       * mount () already handles container-size changes
        * via rAF. Calling resize() synchronously after setOption triggers
        * the ResizeObserver from setOption's SVG DOM mutations, which
        * queues a rAF callback that runs resize() while ECharts' view

@@ -16,7 +16,7 @@ function parsedUrl(rawUrl: unknown) {
   }
 }
 
-/* P_perf-local-favicon — the error fallback used to point at
+/* the error fallback used to point at
    https://www.google.com/s2/favicons?domain_url=… . That host is
    unreachable from mainland China, so on a restricted network every
    link whose own /favicon.ico failed (which is most foreign links)
@@ -59,7 +59,7 @@ export function createLinkFavicon(rawUrl: unknown) {
   image.referrerPolicy = 'no-referrer';
   image.src = url.origin + '/favicon.ico';
   image.dataset.fallback = fallbackFavicon(url);
-  /* P_perf-local-favicon — a dropped SYN never fires `error`, so the
+  /* a dropped SYN never fires `error`, so the
      origin attempt can hang for minutes behind a network that silently
      discards the packets. Swap to the local monogram after a short
      watchdog; if the real icon lands afterwards the browser still
@@ -117,7 +117,7 @@ export function initLinkFavicons() {
   if (initialized || typeof document === 'undefined') return;
   initialized = true;
   let queued = false;
-  /* P_favicon-incremental — the observer watches the whole document, and the
+  /* the observer watches the whole document, and the
      flush used to re-run the complex selector over EVERY element on every
      frame that saw any mutation. While an answer streams that is every frame,
      scanning the full transcript (and the sidebar) to find the one or two new

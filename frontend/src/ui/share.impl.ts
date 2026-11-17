@@ -1,7 +1,7 @@
-/* ui/share.ts — Wave 3 of main-js-split plan.
+/* ui/share.ts
  * Share modal: create, copy, revoke share links for sessions. Also includes
  * read-only session loading from share tokens.
- * Extracted from main.js (post-Wave-2): toggleShareBtn L10076, openShareModal
+ * extracted from legacy entry (post-Wave-2): toggleShareBtn L10076, openShareModal
  * L10107, loadSharedSession L10201, etc.
  *
  * Touches via window.*:

@@ -171,7 +171,7 @@ export function preprocessMarkdown(t: string | null | undefined): string {
 
   s = promoteStandaloneInlineMath(s, true);
 
-  /* P_numeric-math — there used to be an "odd `$` count → escape the LAST
+  /* there used to be an "odd `$` count → escape the LAST
      `$`" rule here. It guessed the wrong dollar whenever a currency amount
      came first (`花了 $5，概率 $1/2$` escaped the formula's closing `$`), and
      the streaming preprocessor never had it, so the answer changed at

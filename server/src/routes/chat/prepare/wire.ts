@@ -36,11 +36,11 @@ export const ChatPayloadSchema = z
      is learner data and travels as untrusted context. Ignored in chat mode. */
     learningMode: z.enum(LEARNING_MODE_IDS).optional(),
     learningFocus: z.string().max(2000).optional(),
-    /* P_dead-field-system-context — `systemContext` used to be accepted
+    /* `systemContext` used to be accepted
      here and read by nobody: the client sent it, the server dropped it.
      The schema is .passthrough(), so a stale client that still sends the
      field is unaffected; the dead declaration is gone. */
-    /* P_rag-context — optional session id. When present, the last user
+    /* optional session id. When present, the last user
      message is used as the retrieval query against the session's
      chunk index and the top hits are injected as an untrusted
      context block into the system prompt. Ownership is verified
@@ -50,7 +50,7 @@ export const ChatPayloadSchema = z
     ragSessionId: z.string().max(64).optional(),
     assistantId: z.string().uuid().optional(),
     sessionId: z.string().uuid().optional(),
-    /* P_deepseek-mode — DeepSeek SDK flags that flip chain-of-
+    /* DeepSeek SDK flags that flip chain-of-
      thought on. The frontend sends these when the active model
      looks like a DeepSeek-family reasoning model. We forward
      them to llm.js as-is; non-DeepSeek upstreams silently ignore
@@ -78,7 +78,7 @@ export { sanitizeExtraBody };
    Multimodal content transforms
    ───────────────────────────────────────────────────────────────── */
 
-/* P_attachments — model-aware content transform.
+/* model-aware content transform.
  *
  * The chat schema accepts multimodal `image_url` parts on every
  * provider, but only vision-capable models can actually consume them.

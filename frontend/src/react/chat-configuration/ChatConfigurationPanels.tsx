@@ -145,7 +145,7 @@ export function EffortPanel({
   onBack,
   onCommit,
 }: EffortPanelProps) {
-  /* P_model-capability-registry — a model that cannot switch thinking off
+  /* a model that cannot switch thinking off
      has no Instant stop. Offering it would promise a mode the server
      rejects with a capability error. */
   const stops = supportsInstant ? EFFORT_STOPS : EFFORT_STOPS.filter((stop) => stop !== 'instant');

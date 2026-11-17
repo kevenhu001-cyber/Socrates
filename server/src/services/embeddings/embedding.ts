@@ -31,7 +31,7 @@ export interface EmbeddingProviderConfig {
   dimensions: number;
 }
 
-/* P_embed-cfg-cache — the active-provider lookup was an uncached
+/* the active-provider lookup was an uncached
    SELECT + a decrypt on EVERY call, and the indexing path calls it
    twice per message (once directly, once inside embedTexts). A
    back-fill of a long session therefore paid two DB round trips and
@@ -53,7 +53,7 @@ export function __resetEmbeddingConfigCache(): void {
   invalidateEmbeddingConfigCache();
 }
 
-/* P_embed-killswitch — the vector layer costs one remote embedding call on
+/* the vector layer costs one remote embedding call on
    the retrieval path of every turn (chat/prepare/context.ts races it against a 2s
    budget before the first token), so operators can disable it without a
    migration or a DB write. Set EMBEDDING_DISABLED=1 to short-circuit to

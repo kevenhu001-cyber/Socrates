@@ -26,7 +26,7 @@ export function setChatStopState(active: boolean): void {
     button.classList.remove('chat-stop');
     button.dataset.stop = '0';
   }
-  /* P_composer-primary-split — the primary is disabled while there is
+  /* the primary is disabled while there is
      nothing to send, but a live turn owns the button as Stop, so it must
      never be unreachable. The `.active` class is the canSend signal the
      composer controller maintains, so this stays correct whichever order

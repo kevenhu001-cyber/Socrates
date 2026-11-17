@@ -1,7 +1,7 @@
 /**
  * Shared contracts for the message list React migration boundary.
  *
- * The legacy `main.js` owns the message state (addMessage, addStreamingMessage,
+ * The legacy `app entrypoint` owns the message state (addMessage, addStreamingMessage,
  * editMessage, etc.) and publishes events through the chat runtime store.
  * React reads immutable published snapshots and renders the message list
  * declaratively.

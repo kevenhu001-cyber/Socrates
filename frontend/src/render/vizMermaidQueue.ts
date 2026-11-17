@@ -32,7 +32,7 @@ export function configureVizMermaidQueue(handlers: {
     _processPendingVizActions = handlers.processPendingVizActions;
 }
 
-/* Viewport-gate test hooks (P_mermaid-viewport-gate). The gate is plain
+/* Viewport-gate test hooks (). The gate is plain
    rect math, so it is unit-testable without a layout engine by driving the
    rect directly; see test/mermaidViewportGate.test.mjs. */
 export function mermaidCardIsNearViewportForTest(el: Element): boolean {
@@ -74,7 +74,7 @@ function renderMermaidFallback(item: MermaidItem): void {
   _rememberLiveVizCard?.(item.id, el);
 }
 
-/* P_mermaid-frame-budget — every mermaid.render pays a synchronous
+/* every mermaid.render pays a synchronous
    parse + layout, so draining the whole queue in one forEach was the
    dominant first-visit long task in the 2026-09-27 profile. The drain
    now starts at most MERMAID_RENDERS_PER_FRAME diagrams per frame and
@@ -88,7 +88,7 @@ function renderMermaidFallback(item: MermaidItem): void {
 const MERMAID_RENDERS_PER_FRAME = 2;
 const MERMAID_FRAME_BUDGET_MS = 8;
 
-/* P_mermaid-viewport-gate — the frame budget above splits an N-diagram
+/* the frame budget above splits an N-diagram
    backlog across frames, but it still renders every diagram in a long
    session: opening a 200-message history with 40 diagrams pays 40
    synchronous mermaid.parse+layout calls for the 2 the user can actually
@@ -266,7 +266,7 @@ function renderPendingMermaidItem(item: MermaidItem): void {
   /* A card reclaimed from the live-card registry is already rendered —
      re-rendering it would flash its SVG away and back. */
   if (liveEl && liveEl.getAttribute('data-viz-state') !== 'loading') return;
-  /* P_mermaid-parse-once — renderMermaid already ran mermaid.parse on
+  /* renderMermaid already ran mermaid.parse on
      this code unless mermaid was still loading when it was queued, so
      only pay for the check when that result is genuinely missing. */
   if (!item.validated && !validMermaid(item.code)) {
@@ -355,9 +355,9 @@ export function processPendingMermaid(): void {
   }
 }
 
-/* P_mermaid-coalesce — processPendingMermaid() works off the global
+/* processPendingMermaid() works off the global
  * _pendingMermaid queue (a frame-budgeted slice of it, see
- * P_mermaid-frame-budget) and (via the trailing call) the viz-actions queue.
+ * ) and (via the trailing call) the viz-actions queue.
  * It used to be invoked once per mounted React row from MessageItem's
  * useLayoutEffect, so a single history commit of N rows ran N full scans in
  * one layout phase — the biggest session-switch long task in the 2026-09-27

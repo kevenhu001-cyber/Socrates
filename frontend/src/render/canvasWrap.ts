@@ -1,5 +1,5 @@
 /**
- * P_canvas-mode — pure helper used by renderAssistantHTML (main.js) and
+ * pure helper used by renderAssistantHTML (app entrypoint) and
  * unit-tested in test/canvasWrap.test.mjs. When outputMode === 'canvas',
  * wraps the assistant's formatted HTML in a <div class="canvas-block">
  * carrying data-* hooks that the React <CanvasBlock> mounts against.

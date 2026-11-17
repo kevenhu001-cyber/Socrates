@@ -1,7 +1,7 @@
 /**
  * ui/messageActions.ts — per-message operations for the legacy shell.
  *
- * Extracted from main.js (Phase 6 split: feedback, lookup, rollback,
+ * extracted from legacy entry (Phase 6 split: feedback, lookup, rollback,
  * delete, and history-restore helpers). The React message list owns its
  * own actions via react/message-list/useMessageActions.ts.
  */

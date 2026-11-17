@@ -122,7 +122,7 @@ interface MistakeBookOptions {
   appendAssistantMessage: (typeof import('../chat/messages.ts'))['addAssistantUiMessage'];
 }
 
-/* P_mistakes-i18n — this panel shipped raw English literals while zh is
+/* this panel shipped raw English literals while zh is
    the default locale, and echoed the internal mistake.type enum straight
    into the card meta. i18n/index.ts's t() does no interpolation, so {n} is
    substituted here, matching the convention in ui/diagnosticQuestion.ts. */

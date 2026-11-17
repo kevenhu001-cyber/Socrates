@@ -1,11 +1,11 @@
 /* session/beacon.ts — pagehide/visibilitychange last-chance save payload.
  *
- * Extracted from main.js P_save-on-unload (Wave F3). The lifecycle wiring
- * (beforeunload/pagehide listeners, keepalive fetch) stays in main.js
+ * extracted from legacy entry  (). The lifecycle wiring
+ * (beforeunload/pagehide listeners, keepalive fetch) stays in app entry
  * because it touches unload-time globals; only the pure snapshot/payload
  * builder lives here so it can be unit-tested without DOM globals.
  *
- * Rules mirrored from main.js:
+ * Rules mirrored from app entry:
  * - skip streaming placeholders, keep rawText/role only (html regenerates)
  * - preserve reasoningContent from either camelCase or snake_case key
  * - cap attachments/toolCalls at 20 per message

@@ -1,5 +1,5 @@
-/* chat/format.ts — Wave 0b of main-js-split plan.
- * Three chat-formatting helpers extracted from main.js region 13.
+/* chat/format.ts
+ * Three chat-formatting helpers extracted from legacy entry.
  */
 
 import { callBridge, dispatchCall } from '../store/index.ts';
@@ -176,7 +176,7 @@ function handleChatApiResult(
     } else if (sanitizedError) {
       dispatchCall({ type: 'call/set', key: 'lastCallSource', value: 'error' });
       ctl.replaceWithError(sanitizedError, function () {
-        /* P_turn-abort-quiet — the retried turn can itself abort
+        /* the retried turn can itself abort
            (session-expired races the retry click); guard the promise so
            it never becomes an unhandledrejection + red banner. */
         try {

@@ -1,4 +1,4 @@
-/* P_storage-shim — first side-effect import, so the in-memory
+/* first side-effect import, so the in-memory
    localStorage/sessionStorage shim is installed before the app modules
    below it (state/store.ts, i18n/index.ts, providers.js, displayPrefs.js, …)
    evaluate and touch storage. Without this ordering, first-party storage
@@ -95,7 +95,7 @@ initTopicFocusAssist();
   if (!ml) return;
   let timer: number | null | undefined = null;
   let ticking = false;
-  /* P_perf-scrollbar — scroll fires per frame while velocityScrollTo drives
+  /* scroll fires per frame while velocityScrollTo drives
      scrollTop (and per wheel tick while the reader scrolls). Coalesce the
      class write + timer reset to one rAF so rapid events share a single DOM
      touch; passive because the handler never cancels the scroll. */

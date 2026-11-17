@@ -1,18 +1,18 @@
 /**
  * chat/templateSystemPrompt.ts — active prompt-template injection.
  *
- * Extracted from main.js. Injects the active template's system prompt as
+ * extracted from legacy entry. Injects the active template's system prompt as
  * a fresh system message right after the base system message. Used by
  * both the chat turn assembly and the tutor prompt builders, so it lives
  * in chat/ rather than either consumer.
  *
- * The active template state itself stays in main.js; this module reads
+ * The active template state itself stays in app entry; this module reads
  * it through the configured getter (same pattern as promptSuffixes).
  */
 
 import type { PromptMessage } from './promptSuffixes.ts';
 
-/** Active prompt template as shaped by main.js setActiveTemplate. */
+/** Active prompt template as shaped by app entry setActiveTemplate. */
 export interface ActiveTemplate {
   id?: string;
   title?: string;
@@ -30,13 +30,13 @@ export interface ActiveTemplate {
 }
 
 export interface TemplateSystemPromptDeps {
-  /** Live reader for the active template owned by main.js. */
+  /** Live reader for the active template owned by application bootstrap. */
   getActiveTemplate: () => ActiveTemplate | null | undefined;
 }
 
 let activeTemplateReader: () => ActiveTemplate | null | undefined = () => null;
 
-/** Provide the active-template reader owned by main.js. */
+/** Provide the active-template reader owned by application bootstrap. */
 export function configureTemplateSystemPrompt(deps: TemplateSystemPromptDeps): void {
   activeTemplateReader = deps.getActiveTemplate;
 }

@@ -175,7 +175,7 @@ export function createFinishLifecycle(
     const visibleFinal = renderResult ? renderResult.visibleFinal : null;
     updateActiveBranchVariant(state, visibleFinal);
 
-    /* P_stream-finish-paint — the settled snapshot reaches React as a
+    /* the settled snapshot reaches React as a
        microtask after this task, so any synchronous work left here delays
        the final frame and the finished answer visibly hangs for a beat.
        Bookkeeping that nothing on screen depends on (the local transcript

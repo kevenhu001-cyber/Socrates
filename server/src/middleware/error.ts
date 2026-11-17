@@ -36,7 +36,7 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
   const fire = () => {
     timer = null;
     if (res.headersSent) {
-      /* P_sse_timeout_exempt — SSE responses (chat stream, execution
+      /* SSE responses (chat stream, execution
        * progress, status subscribe, …) are legitimately long-lived and
        * manage their own cancellation lifecycle. Chat keepalives keep the
        * socket warm during long reasoning pauses. Detect by Content-Type
@@ -54,7 +54,7 @@ export function timeoutMiddleware(req: Request, res: Response, next: NextFunctio
       }
       return;
     }
-    /* P_long-llm-override — non-streaming LLM routes (POST /api/chat,
+    /* non-streaming LLM routes (POST /api/chat,
      * minimax proxy, suggestions) await the upstream for as long as the
      * model thinks, so they opt out with `res.locals.timeoutMs = 0`
      * (no deadline) or extend it with a larger value. A route sets the

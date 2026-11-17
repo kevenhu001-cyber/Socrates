@@ -1,4 +1,4 @@
-/* ui/composerAnim.ts — extracted from main.js (B6 batch).
+/* ui/composerAnim.ts — extracted from legacy entry.
  * Mobile composer fr-interpolation feature detect. Zero-behavior-change lift.
  * Runs once on import (same position semantics as the inline block).
  */

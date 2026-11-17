@@ -243,14 +243,14 @@ export function renderStructureVisualization(
       };
     });
   }
-  /* P_viz-per-instance-marker — every rendered structure diagram
+  /* every rendered structure diagram
      used to define `<marker id="visual-arrow">` at the SVG root.
      When two diagrams render in the same DOM, the second's
      `marker-end="url(#visual-arrow)"` resolves to the FIRST
      diagram's marker (collision on the global id). Give each
      diagram a per-instance marker id, derived from a monotonically
      increasing counter so re-renders don't collide either. */
-  /* P_viz-svg-attrs — inline attributes guarantee the diagram renders
+  /* inline attributes guarantee the diagram renders
      correctly when exported as a standalone SVG (XMLSerializer) where
      the page's CSS classes are unavailable. text-anchor/dominant-baseline
      center labels inside nodes regardless of external styles. */

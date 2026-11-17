@@ -59,14 +59,14 @@ function api(path: string, options?: undefined) {
   return apiFetch(path, options);
 }
 
-/* P_perf-local-icons — connector brand marks used to load from
+/* connector brand marks used to load from
    icon.horse / simpleicons / raw.githubusercontent.com, which can hang
    on mobile networks (especially in CN) and stall page switches. All
    connectors now render bundled local SVG marks (see
    src/connector-icons.ts) or a monogram fallback. Unknown ids still
    fall back to a two-letter monogram so new connectors degrade
    gracefully.
-   P_perf-icons-lazy — the icon pack inlines ~110 raw SVGs (~295KB)
+   the icon pack inlines ~110 raw SVGs (~295KB)
    that no first-paint surface needs; it lazy-loads on first icon
    request (slash palette / connectors / workspace rows) and the
    hydrate pass swaps pending monograms for real marks. */
@@ -157,7 +157,7 @@ if (typeof window !== 'undefined') {
    language directive into the input; the model then auto-calls the
    tool via tool_choice:'auto'. Connectors without a callable tool
    (feishu/onedrive/outlook/baidu-netdisk/qq-mail/arxiv) are omitted.
-   P_slash-no-arxiv — arxiv_search was removed from the slash palette
+   arxiv_search was removed from the slash palette
    per product request. The connector itself, the in-workspace
    "Search arXiv" dialog, and the underlying tool registration stay
    intact — users can still find arxiv via the Connectors panel. */

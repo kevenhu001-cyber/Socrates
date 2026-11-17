@@ -7,7 +7,7 @@
 // parity/composer-unified.css animates them. Only transform/opacity move, so
 // the button's measured box never changes.
 //
-// P_composer-primary-split dropped the voice leg of the sequence: the idle
+//  dropped the voice leg of the sequence: the idle
 // glyph is the arrow, so the morph is arrow → stop.
 
 import { useSendGlyphStore } from './sendGlyph.store.ts';

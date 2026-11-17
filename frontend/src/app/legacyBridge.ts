@@ -1,8 +1,8 @@
 import { updateSessionMetadata } from '../session/rowActions.ts';
-/* app/legacyBridge.ts — extracted from main.js (B6 batch).
+/* app/legacyBridge.ts — extracted from legacy entry.
  * Legacy window bridges (window.X = X for inline handlers / cross-module
  * callers) + the typed window.__socratesLegacy gateway for React.
- * Zero-behavior-change lift. Imported once by main.js for side effects;
+ * Zero-behavior-change lift. Imported once by app entry for side effects;
  * all entries resolve to direct imports (no window-read ordering hazards
  * except the documented optional surfaces that remain window.* reads).
  */
@@ -291,7 +291,7 @@ browserWindow.__socratesLegacy = {
     reclaimVizCards,
     processPendingVizActions,
     wireCodeBlockHeaders,
-    /* P_declarative-tool-run — chart specs are normalized from toolCalls[];
+    /* chart specs are normalized from toolCalls[];
        the React attachment owns the renderer host and its effect lifecycle. */
     mountVisualization: function (spec, host, options) {
       return typeof mountVisualization === 'function'
@@ -309,7 +309,7 @@ browserWindow.__socratesLegacy = {
       if (typeof disposeVisualization === 'function') disposeVisualization(card);
     },
   },
-  /* P_declarative-tool-run — markdown rendering stays in legacy (it owns the
+  /* markdown rendering stays in legacy (it owns the
      viz/mermaid placeholder registration that postRender fills in), but the
      tool rows no longer do: react/tool-run renders those from toolCalls[].
      AssistantTurn calls renderAssistantHTML per prose segment, so the answer
@@ -318,13 +318,13 @@ browserWindow.__socratesLegacy = {
     renderAssistantHTML: function (rawText) {
       return renderAssistantHTML(rawText);
     },
-    /* P_tool-live-turn — the streaming-safe renderer, same one the old
+    /* the streaming-safe renderer, same one the old
        imperative doRender painted with. formatMsg assumes closed pairs, so
        feeding it a half-arrived `$$…$$` or an open fence leaks raw LaTeX into
        the bubble; this preprocessor tolerates partial input. AssistantTurn
        keeps this renderer for the lifetime of a streamed turn, including finish. */
     renderAssistantProgressive: function (rawText, opts) {
-      /* P_strip-citations — same body contract as renderAssistantHTML, so a
+      /* same body contract as renderAssistantHTML, so a
          marker never flashes in the live tail and then vanishes at finish.
          `opts.complete` marks text that can no longer grow (a settled
          block): it renders exactly as renderAssistantHTML will at finish. */

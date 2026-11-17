@@ -1,4 +1,4 @@
-/* ui/dangerConfirms.ts — Wave 2 of main-js-split plan.
+/* ui/dangerConfirms.ts
  * Three "are you sure?" confirm actions reachable from the profile modal:
  * - confirmClearCache:    wipe local session cache, hard reload
  * - confirmClearSettings: delete every non-built-in API provider + local storage

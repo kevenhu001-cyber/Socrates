@@ -47,7 +47,7 @@ router.post(
   audit('chat:sync'),
   async (req, res, next) => {
     try {
-      /* P_long-llm-override — this non-streaming call waits for the upstream
+      /* this non-streaming call waits for the upstream
        * model for as long as it needs to think. `timeoutMs = 0` opts out of
        * the global request deadline entirely (see timeoutMiddleware); the
        * client applies no deadline of its own either. */
@@ -69,7 +69,7 @@ router.post(
         apiKey: provider.keyPlaintext!,
         model: provider.model,
         userId: req.userId,
-        /* P_provider-capability-override — the operator's own statement
+        /* the operator's own statement
          * about their endpoint wins over the registry's host heuristic. */
         instantEncoding: provider.instantEncoding ?? null,
         messages: finalMessages,
@@ -100,7 +100,7 @@ router.post(
       }
 
       const content = completion.content || '';
-      /* P_chat-response-compat — /api/chat is our compact `{content}` API,
+      /* /api/chat is our compact `{content}` API,
        while older auxiliary clients and title/search helpers used the
        OpenAI `choices[0].message.content` shape. Return both views during
        the migration so a stale bundle cannot silently discard a successful

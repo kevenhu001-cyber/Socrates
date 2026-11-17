@@ -1,8 +1,6 @@
-/* chat/messages.js — extracted from main.js (B4/B5 batch).
- * Authoritative message append path. Zero-behavior-change lift.
- * Main.js-local side effects (renderAssistantHTML, saveCurrentSession)
- * resolve via window.* at call time to
- * avoid circular imports.
+/**
+ * Authoritative message append path for the chat session.
+ * Manages message normalization, scaffold HTML rendering, and store commit.
  */
 import {
   dispatchBatch,
@@ -18,6 +16,7 @@ import { hideNewReplyPill } from '../ui/scrollPill.ts';
 import { publishReactChatRuntime } from '../ui/reactBridge.ts';
 import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
+import { buildAssistantHtml } from '../render/assistantHtml.ts';
 import { stripCitationMarkers } from '../render/text.ts';
 import { getActiveProvider } from '../config/providerConfig.service.ts';
 import { generateId } from '../util/ids.ts';
@@ -26,11 +25,11 @@ import { clearTurnViewportOwner } from './turn/anchor/ownership.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 function _renderAssistantHtml(text: string): string {
-  const shell = window as { renderAssistantHTML?: (t: string) => string };
-  if (typeof window !== 'undefined' && typeof shell.renderAssistantHTML === 'function') {
-    return shell.renderAssistantHTML(text);
+  try {
+    return buildAssistantHtml(text);
+  } catch {
+    return formatMsg(text);
   }
-  return formatMsg(text);
 }
 
 /** The in-memory message entry pushed into the store. */
@@ -167,7 +166,7 @@ export function addMessage(
      is just a downstream view. */
   const clientId = 'msg-' + generateId();
   const entry = createMessageEntry(role, text, type, actions, attachmentsArg, clientId);
-  /* P_send-batch-actions — append the message and update scroll intent in
+  /* append the message and update scroll intent in
      one notification walk. Knowledge confidence is deliberately not inferred
      from the fact that a user sent a message. */
   const batch = createMessageBatchActions(role, entry);

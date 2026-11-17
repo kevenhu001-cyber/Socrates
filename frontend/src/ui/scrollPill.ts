@@ -6,7 +6,7 @@
 // The module registers a single global `scroll` listener (capture
 // phase) that toggles `state._userScrolledAway` based on whether the
 // user is currently within `SCROLL_SLACK` of the bottom. This flag is
-// read by addStreamingMessage (in main.js) to decide whether to auto
+// read by addStreamingMessage (in app entry) to decide whether to auto
 // snap-to-bottom.
 import { scrollContainer, smoothScrollToBottom } from './scroll.ts';
 import { dispatchUi, uiStore } from '../store/index.ts';
@@ -68,7 +68,7 @@ export function wireScrollPill() {
     lastClientHeight = lastScroller.clientHeight;
   }
 
-  /* P_stream-scroll-intent — the scroll-position listener below cannot
+  /* the scroll-position listener below cannot
      tell an upward wheel flick from the layout growing underneath the
      reader: while an answer streams, doRender() snaps scrollTop to the
      bottom every ~50-120ms, so a wheel/touch scroll that begins inside
@@ -194,7 +194,7 @@ export function wireScrollPill() {
        guard, scrolling inside a <pre> code block or a viz iframe
        could set _userScrolledAway=true and break auto-scroll. */
       if (ev.target !== sc) return;
-      /* P_auto-scroll-respect — velocityScrollTo() tags the list with
+      /* velocityScrollTo() tags the list with
        `data-auto-scrolling="true"` while it programmatically
        scrolls. Any scroll event fired during that window is from
        our own interpolation, not the user; flipping

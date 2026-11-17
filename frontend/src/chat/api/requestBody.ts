@@ -70,7 +70,7 @@ function activeProviderCapabilities(): ProviderCapabilities | null {
 }
 
 function attachReasoningOptions(body: ChatRequestBody): void {
-  /* P_model-capability-registry — the browser expresses INTENT, never a
+  /* the browser expresses INTENT, never a
      provider parameter.
 
      "Instant" means "do not reason"; how that is encoded belongs to the

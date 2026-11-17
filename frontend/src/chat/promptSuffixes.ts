@@ -1,12 +1,12 @@
 /**
  * chat/promptSuffixes.ts — system-prompt suffix builders for chat turns.
  *
- * Extracted from main.js. These builders compose the client-side context
+ * extracted from legacy entry. These builders compose the client-side context
  * (saved memories, active project, tone voice, thinking policy) that is
  * appended to every chat / socratic system prompt before the server
  * applies its own system boundary.
  *
- * Only the server-memory cache lives in main.js, so the module takes a
+ * Only the server-memory cache lives in application bootstrap, so the module takes a
  * reader for it via configurePromptSuffixes(); everything else is
  * imported directly (appMode is a live binding in config/providers.js).
  */
@@ -25,7 +25,7 @@ export interface ActiveProjectInfo {
 }
 
 export interface PromptSuffixDeps {
-  /** Live reader for the server-memory cache owned by main.js. */
+  /** Live reader for the server-memory cache owned by application bootstrap. */
   getUserMemories: () => unknown;
 }
 
@@ -36,14 +36,14 @@ import { getCachedProjects } from '../projects/projectCache.ts';
 
 let userMemoriesReader: () => unknown = () => [];
 
-/** Provide the server-memory cache reader owned by main.js. */
+/** Provide the server-memory cache reader owned by application bootstrap. */
 export function configurePromptSuffixes(deps: PromptSuffixDeps): void {
   userMemoriesReader = deps.getUserMemories;
 }
 
 /**
  * Return a prefix with the user's saved memories for long-term context.
- * Memories are fetched from /api/memory and cached in main.js.
+ * Memories are fetched from /api/memory and cached in application state.
  */
 export function memoriesSuffix(): string {
   let s = '';

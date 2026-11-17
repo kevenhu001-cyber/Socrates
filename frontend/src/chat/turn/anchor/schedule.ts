@@ -393,7 +393,7 @@ export function scheduleActiveTurnToTop(
      task that mounts this one, so the two never fight over scrollTop. */
   releaseTurnViewportHold();
   let anchorMotionStarted = false;
-  /* P_send-ownership — take the transcript over in the same task as the
+  /* take the transcript over in the same task as the
      submit, not when the reserve finally paints a few frames later. In that
      gap a still-running content-follow (the previous answer streaming, a
      late image, a bottom glide from the keyboard) could otherwise write

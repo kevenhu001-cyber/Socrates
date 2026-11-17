@@ -56,7 +56,7 @@ async function publishServerConfig(configRequest: Promise<unknown>): Promise<voi
       if (typeof config.beagleModel === 'string') setBuiltInProviderModel(config.beagleModel);
       hasBuiltInKey = true;
     }
-    /* P_model-capability-registry — the built-in provider's capabilities no
+    /* the built-in provider's capabilities no
        longer come from a coarse boolean here. The server publishes what the
        active model supports alongside the provider list, and the browser
        needs that to know whether Instant is available at all. */

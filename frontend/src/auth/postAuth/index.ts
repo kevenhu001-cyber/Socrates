@@ -21,7 +21,7 @@ import { migrateLegacyStorage } from './migration.ts';
 import { renderRecents } from '../../ui/recentsView.ts';
 import { restoreComposerReloadDrafts } from '../../composer/reloadDrafts.ts';
 
-/** Legacy boot hooks still published on the window by main.js. */
+/** Legacy boot hooks still published on the window by app entry. */
 interface PostAuthLegacyWindow extends Window {
   refreshServerSessions?: () => Promise<unknown>;
   initialLoad?: () => void;

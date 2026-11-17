@@ -1,4 +1,4 @@
-/* ui/keyboardShortcuts.ts — extracted from main.js (B6 batch).
+/* ui/keyboardShortcuts.ts — extracted from legacy entry.
  * Global keyboard shortcut dispatchers (Ctrl+\, Cmd/Ctrl+K, full P5.6
  * shortcut table). Zero-behavior-change lift.
  * Cross-module actions resolve via direct imports where available,

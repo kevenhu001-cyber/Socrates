@@ -21,7 +21,7 @@ const DIAG_SYSTEM_PROMPT =
    2 Practical applications, 3 Common misconceptions, 4 Advanced).
    The descriptions are passed to the model so each call gets a
    fresh, non-overlapping angle.
-   P_cold-start-coverage — the five dimensions systematically cover:
+   the five dimensions systematically cover:
    0. Basic concepts (基础概念) — vocabulary, definitions, foundational terms
    1. Core principles (核心原理) — underlying mechanisms, derivations, why-it-works
    2. Application scenarios (应用场景) — concrete real-world cases, problem-solving
@@ -134,7 +134,7 @@ export async function generateDiagnosticQuestions(
   return all;
 }
 
-/* P_cold-start-coverage — generate topic-specific KB node names via LLM
+/* generate topic-specific KB node names via LLM
    so the knowledge dimensions are tailored to the subject rather than
    using generic placeholders. Called before diagnostic questions so
    the question generation can reference the same node names. Falls

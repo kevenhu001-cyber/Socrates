@@ -22,12 +22,12 @@ export const PHYSICS_MODELS = [
   },
   {
     id: 'wave-interference',
-    title: 'Wave interference',
+    title: '',
     assumption: 'Coherent cylindrical waves · smoothed source cores · illustrative 2D medium',
     equation: 'y = Σ A sin(kr − ωt + φ)/√r; k = 2π/λ',
     parameters: [
       parameter('wavelength', 'Wavelength', 'm', 0.4, 4, 0.05, 1.4),
-      parameter('speed', 'Wave speed', 'm/s', 0.2, 4, 0.1, 1),
+      parameter('speed', '', 'm/s', 0.2, 4, 0.1, 1),
       parameter('separation', 'Source separation', 'm', 0.4, 6, 0.1, 3),
       parameter('phase', 'Relative phase', '°', 0, 360, 5, 0),
     ],

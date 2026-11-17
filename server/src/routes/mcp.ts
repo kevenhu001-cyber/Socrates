@@ -1,5 +1,5 @@
 /**
- * P_mcp-discovery — Model Context Protocol server for Socrates.
+ * Model Context Protocol server for Socrates.
  *
  * Mounted at /api/mcp. Implements the Streamable HTTP transport specified
  * by the MCP protocol so chat tools (Claude, ChatGPT, Cursor, etc.) can

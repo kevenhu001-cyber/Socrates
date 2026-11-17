@@ -42,7 +42,7 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
 
   /* A status line never overwrites a failure or a retry notice, and the
      waiting dot gives up as soon as the turn has real content.
-     P_tool-order-defer — tool-running is busy too: while a tool row is
+     tool-running is busy too: while a tool row is
      deferred behind an unfinished paragraph, thinking/waiting stamps must
      not overwrite its line (the row itself isn't mounted yet, so this
      line is the only visible proof of work). */
@@ -65,7 +65,7 @@ export function createStatusChrome(state: TurnRuntimeState): StatusChrome {
        phase "thinking" on every chunk; the 1s elapsed tick would otherwise
        flip the label back to the waiting copy between deltas. One-way rule:
        waiting may not overwrite a thinking line — only content (append/tool
-       activity) retires it. (P_thinking-unified: all live phases share one
+       activity) retires it. (all live phases share one
        pill shape, so this is purely about label stability now, not layout.) */
     const _owner = liveMessage();
     const _prev = _owner && _owner._liveStatus;

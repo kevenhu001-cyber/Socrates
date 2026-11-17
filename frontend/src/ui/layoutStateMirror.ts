@@ -1,6 +1,6 @@
 /* ui/layoutStateMirror.ts — mirror a few shell visibility states onto <html>.
  *
- * Why this exists (P_has-invalidation)
+ * Why this exists ()
  * ------------------------------------
  * A handful of layout rules used ancestor-level :has() to react to shell
  * state, e.g.
@@ -80,7 +80,7 @@ export function syncLayoutStateMirror(doc?: Document | null) {
     els[m.id] = el;
     setFlag(root, m.attr, !!el && m.on(el));
   }
-  /* P_composer-single — the flag keeps its landing-only meaning: the
+  /* the flag keeps its landing-only meaning: the
      single shell sets it only while parked in the visible topic setup,
      so focusing the chat composer never trips landing rules. */
   const wrap = d.getElementById('composerInputWrap');

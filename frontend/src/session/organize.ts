@@ -1,4 +1,4 @@
-/* session/organize.ts — extracted from main.js (B6 batch).
+/* session/organize.ts — extracted from legacy entry.
  * Session tags, project cycling and context-menu actions.
  * Zero-behavior-change lift. Render surfaces resolve via window.*.
  */

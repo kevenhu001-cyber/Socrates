@@ -1,4 +1,4 @@
-/* tutor/socraticTurn.ts — extracted from main.js (B4 batch 2).
+/* tutor/socraticTurn.ts — extracted from legacy entry.
  * Socratic execution layer: non-stream/stream question generation,
  * explanation, and follow-up streaming. Zero-behavior-change lift.
  */
@@ -190,7 +190,7 @@ export async function generateFollowUpStream(
   return null;
 }
 
-/* Module-local bridges for main.js-owned turn surfaces. */
+/* Module-local bridges for app entrypoint-owned turn surfaces. */
 
 function _addStreamingMessage(opts: { onRetry: () => void }) {
   return addStreamingMessage(opts);

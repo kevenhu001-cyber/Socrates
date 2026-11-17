@@ -13,7 +13,7 @@ import { estimateTokens } from '../../../services/core/usageTracker.js';
 import type { ProviderMessage } from '../../../lib/providerMessageSchema.js';
 import { applyPolicyBlock, type PolicyBlock } from './prompts.js';
 
-/* P_rag-context — session-scoped RAG injection.
+/* session-scoped RAG injection.
  *
  * Query: the plain text of the LAST user message. Hits: the hybrid
  * BM25 + vector retrieval over the session's chunk index
@@ -125,7 +125,7 @@ export async function resolveRagContext(
   }
 }
 
-/* P_memory-context — server-side recall of the `memories` table.
+/* server-side recall of the `memories` table.
  *
  * The client already injects its local memory list via a system message,
  * but that path never reads the server table — so rows written by the

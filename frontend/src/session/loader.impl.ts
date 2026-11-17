@@ -1,8 +1,8 @@
-/* session/loader.ts — extracted from main.js (B2 batch).
+/* session/loader.ts — extracted from legacy entry.
  * Session loading (loadSession/loadExamSession) + transients + current-id.
- * Zero-behavior-change lift. Main.js-local list surfaces
+ * Zero-behavior-change lift. app-local list surfaces
  * (renderRecents, the recents reconciler) resolve via window.* at call time.
- * P_save-drain-removed: loadSession no longer waits on the save pipeline — the
+ * loadSession no longer waits on the save pipeline — the
  * save queue posts a self-contained snapshot (see session/saveState.ts).
  */
 import { afterSessionPaint } from './afterSessionPaint.ts';
@@ -216,7 +216,7 @@ export function resetSessionTransients(): void {
   /* F2a-ext — clear the active template so a slash-command template
      (/quiz, /summarize, etc.) from the previous session doesn't
      inject its systemPrompt into the new session's LLM call via
-     injectTemplateSystemPrompt (main.js:3910). The template is a
+     injectTemplateSystemPrompt (app entrypoint:3910). The template is a
      user-level tool, not a session-scoped state; resetting it on
      session switch prevents the #1 cross-session context leak. */
   try {

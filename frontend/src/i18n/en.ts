@@ -55,11 +55,11 @@ export const en = {
   'intui.physics.displacementTime': 'Displacement versus time',
   'intui.physics.angleTime': 'Angle versus time',
   'intui.physics.heightTime': 'Height versus time',
-  'intui.physics.wave-interference.title': 'Wave interference',
+  'intui.physics.wave-interference.title': '',
   'intui.physics.wave-interference.assumption':
     'Coherent cylindrical waves · smoothed source cores · illustrative 2D medium',
   'intui.physics.wave-interference.wavelength': 'Wavelength',
-  'intui.physics.wave-interference.speed': 'Wave speed',
+  'intui.physics.wave-interference.speed': '',
   'intui.physics.wave-interference.separation': 'Source separation',
   'intui.physics.wave-interference.phase': 'Relative phase',
   'intui.physics.electric-field.title': 'Electric field',
@@ -355,14 +355,14 @@ export const en = {
   'chat.history.loadFailed': 'Couldn’t load earlier messages. Scroll up to try again.',
   'chat.history.start': 'Beginning of conversation',
   'chat.send': 'Send',
-  /* P_composer-primary-split — the composer primary button is submit-only
+  /* the composer primary button is submit-only
    * and announces the live-turn action while a turn streams. */
   'chat.stop': 'Stop generating',
   'chat.followUp.example': 'Give a concrete example',
   'chat.followUp.deepen': 'Explain key concepts deeper',
   'chat.followUp.summary': 'Summarize key points',
   'chat.followUp.quiz': 'Quiz me on this',
-  /* P_attachments — UI strings for the chat-input attachment chip
+  /* UI strings for the chat-input attachment chip
    * strip, paperclip button, and toast feedback. Kept short so
    * the chips don't wrap. */
   'chat.attach': 'Attach files',
@@ -395,7 +395,7 @@ export const en = {
   'chat.attach.type.image': 'Image',
   'chat.attach.type.media': 'Media',
   'chat.attach.type.file': 'File',
-  /* P_attachments-multimodal — UI strings for the user-controlled
+  /* UI strings for the user-controlled
    * multimodal checkbox on the API key editor row (provider.*) and
    * the rejected-image toast in the chat composer (attach.*). The
    * checkbox label is consumed by data-i18n-key="provider.multimodal"
@@ -404,7 +404,7 @@ export const en = {
   'provider.multimodalHint': 'Allow image attachments to be sent to this model',
   'attach.notMultimodal':
     "The active model can't view images. Add a multimodal provider or remove image attachments.",
-  /* P_provider-capability-override — the per-provider statement of how
+  /* the per-provider statement of how
        the endpoint encodes "no thinking" (Instant). "Automatic" leaves the
        decision to the server's capability registry; the other values are
        the four encodings the server accepts. */
@@ -412,18 +412,18 @@ export const en = {
   'provider.instantEncodingAuto': 'Automatic',
   'provider.instantEncodingHint':
     'How this endpoint encodes “no thinking”. Leave on Automatic unless the model ignores Instant.',
-  /* P_lang-slogans — the topic-setup hero slogan was previously
+  /* the topic-setup hero slogan was previously
        pinned English in BOTH i18n blocks (with a comment claiming
        this was intentional). That made the Tutor-mode hero stay
        English even when the user switched the whole app to 中文,
        which read as broken localization rather than a design
        choice. Chat-mode slogans are translated (`topic.titleChat`),
        so for symmetry we now translate these too. The hero is
-       still managed by syncAppModeUI() in main.js — only the
+       still managed by syncAppModeUI() in app entry — only the
        zh-side strings change. */
   'topic.title': 'What would you like to explore?',
   'topic.subtitle': '',
-  /* P_cowork-landing — the landing composer opens the conversation, so it
+  /* the landing composer opens the conversation, so it
        asks a question. The "/" affordance is discoverable from the slash
        menu itself and no longer has to carry the empty state. */
   'topic.inputPlaceholder': 'Ask Socrates',
@@ -431,7 +431,7 @@ export const en = {
   'topic.hint': 'Be specific for better results',
   'topic.model': 'Model',
   'topic.extensions': 'Extensions',
-  /* P_chatgpt-landing — ChatGPT-style main page (2026-07-20) */
+  /* ChatGPT-style main page (2026-07-20) */
   'greeting.chat': "What's the plan for today?",
   'greeting.tutor': "Let's explore.",
   /* Rotating landing greeting — renderGreeting picks one entry per open. */
@@ -581,7 +581,7 @@ export const en = {
   'sidebar.plugins.uninstall': 'Uninstall',
   'sidebar.plugins.enabled': 'Enabled',
   'sidebar.plugins.disabled': 'Disabled',
-  /* P_composer-primary-split — voice.input retired with the primary's
+  /* voice.input retired with the primary's
        empty-state dictation. Dictation is announced by chrome.voiceInput on
        #composerMicBtn; the primary speaks chat.send / chat.stop. */
   'voice.listening': 'Listening…',
@@ -634,7 +634,7 @@ export const en = {
   'sidebar.recents': 'Recents',
   'sidebar.mistakes': 'Mistakes',
   'sidebar.searchPlaceholder': 'Search chats',
-  /* P_cowork-landing — the session list heading. Keep the visible label
+  /* the session list heading. Keep the visible label
        aligned with the panel's actual contents instead of calling chat
        history "Tasks". */
   'sidebar.recentSessions': 'Recents',
@@ -1365,7 +1365,7 @@ export const en = {
   'kb.yourNote': 'Your note',
   'kb.history': 'Snapshot history',
   'kb.noHistory': 'No snapshots yet.',
-  /* P_mistakes-i18n — mistakeBook.js (ui/) had the same gap as the
+  /* mistakeBook.js (ui/) had the same gap as the
    * knowledge detail panel: raw English literals plus the internal
    * mistake.type enum echoed straight into the card meta. The mistake
    * book is one of the four structural moat features, so it ships in
@@ -1575,7 +1575,7 @@ export const en = {
   'tool.actionRead': 'Reading files',
   'tool.actionWrite': 'Updating files',
   'tool.actionDefault': 'Using a tool',
-  /* P_search-status — inline completion labels shown in the thinking
+  /* inline completion labels shown in the thinking
        pill after a search tool_result lands (ChatGPT-style feedback). */
   'tool.searchDone': 'Found {n} web results',
   'tool.searchEmpty': 'No web results found',
@@ -1633,7 +1633,7 @@ export const en = {
   'tool.groupVisualDone': 'Created {m} visuals',
   'tool.groupDone': 'Used {m} tools',
   'tool.failedCount': '{n} failed',
-  /* P_declarative-tool-run — copy for react/tool-run. Every label carries an
+  /* copy for react/tool-run. Every label carries an
        object taken from the call's own arguments ("Read moe.py", "Searched
        \"…\""), because a bare verb ("Read files") made two different calls
        render identically and forced the reader to expand the row. `{}`
@@ -1671,7 +1671,7 @@ export const en = {
   'tool.readAttachment': 'Read attachment {file}',
   'tool.creatingChart': 'Creating {type}…',
   'tool.createdChart': 'Created {type}',
-  /* P_cowork-landing — clause set for a mixed tool run ("Ran 2 commands,
+  /* clause set for a mixed tool run ("Ran 2 commands,
        read 4 files, edited a file"). A run that touches more than one kind of
        work used to collapse to a bare "Explored", which named nothing the
        reader could act on. Each bucket owns its verb so the clause list also
@@ -1701,7 +1701,7 @@ export const en = {
   'tool.showAll': 'Show all ({n} chars)',
   'tool.showLess': 'Show less',
   'tool.copy': 'Copy',
-  /* P_viz-actions — native visualization card action buttons.
+  /* native visualization card action buttons.
        Previously hardcoded Chinese in render/visualization.js —
        these keys localize the four actions plus the fallback
        retry button. */

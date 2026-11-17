@@ -1,4 +1,4 @@
-/* render/katexRefresh.ts — extracted from main.js.
+/* render/katexRefresh.ts — extracted from legacy entry.
  * KaTeX-lazy re-render.
  * Zero-behavior-change lift.
  */

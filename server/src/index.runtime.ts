@@ -46,7 +46,7 @@ async function main() {
     );
   });
 
-  /* P_sse-nodelay — Node leaves Nagle's algorithm ON by default: small SSE
+  /* Node leaves Nagle's algorithm ON by default: small SSE
    * deltas (often 50–300 bytes) sit in the send buffer up to ~200 ms waiting
    * to coalesce with an ACK, so characters reach the browser in clumps
    * instead of flowing. Disable Nagle on every inbound socket. Bulk

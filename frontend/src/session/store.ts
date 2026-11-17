@@ -53,7 +53,7 @@ export function setChatIdInURL(id: string | null): void {
   history.replaceState({ chatId: id }, '', id ? '/?chat=' + encodeURIComponent(id) : base);
 }
 
-/* P_url-single-write — clear BOTH the ?chat= and ?exam= route keys in one
+/* clear BOTH the ?chat= and ?exam= route keys in one
  * history.replaceState. The new-chat reset used to call setChatIdInURL(null)
  * and then setExamIdInURL(null) back to back; both resolve to the same
  * `base` URL (no query string at all), so the second call re-wrote an
@@ -70,7 +70,7 @@ export function pushChatIdToURL(id: string | null): void {
   history.pushState({ chatId: id }, '', id ? '/?chat=' + encodeURIComponent(id) : base);
 }
 
-/* P_exam-route — exam sessions live under ?exam=<uuid> instead of ?chat=<uuid>.
+/* exam sessions live under ?exam=<uuid> instead of ?chat=<uuid>.
  * Same URL-key shape (uuid) so refresh / shared link round-trips through the
  * same /api/sessions/<id> endpoint; only the query-param name differs so a
  * pasted chat link doesn't accidentally route into an exam view (and vice

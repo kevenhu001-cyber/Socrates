@@ -122,7 +122,7 @@ export interface ChatStreamPipelineContext {
   /** Server-local milestones, starting before route authentication. */
   timing?: import('../../../lib/chatTiming.js').ChatTiming;
   /**
-   * P_prep-parallel — the tool context promise started by the route
+   * the tool context promise started by the route
    * shell alongside ownership/turn/prep, so the connector snapshot
    * reads overlap the RAG embedding round-trip instead of queueing
    * behind the whole prelude. The pipeline awaits it before the first
@@ -134,7 +134,7 @@ export interface ChatStreamPipelineContext {
    */
   toolCtxPromise?: Promise<import('./toolContext.js').StreamToolContext>;
   /**
-   * P_ttfb-prime-first — set when the route shell has already
+   * set when the route shell has already
    * written the SSE status line + headers + 32 KB prime comment
    * (helpers.writeSsePrime) before awaiting ownership/prep. The
    * pipeline skips its own writeHead + SSE_PRIME write when this is

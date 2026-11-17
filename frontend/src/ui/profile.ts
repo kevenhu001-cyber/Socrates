@@ -1,6 +1,6 @@
-/* ui/profile.ts — Wave 2b of main-js-split plan.
+/* ui/profile.ts
  * Profile modal: user info, custom instructions, web search toggle.
- * Extracted from main.js: two non-contiguous blocks — sidebar user-state
+ * extracted from legacy entry: two non-contiguous blocks — sidebar user-state
  * publishing plus openProfile / closeProfile (L8992-L9057) and custom-instructions
  * / web-search helpers (L9895-L9979).
  *
@@ -88,7 +88,7 @@ function sidebarUserSnapshot(user: import('../app/lifecycle/index.ts').UserRecor
       tierLabel: 'Free',
       isSignedIn: false,
     };
-  /* P_cowork-landing — the footer row is ~150px wide once the avatar and
+  /* the footer row is ~150px wide once the avatar and
      the three icon buttons take their share, so a full address ellipsised
      to "jiache…" identified nobody. Fall back to the address's local part;
      the complete address stays visible in the profile modal. */

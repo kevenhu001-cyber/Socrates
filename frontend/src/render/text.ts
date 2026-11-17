@@ -44,7 +44,7 @@ export function stripTags(s: string): string {
   return stripHtmlTags(s);
 }
 
-/* P_strip-citations — remove [1] / [2,3] / [1][2][3] / 【1】 style web-search
+/* remove [1] / [2,3] / [1][2][3] / 【1】 style web-search
    citation markers from assistant prose.
  *
  * The system prompt forbids these markers, but models add them anyway, and

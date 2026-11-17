@@ -84,7 +84,7 @@ async function executeChatStreamPipeline(
     reasoning_effort,
     responseSpeed,
   } = prep.payload;
-  /* P_prep-parallel — prefer the tool context the route shell started
+  /* prefer the tool context the route shell started
      alongside ownership/turn/prep; direct pipeline callers (tests) that
      did not supply one fall back to creating it here, giving up only
      the overlap. Either way it is awaited before the first hop, and a
@@ -118,7 +118,7 @@ async function executeChatStreamPipeline(
         { once: true },
       );
   }
-  /* P_turn-watchdog — the SSE route is exempt from the request timeout
+  /* the SSE route is exempt from the request timeout
      (a reasoning model may think for minutes), which also meant a turn
      that produced NOTHING had no server-side deadline: the request never
      finished, the turn row stayed `running`, and the user waited on a
@@ -128,7 +128,7 @@ async function executeChatStreamPipeline(
      is producing something is never cut off. */
   const watchdog = createTurnWatchdog(turnWatchdogLimits());
   const errorLocale = resolveErrorLocale(req.headers);
-  let streamCompleted = false; // P_streaming-survival — prevents close handler from overwriting cleared streaming_text
+  let streamCompleted = false; // prevents close handler from overwriting cleared streaming_text
   /* M1 async — when a turn is bound, socket close detaches the SSE feed
    * instead of cancelling the run: the upstream LLM keeps going, frames
    * keep landing in chat_turn_events, and the client re-attaches with
@@ -190,7 +190,7 @@ async function executeChatStreamPipeline(
     }
     unsubscribeTurn?.();
   };
-  /* P_turn-watchdog — the interval only flips the abort signal; the
+  /* the interval only flips the abort signal; the
      upstream call then fails on its own and the normal error path writes
      the error frame. `unref` keeps the timer from holding the process
      open if the pipeline unwinds early. */
@@ -224,7 +224,7 @@ async function executeChatStreamPipeline(
     if (!abortController.signal.aborted) {
       abortController.abort('client_disconnected');
     }
-    // P_streaming-survival — save partial content when client
+    // save partial content when client
     // disconnects mid-stream so a reload can resume / retry.
     // Only save if the stream did NOT complete normally (the
     // normal completion path clears streaming_text itself).
@@ -337,7 +337,7 @@ async function executeChatStreamPipeline(
       abortController.signal.aborted ? 'stopped' : 'failed',
       Date.now() - activityStartedAt,
     );
-    /* P_turn-watchdog — when the watchdog aborted the turn, the upstream
+    /* when the watchdog aborted the turn, the upstream
        surfaces a bare AbortError. Replace it with the explicit timeout so
        the client sees WHY the turn ended and can decide to retry. */
     const expiry = watchdogExpiryFromReason(abortController.signal.reason);
@@ -347,7 +347,7 @@ async function executeChatStreamPipeline(
   const emitEvent = emitter.event.bind(emitter);
   emitter.event = (name, data) => {
     emitEvent(name, data);
-    /* P_turn-watchdog — a tool event is progress: the turn is doing
+    /* a tool event is progress: the turn is doing
      * something, so the idle budget must not fire while it works. */
     if (name === 'tool_use' || name === 'tool_result') watchdog.touch();
     if (name === 'tool_use') {

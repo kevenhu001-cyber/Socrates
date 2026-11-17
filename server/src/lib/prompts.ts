@@ -24,7 +24,7 @@ const REPO_ROOT = path.dirname(SERVER_ROOT);
 
 const BEAGLE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/beagle.md');
 const TEACHER_MODE_PROMPT_PATH = path.resolve(REPO_ROOT, 'prompts/teacher-mode.md');
-/* P_code-interpreter-prompt — the routing/when-NOT-to-call guidance
+/* the routing/when-NOT-to-call guidance
  * for code_interpreter. The tool's own `description` field already
  * covers the runnable-Python rules (no top-level await, etc.) — the
  * markdown file complements that with the dispatch logic the model

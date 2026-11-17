@@ -55,7 +55,7 @@ export function requestBodyVariants(opts: ChatCompletionRequestOptions, stream: 
     ...(response_speed === 'fast' ? { service_tier: 'priority' } : {}),
     ...(extra_body ? { ...extra_body } : {}),
   } as Record<string, unknown>;
-  /* P_model-capability-registry — every provider-specific decision below is
+  /* every provider-specific decision below is
      read from the declared capabilities of THIS model (lib/modelCapabilities.ts),
      not from a brand substring. A model the registry does not know gets the
      OpenAI-standard body and nothing vendor-specific. */

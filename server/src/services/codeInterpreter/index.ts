@@ -90,7 +90,7 @@ export const codeInterpreter = {
     sessionExecutionLock,
   },
 
-  /* P_session-scoped-scratch — delete the session's scratch dir
+  /* delete the session's scratch dir
      when the conversation is deleted. Best-effort: filesystem may
      already be gone (TTL sweep, server crash, etc.). Safe to call
      repeatedly. */

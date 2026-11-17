@@ -63,7 +63,7 @@ let pendingDelta: Extract<ChatRuntimeEvent, { type: 'stream-delta' }> | null = n
 /* Tool state can change on more than one message at a time (a retry while a
    new turn streams), so the coalesced set is keyed by message id. */
 let pendingToolRuns: Set<string> | null = null;
-/* P_bridge-coalesce-lifecycle — `message-added` and `stream-started` arrive
+/* `message-added` and `stream-started` arrive
    back-to-back on the click frame from chat/messages.js + chat/turn/streaming.ts.
    The synchronous `commit()` pair used to fire two `Object.freeze` walks over
    the message list and two listener notifications back-to-back. Queue them
@@ -98,7 +98,7 @@ let pendingLifecycleSeq = 0;
 let pendingToolRunsSeq = 0;
 let eventSeq = 0;
 let pendingDeltaFrame = 0;
-/* P_stream-paint-cadence — deltas used to commit once per rAF (up to 60
+/* deltas used to commit once per rAF (up to 60
    repaints/sec), which made the adaptive getStreamRenderInterval() cadence
    dead code: it paced the state mirror but not the paint path. Each commit
    re-parses the markdown tail, so at 60fps the main thread can lose too much

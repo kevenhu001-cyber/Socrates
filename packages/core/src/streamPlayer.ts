@@ -12,7 +12,7 @@
  *
  * `playedLen` chases `totalLen` at an adaptive characters-per-second rate.
  *
- * P_udp-smoothing — the original cadence derived the rate from buffer DEPTH
+ * the original cadence derived the rate from buffer DEPTH
  * alone (`computeCps(pending)`). Depth is a lagging, indirect proxy for
  * upstream speed: a provider stall drains the buffer, which pinned the rate
  * at `baseCps`; the next burst refilled it past `catchUpPending` and slammed
@@ -70,7 +70,7 @@ export interface PlaybackConfig {
 }
 
 export const DEFAULT_PLAYBACK_CONFIG: PlaybackConfig = {
-  /* P_udp-smoothing — the visual rate now follows the SMOOTHED upstream
+  /* the visual rate now follows the SMOOTHED upstream
      arrival rate rather than raw buffer depth. `baseCps` / `maxCps` bound the
      smoothed rate so a fast provider still reveals at a readable, human
      cadence and a slow one can never crawl below the floor. Buffer depth
@@ -144,7 +144,7 @@ function clampConfig(config: Partial<PlaybackConfig> | undefined): PlaybackConfi
 }
 
 /**
- * P_udp-smoothing — the reveal rate is now driven primarily by the SMOOTHED
+ * the reveal rate is now driven primarily by the SMOOTHED
  * upstream arrival rate, with buffer depth kept as a secondary catch-up term.
  *
  * Two terms, both bounded by [baseCps, maxCps]:
@@ -195,7 +195,7 @@ export function createPlaybackClock(config?: Partial<PlaybackConfig>, startMs = 
   let lastActiveMs = startMs;
   let draining = false;
   let started = false;
-  /* P_udp-smoothing — low-pass filter over the upstream ARRIVAL rate.
+  /* low-pass filter over the upstream ARRIVAL rate.
      `smoothedArrivalCps` stays null until the first valid sample so the
      opening frame keeps the historical buffer-depth cadence. */
   let smoothedArrivalCps: number | null = null;

@@ -149,7 +149,7 @@ export async function prepareChatRequest(
     ragBlock?.prompt ?? null,
     learningTurn,
   );
-  /* P_server-policy-refresh — the session prompt snapshot freezes turn 1's
+  /* the session prompt snapshot freezes turn 1's
      system prefix, so two things must not stay frozen inside it:
        - the server policy. A fix published today has to reach the sessions
          that were created before it, so the policy region is replaced with
@@ -177,7 +177,7 @@ export async function prepareChatRequest(
   // regenerate or compress away the frozen system prefix. Include its real
   // size rather than later client-supplied system messages that we ignore.
   try {
-    /* P_model-capability-registry — the conversation budget follows the
+    /* the conversation budget follows the
        window of the model that will actually serve this turn. It used to be
        one global constant (100 000 tokens) for every model, which is wrong
        in both directions: a 1M-token model was compressed far too early (and
@@ -253,7 +253,7 @@ export async function prepareChatRequest(
 
   const safeExtraBody = sanitizeExtraBody(extra_body);
 
-  // Started alongside the context lookups above (P_prep-parallel).
+  // Started alongside the context lookups above ().
   const provider = await providerPromise;
   if (!provider) {
     throw new ApiError(503, 'NO_PROVIDER', 'No active LLM provider configured');
@@ -280,7 +280,7 @@ export async function prepareChatRequest(
     if (limitErr) {
       throw new ApiError(429, 'MONTHLY_LIMIT', limitErr.message, undefined, false);
     }
-    /* P_provider-identity-not-session-state — the built-in provider identity is
+    /* the built-in provider identity is
        resolved per request against the provider that will actually serve this
        turn. It is deliberately NOT part of the shared session prompt snapshot:
        the next turn of this session may be served by a user-configured
@@ -295,7 +295,7 @@ export async function prepareChatRequest(
     };
   }
 
-  /* P_attachments-multimodal — frontend upload validation is the fast path,
+  /* frontend upload validation is the fast path,
      but the server must close the trust gap for stale clients, direct API
      callers, and a model switch while an image is being prepared. Reject
      before token estimation or an upstream request so the response is an

@@ -1,6 +1,6 @@
 /* session/serverCache.ts — centralized server session list cache.
- * Extracted from main.js module-level vars to enable safe loader/recents
- * extraction. Single mutable container shared by main.js and new modules.
+ * extracted from legacy entry module-level vars to enable safe loader/recents
+ * extraction. Single mutable container shared by app entry and new modules.
  * Preserves the window.SERVER_SESSIONS getter/setter contract (capSessions
  * on set) and the read-only window.SERVER_SESSIONS_FETCH_FAILED getter.
  * Zero-behavior-change.

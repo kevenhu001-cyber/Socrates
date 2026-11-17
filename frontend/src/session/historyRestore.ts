@@ -219,7 +219,7 @@ export function restoreSessionMessage(m: PersistedMessage): RestoredMessage {
     /* The API uses the camelCase schema key. Keep the snake_case fallback
        for any legacy payloads. */
     ...reasoning,
-    /* P_turn-summary — carry the persisted retrospective so the Summary
+    /* carry the persisted retrospective so the Summary
        sheet reads the same after a reload as it did live. */
     summary: m.summary || null,
     turnRuntime: normalizeTurnRuntime(m.turnRuntime),

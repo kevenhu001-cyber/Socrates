@@ -16,14 +16,14 @@ const MOBILE_CREDENTIAL_PATHS = new Set([
   '/api/auth/mobile/oauth/exchange',
 ]);
 
-/* P_mcp-discovery — Model Context Protocol clients are not browsers. They
+/* Model Context Protocol clients are not browsers. They
  * speak JSON-RPC 2.0 over Streamable HTTP, they authenticate out of band
  * (or not at all on the discovery surface we expose here), and they have
  * no business carrying an ambient sid cookie. Skip the double-submit
  * check so a stray csrf cookie cannot turn their POST into a 403. */
 const MCP_PATHS = new Set(['/api/mcp', '/api/mcp/', '/api/mcp/docs', '/api/mcp/docs/']);
 
-/* P_oauth-token-endpoints — RFC 6749 §4.1.3 token / §2.1 revoke requests
+/* RFC 6749 §4.1.3 token / §2.1 revoke requests
  * authenticate with client_secret (Basic or POST body) and carry no ambient
  * sid cookie. The double-submit check would only see a stale browser csrf
  * cookie and 403 a perfectly authenticated non-browser client.
@@ -46,7 +46,7 @@ const OAUTH_TOKEN_PATHS = new Set([
   '/api/oauth/revoke/',
 ]);
 
-/* P_admin-auth — the operator login/logout endpoints authenticate with
+/* the operator login/logout endpoints authenticate with
  * an explicit body credential (ADMIN_PASSWORD) and never read an
  * ambient browser cookie as authority, so the double-submit check
  * adds no protection here — it only 403s a legitimate operator whose

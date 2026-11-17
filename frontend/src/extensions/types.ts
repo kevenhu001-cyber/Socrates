@@ -119,7 +119,7 @@ export interface ExtensionDefinition {
   // ── template kind only ──
   systemPrompt?: string;
   body?: string;
-  // ── activation/deactivation side-effects (replaces main.js EXTENSION_SIDE_EFFECTS) ──
+  // ── activation/deactivation side-effects (replaces app entrypoint EXTENSION_SIDE_EFFECTS) ──
   onActivate?: (ctx: ExtensionContext) => void;
   onDeactivate?: (ctx: ExtensionContext) => void;
   // ── behavior switches ──

@@ -73,7 +73,7 @@ function chatLimitForTier(tier?: string | null): number {
   return CHAT_BASE_LIMIT * mult;
 }
 
-/* P_tutor-pool — Tutor mode is an iterative, Socratic back-and-forth:
+/* Tutor mode is an iterative, Socratic back-and-forth:
    a single session fires multiple backend POSTs per turn (initial /
    background web-search refresh / judge round / retry), and a 30-min
    tutoring session can easily burn 100+ requests. Sharing the chat
@@ -92,7 +92,7 @@ function tutorLimitForTier(tier?: string | null): number {
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  /* P_auth-rate-limit — Key on email + IP. The previous build keyed
+  /* Key on email + IP. The previous build keyed
      solely on IP, which a distributed attacker could trivially bypass
      by rotating IPs. Combining the (normalised, lower-cased) email
      with the IP means a single attacker still has to wait 15 minutes
@@ -110,7 +110,7 @@ export const authLimiter = rateLimit({
    5 per email+IP per hour
    makes a remote brute force infeasible.
 
-   P_rate-limit-key-cardinality — M4 audit fix. The previous key
+   M4 audit fix. The previous key
    included the raw `code` field, which has near-unique entropy per
    request: every wrong code produced a brand-new bucket, so the
    limiter never tripped. Key on email + IP only. */
@@ -127,7 +127,7 @@ export const codeLoginLimiter = rateLimit({
    (~256 bits) — cryptographically strong, not brute-forceable — so
    the limiter's job here is anti-abuse, not anti-brute-force.
 
-   P_rate-limit-key-cardinality — M4 audit fix. The previous key
+   M4 audit fix. The previous key
    included the raw `token` field; a real attacker with a valid
    token (e.g. one captured in email logs) would bypass the limiter
    entirely, while a phisher trying a single bad token would get a
@@ -156,7 +156,7 @@ export const chatLimiter = rateLimit({
   handler: chatRateLimitHandler,
 });
 
-/* P_tutor-pool — separate bucket for Tutor mode. Same window /
+/* separate bucket for Tutor mode. Same window /
    handler as chatLimiter but distinct key namespace (`tutor:<id>`)
    so chat and tutor budgets don't interfere, and a higher base cap.
    Mounted only on tutor requests via `pickChatLimiterFor(req)` in
@@ -259,7 +259,7 @@ export const uploadLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Upload rate limit exceeded.'),
 });
 
-/* P_vision-limit — /api/vision/describe costs a 150-300 ms mmx CLI
+/* /api/vision/describe costs a 150-300 ms mmx CLI
    spawn + an upstream vision quota unit per call. Authenticated
    users could otherwise burn through the shared MiniMax vision
    quota by uploading many images, which would NOT count against
@@ -289,7 +289,7 @@ export const clientErrorLimiter = rateLimit({
   message: jsonLimit('TOO_MANY_REQUESTS', 'Too many error reports.'),
 });
 
-/* P_rate-limit-headers — default bucket for every /api request. The
+/* default bucket for every /api request. The
  * per-endpoint limiters above stay the real abuse controls; this one exists
  * so EVERY API response advertises standard RateLimit-Limit/-Remaining/
  * -Reset headers (RFC draft-7) and agents can self-throttle without
@@ -340,7 +340,7 @@ export const oauthRegisterLimiter = rateLimit({
  * atomic code consumption) with no cap at all.
  *
  * Keyed on IP only. Keying on client_id would hand an attacker a fresh
- * bucket per attempt — the same P_rate-limit-key-cardinality mistake
+ * bucket per attempt — the same  mistake
  * the code/token limiters above were corrected for.
  *
  * 60 / 15min / IP is generous for real refresh traffic (~4/min) while

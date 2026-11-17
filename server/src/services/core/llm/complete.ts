@@ -29,7 +29,7 @@ export async function callChatCompletion(opts: ChatCompletionRequestOptions) {
   let successfulVariant: (typeof variants)[number] | null = null;
   for (let variantIndex = 0; variantIndex < variants.length; variantIndex++) {
     const variant = variants[variantIndex];
-    /* P_rpm-backoff — this path had no retry at all, so a single transient
+    /* this path had no retry at all, so a single transient
        429 failed the whole call. That matters because it is not only the
        user-facing completion: retrieval (queryExpander), history
        compression and the turn summary all come through here, once per

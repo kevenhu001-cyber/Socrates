@@ -1,6 +1,6 @@
-/* app/widgetSetup.ts — extracted from main.js (B6 batch).
+/* app/widgetSetup.ts — extracted from legacy entry.
  * Widget/mistake-book runtime wiring. Zero-behavior-change lift.
- * Called once from main.js at the original position to preserve eval order.
+ * Called once from app entry at the original position to preserve eval order.
  */
 import { dispatchKb, dispatchSession, kbStore, sessionStore } from '../store/index.ts';
 import { apiFetch } from '../util/api/index.ts';
@@ -82,7 +82,7 @@ export function getMistakeBookUI() {
 
 export function installWidgetRuntime() {
   /* Legacy widget mounts removed: render/widgets.ts owns mounting via scheduleWidgetMounts. */
-  /* P_main-split - Wave 2: mistake-book runtime extracted. */
+  /* mistake-book runtime extracted. */
   configureWidgetRuntimeEarly({
     formatMsg: formatMsg,
     t: t,

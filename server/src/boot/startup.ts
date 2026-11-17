@@ -116,7 +116,7 @@ function warmPyodidePool(): void {
 }
 
 /** TTL sweep for stale session scratch dirs.
- * P_session-scoped-scratch — every code execution in a
+ * every code execution in a
  * conversation reuses the same on-disk scratch dir so files
  * (matplotlib PNGs, CSVs) persist between turns. When a session
  * is deleted, the DELETE handler reaps the dir; this sweep

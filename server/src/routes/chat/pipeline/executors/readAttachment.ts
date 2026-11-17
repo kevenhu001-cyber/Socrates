@@ -2,7 +2,7 @@
  * read_attachment executor.
  *
  * Lets the model actively read a file the user attached to the
- * conversation (P_file-attachments). The user message carries
+ * conversation (). The user message carries
  * `[Attached file: "name" (mime, size) — fileId: <uuid>]` pointers; this
  * executor resolves that id against the caller's own uploads (ownership
  * enforced inside attachmentReader) and returns one page of extracted

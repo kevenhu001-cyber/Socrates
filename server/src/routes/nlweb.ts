@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 
 /**
- * P_nlweb — Microsoft NLWeb-conformant natural-language query surface.
+ * Microsoft NLWeb-conformant natural-language query surface.
  *
  *   POST /api/nlweb/ask      { query, prefer?: { streaming?: boolean } }
  *   GET  /api/nlweb/ask?q=…

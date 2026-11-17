@@ -32,7 +32,7 @@ export const writeExtension: ExtensionDefinition = {
   systemPrompt: WRITE_EDIT_SYSTEM_PROMPT,
   body: '',
   autoFocus: true,
-  /* P_canvas-mode — the write extension renders its assistant reply inside
+  /* the write extension renders its assistant reply inside
      a ChatGPT-style editable .canvas-block. WRITE_EDIT_SYSTEM_PROMPT is
      unchanged; only the output rendering path differs. autoLaunch:false
      keeps the input bar visible between turns so the user can iterate. */

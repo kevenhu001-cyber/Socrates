@@ -200,7 +200,7 @@ async function mountPlotly(
   stage: HTMLElement,
   helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
 ) {
-  /* P_perf-self-host — plotly UMD is copied as a static asset and
+  /* plotly UMD is copied as a static asset and
      injected only when a Plotly card mounts. */
   plotlyPromise ||= ensurePlotly().catch((error: unknown) => {
     plotlyPromise = null;
@@ -336,7 +336,7 @@ async function mountMermaid(
   spec: VizSpec,
   stage: HTMLElement,
 ): Promise<SpecializedVisualizationResult> {
-  /* P_perf-self-host — mermaid UMD is copied as a static asset and
+  /* mermaid UMD is copied as a static asset and
      injected only when a mermaid card mounts. */
   mermaidPromise ||= ensureMermaid().catch((error: unknown) => {
     mermaidPromise = null;
@@ -594,7 +594,7 @@ function loadGeoGebra(): Promise<GeoGebraAppletConstructor> {
     };
     document.head.appendChild(script);
   }).catch((error) => {
-    /* P_viz-geogebra-retry — a failed CDN load used to poison this cache
+    /* a failed CDN load used to poison this cache
        forever (`||=` keeps the rejected promise), so the card's local Retry
        replayed the same rejection instead of re-requesting the script.
        Drop the cache so the next attempt starts a fresh load. */

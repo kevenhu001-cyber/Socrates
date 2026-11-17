@@ -311,7 +311,7 @@ let _poolInitLock: Promise<void> | null = null;
 /* A pool slot only prevents two calls from sharing one worker. This separate
  * lock protects the mutable scratch directory shared by one conversation. */
 export const sessionExecutionLock = createSessionExecutionLock();
-/* P_pool-retry — `_poolInitLock` was previously a Promise that, on
+/* `_poolInitLock` was previously a Promise that, on
    failure, was never cleared. Every subsequent getPool() call would
    await the same rejected promise and re-throw, permanently disabling
    the executor. We now wrap the IIFE in try/finally so a transient

@@ -18,7 +18,7 @@ import {
 import crypto from 'node:crypto';
 import authRouter from './routes/auth.js';
 import sessionRouter from './routes/sessions/index.js';
-/* P_suggestions-ai — landing-page starter prompts, derived from the
+/* landing-page starter prompts, derived from the
    user's recent sessions via the LLM. Mounted before /api/chat so its
    /api/suggestions/* paths are not claimed by the chat router. */
 import suggestionsRouter from './routes/suggestions.js';
@@ -87,7 +87,7 @@ const app = express();
  * after two hops — the left-most untrusted proxy entry is the real
  * client.
  *
- * P_trust-proxy-subnets — previously `2` (a numeric hop count). A
+ * previously `2` (a numeric hop count). A
  * numeric count is brittle: adding another CDN / WAF hop without
  * updating this number silently mis-attributes every IP, so all
  * rate-limits and audit lines start tracing back to a single
@@ -124,7 +124,7 @@ app.disable('x-powered-by');
 // script-src/style-src and fonts.googleapis.com / fonts.gstatic.com in
 // style-src/font-src, with a comment describing SRI-pinned CDN loads of
 // marked / katex / mermaid / highlight.js / fuse.js. That stopped being
-// true when P_perf-self-host moved every one of those to an npm import
+// true when  moved every one of those to an npm import
 // bundled by Vite — frontend/index.html now states outright that "nothing
 // on this page depends on fonts.googleapis.com or cdn.jsdelivr.net", and
 // mermaid / echarts / plotly are dynamic imports of vendored UMD files.
@@ -184,7 +184,7 @@ app.use(
         // is required for Vite HMR. Production emits NO inline scripts
         // (Vite bundles to /assets/index-*.js).
         //
-        // P_csp-dev-eval — previously this branch was gated on
+        // previously this branch was gated on
         // `process.env.NODE_ENV === 'production'`, which had two
         // failure modes:
         //   1. NODE_ENV unset → defaults to 'development' → unsafe-eval
@@ -307,7 +307,7 @@ app.use(function requestId(req, res, next) {
   next();
 });
 
-// P_cdn-bypass parity — the SPA prefixes every API call with /api/v2/
+//  parity — the SPA prefixes every API call with /api/v2/
 // (frontend/src/util/api.js) to skip stale CDN cache entries; production
 // nginx rewrites /api/v2/* → /api/* before proxying. Local dev (Vite
 // proxy or direct Express) has no nginx, so mirror that rewrite here.
@@ -340,7 +340,7 @@ app.post(
 );
 
 // Body parsing.
-// P_image-payload-alignment — the limit must fit a full chat payload with
+// the limit must fit a full chat payload with
 // multimodal content: up to 6 image attachments, each capped client-side to
 // a ~2,000,000-char base64 dataUrl (matching the Zod image_url/attachment
 // caps), plus conversation history. The previous 2mb limit rejected any
@@ -407,7 +407,7 @@ app.use(
   }),
 );
 
-/* P_client-error-severity — the SPA instruments ~480 deliberately-swallowed
+/* the SPA instruments ~480 deliberately-swallowed
  * catch sites (frontend/src/util/reportSwallow.ts). Almost every one is
  * documented best-effort/optional ("feature absent locally", "cleanup is
  * best-effort"), so logging them all at `console.error` made the real
@@ -448,7 +448,7 @@ app.use((req, _res, next) => {
    Routes
    ──────────────────────────── */
 
-/* P_cache-invalidation — set Cache-Control headers on EVERY API
+/* set Cache-Control headers on EVERY API
    response so CDN edge caches (e.g. Tencent EdgeOne) never serve
    stale user-specific data. Without this, a CDN may cache the
    response to /api/sessions and serve an empty "sessions:[]" to
@@ -462,7 +462,7 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-/* P_rate-limit-headers — default bucket so every /api response carries
+/* default bucket so every /api response carries
    RateLimit-* headers. Mounted before ALL other /api middleware and
    routers so no surface can end up outside the limiter; endpoint
    limiters (client-error, auth, chat, …) compose on top. The
@@ -505,7 +505,7 @@ app.use('/api/status', statusRouter);
 // so a fresh install can verify its same-origin API contract before login.
 app.use('/api/mobile', mobileRouter);
 
-// P_mcp-discovery — Model Context Protocol endpoint (Streamable HTTP).
+// Model Context Protocol endpoint (Streamable HTTP).
 // Public discovery surface; six read-only tools, no write capability. Mounted
 // alongside the other public routers so the CSRF middleware doesn't block
 // non-browser MCP clients. See server/src/middleware/csrf.ts#MCP_PATHS.
@@ -517,12 +517,12 @@ app.use('/api/mcp', mcpRouter);
 // screen enforces its own hidden-field double-submit inside the router.
 app.use('/api/oauth', oauthRouter);
 
-/* P_docs-mcp — the "learn" half of MCP coverage. Separate server instance
+/* the "learn" half of MCP coverage. Separate server instance
  * from the product surface at /api/mcp; tools answer documentation
  * questions only. */
 app.use('/api/mcp/docs', mcpDocsRouter);
 
-// P_nlweb — NLWeb-conformant natural-language query surface over Socrates'
+// NLWeb-conformant natural-language query surface over Socrates'
 // public corpus. /api/nlweb/ask + /stream, with the short /api/ask alias.
 app.use('/api/nlweb', nlwebRouter);
 app.use('/api', nlwebRouter);
@@ -567,7 +567,7 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
 // The raw key is NEVER sent to the client — the server proxies
 // all Beagle requests via /api/minimax/v1/chat/completions.
 //
-// P_privacy-leak — do NOT expose the real upstream model name
+// do NOT expose the real upstream model name
 // (e.g. "deepseek-v4-flash") here. "Beagle" is an alias; surfacing
 // the underlying model lets any unauthenticated visitor learn the
 // operator's LLM choice. The actual model is selected server-side
@@ -599,7 +599,7 @@ app.get('/api/config', async (_req, res) => {
   }
   res.json({
     hasBeagleKey,
-    /* P_privacy-leak — expose only a boolean capability hint, never the
+    /* expose only a boolean capability hint, never the
      * underlying model name. The SPA needs to know whether the built-in
      * provider is reasoning-capable so chat.js can set reasoning_effort
      * and pick longer stream timeouts; it doesn't need to know WHICH
@@ -615,14 +615,14 @@ app.use('/api/auth', authRouter);
 // Sessions (Phase 2)
 app.use('/api/sessions', sessionRouter);
 
-// P_suggestions-ai — three landing-page starter prompts generated by the
+// three landing-page starter prompts generated by the
 // built-in Beagle model from real history and preferences. Mounted before
 // /api/chat so its /api/suggestions/* paths are not claimed by that router.
 app.use('/api/suggestions', suggestionsRouter);
 app.use('/api/intelligent-ui', intelligentUiMediaRouter);
 app.use('/api/favicons', faviconRouter);
 app.use('/api/tts', ttsRouter);
-// P_session-chunks — session-scoped BM25 retrieval over a session's
+// session-scoped BM25 retrieval over a session's
 // own history. Used by the chat surface to surface related past
 // messages; the search is in-memory over session_chunks and is
 // owned-checked before any retrieval.

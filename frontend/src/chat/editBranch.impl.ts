@@ -1,6 +1,6 @@
-/* chat/editBranch.ts — extracted from main.js (B5 batch).
+/* chat/editBranch.ts — extracted from legacy entry.
  * Edit / regenerate / branch operations. Zero-behavior-change lift.
- * Main.js-local turn entries (askChatTurn, saveCurrentSession, resetApp)
+ * app-local turn entries (askChatTurn, saveCurrentSession, resetApp)
  * resolve via window.* at call time to avoid circular imports.
  */
 import {
@@ -174,7 +174,7 @@ export function commitUserMessageEdit(messageId: string, text: string) {
   void patchPromise;
 }
 
-/* P_edit — remove every message whose position in stateStore.read("messages")
+/* remove every message whose position in stateStore.read("messages")
    is greater than `userMessageId`. Removes both the state entry
    and its DOM node. Returns the number of messages dropped.
    Used by commitUserMessageEdit so the conversation "rewinds" to the

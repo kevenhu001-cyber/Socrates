@@ -72,7 +72,7 @@ type BuiltMobileTokenPair = MobileTokenPair & {
  * (index.html:8065/8243) and the input minlength="8" attribute. */
 const MIN_PASSWORD_LENGTH = 8;
 
-/* P_password-bcrypt-truncation — M1 audit fix.
+/* M1 audit fix.
  * bcrypt's algorithm silently TRUNCATES the plaintext at 72 BYTES
  * (not 72 characters — UTF-8 multi-byte chars count as multiple).
  * A 1000-char password "aaaa…aX" and a 73-char password "aaaa…aX"
@@ -854,7 +854,7 @@ export async function resetPassword(token: string, newPassword: string) {
   if (!vt) throw new BadRequest('Invalid or expired reset token');
 
   const passwordHash = await hashPassword(newPassword);
-  /* P_reset-password-atomic — M2 audit fix. Three writes must be
+  /* M2 audit fix. Three writes must be
    * all-or-nothing: changing the password, consuming the reset token,
    * and invalidating every session. A partial failure would leave an
    * inconsistent state — e.g. "new password set, but the token is

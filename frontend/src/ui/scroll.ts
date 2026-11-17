@@ -79,17 +79,17 @@ import { TurnAnchorList } from '@/chat/turn/anchor/ownership.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 /* Re-export the pure auto-scroll decision predicates through scroll.js so
-   the DOM-wiring callers (main.js) import the "where do I scroll" surface
+   the DOM-wiring callers (app entrypoint) import the "where do I scroll" surface
    and the "should I scroll" decision from one place. The predicates stay
    pure in scrollDecision.ts (unit/property tested there); scroll.js and
-   main.js only apply them to live DOM geometry. */
+   app entrypoint only apply them to live DOM geometry. */
 export { isPinnedToBottom, shouldAutoScroll, SCROLL_SLACK };
 
-// src/ui/scroll.ts — Phase 1.4 extraction (main.js A.4)
+// src/ui/scroll.ts — Phase 1.4 extraction (app entrypoint A.4)
 // scrollContainer() returns whichever element is currently the
 // scrollable surface (#msgList when chat/tutor active, else
 // #mainContent for start screen / settings). Centralises the
-// "where do I scroll" question for ~12 callers across main.js.
+// "where do I scroll" question for ~12 callers across app entrypoint.
 //
 // velocityScrollTo() is the lower-level primitive: it scrolls an
 // arbitrary target in `distance` px using the velocity-based duration
@@ -764,7 +764,7 @@ function createPinMetrics(
    rich content (images, KaTeX, tool cards) settles in. The composer
    itself no longer needs JS measurement — flex-shrink on `.msg-list`
    makes room for whatever height the composer naturally takes (see
-   P_chat-reserve in styles.css). The previous function mirrored the
+    in styles.css). The previous function mirrored the
    bar's height into a CSS variable; with the bar in the flex flow that
    geometry bookkeeping is gone. Resize observation remains necessary
    so a reader already at the bottom stays there when in-message
@@ -1007,7 +1007,7 @@ export function scrollToBottomIfPinned() {
 }
 
 /* Scroll the main transcript to the bottom (send / keyboard-open path).
-   Moved from main.js so all scroll ownership lives in this module.
+   Moved from app entry so all scroll ownership lives in this module.
    A forced scroll bypasses the pin check; otherwise the scroll only
    happens when the reader is pinned and has not scrolled away. */
 export function scrollMainToBottom(opts: { force?: boolean; smooth?: boolean } = {}) {

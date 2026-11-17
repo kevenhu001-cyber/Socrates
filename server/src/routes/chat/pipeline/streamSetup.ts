@@ -16,7 +16,7 @@ export function startSseStream({
   ssePrimed?: boolean;
 }): void {
   // Set SSE headers
-  /* P_ttfb-prime-first — when the route shell has already primed
+  /* when the route shell has already primed
        the SSE response (writeSsePrime) before awaiting ownership,
        skip the pipeline's own writeHead + SSE_PRIME write. The two
        code paths converge here so direct pipeline callers (tests)
@@ -63,7 +63,7 @@ export function startSseStream({
     }
   }
 
-  /* P_sse-metrics — bump the active-connection counter so the
+  /* bump the active-connection counter so the
        /api/health endpoint can report how many SSE streams are open
        right now. The close handler (set below) decrements on any
        disconnect, including client aborts mid-stream. */

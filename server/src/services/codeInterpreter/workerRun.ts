@@ -88,7 +88,7 @@ export async function runOnWorker({
 }) {
   const startedAt = Date.now();
   const pool = await getPool();
-  /* P_progress — surface the wait while a worker is busy/booting. */
+  /* surface the wait while a worker is busy/booting. */
   emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
   const slot = await pool!.acquireSlot();
   emitProgress(executionId, { phase: 'ready', executionId }, onProgress);

@@ -64,7 +64,7 @@ import {
   setVizViewPref,
 } from './vizStubs.ts';
 
-/* P_viz-fix-loop — feed a client-side render failure back to the
+/* feed a client-side render failure back to the
    model. The banner's own text + the card's source attribute are
    everything the model needs; it still has the original block in
    context. The prompt rides the existing `tool-retry` CustomEvent
@@ -270,14 +270,14 @@ export function processPendingViz(root?: ParentNode) {
         // policy). Flip the card to error and surface a
         // diagnostic.
         //
-        // P_viz-no-autoreload — the previous version auto-
+        // the previous version auto-
         // reloaded the iframe here, which produced a visible
         // "Rendering…" → error → "Rendering…" → … flicker. The
         // user can re-trigger via the Reload button, which
         // surfaces the error to them with full intent. We never
         // re-enter `loading` state from a timeout.
         //
-        // P_viz-ping-ack — replaces the old iframeIsBlank DOM
+        // replaces the old iframeIsBlank DOM
         // probe, which read iframe.contentWindow.document — an
         // opaque-origin access that always throws under
         // sandbox="allow-scripts", so the "already rendered"
@@ -416,7 +416,7 @@ function _dropErrorRegistry(id: string | number) {
 }
 
 function _markError(id: string, message: unknown) {
-  /* P_viz-cleanup — the iframe may report a viz-error after the
+  /* the iframe may report a viz-error after the
      registry entry has already been removed (e.g. timeout fired
      first). Resolve the live card via the DOM in that case so the
      error still surfaces without resurrecting a strong reference to
@@ -436,7 +436,7 @@ function _markError(id: string, message: unknown) {
   _clearErrorRegistry(id, entry);
 }
 
-/* P_viz-source-check — viz ids are predictable (`viz-card-N`), so
+/* viz ids are predictable (`viz-card-N`), so
    without sender validation any iframe posting {type:'viz-ready',
    vizId:'viz-card-3'} could flip a foreign card's state. contentWindow
    identity can't be forged, so we resolve the SENDER's iframe and use

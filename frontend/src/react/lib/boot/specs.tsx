@@ -13,7 +13,7 @@ import { ErrorBoundary } from '../../ErrorBoundary';
 import type { MountSpec } from './registry';
 import { retryImport } from './retryImport';
 
-/* P_perf-modal-lazy — on-demand overlays (tools menu, cmdk, find,
+/* on-demand overlays (tools menu, cmdk, find,
    more-popover, profile/share/usage modals) are dynamically imported in
    their mount callbacks below so their module graph stays out of the
    entry chunk; they still mount during the boot registry pass, just a
@@ -217,7 +217,7 @@ export function mountRegistryList(): MountSpec[] {
        `<div class="top-bar" id="topBar">`. Its ids are the shell
        contract for the legacy runtime, so the React tree owns the
        markup while the runtime keeps toggling classes and text.
-       P_perf-static-closure — dynamically imported: the header is not on
+       dynamically imported: the header is not on
        the first-paint path either, and the primitive it pulls in would
        otherwise grow the entry chunk past its gzip budget. */
     {
@@ -313,7 +313,7 @@ export function mountRegistryList(): MountSpec[] {
     ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
     ...lazyPortalSpecs(),
-    /* P_perf-session-list — its shared RN shell pulls React Native Web's
+    /* its shared RN shell pulls React Native Web's
        virtual-list and animation code. Reserve the host while the feature
        chunk loads so legacy rendering cannot race the React owner. */
     {
@@ -326,12 +326,12 @@ export function mountRegistryList(): MountSpec[] {
         }),
     },
     /* 6. Global React roots — composer, message list, workflow layer.
-       P_perf-composer-lazy — RichComposer pulls the whole tiptap/prosemirror
+       RichComposer pulls the whole tiptap/prosemirror
        editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
        that chunk leaves the first-paint preload graph; the shell's composer
        area keeps its reserved height until the component mounts moments
        after reveal.
-       P_composer-single — ONE editor for the whole app. The typed controller
+       ONE editor for the whole app. The typed controller
        owns the surface state and slot placement while this root stays
        mounted, preserving each draft, token, focus and chip. The typed
        lifecycle commands branch on the live surface, so the editor does not

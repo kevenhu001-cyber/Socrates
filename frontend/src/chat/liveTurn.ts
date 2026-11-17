@@ -1,4 +1,4 @@
-/* chat/liveTurn.ts — extracted from main.js (B5 batch).
+/* chat/liveTurn.ts — extracted from legacy entry.
  * Live-turn registries: retry owner, runtime map for Codex approvals,
  * message lookup, approval checks, search-retry wiring.
  * Zero-behavior-change lift; state lives in turn/state.ts.
@@ -22,7 +22,7 @@ export interface ToolRetryDetail {
   [key: string]: unknown;
 }
 
-/* P_react-live-turn — one live turn may be retried, and only its own
+/* one live turn may be retried, and only its own
    streaming closure knows how (it holds the prompt, the retry budget, and the
    viewport to re-anchor). React's status line and the legacy timeout block
    therefore both route through this registry instead of each owning a click
@@ -83,7 +83,7 @@ export function retryRecoveredTurn(messageId: string): boolean {
   return true;
 }
 
-/* P_react-live-turn — a declarative row answers a Codex approval through
+/* a declarative row answers a Codex approval through
    __socratesLegacy.liveTurn, and the only code that can POST a decision lives
    inside the runtime that recorded it (chat/toolRuntime/index.ts needs the message
    closure to write the outcome back onto toolCalls[].approval). */
@@ -142,7 +142,7 @@ export function decideLiveApproval(
   );
 }
 
-/* P_tool_retry_button — Retry on a failed search row re-issues the query
+/* Retry on a failed search row re-issues the query
    through the streaming closure that owns the prompt (`onSearchRetry`). */
 export function claimLiveSearchRetry(
   handler: ((query: string, detail?: unknown) => void) | null,
@@ -160,7 +160,7 @@ export function installLiveTurnRetryListener(): void {
       /* share.js / history replay install their own handler for the same event. */
       const handler = turnState.liveSearchRetry;
       if (typeof handler !== 'function') return;
-      /* P_tool_retry_prompt — pass the whole detail so repair prompts
+      /* pass the whole detail so repair prompts
          (viz-failure "Fix with AI") reach the handler alongside the
          legacy `query` field. */
       try {

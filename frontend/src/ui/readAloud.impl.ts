@@ -1,5 +1,5 @@
 /* ui/readAloud.ts — "read aloud" for assistant messages
- * (P_chatgpt-landing; cloud voice added in the LobeHub-alignment M4).
+ * (; cloud voice added in the LobeHub-alignment M4).
  *
  * Voice order:
  *   1. Provider voice — POST /api/tts proxies to the active built-in
@@ -123,7 +123,7 @@ function _speakCloud(clean: string, lang: string, messageId?: string | number) {
     text: clean.slice(0, 20000),
     lang: (lang || '').slice(0, 2),
   };
-  /* P_tts-persist — forward the messageId so /api/tts can persist the
+  /* forward the messageId so /api/tts can persist the
      synthesized audio in tts_results. The server still does the
      ownership check, so a forged id cannot read or write another
      user's audio. */

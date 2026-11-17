@@ -1,6 +1,6 @@
 import type { VendorGlobals } from '../types/vendorRuntime.ts';
 
-/* P_perf-self-host — heavy renderers (mermaid / echarts / plotly) are
+/* heavy renderers (mermaid / echarts / plotly) are
    committed as verbatim UMD files under src/vendor-files/ and injected
    as classic <script> tags only when a visualization actually mounts.
    `new URL(..., import.meta.url)` makes Vite emit them into dist/assets
@@ -11,7 +11,7 @@ const mermaidUrl = new URL('../vendor-files/mermaid.min.js', import.meta.url).hr
 const echartsUrl = new URL('../vendor-files/echarts.min.js', import.meta.url).href;
 const plotlyUrl = new URL('../vendor-files/plotly.min.js', import.meta.url).href;
 const highlightUrl = new URL('../vendor-files/highlight.min.js', import.meta.url).href;
-/* P_katex-retry — KaTeX is vendored as a classic UMD script (like mermaid /
+/* KaTeX is vendored as a classic UMD script (like mermaid /
    echarts / plotly) instead of a dynamic import. Chrome caches failed
    dynamic-import chunk loads in its module map, so a transient network
    failure used to make EVERY formula render as raw LaTeX for the whole

@@ -25,7 +25,7 @@ Follow the server policy for visualization choices and the supplied tool schemas
 /** Compatibility export name; learning output protocols are server-owned. */
 export const LEARNING_SCAFFOLD_GUIDANCE = `Follow the server's learning-interaction policy and the current native tool schemas. Learning cards supplement the explanation and never wrap the whole answer. Ordinary conversation stays in prose. Use a learning interaction only when it serves the current request; if the tool is unavailable, use ordinary prose or Markdown. Do not emit legacy XML learning tags or invent component functions.`;
 
-/* P_reasoning-effort-server-owned — the high-effort depth directive is
+/* the high-effort depth directive is
  * server-owned. It used to sit here, inside the client-application
  * instructions block, which is a LOWER priority tier than the server's own
  * response defaults: the server copy won, so the client copy only burned

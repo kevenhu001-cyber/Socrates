@@ -121,7 +121,7 @@ export interface ChatMessage extends Omit<
   modelInfo?: { label?: string; model?: string } | null;
   toolCalls?: ReadonlyArray<ToolCall>;
   restoredFromHistory?: boolean;
-  /* P_canvas-mode — ExtensionDefinition.outputMode carried onto the
+  /* ExtensionDefinition.outputMode carried onto the
      finalized message entry. 'canvas' tells React's MessageItem to
      mount <CanvasBlock> instead of falling through to dangerouslySetInnerHTML. */
   outputMode?: 'chat' | 'canvas' | null;
@@ -145,7 +145,7 @@ export interface ChatMessage extends Omit<
   _katexRenderedRev?: number;
   _renderRev?: number;
   /**
-   * The one live status line for this turn, written by main.js while the
+   * The one live status line for this turn, written by app entry while the
    * stream is in flight. Previously three DOM surfaces competed for it (the
    * "thinking" placeholder, the reasoning pill, the retry notice); a
    * declarative turn renders at most one, from here.
@@ -159,7 +159,7 @@ export interface ChatMessage extends Omit<
    */
   _streamSettled?: boolean;
   /**
-   * P_smooth-stream — the playback clock's current state, mirrored onto the
+   * the playback clock's current state, mirrored onto the
    * message by chat/turn/streaming.ts so the cursor can animate:
    * 'playing' (breathing dot), 'starved' (upstream stalled, buffer empty —
    * pulse / three dots), 'draining' (finish flushing the buffer — breathing),
@@ -199,12 +199,12 @@ export interface ChatMessage extends Omit<
  * turn ended without an answer (the retry affordance lives here too);
  * `stopped` = the user stopped it, with a Resend affordance instead.
  *
- * `error` and `stopped` outlive the stream — main.js clears the field at
+ * `error` and `stopped` outlive the stream — app entrypoint clears the field at
  * finish(), so anything still set on a finalized entry is a turn that ended
  * broken, and AssistantTurn keeps drawing it.
  *
  * `tool-running` = a tool call is executing but its row is deferred behind
- * an unfinished paragraph (P_tool-order-defer). AssistantTurn hides this
+ * an unfinished paragraph (). AssistantTurn hides this
  * line as soon as the real row mounts, so the two never appear together.
  */
 export interface LiveTurnStatus {

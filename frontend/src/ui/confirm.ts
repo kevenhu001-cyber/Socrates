@@ -1,5 +1,5 @@
-/* ui/confirm.ts — Wave 1a of main-js-split plan.
- * Generic confirm-dialog modal. Extracted from main.js L10359-L10378.
+/* ui/confirm.ts
+ * Generic confirm-dialog modal. extracted from legacy entry.
  * State: module-private _confirmResolve (single in-flight promise).
  *
  * M4 step 4.5c: the overlay skeleton is React-owned (ConfirmDialog.tsx

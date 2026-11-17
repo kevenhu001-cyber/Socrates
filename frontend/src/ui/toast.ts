@@ -1,7 +1,6 @@
 /* ui/toast.ts — minimal toast for action confirmations. Distinct
-   from the chatStatus pill and the share link toast. Extracted
-   from main.js so every module consumes it via a direct import;
-   the window.showToast binding (main.js) stays only for the
+   from the chatStatus pill and the share link toast. extracted from legacy entry so every module consumes it via a direct import;
+   the window.showToast binding (app entrypoint) stays only for the
    React legacy gateway and e2e mocks.
 
    opts.variant  "error" adds .msg-toast-error (session save failures).

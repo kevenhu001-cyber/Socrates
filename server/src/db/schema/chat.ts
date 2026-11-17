@@ -29,7 +29,7 @@ export const sessions = pgTable(
     topic: text('topic').notNull().default(''),
     mode: text('mode').notNull().default('chat'), // tutor | chat
     phase: text('phase').notNull().default('topic'), // topic | diagnostic | chat
-    /* P_exam-history — top-level session "shape". Default 'chat' so
+    /* top-level session "shape". Default 'chat' so
      * every existing row stays the same; the chat service still uses
      * 'tutor' / 'chat'. Exam sessions carry their rendered questions,
      * answers, and language in exam_data (jsonb). The CHECK constraint
@@ -49,7 +49,7 @@ export const sessions = pgTable(
     mistakes: jsonb('mistakes').default([]),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    /* P_streaming-survival — when the client disconnects mid-stream
+    /* when the client disconnects mid-stream
      * (browser close, network blip), the server saves the accumulated
      * partial text and reasoning content here. On reload the client
      * finds these non-null, renders the partial response, and offers
@@ -125,12 +125,12 @@ export const messages = pgTable(
     model: text('model'),
     tokenCount: integer('token_count'),
     clientId: text('client_id'), // Front-end generated ID for DOM mapping
-    /* P_reasoning-persist — chain-of-thought text from DeepSeek / QwQ /
+    /* chain-of-thought text from DeepSeek / QwQ /
      o1-style reasoning models. Stored alongside content so it survives
      session save/load and is included in the LLM context on the next
      chat turn. */
     reasoningContent: text('reasoning_content'),
-    /* P_turn-summary — the model's own one-line retrospective of the work it
+    /* the model's own one-line retrospective of the work it
      did on this turn (what was found / run / concluded), which the Summary
      sheet and the status row render. Distinct from `rawText`: that is the
      ANSWER, this is a description OF the work. Generated off the response
@@ -139,12 +139,12 @@ export const messages = pgTable(
     summary: text('summary'),
     /** Bounded public activity/UI snapshot; contains no private reasoning. */
     turnRuntime: jsonb('turn_runtime'),
-    /* P_attachments — array of {id, kind, name, mime, dataUrl?, text?, size, truncated?}
+    /* array of {id, kind, name, mime, dataUrl?, text?, size, truncated?}
      representing images (dataUrl inlined), text files (text body), and PDFs
      (server-extracted text). Persisted so a session reload restores the
      thumbnails and parsed text without re-uploading. */
     attachments: jsonb('attachments').default([]),
-    /* P_tool-history — array of {id, name, input, output, isError, artifacts}
+    /* array of {id, name, input, output, isError, artifacts}
      representing tool calls the assistant made on this turn (web_search, code_interpreter, etc). Persisted so a session reload re-renders the
      tool cards under the message instead of silently dropping them after
      the live stream ends. Default to [] so existing rows read back as
@@ -179,7 +179,7 @@ export const messages = pgTable(
      aggregates by DATE(created_at) across all sessions and needs
      created_at leading. */
     index('messages_session_created_idx').on(table.sessionId, table.createdAt),
-    /* P_message-dedup — unique constraint on (sessionId, clientId) so
+    /* unique constraint on (sessionId, clientId) so
      concurrent POST /api/sessions cannot create duplicate rows for the
      same logical message. clientId can be NULL (messages without a
      front-end generated id), and Postgres treats NULLs as distinct
@@ -244,7 +244,7 @@ export const sessionChunks = pgTable(
     text: text('text').notNull(),
     startOffset: integer('start_offset').notNull(),
     endOffset: integer('end_offset').notNull(),
-    /* P_session-chunks-embedding — optional pgvector re-ranking column.
+    /* optional pgvector re-ranking column.
      Null when the chunk has not been embedded yet (provider not
      configured, upstream failure, or BM25-only mode). The HNSW index
      over cosine distance makes the re-ranking cheap; the null is

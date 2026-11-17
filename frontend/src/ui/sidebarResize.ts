@@ -105,7 +105,7 @@ function scheduleDragFrame() {
 }
 
 /* Wire mouse + touch + keyboard drag. Idempotent: a second call
-   from main.js's hot-reload no-ops the listeners. */
+   from app entry's hot-reload no-ops the listeners. */
 export function initSidebarDrag() {
   const handle = document.getElementById('sidebarResizeHandle');
   if (!handle) return;
@@ -212,7 +212,7 @@ function cancelDragSpring() {
 }
 
 /* Auto-collapse on viewport shrink to mobile width, expand on grow
-   to desktop. The handler is exported so main.js can register it
+   to desktop. The handler is exported so app entrypoint can register it
    from its central keyboard/resize dispatcher.
 
    Track the last known width so we only act when the width actually
@@ -242,7 +242,7 @@ export function onViewportResize() {
 
 // Side-effect: this ESM module has one canonical importer in main.ts, so its
 // viewport listener is registered once without a window-level sentinel.
-// (Other listeners on `window` resize live in main.js for now.)
+// (Other listeners on `window` resize lives in application bootstrap for now.)
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('resize', onViewportResize);
 }

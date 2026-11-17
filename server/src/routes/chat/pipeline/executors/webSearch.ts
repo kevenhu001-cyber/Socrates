@@ -1,7 +1,7 @@
 /**
  * web_search executor.
  *
- * P_search-numbered — results are formatted as a numbered list with
+ * results are formatted as a numbered list with
  * source IDs for structured claim annotations and source previews.
  * Searches are idempotent and provider/network failures are often
  * transient, so it retries once; code execution deliberately does not

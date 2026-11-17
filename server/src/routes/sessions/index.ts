@@ -132,7 +132,7 @@ const messageDetailColumns = {
   tokenCount: messages.tokenCount,
   clientId: messages.clientId,
   reasoningContent: messages.reasoningContent,
-  /* P_turn-summary — the model's retrospective, so a reloaded session
+  /* the model's retrospective, so a reloaded session
      shows the same Summary sheet the live turn produced. */
   summary: messages.summary,
   turnRuntime: messages.turnRuntime,
@@ -369,7 +369,7 @@ router.patch('/:id', async (req, res, next) => {
 });
 
 /* ─── Delete / purge session ─── */
-/* P_data-removal — when a session is deleted, wipe every row that
+/* when a session is deleted, wipe every row that
  * references its id so no conversation content lingers on the server.
  * This covers mistakes (Q&A text), artifacts (source code generated
  * in-chat), agent runs (task/plan), usage events, and file metadata
@@ -384,7 +384,7 @@ router.delete('/:id', async (req, res, next) => {
     let deletedFilePaths: string[] = [];
 
     await db.transaction(async (tx) => {
-      /* P_serialize-delete — acquire FOR UPDATE lock on the session
+      /* acquire FOR UPDATE lock on the session
        * row BEFORE attempting to delete it. This serializes with the
        * POST handler's existence check (which also uses FOR UPDATE),
        * preventing a race where a concurrent POST's SELECT ... FOR UPDATE
@@ -434,7 +434,7 @@ router.delete('/:id', async (req, res, next) => {
       await fs.unlink(fp).catch(() => {});
     }
 
-    /* P_session-scoped-scratch — drop the on-disk scratch dir the
+    /* drop the on-disk scratch dir the
        conversation was using. Best-effort: if the worker crashed
        mid-run the dir might already be gone, and the TTL sweep
        would catch that case anyway. */
@@ -499,7 +499,7 @@ router.delete('/', async (req, res, next) => {
       await fs.unlink(fp).catch(() => {});
     }
 
-    /* P_session-scoped-scratch — reap every cleared session's
+    /* reap every cleared session's
        scratch dir. Parallel: each fs.rm is independent. */
     await Promise.all(
       allDeletedIds.map((id) =>
