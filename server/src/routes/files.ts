@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray, isNull } from 'drizzle-orm';
 import { getDb } from '../db/index.js';
-import { files, sessions } from '../db/schema/index.js';
-import { requireAuth } from '../middleware/auth.js';
+import { files, sessions, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from '../db/schema/index.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { resourceScope } from '../middleware/scopes.js';
 import { uploadLimiter } from '../middleware/rateLimit.js';
 import { NotFound, BadRequest, PayloadTooLarge } from '../lib/errors.js';
@@ -24,7 +24,7 @@ import {
   prewarmAttachmentExtract,
 } from '../services/embeddings/attachmentReader.js';
 import { decodeTextBuffer, cleanExtractedText, truncateHeadTail } from '../services/fileParsers/text.js';
-import { displayFileName, normalizeFileName, safeStorageExtension } from '../lib/fileName.js';
+import { displayFileName, normalizeFileName, safeStorageExtension, contentDisposition } from '../lib/fileName.js';
 import { isUuid } from '../lib/validate.js';
 import { resolveInsideRoot } from '../lib/pathSafety.js';
 import { ensureUploadDirectory, UPLOAD_DIR } from '../lib/uploadStorage.js';
@@ -126,6 +126,68 @@ const upload = multer({
 });
 
 const router = Router();
+
+/* GET /api/files/:id/raw — serve raw file binary with optional auth (for public shares). */
+router.get('/:id/raw', optionalAuth, async (req, res, next) => {
+  try {
+    const db = getDb();
+    const fileId = String(req.params.id);
+    const [file] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
+    if (!file) return next();
+    let allowed = !!req.userId && file.userId === req.userId;
+    if (!allowed) {
+      let sessionId = file.sessionId;
+      if (!sessionId && file.executionId) {
+        const [exec] = await db.select({ sessionId: executionsTable.sessionId })
+          .from(executionsTable)
+          .where(eq(executionsTable.id, file.executionId))
+          .limit(1);
+        sessionId = exec?.sessionId ?? null;
+      }
+      if (sessionId) {
+        const [share] = await db.select({ token: sharesTable.token })
+          .from(sharesTable)
+          .innerJoin(sessionsTable, eq(sessionsTable.id, sharesTable.sessionId))
+          .where(and(
+            eq(sharesTable.sessionId, sessionId),
+            inArray(sharesTable.visibility, ['public', 'unlisted']),
+            isNull(sessionsTable.archivedAt),
+          ))
+          .limit(1);
+        allowed = !!share;
+      }
+    }
+    if (!allowed) return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Content-Type', file.mimeType);
+    const inlinePreview = req.query.inline === '1' && (
+      file.mimeType.startsWith('audio/')
+      || file.mimeType.startsWith('video/')
+      || (file.mimeType.startsWith('text/') && file.mimeType !== 'text/html' && file.mimeType !== 'text/xhtml' && file.mimeType !== 'text/xhtml+xml')
+      || file.mimeType === 'application/json'
+    );
+    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf' && !inlinePreview) {
+      res.set('Content-Disposition', contentDisposition('attachment', file.name));
+    } else {
+      res.set('Content-Disposition', contentDisposition('inline', file.name));
+    }
+    const fileName = path.basename(file.storagePath);
+    const fileDir = path.dirname(file.storagePath);
+    return res.sendFile(fileName, { root: fileDir, dotfiles: 'allow' }, (err) => {
+      if (err) {
+        if (!res.headersSent) {
+          const failure = err as { code?: string; status?: number };
+          if (failure.status === 404 || failure.code === 'ENOENT' || failure.code === 'EACCES') {
+            return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
+          }
+        }
+        next(err);
+      }
+    });
+  } catch (err) { next(err); }
+});
+
 router.use(requireAuth, resourceScope('files'));
 
 /* GET /api/files — list all files for the authenticated user.

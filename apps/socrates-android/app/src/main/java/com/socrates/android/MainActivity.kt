@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.socrates.android.data.ApiClient
 import com.socrates.android.ui.BrowserLogin
 import com.socrates.android.ui.ChatViewModel
+import com.socrates.android.ui.HybridWorkspace
 import com.socrates.android.ui.SocratesApp
 import com.socrates.android.ui.SocratesTheme
 import kotlinx.coroutines.CancellationException
@@ -25,10 +26,21 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
         )
-        val chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
-        setContent { SocratesTheme { SocratesApp(chatViewModel) } }
-        handleShortcut(intent, chatViewModel)
-        handleCallback(intent)
+        val useNativeCompose = intent.getBooleanExtra(EXTRA_USE_NATIVE_COMPOSE, false)
+        if (useNativeCompose) {
+            val chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
+            setContent { SocratesTheme { SocratesApp(chatViewModel) } }
+            handleShortcut(intent, chatViewModel)
+            handleCallback(intent)
+        } else {
+            setContent {
+                SocratesTheme {
+                    HybridWorkspace(
+                        onBackExit = { finish() }
+                    )
+                }
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -74,5 +86,6 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val ACTION_OPEN_SESSION = "com.socrates.android.OPEN_SESSION"
         const val EXTRA_SESSION_ID = "com.socrates.android.extra.SESSION_ID"
+        const val EXTRA_USE_NATIVE_COMPOSE = "com.socrates.android.extra.USE_NATIVE_COMPOSE"
     }
 }

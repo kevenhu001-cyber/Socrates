@@ -1,4 +1,4 @@
-import { rebaseTurnRuntimeText } from '../../../../../packages/core/src/turnRuntimeText.js';
+import { rebaseTurnRuntimeText } from '@socrates/core/turnRuntimeText';
 /**
  * runChatStreamPipeline — the chat stream orchestrator (M2 of the
  * LobeHub-alignment plan).
@@ -17,8 +17,8 @@ import { rebaseTurnRuntimeText } from '../../../../../packages/core/src/turnRunt
  * Behaviour is a verbatim extraction of the original single-closure
  * handler; the stages only differ in where the closures live.
  */
-import { reduceTurnEvent, settleTurnRuntime } from '../../../../../packages/core/src/turnRuntime.js';
-import type { TurnRuntime } from '../../../../../packages/contracts/src/turnEvent.js';
+import { reduceTurnEvent, settleTurnRuntime } from '@socrates/core/turnRuntime';
+import type { TurnRuntime } from '@socrates/contracts';
 import {and, eq} from 'drizzle-orm';
 import {getDb} from '../../../db/index.js';
 import {chatTurns, messages, sessions} from '../../../db/schema/index.js';

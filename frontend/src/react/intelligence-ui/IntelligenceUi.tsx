@@ -21,6 +21,16 @@ interface IntelligenceUiBlockProps {
   readOnly?: boolean;
 }
 
+function resolveSurfaceMetadata(
+  roots: ReturnType<typeof parseIntelligenceUiRecords>,
+  context: RenderContext,
+) {
+  const root = context.surfaceRootId ? roots[0] : undefined;
+  const title = root ? asProse(resolve(root.title, context)) : undefined;
+  const description = root ? asProse(resolve(root.description, context)) : undefined;
+  return { title, description };
+}
+
 export function IntelligenceUiBlock({ source, tools = [], open = false, showActivityCue = true, readOnly = false, displayMode = 'inline' }: IntelligenceUiBlockProps) {
   const nodes = useMemo(() => parseIntelligenceUiRecords(source), [source]);
   const defaults = useMemo(() => initialStateForNodes(nodes), [nodes]);
@@ -33,7 +43,11 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
 
   const roots = nodes.filter((node) => !node.parent);
   /* Keep the loading footprint until the first record names a root. */
-  if (!roots.length) return open ? <PendingBlock open /> : <div className="intui-callout" data-intui-failure="document" role="status">{i18n('tool.uiInvalid', 'Component could not be displayed.')}</div>;
+  if (!roots.length) {
+    return open
+      ? <PendingBlock open />
+      : <div className="intui-callout" data-intui-failure="document" role="status">{i18n('tool.uiInvalid', 'Component could not be displayed.')}</div>;
+  }
 
   const context: RenderContext = {
     state,
@@ -44,9 +58,7 @@ export function IntelligenceUiBlock({ source, tools = [], open = false, showActi
     streaming: open,
     surfaceRootId: roots.length === 1 && roots[0].type === 'panel' ? roots[0].id : undefined,
   };
-  const root = context.surfaceRootId ? roots[0] : undefined;
-  const title = root ? asProse(resolve(root.title, context)) : undefined;
-  const description = root ? asProse(resolve(root.description, context)) : undefined;
+  const { title, description } = resolveSurfaceMetadata(roots, context);
 
   return (
     <div className="intui" data-intui-streaming={open ? 'true' : 'false'}>

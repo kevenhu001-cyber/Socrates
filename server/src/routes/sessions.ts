@@ -1,5 +1,5 @@
-import { rebaseTurnRuntimeText } from '../../../packages/core/src/turnRuntimeText.js';
-import { normalizeTurnRuntime } from '../../../packages/core/src/turnRuntime.js';
+import { rebaseTurnRuntimeText } from '@socrates/core/turnRuntimeText';
+import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
 import { Router } from 'express';
 import { eq, and, desc, gt, isNull, sql, inArray, count } from 'drizzle-orm';
 import { randomUUID, createHash } from 'node:crypto';

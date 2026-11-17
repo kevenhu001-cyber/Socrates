@@ -29,6 +29,7 @@ import { preloadRenderRuntime } from './render/preloadRuntime.ts';
 import { initCookieConsent } from './cookieConsent.ts';
 import { initChatComposerReserve } from './ui/scroll.ts';
 import { initKeyboardLift } from './ui/keyboard/index.ts';
+import { initAndroidBridge } from './native/androidBridge.ts';
 import { initTopicFocusAssist } from './ui/topicFocusAssist.ts';
 import './ui/composerAnim.js';
 import { installComposerShapeMirror } from './ui/composerShape.ts';
@@ -86,6 +87,7 @@ const keyboardLift = initKeyboardLift({
 if (typeof window !== 'undefined') {
   (window as unknown as { __socratesKeyboard?: typeof keyboardLift }).__socratesKeyboard = keyboardLift;
 }
+initAndroidBridge();
 initTopicFocusAssist();
 
 (function initMsgScrollbar(){

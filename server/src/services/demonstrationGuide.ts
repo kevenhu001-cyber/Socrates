@@ -1,4 +1,4 @@
-import { PHYSICS_EXAMPLES, PHYSICS_EXAMPLE_ASSUMPTIONS } from '../../../packages/core/src/physicsExamples.js';
+import { PHYSICS_EXAMPLES, PHYSICS_EXAMPLE_ASSUMPTIONS } from '@socrates/core/physicsExamples';
 
 /** App-owned mathematical runtime; models author algorithms and composition, not executable JS. */
 export const DEMONSTRATION_GUIDANCE = `Build a new algorithmic demonstration without choosing a preset physics model. Arguments are JSON, not markup: every list is a JSON array, every numeric field is a JSON number, and program.version is the number 1. Never encode a list as {"item": [...]}, never wrap an array in tags, and never send "1" where a number belongs.

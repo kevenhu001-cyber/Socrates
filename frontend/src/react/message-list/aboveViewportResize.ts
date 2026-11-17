@@ -189,31 +189,35 @@ function readerHoldsPosition(): boolean {
   return stateStore.read('_userScrolledAway') === true;
 }
 
+function canRestoreReadingAnchor(host: HTMLElement | null, anchor: ReadingAnchor | null): boolean {
+  if (!anchor || !host || host !== anchor.host) return false;
+  if (!readerHoldsPosition() || readerPinned(host)) return false;
+  if (host.dataset.turnAnchorSettling === 'true') return false;
+  const owner = scrollOwnerOf(host);
+  return owner === null || owner === 'history' || owner === 'anchor';
+}
+
+function findMatchingReadingBlock(row: HTMLElement, anchor: ReadingAnchor): HTMLElement | null {
+  const blocks = readingBlocksOf(row);
+  if (anchor.text) {
+    for (let index = 0; index < blocks.length; index++) {
+      if (blockTextOf(blocks[index]) === anchor.text) return blocks[index];
+    }
+  }
+  return blocks[anchor.index] || null;
+}
+
 function restoreReadingAnchor(): void {
   const anchor = readingAnchor;
   if (!anchor) return;
   const host = scrollHost();
   if (!host || host !== anchor.host) { readingAnchor = null; return; }
-  /* The send glide and the bottom follow own the transcript while they run.
-     A live claim (turn / retry / finish / keyboard / user) means an explicit
-     motion is animating scrollTop; this background correction must not fight
-     it or the glide collapses into a teleport. */
-  if (!readerHoldsPosition() || readerPinned(host)) return;
-  if (host.dataset.turnAnchorSettling === 'true') return;
-  const owner = scrollOwnerOf(host);
-  if (owner !== null && owner !== 'history' && owner !== 'anchor') return;
+  if (!canRestoreReadingAnchor(host, anchor)) return;
   const row = host.querySelector<HTMLElement>(
     '.msg[data-client-id="' + escapeClientId(anchor.clientId) + '"]',
   );
   if (!row) { readingAnchor = null; return; }
-  const blocks = readingBlocksOf(row);
-  let block: HTMLElement | null = null;
-  if (anchor.text) {
-    for (let index = 0; index < blocks.length; index++) {
-      if (blockTextOf(blocks[index]) === anchor.text) { block = blocks[index]; break; }
-    }
-  }
-  if (!block) block = blocks[anchor.index] || null;
+  const block = findMatchingReadingBlock(row, anchor);
   if (!block) return;
   const offset = block.getBoundingClientRect().top - host.getBoundingClientRect().top;
   const delta = offset - anchor.offset;

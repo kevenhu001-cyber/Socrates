@@ -1,2 +1,2 @@
-import type { TurnRuntime } from '../../contracts/src/turnEvent.js';
+import type { TurnRuntime } from '@socrates/contracts';
 export function rebaseTurnRuntimeText(value: unknown, original: string, clean: string): TurnRuntime | null;

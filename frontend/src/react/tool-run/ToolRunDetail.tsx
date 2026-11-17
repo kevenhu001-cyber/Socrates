@@ -102,6 +102,19 @@ function imageOutputsOf(call: ToolCallRecord | undefined) {
     : []);
 }
 
+interface LiveOutputSectionProps {
+  view: ToolRunView;
+}
+
+function LiveOutputSection({ view }: LiveOutputSectionProps) {
+  return (
+    <DetailSection title={translate('tool.detail.liveOutput', 'Live output')} kind="live">
+      {view.livePreview ? <CodeBlock testID="tool-live-preview" maxHeight={200} text={view.livePreview} {...copyLabels()} /> : null}
+      {view.liveOutput ? <CodeBlock testID="tool-live-output" maxHeight={200} text={view.liveOutput} {...copyLabels()} /> : null}
+    </DetailSection>
+  );
+}
+
 export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailProps) {
   const args = view.tech.filter((section) => section.kind === 'args');
   const facts = view.tech.filter((section) => section.kind === 'fact');
@@ -118,12 +131,7 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
           <CodeBlock text={section.text} onCopy={copyText} {...copyLabels()} />
         </DetailSection>
       ))}
-      {hasLiveOutput ? (
-        <DetailSection title={translate('tool.detail.liveOutput', 'Live output')} kind="live">
-          {view.livePreview ? <CodeBlock testID="tool-live-preview" maxHeight={200} text={view.livePreview} {...copyLabels()} /> : null}
-          {view.liveOutput ? <CodeBlock testID="tool-live-output" maxHeight={200} text={view.liveOutput} {...copyLabels()} /> : null}
-        </DetailSection>
-      ) : null}
+      {hasLiveOutput ? <LiveOutputSection view={view} /> : null}
       {!hasLiveOutput ? results.map((section, index) => <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />) : null}
       {images.length ? (
         <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">

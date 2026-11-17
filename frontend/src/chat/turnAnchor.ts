@@ -318,33 +318,40 @@ function alignPromptToOffset(
   writeScrollTop(list, next, 'turn');
 }
 
+function shouldReleaseHold(
+  list: HTMLElement,
+  promptRow: HTMLElement,
+  anchorRow: HTMLElement | null,
+  entry: MessageEntry | null,
+  reserve: number,
+  holdTargetOffset: number,
+): boolean {
+  if (!list.isConnected || stateStore.read('_userScrolledAway')) return true;
+  if (!promptRow.isConnected || latestUserRow(list) !== promptRow) return true;
+  if (!anchorRow || !entry || reserve <= 0) return true;
+  if (anchorRow.getBoundingClientRect().height > reserve + 1) return true;
+  const promptTarget = Math.max(0, Math.min(
+    Math.max(0, list.scrollHeight - list.clientHeight),
+    Math.round(promptRow.offsetTop - holdTargetOffset),
+  ));
+  return list.scrollTop > promptTarget + 24;
+}
+
 function holdTurnViewport(): void {
   const hold = viewportHold;
   if (!hold) return;
   const list = hold.list;
-  if (!list.isConnected || stateStore.read('_userScrolledAway')) {
-    releaseTurnViewportHold();
-    return;
-  }
   const promptRow = hold.promptRow;
-  if (!promptRow.isConnected || latestUserRow(list) !== promptRow) {
-    /* The prompt was removed or a newer send replaced it as the anchor. */
-    releaseTurnViewportHold();
-    return;
-  }
   const anchorRow = hold.rowFor();
   const entry = findAnchorEntry(hold.clientId);
   const reserve = entry ? Number(entry._turnAnchorMinHeight) || 0 : 0;
-  if (!anchorRow || !entry || reserve <= 0) {
+
+  if (shouldReleaseHold(list, promptRow, anchorRow, entry, reserve, hold.targetOffset)) {
     releaseTurnViewportHold();
     return;
   }
-  /* The answer has outgrown the reserve: the row is content-sized now and
-     sticky-bottom owns the tail, so there is no layout left to hold open. */
-  if (anchorRow.getBoundingClientRect().height > reserve + 1) {
-    releaseTurnViewportHold();
-    return;
-  }
+  if (!anchorRow || !entry) return;
+
   const styles = getComputedStyle(list);
   const bottomPadding = parseFloat(styles.paddingBottom) || 0;
   const nextReserve = turnAnchorReserve(
@@ -360,22 +367,7 @@ function holdTurnViewport(): void {
     updateMessageSnapshot(entry, { _turnAnchorMinHeight: nextReserve }, true);
     publishReactChatRuntime({ type: 'tool-run-updated', messageId: hold.clientId });
   }
-  /* A reader who scrolled DOWN off the prompt's slot is following the
-     answer, not holding the page. The hold used to keep re-aligning the
-     prompt to the top on every content frame, so the reader's own scroll
-     to the bottom was undone and the transcript stayed a viewport behind
-     the newest text. Hand the transcript back: content-follow owns the
-     bottom from here. This runs even while the send glide is landing
-     (`align === false`), because the reader's gesture must win over the
-     glide; the glide itself never moves below the prompt's own slot. */
-  const promptTarget = Math.max(0, Math.min(
-    Math.max(0, list.scrollHeight - list.clientHeight),
-    Math.round(promptRow.offsetTop - hold.targetOffset),
-  ));
-  if (list.scrollTop > promptTarget + 24) {
-    releaseTurnViewportHold();
-    return;
-  }
+
   if (hold.align) alignPromptToOffset(list, promptRow, hold.targetOffset);
 }
 

@@ -82,6 +82,22 @@ function intelligenceUiDocumentOf(call: ToolCallRecord): IntelligenceUiDocument 
   return parseIntelligenceUiDocument(call.argumentsText);
 }
 
+function resolveIntelligenceUiSource(
+  call: ToolCallRecord,
+  surface: ToolCallRecord['uiSurface'],
+): { source: string | null; hasVisualization: boolean } {
+  const document = surface && surface.phase !== 'aborted'
+    ? { version: 1, nodes: surface.nodes }
+    : intelligenceUiDocumentOf(call);
+
+  if (!document) {
+    const hasVisualization = toolOutputsOf(call).some((output) => output.kind === 'visualization');
+    return { source: null, hasVisualization };
+  }
+  const source = document.nodes.map((node) => JSON.stringify(node)).join('\n') || null;
+  return { source, hasVisualization: false };
+}
+
 function renderIntelligenceUiAttachment(
   call: ToolCallRecord,
   tools: ReadonlyArray<ToolCallRecord>,
@@ -90,26 +106,12 @@ function renderIntelligenceUiAttachment(
   const state = toolRunStateOf(call);
   const surface = call.uiSurface;
   if (surface?.phase === 'aborted' && state !== 'done') return false;
-  const document = surface && surface.phase !== 'aborted'
-    ? { version: 1, nodes: surface.nodes }
-    : intelligenceUiDocumentOf(call);
-  /* A rejected call keeps a visible card (title, reason, table, repair)
-     instead of vanishing, unless a later attempt in the same turn replaced
-     it: that retry renders its own card. */
   if (state === 'error') return renderIntelligenceUiFailure(call, tools, readOnly);
   if (state === 'stopped') return null;
-  if (!document) {
-    /* The outputs protocol carries a finished visualization spec without the
-       OpenUI program that produced it (persisted history, older writers).
-       Fall through to the generic output host, which mounts that spec
-       directly, instead of painting a failure card over a chart we have. */
-    const hasVisualizationOutput = toolOutputsOf(call).some((output) => output.kind === 'visualization');
-    if (hasVisualizationOutput) return null;
-    if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
-    return null;
-  }
-  const source = document.nodes.map((node) => JSON.stringify(node)).join('\n');
+
+  const { source, hasVisualization } = resolveIntelligenceUiSource(call, surface);
   if (!source) {
+    if (hasVisualization) return null;
     if (state === 'done') return renderIntelligenceUiFailure(call, tools, readOnly);
     return null;
   }

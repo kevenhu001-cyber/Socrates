@@ -1,9 +1,9 @@
-import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '../../../packages/core/src/intelligentUiControls.js';
-import { LEARNING_KINDS, LEARNING_UI_GUIDANCE, openUiLearningMisuse } from '../../../packages/core/src/learningUi.js';
+import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '@socrates/core/intelligentUiControls';
+import { LEARNING_KINDS, LEARNING_UI_GUIDANCE, openUiLearningMisuse } from '@socrates/core/learningUi';
 import { DEMONSTRATION_GUIDANCE, DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
-import { PHYSICS_MODELS } from '../../../packages/core/src/physicsModelRegistry.js';
+import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
 import { visualizationTemplateGuide, validateVisualizationSpec } from './visualization.js';
-import { validateIntelligentUi as validateEnvelope } from '../../../packages/core/src/intelligentUiValidation.js';
+import { validateIntelligentUi as validateEnvelope } from '@socrates/core/intelligentUiValidation';
 import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
 import { inspectOpenUiProgram } from './openUiProgram.js';
 import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';

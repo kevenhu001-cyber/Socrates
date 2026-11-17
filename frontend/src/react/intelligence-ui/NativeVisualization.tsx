@@ -60,12 +60,10 @@ export function NativeVisualization({ streaming = false, serverSpecs = NO_SERVER
     const id = useId();
     const [attempt, setAttempt] = useState(0);
     const [phase, setPhase] = useState<MountPhase>({ kind: 'loading' });
-    /* The card re-renders on every transcript commit; serializing the whole
-       payload each time was pure main-thread work on a hot path. */
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the five props below are the whole payload
+    const { template, title, payload, caption, accessibilitySummary } = props;
     const propsKey = useMemo(
-      () => JSON.stringify({ version: 1, ...props }),
-      [props.template, props.title, props.payload, props.caption, props.accessibilitySummary],
+      () => JSON.stringify({ version: 1, template, title, payload, caption, accessibilitySummary }),
+      [template, title, payload, caption, accessibilitySummary],
     );
     /* The server's normalized spec describes the program's INITIAL state.
        Once local controls change the props it no longer applies. */

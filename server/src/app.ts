@@ -9,7 +9,7 @@ import { csrfProtection } from './middleware/csrf.js';
 import { requireAuth, optionalAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler, timeoutMiddleware } from './middleware/error.js';
 import { sanitizeLogValue } from './lib/log.js';
-import { searchLimiter, fetchLimiter, clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
+import { clientErrorLimiter, webhookLimiter } from './middleware/rateLimit.js';
 import {
   normalizeClientErrorSeverity,
   clientErrorLogLevel,
@@ -73,15 +73,12 @@ import scheduledTasksRouter from './routes/scheduledTasks.js';
 import pluginsRouter from './routes/plugins.js';
 import connectorRouter, { githubWebhookHandler } from './routes/connectors.js';
 import projectConnectorRouter from './routes/projectConnectors.js';
-import { searchContent } from './services/search.js';
-import { webSearch, imageSearch } from './services/webSearch.js';
-import { fetchBatch } from './services/util/fetchBatch.js';
-import { getActiveApiKey } from './services/core/apiKey.js';
+import searchRouter from './routes/search.js';
+import publicSitesRouter from './routes/publicSites.js';
 import { getDb } from './db/index.js';
-import { apiKeys, artifacts as artifactsTable, files as filesTable, executions as executionsTable, shares as sharesTable, sessions as sessionsTable } from './db/schema/index.js';
-import { sql, and, eq, isNotNull, isNull, inArray } from 'drizzle-orm';
+import { apiKeys } from './db/schema/index.js';
+import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
-import { contentDisposition } from './lib/fileName.js';
 
 const app = express();
 
@@ -634,46 +631,8 @@ app.use('/api/messages', messageRouter);
 // Users (Phase 3)
 app.use('/api/users', userRouter);
 
-// Search (Phase 3) — local content (sessions + messages), used by Cmd-K.
-app.post('/api/search', requireAuth, searchLimiter, async (req, res, next) => {
-  try {
-    const { q, scope, limit } = req.body;
-    const result = await searchContent(req.userId!, { q, scope, limit });
-    return res.json(result);
-  } catch (err) { next(err); }
-});
-
-// Web search — live internet results for the in-prompt research block
-// (fetchWebContext in the SPA). Returns {results: [{title,url,snippet},…]},
-// the shape the client already expects. Requires auth so we can rate-limit
-// per user and surface 429 if needed in the future.
-app.post('/api/web-search', requireAuth, searchLimiter, async (req, res, next) => {
-  try {
-    const { query, count } = req.body || {};
-    // Resolve the user's active LLM key hint so the cross-request
-    // result cache invalidates automatically when they switch providers.
-    let apiKeyHint = 'no-key';
-    try {
-      const cfg = await getActiveApiKey(req.userId);
-      if (cfg && cfg.keyHint) apiKeyHint = `${cfg.keyHint}:${cfg.url || ''}:${cfg.model || ''}`;
-    } catch { /* leave placeholder hint */ }
-    const locale = (req.headers['accept-language'] || '').split(',')[0].trim() || undefined;
-    const results = await webSearch(query, count, {
-      userId: req.userId ?? undefined, locale, apiKeyHint,
-    });
-    return res.json({ results, query: String(query || '').slice(0, 200) });
-  } catch (err) { next(err); }
-});
-
-// Image search — live image results from Bing Images. Returns
-// { results: [{ title, url, thumbnailUrl, sourceUrl }] }.
-app.post('/api/image-search', requireAuth, searchLimiter, async (req, res, next) => {
-  try {
-    const { query, count } = req.body || {};
-    const results = await imageSearch(query, count);
-    return res.json({ results, query: String(query || '').slice(0, 200) });
-  } catch (err) { next(err); }
-});
+// Search & Web Retrieval (/api/search, /api/web-search, /api/image-search, /api/fetch-batch)
+app.use('/api', searchRouter);
 
 // Projects (Phase 4)
 app.use('/api/projects', projectRouter);
@@ -702,75 +661,6 @@ app.use('/api/project-connectors', projectConnectorRouter);
 // when the file's session (direct, or via its code-interpreter
 // execution) carries an active public/unlisted share on a non-archived
 // session. Everything else gets 404 so the endpoint is not an
-// existence oracle.
-app.get('/api/files/:id/raw', optionalAuth, async (req, res, next) => {
-  try {
-    const db = getDb();
-    const fileId = String(req.params.id);
-    const [file] = await db.select().from(filesTable).where(eq(filesTable.id, fileId)).limit(1);
-    if (!file) return next();
-    let allowed = !!req.userId && file.userId === req.userId;
-    if (!allowed) {
-      let sessionId = file.sessionId;
-      if (!sessionId && file.executionId) {
-        const [exec] = await db.select({ sessionId: executionsTable.sessionId })
-          .from(executionsTable)
-          .where(eq(executionsTable.id, file.executionId))
-          .limit(1);
-        sessionId = exec?.sessionId ?? null;
-      }
-      if (sessionId) {
-        const [share] = await db.select({ token: sharesTable.token })
-          .from(sharesTable)
-          .innerJoin(sessionsTable, eq(sessionsTable.id, sharesTable.sessionId))
-          .where(and(
-            eq(sharesTable.sessionId, sessionId),
-            inArray(sharesTable.visibility, ['public', 'unlisted']),
-            isNull(sessionsTable.archivedAt),
-          ))
-          .limit(1);
-        allowed = !!share;
-      }
-    }
-    if (!allowed) return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
-    res.set('X-Content-Type-Options', 'nosniff');
-    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.set('Content-Type', file.mimeType);
-    const inlinePreview = req.query.inline === '1' && (
-      file.mimeType.startsWith('audio/')
-      || file.mimeType.startsWith('video/')
-      || (file.mimeType.startsWith('text/') && file.mimeType !== 'text/html' && file.mimeType !== 'text/xhtml' && file.mimeType !== 'text/xhtml+xml')
-      || file.mimeType === 'application/json'
-    );
-    /* Always name the file (RFC 6266 filename + RFC 5987 filename*=UTF-8'')
-       so a download is saved as 「数学.pdf」 rather than "raw" or a uuid;
-       the disposition type itself is unchanged. */
-    if (!file.mimeType.startsWith('image/') && file.mimeType !== 'application/pdf' && !inlinePreview) {
-      res.set('Content-Disposition', contentDisposition('attachment', file.name));
-    } else {
-      res.set('Content-Disposition', contentDisposition('inline', file.name));
-    }
-    /* `dotfiles: 'deny'` — every artifact is stored under a UUID filename, so
-       no legitimate download needs a leading dot. 'allow' would have served a
-       `.env`/`.git` entry if a storagePath ever resolved into a directory
-       that carries one, turning this route into a dotfile reader for a
-       shared session. A denied path reports ENOENT/EACCES and lands on the
-       same 404 as a missing file. */
-    const fileName = path.basename(file.storagePath);
-    const fileDir = path.dirname(file.storagePath);
-    return res.sendFile(fileName, { root: fileDir, dotfiles: 'allow' }, (err) => {
-      if (err) {
-        if (!res.headersSent) {
-          const failure = err as { code?: string; status?: number };
-          if (failure.status === 404 || failure.code === 'ENOENT' || failure.code === 'EACCES') {
-            return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
-          }
-        }
-        next(err);
-      }
-    });
-  } catch (err) { next(err); }
-});
 app.use('/api/files', fileExtractRouter);
 app.use('/api/files', fileRouter);
 
@@ -781,23 +671,6 @@ app.use('/api', tagRouter);
 // Migrate (Phase 4)
 app.use('/api/migrate', migrateRouter);
 
-// Fetch-batch (Phase 4) — requires auth to prevent use as SSRF proxy
-app.post('/api/fetch-batch', requireAuth, fetchLimiter, async (req, res, next) => {
-  try {
-    const { urls } = req.body;
-    if (!Array.isArray(urls)) return res.status(400).json({ code: 'BAD_REQUEST', message: 'urls must be an array' });
-    // SSRF protection is handled by fetchBatch.js (DNS resolution,
-    // private IP check, redirect validation). Allow http(s) here so
-    // search results with http:// URLs are not blocked.
-    for (const url of urls) {
-      if (typeof url !== 'string' || (!url.startsWith('https://') && !url.startsWith('http://'))) {
-        return res.status(400).json({ code: 'BAD_REQUEST', message: 'Only http(s):// URLs are allowed' });
-      }
-    }
-    const result = await fetchBatch(urls);
-    return res.json(result);
-  } catch (err) { next(err); }
-});
 
 // Artifacts (Phase 5)
 app.use('/api/artifacts', artifactRouter);
@@ -864,18 +737,7 @@ const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
 // Published Socrates sites are static HTML documents in the versioned
 // artifact store. A sandboxed CSP keeps author content isolated from the
 // authenticated app even though the URL uses the same host.
-app.get('/s/:token', async (req, res, next) => {
-  try {
-    const [site] = await getDb().select().from(artifactsTable)
-      .where(and(eq(artifactsTable.shareToken, req.params.token), eq(artifactsTable.type, 'site')))
-      .limit(1);
-    if (!site || (site.visibility !== 'public' && site.visibility !== 'unlisted')) return res.status(404).send('Site not found');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; font-src https: data:; sandbox");
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-store');
-    return res.send(site.source);
-  } catch (error) { next(error); }
-});
+app.use('/s', publicSitesRouter);
 app.use(express.static(FRONTEND_DIST, {
   // index.html is the SPA shell — let the route below handle
   // history-mode navigations. Static assets (JS / CSS / images)

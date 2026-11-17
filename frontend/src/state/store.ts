@@ -38,9 +38,36 @@ function rootSnapshot() {
   });
 }
 
-function pathFor(key: unknown) {
+const STATIC_KEY_NAMESPACE_MAP: Record<string, string> = {
+  // session
+  topic: 'session', phase: 'session', diagIndex: 'session', diagAnswers: 'session', diagQuestions: 'session',
+  currentSessionId: 'session', substantiveCount: 'session', explaining: 'session', sessionTitle: 'session',
+  domain: 'session', totalQ: 'session', stuckCount: 'session', branchedFrom: 'session', messages: 'session',
+  currentProjectId: 'session', activeProjectFilter: 'session', teachingStage: 'session',
+  currentExampleIdx: 'session', practiceAttempts: 'session', practicePhase: 'session', teachingPlan: 'session',
+  stuckCheckOffered: 'session', stuckCheckRejected: 'session', fourOptionDialog: 'session', diagCancel: 'session',
+  tutorAttachments: 'session', tutorPartsTemplate: 'session',
+  // kb
+  kbNodes: 'kb', currentNode: 'kb', mistakes: 'kb', boundariesHistory: 'kb', boundariesSavedAt: 'kb', mistakeFilter: 'kb',
+  // search
+  searchContext: 'search', searchResults: 'search', searchContextAt: 'search', searchContextCount: 'search',
+  searchContextQuery: 'search', searchContextError: 'search',
+  // call
+  lastCallSource: 'call', lastCallError: 'call',
+  // ui
+  _userScrolledAway: 'ui', _examInView: 'ui', _canvasPendingId: 'ui',
+  // exam
+  examCancel: 'exam', examQuestions: 'exam', examAnswers: 'exam', examSubmitted: 'exam', examTopic: 'exam',
+  examCount: 'exam', examReadOnly: 'exam', examLang: 'exam', examDifficulty: 'exam', examInstructions: 'exam',
+  examTypes: 'exam', _examPrevActiveId: 'exam', examViewMode: 'exam', examFormDraft: 'exam',
+  examProgress: 'exam', examStatusMessage: 'exam', examStatusDetail: 'exam', examLocaleRevision: 'exam',
+};
+
+function pathFor(key: unknown): string | null {
   if (typeof key !== 'string' || !key) return null;
   if (key.includes('.')) return key;
+  const directNs = STATIC_KEY_NAMESPACE_MAP[key];
+  if (directNs) return directNs + '.' + key;
   const names = Object.keys(namespaceBridges);
   for (let index = 0; index < names.length; index++) {
     const namespace = names[index];
@@ -141,12 +168,26 @@ export function subscribeAll(listener: () => void) {
 
 const stateStore = (function () {
   function read<Key extends string>(key: Key): Key extends keyof LegacyStateValues ? LegacyStateValues[Key] : unknown {
+    if (typeof key === 'string') {
+      const directNs = STATIC_KEY_NAMESPACE_MAP[key];
+      if (directNs) {
+        const bridge = namespaceBridges[directNs];
+        if (bridge) {
+          return (bridge.getSnapshot() as Record<string, unknown>)[key] as Key extends keyof LegacyStateValues ? LegacyStateValues[Key] : unknown;
+        }
+      }
+    }
     const path = pathFor(key);
     return (path ? readPath(path) : undefined) as Key extends keyof LegacyStateValues ? LegacyStateValues[Key] : unknown;
   }
 
   function dispatchStateSet(action: LegacyStateAction) {
     if (typeof action.key !== 'string') throw new TypeError('state/set requires a string key');
+    const directNs = STATIC_KEY_NAMESPACE_MAP[action.key];
+    if (directNs && namespaceBridges[directNs]) {
+      dispatchToNamespace(directNs, { type: directNs + '/set', key: action.key, value: action.value });
+      return;
+    }
     const setPath = pathFor(action.key);
     if (!setPath) throw new TypeError('Unknown state key: ' + action.key);
     const parts = setPath.split('.');

@@ -1,5 +1,5 @@
 import { createParser, evaluate, split, tokenize, walkAST, type ASTNode, type LibraryJSONSchema } from '@openuidev/lang-core';
-import { OPENUI_AST_BUDGET, openUiProgramIssues, openUiRuntimeIssues } from '../../../packages/core/src/openUiProgram.js';
+import { OPENUI_AST_BUDGET, openUiProgramIssues, openUiRuntimeIssues } from '@socrates/core/openUiProgram';
 import { validateVisualizationSpec } from './visualization.js';
 import { OPENUI_SCHEMA } from './openUiPrompt.generated.js';
 

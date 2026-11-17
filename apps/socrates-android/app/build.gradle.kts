@@ -46,9 +46,15 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
     outputs.file(toolRendererAssets.get().file("render/tool-renderer.css"))
     doFirst { output.parentFile.mkdirs() }
 }
+val spaAssets = layout.buildDirectory.dir("generated/spaAssets")
+val syncSpaAssets by tasks.registering(Sync::class) {
+    from(repositoryRoot.resolve("frontend/dist"))
+    into(spaAssets)
+}
 android.sourceSets.getByName("main").assets.srcDir(toolRendererAssets)
 android.sourceSets.getByName("main").assets.srcDir(toolRendererVendorAssets)
-tasks.named("preBuild").configure { dependsOn(bundleToolRenderer, prepareToolRendererAssets) }
+android.sourceSets.getByName("main").assets.srcDir(spaAssets)
+tasks.named("preBuild").configure { dependsOn(bundleToolRenderer, prepareToolRendererAssets, syncSpaAssets) }
 android {
  namespace = "com.socrates.android"; compileSdk = 35
  defaultConfig { applicationId = "com.socrates.android"; minSdk = 26; targetSdk = 35; versionCode = 5; versionName = "1.4"; testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" }

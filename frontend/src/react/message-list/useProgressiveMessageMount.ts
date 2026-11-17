@@ -100,6 +100,43 @@ function useOlderHistoryTrigger(atOldestRow: boolean, itemCount: number): void {
   }, [atOldestRow, itemCount]);
 }
 
+function useDeferredFlusherRegistration(
+  trackRef: React.MutableRefObject<MountTrack>,
+  anchorRef: React.MutableRefObject<ScrollAnchor | null>,
+  rerender: () => void,
+) {
+  useEffect(() => registerDeferredMessageRowsFlusher(
+    () => {
+      const track = trackRef.current;
+      if (track.full) return;
+      flushSync(() => {
+        const host = scrollHost();
+        anchorRef.current = host ? captureScrollAnchor(host) : null;
+        const next = fullMountWindow();
+        trackRef.current = { ...track, ...next };
+        setOffscreenMount(true);
+        rerender();
+      });
+      setOffscreenMount(false);
+    },
+    () => {
+      const track = trackRef.current;
+      if (!track.full) return;
+      flushSync(() => {
+        const host = scrollHost();
+        const anchor = host ? captureScrollAnchor(host) : null;
+        anchorRef.current = anchor;
+        const anchorIndex = anchor?.clientId
+          ? indexOfId(track.items, anchor.clientId)
+          : track.items.length - 1;
+        const next = windowAroundIndex(track.items, anchorIndex >= 0 ? anchorIndex : track.items.length - 1);
+        trackRef.current = { ...track, ...next };
+        rerender();
+      });
+    },
+  ), [anchorRef, rerender, trackRef]);
+}
+
 export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessage>): {
   mounted: ReadonlyArray<LegacyChatMessage>;
   start: number;
@@ -140,37 +177,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<LegacyChatMessag
   });
 
   useAboveViewportResizeCompensation();
-  useEffect(() => registerDeferredMessageRowsFlusher(
-    () => {
-      const track = trackRef.current;
-      if (track.full) return;
-      flushSync(() => {
-        const host = scrollHost();
-        anchorRef.current = host ? captureScrollAnchor(host) : null;
-        const next = fullMountWindow();
-        trackRef.current = { ...track, ...next };
-        setOffscreenMount(true);
-        rerender();
-      });
-      setOffscreenMount(false);
-    },
-    () => {
-      const track = trackRef.current;
-      if (!track.full) return;
-      flushSync(() => {
-        const host = scrollHost();
-        const anchor = host ? captureScrollAnchor(host) : null;
-        anchorRef.current = anchor;
-        const anchorIndex = anchor?.clientId
-          ? indexOfId(track.items, anchor.clientId)
-          : track.items.length - 1;
-        const next = windowAroundIndex(track.items, anchorIndex >= 0 ? anchorIndex : track.items.length - 1);
-        trackRef.current = { ...track, ...next };
-        rerender();
-      });
-    },
-  ), []);
-
+  useDeferredFlusherRegistration(trackRef, anchorRef, rerender);
   useHistoryPrepend(trackRef, anchorRef);
   useOlderHistoryTrigger(start === 0 && !full, items.length);
 

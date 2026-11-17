@@ -39,6 +39,39 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     }
     schedule();
   });
+  function applySvgMathOverlay(svgText: SVGElement, html: string, source: string) {
+    if (svgText.textContent !== source) return;
+    const box = (svgText as unknown as SVGTextElement).getBBox();
+    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+    overlay.setAttribute('data-viz-math', '');
+    overlay.setAttribute('x', String(box.x));
+    overlay.setAttribute('y', String(box.y - box.height));
+    overlay.setAttribute('width', String(Math.max(80, box.width)));
+    overlay.setAttribute('height', String(Math.max(40, box.height * 3)));
+    if (svgText.hasAttribute('transform')) overlay.setAttribute('transform', svgText.getAttribute('transform')!);
+    overlay.style.cssText = 'overflow:visible;pointer-events:none';
+    const content = document.createElement('div');
+    content.style.color = getComputedStyle(svgText).fill;
+    content.style.fontSize = getComputedStyle(svgText).fontSize;
+    content.innerHTML = html;
+    overlay.append(content);
+    svgText.after(overlay);
+    svgText.style.opacity = '0';
+    const watch = new MutationObserver(() => {
+      overlay.remove();
+      svgText.style.removeProperty('opacity');
+      watch.disconnect();
+    });
+    watch.observe(svgText, { childList: true, characterData: true, subtree: true });
+  }
+
+  function applySpanMath(node: Text, html: string) {
+    const span = document.createElement('span');
+    span.dataset.vizMath = '';
+    span.innerHTML = html;
+    node.replaceWith(span);
+  }
+
   window.addEventListener('message', event => {
     const data = event.data;
     if (event.source !== window.parent || data?.type !== 'socrates-viz-math-result' || data.cardId !== cardId || data.nonce !== nonce) return;
@@ -50,30 +83,9 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     const text = entry.node.parentElement;
     const svgText = text?.closest('text');
     if (svgText && svgText.namespaceURI === 'http://www.w3.org/2000/svg') {
-      // One complete SVG label per request. Preserve the renderer's text node
-      // as its layout anchor; only the visible formula becomes MathML.
-      if (svgText.textContent !== entry.source) return;
-      const box = (svgText as unknown as SVGTextElement).getBBox();
-      const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-      overlay.setAttribute('data-viz-math', '');
-      overlay.setAttribute('x', String(box.x)); overlay.setAttribute('y', String(box.y - box.height));
-      overlay.setAttribute('width', String(Math.max(80, box.width))); overlay.setAttribute('height', String(Math.max(40, box.height * 3)));
-      if (svgText.hasAttribute('transform')) overlay.setAttribute('transform', svgText.getAttribute('transform')!);
-      overlay.style.cssText = 'overflow:visible;pointer-events:none';
-      const content = document.createElement('div');
-      content.style.color = getComputedStyle(svgText).fill;
-      content.style.fontSize = getComputedStyle(svgText).fontSize;
-      content.innerHTML = data.html;
-      overlay.append(content); svgText.after(overlay);
-      svgText.style.opacity = '0';
-      // Remove the old overlay when a simulation changes its label.
-      const watch = new MutationObserver(() => { overlay.remove(); svgText.style.removeProperty('opacity'); watch.disconnect(); });
-      watch.observe(svgText, { childList: true, characterData: true, subtree: true });
+      applySvgMathOverlay(svgText, data.html, entry.source);
     } else {
-      const span = document.createElement('span');
-      span.dataset.vizMath = '';
-      span.innerHTML = data.html;
-      entry.node.replaceWith(span);
+      applySpanMath(entry.node, data.html);
     }
   });
   function start() { observer.observe(document.body, { childList: true, subtree: true, characterData: true }); dirty.add(document.body); scan(); }

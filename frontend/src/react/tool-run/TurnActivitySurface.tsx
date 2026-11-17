@@ -213,47 +213,39 @@ function useRunDuration(activities: ReadonlyArray<TurnActivityEntry>, calls: Rea
   return isLive ? liveSec / 1000 : (lastSec.current || undefined) ?? elapsedSec;
 }
 
-export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
-  const { activities = [], isLive = false, elapsedSec, status, calls = [], readOnly } = props;
+function useTurnActivityViewModel(props: TurnActivitySurfaceProps) {
+  const { activities = [], isLive = false, elapsedSec, calls = [], readOnly } = props;
   const statusLabel = props.statusLabel?.trim();
-  const answerStarted = Boolean(props.answerStarted);
-  const [isOpen, setIsOpen] = useState(false);
-  /* A turn that was live keeps one settled line once it ends, even when the
-     run reported no public summary or tool call. Removing that row at
-     settle shrank the answer's own row by ~32px and moved every line the
-     reader was looking at; the surface is the turn's header, so it stays
-     (the same way the reference keeps "Thought for 5s"). */
-  const wasLive = useRef(isLive);
-  if (isLive) wasLive.current = true;
-  const bodyId = useId();
-  useLocaleRefresh();
-
-  /* The elapsed clock re-renders this component four times a second. The step
-     list, the intent and the rendered rows are derived only from props, so
-     they are cached: the ticking header stops rebuilding every tool row (and
-     with it reopening the detail bodies and re-measuring charts). */
   const timelineSteps = useMemo(() => publicSummariesOf(activities), [activities]);
   const steps = useMemo(
     () => stepsWithFallback(timelineSteps, (props.publicSummary || '').trim()),
     [timelineSteps, props.publicSummary],
   );
   const intent = useMemo(() => props.intentSummary?.trim() || '', [props.intentSummary]);
-
   const durationSec = useRunDuration(activities, calls, isLive, elapsedSec);
   const header = thinkingHeaderOf({ live: isLive, durationSec, toolCount: calls.length, statusLabel });
   const label = thinkingLabelOf(header, thinkingLabels());
   const durationLabel = header.durationSec === null ? undefined : tf('think.rn.elapsed', '{sec}秒', { sec: header.durationSec });
 
-  const statusToolName = status?.toolName;
+  const statusToolName = props.status?.toolName;
   const rows = useMemo(
     () => rowsFor({ steps, calls, intent, isLive, statusLabel, statusToolName, readOnly }),
     [steps, calls, intent, isLive, statusLabel, statusToolName, readOnly],
   );
   const hasDetails = rows.length > 0 && Boolean(steps.length || intent || calls.length);
-  /* A settled turn keeps its one-line activity summary instead of vanishing.
-     Unmounting the row at finish removed its height from under the reader in
-     one frame — that is the page jumping when thinking ends. Only a turn with
-     nothing to report (no reasoning, no tools) omits the row entirely. */
+  return { timelineSteps, label, durationLabel, rows, hasDetails };
+}
+
+export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
+  const { activities = [], isLive = false, elapsedSec, status } = props;
+  const answerStarted = Boolean(props.answerStarted);
+  const [isOpen, setIsOpen] = useState(false);
+  const wasLive = useRef(isLive);
+  if (isLive) wasLive.current = true;
+  const bodyId = useId();
+  useLocaleRefresh();
+
+  const { timelineSteps, label, durationLabel, rows, hasDetails } = useTurnActivityViewModel(props);
   const hasRecord = isLive || hasDetails || wasLive.current
     || Boolean(elapsedSec) || Boolean(props.publicSummary) || activities.length > 0;
   if (!hasRecord) return null;

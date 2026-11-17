@@ -1,4 +1,4 @@
-import type { PublicTurnActivity } from '../../../packages/contracts/src/turnActivity.js';
+import type { PublicTurnActivity } from '@socrates/contracts';
 
 /** Emits observations at provider/tool boundaries, never private reasoning. */
 export function createTurnActivityController(emit: (activity: PublicTurnActivity) => void) {

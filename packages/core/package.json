@@ -37,6 +37,50 @@
     "./motion/spring": {
       "types": "./src/motion/spring.ts",
       "import": "./src/motion/spring.ts"
+    },
+    "./turnRuntimeText": {
+      "types": "./src/turnRuntimeText.d.ts",
+      "import": "./src/turnRuntimeText.js"
+    },
+    "./turnEvidence": {
+      "types": "./src/turnEvidence.d.ts",
+      "import": "./src/turnEvidence.js"
+    },
+    "./physicsExamples": {
+      "types": "./src/physicsExamples.d.ts",
+      "import": "./src/physicsExamples.js"
+    },
+    "./openUiProgram": {
+      "types": "./src/openUiProgram.d.ts",
+      "import": "./src/openUiProgram.js"
+    },
+    "./intelligentUiNormalize": {
+      "types": "./src/intelligentUiNormalize.d.ts",
+      "import": "./src/intelligentUiNormalize.js"
+    },
+    "./demonstration": {
+      "types": "./src/demonstration.d.ts",
+      "import": "./src/demonstration.js"
+    },
+    "./intelligentUiControls": {
+      "types": "./src/intelligentUiControls.d.ts",
+      "import": "./src/intelligentUiControls.js"
+    },
+    "./learningUi": {
+      "types": "./src/learningUi.d.ts",
+      "import": "./src/learningUi.js"
+    },
+    "./physicsModelRegistry": {
+      "types": "./src/physicsModelRegistry.d.ts",
+      "import": "./src/physicsModelRegistry.js"
+    },
+    "./intelligentUiValidation": {
+      "types": "./src/intelligentUiValidation.d.ts",
+      "import": "./src/intelligentUiValidation.js"
+    },
+    "./intelligentUiPatch": {
+      "types": "./src/intelligentUiPatch.d.ts",
+      "import": "./src/intelligentUiPatch.js"
     }
   }
 }

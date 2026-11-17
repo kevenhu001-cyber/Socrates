@@ -1,4 +1,4 @@
-import type { TurnSource, TurnCitation, TurnClaim, TurnRuntime } from '../../contracts/src/turnEvent.js';
+import type { TurnSource, TurnCitation, TurnClaim, TurnRuntime } from '@socrates/contracts';
 export function normalizeTurnSource(value: unknown): TurnSource | null;
 export function normalizeTurnCitation(value: unknown): TurnCitation | null;
 export function normalizeTurnClaim(value: unknown): TurnClaim | null;

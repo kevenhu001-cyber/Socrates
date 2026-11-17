@@ -1,9 +1,19 @@
-import { reduceTurnEvent } from '../../../packages/core/src/turnRuntime.js';
-import { normalizeTurnSource, citableTurnMatches } from '../../../packages/core/src/turnEvidence.js';
-import { applyIntelligentUiPatch } from '../../../packages/core/src/intelligentUiPatch.js';
+import { reduceTurnEvent } from '@socrates/core/turnRuntime';
+import { normalizeTurnSource, citableTurnMatches } from '@socrates/core/turnEvidence';
+import { applyIntelligentUiPatch } from '@socrates/core/intelligentUiPatch';
 import { randomUUID } from 'node:crypto';
-import type { PublicTurnActivity } from '../../../packages/contracts/src/turnActivity.js';
-import type { TurnActivityEntry, TurnEvent, TurnEventPayload, TurnUiNode, TurnRuntime, TurnSource, TurnClaim, TurnCitation } from '../../../packages/contracts/src/turnEvent.js';
+import type {
+  PublicTurnActivity,
+  TurnActivityEntry,
+  TurnEvent,
+  TurnEventPayload,
+  TurnUiNode,
+  TurnUiEdit,
+  TurnRuntime,
+  TurnSource,
+  TurnClaim,
+  TurnCitation,
+} from '@socrates/contracts';
 import { validateIntelligentUi } from './intelligentUi.js';
 import { normalizeIntelligentUiNode } from './intelligentUiNormalize.js';
 import { createIntelligentUiNodeStream } from './intelligentUiStream.js';
@@ -104,7 +114,7 @@ export function createTurnEventController(emit: (event: TurnEvent) => void, turn
       if (!result.ok) return fail(result.error);
       const validation = validateIntelligentUi({ version: 1, nodes: result.nodes });
       if (!validation.ok) return fail(validation.error);
-      if (!publish({ type: 'ui.edit', surfaceId: surface.id, baseRevision: surface.revision || 0, operations: args.operations as import('../../../packages/contracts/src/turnEvent.js').TurnUiEdit[] })) return fail('Turn snapshot limit exceeded');
+      if (!publish({ type: 'ui.edit', surfaceId: surface.id, baseRevision: surface.revision || 0, operations: args.operations as TurnUiEdit[] })) return fail('Turn snapshot limit exceeded');
       return { ok: true as const, output: `Updated surface ${surface.id}; revision ${(surface.revision || 0) + 1}. Nodes: ${result.nodes.map((node) => node.id).join(', ')}` };
     },
     activity(value: PublicTurnActivity) {

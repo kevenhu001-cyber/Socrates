@@ -1,7 +1,7 @@
-import type { PublicTurnActivity } from './turnActivity';
-import type { TurnEvent, TurnRuntime } from './turnEvent';
-export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode, TurnUiEdit, TurnSource, TurnCitation, TurnClaim } from './turnEvent';
-export type { PublicTurnActivity } from './turnActivity';
+import type { PublicTurnActivity } from './turnActivity.js';
+import type { TurnEvent, TurnRuntime } from './turnEvent.js';
+export type { TurnEvent, TurnEventPayload, TurnRuntime, TurnActivityEntry, TurnUiSurface, TurnUiNode, TurnUiEdit, TurnSource, TurnCitation, TurnClaim } from './turnEvent.js';
+export type { PublicTurnActivity } from './turnActivity.js';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 

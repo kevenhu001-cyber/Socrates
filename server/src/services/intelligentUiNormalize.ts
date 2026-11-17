@@ -10,8 +10,8 @@ import {
   normalizeIntelligentUiNode as coreNormalizeNode,
   normalizeIntelligentUiArgs as coreNormalizeArgs,
   normalizeIntelligentUiPatchArgs as coreNormalizePatchArgs,
-} from '../../../packages/core/src/intelligentUiNormalize.js';
-import { normalizeDemonstrationProgram as normalizeCoreDemonstrationProgram } from '../../../packages/core/src/demonstration.js';
+} from '@socrates/core/intelligentUiNormalize';
+import { normalizeDemonstrationProgram as normalizeCoreDemonstrationProgram } from '@socrates/core/demonstration';
 
 export { asArray, numberLike };
 
