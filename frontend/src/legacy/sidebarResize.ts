@@ -3,17 +3,15 @@
 // change its width. Range: 200–480 px. Persists in localStorage.
 // The sidebar overlays the main content when wider than 18rem.
 //
-// The drag is driven by the shared spring solver (packages/core): the panel
-// chases the pointer with an overdamped spring — stiffness 1200 / damping
-// 80, ζ = 1.16 — so it converges without a wobble, and the same spring
-// settles the panel after the release. The curve is analytic, so a dropped
-// frame cannot shift it and the Web panel and the Universal app play the
-// same motion.
+// The panel tracks the pointer 1:1, coalesced to one width write per frame.
+// A spring chasing a moving target always trails the cursor by a few pixels,
+// which reads as input lag on a direct-manipulation handle; the compositor
+// already coalesces pointer moves, so the direct value is the honest one.
+// Keyboard steps remain discrete commands.
 //
 // Sidebar open state is published through sidebar.store so React-owned
 // chrome can render the correct controls after a viewport transition.
 
-import { createSpring, Spring, SPRING_PRESETS } from '@socrates/core/motion/spring';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { useSidebarStore } from '../sidebar/sidebar.store.ts';
 import { projectSidebarOpen } from '../sidebar/sidebar.service.ts';
@@ -24,16 +22,10 @@ const SIDEBAR_MAX_PX = 480;
 const SIDEBAR_DEFAULT_PX = 260; /* ChatGPT-style desktop shell */
 const STORAGE_KEY = 'socrates-sidebar-width';
 
-/* A quarter of a pixel is below the threshold of visibility, so the spring
-   may call itself at rest there. */
-const DRAG_REST_DELTA = 0.25;
-
 let sidebarWidthPx = SIDEBAR_DEFAULT_PX;
 let dragging = false;
 let startX = 0;
 let startW = 0;
-/* The spring that chases the pointer, and the width it is heading for. */
-let dragSpring: Spring | null = null;
 let dragTargetPx = SIDEBAR_DEFAULT_PX;
 let dragFrame = 0;
 
@@ -73,30 +65,15 @@ export function getSidebarMaxPx() {
   return SIDEBAR_MAX_PX;
 }
 
-/* Paint the spring's current value and keep painting until it comes to
-   rest. The width is written straight to --app-sidebar-width, because a
-   panel that tracks the pointer has to change its own box — there is no
-   transform that widens a content column without stretching its text. */
-function paintDragFrame(now: number) {
+/* One width write per frame. The width is written straight to
+   --app-sidebar-width, because a panel that tracks the pointer has to
+   change its own box — there is no transform that widens a content column
+   without stretching its text. */
+function paintDragFrame() {
   dragFrame = 0;
-  const spring = dragSpring;
-  if (!spring) return;
-  const value = spring.valueAt(now);
-  if (value !== sidebarWidthPx) {
-    sidebarWidthPx = value;
-    applySidebarWidth();
-  }
-  if (dragging || !spring.settled(now)) {
-    dragFrame = requestAnimationFrame(paintDragFrame);
-    return;
-  }
-  /* At rest the spring only approaches its target asymptotically, so the
-     committed width is the target itself — an integer, and exactly what
-     gets persisted. */
+  if (!dragging || dragTargetPx === sidebarWidthPx) return;
   sidebarWidthPx = dragTargetPx;
   applySidebarWidth();
-  dragSpring = null;
-  saveSidebarWidth(dragTargetPx);
 }
 
 function scheduleDragFrame() {
@@ -117,10 +94,6 @@ export function initSidebarDrag() {
     startX = e.clientX;
     startW = sidebarWidthPx;
     dragTargetPx = startW;
-    dragSpring = createSpring(SPRING_PRESETS.dragRelease, startW, {
-      restDelta: DRAG_REST_DELTA,
-      now: performance.now(),
-    });
     handle!.classList.add('dragging');
     document.body.classList.add('sidebar-resizing');
     e.preventDefault?.();
@@ -133,7 +106,6 @@ export function initSidebarDrag() {
     if (w < SIDEBAR_MIN_PX) w = SIDEBAR_MIN_PX;
     if (w > SIDEBAR_MAX_PX) w = SIDEBAR_MAX_PX;
     dragTargetPx = w;
-    if (dragSpring) dragSpring.setTarget(w, performance.now());
     scheduleDragFrame();
   }
   function onUp() {
@@ -141,10 +113,14 @@ export function initSidebarDrag() {
     dragging = false;
     handle!.classList.remove('dragging');
     document.body.classList.remove('sidebar-resizing');
-    /* The spring keeps running: it converges on the width the pointer left
-       behind and commits it when it comes to rest. */
+    /* Commit the value under the pointer, not a later animation target. */
+    if (dragFrame) {
+      cancelAnimationFrame(dragFrame);
+      dragFrame = 0;
+    }
+    sidebarWidthPx = dragTargetPx;
+    applySidebarWidth();
     saveSidebarWidth(dragTargetPx);
-    scheduleDragFrame();
   }
   handle.addEventListener('mousedown', onDown);
   window.addEventListener('mousemove', onMove);
@@ -179,15 +155,14 @@ export function initSidebarDrag() {
   window.addEventListener('touchend', onUp);
   window.addEventListener('touchcancel', onUp);
   /* Keyboard: focused handle, arrow keys nudge. A keyboard step is a
-     discrete command and lands at once — the spring belongs to the
-     pointer, where the lag reads as weight rather than as delay. */
+     discrete command and lands at once. */
   handle.tabIndex = 0;
   handle.addEventListener('keydown', function (e) {
     const step = e.shiftKey ? 32 : 8;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      /* A keyboard step takes over from the pointer: the running spring is
-       * dropped and the drag chrome comes off with it. */
-      cancelDragSpring();
+      /* A keyboard step takes over from the pointer: drop the pending
+       * drag write and take the drag chrome off. */
+      cancelDragFrame();
       handle.classList.remove('dragging');
       document.body.classList.remove('sidebar-resizing');
       sidebarWidthPx =
@@ -202,12 +177,11 @@ export function initSidebarDrag() {
 }
 
 /* Drop a running drag (a keyboard nudge takes over from the pointer). */
-function cancelDragSpring() {
+function cancelDragFrame() {
   if (dragFrame) {
     cancelAnimationFrame(dragFrame);
     dragFrame = 0;
   }
-  dragSpring = null;
   dragging = false;
 }
 

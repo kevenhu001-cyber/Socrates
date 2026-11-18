@@ -79,12 +79,13 @@ test('finish settle stops across a session change even when the tail id is uncha
   });
 });
 
-test('same-turn finish keeps restoring its capture for at most 30 frames', async () => {
+test('same-turn finish keeps restoring its capture for at most 6 frames', async () => {
   await withViewport(({ frames, listeners, scroller }) => {
     /* settle() no longer corrects synchronously — it defers the first
        correction to the next animation frame (P_stream-finish-paint, see
        chat/turn/finishViewport.ts), so every correction here comes from a
-       queued frame. Count them and hold the documented 30-frame bound. */
+       queued frame. Count them and hold the short frame budget; later
+       corrections are observer-driven. */
     let corrections = 0;
     while (frames.length) {
       scroller.scrollTop = 450;
@@ -95,11 +96,44 @@ test('same-turn finish keeps restoring its capture for at most 30 frames', async
         'same-turn layout still preserves the captured viewport',
       );
       corrections += 1;
-      assert.ok(corrections <= 30, 'finish remains bounded');
+      assert.ok(corrections <= 6, 'finish remains bounded');
     }
-    assert.equal(corrections, 30);
+    assert.equal(corrections, 6);
     assert.equal(listeners.size, 0);
   });
+});
+
+test('a late answer resize is corrected while the finish observer is active', async () => {
+  const previousObserver = globalThis.ResizeObserver;
+  let callback = null;
+  let observed = null;
+  let disconnects = 0;
+  globalThis.ResizeObserver = class {
+    constructor(next) {
+      callback = next;
+    }
+    observe(element) {
+      observed = element;
+    }
+    disconnect() {
+      disconnects += 1;
+    }
+  };
+  try {
+    await withViewport(({ frames, listeners, scroller }) => {
+      while (frames.length) frames.shift()(0);
+      assert.equal(observed, scroller);
+      scroller.scrollTop = 450;
+      callback();
+      assert.equal(scroller.scrollTop, 400, 'late layout growth restores the capture');
+      listeners.get('wheel')();
+      assert.equal(listeners.size, 0);
+      assert.ok(disconnects > 0, 'observer is released when the reader takes over');
+    });
+  } finally {
+    if (previousObserver === undefined) delete globalThis.ResizeObserver;
+    else globalThis.ResizeObserver = previousObserver;
+  }
 });
 
 test('user intent permanently cancels the pending finish correction', async () => {

@@ -40,6 +40,12 @@ html:is([data-main-view='settingsPage'], [data-main-view='profilePage']) #appShe
   display: none;
 }
 
+/* Settings owns a full page with its own header, so the chat top bar is not
+   duplicated above it. Profile keeps the shared account-page frame. */
+html[data-main-view='settingsPage'] #appShell .top-bar {
+  display: none;
+}
+
 @media (max-width: 768px) {
   body[data-conversation-active='true'] #appShell .top-bar-left {
     flex: 1 1 0 !important;

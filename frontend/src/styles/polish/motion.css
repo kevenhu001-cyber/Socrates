@@ -14,7 +14,8 @@
  */
 
 /* Desktop shell: sidebar width and main inset are committed immediately.
-   sidebar.service.ts provides the visible 180ms FLIP on `.main`. */
+   sidebar.service.ts provides the visible 200ms FLIP on `.main` and the
+   160ms content crossfade inside the rail. */
 @media (min-width: 769px) {
   #appShell #sidebar,
   #appShell #sidebar ~ .main {

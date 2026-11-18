@@ -1,0 +1,96 @@
+/*
+ * polish/settings-page.css — the settings route is a page, not a sheet.
+ *
+ * Settings and Profile are separate routes, but the shell chrome around them
+ * still belonged to the chat workspace: the app rail, the top bar, the 6px
+ * canvas inset and the 768px workspace column all remained visible. Settings
+ * now owns the viewport with its own header, navigation rail and scroll area;
+ * the shell comes back when the route closes. Profile deliberately keeps the
+ * shared account-page frame.
+ */
+
+html[data-main-view='settingsPage'] #appShell #sidebarBackdrop {
+  display: none;
+}
+
+html[data-main-view='settingsPage'] #appShell .main {
+  padding: 0;
+  background: var(--ui-bg-page);
+}
+
+/* The canvas card is a chat-workspace frame. A standalone page paints the
+   page surface edge to edge instead of showing a floating inset card. */
+html[data-main-view='settingsPage'] #appShell#appShell .main .main-bg {
+  display: none;
+}
+
+html[data-main-view='settingsPage'] #appShell .main-content {
+  background: var(--ui-bg-page);
+  border-radius: 0;
+}
+
+html[data-main-view='settingsPage'] #appShell #mainInner {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  padding: 0;
+  align-items: stretch;
+}
+
+html[data-main-view='settingsPage'] #appShell #settingsPage.main-page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--ui-bg-page);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .account-page-content {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .account-page-header {
+  flex: 0 0 auto;
+  height: 64px;
+  padding: 0 clamp(24px, 4vw, 48px);
+  background: var(--ui-bg-page);
+}
+
+/* Settings focuses the title when the page opens; it is a heading, not a
+   control, so it should not paint a focus ring around the page name. */
+html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+@media (min-width: 721px) {
+  html[data-main-view='settingsPage'] #settingsPage .settings-shell {
+    grid-template-columns: clamp(232px, 20vw, 288px) minmax(0, 1fr);
+  }
+
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav {
+    padding: 24px 16px 24px clamp(24px, 4vw, 48px);
+  }
+
+  html[data-main-view='settingsPage'] #settingsPage .settings-body {
+    padding: 28px clamp(28px, 4vw, 64px) 48px;
+  }
+
+  /* The old 740px reading column left most of a full-width page empty. Keep
+     the comfortable measure, but let the card rail use the extra room. */
+  html[data-main-view='settingsPage'] #settingsPage .settings-pane {
+    max-width: 1040px;
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-main-view='settingsPage'] #settingsPage .account-page-header {
+    height: 56px;
+    padding: 0 16px;
+  }
+}

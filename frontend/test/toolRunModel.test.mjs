@@ -93,6 +93,34 @@ test('text-only turns yield one text segment', () => {
   assert.equal(layout[0].kind, 'text');
 });
 
+test('append-only plain prose reuses the cached layout without a full scan', () => {
+  const first = buildTurnLayout('Just prose.', []);
+  assert.equal(buildTurnLayout('Just prose.', []), first, 'an identical render reuses the result');
+
+  const grown = buildTurnLayout('Just prose. More', []);
+  assert.notEqual(grown, first);
+  assert.deepEqual(grown, [
+    { kind: 'text', start: 0, end: 'Just prose. More'.length, text: 'Just prose. More' },
+  ]);
+
+  // A tag in the appended suffix is structural, so the full builder takes over.
+  // Build the opener from its code point so the test source itself is not
+  // mistaken for markup by tooling that transports this file.
+  const open = String.fromCharCode(60) + 'think>';
+  const thought = buildTurnLayout('Just prose. More\n\n ' + open + 'hidden', []);
+  assert.deepEqual(
+    thought.map((segment) => segment.kind),
+    ['text', 'think'],
+  );
+  assert.equal(thought[1].text, 'hidden');
+
+  // A non-append edit must not return stale cached segments.
+  const replaced = buildTurnLayout('Different.', []);
+  assert.deepEqual(replaced, [
+    { kind: 'text', start: 0, end: 'Different.'.length, text: 'Different.' },
+  ]);
+});
+
 test('whitespace-only prose does not break a tool run', () => {
   const layout = buildTurnLayout('A.\n\n   \n\nB.', [
     call({ id: 'a', textOffset: 2, output: 'ok', durationMs: 3 }),

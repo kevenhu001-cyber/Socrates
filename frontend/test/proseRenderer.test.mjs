@@ -70,6 +70,56 @@ test('math revisions invalidate prose caches while matching revisions share fina
   }
 });
 
+test('a long plain-prose tail skips the markdown pipeline without changing its text', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
+  const previous = {
+    window: globalThis.window,
+    document: globalThis.document,
+    act: globalThis.IS_REACT_ACT_ENVIRONMENT,
+  };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let progressivePaints = 0;
+  let prose;
+  window.__socratesLegacy = {
+    render: {
+      renderAssistantHTML: (text) => `<p>${text}</p>`,
+      renderAssistantProgressive: (text) => {
+        progressivePaints += 1;
+        return `<p>${text}</p>`;
+      },
+    },
+  };
+  resetBridgeCache();
+  __resetSharedProseCache();
+  const root = createRoot(document.getElementById('root'));
+  function Harness() {
+    prose = useProseRenderer(true);
+    return null;
+  }
+  try {
+    await act(() => root.render(createElement(Harness)));
+    const plain = '中'.repeat(2000);
+    const box = prose.tail(plain);
+    assert.equal(progressivePaints, 0, 'plain prose never enters marked');
+    const host = document.createElement('div');
+    host.innerHTML = box.__html;
+    assert.equal(host.textContent.trimEnd(), plain);
+
+    prose.tail(plain + '**bold**');
+    assert.equal(progressivePaints, 1, 'markdown still uses the real renderer');
+  } finally {
+    await act(() => root.unmount());
+    resetBridgeCache();
+    __resetSharedProseCache();
+    dom.window.close();
+    globalThis.window = previous.window;
+    globalThis.document = previous.document;
+    globalThis.IS_REACT_ACT_ENVIRONMENT = previous.act;
+  }
+});
+
 test('closed streamed scaffolds mount immediately and reuse markup when promoted to a settled block', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/' });
   const previous = {

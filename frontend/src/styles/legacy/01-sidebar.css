@@ -34,7 +34,9 @@
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 body.sidebar-resizing .sidebar {
-  will-change: width;
+  /* `will-change: width` is not a compositable hint; it only asked the
+     engine to promote a layer that still has to re-lay out every frame.
+     The drag now tracks the pointer directly, with one write per frame. */
   transition: none !important;
 }
 .sidebar.collapsed {

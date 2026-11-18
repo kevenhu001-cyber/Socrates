@@ -659,6 +659,26 @@ test('settings and profile are separate routes with browser history', async ({ p
   await expect(page).toHaveURL(/\/profile$/);
 });
 
+test('settings owns the whole viewport without the chat shell', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const settings = page.locator('#settingsPage');
+  await expect(settings).toBeVisible();
+  /* Route activation runs a short FLIP on the shell; measure the settled
+     page, not a frame in the middle of that transition. */
+  await page.waitForTimeout(350);
+  const box = await settings.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.x).toBeLessThanOrEqual(1);
+  expect(box.y).toBeLessThanOrEqual(1);
+  expect(box.width).toBeGreaterThanOrEqual(1439);
+  expect(box.height).toBeGreaterThanOrEqual(899);
+  await expect(page.locator('#sidebar')).toBeHidden();
+  await expect(page.locator('#topBar')).toBeHidden();
+  await expect(settings.locator('.account-page-header')).toBeVisible();
+  await expect(settings.locator('.settings-shell')).toBeVisible();
+});
+
 test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({
   page,
 }) => {

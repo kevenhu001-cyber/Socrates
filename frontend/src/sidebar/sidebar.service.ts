@@ -9,7 +9,9 @@ import { renderRecents } from '../legacy/recentsView.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';
-const SIDEBAR_SPATIAL_DURATION_MS = 180;
+const SIDEBAR_SPATIAL_DURATION_MS = 200;
+const SIDEBAR_CONTENT_ENTER_MS = 160;
+const SIDEBAR_CONTENT_EXIT_MS = 150;
 const SIDEBAR_SPATIAL_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 let mainShiftAnimation: Animation | null = null;
@@ -77,19 +79,15 @@ function animateDesktopSidebarMotion(
     );
   }
 
-  if (!opening) return;
+  /* The shell geometry commits once. The new rail/open content crossfades
+     in place, so the eye reads one layout change rather than a blank rail
+     appearing beside a still-moving main column. */
   const inner = sidebar.querySelector<HTMLElement>('.sidebar-inner');
   if (!inner || typeof inner.animate !== 'function') return;
-  sidebarRevealAnimation = inner.animate(
-    [
-      { opacity: 0, transform: 'translateX(-12px)' },
-      { opacity: 1, transform: 'translateX(0)' },
-    ],
-    {
-      duration: SIDEBAR_SPATIAL_DURATION_MS,
-      easing: SIDEBAR_SPATIAL_EASING,
-    },
-  );
+  sidebarRevealAnimation = inner.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: opening ? SIDEBAR_CONTENT_ENTER_MS : SIDEBAR_CONTENT_EXIT_MS,
+    easing: SIDEBAR_SPATIAL_EASING,
+  });
 }
 
 export function hydrateRecentsFilterState(): void {

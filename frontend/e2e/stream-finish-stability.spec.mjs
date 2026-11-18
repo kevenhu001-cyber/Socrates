@@ -104,18 +104,24 @@ async function measure(page) {
   return page.evaluate(() => {
     const list = document.getElementById('msgList');
     const row = Array.from(list.querySelectorAll('.msg.assistant')).at(-1);
-    const body = row.querySelector('.msg-body');
-    const bodyTop = body.getBoundingClientRect().top;
+    /* The thinking strip above the answer is finished chrome: it collapses at
+       handoff while the answer stays put. Measure the answer's first and last
+       prose blocks, not the .msg-body wrapper that also contains that chrome. */
     const listTop = list.getBoundingClientRect().top;
+    const blocks = Array.from(row.querySelectorAll('.tool-run-prose > *'));
+    const first = blocks[0].getBoundingClientRect();
+    const last = blocks.at(-1).getBoundingClientRect();
+    const activity = row.querySelector('.rn-turn-activity');
     return {
-      bodyHeight: body.getBoundingClientRect().height,
-      bodyOffset: bodyTop - listTop,
+      contentHeight: last.bottom - first.top,
+      activityHeight: activity ? activity.getBoundingClientRect().height : 0,
+      contentOffset: first.top - listTop,
       scrollHeight: list.scrollHeight,
       scrollTop: list.scrollTop,
-      blocks: Array.from(body.querySelectorAll('.tool-run-prose > *')).map((el) => ({
+      blocks: blocks.map((el) => ({
         tag: el.tagName.toLowerCase(),
         text: (el.textContent || '').replace(/\s+/g, ' ').slice(0, 16),
-        top: el.getBoundingClientRect().top - bodyTop,
+        top: el.getBoundingClientRect().top - first.top,
         height: el.getBoundingClientRect().height,
       })),
     };
@@ -127,12 +133,14 @@ async function trackFinishMotion(page) {
   await page.evaluate(() => {
     const list = document.getElementById('msgList');
     const row = Array.from(list.querySelectorAll('.msg.assistant')).at(-1);
-    const body = row.querySelector('.msg-body');
     window.__finishMotion = { samples: [], frame: 0 };
     const sample = () => {
+      const blocks = Array.from(row.querySelectorAll('.tool-run-prose > *'));
+      const first = blocks[0].getBoundingClientRect();
+      const last = blocks.at(-1).getBoundingClientRect();
       window.__finishMotion.samples.push({
-        top: body.getBoundingClientRect().top - list.getBoundingClientRect().top,
-        bodyHeight: body.getBoundingClientRect().height,
+        top: first.top - list.getBoundingClientRect().top,
+        contentHeight: last.bottom - first.top,
         scrollTop: list.scrollTop,
         scrollHeight: list.scrollHeight,
       });
@@ -197,17 +205,25 @@ for (const [label, viewport] of [
     });
     for (const frame of frames) {
       expect(
-        Math.abs(frame.top - live.bodyOffset),
+        Math.abs(frame.top - live.contentOffset),
         '正文在结束过程中的任意一帧都不能跳动',
       ).toBeLessThanOrEqual(2);
       expect(
-        Math.abs(frame.bodyHeight - live.bodyHeight),
+        Math.abs(frame.contentHeight - live.contentHeight),
         '末段间距不能在结束时短暂变高',
       ).toBeLessThanOrEqual(1);
+      /* Collapsing the finished thinking strip above the answer may require
+         scrolling up to keep the prose still. What must never happen is a
+         downward jump toward the bottom, or an upward correction larger than
+         the scroll range that actually disappeared. */
       expect(
-        Math.abs(frame.scrollTop - live.scrollTop),
+        frame.scrollTop - live.scrollTop,
         '结束时不能主动拉到底部',
       ).toBeLessThanOrEqual(2);
+      expect(
+        frame.scrollTop,
+        '向上补偿不能超过消失的滚动范围',
+      ).toBeGreaterThanOrEqual(live.scrollTop - (live.scrollHeight - frame.scrollHeight) - 2);
     }
 
     expect(done.blocks.map((b) => b.tag)).toEqual(live.blocks.map((b) => b.tag));
@@ -223,12 +239,17 @@ for (const [label, viewport] of [
         `block #${i} <${a.tag}> "${a.text}" resized at finish`,
       ).toBeLessThanOrEqual(1);
     }
-    expect(Math.abs(done.bodyHeight - live.bodyHeight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(done.contentHeight - live.contentHeight)).toBeLessThanOrEqual(1);
     expect(
-      Math.abs(done.bodyOffset - live.bodyOffset),
+      Math.abs(done.contentOffset - live.contentOffset),
       'the answer moved in the viewport',
     ).toBeLessThanOrEqual(2);
-    expect(Math.abs(done.scrollHeight - live.scrollHeight)).toBeLessThanOrEqual(2);
+    /* The finished thinking strip is above the answer and leaves the scroll
+       range; allow only that removed chrome, never unexplained growth. */
+    expect(done.scrollHeight).toBeLessThanOrEqual(live.scrollHeight + 2);
+    expect(done.scrollHeight).toBeGreaterThanOrEqual(
+      live.scrollHeight - live.activityHeight - 2,
+    );
   });
 
 test('a long answer stays fully reachable after finish', async ({ page }) => {

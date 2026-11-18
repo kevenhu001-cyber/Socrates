@@ -94,6 +94,7 @@ const ORDERED_MANIFESTS = {
     './mobile-shell.css',
     './mobile-sidebar.css',
     './mobile-directories.css',
+    './settings-page.css',
   ],
 };
 

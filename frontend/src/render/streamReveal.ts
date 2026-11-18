@@ -3,7 +3,7 @@
 const MAX_CHARS = 256;
 const MAX_NODES = 64;
 const MAX_RUNS = 12;
-const MAX_SPANS = 24;
+const MAX_SPANS = 12;
 /** How long a run stays in flight — a margin over the 120ms reveal. */
 export const STREAM_REVEAL_MS = 180;
 /** Segments that arrive together are spread this far apart. */

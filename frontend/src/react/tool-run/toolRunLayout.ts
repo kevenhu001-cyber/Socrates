@@ -147,12 +147,98 @@ export function isSentenceCompleteAt(rawText: string, offset: number): boolean {
  * never lands before the paragraph that triggered it.
  * Finalized turns pass no defer flag, so nothing can starve.
  */
+/* ── live layout reuse ──────────────────────────────────────────────────
+   During a stream this function runs once per published text frame. The
+   full scan is cheap for a short answer and expensive for a long one, and
+   the overwhelmingly common case is append-only plain prose with no think
+   block and no tool row. Keep the last result so:
+
+   - an identical render (parent re-render, unrelated store commit) returns
+     the cached segment list instead of re-scanning the answer;
+   - an append to that one text segment only constructs the new segment
+     list; it does not re-run `findThinkRanges`, sort empty calls, or slice
+     the whole answer again.
+
+   Anything with a tool call, a think tag, or a non-append edit falls back
+   to the full builder. The cache is one entry, so it cannot grow with the
+   session history. */
+interface LiveLayoutCache {
+  raw: string;
+  calls: ReadonlyArray<ToolCallRecord> | null | undefined;
+  inlineThink: boolean;
+  defer: boolean;
+  restored: boolean;
+  textOnly: boolean;
+  segments: TurnSegment[];
+}
+
+let liveLayoutCache: LiveLayoutCache | null = null;
+
+function isEmptyCalls(calls: ReadonlyArray<ToolCallRecord> | null | undefined): boolean {
+  return !calls || calls.length === 0;
+}
+
+function sameCalls(
+  a: ReadonlyArray<ToolCallRecord> | null | undefined,
+  b: ReadonlyArray<ToolCallRecord> | null | undefined,
+): boolean {
+  return a === b || (isEmptyCalls(a) && isEmptyCalls(b));
+}
+
+function layoutOptionsKey(opts?: {
+  inlineThink?: boolean;
+  deferOpenParagraph?: boolean;
+  restoredFromHistory?: boolean;
+}) {
+  return {
+    inlineThink: opts?.inlineThink === true,
+    defer: opts?.deferOpenParagraph === true,
+    restored: opts?.restoredFromHistory === true,
+  };
+}
+
 export function buildTurnLayout(
   rawText: string,
   toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
   opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean; restoredFromHistory?: boolean },
 ): TurnSegment[] {
   const raw = String(rawText || '');
+  const callsInput = toolCalls ?? null;
+  const options = layoutOptionsKey(opts);
+  const cached = liveLayoutCache;
+  if (
+    cached &&
+    cached.raw === raw &&
+    sameCalls(cached.calls, callsInput) &&
+    cached.inlineThink === options.inlineThink &&
+    cached.defer === options.defer &&
+    cached.restored === options.restored
+  ) {
+    return cached.segments;
+  }
+
+  /* Append-only plain prose: no `<` means no think/scaffold tag, and an
+     absent or empty tool list means there is nothing to splice. The previous
+     layout must itself have been that same shape. */
+  if (
+    cached &&
+    cached.textOnly &&
+    (!callsInput || callsInput.length === 0) &&
+    raw.length > cached.raw.length &&
+    raw.startsWith(cached.raw) &&
+    raw.indexOf('<', cached.raw.length) === -1
+  ) {
+    const segments: TurnSegment[] = [{ kind: 'text', start: 0, end: raw.length, text: raw }];
+    liveLayoutCache = {
+      raw,
+      calls: callsInput,
+      ...options,
+      textOnly: true,
+      segments,
+    };
+    return segments;
+  }
+
   const think = opts?.inlineThink ? [] : findThinkRanges(raw);
   const defer = opts?.deferOpenParagraph === true;
   const rowAnchor =
@@ -201,7 +287,15 @@ export function buildTurnLayout(
   }
   pushProse(prev, raw.length);
 
-  return foldConsecutiveRuns(segments);
+  const result = foldConsecutiveRuns(segments);
+  liveLayoutCache = {
+    raw,
+    calls: callsInput,
+    ...options,
+    textOnly: result.length === 1 && result[0].kind === 'text',
+    segments: result,
+  };
+  return result;
 }
 
 function appendText(out: TurnSegment[], text: string, start: number, end: number): void {

@@ -5,7 +5,7 @@ import {
   sharedFinalProseCache,
   clearSharedProseCache,
 } from '../../render/proseCache.ts';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useRef, useSyncExternalStore } from 'react';
 import {
   applyScaffoldTurnPlan,
   scaffoldTurnPlan,
@@ -15,8 +15,29 @@ import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision, subscribeMathRenderRevision } from '../../render/mathRevision.ts';
 import { getCurrentLang } from '../legacy/gateway.ts';
+import { escHTML } from '../../render/text.ts';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;
+
+/* A long plain-prose tail (the common single-paragraph Chinese answer) has
+   no Markdown to parse. Marked + sanitize + widget wiring are pure overhead
+   there, and they run on every streaming frame. Only take this path when no
+   Markdown/HTML trigger exists and the tail cannot be a list, heading,
+   fence, quote or indented block; everything else keeps the real pipeline. */
+const PLAIN_TAIL_MIN = 512;
+const PLAIN_TAIL_FORBIDDEN = /[\\`*_{}[\]<>#|~$&\r]/;
+const PLAIN_TAIL_LINE =
+  /(?:^|\n)(?: {0,3}(?:[-+*][ \t]|\d{1,9}[.)][ \t]|#{1,6}(?:[ \t]|$)|>[ \t]?|```|~~~)|\t| {4}\S)/;
+const PLAIN_TAIL_SETEXT = /(?:^|\n)(?:=+|-+)[ \t]*$/;
+
+function plainProseTailHtml(text: string): string | null {
+  if (text.length < PLAIN_TAIL_MIN || text.includes('\n\n')) return null;
+  if (PLAIN_TAIL_FORBIDDEN.test(text) || PLAIN_TAIL_LINE.test(text)) return null;
+  if (PLAIN_TAIL_SETEXT.test(text) || /\s{2,}$/.test(text)) return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  return '<p>' + escHTML(trimmed).replace(/\n/g, '<br>') + '</p>\n';
+}
 function renderEnvKey(mathRevision: number): string {
   if (typeof window === 'undefined') return '0';
   const runtime = window as unknown as {
@@ -98,7 +119,8 @@ export function useProseRenderer(live: boolean): ProseRenderer {
       if (hasCompleteScaffold(text) && isStableMarkdownPrefix(text)) return settled(text);
       if (lastTailBox !== null && text === lastTailText) return lastTailBox;
       lastTailText = text;
-      lastTailBox = { __html: paint(text, false) };
+      const plain = plainProseTailHtml(text);
+      lastTailBox = plain === null ? { __html: paint(text, false) } : { __html: plain };
       return lastTailBox;
     };
     return { settled, tail };
@@ -125,12 +147,31 @@ export function withScaffoldTurnPlan(prose: ProseRenderer, plan: ScaffoldTurnPla
 /** The turn plan keyed by its content, so a streamed turn keeps one renderer
  *  identity until a new winner appears. */
 export function useScaffoldTurnProse(prose: ProseRenderer, rawText: string): ProseRenderer {
+  /* Most answers never contain a quiz or practice singleton. Re-running the
+     full-text plan scan on every streaming frame is pure overhead in that
+     case, so remember the last plan and only re-scan when an appended frame
+     can actually introduce a scaffold (`<`) or when an existing plan may
+     have grown. Non-append edits always re-scan. */
+  const cache = useRef<{ text: string; plan: ScaffoldTurnPlan; key: string } | null>(null);
   const planKey = useMemo(() => {
+    const previous = cache.current;
+    if (
+      previous &&
+      previous.key === '' &&
+      rawText.startsWith(previous.text) &&
+      rawText.indexOf('<', previous.text.length) === -1
+    ) {
+      cache.current = { text: rawText, plan: previous.plan, key: '' };
+      return '';
+    }
     const plan = scaffoldTurnPlan(rawText);
-    return plan.quiz || plan.practice ? JSON.stringify(plan) : '';
+    const key = plan.quiz || plan.practice ? JSON.stringify(plan) : '';
+    cache.current = { text: rawText, plan, key };
+    return key;
   }, [rawText]);
+  const plan = cache.current && cache.current.key === planKey ? cache.current.plan : null;
   return useMemo(
-    () => (planKey ? withScaffoldTurnPlan(prose, JSON.parse(planKey) as ScaffoldTurnPlan) : prose),
-    [prose, planKey],
+    () => (planKey && plan ? withScaffoldTurnPlan(prose, plan) : prose),
+    [prose, planKey, plan],
   );
 }

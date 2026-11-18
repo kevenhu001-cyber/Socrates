@@ -48,7 +48,7 @@ test('desktop sidebar commits layout once and animates the main surface with tra
     animation.keyframes.join(' ').includes('translateX'),
   );
   expect(spatial).toBeTruthy();
-  expect(spatial.duration).toBe(180);
+  expect(spatial.duration).toBe(200);
 });
 
 test('rapid sidebar reversal preserves the visible position and reduced motion snaps', async ({
@@ -179,7 +179,9 @@ test('composer menu opens crisply without a competing entrance animation', async
   expect(motion.name).toBe('none');
   expect(motion.duration).toBe('0s');
   expect(motion.easing).toBe('ease');
-  expect(motion.radius).toBe('16px');
+  /* The tools card keeps its snapshot-pinned 12px step; the shared popover
+     rung is 16px, but this surface is deliberately the exception. */
+  expect(motion.radius).toBe('12px');
   expect(motion.hasFilter).toBe(false);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(menu).toHaveCSS('animation-name', 'none');

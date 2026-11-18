@@ -42,6 +42,13 @@ export interface FinishViewport {
   settle(): void;
 }
 
+/* The first frames after the settled React commit do the real work. Later
+   frames only need to run when the answer's own box changes (fonts, KaTeX,
+   an image or a tool output mounting), so a ResizeObserver takes over from
+   the old unconditional 30-frame loop. */
+const SETTLE_FRAME_BUDGET = 6;
+const SETTLE_OBSERVE_MS = 500;
+
 function findStreamingAnchor(
   state: TurnRuntimeState,
   list: HTMLElement,
@@ -121,10 +128,11 @@ function captureFinishViewport(state: TurnRuntimeState): FinishViewportCapture {
   };
 }
 
-function installFinishIntentGuard(): FinishIntentGuard {
+function installFinishIntentGuard(onIntent?: () => void): FinishIntentGuard {
   let userIntent = false;
   const markIntent = (): void => {
     userIntent = true;
+    onIntent?.();
   };
   const events = ['wheel', 'touchstart', 'pointerdown', 'keydown'];
   for (const event of events) {
@@ -262,17 +270,37 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
   }
 
   /* Completion can retire status rows or mount tool outputs. Reapply the
-     captured reading position for a bounded number of frames, stopping as
-     soon as the reader scrolls or interacts. */
+     captured reading position for a short frame budget, then only when the
+     scroller's own box actually changes. Reader intent still wins
+     immediately. */
   function settle(): void {
     const viewport = finishViewport;
     if (!viewport || !viewport.scroller) return;
-    const intent = installFinishIntentGuard();
+    let intent: FinishIntentGuard | null = null;
     let frames = 0;
-    const settleFrame = (): void => {
-      if (intent.hasUserIntent() || !isCurrentFinish(viewport)) {
-        intent.detach();
-        return;
+    let stopped = false;
+    let observer: ResizeObserver | null = null;
+    let observeTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const stop = (): void => {
+      if (stopped) return;
+      stopped = true;
+      intent?.detach();
+      observer?.disconnect();
+      observer = null;
+      if (observeTimer !== null) {
+        clearTimeout(observeTimer);
+        observeTimer = null;
+      }
+    };
+    const guard = installFinishIntentGuard(stop);
+    intent = guard;
+
+    const apply = (): boolean => {
+      if (stopped) return false;
+      if (guard.hasUserIntent() || !isCurrentFinish(viewport)) {
+        stop();
+        return false;
       }
       try {
         applyFinishCorrection(state, viewport);
@@ -280,10 +308,39 @@ export function createFinishViewport(state: TurnRuntimeState): FinishViewport {
         reportEmptyCatch(error, 'empty catch: chat/turn/finishViewport.ts');
         /* frame apply failed */
       }
-      frames += 1;
-      if (frames < 30) requestAnimationFrame(settleFrame);
-      else intent.detach();
+      return true;
     };
+
+    const settleFrame = (): void => {
+      if (!apply()) return;
+      frames += 1;
+      if (frames < SETTLE_FRAME_BUDGET) requestAnimationFrame(settleFrame);
+      else if (!observer) stop();
+    };
+
+    if (typeof ResizeObserver === 'function') {
+      observer = new ResizeObserver(() => {
+        apply();
+      });
+      let content: Element | null = viewport.anchorNode;
+      if (viewport.streamRowId) {
+        const row = state.list.querySelector(
+          '.msg[data-client-id="' + viewport.streamRowId + '"][data-react-owned]',
+        );
+        if (row) content = row;
+      }
+      try {
+        /* The scroller's box does not change when the answer grows; observe
+           the answer row/paragraph too, or a late toolbar/KaTeX mount would
+           land after the frame budget with nobody left to correct it. */
+        observer.observe(viewport.scroller);
+        if (content && content !== viewport.scroller) observer.observe(content);
+      } catch {
+        observer = null;
+      }
+      if (observer) observeTimer = setTimeout(stop, SETTLE_OBSERVE_MS);
+    }
+
     /* settle() runs inside the finish task, before
        React commits the settled snapshot (that commit is a microtask after
        this task). Correcting here only forced a layout of the pre-commit DOM

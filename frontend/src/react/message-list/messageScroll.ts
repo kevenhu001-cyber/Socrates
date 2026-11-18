@@ -67,6 +67,11 @@ export function updateScrollFadeMask(list: HTMLElement | null): void {
   if (list.style.getPropertyValue('--ui-scroll-fade-bottom') !== bottomVal) {
     list.style.setProperty('--ui-scroll-fade-bottom', bottomVal);
   }
+  /* A full-list mask creates a composited layer even when both fades are
+     zero. Keep the mask off at the top/bottom resting positions and turn it
+     on only while one edge is actually fading. */
+  const fade = topVal !== '0px' || bottomVal !== '0px' ? 'true' : 'false';
+  if (list.dataset.scrollFade !== fade) list.dataset.scrollFade = fade;
 }
 
 export function stickTo(list: HTMLElement): void {

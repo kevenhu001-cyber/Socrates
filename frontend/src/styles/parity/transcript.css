@@ -30,6 +30,12 @@
     font-family: var(--font-sans);
     --ui-scroll-fade-top: 0px;
     --ui-scroll-fade-bottom: 0px;
+  }
+
+  /* The fade mask is a separate composited layer. Do not pay for it while the
+     transcript rests at the top or the bottom; messageScroll.ts sets this
+     attribute only when one of the two fades is non-zero. */
+  #appShell #msgList[data-scroll-fade='true'] {
     mask-image: linear-gradient(
       to bottom,
       transparent 0%,

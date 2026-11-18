@@ -494,7 +494,7 @@ body.workspace-active #appShell .main-page {
   /* The reference segmented control is 220 x 40 with 36px inner segments. */
 
   /* The reference workspace heads use 28px type and 240px search fields. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel) {
+  body.workspace-active #appShell .main-page:not(#sitesPanel):not(#settingsPage) {
     padding-top: 27px !important;
   }
 
@@ -807,7 +807,7 @@ body.workspace-active #appShell .main-page {
 @media (min-width: 769px) {
   /* .scheduled-directory dropped: it is not a chat-column surface and now
      shares the 1040px directory column with the plugin and site pages. */
-  body.workspace-active #appShell .main-page:not(#sitesPanel) {
+  body.workspace-active #appShell .main-page:not(#sitesPanel):not(#settingsPage) {
     width: min(768px, calc(100% - 64px)) !important;
     max-width: 768px !important;
     margin-inline: auto !important;
