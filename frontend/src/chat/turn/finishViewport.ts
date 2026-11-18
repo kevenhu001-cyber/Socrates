@@ -56,11 +56,12 @@ function findStreamingAnchor(
 ): FinishAnchorCandidate {
   const liveRow = list.querySelector('.msg[data-client-id="' + state.clientId + '"]');
   if (!liveRow) return { node: null, streamRowOffset: null, streamRowNearTop: false };
-  const liveRect = liveRow.getBoundingClientRect();
-  if (liveRect.bottom <= viewport.top + 1 || liveRect.top >= viewport.bottom - 1) {
+  const target = (liveRow.querySelector('.tool-run-prose') as HTMLElement | null) || liveRow;
+  const targetRect = target.getBoundingClientRect();
+  if (targetRect.bottom <= viewport.top + 1 || targetRect.top >= viewport.bottom - 1) {
     return { node: null, streamRowOffset: null, streamRowNearTop: false };
   }
-  const streamRowOffset = liveRect.top - viewport.top;
+  const streamRowOffset = targetRect.top - viewport.top;
   return {
     node: liveRow,
     streamRowOffset,
@@ -188,11 +189,12 @@ function applyStreamRowCorrection(
     '.msg[data-client-id="' + viewport.streamRowId + '"][data-react-owned]',
   ) as HTMLElement | null;
   if (!row) return true;
-  const rowRect = row.getBoundingClientRect();
+  const target = (row.querySelector('.tool-run-prose') as HTMLElement | null) || row;
+  const targetRect = target.getBoundingClientRect();
   const scrollerTop = viewport.scroller.getBoundingClientRect().top;
-  const currentOffset = rowRect.top - scrollerTop;
+  const currentOffset = targetRect.top - scrollerTop;
   const delta = currentOffset - (viewport.streamRowOffset as number);
-  reserveStreamRowForCorrection(state, viewport, row, rowRect, delta);
+  reserveStreamRowForCorrection(state, viewport, row, row.getBoundingClientRect(), delta);
   writeScrollTop(viewport.scroller, viewport.scroller.scrollTop + delta, 'finish');
   return true;
 }
