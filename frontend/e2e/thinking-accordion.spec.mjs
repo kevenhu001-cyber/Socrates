@@ -30,9 +30,11 @@ test('thinking disclosure supports keyboard control and preserves intent through
   const accordion = page.locator('.rn-turn-activity');
   const toggle = accordion.getByTestId('turn-activity-toggle');
   const body = accordion.getByTestId('turn-activity-body');
-  // The action leads; elapsed time is quiet metadata beside it.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
-  await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d/);
+  // 2026-11-18 reference: live, the caption is the bare action with no
+  // elapsed counter and no trailing ellipsis; the caption itself shimmers.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking');
+  await expect(accordion.getByTestId('turn-activity-duration')).toHaveCount(0);
+  await expect(accordion.getByTestId('turn-activity-indicator')).toBeVisible();
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
@@ -71,10 +73,10 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await setLang(page, 'zh');
-  // The settled label is neutral; neither seconds nor summary counts are
-  // presented as a measure of reasoning progress.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考摘要');
-  await expect(accordion.getByTestId('turn-activity-duration')).toHaveText('6 秒');
+  // Settled, the measured time folds into the one line ("Thought for 6s");
+  // summary counts are never presented as a measure of reasoning progress.
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('已思考 6 秒');
+  await expect(accordion.getByTestId('turn-activity-duration')).toHaveCount(0);
   await page.screenshot({
     path: 'test-results/thinking-disclosure-desktop.png',
     animations: 'disabled',

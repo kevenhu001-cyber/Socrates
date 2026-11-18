@@ -50,11 +50,12 @@ test('mobile landing and conversation retain one composer geometry', async ({ pa
   ]);
   /* RN-7: the phone question box is the site ask-box (ComposerFrame,
      compact): one white sheet with 28px corners on the inner frame, the
-     editor storey on top and the 36px control rail beneath it. 86 = 8 top
-     + 26 editor line + 8 gap + 36 rail + 8 bottom; the edge is a hairline
+     editor storey on top and the 36px control rail beneath it. 82 = 8 top
+     + 26 editor line + 4 gap + 36 rail + 8 bottom (the 2026-11-18 reference
+     tightens the editor-to-rail gap on phones); the edge is a hairline
      drawn in the shadow, so there is no border to add. The outer host keeps
      its own 24px layout radius; it is a transparent moving container. */
-  expect(landing.wrap?.height).toBe(86);
+  expect(landing.wrap?.height).toBe(82);
   expect(landing.radius).toBe('24px');
   /* + and the primary control are 36px circles; the mic is the same size
      and all three sit on the one control row, left to right. */
@@ -212,11 +213,17 @@ test('mobile composer keeps model selector and reference controls discoverable',
   await effort.locator('#effortTrigger').click();
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
-  /* The model selector lives in the header; the anchored popover carries the
-     reasoning level and the speed shortcut. */
-  await expect(page.locator('#topModelSwitcher')).toContainText('5.6 Luna');
-  await expect(pop).toContainText('立即');
+  /* 2026-11-18 reference: phones show no header model chip; the effort sheet
+     is the level as a centred heading (leading back to the model list) above
+     the slider. Instant is the slider's first stop, not a separate row. */
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  await expect(pop.locator('.chat-config-effort-head')).toContainText('高');
+  await expect(pop.locator('.chat-config-row', { hasText: '立即' })).toHaveCount(0);
   await expect(pop.locator('input[aria-label="思考强度"]')).toHaveAttribute('aria-valuetext', '高');
+  await expect(pop.locator('input[aria-label="思考强度"]')).toHaveAttribute('min', '0');
+  await expect(pop.locator('input[aria-label="思考强度"]')).toHaveAttribute('max', '3');
+  /* While its sheet is open the trigger names the control as a filled pill. */
+  await expect(effort.locator('#effortTrigger')).toContainText('思考强度');
   /* The popover is anchored above the pill, not a sheet/dialog. */
   const popBox = await pop.boundingBox();
   const triggerBox = await effort.locator('#effortTrigger').boundingBox();

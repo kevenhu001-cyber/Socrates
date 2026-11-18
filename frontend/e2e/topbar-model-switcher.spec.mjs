@@ -90,27 +90,28 @@ test('React model selection updates the top-bar label', async ({ page }) => {
   await expect(switcher).toHaveAttribute('aria-label', /Second model/);
 });
 
-test('phones name the model in a chip instead of an unlabelled settings glyph', async ({
+test('phones carry no header model chip; the composer effort control reaches the model list', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('#topModelSwitcher')).toBeVisible();
-  /* The chip carries the resolved model name; the brand lockup and the
-     settings glyph are desktop/empty-state fallbacks. */
-  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toBeVisible();
-  await expect(page.locator('#topModelSwitcher [data-part="model-name"]')).toHaveText(/\S/);
-  await expect(page.locator('#topModelSwitcher [data-part="model-brand"]')).toBeHidden();
-  await expect(page.locator('#topModelSwitcher [data-part="model-settings"]')).toBeHidden();
+  /* 2026-11-18 reference (docs/ref/mobile-reference-2026-11-18.md): the phone
+     header is sidebar glyph, centred mode switch and the temporary-chat
+     glyph. The model chip is gone; the composer's effort control opens the
+     same popover, whose heading leads back to the model list. */
   await expect(page.locator('#topModeSwitch')).toBeVisible();
-  /* The chip must clear the centred mode switch rather than run under it. */
+  await expect(page.locator('#topModelSwitcher')).toBeHidden();
+  await expect(page.locator('#mobileIncognitoBtn')).toBeVisible();
   const gap = await page.evaluate(() => {
     const tabs = document.getElementById('topModeSwitch').getBoundingClientRect();
-    const model = document.getElementById('topModelSwitcher').getBoundingClientRect();
-    return Math.round(model.left - tabs.right);
+    const trailing = document.getElementById('mobileIncognitoBtn').getBoundingClientRect();
+    return Math.round(trailing.left - tabs.right);
   });
   expect(gap).toBeGreaterThan(0);
-  await page.locator('#topModelSwitcher').click();
-  await expect(page.locator('.chat-config-pop')).toBeInViewport();
+  await page.locator('#effortTrigger:visible').first().click();
+  const pop = page.locator('.chat-config-pop');
+  await expect(pop).toBeInViewport();
+  await pop.locator('.chat-config-effort-head').click();
+  await expect(pop.getByRole('option').first()).toBeVisible();
 });
 
 test('switcher exposes the React model label and composer effort stays in sync', async ({
