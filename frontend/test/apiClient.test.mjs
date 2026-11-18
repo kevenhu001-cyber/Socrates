@@ -103,6 +103,33 @@ test('raw SSE keeps the caller abort linked after fetch resolves', async () => {
   assert.equal(fetchSignal.aborted, true);
 });
 
+test('JSON requests can be aborted after headers arrive while the body is pending', async () => {
+  const caller = new AbortController();
+  let startRead;
+  const reading = new Promise((resolve) => {
+    startRead = resolve;
+  });
+  await withGlobals(
+    {
+      document: { cookie: '' },
+      fetch: async (_path, { signal }) => ({
+        status: 200,
+        text: () =>
+          new Promise((_, reject) => {
+            signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+            startRead();
+          }),
+      }),
+    },
+    async () => {
+      const response = apiFetch('/api/sessions/history/messages', { signal: caller.signal });
+      await reading;
+      caller.abort();
+      await assert.rejects(response, { name: 'AbortError', code: 'ABORTED' });
+    },
+  );
+});
+
 test('raw non-stream responses detach the caller abort listener after headers', async () => {
   const caller = new AbortController();
   let fetchSignal;

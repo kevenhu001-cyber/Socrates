@@ -42,6 +42,16 @@ const PRIORITY: Record<ScrollOwner, number> = {
 
 const claims = new WeakMap<HTMLElement, ScrollClaim>();
 let nextToken = 0;
+let intentRevision = 0;
+
+/** A sequence avoids losing two gestures that arrive in the same millisecond. */
+export function recordScrollIntent(): void {
+  intentRevision += 1;
+}
+
+export function scrollIntentRevision(): number {
+  return intentRevision;
+}
 
 function priorityFor(owner: ScrollOwner | string): number {
   return PRIORITY[owner as ScrollOwner] || 0;

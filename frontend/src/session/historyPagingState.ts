@@ -9,10 +9,12 @@
  * network/restore side lives in session/historyPaging.ts.
  */
 
-export interface HistoryCursor {
-  createdAt: string;
-  id: string;
-}
+import type {
+  SessionMessageCursor as HistoryCursor,
+  SessionTailPageDto,
+} from '@socrates/contracts';
+
+export type { SessionMessageCursor as HistoryCursor } from '@socrates/contracts';
 
 export interface HistoryPagingSnapshot {
   /** Session the state belongs to; null before any chat session loads. */
@@ -38,10 +40,7 @@ export interface OlderHistoryRequest {
     always covers that window. */
 export const TAIL_PAGE_SIZE = 100;
 
-export interface MessagesPage {
-  hasMore?: boolean;
-  cursor?: HistoryCursor | null;
-  total?: number;
+export interface MessagesPage extends Partial<SessionTailPageDto> {
   /** Rows older than the tail at fetch time; derived on arrival so a cached
       response whose messages grow through saves keeps a correct count. */
   older?: number;
@@ -178,8 +177,10 @@ export async function requestAllOlderHistory(): Promise<number> {
     guard < 1000 && loader && snapshot.hasMore && snapshot.sessionId === sessionId;
     guard++
   ) {
+    const before = snapshot;
     const rows = await loader({ limit: 200 });
-    if (rows <= 0 && (snapshot.failed || snapshot.sessionId !== sessionId)) break;
+    if (rows <= 0 && (snapshot === before || snapshot.failed || snapshot.sessionId !== sessionId))
+      break;
     added += rows;
   }
   return added;

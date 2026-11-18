@@ -48,7 +48,10 @@ val bundleToolRenderer by tasks.registering(Exec::class) {
 }
 val spaAssets = layout.buildDirectory.dir("generated/spaAssets")
 val syncSpaAssets by tasks.registering(Sync::class) {
-    from(repositoryRoot.resolve("frontend/dist"))
+    from(repositoryRoot.resolve("frontend/dist")) {
+        // The WebView reads the original assets. AGP treats .gz sidecars as duplicates.
+        exclude("**/*.gz", "**/*.br")
+    }
     into(spaAssets)
 }
 android.sourceSets.getByName("main").assets.srcDir(toolRendererAssets)

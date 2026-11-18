@@ -27,10 +27,10 @@ const p = (values, q) => {
 };
 const round = (value) => Math.round(value * 10) / 10;
 
-async function boot(page, count) {
+async function boot(page, count, viewport = { width: 1280, height: 860 }) {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.setViewportSize({ width: 1280, height: 860 });
+  await page.setViewportSize(viewport);
   await mockAuthedApp(page);
   const log = await routeLargeSessions(page, [
     {
@@ -333,6 +333,82 @@ test('scrolling to the top of a paginated session loads older pages, keeps the a
   expect(await page.locator('#msgList .msg').count()).toBeLessThanOrEqual(60);
   expect(errors).toEqual([]);
 });
+
+for (const touch of [false, true]) {
+  test.describe(touch ? 'touch transcript' : 'wheel transcript', () => {
+    test.use({ hasTouch: touch, isMobile: touch });
+    test('fast upward scrolling crosses message windows without jumping back', async ({
+      page,
+    }, info) => {
+      const { errors } = await boot(page, 450, touch ? { width: 390, height: 844 } : undefined);
+      await openSession(page, SESSION_A);
+      const list = page.locator('#msgList');
+      await expect(list.locator('.msg.assistant').last()).toContainText('Result marker 449');
+      const box = await list.boundingBox();
+      // Aim at the transcript gutter so embedded charts can't capture the gesture.
+      const x = Math.round(box.x + box.width - 16);
+      const y = Math.round(box.y + box.height * 0.24);
+      await list.evaluate((host) => {
+        const frames = [];
+        const sample = (t) => {
+          const top = host.getBoundingClientRect().top;
+          const mounted = [...host.querySelectorAll('.msg[data-client-id]')];
+          const row = mounted.find((element) => element.getBoundingClientRect().bottom > top + 1);
+          if (row)
+            frames.push({
+              t,
+              row: Number(row.dataset.clientId.split('-').at(-1)),
+              first: Number(mounted[0].dataset.clientId.split('-').at(-1)),
+            });
+          window.__stopFastScroll = requestAnimationFrame(sample);
+        };
+        window.__fastScrollFrames = frames;
+        sample(performance.now());
+      });
+
+      if (touch) {
+        const cdp = await page.context().newCDPSession(page);
+        for (let gesture = 0; gesture < 12; gesture++) {
+          await cdp.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            touchPoints: [{ x, y }],
+          });
+          for (let step = 1; step <= 5; step++) {
+            await cdp.send('Input.dispatchTouchEvent', {
+              type: 'touchMove',
+              touchPoints: [{ x, y: y + step * Math.floor(box.height / 10) }],
+            });
+          }
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        }
+      } else {
+        await page.mouse.move(x, y);
+        for (let step = 0; step < 24; step++) {
+          await page.mouse.wheel(0, -700);
+          await page.evaluate(() => new Promise(requestAnimationFrame));
+        }
+      }
+
+      const frames = await page.evaluate(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        cancelAnimationFrame(window.__stopFastScroll);
+        return window.__fastScrollFrames;
+      });
+      await info.attach('fast-scroll-frames', {
+        body: JSON.stringify(frames),
+        contentType: 'application/json',
+      });
+      const rows = frames.map((frame) => frame.row);
+      expect(rows.length).toBeGreaterThan(10);
+      expect(frames.at(-1).first).toBeLessThan(frames[0].first);
+      expect(rows.at(-1)).toBeLessThan(rows[0]);
+      const maxReversal = Math.max(0, ...rows.slice(1).map((row, i) => row - rows[i]));
+      expect(maxReversal).toBeLessThanOrEqual(2);
+      expect(await list.locator('.msg').count()).toBeLessThanOrEqual(60);
+      expect(errors).toEqual([]);
+    });
+  });
+}
 
 for (const rate of [1, 4]) {
   for (const count of [1000, 2000]) {

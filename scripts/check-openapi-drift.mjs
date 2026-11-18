@@ -106,12 +106,15 @@ function routesInFile(file) {
   const re = new RegExp(`\\b${v}\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g');
   for (const m of src.matchAll(re)) found.push({ method: m[1].toUpperCase(), sub: m[2] });
 
-  // Scan subfolder helper imports for route registrations (e.g. routes/chat/stream.ts)
+  // Scan nested helpers and sibling registrars called with this router.
   const dir = dirname(file);
-  for (const im of src.matchAll(/import\s+(?:\{[^}]*\}|\w+)\s+from\s+'(\.\/[^']+)\.js'/g)) {
-    const importPath = im[1];
-    // Only inspect subdirectories (e.g. ./chat/stream), not sibling router files (e.g. ./apiKeys)
-    if (!importPath.slice(2).includes('/')) continue;
+  for (const im of src.matchAll(/import\s+(?:\{([^}]*)\}|\w+)\s+from\s+'(\.\/[^']+)\.js'/g)) {
+    const importPath = im[2];
+    const registrars = im[1]?.match(/\bregister\w+\b/g) ?? [];
+    const registersRoutes = registrars.some((name) =>
+      new RegExp(`\\b${name}\\(\\s*${v}\\s*\\)`).test(src),
+    );
+    if (!importPath.slice(2).includes('/') && !registersRoutes) continue;
     for (const ext of ['.ts', '.js']) {
       const helper = join(dir, importPath + ext);
       if (existsSync(helper)) {

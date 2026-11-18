@@ -160,31 +160,26 @@ export async function apiFetch<T = unknown>(
   const userSignal = opts.signal || null;
   const linkedSignal = linkAbortSignal(userSignal, 'util/api.apiFetch');
   let response: Response;
+  let body: unknown;
   try {
-    response = await fetch(
-      request.path,
-      Object.assign({}, request.opts, {
-        signal: linkedSignal.controller.signal,
-      }) as RequestInit,
-    );
-  } catch (caught) {
-    const failure = caught as { name?: string } | null;
-    const aborted =
-      !!failure && (failure.name === 'AbortError' || linkedSignal.controller.signal.aborted);
-    const err = makeApiError(
-      0,
-      aborted ? '请求被取消' : '网络异常，请检查连接后重试',
-      null,
-      aborted ? 'ABORTED' : 'NETWORK',
-      0,
-    );
-    if (aborted) err.name = 'AbortError';
-    throw err;
+    try {
+      response = await fetch(
+        request.path,
+        Object.assign({}, request.opts, {
+          signal: linkedSignal.controller.signal,
+        }) as RequestInit,
+      );
+    } catch (caught) {
+      const failure = caught as { name?: string } | null;
+      if (failure?.name === 'AbortError' || linkedSignal.controller.signal.aborted)
+        throw abortedRequestError();
+      throw makeApiError(0, '网络异常，请检查连接后重试', null, 'NETWORK', 0);
+    }
+    body = await readJsonBody(response, linkedSignal.controller.signal);
   } finally {
     linkedSignal.detach();
   }
 
-  const body = await readJsonBody(response);
   if (response.ok) return body as T;
 
   const error = makeJsonResponseError(response, body);
@@ -204,11 +199,18 @@ function shouldRefreshCsrf(response: Response, opts: ApiRequestOptions, method: 
   return response.status === 403 && !opts._csrfRetried && method !== 'GET' && method !== 'HEAD';
 }
 
-async function readJsonBody(response: Response): Promise<unknown> {
+function abortedRequestError() {
+  const error = makeApiError(0, '请求被取消', null, 'ABORTED', 0);
+  error.name = 'AbortError';
+  return error;
+}
+
+async function readJsonBody(response: Response, signal: AbortSignal): Promise<unknown> {
   let text: string;
   try {
     text = await response.text();
   } catch {
+    if (signal.aborted) throw abortedRequestError();
     throw makeApiError(response.status || 0, '响应读取失败', null, 'READ_BODY', 0);
   }
   try {

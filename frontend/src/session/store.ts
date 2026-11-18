@@ -16,7 +16,7 @@ export interface SessionRow {
   id: string;
   title?: string | null;
   mode?: string;
-  preview?: string;
+  preview?: string | null;
   topic?: string | null;
   pinned?: boolean;
   projectId?: string | null;

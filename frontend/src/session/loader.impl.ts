@@ -46,7 +46,11 @@ import {
   type PersistedMessage,
 } from './historyRestore.ts';
 import { reattachPendingTurn } from './pendingTurnRestore.ts';
-import { beginHistoryPaging, endHistoryPaging } from './historyPaging.ts';
+import {
+  beginHistoryPaging,
+  cancelOlderHistoryRequest,
+  endHistoryPaging,
+} from './historyPaging.ts';
 import { normalizeDetailPage, olderRowCount, sessionDetailPath } from './historyPagingState.ts';
 import { flushDeferredSessionSave, seedSyncedMessages } from './persistence.ts';
 import { toggleShareBtn } from '../ui/share.ts';
@@ -402,6 +406,7 @@ function beginSessionLoad(id: string): AbortController {
   const controller = new AbortController();
   saveState.loadAbortCtl = controller;
   saveState.loadSessionId = id;
+  cancelOlderHistoryRequest();
   return controller;
 }
 

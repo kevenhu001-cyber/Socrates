@@ -18,6 +18,28 @@ export type TimelineEntry = {
 };
 const OVERSCAN = 8;
 
+function timelineTop(root: HTMLElement, host: HTMLElement): number {
+  return Math.max(0, host.getBoundingClientRect().top - root.getBoundingClientRect().top);
+}
+
+function rowIndexAt(offsets: number[], position: number): number {
+  let low = 0;
+  let high = offsets.length - 1;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (offsets[mid + 1] <= position) low = mid + 1;
+    else high = mid;
+  }
+  return Math.min(low, offsets.length - 2);
+}
+
+function visibleRange(offsets: number[], top: number, height: number) {
+  return {
+    start: Math.max(0, rowIndexAt(offsets, top) - OVERSCAN),
+    end: Math.min(offsets.length - 1, rowIndexAt(offsets, top + height) + OVERSCAN + 1),
+  };
+}
+
 /** Variable-height window with sparse retained rows for menus, rename and drag.
  * Gaps stay in normal flow, so retained rows never move or remount on scroll. */
 export function VirtualSessionTimeline({
@@ -29,8 +51,10 @@ export function VirtualSessionTimeline({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const heights = useRef(new Map<string, number>());
+  const measurement = useRef({ entries, offsets: [0] });
+  const rowObserver = useRef<ResizeObserver | null>(null);
+  const observedRows = useRef(new Set<HTMLElement>());
   const [measureRevision, setMeasureRevision] = useState(0);
-  const [viewport, setViewport] = useState({ top: 0, height: 600 });
   const [retained, setRetained] = useState<ReadonlySet<string>>(new Set());
   const [focused, setFocused] = useState<string | null>(null);
   const retain = useCallback((id: string, active: boolean) => {
@@ -52,23 +76,34 @@ export function VirtualSessionTimeline({
     return result;
     // Measurements are external geometry, revision changes when they change.
   }, [entries, measureRevision]);
-  const indexAt = (position: number) => {
-    let low = 0,
-      high = entries.length;
-    while (low < high) {
-      const mid = (low + high) >>> 1;
-      if (offsets[mid + 1] <= position) low = mid + 1;
-      else high = mid;
-    }
-    return Math.min(low, entries.length - 1);
-  };
-  const start = Math.max(0, indexAt(viewport.top) - OVERSCAN);
-  const end = Math.min(entries.length, indexAt(viewport.top + viewport.height) + OVERSCAN + 1);
-  const indices: number[] = [];
-  entries.forEach((entry, index) => {
-    if ((index >= start && index < end) || retained.has(entry.key) || focused === entry.key)
-      indices.push(index);
-  });
+  const [{ start, end }, setRange] = useState(() => visibleRange(offsets, 0, 600));
+  const indices = useMemo(
+    () =>
+      entries.flatMap((entry, index) =>
+        (index >= start && index < end) || retained.has(entry.key) || focused === entry.key
+          ? [index]
+          : [],
+      ),
+    [entries, start, end, retained, focused],
+  );
+
+  const updateRange = useCallback((root: HTMLElement, host: HTMLElement) => {
+    const next = visibleRange(
+      measurement.current.offsets,
+      timelineTop(root, host),
+      host.clientHeight || 600,
+    );
+    setRange((current) =>
+      current.start === next.start && current.end === next.end ? current : next,
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    measurement.current = { entries, offsets };
+    const root = rootRef.current;
+    const host = root?.closest<HTMLElement>('#recentsPanel');
+    if (root && host) updateRange(root, host);
+  }, [entries, offsets, updateRange]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -77,50 +112,43 @@ export function VirtualSessionTimeline({
     let frame = 0;
     const update = () => {
       frame = 0;
-      const top = Math.max(
-        0,
-        host.scrollTop -
-          (root.getBoundingClientRect().top - host.getBoundingClientRect().top + host.scrollTop),
-      );
-      const height = host.clientHeight || 600;
-      setViewport((previous) =>
-        previous.top === top && previous.height === height ? previous : { top, height },
-      );
+      updateRange(root, host);
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
     host.addEventListener('scroll', schedule, { passive: true });
-    const observer = new ResizeObserver(schedule);
-    observer.observe(host);
-    update();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
+    observer?.observe(host);
     return () => {
       host.removeEventListener('scroll', schedule);
-      observer.disconnect();
+      observer?.disconnect();
       if (frame) cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [updateRange]);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
     const host = root?.closest<HTMLElement>('#recentsPanel');
-    if (!root || !host) return undefined;
-    const live = new Set(entries.map((entry) => entry.key));
-    for (const key of heights.current.keys()) if (!live.has(key)) heights.current.delete(key);
+    if (!root || !host || typeof ResizeObserver !== 'function') return undefined;
+    const observed = observedRows.current;
     const observer = new ResizeObserver((changes) => {
-      let changed = false,
-        correction = 0;
+      const { entries, offsets } = measurement.current;
+      const top = timelineTop(root, host);
+      let changed = false;
+      let correction = 0;
       for (const change of changes) {
         const element = change.target as HTMLElement;
+        if (!observed.has(element)) continue;
         const index = Number(element.dataset.timelineIndex);
         const key = entries[index]?.key;
         const height =
           change.borderBoxSize?.[0]?.blockSize ?? element.getBoundingClientRect().height;
-        if (!key || height <= 0) continue; // hidden mobile drawer
-        const previous = offsets[index + 1] - offsets[index];
+        if (!key || key !== element.dataset.timelineKey || height <= 0) continue;
+        const previous = heights.current.get(key) ?? offsets[index + 1] - offsets[index];
         if (Math.abs(previous - height) < 0.5) continue;
         heights.current.set(key, height);
-        if (offsets[index + 1] <= viewport.top) correction += height - previous;
+        if (offsets[index + 1] <= top) correction += height - previous;
         changed = true;
       }
       if (changed) {
@@ -128,11 +156,35 @@ export function VirtualSessionTimeline({
         setMeasureRevision((revision) => revision + 1);
       }
     });
-    root
-      .querySelectorAll<HTMLElement>('[data-timeline-index]')
-      .forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
-  }, [entries, offsets, start, end, retained, focused, viewport.top]);
+    rowObserver.current = observer;
+    return () => {
+      observer.disconnect();
+      rowObserver.current = null;
+      observed.clear();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const live = new Set(entries.map((entry) => entry.key));
+    for (const key of heights.current.keys()) if (!live.has(key)) heights.current.delete(key);
+  }, [entries]);
+
+  useLayoutEffect(() => {
+    const observer = rowObserver.current;
+    if (!observer || !rootRef.current) return;
+    const observed = observedRows.current;
+    const next = new Set(rootRef.current.querySelectorAll<HTMLElement>('[data-timeline-index]'));
+    for (const element of observed) {
+      if (next.has(element)) continue;
+      observer.unobserve(element);
+      observed.delete(element);
+    }
+    for (const element of next) {
+      if (observed.has(element)) continue;
+      observer.observe(element);
+      observed.add(element);
+    }
+  }, [indices]);
 
   let previousEnd = 0;
   return (

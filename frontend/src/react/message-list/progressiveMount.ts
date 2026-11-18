@@ -17,14 +17,6 @@ export interface MountTrack extends MountWindowState {
   items: ReadonlyArray<ChatMessage>;
 }
 
-export interface ScrollAnchor {
-  height: number;
-  top: number;
-  pinned: boolean;
-  clientId?: string;
-  visualTop?: number;
-}
-
 export type MountWindowDirection = 'older' | 'newer';
 
 function lastId(items: ReadonlyArray<ChatMessage>): string | null {

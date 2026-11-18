@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { sitePage, startSite, stopSite } from './helpers/site-browser.mjs';
 
 let site;
@@ -20,6 +20,51 @@ const slugs = [
   'tutor-curiosity',
 ];
 const dates = ['2026-08-12', '2026-07-29', '2026-07-11', '2026-06-24', '2026-04-30', '2026-02-18'];
+
+for (const [prefix, locale, width] of [
+  ['', 'en', 1280],
+  ['/zh', 'zh', 390],
+]) {
+  test(`${prefix}/download offers the localized web app and the shared Android APK`, async (t) => {
+    const page = await sitePage(site, t, `${prefix}/download`, width);
+    const options = page.locator('.download-option');
+    assert.equal(await options.count(), 2);
+    assert.equal(
+      await options.first().locator('a').getAttribute('href'),
+      `https://app.topodrive.top/?lang=${locale}`,
+    );
+
+    const apkName = 'socrates-android-1.4-debug.apk';
+    const apkPath = `/media/downloads/${apkName}`;
+    const apkLink = options.last().locator('a[download]');
+    assert.equal(await apkLink.getAttribute('href'), apkPath);
+    const [download] = await Promise.all([page.waitForEvent('download'), apkLink.click()]);
+    assert.equal(download.suggestedFilename(), apkName);
+    assert.equal(await download.failure(), null);
+    assert.equal(
+      (await stat(await download.path())).size,
+      (await stat(new URL(`../site${apkPath}`, import.meta.url))).size,
+    );
+    const [web, android] = await Promise.all([
+      options.first().boundingBox(),
+      options.last().boundingBox(),
+    ]);
+    if (locale === 'zh') assert.ok(web.y + web.height <= android.y);
+    else assert.equal(web.y, android.y);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
+
+    const home = await sitePage(site, t, `${prefix}/`, width);
+    assert.equal(
+      await home.locator('.hero-actions').locator(`a[href="${prefix}/download"]`).count(),
+      1,
+    );
+    const product = await sitePage(site, t, `${prefix}/product`, width);
+    assert.equal(
+      await product.locator('.product-actions').locator(`a[href="${prefix}/download"]`).count(),
+      1,
+    );
+  });
+}
 
 for (const prefix of ['', '/zh']) {
   for (const kind of ['research', 'about']) {

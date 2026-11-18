@@ -9,6 +9,7 @@
 // read by addStreamingMessage (in app entry) to decide whether to auto
 // snap-to-bottom.
 import { scrollContainer, smoothScrollToBottom } from './scroll.ts';
+import { recordScrollIntent } from './scrollCoordinator.ts';
 import { dispatchUi, uiStore } from '../store/index.ts';
 
 const SCROLL_SLACK = 64; /* pixels from bottom considered "pinned" */
@@ -26,6 +27,7 @@ export function getLastScrollIntentAt() {
 
 function markUserScrollIntent() {
   lastUserScrollIntentAt = Date.now();
+  recordScrollIntent();
 }
 
 /* A layout compensation (chat/turn/anchor/ retiring a spent answer
@@ -109,11 +111,20 @@ export function wireScrollPill() {
     { passive: true, capture: true },
   );
   document.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.target === scrollContainer()) recordScrollIntent();
+    },
+    { passive: true, capture: true },
+  );
+
+  document.addEventListener(
     'touchmove',
     function (ev) {
       if (touchY == null || !ev.touches || !ev.touches.length) return;
       const y = ev.touches[0].clientY;
-      if (Math.abs(y - touchY) > 4) markUserScrollIntent();
+      if (y !== touchY) recordScrollIntent();
+      if (Math.abs(y - touchY) > 4) lastUserScrollIntentAt = Date.now();
       if (y - touchY > 4) releasePin(); /* finger down = scrolling up */
       else if (touchY - y > 4) upIntentAt = 0;
       touchY = y;
@@ -129,11 +140,12 @@ export function wireScrollPill() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (el && (el as HTMLElement).isContentEditable))
         return;
       if (ev.key === 'ArrowUp' || ev.key === 'PageUp' || ev.key === 'Home') {
-        markUserScrollIntent();
         releasePin();
       } else if (ev.key === 'End') {
         markUserScrollIntent();
         upIntentAt = 0;
+      } else if (ev.key === 'ArrowDown' || ev.key === 'PageDown' || ev.key === ' ') {
+        recordScrollIntent();
       }
     },
     true,

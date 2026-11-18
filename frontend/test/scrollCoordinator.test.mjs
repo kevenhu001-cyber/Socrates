@@ -2,6 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { beginScrollOwner, endScrollOwner, writeScrollTop } from '../src/ui/scrollCoordinator.ts';
+import { recordScrollIntent } from '../src/ui/scrollCoordinator.ts';
+import {
+  captureScrollAnchor,
+  correctScrollAnchor,
+} from '../src/react/message-list/messageScroll.ts';
 
 test('higher-priority scroll owners block lower-priority writes', () => {
   const list = { scrollTop: 10 };
@@ -32,4 +37,18 @@ test('a newer owner supersedes a previous claim without stale release', () => {
   endScrollOwner(list, user);
   assert.equal(writeScrollTop(list, 60, 'content'), true);
   assert.equal(list.scrollTop, 60);
+});
+
+test('a pending history anchor cannot re-pin after new input or a host replacement', () => {
+  const host = { scrollTop: 50, scrollHeight: 150, clientHeight: 100 };
+  const captured = captureScrollAnchor(host);
+  const replacement = { ...host, scrollHeight: 300 };
+  correctScrollAnchor(captured, replacement);
+  assert.equal(replacement.scrollTop, 50);
+
+  recordScrollIntent();
+  host.scrollHeight = 300;
+  host.scrollTop = 20;
+  correctScrollAnchor(captured, host);
+  assert.equal(host.scrollTop, 20);
 });

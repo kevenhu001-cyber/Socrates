@@ -45,6 +45,44 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
   await expect(page.locator('#navMore')).toHaveCount(1);
 });
 
+test('the recent-session window reuses its row observer across rapid scrolling', async ({
+  page,
+}) => {
+  const sessions = Array.from({ length: 160 }, (_, index) => ({
+    id: `59595959-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    title: `Recent session ${index}`,
+    mode: 'chat',
+    updatedAt: new Date(Date.UTC(2026, 9, 1, 0, 0, 160 - index)).toISOString(),
+  }));
+  await page.route(/\/api\/(?:v2\/)?sessions\?/, (route) => route.fulfill({ json: { sessions } }));
+  await page.addInitScript(() => {
+    const NativeObserver = window.ResizeObserver;
+    const rowObservers = new WeakSet();
+    window.__recentsObserverCount = 0;
+    window.ResizeObserver = class extends NativeObserver {
+      observe(target, options) {
+        if (target.hasAttribute('data-timeline-index') && !rowObservers.has(this)) {
+          rowObservers.add(this);
+          window.__recentsObserverCount += 1;
+        }
+        return super.observe(target, options);
+      }
+    };
+  });
+  await gotoAndSettle(page, '/');
+  const panel = page.locator('#recentsPanel');
+  await expect(panel.getByText('Recent session 0', { exact: true })).toBeVisible();
+  await panel.evaluate(async (host) => {
+    for (let step = 0; step < 14; step++) {
+      host.scrollTop += 560;
+      await new Promise(requestAnimationFrame);
+    }
+  });
+  await expect(panel.getByText('Recent session 159', { exact: true })).toBeInViewport();
+  expect(await panel.locator('[data-timeline-index]').count()).toBeLessThan(45);
+  expect(await page.evaluate(() => window.__recentsObserverCount)).toBe(1);
+});
+
 test('tutor sidebar panel selection is driven by React state', async ({ page }) => {
   await page.locator('#topModeTutor').click();
   await expect(page.locator('body')).toHaveAttribute('data-app-mode', 'tutor');

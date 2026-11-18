@@ -3,6 +3,7 @@
  * store, and browser-local history. */
 import { whenSessionIdle } from './afterSessionPaint.ts';
 import { normalizeTurnRuntime } from '@socrates/core/turnRuntime';
+import type { SessionMessageDto } from '@socrates/contracts';
 import { dispatchSession, sessionStore } from '../store/index.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { quietTurn } from '../chat/turn/ui.ts';
@@ -20,20 +21,16 @@ import { reportSwallow } from '../util/reportSwallow.ts';
 import { t } from '../i18n/index.ts';
 
 /** A persisted message row from GET /api/sessions/:id. */
-export interface PersistedMessage {
+export interface PersistedMessage extends Partial<
+  Omit<SessionMessageDto, 'id' | 'createdAt' | 'attachments' | 'toolCalls' | 'summary'>
+> {
   id?: string | null;
-  clientId?: string | null;
-  role?: string;
-  rawText?: string | null;
+  createdAt?: string | null;
   content?: string | null;
-  html?: string | null;
-  type?: string | null;
-  reasoningContent?: string | null;
   reasoning_content?: string | null;
   reasoningDurationSec?: number | null;
   reasoning_duration_sec?: number | null;
   summary?: unknown;
-  turnRuntime?: unknown;
   attachments?: unknown[];
   toolCalls?: PersistedToolCall[];
   [key: string]: unknown;

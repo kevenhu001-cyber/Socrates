@@ -235,20 +235,30 @@ class ApiClient(context: Context, initialBaseUrl: String = DEFAULT_BASE_URL, pri
     @Synchronized fun invalidateSession() { authGeneration++; activeStream?.cancel(); activeStream = null; clearTokens(); onAuthLost?.invoke() }
 
     fun listSessions(includeArchived: Boolean = true): List<ChatSession> {
-        val output = mutableListOf<ChatSession>(); var cursor: String? = null; val seen = mutableSetOf<String>()
+        val output = mutableListOf<ChatSession>()
+        val seen = mutableSetOf<String>()
+        var cursor: String? = null
         do {
-            val suffix = "?limit=50" + (if (includeArchived) "&archived=true" else "") + (cursor?.let { "&cursor=${encode(it)}" } ?: "")
-            val page = jsonRequest("GET", "/sessions$suffix"); val rows = page.optJSONArray("sessions") ?: JSONArray()
-            for (i in 0 until rows.length()) output += parseSession(rows.optJSONObject(i) ?: JSONObject())
-            cursor = page.optString("nextCursor").takeIf { it.isNotBlank() && it != "null" }
+            val page = listSessionPage(cursor, includeArchived)
+            output += page.sessions
+            cursor = page.nextCursor
             if (cursor != null && !seen.add(cursor)) throw IOException("Session pagination cursor did not advance")
         } while (cursor != null)
         return output
     }
-    fun listSessionPage(cursor: String? = null): SessionPage {
-        val suffix = "?limit=50" + (cursor?.let { "&cursor=${encode(it)}" } ?: "")
-        val json = jsonRequest("GET", "/sessions$suffix"); val rows = json.optJSONArray("sessions") ?: JSONArray()
-        return SessionPage((0 until rows.length()).map { parseSession(rows.optJSONObject(it) ?: JSONObject()) }, json.optString("nextCursor").takeIf { it.isNotBlank() && it != "null" })
+
+    fun listSessionPage(cursor: String? = null, includeArchived: Boolean = false): SessionPage {
+        val path = buildString {
+            append("/sessions?limit=50&cursorVersion=2")
+            if (includeArchived) append("&archived=true")
+            if (cursor != null) append("&cursor=").append(encode(cursor))
+        }
+        val json = jsonRequest("GET", path)
+        val rows = json.optJSONArray("sessions") ?: JSONArray()
+        return SessionPage(
+            (0 until rows.length()).map { parseSession(rows.optJSONObject(it) ?: JSONObject()) },
+            json.optString("nextCursor").takeIf { it.isNotBlank() && it != "null" },
+        )
     }
     fun getSession(id: String): ChatSession = parseSession(jsonRequest("GET", "/sessions/${encodePath(id)}"))
     fun saveSession(session: ChatSession): ChatSession {

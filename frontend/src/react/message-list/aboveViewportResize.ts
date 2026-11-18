@@ -21,7 +21,7 @@ import { useEffect, useLayoutEffect } from 'react';
 
 import { isSticky, scrollHost } from './messageScroll';
 import { uiBridge } from '../../store/index.ts';
-import { scrollOwnerOf, writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { scrollIntentRevision, scrollOwnerOf, writeScrollTop } from '../../ui/scrollCoordinator.ts';
 
 interface Keeper {
   host: HTMLElement;
@@ -139,7 +139,9 @@ interface ReadingAnchor {
   clientId: string;
   text: string;
   index: number;
-  /** Block top minus the scroller's top, in px. Scroll-invariant. */
+  scrollTop: number;
+  intent: number;
+  /** Block top relative to the viewport at capture. */
   offset: number;
 }
 
@@ -198,6 +200,9 @@ function canRestoreReadingAnchor(host: HTMLElement | null, anchor: ReadingAnchor
   if (!anchor || !host || host !== anchor.host) return false;
   if (!readerHoldsPosition() || readerPinned(host)) return false;
   if (host.dataset.turnAnchorSettling === 'true') return false;
+  // A pending scroll event can arrive after this layout effect, including during touch inertia.
+  if (anchor.intent !== scrollIntentRevision() || Math.abs(host.scrollTop - anchor.scrollTop) > 0.5)
+    return false;
   const owner = scrollOwnerOf(host);
   return owner === null || owner === 'history' || owner === 'anchor';
 }
@@ -260,6 +265,8 @@ function rememberReadingAnchor(): void {
         clientId,
         text: blockTextOf(blocks[index]),
         index,
+        scrollTop: host.scrollTop,
+        intent: scrollIntentRevision(),
         offset: rect.top - hostTop,
       };
       return;

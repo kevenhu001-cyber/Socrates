@@ -557,7 +557,7 @@ grep -q 'another Socrates deploy is already in progress' "$lock_base/output.log"
 # state file came out as `"worktreeDirtyFiles": 0` followed by a bare `0,`,
 # which no JSON parser accepts.
 site_state_base=$(make_fixture site-only-state)
-mkdir -p "$site_state_base/site/zh"
+mkdir -p "$site_state_base/site/zh" "$site_state_base/site/media/downloads"
 cat > "$site_state_base/site/index.html" <<'HTML'
 <!doctype html>
 <html lang="en"><head><title>Socrates</title></head>
@@ -566,6 +566,9 @@ HTML
 cp "$site_state_base/site/index.html" "$site_state_base/site/pricing.html"
 cp "$site_state_base/site/index.html" "$site_state_base/site/zh/index.html"
 cp "$site_state_base/site/index.html" "$site_state_base/site/zh/pricing.html"
+printf '<a href="/media/downloads/fixture.apk" download>Download</a>\n' > "$site_state_base/site/download.html"
+cp "$site_state_base/site/download.html" "$site_state_base/site/zh/download.html"
+printf 'APK fixture\n' > "$site_state_base/site/media/downloads/fixture.apk"
 printf '/* fixture */\n' > "$site_state_base/site/inner.css"
 # Ignore everything so the fixture worktree reads as clean. The dirty-file
 # count is only zero there, and only a zero count took the broken fallback
@@ -578,6 +581,9 @@ if ! jq -e '.lastSuccessfulSiteDeploy.worktreeDirtyFiles == 0' "$site_state_base
   cat "$site_state_base/deploy-state.site.json" >&2
   exit 1
 fi
-jq -e '.lastSuccessfulSiteDeploy.htmlPages == 4' "$site_state_base/deploy-state.site.json" >/dev/null
+jq -e '.lastSuccessfulSiteDeploy.htmlPages == 6' "$site_state_base/deploy-state.site.json" >/dev/null
+for file in download.html zh/download.html media/downloads/fixture.apk; do
+  cmp "$site_state_base/site/$file" "$site_state_base/site-root/$file"
+done
 
 echo "deploy flow: CI gate skip/success/default-advisory failure/missing/unverifiable and opt-in enforcement, the explicit --no-ci-check and DEPLOY_REQUIRE_CI_CHECK=0 opt-outs, success, lock contention, health gate, cleanup, rollback, the status-page gate (DNS missing/strict/artifact/feed/public), and the site-only state file passed"

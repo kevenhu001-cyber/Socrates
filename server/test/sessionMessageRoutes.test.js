@@ -86,6 +86,40 @@ test('session detail retains message metadata without duplicating content and hi
   assert.equal((await f.request('/api/sessions/not-a-uuid')).status, 404);
 });
 
+test('versioned session cursors preserve tied timestamps and microseconds', async () => {
+  const ids = [1, 2, 3, 4].map((n) => `53535353-0000-4000-8000-00000000000${n}`);
+  const times = ['.123454', '.123455', '.123456', '.123456'];
+  for (const [index, id] of ids.entries()) {
+    await session(f.owner, { id });
+    await f.db.execute(
+      sql`update sessions set updated_at = ${`2030-01-01T00:00:00${times[index]}Z`}::timestamptz where id = ${id}`,
+    );
+  }
+  const first = await f.request('/api/v2/sessions?limit=1&cursorVersion=2');
+  assert.equal(first.status, 200);
+  assert.match(first.body.nextCursor, /^v2:2030-01-01T00:00:00\.123456Z\|/);
+  let page = first;
+  const received = [];
+  for (let i = 0; i < ids.length; i++) {
+    assert.equal(page.status, 200);
+    received.push(page.body.sessions[0].id);
+    if (i < ids.length - 1)
+      page = await f.request(
+        `/api/v2/sessions?limit=1&cursor=${encodeURIComponent(page.body.nextCursor)}`,
+      );
+  }
+  assert.deepEqual(received, [...ids].reverse());
+  assert.equal((await f.request('/api/v2/sessions?cursor=v2:invalid')).status, 400);
+
+  const legacy = await f.request('/api/v2/sessions?limit=1');
+  assert.equal(legacy.body.nextCursor, '2030-01-01T00:00:00.123Z');
+  assert.equal(
+    (await f.request(`/api/v2/sessions?cursor=${encodeURIComponent(legacy.body.nextCursor)}`))
+      .status,
+    200,
+  );
+});
+
 test('session metadata PATCH validates assistant ownership, supports clearing, and never transfers ownership', async () => {
   const s = await session();
   const assistants = await f.db
@@ -316,6 +350,10 @@ test('message page returns the newest tail by default, oldest-last, with a stitc
     );
   }
   assert.equal((await f.request(`/api/sessions/${s.id}/messages`, { as: f.other })).status, 404);
+  assert.equal(
+    (await f.request(`/api/sessions/${s.id}/messages?before=bad`, { as: f.other })).status,
+    404,
+  );
   assert.equal((await f.request('/api/sessions/not-a-uuid/messages')).status, 404);
 
   const page1 = await f.request(`/api/sessions/${s.id}/messages?limit=3`);
@@ -493,6 +531,15 @@ test('session detail ?tail=N returns the newest page plus page metadata; without
   assert.equal(all.body.messages.length, 5);
   assert.equal(all.body.messagesPage.hasMore, false);
   assert.equal(all.body.messagesPage.cursor, null);
+  assert.equal(all.body.messagesPage.total, 5);
+  const empty = await session();
+  const emptyTail = await f.request(`/api/v2/sessions/${empty.id}?tail=2`);
+  assert.equal(emptyTail.status, 200);
+  assert.deepEqual(emptyTail.body.messages, []);
+  assert.deepEqual(emptyTail.body.messagesPage, { hasMore: false, cursor: null, total: 0 });
+  const emptyPage = await f.request(`/api/v2/sessions/${empty.id}/messages`);
+  assert.equal(emptyPage.status, 200);
+  assert.deepEqual(emptyPage.body, { messages: [], hasMore: false, cursor: null });
   assert.equal((await f.request(`/api/sessions/${s.id}?tail=0`)).body.messages.length, 1);
 
   const full = await f.request(`/api/sessions/${s.id}`);

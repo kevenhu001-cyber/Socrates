@@ -1,5 +1,5 @@
-import type { ScrollAnchor } from './progressiveMount';
-import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { scrollIntentRevision, writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { sessionStore } from '../../store/index.ts';
 
 const MSG_LIST_ID = 'msgList';
 const STICKY_MS = 4000;
@@ -14,16 +14,33 @@ interface Sticky {
 }
 
 let sticky: Sticky | null = null;
-let intentBound: HTMLElement | null = null;
+const stickyReleaseEvents = ['wheel', 'touchstart', 'mousedown'] as const;
+
+export interface ScrollAnchor {
+  host: HTMLElement;
+  sessionId: ReturnType<typeof currentSessionId>;
+  intent: number;
+  height: number;
+  top: number;
+  pinned: boolean;
+  clientId?: string;
+  visualTop?: number;
+}
+
+function currentSessionId() {
+  return sessionStore.getState().currentSessionId;
+}
 
 export function scrollHost(): HTMLElement | null {
   return typeof document === 'undefined' ? null : document.getElementById(MSG_LIST_ID);
 }
 
 export function releaseSticky(): void {
-  if (sticky?.frame) cancelAnimationFrame(sticky.frame);
-  if (sticky?.timer != null) clearTimeout(sticky.timer);
-  sticky?.resizeObserver?.disconnect();
+  if (!sticky) return;
+  if (sticky.frame) cancelAnimationFrame(sticky.frame);
+  if (sticky.timer != null) clearTimeout(sticky.timer);
+  sticky.resizeObserver?.disconnect();
+  for (const type of stickyReleaseEvents) sticky.list.removeEventListener(type, releaseOnIntent);
   sticky = null;
 }
 
@@ -60,11 +77,8 @@ export function stickTo(list: HTMLElement): void {
 
 export function pinToBottom(list: HTMLElement): void {
   releaseSticky();
-  if (intentBound !== list) {
-    for (const type of ['wheel', 'touchstart', 'mousedown'] as const) {
-      list.addEventListener(type, releaseOnIntent, { passive: true });
-    }
-    intentBound = list;
+  for (const type of stickyReleaseEvents) {
+    list.addEventListener(type, releaseOnIntent, { passive: true });
   }
   const state: Sticky = {
     list,
@@ -120,6 +134,9 @@ function firstVisibleMessageRow(host: HTMLElement): HTMLElement | null {
 export function captureScrollAnchor(host: HTMLElement): ScrollAnchor {
   const pinned = isSticky(host) || host.scrollHeight - host.scrollTop - host.clientHeight <= 2;
   const anchor: ScrollAnchor = {
+    host,
+    sessionId: currentSessionId(),
+    intent: scrollIntentRevision(),
     height: host.scrollHeight,
     top: host.scrollTop,
     pinned,
@@ -141,6 +158,12 @@ function rowByClientId(host: HTMLElement, clientId: string): HTMLElement | null 
 }
 
 export function correctScrollAnchor(anchor: ScrollAnchor, host: HTMLElement): void {
+  if (
+    host !== anchor.host ||
+    currentSessionId() !== anchor.sessionId ||
+    scrollIntentRevision() !== anchor.intent
+  )
+    return;
   if (anchor.pinned) {
     stickTo(host);
     return;

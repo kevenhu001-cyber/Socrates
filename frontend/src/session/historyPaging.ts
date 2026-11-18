@@ -31,6 +31,8 @@ import {
   type OlderHistoryRequest,
 } from './historyPagingState.ts';
 import type { ChatMessageShape } from '../state/session.ts';
+import type { SessionMessagePageDto } from '@socrates/contracts';
+import { saveState } from './saveState.ts';
 
 export const OLDER_PAGE_SIZE = 100;
 
@@ -39,23 +41,26 @@ interface PagedDetail {
   [key: string]: unknown;
 }
 
-interface PageResponse {
-  messages?: PersistedMessage[];
-  hasMore?: boolean;
-  cursor?: HistoryCursor | null;
+let cursor: HistoryCursor | null = null;
+let inflight: { controller: AbortController; promise: Promise<number> } | null = null;
+
+function abortHistoryPage(): void {
+  const previous = inflight;
+  inflight = null;
+  previous?.controller.abort();
 }
 
-let cursor: HistoryCursor | null = null;
-let generation = 0;
-let inflight: Promise<number> | null = null;
+export function cancelOlderHistoryRequest(): void {
+  abortHistoryPage();
+  patchHistoryPaging({ loading: false });
+}
 
 /** Called by the loader once the tail page is in the store. */
 export function beginHistoryPaging(
   sessionId: string,
   response: PagedDetail | null | undefined,
 ): void {
-  generation += 1;
-  inflight = null;
+  abortHistoryPage();
   const page = response && response.messagesPage;
   cursor = page && page.hasMore && validCursor(page.cursor) ? page.cursor : null;
   resetHistoryPaging(sessionId, cursor !== null);
@@ -63,23 +68,18 @@ export function beginHistoryPaging(
 
 /** Leave paging (exam view, missing session, new chat). */
 export function endHistoryPaging(): void {
-  generation += 1;
-  inflight = null;
+  abortHistoryPage();
   cursor = null;
   resetHistoryPaging(null, false);
 }
 
 function pagePath(sessionId: string, from: HistoryCursor, limit: number): string {
-  return (
-    '/api/sessions/' +
-    encodeURIComponent(sessionId) +
-    '/messages?limit=' +
-    limit +
-    '&before=' +
-    encodeURIComponent(from.createdAt) +
-    '&beforeId=' +
-    encodeURIComponent(from.id)
-  );
+  const query = new URLSearchParams({
+    limit: String(limit),
+    before: from.createdAt,
+    beforeId: from.id,
+  });
+  return `/api/sessions/${encodeURIComponent(sessionId)}/messages?${query}`;
 }
 
 function knownIds(messages: ReadonlyArray<ChatMessageShape>): Set<string> {
@@ -130,22 +130,29 @@ function applyOlderRows(
 }
 
 function loadOlderPage(request: OlderHistoryRequest): Promise<number> {
-  if (inflight) return inflight;
+  if (inflight) return inflight.promise;
   const state = getHistoryPagingSnapshot();
   const sessionId = state.sessionId;
   const from = cursor;
   if (!sessionId || !from || !state.hasMore) return Promise.resolve(0);
-  const token = generation;
+  if (saveState.loadingSession && saveState.loadSessionId !== sessionId) return Promise.resolve(0);
+  const controller = new AbortController();
   const limit = Math.min(Math.max(Math.floor(request.limit || OLDER_PAGE_SIZE), 1), 200);
   const stillCurrent = () =>
-    token === generation && sessionBridge.getSnapshot().currentSessionId === sessionId;
+    inflight?.controller === controller &&
+    sessionBridge.getSnapshot().currentSessionId === sessionId;
   patchHistoryPaging({ loading: true, failed: false });
-  const run = apiFetch<PageResponse>(pagePath(sessionId, from, limit))
+  const promise = apiFetch<SessionMessagePageDto<PersistedMessage>>(
+    pagePath(sessionId, from, limit),
+    {
+      signal: controller.signal,
+    },
+  )
     .then((page) => {
       if (!stillCurrent()) return 0;
       const rows = page && Array.isArray(page.messages) ? page.messages : [];
       const more = Boolean(page && page.hasMore === true && validCursor(page.cursor));
-      cursor = more ? (page.cursor as HistoryCursor) : null;
+      cursor = more ? page.cursor : null;
       /* Publish the paging state and the rows in one runtime notification so
        the list renders the prepended rows and the final status together. */
       patchHistoryPaging({ hasMore: more, loading: false, pagedBack: true });
@@ -154,15 +161,16 @@ function loadOlderPage(request: OlderHistoryRequest): Promise<number> {
       return added;
     })
     .catch((error: unknown) => {
-      if (stillCurrent()) patchHistoryPaging({ loading: false, failed: true });
+      if (!stillCurrent()) return 0;
+      patchHistoryPaging({ loading: false, failed: true });
       reportSwallow(error, 'session/historyPaging.loadOlderPage', 'expected');
       return 0;
     })
     .finally(() => {
-      if (token === generation) inflight = null;
+      if (inflight?.controller === controller) inflight = null;
     });
-  inflight = run;
-  return run;
+  inflight = { controller, promise };
+  return promise;
 }
 
 registerOlderHistoryLoader(loadOlderPage);

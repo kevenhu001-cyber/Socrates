@@ -8,6 +8,7 @@ import {
   pinToBottom,
   releaseSticky,
   scrollHost,
+  type ScrollAnchor,
 } from './messageScroll';
 import {
   fullMountWindow,
@@ -21,12 +22,12 @@ import {
   windowAroundIndex,
   type MountTrack,
   type MountWindowState,
-  type ScrollAnchor,
 } from './progressiveMount';
 import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity';
 import { setOffscreenMount } from './nearViewport';
 import { useAboveViewportResizeCompensation } from './aboveViewportResize';
+import { whenSessionIdle } from '../../session/afterSessionPaint.ts';
 import {
   canLoadOlderHistory,
   registerBeforeOlderRows,
@@ -89,20 +90,11 @@ function useOlderHistoryTrigger(atOldestRow: boolean, itemCount: number): void {
     host.addEventListener('scroll', onScroll, { passive: true });
     host.addEventListener('wheel', onUpwardIntent, { passive: true });
     host.addEventListener('touchmove', onUpwardIntent, { passive: true });
-    const idle = (
-      window as Window & {
-        requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-      }
-    ).requestIdleCallback;
-    const fillTimer =
-      host.scrollHeight <= host.clientHeight + NEAR_TOP_PX
-        ? window.setTimeout(() => {
-            if (typeof idle === 'function') idle.call(window, loadOlder, { timeout: 200 });
-            else loadOlder();
-          }, 0)
-        : null;
+    const idleFill = new AbortController();
+    if (host.scrollHeight <= host.clientHeight + NEAR_TOP_PX)
+      whenSessionIdle(loadOlder, 200, idleFill.signal);
     return () => {
-      if (fillTimer !== null) window.clearTimeout(fillTimer);
+      idleFill.abort();
       host.removeEventListener('scroll', onScroll);
       host.removeEventListener('wheel', onUpwardIntent);
       host.removeEventListener('touchmove', onUpwardIntent);
@@ -184,12 +176,12 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
     const last = items.length ? items[items.length - 1] : null;
     // A rewind removes the former tail but keeps the same conversation.
     // Its restored rows must not trigger the initial history bottom pin.
-    const sharesRows = previousItems.some((entry) => indexOfId(items, entryId(entry, '')) >= 0);
-    if (replaced && !sharesRows && last?.restoredFromHistory) {
-      const list = scrollHost();
+    if (replaced) {
+      const ids = new Set(items.map((entry, index) => entryId(entry, `idx-${index}`)));
+      const sharesRows = previousItems.some((entry) => ids.has(entryId(entry, '')));
+      const list = !sharesRows && last?.restoredFromHistory ? scrollHost() : null;
       if (list) pinToBottom(list);
-    } else if (replaced) {
-      releaseSticky();
+      else releaseSticky();
     }
   });
 
@@ -204,6 +196,8 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
     if (!host) return undefined;
 
     let cancelled = false;
+    let frame = 0;
+    let previousTop = host.scrollTop;
     let idleHandle: number | null = null;
     const browser = window as Window & {
       requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
@@ -215,28 +209,36 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
       const track = trackRef.current;
       const next = shiftMountWindow(track.items, track, direction);
       if (sameWindow(track, next)) return;
-      anchorRef.current = captureScrollAnchor(host);
-      trackRef.current = { ...track, ...next };
       cancelled = true;
-      /* Rows revealed by a shift sit outside the viewport (above it while
-         scrolling up, below it while scrolling down): their heavy wiring
-         waits until they come within reach. */
-      setOffscreenMount(true);
-      rerender();
+      // Capture and commit in one frame so native scrolling keeps its latest position.
+      flushSync(() => {
+        anchorRef.current = captureScrollAnchor(host);
+        trackRef.current = { ...track, ...next };
+        setOffscreenMount(true);
+        rerender();
+      });
     };
 
-    const onScroll = () => {
+    const updateWindow = () => {
+      frame = 0;
       if (cancelled) return;
+      const top = host.scrollTop;
+      const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+      const movedUp = top < previousTop || top <= 0;
+      const movedDown = top > previousTop || (maxTop > 0 && top >= maxTop);
+      previousTop = top;
       if (turnOwnsMountViewport(host)) return;
-      if (start > 0 && host.scrollTop < NEAR_TOP_PX) {
+      if (movedUp && start > 0 && top < NEAR_TOP_PX) {
         /* While a response streams, keep its tail row resident. We may grow
            backward up to the cap, but we do not slide the whole window away
            from the live assistant row. */
         if (!liveTail || mounted.length < MAX_MOUNTED_ROWS) shift('older');
         return;
       }
-      const distanceFromBottom = host.scrollHeight - host.scrollTop - host.clientHeight;
-      if (end < items.length && distanceFromBottom < NEAR_BOTTOM_PX) shift('newer');
+      if (movedDown && end < items.length && maxTop - top < NEAR_BOTTOM_PX) shift('newer');
+    };
+    const onScroll = () => {
+      if (!frame && !cancelled) frame = requestAnimationFrame(updateWindow);
     };
 
     host.addEventListener('scroll', onScroll, { passive: true });
@@ -261,6 +263,7 @@ export function useProgressiveMessageMount(items: ReadonlyArray<ChatMessage>): {
 
     return () => {
       cancelled = true;
+      if (frame) cancelAnimationFrame(frame);
       if (idleHandle !== null) {
         if (typeof browser.cancelIdleCallback === 'function')
           browser.cancelIdleCallback(idleHandle);

@@ -1,3 +1,4 @@
+import type { SessionListDto } from '@socrates/contracts';
 /* session/recents.ts — extracted from legacy entry.
  * Recents fetching + session deletion/restore/purge/archive helpers.
  * Zero-behavior-change lift. Render surfaces (renderRecents,
@@ -140,9 +141,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
     ok = true;
   } else {
     try {
-      const r = await apiFetch<{ sessions?: SessionRow[] }>(
-        '/api/sessions?limit=200&archived=true',
-      );
+      const r = await apiFetch<SessionListDto>('/api/sessions?limit=200&archived=true');
       serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
       ok = true;
     } catch (e) {
@@ -165,9 +164,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
           await new Promise(function (res) {
             setTimeout(res, 400);
           });
-          const r2 = await apiFetch<{ sessions?: SessionRow[] }>(
-            '/api/sessions?limit=200&archived=true',
-          );
+          const r2 = await apiFetch<SessionListDto>('/api/sessions?limit=200&archived=true');
           serverCache.sessions = r2 && Array.isArray(r2.sessions) ? r2.sessions : [];
           ok = true;
         } catch (retryError) {

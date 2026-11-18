@@ -233,6 +233,78 @@ export interface Session extends TutorState {
   streamingReasoning?: string | null;
 }
 
+/** Read projections for the authenticated session endpoints. */
+export interface SessionListItemDto {
+  id: string;
+  title: string | null;
+  topic: string;
+  mode: string;
+  phase: string;
+  kind: string;
+  domain: string | null;
+  projectId: string | null;
+  pinned: boolean;
+  archivedAt: string | null;
+  preview: string | null;
+  totalQ: number;
+  currentNode: number;
+  branchedFrom: unknown;
+  updatedAt: string;
+  createdAt: string;
+  tags: string[];
+  [key: string]: unknown;
+}
+
+export interface SessionListDto {
+  sessions: SessionListItemDto[];
+  nextCursor: string | null;
+}
+
+export interface SessionMessageDto {
+  id: string;
+  sessionId: string;
+  role: string;
+  rawText: string | null;
+  html: string | null;
+  type: string | null;
+  sources: unknown;
+  parentId: string | null;
+  model: string | null;
+  tokenCount: number | null;
+  clientId: string | null;
+  reasoningContent: string | null;
+  summary: string | null;
+  turnRuntime: unknown;
+  attachments: unknown;
+  toolCalls: unknown;
+  agentRunId: string | null;
+  editedAt: string | null;
+  createdAt: string;
+}
+
+export interface SessionMessageCursor {
+  /** ISO timestamp preserving PostgreSQL's microseconds. */
+  createdAt: string;
+  id: string;
+}
+
+export interface SessionMessagePageDto<TMessage = SessionMessageDto> {
+  messages: TMessage[];
+  hasMore: boolean;
+  cursor: SessionMessageCursor | null;
+}
+
+export interface SessionTailPageDto extends Pick<SessionMessagePageDto, 'hasMore' | 'cursor'> {
+  total: number;
+}
+
+export interface SessionDetailDto<TMessage = SessionMessageDto> {
+  id: string;
+  messages: TMessage[];
+  messagesPage?: SessionTailPageDto;
+  [key: string]: unknown;
+}
+
 export type ShareVisibility = 'public' | 'private';
 
 /** Share settings returned by GET /api/sessions/:id/share. */

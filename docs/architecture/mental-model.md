@@ -85,9 +85,28 @@ Rules:
   it is not a second global store. If two surfaces must share it, promote it to
   `store/` with a typed domain action.
 
+### Session history
+
+- `frontend/src/session/loader.impl.ts` restores a session and hands older-page
+  ownership to `historyPaging.ts`. The pager deduplicates requests and aborts
+  outstanding work when the session changes. `historyPagingState.ts` exposes
+  the small snapshot used by the transcript without importing the loader.
+- `frontend/src/ui/scrollCoordinator.ts` arbitrates programmatic writes and
+  records newer scroll input. `react/message-list/` owns row mounting and DOM
+  measurements. Window shifts capture and restore the visible row in the same
+  frame. Layout callbacks discard stale reading positions when input advances.
+- `react/session-list/VirtualSessionTimeline.tsx` measures the Recents sidebar
+  with one row observer per mount and updates the rendered range at row boundaries.
+
 ## 4. Server boundaries
 
 - `routes/*` owns HTTP: auth, scope, validation, status codes.
+- `routes/sessions/read.ts` owns its SQL projections and pagination. Session
+  read DTOs live in `packages/contracts`, and the public schemas come from
+  `docs/api/openapi.yaml`. Clients pass cursors back unchanged. The Android
+  list requests the versioned cursor and keeps the full session detail path.
+  The older-message query checks ownership in SQL, with a separate ownership
+  lookup on empty results to distinguish an empty history from a missing session.
 - `routes/chat/prepare/*` owns request assembly: wire schema, prompts, RAG,
   memory, client-system boundary, SSE priming, rate limits.
 - `routes/chat/pipeline/*` owns one streaming turn: tool loop, SSE frames,
