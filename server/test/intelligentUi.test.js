@@ -515,11 +515,30 @@ test('native visualization nodes validate and extract normalized specs without O
   assert.equal(normalized.nodes[0].template, 'line');
   assert.deepEqual(normalized.nodes[0].payload, { categories: ['A'], series: [{ data: [1] }] });
 
+  /* A series longer than its categories is reconciled by the shared
+   * normalizer (packages/core visualizationNormalize): the surplus value is
+   * dropped and the mismatch surfaces as a warning, not a rejection. That
+   * leniency is the contract — the normalizer's own "long series trims to
+   * categories" case pins it — so this asserts the reconciled outcome
+   * instead of a hard failure. */
+  const overlong = {
+    id: 'long-chart',
+    type: 'visualization',
+    template: 'bar',
+    payload: { categories: ['A'], series: [{ data: [1, 2] }] },
+  };
+  const overlongResult = validateIntelligentUi({ version: 1, nodes: [overlong] });
+  assert.equal(overlongResult.ok, true);
+  assert.match(overlongResult.warnings.join(' '), /beyond the last category/);
+  assert.deepEqual(overlongResult.visualizations[0].payload.series[0].data, [1]);
+
+  /* A chart whose values carry no number is not reconcilable, so it fails
+   * validation and the model receives actionable feedback. */
   const bad = {
     id: 'bad-chart',
     type: 'visualization',
     template: 'bar',
-    payload: { categories: ['A'], series: [{ data: [1, 2] }] },
+    payload: { categories: ['A'], series: [{ data: ['x'] }] },
   };
   const badResult = validateIntelligentUi({ version: 1, nodes: [bad] });
   assert.equal(badResult.ok, false);
