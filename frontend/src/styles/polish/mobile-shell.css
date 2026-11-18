@@ -106,8 +106,7 @@
   #appShell #topicSetup .topic-title.greeting {
     position: absolute;
     inset-inline: 0;
-    /* 2026-11-18 reference: a 26px regular line centred at ~43% of the page. */
-    top: 43%;
+    top: 40.5%;
     width: 100%;
     margin: 0;
     padding: 0;
@@ -116,7 +115,7 @@
     font-family: var(--font-sans);
     font-size: var(--ui-mobile-font-greeting);
     font-weight: var(--ui-font-weight-regular);
-    line-height: 34px;
+    line-height: 28px;
     letter-spacing: -0.01em;
     color: var(--foreground);
     text-align: center;

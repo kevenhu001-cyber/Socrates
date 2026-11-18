@@ -61,16 +61,15 @@ for (const mode of ['dark', 'light']) {
     });
     /* Dark: the reference question box is the #1b1b1b field tone between
        the pure-black canvas and the panel rung; menus keep #292929. Light:
-       the white paper on the #fcfcfc canvas. Corner: 30px (circle fit on
-       the 2026-11-18 reference's ~83px field). */
+       the white paper on the #fcfcfc canvas. Corner: 26px (circle fit). */
     expect(rgbChannels(frameStyle.background)).toEqual(
       mode === 'dark' ? [27, 27, 27] : [255, 255, 255],
     );
-    expect(frameStyle.radius).toBe('30px');
+    expect(frameStyle.radius).toBe('26px');
     const composerBox = await page.locator('#composerInputWrap').boundingBox();
     expect(composerBox.x).toBe(16);
     expect(composerBox.width).toBe(358);
-    expect(composerBox.height).toBe(82);
+    expect(composerBox.height).toBe(86);
     expect(Math.round(769 - composerBox.y - composerBox.height)).toBe(24);
     /* The landing shortcut rail and the phone suggestion line were removed
        on 2026-11-16; the composer is the last thing on the landing now. */

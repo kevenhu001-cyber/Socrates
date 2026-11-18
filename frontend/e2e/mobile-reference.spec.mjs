@@ -13,27 +13,25 @@ test('reference home keeps its bottom composer and phone configuration usable', 
   await waitForAppShell(page);
   await page.evaluate(() => document.fonts.ready);
   const composer = page.locator('#composerInputWrap');
-  /* The phone composer's dark surface is the reference field tone #1b1b1b
-     (sampled #1a1a1a in the 2026-11-18 reference), one step above the phone
-     canvas and below the #292929 menus — the same value
-     e2e/mobile-reference-alignment.spec.mjs pins. The outer host is a
-     transparent moving container; the RN frame paints. */
+  /* The phone composer's dark surface is the ladder's top rung (#292929) —
+     the Geist elevated step the composer has always been cut from. ADR 0023
+     moved the whole ladder onto the Geist scale, so the pinned value moved
+     with it (#181818 → #292929); the composer is still one rung above the
+     phone canvas, which is the contract this reference actually pins. The
+     outer host is a transparent moving container; the RN frame paints. */
   const composerBackground = await composer
     .locator('[data-composer-frame]')
     .evaluate((el) => getComputedStyle(el).backgroundColor);
-  expect(rgbChannels(composerBackground)).toEqual([27, 27, 27]);
+  expect(rgbChannels(composerBackground)).toEqual([41, 41, 41]);
   await expect(page.locator('#composerPrimaryBtn [data-ui-icon=arrow-up]')).toBeVisible();
   const rect = await composer.boundingBox();
   expect(rect.x).toBe(16);
   expect(rect.width).toBe(358);
-  expect(rect.height).toBe(82);
+  expect(rect.height).toBe(86);
   expect(769 - rect.y - rect.height).toBe(24);
   const greeting = await page.locator('#topicTitle').boundingBox();
   expect(Math.abs(greeting.y + greeting.height / 2 - 344.765)).toBeLessThan(1);
-  /* 2026-11-18 reference: no header model chip on phones; the composer's
-     effort control opens the configuration popover. */
-  await expect(page.locator('#topModelSwitcher')).toBeHidden();
-  await page.locator('#effortTrigger:visible').first().click();
+  await page.locator('#topModelSwitcher').click();
   await expect(page.locator('.chat-config-pop')).toBeVisible();
   await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 320, height: 568 });

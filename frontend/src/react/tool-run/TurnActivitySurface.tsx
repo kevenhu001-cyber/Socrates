@@ -19,6 +19,7 @@ import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
+import { ThinkingSpark } from './ThinkingSpark';
 import { ToolRunDetail } from './ToolRunDetail';
 import { ToolRunAgentSteps } from './ToolRunAgentSteps';
 import { useToolRunDisclosure } from './ToolRunDisclosure';
@@ -280,26 +281,19 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const hasDetails = rows.length > 0;
   if (!isLive && !hasDetails && header.durationSec === null) return null;
 
-  /* Reference grammar (docs/ref/mobile-reference-2026-11-18.md): live, the
-     caption is the bare action ("Thinking", "Searching …") with no elapsed
-     counter or trailing ellipsis; settled, the measured time folds into one
-     line, "Thought for 6s", followed by the disclosure chevron. */
-  const settledDuration = !isLive && header.durationSec !== null;
-  const rawLabel = settledDuration
-    ? tf('think.thoughtDuration', 'Thought for {sec}s', { sec: header.durationSec ?? 0 })
-    : !isLive && !hasDetails
+  const label =
+    !isLive && !hasDetails
       ? i18n('think.complete', 'Finished thinking')
       : thinkingLabelOf(header, thinkingLabels(steps.length > 0, Boolean(intent)));
-  const label = isLive ? rawLabel.replace(/\s*(?:…|\.\.\.)$/u, '') : rawLabel;
+  const durationLabel =
+    header.durationSec === null
+      ? undefined
+      : tf('think.rn.elapsed', '{sec}s', { sec: header.durationSec });
   const openRunningRow =
     isOpen && status?.phase === 'tool-running' && calls.some((call) => call.id === activeTool?.id);
   const showActivityCue =
     isLive && status?.phase !== 'tool-awaiting' && status?.phase !== 'answering' && !openRunningRow;
-  /* Only a connected app keeps its mark beside the caption (the reference's
-     GitHub row); web search and built-in tools read as plain gray text. */
-  const liveTool = isLive ? status?.toolName : undefined;
-  const toolName =
-    liveTool && toolVerbOf(liveTool).key === 'tool.verb.connector' ? liveTool : undefined;
+  const toolName = isLive ? status?.toolName : undefined;
   const sites = toolName ? toolActivitySites(activeTool) : [];
 
   return (
@@ -315,8 +309,9 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
       <WebUiTheme>
         <ThinkingSurface
           label={label}
+          durationLabel={durationLabel}
           live={isLive}
-          indicator={showActivityCue ? true : undefined}
+          indicator={showActivityCue ? <ThinkingSpark /> : undefined}
           icon={toolName ? <ToolActivityIcon name={toolName} sites={sites} /> : undefined}
           iconWidth={sites.length > 1 ? 30 : undefined}
           expandable={hasDetails}

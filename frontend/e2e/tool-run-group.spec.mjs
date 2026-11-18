@@ -513,8 +513,7 @@ test('a running code call streams into the open panel and keeps it open on compl
   const row = bubble.locator('.rn-tool-row[data-tcid="live-code"]').last();
   await expect(row).toHaveAttribute('data-state', 'running');
   await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
-  /* 2026-11-18 reference: no elapsed counter beside the live caption. */
-  await expect(bubble.getByTestId('turn-activity-duration')).toHaveCount(0);
+  await expect(bubble.getByTestId('turn-activity-duration')).toContainText(/\d/);
 
   await page.evaluate(() => {
     window.__beforeToolSnapshot = window.__socratesTestState.session().messages.at(-1);

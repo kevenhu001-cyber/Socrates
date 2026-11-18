@@ -1,9 +1,7 @@
 # Mobile reference contract — 2026-10-04
 
 Current home-header and drawer behavior is updated in
-[the 2026-10-18 reference](mobile-reference-2026-10-18.md), and the phone
-typography, composer, activity rows, drawer and settings are superseded by
-[the 2026-11-18 reference](mobile-reference-2026-11-18.md). The original capture
+[the 2026-10-18 reference](mobile-reference-2026-10-18.md). The original capture
 below remains context for the unchanged directory and composer surfaces.
 
 The six user-provided screenshots show home, the free account drawer, session

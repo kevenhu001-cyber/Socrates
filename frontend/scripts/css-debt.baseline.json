@@ -4,18 +4,18 @@
       "important": 14,
       "hexColor": 31,
       "literalRadius": 0,
-      "stackedId": 31,
+      "stackedId": 32,
       "literalFontSize": 50,
       "legacyChannel": 1,
-      "shadcnVarReads": 648
+      "shadcnVarReads": 655
     },
     "frozen": {
-      "important": 388,
-      "hexColor": 38,
+      "important": 389,
+      "hexColor": 39,
       "literalRadius": 166,
-      "stackedId": 39,
-      "literalFontSize": 336,
-      "legacyChannel": 768,
+      "stackedId": 41,
+      "literalFontSize": 337,
+      "legacyChannel": 769,
       "shadcnVarReads": 123
     }
   },

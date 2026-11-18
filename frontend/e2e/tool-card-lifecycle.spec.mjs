@@ -120,15 +120,14 @@ test('the declarative tool row runs, settles, and opens its details', async ({ p
   await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(1);
   await expect(row.getByTestId('thinking-step-title')).toContainText('Executing code');
 
-  // 2026-11-18 reference: the live header is the bare action with no
-  // elapsed counter, so the caption stays byte-stable while the tool runs.
-  const label = bubble.getByTestId('turn-activity-label');
-  await expect(label).toContainText('Executing code');
-  await expect(bubble.getByTestId('turn-activity-duration')).toHaveCount(0);
-  const firstReading = (await label.innerText()).trim();
-  expect(firstReading).not.toMatch(/\d+\s?(s|秒)|…$/u);
-  await page.waitForTimeout(1_200);
-  await expect(label).toHaveText(firstReading);
+  // Only the secondary duration ticks; the current-action label is stable.
+  await expect(bubble.getByTestId('turn-activity-label')).toContainText('Executing code');
+  const meta = bubble.getByTestId('turn-activity-duration');
+  const readMeta = async () =>
+    (await meta.count()) ? (await meta.first().innerText()).trim() : '';
+  await expect.poll(readMeta, { timeout: 10_000 }).toMatch(/\d/);
+  const firstReading = await readMeta();
+  await expect.poll(readMeta, { timeout: 10_000 }).not.toBe(firstReading);
 
   // The terminal frame settles the row.
   await page.evaluate(() => window.__pushToolResult());

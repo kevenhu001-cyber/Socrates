@@ -125,7 +125,7 @@
   --ui-mobile-font-meta: calc(13px * var(--app-type-scale));
   /* Drawer account name (reference: 15px, between the nav and body steps). */
   --ui-mobile-font-account: calc(15px * var(--app-type-scale));
-  --ui-mobile-font-greeting: calc(26px * var(--app-type-scale));
+  --ui-mobile-font-greeting: calc(21px * var(--app-type-scale));
   --ui-mobile-bottom: max(24px, env(safe-area-inset-bottom, 0px));
   --ui-sidebar-desktop: 260px;
   --ui-detail-width: 420px;
@@ -150,8 +150,6 @@
   --ui-font-size-lg: calc(18px * var(--app-type-scale));
   --ui-font-size-xl: calc(var(--ui-foundation-font-size-xl) * var(--app-type-scale));
   --ui-font-size-xxl: calc(var(--ui-foundation-font-size-heading-3) * var(--app-type-scale));
-  /* Phone settings page title (2026-11-18 reference). */
-  --ui-font-size-title-lg: calc(28px * var(--app-type-scale));
 
   /* Typography — weights */
   --ui-font-weight-regular: 400;

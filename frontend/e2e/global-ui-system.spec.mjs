@@ -33,10 +33,7 @@ for (const theme of ['light', 'dark']) {
           .map((entry) => ({ name: entry.name, bytes: entry.decodedBodySize })),
       }));
       expect(fonts.ui).toBe('14px');
-      /* 2026-11-18 reference: UI text is the platform system sans; the
-         bundled Noto Sans SC stays the named CJK fallback. */
-      expect(fonts.family).toContain('system-ui');
-      expect(fonts.family).not.toContain('Geist Sans');
+      expect(fonts.family).toContain('Geist Sans');
       expect(fonts.family).toContain('Noto Sans SC');
       expect(fonts.resources.some((entry) => /noto-sans-sc-\d+-/.test(entry.name))).toBe(true);
       expect(fonts.resources.some((entry) => entry.name.includes('chinese-simplified'))).toBe(
@@ -51,15 +48,6 @@ for (const theme of ['light', 'dark']) {
       const settings = page.locator('#settingsOverlay');
       await expect(settings).toBeVisible();
       await expect(settings.locator('.settings-nav button').first()).toHaveCSS('font-size', '14px');
-      if (width < 769) {
-        /* Phones open settings on the category index (2026-11-18 reference);
-           General is one tap away and holds the appearance control. */
-        await expect(settings.locator('.settings-modal')).toHaveAttribute(
-          'data-mobile-index',
-          'true',
-        );
-        await settings.getByRole('button', { name: '通用', exact: true }).click();
-      }
       await expect(settings.locator('#settings-appearance')).toHaveCSS('font-size', '14px');
       expect(
         await settings.evaluate((node) => Number(getComputedStyle(node).zIndex)),

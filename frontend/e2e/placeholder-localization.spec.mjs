@@ -1,15 +1,12 @@
 // e2e/placeholder-localization.spec.mjs — the zh chat placeholder must
-// localize at runtime and keep the platform system sans first in the
-// mixed-script stack (2026-11-18 reference), with the bundled CJK face
-// available as the named CJK fallback.
+// localize at runtime and keep the bundled western UI face first in the
+// mixed-script stack, with the bundled CJK face available for CJK fallback.
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-/* The UI face is the system sans (docs/ref/mobile-reference-2026-11-18.md);
-   the locally hosted Noto Sans SC stays the CJK fallback. Require real font
-   loading for that face as well as the declared stack. */
-const UI_FACE = 'ui-sans-serif';
+/* Match the marketing site's Geist UI and locally hosted Noto Sans SC
+   fallback. Require real font loading as well as the declared stack. */
 const CJK_FACE = 'Noto Sans SC';
 
 /* The name in a font stack is not proof the face is usable: a @font-face
@@ -23,7 +20,7 @@ async function cjkFaceLoads(page) {
   }, CJK_FACE);
 }
 
-test('zh UI localizes live with the system UI face first', async ({ page }) => {
+test('zh UI localizes live with the bundled Geist Sans face', async ({ page }) => {
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await page.waitForLoadState('domcontentloaded');
@@ -46,31 +43,33 @@ test('zh UI localizes live with the system UI face first', async ({ page }) => {
   });
   expect(zhState).not.toBeNull();
   expect(zhState.content).toContain('有问题，随便问');
-  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe(UI_FACE);
+  expect(zhState.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhState.fontFamily).toContain(CJK_FACE);
-  expect(zhState.fontFamily).not.toContain('Geist Sans');
+  expect(zhState.fontFamily).toContain('Geist Sans');
   expect(zhState.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
-  /* Code keeps the bundled Geist Mono face. */
   const brandFaces = await page.evaluate(async () =>
-    Promise.all([document.fonts.load('400 16px "Geist Mono"', 'const value = 1;')]).then((groups) =>
+    Promise.all([
+      document.fonts.load('400 16px "Geist Sans"', 'Socrates'),
+      document.fonts.load('700 16px "Geist Sans"', 'Socrates'),
+      document.fonts.load('400 16px "Geist Mono"', 'const value = 1;'),
+    ]).then((groups) =>
       groups.every((faces) => faces.length > 0 && faces.every((face) => face.status === 'loaded')),
     ),
   );
   expect(brandFaces).toBe(true);
 
-  /* Switching back to English keeps the same system UI face. */
+  /* Switching back to English must restore the Latin UI face. */
   await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   await expect(editor).toHaveAttribute('aria-label', 'Ask Socrates');
   const enFont = await editor.evaluate((el) => {
     const p = el.querySelector('p.is-editor-empty:first-child');
     return p ? getComputedStyle(p, '::before').fontFamily : '';
   });
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe(UI_FACE);
-  expect(enFont).not.toContain('Geist Sans');
+  expect(enFont).toContain('Geist Sans');
 });
 
-test('landing greeting has no leading logo and keeps the system UI face in Chinese UI', async ({
+test('landing greeting has no leading logo and keeps the western Geist Sans face in Chinese UI', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -93,9 +92,9 @@ test('landing greeting has no leading logo and keeps the system UI face in Chine
     paddingLeft: getComputedStyle(el).paddingLeft,
     beforeContent: getComputedStyle(el, '::before').content,
   }));
-  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe(UI_FACE);
+  expect(zhStyle.fontFamily.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
   expect(zhStyle.fontFamily).toContain(CJK_FACE);
-  expect(zhStyle.fontFamily).not.toContain('Geist Sans');
+  expect(zhStyle.fontFamily).toContain('Geist Sans');
   expect(zhStyle.fontFamily).not.toContain('MiSans');
   expect(await cjkFaceLoads(page)).toBe(true);
   expect(zhStyle.paddingLeft).toBe('0px');
@@ -103,5 +102,5 @@ test('landing greeting has no leading logo and keeps the system UI face in Chine
 
   await page.evaluate(() => window.__socratesLegacy.profile.setLang('en'));
   const enFont = await greeting.evaluate((el) => getComputedStyle(el).fontFamily);
-  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe(UI_FACE);
+  expect(enFont.split(',')[0].replace(/["']/g, '').trim()).toBe('Geist Sans');
 });

@@ -168,10 +168,18 @@ function SidebarToggle() {
 /**
  * The top-left model switcher opens the shared chat-configuration popover
  * (model · reasoning effort · speed). The visible model name is part of the
- * accessible name (WCAG 2.5.3). Phones never show it (2026-11-18 reference):
- * the composer effort pill is the phone's model-settings path.
+ * accessible name (WCAG 2.5.3). Phones show the compact model chip on the
+ * new-chat screen. During a conversation the header has no room beside the
+ * centred mode switch and session actions, so the composer effort pill stays
+ * the model-settings path.
  */
-function ModelSwitcher({ phone }: { phone: boolean }) {
+function ModelSwitcher({
+  phone,
+  conversationActive,
+}: {
+  phone: boolean;
+  conversationActive: boolean;
+}) {
   const snapshot = useChatConfigurationSnapshot();
   const modelLabel = useActiveModelLabel();
   const effort = useStoredReasoningEffort();
@@ -186,10 +194,7 @@ function ModelSwitcher({ phone }: { phone: boolean }) {
       accessibilityLabel={`${visibleLabel} — ${purpose}${modelLabel ? '' : ` · ${effortLabel(effort)}`}`}
       expanded={snapshot.open && snapshot.triggerId === 'topModelSwitcher'}
       compact={phone}
-      /* Phones follow the 2026-11-18 reference: no model chip in the header
-         at all; the composer's effort pill opens the same popover, whose
-         heading leads back to the model list. */
-      visible={!phone}
+      visible={!phone || !conversationActive}
       onPress={() => {
         const trigger = anchor('topModelSwitcher');
         if (trigger) openChatConfiguration(trigger);
@@ -326,7 +331,7 @@ function TopBarLeft({
             样式槽位按 body[data-conversation-active] 同步隐藏，不必等待
             store 推导后的下一次 React 渲染。 */}
         <span className="top-model-slot" data-topbar-slot="model">
-          <ModelSwitcher phone={phone} />
+          <ModelSwitcher phone={phone} conversationActive={conversationActive} />
         </span>
         <PracticeProgress phone={phone} conversationActive={conversationActive} />
         <StageProgress phone={phone} conversationActive={conversationActive} />
@@ -399,17 +404,8 @@ function ModeSwitch({
 
 /* ── Right: find · share ──────────────────────────────────────────────── */
 
-/**
- * Incognito is opened from More on desktop. On the phone's new-chat screen it
- * is the trailing header glyph, where the reference puts its temporary chat.
- */
-function IncognitoAction({
-  phone,
-  conversationActive,
-}: {
-  phone: boolean;
-  conversationActive: boolean;
-}) {
+/** Incognito is opened from More; this hidden state mirror stays in sync with that action. */
+function IncognitoAction() {
   const on = useIncognito();
   return (
     <TopBarAction
@@ -418,7 +414,7 @@ function IncognitoAction({
       label={t('sidebar.nav.incognito', 'Incognito chat')}
       pressed={on}
       touch
-      visible={phone && !conversationActive}
+      visible={false}
       onPress={() => {
         void toggleIncognito();
       }}
@@ -426,18 +422,12 @@ function IncognitoAction({
   );
 }
 
-function TopBarRight({
-  phone,
-  conversationActive,
-}: {
-  phone: boolean;
-  conversationActive: boolean;
-}) {
+function TopBarRight({ phone }: { phone: boolean }) {
   const { conversationActions, sharedView } = useTopbarState();
   return (
     <div className="top-bar-right">
       <WebUiTheme>
-        <IncognitoAction phone={phone} conversationActive={conversationActive} />
+        <IncognitoAction />
         <TopBarAction
           id="findBtn"
           icon="search"
@@ -507,7 +497,7 @@ export function TopBar() {
       <PluginWorkspaceTabs />
       <TopBarLeft phone={phone} conversationActive={conversationActive} />
       <ModeSwitch phone={phone} conversationActive={conversationActive} />
-      <TopBarRight phone={phone} conversationActive={conversationActive} />
+      <TopBarRight phone={phone} />
     </>
   );
 }

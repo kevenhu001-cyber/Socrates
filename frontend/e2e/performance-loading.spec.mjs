@@ -6,7 +6,7 @@ import { ACTIVE_CLASS, gotoAndSettle, login, publishChatRuntime } from './_lib.m
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { prepareChatWorkbench } from './_chat-workbench.mjs';
 
-test('UI text uses the system face: no UI font preload or transfer, CJK stays download-first', async ({
+test('download-first UI fonts preload one variable face without duplicate transfers', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -23,7 +23,7 @@ test('UI text uses the system face: no UI font preload or transfer, CJK stays do
     const fonts = resources.filter((entry) => /geist-sans.*\.woff2/.test(entry.name));
     const cjkFonts = resources.filter((entry) => /noto-sans-sc-\d+-.*\.woff2/.test(entry.name));
     /* Full-width CJK punctuation is the user-visible property that a wrong
-       family order breaks: a Latin UI face can carry narrow glyphs for
+       family order breaks: Geist carries narrow Latin-proportioned glyphs for
        U+FF0C, so a half-width comma is the symptom of a stack that never
        reaches a CJK face. Measure the advance instead of trusting the string. */
     const probe = document.createElement('span');
@@ -42,14 +42,10 @@ test('UI text uses the system face: no UI font preload or transfer, CJK stays do
       commaWidth,
     };
   });
-  /* 2026-11-18 reference: UI text is the platform system sans, so no Latin
-     UI face is preloaded or fetched; the bundled CJK face is still the named
-     fallback and loads on demand from our own origin. */
-  expect(result.count).toBe(0);
-  expect(result.initiator).toBeUndefined();
-  expect(result.preload).toBe(0);
-  expect(result.family).toMatch(/^ui-sans-serif, -apple-system, system-ui\b/);
-  expect(result.family).toContain('"Noto Sans SC"');
+  expect(result.count).toBe(1);
+  expect(result.initiator).toBe('link');
+  expect(result.preload).toBe(1);
+  expect(result.family).toMatch(/^"Geist Sans", "Noto Sans SC"/);
   expect([...new Set(result.cjkFonts)]).toEqual([result.appOrigin]);
   const devTools = await page.context().newCDPSession(page);
   await devTools.send('DOM.enable');
@@ -60,15 +56,8 @@ test('UI text uses the system face: no UI font preload or transfer, CJK stays do
     selector: '#composerInputWrap .tiptap p',
   });
   const { fonts: renderedFonts } = await devTools.send('CSS.getPlatformFontsForNode', { nodeId });
-  /* Every CJK glyph comes from the bundled (custom) Noto Sans SC subset. The
-     subsets are variable files, so Chrome may report the file's default
-     instance name ("Noto Sans SC Thin") while the weight axis is applied. */
   expect(renderedFonts).toEqual([
-    expect.objectContaining({
-      familyName: expect.stringMatching(/^Noto Sans SC\b/),
-      isCustomFont: true,
-      glyphCount: 8,
-    }),
+    expect.objectContaining({ familyName: 'Noto Sans SC', isCustomFont: true, glyphCount: 8 }),
   ]);
   await devTools.detach();
   expect(result.commaWidth).toBeGreaterThan(14);

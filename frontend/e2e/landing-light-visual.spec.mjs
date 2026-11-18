@@ -65,9 +65,7 @@ test('light conversation home has a neutral readable palette and balanced compos
      greeting step of packages/theme uiType (28px Geist medium), with a 40px
      pause before the 768×94 ask-box (the #homeHero host margin). */
   expect(geometry.titleSize).toBe('28px');
-  /* 2026-11-18 reference: the system UI sans, not a bundled Latin face. */
-  expect(geometry.fontFamily).toContain('system-ui');
-  expect(geometry.fontFamily).not.toContain('Geist Sans');
+  expect(geometry.fontFamily).toContain('Geist Sans');
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeGreaterThanOrEqual(38);
   expect((geometry.composer?.top ?? 0) - (geometry.title?.bottom ?? 0)).toBeLessThanOrEqual(42);
   expect(geometry.composer?.bottom ?? 960).toBeLessThan(960 * 0.64);

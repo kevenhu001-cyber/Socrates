@@ -1,10 +1,5 @@
 # Mobile reference update — 2026-10-18
 
-> **Superseded (2026-11-18):** phone typography, composer, thinking/tool
-> activity, header model chip, drawer and settings now follow
-> [the 2026-11-18 reference](mobile-reference-2026-11-18.md). This page is kept
-> for history and for contracts the newer capture does not cover.
-
 The user supplied four current ChatGPT mobile-web screenshots and asked to
 begin improving Socrates, especially its UI. This update supersedes the
 home-header and drawer measurements in `mobile-reference-2026-10-04.md`;
