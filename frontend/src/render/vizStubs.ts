@@ -715,13 +715,19 @@ export function pendingVizCounts() {
  */
 let _vizRuntime: typeof import('./viz.ts') | null = null;
 let _vizRuntimeImport: Promise<typeof import('./viz.ts')> | null = null;
+/* A React prose owner may hand us its root while the lazy runtime is still
+   loading. Keep the newest root so the import drain can scan it instead of
+   stranding freshly rendered loading cards with no ready handshake. */
+let _pendingVizRoot: ParentNode | null = null;
 
 export function loadVizRuntime() {
   if (!_vizRuntimeImport) {
     _vizRuntimeImport = import('./viz.ts').then(function (m) {
       _vizRuntime = m;
+      const root = _pendingVizRoot;
+      _pendingVizRoot = null;
       try {
-        m.processPendingViz();
+        m.processPendingViz(root || undefined);
       } catch (e) {
         reportSwallow(e, 'vizStubs.drainViz'); /* drain errors are non-fatal */
       }
@@ -745,10 +751,15 @@ export function loadVizRuntime() {
   return _vizRuntimeImport;
 }
 
-export function processPendingViz() {
+export function processPendingViz(root?: ParentNode) {
+  if (root) _pendingVizRoot = root;
   const m = _vizRuntime;
-  if (m) return m.processPendingViz();
-  if (_pendingViz.length) loadVizRuntime();
+  if (m) {
+    const target = _pendingVizRoot || undefined;
+    _pendingVizRoot = null;
+    return m.processPendingViz(target);
+  }
+  if (_pendingViz.length || root) loadVizRuntime();
 }
 
 export function processPendingVizActions(root?: ParentNode) {
