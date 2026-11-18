@@ -31,7 +31,8 @@ test('activity hands the same message body to the first answer token', async ({ 
   await expect(status).toHaveCount(1);
   // One current-action line, with no duplicate status row below it.
   await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
-  await expect(status.getByTestId('turn-activity-duration')).toContainText(/\d/);
+  // 2026-11-18 reference: the live caption carries no elapsed counter.
+  await expect(status.getByTestId('turn-activity-duration')).toHaveCount(0);
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
   const before = await status.boundingBox();
@@ -68,11 +69,15 @@ test('waiting time is separate from observed model reasoning', async ({ page }) 
   await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
   await expect(status.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await page.evaluate(() => window.__advanceReasoningClock());
-  await expect(status.getByTestId('turn-activity-duration')).toContainText(/[5-9]\s?(s|秒)/);
+  /* The wall clock moved 5s, but the live caption stays the bare action (no
+     counter, 2026-11-18 reference); the waiting time must not be booked as
+     reasoning time, which the reasoningDurationSec check below proves. */
+  await expect(status.getByTestId('turn-activity-label')).toHaveText('Waiting for the response.');
+  await expect(status.getByTestId('turn-activity-duration')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/waiting-response.png' });
   await page.evaluate(() => window.__waitingController.appendThinking('PRIVATE REASONING'));
   await expect(status).toHaveAttribute('data-phase', 'thinking');
-  await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking…');
+  await expect(status.getByTestId('turn-activity-label')).toHaveText('Thinking');
   await expect(status.getByTestId('turn-activity-indicator')).toBeVisible();
   const duration = await page.evaluate(
     () => window.__socratesTestState.session().messages.at(-1).reasoningDurationSec,
@@ -134,7 +139,8 @@ test('streaming actions are absent and running tools own the activity surface', 
   await expect(message.locator('.rn-tool-row[data-state="running"]')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity.is-live')).toHaveCount(1);
   await expect(message.locator('.rn-turn-activity')).toHaveCount(1);
-  // The collapsed header names the running call; time remains secondary.
+  // The collapsed header names the running call as one gray line; there is
+  // no elapsed counter beside it (2026-11-18 reference).
   await expect(message.locator('.rn-tool-row[data-tcid="search"]')).toContainText(
     'React Context rendering',
   );
@@ -142,7 +148,7 @@ test('streaming actions are absent and running tools own the activity surface', 
     message.locator('.rn-tool-row[data-tcid="search"]').getByTestId('thinking-step-spinner'),
   ).toHaveCount(1);
   await expect(message.getByTestId('turn-activity-label')).toContainText('React Context rendering');
-  await expect(message.getByTestId('turn-activity-duration')).toContainText(/\d/);
+  await expect(message.getByTestId('turn-activity-duration')).toHaveCount(0);
   await expect(message.locator('.msg-toolbar button')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/turn-activity-running.png' });
 

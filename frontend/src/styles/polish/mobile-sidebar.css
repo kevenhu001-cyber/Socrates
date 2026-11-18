@@ -507,7 +507,8 @@
   #appShell .sidebar-logo > span {
     display: inline-block;
     color: var(--foreground);
-    font-size: var(--ui-font-size-lg);
+    /* 2026-11-18 reference: the drawer wordmark is a 20px bold lockup. */
+    font-size: var(--ui-font-size-xl);
     font-weight: var(--ui-font-weight-semibold);
     line-height: 28px;
     letter-spacing: -0.02em;
@@ -800,8 +801,15 @@
     background: var(--ui-bg-active);
     color: var(--foreground);
   }
-  /* Reference rows: ⋯ then a pin toggle, both always visible on touch. The
-     toggle replaces the leading pinned mark, so a pinned row shows one pin. */
+  /* Reference rows (2026-11-18): a pin toggle then ⋯, both always visible on
+     touch. The toggle replaces the leading pinned mark, so a pinned row shows
+     one pin. */
+  #appShell .recent-item .recent-item-pin-toggle {
+    order: 1;
+  }
+  #appShell .recent-item .recent-item-overflow {
+    order: 2;
+  }
   #appShell .recent-item .recent-item-pin-toggle {
     display: grid;
     place-items: center;

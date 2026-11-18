@@ -111,11 +111,12 @@ for (const viewport of VIEWPORTS)
           width: body.getBoundingClientRect().width,
         };
       });
-      // Phones have a separate reference-pinned type scale in components/chat.css;
+      // Phones have a separate reference-pinned type scale in components/chat.css
+      // (16px on a 1.6 pitch, docs/ref/mobile-reference-2026-11-18.md);
       // parity/transcript.css owns the larger desktop headings and line pitch.
       const mobile = viewport.width <= 768;
       const readingType = mobile
-        ? { line: '26px', h2: '18px', h3: '16px' }
+        ? { line: '25.6px', h2: '18px', h3: '16px' }
         : { line: '28px', h2: '20px', h3: '18px' };
       expect(typography).toMatchObject({
         size: '16px',
@@ -126,7 +127,8 @@ for (const viewport of VIEWPORTS)
         overflow: 0,
       });
       expect(typography.headingColors).toEqual([typography.primary, typography.primary]);
-      expect(typography.font).toContain('Geist Sans');
+      expect(typography.font).toContain('system-ui');
+      expect(typography.font).not.toContain('Geist Sans');
       expect(typography.font).toContain('Noto Sans SC');
       expect(Math.abs(typography.x - chat.x)).toBeLessThanOrEqual(1);
       expect(Math.abs(typography.width - chat.width)).toBeLessThanOrEqual(1);

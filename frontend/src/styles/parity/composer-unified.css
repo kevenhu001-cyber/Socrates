@@ -35,7 +35,7 @@
   border-radius: var(--ui-radius-card);
   background: transparent;
   box-shadow: none;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
 }
 #appShell .composer-shell .composer-editor-root {
   display: block;
@@ -78,7 +78,7 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   font-family: var(--font-sans);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-regular);
@@ -510,7 +510,7 @@
   font-size: calc(13px * var(--app-font-scale, 1));
   font-weight: var(--ui-font-weight-semibold, 600);
   line-height: 1.25;
-  color: var(--foreground);
+  color: var(--ui-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -706,4 +706,43 @@
   :is(path, line, polyline, polygon, rect, circle, ellipse) {
   vector-effect: non-scaling-stroke;
   stroke-width: 1.5px;
+}
+
+/* ── Above the box: disclaimer / jump-to-latest (2026-11-18 reference) ──
+   One line centred over the question box in a conversation: the quiet 13px
+   disclaimer while the reader is at the latest message, a round "•••" chip
+   on the page colour with a hairline once they scroll away. It floats so the
+   box itself never moves. */
+#appShell .composer-shell .composer-overhead {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--ui-space-sm);
+  pointer-events: none;
+}
+#appShell .composer-shell .composer-disclaimer {
+  margin: 0;
+  padding: 0 var(--ui-space-lg);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 18px;
+  text-align: center;
+}
+#appShell .composer-shell .composer-jump-latest {
+  display: grid;
+  place-items: center;
+  width: var(--ui-control-md);
+  height: var(--ui-control-sm);
+  margin-bottom: var(--ui-space-md);
+  padding: 0;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-pill);
+  background: var(--ui-bg-page);
+  color: var(--ui-text-primary);
+  pointer-events: auto;
+}
+#appShell .composer-shell .composer-jump-latest:hover {
+  background: var(--ui-bg-hover-ghost);
 }

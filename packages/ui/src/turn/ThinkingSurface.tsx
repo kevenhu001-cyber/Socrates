@@ -1,7 +1,9 @@
 /**
  * ThinkingSurface — the one-line activity header and its expandable
- * step list. The current action leads; elapsed time stays secondary, and
- * the host's working glyph remains visible with the details collapsed.
+ * step list, drawn like the 2026-11-18 reference: a plain gray body-size
+ * caption ("Thinking", "Thought for 6s", "Searching…") followed by a
+ * down chevron. While live, the caption itself shimmers; there is no card,
+ * spinner or icon tile.
  * A content-sized trigger and a single quiet rail keep this subordinate
  * to the answer rather than looking like another message card.
  *
@@ -21,7 +23,7 @@ export interface ThinkingSurfaceProps {
   /** Quiet elapsed time; deliberately outside the status live region. */
   durationLabel?: string;
   live: boolean;
-  /** Live working indicator, drawn alongside the caption. */
+  /** Truthy while a live working cue should show: the caption shimmers. */
   indicator?: ReactNode;
   /** A tool or site mark remains visible alongside the working indicator. */
   icon?: ReactNode;
@@ -52,6 +54,19 @@ export function ThinkingSurface({
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
   const reveal = useReveal(open, 2);
+  const labelText = (
+    <UiText
+      testID="turn-activity-label"
+      variant="body"
+      tone="tertiary"
+      role={live ? 'status' : undefined}
+      numberOfLines={1}
+      ellipsizeMode="tail"
+      style={{ flexShrink: 1, minWidth: 0, fontVariant: ['tabular-nums'] }}
+    >
+      {label}
+    </UiText>
+  );
   return (
     <View testID="turn-activity" style={{ alignSelf: 'stretch' }}>
       <Pressable
@@ -70,7 +85,7 @@ export function ThinkingSurface({
           flexDirection: 'row',
           flexWrap: 'nowrap',
           alignItems: 'center',
-          gap: S[75],
+          gap: S[50],
           minHeight: width < 768 ? 44 : 32,
           paddingHorizontal: S[75],
           marginLeft: -S[75],
@@ -86,26 +101,19 @@ export function ThinkingSurface({
             {icon}
           </View>
         ) : null}
-        <UiText
-          testID="turn-activity-label"
-          variant="bodySm"
-          tone="secondary"
-          role={live ? 'status' : undefined}
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          style={{ flexShrink: 1, minWidth: 0, fontVariant: ['tabular-nums'] }}
-        >
-          {label}
-        </UiText>
         {live && indicator ? (
-          <View testID="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
-            {indicator}
+          /* The live indicator is the label itself: a quiet shimmer over the
+             gray caption (host CSS), with no separate spinner glyph. */
+          <View testID="turn-activity-indicator" style={{ flexShrink: 1, minWidth: 0 }}>
+            {labelText}
           </View>
-        ) : null}
+        ) : (
+          labelText
+        )}
         {durationLabel ? (
           <UiText
             testID="turn-activity-duration"
-            variant="labelSm"
+            variant="body"
             tone="tertiary"
             aria-live="off"
             numberOfLines={1}

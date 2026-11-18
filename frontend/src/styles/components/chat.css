@@ -63,7 +63,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 @media (max-width: 768px) {
   /* Include read-only transcripts that do not set conversation-active. */
   #appShell .msg-body {
-    --msg-para-gap: var(--ui-space-md);
+    /* 2026-11-18 phone reference: ~16px between paragraphs. */
+    --msg-para-gap: var(--ui-space-lg);
   }
 
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
@@ -73,8 +74,9 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     font-family: var(--font-sans);
     font-size: var(--ui-text-body);
     font-weight: var(--ui-font-weight-regular);
-    /* Phone reference prose: 16px on a 25.3–26px line pitch (desktop keeps 28). */
-    line-height: calc(26px * var(--app-type-scale));
+    /* Phone reference prose (2026-11-18): system sans 16px on a 1.6 line
+       pitch, 25.2–25.6px measured on the CJK paragraphs (desktop keeps 28). */
+    line-height: calc(25.6px * var(--app-type-scale));
     letter-spacing: normal;
   }
 
@@ -104,7 +106,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     h2 {
     font-size: var(--ui-font-size-lg);
     line-height: 1.45;
-    margin: var(--ui-space-xl) 0 var(--ui-space-md);
+    margin: var(--ui-space-xl) 0 var(--ui-space-sm);
   }
   body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     #appShell
@@ -353,7 +355,20 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 }
 @media (hover: none) {
   .msg-toolbar {
-    opacity: 0.7;
+    opacity: 1;
+  }
+}
+/* Phone reference: the user turn keeps copy / share / edit visible beneath
+   its bubble at all times, right-aligned, in the secondary ink. */
+@media (max-width: 768px) {
+  #appShell #msgList .msg.user .msg-toolbar {
+    gap: 0;
+    opacity: 1;
+    color: var(--ui-text-secondary);
+  }
+  #appShell #msgList .msg-toolbar-btn svg {
+    width: 20px;
+    height: 20px;
   }
 }
 .msg-list > .msg.assistant:last-child .msg-toolbar {

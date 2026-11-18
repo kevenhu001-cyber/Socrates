@@ -13,8 +13,9 @@
  * Look (site chrome): 36px pill controls, bare glyphs until touched — a 4%
  * fill on hover, 8% while a menu it owns is open — and the send disc, grey
  * when empty and ink once there is something to send. Phones follow the
- * reference instead: the effort control is plain text and the empty send
- * disc is the action colour at half strength. Focus is drawn by the host's
+ * reference instead: the effort control is plain text (a filled pill
+ * naming the control while its sheet is open) and the send disc is the
+ * full-strength action blue even when empty. Focus is drawn by the host's
  * focus ring.
  */
 import type { ReactNode } from 'react';
@@ -200,22 +201,32 @@ export function ComposerControls({
             alignItems: 'center',
             gap: 4,
             height: COMPOSER_CONTROL_SIZE,
-            paddingLeft: compact ? 10 : 12,
-            paddingRight: 10,
+            paddingLeft: compact ? 14 : 12,
+            paddingRight: compact ? 12 : 10,
             borderRadius: uiRadius.pill,
             backgroundColor: pressed
               ? colors.fillPressed
-              : hovered || effort.expanded
-                ? colors.fillHover
-                : 'transparent',
+              : compact && effort.expanded
+                ? colors.fillPressed
+                : hovered || effort.expanded
+                  ? colors.fillHover
+                  : 'transparent',
           })}
         >
-          {compact ? null : (
-            <UiText variant="bodySm" numberOfLines={1}>
+          {compact && !effort.expanded ? null : (
+            /* Phone reference: while the effort sheet is open the trigger
+               becomes a filled pill reading the control's name
+               ("Thinking effort ⌄"); closed, it is the bare level. */
+            <UiText
+              variant={compact ? 'body' : 'bodySm'}
+              tone={compact ? 'tertiary' : undefined}
+              numberOfLines={1}
+              style={compact ? { lineHeight: 20 } : undefined}
+            >
               {effort.caption}
             </UiText>
           )}
-          {effort.value ? (
+          {effort.value && !(compact && effort.expanded) ? (
             <UiText
               variant={compact ? 'body' : 'bodySm'}
               tone={compact ? 'tertiary' : undefined}
@@ -290,9 +301,10 @@ export function ComposerControls({
           justifyContent: 'center',
           /* Site send disc: a quiet grey disc while there is nothing to
              send, the action disc once there is (and while it means Stop).
-             Phones keep the action colour at half strength when empty. */
+             Phones follow the 2026-11-18 reference: the blue disc stays at
+             full strength even while empty. */
           backgroundColor: enabled || compact ? colors.action : colors.fill,
-          opacity: enabled || !compact ? 1 : 0.5,
+          opacity: 1,
           transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
         })}
       >

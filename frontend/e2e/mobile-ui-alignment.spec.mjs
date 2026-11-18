@@ -84,7 +84,12 @@ for (const theme of ['light', 'dark']) {
     await page.screenshot({
       path: `test-results/ui-alignment-${encodeURIComponent(theme)}-home.png`,
     });
-    await page.locator('#topModelSwitcher').click();
+    /* 2026-11-18 reference: no header model chip on phones. The trailing
+       header glyph is the temporary (incognito) chat, and the composer's
+       effort control opens the model/effort sheet. */
+    await expect(page.locator('#topModelSwitcher')).toBeHidden();
+    await expect(page.locator('#mobileIncognitoBtn')).toBeVisible();
+    await page.locator('#effortTrigger').click();
     await expect(page.locator('.chat-config-pop')).toBeInViewport();
     await page.keyboard.press('Escape');
     await page.locator('#sidebarOpenBtn').click();
@@ -101,12 +106,15 @@ for (const theme of ['light', 'dark']) {
           .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
           .map((node) => node.id),
       );
+    /* polish/mobile-sidebar.css orders the phone drawer like the reference:
+       the destinations first, then Projects with its create action as its
+       own group (docs/ref/mobile-reference-2026-11-18.md). */
     expect(order).toEqual([
       'navNew',
       'navLibrary',
-      'navProjects',
       'navScheduled',
       'navPlugins',
+      'navProjects',
       'navSites',
       'navMore',
     ]);
@@ -213,9 +221,11 @@ test('compact phone menus and enlarged text stay inside the viewport', async ({ 
   await expect(page.locator('#topModeSwitch')).toBeInViewport();
   const overlap = await page.evaluate(() => {
     const tabs = document.getElementById('topModeSwitch').getBoundingClientRect();
-    const model = document.getElementById('topModelSwitcher').getBoundingClientRect();
+    /* Phones carry no model chip (2026-11-18 reference); the trailing glyph
+       beside the centred tabs is the temporary-chat action. */
+    const trailing = document.getElementById('mobileIncognitoBtn').getBoundingClientRect();
     return {
-      overlaps: tabs.right > model.left,
+      overlaps: tabs.right > trailing.left,
       overflow: document.documentElement.scrollWidth - innerWidth,
     };
   });
