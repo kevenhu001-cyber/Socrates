@@ -118,6 +118,7 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
   if (failed || !source.favicon) {
     return (
       <View
+        testID="tool-source-monogram"
         aria-hidden
         style={{
           width: 20,

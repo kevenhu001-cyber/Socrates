@@ -273,9 +273,12 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
      progress cue ChatGPT uses while the response continues composing. */
   const hasAnswerProse = hasAnswerText(segments, storedProse);
   const hasSettledTool = calls.some((c) => toolRunStateOf(c) === 'done');
-  const activeTool = calls.find((call) => ['running', 'awaiting'].includes(toolRunStateOf(call)));
+  const activeTool =
+    calls.find((call) => toolRunStateOf(call) === 'awaiting') ||
+    calls.find((call) => toolRunStateOf(call) === 'running');
   const presentation = deriveTurnPresentationState(message, {
     live: isLive,
+    answerStarted: hasAnswerProse,
     hasRunningRow,
     hasSettledTool,
     activeTool,
@@ -292,12 +295,14 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
           publicSummary={presentation.publicSummary}
           isLive={presentation.activityLive}
           status={presentation.activityStatus}
-          elapsedSec={presentation.reasoningDurationSec}
+          activityStartedAt={presentation.activityStartedAt}
+          reasoningDurationSec={presentation.reasoningDurationSec}
+          turnDurationMs={message.turnRuntime?.durationMs}
           statusLabel={presentation.activityLabel}
           intentSummary={presentation.intentSummary}
           answerStarted={hasAnswerProse}
           calls={activityCalls}
-          messageId={messageId}
+          activeTool={activeTool}
           readOnly={readOnly}
         />
         {legacyHtml ? (

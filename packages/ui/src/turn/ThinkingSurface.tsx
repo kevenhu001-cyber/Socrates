@@ -21,8 +21,11 @@ export interface ThinkingSurfaceProps {
   /** Quiet elapsed time; deliberately outside the status live region. */
   durationLabel?: string;
   live: boolean;
-  /** Live working indicator, drawn ahead of the caption (host-rendered glyph). */
+  /** Live working indicator, drawn alongside the caption. */
   indicator?: ReactNode;
+  /** A tool or site mark remains visible alongside the working indicator. */
+  icon?: ReactNode;
+  iconWidth?: number;
   expandable: boolean;
   open: boolean;
   onToggle(): void;
@@ -36,6 +39,8 @@ export function ThinkingSurface({
   durationLabel,
   live,
   indicator,
+  icon,
+  iconWidth = 18,
   expandable,
   open,
   onToggle,
@@ -76,19 +81,9 @@ export function ThinkingSurface({
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
-        {live && indicator ? (
-          <View
-            testID="turn-activity-indicator"
-            aria-hidden
-            style={{
-              width: 18,
-              height: 18,
-              flexShrink: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {indicator}
+        {icon ? (
+          <View aria-hidden style={[headerGlyphStyle, { width: iconWidth }]}>
+            {icon}
           </View>
         ) : null}
         <UiText
@@ -102,6 +97,11 @@ export function ThinkingSurface({
         >
           {label}
         </UiText>
+        {live && indicator ? (
+          <View testID="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
+            {indicator}
+          </View>
+        ) : null}
         {durationLabel ? (
           <UiText
             testID="turn-activity-duration"
@@ -128,12 +128,24 @@ export function ThinkingSurface({
   );
 }
 
+const headerGlyphStyle = {
+  width: 18,
+  height: 18,
+  flexShrink: 0,
+  alignItems: 'center',
+  justifyContent: 'center',
+} as const;
+
 export interface ActivityStepProps {
-  /** Step glyph, drawn by the host. Ignored while `live` (a spinner leads). */
+  /** Step glyph, drawn by the host. */
   icon?: ReactNode;
+  iconWidth?: number;
   /** One line, already translated. */
   label: string;
   live?: boolean;
+  /** Execution status and optional facts are available in the accessible name. */
+  status?: string;
+  metadata?: string;
   /** Failed steps keep the wording but take the danger ink. */
   error?: boolean;
   /** Omit to render a still row (a status line, a summary without body). */
@@ -142,6 +154,8 @@ export interface ActivityStepProps {
   onToggle?(): void;
   /** Revealed beneath the row, aligned with the label. */
   detail?: ReactNode;
+  /** Readable beneath the row while its full detail is closed. */
+  preview?: ReactNode;
   testID?: string;
 }
 
@@ -173,13 +187,17 @@ const DETAIL_INSET = ROW_PAD + ROW_ICON + ROW_GAP;
 
 export function ActivityStep({
   icon,
+  iconWidth = ROW_ICON,
   label,
   live,
+  status,
+  metadata,
   error,
   expandable,
   open,
   onToggle,
   detail,
+  preview,
   testID,
 }: ActivityStepProps) {
   const { colors } = useUiTheme();
@@ -197,7 +215,7 @@ export function ActivityStep({
       disabled={!interactive}
       aria-expanded={interactive ? Boolean(open) : undefined}
       aria-controls={interactive ? detailId : undefined}
-      aria-label={label}
+      aria-label={interactive ? [label, status, metadata].filter(Boolean).join(' · ') : undefined}
       onPress={onToggle}
       {...handlers}
       {...{ dataSet: { state: live ? 'running' : error ? 'error' : 'done' } }}
@@ -221,14 +239,14 @@ export function ActivityStep({
       <View
         aria-hidden
         style={{
-          width: ROW_ICON,
+          width: iconWidth,
           height: ROW_ICON,
           flexShrink: 0,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {live ? <Spinner /> : icon}
+        {icon}
       </View>
       <UiText
         testID="thinking-step-title"
@@ -240,6 +258,29 @@ export function ActivityStep({
       >
         {label}
       </UiText>
+      {metadata ? (
+        <UiText
+          testID="thinking-step-meta"
+          variant="labelSm"
+          tone="tertiary"
+          numberOfLines={1}
+          style={{ flexShrink: 0 }}
+        >
+          {metadata}
+        </UiText>
+      ) : null}
+      {live ? <Spinner /> : null}
+      {status ? (
+        <UiText
+          testID="thinking-step-status"
+          variant="labelSm"
+          tone={error ? 'ink' : 'secondary'}
+          numberOfLines={1}
+          style={{ flexShrink: 0 }}
+        >
+          {status}
+        </UiText>
+      ) : null}
       {interactive ? <Chevron open={Boolean(open)} size={6} tone="tertiary" /> : null}
     </Pressable>
   );
@@ -247,12 +288,22 @@ export function ActivityStep({
   return (
     <View style={{ minWidth: 0 }}>
       {row}
+      {preview && !open ? (
+        <View style={{ minWidth: 0, paddingLeft: DETAIL_INSET, paddingBottom: S[100] }}>
+          {preview}
+        </View>
+      ) : null}
       {detail && open ? (
         <Animated.View
           testID="thinking-step-detail"
           nativeID={detailId}
           style={[
-            { minWidth: 0, paddingLeft: DETAIL_INSET, paddingTop: S[50], paddingBottom: S[100] },
+            {
+              minWidth: 0,
+              paddingLeft: DETAIL_INSET + iconWidth - ROW_ICON,
+              paddingTop: S[50],
+              paddingBottom: S[100],
+            },
             reveal,
           ]}
         >

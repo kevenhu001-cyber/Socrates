@@ -61,10 +61,6 @@ function parseIntelligentUiDocument(value: unknown): IntelligentUiDocument | nul
   ) {
     return null;
   }
-  /* A persisted call can carry an argument skeleton whose visualization node
-     has only an id/type (no template): the real spec lives in `outputs[]`.
-     Treat that skeleton as "no program" so the output host mounts the spec
-     instead of the OpenUI path drawing an empty chart over it. */
   const nodes = normalized.nodes as Array<Record<string, unknown>>;
   const hasVisualization = nodes.some((node) => node && node.type === 'visualization');
   const hasRenderableVisualization = nodes.some(
@@ -98,14 +94,26 @@ function resolveIntelligentUiSource(
   call: ToolCallRecord,
   surface: ToolCallRecord['uiSurface'],
 ): { source: string | null; hasVisualization: boolean } {
-  const document =
-    surface && surface.phase !== 'aborted'
-      ? { version: 1, nodes: surface.nodes }
-      : intelligentUiDocumentOf(call);
+  const committedSurface = surface && surface.phase !== 'aborted' ? surface : undefined;
+  const document = committedSurface
+    ? { version: 1, nodes: committedSurface.nodes }
+    : intelligentUiDocumentOf(call);
 
   if (!document) {
     const hasVisualization = toolOutputsOf(call).some((output) => output.kind === 'visualization');
     return { source: null, hasVisualization };
+  }
+  /* A legacy argument may only point at a chart whose data lives in outputs[].
+     Normalization supplies a template, but the saved output still owns its data. */
+  if (!committedSurface && document.nodes.length === 1) {
+    const node = document.nodes[0] as { type?: string; payload?: unknown } | null;
+    if (
+      node?.type === 'visualization' &&
+      node.payload === undefined &&
+      toolOutputsOf(call).some((output) => output.kind === 'visualization')
+    ) {
+      return { source: null, hasVisualization: true };
+    }
   }
   const source = document.nodes.map((node) => JSON.stringify(node)).join('\n') || null;
   return { source, hasVisualization: false };

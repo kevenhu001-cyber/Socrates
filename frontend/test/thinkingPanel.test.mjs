@@ -194,3 +194,19 @@ test('intent can label waiting, and terminal state retires the activity cue', ()
     false,
   );
 });
+
+test('approval and answer playback have distinct activity phases', () => {
+  const message = { ...live, rawText: 'The answer has started.', _activity: { type: 'done' } };
+  const activeTool = { name: 'workspace_agent', status: 'awaiting_approval' };
+  assert.equal(
+    deriveTurnPresentationState(message, { activeTool }).activityStatus.phase,
+    'tool-awaiting',
+  );
+  const writing = deriveTurnPresentationState(message);
+  assert.equal(writing.activityStatus.phase, 'answering');
+  assert.equal(writing.showToolbar, false);
+  assert.equal(
+    deriveTurnPresentationState({ ...message, _streamSettled: true }).activityStatus,
+    undefined,
+  );
+});

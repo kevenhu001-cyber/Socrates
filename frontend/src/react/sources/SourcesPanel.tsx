@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway';
+import { faviconProxyUrl } from '../../ui/faviconProxy';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';
 
 const rootSlot = createRootSlot('sources-panel');
@@ -29,22 +30,10 @@ function monogramOf(host: string): string {
   return /[a-z0-9]/i.test(first) ? first.toUpperCase() : '?';
 }
 
-/** Same-origin proxy for the site's icon; failures leave the monogram. */
-function faviconOf(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    return /^https?:$/.test(parsed.protocol)
-      ? `/api/favicons?url=${encodeURIComponent(parsed.origin)}`
-      : null;
-  } catch {
-    return null;
-  }
-}
-
 function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) {
   const host = hostOf(item);
   const [iconFailed, setIconFailed] = useState(false);
-  const favicon = faviconOf(item.url);
+  const favicon = faviconProxyUrl(item.url);
   return (
     <li className="sources-list-item">
       <a

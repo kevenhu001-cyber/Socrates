@@ -1,14 +1,8 @@
-/**
- * react/tool-run/ToolRunDetail.tsx — body of a call's detail drawer / sheet.
- *
- * RN-2: drawn with the shared RN pieces (@socrates/ui/turn). Order is
- * input → live output → results (sources, output, files, images) → error,
- * with error codes and retry hints as a quiet technical footnote.
- */
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
 import {
   CodeBlock,
+  Chevron,
   DetailSection,
   ImageOutput,
   PlainDetail,
@@ -16,6 +10,7 @@ import {
   sourceCardsOf,
 } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
+import { faviconProxyUrl } from '../../ui/faviconProxy';
 import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
@@ -85,7 +80,13 @@ function ResultSection({ section, entryKey }: { section: Section; entryKey: stri
     }));
     return (
       <DetailSection title={section.title} kind="sources">
-        <SourceList sources={sourceCardsOf(section.items)} onOpen={openExternal} />
+        <SourceList
+          sources={sourceCardsOf(section.items).map((source) => ({
+            ...source,
+            favicon: source.url ? faviconProxyUrl(source.url) : null,
+          }))}
+          onOpen={openExternal}
+        />
         <UiButton
           testID="tool-sources-open"
           variant="ghost"
@@ -153,6 +154,9 @@ function LiveOutputSection({ view }: LiveOutputSectionProps) {
 }
 
 export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailProps) {
+  const [showInput, setShowInput] = useState(false);
+  const inputId = useId();
+  const { width } = useWindowDimensions();
   const args = view.tech.filter((section) => section.kind === 'args');
   const facts = view.tech.filter((section) => section.kind === 'fact');
   const hasLiveOutput = inFlight && Boolean(view.livePreview || view.liveOutput);
@@ -164,21 +168,12 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
   const entryKey = call?.id || view.id;
   return (
     <>
-      {args.map((section, index) => (
-        <DetailSection
-          key={`args-${index}`}
-          title={translate('tool.detail.input', 'Input')}
-          kind="input"
-        >
-          <CodeBlock text={section.text} onCopy={copyText} {...copyLabels()} />
-        </DetailSection>
-      ))}
       {hasLiveOutput ? <LiveOutputSection view={view} /> : null}
-      {!hasLiveOutput
-        ? results.map((section, index) => (
-            <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
-          ))
-        : null}
+      {results.map((section, index) =>
+        !hasLiveOutput || section.kind === 'sources' ? (
+          <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
+        ) : null,
+      )}
       {images.length ? (
         <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
           {images.map((image) => (
@@ -193,6 +188,27 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
       {errors.map((section, index) => (
         <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />
       ))}
+      {args.length ? (
+        <div className="thinking-tool-input">
+          <UiButton
+            testID="tool-input-toggle"
+            variant="ghost"
+            size={width < 768 ? 'lg' : 'sm'}
+            label={translate('tool.detail.input', 'Input')}
+            leading={<Chevron open={showInput} />}
+            aria-expanded={showInput}
+            aria-controls={inputId}
+            onPress={() => setShowInput((previous) => !previous)}
+          />
+          <div id={inputId} hidden={!showInput} data-testid="tool-detail-section-input">
+            {showInput
+              ? args.map((section, index) => (
+                  <CodeBlock key={index} text={section.text} onCopy={copyText} {...copyLabels()} />
+                ))
+              : null}
+          </div>
+        </div>
+      ) : null}
       {facts.length ? (
         <DetailSection title={translate('tool.techDetails', 'Technical details')} kind="technical">
           {facts.map((section, index) => (

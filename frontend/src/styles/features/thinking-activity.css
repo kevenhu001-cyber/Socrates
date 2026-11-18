@@ -77,16 +77,59 @@
    The RN surface owns the compact action + duration header and a single
    quiet rail. These HTML bodies stay aligned with their row's label;
    neither summaries nor tool details introduce another card surface. */
-.rn-turn-activity .thinking-step-summary {
+.rn-turn-activity .thinking-step-summary,
+.rn-turn-activity .thinking-step-preview {
   margin: 0;
-  max-height: min(360px, 50dvh);
-  overflow: auto;
-  overscroll-behavior: contain;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.rn-turn-activity .thinking-step-summary {
+  max-height: min(360px, 50dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.rn-turn-activity .thinking-tool-input {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.rn-turn-activity .thinking-tool-input > [role='button'] {
+  align-self: flex-start;
+}
+
+.rn-turn-activity .tool-site-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rn-turn-activity .tool-site-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--ui-bg-raised);
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+  line-height: 1;
+}
+
+.rn-turn-activity .tool-site-mark img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* A tool's detail opens beneath its own label, capped and scrollable so one
@@ -105,7 +148,7 @@
   margin-block: 0;
 }
 
-/* The live caption is still text; the working cue is the glyph in front of
+/* The live caption is still text; the working cue is the glyph alongside
    it (react/tool-run/ThinkingSpark.tsx): twelve dots on a sphere turning in
    3D, one turn every 3.4s, near dots larger and inked, far dots small and
    faint. The component sizes the box and places each dot, then drives the

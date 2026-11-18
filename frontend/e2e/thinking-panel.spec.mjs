@@ -3,6 +3,9 @@ import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { TURN, openActivity, toolRow, toolRowButton } from './_turn-ui.mjs';
 
+const SITE_ICON =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="teal"/></svg>';
+
 async function installStream(page, immediate = true) {
   await page.evaluate((immediate) => {
     const nativeFetch = window.fetch.bind(window);
@@ -124,8 +127,8 @@ test('intent stays in the unified activity and completed observations do not dup
   await expect(toggle).toBeEnabled();
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Preparing the comparison.');
-  await expect(bubble.locator(TURN.stepTitle).first()).toBeVisible();
+  await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Task overview');
+  await expect(bubble.locator('.thinking-step-preview')).toHaveText('Preparing the comparison.');
   await page.evaluate(() =>
     window.__pushThinkingFrame('', {
       choices: [{ delta: { reasoning_content: 'another private thought' } }],
@@ -146,6 +149,12 @@ test('intent stays in the unified activity and completed observations do not dup
 
 test('the running tool names itself on its row, and its detail opens inline', async ({ page }) => {
   const bubble = await startTurn(page);
+  await page.route('**/api/favicons?*', (route) => {
+    const origin = new URL(route.request().url()).searchParams.get('url');
+    return origin === 'https://example.test'
+      ? route.fulfill({ contentType: 'image/svg+xml', body: SITE_ICON })
+      : route.fulfill({ status: 404 });
+  });
   await page.evaluate(() =>
     window.__pushThinkingFrame('tool_use', [
       { id: 'search-inline', name: 'web_search', input: { query: 'public query' } },
@@ -159,8 +168,10 @@ test('the running tool names itself on its row, and its detail opens inline', as
   await expect(bubble.locator(TURN.label)).toContainText('public query');
   await expect(bubble.locator(TURN.duration)).toContainText(/\d/);
   await expect(bubble.locator(TURN.duration)).toHaveAttribute('aria-live', 'off');
-  await expect(row.locator(TURN.spinner)).toHaveCount(1);
+  await expect(bubble.locator(TURN.indicator)).toBeVisible();
   await openActivity(bubble);
+  await expect(row.locator(TURN.spinner)).toBeVisible();
+  await expect(bubble.locator(TURN.indicator)).toHaveCount(0);
   await expect(toolRowButton(bubble, 'search-inline')).toContainText('public query');
   await page.evaluate(() =>
     window.__pushThinkingFrame('tool_result', {
@@ -168,23 +179,107 @@ test('the running tool names itself on its row, and its detail opens inline', as
       name: 'web_search',
       ok: true,
       output: 'Found a source',
-      results: [{ title: 'Source', url: 'https://example.test' }],
+      results: [
+        { title: 'Source', url: 'https://example.test' },
+        { title: 'Another page', url: 'https://example.test/another' },
+        { title: 'Broken icon', url: 'https://broken.test/article' },
+      ],
       status: 'completed',
     }),
   );
   await expect(row).toHaveAttribute('data-state', 'done');
+  await expect(row.getByTestId('tool-site-mark')).toHaveCount(2);
+  await expect(row.getByTestId('tool-site-mark').first().locator('img')).toHaveAttribute(
+    'src',
+    '/api/favicons?url=https%3A%2F%2Fexample.test',
+  );
+  const siteIcon = row.getByTestId('tool-site-mark').first().locator('img');
+  await expect.poll(() => siteIcon.evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+  await expect(row.getByTestId('tool-site-mark').last()).toHaveText('B');
+  await expect(row.getByTestId('tool-site-mark').last().locator('img')).toHaveCount(0);
+  await expect(row.getByTestId('thinking-step-meta')).toHaveText('3 sources');
+  await page.evaluate(() =>
+    window.__pushThinkingFrame('', {
+      choices: [{ delta: { content: 'The answer is streaming.' } }],
+    }),
+  );
+  await expect(bubble.locator(TURN.label)).toHaveText('Writing the answer…');
   // Keyboard: the row is a button that opens the call's detail inline.
   const trigger = toolRowButton(bubble, 'search-inline');
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  await siteIcon.click();
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('[data-detail-owner="artifact"]')).toHaveCount(0);
+  await trigger.click();
   await trigger.focus();
   await page.keyboard.press('Enter');
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
-  await expect(detail.locator(TURN.source)).toBeVisible();
-  await expect(detail.locator(TURN.sourceTitle)).toHaveText('Source');
+  await expect(detail.locator(TURN.source)).toHaveCount(3);
+  await expect(detail.locator(TURN.sourceTitle).first()).toHaveText('Source');
+  await expect(detail.locator(TURN.source).last().getByTestId('tool-source-monogram')).toHaveText(
+    'B',
+  );
+  await expect(detail.getByTestId('tool-input-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await page.evaluate(() => {
+    window.open = (url) => {
+      window.__openedSource = url;
+      return null;
+    };
+  });
+  await detail.locator(TURN.source).last().click();
+  expect(await page.evaluate(() => window.__openedSource)).toBe('https://broken.test/article');
+  await trigger.focus();
   await page.keyboard.press('Enter');
   await expect(detail).toHaveCount(0);
   await page.evaluate(() => window.__finishThinking());
+});
+
+test('a plugin keeps its brand while running and after it finishes', async ({ page }) => {
+  const bubble = await startTurn(page, false);
+  await page.evaluate(() =>
+    window.__pushThinkingFrame('tool_use', [
+      { id: 'github-live', name: 'oc_github_list_workflow_run_jobs', input: { run_id: 42 } },
+    ]),
+  );
+  const brand = '.is-connector-brand svg';
+  await expect(bubble.locator(TURN.toggle).locator(brand)).toBeVisible();
+  await openActivity(bubble);
+  const row = toolRow(bubble, 'github-live');
+  await expect(row.locator(brand)).toBeVisible();
+  await expect(row.locator(TURN.spinner)).toBeVisible();
+  await page.evaluate(() =>
+    window.__pushThinkingFrame('tool_result', {
+      id: 'github-live',
+      ok: true,
+      status: 'completed',
+      output: 'Build passed.',
+    }),
+  );
+  await expect(row.getByTestId('thinking-step-status')).toHaveText('Done');
+  await expect(row.locator(brand)).toBeVisible();
+  await expect(row.locator(TURN.spinner)).toHaveCount(0);
+  await page.evaluate(() => window.__finishPlain());
+});
+
+test('a web fetch identifies its target site before the result arrives', async ({ page }) => {
+  const bubble = await startTurn(page, false);
+  await page.route('**/api/favicons?*', (route) =>
+    route.fulfill({ contentType: 'image/svg+xml', body: SITE_ICON }),
+  );
+  await page.evaluate(() =>
+    window.__pushThinkingFrame('tool_use', [
+      { id: 'read-site', name: 'web_fetch', input: { url: 'https://guide.test/learn' } },
+    ]),
+  );
+  const mark = bubble.locator(TURN.toggle).getByTestId('tool-site-mark');
+  await expect(mark.locator('img')).toHaveAttribute(
+    'src',
+    '/api/favicons?url=https%3A%2F%2Fguide.test',
+  );
+  await expect(mark).toBeVisible();
+  await expect(bubble.locator(TURN.label)).toContainText('guide.test');
+  await page.evaluate(() => window.__finishPlain());
 });
 
 test('parallel tools keep their order, DOM identity, and open details as later calls settle', async ({
@@ -204,6 +299,9 @@ test('parallel tools keep their order, DOM identity, and open details as later c
   await toolRowButton(bubble, 'first-slow').click();
   const detail = page.locator(TURN.detail);
   await expect(detail).toBeVisible();
+  const inputToggle = detail.getByTestId('tool-input-toggle');
+  await inputToggle.click();
+  await inputToggle.focus();
   await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(
     'slow.ts',
   );
@@ -219,6 +317,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     }),
   );
   await expect(toolRow(bubble, 'second-fast')).toHaveAttribute('data-state', 'done');
+  await expect(inputToggle).toBeFocused();
   /* A sibling settling neither closes nor remounts the open panel. */
   await expect(detail).toBeVisible();
   expect(
@@ -246,6 +345,7 @@ test('parallel tools keep their order, DOM identity, and open details as later c
     }),
   );
   await expect(first).toHaveAttribute('data-state', 'done');
+  await expect(inputToggle).toBeFocused();
   expect(
     await page.evaluate(
       (node) => node === document.querySelector('.rn-tool-row[data-tcid="first-slow"]'),
@@ -274,13 +374,14 @@ test('a task preview keeps one quiet settled header on a plain answer', async ({
     }),
   );
   await openActivity(bubble);
-  await expect(bubble.locator(TURN.stepTitle).first()).toHaveText('Preparing an answer.');
+  await expect(bubble.locator('.thinking-step-preview')).toHaveText('Preparing an answer.');
   await page.evaluate(() => window.__finishPlain());
   await expect(bubble).toContainText('A direct answer.');
   /* The header is the turn's own line, so it stays when the run settles.
      Removing it here shrank the answer row and moved every line under it. */
   await expect(bubble.locator(TURN.surface)).toHaveCount(1);
-  await expect(bubble.locator(TURN.label)).toHaveText('Thought process');
+  await expect(bubble.locator(TURN.label)).toHaveText('Activity');
+  await expect(bubble.locator('.thinking-step-preview')).toBeVisible();
 });
 
 test('a long public summary has a short disclosure title, without repeating the body', async ({
@@ -296,11 +397,13 @@ test('a long public summary has a short disclosure title, without repeating the 
   );
   await openActivity(bubble);
   const step = bubble.locator(TURN.step).first();
-  await expect(step).toHaveText('Activity summary');
+  await expect(step).toHaveText('Thinking summary');
+  await expect(bubble.locator('.thinking-step-preview')).toHaveText(/^Comparing.*…$/);
   await step.focus();
   await page.keyboard.press('Enter');
   await expect(bubble.locator(TURN.stepSummary)).toHaveText(text);
   await expect(bubble.locator(TURN.stepSummary)).toBeVisible();
+  await expect(bubble.locator('.thinking-step-preview')).toHaveCount(0);
   await page.keyboard.press('Space');
   await expect(bubble.locator(TURN.stepSummary)).toHaveCount(0);
   await page.evaluate(() => window.__finishThinking());
@@ -357,13 +460,22 @@ for (const theme of ['light', 'dark']) {
                 input: { query: longQuery },
                 status: 'completed',
                 textOffset: lead.length + 2,
-                results: [{ title: '工作流说明', url: 'https://example.test/guide' }],
+                results: [
+                  { title: '工作流说明', url: 'https://example.test/guide' },
+                  { title: '检查指南', url: 'https://guide.test/ci' },
+                ],
               },
             ],
           },
         ],
         { theme, lang: 'zh' },
       );
+      await page.route('**/api/favicons?*', (route) => {
+        const icon = route.request().url().includes('guide.test')
+          ? SITE_ICON.replace('teal', 'royalblue')
+          : SITE_ICON;
+        return route.fulfill({ contentType: 'image/svg+xml', body: icon });
+      });
       await expect(page).toHaveTitle(/Socrates/i);
       expect(new URL(page.url()).pathname).toBe('/');
       const bubble = page.locator('.msg.assistant').last();
@@ -396,6 +508,22 @@ for (const theme of ['light', 'dark']) {
       const brand = toolRow(bubble, 'github-jobs').locator('.is-connector-brand svg');
       await expect(brand).toBeVisible();
       const tool = toolRow(bubble, 'search-example');
+      await expect(tool.getByTestId('tool-site-mark')).toHaveCount(2);
+      const icons = tool.getByTestId('tool-site-mark').locator('img');
+      await expect(icons).toHaveCount(2);
+      await expect
+        .poll(() => icons.evaluateAll((images) => images.every((img) => img.naturalWidth > 0)))
+        .toBe(true);
+      const iconOffsets = await icons.evaluateAll((images) =>
+        images.map((image) => {
+          const icon = image.getBoundingClientRect();
+          const row = image
+            .closest('[data-testid="tool-row-search-example"]')
+            .getBoundingClientRect();
+          return Math.abs(icon.top + icon.height / 2 - (row.top + row.height / 2));
+        }),
+      );
+      expect(Math.max(...iconOffsets)).toBeLessThanOrEqual(1);
       /* The object is clipped to one line; the full query lives in the panel. */
       const label = tool.locator(TURN.stepTitle);
       await expect(label).toHaveText(/检查 GitHub Actions/);
@@ -433,10 +561,15 @@ for (const theme of ['light', 'dark']) {
       await toolRowButton(bubble, 'search-example').click();
       const detail = page.locator(TURN.detail);
       await expect(detail).toBeVisible();
+      await expect(detail.getByTestId('tool-input-toggle')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      await detail.getByTestId('tool-input-toggle').click();
       await expect(detail.locator('[data-testid="tool-detail-section-input"]')).toContainText(
         longQuery.slice(0, 20),
       );
-      await expect(detail.locator(TURN.source)).toBeVisible();
+      await expect(detail.locator(TURN.source)).toHaveCount(2);
       expect(
         await bubble.evaluate((node) => node.scrollWidth - node.clientWidth),
       ).toBeLessThanOrEqual(1);
@@ -463,7 +596,7 @@ test('the live caption shimmers and the sphere turns, both respecting reduced mo
     .poll(() => label.evaluate((el) => getComputedStyle(el).animationName))
     .toBe('ui-shimmer-sweep');
   await page.screenshot({ path: 'test-results/thinking-text-shimmer.png' });
-  /* The working glyph ahead of the caption: twelve dots on a sphere, driven
+  /* The working glyph alongside the caption: twelve dots on a sphere, driven
      by the Web Animations API so the turn runs on the compositor. */
   const spark = bubble.locator(TURN.indicator);
   await expect(spark).toHaveCount(1);

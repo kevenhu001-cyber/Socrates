@@ -12,7 +12,17 @@ test('thinking disclosure supports keyboard control and preserves intent through
         role: 'assistant',
         type: 'streaming',
         rawText: '<think>internal draft</think>',
-        _activity: { type: 'public_reasoning_summary', text: 'Preparing a concise comparison.' },
+        reasoningDurationSec: 6,
+        turnRuntime: {
+          activities: [
+            { id: 'reasoning', kind: 'reasoning', phase: 'running', startedAt: Date.now() - 5000 },
+          ],
+          uiSurfaces: [],
+        },
+        _activity: {
+          type: 'public_reasoning_summary',
+          text: '**Comparison**\n\nChecking both assumptions.',
+        },
         _streamSettled: false,
       },
     ],
@@ -23,13 +33,15 @@ test('thinking disclosure supports keyboard control and preserves intent through
   // The action leads; elapsed time is quiet metadata beside it.
   await expect(accordion.getByTestId('turn-activity-label')).toHaveText('Thinking…');
   await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d/);
-  await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(1);
+  await expect(accordion.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.focus();
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(body).toBeVisible();
   await expect(body).not.toHaveAttribute('aria-hidden', 'true');
+  await expect(body.locator('.thinking-step-preview')).toHaveText('Checking both assumptions.');
+  await expect(body.getByTestId('thinking-step')).not.toHaveAttribute('aria-expanded');
   await page.keyboard.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
@@ -61,8 +73,8 @@ test('thinking disclosure supports keyboard control and preserves intent through
   await setLang(page, 'zh');
   // The settled label is neutral; neither seconds nor summary counts are
   // presented as a measure of reasoning progress.
-  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考过程');
-  await expect(accordion.getByTestId('turn-activity-duration')).toContainText(/\d+ 秒/);
+  await expect(accordion.getByTestId('turn-activity-label')).toHaveText('思考摘要');
+  await expect(accordion.getByTestId('turn-activity-duration')).toHaveText('6 秒');
   await page.screenshot({
     path: 'test-results/thinking-disclosure-desktop.png',
     animations: 'disabled',

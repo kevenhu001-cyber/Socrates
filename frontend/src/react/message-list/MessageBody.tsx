@@ -31,7 +31,9 @@ export function MessageBody({
       !clicked && role === 'assistant' && event.target instanceof Element
         ? event.target.closest('img:not(.exec-artifact-image):not(.site-link-favicon)')
         : null;
-    const target = clicked || assistantImage;
+    // Decorative images belong to the surrounding control, such as a source link.
+    const target =
+      clicked || (assistantImage?.closest('[aria-hidden="true"]') ? null : assistantImage);
     if (!target) return;
     event.preventDefault();
     openArtifactPreview({

@@ -490,7 +490,7 @@
 .msg-body a:hover {
   color: hsl(var(--accent-100));
 }
-.msg-body img:not(.site-link-favicon) {
+.msg-body img:not(.site-link-favicon, [aria-hidden='true'], [aria-hidden='true'] img) {
   max-width: 100%;
   max-height: 280px;
   border-radius: 10px;
@@ -500,7 +500,7 @@
     opacity 0.18s ease,
     transform 0.18s ease;
 }
-.msg-body img:not(.site-link-favicon):hover {
+.msg-body img:not(.site-link-favicon, [aria-hidden='true'], [aria-hidden='true'] img):hover {
   opacity: 0.92;
   transform: scale(1.005);
 }

@@ -40,8 +40,7 @@ const FIXTURE_CALLS = [
   searchCall('s2', 'beta theory', [
     { title: 'Beta one', url: 'https://example.test/beta-one', snippet: 'Third' },
   ]),
-  /* No output, no status, no duration → still in flight. History cannot
-     literally stream, so this is how the fixture gets a running row. */
+  /* An old session can omit all execution outcome fields. */
   {
     id: 's3',
     name: 'web_search',
@@ -168,14 +167,17 @@ test('every call is one row on the rail, in call order', async ({ page }) => {
   await expect(s1).toContainText('alpha theory');
   await expect(body.getByTestId('tool-row-w1')).toContainText('router_v2.py');
   await expect(body.getByTestId('tool-row-w2')).toContainText('moe.py');
-  // A row that is still in flight leads with the spinner; settled rows do not.
+  // A restored row with no recorded outcome shows a neutral status.
   await expect(body.locator('.rn-tool-row[data-tcid="s3"]')).toHaveAttribute(
     'data-state',
     'running',
   );
   await expect(
     body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
+  await expect(body.getByTestId('tool-row-s3').getByTestId('thinking-step-status')).toHaveText(
+    'Status unknown',
+  );
   await expect(s1.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(body.locator('.rn-tool-row[data-tcid="f1"]')).toHaveAttribute('data-state', 'error');
 });
@@ -187,6 +189,8 @@ test('a row opens its detail inline, and closes on a second press', async ({ pag
   const detail = await openDetail(page, body, 's1');
   await expect(row).toHaveAttribute('aria-expanded', 'true');
   expect(await detail.getAttribute('role')).toBe(null);
+  await expect(detail.getByTestId('tool-detail-section-input')).toBeHidden();
+  await detail.getByTestId('tool-input-toggle').click();
   await expect(detail.getByTestId('tool-detail-section-input')).toContainText(
     '"query": "alpha theory"',
   );
@@ -265,6 +269,7 @@ test('long arguments stay inside the inline panel viewport', async ({ page }) =>
   };
   const body = await loadFixtureSession(page, { toolCalls: [longCall] });
   const detail = await openDetail(page, body, 'wide-args');
+  await detail.getByTestId('tool-input-toggle').click();
   const input = detail.getByTestId('tool-detail-section-input');
   await expect(input).toContainText('wide detail');
   const bounds = await input.evaluate((element) => ({
@@ -311,6 +316,7 @@ test('each file action names its file in the row and in its own details', async 
   const w2 = body.getByTestId('tool-row-w2');
   await expect(w2).toContainText('moe.py');
   const detail = await openDetail(page, body, 'w1');
+  await detail.getByTestId('tool-input-toggle').click();
   await expect(detail).toContainText('router_v2.py');
 });
 
@@ -408,15 +414,13 @@ test('rows share one icon column and the prose column', async ({ page }) => {
   await body.scrollIntoViewIfNeeded();
   await body.screenshot({ path: 'test-results/tool-run-group-dark-open.png' });
   const icons = await body
-    .locator('.rn-tool-row .tool-inline-tool-icon')
+    .locator('.rn-tool-row :is(.tool-inline-tool-icon, .tool-site-marks)')
     .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
-  /* Five settled rows carry their tool glyph; the in-flight row leads with
-     the shared spinner instead, so it contributes no icon. */
-  expect(icons.length).toBe(5);
+  expect(icons.length).toBe(6);
   expect(Math.max(...icons) - Math.min(...icons)).toBeLessThanOrEqual(1);
   await expect(
     body.locator('.rn-tool-row[data-tcid="s3"]').getByTestId('thinking-step-spinner'),
-  ).toHaveCount(1);
+  ).toHaveCount(0);
   const proseWidth = await body
     .locator('.tool-run-prose')
     .first()
@@ -654,6 +658,9 @@ test('a pending approval stays visible in the transcript with pill decisions', a
   await page.evaluate(() => window.__requestToolApproval());
   const prompt = page.locator('.rn-tool-approval');
   await expect(row).toHaveAttribute('data-state', 'awaiting');
+  await expect(page.getByTestId('turn-activity-label')).toHaveText('Waiting for your decision');
+  await expect(page.getByTestId('turn-activity-indicator')).toHaveCount(0);
+  await expect(row.getByTestId('thinking-step-spinner')).toHaveCount(0);
   await expect(prompt).toBeVisible();
   await expect(prompt).toHaveAttribute('role', 'region');
   await expect(page.getByTestId('tool-detail')).toHaveCount(0);

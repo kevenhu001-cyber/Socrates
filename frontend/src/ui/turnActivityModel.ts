@@ -32,10 +32,15 @@ function validDuration(value: unknown): number | undefined {
 
 interface PresentationOptions {
   live?: boolean;
+  answerStarted?: boolean;
   hasRunningRow?: boolean;
   hasSettledTool?: boolean;
   activeTool?: ToolCallLike;
 }
+
+export type TurnActivityStatus = Pick<LiveTurnStatus, 'toolName' | 'label' | 'elapsedSec'> & {
+  phase: LiveTurnStatus['phase'] | 'answering' | 'tool-awaiting';
+};
 
 /**
  * Provider reasoning and public answer text share the same raw stream field
@@ -159,19 +164,32 @@ function activityStatusFor(
   status: LiveTurnStatus | undefined,
   live: boolean,
   options: PresentationOptions,
-): LiveTurnStatus | undefined {
-  if (status?.phase === 'error' || status?.phase === 'stopped') return undefined;
-  if (status) return status;
-  if (!live || !options.activeTool) return undefined;
-  return {
-    phase: 'tool-running',
-    toolName: options.activeTool.name,
-    label: toolRunLabel(options.activeTool, 'running').text,
-  };
+  answerStarted: boolean,
+): TurnActivityStatus | undefined {
+  if (!live || status?.phase === 'error' || status?.phase === 'stopped') return undefined;
+  if (status?.phase === 'retrying') return status;
+  if (options.activeTool) {
+    const state = toolRunStateOf(options.activeTool);
+    return {
+      phase: state === 'awaiting' ? 'tool-awaiting' : 'tool-running',
+      toolName: options.activeTool.name,
+      label: toolRunLabel(options.activeTool, state).text,
+    };
+  }
+  if (status?.phase === 'tool-running') return status;
+  if (answerStarted) {
+    return { phase: 'answering', label: translate('think.answering', 'Writing the answer…') };
+  }
+  return (
+    status || {
+      phase: 'waiting',
+      label: translate('think.waitingForResponse', 'Waiting for the response.'),
+    }
+  );
 }
 
 function activityLabelFor(
-  status: LiveTurnStatus | undefined,
+  status: TurnActivityStatus | undefined,
   intentSummary: string,
 ): string | undefined {
   return status?.phase === 'waiting' && intentSummary ? intentSummary : status?.label;
@@ -191,9 +209,26 @@ export function deriveTurnPresentationState(
   const activities = message.turnRuntime?.activities || [];
   const { reasoningSummaries, publicSummary } = reasoningSummaryState(activities, activity);
   const intentSummary = live ? message._taskSummary?.trim() || '' : '';
-  const activityStatus = activityStatusFor(status, live, options);
+  const activityStatus = activityStatusFor(
+    status,
+    live,
+    options,
+    options.answerStarted ?? hasVisibleAnswerText(message),
+  );
+  let activityStartedAt: number | undefined;
+  for (const entry of activities) {
+    if (entry.phase !== 'running') continue;
+    if (
+      (activityStatus?.phase === 'thinking' && entry.kind === 'reasoning') ||
+      (activityStatus?.phase === 'waiting' && entry.kind === 'waiting') ||
+      (activityStatus?.phase === 'synthesizing' && entry.kind === 'synthesis')
+    ) {
+      activityStartedAt = entry.startedAt;
+    }
+  }
   return {
     activityStatus,
+    activityStartedAt,
     activityLabel: activityLabelFor(activityStatus, intentSummary),
     activityLive: live && Boolean(activityStatus),
     activities,
