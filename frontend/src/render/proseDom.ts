@@ -47,7 +47,11 @@ function syncTextData(current: Node, next: Node): void {
   ) {
     suffix += 1;
   }
-  target.replaceData(prefix, oldValue.length - prefix - suffix, nextValue.slice(prefix, nextValue.length - suffix));
+  target.replaceData(
+    prefix,
+    oldValue.length - prefix - suffix,
+    nextValue.slice(prefix, nextValue.length - suffix),
+  );
 }
 
 function compatibleNode(current: Node, next: Node): boolean {
@@ -103,7 +107,8 @@ function reconcile(current: Node, next: Node, inTable = false, root = false): vo
     /* Anchor insertion at the first surviving suffix node, not at a node
        that the removal loop is about to detach. */
     const reference = existingChildren[currentEnd + 1] || null;
-    for (let index = prefix; index <= currentEnd; index++) current.removeChild(existingChildren[index]);
+    for (let index = prefix; index <= currentEnd; index++)
+      current.removeChild(existingChildren[index]);
     for (let index = prefix; index <= nextEnd; index++) {
       current.insertBefore(children[index].cloneNode(true), reference);
     }

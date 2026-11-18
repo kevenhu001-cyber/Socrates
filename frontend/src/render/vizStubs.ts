@@ -715,19 +715,26 @@ export function pendingVizCounts() {
  */
 let _vizRuntime: typeof import('./viz.ts') | null = null;
 let _vizRuntimeImport: Promise<typeof import('./viz.ts')> | null = null;
-/* A React prose owner may hand us its root while the lazy runtime is still
-   loading. Keep the newest root so the import drain can scan it instead of
-   stranding freshly rendered loading cards with no ready handshake. */
-let _pendingVizRoot: ParentNode | null = null;
+/* React prose owners may hand us roots while the lazy runtime is still
+   loading. Buffer all unique roots so the import drain can scan each of them
+   instead of dropping earlier roots or missing action cards. */
+const _pendingVizRoots = new Set<ParentNode>();
+const _pendingActionRoots = new Set<ParentNode>();
 
 export function loadVizRuntime() {
   if (!_vizRuntimeImport) {
     _vizRuntimeImport = import('./viz.ts').then(function (m) {
       _vizRuntime = m;
-      const root = _pendingVizRoot;
-      _pendingVizRoot = null;
+      const vizRoots = Array.from(_pendingVizRoots);
+      _pendingVizRoots.clear();
       try {
-        m.processPendingViz(root || undefined);
+        if (vizRoots.length > 0) {
+          for (const root of vizRoots) {
+            m.processPendingViz(root);
+          }
+        } else {
+          m.processPendingViz();
+        }
       } catch (e) {
         reportSwallow(e, 'vizStubs.drainViz'); /* drain errors are non-fatal */
       }
@@ -736,8 +743,16 @@ export function loadVizRuntime() {
       } catch (e) {
         reportSwallow(e, 'vizStubs.drainMermaid'); /* drain errors are non-fatal */
       }
+      const actionRoots = Array.from(_pendingActionRoots);
+      _pendingActionRoots.clear();
       try {
-        m.processPendingVizActions();
+        if (actionRoots.length > 0) {
+          for (const root of actionRoots) {
+            m.processPendingVizActions(root);
+          }
+        } else {
+          m.processPendingVizActions();
+        }
       } catch (e) {
         reportSwallow(e, 'vizStubs.drainActions'); /* drain errors are non-fatal */
       }
@@ -745,6 +760,8 @@ export function loadVizRuntime() {
     });
     _vizRuntimeImport.catch(function (err) {
       _vizRuntimeImport = null;
+      _pendingVizRoots.clear();
+      _pendingActionRoots.clear();
       console.error('[viz] failed to load runtime', err);
     });
   }
@@ -752,20 +769,19 @@ export function loadVizRuntime() {
 }
 
 export function processPendingViz(root?: ParentNode) {
-  if (root) _pendingVizRoot = root;
   const m = _vizRuntime;
   if (m) {
-    const target = _pendingVizRoot || undefined;
-    _pendingVizRoot = null;
-    return m.processPendingViz(target);
+    return m.processPendingViz(root);
   }
+  if (root) _pendingVizRoots.add(root);
   if (_pendingViz.length || root) loadVizRuntime();
 }
 
 export function processPendingVizActions(root?: ParentNode) {
   const m = _vizRuntime;
   if (m) return m.processPendingVizActions(root);
-  if (_pendingActions.length) loadVizRuntime();
+  if (root) _pendingActionRoots.add(root);
+  if (_pendingActions.length || root) loadVizRuntime();
 }
 
 export function processPendingMermaid() {

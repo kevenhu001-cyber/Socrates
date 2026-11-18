@@ -30,7 +30,7 @@ export function pushWorkspaceRoute(name: string, accountPageEntry = false) {
     history.pushState(
       accountPageEntry ? { workspace: name, accountPageEntry: true } : { workspace: name },
       '',
-      next
+      next,
     );
   }
 }

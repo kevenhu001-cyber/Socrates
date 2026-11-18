@@ -216,14 +216,10 @@ for (const [label, viewport] of [
          scrolling up to keep the prose still. What must never happen is a
          downward jump toward the bottom, or an upward correction larger than
          the scroll range that actually disappeared. */
-      expect(
-        frame.scrollTop - live.scrollTop,
-        '结束时不能主动拉到底部',
-      ).toBeLessThanOrEqual(2);
-      expect(
-        frame.scrollTop,
-        '向上补偿不能超过消失的滚动范围',
-      ).toBeGreaterThanOrEqual(live.scrollTop - (live.scrollHeight - frame.scrollHeight) - 2);
+      expect(frame.scrollTop - live.scrollTop, '结束时不能主动拉到底部').toBeLessThanOrEqual(2);
+      expect(frame.scrollTop, '向上补偿不能超过消失的滚动范围').toBeGreaterThanOrEqual(
+        live.scrollTop - (live.scrollHeight - frame.scrollHeight) - 2,
+      );
     }
 
     expect(done.blocks.map((b) => b.tag)).toEqual(live.blocks.map((b) => b.tag));
@@ -247,9 +243,7 @@ for (const [label, viewport] of [
     /* The finished thinking strip is above the answer and leaves the scroll
        range; allow only that removed chrome, never unexplained growth. */
     expect(done.scrollHeight).toBeLessThanOrEqual(live.scrollHeight + 2);
-    expect(done.scrollHeight).toBeGreaterThanOrEqual(
-      live.scrollHeight - live.activityHeight - 2,
-    );
+    expect(done.scrollHeight).toBeGreaterThanOrEqual(live.scrollHeight - live.activityHeight - 2);
   });
 
 test('a long answer stays fully reachable after finish', async ({ page }) => {

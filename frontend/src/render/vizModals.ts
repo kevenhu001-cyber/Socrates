@@ -34,7 +34,11 @@ function mountModal(props: MountedModal): void {
   };
 
   try {
-    handle = mountOwnedRoot(host, 'viz-modal', createElement(VizModal, { ...props, onClose: close }));
+    handle = mountOwnedRoot(
+      host,
+      'viz-modal',
+      createElement(VizModal, { ...props, onClose: close }),
+    );
   } catch (error) {
     host.remove();
     throw error;

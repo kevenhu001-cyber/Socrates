@@ -76,6 +76,7 @@ const SHADOW_EXEMPTIONS = [
     match: /cmd-k-input-row/,
     why: 'the search row owns the focus treatment (its hairline), like the sidebar search',
   },
+  { match: /#settingsTitle/, why: 'programmatically focused heading; not a control' },
   { match: /intui-slider input/, why: 'the range thumb carries the focus ring' },
 ];
 

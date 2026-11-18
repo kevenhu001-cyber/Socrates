@@ -93,6 +93,7 @@ export function writeScrollTop(
   if (!list || !Number.isFinite(top)) return false;
   const current = claims.get(list);
   if (current && priorityFor(owner) < current.priority) return false;
+  if (list.scrollTop === top) return true;
   list.scrollTop = top;
   return true;
 }

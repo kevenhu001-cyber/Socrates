@@ -29,6 +29,7 @@ test('the app exposes the split stylesheet bundle in cascade order', async () =>
     '/src/styles/critical-5.css',
     '/src/styles/polish/press.css',
     '/src/styles/critical-6.css',
+    '/src/styles/polish/settings-page.css',
     '/src/styles/themes.css',
   ]);
 });
