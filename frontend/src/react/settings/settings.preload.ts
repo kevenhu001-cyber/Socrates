@@ -1,21 +1,21 @@
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 
-let settingsModalImport: Promise<typeof import('./SettingsModal')> | null = null;
+let settingsPageImport: Promise<typeof import('./SettingsPage')> | null = null;
 
-export function loadSettingsModal(): Promise<typeof import('./SettingsModal')> {
-  if (!settingsModalImport) {
-    settingsModalImport = import('./SettingsModal').catch((error: unknown) => {
-      settingsModalImport = null;
+export function loadSettingsPage(): Promise<typeof import('./SettingsPage')> {
+  if (!settingsPageImport) {
+    settingsPageImport = import('./SettingsPage').catch((error: unknown) => {
+      settingsPageImport = null;
       throw error;
     });
   }
-  return settingsModalImport;
+  return settingsPageImport;
 }
 
-/** Start downloading the modal and its first pane before the user opens it. */
-export function preloadSettingsModal(): void {
-  void loadSettingsModal().catch((error: unknown) => {
-    reportEmptyCatch(error, 'empty catch: react/settings/settings.preload.ts:preload-modal');
+/** Start downloading the page and its first pane before the user opens it. */
+export function preloadSettingsPage(): void {
+  void loadSettingsPage().catch((error: unknown) => {
+    reportEmptyCatch(error, 'empty catch: react/settings/settings.preload.ts:preload-page');
   });
   void import('./GeneralSettingsPane').catch((error: unknown) => {
     reportEmptyCatch(error, 'empty catch: react/settings/settings.preload.ts:preload-general-pane');

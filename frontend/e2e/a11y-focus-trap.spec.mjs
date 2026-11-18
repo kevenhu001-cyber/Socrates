@@ -1,5 +1,5 @@
 // e2e/a11y-focus-trap.spec.mjs — P0 accessibility contract:
-// 1) When a modal opens (Cmd-K or Settings), background #appShell is set to inert;
+// 1) When a modal opens (such as Cmd-K), background #appShell is set to inert;
 // 2) Focus is trapped inside the active dialog across Tab and Shift+Tab navigation;
 // 3) Closing the modal removes the inert attribute from #appShell and restores focus.
 
@@ -41,33 +41,22 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
     await expect(appShell).not.toHaveAttribute('inert');
   });
 
-  test('Settings modal sets #appShell inert and traps Tab focus', async ({ page }) => {
+  test('Settings gives focus to the page and leaves sidebar navigation available', async ({
+    page,
+  }) => {
     await mockAuthedApp(page);
     await gotoAndSettle(page, '/');
     await login(page);
 
-    const appShell = page.locator('#appShell');
-    await expect(appShell).not.toHaveAttribute('inert');
-
     await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-    const overlay = page.locator('#settingsOverlay');
-    await expect(overlay).toBeVisible();
-    await expect(appShell).toHaveAttribute('inert', '');
+    const settings = page.getByRole('region', { name: 'Settings', exact: true });
+    await expect(settings.getByRole('heading', { name: 'Settings', exact: true })).toBeFocused();
+    await expect(page.locator('#appShell')).not.toHaveAttribute('inert');
 
-    // Navigate with Tab several times and ensure focus stays within #settingsOverlay
-    for (let i = 0; i < 5; i++) {
-      await page.keyboard.press('Tab');
-      const inSettings = await page.evaluate(() => {
-        const active = document.activeElement;
-        const stg = document.getElementById('settingsOverlay');
-        return stg && stg.contains(active);
-      });
-      expect(inSettings).toBe(true);
-    }
-
-    // Press Escape to close
-    await page.keyboard.press('Escape');
-    await expect(overlay).toBeHidden();
-    await expect(appShell).not.toHaveAttribute('inert');
+    await page.keyboard.press('Tab');
+    await expect(settings.getByRole('searchbox')).toBeFocused();
+    const sidebarSearch = page.getByRole('textbox', { name: 'Search chats', exact: true });
+    await sidebarSearch.focus();
+    await expect(sidebarSearch).toBeFocused();
   });
 });

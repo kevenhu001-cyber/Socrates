@@ -293,7 +293,7 @@ test('account row exposes profile and settings through its menu', async ({ page 
   // The gear still opens the settings modal, whose account pane carries
   // the profile entry.
   await page.locator('#apiSettingsBtn').click();
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay).toBeVisible();
   await overlay.locator('.settings-nav button').last().click();
   await expect(overlay.locator('.settings-account-card')).toBeVisible();

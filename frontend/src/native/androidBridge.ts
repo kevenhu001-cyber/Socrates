@@ -12,11 +12,11 @@
  * 4. Safe-area insets: Maps notch and gesture bars into CSS variables.
  */
 
+import { closeAccountPage } from '../sidebar/navigation.service.ts';
 import { closeSidebarOnMobile } from '../sidebar/sidebar.service.ts';
 import { closeCmdK } from '../legacy/cmdK.ts';
 import { closeStorageModal } from '../legacy/storage.ts';
 import { closePromptTemplatesModal } from '../legacy/promptTemplates.ts';
-import { closeProfile } from '../legacy/profile.ts';
 import { closeCheatsheet } from '../legacy/cheatsheet.ts';
 import { closeShareModal } from '../legacy/share.ts';
 import { closeTagEditor } from '../session/organizeRuntime.ts';
@@ -113,16 +113,6 @@ export function handleBackPress(): boolean {
     closePromptTemplatesModal();
     return true;
   }
-  if (isElementVisible('profileOverlay')) {
-    closeProfile();
-    return true;
-  }
-  if (isElementVisible('settingsOverlay')) {
-    void import('../react/settings/settings.service.ts')
-      .then((m) => m.closeSettings())
-      .catch((err) => reportSwallow(err, 'androidBridge.closeSettings'));
-    return true;
-  }
   if (isElementVisible('cheatsheetOverlay')) {
     closeCheatsheet();
     return true;
@@ -146,6 +136,8 @@ export function handleBackPress(): boolean {
   if (closeSidebarOnMobile()) {
     return true;
   }
+
+  if (closeAccountPage()) return true;
 
   // No overlay was active; allow Android to handle back (e.g. exit/minimize)
   return false;

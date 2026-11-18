@@ -341,42 +341,22 @@ test('dark palette roles clear AA on every dark surface they sit on', async ({ p
   expect(probe.text.muted).toBe(probe.text.tertiary);
 });
 
-test('dark dialogs are elevated cards over a flat token scrim', async ({ page }) => {
-  await openApp(page, { mode: 'dark' });
-  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await expect(page.locator('#settingsOverlay')).toBeVisible();
-  const settings = await page.evaluate(() => {
-    const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
-    const card = document.querySelector(
-      '#settingsOverlay .settings-modal, #settingsOverlay .modal, #settingsOverlay [role="dialog"]',
-    );
-    return {
-      scrim: overlay.backgroundColor,
-      blur: overlay.backdropFilter,
-      card: card ? getComputedStyle(card).backgroundColor : null,
-      cardText: card ? getComputedStyle(card).color : null,
-    };
+for (const mode of ['dark', 'light']) {
+  test(`settings text meets AA contrast on the ${mode} page`, async ({ page }) => {
+    await openApp(page, { mode });
+    await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+    const section = page.locator('#settingsPage .settings-pane:visible .settings-section').first();
+    await expect(section).toBeVisible();
+    const colors = await section.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { background: style.backgroundColor, text: style.color };
+    });
+    expect(contrast(rgb(colors.text), rgb(colors.background))).toBeGreaterThanOrEqual(4.5);
   });
-  expect(rgb(settings.scrim).a).toBeLessThanOrEqual(0.5);
-  expect(settings.blur).toBe('none');
-  if (settings.card) {
-    expect(luminance(rgb(settings.card))).toBeLessThan(0.1);
-    expect(contrast(rgb(settings.cardText), rgb(settings.card))).toBeGreaterThanOrEqual(4.5);
-  }
-});
+}
 
-test('light dialogs are white cards over a flat token scrim', async ({ page }) => {
+test('the command palette uses a flat scrim', async ({ page }) => {
   await openApp(page, { mode: 'light' });
-  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await expect(page.locator('#settingsOverlay')).toBeVisible();
-  const settings = await page.evaluate(() => {
-    const overlay = getComputedStyle(document.getElementById('settingsOverlay'));
-    return { scrim: overlay.backgroundColor, blur: overlay.backdropFilter };
-  });
-  expect(rgb(settings.scrim).a).toBeLessThanOrEqual(0.5);
-  expect(settings.blur).toBe('none');
-  await page.evaluate(() => window.__socratesLegacy.navigation.closeSettings());
-
   await page.keyboard.press('Control+k');
   await expect(page.locator('#cmdKOverlay')).toBeVisible();
   const palette = await page.evaluate(

@@ -9,6 +9,8 @@ export const DESTINATIONS = {
   sites: { path: '/sites', host: 'sitesPanel' },
   exam: { path: '/exam', host: 'examView' },
   admin: { path: '/admin', host: 'adminPanel' },
+  settings: { path: '/settings', host: 'settingsPage' },
+  profile: { path: '/profile', host: 'profilePage' },
 } as const;
 
 export type PageDestination = keyof typeof DESTINATIONS;

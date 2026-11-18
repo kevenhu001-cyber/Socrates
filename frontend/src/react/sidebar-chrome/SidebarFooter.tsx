@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useUserInfo } from './sidebarChrome.store';
 import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
-import { preloadSettingsModal } from '../settings/settings.preload.ts';
+import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { openSettings } from '../settings/settings.service.ts';
 
 export function SidebarFooter() {
@@ -64,7 +64,7 @@ export function SidebarFooter() {
               className="account-menu-identity"
               onClick={() => {
                 close();
-                getLegacyActions().navigation.openProfile();
+                getLegacyActions().navigation.openProfile(accountTrigger.current);
               }}
             >
               {identity}
@@ -78,16 +78,16 @@ export function SidebarFooter() {
             <FoundationMenuItem
               onClick={() => {
                 close();
-                getLegacyActions().navigation.openProfile();
+                getLegacyActions().navigation.openProfile(accountTrigger.current);
               }}
             >
               <Icon name="user" />
               {label('个人资料', 'Profile')}
             </FoundationMenuItem>
             <FoundationMenuItem
-              onPointerEnter={preloadSettingsModal}
-              onPointerDown={preloadSettingsModal}
-              onFocus={preloadSettingsModal}
+              onPointerEnter={preloadSettingsPage}
+              onPointerDown={preloadSettingsPage}
+              onFocus={preloadSettingsPage}
               onClick={() => navigate('general')}
             >
               <Icon name="gear" />

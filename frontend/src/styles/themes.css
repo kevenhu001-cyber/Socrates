@@ -607,10 +607,9 @@ html[data-theme='socrates'][data-mode='light'] {
 }
 
 html[data-theme='socrates'][data-mode='dark'] {
-  /* Reference user bubble (phone, measured): #223d72 under white copy
-     (≈ 11:1). Assistant turns stay bare. */
-  --conversation-user: rgb(34 61 114);
-  --conversation-user-text: rgb(255 255 255);
+  /* Modern monochrome bubble: neutral surface aligned with Geist gray scale, matching ChatGPT / Grok style. */
+  --conversation-user: var(--ui-bg-bubble);
+  --conversation-user-text: var(--foreground);
   /* Reference secondary grey: icons, placeholder, disclaimer, section
      titles and quiet labels all measure #afafaf–#b0b0b0 on the black canvas. */
   --muted-foreground: rgb(175 175 175);
@@ -710,8 +709,7 @@ html[data-theme='philosophy'][data-mode]:lang(zh) {
 
 html[data-theme='philosophy'] .greeting,
 html[data-theme='philosophy'] .topic-title,
-html[data-theme='philosophy'] .auth-brand span,
-html[data-theme='philosophy'] .sidebar-logo span {
+html[data-theme='philosophy'] .auth-brand span {
   font-family: var(--font-display);
   letter-spacing: -0.015em;
 }

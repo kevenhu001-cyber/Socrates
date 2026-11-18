@@ -27,7 +27,6 @@ export interface ProviderListProps {
 }
 
 export interface SettingsSnapshot {
-  open: boolean;
   section: SettingsSection;
   query: string;
   mobileDetail: boolean;

@@ -137,7 +137,7 @@ export const uiColorsCssVars: UiColors = Object.freeze(
   ) as unknown as UiColors,
 );
 
-/** Font stacks. Geist for Latin, Noto Sans SC for Chinese. */
+/** Font stacks. Bundled fonts first: Geist Sans for Latin/UI and Noto Sans SC for Chinese. */
 export const uiFont = {
   sans: '"Geist Sans", "Noto Sans SC", system-ui, sans-serif',
   mono: '"Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", monospace',

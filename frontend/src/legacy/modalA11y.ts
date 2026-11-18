@@ -9,10 +9,8 @@ import { reportSwallow } from '../util/reportSwallow.ts';
    handler (delegate.js). Centralize the focus/Esc behavior here so a single
    helper consistent across:
      - #cmdKOverlay   (cmdK.js → closeCmdK)
-     - #settingsOverlay (typed settings service → closeSettings; React owns title)
      - #shareOverlay  (share.js → closeShareModal)
      - #usageOverlay  (usage.js → closeUsageModal)
-     - #profileOverlay (profile.js → closeProfile)
 
    Confirm dialog is excluded — it has its own resolver semantics in
    confirm.js; closing on Esc means "false" which the resolver handles.

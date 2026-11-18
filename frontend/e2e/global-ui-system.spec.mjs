@@ -45,13 +45,13 @@ for (const theme of ['light', 'dark']) {
       });
 
       await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-      const settings = page.locator('#settingsOverlay');
+      const settings = page.locator('#settingsPage');
       await expect(settings).toBeVisible();
       await expect(settings.locator('.settings-nav button').first()).toHaveCSS('font-size', '14px');
       await expect(settings.locator('#settings-appearance')).toHaveCSS('font-size', '14px');
-      expect(
-        await settings.evaluate((node) => Number(getComputedStyle(node).zIndex)),
-      ).toBeGreaterThan(200);
+      await expect(page).toHaveURL(/\/settings$/);
+      await expect(page.locator('#mainContent #settingsPage')).toBeVisible();
+      if (width < 721) await settings.locator('[data-section="general"]').click();
       const appearance = settings.locator('#settings-appearance');
       await appearance.click();
       await page

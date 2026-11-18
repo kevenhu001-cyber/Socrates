@@ -1,5 +1,5 @@
 // e2e/settings-modal.spec.mjs — Settings ownership regression coverage.
-// SettingsModal.tsx owns the overlay and provider/tone markup; a typed provider
+// SettingsPage.tsx owns the page and provider/tone markup; a typed provider
 // service owns configuration and persistence. These specs pin open/close,
 // provider CRUD, tone selection, and persistence through visible UI/API effects.
 
@@ -50,10 +50,10 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 
 /* The provider and tone controls live in separate category panes;
-   the modal opens on General, so these specs navigate to Models & voice. */
+   the page opens on General, so these specs navigate to Models & voice. */
 async function openModelsPane(page) {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay).toBeVisible();
   await overlay.locator('.settings-nav [data-section="models"]').click();
   return overlay;
@@ -63,7 +63,7 @@ test('tone choices have separate readable labels and expose the selected state',
   page,
 }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
   const options = overlay.locator('.tone-preset-btn');
   await expect(options).toHaveCount(5);
@@ -89,7 +89,7 @@ test('tone choices have separate readable labels and expose the selected state',
   await expect(friendly).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('settings modal opens with React-owned providers and tones, and closes', async ({ page }) => {
+test('settings page opens with React-owned providers and tones, and closes', async ({ page }) => {
   const memoryRequests = [];
   const serverMemoryId = '550e8400-e29b-41d4-a716-446655440000';
   let serverMemories = [];
@@ -221,7 +221,7 @@ test('settings modal opens with React-owned providers and tones, and closes', as
       updatedAt: expect.any(Number),
     });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const reloadedOverlay = page.locator('#settingsOverlay');
+  const reloadedOverlay = page.locator('#settingsPage');
   await reloadedOverlay.locator('.settings-nav [data-section="personalization"]').click();
   await expect(reloadedOverlay.locator('.settings-memory-item')).toContainText('prefers Python');
 
@@ -268,7 +268,7 @@ test('all settings categories render their own pane and mobile search reaches hi
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay).toBeVisible();
   const sections = [
     ['general', 'General'],
@@ -286,6 +286,7 @@ test('all settings categories render their own pane and mobile search reaches hi
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await overlay.locator('#settingsMobileBack').click();
   const search = overlay.getByRole('searchbox', { name: 'Search settings' });
   await expect(search).toBeVisible();
   const categories = overlay.locator('.settings-nav-categories');
@@ -324,7 +325,7 @@ test('all settings categories render their own pane and mobile search reaches hi
 
 test('model provider actions stay inside the settings pane on mobile', async ({ page }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await page.setViewportSize({ width: 390, height: 844 });
   await overlay.locator('.settings-nav [data-section="models"]').click();
   const actions = overlay.locator('#addProviderBtn');
@@ -351,7 +352,7 @@ test('model menu opens the model settings detail directly on mobile', async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   const trigger = page.locator('#topModelSwitcher');
   const menu = page.locator('.chat-config-pop');
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   const back = overlay.locator('#settingsMobileBack');
   const openModels = async () => {
     await trigger.click();
@@ -380,7 +381,7 @@ test('account menu opens personalization and returns focus to the account trigge
   const trigger = page.locator('.sidebar-account-trigger');
   await trigger.click();
   await page.getByRole('menuitem', { name: 'Personalization', exact: true }).click();
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Personalization');
   await expect(overlay.locator('.settings-pane')).toHaveCount(1);
   await page.keyboard.press('Escape');
@@ -396,7 +397,7 @@ test('display settings persist text size, content width, grid, and background co
   page,
 }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await overlay.locator('.settings-nav [data-section="display"]').click();
 
   const fontGroup = overlay.locator('.settings-choice--segmented').filter({ hasText: 'Text size' });
@@ -479,7 +480,7 @@ test('custom instructions save once after typing and sync through the account en
     requests.push({ url: request.url(), body: request.postDataJSON() });
   });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await overlay.locator('.settings-nav [data-section="personalization"]').click();
   const instructions = overlay.locator('#settings-custom-instructions');
   await instructions.fill('Draft one');
@@ -512,7 +513,7 @@ test('general and model preferences update the app and sync supported account fi
     }
   });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
 
   await overlay.locator('#settings-appearance').click();
   await page.getByRole('option', { name: 'Dark', exact: true }).click();
@@ -550,7 +551,7 @@ test('settings restore server preferences when this browser has no local values'
   page,
 }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(overlay.locator('#settings-language')).toContainText('English');
@@ -575,7 +576,7 @@ test('settings utility links reach Plugins and Library, while account actions st
     }
   });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
 
   await overlay.locator('.settings-nav [data-section="apps"]').click();
   await overlay.getByRole('button', { name: 'Manage connections', exact: true }).click();
@@ -637,20 +638,25 @@ test('settings utility links reach Plugins and Library, while account actions st
   await expect(overlay).toBeVisible();
 });
 
-test('settings modal closes on backdrop click and via Esc', async ({ page }) => {
-  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
-  await expect(overlay).toBeVisible();
+test('settings and profile are separate routes with browser history', async ({ page }) => {
+  await page.goto('/profile');
+  await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Account settings' }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page.locator('.settings-pane:visible h2')).toHaveText('Account');
+  await expect(page.locator('#profilePage')).toBeHidden();
+  await page.screenshot({ path: 'test-results/settings-desktop.png' });
 
-  // Backdrop click (target === overlay host) closes.
-  await overlay.click({ position: { x: 8, y: 8 } });
-  await expect(overlay).toBeHidden();
-
-  // Esc closes (React-owned keydown handler).
-  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await expect(overlay).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(overlay).toBeHidden();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page.locator('#profilePage')).toBeVisible();
+  await page.goForward();
+  await expect(page.locator('#settingsPage')).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(/\/settings$/);
+  await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
+  await page.locator('#settingsCloseBtn').click();
+  await expect(page).toHaveURL(/\/profile$/);
 });
 
 test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({
@@ -658,7 +664,7 @@ test('settings keeps the focus where the user moved it and hands it back to the 
 }) => {
   const trigger = page.locator('#apiSettingsBtn');
   await trigger.click();
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay).toBeVisible();
 
   // Move the focus while the deferred initial focus is still pending. Once it
@@ -668,7 +674,7 @@ test('settings keeps the focus where the user moved it and hands it back to the 
   await page.waitForTimeout(250);
   await expect(nav).toBeFocused();
 
-  // Closing returns the focus to the trigger that opened the dialog.
+  // Closing returns the focus to the trigger that opened the page.
   await page.keyboard.press('Escape');
   await expect(overlay).toBeHidden();
   await expect(trigger).toBeFocused();
@@ -881,7 +887,7 @@ test('settings mounts only visited categories and preserves provider drafts acro
   page,
 }) => {
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await expect(overlay.locator('.settings-pane')).toHaveCount(1);
   await expect(overlay.locator('.settings-pane h2')).toHaveText('General');
   await expect(overlay.locator('#providerList')).toHaveCount(0);
@@ -920,7 +926,7 @@ test('settings category load failure stays local and can be retried', async ({ p
     await route.abort('failed');
   });
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const overlay = page.locator('#settingsOverlay');
+  const overlay = page.locator('#settingsPage');
   await overlay.locator('[data-section="display"]').click();
   await expect(overlay.getByRole('alert')).toContainText('Could not load this category');
   expect(failures).toBeGreaterThan(0);

@@ -10,7 +10,6 @@ const dom = new JSDOM(
   <div id="cmdKOverlay" class="hidden"></div>
   <div id="storageModalOverlay" class="hidden"></div>
   <div id="promptTemplatesOverlay" class="hidden"></div>
-  <div id="profileOverlay" class="hidden"></div>
   <div id="cheatsheetOverlay" class="hidden"></div>
   <div id="shareOverlay" class="hidden"></div>
 </body></html>`,

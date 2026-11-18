@@ -14,7 +14,7 @@ import type { MountSpec } from './registry';
 import { retryImport } from './retryImport';
 
 /* on-demand overlays (tools menu, cmdk, find,
-   more-popover, profile/share/usage modals) are dynamically imported in
+   more-popover, share/usage modals) are dynamically imported in
    their mount callbacks below so their module graph stays out of the
    entry chunk; they still mount during the boot registry pass, just a
    tick later. RN sidebar and transcript hosts are reserved while their
@@ -274,12 +274,6 @@ export function mountRegistryList(): MountSpec[] {
       label: 'share-modal',
       ensureHost: (doc) => ensureBodyChild(doc, 'shareModalReactRoot'),
       mount: () => import('../../shareModal').then((m) => m.mountShareModal()),
-    },
-    {
-      hostId: 'profileModalReactRoot',
-      label: 'profile-modal',
-      ensureHost: (doc) => ensureBodyChild(doc, 'profileModalReactRoot'),
-      mount: () => import('../../profileModal').then((m) => m.mountProfileModal()),
     },
     {
       hostId: 'usageModalReactRoot',

@@ -61,10 +61,6 @@ test('switcher toggles the configuration menu below it and closes on outside cli
   const pop = page.locator('.chat-config-pop');
   await expect(pop).toBeVisible();
   await expect(sw).toHaveAttribute('aria-expanded', 'true');
-  /* The click lands mid-press (styles/polish/press.css scales the switcher
-     for ~270ms) while the popover is anchored to the switcher's resting box
-     (legacy/pressFeedback.ts restingRect). Compare against that resting box. */
-  await expect(sw).not.toHaveClass(/\bis-press/);
   const [a, b] = await Promise.all([sw.boundingBox(), pop.boundingBox()]);
   expect(Math.abs(b.x - a.x)).toBeLessThanOrEqual(1);
   expect(b.y).toBeGreaterThan(a.y + a.height);
@@ -77,6 +73,21 @@ test('switcher toggles the configuration menu below it and closes on outside cli
   await expect(pop).toBeVisible();
   await page.mouse.click(1000, 700);
   await expect(pop).toHaveCount(0);
+});
+
+test('model trigger and model choices stay in place while pressed', async ({ page }) => {
+  for (const locator of [
+    page.locator('#topModelSwitcher'),
+    page.getByRole('option', { name: /First model/ }),
+  ]) {
+    const before = await locator.boundingBox();
+    expect(before).not.toBeNull();
+    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+    await page.mouse.down();
+    await expect(locator).toHaveClass(/is-pressed/);
+    expect(await locator.boundingBox()).toEqual(before);
+    await page.mouse.up();
+  }
 });
 
 test('React model selection updates the top-bar label', async ({ page }) => {

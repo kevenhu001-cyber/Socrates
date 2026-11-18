@@ -1,8 +1,7 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Badge } from '../ui/shadcn/badge';
 import { Button } from '../ui/shadcn/button';
-import { useProfileDispatch, useProfileSnapshot } from '../profileModal/profileModal.store';
-import { closeSettings } from './settings.service';
+import { useProfileDispatch, useProfileSnapshot } from '../profile/profile.store';
 import type { SettingsPaneProps } from './settings.types';
 
 export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
@@ -66,27 +65,13 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
         </div>
         <div className="settings-choice">
           <span>{label('Token 用量', 'Token usage')}</span>
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => {
-              closeSettings();
-              actions.openUsage();
-            }}
-          >
+          <Button variant="outline" type="button" onClick={actions.openUsage}>
             {label('查看', 'View')}
           </Button>
         </div>
         <div className="settings-choice">
           <span>{label('已归档会话', 'Archived sessions')}</span>
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => {
-              closeSettings();
-              actions.openStorage();
-            }}
-          >
+          <Button variant="outline" type="button" onClick={actions.openStorage}>
             {label('管理', 'Manage')}
           </Button>
         </div>

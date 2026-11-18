@@ -29,7 +29,7 @@ for (const style of ['socrates', 'philosophy']) {
       await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
       await expect(page.locator('vite-error-overlay')).toHaveCount(0);
       await page.locator('#apiSettingsBtn').click();
-      const settings = page.locator('#settingsOverlay');
+      const settings = page.locator('#settingsPage');
       await expect(settings).toBeVisible();
       const appearance = settings.locator('#settings-appearance');
       await expect(appearance).toHaveAttribute('data-slot', 'select-trigger');
@@ -37,9 +37,9 @@ for (const style of ['socrates', 'philosophy']) {
         'data-slot',
         'input-group-control',
       );
-      await expect(settings.locator('#settingsCloseBtn')).toHaveAttribute(
+      await expect(settings.getByRole('button', { name: 'Back', exact: true })).toHaveAttribute(
         'data-slot',
-        'dialog-close',
+        'button',
       );
       const aliases = await page.evaluate(() => {
         const css = getComputedStyle(document.documentElement);
@@ -60,12 +60,10 @@ for (const style of ['socrates', 'philosophy']) {
         expect(semantic).toBe(legacy);
       }
       await settings.locator('.settings-nav [data-section="personalization"]').click();
-      await expect(settings.locator('[data-slot="card"]')).toBeVisible();
-      // A global unlayered padding reset used to silently beat utilities.
+      const section = settings.locator('.settings-pane:visible .settings-section').first();
+      await expect(section).toBeVisible();
       expect(
-        await settings
-          .locator('[data-slot="card-header"]')
-          .evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft)),
+        await section.evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft)),
       ).toBeGreaterThan(0);
       const tones = settings.locator('#tonePresetOptions');
       await expect(tones.getByRole('button').first()).toHaveCSS('border-width', '1px');
@@ -77,9 +75,11 @@ for (const style of ['socrates', 'philosophy']) {
         'background-color',
         'rgba(0, 0, 0, 0)',
       );
-      expect((await tones.boundingBox()).width).toBeGreaterThan(
-        (await settings.locator('.settings-pane:visible').boundingBox()).width * 0.9,
-      );
+      const contentWidth = await section.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return node.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      });
+      expect((await tones.boundingBox()).width).toBeCloseTo(contentWidth, 0);
       const instructions = settings.locator('#settings-custom-instructions');
       await instructions.fill('A shared theme must preserve editable form state.');
       await expect(instructions).toHaveValue('A shared theme must preserve editable form state.');
@@ -104,7 +104,7 @@ test('display options support keyboard navigation and switches persist on mobile
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const settings = page.locator('#settingsOverlay');
+  const settings = page.locator('#settingsPage');
   await settings.locator('.settings-nav [data-section="display"]').click();
   const options = settings.locator('[data-slot="toggle-group"]').first().getByRole('button');
   await options.first().focus();
@@ -114,9 +114,9 @@ test('display options support keyboard navigation and switches persist on mobile
   await page.keyboard.press('Space');
   await expect(options.nth(2)).toHaveAttribute('aria-pressed', 'true');
   const grid = settings.getByRole('switch');
-  const before = await grid.getAttribute('aria-checked');
+  const before = await grid.isChecked();
   await grid.click();
-  await expect(grid).toHaveAttribute('aria-checked', before === 'true' ? 'false' : 'true');
+  await expect(grid).toBeChecked({ checked: !before });
   await expect
     .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('socrates-display')).font))
     .toBe(1.25);

@@ -24,9 +24,15 @@ export function workspaceForPath(pathname: string | null | undefined) {
   );
 }
 
-export function pushWorkspaceRoute(name: string) {
+export function pushWorkspaceRoute(name: string, accountPageEntry = false) {
   const next = isPageDestination(name) ? DESTINATIONS[name].path : undefined;
-  if (next && location.pathname !== next) history.pushState({ workspace: name }, '', next);
+  if (next && location.pathname !== next) {
+    history.pushState(
+      accountPageEntry ? { workspace: name, accountPageEntry: true } : { workspace: name },
+      '',
+      next
+    );
+  }
 }
 
 /* The plugin center's in-page back button exits explicitly to home —

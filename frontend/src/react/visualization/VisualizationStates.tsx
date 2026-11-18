@@ -147,8 +147,7 @@ export interface VisualizationSkeletonProps {
 /**
  * Same geometry as the finished card (header row, the engine's stage height,
  * the phone breakpoint, the caption row), so the card replaces it in place.
- * The status line sits inside the stage, where the card shows its own
- * progress line, instead of adding a row that would vanish later.
+ * One continuous highlight sweeps across the stage and its placeholders.
  */
 export function VisualizationSkeleton({
   title,
@@ -164,6 +163,7 @@ export function VisualizationSkeleton({
     <section
       className="viz-state-skeleton"
       aria-busy="true"
+      aria-label={label}
       data-viz-state={phase}
       data-renderer={visualizationRendererKind(template)}
     >
@@ -174,16 +174,13 @@ export function VisualizationSkeleton({
           <span className="viz-skeleton-title-bar skeleton-shimmer" aria-hidden="true" />
         )}
       </header>
-      <div className="viz-skeleton-stage skeleton-shimmer">
-        <p className="viz-skeleton-progress" role="status">
-          {label}
-        </p>
-        <div className="viz-skeleton-bars" aria-hidden="true">
-          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '42%' }} />
-          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '68%' }} />
-          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '36%' }} />
-          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '82%' }} />
-          <span className="viz-skeleton-bar skeleton-shimmer" style={{ height: '54%' }} />
+      <div className="viz-skeleton-stage" aria-hidden="true">
+        <div className="viz-skeleton-bars">
+          <span className="viz-skeleton-bar" style={{ height: '42%' }} />
+          <span className="viz-skeleton-bar" style={{ height: '68%' }} />
+          <span className="viz-skeleton-bar" style={{ height: '36%' }} />
+          <span className="viz-skeleton-bar" style={{ height: '82%' }} />
+          <span className="viz-skeleton-bar" style={{ height: '54%' }} />
         </div>
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />

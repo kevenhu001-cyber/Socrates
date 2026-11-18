@@ -6,7 +6,7 @@ import { buttonVariants } from '../ui/shadcn/button';
 export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
   return (
     <div className="profile-section">
-      <div className="profile-section-title">{profileText('profile.account', 'Account')}</div>
+      <h2 className="profile-section-title">{profileText('profile.account', 'Account')}</h2>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.joined', 'Joined')}</span>
         <span className="profile-row-value" id="profileJoined">
@@ -18,7 +18,9 @@ export function ProfileAccountSection({ user }: { user: ProfileUserSnapshot }) {
           {profileText('profile.emailVerified', 'Email verified')}
         </span>
         <Badge variant={user.verifiedAt ? 'secondary' : 'outline'} id="profileVerified">
-          {user.verifiedAt ? 'Yes' : 'No'}
+          {user.verifiedAt
+            ? profileText('profile.verified', 'Verified')
+            : profileText('profile.unverified', 'Unverified')}
         </Badge>
       </div>
       <div className="profile-row">
@@ -35,9 +37,9 @@ export function ProfileSubscriptionSection({ user }: { user: ProfileUserSnapshot
   const tierLabel = user.tier.charAt(0).toUpperCase() + user.tier.slice(1);
   return (
     <div className="profile-section">
-      <div className="profile-section-title">
+      <h2 className="profile-section-title">
         {profileText('profile.subscription', 'Subscription')}
-      </div>
+      </h2>
       <div className="profile-row">
         <span className="profile-row-label">
           {profileText('profile.currentPlan', 'Current plan')}

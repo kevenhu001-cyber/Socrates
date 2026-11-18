@@ -73,8 +73,8 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     font-family: var(--font-sans);
     font-size: var(--ui-text-body);
     font-weight: var(--ui-font-weight-regular);
-    /* Phone reference prose: 16px on a 25.3–26px line pitch (desktop keeps 28). */
-    line-height: calc(26px * var(--app-type-scale));
+    /* Phone reference prose: enlarged from 26px to 28px for improved readability and refinement. */
+    line-height: calc(28px * var(--app-type-scale));
     letter-spacing: normal;
   }
 
@@ -341,10 +341,13 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
 .msg.assistant .msg-toolbar {
   justify-content: flex-start;
   margin-left: 2px;
+  width: fit-content;
 }
 .msg.user .msg-toolbar {
   justify-content: flex-end;
   margin-right: 0;
+  width: fit-content;
+  margin-left: auto;
 }
 @media (hover: hover) {
   .msg:hover .msg-toolbar {

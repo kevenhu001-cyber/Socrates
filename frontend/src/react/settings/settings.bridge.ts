@@ -6,7 +6,6 @@ import type { SettingsBridge, SettingsSnapshot } from './types';
 type Action = Partial<Omit<SettingsSnapshot, 'revision'>>;
 
 const initial: SettingsSnapshot = Object.freeze({
-  open: false,
   section: 'general',
   query: '',
   mobileDetail: false,

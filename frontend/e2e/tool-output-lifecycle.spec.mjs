@@ -406,6 +406,13 @@ test('a visualization stays visible across the running → result transition', a
   const skeleton = message.locator('.viz-state-skeleton').last();
   await expect(skeleton).toBeVisible();
   await expect(skeleton).toContainText('Probe transition');
+  await expect(skeleton).toHaveAttribute('aria-label', 'Receiving data…');
+  await expect(skeleton).not.toContainText('Receiving data');
+  const stage = skeleton.locator('.viz-skeleton-stage');
+  expect(await stage.evaluate((node) => getComputedStyle(node, '::after').animationName)).toBe(
+    'ui-shimmer-sweep',
+  );
+  await expect(stage.locator('.skeleton-shimmer')).toHaveCount(0);
 
   await page.evaluate(
     (visualization) =>

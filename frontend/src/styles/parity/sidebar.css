@@ -64,7 +64,7 @@ body[data-app-mode='tutor'] #appShell #sidebar:has([data-sidebar-view='mistakes'
 
   #appShell {
     --sidebar-rail: 52px;
-    --sidebar-row: 36px;
+    --sidebar-row: 38px;
     --sidebar-duration: 200ms;
   }
 
@@ -94,6 +94,10 @@ body[data-app-mode='tutor'] #appShell #sidebar:has([data-sidebar-view='mistakes'
     font-family: var(--font-sans);
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     transform: none;
     box-shadow: none;
     transition: width var(--sidebar-duration) var(--ui-ease-out);

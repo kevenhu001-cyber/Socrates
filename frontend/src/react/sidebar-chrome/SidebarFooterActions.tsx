@@ -2,7 +2,7 @@ import { Button } from '../ui/shadcn/button';
 import { NativeControl } from '../ui/NativeControl';
 import { i18n } from '../legacy/gateway.ts';
 import { openSettings } from '../settings/settings.service.ts';
-import { preloadSettingsModal } from '../settings/settings.preload.ts';
+import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { restingRect } from '../../legacy/pressFeedback.ts';
 import { DEFAULT_DARK_PICKER, DEFAULT_LIGHT_PICKER } from '../../legacy/tokens.ts';
@@ -439,9 +439,9 @@ export function SidebarFooterActions() {
         aria-label={t('chrome.apiSettings', 'API Settings')}
         data-i18n-title="chrome.apiSettings"
         data-i18n-aria="chrome.apiSettings"
-        onPointerEnter={preloadSettingsModal}
-        onPointerDown={preloadSettingsModal}
-        onFocus={preloadSettingsModal}
+        onPointerEnter={preloadSettingsPage}
+        onPointerDown={preloadSettingsPage}
+        onFocus={preloadSettingsPage}
         onClick={() => {
           void openSettings();
         }}

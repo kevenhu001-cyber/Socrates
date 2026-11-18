@@ -11,9 +11,11 @@ import { profileText } from './profileText';
 export function ProfilePreferencesSection({
   snapshot,
   dispatch,
+  language,
 }: {
   snapshot: ProfileSnapshot;
   dispatch: ProfileDispatch;
+  language: string;
 }) {
   /* The two fields are one saved value, so an edit in either reports both.
      React reads its own fields — the legacy module never reaches into this
@@ -26,14 +28,12 @@ export function ProfilePreferencesSection({
 
   return (
     <div className="profile-section">
-      <div className="profile-section-title">
-        {profileText('profile.preferences', 'Preferences')}
-      </div>
+      <h2 className="profile-section-title">{profileText('profile.preferences', 'Preferences')}</h2>
       <div className="profile-row">
         <span className="profile-row-label">{profileText('profile.language', 'Language')}</span>
         <ToggleGroup
           id="profileLangToggle"
-          value={[snapshot.currentLang]}
+          value={[language]}
           aria-label={profileText('profile.language', 'Language')}
           onValueChange={(values) => {
             if (values[0] === 'en' || values[0] === 'zh') dispatch.setLang(values[0]);
@@ -41,7 +41,7 @@ export function ProfilePreferencesSection({
         >
           <ToggleGroupItem
             type="button"
-            className={cn(snapshot.currentLang === 'en' && 'active')}
+            className={cn(language === 'en' && 'active')}
             value="en"
             id="profileLangEn"
           >
@@ -49,7 +49,7 @@ export function ProfilePreferencesSection({
           </ToggleGroupItem>
           <ToggleGroupItem
             type="button"
-            className={cn(snapshot.currentLang === 'zh' && 'active')}
+            className={cn(language === 'zh' && 'active')}
             value="zh"
             id="profileLangZh"
           >

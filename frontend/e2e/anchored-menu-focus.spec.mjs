@@ -92,7 +92,7 @@ test('account menu opens from the keyboard and supports bounds and typeahead', a
   await expect(menu.getByRole('menuitem', { name: 'Settings', exact: true })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(menu).toHaveCount(0);
-  await expect(page.locator('.settings-modal')).toBeVisible();
+  await expect(page.locator('.settings-page')).toBeVisible();
 });
 
 for (const variant of ['light', 'dark', 'mobile']) {

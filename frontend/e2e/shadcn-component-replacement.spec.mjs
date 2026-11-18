@@ -10,7 +10,7 @@ test('preference Select supports keyboard selection and Escape closes only the t
   await waitForAppShell(page);
   const trigger = page.locator('#apiSettingsBtn');
   await trigger.click();
-  const settings = page.locator('#settingsOverlay');
+  const settings = page.locator('#settingsPage');
   const search = settings.getByRole('searchbox');
   await search.focus();
   await expect(search).toHaveCSS('box-shadow', 'none');
@@ -66,7 +66,7 @@ test('provider radio arrow navigation preserves text editing and persists the ne
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const settings = page.locator('#settingsOverlay');
+  const settings = page.locator('#settingsPage');
   await settings.locator('[data-section="models"]').click();
   const first = settings.locator('.provider-row[data-id="first"]');
   const second = settings.locator('.provider-row[data-id="second"]');
@@ -126,7 +126,7 @@ test('provider Card fields and choices remain reachable on a narrow phone', asyn
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  const settings = page.locator('#settingsOverlay');
+  const settings = page.locator('#settingsPage');
   await settings.locator('[data-section="models"]').click();
   await settings.locator('#addProviderBtn').click();
   const provider = settings.locator('.provider-row[data-id^="new-"]').first();

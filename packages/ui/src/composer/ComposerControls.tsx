@@ -282,7 +282,7 @@ export function ComposerControls({
           ready: primary.ready ? 'true' : 'false',
           sending: primary.sending ? 'true' : 'false',
         })}
-        style={({ pressed }: PressState) => ({
+        style={{
           width: COMPOSER_CONTROL_SIZE,
           height: COMPOSER_CONTROL_SIZE,
           borderRadius: uiRadius.pill,
@@ -292,9 +292,8 @@ export function ComposerControls({
              send, the action disc once there is (and while it means Stop).
              Phones keep the action colour at half strength when empty. */
           backgroundColor: enabled || compact ? colors.action : colors.fill,
-          opacity: enabled || !compact ? 1 : 0.5,
-          transform: [{ scale: pressed && enabled ? 0.94 : 1 }],
-        })}
+          opacity: !enabled && compact ? 0.5 : undefined,
+        }}
       >
         <View nativeID="composerPrimaryBtnContent">
           <UiIcon

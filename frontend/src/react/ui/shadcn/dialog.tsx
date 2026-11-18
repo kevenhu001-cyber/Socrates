@@ -49,13 +49,11 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
-  layout = 'default',
   keepMounted = false,
   backdropProps,
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
-  layout?: 'default' | 'settings';
   keepMounted?: boolean;
   backdropProps?: DialogPrimitive.Backdrop.Props;
 }) {
@@ -64,9 +62,7 @@ function DialogContent({
       data-slot="dialog-content"
       className={cn(
         'fixed top-1/2 left-1/2 z-(--ui-z-modal) -translate-x-1/2 -translate-y-1/2 rounded-xl bg-popover text-sm text-popover-foreground ring-1 ring-foreground/10 duration-200',
-        layout === 'settings'
-          ? 'flex flex-col gap-0 p-0'
-          : 'grid w-full max-w-[calc(100%-2rem)] gap-4 p-4 sm:max-w-sm',
+        'grid w-full max-w-[calc(100%-2rem)] gap-4 p-4 sm:max-w-sm',
         className,
       )}
       {...props}

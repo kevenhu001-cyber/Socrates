@@ -8,7 +8,7 @@ import { restingRect } from '../../legacy/pressFeedback.ts';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 import { useMorePopoverDispatch, useMorePopoverSnapshot } from './morePopover.store';
 import type { MorePopoverAction } from './types';
-import { preloadSettingsModal } from '../settings/settings.preload.ts';
+import { preloadSettingsPage } from '../settings/settings.preload.ts';
 
 const POPOVER_ID = 'moreNavPopover';
 const TRIGGER_ID = 'navMore';
@@ -98,7 +98,7 @@ function MenuItem({
   const className = spec.danger
     ? 'sidebar-more-item sidebar-more-item-danger'
     : 'sidebar-more-item';
-  const preloadSettings = spec.action === 'settings' ? preloadSettingsModal : undefined;
+  const preloadSettings = spec.action === 'settings' ? preloadSettingsPage : undefined;
   return (
     <UiButton
       type="button"

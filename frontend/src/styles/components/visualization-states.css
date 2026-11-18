@@ -98,15 +98,6 @@
   height: 0;
   border-top: 1px solid var(--ui-border-subtle);
 }
-.viz-skeleton-progress {
-  position: absolute;
-  inset: 0 auto auto 0;
-  margin: 0;
-  padding: var(--ui-space-md);
-  color: var(--muted-foreground);
-  font-size: var(--ui-font-size-xs);
-  line-height: 1.5;
-}
 .viz-skeleton-caption {
   margin: 0;
   padding: 10px 0 12px;
@@ -218,22 +209,22 @@
   transition-property: none;
 }
 
-/* Skeleton shimmer sweep (骨架屏扫光) animation across stage and placeholder bars. */
+/* Use one moving layer across the entire stage, including the grid and bars. */
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
-  .viz-skeleton-stage.skeleton-shimmer,
-  .viz-state-skeleton .skeleton-shimmer {
-    --shimmer-bright: color-mix(in srgb, var(--ui-fill-pressed) 75%, var(--ui-border-strong) 25%);
+  .viz-skeleton-stage::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     background-image: linear-gradient(
-      105deg,
-      transparent 20%,
-      var(--shimmer-bright) 48%,
-      rgba(255, 255, 255, 0.45) 50%,
-      var(--shimmer-bright) 52%,
-      transparent 80%
+      90deg,
+      transparent 33%,
+      var(--ui-fill-pressed) 50%,
+      transparent 67%
     );
     background-repeat: no-repeat;
     background-size: 300% 100%;
-    animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep, 1800ms)
-      cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    background-position: 100% 0;
+    animation: ui-shimmer-sweep var(--ui-duration-shimmer-sweep) ease-in-out infinite;
   }
 }

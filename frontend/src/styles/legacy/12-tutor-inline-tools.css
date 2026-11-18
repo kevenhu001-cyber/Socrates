@@ -333,9 +333,6 @@ body[data-app-mode='chat'] .tutor-only {
   .auth-card {
     padding: 24px 16px;
   }
-  .profile-overlay {
-    padding: 20px 12px;
-  }
   .new-reply-pill {
     right: 10px;
     bottom: calc(96px + env(safe-area-inset-bottom, 0px) + var(--keyboard-inset, 0px) + 12px);

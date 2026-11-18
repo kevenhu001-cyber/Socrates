@@ -6,6 +6,12 @@ import { toggleSidebar } from './sidebar.service';
 import { isMobileViewport } from './breakpoints.ts';
 import type { SidebarNavKey } from '../react/sidebar/types';
 
+type AccountPage = 'profile' | 'settings';
+
+function isAccountPage(destination: SidebarNavKey): destination is AccountPage {
+  return destination === 'profile' || destination === 'settings';
+}
+
 type NavigationDestination = Exclude<SidebarNavKey, null>;
 type NavigationTarget = NavigationDestination | 'skills';
 type DestinationOpener = () => void;
@@ -16,6 +22,7 @@ type NavigationAdapters = Partial<Record<NavigationTarget, DestinationOpener>> &
 let adapters: NavigationAdapters = {};
 let routeListenersInstalled = false;
 let homeReturnView = 'topicSetup';
+let accountReturnFocus: HTMLElement | null = null;
 
 function closeMobileSidebarAfterNavigation(destination: NavigationTarget): void {
   if (destination === 'more' || !isMobileViewport()) return;
@@ -39,7 +46,7 @@ export function openNav(name: string, options?: { fromRoute?: boolean }): void {
   if (isPageDestination(destination)) {
     const coreView = getVisibleCoreView(document);
     if (!document.getElementById(coreView)?.classList.contains('hidden')) homeReturnView = coreView;
-    if (!fromRoute) pushWorkspaceRoute(destination);
+    if (!fromRoute) pushWorkspaceRoute(destination, isAccountPage(destination));
     setActiveNav(destination);
     activateMainView(DESTINATIONS[destination].host, document);
   }
@@ -51,6 +58,27 @@ export function openNav(name: string, options?: { fromRoute?: boolean }): void {
   closeMobileSidebarAfterNavigation(destination);
 }
 
+export function openAccountPage(
+  destination: AccountPage,
+  trigger: HTMLElement | null = null,
+): void {
+  if (!isAccountPage(getActiveDestination())) {
+    accountReturnFocus =
+      trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  }
+  openNav(destination);
+}
+
+export function closeAccountPage(): boolean {
+  if (!isAccountPage(getActiveDestination())) return false;
+  if (history.state?.accountPageEntry) {
+    history.back();
+  } else {
+    exitPluginsView();
+  }
+  return true;
+}
+
 export function exitPluginsView(): void {
   activateMainView(homeReturnView, document);
   pushHomeRoute();
@@ -58,6 +86,7 @@ export function exitPluginsView(): void {
 }
 
 export function syncWorkspaceRoute(): void {
+  const fromAccountPage = isAccountPage(getActiveDestination());
   const destination = workspaceForPath(location.pathname);
   if (destination) {
     openNav(destination, { fromRoute: true });
@@ -67,6 +96,11 @@ export function syncWorkspaceRoute(): void {
     // with the session owner.
     activateMainView(homeReturnView, document);
     setActiveNav(null);
+  }
+  if (fromAccountPage && !isAccountPage(getActiveDestination())) {
+    const trigger = accountReturnFocus;
+    accountReturnFocus = null;
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
   }
 }
 

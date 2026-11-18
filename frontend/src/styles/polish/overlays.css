@@ -127,24 +127,13 @@
    re-rasterises the whole page on every frame of the open fade. */
 /* Deferred polish links can precede the bundled legacy CSS in production.
    The body scope keeps modal layers authoritative in either loading order. */
-body
-  :is(
-    .cmd-k-overlay,
-    .share-overlay,
-    .profile-overlay,
-    .usage-overlay,
-    .settings-overlay,
-    .admin-modal-overlay,
-    .confirm-dialog
-  ) {
+body :is(.cmd-k-overlay, .share-overlay, .usage-overlay, .admin-modal-overlay, .confirm-dialog) {
   z-index: var(--ui-z-modal);
 }
 #appShell .cmd-k-overlay,
 .cmd-k-overlay,
 .share-overlay,
-.profile-overlay,
 .usage-overlay,
-.settings-overlay,
 .admin-modal-overlay,
 .confirm-dialog {
   background: var(--ui-backdrop);
@@ -174,12 +163,9 @@ body.composer-tools-open.composer-tools-open::after {
    (sidebar account, session rows), the message overflow popover and the
    library row/new/filter menus used to pop too; they now share the same
    entrance so a click never produces an un-animated surface. The composer
-   "+" menu and the generation-config popover keep their anchored lift
-   (polish/composer.css, restore/chat-surface.css). Reduced motion collapses
-   this via foundations/base.css. */
+   "+" menu keeps its anchored lift. The generation-config menu enters with
+   opacity only so model rows hold their coordinates. */
 @keyframes ui-overlay-in {
-  /* Opacity + transform stay compositor-friendly; animating blur on a large
-     settings dialog repaints its text and makes the entrance look soft. */
   from {
     opacity: 0;
     transform: scale(var(--ui-overlay-enter-scale));
@@ -219,7 +205,6 @@ body.composer-tools-open.composer-tools-open::after {
   }
 }
 
-.settings-modal,
 .confirm-box,
 .sidebar-more-popover,
 .anchored-menu,
@@ -238,11 +223,9 @@ body.composer-tools-open.composer-tools-open::after {
    one animation — these selectors were removed from `ui-overlay-in` above.
    Browsers without discrete transitions keep the old instant toggle. */
 .cmd-k-modal,
-.profile-modal,
 .usage-modal,
 .share-modal,
-.display-prefs-popover,
-.chat-config-pop {
+.display-prefs-popover {
   opacity: 1;
   transform: none;
   transform-origin: center;
@@ -252,35 +235,39 @@ body.composer-tools-open.composer-tools-open::after {
     display var(--ui-duration-fast) allow-discrete;
 }
 .cmd-k-modal.hidden,
-.profile-modal.hidden,
 .usage-modal.hidden,
 .share-modal.hidden,
-.display-prefs-popover.hidden,
-.chat-config-pop.hidden {
+.display-prefs-popover.hidden {
   opacity: 0;
   transform: scale(var(--ui-overlay-enter-scale));
 }
 @starting-style {
   .cmd-k-modal:not(.hidden),
-  .profile-modal:not(.hidden),
   .usage-modal:not(.hidden),
   .share-modal:not(.hidden),
-  .display-prefs-popover:not(.hidden),
-  .chat-config-pop:not(.hidden) {
+  .display-prefs-popover:not(.hidden) {
     opacity: 0;
     transform: scale(var(--ui-overlay-enter-scale));
   }
 }
-/* Anchored panels unfold from their trigger, not their centre. */
-.display-prefs-popover,
-.chat-config-pop {
+.display-prefs-popover {
   transform-origin: top left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chat-config-pop {
+    transition: opacity var(--ui-duration-fast) var(--ui-ease-out);
+  }
+  @starting-style {
+    .chat-config-pop {
+      opacity: 0;
+    }
+  }
 }
 
 /* Their scrims share the clock: the dim holds while the card leaves, then
    both flip to `display: none` together. */
 .cmd-k-overlay,
-.profile-overlay,
 .usage-overlay,
 .share-overlay {
   opacity: 1;
@@ -289,14 +276,12 @@ body.composer-tools-open.composer-tools-open::after {
     display var(--ui-duration-fast) allow-discrete;
 }
 .cmd-k-overlay.hidden,
-.profile-overlay.hidden,
 .usage-overlay.hidden,
 .share-overlay.hidden {
   opacity: 0;
 }
 @starting-style {
   .cmd-k-overlay:not(.hidden),
-  .profile-overlay:not(.hidden),
   .usage-overlay:not(.hidden),
   .share-overlay:not(.hidden) {
     opacity: 0;
@@ -331,7 +316,6 @@ body.composer-tools-open.composer-tools-open::after {
    entrance at all; the rest carried their own 120–150ms fadeIn. One token
    keeps the dim and the card on the same clock. The four scrims that share
    the dismissal transition above are no longer in this list. */
-.settings-overlay,
 .admin-modal-overlay,
 .confirm-dialog {
   animation: ui-scrim-in var(--ui-duration-overlay) var(--ui-ease-out) both;
@@ -339,8 +323,6 @@ body.composer-tools-open.composer-tools-open::after {
 
 .confirm-box[data-state='closing'],
 .cmd-k-modal[data-state='closing'],
-.settings-modal[data-state='closing'],
-.profile-modal[data-state='closing'],
 .usage-modal[data-state='closing'],
 .share-modal[data-state='closing'],
 .sidebar-more-popover[data-state='closing'],
@@ -349,8 +331,6 @@ body.composer-tools-open.composer-tools-open::after {
 [data-state='closing'].sidebar-account-menu,
 [data-state='closing'].composer-tools-menu,
 .confirm-dialog[data-state='closing'],
-.settings-overlay[data-state='closing'],
-.profile-overlay[data-state='closing'],
 .usage-overlay[data-state='closing'],
 .share-overlay[data-state='closing'],
 .cmd-k-overlay[data-state='closing'] {
@@ -492,58 +472,25 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-control, 8px);
 }
 
-/* ── Settings modal ── */
-.settings-modal {
-  border-radius: var(--ui-radius-dialog);
-  box-shadow: var(--ui-shadow-modal);
-}
-
-/* Desktop keeps a steady navigation rail. On phones the same categories
-   become a directory first, then a focused detail page. */
-.settings-modal.settings-modal--full {
-  display: flex;
-  flex-direction: column;
-  width: min(94vw, 960px);
-  max-width: 960px;
-  height: min(84vh, 700px);
-  max-height: calc(100dvh - 40px);
-  overflow: hidden;
-  border: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-dialog);
-}
-.settings-modal--full .settings-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex: none;
-  min-height: 56px;
-  padding: 0 16px 0 24px;
-  border-bottom: 1px solid var(--ui-border-subtle);
-  background: var(--ui-bg-dialog);
-}
-.settings-modal--full .settings-title {
-  font-weight: var(--ui-font-weight-semibold);
-  font-size: var(--ui-font-size-lg);
-}
-.settings-modal--full .settings-shell {
+/* ── Settings page ── */
+.settings-page .settings-shell {
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: clamp(208px, 27%, 264px) minmax(0, 1fr);
   min-height: 0;
   flex: 1;
 }
-.settings-modal--full .settings-nav {
+.settings-page .settings-nav {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
   min-height: 0;
-  padding: 16px 12px 18px;
+  padding: 24px var(--ui-space-md) 24px 0;
   border-right: 1px solid var(--ui-border-subtle);
   overflow: hidden;
-  background: var(--ui-bg-surface);
   scrollbar-width: thin;
 }
-.settings-modal--full .settings-nav-categories {
+.settings-page .settings-nav-categories {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -551,7 +498,7 @@ body.composer-tools-open.composer-tools-open::after {
   overflow-y: auto;
   scrollbar-width: thin;
 }
-.settings-modal--full .settings-nav-item {
+.settings-page .settings-nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -561,7 +508,7 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-control);
   text-align: left;
 }
-.settings-modal--full .settings-category-icon {
+.settings-page .settings-category-icon {
   display: grid;
   place-items: center;
   width: 28px;
@@ -569,11 +516,11 @@ body.composer-tools-open.composer-tools-open::after {
   flex: none;
   color: var(--ui-text-secondary);
 }
-.settings-modal--full .settings-category-icon svg {
+.settings-page .settings-category-icon svg {
   width: 17px;
   height: 17px;
 }
-.settings-modal--full .settings-category-copy {
+.settings-page .settings-category-copy {
   display: flex;
   flex: 1;
   min-width: 0;
@@ -581,7 +528,7 @@ body.composer-tools-open.composer-tools-open::after {
   align-items: flex-start;
   gap: 1px;
 }
-.settings-modal--full .settings-category-name {
+.settings-page .settings-category-name {
   overflow: hidden;
   max-width: 100%;
   text-overflow: ellipsis;
@@ -589,7 +536,7 @@ body.composer-tools-open.composer-tools-open::after {
   font-size: var(--ui-font-size-sm);
   line-height: 20px;
 }
-.settings-modal--full .settings-category-description {
+.settings-page .settings-category-description {
   display: block;
   overflow: hidden;
   max-width: 100%;
@@ -599,51 +546,51 @@ body.composer-tools-open.composer-tools-open::after {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.settings-modal--full .settings-nav-item[aria-current='page'] .settings-category-description {
+.settings-page .settings-nav-item[aria-current='page'] .settings-category-description {
   color: var(--ui-text-secondary);
 }
-.settings-modal--full .settings-category-chevron {
+.settings-page .settings-category-chevron {
   display: none;
 }
-.settings-modal--full .settings-nav-item:hover .settings-category-chevron,
-.settings-modal--full .settings-nav-item[aria-current='page'] .settings-category-chevron {
+.settings-page .settings-nav-item:hover .settings-category-chevron,
+.settings-page .settings-nav-item[aria-current='page'] .settings-category-chevron {
   opacity: 1;
 }
-.settings-modal--full .settings-nav-item.active .settings-category-icon {
+.settings-page .settings-nav-item.active .settings-category-icon {
   color: var(--foreground);
 }
-.settings-modal--full .settings-nav-empty {
+.settings-page .settings-nav-empty {
   margin: 0;
   padding: 14px 8px;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
 }
-.settings-modal--full .settings-search {
+.settings-page .settings-search {
   margin: 0;
 }
-.settings-modal--full .settings-body {
+.settings-page .settings-body {
   display: block;
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  padding: 26px 32px 40px;
+  padding: 24px clamp(24px, 4vw, 56px) 40px;
   scrollbar-gutter: stable;
 }
-.settings-modal--full .settings-mobile-back {
+.settings-page .settings-mobile-back {
   display: none;
 }
-.settings-modal--full .settings-pane[hidden] {
+.settings-page .settings-pane[hidden] {
   display: none;
 }
-.settings-modal--full .settings-pane {
+.settings-page .settings-pane {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 640px;
+  max-width: 740px;
   margin-inline: auto;
 }
-.settings-modal--full .settings-pane > h2 {
+.settings-page .settings-pane > h2 {
   margin: 0;
   color: var(--foreground);
   font-size: var(--ui-font-size-xl);
@@ -651,7 +598,7 @@ body.composer-tools-open.composer-tools-open::after {
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.02em;
 }
-.settings-modal--full .settings-pane > p {
+.settings-page .settings-pane > p {
   margin: -10px 0 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
@@ -670,7 +617,7 @@ body.composer-tools-open.composer-tools-open::after {
 .settings-account-name {
   min-width: 0;
 }
-.settings-modal--full .settings-section {
+.settings-page .settings-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -680,7 +627,7 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-lg);
   background: var(--ui-bg-raised);
 }
-.settings-modal--full .settings-choice {
+.settings-page .settings-choice {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -691,50 +638,50 @@ body.composer-tools-open.composer-tools-open::after {
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
 }
-.settings-modal--full .settings-choice:last-child {
+.settings-page .settings-choice:last-child {
   border-bottom: 0;
 }
-.settings-modal--full .settings-choice input[role='switch'] {
+.settings-page .settings-choice input[role='switch'] {
   border-radius: var(--ui-radius-pill);
 }
-.settings-modal--full .settings-choice--segmented > [data-slot='toggle-group'] {
+.settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
   flex: none;
 }
-.settings-modal--full .settings-choice--color {
+.settings-page .settings-choice--color {
   padding-block: 12px;
 }
-.settings-modal--full .settings-choice-label {
+.settings-page .settings-choice-label {
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
 }
-.settings-modal--full :is(.settings-label, .settings-hint) {
+.settings-page :is(.settings-label, .settings-hint) {
   color: var(--ui-text-secondary);
 }
-.settings-modal--full .settings-section-head {
+.settings-page .settings-section-head {
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding: 0;
 }
-.settings-modal--full .settings-section-head--actions {
+.settings-page .settings-section-head--actions {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
-.settings-modal--full .settings-section-head > h3 {
+.settings-page .settings-section-head > h3 {
   margin: 0;
   color: var(--foreground);
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-semibold);
 }
-.settings-modal--full .settings-section-head > p {
+.settings-page .settings-section-head > p {
   margin: 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
-.settings-modal--full .settings-card--toggle {
+.settings-page .settings-card--toggle {
   display: flex;
   align-items: center;
   min-height: var(--ui-control-touch);
@@ -743,53 +690,54 @@ body.composer-tools-open.composer-tools-open::after {
   border-radius: var(--ui-radius-control);
   background: var(--ui-bg-surface);
 }
-.settings-modal--full .settings-provider-actions {
+.settings-page .settings-provider-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   padding-top: 14px;
   border-top: 1px solid var(--ui-border-subtle);
 }
-.settings-modal--full .settings-clear-api {
+.settings-page .settings-clear-api {
   color: var(--destructive);
 }
-.settings-modal--full .provider-empty {
+.settings-page .provider-empty {
   padding: 10px 4px;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-text-ui-line);
   text-align: center;
 }
-.settings-modal--full .provider-row {
+.settings-page .provider-row {
   border-color: var(--ui-border-subtle);
   border-radius: var(--ui-radius-control);
   background: var(--ui-bg-surface);
 }
-.settings-modal--full .built-in-row [data-slot='card-content'] {
+.settings-page .built-in-row [data-slot='card-content'] {
   padding-top: 0;
 }
-.settings-modal--full .settings-inline-action {
+.settings-page .settings-inline-action {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.settings-modal--full .settings-inline-action > input {
+.settings-page .settings-inline-action > input {
   flex: 1;
   min-width: 0;
 }
-.settings-modal--full .settings-inline-action > button {
+.settings-page .settings-inline-action > button {
   flex: none;
 }
-.settings-modal--full .settings-image-model-field {
+.settings-page .settings-image-model-field {
   gap: 10px;
 }
-.settings-modal--full .settings-info-panel {
+.settings-page .settings-info-panel {
   flex-direction: row;
   align-items: center;
   gap: 14px;
 }
-.settings-modal--full .settings-info-icon {
+.settings-page .settings-info-icon {
   display: grid;
   place-items: center;
   width: 42px;
@@ -799,27 +747,27 @@ body.composer-tools-open.composer-tools-open::after {
   background: var(--secondary);
   color: var(--ui-text-secondary);
 }
-.settings-modal--full .settings-info-icon svg {
+.settings-page .settings-info-icon svg {
   width: 20px;
   height: 20px;
 }
-.settings-modal--full .settings-info-copy {
+.settings-page .settings-info-copy {
   min-width: 0;
   flex: 1;
 }
-.settings-modal--full .settings-info-copy h3 {
+.settings-page .settings-info-copy h3 {
   margin: 0;
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
 }
-.settings-modal--full .settings-info-copy p {
+.settings-page .settings-info-copy p {
   margin: 4px 0 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-text-ui-line);
 }
-.settings-modal--full .settings-info-badge {
+.settings-page .settings-info-badge {
   flex: none;
   padding: 4px 8px;
   border-radius: var(--ui-radius-pill);
@@ -827,52 +775,47 @@ body.composer-tools-open.composer-tools-open::after {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xxs);
 }
-.settings-modal--full .tone-preset-options {
+.settings-page .tone-preset-options {
   margin-top: 0;
 }
-.settings-modal--full .settings-save-error {
+.settings-page .settings-save-error {
   margin: 14px 0 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
-.settings-modal--full .settings-search-empty {
+.settings-page .settings-search-empty {
   margin: 0 auto;
   width: 100%;
-  max-width: 640px;
+  max-width: 740px;
   padding: var(--ui-space-xl) 0;
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-sm);
 }
-.settings-modal--full .settings-account-card {
+.settings-page .settings-account-card {
   padding: 18px;
 }
-.settings-modal--full .settings-account-card + .settings-section {
+.settings-page .settings-account-card + .settings-section {
   margin-top: 0;
 }
-.settings-modal--full .settings-danger-zone {
+.settings-page .settings-danger-zone {
   border-color: color-mix(in srgb, var(--destructive) 36%, var(--ui-border-subtle));
   background: color-mix(in srgb, var(--destructive) 5%, var(--ui-bg-raised));
 }
-.settings-modal--full .settings-mobile-back:focus-visible {
+.settings-page .settings-mobile-back:focus-visible {
   box-shadow: var(--ui-focus-shadow);
 }
 /* Laptop / tablet: keep the rail but give the pane room to breathe. */
 @media (min-width: 721px) and (max-width: 900px) {
-  .settings-modal.settings-modal--full {
-    width: min(96vw, 780px);
-    max-width: 780px;
-    height: min(86vh, 680px);
+  .settings-page .settings-shell {
+    grid-template-columns: 184px minmax(0, 1fr);
   }
-  .settings-modal--full .settings-shell {
-    grid-template-columns: 212px minmax(0, 1fr);
+  .settings-page .settings-nav {
+    padding: 16px 10px 16px 0;
   }
-  .settings-modal--full .settings-nav {
-    padding: 14px 10px 16px;
-  }
-  .settings-modal--full .settings-body {
+  .settings-page .settings-body {
     padding: 22px 22px 34px;
   }
-  .settings-modal--full .settings-pane {
+  .settings-page .settings-pane {
     max-width: none;
   }
 }
@@ -880,52 +823,37 @@ body.composer-tools-open.composer-tools-open::after {
   .provider-fields {
     grid-template-columns: minmax(0, 1fr);
   }
-  .settings-modal.settings-modal--full {
-    width: 100vw;
-    height: 100dvh;
-    max-height: 100dvh;
-    border: 0;
-    border-radius: 0;
-  }
-  .settings-modal--full .settings-header {
-    padding: env(safe-area-inset-top, 0px) 16px 0;
-    min-height: calc(58px + env(safe-area-inset-top, 0px));
-  }
-  .settings-modal--full #settingsCloseBtn {
-    min-width: var(--ui-control-touch);
-    min-height: var(--ui-control-touch);
-  }
-  .settings-modal--full .settings-shell {
+  .settings-page .settings-shell {
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
-  .settings-modal--full .settings-nav {
+  .settings-page .settings-nav {
     display: none;
   }
-  .settings-modal--full[data-mobile-index='true'] .settings-nav {
+  .settings-page[data-mobile-index='true'] .settings-nav {
     display: flex;
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 18px 0 calc(16px + env(safe-area-inset-bottom, 0px));
     border: 0;
-    background: var(--ui-bg-dialog);
+    background: transparent;
   }
-  .settings-modal--full .settings-search {
+  .settings-page .settings-search {
     width: 100%;
     min-height: var(--ui-control-touch);
     height: auto;
     margin: 0;
   }
-  .settings-modal--full .settings-nav-categories {
+  .settings-page .settings-nav-categories {
     display: flex;
     flex: 1;
     gap: 8px;
     overflow-y: auto;
     padding: 2px 1px 8px;
   }
-  .settings-modal--full .settings-nav-item {
+  .settings-page .settings-nav-item {
     min-height: var(--ui-control-touch);
     padding: 9px 10px;
     gap: 11px;
@@ -934,31 +862,31 @@ body.composer-tools-open.composer-tools-open::after {
     background: var(--ui-bg-surface);
     white-space: normal;
   }
-  .settings-modal--full .settings-nav-item.active {
+  .settings-page .settings-nav-item.active {
     border-color: var(--ring);
     background: var(--secondary);
   }
-  .settings-modal--full .settings-category-icon {
+  .settings-page .settings-category-icon {
     width: 36px;
     height: 36px;
     border-radius: var(--ui-radius-sm);
     background: var(--ui-bg-raised);
   }
-  .settings-modal--full .settings-category-icon svg {
+  .settings-page .settings-category-icon svg {
     width: 18px;
     height: 18px;
   }
-  .settings-modal--full .settings-category-copy {
+  .settings-page .settings-category-copy {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
   }
-  .settings-modal--full .settings-category-name {
+  .settings-page .settings-category-name {
     font-size: var(--ui-font-size-sm);
     font-weight: var(--ui-font-weight-medium);
   }
-  .settings-modal--full .settings-category-description {
+  .settings-page .settings-category-description {
     display: block;
     overflow: hidden;
     max-width: 100%;
@@ -968,21 +896,22 @@ body.composer-tools-open.composer-tools-open::after {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .settings-modal--full .settings-category-chevron {
+  .settings-page .settings-category-chevron {
     opacity: 1;
   }
-  .settings-modal--full .settings-nav-empty {
+  .settings-page .settings-nav-empty {
     padding: 18px 4px;
   }
-  .settings-modal--full[data-mobile-index='true'] .settings-body {
+  .settings-page[data-mobile-index='true'] .settings-body {
     display: none;
   }
-  .settings-modal--full[data-mobile-index='false'] .settings-body {
+  .settings-page[data-mobile-index='false'] .settings-body {
     display: block;
     flex: 1;
-    padding: 8px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 0 calc(24px + env(safe-area-inset-bottom, 0px));
+    scrollbar-gutter: auto;
   }
-  .settings-modal--full .settings-mobile-back {
+  .settings-page .settings-mobile-back {
     display: inline-flex;
     align-self: flex-start;
     min-height: var(--ui-control-touch);
@@ -991,96 +920,216 @@ body.composer-tools-open.composer-tools-open::after {
     color: var(--ui-text-secondary);
     font-size: var(--ui-font-size-sm);
   }
-  .settings-modal--full .settings-body button,
-  .settings-modal--full .settings-body :is(input:not([type='hidden'], [role='switch']), select) {
+  .settings-page .settings-body button,
+  .settings-page .settings-body :is(input:not([type='hidden'], [role='switch']), select) {
     min-height: var(--ui-control-touch);
   }
-  .settings-modal--full .settings-bg-picker input[type='color'] {
+  .settings-page .settings-bg-picker input[type='color'] {
     width: var(--ui-control-touch);
     height: var(--ui-control-touch);
   }
-  .settings-modal--full .settings-pane {
+  .settings-page .settings-pane {
     gap: 16px;
     max-width: none;
   }
-  .settings-modal--full .settings-pane > h2 {
+  .settings-page .settings-pane > h2 {
     font-size: var(--ui-font-size-lg);
   }
-  .settings-modal--full .settings-pane > p {
+  .settings-page .settings-pane > p {
     margin: -8px 0 0;
     font-size: var(--ui-font-size-xs);
   }
-  .settings-modal--full .settings-section {
+  .settings-page .settings-section {
     gap: 14px;
     padding: 16px;
     border-radius: var(--ui-radius-lg);
   }
-  .settings-modal--full .settings-section-head--actions {
+  .settings-page .settings-section-head--actions {
     align-items: flex-start;
     flex-direction: column;
   }
-  .settings-modal--full .settings-section-head--actions > button {
+  .settings-page .settings-section-head--actions > button {
     align-self: flex-start;
   }
-  .settings-modal--full .settings-choice {
+  .settings-page .settings-choice {
     align-items: stretch;
     flex-direction: column;
     gap: 12px;
     min-height: 0;
     padding: 14px 0;
   }
-  .settings-modal--full .settings-choice--segmented > [data-slot='toggle-group'] {
+  .settings-page .settings-choice--segmented > [data-slot='toggle-group'] {
     width: 100%;
   }
-  .settings-modal--full .settings-choice--segmented [data-slot='toggle-group-item'] {
+  .settings-page .settings-choice--segmented [data-slot='toggle-group-item'] {
     flex: 1;
     min-width: 0;
   }
-  .settings-modal--full .settings-provider-actions {
+  .settings-page .settings-provider-actions {
     gap: 10px;
   }
-  .settings-modal--full .settings-memory-head {
+  .settings-page .settings-memory-head {
     align-items: flex-start;
     flex-direction: column;
   }
-  .settings-modal--full .settings-inline-action {
+  .settings-page .settings-inline-action {
     gap: 8px;
   }
-  .settings-modal--full .settings-inline-action > button {
+  .settings-page .settings-inline-action > button {
     white-space: nowrap;
   }
-  .settings-modal--full .settings-bg-pickers {
+  .settings-page .settings-bg-pickers {
     width: 100%;
     gap: 10px;
   }
-  .settings-modal--full .settings-account-card {
+  .settings-page .settings-account-card {
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .settings-modal--full .settings-info-panel {
+  .settings-page .settings-info-panel {
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .settings-modal--full .settings-info-copy {
+  .settings-page .settings-info-copy {
     flex-basis: calc(100% - 60px);
   }
-  .settings-modal--full .settings-info-panel > button {
+  .settings-page .settings-info-panel > button {
     margin-left: 56px;
   }
 }
 
-/* ── Profile modal ── */
-.profile-modal {
-  border: 1px solid var(--ui-border-subtle);
-  border-radius: var(--ui-radius-dialog);
-  box-shadow: var(--ui-shadow-modal);
+/* Account destinations share the main pane and leave the app sidebar available. */
+.account-page {
+  width: 100%;
+  overflow: hidden;
 }
-/* Same identity chip as the sidebar account row (parity/sidebar.css). The
-   legacy skin inverted it to a near-black disc in light mode, so the one
-   avatar read as two different things. */
-.profile-avatar {
-  background: var(--secondary);
+.account-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 40px);
   color: var(--foreground);
+}
+.account-page-header {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  padding-block: 20px;
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+.account-page-title {
+  flex: 1;
+  margin: 0;
+}
+.account-page-title h1 {
+  margin: 0;
+}
+.account-page-title h1:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+  border-radius: var(--ui-radius-sm);
+}
+.settings-page .settings-nav-item.active {
+  background: var(--ui-fill-hover);
+  box-shadow: inset 2px 0 var(--ui-ink);
+}
+.settings-page .settings-nav-item.active:focus-visible {
+  box-shadow:
+    var(--ui-focus-shadow),
+    inset 2px 0 var(--ui-ink);
+}
+
+.profile-page {
+  max-width: 880px;
+}
+.profile-page-body {
+  display: grid;
+  align-content: start;
+  gap: var(--ui-space-lg);
+  overflow-y: auto;
+  padding: var(--ui-space-lg) 4px calc(32px + env(safe-area-inset-bottom, 0px));
+  scrollbar-gutter: stable;
+}
+.profile-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-space-lg);
+}
+.profile-header,
+.profile-section {
+  min-width: 0;
+  padding: var(--ui-space-lg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-raised);
+}
+.profile-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
+  align-items: center;
+  gap: var(--ui-space-lg);
+  padding-block: 24px;
+}
+.profile-display-name {
+  display: grid;
+  gap: var(--ui-space-xs);
+  font-size: var(--ui-font-size-sm);
+  color: var(--ui-text-secondary);
+}
+.profile-section-title {
+  margin: 0 0 var(--ui-space-sm);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+.profile-row,
+.profile-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  padding-block: var(--ui-space-sm);
+  font-size: var(--ui-font-size-sm);
+}
+.profile-row + .profile-row,
+.profile-action-row + .profile-action-row {
+  border-top: 1px solid var(--ui-border-subtle);
+}
+.profile-row-value {
+  min-width: 0;
+  text-align: right;
+}
+.profile-id-text {
+  font-family: var(--font-mono);
+  font-size: var(--ui-font-size-xs);
+  overflow-wrap: anywhere;
+}
+.profile-action-desc,
+.profile-toggle-desc {
+  color: var(--ui-text-secondary);
+  font-size: var(--ui-font-size-xs);
+}
+.profile-action-desc {
+  margin-top: var(--ui-space-xxs);
+}
+@media (max-width: 720px) {
+  .account-page-content {
+    padding-inline: 16px;
+  }
+  .account-page-header {
+    padding-block: 12px;
+  }
+  .profile-header,
+  .profile-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .profile-page-body {
+    scrollbar-gutter: auto;
+  }
 }
 
 /* ── Settings · Account pane ── */

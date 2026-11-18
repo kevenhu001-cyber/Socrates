@@ -18,6 +18,10 @@ import { getActiveDestination } from './navigation.store';
 import { setSidebarPanelView } from './sidebar.store';
 import { activateMainView } from '../legacy/mainViewController.ts';
 import { DESTINATIONS } from './navigation.destinations';
+import { loadSettingsPage } from '../react/settings/settings.preload';
+import { publishProfileSnapshot } from '../legacy/profile';
+import { showToast } from '../legacy/toast.js';
+import { t } from '../i18n';
 
 function closeAllPanels(): void {
   setSidebarPanelView('recents');
@@ -87,6 +91,18 @@ registerNavigationAdapters({
   sites: () => openCreation('sites'),
   exam: openExam,
   admin: openAdmin,
+  settings: () => {
+    publishProfileSnapshot();
+    void loadSettingsPage()
+      .then(({ mountSettingsPage }) => mountSettingsPage())
+      .catch(() => showToast(t('toast.settingsLoadFailed')));
+  },
+  profile: () => {
+    publishProfileSnapshot();
+    void import('../react/profile/ProfilePage')
+      .then(({ mountProfilePage }) => mountProfilePage())
+      .catch((error) => reportSwallow(error, 'sidebar/navigation.openProfile'));
+  },
   more: openMore,
   skills: openPromptTemplatesModal,
   closePanels: closeAllPanels,

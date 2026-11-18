@@ -11,8 +11,6 @@
    visibly janky. Mobile overlays keep the dim scrim but drop the blur. */
 @media (max-width: 768px) {
   .cmd-k-overlay,
-  .settings-overlay,
-  .profile-overlay,
   .usage-overlay,
   .share-overlay,
   .workspace-dialog,

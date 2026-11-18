@@ -101,8 +101,8 @@ export function notifyEmbeddedAuthExpired() {
  * Dynamic portal modals (storage/prompt templates) are considered open while
  * their element exists; static overlays are open while `hidden` is absent. */
 const EMBEDDED_MODAL_SELECTORS: Record<string, string> = {
-  'api-settings': '#settingsOverlay',
-  profile: '#profileOverlay',
+  'api-settings': '#settingsPage',
+  profile: '#profilePage',
   usage: '#usageOverlay',
   storage: '#storageModalOverlay',
   skills: '#promptTemplatesOverlay',

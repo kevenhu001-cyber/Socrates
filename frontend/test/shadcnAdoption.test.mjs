@@ -36,7 +36,7 @@ test('new Base UI imports must pass through the adapted component boundary', () 
 test('migrated features cannot return to compatibility buttons, native selects or surface variants', () => {
   const source =
     "import { Button } from '../ui/Button'; import { NativeSelect } from '../ui/shadcn/native-select'; export const View = () => <Button variant=\"surface\" />;";
-  for (const feature of ['settings', 'profileModal', 'adminModal']) {
+  for (const feature of ['settings', 'profile', 'adminModal']) {
     assert.deepEqual(
       inspectSource(source, `src/react/${feature}/View.tsx`).map((p) => p.kind),
       Array(3).fill('compatibilityControls'),

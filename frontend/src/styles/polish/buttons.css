@@ -45,19 +45,22 @@
   min-width: var(--ui-control-md);
   padding: 0 14px;
   border: 1px solid transparent;
-  /* R1 restyle: text buttons are capsules, like the marketing site. */
-  border-radius: var(--ui-radius-pill);
+  /* Refined geometry: standard control radius with optical tracking, opt-in pill via .btn-pill. */
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: var(--muted-foreground);
   font: var(--ui-font-weight-regular) var(--ui-text-ui) / 20px
     var(--font-sans, system-ui, sans-serif);
+  letter-spacing: -0.012em;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
   transition:
-    background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-    color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-    border-color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    border-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    transform 120ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -91,10 +94,58 @@
 }
 
 /* ─────────── Semantic variants ─────────── */
+.btn-pill {
+  border-radius: var(--ui-radius-pill);
+}
+
+.btn-primary {
+  background: var(--ui-ink);
+  color: var(--ui-on-ink);
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 20%),
+    0 1px 2px 0 rgb(0 0 0 / 12%);
+}
+
+.btn-primary:hover {
+  background: var(--ui-ink-hover);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 28%),
+    0 2px 4px 0 rgb(0 0 0 / 18%);
+  color: var(--ui-on-ink);
+}
+
+.btn-primary:active {
+  box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 24%);
+  transform: translateY(0.5px);
+}
+
+.btn-secondary {
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  border-color: var(--ui-hairline);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 6%),
+    0 1px 2px 0 rgb(0 0 0 / 4%);
+}
+
+.btn-secondary:hover {
+  background: var(--ui-fill-hover);
+  border-color: var(--ui-hairline-strong);
+}
+
+.btn-secondary:active {
+  transform: translateY(0.5px);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--foreground);
   font-weight: var(--ui-font-weight-regular);
+}
+
+.btn-ghost:active {
+  transform: translateY(0.5px);
 }
 
 .btn-ghost.active,
@@ -120,8 +171,9 @@
   cursor: pointer;
   user-select: none;
   transition:
-    background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-    color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+    background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+    transform 120ms ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -129,6 +181,10 @@
 .btn-icon:hover {
   background: var(--accent);
   color: var(--foreground);
+}
+
+.btn-icon:active {
+  transform: scale(0.96);
 }
 
 [data-mode='light'] .btn {

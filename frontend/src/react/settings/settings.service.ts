@@ -1,17 +1,8 @@
-import { showToast } from '../../legacy/toast.js';
-import { publishProfileSnapshot } from '../../legacy/profile.ts';
-import { i18n } from '../legacy/gateway';
+import { closeAccountPage, openAccountPage } from '../../sidebar/navigation.service';
+import { getActiveDestination } from '../../sidebar/navigation.store';
+import { reportSwallow } from '../../util/reportSwallow';
 import { installSettingsBridge, getSettingsSnapshot } from './settings.bridge';
-import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
-import { loadSettingsModal } from './settings.preload';
 import type { SettingsSection } from './settings.types';
-
-let settingsReturnFocus: HTMLElement | null = null;
-let pendingOpen: symbol | undefined;
-
-export function getSettingsReturnFocus(): HTMLElement | null {
-  return settingsReturnFocus?.isConnected ? settingsReturnFocus : null;
-}
 
 function readExternalApiPreference(): boolean {
   try {
@@ -23,17 +14,12 @@ function readExternalApiPreference(): boolean {
 }
 
 export function initializeSettingsService(): void {
-  installSettingsBridge();
   if (getSettingsSnapshot().revision === 0) {
-    installSettingsBridge().publish({ open: false, externalApiOn: readExternalApiPreference() });
+    installSettingsBridge().publish({ externalApiOn: readExternalApiPreference() });
   }
-  /* No boot-time warm-up: an unconditional idle import downloaded the modal
-     and its first pane on every home page visit, even for readers who never
-     open Settings. The sidebar footer, More menu and Library toolbar already
-     preload it on pointer/focus intent, which is the moment that matters. */
 }
 
-export async function openSettings({
+export function openSettings({
   section,
   mobileIndex = false,
   returnFocus,
@@ -41,37 +27,18 @@ export async function openSettings({
   section?: SettingsSection;
   mobileIndex?: boolean;
   returnFocus?: HTMLElement | null;
-} = {}): Promise<void> {
-  const active = document.activeElement;
-  const trigger =
-    returnFocus ?? (active instanceof HTMLElement && active !== document.body ? active : null);
-  const request = Symbol();
-  pendingOpen = request;
-  try {
-    const { mountSettingsModal } = await loadSettingsModal();
-    if (pendingOpen !== request) return;
-    mountSettingsModal();
-  } catch {
-    if (pendingOpen === request) {
-      showToast(i18n('toast.settingsLoadFailed', 'Could not load settings. Please try again.'));
-    }
-    return;
-  } finally {
-    if (pendingOpen === request) pendingOpen = undefined;
-  }
+} = {}): void {
   const current = getSettingsSnapshot();
-  if (!current.open) settingsReturnFocus = trigger;
   installSettingsBridge().publish(
     section
-      ? { open: true, section, query: '', mobileDetail: !mobileIndex }
-      : { open: true, mobileDetail: current.open && current.mobileDetail },
+      ? { section, query: '', mobileDetail: !mobileIndex }
+      : { mobileDetail: getActiveDestination() === 'settings' && current.mobileDetail },
   );
-  publishProfileSnapshot();
+  openAccountPage('settings', returnFocus);
 }
 
 export function closeSettings(): void {
-  pendingOpen = undefined;
-  installSettingsBridge().publish({ open: false });
+  if (getActiveDestination() === 'settings') closeAccountPage();
 }
 
 export function toggleExternalApi(): void {
@@ -79,8 +46,7 @@ export function toggleExternalApi(): void {
   try {
     localStorage.setItem('socrates-external-api', JSON.stringify(externalApiOn));
   } catch (error) {
-    reportEmptyCatch(error, 'empty catch: react/settings/settings.service.ts');
-    /* Preference is still updated for this page session. */
+    reportSwallow(error, 'settings.toggleExternalApi');
   }
   installSettingsBridge().publish({ externalApiOn });
 }

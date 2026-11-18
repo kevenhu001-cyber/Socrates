@@ -13,10 +13,10 @@ import { Button } from '../ui/shadcn/button';
  * still product-owned. */
 const TOOL_BUTTON = [
   'msg-toolbar-btn relative inline-grid size-(--ui-control-sm) place-items-center',
-  'rounded-[var(--ui-radius-md)] border-0 bg-transparent p-0',
+  'rounded-[var(--ui-radius-control)] border-0 bg-transparent p-0',
   'text-muted-foreground cursor-pointer hover:bg-[var(--ui-bg-hover-ghost)] hover:text-foreground',
   'focus-visible:bg-[var(--ui-bg-hover-ghost)] focus-visible:text-foreground',
-  'transition-colors duration-(--ui-duration-hover) active:not-aria-[haspopup]:translate-y-0',
+  'transition-all duration-(--ui-duration-hover) active:not-aria-[haspopup]:translate-y-0 active:scale-95',
 ].join(' ');
 
 export interface ToolButtonProps extends Omit<React.ComponentProps<typeof Button>, 'aria-label'> {

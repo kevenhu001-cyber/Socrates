@@ -82,7 +82,7 @@ export function ModelPickerPanel({
             <UiButton
               key={provider.id}
               type="button"
-              className="chat-config-row"
+              className="chat-config-row press-tint"
               role="option"
               aria-selected={activeId === provider.id}
               data-initial-focus={index === 0 ? 'true' : undefined}
@@ -102,7 +102,7 @@ export function ModelPickerPanel({
         )}
       </div>
       <div className="chat-config-divider" />
-      <UiButton type="button" className="chat-config-row" onClick={onOpenEffort}>
+      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenEffort}>
         <span>
           <strong>{i18n('chatconfig.effort', 'Reasoning effort')}</strong>
         </span>
@@ -111,7 +111,7 @@ export function ModelPickerPanel({
           <ChevronIcon />
         </span>
       </UiButton>
-      <UiButton type="button" className="chat-config-row" onClick={onOpenSpeed}>
+      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSpeed}>
         <span>
           <strong>{i18n('chatconfig.speed', 'Speed')}</strong>
         </span>
@@ -120,7 +120,7 @@ export function ModelPickerPanel({
           <ChevronIcon />
         </span>
       </UiButton>
-      <UiButton type="button" className="chat-config-row" onClick={onOpenSettings}>
+      <UiButton type="button" className="chat-config-row press-tint" onClick={onOpenSettings}>
         <span>
           <strong>{i18n('chatconfig.manageModels', 'Manage models')}</strong>
         </span>
@@ -154,7 +154,7 @@ export function EffortPanel({
     <>
       <UiButton
         type="button"
-        className="chat-config-row"
+        className="chat-config-row press-tint"
         data-initial-focus="true"
         aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${effortLabel(effort)}`}
         onClick={onBack}
@@ -168,7 +168,7 @@ export function EffortPanel({
       </UiButton>
       <UiButton
         type="button"
-        className="chat-config-row"
+        className="chat-config-row press-tint"
         aria-pressed={effort === 'instant'}
         disabled={!supportsInstant}
         onClick={() => onCommit('instant', speed)}
@@ -225,7 +225,7 @@ export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
     <div role="listbox" aria-label={i18n('chatconfig.speed', 'Speed')}>
       <UiButton
         type="button"
-        className="chat-config-row"
+        className="chat-config-row press-tint"
         role="option"
         aria-selected={speed === 'standard'}
         data-initial-focus="true"
@@ -241,7 +241,7 @@ export function SpeedPanel({ effort, speed, onCommit }: SpeedPanelProps) {
       </UiButton>
       <UiButton
         type="button"
-        className="chat-config-row"
+        className="chat-config-row press-tint"
         role="option"
         aria-selected={speed === 'fast'}
         onClick={() => onCommit(effort, 'fast')}

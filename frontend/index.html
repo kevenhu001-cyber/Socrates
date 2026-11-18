@@ -344,6 +344,8 @@
          #adminPanel when the route is active; the login form and the
          two config sections are rendered by React. -->
     <div class="admin-panel main-page hidden" id="adminPanel"></div>
+    <section class="account-page main-page hidden" id="settingsPage" aria-labelledby="settingsTitle"></section>
+    <section class="account-page main-page hidden" id="profilePage" aria-labelledby="profileTitle"></section>
 
     </div>
 
@@ -402,14 +404,6 @@
 
 <!-- Share modal is React-owned: ShareModal.tsx renders #shareOverlay
      into #shareModalReactRoot at boot and handles its own
-     Esc/focus/backdrop-close. No static markup here. -->
-
-<!-- Settings modal is React-owned (M4 step 4.5b): SettingsModal.tsx
-     renders #settingsOverlay into #settingsModalReactRoot at boot and
-     handles its own Esc/focus/backdrop-close. No static markup here. -->
-
-<!-- profile modal is React-owned: ProfileModal.tsx renders #profileOverlay
-     into #profileModalReactRoot at boot and handles its own
      Esc/focus/backdrop-close. No static markup here. -->
 
 <!-- Confirm dialog is React-owned (M4 step 4.5c): ConfirmDialog.tsx

@@ -30,7 +30,7 @@ export interface LegacyNavigation {
   openNav(key: string): void;
   openSettings(): Promise<void> | void;
   closeSettings(): void;
-  openProfile(): void;
+  openProfile(trigger?: HTMLElement | null): void;
   closeProfile(): void;
   openUsageModal(): void;
   closeUsageModal(): void;

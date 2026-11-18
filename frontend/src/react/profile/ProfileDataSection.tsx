@@ -31,7 +31,7 @@ function ProfileActionRow({
 export function ProfileDataSection({ dispatch }: { dispatch: ProfileDispatch }) {
   return (
     <div className="profile-section">
-      <div className="profile-section-title">{profileText('profile.data', 'Data')}</div>
+      <h2 className="profile-section-title">{profileText('profile.data', 'Data')}</h2>
       <ProfileActionRow
         title={profileText('profile.usage', 'Token usage')}
         description={profileText(

@@ -1,3 +1,6 @@
+import { ProfileIdentity } from '@socrates/ui/settings';
+import { profileText } from './profileText';
+import { Label } from '../ui/shadcn/label';
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import {
   useCallback,
@@ -46,21 +49,19 @@ export function ProfileHeader({
 
   return (
     <div className="profile-header">
-      <div className="profile-avatar" id="profileAvatar">
-        {user.initials}
-      </div>
-      <ShadcnInput
-        className="profile-name-input"
-        id="profileName"
-        type="text"
-        maxLength={50}
-        value={draft}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={handleNameBlur}
-        onKeyDown={handleNameKeyDown}
-      />
-      <div className="profile-email" id="profileEmail">
-        {user.email}
+      <ProfileIdentity initials={user.initials} email={user.email} />
+      <div className="profile-display-name">
+        <Label htmlFor="profileName">{profileText('profile.displayName', 'Display name')}</Label>
+        <ShadcnInput
+          className="profile-name-input"
+          id="profileName"
+          type="text"
+          maxLength={50}
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={handleNameBlur}
+          onKeyDown={handleNameKeyDown}
+        />
       </div>
     </div>
   );

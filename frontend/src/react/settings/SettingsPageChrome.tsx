@@ -1,7 +1,6 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { InputGroup, InputGroupInput, InputGroupAddon } from '../ui/shadcn/input-group';
 import { Button } from '../ui/shadcn/button';
-import { DialogHeader, DialogTitle, DialogClose } from '../ui/shadcn/dialog';
 import {
   BellIcon,
   BoxesIcon,
@@ -14,7 +13,6 @@ import {
   Settings2Icon,
   SparklesIcon,
   UserRoundIcon,
-  XIcon,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from 'cn';
@@ -31,30 +29,6 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
   data: DatabaseIcon,
   account: UserRoundIcon,
 };
-
-export function SettingsHeader({ label }: { label: SettingsLabel }) {
-  return (
-    <DialogHeader className="settings-header flex-row items-center justify-between">
-      <DialogTitle id="settingsTitle" className="settings-title">
-        {label('设置', 'Settings')}
-      </DialogTitle>
-      <DialogClose
-        render={
-          <Button
-            variant="ghost"
-            size="icon"
-            id="settingsCloseBtn"
-            aria-label={label('关闭', 'Close')}
-            data-i18n-aria="common.close"
-            data-initial-focus="true"
-          />
-        }
-      >
-        <XIcon data-icon="inline-start" aria-hidden />
-      </DialogClose>
-    </DialogHeader>
-  );
-}
 
 export function SettingsMobileBack({
   label,
@@ -115,7 +89,7 @@ export function SettingsNavigation({
     items[next]?.click();
   };
   return (
-    <aside className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
+    <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
       <InputGroup className="settings-search shrink-0">
         <InputGroupInput
           id="settingsSearchInput"
@@ -164,6 +138,6 @@ export function SettingsNavigation({
           </p>
         ) : null}
       </div>
-    </aside>
+    </nav>
   );
 }

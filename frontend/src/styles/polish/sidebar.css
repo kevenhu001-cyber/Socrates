@@ -37,10 +37,12 @@
   }
   #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
+    border-radius: var(--ui-radius-pill);
     color: var(--foreground);
     transition:
-      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-      color var(--ui-duration-hover) var(--ui-ease-apple, ease);
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      transform 120ms ease;
   }
   #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
@@ -48,6 +50,10 @@
   #appShell #sidebarCloseBtn:focus-visible {
     background: var(--ui-fill);
     color: var(--foreground);
+  }
+  #appShell #newChatBtn:active,
+  #appShell #sidebarCloseBtn:active {
+    transform: scale(0.94);
   }
   #appShell #newChatBtn svg,
   #appShell #sidebarCloseBtn svg {
@@ -58,6 +64,19 @@
   #appShell #sidebarNav {
     gap: 1px;
     padding: 2px 8px 8px;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn {
+    border-radius: var(--ui-radius-control);
+    transition:
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      transform 120ms ease;
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:hover {
+    background: var(--ui-fill);
+  }
+  #appShell #sidebarNav .sidebar-nav-btn:active {
+    transform: scale(0.98);
   }
   /* The desktop row look moved into react/sidebar/SidebarNavButton.tsx: the
      control ladder, the 10px --ui-radius-row and the ghost hover now live as
@@ -83,15 +102,17 @@
     border-radius: var(--ui-radius-pill);
     background: var(--ui-card);
     color: var(--foreground);
+    box-shadow: var(--ui-elevation-ring);
     transition:
-      background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-      color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-      border-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
-      box-shadow var(--ui-duration-hover) var(--ui-ease-apple, ease);
+      background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      border-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1);
   }
   #appShell #sidebar .sidebar-search:hover {
     border-color: var(--ui-border-strong);
     color: var(--foreground);
+    box-shadow: 0 0 0 1px var(--ui-hairline-strong);
   }
   /* The pill carries the focus treatment for its bare input (the input has
      no frame of its own, so a ring around it read as a box drawn around the
@@ -177,6 +198,7 @@
     color: var(--foreground);
     font-size: var(--ui-text-ui);
     line-height: var(--ui-text-ui-line);
+    letter-spacing: -0.01em;
     transition: color var(--ui-duration-hover) ease;
   }
   #appShell #sidebar .recent-item:hover,

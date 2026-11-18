@@ -39,7 +39,6 @@ test('static shell chrome localizes to Chinese', async ({ page }) => {
 
   // Overlay containers carry the dialog name a screen reader announces.
   expect(await attr(page, '#cmdKOverlay', 'aria-label')).toBe('命令面板');
-  expect(await attr(page, '#profileOverlay', 'aria-label')).toBe('账户');
   expect(await attr(page, '#usageOverlay', 'aria-label')).toBe('Token 用量');
   expect(await attr(page, '#shareOverlay', 'aria-label')).toBe('分享对话');
 
@@ -114,4 +113,10 @@ test('sidebar toggle copy localizes from React state', async ({ page }) => {
   await expect
     .poll(() => attr(page, '#sidebarCloseBtn', 'title'))
     .toMatch(/Close sidebar|Open sidebar/);
+});
+
+test('the profile page has a localized region name', async ({ page }) => {
+  await setLang(page, 'zh');
+  await page.evaluate(() => window.__socratesLegacy.navigation.openProfile());
+  await expect(page.getByRole('region', { name: '个人资料', exact: true })).toBeVisible();
 });

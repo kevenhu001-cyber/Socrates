@@ -270,24 +270,25 @@ test("a popover opened by a pressed trigger is placed from the trigger's resting
   page,
 }) => {
   await boot(page);
-  /* Desktop landing: composerTools.js places the menu at trigger.bottom + 8.
-     The trigger now stays fixed during a press; the compatibility geometry
-     guard must preserve that exact resting anchor. */
+  /* The menu can sit on either side of the resting trigger and clamps to
+     the viewport when neither side has room for its full height. */
   await page.locator('#composerToolsBtn').click();
   await expect(page.locator('#composerToolsMenu')).toBeVisible();
   await page.waitForTimeout(400); /* press + release fully settled */
   const geo = await page.evaluate(() => {
     const trigger = document.getElementById('composerToolsBtn');
     const menu = document.getElementById('composerToolsMenu');
+    const bounds = trigger.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight;
+    const anchor =
+      menu.dataset.menuSide === 'above' ? bounds.top - menuHeight - 8 : bounds.bottom + 8;
     return {
-      restingBottom: trigger.getBoundingClientRect().bottom,
+      expectedTop: Math.max(8, Math.min(innerHeight - menuHeight - 8, anchor)),
       menuTop: parseFloat(menu.style.top),
       inlineScale: trigger.style.getPropertyValue('scale'),
     };
   });
-  expect(Math.abs(geo.menuTop - (geo.restingBottom + 8)), JSON.stringify(geo)).toBeLessThanOrEqual(
-    0.5,
-  );
+  expect(Math.abs(geo.menuTop - geo.expectedTop), JSON.stringify(geo)).toBeLessThanOrEqual(0.5);
   expect(geo.inlineScale, 'the guard lifted its pin').toBe('');
   await page.keyboard.press('Escape');
 });

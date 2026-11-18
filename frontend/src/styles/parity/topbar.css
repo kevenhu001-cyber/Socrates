@@ -36,6 +36,10 @@ body:is(.workspace-active, .exam-active, .admin-active) #appShell .top-mode-swit
   display: none;
 }
 
+html:is([data-main-view='settingsPage'], [data-main-view='profilePage']) #appShell .top-model-slot {
+  display: none;
+}
+
 @media (max-width: 768px) {
   body[data-conversation-active='true'] #appShell .top-bar-left {
     flex: 1 1 0 !important;

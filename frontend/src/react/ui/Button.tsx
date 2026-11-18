@@ -31,7 +31,15 @@ export type ButtonSize = 'sm' | 'md' | 'touch' | 'desktop';
  * `ghost`   the `.btn .btn-ghost` grammar.
  */
 export type ButtonVariant =
-  'plain' | 'shared' | 'ghost' | 'default' | 'secondary' | 'outline' | 'destructive' | 'link';
+  | 'plain'
+  | 'shared'
+  | 'ghost'
+  | 'default'
+  | 'secondary'
+  | 'outline'
+  | 'destructive'
+  | 'link'
+  | 'pill';
 
 interface ButtonOwnProps extends Omit<
   ComponentPropsWithRef<'button'>,
@@ -88,6 +96,7 @@ const SHADCN_VARIANT = {
   outline: 'outline',
   destructive: 'destructive',
   link: 'link',
+  pill: 'pill',
 } as const;
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

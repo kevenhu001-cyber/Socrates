@@ -109,28 +109,28 @@ test('cancel, backdrop and accept preserve the boolean Promise result across rep
   }
 });
 
-test('a confirmation above settings releases only its own modal and restores parent focus', async ({
+test('a confirmation above settings releases only its own modal and restores page focus', async ({
   page,
 }) => {
   await boot(page);
   const trigger = page.locator('#apiSettingsBtn');
   await trigger.click();
-  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  const settings = page.getByRole('region', { name: 'Settings', exact: true });
   await expect(settings).toBeVisible();
-  const opener = page.locator('#settingsOverlay .settings-nav button').first();
+  const opener = page.locator('#settingsPage .settings-nav button').first();
   await opener.focus();
   await open(page);
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
-  await expect(settings).toHaveCount(0); // background dialog is hidden from AT
+  await expect(settings).toHaveCount(0); // inert background is hidden from AT
   await page.keyboard.press('Escape');
   await result(page, false);
   await expect(dialog).toHaveCount(0);
   await expect(settings).toBeVisible();
   await expect(opener).toBeFocused();
-  await expect(page.locator('#appShell')).toHaveAttribute('inert', '');
+  await expect(page.locator('#appShell')).not.toHaveAttribute('inert', '');
   await page.keyboard.press('Escape');
-  await expect(page.locator('#settingsOverlay')).toBeHidden();
+  await expect(page.locator('#settingsPage')).toBeHidden();
   await expect(page.locator('#appShell')).not.toHaveAttribute('inert', '');
   await expect(trigger).toBeFocused();
 });

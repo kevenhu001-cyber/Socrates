@@ -18,7 +18,7 @@ body {
   color: var(--foreground);
   font-size: var(--ui-text-ui);
   line-height: var(--ui-text-ui-line);
-  letter-spacing: 0;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

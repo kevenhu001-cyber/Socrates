@@ -125,7 +125,7 @@ body.sidebar-resizing {
   white-space: nowrap;
   border-radius: 6px;
   color: hsl(var(--text-100));
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
 }
 .sidebar-logo img {
   flex-shrink: 0;

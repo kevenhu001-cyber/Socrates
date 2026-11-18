@@ -9,7 +9,7 @@ import { showToast } from './toast.js';
 import { openCheatsheet, closeCheatsheet } from './cheatsheet.js';
 import { toggleTheme } from '../displayPrefs.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
-import { openNav } from '../sidebar/navigation.service.ts';
+import { closeAccountPage, openNav } from '../sidebar/navigation.service.ts';
 import { openShareModal, closeShareModal } from './share.ts';
 /* closeUsageModal resolves via window.* — legacy/usage.ts is lazy-loaded and
    the overlay can only be visible after the module mounted. */
@@ -65,15 +65,6 @@ function closeOpenModal(event: KeyboardEvent) {
     ['cmdKOverlay', closeCmdK],
     ['storageModalOverlay', closeStorageModal],
     ['promptTemplatesOverlay', closePromptTemplatesModal],
-    ['profileOverlay', closeProfile],
-    [
-      'settingsOverlay',
-      () => {
-        void import('../react/settings/settings.service.ts')
-          .then((module) => module.closeSettings())
-          .catch((error) => reportSwallow(error, 'keyboardShortcuts.closeSettings'));
-      },
-    ],
     ['cheatsheetOverlay', closeCheatsheet],
     [
       'usageOverlay',
@@ -87,7 +78,10 @@ function closeOpenModal(event: KeyboardEvent) {
     ['shareOverlay', closeShareModal],
   ];
 
-  return modalClosers.some(([id, close]) => closeVisibleOverlay(event, id, close));
+  if (modalClosers.some(([id, close]) => closeVisibleOverlay(event, id, close))) return true;
+  if (event.defaultPrevented || isVisible('confirmOverlay') || !closeAccountPage()) return false;
+  event.preventDefault();
+  return true;
 }
 
 function handleBackslashSidebar(event: KeyboardEvent) {
@@ -132,7 +126,7 @@ function handleProfile(event: KeyboardEvent) {
   if (!isCommandShortcut(event, '.')) return false;
   event.preventDefault();
   if (typeof openProfile === 'function') {
-    if (isVisible('profileOverlay')) closeProfile();
+    if (isVisible('profilePage')) closeProfile();
     else openProfile();
   }
   return true;

@@ -18,8 +18,8 @@
     /* --ui-text-body already carries --app-type-scale (tokens.css), so
        multiplying here would scale the prose twice. */
     --prose-size: var(--ui-text-body);
-    --prose-line: var(--ui-text-body-line);
-    --msg-para-gap: var(--ui-space-lg);
+    --prose-line: calc(30px * var(--app-type-scale));
+    --msg-para-gap: var(--ui-foundation-space-md);
     box-sizing: border-box;
     width: 100%;
     max-width: none;
@@ -144,22 +144,22 @@
     font-weight: var(--ui-font-weight-semibold);
   }
   #appShell #msgList .msg-body h1:not(.sc-rich *) {
-    margin: 28px 0 12px;
+    margin: 32px 0 14px;
     font-size: var(--ui-font-size-xxl);
     line-height: 1.33;
   }
   #appShell #msgList .msg-body h2:not(.sc-rich *) {
-    margin: 24px 0 12px;
+    margin: 28px 0 12px;
     font-size: var(--ui-font-size-xl);
     line-height: 1.4;
   }
   #appShell #msgList .msg-body h3:not(.sc-rich *) {
-    margin: 20px 0 8px;
+    margin: 24px 0 10px;
     font-size: var(--ui-font-size-lg);
     line-height: 1.55;
   }
   #appShell #msgList .msg-body h4:not(.sc-rich *) {
-    margin: 16px 0 4px;
+    margin: 20px 0 6px;
     font-size: var(--prose-size);
     line-height: var(--prose-line);
   }
@@ -168,7 +168,7 @@
     padding-left: 26px;
   }
   #appShell #msgList .msg-body li {
-    margin: 0 0 6px;
+    margin: 0 0 8px;
     padding-left: 2px;
   }
   #appShell #msgList .msg-body li > :where(ul, ol) {

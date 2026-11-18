@@ -122,7 +122,7 @@ test('image gallery supports generation and editing', async ({ page }) => {
 
 test('settings exposes appearance, language and model configuration', async ({ page }) => {
   await page.locator('#apiSettingsBtn').click();
-  await expect(page.locator('.settings-modal--full')).toBeVisible();
+  await expect(page.locator('.settings-page')).toBeVisible();
   await expect(page.getByRole('button', { name: 'General' })).toBeVisible();
   await page.getByRole('button', { name: 'Models & voice' }).click();
   await expect(page.locator('#providerList')).toBeAttached();
@@ -152,6 +152,6 @@ test('new pages and settings fit a phone viewport in both themes', async ({ page
     expect(sizes.scroll).toBeLessThanOrEqual(sizes.viewport + 2);
   }
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await expect(page.locator('.settings-modal--full')).toBeInViewport();
+  await expect(page.locator('.settings-page')).toBeInViewport();
   await expect(page.locator('.settings-nav')).toBeVisible();
 });

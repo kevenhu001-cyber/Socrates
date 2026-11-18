@@ -65,7 +65,7 @@ test('mobile account menu opens settings and restores keyboard focus', async ({ 
   await expect(trigger).toBeFocused();
   await trigger.click();
   await menu.getByRole('menuitem', { name: '个性化', exact: true }).click();
-  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  await expect(page.locator('#settingsPage')).toBeVisible();
   await expect(page.locator('.settings-nav [data-section="personalization"]')).toHaveClass(
     /active/,
   );

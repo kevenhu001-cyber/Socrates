@@ -47,7 +47,6 @@ export function AppConnectionsSettingsPane({ hidden, label }: SettingsPaneProps)
           variant="outline"
           onClick={() => {
             const navigation = getLegacyActions().navigation;
-            navigation.closeSettings();
             navigation.openNav('plugins');
           }}
         >
@@ -79,7 +78,6 @@ export function DataControlsSettingsPane({ hidden, label }: SettingsPaneProps) {
           variant="outline"
           onClick={() => {
             const navigation = getLegacyActions().navigation;
-            navigation.closeSettings();
             navigation.openNav('library');
           }}
         >

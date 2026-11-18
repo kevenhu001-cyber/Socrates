@@ -54,8 +54,8 @@ for (const signedIn of [true, false]) {
       ),
     ]);
     for (const id of [
-      'src/exam.ts',
-      'src/chat/streamingTurn.ts',
+      'src/exam/index.ts',
+      'src/chat/turn/streaming.ts',
       'node_modules/fuse.js/dist/fuse.mjs',
     ]) {
       expect(paths).not.toContain('/' + chunkOf(id));
@@ -70,7 +70,7 @@ for (const signedIn of [true, false]) {
        (prose answers share its card shell), but Settings is only downloaded
        after an explicit settings intent. */
     for (const id of [
-      'src/react/settings/SettingsModal.tsx',
+      'src/react/settings/SettingsPage.tsx',
       'src/react/settings/GeneralSettingsPane.tsx',
     ]) {
       expect(paths).not.toContain('/' + chunkOf(id));
@@ -101,7 +101,7 @@ for (const signedIn of [true, false]) {
 }
 
 /* A signed-in home visit is the first-load surface: it must not warm chunks
-   that belong to an answer, a settings dialog or a visualization. This is
+   that belong to an answer, a settings page or a visualization. This is
    the regression gate for "the home page got heavier": the byte ceiling
    below is the whole JS/CSS graph after every idle slot has run, measured
    from the built files, so a new eager import fails here instead of only
@@ -124,11 +124,11 @@ test('signed-in home visit keeps answer, settings and render vendors deferred', 
     ),
   ]);
   for (const id of [
-    'src/react/settings/SettingsModal.tsx',
+    'src/react/settings/SettingsPage.tsx',
     'src/react/settings/GeneralSettingsPane.tsx',
     'src/react/tool-run/AssistantTurn.tsx',
-    'src/exam.ts',
-    'src/chat/streamingTurn.ts',
+    'src/exam/index.ts',
+    'src/chat/turn/streaming.ts',
     'src/render/visualization.ts',
   ]) {
     expect(paths, `${id} joined the home-page load`).not.toContain('/' + chunkOf(id));

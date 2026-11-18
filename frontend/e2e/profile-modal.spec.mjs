@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
-test('profile modal renders account, subscription, preferences, and data sections', async ({
+test('profile page renders account, subscription, preferences, and data sections', async ({
   page,
 }) => {
   await mockAuthedApp(page);
@@ -11,8 +11,9 @@ test('profile modal renders account, subscription, preferences, and data section
   expect(await page.evaluate(() => '_userMemories' in window)).toBe(false);
   await page.evaluate(() => window.__socratesLegacy.navigation.openProfile());
 
-  const profile = page.locator('.profile-modal');
-  await expect(profile).toBeVisible();
+  const profile = page.locator('#profilePage');
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page.getByRole('region', { name: 'Profile', exact: true })).toBeVisible();
   await expect(profile.locator('#profileName')).toBeVisible();
   await expect(profile.locator('#profileEmail')).not.toBeEmpty();
   await expect(profile.locator('#profileJoined')).not.toBeEmpty();
@@ -30,7 +31,9 @@ test('profile modal renders account, subscription, preferences, and data section
 
   await profile.locator('#profileLangZh').click();
   await expect(profile.locator('#profileLangZh')).toHaveClass(/active/);
+  await expect(page.getByRole('heading', { name: '个人资料', exact: true })).toBeVisible();
   await page.screenshot({ path: 'test-results/shadcn-profile.png' });
-  await profile.locator('.profile-actions button').click();
-  await expect(profile).toBeHidden();
+  await page.locator('#profileBackBtn').click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#profilePage')).toBeHidden();
 });

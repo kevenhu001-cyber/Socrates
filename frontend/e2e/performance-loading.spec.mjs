@@ -235,7 +235,7 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   const initial = await loadedScripts();
 
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  await expect(page.locator('#settingsPage')).toBeVisible();
   const afterSettings = await loadedScripts();
   expect(newlyLoadedScripts(initial, afterSettings)).toBe(true);
 
@@ -246,14 +246,14 @@ test('settings and workspace code load only when opened', async ({ page }) => {
   expect(newlyLoadedScripts(afterSettings, afterWorkspace)).toBe(true);
 });
 
-test('settings modal and first pane preload on trigger intent before the click', async ({
+test('settings page and first pane preload on trigger intent before the click', async ({
   page,
 }) => {
   const report = JSON.parse(
     readFileSync(resolve(import.meta.dirname, '../dist/.vite/entry-graph.json'), 'utf8'),
   );
   const modal = report.modules.find(
-    (module) => module.id === 'src/react/settings/SettingsModal.tsx',
+    (module) => module.id === 'src/react/settings/SettingsPage.tsx',
   );
   const general = report.modules.find(
     (module) => module.id === 'src/react/settings/GeneralSettingsPane.tsx',
@@ -287,7 +287,7 @@ test('settings modal and first pane preload on trigger intent before the click',
     })
     .toBe(true);
   await trigger.click();
-  await expect(page.locator('#settingsOverlay')).toBeVisible();
+  await expect(page.locator('#settingsPage')).toBeVisible();
   await expect(page.locator('.settings-pane:visible h2')).toHaveText('General');
 });
 

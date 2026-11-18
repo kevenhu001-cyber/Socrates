@@ -1,17 +1,4 @@
-/* legacy/profile.ts
- * Profile modal: user info, custom instructions, web search toggle.
- * extracted from legacy entry: two non-contiguous blocks — sidebar user-state
- * publishing plus openProfile / closeProfile (L8992-L9057) and custom-instructions
- * / web-search helpers (L9895-L9979).
- *
- * Touches via window.*:
- *   CURRENT_USER, state, escapeHtml, esc, t, loadCustomInstructions,
- *   saveCustomInstructions, closeProfile (self)
- *
- * React subscribes to profile and sidebar-user module stores; this module
- * remains the owner of profile actions and imperative shell visibility.
- */
-
+/* Owns the account snapshot and profile actions shared by the SPA pages. */
 import { webSearchOn, setWebSearchOn } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentLanguage } from '../i18n/languageState.ts';
@@ -20,6 +7,8 @@ import { publishSidebarUser } from './sidebarUserState.ts';
 import { setUserMemories } from '../app/lifecycle/userMemory.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { apiFetch } from '../util/api/index.ts';
+import { closeAccountPage, openAccountPage } from '../sidebar/navigation.service.ts';
+import { getActiveDestination } from '../sidebar/navigation.store.ts';
 import {
   buildCustomInstructionsString,
   loadCustomInstructions,
@@ -63,7 +52,6 @@ function _publishProfileState() {
   const cu = getCurrentUser() || {};
   const inst = loadCustomInstructions();
   publishProfileState({
-    open: _profileOpen,
     user: profileUserSnapshot(cu),
     webSearchOn: !!webSearchOn,
     currentLang: getCurrentLanguage(),
@@ -72,10 +60,6 @@ function _publishProfileState() {
     instSaveState: null,
   });
 }
-
-/* React owns the profile modal and sidebar user row unconditionally
-   under the always-on runtime. The publish path is the only thing
-   the React side reads; the legacy DOM mutations are dropped. */
 
 /* The sidebar footer React component reads this normalized account view. */
 function sidebarUserSnapshot(user: import('../app/lifecycle/index.ts').UserRecord) {
@@ -91,7 +75,7 @@ function sidebarUserSnapshot(user: import('../app/lifecycle/index.ts').UserRecor
   /* the footer row is ~150px wide once the avatar and
      the three icon buttons take their share, so a full address ellipsised
      to "jiache…" identified nobody. Fall back to the address's local part;
-     the complete address stays visible in the profile modal. */
+     the complete address stays visible in the profile page. */
   const localPart = String(user.email || '').split('@')[0];
   const name = user.displayName || localPart || '?';
   const tier = user.tier || 'diophantus';
@@ -122,24 +106,12 @@ export function publishSidebarChrome() {
   publishSidebarUser(sidebarUserSnapshot(cu));
 }
 
-/* ─── Profile modal shell ─── */
-
-/* React owns the overlay: it renders `#profileOverlay` and its `hidden`
-   class from the published `open` flag. This module only publishes state. */
-let _profileOpen = false;
-
-function openProfile() {
-  if (!getCurrentUser()) return;
-  _profileOpen = true;
-  loadCustomInstructionsIntoUI();
-  syncProfileWebSearchUI();
-  syncProfileLangToggle();
-  _publishProfileState();
+function openProfile(trigger?: HTMLElement | null) {
+  if (getCurrentUser()) openAccountPage('profile', trigger);
 }
 
 function closeProfile() {
-  _profileOpen = false;
-  _publishProfileState();
+  if (getActiveDestination() === 'profile') closeAccountPage();
 }
 
 /* ─── Rename user ─── */
@@ -217,10 +189,6 @@ function toggleProfileWebSearch() {
 }
 
 function syncProfileWebSearchUI() {
-  _publishProfileState();
-}
-
-function syncProfileLangToggle() {
   _publishProfileState();
 }
 

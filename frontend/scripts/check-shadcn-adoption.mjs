@@ -27,7 +27,7 @@ export function inspectSource(source, name) {
   const ast = ts.createSourceFile(name, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const normalizedName = name.replaceAll('\\', '/');
   const replacedFeature =
-    /(?:^|\/)react\/(?:settings|profileModal|adminModal|sidebar|sidebar-chrome)\//.test(
+    /(?:^|\/)react\/(?:settings|profile|adminModal|sidebar|sidebar-chrome)\//.test(
       normalizedName,
     ) ||
     /(?:^|\/)react\/pages\/workspace\/(?:LibraryToolbar|PluginDetailHeader|PluginDirectory|PluginDirectoryCard|ProjectsView|workspaceUi)\.tsx$/.test(
