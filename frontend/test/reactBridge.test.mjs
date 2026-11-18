@@ -11,8 +11,8 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.CustomEvent = dom.window.CustomEvent;
 
-const { publishReactChatRuntime } = await import('../src/ui/reactBridge.ts');
-const { chatRuntimeStore } = await import('../src/ui/chatRuntimeStore.ts');
+const { publishReactChatRuntime } = await import('../src/legacy/reactBridge.ts');
+const { chatRuntimeStore } = await import('../src/legacy/chatRuntimeStore.ts');
 
 test('publishes into the in-process chat runtime store', () => {
   chatRuntimeStore.__resetForTests();

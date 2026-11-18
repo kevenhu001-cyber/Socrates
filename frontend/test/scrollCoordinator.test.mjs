@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { beginScrollOwner, endScrollOwner, writeScrollTop } from '../src/ui/scrollCoordinator.ts';
-import { recordScrollIntent } from '../src/ui/scrollCoordinator.ts';
+import {
+  beginScrollOwner,
+  endScrollOwner,
+  writeScrollTop,
+} from '../src/legacy/scrollCoordinator.ts';
+import { recordScrollIntent } from '../src/legacy/scrollCoordinator.ts';
 import {
   captureScrollAnchor,
   correctScrollAnchor,

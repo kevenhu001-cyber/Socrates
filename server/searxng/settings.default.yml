@@ -4,5 +4,8 @@
 use_default_settings: true
 
 server:
-  secret_key: 'BLtOrPvecgD02LFgCjbl3gFem51M7sx'
+  # Template value, not a credential. SearXNG signs its own session cookies with
+  # this; a deployment overrides it with the SEARXNG_SECRET environment variable
+  # (or its own settings.yml) and never commits the real key.
+  secret_key: 'ultrasecretkey'
   image_proxy: true

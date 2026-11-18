@@ -7,18 +7,18 @@ import {
   setExamIdInURL,
 } from '../../session/store.ts';
 import { loadSession } from '../../session/loader.ts';
-import { loadUserMemories, publishSidebarChrome } from '../../ui/profile.ts';
+import { loadUserMemories, publishSidebarChrome } from '../../legacy/profile.ts';
 import { refreshApiConfig, syncAppModeUI, syncSidebarForMode } from '../../config/providers.ts';
 import { syncWorkspaceRoute } from '../../sidebar/navigation.service.ts';
-import { toggleShareBtn } from '../../ui/share.ts';
-import { renderGreeting } from '../../ui/greeting.js';
-import { activateMainView } from '../../ui/mainViewController.ts';
+import { toggleShareBtn } from '../../legacy/share.ts';
+import { renderGreeting } from '../../legacy/greeting.js';
+import { activateMainView } from '../../legacy/mainViewController.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { clearPerUserClientState, isInAuthGraceWindow } from '../../app/lifecycle/index.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { fetchWithAuthGraceRetry, restoreRoutedSession } from './flow.ts';
 import { migrateLegacyStorage } from './migration.ts';
-import { renderRecents } from '../../ui/recentsView.ts';
+import { renderRecents } from '../../legacy/recentsView.ts';
 import { restoreComposerReloadDrafts } from '../../composer/reloadDrafts.ts';
 
 /** Legacy boot hooks still published on the window by app entry. */

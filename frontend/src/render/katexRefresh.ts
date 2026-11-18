@@ -4,7 +4,7 @@
  */
 import { onKatexReady } from '../vendor/lazy.ts';
 import { dispatchSession, sessionStore } from '../store/index.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import {
   processPendingMermaid,
   processPendingViz,

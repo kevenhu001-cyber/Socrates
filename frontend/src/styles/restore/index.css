@@ -31,7 +31,7 @@
  * Component ownership map (2026-09-23 audit):
  *
  *   Sidebar geometry & skin (desktop)   chatgpt-parity.css - width uses
- *     var(--app-sidebar-width) so ui/sidebarResize.js still owns resizing;
+ *     var(--app-sidebar-width) so legacy/sidebarResize.js still owns resizing;
  *     mobile drawer transform/backdrop   components/sidebar.css (live).
  *   Top-bar                             chatgpt-parity.css (desktop) /
  *     mobile-parity.css + fixes.css (mobile centering).

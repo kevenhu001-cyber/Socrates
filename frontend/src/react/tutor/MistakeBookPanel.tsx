@@ -1,12 +1,12 @@
 /**
  * RN-5 adapter for the shared mistake book (packages/ui/src/study): reads the
  * KB store, writes the filter back, and hands "Redo" to the existing redo
- * command (ui/mistakeBookCommands → the widget runtime re-mounts the item).
+ * command (legacy/mistakeBookCommands → the widget runtime re-mounts the item).
  */
 import { useSyncExternalStore } from 'react';
 import { MistakeBook, defaultMistakeStrings, type MistakeStrings } from '@socrates/ui/study';
 import { dispatchKb, useKbStore } from '../../store/index.ts';
-import { formatRelativeTime } from '../../ui/recentsModel.ts';
+import { formatRelativeTime } from '../../legacy/recentsModel.ts';
 import {
   getPendingNextQuestion,
   subscribePendingNextQuestion,

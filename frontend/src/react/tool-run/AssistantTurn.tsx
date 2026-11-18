@@ -4,7 +4,7 @@
  */
 import { TurnEvidence } from '../citations/TurnEvidence';
 import { TurnActivitySurface } from './TurnActivitySurface';
-import { deriveTurnPresentationState } from '../../ui/turnActivityModel';
+import { deriveTurnPresentationState } from '../../legacy/turnActivityModel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildTurnLayout,

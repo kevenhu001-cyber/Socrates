@@ -177,7 +177,7 @@ test('migrated workspace panels are single React-owned page hosts', async () => 
     'data-live-directory compat attribute must stay removed',
   );
   await assert.rejects(
-    access(new URL('src/ui/workspace-reference-ui.js', root)),
+    access(new URL('src/legacy/workspace-reference-ui.js', root)),
     'workspace-reference-ui.js must stay deleted',
   );
 });

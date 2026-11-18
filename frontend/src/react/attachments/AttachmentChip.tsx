@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FileCard } from './FileCard';
 import { getAttachmentIcon } from './fileIcons';
 import { t as translate } from '../legacy/gateway.ts';
-import type { AttachmentEntry } from '../../ui/attachmentsState.ts';
+import type { AttachmentEntry } from '../../legacy/attachmentsState.ts';
 
 interface AttachmentChipProps {
   entry: AttachmentEntry;

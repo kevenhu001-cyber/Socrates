@@ -26,7 +26,7 @@
    this data orchestrator does not depend on a browser global or React tree. */
 import type { ChatRuntimeEvent } from '../../react/types/domain';
 
-import type { AgentPlanData, AgentStepData } from '../../ui/agentSteps.ts';
+import type { AgentPlanData, AgentStepData } from '../../legacy/agentSteps.ts';
 import { TOOL_RUN_PHASES, isTerminalToolPhase, transitionToolRun } from '../toolRunState.ts';
 import type { ToolRun } from '../toolRunState.ts';
 import type { LiveOutputBufferHandle } from '../liveOutput.ts';

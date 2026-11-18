@@ -23,9 +23,9 @@ test('interaction-only runtimes stay outside the production static closure', () 
   const deferred = [
     'src/session/loader.impl.ts',
     'src/chat/editBranch.impl.ts',
-    'src/ui/readAloud.impl.ts',
+    'src/legacy/readAloud.impl.ts',
     'src/session/organize.ts',
-    'src/ui/cmdK.impl.ts',
+    'src/legacy/cmdK.impl.ts',
     'src/react/tutor/KnowledgePanel.tsx',
     'src/tutor/socraticTurn.impl.ts',
     'src/chat/sessionBootstrap/tutorStart.impl.ts',

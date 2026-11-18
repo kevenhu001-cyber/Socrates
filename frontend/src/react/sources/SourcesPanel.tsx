@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway';
-import { faviconProxyUrl } from '../../ui/faviconProxy';
+import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';
 
 const rootSlot = createRootSlot('sources-panel');

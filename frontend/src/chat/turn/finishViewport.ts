@@ -6,8 +6,8 @@
  * bottom is never a reason to move the reader to a different paragraph.
  */
 import { sessionBridge, uiBridge } from '../../store/index.ts';
-import { updateMessageSnapshot } from '../../ui/messageSnapshot.ts';
-import { writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { updateMessageSnapshot } from '../../legacy/messageSnapshot.ts';
+import { writeScrollTop } from '../../legacy/scrollCoordinator.ts';
 import { readTurnMessage } from './runtimeState.ts';
 import type { TurnRuntimeState } from './runtimeState.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';

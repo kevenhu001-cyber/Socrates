@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { attachmentsState, publishAttachmentsState } = await import('../src/ui/attachmentsState.ts');
+const { attachmentsState, publishAttachmentsState } =
+  await import('../src/legacy/attachmentsState.ts');
 
 test('attachment publisher shares immutable array snapshots with subscribers', () => {
   attachmentsState.__resetForTests();

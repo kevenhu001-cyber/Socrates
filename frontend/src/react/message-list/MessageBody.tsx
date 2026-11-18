@@ -3,7 +3,7 @@ import { useMemo, type MouseEvent, type RefObject } from 'react';
 import { CanvasBlock } from '../canvas';
 import { LazyAssistantTurn } from '../tool-run/LazyAssistantTurn';
 import type { ChatMessage } from '../types/domain';
-import { openArtifactPreview } from '../../ui/artifactPreview.ts';
+import { openArtifactPreview } from '../../legacy/artifactPreview.ts';
 import { LinkPreviews } from './LinkPreviews';
 
 export function MessageBody({

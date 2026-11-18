@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMistakeBook } from '../src/ui/mistakeBook.ts';
+import { createMistakeBook } from '../src/legacy/mistakeBook.ts';
 
 function createHarness() {
   const calls = [];
@@ -166,7 +166,7 @@ test('RN-14 retrying a quiz and missing again refreshes the entry instead of add
 });
 
 test('RN-14 a resolved entry does not absorb a new miss on the same question', async () => {
-  const { findSameMistake } = await import('../src/ui/mistakeBook.ts');
+  const { findSameMistake } = await import('../src/legacy/mistakeBook.ts');
   const entries = [
     { id: 'a', type: 'practice', q: '∫x dx', quizSlotId: null, resolved: true },
     { id: 'b', type: 'practice', q: '∫x dx', quizSlotId: null },

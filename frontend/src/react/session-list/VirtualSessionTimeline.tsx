@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 import { SessionGroupHeading } from './SessionGroupHeading';
 
 export type TimelineEntry = {

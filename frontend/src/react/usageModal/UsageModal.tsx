@@ -4,7 +4,7 @@ import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { cn } from 'cn';
-import { installModalA11y } from '../../ui/modalA11y.ts';
+import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 import { t as _t } from '../legacy/gateway.ts';
 import {
@@ -16,8 +16,8 @@ import {
   usageMonthLabels,
   type UsageCalendarDay,
   type UsagePeriod,
-} from '../../ui/usageModel.ts';
-import { loadUsagePeriod } from '../../ui/usage.ts';
+} from '../../legacy/usageModel.ts';
+import { loadUsagePeriod } from '../../legacy/usage.ts';
 import { useUsageDispatch, useUsageSnapshot } from './usageModal.store';
 
 const OVERLAY_ID = 'usageOverlay';

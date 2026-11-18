@@ -1,4 +1,4 @@
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { t } from '../i18n/index.ts';
 
 /* Tutor/Socratic turns fall back to canned strings from `chat/mocks.ts`

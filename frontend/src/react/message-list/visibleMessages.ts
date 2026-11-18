@@ -1,4 +1,4 @@
-import { getChatRuntimeSnapshot } from '../../ui/chatRuntimeStore.ts';
+import { getChatRuntimeSnapshot } from '../../legacy/chatRuntimeStore.ts';
 import type { ChatMessage } from '../types/domain';
 import { entryId } from './messageIdentity.ts';
 

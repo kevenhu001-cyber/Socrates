@@ -11,9 +11,9 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.marked = marked;
 const { formatMsg, formatMsgProgressive } = await import('../src/render/markdown.ts');
-const { showToast } = await import('../src/ui/toast.js');
-const { showConfirm, closeConfirm } = await import('../src/ui/confirm.js');
-const { confirmState } = await import('../src/ui/confirmState.js');
+const { showToast } = await import('../src/legacy/toast.js');
+const { showConfirm, closeConfirm } = await import('../src/legacy/confirm.js');
+const { confirmState } = await import('../src/legacy/confirmState.js');
 const asDom = (html) => {
   const root = document.createElement('div');
   root.innerHTML = html;

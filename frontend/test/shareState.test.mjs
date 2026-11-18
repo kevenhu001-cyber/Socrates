@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-const { shareState, publishShareState } = await import('../src/ui/shareState.ts');
+const { shareState, publishShareState } = await import('../src/legacy/shareState.ts');
 
 test('share publisher shares visibility and link status with React subscribers', () => {
   shareState.__resetForTests();

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { fill, t } from './text';
-import type { CmdKDoc, CmdKHit } from '../../ui/cmdKState.ts';
+import type { CmdKDoc, CmdKHit } from '../../legacy/cmdKState.ts';
 
 interface CommandPaletteResultsProps {
   query: string;

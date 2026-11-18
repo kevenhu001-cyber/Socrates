@@ -5,7 +5,7 @@ import { apiFetch } from '../util/api/index.ts';
 import { serverCache } from './serverCache.ts';
 import { dispatchSession, sessionStore } from '../store/index.ts';
 import { detailCache } from './detailCache.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 
 /** Fields the row menu can PATCH; anything else is passed through. */
 export interface SessionMetadataPatch {

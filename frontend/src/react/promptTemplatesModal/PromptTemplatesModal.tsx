@@ -23,7 +23,7 @@ import {
   onPromptTemplateEditorSave,
   openPromptTemplateEditor,
   renderPromptTemplatesModal,
-} from '../../ui/promptTemplates.ts';
+} from '../../legacy/promptTemplates.ts';
 import { usePromptTemplatesDispatch, usePromptTemplatesSnapshot } from './promptTemplates.store';
 import type { PromptTemplateData } from './types';
 

@@ -2085,6 +2085,53 @@ paths:
                   meta: { type: object, additionalProperties: true }
         '415': { $ref: '#/components/responses/BadRequest' }
 
+  /api/favicons:
+    get:
+      tags: [files]
+      operationId: getFavicon
+      summary: Fetch a site icon for a URL
+      description: |
+        Resolves and returns the icon of the site behind `url` so the SPA can
+        show a source favicon without a third-party request from the browser
+        (`check-external-hosts.mjs` keeps every runtime byte on our origin).
+        Only `http`/`https` URLs without embedded credentials, a non-standard
+        port or a literal IP are accepted; at most two redirects are followed
+        and responses above 256 KiB are treated as "no usable icon". Rate
+        limited to 120 requests per minute per user.
+      parameters:
+        - in: query
+          name: url
+          required: true
+          description: Absolute page URL whose icon should be resolved (max 2048 characters).
+          schema: { type: string, maxLength: 2048 }
+      responses:
+        '200':
+          description: Image bytes; `Content-Type` matches the discovered icon format.
+          headers:
+            Cache-Control:
+              schema: { type: string }
+              description: Always `private, max-age=86400`.
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/svg+xml:
+              schema: { type: string, format: binary }
+            image/x-icon:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404':
+          description: The page has no usable icon (FAVICON_NOT_FOUND).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+        '502':
+          description: The icon could not be loaded (FAVICON_UNAVAILABLE).
+          content:
+            application/json:
+              schema: { type: object, additionalProperties: true }
+
   # ========================================================================
   # P4.1 — Artifacts
   # ========================================================================
@@ -3321,26 +3368,6 @@ paths:
         /api/intelligent-ui; no additional provider key, arbitrary Query/Mutation
         provider or executable HTML is supplied. Shared packages carry only data; the React OpenUI renderer
         belongs to the SPA until Universal App artifact migration signs off.
-  /api/favicons:
-    get:
-      tags: [chat]
-      operationId: getFavicon
-      summary: Read the favicon for a public site
-      parameters:
-        - name: url
-          in: query
-          required: true
-          schema: { type: string, format: uri, maxLength: 2048 }
-      responses:
-        '200':
-          description: Site icon bytes
-          content:
-            'image/*':
-              schema: { type: string, format: binary }
-        '400': { description: Unsupported site URL }
-        '404': { description: No usable icon found }
-        '502': { description: Icon unavailable }
-
   /api/intelligent-ui/images:
     get:
       tags: [chat]

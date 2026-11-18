@@ -2,8 +2,8 @@
  * Property tests for the declarative tool row's view model.
  *
  * Covers `toolRunStateOf`, `runStartedAt` and `durationOf` from
- * src/ui/toolPresentationState.ts plus `formatSeconds` from
- * src/ui/toolPresentationModel.ts — the pure derivation that maps a tool call
+ * src/legacy/toolPresentationState.ts plus `formatSeconds` from
+ * src/legacy/toolPresentationModel.ts — the pure derivation that maps a tool call
  * (chat/toolRuntime/index.ts writes `_run` while streaming) into the state and the
  * duration the React row reads.
  *
@@ -18,8 +18,8 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import { toolRunStateOf, runStartedAt, durationOf } from '../src/ui/toolPresentationState.ts';
-import { formatSeconds } from '../src/ui/toolPresentationModel.ts';
+import { toolRunStateOf, runStartedAt, durationOf } from '../src/legacy/toolPresentationState.ts';
+import { formatSeconds } from '../src/legacy/toolPresentationModel.ts';
 import { TOOL_RUN_PHASES, isTerminalToolPhase } from '../src/chat/toolRunState.ts';
 
 const RUNS = 200;

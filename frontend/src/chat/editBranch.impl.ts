@@ -18,12 +18,12 @@ import {
   messageApiPath,
   MessageEntry,
   rollbackMessagesAfter,
-} from '../ui/messageActions.ts';
+} from '../legacy/messageActions.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { buildUserContentParts } from '../chat/history.ts';
 import { apiFetch } from '../util/api/index.ts';
-import { showToast } from '../ui/toast.js';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { showToast } from '../legacy/toast.js';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
 import {
   prepareUserEditBranch,

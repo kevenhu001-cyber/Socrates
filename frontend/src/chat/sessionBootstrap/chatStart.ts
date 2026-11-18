@@ -8,12 +8,12 @@ import { addStreamingMessage, prefetchStreamingTurn } from '../turn/loadStreamin
 import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
-import { activateMainView } from '../../ui/mainViewController.ts';
+import { activateMainView } from '../../legacy/mainViewController.ts';
 import { clearComposer } from '../../composer/controller.ts';
-import { clearLegacyMsgListChildren } from '../../ui/messageListDom.ts';
+import { clearLegacyMsgListChildren } from '../../legacy/messageListDom.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
-import { publishReactChatRuntime } from '../../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../../legacy/reactBridge.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import type { SessionStartContext } from './input.ts';
 

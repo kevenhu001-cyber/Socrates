@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 const { promptTemplatesState, publishPromptTemplatesState } =
-  await import('../src/ui/promptTemplatesState.ts');
+  await import('../src/legacy/promptTemplatesState.ts');
 
 test('prompt template publisher updates the shared snapshot and notifies subscribers', () => {
   promptTemplatesState.__resetForTests();

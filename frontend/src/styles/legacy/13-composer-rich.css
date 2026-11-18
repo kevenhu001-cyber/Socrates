@@ -316,7 +316,7 @@
 }
 
 /* Keep the arrow visible in the idle and text-entry states. The recording
-   surface is a separate full-width child added by ui/voiceInput.js. */
+   surface is a separate full-width child added by legacy/voiceInput.js. */
 
 /* ─── Inline-style replacement utilities ── */
 /* These classes replace `style="..."` attributes to eliminate

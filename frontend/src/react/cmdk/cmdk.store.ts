@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { useBridge, useBridgeSelector } from '../../store/index.ts';
-import { cmdKState } from '../../ui/cmdKState.ts';
+import { cmdKState } from '../../legacy/cmdKState.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
-import type { CmdKHit, CmdKSnapshot } from '../../ui/cmdKState.ts';
+import type { CmdKHit, CmdKSnapshot } from '../../legacy/cmdKState.ts';
 
 export function getCmdKSnapshot(): CmdKSnapshot {
   return cmdKState.getSnapshot();

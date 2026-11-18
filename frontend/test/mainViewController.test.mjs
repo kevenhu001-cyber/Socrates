@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-import { activateMainView, getVisibleCoreView } from '../src/ui/mainViewController.ts';
+import { activateMainView, getVisibleCoreView } from '../src/legacy/mainViewController.ts';
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body class="workspace-active plugins-active admin-active exam-active">

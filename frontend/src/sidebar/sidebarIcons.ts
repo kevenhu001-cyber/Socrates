@@ -1,7 +1,7 @@
 /** Sidebar glyphs share the interface collection with menus and chat controls.
  * Keep the pre-paint SVGs in index.html synchronized with these exports.
  */
-import { interfaceIcon } from '../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../legacy/icons/interfaceIcons';
 
 export const NEW_CHAT_ICON = interfaceIcon('newChat');
 export const LIBRARY_ICON = interfaceIcon('library');

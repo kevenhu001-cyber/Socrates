@@ -21,7 +21,11 @@ import { useEffect, useLayoutEffect } from 'react';
 
 import { isSticky, scrollHost } from './messageScroll';
 import { uiBridge } from '../../store/index.ts';
-import { scrollIntentRevision, scrollOwnerOf, writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import {
+  scrollIntentRevision,
+  scrollOwnerOf,
+  writeScrollTop,
+} from '../../legacy/scrollCoordinator.ts';
 
 interface Keeper {
   host: HTMLElement;

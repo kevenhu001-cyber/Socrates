@@ -15,7 +15,7 @@
 import { apiFetch } from '../util/api/index.ts';
 import { sessionBridge } from '../store/index.ts';
 import { dispatchSession } from '../store/index.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { restoreSessionMessage, type PersistedMessage } from './historyRestore.ts';
 import { markMessagesSynced } from './persistence.ts';

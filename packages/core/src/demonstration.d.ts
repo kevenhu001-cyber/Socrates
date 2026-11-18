@@ -126,7 +126,7 @@ export interface DemonstrationRuntime {
   evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number;
   stateAt(time: number): Record<string, number>;
 }
-export function parseDemonstrationExpression(source: DemonstrationValue): DemonstrationExpression;
+export function parseDemonstrationExpression(input: DemonstrationValue): DemonstrationExpression;
 export function evaluateDemonstrationExpression(
   ast: DemonstrationExpression,
   scope: Record<string, number>,
@@ -137,15 +137,16 @@ export interface DemonstrationIssue {
   message: string;
 }
 export function validateDemonstration(
-  program: unknown,
+  input: unknown,
 ): { ok: true } | { ok: false; error: string; path?: string; issues?: DemonstrationIssue[] };
-export function normalizeDemonstrationProgram(program: unknown): unknown;
+export function normalizeDemonstrationProgram(input: unknown): unknown;
 export function normalizeDemonstrationExpression<T>(source: T): T;
 export function normalizeDemonstrationIdentifier<T>(value: T): T;
 export function isDemonstrationBudgetError(error: unknown): boolean;
 export const DEMONSTRATION_LOOP_LIMIT: number;
+/** Accepts any program shape: it normalizes, then validates, and throws on failure. */
 export function createDemonstrationRuntime(
-  program: DemonstrationProgram,
+  input: unknown,
   values?: Record<string, number>,
 ): DemonstrationRuntime;
 

@@ -106,15 +106,15 @@ function routesInFile(file) {
   const re = new RegExp(`\\b${v}\\.(${METHOD_RE})\\(\\s*'([^']+)'`, 'g');
   for (const m of src.matchAll(re)) found.push({ method: m[1].toUpperCase(), sub: m[2] });
 
-  // Scan nested helpers and sibling registrars called with this router.
+  // Scan imported helpers for route registrations. Both subfolder helpers
+  // (routes/chat/index.ts → ./stream.js, ./prepare/*.js) and sibling helpers
+  // (routes/chat.ts → ./chat/stream.js in the pre-directory layout) count: a
+  // router may delegate its paths to a `registerX(router)` helper. A helper
+  // that creates its own Router() is a router file, not a delegate, and is
+  // skipped — the `Router(` test also catches `createXRouter()` factories.
   const dir = dirname(file);
-  for (const im of src.matchAll(/import\s+(?:\{([^}]*)\}|\w+)\s+from\s+'(\.\/[^']+)\.js'/g)) {
-    const importPath = im[2];
-    const registrars = im[1]?.match(/\bregister\w+\b/g) ?? [];
-    const registersRoutes = registrars.some((name) =>
-      new RegExp(`\\b${name}\\(\\s*${v}\\s*\\)`).test(src),
-    );
-    if (!importPath.slice(2).includes('/') && !registersRoutes) continue;
+  for (const im of src.matchAll(/import\s+(?:\{[^}]*\}|\w+)\s+from\s+'(\.\/[^']+)\.js'/g)) {
+    const importPath = im[1];
     for (const ext of ['.ts', '.js']) {
       const helper = join(dir, importPath + ext);
       if (existsSync(helper)) {

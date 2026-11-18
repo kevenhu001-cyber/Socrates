@@ -11,7 +11,7 @@
 // in-memory implementations so the ~8 "Tracking Prevention blocked
 // access to storage" warnings per tutor-mode turn go away.
 
-import { showToast } from './ui/toast.js';
+import { showToast } from './legacy/toast.js';
 import { reportSwallow as reportEmptyCatch } from './util/reportSwallow.ts';
 
 let _batchStoragePending: Record<string, string> | null = null;

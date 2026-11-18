@@ -9,7 +9,7 @@ import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button as BaseButton } from '../ui/Button';
 import { PhysicsLab } from './physics/PhysicsLab';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
 import {

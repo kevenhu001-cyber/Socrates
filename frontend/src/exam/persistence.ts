@@ -8,13 +8,13 @@ import {
 } from '../store/index.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { pushExamIdToURL } from '../session/store.ts';
-import { toggleShareBtn } from '../ui/share.ts';
-import { prefersReducedMotion } from '../ui/motion/index.ts';
+import { toggleShareBtn } from '../legacy/share.ts';
+import { prefersReducedMotion } from '../legacy/motion/index.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { getAppMode } from '../config/providers.ts';
 import { flushRecentsReconcile } from '../session/recents.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 
 let _examAnswerSaveTimer: number | null | undefined = null;
 let _examSaveInFlight: Promise<void> | null = null;

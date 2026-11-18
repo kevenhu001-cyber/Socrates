@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-import { setConversationChrome } from '../src/ui/topBarState.ts';
+import { setConversationChrome } from '../src/legacy/topBarState.ts';
 
 function createDocument() {
   return new JSDOM(`<!doctype html><html><body>

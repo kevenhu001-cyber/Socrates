@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
-import { createLinkFavicon, decorateExternalLinks } from '../src/ui/linkFavicons.ts';
+import { createLinkFavicon, decorateExternalLinks } from '../src/legacy/linkFavicons.ts';
 
 test('external answer links receive the linked domain favicon first', () => {
   const dom = new JSDOM(

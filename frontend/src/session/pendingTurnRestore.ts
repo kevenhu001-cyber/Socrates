@@ -3,7 +3,7 @@
 import { sessionBridge } from '../store/index.ts';
 import { quietTurn } from '../chat/turn/ui.ts';
 import { buildUserContentParts } from '../chat/history.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import {
   bumpPendingSeq,
   clearPendingTurn,

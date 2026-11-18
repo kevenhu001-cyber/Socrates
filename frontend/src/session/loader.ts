@@ -13,7 +13,7 @@
 import { dispatchPatches, dispatchSession } from '../store/index.ts';
 import { turnState } from '../chat/turn/state.ts';
 import { clearComposer } from '../composer/controller.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type { LoadedSession } from './loader.impl.ts';
 

@@ -1,4 +1,4 @@
-import { scrollIntentRevision, writeScrollTop } from '../../ui/scrollCoordinator.ts';
+import { scrollIntentRevision, writeScrollTop } from '../../legacy/scrollCoordinator.ts';
 import { sessionStore } from '../../store/index.ts';
 
 const MSG_LIST_ID = 'msgList';

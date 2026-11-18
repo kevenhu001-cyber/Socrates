@@ -1,7 +1,7 @@
 // frontend/src/react/legacy/types.ts
 // Typed interface for all legacy system actions invoked by React components.
 //
-// Every function here is backed by a legacy JS module (app entrypoint, ui/*.js, etc.)
+// Every function here is backed by a legacy JS module (app entrypoint, legacy/*.js, etc.)
 // and published via window.__socratesLegacy. React code never reads window.X
 // directly — it always goes through getLegacyActions() from gateway.ts.
 //
@@ -48,7 +48,7 @@ export interface LegacyNavigation {
 
 /* M4 step 4.5c — confirm-dialog actions, called from React's
    ConfirmDialog.tsx (which owns the overlay skeleton). Backed by
-   ui/confirm.js exports. */
+   legacy/confirm.js exports. */
 export interface LegacyConfirm {
   closeConfirm(resolveWith?: boolean): void;
   showConfirm(title: string, message: string, danger?: boolean): Promise<boolean>;

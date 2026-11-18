@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { monogramOf } from '@socrates/ui/turn';
-import { faviconProxyUrl } from '../../ui/faviconProxy';
+import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { isInlineSearchTool, toolCategory } from '../../render/toolCategory';
-import { toolIcon } from '../../ui/icons/toolIcons.ts';
-import { connectorActivityOf, connectorToolIdOf } from '../../ui/toolActivity.ts';
-import { hostOf, urlOf } from '../../ui/toolPresentationModel';
+import { toolIcon } from '../../legacy/icons/toolIcons.ts';
+import { connectorActivityOf, connectorToolIdOf } from '../../legacy/toolActivity.ts';
+import { hostOf, urlOf } from '../../legacy/toolPresentationModel';
 import { normalizeSources, type ToolCallRecord } from './toolRunModel';
 
 // Reuse local vendor marks, loaded only for connector activity.

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   deriveTurnPresentationState,
   normalizePublicTurnActivity,
-} from '../src/ui/turnActivityModel.ts';
+} from '../src/legacy/turnActivityModel.ts';
 
 const live = { type: 'streaming', role: 'assistant', reasoningContent: 'private scratch work' };
 test('private reasoning and legacy task previews never become public copy', () => {

@@ -10,8 +10,8 @@ import {
   sourceCardsOf,
 } from '@socrates/ui/turn';
 import { UiButton } from '@socrates/ui/primitives';
-import { faviconProxyUrl } from '../../ui/faviconProxy';
-import { basename, tf, translate } from '../../ui/toolPresentationModel.ts';
+import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
 import { toolOutputsOf } from './toolOutputs';
 import { openSourcesPanel } from '../sources/mount';

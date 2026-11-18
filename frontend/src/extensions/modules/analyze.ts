@@ -1,4 +1,4 @@
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 // frontend/src/extensions/modules/analyze.ts
 
 import type { ExtensionDefinition } from '../types';

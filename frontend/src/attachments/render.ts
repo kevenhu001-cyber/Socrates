@@ -9,10 +9,10 @@
 // Application callers use direct module imports; React attachment actions
 // use the typed legacy composer gateway.
 import { attachments, addFiles, retryAttachment } from '../attachments/index.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { createAttachmentMediaInput } from '../react/attachments/mediaPickerInputHost.tsx';
-import { publishAttachmentsState } from '../ui/attachmentsState.ts';
+import { publishAttachmentsState } from '../legacy/attachmentsState.ts';
 
 type WiredInput = {
   btnId?: string;

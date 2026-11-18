@@ -8,7 +8,8 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-const { fireFeedback, messageApiPath, sendFeedback } = await import('../src/ui/messageActions.ts');
+const { fireFeedback, messageApiPath, sendFeedback } =
+  await import('../src/legacy/messageActions.ts');
 const { dispatchSession, sessionStore } = await import('../src/store/index.ts');
 
 test('messageApiPath leaves client ids unscoped without a uuid session', () => {

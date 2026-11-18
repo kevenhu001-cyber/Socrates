@@ -113,7 +113,7 @@ function writeQueue(ops: MessageOp[]): void {
 /**
  * Build the API path for a message, scoped to an explicit session.
  *
- * `messageApiPath` (ui/messageActions.ts) reads currentSessionId from the
+ * `messageApiPath` (legacy/messageActions.ts) reads currentSessionId from the
  * store, which is wrong here: a drain can run while the user is looking
  * at a *different* session, and we need to address the session the op was
  * queued against. The sessionId is also what lets the server's

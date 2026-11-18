@@ -8,7 +8,7 @@ import {
   FieldSet,
   FieldTitle,
 } from '../ui/shadcn/field';
-import type { ShareVisibility } from '../../ui/shareState.ts';
+import type { ShareVisibility } from '../../legacy/shareState.ts';
 import { shareText } from './shareText';
 
 export function ShareVisibilityOptions({

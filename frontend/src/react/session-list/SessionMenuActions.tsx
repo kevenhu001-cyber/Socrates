@@ -1,4 +1,4 @@
-import { Icon } from '../../ui/Icon';
+import { Icon } from '../../legacy/Icon';
 import type { RefObject } from 'react';
 import type { FoundationMenuItem } from '../menu/FoundationMenu';
 import { getLegacyActionsOrNull, t } from '../legacy/gateway.ts';

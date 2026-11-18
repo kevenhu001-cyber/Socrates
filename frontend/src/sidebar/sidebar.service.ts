@@ -5,7 +5,7 @@ import {
   useSidebarStore,
 } from './sidebar.store';
 import { DESKTOP_VIEWPORT_MIN_PX, isMobileViewport } from './breakpoints.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 const RECENTS_FILTER_KEY = 'socrates-recents-filter';

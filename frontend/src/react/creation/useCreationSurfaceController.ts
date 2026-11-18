@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { focusComposer, setComposerMarkdown } from '../../composer/controller.ts';
 import { dispatchExtension } from '../../extensions/index.ts';
-import { closeDetailSurface, openDetailSurface } from '../../ui/detailSurface.ts';
+import { closeDetailSurface, openDetailSurface } from '../../legacy/detailSurface.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { getLegacyActions } from '../legacy/gateway.ts';
 import {

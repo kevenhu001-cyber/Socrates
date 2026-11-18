@@ -16,25 +16,25 @@ import {
 } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
 import { readBootSessions } from './bootSessions.ts';
-import { getKnownTagsFromSessions } from '../ui/recentsModel.ts';
+import { getKnownTagsFromSessions } from '../legacy/recentsModel.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
 import { clearLocalMemory } from '../storage/localMemory.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
-import { resetShareToken, toggleShareBtn } from '../ui/share.ts';
-import { showConfirm } from '../ui/confirm.js';
-import { showToast } from '../ui/toast.js';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
+import { resetShareToken, toggleShareBtn } from '../legacy/share.ts';
+import { showConfirm } from '../legacy/confirm.js';
+import { showToast } from '../legacy/toast.js';
 import { clearComposer } from '../composer/controller.ts';
 import { clearComposerPlugins } from '../composer/pluginSelection.ts';
-import { clearLegacyMsgListChildren } from '../ui/messageListDom.ts';
+import { clearLegacyMsgListChildren } from '../legacy/messageListDom.ts';
 import { turnState } from '../chat/turn/state.ts';
 import { detachActiveTurn } from '../chat/turn/cancelActiveTurn.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
 import { t } from '../i18n/index.ts';
-import { renderRecents } from '../ui/recentsView.ts';
-import { renderArchivedList } from '../ui/storage.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
+import { renderArchivedList } from '../legacy/storage.ts';
 
 /* RN-14: a deleted session's mistakes leave the cross-session book. */
 function forgetSessionMistakes(id: string): void {

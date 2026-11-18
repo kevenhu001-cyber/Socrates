@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
-import { initTopicFocusAssist } from '../src/ui/topicFocusAssist.ts';
+import { initTopicFocusAssist } from '../src/legacy/topicFocusAssist.ts';
 
 function createBrowser({ keyboardOpen = false, coarsePointer = false, initialScrollTop = 0 } = {}) {
   const dom = new JSDOM(

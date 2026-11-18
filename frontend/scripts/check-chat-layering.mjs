@@ -18,7 +18,7 @@
  *
  * A concrete instance this check is guarding: `chat/streamingTurn.ts` used to
  * import `isMsgListMounted()` from `react/message-list/MessageList.tsx` just
- * to read one boolean. The flag now lives in the neutral `src/ui/` layer.
+ * to read one boolean. The flag now lives in the neutral `src/legacy/` layer.
  *
  * Shared types are fine — `react/types/domain` is the contract both sides
  * speak. What is forbidden is reaching into the component tree.
@@ -160,7 +160,7 @@ function main() {
     );
     for (const o of offenders) console.error(`  - ${o}`);
     console.error('The legacy chat layer must not depend on the React component tree.');
-    console.error('Move the shared piece to src/ui/ or src/react/types/, not into the import.');
+    console.error('Move the shared piece to src/legacy/ or src/react/types/, not into the import.');
     process.exit(1);
   }
   console.log(`chat-layering check passed (${offenders.length}/${allowed} allowed).`);

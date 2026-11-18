@@ -3,10 +3,10 @@
  * drop them from the session state.
  */
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
-import { publishReactChatRuntime } from '../../../ui/reactBridge.ts';
-import { writeScrollTop } from '../../../ui/scrollCoordinator.ts';
-import { suppressScrollPositionIntent } from '../../../ui/scrollPill.ts';
-import type { MessageEntry } from '../../../ui/messageActions.ts';
+import { publishReactChatRuntime } from '../../../legacy/reactBridge.ts';
+import { writeScrollTop } from '../../../legacy/scrollCoordinator.ts';
+import { suppressScrollPositionIntent } from '../../../legacy/scrollPill.ts';
+import type { MessageEntry } from '../../../legacy/messageActions.ts';
 import type { TurnAnchorList } from './ownership.ts';
 
 function hideStubAndPreserveScroll(list: TurnAnchorList, row: HTMLElement): void {

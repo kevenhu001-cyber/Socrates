@@ -7,8 +7,8 @@ import {
   MAX_OUTPUT_CHARS,
   type AgentPlanData,
   type AgentStepData,
-} from '../../ui/agentSteps.ts';
-import { agentStepIcon } from '../../ui/icons/toolIcons.ts';
+} from '../../legacy/agentSteps.ts';
+import { agentStepIcon } from '../../legacy/icons/toolIcons.ts';
 import type { ToolRunView } from './toolRunModel';
 import { i18n } from '../legacy/gateway.ts';
 

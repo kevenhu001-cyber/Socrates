@@ -4,7 +4,7 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
 import { t as _t } from '../legacy/gateway.ts';
-import { restingRect } from '../../ui/pressFeedback.ts';
+import { restingRect } from '../../legacy/pressFeedback.ts';
 import { useMorePopoverStore } from '../../sidebar/morePopover.store.ts';
 import { useMorePopoverDispatch, useMorePopoverSnapshot } from './morePopover.store';
 import type { MorePopoverAction } from './types';

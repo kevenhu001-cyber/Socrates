@@ -238,7 +238,7 @@
 /* ── Primary control: one disc changing meaning ─────────────────────────
    The disc fills when a draft exists and becomes Stop while a turn runs.
    Both used to be hard cuts; the fill now eases and the glyph settles a
-   touch smaller for the 220ms send beat (ui/sendGlyph.ts), so the swap
+   touch smaller for the 220ms send beat (legacy/sendGlyph.ts), so the swap
    reads as the same control changing state. */
 #appShell .composer-shell [data-composer-control='send'] {
   transition:

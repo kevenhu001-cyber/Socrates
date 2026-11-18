@@ -5,7 +5,7 @@ const published = [];
 globalThis.window = { dispatchEvent() {}, CustomEvent: class CustomEvent {} };
 
 const { dispatchSession, resetDomains, sessionStore } = await import('../src/store/index.ts');
-const { chatRuntimeStore } = await import('../src/ui/chatRuntimeStore.ts');
+const { chatRuntimeStore } = await import('../src/legacy/chatRuntimeStore.ts');
 chatRuntimeStore.subscribe(() => published.push(chatRuntimeStore.getSnapshot().lastEvent));
 const { persistCanvasEdit } = await import('../src/react/canvas/canvasState.ts');
 

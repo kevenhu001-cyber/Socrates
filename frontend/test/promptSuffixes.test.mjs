@@ -8,7 +8,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
 
-/* Seed before the module graph loads: ui/effortPicker.ts runs
+/* Seed before the module graph loads: legacy/effortPicker.ts runs
    syncEffortUI() at import time when document.readyState is not
    "loading" (always true under JSDOM), which caches the effort. */
 globalThis.localStorage.setItem('socrates-reasoning-effort', 'high');

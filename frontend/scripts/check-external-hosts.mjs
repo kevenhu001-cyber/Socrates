@@ -8,7 +8,7 @@
  * our own origin. That is what makes the app load at all on a network that
  * cannot reach the open internet — and it was undone twice by accident:
  *
- *   1. ui/linkFavicons.ts fell back to www.google.com/s2/favicons when a
+ *   1. legacy/linkFavicons.ts fell back to www.google.com/s2/favicons when a
  *      link's own /favicon.ico failed. That host is unreachable from mainland
  *      China, so the fallback hung until the browser's own timeout and kept
  *      the page's loading indicator spinning.

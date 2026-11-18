@@ -3,8 +3,8 @@ import {
   installComposerPluginSelectionBridge,
 } from '../composer/pluginSelection.ts';
 import { getComposerMarkdown, setComposerMarkdown } from '../composer/controller.ts';
-import { openPromptTemplatesModal } from '../ui/promptTemplates.ts';
-import { activateMainView } from '../ui/mainViewController.ts';
+import { openPromptTemplatesModal } from '../legacy/promptTemplates.ts';
+import { activateMainView } from '../legacy/mainViewController.ts';
 import { loadSession } from '../session/loader.ts';
 import { workspaceForPath, replaceRoute } from '../app/router.ts';
 import { openNav } from './navigation.service.ts';

@@ -1,6 +1,6 @@
 /* Browser entrypoints for server-owned, durable Deep Research. */
 import { submitResearch } from './researchJobsClient.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { t } from '../i18n/index.ts';
 
 async function startDeepResearch(query: string) {

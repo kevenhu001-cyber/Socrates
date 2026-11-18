@@ -1,4 +1,4 @@
-import { interfaceIcon } from '../../ui/icons/interfaceIcons';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons';
 import type { ExtensionDefinition } from '../types';
 
 export const CREATE_SITE_ICON = interfaceIcon('site', 18);

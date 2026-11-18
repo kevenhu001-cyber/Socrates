@@ -15,7 +15,7 @@ import {
   type ThinkingStep,
 } from '@socrates/ui/turn';
 import type { TurnActivityEntry } from '@socrates/contracts';
-import type { TurnActivityStatus } from '../../ui/turnActivityModel';
+import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
 import { i18n } from '../legacy/gateway';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
@@ -32,8 +32,8 @@ import {
   type ToolCallRecord,
   type ToolRunView,
 } from './toolRunModel';
-import { tf, toolRunLabel } from '../../ui/toolPresentationModel.ts';
-import { interfaceIcon } from '../../ui/icons/interfaceIcons.ts';
+import { tf, toolRunLabel } from '../../legacy/toolPresentationModel.ts';
+import { interfaceIcon } from '../../legacy/icons/interfaceIcons.ts';
 
 export interface TurnActivitySurfaceProps {
   /** Public model-provided summary only. Never pass parsed reasoning text here. */

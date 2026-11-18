@@ -3,7 +3,7 @@
  * Zero-behavior-change lift; self-contained (window/document only).
  */
 import { CLIENT_ERROR_PATH } from '../util/clientErrorReporter.ts';
-import { renderActionButton } from '../ui/actionButton.ts';
+import { renderActionButton } from '../legacy/actionButton.ts';
 import { reportSwallow as reportEmptyCatch } from '../util/reportSwallow.ts';
 
 export let __socratesGlobalErrorHandlerInstalled = false;

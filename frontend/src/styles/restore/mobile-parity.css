@@ -49,7 +49,7 @@
   }
 
   /* In-flow surfaces need no paint compensation: the visual-viewport pan
-     is already subtracted from --keyboard-inset by ui/keyboard/index.ts,
+     is already subtracted from --keyboard-inset by legacy/keyboard/index.ts,
      so the composer position tracks the visible keyboard edge 1:1 with
      plain layout (no transform — transforms on scrolled/fixed surfaces
      mis-position on recent iOS and fight the browser's own pan). */

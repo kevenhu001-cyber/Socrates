@@ -1,4 +1,4 @@
-import type { SessionItem } from '../../ui/sessionListState.ts';
+import type { SessionItem } from '../../legacy/sessionListState.ts';
 
 export interface SessionProjectGroup {
   id: string;

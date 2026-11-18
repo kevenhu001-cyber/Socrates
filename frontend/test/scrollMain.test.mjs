@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { scrollMainToBottom, scheduleScrollMainToBottom } from '../src/ui/scroll.ts';
+import { scrollMainToBottom, scheduleScrollMainToBottom } from '../src/legacy/scroll.ts';
 import { dispatchUi } from '../src/store/index.ts';
 
 function makeList() {

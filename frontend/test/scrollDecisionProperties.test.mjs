@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import fc from 'fast-check';
 
-import { SCROLL_SLACK, isPinnedToBottom, shouldAutoScroll } from '../src/ui/scrollDecision.ts';
+import { SCROLL_SLACK, isPinnedToBottom, shouldAutoScroll } from '../src/legacy/scrollDecision.ts';
 
 const RUNS = 200;
 

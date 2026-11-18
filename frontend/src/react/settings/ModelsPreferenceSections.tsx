@@ -4,7 +4,7 @@ import { Button } from '../ui/shadcn/button';
 import { Field, FieldLabel } from '../ui/shadcn/field';
 import { useState } from 'react';
 import { getCurrentUser } from '../legacy/gateway.ts';
-import { confirmClearSettings } from '../../ui/dangerConfirms.js';
+import { confirmClearSettings } from '../../legacy/dangerConfirms.js';
 import type { SettingsLabel, SaveSettingsPreference } from './settings.types';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 

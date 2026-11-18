@@ -12,8 +12,8 @@ import {
   type UiAction,
 } from '../store/index.ts';
 import type { ChatMessageShape } from '../state/session.ts';
-import { hideNewReplyPill } from '../ui/scrollPill.ts';
-import { publishReactChatRuntime } from '../ui/reactBridge.ts';
+import { hideNewReplyPill } from '../legacy/scrollPill.ts';
+import { publishReactChatRuntime } from '../legacy/reactBridge.ts';
 import { appendLocalMemory } from '../storage/localMemory.ts';
 import { formatMsg } from '../render/markdown.ts';
 import { buildAssistantHtml } from '../render/assistantHtml.ts';

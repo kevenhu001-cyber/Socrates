@@ -2,7 +2,7 @@ import { setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import type { ChainCandidate } from '@socrates/ui/think-model';
 import { followQuestionChain } from './questionChain.ts';
-import { requestMistakeRedo } from '../ui/mistakeBookCommands.ts';
+import { requestMistakeRedo } from '../legacy/mistakeBookCommands.ts';
 
 /** Follow a suggested question or turn an unresolved mistake into a redo. */
 export function followChainCandidate(candidate: ChainCandidate): void {

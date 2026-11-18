@@ -49,7 +49,7 @@
   --composer-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
   margin-top: 0;
   /* Keyboard avoidance (Open WebUI model): --keyboard-inset is mirrored
-     1:1 from the visual viewport by ui/keyboard/index.ts on every geometry
+     1:1 from the visual viewport by legacy/keyboard/index.ts on every geometry
      event — the value already moves on the keyboard's own animation curve,
      so it must NOT be transitioned here. A CSS transition would lag each
      per-frame write by its full duration and read as trailing/jitter.
@@ -92,7 +92,7 @@
   scroll-padding-bottom: 12px;
   /* Smooth scroll is disabled by default. JS uses the browser-native
      Element.scrollTo({behavior:'smooth'}) pipeline (see
-     ui/scroll.js#smoothScrollToBottom) when the reader needs to be
+     legacy/scroll.js#smoothScrollToBottom) when the reader needs to be
      re-pinned, so no class toggle is needed and the platform owns the
      easing curve. A class-based toggle on scroll-behavior raced the
      first paint and produced a visible snap on send / keyboard open. */
@@ -123,7 +123,7 @@
 }
 /* P_has-invalidation — no ancestor-level :has() here: it made every DOM
    insertion under the shell re-style the whole app (see
-   ui/layoutStateMirror.js). `:not(#_n):not(._n)` never excludes anything; it
+   legacy/layoutStateMirror.js). `:not(#_n):not(._n)` never excludes anything; it
    only keeps the specificity identical to the :has() form it replaced. */
 :where(:root[data-chat-view-open], :root[data-routed-session='true'])
   #mainContent:not(#_n):not(._n)

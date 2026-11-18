@@ -25,15 +25,15 @@ import {
   type MessageLike,
 } from './saveDelta.ts';
 import { generateSessionTitle } from '../chat/sessionTitle.ts';
-import { markCmdKIndexDirty } from '../ui/cmdK.ts';
-import { toggleShareBtn } from '../ui/share.ts';
+import { markCmdKIndexDirty } from '../legacy/cmdK.ts';
+import { toggleShareBtn } from '../legacy/share.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
-import { showToast } from '../ui/toast.js';
+import { showToast } from '../legacy/toast.js';
 import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
 import { appMode } from '../config/providers.ts';
 import { t } from '../i18n/index.ts';
-import { renderRecents } from '../ui/recentsView.ts';
+import { renderRecents } from '../legacy/recentsView.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
 /** A message row in the save payload (html/rawText both travel). */
