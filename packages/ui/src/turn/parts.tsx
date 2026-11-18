@@ -72,7 +72,8 @@ export function Chevron({
   }, [open, reduced, turn]);
   const color =
     tone === 'ink' ? colors.ink : tone === 'secondary' ? colors.inkSecondary : colors.inkTertiary;
-  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['-45deg', '45deg'] });
+  /* Closed points down (⌄) and open flips up, like the reference disclosure. */
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['45deg', '225deg'] });
   return (
     <View
       aria-hidden
@@ -92,7 +93,7 @@ export function Chevron({
           borderRightWidth: 1.5,
           borderBottomWidth: 1.5,
           borderColor: color,
-          marginLeft: -2,
+          marginTop: open ? 2 : -3,
           transform: [{ rotate }],
         }}
       />

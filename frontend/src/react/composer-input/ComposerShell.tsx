@@ -33,6 +33,7 @@ import { toggleComposerTools, useComposerToolsSnapshot } from '../composer/compo
 import { useStore } from 'zustand';
 import { useIsChatStreaming } from '../useChatRuntime';
 import { VoiceSpectrum } from './VoiceSpectrum';
+import { ComposerOverhead } from './ComposerOverhead';
 import { useVoiceInputStore } from '../../legacy/voiceInput.store.ts';
 import { voiceInputUnavailableReason } from '../../legacy/voiceInputAvailability.ts';
 
@@ -234,6 +235,7 @@ export function ComposerShell({
 
   return (
     <>
+      <ComposerOverhead />
       {/* RN-7: the question box is the shared RN frame (packages/ui/src/composer).
           The web supplies two slots — the attachment row and the rich editor
           (paste, shortcuts, IME, tokens unchanged); the frame draws the rest. */}

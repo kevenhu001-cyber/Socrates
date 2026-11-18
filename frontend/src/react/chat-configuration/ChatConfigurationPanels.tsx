@@ -154,7 +154,7 @@ export function EffortPanel({
     <>
       <UiButton
         type="button"
-        className="chat-config-row"
+        className="chat-config-row chat-config-effort-head"
         data-initial-focus="true"
         aria-label={`${i18n('chatconfig.backToModels', 'Back to model list')} · ${effortLabel(effort)}`}
         onClick={onBack}
@@ -166,23 +166,17 @@ export function EffortPanel({
           <ChevronIcon />
         </span>
       </UiButton>
-      <UiButton
-        type="button"
-        className="chat-config-row"
-        aria-pressed={effort === 'instant'}
-        disabled={!supportsInstant}
-        onClick={() => onCommit('instant', speed)}
-      >
-        <span>
-          <strong>{i18n('effort.instant', 'Instant')}</strong>
-          <small>
-            {supportsInstant
-              ? i18n('chatconfig.instantHint', 'Answer directly without thinking')
-              : i18n('chatconfig.instantUnsupported', 'This model always reasons')}
-          </small>
-        </span>
-        {effort === 'instant' ? <CheckIcon /> : null}
-      </UiButton>
+      {/* Reference sheet: the level and the slider, nothing else. Instant is
+          the slider's first stop; the row only stays to explain a model that
+          cannot switch thinking off. */}
+      {supportsInstant ? null : (
+        <UiButton type="button" className="chat-config-row" aria-pressed={false} disabled>
+          <span>
+            <strong>{i18n('effort.instant', 'Instant')}</strong>
+            <small>{i18n('chatconfig.instantUnsupported', 'This model always reasons')}</small>
+          </span>
+        </UiButton>
+      )}
       <div
         className="chat-config-slider"
         style={

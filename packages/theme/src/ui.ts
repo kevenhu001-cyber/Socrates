@@ -137,9 +137,15 @@ export const uiColorsCssVars: UiColors = Object.freeze(
   ) as unknown as UiColors,
 );
 
-/** Font stacks. Geist for Latin, Noto Sans SC for Chinese. */
+/**
+ * Font stacks. UI and prose use the platform's own sans (the 2026-11-18
+ * reference is the system UI face on the phone), with the platform CJK
+ * faces next and the bundled Noto Sans SC as the last named fallback so
+ * Chinese punctuation keeps full-width metrics where no CJK face exists.
+ * Code keeps Geist Mono.
+ */
 export const uiFont = {
-  sans: '"Geist Sans", "Noto Sans SC", system-ui, sans-serif',
+  sans: 'ui-sans-serif, -apple-system, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif',
   mono: '"Geist Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", monospace',
 } as const;
 

@@ -57,8 +57,9 @@ export function ComposerFrame({
       style={
         {
           width: '100%',
-          /* Phones: the reference box's corner measures 26px (circle fit). */
-          borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
+          /* Phones: the 2026-11-18 reference box's corner measures ~30px
+             (circle fit on an 83px-tall field). */
+          borderRadius: compact ? 30 : uiRadius.card,
           backgroundColor: colors.card,
           boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
           transitionProperty: 'box-shadow',
@@ -86,7 +87,7 @@ export function ComposerFrame({
         style={{
           paddingHorizontal: compact ? uiStep[75] : uiStep[100],
           minHeight: 26,
-          marginBottom: uiStep[75],
+          marginBottom: compact ? uiStep[50] : uiStep[75],
         }}
       >
         {body}
