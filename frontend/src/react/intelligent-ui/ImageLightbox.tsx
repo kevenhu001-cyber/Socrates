@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Icon } from '../../legacy/Icon';
 import { Button as BaseButton } from '../ui/Button';
 import { MathText } from '../rn/useInlineMath';
+import { reportSwallow } from '../../util/reportSwallow.ts';
 
 export interface LightboxImageItem {
   src: string;
@@ -19,12 +20,7 @@ interface ImageLightboxProps {
   onClose: () => void;
 }
 
-export function ImageLightbox({
-  images,
-  initialIndex = 0,
-  open,
-  onClose,
-}: ImageLightboxProps) {
+export function ImageLightbox({ images, initialIndex = 0, open, onClose }: ImageLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
   const [copied, setCopied] = useState(false);
@@ -58,8 +54,8 @@ export function ImageLightbox({
       await navigator.clipboard.writeText(currentImage.src);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // ignore
+    } catch (error) {
+      reportSwallow(error, 'react/intelligent-ui/ImageLightbox.tsx:61', 'expected');
     }
   };
 

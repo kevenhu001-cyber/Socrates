@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { IntelligentUiNode } from '@socrates/core';
 import { MathText } from '../rn/useInlineMath';
+import { Button } from '../ui/Button';
 import { asProse, isRecord, resolve, setBoundValue, type RenderContext } from './renderRuntime';
 
 interface AccordionItem {
@@ -79,11 +80,9 @@ export function UiAccordion({
       {items.map((item) => {
         const isOpen = isItemOpen(item.id);
         return (
-          <div
-            key={item.id}
-            className={`intui-accordion-item ${isOpen ? 'is-open' : 'is-closed'}`}
-          >
-            <button
+          <div key={item.id} className={`intui-accordion-item ${isOpen ? 'is-open' : 'is-closed'}`}>
+            <Button
+              variant="plain"
               type="button"
               className="intui-accordion-trigger"
               onClick={() => toggleItem(item.id)}
@@ -95,7 +94,7 @@ export function UiAccordion({
               <span className="intui-accordion-icon" aria-hidden="true">
                 {isOpen ? '▾' : '▸'}
               </span>
-            </button>
+            </Button>
 
             {isOpen && (
               <div className="intui-accordion-content">

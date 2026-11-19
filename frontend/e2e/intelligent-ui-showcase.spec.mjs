@@ -18,6 +18,9 @@ const SHOWCASE_SOURCE = [
   '{"id":"modes","type":"table","parent":"showcase","caption":"Runtime modes","columns":[{"key":"mode","label":"Mode"},{"key":"status","label":"Status"}],"rows":[{"mode":"Streaming","status":"Ready"}]}',
   '{"id":"result","type":"entity","parent":"showcase","title":"Socrates Runtime","subtitle":"Native renderer","description":"Structured data stays inside the trusted component registry.","image":"https://assets.example.test/entity.svg","imageAlt":"Abstract Socrates mark","fields":[{"label":"Mode","value":"Streaming"},{"label":"Execution","value":"Declarative"}]}',
   '{"id":"gallery","type":"image-gallery","parent":"showcase","label":"References","columns":2,"images":[{"src":"https://assets.example.test/one.svg","alt":"Reference one","caption":"First reference"},{"src":"https://assets.example.test/two.svg","alt":"Reference two","caption":"Second reference"},{"src":"javascript:alert(1)","alt":"Rejected image"}]}',
+  '{"id":"status","type":"badge","parent":"showcase","label":"Stable","tone":"success","variant":"solid"}',
+  '{"id":"flow","type":"steps","parent":"showcase","current":1,"items":[{"id":"s1","title":"Collected"},{"id":"s2","title":"Synthesize"},{"id":"s3","title":"Review"}]}',
+  '{"id":"method","type":"accordion","parent":"showcase","items":[{"id":"a1","title":"Method","content":"Two sources agree.","defaultOpen":true}]}',
   '```',
 ].join('\n');
 
@@ -110,4 +113,27 @@ test('v2 Intelligent UI showcase renders trusted components and local tab state'
   await expect(gallery.locator('img').first()).toHaveAttribute('loading', 'lazy');
   await expect(gallery.locator('img').first()).toHaveAttribute('referrerpolicy', 'no-referrer');
   await expect(ui).not.toContainText('Rejected image');
+
+  // A panel is a grid; a badge is still a chip, not a full-width bar.
+  const badge = ui.locator('.intui-badge');
+  await expect(badge).toHaveText('Stable');
+  await expect(badge).toHaveClass(/is-success/);
+  await expect(badge).toHaveClass(/is-solid/);
+  expect((await badge.boundingBox()).width).toBeLessThan(140);
+
+  // Steps render per-item status, and the accordion is the shared Button.
+  await expect(ui.locator('.intui-step-item')).toHaveCount(3);
+  await expect(ui.locator('.intui-step-item').first()).toHaveClass(/is-completed/);
+  const accordion = ui.locator('.intui-accordion-trigger').first();
+  await expect(accordion).toHaveAttribute('aria-expanded', 'true');
+  await accordion.click();
+  await expect(accordion).toHaveAttribute('aria-expanded', 'false');
+
+  // Opening the gallery lightbox exercises the modal layer token and Escape.
+  await gallery.locator('[role="button"]').first().click();
+  const lightbox = page.locator('.intui-lightbox-backdrop');
+  await expect(lightbox).toBeVisible();
+  await expect(lightbox).toHaveCSS('z-index', '400');
+  await page.keyboard.press('Escape');
+  await expect(lightbox).toHaveCount(0);
 });
