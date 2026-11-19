@@ -1,6 +1,22 @@
 import { posix } from 'node:path';
 import { staticPaths } from './entry-graph.mjs';
 
+/* A lazy chunk that owns CSS must keep Vite's __vitePreload wrapper: that
+   wrapper is what appends the chunk's stylesheet <link>. Replacing its inner
+   import() with the retry helper drops the deps argument, so the module runs
+   unstyled (OpenUiBlock and the tldraw editor are the two current cases).
+   Leave those imports native; the retry path is only for CSS-free chunks.
+   The composer-editor preflight is the one exception: its chunk owns no lazy
+   CSS today, and its retry path must stay. */
+function carriesCss(path, importer, chunks) {
+  if (!chunks) return false;
+  const directory = posix.dirname(importer.fileName);
+  const target = posix.normalize(posix.join(directory, path));
+  return Boolean(
+    chunks[target]?.moduleIds?.some((id) => /\.css(?:\?|$)/.test(id.replaceAll('\\', '/'))),
+  );
+}
+
 function editorPreflight(path, importer, chunks) {
   if (!chunks) return [];
   const directory = posix.dirname(importer.fileName);
@@ -45,6 +61,7 @@ export function createRetryDynamicImportsPlugin() {
           /^\.\.?\//.test(node.source.value)
         ) {
           const assets = editorPreflight(node.source.value, chunk, chunks);
+          if (!assets.length && carriesCss(node.source.value, chunk, chunks)) return;
           if (assets.length) {
             needsPreflight = true;
             edits.push([node.end - 1, node.end - 1, ', ' + JSON.stringify(assets)]);
