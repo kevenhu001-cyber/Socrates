@@ -312,3 +312,9 @@
 
 - P2 的 7 项全部保持原状，等产品确认（尤其空态 starter 与显示设置双入口）。
 - `intelligent-ui.css` 的 token 迁移、z-index 归位、raw button 替换：建议作为紧随其后的独立提交，跑 `theme-contrast` / `surface-ladder` / 相关 visual spec。
+
+## 补记 2：P2 布局与代码块（2026-11-20 凌晨）
+
+- **P2-1 设置页宽度**：`settings-page.css` 的页面模式 `max-width` 从 1040px 收到 880px，`e2e/settings-modal.spec.mjs` 新增 `600 < paneWidth <= 900` 断言。实测 1440px 下 pane 880、行宽 842，标签到控件约 700px（改前 ≈845px）。设置 spec 24/24 通过。
+- **P2-7 代码块**：`render/postRender.ts` 增加 fence id → 产品拼写映射（js→JavaScript、python→Python、ts→TypeScript…）；`parity/transcript.css` 去掉 `text-transform: lowercase`、标签字号从 11px 移到 `--ui-font-size-xxs`；`CodeBlockActions.tsx` 的 Expand/Copy 从 24px 提到 32px（`icon-sm`/`sm`）。`test/postRender.test.mjs` 新增拼写用例，`e2e/code-copy-visual.spec.mjs` 2/2 通过；截图复核见本地 `test-results/uiaudit/37-code-actions.png`。
+- **lint 残差**：这两项之后 `literalFontSize` 从 58 降到 57（baseline 50），`css-debt` 仍因 `intelligent-ui.css` 超限；同文件的 `z-index: 9999/10` 与 raw `<button>` 仍未处理。阻断项与 batch A 时一致，属于独立的 intelligent-ui token 迁移。
