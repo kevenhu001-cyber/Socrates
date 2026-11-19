@@ -710,6 +710,14 @@ test('settings owns the whole viewport without the chat shell', async ({ page })
   await expect(page.locator('#topBar')).toBeHidden();
   await expect(settings.locator('.account-page-header')).toBeVisible();
   await expect(settings.locator('.settings-shell')).toBeVisible();
+
+  /* A settings row is a label/value pair; past ~900px the eye has to cross
+     too much empty space to pair them. 740px is the reviewed ceiling. */
+  const paneWidth = await settings
+    .locator('.settings-pane')
+    .evaluate((el) => Math.round(el.getBoundingClientRect().width));
+  expect(paneWidth).toBeGreaterThan(600);
+  expect(paneWidth).toBeLessThanOrEqual(900);
 });
 
 test('settings keeps the focus where the user moved it and hands it back to the trigger on close', async ({
