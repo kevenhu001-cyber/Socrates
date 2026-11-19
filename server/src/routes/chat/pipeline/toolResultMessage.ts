@@ -54,6 +54,9 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
       lines.push('Likely fixes by error_code:');
       lines.push('- `code_too_large` → split into multiple smaller runs.');
       lines.push(
+        '- `execution_queue_timeout` → the runner was busy or still starting. The code never started. Do not retry during this turn.',
+      );
+      lines.push(
         '- `daily_execution_limit_reached` → tell the user the per-day cap; do not retry.',
       );
       lines.push(

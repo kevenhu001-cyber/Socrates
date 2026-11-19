@@ -58,3 +58,18 @@ export function resolvePyodideWorkerEntry(): PyodideWorkerEntry {
 
 /* Make sure the scratch root exists before any worker is spawned. */
 await fs.mkdir(SCRATCH_DIR, { recursive: true }).catch(() => {});
+
+function timeoutSetting(raw: string | undefined, fallback: number) {
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value >= 100 && value <= 2_147_483_647 ? value : fallback;
+}
+
+export const WORKER_WAIT_TIMEOUT_MS = timeoutSetting(
+  process.env.EXEC_WORKER_WAIT_TIMEOUT_MS,
+  30_000,
+);
+export const WORKER_BOOT_TIMEOUT_MS = timeoutSetting(
+  process.env.EXEC_WORKER_BOOT_TIMEOUT_MS,
+  45_000,
+);
+export const WORKER_INTERRUPT_GRACE_MS = 1_000;

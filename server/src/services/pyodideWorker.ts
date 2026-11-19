@@ -357,16 +357,15 @@ async function bootPyodide() {
       },
     });
 
-    /* Preload scientific packages. loadPackage is a no-op for already-
-       loaded packages, so this is safe to call repeatedly. The wheels
-       cache to node_modules on first download — subsequent boots just
-       read from disk. */
-    for (const pkg of PRELOAD_PACKAGES) {
-      try {
-        await pyodide.loadPackage([pkg]);
-      } catch (e) {
-        console.error(`[pyodide] preload ${pkg} failed: ${(e && (e as PyRunError).message) || e}`);
-      }
+    // Let Pyodide resolve dependencies and download the wheels as one batch.
+    try {
+      await pyodide.loadPackage(PRELOAD_PACKAGES, {
+        errorCallback: (message) => console.warn(`[pyodide] preload: ${message}`),
+      });
+    } catch (error) {
+      console.warn(
+        `[pyodide] preload failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
 
     // Install a self-contained stream class. sys.stdout and sys.stderr are
@@ -679,6 +678,13 @@ async function runCode({
      in the source makes find_imports raise here — swallowed on
      purpose so the exec below can report the real error through the
      normal marker path. */
+  const packagesStartedAt = Date.now();
+  parentPort!.postMessage({
+    id,
+    type: 'phase',
+    phase: 'preparing',
+    elapsedMs: packagesStartedAt - startedAt,
+  });
   try {
     const loadedPackages = await pyodide.loadPackagesFromImports(code, {
       messageCallback: (msg: string) => {
@@ -704,6 +710,14 @@ async function runCode({
   } catch (_) {
     /* offline fetch / unparseable source — exec reports the real error */
   }
+
+  const packageMs = Date.now() - packagesStartedAt;
+  parentPort!.postMessage({
+    id,
+    type: 'phase',
+    phase: 'running',
+    elapsedMs: Date.now() - startedAt,
+  });
 
   let status = 'completed';
   let exitCode = 0;
@@ -988,6 +1002,7 @@ async function runCode({
     status,
     exitCode,
     durationMs,
+    packageMs,
     stdout: String(stdoutText),
     stderr: String(stderrText),
     errorMessage,

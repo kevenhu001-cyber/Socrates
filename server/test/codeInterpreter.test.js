@@ -116,7 +116,7 @@ describe('codeInterpreter.execute — input guard rails', () => {
     const serviceSource = await fsPromises.readFile(source, 'utf8');
     // The worker owns the scratch listing. Inserting Python ahead of user
     // code rejects future imports and shifts every traceback line by one.
-    assert.match(serviceSource, /result = await runOnWorker\(\{\s*executionId,\s*code,/);
+    assert.match(serviceSource, /result = await runOnWorker\(\s*\{\s*executionId,\s*code,/);
   });
 
   test('rejects sources larger than MAX_CODE_CHARS without touching the pool', async () => {

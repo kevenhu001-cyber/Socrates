@@ -153,18 +153,18 @@ export const executeCodeInterpreter: ToolExecutor = async (
 
   const isExecutionTimeout =
     execResult.status === 'timeout' || execResult.errorCode === 'execution_timeout';
+  const stopMessage = isExecutionTimeout
+    ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用向量化计算。'
+    : execResult.errorCode === 'execution_queue_timeout'
+      ? '代码执行器等待超时，代码尚未运行。请稍后重试。'
+      : execResult.status === 'cancelled'
+        ? '代码执行已取消。'
+        : null;
   if (execResult.status !== 'completed') {
-    /* Per-tool accounting lives in toolPolicy: the same failing tool
-       steps aside after its own limit, and a success anywhere in the
-       turn resets its streak. */
     toolPolicy.recordResult('code_interpreter', false, execResult.errorCode || 'execution_failed');
-    execResult.retryable = isExecutionTimeout
-      ? false
-      : toolPolicy.remainingRetries('code_interpreter') > 0;
+    execResult.retryable = !stopMessage && toolPolicy.remainingRetries('code_interpreter') > 0;
     if (!execResult.retryable) {
-      execResult.userMessage = isExecutionTimeout
-        ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
-        : '代码执行连续多次失败，本次不再自动重试。';
+      execResult.userMessage = stopMessage || '代码执行连续多次失败，本次不再自动重试。';
     }
   } else {
     toolPolicy.recordResult('code_interpreter', true);
@@ -181,11 +181,8 @@ export const executeCodeInterpreter: ToolExecutor = async (
       execResult.errorCode ||
       (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
     retryable: execResult.retryable !== false,
-    userMessage: isExecutionTimeout
-      ? '代码执行超过时间预算，请拆分步骤、减少循环规模或改用 numpy/pandas 向量化计算后重试。'
-      : execResult.status === 'completed'
-        ? null
-        : execResult.userMessage || '代码未能完成执行。',
+    userMessage:
+      execResult.status === 'completed' ? null : execResult.userMessage || '代码未能完成执行。',
     detail: execResult.stderr || execResult.errorMessage || null,
     artifacts: execResult.artifactFileIds || [],
     executionId: execResult.executionId,

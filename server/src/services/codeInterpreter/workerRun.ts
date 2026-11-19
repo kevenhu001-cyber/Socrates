@@ -3,8 +3,13 @@
  * result parsing.
  */
 import crypto from 'node:crypto';
-import { DEFAULT_TIMEOUT_MS, MAX_OUTPUT_BYTES } from './config.js';
-import { getPool } from './pool.js';
+import {
+  DEFAULT_TIMEOUT_MS,
+  MAX_OUTPUT_BYTES,
+  WORKER_WAIT_TIMEOUT_MS,
+  WORKER_INTERRUPT_GRACE_MS,
+} from './config.js';
+import { getPool, type PyodidePool } from './pool.js';
 import { emitProgress, type ProgressListener } from './progress.js';
 import { isRecord } from './values.js';
 
@@ -21,6 +26,8 @@ interface WorkerExecutionResult {
   stderr?: string;
   exitCode?: number;
   durationMs?: number;
+  queueMs?: number;
+  packageMs?: number;
   errorCode?: string;
   errorMessage?: string;
   artifacts?: WorkerArtifact[];
@@ -45,6 +52,7 @@ function parseWorkerExecutionResult(value: unknown): WorkerExecutionResult | nul
     stderr: typeof value.stderr === 'string' ? value.stderr : undefined,
     exitCode: typeof value.exitCode === 'number' ? value.exitCode : undefined,
     durationMs: typeof value.durationMs === 'number' ? value.durationMs : undefined,
+    packageMs: typeof value.packageMs === 'number' ? value.packageMs : undefined,
     errorCode: typeof value.errorCode === 'string' ? value.errorCode : undefined,
     errorMessage: typeof value.errorMessage === 'string' ? value.errorMessage : undefined,
     artifacts,
@@ -64,108 +72,117 @@ export interface WorkerResult {
   stderr?: string;
   exitCode?: number;
   durationMs?: number;
+  queueMs?: number;
+  packageMs?: number;
   errorMessage?: string;
   errorCode?: string;
   artifacts?: Artifact[];
   [k: string]: unknown;
 }
-export async function runOnWorker({
-  executionId,
-  code,
-  timeoutMs,
-  signal,
-  scratchDir,
-  maxOutputBytes,
-  onProgress,
-}: {
-  executionId: string;
-  code: string;
-  timeoutMs?: number;
-  signal?: AbortSignal | null;
-  scratchDir: string;
-  maxOutputBytes?: number;
-  onProgress?: ProgressListener | null;
-}) {
-  const startedAt = Date.now();
-  const pool = await getPool();
-  /* surface the wait while a worker is busy/booting. */
+export function executionWaitError(
+  signal?: AbortSignal | null,
+): Error & { code: string; status?: 'cancelled' } {
+  return signal?.aborted
+    ? Object.assign(new Error('cancelled_by_caller'), {
+        code: 'execution_cancelled',
+        status: 'cancelled' as const,
+      })
+    : Object.assign(new Error('execution_queue_timeout'), { code: 'execution_queue_timeout' });
+}
+
+export async function runOnWorker(
+  {
+    executionId,
+    code,
+    timeoutMs,
+    signal,
+    waitSignal,
+    scratchDir,
+    maxOutputBytes,
+    onProgress,
+  }: {
+    executionId: string;
+    code: string;
+    timeoutMs?: number;
+    signal?: AbortSignal | null;
+    waitSignal?: AbortSignal;
+    scratchDir: string;
+    maxOutputBytes?: number;
+    onProgress?: ProgressListener | null;
+  },
+  pool: PyodidePool | null = getPool(),
+) {
+  if (!pool) throw Error('code_interpreter_disabled');
+  const queuedAt = Date.now();
+  const deadline = waitSignal ?? AbortSignal.timeout(WORKER_WAIT_TIMEOUT_MS);
+  const queueSignal = signal ? AbortSignal.any([signal, deadline]) : deadline;
   emitProgress(executionId, { phase: 'queued', executionId }, onProgress);
-  const slot = await pool!.acquireSlot();
-  emitProgress(executionId, { phase: 'ready', executionId }, onProgress);
-  // slot.tryClaim()/claim() already returned a fully-claimed slot with
-  // a booted worker, so slot.worker is ready — no second await needed.
+  const slot = await pool.acquireSlot(queueSignal).catch((error: unknown) => {
+    throw Object.assign(queueSignal.aborted ? executionWaitError(signal) : (error as Error), {
+      queueMs: Date.now() - queuedAt,
+    });
+  });
+  const queueMs = Date.now() - queuedAt;
   const worker = slot.worker!;
   const id = crypto.randomUUID();
   const interruptBuffer = new SharedArrayBuffer(8);
-
-  const timeout = Math.max(100, timeoutMs || DEFAULT_TIMEOUT_MS);
-  let timedOut = false;
-  let cancelledByCaller = false;
-
-  // SIGINT path: works for I/O-bound code (time.sleep, file reads, etc).
-  // Doesn't work for CPU-bound pure-Python loops — those need termination.
-  // Progressive timeout warnings — notify listeners at 50%, 80%, and 95%
-  // of the budget so the UI can show "still running…" instead of silence.
-  const timeoutCheckpoints = [
-    { at: 0.5, label: '50%' },
-    { at: 0.8, label: '80%' },
-    { at: 0.95, label: '95%' },
-  ];
-  const timeoutWarnings: NodeJS.Timeout[] = [];
-  for (const cp of timeoutCheckpoints) {
-    const t = setTimeout(
+  const startedAt = Date.now();
+  const requestedTimeout = timeoutMs || DEFAULT_TIMEOUT_MS;
+  const timeout = Number.isFinite(requestedTimeout)
+    ? Math.min(2_147_482_647, Math.max(100, requestedTimeout))
+    : 120_000;
+  let dependencyStartedAt: number | undefined;
+  let packageMs: number | undefined;
+  let stopReason: 'timeout' | 'cancelled' | undefined;
+  let killTimer: NodeJS.Timeout | undefined;
+  const stop = (reason: typeof stopReason) => {
+    if (stopReason) return;
+    stopReason = reason;
+    Atomics.store(new Uint8Array(interruptBuffer), 0, 0x02);
+    killTimer = setTimeout(() => slot.terminate(), WORKER_INTERRUPT_GRACE_MS);
+  };
+  const onAbort = () => stop('cancelled');
+  const timeoutTimer = setTimeout(() => stop('timeout'), timeout);
+  const warnings = [0.5, 0.8, 0.95].map((fraction) =>
+    setTimeout(
       () => {
+        if (stopReason) return;
         emitProgress(
           executionId,
           {
             phase: 'timeout_warning',
             stream: null,
-            chunk: `Execution at ${cp.label} of timeout (${(timeout / 1000).toFixed(0)}s)`,
+            chunk: `Execution at ${Math.round(fraction * 100)}% of timeout (${(timeout / 1000).toFixed(0)}s)`,
             executionId,
-            elapsedMs: Math.round(timeout * cp.at),
+            elapsedMs: Math.round(timeout * fraction),
           },
           onProgress,
         );
       },
-      Math.round(timeout * cp.at),
-    );
-    timeoutWarnings.push(t);
-  }
+      Math.round(timeout * fraction),
+    ),
+  );
 
-  const sigintTimer = setTimeout(() => {
-    timedOut = true;
-    try {
-      new Uint8Array(interruptBuffer)[0] = 0x02;
-    } catch (_) {}
-  }, timeout);
-
-  // Hard termination fallback: if SIGINT hasn't returned within timeout + 1s,
-  // terminate the worker. The slot's exit handler rejects the in-flight
-  // promise and respawns on next acquire.
-  const terminateTimer = setTimeout(() => {
-    slot.terminate();
-  }, timeout + 1000);
-
+  let onMessage: (message: unknown) => void = () => undefined;
   try {
+    if (signal?.aborted) throw executionWaitError(signal);
+    emitProgress(executionId, { phase: 'ready', executionId, elapsedMs: queueMs }, onProgress);
     const result = await new Promise<WorkerExecutionResult>((resolve, reject) => {
-      slot._inflightReject = reject; // per-slot, not pool._inflightReject
-      const onAbort = () => {
-        cancelledByCaller = true;
-        try {
-          new Uint8Array(interruptBuffer)[0] = 0x02;
-        } catch (_) {}
-      };
-      if (signal) {
-        if (signal.aborted) onAbort();
-        else signal.addEventListener('abort', onAbort, { once: true });
-      }
-      const onMessage = (msg: unknown) => {
+      slot.onRunFailure = reject;
+      onMessage = (msg) => {
         if (!isRecord(msg) || msg.id !== id) return;
+        if (msg.type === 'phase' && typeof msg.elapsedMs === 'number') {
+          if (msg.phase === 'preparing') dependencyStartedAt = msg.elapsedMs;
+          if (msg.phase === 'running' && dependencyStartedAt !== undefined) {
+            packageMs = msg.elapsedMs - dependencyStartedAt;
+            dependencyStartedAt = undefined;
+          }
+        }
         if (msg.type === 'stdout' || msg.type === 'stderr' || msg.type === 'phase') {
           emitProgress(
             executionId,
             {
-              phase: msg.type,
+              phase: typeof msg.phase === 'string' ? msg.phase : msg.type,
               stream: msg.type,
               chunk: typeof msg.chunk === 'string' ? msg.chunk : String(msg.chunk ?? ''),
               executionId,
@@ -176,75 +193,90 @@ export async function runOnWorker({
           return;
         }
         if (msg.type === 'result' || typeof msg.status === 'string') {
-          worker.off('message', onMessage);
-          if (signal) signal.removeEventListener('abort', onAbort);
-          slot._inflightReject = null;
-          // Clear termination timers immediately so a concurrent
-          // terminateTimer fire doesn't kill the worker after a
-          // normal completion (race between resolve and finally).
-          clearTimeout(sigintTimer);
-          clearTimeout(terminateTimer);
-          for (const t of timeoutWarnings) clearTimeout(t);
-          const result = parseWorkerExecutionResult(msg);
-          if (result) resolve(result);
+          const parsed = parseWorkerExecutionResult(msg);
+          if (parsed) resolve(parsed);
           else reject(new Error('pyodide_worker_invalid_result'));
         }
       };
       worker.on('message', onMessage);
-      try {
-        worker.postMessage({
-          id,
-          type: 'run',
-          executionId,
-          code,
-          scratchDir,
-          maxOutputBytes: maxOutputBytes || MAX_OUTPUT_BYTES,
-          interruptBuffer,
-        });
-      } catch (err) {
-        worker.off('message', onMessage);
-        if (signal) signal.removeEventListener('abort', onAbort);
-        slot._inflightReject = null;
-        reject(err);
+      if (signal?.aborted) {
+        reject(executionWaitError(signal));
+        return;
       }
+      signal?.addEventListener('abort', onAbort, { once: true });
+      worker.postMessage({
+        id,
+        type: 'run',
+        executionId,
+        code,
+        scratchDir,
+        interruptBuffer,
+        maxOutputBytes: maxOutputBytes || MAX_OUTPUT_BYTES,
+      });
     });
-    if (cancelledByCaller && result && result.status === 'timeout') {
-      result.status = 'cancelled';
-      result.errorMessage = 'cancelled_by_caller';
-      result.exitCode = 130;
-    } else if (!timedOut && result && result.status === 'timeout') {
-      // A user-raised KeyboardInterrupt is not a tool timeout.
-      result.status = 'failed';
-      result.errorMessage = 'worker_interrupt';
-      result.exitCode = 130;
+    if (stopReason === 'cancelled') {
+      return {
+        ...result,
+        queueMs,
+        status: 'cancelled',
+        errorCode: 'execution_cancelled',
+        errorMessage: 'cancelled_by_caller',
+        exitCode: 130,
+      };
     }
-    return result;
+    if (stopReason === 'timeout') {
+      return {
+        ...result,
+        queueMs,
+        status: 'timeout',
+        errorCode: 'execution_timeout',
+        errorMessage: 'execution_timeout',
+        exitCode: 124,
+      };
+    }
+    if (result.status === 'timeout') {
+      return {
+        ...result,
+        queueMs,
+        status: 'failed',
+        errorMessage: 'worker_interrupt',
+        exitCode: 130,
+      };
+    }
+    return { ...result, queueMs };
   } catch (err) {
-    const incoming = err as Error & { code?: string; status?: string; durationMs?: number };
-    const message = String((incoming && incoming.message) || err);
-    const incomingStatus = incoming.status;
-    const incomingCode = incoming.code;
-    const mappedStatus =
-      incomingStatus || (cancelledByCaller ? 'cancelled' : timedOut ? 'timeout' : 'failed');
-    const mapped = new Error(
-      cancelledByCaller ? 'cancelled_by_caller' : timedOut ? 'execution_timeout' : message,
-    ) as Error & { code?: string; status?: string; durationMs?: number };
-    mapped.code =
-      incomingCode ||
-      (cancelledByCaller
-        ? 'execution_cancelled'
-        : timedOut
-          ? 'execution_timeout'
-          : /pyodide_worker_exited|pyodide_worker_entry_missing|Worker/i.test(message)
-            ? 'pyodide_worker_failed'
-            : 'code_execution_failed');
-    mapped.status = mappedStatus;
-    mapped.durationMs = incoming.durationMs ?? Date.now() - startedAt;
-    throw mapped;
+    const incoming = err as Error & { code?: string; status?: string };
+    const durationMs = Date.now() - startedAt;
+    const timing = {
+      queueMs,
+      durationMs,
+      packageMs:
+        packageMs ??
+        (dependencyStartedAt === undefined ? undefined : durationMs - dependencyStartedAt),
+    };
+    if (stopReason === 'cancelled') {
+      throw Object.assign(executionWaitError(signal), timing);
+    }
+    if (stopReason === 'timeout') {
+      throw Object.assign(new Error('execution_timeout'), {
+        code: 'execution_timeout',
+        status: 'timeout',
+        ...timing,
+      });
+    }
+    const code =
+      incoming.code ??
+      (/pyodide_worker_exited|Worker/i.test(incoming.message)
+        ? 'pyodide_worker_failed'
+        : 'code_execution_failed');
+    throw Object.assign(incoming, { code, ...timing });
   } finally {
-    clearTimeout(sigintTimer);
-    clearTimeout(terminateTimer);
-    for (const t of timeoutWarnings) clearTimeout(t);
+    worker.off('message', onMessage);
+    signal?.removeEventListener('abort', onAbort);
+    slot.onRunFailure = null;
+    clearTimeout(timeoutTimer);
+    clearTimeout(killTimer);
+    for (const warning of warnings) clearTimeout(warning);
     slot.release();
   }
 }

@@ -48,7 +48,10 @@ export type ExecutionResponse = {
   artifactCount: number;
 };
 
-export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse> {
+export async function executeCode(
+  opts: ExecuteOpts,
+  waitSignal?: AbortSignal,
+): Promise<ExecutionResponse> {
   const requestStartedAt = Date.now();
   if (EXEC_RUNNER === 'disabled') {
     /* still emit a terminal so the chat route can
@@ -161,7 +164,7 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   const executionStartedAt = Date.now();
   let pool: PyodidePool | null;
   try {
-    pool = await getPool();
+    pool = getPool();
   } catch (err) {
     const errorMessage = String((err && (err as Error).message) || err);
     return {
@@ -220,17 +223,27 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     await fs.mkdir(sessionScratchDir, { recursive: true });
     // The worker prints the scratch header separately. Preserve source bytes
     // so future imports and traceback line numbers keep their Python meaning.
-    result = await runOnWorker({
-      executionId,
-      code,
-      timeoutMs,
-      signal,
-      scratchDir: sessionScratchDir,
-      maxOutputBytes: MAX_OUTPUT_BYTES,
-      onProgress,
-    });
+    result = await runOnWorker(
+      {
+        executionId,
+        code,
+        timeoutMs,
+        signal,
+        waitSignal,
+        scratchDir: sessionScratchDir,
+        maxOutputBytes: MAX_OUTPUT_BYTES,
+        onProgress,
+      },
+      pool,
+    );
   } catch (err) {
-    const typed = err as Error & { code?: string; status?: string; durationMs?: number };
+    const typed = err as Error & {
+      code?: string;
+      status?: string;
+      durationMs?: number;
+      queueMs?: number;
+      packageMs?: number;
+    };
     const msg = String((typed && typed.message) || err);
     const status = typed.status || 'failed';
     const errorCode =
@@ -247,6 +260,8 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
       stdout: '',
       stderr: '',
       exitCode: status === 'timeout' ? 124 : status === 'cancelled' ? 130 : 1,
+      queueMs: typed.queueMs,
+      packageMs: typed.packageMs,
       durationMs: Math.max(1, typed.durationMs ?? Date.now() - executionStartedAt),
       artifacts: [],
     };
@@ -299,14 +314,11 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
   const finalStatus = result.status || 'failed';
   const finalArtifactCount = artifactFileIds.length;
 
-  /* a compile-time rejection (SyntaxError /
-     IndentationError / TabError) never executed user code, so the
-     row is persisted as 'rejected' instead of 'failed'. The daily
-     quota count in the chat executor excludes 'rejected' rows:
-     the model shouldn't burn the user's execution budget on a
-     parse error it can fix for free. The row is kept (not deleted)
-     so execution history and audit still show the attempt. */
-  const persistedStatus = result.errorCode === 'syntax_error' ? 'rejected' : finalStatus;
+  // Attempts that never ran the user's code stay in history without
+  // consuming the daily execution quota.
+  const rejected = ['syntax_error', 'execution_queue_timeout', 'pyodide_worker_boot_failed'];
+  const persistedStatus =
+    result.errorCode && rejected.includes(result.errorCode) ? 'rejected' : finalStatus;
 
   // Update the execution row.
   await db
@@ -329,6 +341,9 @@ export async function executeCode(opts: ExecuteOpts): Promise<ExecutionResponse>
     status: finalStatus,
     exitCode: result.exitCode,
     durationMs: result.durationMs,
+    queueMs: result.queueMs,
+    packageMs: result.packageMs,
+    errorCode: result.errorCode,
     artifactCount: finalArtifactCount,
     errorMessage: result.errorMessage || null,
   }).catch(() => {});

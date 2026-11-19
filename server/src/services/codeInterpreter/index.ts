@@ -17,12 +17,14 @@ import {
   POOL_SIZE,
   PYODIDE_VERSION,
   SCRATCH_DIR,
+  WORKER_WAIT_TIMEOUT_MS,
   executionScratchPath,
   sessionScratchPath,
 } from './config.js';
 import { getPool, sessionExecutionLock } from './pool.js';
 import { CODE_INTERPRETER_TOOL } from './tool.js';
 import { executeCode, type ExecuteOpts, type ExecutionResponse } from './execute.js';
+import { executionWaitError } from './workerRun.js';
 
 export {
   subscribeExecution,
@@ -49,7 +51,31 @@ export const codeInterpreter = {
     /* Serialize full execution lifecycles, including artifact persistence.
        Doing only runOnWorker() would still let a later call observe a file
        before its predecessor had copied/recorded the corresponding artifact. */
-    return sessionExecutionLock.run(rawSessionId, () => executeCode(opts));
+    const queuedAt = Date.now();
+    const deadline = AbortSignal.timeout(WORKER_WAIT_TIMEOUT_MS);
+    const wait = opts.signal ? AbortSignal.any([opts.signal, deadline]) : deadline;
+    let entered = false;
+    try {
+      return await sessionExecutionLock.run(
+        rawSessionId,
+        () => {
+          entered = true;
+          return executeCode(opts, deadline);
+        },
+        wait,
+      );
+    } catch (error) {
+      if (entered || !wait.aborted) throw error;
+      const failure = executionWaitError(opts.signal);
+      return {
+        status: failure.status ?? 'failed',
+        errorCode: failure.code,
+        errorMessage: failure.message,
+        durationMs: Date.now() - queuedAt,
+        artifactFileIds: [],
+        artifactCount: 0,
+      };
+    }
   },
 
   /**
@@ -67,7 +93,7 @@ export const codeInterpreter = {
    * execute().
    */
   async warm() {
-    const p = await getPool();
+    const p = getPool();
     // Wait for all workers in the pool to finish booting so the first
     // user request doesn't pay the 3-5s warm-up cost inline.
     if (p && p.slots) {

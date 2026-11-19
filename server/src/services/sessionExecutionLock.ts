@@ -1,3 +1,5 @@
+import { waitForSignal } from '../lib/waitForSignal.js';
+
 /**
  * In-process serializer for mutable session-scoped execution resources.
  *
@@ -8,7 +10,12 @@
 export function createSessionExecutionLock() {
   const tails = new Map<string, Promise<void>>();
 
-  async function run<T>(sessionId: string | null, work: () => Promise<T>): Promise<T> {
+  async function run<T>(
+    sessionId: string | null,
+    work: () => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    signal?.throwIfAborted();
     if (!sessionId) return work();
 
     const previous = tails.get(sessionId) || Promise.resolve();
@@ -19,12 +26,19 @@ export function createSessionExecutionLock() {
     const ownTail = previous.catch(() => undefined).then(() => gate);
     tails.set(sessionId, ownTail);
 
-    await previous.catch(() => undefined);
+    let entered = false;
+    const clear = () => {
+      if (tails.get(sessionId) === ownTail) tails.delete(sessionId);
+    };
     try {
+      await waitForSignal(previous, signal);
+      signal?.throwIfAborted();
+      entered = true;
       return await work();
     } finally {
       release();
-      if (tails.get(sessionId) === ownTail) tails.delete(sessionId);
+      if (entered) clear();
+      else void ownTail.then(clear);
     }
   }
 
