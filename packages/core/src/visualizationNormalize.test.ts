@@ -456,10 +456,17 @@ describe('normalizeFunctionExpression', () => {
     ['2πx', '2*pi*x'],
     ['x²+1', 'x^2+1'],
     ['f(x) = x^3', 'x^3'],
+    ['y(x) = x^2 - 4x + 4', 'x^2-4*x+4'],
     ['2(x+1)(x-1)', '2*(x+1)*(x-1)'],
     ['e^x', 'e^x'],
     ['xsin(x)', 'x*sin(x)'],
     ['√x', 'sqrt(x)'],
+    ['\\frac{1}{1+x^2}', '((1)/(1+x^2))'],
+    ['\\sin(2x)', 'sin(2*x)'],
+    ['\\left(x+1\\right)', '(x+1)'],
+    ['sin^2(x)', '(sin(x))^2'],
+    ['|x - 2|', 'abs(x-2)'],
+    ['sin(2*pi*t)', 'sin(2*pi*x)'],
   ];
   for (const [input, expected] of cases) {
     it(`${input} → ${expected}`, () => {

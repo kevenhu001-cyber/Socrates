@@ -84,16 +84,28 @@ export function isCitableTurnRange(text, start, end) {
 export function citableTurnMatches(text, quote) {
   if (!quote) return [];
   const protectedRanges = protectedTurnRanges(text);
-  const positions = [];
-  for (
-    let at = text.indexOf(quote);
-    at >= 0 && positions.length <= 1000;
-    at = text.indexOf(quote, at + 1)
-  ) {
-    if (!protectedRanges.some(([from, to]) => at < to && at + quote.length > from))
-      positions.push(at);
+  const findMatches = (needle) => {
+    const positions = [];
+    for (
+      let at = text.indexOf(needle);
+      at >= 0 && positions.length <= 1000;
+      at = text.indexOf(needle, at + 1)
+    ) {
+      if (!protectedRanges.some(([from, to]) => at < to && at + needle.length > from))
+        positions.push(at);
+    }
+    return positions;
+  };
+  const exact = findMatches(quote);
+  if (exact.length > 0) return exact;
+
+  // Fallback: trimmed surrounding quotes or sentence punctuation
+  const trimmed = quote.replace(/^["'“”‘’.,;:!?()[\]{}]+|["'“”‘’.,;:!?()[\]{}]+$/g, '').trim();
+  if (trimmed && trimmed.length >= 4 && trimmed !== quote) {
+    const fallback = findMatches(trimmed);
+    if (fallback.length > 0) return fallback;
   }
-  return positions;
+  return [];
 }
 
 /** Insert only app-authored links; numerical model markers are never a source ID. */

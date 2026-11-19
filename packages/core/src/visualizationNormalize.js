@@ -673,6 +673,9 @@ function normalizeHeatmapPayload(payload, warnings) {
 }
 
 const FUNCTION_NAMES = [
+  'arcsin',
+  'arccos',
+  'arctan',
   'asin',
   'acos',
   'atan',
@@ -701,7 +704,11 @@ function splitIdentifier(word) {
       FUNCTION_NAMES.find((candidate) => rest.startsWith(candidate)) ||
       SYMBOLS.find((candidate) => rest.startsWith(candidate));
     if (!name) return null;
-    parts.push({ type: FUNCTION_NAMES.includes(name) ? 'fn' : 'sym', text: name });
+    let mapped = name;
+    if (mapped === 'arcsin') mapped = 'asin';
+    else if (mapped === 'arccos') mapped = 'acos';
+    else if (mapped === 'arctan') mapped = 'atan';
+    parts.push({ type: FUNCTION_NAMES.includes(name) ? 'fn' : 'sym', text: mapped });
     rest = rest.slice(name.length);
   }
   return parts;
@@ -712,7 +719,28 @@ export function normalizeFunctionExpression(source) {
   while (text.startsWith('$')) text = text.slice(1);
   while (text.endsWith('$')) text = text.slice(0, -1);
   text = text.trim();
-  text = text.replace(/^(?:y|[fgh]\s*\(\s*x\s*\))\s*=\s*/i, '');
+
+  // Strip equation LHS, e.g. "y = ", "y(x) = ", "f(x) = ", "y_1(x) = ", "f1(t) = "
+  text = text.replace(
+    /^(?:y(?:_\d+)?(?:\s*\(\s*[a-zA-Z_]\s*\))?|[a-zA-Z](?:_\d+|\d+)?\s*\(\s*[a-zA-Z_]\s*\))\s*=\s*/i,
+    '',
+  );
+
+  // Normalize LaTeX fractions: \frac{a}{b} -> ((a)/(b))
+  while (/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/.test(text)) {
+    text = text.replace(/\\frac\s*\{([^{}]+)\}\s*\{([^{}]+)\}/g, '(($1)/($2))');
+  }
+  // Also handle single-char \frac 1 2 or \frac 1 x
+  text = text.replace(/\\frac\s*([0-9a-zA-Z])\s*([0-9a-zA-Z])/g, '(($1)/($2))');
+
+  // Strip layout and formatting keywords
+  text = text
+    .replace(/\\(left|right|displaystyle|limits)\s*/g, '')
+    .replace(/\\(mathrm|text)\s*\{([^{}]+)\}/g, '$2');
+
+  // Absolute value notation: |x| -> abs(x)
+  text = text.replace(/\|([^|]+)\|/g, 'abs($1)');
+
   text = text
     .replace(/[\u2212\u2013\uFF0D]/g, '-')
     .replace(/[\u00D7\u00B7\u22C5\u2217]/g, '*')
@@ -724,9 +752,40 @@ export function normalizeFunctionExpression(source) {
     .replace(/\u00B3/g, '^3')
     .replace(/\*\*/g, '^')
     .replace(/\\cdot|\\times/g, '*')
-    .replace(/\\pi/g, 'pi')
-    .replace(/\\(sin|cos|tan|ln|log|sqrt|exp)/g, '$1')
-    .replace(/[{}]/g, (ch) => (ch === '{' ? '(' : ')'));
+    .replace(/\\pi/g, 'pi');
+
+  // Normalize trigonometric power syntax: sin^2(x) -> (sin(x))^2
+  text = text.replace(
+    /\b(sin|cos|tan|ln|log|exp|sinh|cosh|tanh|asin|acos|atan)\s*\^\s*([0-9]+)\s*\(([^()]+)\)/gi,
+    '($1($3))^$2',
+  );
+
+  // Normalize LaTeX math functions to plain names
+  text = text.replace(
+    /\\(sin|cos|tan|asin|acos|atan|sinh|cosh|tanh|arcsin|arccos|arctan|ln|log|exp|sqrt|abs)/gi,
+    (match, fn) => {
+      const lower = fn.toLowerCase();
+      if (lower === 'arcsin') return 'asin';
+      if (lower === 'arccos') return 'acos';
+      if (lower === 'arctan') return 'atan';
+      return lower;
+    },
+  );
+
+  text = text.replace(/[{}]/g, (ch) => (ch === '{' ? '(' : ')'));
+
+  // If there is no 'x' in the expression, normalize single independent variable (t, theta, r, z) to 'x'
+  if (!/\bx\b/i.test(text)) {
+    if (/\btheta\b/i.test(text)) {
+      text = text.replace(/\btheta\b/gi, 'x');
+    } else if (/\bt\b/i.test(text)) {
+      text = text.replace(/\bt\b/g, 'x');
+    } else if (/\br\b/i.test(text)) {
+      text = text.replace(/\br\b/g, 'x');
+    } else if (/\bz\b/i.test(text)) {
+      text = text.replace(/\bz\b/g, 'x');
+    }
+  }
   const tokens = [];
   const pattern = /\s*(?:(\d+\.?\d*|\.\d+)|([A-Za-z]+)|(.))/gy;
   let match;

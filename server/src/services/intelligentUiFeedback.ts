@@ -94,8 +94,27 @@ function userMessageFor(failure: IntelligentUiFailure): string {
       const what = first?.template ? `「${first.template}」图表` : '图表';
       if (first?.stage === 'payload_shape')
         return `${what}的数据格式不符合要求，已附上正确示例请模型修正。`;
-      if (first?.stage === 'semantic')
+      if (first?.stage === 'semantic') {
+        if (first.template === 'function') {
+          const issueMsg = (first.issues?.[0] as unknown as { message?: string })?.message || '';
+          if (issueMsg.includes('domain'))
+            return '「function」函数定义域区间不合法（需为递增区间 [min, max]），已请模型修正。';
+          if (issueMsg.includes('no finite values'))
+            return '「function」函数在选定定义域内无有效数值，已请模型调整定义域或表达式。';
+          return '「function」函数表达式格式不符合规范（需为纯数学表达式并以 x 为自变量），已附上正确示例请模型修正。';
+        }
+        if (first.template === 'histogram') {
+          return '「histogram」直方图频数取值不能为负数，已请模型修正。';
+        }
+        const msg = (first.issues?.[0] as unknown as { message?: string })?.message || '';
+        if (msg.includes('at least one numeric value')) {
+          return `${what}未包含有效的数值数据，已请模型修正。`;
+        }
+        if (msg.includes('match the categories') || msg.includes('match the indicators')) {
+          return `${what}的数据与分类数量不一致，已请模型修正。`;
+        }
         return `${what}的数据前后不一致（数量或取值不匹配），已请模型修正。`;
+      }
       if (first?.stage === 'envelope') return `${what}缺少标题或模板名，已请模型补全。`;
       if (first?.stage === 'envelope_misuse')
         return '图表参数顺序写错了，已附上正确写法请模型修正。';
@@ -161,6 +180,11 @@ export function intelligentUiFeedback(
   )
     lines.push(NUMBER_HINT);
   if (failure.stage === 'visualization') {
+    if (failure.failures.some((item) => item.template === 'function')) {
+      lines.push(
+        'For "function" template: write ONLY the right-hand math expression (e.g. "sin(x)", "x^2 - 4*x + 4", not "y = ..."), use lowercase x as the variable (convert t or r to x), use explicit * for multiplication (2*x, not 2x), and use plain ASCII math without LaTeX formatting.',
+      );
+    }
     lines.push(
       'Keep a native visualization node inside render_intelligent_ui: {id:"chart", type:"visualization", template:"<template>", title:"<Title>", payload:{...}, accessibilitySummary:"<Summary>"}. Follow the selected template contract above: function uses functions:[{expression,domain?}], category charts use series:[{name,data}], graph templates use nodes/edges, geometry uses shapes, and teaching diagrams use items. Write numeric measurements as JSON numbers and use null only for missing measurements. Do not wrap static visualizations in OpenUI source strings.',
     );
