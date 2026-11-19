@@ -318,3 +318,15 @@
 - **P2-1 设置页宽度**：`settings-page.css` 的页面模式 `max-width` 从 1040px 收到 880px，`e2e/settings-modal.spec.mjs` 新增 `600 < paneWidth <= 900` 断言。实测 1440px 下 pane 880、行宽 842，标签到控件约 700px（改前 ≈845px）。设置 spec 24/24 通过。
 - **P2-7 代码块**：`render/postRender.ts` 增加 fence id → 产品拼写映射（js→JavaScript、python→Python、ts→TypeScript…）；`parity/transcript.css` 去掉 `text-transform: lowercase`、标签字号从 11px 移到 `--ui-font-size-xxs`；`CodeBlockActions.tsx` 的 Expand/Copy 从 24px 提到 32px（`icon-sm`/`sm`）。`test/postRender.test.mjs` 新增拼写用例，`e2e/code-copy-visual.spec.mjs` 2/2 通过；截图复核见本地 `test-results/uiaudit/37-code-actions.png`。
 - **lint 残差**：这两项之后 `literalFontSize` 从 58 降到 57（baseline 50），`css-debt` 仍因 `intelligent-ui.css` 超限；同文件的 `z-index: 9999/10` 与 raw `<button>` 仍未处理。阻断项与 batch A 时一致，属于独立的 intelligent-ui token 迁移。
+
+## 补记 3：intelligent-ui 守卫清账（2026-11-20 凌晨）
+
+把 `feat(intelligent-ui)` 留下的 lint 债清掉后，`npm run lint` 现在是 **exit 0**。
+
+- `frontend/src/styles/components/intelligent-ui.css`：25 个 hex → `--ui-on-action` / `--ui-info|success|warning|danger`；8 个 11/12px 字号 → `--ui-font-size-xxs`；2 个 `9999px` 圆角 → `--ui-radius-pill`；26 个 `--foreground`、13 个 `--muted-foreground`、3 个 `--background`、1 个 `--border`、6 个 `--primary`、1 个 `--primary-foreground` → 对应 `--ui-*` 角色（都是 themes.css 里的精确别名）。solid badge/step 用主题 tone 做底、`--ui-bg-page` 做字，深色下是亮底黑字、浅色下是深底白字；subtle badge 用同一 tone 的 12% `color-mix`。
+- 同文件的 `z-index: 9999/10` → `--ui-z-modal` + 局部 `2`；raw `<button>` → 共享 `Button`（plain variant，几何由 `.intui-accordion-trigger` 保留）；empty catch → `reportSwallow`。badge 增加 `justify-self: start`，不再被 panel grid 拉成整行。
+- 守卫结果：css-debt `hex 31/31、literalFontSize 49/50、radius 0/0、shadcnVarReads 621/655`；z-index 0；button-primitive 0；shadcn-adoption 全 0；empty-catch 0。
+
+**顺带发现的真实生产 bug**：`retry-dynamic-imports` 在 `__vitePreload` 内部替换 `import()` 时丢掉了 preload 依赖表，OpenUiBlock（含 MapLibre）和 tldraw 的 CSS 被抽出却从未挂载，延迟加载的界面在生产构建里是无样式的。现在目标 chunk 带 CSS 时保留原生 import（CSS-free chunk 继续 retry），`intelligent-ui-density` 3/3、`openui-media` 3/3 从失败转为通过。
+
+验证：`npm run lint` 通过；`intelligent-ui-*` + `openui*` + `creation-surfaces` **72/72**；intelligentUi/openUiMedia 单测 **18/18**；showcase 新增 badge/step/accordion/lightbox 断言 1/1。
