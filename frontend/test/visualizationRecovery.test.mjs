@@ -47,8 +47,8 @@ for (const [template, payload, globalName, runtime] of [
     },
   ],
   [
-    'function',
-    { functions: [{ expression: 'x' }] },
+    'paper_chart',
+    { categories: ['A'], series: [{ data: [1] }] },
     'Plotly',
     {
       newPlot: async () => {},
@@ -90,7 +90,7 @@ test('Plotly reacts to a palette change within the same day/night mode', async (
     return Promise.resolve();
   };
   const card = await mountVisualization(
-    spec('function', { functions: [{ expression: 'x' }] }),
+    spec('paper_chart', { categories: ['A'], series: [{ data: [1] }] }),
     host(),
   );
   document.documentElement.setAttribute('data-theme', 'another-palette');

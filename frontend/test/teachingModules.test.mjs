@@ -253,13 +253,7 @@ test('visualization: category label formatting and axis layout are stable for fi
  * ------------------------------------------------------------------- */
 test('routing: visualization templates dispatch to the specialized vs generic renderer', () => {
   // Specialized-renderer templates.
-  for (const template of [
-    'function',
-    'paper_chart',
-    'math_construction',
-    'geometry_3d',
-    'whiteboard',
-  ]) {
+  for (const template of ['paper_chart', 'math_construction', 'geometry_3d', 'whiteboard']) {
     assert.equal(usesSpecializedRenderer(template), true, `${template} should be specialized`);
   }
   // Structure templates route to the specialized (mermaid-style) path.
@@ -274,8 +268,10 @@ test('routing: visualization templates dispatch to the specialized vs generic re
   ]) {
     assert.equal(usesSpecializedRenderer(template), true, `${template} should be specialized`);
   }
-  // Plain chart templates fall through to the generic renderer.
-  for (const template of ['line', 'bar', 'scatter', undefined, '']) {
+  // Plain chart templates fall through to the shared chart renderer, including
+  // `function` (it draws through the ECharts option builder so a slider updates
+  // the curve in place instead of remounting the card).
+  for (const template of ['function', 'line', 'bar', 'scatter', undefined, '']) {
     assert.equal(usesSpecializedRenderer(template), false, `${template} should be generic`);
   }
 });
