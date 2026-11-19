@@ -114,9 +114,21 @@ for (const prefix of ['', '/zh']) {
         6,
         'NASA hero, product diagram, learning scene and three research covers',
       );
+      const heroImage = page.locator('.home-hero-image img');
+      assert.match(
+        await heroImage.getAttribute('src'),
+        /^\/media\/socrates-nasa-endeavour-limb-v2-\d+\.webp$/,
+        'the hero ships a width-specific WebP, not the 396 KB original',
+      );
       assert.equal(
-        await page.locator('.home-hero-image img').getAttribute('src'),
-        '/media/socrates-nasa-endeavour-limb-v2.jpg',
+        (await heroImage.getAttribute('srcset')).split(',').length,
+        4,
+        'the hero offers four width candidates so phones never fetch 2400w',
+      );
+      assert.match(
+        await heroImage.getAttribute('sizes'),
+        /^\(min-width: 1224px\) 1160px/,
+        'the hero caps at its 1160px frame, not the full viewport',
       );
       assert.match(
         await page.locator('.home-hero-image figcaption').innerText(),

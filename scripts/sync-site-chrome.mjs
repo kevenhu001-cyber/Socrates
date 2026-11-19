@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../site/', import.meta.url));
 // locale.js change: the site serves them with `cache-control: immutable,
 // max-age=604800`, so a returning browser keeps the old bytes for a week
 // unless the query string changes.
-const version = '20261119q1';
+const version = '20261119q2';
 const appURL = 'https://app.topodrive.top';
 const arrow =
   '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -471,6 +471,13 @@ export async function syncChrome({ check = false } = {}) {
       .replace(/[ \t]*<link rel="stylesheet" href="\/public\.css[^\"]*">\r?\n?/g, '')
       .replace(/[ \t]*<link rel="stylesheet" href="[^\"]*fonts\.css[^\"]*">\r?\n?/g, (tag) =>
         locale === 'zh' ? '' : tag,
+      )
+      // English pages that keep a fonts.css link still need the current
+      // cache-bust: the sheet carries the Geist Mono face, and a stale ?cb=
+      // pins them to a week-old copy of it.
+      .replace(
+        /(<link rel="stylesheet" href="[^"]*fonts\.css)\?(?:[^"]*)(")/g,
+        `$1?cb=${version}$2`,
       )
       .replace(/[ \t]*<script src="\/chrome\.js[^\"]*"><\/script>\r?\n?/g, '')
       .replace(/[ \t]*<script src="\/motion\.js[^\"]*"><\/script>\r?\n?/g, '')

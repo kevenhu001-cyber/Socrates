@@ -460,7 +460,10 @@ test('the research filter row holds its place from the first paint', async (t) =
 test('NASA hero remains present as the reader reaches the interactive question chain', async (t) => {
   const page = await animatedPage(t);
   const image = page.locator('.home-hero-image img');
-  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+  assert.match(
+    await image.getAttribute('src'),
+    /^\/media\/socrates-nasa-endeavour-limb-v2-\d+\.webp$/,
+  );
   assert.ok(await image.evaluate((node) => node.complete && node.naturalWidth > 0));
   await page.locator('#question-chain').scrollIntoViewIfNeeded();
   assert.ok(await page.locator('#question-chain [data-qc-next]').isVisible());
@@ -473,7 +476,10 @@ test('NASA hero remains present as the reader reaches the interactive question c
 test('without scripts the NASA hero image and native question form stay usable', async (t) => {
   const page = await sitePage(site, t, '/zh/', 390, false);
   const image = page.locator('.home-hero-image img');
-  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+  assert.match(
+    await image.getAttribute('src'),
+    /^\/media\/socrates-nasa-endeavour-limb-v2-\d+\.webp$/,
+  );
   assert.ok(await image.evaluate((node) => node.complete && node.naturalWidth > 0));
   assert.equal(await page.locator('[data-ask-form]').count(), 1);
   assert.equal(await page.locator('#askInputHero').getAttribute('name'), 'q');
@@ -775,7 +781,10 @@ test('editing the hero question updates its submit state without changing the NA
   assert.ok(await image.isVisible());
   await input.fill('');
   assert.equal(await form.evaluate((node) => node.classList.contains('has-value')), false);
-  assert.equal(await image.getAttribute('src'), '/media/socrates-nasa-endeavour-limb-v2.jpg');
+  assert.match(
+    await image.getAttribute('src'),
+    /^\/media\/socrates-nasa-endeavour-limb-v2-\d+\.webp$/,
+  );
 });
 
 test('the question chain grows its map out of the dot field, node by node, on its points', async (t) => {

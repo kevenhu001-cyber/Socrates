@@ -11,6 +11,7 @@ scripts/
 ├── archive/                     ← 一次性、已完结的 audit 历史（参见下文"归档"）
 ├── backup/                      ← 生产数据备份（参见下文"backup"）
 ├── utils/                       ← 复用率低、有命名子域的工具集（参见下文"utils"）
+├── build-site-cjk-subset.py     ← 重建 site/ 自托管中文字体子集（改站点文案后运行，需 fonttools）
 ├── backup-secrets.sh            ← 把 secrets/ 加密备份到 ~/.socrates-backups
 ├── check-drizzle-drift.mjs      ← **CI 门禁**：drizzle migration 元数据漂移（server job）
 ├── check-openapi-drift.mjs      ← **CI 门禁**：路由 ↔ openapi.yaml 双向漂移棘轮（sanity job）
