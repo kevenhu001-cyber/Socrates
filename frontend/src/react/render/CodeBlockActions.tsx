@@ -72,7 +72,7 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
     <>
       <Button
         variant="ghost"
-        size="icon-xs"
+        size="icon-sm"
         className="code-block-expand"
         aria-label="Expand code"
         title="Expand"
@@ -84,7 +84,7 @@ export function CodeBlockActions({ codeElement, language }: CodeBlockActionsProp
         variant={
           copyState === 'failed' ? 'destructive' : copyState === 'copied' ? 'secondary' : 'ghost'
         }
-        size="xs"
+        size="sm"
         className={`code-block-copy${copyState === 'copied' ? ' copied' : ''}${copyState === 'failed' ? ' copy-failed' : ''}`}
         aria-label={copyLabel}
         title={copyLabel}

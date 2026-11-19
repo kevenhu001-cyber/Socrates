@@ -250,9 +250,11 @@
     margin-right: auto;
     color: inherit;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--ui-font-size-xxs);
     font-weight: var(--ui-font-weight-medium);
-    text-transform: lowercase;
+    /* legacy/09 lowercases the raw fence id; the header now carries a
+       product label (JavaScript, Python) and must keep its casing. */
+    text-transform: none;
     letter-spacing: 0.02em;
   }
   #appShell #msgList .msg-body pre:not(.tool-inline-detail-value) {

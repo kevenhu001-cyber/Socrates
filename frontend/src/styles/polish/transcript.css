@@ -39,6 +39,7 @@
   #appShell#appShell .msg-body .code-block-header-lang {
     color: var(--muted-foreground);
     font-weight: var(--ui-font-weight-medium);
+    text-transform: none;
   }
 }
 @media (max-width: 768px) {

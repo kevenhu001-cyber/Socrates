@@ -17,7 +17,7 @@ test('code block headers infer markup and remain idempotent', () => {
   const pre = body.querySelector('pre');
   const header = body.querySelector('.code-block-header');
   assert.equal(header.nextElementSibling, pre);
-  assert.equal(header.querySelector('.code-block-header-lang').textContent, 'html');
+  assert.equal(header.querySelector('.code-block-header-lang').textContent, 'HTML');
   assert.ok(header.querySelector('[data-code-block-actions-root]'));
   assert.equal(
     header.querySelector('button'),
@@ -27,6 +27,17 @@ test('code block headers infer markup and remain idempotent', () => {
 
   wireCodeBlockHeaders(body);
   assert.equal(body.querySelectorAll('.code-block-header').length, 1);
+});
+
+test('code block headers use product language spellings', () => {
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+  body.innerHTML =
+    '<pre><code class="language-js">const x = 1;</code></pre>' +
+    '<pre><code class="language-python">print(1)</code></pre>';
+  wireCodeBlockHeaders(body);
+  const labels = [...body.querySelectorAll('.code-block-header-lang')].map((el) => el.textContent);
+  assert.deepEqual(labels, ['JavaScript', 'Python']);
 });
 
 test('tool and visualization artifacts do not receive code headers', () => {
