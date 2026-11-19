@@ -55,7 +55,7 @@ test('new chat switches instantly while a session save is in flight', async ({ p
   await expect.poll(() => posted.length).toBe(1);
 
   const started = Date.now();
-  await page.locator('#newChatBtn').click();
+  await page.locator('#navNew').click();
   await expect(page.locator('#topicSetup')).toBeVisible();
   expect(Date.now() - started).toBeLessThan(1500);
   await expect(page.locator('#confirmDialog')).toBeHidden();
@@ -85,6 +85,7 @@ test('new chat returns from every destination with the same live editor and no r
   await mockAuthedApp(page, { lang: 'en' });
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  await expect(page.locator('.rich-composer-editor')).toBeVisible();
   await page.evaluate(() => {
     window.__originalComposer = document.querySelector('.rich-composer-editor');
   });
@@ -105,7 +106,7 @@ test('new chat returns from every destination with the same live editor and no r
       },
       { path, view },
     );
-    await page.locator('#newChatBtn').click();
+    await page.locator('#navNew').click();
     if (view === 'examView')
       await page.getByRole('alertdialog').getByRole('button', { name: 'OK', exact: true }).click();
     await expect(page.locator('#topicSetup')).toBeVisible();

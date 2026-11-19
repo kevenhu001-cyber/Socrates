@@ -637,6 +637,8 @@ export const en = {
   'sidebar.knowledge': 'Knowledge',
   'sidebar.recents': 'Recents',
   'sidebar.mistakes': 'Mistakes',
+  'sidebar.nav.search': 'Search',
+  'sidebar.filterRecents': 'Filter recent chats',
   'sidebar.searchPlaceholder': 'Search chats',
   /* the session list heading. Keep the visible label
        aligned with the panel's actual contents instead of calling chat

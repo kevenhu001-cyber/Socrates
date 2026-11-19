@@ -53,7 +53,7 @@ test('navigation clears detail and workspace hides chat-specific chrome', async 
   await expect(page.locator('.detail-root')).toBeHidden();
   await expect(page.locator('#topModelSwitcher')).toBeHidden();
   await page.screenshot({ path: 'test-results/detail-surface-workspace.png' });
-  await page.locator('#newChatBtn').click();
+  await page.locator('#navNew').click();
   await expect(page.locator('#topModelSwitcher')).toBeVisible();
 });
 

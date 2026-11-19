@@ -81,10 +81,17 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     padding: 28px clamp(28px, 4vw, 64px) 48px;
   }
 
-  /* The old 740px reading column left most of a full-width page empty. Keep
-     the comfortable measure, but let the card rail use the extra room. */
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
+    min-height: var(--ui-control-md);
+  }
+
+  html[data-main-view='settingsPage'] #settingsPage .settings-category-description {
+    display: none;
+  }
+
+  /* Cap the form measure without constraining the full-viewport shell. */
   html[data-main-view='settingsPage'] #settingsPage .settings-pane {
-    max-width: 1040px;
+    max-width: 740px;
   }
 }
 

@@ -1,19 +1,10 @@
 import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
-import { preloadSettingsPage } from '../../settings/settings.preload.ts';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
-import { getLegacyActions, t as translate } from '../../legacy/gateway.ts';
+import { t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
-import {
-  ChevronDownIcon,
-  FilterIcon,
-  GearIcon,
-  GridIcon,
-  i18n,
-  ListIcon,
-  SearchIcon,
-} from './workspaceUi';
+import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
 
 const FILE_TYPE_FILTERS = [
   { id: 'all', labelKey: 'library.filter.all', fallback: 'All' },
@@ -93,19 +84,6 @@ export function LibraryToolbar({
               </div>
             ) : null}
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-lg"
-            className="library-settings-btn"
-            aria-label={i18n('profile.preferences', '偏好设置')}
-            onPointerEnter={preloadSettingsPage}
-            onPointerDown={preloadSettingsPage}
-            onFocus={preloadSettingsPage}
-            onClick={() => getLegacyActions().navigation.openSettings()}
-          >
-            <GearIcon />
-          </Button>
         </div>
       </div>
 

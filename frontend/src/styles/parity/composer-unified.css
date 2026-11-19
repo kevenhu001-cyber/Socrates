@@ -279,7 +279,8 @@
 #appShell
   .composer-shell
   [data-composer-control='send'][data-sending='true']
-  #composerPrimaryBtnContent {
+  #composerPrimaryBtnContent,
+#appShell .composer-shell [data-composer-control='send']:active #composerPrimaryBtnContent {
   transform: scale(0.9);
 }
 
@@ -314,6 +315,11 @@
   #appShell .composer-shell .rich-composer-editor {
     max-height: 220px;
     font-size: var(--ui-font-size-md);
+  }
+  /* Add to the shared rail's 4px gap so the two 4px hit slop edges meet
+     without overlapping. The painted discs stay 36px. */
+  #appShell .composer-shell [data-composer-control='send'] {
+    margin-inline-start: var(--ui-step-50);
   }
   #appShell .composer-shell .composer-plugin-chips {
     flex-wrap: nowrap;

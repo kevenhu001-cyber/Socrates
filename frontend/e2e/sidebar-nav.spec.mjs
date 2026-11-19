@@ -31,8 +31,9 @@ test('sidebar exposes the primary destinations', async ({ page }) => {
     );
   expect(visibleIds).toEqual([
     'navNew',
-    'navLibrary',
+    'navSearch',
     'navProjects',
+    'navLibrary',
     'navScheduled',
     'navPlugins',
     'navSites',
@@ -430,4 +431,16 @@ test('every routed destination restores its page host after a direct visit', asy
     }
     await expect(page.locator('#topicSetup')).toBeHidden();
   }
+});
+
+test('sidebar search opens the same global search as the keyboard shortcut', async ({ page }) => {
+  const trigger = page.locator('#navSearch');
+  const field = page.locator('#cmdKInput');
+  await trigger.click();
+  await expect(field).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(field).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press('ControlOrMeta+k');
+  await expect(field).toBeFocused();
 });

@@ -139,8 +139,7 @@ test('directory headings and actions align without occupying the phone app bar',
   await page.locator('.library-new-pill').click();
   await expect(page.locator('.library-new-menu')).toBeInViewport();
   await page.locator('.library-new-pill').click();
-  await page.locator('.library-settings-btn').click();
-  await expect(page.locator('#settingsPage')).toBeVisible();
+  await expect(page.locator('.library-settings-btn')).toHaveCount(0);
 });
 
 test('library filters and view mode use shadcn stateful controls', async ({ page }) => {

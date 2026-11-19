@@ -195,44 +195,6 @@
     white-space: nowrap;
   }
 }
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navNew {
-    order: 0;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navImages {
-    order: 1;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navLibrary {
-    order: 2;
-  }
-}
-/* Reference drawer order: New chat · Images · Library · Scheduled · Plugins ·
-   Projects(+) · More — exactly matching ChatGPT mobile screenshot. */
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navScheduled {
-    order: 3;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navPlugins {
-    order: 4;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #sidebarNav .sidebar-project-nav {
-    order: 5;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navMore {
-    order: 7;
-  }
-}
-
 /* Reference shell metrics. This existing mobile owner consumes theme tokens. */
 @media (max-width: 768px) {
   #appShell #sidebarHeader .cg-sidebar-caret {
@@ -267,13 +229,6 @@
     flex-direction: column;
   }
 }
-@media (max-width: 768px) {
-  #appShell #sidebarNav #navSites.sidebar-nav-btn {
-    display: grid;
-    order: 6;
-  }
-}
-
 /* Mobile toolbar density retained from transcript compatibility rules. */
 @media (max-width: 768px) {
   #appShell .msg-toolbar {

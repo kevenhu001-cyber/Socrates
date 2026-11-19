@@ -123,13 +123,13 @@ for (const mode of ['dark', 'light']) {
     const actualOrder = [...geometry].sort((a, b) => a.y - b.y).map((row) => row.id);
     expect(actualOrder.indexOf('navLibrary')).toBeLessThan(actualOrder.indexOf('navScheduled'));
     expect(actualOrder.indexOf('navScheduled')).toBeLessThan(actualOrder.indexOf('navPlugins'));
-    expect(actualOrder.indexOf('navPlugins')).toBeLessThan(actualOrder.indexOf('navProjects'));
-    if (actualOrder.includes('navImages'))
-      expect(actualOrder.indexOf('navImages')).toBeLessThan(actualOrder.indexOf('navLibrary'));
+    expect(actualOrder.slice(0, 4)).toEqual(['navNew', 'navSearch', 'navProjects', 'navLibrary']);
+    expect(actualOrder).not.toContain('navImages');
+    expect(actualOrder).toEqual(geometry.map(({ id }) => id));
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
     expect((await recent.boundingBox()).height).toBe(36);
-    /* Reference drawer lockup: wordmark + ⌄ on the left, search and the
+    /* Reference drawer lockup: wordmark + ⌄ on the left, recent filter and the
        sidebar glyph (not ×) on the right. */
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
     await expect(page.locator('.sidebar-logo [data-part="brand-caret"]')).toBeVisible();

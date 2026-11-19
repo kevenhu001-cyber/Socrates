@@ -2,11 +2,6 @@
  * Their inputs, buttons, toggles, menus and field labels come from the
  * shared shadcn components; these selectors retain page layout and the
  * 36px control rung while resolving colours through semantic tokens. */
-@media (max-width: 768px) {
-  #appShell #navMore.sidebar-nav-btn {
-    order: 6;
-  }
-}
 #appShell .creation-panel {
   width: 100%;
   min-height: 100%;

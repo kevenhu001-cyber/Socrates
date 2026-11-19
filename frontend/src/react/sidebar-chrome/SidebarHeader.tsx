@@ -4,7 +4,6 @@ import { useUserInfo } from './sidebarChrome.store';
 import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
 import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
-import { startNewChat } from '../../app/lifecycle/index.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
@@ -28,8 +27,8 @@ const MOBILE_BRAND_NAME = {
  *
  * Both desktop and the phone drawer draw the panel glyph on the collapse
  * control, as the reference does. On the phone the header is the reference
- * lockup: the wordmark with a decorative ⌄ (no mark), then search and
- * collapse (new chat lives in the nav list there).
+ * lockup: the wordmark with a decorative ⌄ (no mark), then the recent-chat filter and
+ * collapse. Global search and new chat live in the nav list.
  */
 export function SidebarHeader() {
   useLocaleRefresh();
@@ -46,10 +45,8 @@ export function SidebarHeader() {
   const closeButtonHidden = isMobile && !sidebarOpen;
   const closeSidebarKey = sidebarOpen ? 'chrome.closeSidebar' : 'chrome.openSidebar';
   const closeSidebarLabel = t(closeSidebarKey);
-  const searchLabel = t('sidebar.searchPlaceholder');
-  const newChatLabel = t('sidebar.startNewChat');
+  const searchLabel = t('sidebar.filterRecents');
   useDomTitle('sidebarSearchBtn', searchLabel);
-  useDomTitle('newChatBtn', newChatLabel);
   useDomTitle('sidebarCloseBtn', closeSidebarLabel);
   // Subscribe to the chrome bridge so the header re-renders on user change.
   useUserInfo();
@@ -70,25 +67,14 @@ export function SidebarHeader() {
       <SidebarHeaderActions hostStyle={webClass('sidebar-header-actions')}>
         <SidebarIconAction
           id="sidebarSearchBtn"
-          icon="search"
+          icon="sliders"
           label={searchLabel}
-          i18nKey="sidebar.searchPlaceholder"
+          i18nKey="sidebar.filterRecents"
           controls="sidebarSearch"
           expanded={searchOpen}
           iconSize={iconSize}
           hostStyle={webClass(isMobile && 'btn-icon', 'sidebar-search-btn')}
           onPress={() => setSidebarSearchOpen(!searchOpen)}
-        />
-        <SidebarIconAction
-          id="newChatBtn"
-          icon="compose"
-          label={newChatLabel}
-          i18nKey="sidebar.startNewChat"
-          iconSize={iconSize}
-          hostStyle={webClass(isMobile && 'btn-icon', 'compose-btn')}
-          onPress={() => {
-            void startNewChat();
-          }}
         />
         <SidebarIconAction
           id="sidebarCloseBtn"

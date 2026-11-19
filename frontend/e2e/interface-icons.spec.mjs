@@ -8,6 +8,7 @@ test('React-owned navigation renders a glyph for every primary destination', asy
   await waitForAppShell(page);
   for (const id of [
     'navNew',
+    'navSearch',
     'navLibrary',
     'navProjects',
     'navScheduled',

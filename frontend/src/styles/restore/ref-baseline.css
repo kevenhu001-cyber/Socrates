@@ -62,51 +62,6 @@
   }
 }
 
-/* Reference section order: 新聊天 / 资料库 / 项目 / 定时任务 / 插件 / ….
-   styles.css pins the legacy order through flex `order` on desktop; the DOM
-   (index.html + SidebarNav.tsx BUTTONS) already follows the reference order,
-   so re-pin it here. Later source order wins at equal specificity. */
-@media (max-width: 768px) {
-  #appShell #navNew {
-    order: 1;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navLibrary {
-    order: 2;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navProjects {
-    order: 3;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navScheduled {
-    order: 4;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navPlugins {
-    order: 5;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navMore {
-    order: 6;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navExam {
-    order: 7;
-  }
-}
-@media (max-width: 768px) {
-  #appShell #navSkills {
-    order: 8;
-  }
-}
-
 /* Sidebar nav is a flat list: no hairline divider between 项目 and 定时任务.
    styles.css adds a two-tier separator on [data-nav="scheduled"]; neutralize
    it here so all six rows share the same rhythm. */

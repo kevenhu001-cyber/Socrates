@@ -103,8 +103,9 @@ for (const theme of ['light', 'dark']) {
       );
     expect(order).toEqual([
       'navNew',
-      'navLibrary',
+      'navSearch',
       'navProjects',
+      'navLibrary',
       'navScheduled',
       'navPlugins',
       'navSites',

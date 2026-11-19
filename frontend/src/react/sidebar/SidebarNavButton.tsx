@@ -13,6 +13,7 @@ function i18n(key: string, fallback: string): string {
 /* The shared shell draws glyphs from the shared interface icon set. */
 const GLYPHS: Record<NavButtonSpec['key'], UiGlyphName> = {
   new: 'compose',
+  search: 'search',
   library: 'library',
   projects: 'folder',
   scheduled: 'clock',

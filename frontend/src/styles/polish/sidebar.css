@@ -35,7 +35,6 @@
   #appShell #sidebarHeader .sidebar-logo-img {
     border-radius: var(--ui-radius-xs);
   }
-  #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     border-radius: var(--ui-radius-pill);
     color: var(--foreground);
@@ -44,18 +43,14 @@
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       transform 120ms ease;
   }
-  #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover,
-  #appShell #newChatBtn:focus-visible,
   #appShell #sidebarCloseBtn:focus-visible {
     background: var(--ui-fill);
     color: var(--foreground);
   }
-  #appShell #newChatBtn:active,
   #appShell #sidebarCloseBtn:active {
     transform: scale(0.94);
   }
-  #appShell #newChatBtn svg,
   #appShell #sidebarCloseBtn svg {
     width: 18px;
     height: 18px;

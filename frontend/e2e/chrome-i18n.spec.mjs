@@ -28,8 +28,8 @@ test('static shell chrome localizes to Chinese', async ({ page }) => {
   await setLang(page, 'zh');
   expect(await page.evaluate(() => '_currentLang' in window)).toBe(false);
 
-  expect(await attr(page, '#sidebarSearchBtn', 'title')).toBe('搜索对话');
-  expect(await attr(page, '#sidebarSearchBtn', 'aria-label')).toBe('搜索对话');
+  expect(await attr(page, '#sidebarSearchBtn', 'title')).toBe('筛选最近对话');
+  expect(await attr(page, '#sidebarSearchBtn', 'aria-label')).toBe('筛选最近对话');
   expect(await attr(page, '#themeToggle', 'title')).toBe('切换主题');
   expect(await attr(page, '#displayPrefsBtn', 'title')).toBe('显示设置');
   expect(await attr(page, '#displayPrefsBtn', 'aria-label')).toBe('显示设置');
@@ -58,7 +58,7 @@ test('static shell chrome localizes back to English', async ({ page }) => {
   await setLang(page, 'zh');
   await setLang(page, 'en');
 
-  expect(await attr(page, '#sidebarSearchBtn', 'title')).toBe('Search chats');
+  expect(await attr(page, '#sidebarSearchBtn', 'title')).toBe('Filter recent chats');
   expect(await attr(page, '#themeToggle', 'title')).toBe('Toggle theme');
   expect(await attr(page, '#displayPrefsBtn', 'title')).toBe('Display settings');
   expect(await attr(page, '#composerToolsBtn', 'title')).toBe('Add tools and files');

@@ -19,7 +19,7 @@ export function SidebarNav() {
   return (
     <WebUiTheme>
       {BUTTONS.map((button) => {
-        const isActive = button.key !== 'new' && button.key !== 'skills' && active === button.key;
+        const isActive = active === button.key;
         const navigation = (
           <SidebarNavButton
             key={button.key}
@@ -29,6 +29,8 @@ export function SidebarNav() {
             onClick={() => {
               if (button.key === 'new') {
                 getLegacyActions().navigation.startNewChat();
+              } else if (button.key === 'search') {
+                getLegacyActions().cmdK.openCmdK();
               } else if (button.key === 'skills') {
                 getLegacyActions().navigation.openPromptTemplatesModal();
               } else {
