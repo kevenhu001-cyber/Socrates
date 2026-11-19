@@ -11,7 +11,8 @@
 
 import fs from 'node:fs/promises';
 
-export type ParseErrorCode = 'PARSE_FAILED' | 'ENCRYPTED' | 'EMPTY_DOCUMENT' | 'UNSUPPORTED_MIME';
+export type ParseErrorCode =
+  'PARSE_FAILED' | 'ENCRYPTED' | 'EMPTY_DOCUMENT' | 'UNSUPPORTED_MIME' | 'PARSE_TIMEOUT';
 
 export function parseError(
   code: ParseErrorCode,

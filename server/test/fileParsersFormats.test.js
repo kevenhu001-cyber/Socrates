@@ -5,7 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import JSZip from 'jszip';
 import XLSX from 'xlsx';
-import { extractText, SUPPORTED_MIMES, PARSERS } from '../src/services/fileParsers/index.js';
+import {
+  extractText,
+  SUPPORTED_MIMES,
+  PARSERS,
+  stopFileParserPool,
+} from '../src/services/fileParsers/index.js';
 import { extract as legacyDocExtract } from '../src/services/fileParsers/legacyDoc.js';
 import { extract as legacyXlsExtract } from '../src/services/fileParsers/legacyXls.js';
 import { extractOdt, extractOds, extractOdp } from '../src/services/fileParsers/odf.js';
@@ -168,4 +173,8 @@ test('corrupt inputs fail with PARSE_FAILED instead of crashing', async () => {
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
+});
+
+test.after(async () => {
+  await stopFileParserPool();
 });

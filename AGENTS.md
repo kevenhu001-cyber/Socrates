@@ -92,7 +92,13 @@ Conventions these follow: a failing check prints the offending `file:line` and e
 
 Do not run the full `test:unit` / Playwright suites for every change. Tests are slow
 (unit ≈2 min, full Playwright much longer), so map the diff to tests and run only those.
+Prefer the automated affected test runner:
+- `npm run test:fast` — runs only the test files affected by your current git changes (staged, unstaged, untracked).
+- `node scripts/run-affected-tests.mjs --dry-run` — inspect mapped tests without executing.
+- `node scripts/run-affected-tests.mjs --e2e` — also include affected Playwright specs.
+- `npm run test:fast -- <path>` — test for specific modified files.
 
+When running manually:
 1. Find the change set: `git status --short` + `git diff --name-only HEAD` (or diff
    against the last verified commit you recorded).
 2. Map changed files to specs:

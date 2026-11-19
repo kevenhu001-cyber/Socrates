@@ -21,6 +21,7 @@
     "lint": "npm run typecheck && npm run lint:boundaries",
     "typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
     "test": "node --import tsx scripts/run-tests.mjs",
+    "test:fast": "node ../scripts/run-affected-tests.mjs",
     "test:unit": "node --import tsx --import ./scripts/test-env.mjs --test test/*.test.js test/*.test.mjs",
     "test:strict": "node --import tsx scripts/run-tests.mjs --strict",
     "test:coverage": "node --import tsx --import ./scripts/test-env.mjs --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-exclude='scripts/**' --test-coverage-exclude='**/*.generated.ts' test/*.test.js test/*.test.mjs",

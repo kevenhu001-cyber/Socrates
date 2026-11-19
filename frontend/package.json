@@ -63,6 +63,7 @@
     "lint:ui-entry": "node scripts/check-ui-entry.mjs",
     "generate:openui": "tsx scripts/generate-openui-prompt.mts",
     "lint:shadcn": "node scripts/check-shadcn-adoption.mjs",
+    "test:fast": "node ../scripts/run-affected-tests.mjs",
     "test:one": "tsx --tsconfig tsconfig.test.json --test"
   },
   "devDependencies": {

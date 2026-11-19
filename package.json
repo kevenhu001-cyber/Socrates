@@ -20,6 +20,8 @@
     "lint:bundle": "node scripts/check-bundle-size.mjs",
     "lint:dom": "node scripts/check-packages-dom.mjs",
     "lint:drizzle": "node scripts/check-drizzle-drift.mjs",
+    "test:fast": "node scripts/run-affected-tests.mjs",
+    "test:affected": "node scripts/run-affected-tests.mjs",
     "test:unit": "npm --prefix server run test:unit && npm --prefix frontend run test:unit",
     "test:shared": "node scripts/run-shared-tests.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test:shared",
