@@ -67,13 +67,13 @@ export const INTELLIGENT_UI_TOOL = {
               template: {
                 type: 'string',
                 description:
-                  'Required for visualization nodes. Supported templates:\n' +
+                  'Required for visualization nodes. A chart node accepts the same template and payload as a visualization node, so prefer one node shape for every chart, graph and diagram. Supported templates:\n' +
                   visualizationTemplateGuide(),
               },
               payload: {
                 type: 'object',
                 description:
-                  'Required for visualization nodes. Template data payload (e.g. {categories, series} for bar/line/pie/radar, {functions} for function, {values, xCategories, yCategories} for heatmap).',
+                  'Required for visualization nodes; a chart node accepts the same payload. Template data payload (e.g. {categories, series} for bar/line/pie/radar, {functions} for function, {values, xCategories, yCategories} for heatmap).',
               },
               accessibilitySummary: {
                 type: 'string',
@@ -225,7 +225,8 @@ export const INTELLIGENT_UI_TOOL = {
               points: {
                 type: 'array',
                 maxItems: 50,
-                description: 'Chart values: [{label,value}].',
+                description:
+                  'Legacy chart shorthand: [{label,value}] becomes one bar or line series. Prefer template+payload whenever the chart needs a function, axis labels, a legend or more than 50 points.',
               },
               options: {
                 type: 'array',

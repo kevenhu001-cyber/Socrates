@@ -7,6 +7,16 @@ const SVG = 'http://www.w3.org/2000/svg';
 const HTML = 'http://www.w3.org/1999/xhtml';
 
 const SKIP_HTML = 'svg, .katex, [data-viz-math], script, style, textarea, pre, code, option';
+/* SVG renderers that draw their labels as HTML (Mermaid puts every node and
+   edge label in a <foreignObject>) would be excluded by the `svg` above, so
+   their labels are checked against the text-only exclusions instead. */
+const SKIP_FOREIGN = '.katex, [data-viz-math], script, style, textarea, pre, code, option';
+
+/** True when this element's text must stay literal. */
+function skipsText(element: Element | null): boolean {
+  if (!element) return false;
+  return element.closest(element.closest('foreignObject') ? SKIP_FOREIGN : SKIP_HTML) !== null;
+}
 
 type Typeset = (source: string) => string | null;
 
@@ -66,11 +76,11 @@ function typesetTextLeaves(host: Node, render: Typeset): void {
   let leaf: Text | null;
   if (host.nodeType === 3) leaves.push(host as Text);
   while ((leaf = walker.nextNode() as Text | null)) {
-    if (leaf.parentElement?.closest(SKIP_HTML)) continue;
+    if (skipsText(leaf.parentElement)) continue;
     if (MATH_LABEL_TRIGGER.test(leaf.data)) leaves.push(leaf);
   }
   for (const item of leaves) {
-    if (item.parentElement?.closest(SKIP_HTML) || !MATH_LABEL_TRIGGER.test(item.data)) continue;
+    if (skipsText(item.parentElement) || !MATH_LABEL_TRIGGER.test(item.data)) continue;
     const html = render(item.data);
     if (!html) continue;
     const span = host.ownerDocument!.createElement('span');
@@ -161,7 +171,10 @@ export function installVisualizationMath(host: HTMLElement): () => void {
   const observer = new Observer((records) => {
     for (const record of records) {
       const element = elementFor(record.target);
-      if (element?.closest('.katex, foreignObject, [data-viz-math]')) continue;
+      /* Our own overlays carry [data-viz-math] and KaTeX carries .katex, so
+         both are inert. `foreignObject` is deliberately not excluded: that is
+         where Mermaid keeps its labels, and those must be typeset too. */
+      if (element?.closest('.katex, [data-viz-math]')) continue;
       if (record.type === 'attributes') {
         // Ancestor transforms move labels and overlays together.
         // Geometry/colour on a text or its ancestor can affect formulas;

@@ -249,7 +249,12 @@ function renderMermaidResult(
     svg.style.maxWidth = '100%';
     svg.style.height = 'auto';
   }
-  installVisualizationMath(card.body);
+  /* A re-render (theme switch, resize, re-parse) replaces the SVG but keeps
+     the same .viz-body element, so the previous observer has to be released
+     first or every render would stack another one on the card. */
+  const body = card.body as HTMLElement & { _vizMathCleanup?: () => void };
+  body._vizMathCleanup?.();
+  body._vizMathCleanup = installVisualizationMath(body);
 }
 
 function mermaidErrorMessage(error: unknown): string {

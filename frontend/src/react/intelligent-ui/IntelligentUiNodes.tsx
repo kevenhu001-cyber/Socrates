@@ -143,7 +143,8 @@ function UiText({ node, context }: { node: IntelligentUiNode; context: RenderCon
   if (!text) return null;
   return (
     <p className="intui-text" data-intui-id={node.id}>
-      <MathText text={text} />
+      {/* Block copy: a `$$…$$` the model wrote on its own line is display math. */}
+      <MathText text={text} display />
     </p>
   );
 }
@@ -236,7 +237,7 @@ function UiCallout({ node, context }: { node: IntelligentUiNode; context: Render
       ) : null}
       {text ? (
         <div className="intui-callout-text">
-          <MathText text={text} />
+          <MathText text={text} display />
         </div>
       ) : null}
       {renderChildren(node, context)}
@@ -442,52 +443,83 @@ function resolvedChartPoints(node: IntelligentUiNode, context: RenderContext): C
   return points;
 }
 
-function UiChart({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
+interface VisualizationProps {
+  template: string;
+  title: string;
+  caption?: string;
+  payload: Record<string, unknown>;
+  accessibilitySummary?: string;
+}
+
+/* One card, one prop contract. `chart` and `visualization` are two spellings
+   of the same node: a `chart` may carry the full template/payload of a
+   `visualization` node, and the legacy `points` shape is folded into that
+   same contract — so a function graph, a bar chart and a diagram all reach
+   the reader through NativeVisualization with the same card chrome. */
+function visualizationTemplateOf(node: IntelligentUiNode): string {
+  if (typeof node.template === 'string' && node.template) return node.template;
+  if (typeof node.kind === 'string' && node.kind) return node.kind;
+  return '';
+}
+
+/** The `accessibilitySummary` / `summary` pair every card reads. */
+function visualizationSummaryOf(node: IntelligentUiNode): string | undefined {
+  if (typeof node.accessibilitySummary === 'string') return node.accessibilitySummary;
+  if (typeof node.summary === 'string') return node.summary;
+  return undefined;
+}
+
+/** Legacy `chart`: `points: [{label, value}]` becomes one category series. */
+function chartPointsProps(
+  node: IntelligentUiNode,
+  context: RenderContext,
+  template: string,
+  title: string,
+): VisualizationProps | null {
   const points = resolvedChartPoints(node, context);
   if (!points.length) return null;
+  return {
+    template: template || (node.kind === 'line' ? 'line' : 'bar'),
+    title,
+    payload: {
+      categories: points.map((point) => point.label),
+      series: [{ name: title || 'Values', data: points.map((point) => point.value) }],
+    },
+    accessibilitySummary: points.map((point) => `${point.label}: ${point.value}`).join('; '),
+  };
+}
+
+function visualizationPropsOf(
+  node: IntelligentUiNode,
+  context: RenderContext,
+): VisualizationProps | null {
   const title = asProse(resolve(node.title, context));
-  return (
-    <div className="intui-chart" data-intui-id={node.id}>
-      <NativeVisualization
-        template={node.kind === 'line' ? 'line' : 'bar'}
-        title={title}
-        streaming={context.streaming}
-        accessibilitySummary={points.map((point) => `${point.label}: ${point.value}`).join('; ')}
-        payload={{
-          categories: points.map((point) => point.label),
-          series: [{ name: title || 'Values', data: points.map((point) => point.value) }],
-        }}
-      />
-    </div>
-  );
+  const template = visualizationTemplateOf(node);
+  const payload = isRecord(node.payload) ? node.payload : isRecord(node.data) ? node.data : null;
+  if (template && payload) {
+    const caption = asProse(resolve(node.caption, context));
+    return {
+      template,
+      title,
+      caption: caption || undefined,
+      payload,
+      accessibilitySummary: visualizationSummaryOf(node),
+    };
+  }
+  return chartPointsProps(node, context, template, title);
 }
 
 function UiVisualization({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
-  const title = asProse(resolve(node.title, context));
-  const caption = asProse(resolve(node.caption, context));
-  const template =
-    typeof node.template === 'string'
-      ? node.template
-      : typeof node.kind === 'string'
-        ? node.kind
-        : 'bar';
-  const payload = isRecord(node.payload) ? node.payload : isRecord(node.data) ? node.data : {};
-  const accessibilitySummary =
-    typeof node.accessibilitySummary === 'string'
-      ? node.accessibilitySummary
-      : typeof node.summary === 'string'
-        ? node.summary
-        : undefined;
+  const props = visualizationPropsOf(node, context);
+  if (!props) return null;
   return (
-    <div className="intui-chart" data-intui-id={node.id} data-template={template}>
-      <NativeVisualization
-        template={template}
-        title={title}
-        caption={caption}
-        payload={payload}
-        accessibilitySummary={accessibilitySummary}
-        streaming={context.streaming}
-      />
+    <div
+      className="intui-chart"
+      data-intui-id={node.id}
+      data-template={props.template}
+      data-chart-node={node.type === 'chart' ? '' : undefined}
+    >
+      <NativeVisualization {...props} streaming={context.streaming} />
     </div>
   );
 }
@@ -846,7 +878,7 @@ const nodeRenderers = new Map<string, UiNodeRenderer>([
   ['toggle', (node, context) => <UiToggle node={node} context={context} />],
   ['button', (node, context) => <UiButton node={node} context={context} />],
   ['table', (node, context) => <UiTable node={node} context={context} />],
-  ['chart', (node, context) => <UiChart node={node} context={context} />],
+  ['chart', (node, context) => <UiVisualization node={node} context={context} />],
   ['tabs', (node, context) => <UiTabs node={node} context={context} />],
   ['entity', (node, context) => <UiEntity node={node} context={context} />],
   ['image-gallery', (node, context) => <UiImageGallery node={node} context={context} />],

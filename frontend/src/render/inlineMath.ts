@@ -27,9 +27,17 @@ function hasInlineMarks(text: string): boolean {
   return CODE_RE.test(text) || BOLD_RE.test(text);
 }
 
+export interface InlineMathOptions {
+  /* Render `$$…$$` / `\[…\]` as display math. Off by default: a mistake stem
+     or an answer option must stay one line, and a display formula there would
+     centre and enlarge it. Block text (a derivation, a callout) opts in. */
+  display?: boolean;
+}
+
 export function renderInlineMathHtml(
   text: string,
   output: 'htmlAndMathml' | 'mathml' = 'htmlAndMathml',
+  options: InlineMathOptions = {},
 ): string | null {
   const source = String(text ?? '');
   const hasMath = hasMathDelimiters(source);
@@ -45,13 +53,13 @@ export function renderInlineMathHtml(
   /* Formulas are stashed before the bold pass so a `*` inside one is never
      read as a mark. Without KaTeX the formula keeps its escaped source. */
   let typesetCount = 0;
-  const typeset = (math: string, raw: string): string => {
+  const typeset = (math: string, raw: string, display = false): string => {
     if (!katex) return stash(esc(raw));
     typesetCount += 1;
     let html: string;
     try {
       html = katex.renderToString(math.trim(), {
-        displayMode: false,
+        displayMode: display,
         output,
         throwOnError: false,
         macros: KATEX_MACROS,
@@ -64,13 +72,15 @@ export function renderInlineMathHtml(
   let marked = source.replace(CODE_RE, (_match, code: string) =>
     stash(`<code>${esc(code)}</code>`),
   );
-  // `$$…$$` stays on the line (inline mode) so a stem never grows a block.
-  marked = marked.replace(/\$\$([\s\S]+?)\$\$/g, (match, math: string) => typeset(math, match));
+  // `$$…$$` stays on the line by default so a stem never grows a block.
+  marked = marked.replace(/\$\$([\s\S]+?)\$\$/g, (match, math: string) =>
+    typeset(math, match, options.display === true),
+  );
   marked = replaceInlineDollarMath(marked, true, (math) => typeset(math, `$${math}$`));
   marked = marked.replace(
     /\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]/g,
     (match, inline: string | undefined, block: string | undefined) =>
-      typeset(inline ?? block ?? '', match),
+      typeset(inline ?? block ?? '', match, Boolean(block) && options.display === true),
   );
   if (!typesetCount && !hasMarks) return null;
   const tokenRe = new RegExp(`${TOKEN}(\\d+)${TOKEN}`, 'g');

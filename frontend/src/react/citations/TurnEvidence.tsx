@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../legacy/gateway';
+import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';
 
 const PREFIX = '#socrates-citation-';
@@ -196,7 +197,11 @@ export function TurnEvidence({
                     </svg>
                   </a>
                   <small>{safeHostname(source.url)}</small>
-                  {source.snippet ? <p>{source.snippet}</p> : null}
+                  {source.snippet ? (
+                    <p>
+                      <MathText text={source.snippet} />
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </aside>,

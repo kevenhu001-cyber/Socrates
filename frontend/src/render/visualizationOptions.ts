@@ -70,8 +70,22 @@ function normalizeFunction(spec: VizSpec): {
         return point[1] as number;
       }),
     );
-    minX = Math.min(minX, sample.domain[0]);
-    maxX = Math.max(maxX, sample.domain[1]);
+    /* Fit the x axis to where the curve actually exists, not to the requested
+       domain. ln(x) sampled over a domain that crosses zero has no values at
+       x <= 0, and keeping that empty left half showed the curve starting in
+       the middle of a blank plot. */
+    minX = Math.min(
+      minX,
+      ...finitePoints.map(function (point) {
+        return point[0] as number;
+      }),
+    );
+    maxX = Math.max(
+      maxX,
+      ...finitePoints.map(function (point) {
+        return point[0] as number;
+      }),
+    );
     series.push({
       name: fn.label || fn.expression,
       role: fn.role,
@@ -81,6 +95,29 @@ function normalizeFunction(spec: VizSpec): {
   });
   const yExtent = robustExtent(allValues);
   return { series: series, xExtent: [minX, maxX], yExtent: yExtent };
+}
+
+/* A sampled curve produces arbitrary bounds (3.797, -1.7287). Rounding each
+   axis end outward to a half-decade keeps the extreme ticks readable and the
+   plot the same size; the data itself is untouched. */
+function niceBound(value: number, direction: 1 | -1): number {
+  if (!Number.isFinite(value) || value === 0) return direction > 0 ? 1 : -1;
+  const step = 10 ** Math.floor(Math.log10(Math.abs(value))) / 2;
+  const rounded = direction > 0 ? Math.ceil(value / step) * step : Math.floor(value / step) * step;
+  return Number(rounded.toPrecision(6));
+}
+
+/* A sampled curve produces arbitrary floats. Axis ticks read as numbers a
+   reader can compare, so keep at most four significant decimals and fall back
+   to exponent form at the extremes instead of printing
+   -1.7286640104019755 across the axis. */
+function formatNumericTick(value: number): string {
+  if (!Number.isFinite(value)) return '';
+  if (value === 0) return '0';
+  const magnitude = Math.abs(value);
+  if (magnitude >= 1e5 || magnitude < 1e-3) return value.toExponential(1).replace('e+', 'e');
+  const rounded = Number(value.toFixed(4));
+  return String(rounded);
 }
 
 /* Canvas/SVG renderers need a concrete family list. Keep it aligned with
@@ -145,30 +182,37 @@ function functionChartOption(
     ),
     legend: legendOptions(normalized.series, colors, fontFamily),
     grid: {
-      left: 56,
-      right: 20,
-      top: normalized.series.length > 1 ? 38 : 18,
-      bottom: 50,
-      containLabel: false,
+      left: 62,
+      right: 22,
+      top: normalized.series.length > 1 ? 44 : 20,
+      bottom: 52,
+      containLabel: true,
     },
+    /* Same axis layout as the scatter card: names sit centred along their
+       axis, because at the default end position the y name collided with the
+       top tick and the x name ran past the right margin on a phone. */
     xAxis: {
       type: 'value',
       name: spec.payload.xLabel || 'x',
+      nameLocation: 'middle',
+      nameGap: 30,
       min: Math.min(0, normalized.xExtent[0]),
-      max: normalized.xExtent[1],
+      max: niceBound(normalized.xExtent[1], 1),
       nameTextStyle: { color: colors.text, fontFamily },
       axisLine: { lineStyle: { color: colors.line } },
-      axisLabel: { color: colors.text, fontFamily },
+      axisLabel: { color: colors.text, fontFamily, formatter: formatNumericTick },
       splitLine: { lineStyle: { color: colors.grid } },
     },
     yAxis: {
       type: 'value',
       name: spec.payload.yLabel || 'y',
-      min: normalized.yExtent[0],
-      max: normalized.yExtent[1],
+      nameLocation: 'middle',
+      nameGap: 44,
+      min: niceBound(normalized.yExtent[0], -1),
+      max: niceBound(normalized.yExtent[1], 1),
       nameTextStyle: { color: colors.text, fontFamily },
       axisLine: { lineStyle: { color: colors.line } },
-      axisLabel: { color: colors.text, fontFamily },
+      axisLabel: { color: colors.text, fontFamily, formatter: formatNumericTick },
       splitLine: { lineStyle: { color: colors.grid } },
     },
     dataZoom: [{ type: 'inside', zoomOnMouseWheel: true, moveOnMouseMove: true }],

@@ -124,11 +124,27 @@ test('light muted labels clear AA and the placeholder keeps its reference tone',
       const node = document.querySelector(selector);
       return node ? getComputedStyle(node).color : null;
     };
+    /* A surface node can be `transparent` (the page paints on an ancestor, and
+       an empty session paints nothing). Reading that alpha as black turned
+       every contrast check into a comparison against #000. Walk up to the
+       first opaque background, and fall back to the palette's own rung. */
+    const painted = (node, fallbackToken) => {
+      for (let current = node; current; current = current.parentElement) {
+        const value = getComputedStyle(current).backgroundColor;
+        if (!/rgba?\(.*,\s*0(\.0+)?\)$/.test(value) && value !== 'transparent') return value;
+      }
+      const probe = document.createElement('span');
+      probe.style.backgroundColor = `var(${fallbackToken})`;
+      document.body.appendChild(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return value;
+    };
     const root = getComputedStyle(document.documentElement);
     return {
       sectionLabel: pick('#recentsList .recents-time-label'),
-      page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
-      sidebar: getComputedStyle(document.getElementById('sidebar')).backgroundColor,
+      page: painted(document.querySelector('.main-content'), '--ui-bg-page'),
+      sidebar: painted(document.getElementById('sidebar'), '--ui-bg-rail'),
       placeholder: root.getPropertyValue('--ui-text-placeholder').trim(),
       thumb: root.getPropertyValue('--ui-scrollbar-thumb').trim(),
     };
@@ -160,7 +176,18 @@ test('light palette roles clear AA on every light surface they sit on', async ({
     const color = (token) => resolve(`var(${token})`, 'color');
     const surface = (token) => resolve(`var(${token})`, 'backgroundColor');
     const out = {
-      page: getComputedStyle(document.querySelector('.main-content')).backgroundColor,
+      page: (() => {
+        for (let node = document.querySelector('.main-content'); node; node = node.parentElement) {
+          const value = getComputedStyle(node).backgroundColor;
+          if (!/rgba?\(.*,\s*0(\.0+)?\)$/.test(value) && value !== 'transparent') return value;
+        }
+        const probe = document.createElement('span');
+        probe.style.backgroundColor = 'var(--ui-bg-page)';
+        document.body.appendChild(probe);
+        const value = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return value;
+      })(),
       surfaces: {
         surface: surface('--ui-bg-surface'),
         bubble: surface('--ui-bg-bubble'),
@@ -459,7 +486,7 @@ test('history rows do not replay the reveal and boot spinners stop', async ({ pa
   for (const name of rows) expect(name).toBe('none');
 });
 
-test('plotly charts follow a theme switch after mounting', async ({ page }) => {
+test('a mounted chart follows a theme switch', async ({ page }) => {
   await openApp(page, {
     mode: 'dark',
     session: {
@@ -504,7 +531,12 @@ test('plotly charts follow a theme switch after mounting', async ({ page }) => {
     },
   });
   await loadSession(page);
-  const tick = page.locator('.visualization-card .xtick text').first();
+  /* One engine draws every cartesian card, so the axis tick is the ECharts SVG
+     text node — the same node a bar or scatter card paints. */
+  const tick = page
+    .locator('.visualization-card .visualization-stage svg text')
+    .filter({ hasText: /^-?\d/ })
+    .first();
   await expect(tick).toBeVisible({ timeout: 20_000 });
   const darkFill = await tick.evaluate((node) => getComputedStyle(node).fill);
   expect(luminance(rgb(darkFill))).toBeGreaterThan(0.5);
@@ -515,10 +547,4 @@ test('plotly charts follow a theme switch after mounting', async ({ page }) => {
       timeout: 5_000,
     })
     .toBeLessThan(0.2);
-  const modebar = await page
-    .locator('.visualization-card .modebar-group')
-    .first()
-    .evaluate((node) => getComputedStyle(node).backgroundColor)
-    .catch(() => null);
-  if (modebar) expect(rgb(modebar).a).toBe(0);
 });

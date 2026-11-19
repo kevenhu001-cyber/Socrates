@@ -169,7 +169,9 @@ export function VisualizationSkeleton({
     >
       <header className="viz-skeleton-header">
         {title ? (
-          <h3 className="viz-skeleton-title">{title}</h3>
+          <h3 className="viz-skeleton-title">
+            <MathText text={title} />
+          </h3>
         ) : (
           <span className="viz-skeleton-title-bar skeleton-shimmer" aria-hidden="true" />
         )}
@@ -187,7 +189,11 @@ export function VisualizationSkeleton({
         <span className="viz-skeleton-gridline" aria-hidden="true" />
         <span className="viz-skeleton-gridline" aria-hidden="true" />
       </div>
-      {caption ? <p className="viz-skeleton-caption">{caption}</p> : null}
+      {caption ? (
+        <p className="viz-skeleton-caption">
+          <MathText text={caption} />
+        </p>
+      ) : null}
     </section>
   );
 }

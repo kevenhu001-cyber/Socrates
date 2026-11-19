@@ -3,6 +3,7 @@ import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
 import { i18n } from '../legacy/gateway';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
+import { MathText } from '../rn/useInlineMath';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';
 
 const rootSlot = createRootSlot('sources-panel');
@@ -63,8 +64,14 @@ function SourceCard({ item, index }: { item: SourcesPanelItem; index: number }) 
             {item.source || host}
             {item.date ? <span className="source-card-date"> · {item.date}</span> : null}
           </span>
-          <span className="source-card-title">{item.title}</span>
-          {item.snippet ? <span className="source-card-snippet">{item.snippet}</span> : null}
+          <span className="source-card-title">
+            <MathText text={item.title} />
+          </span>
+          {item.snippet ? (
+            <span className="source-card-snippet">
+              <MathText text={item.snippet} />
+            </span>
+          ) : null}
         </span>
         <svg
           className="source-card-arrow"

@@ -41,7 +41,9 @@ const RICH_CLASS: Record<Parameters<RenderDiagnosticRich>[1], string> = {
    would read an option that is only `$\frac13$` as a display formula and
    centre and enlarge it. */
 function richHtml(source: string, part: Parameters<RenderDiagnosticRich>[1]): string {
-  if (part === 'diag-notice') return source;
+  /* A notice is one line of plain text, but it can carry a formula (the
+     boundary hint names the topic). Typeset the math, keep the line. */
+  if (part === 'diag-notice') return renderInlineMathHtml(source) ?? source;
   if (part === 'diag-option') return renderInlineMathHtml(source) ?? esc(source);
   return formatMsg(source);
 }

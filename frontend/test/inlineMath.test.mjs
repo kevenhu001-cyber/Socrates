@@ -41,6 +41,32 @@ test('$$…$$ and \\(…\\) stay on the line', () => {
   assert.equal(html, '看 <span class="katex">a^2</span> 和 <span class="katex">b</span>');
 });
 
+test('block copy can typeset $$…$$ as display math', () => {
+  installKatex();
+  /* Off by default: a stem or an option must stay one line. Block text opts in
+     so the display formula the model wrote keeps its own line and size. */
+  const inline = renderInlineMathHtml('面积 $$S=\\pi r^2$$ 由此得到');
+  assert.ok(calls.every((call) => call.opts.displayMode === false));
+
+  calls.length = 0;
+  const display = renderInlineMathHtml('面积 $$S=\\pi r^2$$ 由此得到', 'htmlAndMathml', {
+    display: true,
+  });
+  assert.equal(display, inline);
+  assert.deepEqual(
+    calls.map((call) => [call.math, call.opts.displayMode]),
+    [['S=\\pi r^2', true]],
+  );
+
+  /* A single-dollar formula inside block copy stays inline. */
+  calls.length = 0;
+  renderInlineMathHtml('其中 $r$ 是半径 \\[A=\\pi r^2\\]', 'htmlAndMathml', { display: true });
+  assert.deepEqual(
+    calls.map((call) => call.opts.displayMode),
+    [false, true],
+  );
+});
+
 test('a price is not a formula', () => {
   installKatex();
   assert.equal(renderInlineMathHtml('花了 $5'), null);

@@ -648,15 +648,6 @@
 /*  Workspace Loading & Skeletons                                     */
 /* ------------------------------------------------------------------ */
 
-@keyframes workspaceSkeletonShimmer {
-  from {
-    background-position: 150% 0;
-  }
-  to {
-    background-position: -50% 0;
-  }
-}
-
 @keyframes workspaceTextShimmer {
   from {
     background-position: 150% 0;
@@ -765,23 +756,14 @@
   width: 100%;
 }
 
-/* All visible placeholder blocks share one sweep. A gradient background is
-   used instead of opacity pulsing so the user can read the loading direction
-   at a glance while each block keeps its final layout footprint. */
+/* All visible placeholder blocks share the one sweep defined in
+   foundations/base.css (`.skeleton-shimmer`, which the shadcn Skeleton already
+   applies). This rule only pins the workspace's own fill and highlight, so the
+   directory skeletons read the same as every other skeleton instead of running
+   a second gradient at a different angle and speed. */
 #appShell .workspace-skeleton-shimmer {
   background-color: var(--cg-surface-raised);
-  background-image: linear-gradient(
-    105deg,
-    var(--cg-surface-raised) 0%,
-    var(--cg-surface-raised) 36%,
-    color-mix(in srgb, var(--cg-surface-raised), var(--foreground) 12%) 50%,
-    var(--cg-surface-raised) 64%,
-    var(--cg-surface-raised) 100%
-  );
-  background-repeat: no-repeat;
-  background-size: 240% 100%;
-  background-position: 150% 0;
-  animation: workspaceSkeletonShimmer var(--ui-duration-shimmer) linear infinite;
+  --skeleton-shimmer-highlight: color-mix(in srgb, var(--cg-surface-raised), var(--foreground) 12%);
 }
 
 /* The global .01ms blanket stops these loops but leaves the gradient frozen
@@ -864,7 +846,10 @@
 }
 
 #appShell .workspace-skeleton-search {
-  width: 220px;
+  /* Fills whatever the toolbar leaves after its fixed-size neighbour, so the
+     row still fits a phone instead of overflowing at 220px + 100px. */
+  flex: 1 1 0;
+  min-width: 0;
   height: 36px;
   border-radius: var(--ui-radius-pill);
   background: var(--cg-surface-raised);
@@ -901,7 +886,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1 1 auto;
+  /* Take the row's leftover so the 100% line placeholders resolve against a
+     definite width instead of their own content. */
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 #appShell .workspace-skeleton-line {
@@ -910,27 +898,32 @@
 }
 
 #appShell .workspace-skeleton-line-title {
-  width: 140px;
+  /* Every line placeholder spans the copy column; a fixed 140px read as a
+     settled short line and let the real row reflow on arrival. */
+  width: 100%;
   height: 16px;
 }
 
 #appShell .workspace-skeleton-line-desc {
-  width: 280px;
-  max-width: 80%;
+  width: 100%;
+  max-width: none;
   height: 12px;
 }
 
 #appShell .workspace-skeleton-line-sub {
-  width: 180px;
+  width: 100%;
   height: 12px;
 }
 
 #appShell .workspace-skeleton-line-date {
+  /* Trailing metadata keeps its own measure; the copy column takes the rest. */
+  flex: none;
   width: 80px;
   height: 12px;
 }
 
 #appShell .workspace-skeleton-line-size {
+  flex: none;
   width: 60px;
   height: 12px;
 }
@@ -997,12 +990,12 @@
 }
 
 #appShell .workspace-skeleton-line-page-title {
-  width: 180px;
+  width: 100%;
   height: 32px;
 }
 
 #appShell .workspace-skeleton-line-page-desc {
-  width: min(360px, 100%);
+  width: 100%;
   height: 12px;
 }
 
@@ -1013,7 +1006,8 @@
 }
 
 #appShell .workspace-skeleton-scheduled-actions .workspace-skeleton-search {
-  width: 220px;
+  flex: 1 1 0;
+  width: auto;
   height: var(--ui-control-search);
 }
 
@@ -1072,7 +1066,6 @@
 #appShell .workspace-chunk-loading {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12px;
   min-height: 180px;
   padding: 48px 20px;
@@ -1083,13 +1076,15 @@
 }
 
 #appShell .workspace-chunk-loading-line {
-  width: min(420px, 82%);
+  /* The lazy chunk resolves into a full-width page, so its placeholder lines
+     span the same measure instead of sitting as a narrow centred block. */
+  width: 100%;
   height: 12px;
   border-radius: var(--ui-radius-pill);
 }
 
 #appShell .workspace-chunk-loading-line-short {
-  width: min(260px, 58%);
+  width: 100%;
 }
 
 @media (max-width: 768px) {

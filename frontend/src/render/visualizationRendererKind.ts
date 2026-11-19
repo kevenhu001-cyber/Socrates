@@ -6,7 +6,13 @@ import { MATH_LABEL_TRIGGER } from './latex.ts';
 export type VisualizationRendererKind =
   'echarts' | 'plotly' | 'three' | 'geogebra' | 'tldraw' | 'mermaid' | 'semantic' | 'extension';
 
+/* Every cartesian family lives on one engine. `function` belongs here: the
+   sampling, axis names, legend and inside-zoom are the same ECharts option
+   builder the other charts use, and it is the only path that can push new
+   samples into a mounted figure — a parameter slider must not remount the
+   card on every input event. `paper_chart` keeps Plotly's publication look. */
 export const CHART_TEMPLATES: readonly string[] = [
+  'function',
   'line',
   'area',
   'bar',
@@ -33,7 +39,7 @@ export const STRUCTURE_TEMPLATES: ReadonlySet<string> = new Set([
 
 export function visualizationRendererKind(template: unknown): VisualizationRendererKind {
   const name = typeof template === 'string' ? template : '';
-  if (name === 'function' || name === 'paper_chart') return 'plotly';
+  if (name === 'paper_chart') return 'plotly';
   if (name === 'geometry_3d') return 'three';
   if (name === 'math_construction') return 'geogebra';
   if (name === 'whiteboard') return 'tldraw';

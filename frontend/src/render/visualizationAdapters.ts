@@ -32,8 +32,9 @@ let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
 let geogebraSequence = 0;
 
 export function usesSpecializedRenderer(template: string) {
+  /* `function` is not specialized: it draws through the shared ECharts option
+     builder so a slider-driven curve updates in place instead of remounting. */
   return (
-    template === 'function' ||
     template === 'paper_chart' ||
     template === 'math_construction' ||
     template === 'geometry_3d' ||
@@ -143,7 +144,7 @@ function addThreeObjects(
 
 export function plotlyTracesForVisualization(
   spec: VizSpec,
-  colors: {
+  _colors: {
     text?: string;
     muted?: string;
     grid?: string;
@@ -152,28 +153,10 @@ export function plotlyTracesForVisualization(
     comparison?: string;
     highlight?: string;
   },
-  sampleFunctionImpl: typeof import('@socrates/core/visualizationMath').sampleFunction,
 ) {
-  if (spec.template === 'function') {
-    const paletteList = [
-      colors.primary,
-      colors.secondary || '#0d9488',
-      colors.comparison || '#7c3aed',
-      colors.highlight || '#f59e0b',
-    ];
-    return (spec.payload.functions || []).map((fn, index) => {
-      const sampled = sampleFunctionImpl(fn.expression, fn.domain, 900);
-      return {
-        x: sampled.points.map((point) => point[0]),
-        y: sampled.points.map((point) => point[1]),
-        type: 'scatter',
-        mode: 'lines',
-        name: fn.label || fn.expression,
-        line: { width: 2.4, color: paletteList[index % paletteList.length] },
-        connectgaps: false,
-      };
-    });
-  }
+  /* Only `paper_chart` reaches Plotly. Ordinary curves, including every
+     function graph, are drawn by the shared ECharts option builder; a second
+     sampler here would be free to drift from it. */
   const categories = spec.payload.categories || [];
   return (spec.payload.series || []).map((series, index) => ({
     x: categories.length ? categories : series.data.map((_, i) => i + 1),
@@ -196,11 +179,7 @@ function downloadSvgAdapter(stage: HTMLElement) {
   };
 }
 
-async function mountPlotly(
-  spec: VizSpec,
-  stage: HTMLElement,
-  helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
-) {
+async function mountPlotly(spec: VizSpec, stage: HTMLElement) {
   /* plotly UMD is copied as a static asset and
      injected only when a Plotly card mounts. */
   plotlyPromise ||= ensurePlotly().catch((error: unknown) => {
@@ -209,7 +188,7 @@ async function mountPlotly(
   });
   const Plotly = await plotlyPromise;
   const colors = plotlyColors();
-  const traces = plotlyTracesForVisualization(spec, colors, helpers.sampleFunction);
+  const traces = plotlyTracesForVisualization(spec, colors);
   const categories = spec.payload.categories || [];
   const longestCategory = categories.reduce<number>(
     (max, value) => Math.max(max, Array.from(String(value ?? '')).length),
@@ -703,10 +682,9 @@ async function mountGeoGebra(
 export async function mountSpecializedVisualization(
   spec: VizSpec,
   stage: HTMLElement,
-  helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
+  _helpers: { sampleFunction: typeof import('@socrates/core/visualizationMath').sampleFunction },
 ): Promise<SpecializedVisualizationResult> {
-  if (spec.template === 'function' || spec.template === 'paper_chart')
-    return mountPlotly(spec, stage, helpers);
+  if (spec.template === 'paper_chart') return mountPlotly(spec, stage);
   if (STRUCTURE_TEMPLATES.has(spec.template)) return mountMermaid(spec, stage);
   if (spec.template === 'geometry_3d') return mountThree(spec, stage);
   if (spec.template === 'math_construction') return mountGeoGebra(spec, stage);

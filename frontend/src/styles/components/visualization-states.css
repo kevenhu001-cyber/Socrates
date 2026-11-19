@@ -3,6 +3,9 @@
 .viz-state {
   display: grid;
   gap: var(--ui-space-sm);
+  /* Also a flex child of .tool-inline-attachments: fill the row instead of
+     collapsing to the title bar's min-content. */
+  width: 100%;
   margin: var(--ui-space-sm) 0;
   padding: var(--ui-space-md);
   border: 1px solid var(--ui-border-subtle);
@@ -25,6 +28,9 @@
    engine, the 520px phone stage, the caption row) so the card that replaces
    it lands on the same pixels. A highlight sweeps over the reserved stage. */
 .viz-state-skeleton {
+  /* Fill whatever holds it — including the flex row of tool attachments,
+     where a bare min-content child would collapse to the title bar. */
+  width: 100%;
   margin: 0;
   min-width: 0;
   color: var(--foreground);
@@ -44,7 +50,10 @@
 }
 .viz-skeleton-title-bar {
   display: block;
-  width: 140px;
+  /* The real header's title runs the card's width; keep the placeholder on the
+     same measure so the handover does not reflow. */
+  width: 100%;
+  max-width: none;
   height: 1.15rem;
   border-radius: var(--ui-radius-xs);
   background-color: color-mix(in srgb, var(--ui-ink) 9%, transparent);
@@ -61,19 +70,22 @@
   overflow: hidden;
 }
 .viz-skeleton-bars {
+  /* One row of bars spanning the stage, like the plot it stands in for. The
+     old 56px/24px inset and the 48px per-bar cap made a narrow island in the
+     middle of a full-width card. */
   position: absolute;
-  inset: auto 24px 20px 56px;
+  inset: auto 12px 20px;
   height: 220px;
   display: flex;
   align-items: flex-end;
   justify-content: space-around;
-  gap: 16px;
+  gap: 12px;
   pointer-events: none;
 }
 .viz-skeleton-bar {
   display: block;
-  flex: 1;
-  max-width: 48px;
+  flex: 1 1 0;
+  min-width: 0;
   border-radius: var(--ui-radius-xs) var(--ui-radius-xs) 0 0;
   background-color: color-mix(in srgb, var(--ui-ink) 7%, transparent);
 }

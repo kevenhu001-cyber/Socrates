@@ -77,10 +77,24 @@ test('native function card renders an actual SVG curve for ln(x)', async ({ page
   await renderLn(page);
   const card = page.locator('.tool-inline-attachments .visualization-card').last();
   await expect(card).toBeVisible();
-  await expect(card.locator('svg .scatterlayer .trace')).toHaveCount(2);
+  /* One engine for every cartesian family: the curve is an ECharts SVG line
+     series, not a Plotly trace. Two functions are two stroked series paths. */
+  await expect(card).toHaveAttribute('data-visualization-renderer', 'echarts');
+  await expect(
+    card.locator('.visualization-stage svg path[stroke-width="2.35"][fill="none"]'),
+  ).toHaveCount(2);
+  /* Axis names and legend labels are typeset, not left as `$…$` source. */
   await expect(
     card.locator('svg foreignObject .katex annotation').filter({ hasText: '\\ln(x)+1' }),
   ).toHaveCount(1);
+  /* Sampled curves produce arbitrary floats; ticks stay readable numbers
+     (at most four decimals) instead of a full float from the sampler. */
+  const ticks = await card
+    .locator('.visualization-stage svg text')
+    .allTextContents()
+    .then((values) => values.map((value) => value.trim()).filter((value) => /^-?\d/.test(value)));
+  expect(ticks.length).toBeGreaterThan(0);
+  for (const tick of ticks) expect(tick).toMatch(/^-?\d+(\.\d{1,4})?$/);
   await expect(card).toContainText('y = ln(x)');
   const frame = await card.evaluate((element) => ({
     border: getComputedStyle(element).borderTopWidth,

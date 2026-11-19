@@ -228,7 +228,9 @@ const CASES = [
       source:
         '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800"><rect width="1200" height="800" fill="#336699"/><circle cx="600" cy="400" r="160" fill="#fff"/></svg>',
     }),
-    content: 'iframe[data-ready="true"]',
+    /* A static illustration is drawn inline by the native SVG renderer now;
+       it no longer boots an extension iframe. */
+    content: 'svg[role="img"]',
   },
   {
     spec: S('geometry_3d', { objects: [{ type: 'box' }, { type: 'sphere', position: [2, 0, 0] }] }),
@@ -355,9 +357,7 @@ for (const { spec, content, tableRows } of CASES) {
         );
       }
       if (spec.template === 'svg_illustration') {
-        const illustration = card
-          .frameLocator('iframe.visualization-extension')
-          .locator('svg[role="img"]');
+        const illustration = card.locator('.visualization-stage svg[role="img"]');
         await expect(illustration).toHaveCount(1);
         await expect(illustration).toHaveAttribute('aria-label', spec.accessibilitySummary);
         const bounds = await illustration.evaluate((image) => {

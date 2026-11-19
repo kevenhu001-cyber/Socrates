@@ -8,7 +8,10 @@ import {
 test('every template maps to the engine whose stage height the skeleton reserves', () => {
   assert.equal(visualizationRendererKind('bar'), 'echarts');
   assert.equal(visualizationRendererKind('heatmap'), 'echarts');
-  assert.equal(visualizationRendererKind('function'), 'plotly');
+  /* A function graph is an ordinary chart: one ECharts option builder draws it,
+     and it is the only path that can push new samples into a mounted figure. */
+  assert.equal(visualizationRendererKind('function'), 'echarts');
+  assert.equal(visualizationRendererKind('paper_chart'), 'plotly');
   assert.equal(visualizationRendererKind('geometry_3d'), 'three');
   assert.equal(visualizationRendererKind('math_construction'), 'geogebra');
   assert.equal(visualizationRendererKind('whiteboard'), 'tldraw');

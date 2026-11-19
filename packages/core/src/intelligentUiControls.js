@@ -37,7 +37,7 @@ const numeric = (value) =>
 
 /** Shared with model guidance; deliberately portable to providers without oneOf. */
 export const INTELLIGENT_UI_CONTROL_GUIDANCE =
-  'slider/choice/toggle require a safe bind state key. Slider defaults to min:0,max:100,step:1; min < max and step > 0. Choice needs 1–8 unique {label,value} scalar options. Button needs label and action: set(key,value), increment(key,amount?), prompt(prompt), open_url(url). Table needs 1–8 columns (strings or {key,label}) and 0–24 keyed object rows; [] is an explicit empty state. Chart needs kind:bar|line and 1–50 {label,value} numeric points. Tabs needs 1–8 unique {id,label}; bind is optional; child.tab must name a tab on its tabs parent.';
+  'slider/choice/toggle require a safe bind state key. Slider defaults to min:0,max:100,step:1; min < max and step > 0. Choice needs 1–8 unique {label,value} scalar options. Button needs label and action: set(key,value), increment(key,amount?), prompt(prompt), open_url(url). Table needs 1–8 columns (strings or {key,label}) and 0–24 keyed object rows; [] is an explicit empty state. Chart takes the same template and payload as a visualization node (functions, axes, legend, any series length), or the compact kind:bar|line with 1–50 {label,value} numeric points. Tabs needs 1–8 unique {id,label}; bind is optional; child.tab must name a tab on its tabs parent.';
 
 /** Only coerce known numeric positions; never invent bindings, actions or data. */
 export function normalizeIntelligentUiControl(raw) {
@@ -180,9 +180,14 @@ export function intelligentUiControlIssues(node) {
   if (node.type === 'chart') {
     if (node.kind !== undefined)
       require(['bar', 'line'].includes(node.kind), 'kind', 'Expected bar or line');
-    require(Array.isArray(node.points) &&
-      node.points.length > 0 &&
-      node.points.length <= 50, 'points', 'Expected 1–50 points');
+    /* A chart is a visualization: when it carries a template and payload it
+       takes that whole contract (functions, axis labels, legends, series of
+       any length). `points` is only the compact legacy shorthand. */
+    const full = typeof node.template === 'string' && record(node.payload);
+    if (!full)
+      require(Array.isArray(node.points) &&
+        node.points.length > 0 &&
+        node.points.length <= 50, 'points', 'Expected 1–50 points, or a template with a payload');
     if (Array.isArray(node.points))
       node.points.forEach((point, i) =>
         require(record(point) &&

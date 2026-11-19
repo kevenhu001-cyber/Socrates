@@ -498,33 +498,6 @@
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.exec-artifact-skeleton {
-  width: 100%;
-  height: 160px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: hsl(var(--bg-200) / 0.6);
-  position: relative;
-  overflow: hidden;
-}
-.exec-artifact-skeleton::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 24px;
-  height: 24px;
-  margin-left: -12px;
-  margin-top: -12px;
-  border-radius: 50%;
-  border: 2px solid hsl(var(--bg-300));
-  border-top-color: hsl(var(--accent-000));
-  animation: loadingSpin var(--ui-duration-spin) linear infinite;
-}
-.exec-artifact-skeleton-pulse {
-  display: none;
-}
 .exec-artifact-link {
   display: inline-flex;
   align-items: center;
@@ -972,10 +945,6 @@
 }
 .exec-artifact-image {
   border-radius: 10px;
-}
-.exec-artifact-skeleton {
-  height: 120px;
-  background: hsl(var(--bg-200) / 0.35);
 }
 .artifact-error {
   align-items: flex-start;

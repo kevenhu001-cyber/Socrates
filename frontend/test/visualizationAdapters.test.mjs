@@ -18,7 +18,7 @@ test('paper charts preserve line, bar and scatter intent in Plotly traces', () =
       ],
     },
   };
-  const traces = plotlyTracesForVisualization(spec, { primary: '#36c' }, () => ({ points: [] }));
+  const traces = plotlyTracesForVisualization(spec, { primary: '#36c' });
   assert.deepEqual(
     traces.map(({ type, mode }) => [type, mode]),
     [

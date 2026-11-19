@@ -210,8 +210,14 @@ function curveSpecs(view: View) {
     : [{ expression: view.vertical, color: view.color, label: undefined, dashed: false }];
 }
 
+/* One tick vocabulary across every plot: a sampled or simulated curve produces
+   arbitrary floats, so read as a comparison number rather than a full float.
+   Mirrors the chart cards' axis formatter (render/visualizationOptions.ts). */
 function formatTick(value: number): string {
-  return Math.abs(value) < 1e-8 ? '0' : Number(value.toPrecision(3)).toString();
+  if (!Number.isFinite(value) || value === 0) return '0';
+  const magnitude = Math.abs(value);
+  if (magnitude >= 1e5 || magnitude < 1e-3) return value.toExponential(1).replace('e+', 'e');
+  return String(Number(value.toFixed(4)));
 }
 
 function ticks(min: number, max: number, target: number): number[] {
@@ -435,12 +441,19 @@ function renderPlot(view: View, result: Sampled, id: string) {
         </g>
         <SvgMathText
           className="demo-axis-label"
-          x={WIDTH - RIGHT}
+          x={LEFT + (WIDTH - LEFT - RIGHT) / 2}
           y={HEIGHT - 2}
-          anchor="end"
+          anchor="middle"
           text={view.xLabel || ''}
         />
-        <SvgMathText className="demo-axis-label" x={LEFT} y={10} text={view.yLabel || ''} />
+        <SvgMathText
+          className="demo-axis-label"
+          x={12}
+          y={TOP + (HEIGHT - TOP - BOTTOM) / 2}
+          anchor="middle"
+          rotate={-90}
+          text={view.yLabel || ''}
+        />
       </svg>
       <PlotLegend view={view} />
       <PlotIssues issues={result.issues} />

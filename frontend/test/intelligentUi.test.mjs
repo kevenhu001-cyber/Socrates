@@ -276,3 +276,56 @@ test('frontend normalization handles string numeric attributes and choice option
   const validation = validateIntelligentUi(normalized);
   assert.equal(validation.ok, true, validation.error);
 });
+
+test('a chart node takes the visualization template and payload contract', () => {
+  /* A function graph is a chart: the compact `points` shorthand cannot express
+     a curve, axes or a legend, so template+payload is the same contract the
+     `visualization` node uses. */
+  const graph = {
+    id: 'graph',
+    type: 'chart',
+    template: 'function',
+    payload: { functions: [{ expression: 'sin(x)', label: 'y = \\sin x' }] },
+  };
+  const kept = parseIntelligentUiRecords(JSON.stringify({ version: 1, nodes: [graph] }));
+  assert.equal(kept.length, 1);
+  assert.equal(kept[0].template, 'function');
+  assert.deepEqual(kept[0].payload, graph.payload);
+
+  /* Both spellings reach the renderer with the same shape. */
+  const viz = parseIntelligentUiRecords(
+    JSON.stringify({ version: 1, nodes: [{ ...graph, id: 'graph2', type: 'visualization' }] }),
+  );
+  assert.equal(viz[0].template, kept[0].template);
+  assert.deepEqual(viz[0].payload, kept[0].payload);
+
+  /* A chart with neither a template nor points carries no data: the document
+     still recovers its other nodes, and this one draws nothing. */
+  const empty = parseIntelligentUiRecords('{"id":"empty","type":"chart"}');
+  assert.equal(empty.length, 1);
+  assert.equal(empty[0].template, undefined);
+  assert.equal(empty[0].payload, undefined);
+
+  /* The shorthand still works and still normalizes its numbers. */
+  const points = parseIntelligentUiRecords(
+    JSON.stringify({
+      version: 1,
+      nodes: [
+        {
+          id: 'bars',
+          type: 'chart',
+          kind: 'line',
+          points: [
+            { label: 'a', value: '1' },
+            { label: 'b', value: 2 },
+          ],
+        },
+      ],
+    }),
+  );
+  assert.equal(points[0].kind, 'line');
+  assert.deepEqual(
+    points[0].points.map((point) => point.value),
+    [1, 2],
+  );
+});

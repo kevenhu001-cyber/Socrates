@@ -1,5 +1,9 @@
 /* OpenUI primitives bridge to the active Socrates theme; loaded on demand. */
 .intui-openui {
+  /* A top-level block that is also a flex child (tool attachments): without a
+     width it collapses to min-content and its skeleton draws at 0px. */
+  width: 100%;
+  min-width: 0;
   --iui-ink: var(--foreground);
   --iui-muted: var(--muted-foreground);
   --iui-faint: var(--ui-text-tertiary);

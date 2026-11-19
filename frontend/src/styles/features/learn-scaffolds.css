@@ -139,8 +139,11 @@
 }
 
 .sc-live-skeleton {
+  /* Every placeholder spans the card's content column: a narrower bar reads
+     as a settled short line and the card visibly reflows when the real text
+     lands. */
+  width: 100%;
   height: 12px;
-  width: 40%;
   margin: 6px 0;
   border-radius: var(--ui-round-pill);
   background-color: var(--ui-fill);
@@ -152,6 +155,28 @@
   justify-content: space-between;
   gap: var(--ui-gap-2);
   min-height: 36px;
+}
+/* The two ends split the row and each placeholder grows into its share, so a
+   streamed card's control row is covered edge to edge exactly like the row it
+   is about to become — no narrow capsule that the settled buttons outgrow. */
+.sc-live-actions-start,
+.sc-live-actions-end {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.sc-live-actions-start {
+  justify-content: flex-start;
+}
+.sc-live-actions-end {
+  justify-content: flex-end;
+}
+/* The two ends split the row so the pending action sits on the edge the real
+   button will occupy. The capsule itself keeps its own footprint: a stretched
+   bar would read as content, not as a control that is about to appear. */
+.sc-live-actions .sc-live-pill {
+  flex: 0 0 auto;
+  max-width: 100%;
 }
 
 .sc-live-pill {
@@ -226,12 +251,9 @@
   align-items: center;
 }
 .sc-live-option--pending > .sc-live-skeleton {
-  flex: none;
-  width: 52%;
+  flex: 1 1 auto;
+  width: 100%;
   margin: 0;
-}
-.sc-live-option--pending:nth-child(even) > .sc-live-skeleton {
-  width: 38%;
 }
 
 .sc-live-input {

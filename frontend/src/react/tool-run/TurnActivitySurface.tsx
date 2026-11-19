@@ -34,6 +34,7 @@ import {
 } from './toolRunModel';
 import { tf, toolRunLabel } from '../../legacy/toolPresentationModel.ts';
 import { interfaceIcon } from '../../legacy/icons/interfaceIcons.ts';
+import { MathText } from '../rn/useInlineMath';
 
 export interface TurnActivitySurfaceProps {
   /** Public model-provided summary only. Never pass parsed reasoning text here. */
@@ -88,8 +89,20 @@ function SummaryStep({ step }: { step: ThinkingStep }): ReactElement {
       expandable={expandable}
       open={open}
       onToggle={expandable ? () => setOpen((value) => !value) : undefined}
-      preview={preview ? <p className="thinking-step-preview">{preview}</p> : null}
-      detail={expandable ? <p className="thinking-step-summary">{step.summary}</p> : null}
+      preview={
+        preview ? (
+          <p className="thinking-step-preview">
+            <MathText text={preview} />
+          </p>
+        ) : null
+      }
+      detail={
+        expandable ? (
+          <p className="thinking-step-summary">
+            <MathText text={step.summary} />
+          </p>
+        ) : null
+      }
     />
   );
 }
@@ -205,7 +218,11 @@ function rowsFor(
       <ActivityStep
         key="intent"
         label={i18n('think.taskOverview', 'Task overview')}
-        preview={<p className="thinking-step-preview">{intent}</p>}
+        preview={
+          <p className="thinking-step-preview">
+            <MathText text={intent} />
+          </p>
+        }
       />,
     );
   }

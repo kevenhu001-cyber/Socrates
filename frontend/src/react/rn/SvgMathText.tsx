@@ -8,6 +8,7 @@ export function SvgMathText({
   y,
   width = 160,
   anchor = 'start',
+  rotate = 0,
   className,
 }: {
   text: string;
@@ -15,11 +16,14 @@ export function SvgMathText({
   y: number;
   width?: number;
   anchor?: 'start' | 'middle' | 'end';
+  /** Degrees around the anchor point; a rotated axis name reads along its axis. */
+  rotate?: number;
   className?: string;
 }) {
+  const transform = rotate ? `rotate(${rotate} ${x} ${y})` : undefined;
   if (!mathLabelSource(text))
     return (
-      <text x={x} y={y} textAnchor={anchor} className={className}>
+      <text x={x} y={y} textAnchor={anchor} transform={transform} className={className}>
         {text}
       </text>
     );
@@ -31,6 +35,7 @@ export function SvgMathText({
       width={width}
       height={40}
       overflow="visible"
+      transform={transform}
       className={className}
     >
       <div

@@ -462,33 +462,6 @@ a.attachment-chip-link:hover .attachment-chip-name {
 
 /* Tiny variant for very compact spaces */
 
-/* Skeleton shimmer — a moving highlight bar for content placeholders. */
-.shimmer {
-  position: relative;
-  overflow: hidden;
-  background: hsl(var(--bg-200));
-  border-radius: 6px;
-}
-.shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsla(var(--accent-000) / 0.08) 50%,
-    transparent 100%
-  );
-  animation: shimmerSweep 2s ease-in-out infinite;
-  transform: translateX(-100%);
-}
-
-@keyframes shimmerSweep {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @keyframes loadingSpin {
   to {
     transform: rotate(360deg);

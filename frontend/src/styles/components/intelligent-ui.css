@@ -2,7 +2,14 @@
  * Model output selects semantic composition only; visual decisions stay on the
  * Socrates token system. The unique .intui namespace keeps these rules local
  * without declaring another transcript-surface owner. */
-.msg.assistant .msg-body.is-declarative .intui {
+
+/* The block's own geometry, declared once for every host. An intui block also
+   mounts in tool attachments, in the share/read-only transcript and in history
+   replay; those hosts have no `.msg-body.is-declarative`, so scoping the shell
+   to the answer column used to leave them collapsed to a zero-width,
+   non-container grid. The rules that follow are scoped to the `.intui`
+   namespace for the same reason. */
+.intui {
   display: grid;
   position: relative;
   gap: var(--ui-space-sm);
@@ -14,7 +21,7 @@
     var(--ui-line-height-normal) var(--font-sans);
   container-type: inline-size;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel {
+.intui-panel {
   min-width: 0;
   overflow: hidden;
   padding: 0;
@@ -22,18 +29,18 @@
   border-radius: var(--ui-radius-lg);
   background: transparent;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-head {
+.intui-panel-head {
   display: grid;
   gap: var(--ui-space-xxs);
   margin-bottom: var(--ui-foundation-space-md);
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-panel-title, .intui-callout-title) {
+:is(.intui-panel-title, .intui-callout-title) {
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-semibold);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-title {
+.intui-panel-title {
   font-size: inherit;
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
@@ -45,21 +52,32 @@
   font-size: var(--ui-font-size-sm);
   line-height: var(--ui-line-height-relaxed);
 }
-.msg.assistant .msg-body.is-declarative .intui-text {
+.intui-text {
   margin: 0;
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-panel-body, .intui-stack) {
+/* A display formula inside block copy keeps the answer column's rhythm: the
+   global `.katex-display` margin is tuned for prose paragraphs, and the
+   paragraph here is a grid child with no margin of its own. It also reads in
+   ink, not in the de-emphasised paragraph tone. */
+.intui :is(.intui-text, .intui-callout-text) .katex-display {
+  margin: 0.4em 0;
+  color: var(--foreground);
+}
+.intui :is(.intui-text, .intui-callout-text) .katex-display > .katex {
+  font-size: 1.1em;
+}
+:is(.intui-panel-body, .intui-stack) {
   display: grid;
   gap: var(--ui-space-md);
   min-width: 0;
 }
-.msg.assistant .msg-body.is-declarative .intui-grid {
+.intui-grid {
   display: grid;
   grid-template-columns: repeat(var(--intui-columns, 2), minmax(0, 1fr));
   gap: var(--ui-space-sm);
   min-width: 0;
 }
-.msg.assistant .msg-body.is-declarative .intui-metric {
+.intui-metric {
   display: grid;
   align-content: start;
   gap: var(--ui-space-xxs);
@@ -69,13 +87,13 @@
   border-radius: var(--ui-radius-md);
   background: transparent;
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-label {
+.intui-metric-label {
   overflow-wrap: anywhere;
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-value {
+.intui-metric-value {
   overflow-wrap: anywhere;
   color: var(--foreground);
   font-size: inherit;
@@ -84,7 +102,7 @@
   letter-spacing: -0.015em;
   line-height: var(--ui-line-height-tight);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-delta {
+.intui-metric-delta {
   display: inline-flex;
   align-items: center;
   justify-self: start;
@@ -98,15 +116,15 @@
   font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend='up'] {
+.intui-metric-delta[data-trend='up'] {
   background: var(--ui-fill);
   color: var(--ui-ink);
 }
-.msg.assistant .msg-body.is-declarative .intui-metric-delta[data-trend='down'] {
+.intui-metric-delta[data-trend='down'] {
   background: color-mix(in srgb, var(--destructive) 12%, transparent);
   color: var(--destructive);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout {
+.intui-callout {
   --intui-tone: var(--ui-border-strong);
   display: grid;
   gap: var(--ui-space-xs);
@@ -117,19 +135,19 @@
   background: color-mix(in srgb, var(--intui-tone) 6%, transparent);
   color: var(--muted-foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='info'] {
+.intui-callout[data-tone='info'] {
   --intui-tone: var(--ui-info);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='success'] {
+.intui-callout[data-tone='success'] {
   --intui-tone: var(--ui-success);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='warning'] {
+.intui-callout[data-tone='warning'] {
   --intui-tone: var(--ui-warning);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='danger'] {
+.intui-callout[data-tone='danger'] {
   --intui-tone: var(--destructive);
 }
-.msg.assistant .msg-body.is-declarative .intui-callout[data-tone='neutral'] {
+.intui-callout[data-tone='neutral'] {
   border-color: transparent;
   border-inline-start-color: var(--ui-border-strong);
   background: var(--background);
@@ -140,13 +158,13 @@
   .intui-callout-title {
   color: var(--intui-tone);
 }
-.msg.assistant .msg-body.is-declarative .intui-divider {
+.intui-divider {
   width: 100%;
   margin: 0;
   border: 0;
   border-top: 1px solid var(--ui-border-subtle);
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-slider, .intui-progress, .intui-choice) {
+:is(.intui-slider, .intui-progress, .intui-choice) {
   display: grid;
   gap: var(--ui-space-sm);
   min-width: 0;
@@ -154,7 +172,7 @@
   padding: 0;
   border: 0;
 }
-.msg.assistant .msg-body.is-declarative :is(.intui-control-head, .intui-progress-head) {
+:is(.intui-control-head, .intui-progress-head) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -171,42 +189,42 @@
   font-weight: var(--ui-font-weight-medium);
 }
 /* Parameter rows stay compact while their native input retains a touch target. */
-.msg.assistant .msg-body.is-declarative .intui-slider {
+.intui-slider {
   grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) minmax(3rem, auto);
   align-items: center;
   column-gap: var(--ui-space-sm);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head {
+.intui-slider .intui-control-head {
   display: contents;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider .intui-control-head > span {
+.intui-slider .intui-control-head > span {
   grid-column: 1;
   grid-row: 1;
   overflow-wrap: anywhere;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider output {
+.intui-slider output {
   grid-column: 3;
   grid-row: 1;
   text-align: end;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
+.intui-slider input[type='range'] {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
 }
 @container (max-width: 320px) {
-  .msg.assistant .msg-body.is-declarative .intui-slider {
+  .intui-slider {
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .msg.assistant .msg-body.is-declarative .intui-slider output {
+  .intui-slider output {
     grid-column: 2;
   }
-  .msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
+  .intui-slider input[type='range'] {
     grid-column: 1 / -1;
     grid-row: 2;
   }
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input[type='range'] {
+.intui-slider input[type='range'] {
   appearance: none;
   width: 100%;
   height: var(--ui-control-touch);
@@ -216,17 +234,17 @@
   background: transparent;
   cursor: pointer;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input::-webkit-slider-runnable-track {
+.intui-slider input::-webkit-slider-runnable-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
   background: var(--secondary);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input::-moz-range-track {
+.intui-slider input::-moz-range-track {
   height: var(--ui-space-xs);
   border-radius: var(--ui-radius-pill);
   background: var(--secondary);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input::-webkit-slider-thumb {
+.intui-slider input::-webkit-slider-thumb {
   appearance: none;
   width: var(--ui-foundation-space-md);
   height: var(--ui-foundation-space-md);
@@ -235,7 +253,7 @@
   border-radius: var(--ui-radius-pill);
   background: var(--foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input::-moz-range-thumb {
+.intui-slider input::-moz-range-thumb {
   width: var(--ui-foundation-space-md);
   height: var(--ui-foundation-space-md);
   box-sizing: border-box;
@@ -243,35 +261,35 @@
   border-radius: var(--ui-radius-pill);
   background: var(--foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible {
+.intui-slider input:focus-visible {
   outline: 0;
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-webkit-slider-thumb {
+.intui-slider input:focus-visible::-webkit-slider-thumb {
   box-shadow:
     0 0 0 var(--ui-space-xxs) var(--ui-bg-raised),
     0 0 0 var(--ui-space-xs) var(--ui-text-tertiary);
 }
-.msg.assistant .msg-body.is-declarative .intui-slider input:focus-visible::-moz-range-thumb {
+.intui-slider input:focus-visible::-moz-range-thumb {
   box-shadow:
     0 0 0 var(--ui-space-xxs) var(--ui-bg-raised),
     0 0 0 var(--ui-space-xs) var(--ui-text-tertiary);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress {
+.intui-progress {
   --intui-tone: var(--primary);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='info'] {
+.intui-progress[data-tone='info'] {
   --intui-tone: var(--ui-info);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='success'] {
+.intui-progress[data-tone='success'] {
   --intui-tone: var(--ui-success);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='warning'] {
+.intui-progress[data-tone='warning'] {
   --intui-tone: var(--ui-warning);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress[data-tone='danger'] {
+.intui-progress[data-tone='danger'] {
   --intui-tone: var(--destructive);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress-track {
+.intui-progress-track {
   position: relative;
   width: 100%;
   height: var(--ui-space-xs);
@@ -279,50 +297,50 @@
   border-radius: var(--ui-radius-pill);
   background: var(--secondary);
 }
-.msg.assistant .msg-body.is-declarative .intui-progress-value {
+.intui-progress-value {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: var(--intui-tone);
   transition: width var(--ui-duration-normal) var(--ui-ease-out);
 }
-.msg.assistant .msg-body.is-declarative .intui-choice legend {
+.intui-choice legend {
   padding: 0;
   color: var(--muted-foreground);
   font-size: var(--ui-font-size-xs);
 }
-.msg.assistant .msg-body.is-declarative .intui-choice-options {
+.intui-choice-options {
   display: flex;
   flex-wrap: wrap;
   gap: var(--ui-space-xs);
 }
 /* Controls carry their own fill, border and state from the shadcn primitive;
    this file only pins the chip geometry the transcript uses. */
-.msg.assistant .msg-body.is-declarative .intui-choice-options button {
+.intui-choice-options button {
   border-radius: var(--ui-radius-pill);
   font: var(--ui-font-weight-medium) var(--ui-font-size-xs) / 1 var(--font-sans);
   touch-action: manipulation;
 }
-.msg.assistant .msg-body.is-declarative .intui-choice-options button:not(.is-selected) {
+.intui-choice-options button:not(.is-selected) {
   background: transparent;
 }
-.msg.assistant .msg-body.is-declarative .intui-choice-options button.is-selected {
+.intui-choice-options button.is-selected {
   border-color: var(--primary);
   background: var(--primary);
   color: var(--primary-foreground);
 }
-.msg.assistant .msg-body.is-declarative .intui-button {
+.intui-button {
   border-radius: var(--ui-radius-pill);
   touch-action: manipulation;
 }
-.msg.assistant .msg-body.is-declarative .intui-button.is-primary:hover:not(:disabled) {
+.intui-button.is-primary:hover:not(:disabled) {
   opacity: var(--ui-press-opacity);
 }
-.msg.assistant .msg-body.is-declarative .intui-button:disabled {
+.intui-button:disabled {
   cursor: default;
   opacity: 0.5;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-actions {
+.intui-panel-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -343,7 +361,7 @@
 }
 /* A switch is a setting, not a card: the row sits on the transcript with the
    same quiet rhythm as the rest of the result. */
-.msg.assistant .msg-body.is-declarative .intui-toggle {
+.intui-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -353,26 +371,26 @@
   border: 0;
   background: transparent;
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle + .intui-toggle {
+.intui-toggle + .intui-toggle {
   border-top: 1px solid var(--ui-border-subtle);
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle-copy {
+.intui-toggle-copy {
   display: grid;
   gap: var(--ui-space-xxs);
   min-width: 0;
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle-label {
+.intui-toggle-label {
   color: var(--foreground);
   font-size: var(--ui-font-size-sm);
   font-weight: var(--ui-font-weight-medium);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle-description {
+.intui-toggle-description {
   color: var(--ui-text-tertiary);
   font-size: var(--ui-font-size-xs);
   line-height: var(--ui-line-height-normal);
 }
-.msg.assistant .msg-body.is-declarative .intui-toggle [data-slot='switch'] {
+.intui-toggle [data-slot='switch'] {
   flex: none;
 }
 /* ── Unified Design System Table Contract: .ds-table-wrap & .ds-table ── */
@@ -401,7 +419,7 @@
   padding: var(--ui-space-xs) var(--ui-space-sm);
 }
 .ds-table-wrap > table.ds-table,
-.msg.assistant .msg-body.is-declarative .intui-table {
+.intui-table {
   width: max-content;
   min-width: 0;
   max-width: 100%;
@@ -412,7 +430,7 @@
   line-height: var(--ui-line-height-normal, 1.5);
 }
 .ds-table-wrap > table.ds-table caption,
-.msg.assistant .msg-body.is-declarative .intui-table-caption {
+.intui-table-caption {
   padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
   border-bottom: 1px solid var(--ui-border-strong);
   background: transparent;
@@ -422,7 +440,7 @@
   text-align: start;
 }
 .ds-table-wrap > table.ds-table :is(th, td),
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td) {
+:is(.intui-table th, .intui-table td) {
   padding: var(--ui-space-sm, 8px) var(--ui-space-md, 14px);
   border: 0;
   border-bottom: 1px solid var(--ui-border-subtle);
@@ -432,15 +450,15 @@
   max-width: min(30vw, 320px);
 }
 .ds-table-wrap > table.ds-table :is(th, td):first-child,
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):first-child {
+:is(.intui-table th, .intui-table td):first-child {
   padding-left: 0;
 }
 .ds-table-wrap > table.ds-table :is(th, td):last-child,
-.msg.assistant .msg-body.is-declarative :is(.intui-table th, .intui-table td):last-child {
+:is(.intui-table th, .intui-table td):last-child {
   padding-right: 0;
 }
 .ds-table-wrap > table.ds-table th,
-.msg.assistant .msg-body.is-declarative .intui-table th {
+.intui-table th {
   background: transparent;
   color: var(--foreground);
   font-weight: var(--ui-font-weight-medium, 500);
@@ -448,24 +466,24 @@
   border-bottom-color: var(--ui-border-strong);
 }
 .ds-table-wrap > table.ds-table code,
-.msg.assistant .msg-body.is-declarative .intui-table code {
+.intui-table code {
   font-size: 0.875em;
 }
 .ds-table-wrap > table.ds-table tbody tr:hover td,
-.msg.assistant .msg-body.is-declarative .intui-table tbody tr:hover td {
+.intui-table tbody tr:hover td {
   background: var(--ui-bg-hover-ghost);
 }
 .ds-table-wrap > table.ds-table tbody tr:last-child td,
-.msg.assistant .msg-body.is-declarative .intui-table tbody tr:last-child td {
+.intui-table tbody tr:last-child td {
   border-bottom: 0;
 }
-.msg.assistant .msg-body.is-declarative .intui-table-wrap {
+.intui-table-wrap {
   max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--ui-border-subtle);
   border-radius: var(--ui-radius-md);
 }
-.msg.assistant .msg-body.is-declarative .intui-stream-dot {
+.intui-stream-dot {
   position: absolute;
   inset-inline-end: var(--ui-space-xs);
   inset-block-end: var(--ui-space-xs);
@@ -692,13 +710,13 @@
 /* Pip and split panes are narrower than the transcript, so composition reacts
    to the surface itself instead of the window. */
 @container (max-width: 30rem) {
-  .msg.assistant .msg-body.is-declarative .intui-grid {
+  .intui-grid {
     grid-template-columns: repeat(auto-fit, minmax(min(6.5rem, 100%), 1fr));
   }
-  .msg.assistant .msg-body.is-declarative .intui-entity {
+  .intui-entity {
     grid-template-columns: 1fr;
   }
-  .msg.assistant .msg-body.is-declarative .intui-entity-image {
+  .intui-entity-image {
     width: 4rem;
     height: 4rem;
   }
@@ -708,10 +726,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .msg.assistant .msg-body.is-declarative .intui-progress-value {
+  .intui-progress-value {
     transition: none;
   }
-  .msg.assistant .msg-body.is-declarative .intui-stream-dot {
+  .intui-stream-dot {
     animation: none;
     opacity: 0.65;
   }
@@ -790,7 +808,7 @@
   color: var(--ui-text-disabled);
   cursor: default;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
+.intui-panel-actions .intui-panel-more {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -803,7 +821,7 @@
   color: var(--muted-foreground);
   cursor: pointer;
 }
-.msg.assistant .msg-body.is-declarative .intui-panel-more:hover {
+.intui-panel-more:hover {
   background: var(--accent);
   color: var(--foreground);
 }
@@ -839,7 +857,7 @@
   .intui-surface-menu :is([role='menuitemradio'], [role='menuitem']) {
     min-height: var(--ui-control-touch);
   }
-  .msg.assistant .msg-body.is-declarative .intui-panel-actions .intui-panel-more {
+  .intui-panel-actions .intui-panel-more {
     min-height: var(--ui-control-touch);
   }
   .msg.assistant
@@ -862,13 +880,15 @@
 }
 .intui-block-skeleton-line {
   display: block;
-  width: 72%;
+  /* Full measure: the block is about to fill the answer column, so a short
+     placeholder bar would read as settled content and then reflow. */
+  width: 100%;
   height: 0.75rem;
   border-radius: var(--ui-radius-xs);
   background-color: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 .intui-block-skeleton-line[data-width='title'] {
-  width: 40%;
+  width: 100%;
   height: 1rem;
 }
 
