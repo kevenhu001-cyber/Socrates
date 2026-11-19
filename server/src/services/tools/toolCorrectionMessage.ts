@@ -56,6 +56,7 @@ export interface ToolErrorFeedback {
    executor, which the unit tests assert so an example can never rot. */
 const CANONICAL_EXAMPLES: Record<string, Record<string, unknown>> = {
   web_search: { query: 'Python 3.13 release date', count: 5 },
+  image_search: { query: 'James Webb Space Telescope Carina Nebula', count: 4 },
   web_fetch: { url: 'https://example.com/article' },
   code_interpreter: { language: 'python', code: 'import pandas as pd\nprint(pd.__version__)' },
   workspace_agent: { task: 'Read server/src/app.ts and list the registered routes.' },

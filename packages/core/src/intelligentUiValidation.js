@@ -25,7 +25,11 @@ const TYPES = [
   'chart',
   'tabs',
   'entity',
+  'image',
   'image-gallery',
+  'accordion',
+  'steps',
+  'badge',
   'physics',
   'demonstration',
   'learning',
@@ -269,7 +273,10 @@ function safeId(value) {
 }
 
 function safeUiUrl(value) {
-  if (value.length > 2048) return false;
+  if (typeof value !== 'string' || value.length > 2048) return false;
+  if (value.startsWith('/api/v2/intelligent-ui/') || value.startsWith('/api/intelligent-ui/')) {
+    return true;
+  }
   try {
     const url = new URL(value);
     return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;

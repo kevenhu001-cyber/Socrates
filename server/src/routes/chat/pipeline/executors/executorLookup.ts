@@ -17,6 +17,7 @@ import { executeWorkspaceAgent } from './workspaceAgent.js';
 import { executeInitializeWorkspace } from './workspaceInit.js';
 import { executeCodeInterpreter } from './codeInterpreter.js';
 import { executeWebSearch } from './webSearch.js';
+import { executeImageSearch } from './imageSearch.js';
 import { executeWebFetch } from './webFetch.js';
 import { executeReadAttachment } from './readAttachment.js';
 import { executeSaveMemory } from './saveMemory.js';
@@ -40,6 +41,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['initialize_workspace', executeInitializeWorkspace],
     ['code_interpreter', executeCodeInterpreter],
     ['web_search', executeWebSearch],
+    ['image_search', executeImageSearch],
     ['web_fetch', executeWebFetch],
     ['read_attachment', executeReadAttachment],
     ['save_memory', executeSaveMemory],

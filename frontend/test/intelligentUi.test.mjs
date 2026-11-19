@@ -78,14 +78,18 @@ test('accepts registered native node types and rejects unknown elements', () => 
     '{"id":"chart","type":"chart"}',
     '{"id":"tabs","type":"tabs"}',
     '{"id":"entity","type":"entity"}',
+    '{"id":"image1","type":"image"}',
     '{"id":"gallery","type":"image-gallery"}',
+    '{"id":"acc","type":"accordion"}',
+    '{"id":"st","type":"steps"}',
+    '{"id":"bdg","type":"badge"}',
     '{"id":"notify","type":"toggle","bind":"notify","checked":true}',
     '{"id":"iframe","type":"iframe"}',
   ].join('\n');
 
   assert.deepEqual(
     parseIntelligentUiRecords(source).map((node) => node.type),
-    ['chart', 'tabs', 'entity', 'image-gallery', 'toggle'],
+    ['chart', 'tabs', 'entity', 'image', 'image-gallery', 'accordion', 'steps', 'badge', 'toggle'],
   );
 });
 
@@ -142,6 +146,10 @@ test('image URLs are restricted to absolute credential-free HTTP(S)', () => {
   assert.equal(
     normalizeIntelligentUiImageUrl('http://example.com/reference.png'),
     'http://example.com/reference.png',
+  );
+  assert.equal(
+    normalizeIntelligentUiImageUrl('/api/v2/intelligent-ui/image?url=https%3A%2F%2Fexample.com%2Fpic.jpg'),
+    '/api/v2/intelligent-ui/image?url=https%3A%2F%2Fexample.com%2Fpic.jpg',
   );
   assert.equal(normalizeIntelligentUiImageUrl('/relative.png'), null);
   assert.equal(normalizeIntelligentUiImageUrl('data:image/png;base64,AAAA'), null);

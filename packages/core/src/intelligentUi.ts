@@ -30,7 +30,11 @@ export type IntelligentUiNodeType =
   | 'chart'
   | 'tabs'
   | 'entity'
+  | 'image'
   | 'image-gallery'
+  | 'accordion'
+  | 'steps'
+  | 'badge'
   | 'demonstration'
   | 'physics'
   | 'learning'
@@ -54,7 +58,11 @@ const NODE_TYPES = new Set<IntelligentUiNodeType>([
   'chart',
   'tabs',
   'entity',
+  'image',
   'image-gallery',
+  'accordion',
+  'steps',
+  'badge',
   'demonstration',
   'physics',
   'learning',
@@ -138,6 +146,14 @@ export interface IntelligentUiNode {
   delta?: unknown;
   checked?: unknown;
   caption?: unknown;
+  src?: unknown;
+  url?: unknown;
+  query?: unknown;
+  items?: unknown;
+  current?: unknown;
+  badge?: unknown;
+  fit?: unknown;
+  aspectRatio?: unknown;
   [key: string]: unknown;
 }
 
@@ -178,13 +194,17 @@ export function isSafeIntelligentUiStateKey(value: string): boolean {
 }
 
 /**
- * Accept only absolute HTTP(S) image URLs. Credentials, data/blob/javascript
- * schemes, and overlong model-provided URLs are rejected before reaching DOM.
+ * Accept only absolute HTTP(S) image URLs or local media proxy endpoints.
+ * Credentials, data/blob/javascript schemes, and overlong model-provided
+ * URLs are rejected before reaching DOM.
  */
 export function normalizeIntelligentUiImageUrl(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const raw = value.trim();
   if (!raw || raw.length > MAX_EXTERNAL_URL_LENGTH) return null;
+  if (raw.startsWith('/api/v2/intelligent-ui/') || raw.startsWith('/api/intelligent-ui/')) {
+    return raw;
+  }
   try {
     const url = new URL(raw);
     if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.username || url.password)

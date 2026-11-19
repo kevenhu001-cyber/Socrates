@@ -143,6 +143,26 @@ export function normalizeIntelligentUiNode(raw) {
     }
   }
 
+  if (node.type === 'image') {
+    if (!node.id) node.id = 'img_' + Math.random().toString(36).slice(2, 8);
+    if (!node.src && typeof node.url === 'string') node.src = node.url;
+  }
+
+  if (node.type === 'accordion') {
+    if (!node.id) node.id = 'acc_' + Math.random().toString(36).slice(2, 8);
+    if (!Array.isArray(node.items) && Array.isArray(node.sections)) node.items = node.sections;
+  }
+
+  if (node.type === 'steps') {
+    if (!node.id) node.id = 'step_' + Math.random().toString(36).slice(2, 8);
+    if (!Array.isArray(node.items) && Array.isArray(node.steps)) node.items = node.steps;
+  }
+
+  if (node.type === 'badge') {
+    if (!node.id) node.id = 'badge_' + Math.random().toString(36).slice(2, 8);
+    if (!node.label && node.text) node.label = node.text;
+  }
+
   return normalizeLearningUiNode(normalizeIntelligentUiControl(node));
 }
 

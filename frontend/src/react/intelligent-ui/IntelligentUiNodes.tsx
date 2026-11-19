@@ -12,6 +12,12 @@ import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Icon } from '../../legacy/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { i18n } from '../legacy/gateway';
+import { UiImage } from './UiImage';
+import { UiAccordion } from './UiAccordion';
+import { UiSteps } from './UiSteps';
+import { UiBadge } from './UiBadge';
+import { ImageLightbox } from './ImageLightbox';
+import { useRemote, MEDIA_API } from './openui/remoteData';
 import {
   isSafeIntelligentUiStateKey,
   intelligentUiControlIssues,
@@ -648,17 +654,36 @@ function EntityCopy({ title, subtitle, description }: EntityPresentationProps) {
 }
 
 function EntityImage({ imageUrl, imageAlt }: { imageUrl: string | null; imageAlt: string }) {
+  const [open, setOpen] = useState(false);
   if (!imageUrl) return null;
   return (
-    <img
-      className="intui-entity-image"
-      src={imageUrl}
-      alt={imageAlt}
-      loading="lazy"
-      decoding="async"
-      referrerPolicy="no-referrer"
-      draggable={false}
-    />
+    <>
+      <img
+        className="intui-entity-image is-clickable"
+        src={imageUrl}
+        alt={imageAlt}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        draggable={false}
+        onClick={() => setOpen(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
+      />
+      {open && (
+        <ImageLightbox
+          images={[{ src: imageUrl, alt: imageAlt, title: imageAlt }]}
+          open={open}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -772,14 +797,30 @@ function resolvedGalleryImages(node: IntelligentUiNode, context: RenderContext):
 }
 
 function UiImageGallery({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
-  const images = resolvedGalleryImages(node, context);
-  if (!images.length) return null;
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const directImages = resolvedGalleryImages(node, context);
+  const query = asProse(resolve(node.query, context));
+  const searchPath =
+    !directImages.length && query ? `${MEDIA_API}/images?q=${encodeURIComponent(query)}` : null;
+  const { data: remoteResults, loading } = useRemote<
+    Array<{ url: string; title: string; sourceUrl: string }>
+  >(searchPath);
+
+  const images: GalleryImage[] = directImages.length
+    ? directImages
+    : (remoteResults || []).map((r) => ({
+        src: r.url,
+        alt: r.title,
+        caption: r.title,
+      }));
+
+  if (!images.length && !loading) return null;
   const columns = Math.min(
-    3,
+    4,
     Math.max(1, Math.round(asNumber(resolve(node.columns, context), images.length === 1 ? 1 : 2))),
   );
   const style = { '--intui-gallery-columns': columns } as CSSProperties;
-  const label = asProse(resolve(node.label, context));
+  const label = asProse(resolve(node.label || node.title, context));
   return (
     <section
       className="intui-image-gallery-wrap"
@@ -791,25 +832,54 @@ function UiImageGallery({ node, context }: { node: IntelligentUiNode; context: R
           <MathText text={label} />
         </div>
       ) : null}
-      <div className="intui-image-gallery" style={style}>
-        {images.map((image, index) => (
-          <figure key={`${node.id}-image-${index}`}>
-            <img
-              src={image.src}
-              alt={image.alt}
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-              draggable={false}
-            />
-            {image.caption ? (
-              <figcaption>
-                <MathText text={image.caption} />
-              </figcaption>
-            ) : null}
-          </figure>
-        ))}
-      </div>
+      {loading ? (
+        <div className="intui-image-loading" role="status">
+          <span className="thinking-ring thinking-ring-sm" aria-hidden="true" />
+          <span className="intui-image-loading-text">
+            {query ? `Searching images for "${query}"…` : 'Loading gallery…'}
+          </span>
+        </div>
+      ) : (
+        <div className="intui-image-gallery" style={style}>
+          {images.map((image, index) => (
+            <figure
+              key={`${node.id}-image-${index}`}
+              className="intui-gallery-item-clickable"
+              onClick={() => setLightboxIndex(index)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setLightboxIndex(index);
+                }
+              }}
+            >
+              <img
+                src={image.src}
+                alt={image.alt}
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                draggable={false}
+              />
+              {image.caption ? (
+                <figcaption>
+                  <MathText text={image.caption} />
+                </figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+      )}
+      {lightboxIndex !== null && (
+        <ImageLightbox
+          images={images}
+          initialIndex={lightboxIndex}
+          open={lightboxIndex !== null}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </section>
   );
 }
@@ -881,7 +951,11 @@ const nodeRenderers = new Map<string, UiNodeRenderer>([
   ['chart', (node, context) => <UiVisualization node={node} context={context} />],
   ['tabs', (node, context) => <UiTabs node={node} context={context} />],
   ['entity', (node, context) => <UiEntity node={node} context={context} />],
+  ['image', (node, context) => <UiImage node={node} context={context} />],
   ['image-gallery', (node, context) => <UiImageGallery node={node} context={context} />],
+  ['accordion', (node, context) => <UiAccordion node={node} context={context} />],
+  ['steps', (node, context) => <UiSteps node={node} context={context} />],
+  ['badge', (node, context) => <UiBadge node={node} context={context} />],
 ]);
 
 export function UiNode({

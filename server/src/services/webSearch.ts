@@ -148,6 +148,38 @@ export const WEB_SEARCH_TOOL = {
   },
 };
 
+export const IMAGE_SEARCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'image_search',
+    description:
+      'Search the web for real-world images, photographs, diagrams, and illustrations. ' +
+      'Returns a list of image results with title, direct image URL (url), and source page URL (sourceUrl). ' +
+      'Use this tool when the user asks for pictures, images, photos, or when visual illustrations from the web would make your explanation richer. ' +
+      'You can display the resulting images directly on the page by calling `render_intelligent_ui` with an `image` or `image-gallery` node, or with Markdown image syntax `![title](url)`.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query for the desired images (1-6 concise descriptive words).',
+          minLength: 1,
+          maxLength: 200,
+        },
+        count: {
+          type: 'number',
+          description: 'Maximum number of images to return (1-8, default 4).',
+          default: 4,
+          minimum: 1,
+          maximum: 8,
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+};
+
 /* ─── Configuration ─── */
 
 const MAX_RESULTS = 12; // final merged count / per-source limit

@@ -17,6 +17,7 @@
    detail panel and the Retry affordance. */
 export const SEARCH_TOOLS: ReadonlySet<string> = new Set([
   'web_search',
+  'image_search',
   'arxiv_search',
   'zotero_search',
   'notion_search_pages',

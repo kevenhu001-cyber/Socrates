@@ -345,6 +345,11 @@ const RUNNING_STATIC_LABELS = new Map<string, () => RunLabel>([
 
 function runningSearchLabel(call: ToolCallLike): RunLabel {
   const query = queryOf(call.input);
+  if (call.name === 'image_search') {
+    return query
+      ? { text: tf('tool.searchingImagesFor', 'Searching images for "{query}"…', { query }) }
+      : { text: translate('tool.actionImageSearch', 'Searching images…') };
+  }
   return query
     ? { text: tf('tool.searchingFor', 'Searching "{query}"…', { query }) }
     : { text: translate('tool.actionSearch', 'Searching the web…') };
@@ -388,6 +393,15 @@ function runningLabel(call: ToolCallLike): RunLabel {
 function doneSearchLabel(call: ToolCallLike): RunLabel {
   const count = resultCount(call);
   const query = queryOf(call.input);
+  if (call.name === 'image_search') {
+    const meta = count > 0 ? [tf('tool.nImages', '{n} images', { n: count })] : [];
+    const text = query
+      ? tf('tool.searchedImagesFor', 'Searched images for “{query}”', { query })
+      : count > 0
+        ? tf('tool.imagesDone', 'Found {n} images', { n: count })
+        : translate('tool.imagesEmpty', 'No images found');
+    return { text, meta, hosts: resultHosts(call) };
+  }
   const meta =
     count > 0
       ? [

@@ -43,6 +43,7 @@ test('tool registry exposes the same native search and visual tools in tutor mod
       'code_interpreter',
       ...workspaceTools,
       'web_search',
+      'image_search',
       'web_fetch',
       'read_attachment',
       'save_memory',
@@ -60,6 +61,7 @@ test('tool registry exposes the same native search and visual tools in tutor mod
     [
       ...workspaceTools,
       'web_search',
+      'image_search',
       'web_fetch',
       'read_attachment',
       'save_memory',

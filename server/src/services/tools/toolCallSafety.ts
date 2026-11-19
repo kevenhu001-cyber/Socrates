@@ -270,6 +270,7 @@ const MAX_UNWRAP_DEPTH = 3;
 const MAX_SCHEMA_DEPTH = 8;
 const TOOL_ARGUMENT_ALIASES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   web_search: { q: 'query', search_query: 'query', keyword: 'query' },
+  image_search: { q: 'query', search_query: 'query', keyword: 'query', term: 'query' },
   read_attachment: { file_id: 'fileId' },
   code_interpreter: { script: 'code', python: 'code', source: 'code' },
 };
@@ -861,6 +862,15 @@ const TOOL_NAME_ALIASES: Record<string, string> = {
   bing: 'web_search',
   internet_search: 'web_search',
   browser_search: 'web_search',
+  // image search
+  images: 'image_search',
+  image_search: 'image_search',
+  search_images: 'image_search',
+  search_image: 'image_search',
+  web_image_search: 'image_search',
+  find_images: 'image_search',
+  bing_images: 'image_search',
+  google_images: 'image_search',
   // fetch
   webfetch: 'web_fetch',
   fetch: 'web_fetch',

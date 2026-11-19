@@ -1,6 +1,6 @@
 import { CITE_SOURCES_TOOL, PATCH_INTELLIGENT_UI_TOOL } from '../turnRuntimeTools.js';
 import { INTELLIGENT_UI_TOOL } from '../intelligentUi.js';
-import { WEB_SEARCH_TOOL } from '../webSearch.js';
+import { IMAGE_SEARCH_TOOL, WEB_SEARCH_TOOL } from '../webSearch.js';
 import { WEB_FETCH_TOOL } from '../util/fetchBatch.js';
 import { READ_ATTACHMENT_TOOL } from '../embeddings/attachmentReader.js';
 import { SAVE_MEMORY_TOOL } from '../memoryTool.js';
@@ -90,6 +90,13 @@ export function createToolRegistry({
     {
       name: 'web_search',
       modelDefinition: WEB_SEARCH_TOOL,
+      enabled: true,
+      pure: true,
+      sessionSerial: false,
+    },
+    {
+      name: 'image_search',
+      modelDefinition: IMAGE_SEARCH_TOOL,
       enabled: true,
       pure: true,
       sessionSerial: false,

@@ -243,6 +243,9 @@ Choose \`workspace_agent\` automatically whenever the user's intent requires tou
 const WEB_SEARCH_ROUTING_HINT = `## Web search
 When \`web_search\` is supplied, call it for real-time information, current facts, or looking up URLs. The required parameter is \`query\` (a concise search string, 1-6 words). Do not use \`q\` or \`keyword\`. An optional \`count\` (1-12, default 8) may be provided.`;
 
+const IMAGE_SEARCH_ROUTING_HINT = `## Image search
+When \`image_search\` is supplied, call it whenever the user asks for pictures, photos, or visual references, or when illustrating a topic with real-world imagery. The required parameter is \`query\` (a concise descriptive query, 1-6 words). Present the returned image URLs directly on the page using \`render_intelligent_ui\` (with \`image\` or \`image-gallery\` nodes) or Markdown image syntax.`;
+
 const WEB_FETCH_ROUTING_HINT = `## Web fetch
 When \`web_fetch\` is supplied, call it to read the content of specific URLs discovered via search or provided by the user. Pass \`url\` (a single http/https URL string) or \`urls\` (an array of up to 4 URLs).`;
 
@@ -256,6 +259,7 @@ export function appendToolRoutingHints<T extends { role: string; content?: unkno
   const nameSet = new Set(toolNames.filter((name): name is string => typeof name === 'string'));
   const blocks: string[] = [];
   if (nameSet.has('web_search')) blocks.push(WEB_SEARCH_ROUTING_HINT);
+  if (nameSet.has('image_search')) blocks.push(IMAGE_SEARCH_ROUTING_HINT);
   if (nameSet.has('web_fetch')) blocks.push(WEB_FETCH_ROUTING_HINT);
   if (nameSet.has('search_connectors')) blocks.push(CONNECTOR_DISCOVERY_ROUTING_HINT);
   if (nameSet.has('render_intelligent_ui')) blocks.push(INTELLIGENT_UI_VISUALIZATION_HINT);

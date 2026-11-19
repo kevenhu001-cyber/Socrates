@@ -129,6 +129,7 @@ const CONNECTOR_NAMES = new Set([
 
 const TOOL_ICONS = new Map<string, string>([
   ['web_search', STROKE_ICONS.search],
+  ['image_search', STROKE_ICONS.image],
   ['arxiv_search', STROKE_ICONS.search],
   ['zotero_search', STROKE_ICONS.search],
   ['notion_search_pages', STROKE_ICONS.search],

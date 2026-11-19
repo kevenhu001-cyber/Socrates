@@ -1158,3 +1158,433 @@
 .intui .katex :is(.mord, .mbin, .mrel) {
   color: inherit;
 }
+
+/* ── Interactive Image & Lightbox ── */
+.intui-image {
+  display: grid;
+  gap: var(--ui-space-xs);
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+.intui-image-title {
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+}
+.intui-image-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--ui-radius-lg);
+  background: var(--secondary, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--ui-border-subtle, rgba(0, 0, 0, 0.08));
+}
+.intui-image-clickable {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.intui-image-clickable img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.intui-image-clickable:hover img {
+  opacity: 0.95;
+}
+.intui-image-zoom-hint {
+  position: absolute;
+  right: var(--ui-space-sm);
+  bottom: var(--ui-space-sm);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: var(--ui-radius-control, 9999px);
+  padding: 4px 8px;
+  font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.intui-image-clickable:hover .intui-image-zoom-hint {
+  opacity: 1;
+}
+.intui-image-loading,
+.intui-image-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-sm);
+  min-height: 12rem;
+  padding: var(--ui-space-md);
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  text-align: center;
+}
+.intui-image-nav-strip {
+  position: absolute;
+  bottom: var(--ui-space-xs);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xxs);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  border-radius: var(--ui-radius-control, 9999px);
+  padding: 2px 6px;
+  font-size: 11px;
+}
+.intui-image-nav-strip button {
+  color: #fff;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+}
+.intui-image-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  color: var(--ui-text-tertiary, var(--muted-foreground));
+  font-size: var(--ui-font-size-xs);
+}
+.intui-image-source-link {
+  color: var(--primary, currentColor);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.intui-gallery-item-clickable {
+  cursor: zoom-in;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.intui-gallery-item-clickable:hover {
+  opacity: 0.92;
+}
+.intui-entity-image.is-clickable {
+  cursor: zoom-in;
+  transition: opacity 0.15s ease;
+}
+.intui-entity-image.is-clickable:hover {
+  opacity: 0.9;
+}
+
+/* ── Lightbox Overlay ── */
+.intui-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  color: #f8fafc;
+  animation: intui-fade-in 0.2s ease-out;
+}
+@keyframes intui-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.intui-lightbox-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 3rem;
+}
+.intui-lightbox-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+  overflow: hidden;
+}
+.intui-lightbox-counter {
+  font-size: var(--ui-font-size-xs);
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+.intui-lightbox-title {
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.intui-lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+}
+.intui-lightbox-actions button {
+  color: rgba(255, 255, 255, 0.85);
+}
+.intui-lightbox-actions button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+.intui-lightbox-zoom-level {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+.intui-lightbox-link-btn {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--ui-radius-sm);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.15s ease;
+}
+.intui-lightbox-link-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.intui-lightbox-content {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: var(--ui-space-md);
+}
+.intui-lightbox-img-wrapper {
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease-out;
+}
+.intui-lightbox-img-wrapper img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: var(--ui-radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.intui-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.intui-lightbox-nav:hover {
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+}
+.intui-lightbox-prev { left: var(--ui-space-md); }
+.intui-lightbox-next { right: var(--ui-space-md); }
+.intui-lightbox-caption {
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  background: rgba(0, 0, 0, 0.4);
+  text-align: center;
+  font-size: var(--ui-font-size-xs);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Interactive Accordion ── */
+.intui-accordion {
+  display: grid;
+  gap: var(--ui-space-xs);
+  width: 100%;
+}
+.intui-accordion-item {
+  border: 1px solid var(--ui-border-subtle, rgba(0, 0, 0, 0.08));
+  border-radius: var(--ui-radius-md);
+  overflow: hidden;
+  background: var(--card, transparent);
+  transition: border-color 0.15s ease;
+}
+.intui-accordion-item.is-open {
+  border-color: var(--ui-border-strong, rgba(0, 0, 0, 0.16));
+}
+.intui-accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  background: transparent;
+  border: 0;
+  color: var(--foreground);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  cursor: pointer;
+  text-align: start;
+  gap: var(--ui-space-sm);
+}
+.intui-accordion-trigger:hover {
+  background: var(--accent, rgba(0, 0, 0, 0.03));
+}
+.intui-accordion-icon {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  transition: transform 0.2s ease;
+}
+.intui-accordion-content {
+  padding: 0 var(--ui-space-md) var(--ui-space-sm);
+  animation: intui-accordion-down 0.2s ease-out;
+}
+@keyframes intui-accordion-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.intui-accordion-body {
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-sm);
+  line-height: var(--ui-line-height-relaxed);
+}
+
+/* ── Interactive Steps ── */
+.intui-steps {
+  display: grid;
+  gap: var(--ui-space-sm);
+  width: 100%;
+  padding: var(--ui-space-xs) 0;
+}
+.intui-step-item {
+  display: flex;
+  gap: var(--ui-space-sm);
+  align-items: flex-start;
+  position: relative;
+}
+.intui-step-item.is-clickable {
+  cursor: pointer;
+}
+.intui-step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.intui-step-circle {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: var(--ui-font-weight-semibold);
+  border: 2px solid var(--ui-border-subtle, rgba(0, 0, 0, 0.12));
+  background: var(--background, #fff);
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
+}
+.intui-step-item.is-completed .intui-step-circle {
+  background: var(--ui-tone-success, #10b981);
+  border-color: var(--ui-tone-success, #10b981);
+  color: #fff;
+}
+.intui-step-item.is-current .intui-step-circle,
+.intui-step-item.is-active .intui-step-circle {
+  border-color: var(--primary, #3b82f6);
+  color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+.intui-step-line {
+  width: 2px;
+  flex: 1 1 auto;
+  min-height: 1.5rem;
+  background: var(--ui-border-subtle, rgba(0, 0, 0, 0.1));
+  margin: var(--ui-space-xxs) 0;
+}
+.intui-step-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-bottom: var(--ui-space-xs);
+}
+.intui-step-title {
+  color: var(--foreground);
+  font-size: var(--ui-font-size-sm);
+  font-weight: var(--ui-font-weight-medium);
+  line-height: var(--ui-line-height-normal);
+}
+.intui-step-description {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+  font-size: var(--ui-font-size-xs);
+  line-height: var(--ui-line-height-normal);
+}
+
+/* ── Badge / Tag ── */
+.intui-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: var(--ui-radius-control, 9999px);
+  font-size: 11px;
+  font-weight: var(--ui-font-weight-medium);
+  line-height: 1.25;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.intui-badge.is-subtle.is-neutral {
+  background: var(--secondary, rgba(0, 0, 0, 0.06));
+  color: var(--foreground);
+}
+.intui-badge.is-subtle.is-info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+.intui-badge.is-subtle.is-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+.intui-badge.is-subtle.is-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+.intui-badge.is-subtle.is-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+.intui-badge.is-solid.is-info {
+  background: #2563eb;
+  color: #fff;
+}
+.intui-badge.is-solid.is-success {
+  background: #059669;
+  color: #fff;
+}
+.intui-badge.is-solid.is-warning {
+  background: #d97706;
+  color: #fff;
+}
+.intui-badge.is-solid.is-danger {
+  background: #dc2626;
+  color: #fff;
+}
+.intui-badge.is-outline {
+  background: transparent;
+  border: 1px solid currentColor;
+}
