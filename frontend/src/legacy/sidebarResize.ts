@@ -44,6 +44,10 @@ export function loadSidebarWidth() {
 
 export function applySidebarWidth() {
   document.documentElement.style.setProperty('--app-sidebar-width', sidebarWidthPx + 'px');
+  /* The handle is a focusable separator, not a decorative strip: expose the
+     live width so assistive tech can announce the value while arrowing. */
+  const handle = document.getElementById('sidebarResizeHandle');
+  if (handle) handle.setAttribute('aria-valuenow', String(Math.round(sidebarWidthPx)));
 }
 
 export function saveSidebarWidth(width?: number) {
@@ -155,24 +159,29 @@ export function initSidebarDrag() {
   window.addEventListener('touchend', onUp);
   window.addEventListener('touchcancel', onUp);
   /* Keyboard: focused handle, arrow keys nudge. A keyboard step is a
-     discrete command and lands at once. */
+     discrete command and lands at once. Home/End reach the endpoints so a
+     keyboard user is not forced to hold the arrow key for 35 steps. */
+  handle.setAttribute('aria-valuemin', String(SIDEBAR_MIN_PX));
+  handle.setAttribute('aria-valuemax', String(SIDEBAR_MAX_PX));
   handle.tabIndex = 0;
   handle.addEventListener('keydown', function (e) {
     const step = e.shiftKey ? 32 : 8;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      /* A keyboard step takes over from the pointer: drop the pending
-       * drag write and take the drag chrome off. */
-      cancelDragFrame();
-      handle.classList.remove('dragging');
-      document.body.classList.remove('sidebar-resizing');
-      sidebarWidthPx =
-        e.key === 'ArrowLeft'
-          ? Math.max(SIDEBAR_MIN_PX, sidebarWidthPx - step)
-          : Math.min(SIDEBAR_MAX_PX, sidebarWidthPx + step);
-      applySidebarWidth();
-      saveSidebarWidth();
-      e.preventDefault();
-    }
+    const direction = getComputedStyle(document.documentElement).direction === 'rtl' ? -1 : 1;
+    let next: number | null = null;
+    if (e.key === 'ArrowLeft') next = sidebarWidthPx - step * direction;
+    else if (e.key === 'ArrowRight') next = sidebarWidthPx + step * direction;
+    else if (e.key === 'Home') next = SIDEBAR_MIN_PX;
+    else if (e.key === 'End') next = SIDEBAR_MAX_PX;
+    if (next === null) return;
+    /* A keyboard step takes over from the pointer: drop the pending
+     * drag write and take the drag chrome off. */
+    cancelDragFrame();
+    handle.classList.remove('dragging');
+    document.body.classList.remove('sidebar-resizing');
+    sidebarWidthPx = Math.max(SIDEBAR_MIN_PX, Math.min(SIDEBAR_MAX_PX, next));
+    applySidebarWidth();
+    saveSidebarWidth();
+    e.preventDefault();
   });
 }
 

@@ -119,9 +119,11 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
   // Labels are visually hidden, not removed: icons keep accessible names.
   await expect(page.getByRole('button', { name: /资料库/ })).toBeVisible();
 
-  // Each visible nav button exposes its label via `title` so the CSS
-  // rail-tooltip (`::after` with `content: attr(title)`) has text to show
-  // and screen readers announce a useful name on hover/focus.
+  // Each visible nav button exposes its label via `aria-label`, and the
+  // CSS rail-tooltip reads that same attribute (`content: attr(aria-label)`).
+  // Assert the rendered tooltip, not just the accessible name: the two
+  // drifted apart once already (nav rows stopped emitting `title`, so the
+  // tooltip rendered as an empty bubble while aria-label stayed correct).
   const railIds = await page
     .locator('#sidebarNav .sidebar-nav-btn')
     .evaluateAll((buttons) =>
@@ -129,7 +131,12 @@ test('collapsing keeps a 52px icon rail with named buttons and reopens from it',
     );
   expect(railIds.length).toBeGreaterThan(0);
   for (const id of railIds) {
-    await expect(page.locator(`#${id}`)).toHaveAttribute('aria-label', /\S+/);
+    const button = page.locator(`#${id}`);
+    await expect(button).toHaveAttribute('aria-label', /\S+/);
+    const label = await button.getAttribute('aria-label');
+    await button.hover();
+    const tooltip = await button.evaluate((el) => getComputedStyle(el, '::after').content);
+    expect(tooltip).toBe(JSON.stringify(label));
   }
 
   const toggle = page.locator('#sidebarCloseBtn');

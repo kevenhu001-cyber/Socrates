@@ -169,7 +169,17 @@ test('pinned reader stays at the bottom while content streams', async ({ page })
 
   // The scroll-away flag must remain clear for a pinned reader.
   expect(await page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway)).toBe(false);
-  await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
+  const hiddenPill = page.locator('#newReplyPill');
+  await expect(hiddenPill).not.toHaveClass(/visible/);
+  // Hidden means hidden to the keyboard too: opacity:0 alone used to leave
+  // this role=button tabindex=0 pill as an invisible focus stop.
+  await expect(hiddenPill).toBeHidden();
+  expect(
+    await hiddenPill.evaluate((el) => {
+      el.focus();
+      return document.activeElement === el;
+    }),
+  ).toBe(false);
 
   await page.evaluate(() => window.__finishStream());
   await page.evaluate(() => window.__streamPromise);
@@ -281,15 +291,18 @@ test('upward gesture stops auto-scroll and shows the new-reply pill; clicking it
   await expect.poll(() => distanceFromBottom(page)).toBeGreaterThan(64);
 
   // The "↓ new response" pill becomes visible while scrolled away.
-  await expect(page.locator('#newReplyPill')).toHaveClass(/visible/);
+  const visiblePill = page.locator('#newReplyPill');
+  await expect(visiblePill).toHaveClass(/visible/);
+  await expect(visiblePill).toBeVisible();
 
   // Clicking the pill clears the scrolled-away flag and snaps to bottom.
-  await page.locator('#newReplyPill').click();
+  await visiblePill.click();
   await expect
     .poll(() => page.evaluate(() => window.__socratesTestState.ui()._userScrolledAway))
     .toBe(false);
   await expect.poll(() => distanceFromBottom(page)).toBeLessThanOrEqual(4);
   await expect(page.locator('#newReplyPill')).not.toHaveClass(/visible/);
+  await expect(page.locator('#newReplyPill')).toBeHidden();
 
   await page.evaluate(() => window.__finishStream());
   await page.evaluate(() => window.__streamPromise);

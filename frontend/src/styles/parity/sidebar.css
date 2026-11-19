@@ -613,12 +613,14 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     white-space: nowrap;
   }
   /* Rail tooltip — each icon button surfaces its label on hover/focus.
-     Pulls text from the native `title` attribute (written by applyI18n
-     via data-i18n-title), so there is one source of truth shared with
-     the accessibility tree. */
+     Pulls text from `aria-label`, which the shared RN row always writes
+     (localized) for the accessibility tree. Reading the same attribute
+     keeps the visual tooltip and the screen-reader name in sync; the
+     older `attr(title)` lookup rendered an empty bubble because the RN
+     row does not emit a `title`. */
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn:hover::after,
   #appShell #sidebar.collapsed #sidebarNav .sidebar-nav-btn:focus-visible::after {
-    content: attr(title);
+    content: attr(aria-label);
     position: absolute;
     left: calc(100% + 10px);
     top: 50%;

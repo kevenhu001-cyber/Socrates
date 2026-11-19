@@ -101,3 +101,38 @@ test('sidebar resize handle clamps to its min/max range', async ({ page }) => {
   const min = await railAtRest(page, 200);
   expect(min.sidebarWidth).toBe(200);
 });
+
+test('resize handle exposes separator semantics and keyboard steps', async ({ page }) => {
+  await mockAuthedApp(page);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const handle = page.locator('#sidebarResizeHandle');
+  await expect(handle).toHaveAttribute('role', 'separator');
+  await expect(handle).toHaveAttribute('aria-orientation', 'vertical');
+  await expect(handle).toHaveAttribute('aria-valuemin', '200');
+  await expect(handle).toHaveAttribute('aria-valuemax', '480');
+
+  const before = await railMetrics(page);
+  await expect(handle).toHaveAttribute('aria-valuenow', String(before.sidebarWidth));
+
+  await handle.focus();
+  await page.keyboard.press('ArrowRight');
+  const afterStep = await railAtRest(page, before.sidebarWidth + 8);
+  await expect(handle).toHaveAttribute('aria-valuenow', String(afterStep.sidebarWidth));
+
+  await page.keyboard.press('Shift+ArrowRight');
+  await railAtRest(page, before.sidebarWidth + 40);
+
+  await page.keyboard.press('Home');
+  await railAtRest(page, 200);
+  await expect(handle).toHaveAttribute('aria-valuenow', '200');
+
+  await page.keyboard.press('End');
+  await railAtRest(page, 480);
+  await expect(handle).toHaveAttribute('aria-valuenow', '480');
+  expect(Number(await page.evaluate(() => localStorage.getItem('socrates-sidebar-width')))).toBe(
+    480,
+  );
+});

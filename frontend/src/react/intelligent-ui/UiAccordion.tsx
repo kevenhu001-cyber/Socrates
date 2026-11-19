@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import type { IntelligentUiNode } from '@socrates/core';
 import { MathText } from '../rn/useInlineMath';
 import { asProse, isRecord, resolve, setBoundValue, type RenderContext } from './renderRuntime';
