@@ -8,9 +8,17 @@ import { composerLifecycleStore } from '../../composer/lifecycle.store.ts';
 import { submitComposer } from '../composer-input/lifecycle';
 import { getLegacyActions, i18n } from '../legacy/gateway';
 
-/** Keep the primary input usable when the rich editor's chunk cannot load.
+const basicComposers = new WeakMap<HTMLElement, () => void>();
+
+export function releaseBasicComposer(host: HTMLElement): void {
+  basicComposers.get(host)?.();
+}
+
+/** Keep the primary input usable while the rich editor is unavailable.
  * This adapter intentionally uses native DOM so it has no editor/UI dependency. */
 export function mountBasicComposer(host: HTMLElement): () => void {
+  const existing = basicComposers.get(host);
+  if (existing) return existing;
   const doc = host.ownerDocument;
   const field = doc.createElement('textarea');
   field.className = 'msg-edit-area';
@@ -61,7 +69,9 @@ export function mountBasicComposer(host: HTMLElement): () => void {
   field.addEventListener('keydown', keydown);
   send.addEventListener('click', submit);
   host.append(field, send);
-  return () => {
+  const release = () => {
+    if (basicComposers.get(host) !== release) return;
+    basicComposers.delete(host);
     unregister();
     unsubscribe();
     field.removeEventListener('input', update);
@@ -70,4 +80,6 @@ export function mountBasicComposer(host: HTMLElement): () => void {
     field.remove();
     send.remove();
   };
+  basicComposers.set(host, release);
+  return release;
 }

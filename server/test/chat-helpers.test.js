@@ -205,7 +205,7 @@ describe('enforceServerSystemBoundary', () => {
        nodes only. */
     assert.doesNotMatch(out[0].content, /Visualization\(template/);
     assert.match(out[0].content, /Never encode a list as \{"item": \[\.\.\.\]\}/);
-    assert.match(out[0].content, /For mathematics, use LaTeX/);
+    assert.match(out[0].content, /use LaTeX for every reader-facing formula .* visual UI/);
     /* The new client-system classifier (P_client_system_classifier)
        routes unstyled client strings like "Call [web_search: query]"
        into the untrusted-data block, not the application-instructions
@@ -1219,6 +1219,8 @@ test('tool guidance is deterministic, capability gated and encourages label math
   const visual = appendToolRoutingHints(base, ['render_intelligent_ui', 'web_search']);
   assert.deepEqual(visual, appendToolRoutingHints(base, ['web_search', 'render_intelligent_ui']));
   assert.match(visual[0].content, /Use LaTeX for EVERY displayed formula/);
+  assert.match(visual[0].content, /same payload\.functions array/);
+  assert.match(visual[0].content, /display-only panel or chart needs zero buttons/);
   assert.match(visual[0].content, /Keep executable expressions/);
   assert.deepEqual(visual, appendToolRoutingHints(visual, ['web_search', 'render_intelligent_ui']));
   assert.deepEqual(appendToolRoutingHints(base, []), base);

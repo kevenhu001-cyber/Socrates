@@ -132,15 +132,12 @@ button {
    animates. Used by the OpenUI BlockSkeleton (react/intelligent-ui) and the
    streaming scaffold previews (render/markdownScaffolds.ts). Reduced motion
    and forced colours get the static fill. */
-.skeleton-shimmer {
-  --skeleton-shimmer-highlight: var(--ui-fill-pressed);
-}
 @media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   .skeleton-shimmer {
     background-image: linear-gradient(
       90deg,
       transparent 33%,
-      var(--skeleton-shimmer-highlight) 50%,
+      var(--skeleton-shimmer-highlight, var(--ui-fill-pressed)) 50%,
       transparent 67%
     );
     background-repeat: no-repeat;
@@ -160,10 +157,19 @@ button {
   }
 }
 
-/* RN-7 — the boot shell keeps the shimmering wordmark only; its three-dot
-   loader was the last dotted decoration outside the streaming cue. */
-.boot-loading-dots {
-  display: none;
+/* Sweep a single band across the viewport behind the wordmark. */
+.boot-loading-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.boot-loading-logo {
+  position: relative;
+}
+
+html:not([data-boot-state='checking']) .boot-loading-sweep {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

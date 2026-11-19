@@ -1,4 +1,5 @@
 /* Locale-aware, bounded category label formatting for chart axes. */
+import { mathLabelSource } from './latex.ts';
 
 export interface CategoryAxisOptions {
   maxChars?: number;
@@ -20,13 +21,9 @@ function labelLength(value: unknown): number {
   return Array.from(String(value == null ? '' : value)).length;
 }
 
-function containsFormula(text: string): boolean {
-  return /\$[^$]+\$|\\\([\s\S]+?\\\)/.test(text);
-}
-
 export function truncateLabel(value: unknown, maxChars: number): string {
   const source = String(value == null ? '' : value);
-  if (containsFormula(source)) return source;
+  if (mathLabelSource(source)) return source;
   const chars = Array.from(source);
   if (chars.length <= maxChars) return chars.join('');
   return chars.slice(0, Math.max(1, maxChars - 1)).join('') + '…';
@@ -42,7 +39,7 @@ export function formatCategoryLabel(value: unknown, options?: CategoryAxisOption
   const lineChars = opts.lineChars || 10;
   const maxLines = opts.maxLines || 2;
   const compact = truncateLabel(value, maxChars);
-  if (containsFormula(compact) || opts.rotate || labelLength(compact) <= lineChars) return compact;
+  if (mathLabelSource(compact) || opts.rotate || labelLength(compact) <= lineChars) return compact;
   const chars = Array.from(compact);
   const lines: string[] = [];
   for (let index = 0; index < chars.length && lines.length < maxLines; index += lineChars) {

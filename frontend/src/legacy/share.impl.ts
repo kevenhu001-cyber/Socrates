@@ -12,7 +12,7 @@
  */
 
 import { apiFetch } from '../util/api/index.ts';
-import { dispatchPatches, dispatchSession, sessionStore, uiStore } from '../store/index.ts';
+import { dispatchPatches, dispatchSession, sessionStore } from '../store/index.ts';
 import { showToast } from './toast.js';
 import { activateMainView } from './mainViewController.ts';
 import { publishReactChatRuntime } from './reactBridge.ts';
@@ -20,8 +20,6 @@ import { registerSharedViewCleanup } from './msgListMount.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { publishShareState, type ShareVisibility } from './shareState.ts';
 import type { MessageEntry } from './messageActions.ts';
-import { getCurrentUser } from '../app/lifecycle/index.ts';
-import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
 import { readTopbarState, setTopbarState } from '../react/topbar/topbarStore.ts';
 import { hideGate } from '../auth/index.ts';
 import { dispatchExam, dispatchUi } from '../store/index.ts';
@@ -161,24 +159,6 @@ function _publishShareState() {
 /* React owns the share modal unconditionally under the always-on
    runtime. `renderShareModal` is kept as a no-op for legacy callers;
    state mutations still update the React subscriber via `_publishShareState`. */
-
-function toggleShareBtn() {
-  /* RN-7 — share and find share one visibility rule (only useful while a
-     conversation or exam is on screen). The top bar renders from the
-     header store; nothing here touches the buttons. */
-  const show = !!(
-    getCurrentUser() &&
-    (sessionStore.getState().currentSessionId || uiStore.getState()._examInView)
-  );
-  setTopbarState({ conversationActions: show });
-  if (!show) {
-    try {
-      closeFindInSession();
-    } catch (error) {
-      reportSwallow(error, 'legacy/share.impl.ts:75');
-    }
-  }
-}
 
 function hideAuthGate() {
   try {
@@ -506,7 +486,6 @@ async function loadSharedExamSession(session: SharedSession) {
   revealSharedExam();
 }
 export {
-  toggleShareBtn,
   openShareModal,
   closeShareModal,
   selectShareVis,

@@ -1,4 +1,5 @@
 import { MathText } from './useInlineMath';
+import { mathLabelSource } from '../../render/latex';
 
 /** HTML math inside an SVG coordinate system; ordinary ticks remain SVG text. */
 export function SvgMathText({
@@ -16,7 +17,7 @@ export function SvgMathText({
   anchor?: 'start' | 'middle' | 'end';
   className?: string;
 }) {
-  if (!/\$|\\[([]/.test(text))
+  if (!mathLabelSource(text))
     return (
       <text x={x} y={y} textAnchor={anchor} className={className}>
         {text}

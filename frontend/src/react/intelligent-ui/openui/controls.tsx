@@ -423,7 +423,7 @@ export const Slider = defineComponent({
                     left: `calc(var(--ui-space-sm) + (100% - var(--ui-space-sm) * 2) * ${at})`,
                   }}
                 >
-                  {m.label}
+                  <MathText text={m.label} />
                 </span>
               );
             })}
@@ -452,7 +452,9 @@ export const Checkbox = defineComponent({
           checked={checked}
           onChange={(event) => field.setValue(event.target.checked)}
         />
-        <span>{String(props.label ?? '')}</span>
+        <span>
+          <MathText text={props.label} />
+        </span>
       </ShadcnLabel>
     );
   },

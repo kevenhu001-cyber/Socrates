@@ -2,7 +2,8 @@ type FeatureRuntime = typeof import('./share.impl.ts');
 
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { getCurrentUser } from '../app/lifecycle/index.ts';
-import { closeFindInSession } from '../react/find-in-session/findInSession.actions.ts';
+import { closeFindInSession, isFindOpen } from '../react/find-in-session/findInSession.actions.ts';
+import { setTopbarState } from '../react/topbar/topbarStore.ts';
 import { sessionBridge, uiBridge } from '../store/index.ts';
 
 /* legacy/share.ts — lightweight share facade.
@@ -44,17 +45,14 @@ function runShareAction(action: (module: FeatureRuntime) => void): void {
 
 /* This is part of session/auth chrome and runs frequently, so keep it fully
    synchronous and dependency-free instead of waking the heavy share runtime. */
-function toggleShareBtn() {
-  const btn = document.getElementById('shareBtn');
-  if (!btn) return;
+function toggleShareBtn(view = document.documentElement.dataset.mainView) {
   const show = !!(
     getCurrentUser() &&
-    (sessionBridge.getSnapshot().currentSessionId || uiBridge.getSnapshot()._examInView)
+    ((view === 'chatView' && sessionBridge.getSnapshot().currentSessionId) ||
+      (view === 'examView' && uiBridge.getSnapshot()._examInView))
   );
-  btn.classList.toggle('hidden', !show);
-  const findBtn = document.getElementById('findBtn');
-  if (findBtn) findBtn.classList.toggle('hidden', !show);
-  if (!show) {
+  setTopbarState({ conversationActions: show });
+  if (!show && isFindOpen()) {
     try {
       closeFindInSession();
     } catch (error) {

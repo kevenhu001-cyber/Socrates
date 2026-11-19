@@ -1,4 +1,5 @@
 import { visualizationSandboxMath } from './visualizationSandboxMath.ts';
+import { MATH_LABEL_TRIGGER } from './latex.ts';
 /* Sandboxed extension rendering and model-facing repair routing. */
 /* Extension content is self-contained: tags and CSP block executable/network
    escape paths, and resource URLs are limited to fragments or inline data.
@@ -125,6 +126,8 @@ export function renderExtension(
     JSON.stringify(cardId).replace(/</g, '\\u003c') +
     ',' +
     JSON.stringify(nonce) +
+    ',' +
+    JSON.stringify(MATH_LABEL_TRIGGER.source).replace(/</g, '\\u003c') +
     ')</script>';
   const documentSource =
     '<!doctype html><meta http-equiv="Content-Security-Policy" content="' +

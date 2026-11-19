@@ -3,8 +3,14 @@ import test from 'node:test';
 import { parseAst } from 'rolldown/parseAst';
 import { createRetryDynamicImportsPlugin } from '../scripts/retry-dynamic-imports.mjs';
 
-function transform(code) {
-  return createRetryDynamicImportsPlugin().renderChunk.call({ parse: parseAst }, code);
+function transform(code, importer, chunks) {
+  return createRetryDynamicImportsPlugin().renderChunk.call(
+    { parse: parseAst },
+    code,
+    importer,
+    {},
+    { chunks },
+  );
 }
 
 test('build transform preserves namespace adapters and ignores strings and static imports', () => {
@@ -41,4 +47,48 @@ test('failed imports get fresh same-origin URLs while successful imports retain 
     'https://example.test/assets/editor.js?__load_retry=1',
     'https://example.test/assets/editor.js?__load_retry=1',
   ]);
+});
+
+test('editor dependency HTTP errors retry outside the module map and bypass cached errors', async () => {
+  const importer = { fileName: 'assets/boot.js', imports: ['assets/shared.js'] };
+  const result = transform("const load = () => import('./editor.js');", importer, {
+    'assets/boot.js': importer,
+    'assets/editor.js': {
+      moduleIds: ['/app/src/react/composer-input/index.ts'],
+      imports: ['assets/shared.js', 'assets/vendor.js'],
+    },
+    'assets/shared.js': { imports: [] },
+    'assets/vendor.js': { imports: [] },
+  });
+  const requests = [];
+  const imports = [];
+  const load = new Function(
+    'fetch',
+    '__testImport',
+    result.code
+      .replaceAll('import.meta.url', JSON.stringify('https://example.test/assets/boot.js'))
+      .replace('import(url.href)', '__testImport(url.href)') + '\nreturn load;',
+  )(
+    async (url, { cache }) => {
+      requests.push([url.pathname, cache]);
+      const status = url.pathname.endsWith('/vendor.js') && cache === 'force-cache' ? 503 : 200;
+      return new Response('export {}', {
+        status,
+        headers: { 'content-type': 'application/javascript' },
+      });
+    },
+    async (url) => imports.push(url),
+  );
+  await assert.rejects(load(), /vendor\.js \(503\)/);
+  assert.deepEqual(imports, []);
+  await load();
+  assert.deepEqual(imports, ['https://example.test/assets/editor.js']);
+  assert.deepEqual(
+    requests.filter(([path]) => path.endsWith('/vendor.js')),
+    [
+      ['/assets/vendor.js', 'force-cache'],
+      ['/assets/vendor.js', 'reload'],
+    ],
+  );
+  assert.ok(!requests.some(([path]) => path.endsWith('/shared.js')));
 });

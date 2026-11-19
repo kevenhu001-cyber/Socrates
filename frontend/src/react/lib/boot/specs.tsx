@@ -12,6 +12,7 @@ import { hydrateOwnedRoot, mountOwnedRoot } from './ownedRoot';
 import { ErrorBoundary } from '../../ErrorBoundary';
 import type { MountSpec } from './registry';
 import { retryImport } from './retryImport';
+import { mountBasicComposer, releaseBasicComposer } from '../../ui/composerRecovery';
 
 /* on-demand overlays (tools menu, cmdk, find,
    more-popover, share/usage modals) are dynamically imported in
@@ -333,8 +334,16 @@ export function mountRegistryList(): MountSpec[] {
     {
       hostId: 'composerInputWrap',
       label: 'composer-shell',
-      mount: (host) => {
-        return retryImport(() => import('../../composer-input')).then(({ ComposerShell }) => {
+      mount: async (host) => {
+        const showBasicEditor = window.setTimeout(() => {
+          if (host.isConnected) mountBasicComposer(host);
+        }, 300);
+        try {
+          const { ComposerShell } = await retryImport(() => import('../../composer-input'));
+          if (document.getElementById('composerInputWrap') !== host) {
+            releaseBasicComposer(host);
+            return false;
+          }
           mountOwnedRoot(
             host,
             'composer-shell',
@@ -348,7 +357,11 @@ export function mountRegistryList(): MountSpec[] {
               />
             </ErrorBoundary>,
           );
-        });
+          releaseBasicComposer(host);
+        } finally {
+          window.clearTimeout(showBasicEditor);
+          if (!host.isConnected) releaseBasicComposer(host);
+        }
       },
     },
     {

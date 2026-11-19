@@ -41,7 +41,7 @@ const CASES = [
     content: '.tl-container',
   },
   {
-    spec: S('math_construction', { commands: ['A=(0,0)', 'Circle(A,4)'] }),
+    spec: S('math_construction', { appName: 'graphing', commands: ['f(x)=sin(x)'] }),
     content: '[data-test-ggb]',
   },
   {
@@ -256,10 +256,18 @@ for (const { spec, content, tableRows } of CASES) {
             inject(stage) {
               const content = document.createElement('div');
               content.dataset.testGgb = 'true';
+              content.dataset.appName = this.options.appName;
+              content.dataset.canvasWidth = String(this.options.width);
               content.textContent = 'Construction';
               stage.appendChild(content);
               this.options.appletOnLoad({
-                evalCommand: () => true,
+                evalCommand: (command) => {
+                  content.dataset.command = command;
+                  return true;
+                },
+                setSize: (width) => {
+                  content.dataset.canvasWidth = String(width);
+                },
                 remove: () => content.remove(),
               });
             }
@@ -315,6 +323,19 @@ for (const { spec, content, tableRows } of CASES) {
         timeout: 15000,
       });
       await expect(card.locator('.visualization-fallback')).toHaveCount(0);
+      if (spec.template === 'math_construction') {
+        const applet = card.locator('[data-test-ggb]');
+        await expect(applet).toHaveAttribute('data-app-name', 'graphing');
+        await expect(applet).toHaveAttribute('data-command', 'f(x)=sin(x)');
+        await page.setViewportSize({ width: 350, height: 850 });
+        await expect
+          .poll(() =>
+            applet.evaluate(
+              (element) => Number(element.dataset.canvasWidth) - element.parentElement.clientWidth,
+            ),
+          )
+          .toBe(0);
+      }
       if (spec.template === 'heatmap')
         await card.screenshot({ path: 'test-results/visualization-heatmap.png' });
       if (spec.template === 'process')

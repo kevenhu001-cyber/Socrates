@@ -1,4 +1,4 @@
-import { renderInlineMathHtml } from './inlineMath.ts';
+import { renderMathLabelHtml } from './inlineMath.ts';
 import { ensureKatex } from '../vendor/lazy.ts';
 import { installVisualizationMath } from './visualizationMath.ts';
 import type {
@@ -569,7 +569,7 @@ function mountExtensionRenderer(
               cardId,
               nonce: frame.dataset.nonce,
               id: data.id,
-              html: renderInlineMathHtml(data.source!, 'mathml'),
+              html: renderMathLabelHtml(data.source!, 'mathml'),
             },
             '*',
           );

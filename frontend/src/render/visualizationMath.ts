@@ -1,17 +1,12 @@
-import { renderInlineMathHtml } from './inlineMath.ts';
+import { renderMathLabelHtml } from './inlineMath.ts';
+import { MATH_LABEL_TRIGGER } from './latex.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { onKatexReady } from '../vendor/lazy.ts';
 
 const SVG = 'http://www.w3.org/2000/svg';
 const HTML = 'http://www.w3.org/1999/xhtml';
 
-const MATH_TRIGGER =
-  /\$|\\[([]|\\(?:frac|sqrt|sin|cos|tan|log|ln|pi|theta|alpha|beta|gamma|lambda|sigma|omega|mu|Delta|sum|int|cdot|times|pm|approx|leq|geq|neq|partial|nabla)\b/;
-
-function ensureMathDelimiters(text: string): string {
-  if (/\$|\\[([]/.test(text)) return text;
-  return `$${text.trim()}$`;
-}
+const SKIP_HTML = 'svg, .katex, [data-viz-math], script, style, textarea, pre, code, option';
 
 type Typeset = (source: string) => string | null;
 
@@ -30,9 +25,8 @@ function typesetSvgText(
   render: Typeset,
 ): void {
   const source = (text.textContent || '').trim();
-  if (!MATH_TRIGGER.test(source)) return;
   const html = render(source);
-  if (!html || !html.includes('katex')) return;
+  if (!html) return;
   let box: DOMRect | SVGRect | null = null;
   try {
     box = text.getBBox();
@@ -43,7 +37,9 @@ function typesetSvgText(
   const style = getComputedStyle(text);
   const overlay = document.createElementNS(SVG, 'foreignObject');
   const width = Math.max(box.width, 80);
-  overlay.setAttribute('x', String(box.x + (box.width - width) / 2));
+  const anchor = style.textAnchor || text.getAttribute('text-anchor');
+  const alignment = anchor === 'end' ? 1 : anchor === 'middle' ? 0.5 : 0;
+  overlay.setAttribute('x', String(box.x + (box.width - width) * alignment));
   overlay.setAttribute('y', String(box.y + box.height / 2 - 40));
   overlay.setAttribute('width', String(width));
   overlay.setAttribute('height', '80');
@@ -53,8 +49,8 @@ function typesetSvgText(
   overlay.style.overflow = 'visible';
   overlay.setAttribute('aria-hidden', 'true');
   const content = document.createElementNS(HTML, 'div');
-  content.style.cssText =
-    'display:flex;align-items:center;justify-content:center;height:100%;white-space:nowrap;';
+  content.style.cssText = 'display:flex;align-items:center;height:100%;white-space:nowrap;';
+  content.style.justifyContent = alignment === 1 ? 'flex-end' : alignment ? 'center' : 'flex-start';
   content.style.color = style.fill;
   content.style.fontSize = style.fontSize;
   content.innerHTML = html;
@@ -70,18 +66,15 @@ function typesetTextLeaves(host: Node, render: Typeset): void {
   let leaf: Text | null;
   if (host.nodeType === 3) leaves.push(host as Text);
   while ((leaf = walker.nextNode() as Text | null)) {
-    if (leaf.parentElement?.closest('svg, .katex, script, style, textarea, pre, code')) continue;
-    if (MATH_TRIGGER.test(leaf.data)) leaves.push(leaf);
+    if (leaf.parentElement?.closest(SKIP_HTML)) continue;
+    if (MATH_LABEL_TRIGGER.test(leaf.data)) leaves.push(leaf);
   }
   for (const item of leaves) {
-    if (
-      item.parentElement?.closest('svg, .katex, script, style, textarea, pre, code') ||
-      !MATH_TRIGGER.test(item.data)
-    )
-      continue;
+    if (item.parentElement?.closest(SKIP_HTML) || !MATH_LABEL_TRIGGER.test(item.data)) continue;
     const html = render(item.data);
     if (!html) continue;
     const span = host.ownerDocument!.createElement('span');
+    span.dataset.vizMath = '';
     span.innerHTML = html;
     item.replaceWith(span);
   }
@@ -99,7 +92,7 @@ export function installVisualizationMath(host: HTMLElement): () => void {
   const render: Typeset = (source) => {
     const cached = cache.get(source);
     if (cached) return cached;
-    const html = renderInlineMathHtml(ensureMathDelimiters(source));
+    const html = renderMathLabelHtml(source);
     if (html) {
       if (cache.size >= 256) cache.delete(cache.keys().next().value!);
       cache.set(source, html);
@@ -143,8 +136,8 @@ export function installVisualizationMath(host: HTMLElement): () => void {
       const label = element?.closest<SVGTextElement>('text');
       if (label?.namespaceURI === SVG) texts.add(label);
       if (root.nodeType === 1) {
-        for (const text of (root as Element).querySelectorAll<SVGTextElement>('svg text, text'))
-          texts.add(text);
+        for (const text of (root as Element).querySelectorAll<SVGTextElement>('text'))
+          if (text.namespaceURI === SVG) texts.add(text);
       }
     }
     for (const [text, overlay] of labels) {
@@ -168,7 +161,7 @@ export function installVisualizationMath(host: HTMLElement): () => void {
   const observer = new Observer((records) => {
     for (const record of records) {
       const element = elementFor(record.target);
-      if (element?.closest('.katex, foreignObject')) continue;
+      if (element?.closest('.katex, foreignObject, [data-viz-math]')) continue;
       if (record.type === 'attributes') {
         // Ancestor transforms move labels and overlays together.
         // Geometry/colour on a text or its ancestor can affect formulas;

@@ -274,15 +274,12 @@ test('mobile conversation home matches the compact dark reference layout', async
   await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
   const menuBox = await menu.boundingBox();
-  /* On phones the add-content menu follows the reference: a card as wide
-     as the question box, on its 16px gutter, whose bottom edge rests over
-     the box's upper half so the + row stays visible below it. */
-  const askBox = await page.locator('#composerInputWrap').boundingBox();
-  expect(Math.round(menuBox?.width ?? 0)).toBe(Math.round(askBox?.width ?? -1));
-  expect(Math.round(menuBox?.x ?? 0)).toBe(16);
-  const menuBottom = (menuBox?.y ?? 0) + (menuBox?.height ?? 0);
-  expect(menuBottom).toBeGreaterThan(askBox?.y ?? 0);
-  expect(menuBottom).toBeLessThan((askBox?.y ?? 0) + (askBox?.height ?? 0));
+  /* The phone add-content menu is a full-width bottom sheet. */
+  const viewport = page.viewportSize();
+  await expect(menu).toHaveAttribute('data-menu-side', 'sheet');
+  expect(Math.round(menuBox?.width ?? 0)).toBe(viewport.width);
+  expect(Math.round(menuBox?.x ?? -1)).toBe(0);
+  expect(Math.round((menuBox?.y ?? 0) + (menuBox?.height ?? 0))).toBe(viewport.height);
   expect(menuBox?.y ?? -1).toBeGreaterThanOrEqual(0);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });

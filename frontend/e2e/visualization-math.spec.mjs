@@ -86,10 +86,11 @@ test('sandbox formulas rerender after local calculation without replacing contro
 }) => {
   const card = await show(page, 'interactive_simulation', {
     source:
-      '<button id="inc">Increment</button><p id="product">$ct$</p><p id="result">$x^2=4$</p><script>let x=2;document.getElementById("inc").onclick=()=>{x++;document.getElementById("result").textContent="$x^2="+(x*x)+"$"}</script>',
+      '<button id="inc">Increment</button><p id="product">\\vec{v}</p><p id="result">$x^2=4$</p><svg width="300" height="60"><text id="axis" x="12" y="30"><tspan>$x</tspan><tspan>^2$</tspan></text></svg><script>let x=2;document.getElementById("inc").onclick=()=>{x++;document.getElementById("result").textContent="$x^2="+(x*x)+"$";document.getElementById("axis").textContent="$x^2$"}</script>',
   });
   const frame = card.frameLocator('iframe');
   await expect(frame.locator('#product math')).toBeVisible();
+  await expect(frame.locator('svg foreignObject math annotation')).toHaveText('x^2');
   await expect(frame.locator('#result math')).toBeVisible();
   await frame.locator('#inc').click();
   await expect(frame.locator('#result math')).toBeVisible();
@@ -97,6 +98,7 @@ test('sandbox formulas rerender after local calculation without replacing contro
   await frame.locator('#inc').click();
   await expect(frame.locator('#result')).toContainText('16');
   await expect(frame.locator('#result math')).toBeVisible();
+  await expect(frame.locator('svg foreignObject math annotation')).toHaveText('x^2');
   await card.screenshot({ path: 'test-results/visualization-math-simulation.png' });
 });
 
@@ -115,7 +117,7 @@ test('static SVG illustrations typeset LaTeX in their native renderer', async ({
 });
 
 test('Mermaid formula labels retain long expressions and absolute-value bars', async ({ page }) => {
-  const formula = '$\\frac{|x|+x^2+x^3+x^4+x^5+x^6+x^7+x^8}{\\sqrt{1+x^2}}$';
+  const formula = '\\[\\frac{|x|+x^2+x^3+x^4+x^5+x^6+x^7+x^8}{\\sqrt{1+x^2}}\\]';
   const card = await show(page, 'flowchart', {
     nodes: [{ id: 'formula', label: formula }],
     edges: [],
@@ -123,7 +125,7 @@ test('Mermaid formula labels retain long expressions and absolute-value bars', a
   await expect(card.locator('.visualization-fallback')).toHaveCount(0);
   const math = card.locator('svg foreignObject .katex').first();
   await expect(math).toBeVisible();
-  await expect(math.locator('annotation')).toHaveText(formula.slice(1, -1));
+  await expect(math.locator('annotation')).toHaveText(formula.slice(2, -2));
   await card.screenshot({ path: 'test-results/visualization-mermaid-formula.png' });
 });
 

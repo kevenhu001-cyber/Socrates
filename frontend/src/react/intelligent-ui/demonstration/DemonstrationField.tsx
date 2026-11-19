@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { demonstrationDomain, isDemonstrationBudgetError } from '@socrates/core';
 import type { DemonstrationField, DemonstrationRuntime } from '@socrates/core';
 import { i18n } from '../../legacy/gateway';
+import { MathText } from '../../rn/useInlineMath';
 import { DemoIssue } from './DemonstrationIssue';
 
 type Domain = [number, number];
@@ -275,7 +276,11 @@ export function DemoField({
     : i18n('intui.demo.failedView', 'This view could not be computed');
   return (
     <figure className="demo-field">
-      {view.label ? <figcaption>{view.label}</figcaption> : null}
+      {view.label ? (
+        <figcaption>
+          <MathText text={view.label} />
+        </figcaption>
+      ) : null}
       <canvas
         ref={canvas}
         width={320}

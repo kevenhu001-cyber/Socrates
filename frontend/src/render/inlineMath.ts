@@ -10,7 +10,7 @@
  * KaTeX is not loaded yet: `getKatex` starts the lazy load and
  * `onKatexReady` tells the caller to paint again. With a mark it paints the
  * marks right away and leaves a not-yet-typeset formula as escaped source. */
-import { KATEX_MACROS } from './latex.ts';
+import { KATEX_MACROS, mathLabelSource } from './latex.ts';
 import { esc } from './text.ts';
 import { getKatex, hasMathDelimiters, replaceInlineDollarMath } from './markdownMath.ts';
 
@@ -66,9 +66,9 @@ export function renderInlineMathHtml(
   );
   // `$$…$$` stays on the line (inline mode) so a stem never grows a block.
   marked = marked.replace(/\$\$([\s\S]+?)\$\$/g, (match, math: string) => typeset(math, match));
-  marked = replaceInlineDollarMath(marked, false, (math) => typeset(math, `$${math}$`));
+  marked = replaceInlineDollarMath(marked, true, (math) => typeset(math, `$${math}$`));
   marked = marked.replace(
-    /\\\((.+?)\\\)|\\\[([\s\S]+?)\\\]/g,
+    /\\\(([\s\S]+?)\\\)|\\\[([\s\S]+?)\\\]/g,
     (match, inline: string | undefined, block: string | undefined) =>
       typeset(inline ?? block ?? '', match),
   );
@@ -77,4 +77,14 @@ export function renderInlineMathHtml(
   return esc(marked)
     .replace(BOLD_RE, (_match, bold: string) => `<strong>${bold}</strong>`)
     .replace(tokenRe, (_match, index: string) => bank[Number(index)] ?? '');
+}
+
+export function renderMathLabelHtml(
+  text: string,
+  output: 'htmlAndMathml' | 'mathml' = 'htmlAndMathml',
+): string | null {
+  const source = mathLabelSource(text);
+  if (!source) return null;
+  const html = renderInlineMathHtml(source, output);
+  return html?.includes(output === 'mathml' ? '<math ' : 'class="katex"') ? html : null;
 }

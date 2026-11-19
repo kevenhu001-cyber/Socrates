@@ -10,6 +10,7 @@ export interface ChartInstance {
 }
 export interface GeoGebraApi {
   remove?(): void;
+  setSize?(width: number, height: number): void;
   evalCommand(command: string): boolean;
   setCoordSystem(xMin: number, xMax: number, yMin: number, yMax: number): void;
   getPNGBase64(scale: number, transparent: boolean, dpi: number): string;

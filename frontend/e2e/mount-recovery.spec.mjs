@@ -175,6 +175,36 @@ test('a transient composer fetch failure retries before showing recovery UI', as
   await expect(page.locator('[data-mount-recovery="composer-shell"]')).toHaveCount(0);
 });
 
+test('a temporary editor dependency failure preserves typing and recovers in place', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  const { promise, resolve } = Promise.withResolvers();
+  const requestTypes = [];
+  await page.route('**/assets/vendor-editor-*.js', async (route) => {
+    requestTypes.push(route.request().resourceType());
+    if (requestTypes.length === 1) return route.abort('failed');
+    await promise;
+    return route.continue();
+  });
+  const draft = 'Typing while the rich editor reconnects';
+  try {
+    await page.goto('/');
+    const fallback = page.locator('[data-basic-composer]');
+    await expect(fallback).toBeVisible();
+    await fallback.fill(draft);
+    expect(requestTypes[0]).toBe('fetch');
+  } finally {
+    resolve();
+  }
+  await expect(page.locator('#composerRoot .rich-composer-editor')).toHaveText(draft);
+  await expect(page.locator('[data-basic-composer]')).toHaveCount(0);
+  await expect(page.locator('[data-mount-recovery="composer-shell"]')).toHaveCount(0);
+  expect(requestTypes.filter((type) => type === 'fetch').length).toBeGreaterThan(1);
+  await expectNoGlobalError(page);
+});
+
 test('a failed static editor dependency can recover in a fresh document with its draft', async ({
   page,
 }) => {
@@ -193,7 +223,9 @@ test('a failed static editor dependency can recover in a fresh document with its
   );
   let blocked = true;
   await page.route('**/assets/vendor-editor-*.js', (route) =>
-    blocked ? route.abort('failed') : route.continue(),
+    blocked && route.request().resourceType() === 'script'
+      ? route.abort('failed')
+      : route.continue(),
   );
   await page.goto(`/?chat=${id}`);
   await expect(page.locator('#chatView')).toBeVisible();

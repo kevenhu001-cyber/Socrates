@@ -23,7 +23,8 @@ export function openFindInSession(): void {
      during the user activation, not in a later effect tick. */
   document.getElementById(FIND_BAR_ID)?.classList.remove('hidden');
   const input = document.getElementById(FIND_INPUT_ID) as HTMLInputElement | null;
-  input?.focus();
+  input?.focus({ preventScroll: true });
+  input?.select();
 }
 
 export function closeFindInSession(): void {

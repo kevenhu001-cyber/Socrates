@@ -1,6 +1,7 @@
 /* Which engine draws a visualization template. Kept DOM-free and tiny so the
  * OpenUI streaming skeleton can reserve the same stage height as the card the
  * engine will mount, without loading the engine module itself. */
+import { MATH_LABEL_TRIGGER } from './latex.ts';
 
 export type VisualizationRendererKind =
   'echarts' | 'plotly' | 'three' | 'geogebra' | 'tldraw' | 'mermaid' | 'semantic' | 'extension';
@@ -54,7 +55,7 @@ export function chartPrefersCanvas(
 ): boolean {
   // Formula labels need SVG DOM anchors for the shared LaTeX overlay.
   // Canvas has no text nodes to typeset, even when a series is large.
-  if (/\$|\\[([]/.test(JSON.stringify(payload ?? {}))) return false;
+  if (MATH_LABEL_TRIGGER.test(JSON.stringify(payload ?? {}))) return false;
   if (template === 'heatmap') {
     const values = payload?.values;
     const cells = Array.isArray(values)

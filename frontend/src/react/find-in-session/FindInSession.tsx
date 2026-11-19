@@ -63,8 +63,11 @@ export function FindInSession() {
   useEffect(() => {
     if (snapshot.isOpen) {
       const id = window.setTimeout(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
+        const input = inputRef.current;
+        if (input && input.ownerDocument.activeElement !== input) {
+          input.focus({ preventScroll: true });
+          input.select();
+        }
       }, 0);
       return () => window.clearTimeout(id);
     }

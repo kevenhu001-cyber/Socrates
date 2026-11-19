@@ -9,7 +9,14 @@ const lnSpec = {
   caption: 'Natural logarithm',
   accessibilitySummary:
     'The natural logarithm is defined for x greater than zero, has a vertical boundary at x equals zero, and passes through (1, 0).',
-  payload: { functions: [{ expression: 'ln(x)', label: 'ln(x)' }], xLabel: 'x', yLabel: 'y' },
+  payload: {
+    functions: [
+      { expression: 'ln(x)', label: '$\\ln(x)$' },
+      { expression: 'ln(x)+1', label: '$\\ln(x)+1$' },
+    ],
+    xLabel: '$x$',
+    yLabel: '$y$',
+  },
 };
 
 async function renderLn(page) {
@@ -70,7 +77,10 @@ test('native function card renders an actual SVG curve for ln(x)', async ({ page
   await renderLn(page);
   const card = page.locator('.tool-inline-attachments .visualization-card').last();
   await expect(card).toBeVisible();
-  await expect(card.locator('svg path')).not.toHaveCount(0);
+  await expect(card.locator('svg .scatterlayer .trace')).toHaveCount(2);
+  await expect(
+    card.locator('svg foreignObject .katex annotation').filter({ hasText: '\\ln(x)+1' }),
+  ).toHaveCount(1);
   await expect(card).toContainText('y = ln(x)');
   const frame = await card.evaluate((element) => ({
     border: getComputedStyle(element).borderTopWidth,

@@ -792,14 +792,6 @@ html[data-boot-state='auth'] .boot-loading {
     opacity 0.25s var(--ease-out),
     visibility 0s linear 0.25s;
 }
-/* The layer is never removed from the DOM, so its two infinite rings keep
-   ticking under opacity:0 for the whole session. Stop them once boot is done. */
-html[data-boot-state='app'] .boot-loading-dots::before,
-html[data-boot-state='app'] .boot-loading-dots::after,
-html[data-boot-state='auth'] .boot-loading-dots::before,
-html[data-boot-state='auth'] .boot-loading-dots::after {
-  animation: none;
-}
 .boot-loading-logo {
   display: flex;
   align-items: center;
@@ -813,43 +805,6 @@ html[data-boot-state='auth'] .boot-loading-dots::after {
 .boot-loading-logo img {
   flex-shrink: 0;
   color: hsl(var(--brand-000));
-}
-.boot-loading-dots {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 6px;
-  width: 16px;
-  height: 16px;
-  position: relative;
-}
-.boot-loading-dots span {
-  display: none;
-}
-.boot-loading-dots::before {
-  content: '';
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 2px solid hsl(var(--border-300) / 0.3);
-  border-top-color: hsl(var(--accent-000));
-  border-right-color: hsl(var(--brand-000));
-  animation: bootSpin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  box-sizing: border-box;
-}
-.boot-loading-dots::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 1px solid hsl(var(--accent-000) / 0.2);
-  animation: bootSpin 2s linear infinite reverse;
-  opacity: 0.5;
-}
-@keyframes bootSpin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 .auth-card {
   width: 100%;

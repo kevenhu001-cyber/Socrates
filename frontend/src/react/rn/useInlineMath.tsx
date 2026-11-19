@@ -9,6 +9,7 @@
  */
 import { memo, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { renderInlineMathHtml } from '../../render/inlineMath.ts';
+import { mathLabelSource } from '../../render/latex.ts';
 import { onKatexReady } from '../../vendor/lazy.ts';
 
 export type InlineTextRenderer = (text: string, part: string) => ReactNode;
@@ -36,5 +37,7 @@ export function useInlineMath(): InlineTextRenderer {
 /** Shared rich inline text for DOM cards, including lazy KaTeX refresh. */
 export const MathText = memo(function MathText({ text = '' }: { text?: string }) {
   const render = useInlineMath();
-  return <>{render(text, 'content')}</>;
+  const source = mathLabelSource(text);
+  const rendered = render(source ?? text, 'content');
+  return <>{typeof rendered === 'string' ? text : rendered}</>;
 });

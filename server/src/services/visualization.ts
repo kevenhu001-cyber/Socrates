@@ -315,11 +315,11 @@ const COMMON_NUMERIC_PAYLOAD = {
 export const VISUALIZATION_TEMPLATE_CONTRACTS = {
   function: {
     guidance:
-      'payload.functions is an array of {expression,label?,domain?}. Use Cartesian y=f(x) only and send just the right-hand side (x^2, not y = x^2). Expressions use x, pi, e, + - * / ^, parentheses, and named functions such as sin(x), ln(x), sqrt(x); prefer explicit multiplication (2*x) and always call functions with parentheses. domain, when supplied, is [min,max] with min < max.',
+      'payload.functions is an array of {expression,label?,domain?}. Put related Cartesian curves in this one array. Send each right-hand side as an executable expression (x^2, not y = x^2) and write its display label in LaTeX. Expressions use x, pi, e, + - * / ^, parentheses, and named functions such as sin(x), ln(x), sqrt(x); prefer explicit multiplication (2*x) and always call functions with parentheses. domain, when supplied, is [min,max] with min < max.',
     payload: {
-      functions: [{ expression: 'sin(x)', label: 'sin(x)', domain: [-6.28, 6.28] }],
-      xLabel: 'x',
-      yLabel: 'y',
+      functions: [{ expression: 'sin(x)', label: '$\\sin(x)$', domain: [-6.28, 6.28] }],
+      xLabel: '$x$',
+      yLabel: '$y$',
     },
   },
   line: {
@@ -511,7 +511,7 @@ export const VISUALIZATION_TEMPLATE_CONTRACTS = {
   },
   math_construction: {
     guidance:
-      'payload.commands is an array of GeoGebra commands, one command per string. Use standard GeoGebra syntax such as A=(0,0) or Circle(A,4); this template requires the GeoGebra runtime.',
+      'Use this template for editable GeoGebra constructions. Choose appName "graphing" for editable functions, "geometry" for planar geometry, or "3d" for spatial constructions. payload.commands is an array of GeoGebra commands, one command per string in dependency order. Use GeoGebra syntax such as f(x)=sin(x), A=(0,0), or Circle(A,4).',
     payload: { appName: 'geometry', commands: ['A=(0,0)', 'Circle(A,4)'] },
   },
   geometry_3d: {

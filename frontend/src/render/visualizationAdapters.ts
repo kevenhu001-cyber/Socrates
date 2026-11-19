@@ -29,6 +29,7 @@ interface GeoGebraWindow {
   GGBApplet?: GeoGebraAppletConstructor;
 }
 let geogebraPromise: Promise<GeoGebraAppletConstructor> | undefined;
+let geogebraSequence = 0;
 
 export function usesSpecializedRenderer(template: string) {
   return (
@@ -324,11 +325,13 @@ export function mermaidText(spec: VizSpec) {
 export function applyGeoGebraCommands(api: Pick<GeoGebraApi, 'evalCommand'>, commands: unknown) {
   if (commands === undefined || commands === null) return;
   if (!Array.isArray(commands)) throw new Error('Construction commands must be an array.');
-  for (const command of commands) {
+  for (const [index, command] of commands.entries()) {
     if (typeof command !== 'string') throw new Error('Construction commands must be text.');
     const accepted = api.evalCommand(command);
     if (accepted === false)
-      throw new Error(`Construction app rejected a command: ${String(command).slice(0, 120)}`);
+      throw new Error(
+        `Construction app rejected a command: ${command.slice(0, 120)} (command ${index + 1})`,
+      );
   }
 }
 
@@ -610,6 +613,8 @@ async function mountGeoGebra(
 ): Promise<SpecializedVisualizationResult> {
   const GGBApplet = await loadGeoGebra();
   let api: GeoGebraApi | undefined;
+  let width = stage.clientWidth || 320;
+  let height = stage.clientHeight || 300;
   await new Promise<void>((resolve, reject) => {
     let settled = false;
     const timer = setTimeout(
@@ -625,9 +630,10 @@ async function mountGeoGebra(
     };
     const applet = new GGBApplet(
       {
+        id: `socratesGgb${++geogebraSequence}`,
         appName: spec.payload.appName || 'geometry',
-        width: Math.max(stage.clientWidth, 320),
-        height: Math.max(stage.clientHeight, 300),
+        width,
+        height,
         showToolBar: true,
         showAlgebraInput: true,
         showMenuBar: false,
@@ -659,6 +665,15 @@ async function mountGeoGebra(
     stage.replaceChildren();
     throw error;
   });
+  const resize = new ResizeObserver(() => {
+    const nextWidth = stage.clientWidth;
+    const nextHeight = stage.clientHeight;
+    if (!nextWidth || !nextHeight || (nextWidth === width && nextHeight === height)) return;
+    width = nextWidth;
+    height = nextHeight;
+    api?.setSize?.(width, height);
+  });
+  resize.observe(stage);
   return {
     handled: true,
     chart: {
@@ -670,6 +685,7 @@ async function mountGeoGebra(
       },
     },
     cleanup() {
+      resize.disconnect();
       api?.remove?.();
       stage.replaceChildren();
     },

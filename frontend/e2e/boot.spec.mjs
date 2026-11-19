@@ -48,6 +48,40 @@ test.beforeAll(() => {
   }
 });
 
+test('initial shimmer fills the viewport and stops after authentication resolves', async ({
+  page,
+}) => {
+  const { promise, resolve } = Promise.withResolvers();
+  await page.route('**/api/v2/auth/me*', async (route) => {
+    await promise;
+    await route.fulfill({ status: 401, json: { error: 'unauthorized' } });
+  });
+  try {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const sweep = page.locator('.boot-loading-sweep');
+    await expect(page.locator('html')).toHaveAttribute('data-boot-state', 'checking');
+    await expect(sweep).toHaveCSS('animation-name', 'ui-shimmer-sweep');
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: 800 });
+      expect(await sweep.boundingBox()).toEqual({ x: 0, y: 0, width, height: 800 });
+    }
+    await sweep.evaluate((element) => {
+      const [animation] = element.getAnimations();
+      animation.pause();
+      animation.currentTime = 950;
+    });
+    await page.screenshot({ path: 'test-results/boot-viewport-shimmer.png' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(sweep).toHaveCSS('animation-name', 'none');
+  } finally {
+    resolve();
+  }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('html')).toHaveAttribute('data-boot-state', 'auth');
+  await expect(page.locator('#bootLoading')).toBeHidden();
+  await expect(page.locator('.boot-loading-sweep')).toHaveCSS('animation-name', 'none');
+});
+
 test('page boots, dist HTML script ordering correct, inline-handler hash matches snapshot', async ({
   page,
 }) => {

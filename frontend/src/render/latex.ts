@@ -158,6 +158,19 @@ export const LATEX_COMMANDS_RE =
 export const MATH_OPERATOR_RE = /[=+\-×÷≤≥≠→←⇒⇔∫∑∏∂√∞∈∉⊂⊃±∓]/;
 export const HAS_LETTER_RE = /[a-zA-Z\\]/;
 
+const LABEL_DELIMITERS = /\$[^$]+\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\]/;
+const BARE_LABEL_TEX = new RegExp(
+  `(?:${LATEX_COMMANDS_RE.source}|\\\\(?:sin|cos|tan|log|ln|Delta|Gamma|Omega|mp|quad|qquad))\\b`,
+);
+export const MATH_LABEL_TRIGGER = new RegExp(`${LABEL_DELIMITERS.source}|${BARE_LABEL_TEX.source}`);
+
+/** Recover bare TeX in display labels while leaving currency and code literal. */
+export function mathLabelSource(text: string): string | null {
+  if (LABEL_DELIMITERS.test(text)) return text;
+  if (!BARE_LABEL_TEX.test(text) || /[$`\p{Script=Han}]/u.test(text)) return null;
+  return '\\(' + text.trim() + '\\)';
+}
+
 export function _looksLikeLatex(s: string): boolean {
   if (LATEX_COMMANDS_RE.test(s)) return true;
   if (MATH_OPERATOR_RE.test(s) && HAS_LETTER_RE.test(s)) return true;

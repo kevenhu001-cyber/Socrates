@@ -1,8 +1,12 @@
 /** Runs inside the opaque extension frame. Only typesetting crosses the bridge;
  * simulation state and event handlers remain owned by the original document. */
-export function visualizationSandboxMath(cardId: string, nonce: string): void {
-  const pending = new Map<number, { node: Text; source: string }>();
-  const requested = new WeakMap<Text, string>();
+export function visualizationSandboxMath(cardId: string, nonce: string, mathPattern: string): void {
+  type Request = { node: Text | SVGTextElement; source: string };
+  const pending = new Map<number, Request>();
+  const requested = new WeakMap<Node, Request>();
+  const mathTrigger = new RegExp(mathPattern);
+  const skip = 'script,style,textarea,pre,code,option,title,desc,math,[data-viz-math]';
+  const svgNamespace = 'http://www.w3.org/2000/svg';
   let sequence = 0;
   let queued = false;
   const dirty = new Set<Node>();
@@ -13,22 +17,16 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     const roots = [...dirty];
     dirty.clear();
     for (const root of roots) {
-      if (
-        !root.isConnected ||
-        elementFor(root)?.closest('script,style,textarea,pre,code,math,[data-viz-math]')
-      )
-        continue;
+      if (!root.isConnected || elementFor(root)?.closest(skip)) continue;
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
       let node: Text | null =
         root.nodeType === Node.TEXT_NODE ? (root as Text) : (walker.nextNode() as Text | null);
       for (; node; node = walker.nextNode() as Text | null) {
-        const source = node.data;
-        if (
-          !/\$|\\[([]/.test(source) ||
-          node.parentElement?.closest('script,style,textarea,pre,code,math,[data-viz-math]')
-        )
-          continue;
-        if (requested.get(node) === source) continue;
+        if (node.parentElement?.closest(skip)) continue;
+        const svgText = node.parentElement?.closest<SVGTextElement>('text');
+        const label = svgText?.namespaceURI === svgNamespace ? svgText : node;
+        const source = label.textContent || '';
+        if (!mathTrigger.test(source) || requested.get(label)?.source === source) continue;
         // Retain unprocessed roots when the bridge is saturated. A response
         // frees a slot and resumes work; no formula is silently abandoned.
         if (pending.size >= 200) {
@@ -36,8 +34,9 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
           break;
         }
         const id = ++sequence;
-        requested.set(node, source);
-        pending.set(id, { node, source });
+        const entry = { node: label, source };
+        requested.set(label, entry);
+        pending.set(id, entry);
         window.parent.postMessage(
           { type: 'socrates-viz-math', cardId, nonce, id, source: source.slice(0, 8000) },
           '*',
@@ -58,10 +57,10 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     }
     schedule();
   });
-  function applySvgMathOverlay(svgText: SVGElement, html: string, source: string) {
-    if (svgText.textContent !== source) return;
-    const box = (svgText as unknown as SVGTextElement).getBBox();
-    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+  function applySvgMathOverlay(svgText: SVGTextElement, html: string, entry: Request) {
+    const box = svgText.getBBox();
+    if (!box.width || !box.height) return;
+    const overlay = document.createElementNS(svgNamespace, 'foreignObject');
     overlay.setAttribute('data-viz-math', '');
     overlay.setAttribute('x', String(box.x));
     overlay.setAttribute('y', String(box.y - box.height));
@@ -78,6 +77,7 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     svgText.after(overlay);
     svgText.style.opacity = '0';
     const watch = new MutationObserver(() => {
+      if (requested.get(svgText) === entry) requested.delete(svgText);
       overlay.remove();
       svgText.style.removeProperty('opacity');
       watch.disconnect();
@@ -104,15 +104,16 @@ export function visualizationSandboxMath(cardId: string, nonce: string): void {
     const entry = pending.get(data.id);
     pending.delete(data.id);
     schedule();
-    if (!entry || !entry.node.isConnected || entry.node.data !== entry.source) return;
+    if (
+      !entry ||
+      requested.get(entry.node) !== entry ||
+      !entry.node.isConnected ||
+      entry.node.textContent !== entry.source
+    )
+      return;
     if (typeof data.html !== 'string' || !data.html) return;
-    const text = entry.node.parentElement;
-    const svgText = text?.closest('text');
-    if (svgText && svgText.namespaceURI === 'http://www.w3.org/2000/svg') {
-      applySvgMathOverlay(svgText, data.html, entry.source);
-    } else {
-      applySpanMath(entry.node, data.html);
-    }
+    if (entry.node instanceof SVGElement) applySvgMathOverlay(entry.node, data.html, entry);
+    else applySpanMath(entry.node, data.html);
   });
   function start() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });

@@ -187,6 +187,49 @@ test('a fast touch tap keeps the pressed state visible for more than a frame', a
   }
 });
 
+test.describe('phone header', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  test('find and share remain anchored through touch and overlay changes', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => {
+      window.__socratesTestState.patch({
+        session: { currentSessionId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', phase: 'chat' },
+      });
+      window.__testActivateMainView('chatView');
+    });
+    const header = page.locator('#topBar');
+    const find = page.locator('#findBtn');
+    const share = page.locator('#shareBtn');
+    await expect(find).toBeVisible();
+    await expect(share).toBeVisible();
+    const before = [await find.boundingBox(), await share.boundingBox()];
+    const boxes = async () => [await find.boundingBox(), await share.boundingBox()];
+
+    await find.tap();
+    const bar = page.locator('#findBar');
+    const input = bar.getByRole('textbox');
+    await expect(input).toBeFocused();
+    expect(
+      Number.parseFloat(await input.evaluate((field) => getComputedStyle(field).fontSize)),
+    ).toBeGreaterThanOrEqual(16);
+    const headerBox = await header.boundingBox();
+    expect((await bar.boundingBox()).y).toBeGreaterThanOrEqual(headerBox.y + headerBox.height);
+    expect(await boxes()).toEqual(before);
+    await page.screenshot({ path: 'test-results/phone-find-below-header.png' });
+    await bar.getByRole('button', { name: 'Close find' }).tap();
+    await expect(bar).toBeHidden();
+    expect(await boxes()).toEqual(before);
+
+    await share.tap();
+    await expect(page.locator('#shareOverlay')).toBeVisible();
+    expect(await boxes()).toEqual(before);
+    await page.locator('#shareOverlay .share-close').tap();
+    await expect(page.locator('#shareOverlay')).toBeHidden();
+    expect(await boxes()).toEqual(before);
+  });
+});
+
 test('disabled buttons do not press', async ({ page }) => {
   await boot(page);
   await page.evaluate(() => {

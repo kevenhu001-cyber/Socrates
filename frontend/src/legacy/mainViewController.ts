@@ -6,6 +6,7 @@ import { closeDetailSurface } from './detailSurface.ts';
 import { CORE_VIEW_IDS, MAIN_PAGE_IDS } from '../sidebar/navigation.destinations.ts';
 import { dispatchUi, uiStore } from '../store/index.ts';
 import { setTopbarState } from '../react/topbar/topbarStore.ts';
+import { toggleShareBtn } from './share.ts';
 
 export { CORE_VIEW_IDS, MAIN_PAGE_IDS };
 
@@ -55,6 +56,7 @@ export function hideCoreViews(doc?: Document | null) {
   setHidden(currentDocument, CORE_VIEW_IDS, true);
   syncChatPageGate(currentDocument);
   setConversationChrome(false, currentDocument);
+  setTopbarState({ conversationActions: false });
 }
 
 export function getVisibleCoreView(doc?: Document | null) {
@@ -129,6 +131,7 @@ export function activateMainView(viewId: string, doc?: Document | null) {
   applyWorkspaceClasses(currentDocument, viewId);
 
   setConversationChrome(CONVERSATION_CHROME_VIEWS.has(viewId), currentDocument);
+  toggleShareBtn(viewId);
   animateSurfaceEntrance(target, previousView, WORKSPACE_PAGE_IDS.has(viewId));
   return true;
 }

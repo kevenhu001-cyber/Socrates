@@ -34,7 +34,7 @@ const mountOptions: MountRegistryOptions = {
     const message = RECOVERY_MESSAGES[failure.spec.label];
     if (!message) return;
     const isComposer = failure.spec.label === 'composer-shell';
-    const releaseInput = isComposer ? mountBasicComposer(failure.host) : undefined;
+    if (isComposer) mountBasicComposer(failure.host);
     const reload =
       isComposer && isImportLoadError(failure.error) && canReloadComposer()
         ? {
@@ -46,17 +46,13 @@ const mountOptions: MountRegistryOptions = {
             ),
           }
         : undefined;
-    const releaseNotice = showMountRecovery(
+    return showMountRecovery(
       failure,
       i18n(...message),
       i18n('error.retry', 'Try again'),
       message[0],
       reload,
     );
-    return () => {
-      releaseInput?.();
-      releaseNotice();
-    };
   },
 };
 

@@ -13,6 +13,13 @@
   #appShell .top-bar-right {
     gap: 8px;
   }
+  body > #findBar {
+    top: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+  }
+  body > #findBar input {
+    /* Mobile Safari zooms the viewport when focusing smaller form fields. */
+    font-size: max(1rem, var(--ui-font-size-md));
+  }
   #appShell #sidebarOpenBtn {
     width: var(--ui-control-md);
     min-width: var(--ui-control-md);
