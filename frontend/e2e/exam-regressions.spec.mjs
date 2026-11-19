@@ -13,7 +13,7 @@ test('starting a new chat from exam mode reveals the topic composer', async ({ p
   await expect(page.locator('#examView')).toBeVisible();
   await expect(page.locator('#examViewReactRoot #examViewBody')).toBeVisible();
 
-  await page.locator('#newChatBtn').click();
+  await page.locator('#navNew').click();
   await expect(page.locator('#confirmDialog')).toBeVisible();
   await page.locator('#confirmOkBtn').click();
 

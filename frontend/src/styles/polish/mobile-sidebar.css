@@ -595,34 +595,16 @@
   #appShell #sidebarNav .nav-label {
     line-height: 24px;
   }
-  #appShell #sidebarNav #navNew {
-    order: 0;
-  }
-  #appShell #sidebarNav #navImages {
-    order: 1;
-  }
-  #appShell #sidebarNav #navLibrary {
-    order: 2;
-  }
-  #appShell #sidebarNav #navScheduled {
-    order: 3;
-  }
-  #appShell #sidebarNav #navPlugins {
-    order: 4;
-  }
   #appShell #sidebarNav .sidebar-project-nav {
-    order: 5;
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--ui-control-md);
     align-items: center;
     border-radius: var(--ui-radius-row);
   }
   #appShell #sidebarNav #navProjects {
-    order: 0;
     padding-right: 0;
   }
   #appShell .sidebar-project-create {
-    order: 1;
     display: grid;
     place-items: center;
     width: var(--ui-control-md);
@@ -648,16 +630,11 @@
   #appShell .sidebar-project-create:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarNav #navMore {
-    order: 6;
-  }
+  #appShell #sidebarNav #navImages,
   #appShell #sidebarNav #navAssistants,
   #appShell #sidebarNav #navSkills,
   #appShell #sidebarNav #navExam {
     display: none;
-  }
-  #appShell #sidebarNav #navImages {
-    display: grid;
   }
   :root #appShell #sidebarNav #navSites {
     display: none;
@@ -665,20 +642,9 @@
   :root[data-user-tier]:not([data-user-tier='diophantus']):not([data-user-tier='free'])
     #appShell
     #sidebarNav
-    #navImages {
-    display: none;
-  }
-  :root[data-user-tier]:not([data-user-tier='diophantus']):not([data-user-tier='free'])
-    #appShell
-    #sidebarNav
     #navSites {
     display: grid;
-    order: 6;
   }
-  #appShell #sidebarHeader #newChatBtn {
-    display: none;
-  }
-  #appShell #sidebarNav #navNew,
   #appShell #sidebarNav .sidebar-nav-btn.active {
     background: var(--ui-bg-panel);
   }
@@ -714,10 +680,7 @@
     letter-spacing: 0;
     color: var(--muted-foreground);
   }
-  /* 32px, not 22px: the drawer row holds two of these side by side, and a
-     22px-wide button fell under the WCAG 2.2 SC 2.5.8 24×24 floor for
-     pointer targets. 32px matches the session-row overflow button in the
-     same drawer. */
+  /* Match the overflow targets used on the session rows. */
   #appShell .recents-head-btn {
     display: grid;
     place-items: center;

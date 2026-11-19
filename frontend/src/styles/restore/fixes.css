@@ -13,15 +13,6 @@
   display: flex !important;
 }
 
-/* Socrates-specific Skills stays reachable from More while the primary
-   destinations match the compact reference drawer. */
-
-@media (max-width: 768px) {
-  #appShell #navMore.sidebar-nav-btn {
-    order: 7 !important;
-  }
-}
-
 @media (max-width: 768px) {
   /* Recents row ⋯ menu: later sibling rows paint over an open menu because
      .recent-item has `contain: layout` (own stacking context). Lift the open

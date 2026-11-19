@@ -783,14 +783,6 @@ body.composer-tools-open.composer-tools-open::after {
   color: var(--ui-text-secondary);
   font-size: var(--ui-font-size-xs);
 }
-.settings-page .settings-search-empty {
-  margin: 0 auto;
-  width: 100%;
-  max-width: 740px;
-  padding: var(--ui-space-xl) 0;
-  color: var(--ui-text-secondary);
-  font-size: var(--ui-font-size-sm);
-}
 .settings-page .settings-account-card {
   padding: 18px;
 }

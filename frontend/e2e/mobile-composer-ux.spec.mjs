@@ -79,3 +79,27 @@ test('mobile plugin status explains the empty state and opens the connector dire
   await expect(page.locator('#pluginsPanel')).toBeVisible();
   await expect(menu).toHaveClass(/hidden/);
 });
+
+test('phone composer hit areas reach into the visual gap without stealing adjacent taps', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await page.locator('#composerRoot .rich-composer-editor').fill('A question');
+  const targets = await page.evaluate(() => {
+    const mic = document.getElementById('composerMicBtn').getBoundingClientRect();
+    const send = document.getElementById('composerPrimaryBtn').getBoundingClientRect();
+    const y = send.top + send.height / 2;
+    const target = (x) => document.elementFromPoint(x, y)?.closest('[data-composer-control]')?.id;
+    return {
+      gap: send.left - mic.right,
+      mic: target(mic.right + 2),
+      send: target(send.left - 2),
+    };
+  });
+  expect(targets.gap).toBeGreaterThanOrEqual(8);
+  expect(targets.mic).toBe('composerMicBtn');
+  expect(targets.send).toBe('composerPrimaryBtn');
+});

@@ -4,12 +4,13 @@ import { saveState } from '../../session/saveState.ts';
 import { resetSessionTransients } from '../../session/loader.ts';
 import { saveCurrentSession } from '../../session/persistence.ts';
 import { askChatTurn } from '../turn/controller.ts';
-import { addStreamingMessage, prefetchStreamingTurn } from '../turn/loadStreamingTurn.ts';
+import { addStreamingMessage } from '../turn/loadStreamingTurn.ts';
 import { isExpectedTurnAbort } from '../turn/ui.ts';
 import { setActiveTemplate } from '../templateSlash.ts';
 import { addMessage } from '../messages.ts';
 import { activateMainView } from '../../legacy/mainViewController.ts';
 import { clearComposer } from '../../composer/controller.ts';
+import { playSendGlyph } from '../../legacy/sendGlyph.ts';
 import { clearLegacyMsgListChildren } from '../../legacy/messageListDom.ts';
 import { buildMessageContent, resetAttachments } from '../../attachments/index.ts';
 import { renderAttachmentChips } from '../../attachments/render.ts';
@@ -94,6 +95,7 @@ async function assembleAndSendFirstTurn(
 }
 
 export async function startChatSession(context: SessionStartContext): Promise<void> {
+  playSendGlyph();
   activateMainView('chatView', document);
   try {
     clearComposer('topic');
@@ -101,8 +103,6 @@ export async function startChatSession(context: SessionStartContext): Promise<vo
     reportSwallow(error, 'chat/sessionBootstrap.clearTopicComposer');
   }
   clearLegacyMsgListChildren();
-
-  prefetchStreamingTurn();
 
   const userClientId = addMessage(
     'user',

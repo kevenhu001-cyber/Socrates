@@ -3,7 +3,7 @@ import type { SidebarNavKey } from './types';
 
 export const NAV_ID = 'sidebarNav';
 
-type NavButtonKey = Exclude<SidebarNavKey, null> | 'new' | 'skills';
+type NavButtonKey = Exclude<SidebarNavKey, null> | 'new' | 'search' | 'skills';
 
 export interface NavButtonSpec {
   key: NavButtonKey;
@@ -16,13 +16,14 @@ export interface NavButtonSpec {
 
 export const BUTTONS: NavButtonSpec[] = [
   { key: 'new', label: 'New chat', i18nKey: 'sidebar.nav.new', icon: sidebarIcons.newChat },
-  { key: 'library', label: 'Library', i18nKey: 'sidebar.nav.library', icon: sidebarIcons.library },
+  { key: 'search', label: 'Search', i18nKey: 'sidebar.nav.search', icon: sidebarIcons.search },
   {
     key: 'projects',
     label: 'Projects',
     i18nKey: 'sidebar.nav.projects',
     icon: sidebarIcons.projects,
   },
+  { key: 'library', label: 'Library', i18nKey: 'sidebar.nav.library', icon: sidebarIcons.library },
   {
     key: 'scheduled',
     label: 'Scheduled',

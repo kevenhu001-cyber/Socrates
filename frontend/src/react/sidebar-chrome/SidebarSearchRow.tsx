@@ -50,10 +50,10 @@ export function SidebarSearchRow() {
           value={searchQuery}
           autoComplete="off"
           spellCheck={false}
-          placeholder={i18n('sidebar.searchPlaceholder', 'Search chats')}
-          data-i18n-placeholder="sidebar.searchPlaceholder"
-          aria-label={i18n('sidebar.searchPlaceholder', 'Search chats')}
-          data-i18n-aria="sidebar.searchPlaceholder"
+          placeholder={i18n('sidebar.filterRecents', 'Filter recent chats')}
+          data-i18n-placeholder="sidebar.filterRecents"
+          aria-label={i18n('sidebar.filterRecents', 'Filter recent chats')}
+          data-i18n-aria="sidebar.filterRecents"
           onChange={(event) => setRecentsSearch(event.currentTarget.value)}
           onFocus={showRecents}
         />

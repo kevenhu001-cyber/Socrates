@@ -61,6 +61,27 @@ export function DataControlsSettingsPane({ hidden, label }: SettingsPaneProps) {
   return (
     <section className="settings-pane" hidden={hidden}>
       <h2>{label('数据管理', 'Data controls')}</h2>
+      <section className="settings-section">
+        <div className="settings-section-head">
+          <h3>{label('对话记录', 'Chat history')}</h3>
+          <p>
+            {label(
+              '查看、恢复或永久删除已归档的对话。',
+              'View, restore, or permanently delete archived chats.',
+            )}
+          </p>
+        </div>
+        <div className="settings-choice">
+          <span>{label('已归档会话', 'Archived sessions')}</span>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => getLegacyActions().navigation.openStorageModal()}
+          >
+            {label('管理', 'Manage')}
+          </Button>
+        </div>
+      </section>
       <section className="settings-section settings-info-panel">
         <span className="settings-info-icon">
           <DatabaseIcon aria-hidden />

@@ -55,7 +55,7 @@ test.describe('Modal accessibility focus trap and background isolation', () => {
 
     await page.keyboard.press('Tab');
     await expect(settings.getByRole('searchbox')).toBeFocused();
-    const sidebarSearch = page.getByRole('textbox', { name: 'Search chats', exact: true });
+    const sidebarSearch = page.getByRole('textbox', { name: 'Filter recent chats', exact: true });
     await sidebarSearch.focus();
     await expect(sidebarSearch).toBeFocused();
   });

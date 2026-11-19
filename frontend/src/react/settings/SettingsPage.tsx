@@ -78,14 +78,6 @@ function SettingsPage() {
           />
           <div className="settings-body" ref={body}>
             <SettingsMobileBack label={preferences.label} onBack={backToIndex} />
-            {navigation.hasNoSearchResults ? (
-              <p className="settings-search-empty" role="status">
-                {preferences.label(
-                  '没有匹配的设置，请尝试其他关键词。',
-                  'No matching settings. Try another keyword.',
-                )}
-              </p>
-            ) : null}
             <SettingsPanes
               open={active}
               section={section}

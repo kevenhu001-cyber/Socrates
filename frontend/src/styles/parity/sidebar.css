@@ -117,7 +117,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     opacity: 1;
   }
 
-  /* ── Header: logo · (new chat) · toggle ─────────────────────────────── */
+  /* ── Header: logo · toggle ─────────────────────────────── */
   #appShell #sidebarHeader {
     display: flex;
     flex: 0 0 auto;
@@ -169,7 +169,6 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   }
   /* The shadcn buttons own their 32px size and radius. The shell keeps only
      the state colors and icon drawing size here. */
-  #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     background: transparent;
     color: var(--muted-foreground);
@@ -178,12 +177,10 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
       background-color var(--ui-duration-hover) ease,
       color var(--ui-duration-hover) ease;
   }
-  #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover {
     background: var(--ui-fill);
     color: var(--foreground);
   }
-  #appShell #newChatBtn svg,
   #appShell #sidebarCloseBtn svg {
     width: 20px;
     height: 20px;
@@ -268,35 +265,12 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     background: var(--ui-bg-selected);
     color: var(--foreground);
   }
-  /* The reference lights the primary destination while the composer is
-     empty — 新聊天 sits on a flat wash, so the rail always says where a
-     new turn starts. The wash is the selected role rather than the hover
-     role: it has to survive the pointer leaving the row, and it must not
-     be the same value a hover paints, or the two states are
-     indistinguishable. */
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell
-    #sidebarNav
-    #navNew.sidebar-nav-btn {
-    background: var(--ui-bg-selected);
-    color: var(--foreground);
-  }
-  /* Same visible set and order as before the parity pass. */
+  /* Secondary destinations remain available from More. */
   #appShell #sidebarNav #navImages.sidebar-nav-btn,
   #appShell #sidebarNav #navAssistants.sidebar-nav-btn,
   #appShell #sidebarNav #navExam.sidebar-nav-btn {
     display: none;
   }
-  #appShell #sidebarNav #navSites.sidebar-nav-btn {
-    order: 6;
-  }
-  #appShell #sidebarNav #navMore.sidebar-nav-btn {
-    order: 7;
-  }
-  #appShell #sidebarNav #navSkills.sidebar-nav-btn {
-    order: 8;
-  }
-
   /* "Search chats" reads as a nav row whose label is the input.
      The row is the one collapsible block in the sidebar: it collapses on
      grid-template-rows (0fr → 1fr) instead of a magic max-height, so the
@@ -580,7 +554,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     background: var(--accent);
     color: var(--foreground);
   }
-  [data-mode='light'] :is(#newChatBtn, #sidebarCloseBtn),
+  [data-mode='light'] #sidebarCloseBtn,
   [data-mode='light'] #sidebarFooter .icon-btn {
     color: var(--foreground);
   }
@@ -604,8 +578,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     height: auto;
     padding: 8px 8px 4px;
   }
-  #appShell #sidebar.collapsed #sidebarHeader .sidebar-logo,
-  #appShell #sidebar.collapsed #newChatBtn {
+  #appShell #sidebar.collapsed #sidebarHeader .sidebar-logo {
     display: none;
   }
   #appShell #sidebar.collapsed #sidebarNav {
@@ -934,11 +907,7 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
   #appShell #sidebar .recent-item.active,
   #appShell #sidebar .recent-item[aria-current='true'],
-  #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'],
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell
-    #sidebarNav
-    #navNew.sidebar-nav-btn {
+  #appShell #sidebarNav .sidebar-nav-btn[aria-current='page'] {
     background: var(--ui-card);
     box-shadow: var(--ui-elevation-raised);
     color: var(--ui-ink);
@@ -958,11 +927,9 @@ html[data-detail-open='true'][data-detail-layout='docked'] #appShell .main {
   }
 
   /* Header icon controls: 4% fill on hover, pill-round. */
-  #appShell #newChatBtn,
   #appShell #sidebarCloseBtn {
     border-radius: var(--ui-round-pill);
   }
-  #appShell #newChatBtn:hover,
   #appShell #sidebarCloseBtn:hover {
     background: var(--ui-fill);
   }

@@ -261,15 +261,6 @@
     min-height: var(--ui-control-desktop);
     padding: 0 12px;
   }
-  body.workspace-active #appShell .library-settings-btn {
-    width: var(--ui-control-desktop);
-    height: var(--ui-control-desktop);
-    padding: 0;
-  }
-  body.workspace-active #appShell .library-settings-btn svg {
-    width: 20px;
-    height: 20px;
-  }
   body.workspace-active #appShell .library-toolbar {
     display: flex;
     align-items: center;

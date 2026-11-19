@@ -643,7 +643,12 @@ test('settings utility links reach Plugins and Library, while account actions st
   await expect(page.locator('#usageOverlay')).toBeVisible();
   await page.locator('#usageOverlay .usage-close').click();
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
-  await overlay.locator('.settings-nav [data-section="account"]').click();
+  await overlay.getByRole('searchbox', { name: 'Search settings' }).fill('Archived sessions');
+  await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(1);
+  await expect(overlay.locator('.settings-nav [data-section="data"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   await overlay
     .locator('.settings-choice')
     .filter({ hasText: 'Archived sessions' })
@@ -653,6 +658,7 @@ test('settings utility links reach Plugins and Library, while account actions st
   await page.locator('#storageModalOverlay').getByRole('button', { name: 'Close' }).click();
 
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  await overlay.getByRole('searchbox', { name: 'Search settings' }).clear();
   await overlay.locator('.settings-nav [data-section="account"]').click();
   await overlay.getByRole('button', { name: 'Delete account' }).click();
   const deleteConfirm = page.getByRole('alertdialog', { name: 'Delete your account?' });
@@ -989,4 +995,20 @@ test('settings category load failure stays local and can be retried', async ({ p
   await expect(overlay.getByRole('alert')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(overlay).toBeHidden();
+});
+
+test('wide settings keeps a readable form width and announces one empty search state', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
+  const overlay = page.locator('#settingsPage');
+  const pane = overlay.locator('.settings-pane:visible');
+  await expect(pane.locator('#settings-language')).toBeVisible();
+  expect((await pane.boundingBox()).width).toBeLessThanOrEqual(740);
+  await overlay.getByRole('searchbox', { name: 'Search settings' }).fill('no such preference');
+  await expect(
+    overlay.getByRole('status').filter({ hasText: 'No matching settings.' }),
+  ).toHaveCount(1);
+  await expect(pane).toHaveCount(0);
 });

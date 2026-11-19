@@ -596,6 +596,8 @@ export const zh = {
   'sidebar.knowledge': '知识',
   'sidebar.recents': '最近',
   'sidebar.mistakes': '错题',
+  'sidebar.nav.search': '搜索',
+  'sidebar.filterRecents': '筛选最近对话',
   'sidebar.searchPlaceholder': '搜索对话',
   'sidebar.recentSessions': '最近',
   'sidebar.new': '新建',

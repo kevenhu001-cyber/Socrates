@@ -61,18 +61,12 @@ export function AccountSettingsPane({ hidden, label }: SettingsPaneProps) {
       </section>
       <section className="settings-section">
         <div className="settings-section-head">
-          <h3>{label('数据与用量', 'Data & usage')}</h3>
+          <h3>{label('用量', 'Usage')}</h3>
         </div>
         <div className="settings-choice">
           <span>{label('Token 用量', 'Token usage')}</span>
           <Button variant="outline" type="button" onClick={actions.openUsage}>
             {label('查看', 'View')}
-          </Button>
-        </div>
-        <div className="settings-choice">
-          <span>{label('已归档会话', 'Archived sessions')}</span>
-          <Button variant="outline" type="button" onClick={actions.openStorage}>
-            {label('管理', 'Manage')}
           </Button>
         </div>
       </section>

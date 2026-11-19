@@ -25,18 +25,6 @@ export function RecentsHeader() {
         {i18n('sidebar.recentSessions', 'Recents')}
       </span>
       <span className="recents-header-actions">
-        <Button
-          variant="ghost"
-          className="recents-head-btn active:not-aria-[haspopup]:translate-y-0"
-          id="recentsNewBtn"
-          aria-label={i18n('sidebar.newChat', 'New chat')}
-          title={i18n('sidebar.newChat', 'New chat')}
-          onClick={() => {
-            void getLegacyActions().navigation.startNewChat();
-          }}
-        >
-          <Icon name="newChat" />
-        </Button>
         <DeferredMenu
           open={open}
           onOpenChange={setOpen}
