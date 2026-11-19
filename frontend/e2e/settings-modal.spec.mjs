@@ -461,13 +461,40 @@ test('display settings persist text size, content width, grid, and background co
   await expect(overlay).toBeHidden();
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await expect(grid).toBeChecked();
+  await expect(
+    fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
   await page.reload();
   await waitForAppShell(page);
   await page.evaluate(() => window.__socratesLegacy.navigation.openSettings());
   await overlay.locator('.settings-nav [data-section="display"]').click();
   await expect(grid).toBeChecked();
+  await expect(
+    fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    widthGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^XL$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('html')).toHaveAttribute('data-show-grid', 'true');
+
+  const fontM = fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^M$/ });
+  await fontM.focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Space');
+  await expect(
+    fontGroup.locator('[data-slot="toggle-group-item"]').filter({ hasText: /^L$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--app-font-scale').trim(),
+      ),
+    )
+    .toBe('1.25');
 });
 
 test('custom instructions save once after typing and sync through the account endpoint', async ({

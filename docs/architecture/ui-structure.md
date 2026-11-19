@@ -184,7 +184,7 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
 | window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` facade 已于 2026-11-17 退役，不再有生产调用；认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 聊天历史与诊断／搜索的状态读取已迁到类型化 store，无需再分域迁移。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
 | `legacy/` / `restore/` | `lint:css-debt` 实测冻结区 `!important` 388、硬编码半径 166、硬编码字号 336、legacy 通道 768。对应的已提交上限是 389／166／337／769。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
-| RN 化签收 | 考试已签收。设置「对话背景网格」使用共享 RN 开关，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。 | 复核字号和内容宽度的分组语义和键盘导航，再逐项迁移。宿主分工、批次和验收范围见 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。 |
+| RN 化签收 | 考试已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）均使用共享 `@socrates/ui/settings` 组件接入，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。 | 从现有设置行中挑选低耦合偏好行迁移。宿主分工、批次和验收范围见 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。 |
 
 DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，共 242 处、105 个文件。这个计数包含
 读取和挂载宿主的查找。`window.stateStore` 的清理已经完成：facade 于 2026-11-17 退役，代码树里残留的 `stateStore` 字样是过期注释，只有两个遗留 e2e 仍引用该全局（`e2e/zz-ui-repro.spec.mjs` 直接调用，`e2e/storage-bootstrap.spec.mjs` 断言它不存在）。
