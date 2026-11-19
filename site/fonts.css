@@ -21,28 +21,18 @@
 /* source-serif-4-latin-500-normal */
 /* source-serif-4-latin-600-normal */
 
-/* Local fallback copies of the Google Fonts set (Geist Mono,
-   Newsreader, Noto Sans SC, Noto Serif SC). Pages load the live Google
-   Fonts CSS after this file; if Google Fonts is unreachable, these local
-   files keep the same families working. Files live in media/fonts/;
-   unicode-range subsetting matches the Google Fonts CSS. The single
-   sans-serif family is Inter (loaded above); Geist @font-face declarations
-   were removed when the site unified on Inter. Geist Mono ships only the
-   latin subset locally: the cyrillic / cyrillic-ext / latin-ext / symbols2 /
-   vietnamese faces pointed at woff2 files that were never committed, so
-   every non-latin code-point fell through to a 404 before the Google Fonts
-   copy could win. Those glyphs now resolve straight from Google Fonts (or
-   the monospace fallback in the font stack). */
-
-@font-face {
-  font-family: 'Geist Mono';
-  font-style: normal;
-  font-display: swap;
-  font-weight: 100 900;
-  src: url('/media/fonts/geist-mono-variable.woff2') format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-
+/* Self-hosted faces. This stylesheet declares Geist Mono (latin) and the
+   Noto Sans SC slices that keep CJK readable when the host has no Chinese
+   font. The Latin editorial families in the stacks above (Inter, Newsreader,
+   Source Serif 4) and Noto Serif SC are not declared locally: their former
+   copies were never referenced by an @font-face and were removed. Pages that
+   need CJK still load Google Fonts' Noto Sans SC after this file; everything
+   else falls through the stacks to the platform faces. Files live in
+   media/fonts/ and use the same unicode-range boundaries as the Google Fonts
+   CSS. Geist Mono ships only the latin subset locally: the cyrillic /
+   cyrillic-ext / latin-ext / symbols2 / vietnamese faces pointed at woff2
+   files that were never committed, so those glyphs resolve from Google Fonts
+   or the monospace fallback in the stack. */
 
 @font-face {
   font-family: 'Geist Mono';

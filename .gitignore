@@ -22,6 +22,11 @@ android/signing.properties
 *.iml
 .idea/
 *.hprof
+# APKs are distribution artifacts, not source. The Android client is published
+# as a GitHub Release asset (tag android-v<version>) and site/download.html
+# links there; a 38 MB debug APK was committed once in dbff47e0 and every clone
+# still carries it. Never add another one.
+*.apk
 
 # ─── React Native / Expo generated state ───
 mobile/node_modules/

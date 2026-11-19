@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { sitePage, startSite, stopSite } from './helpers/site-browser.mjs';
 
 let site;
@@ -34,16 +34,14 @@ for (const [prefix, locale, width] of [
       `https://app.topodrive.top/?lang=${locale}`,
     );
 
-    const apkName = 'socrates-android-1.4-debug.apk';
-    const apkPath = `/media/downloads/${apkName}`;
-    const apkLink = options.last().locator('a[download]');
-    assert.equal(await apkLink.getAttribute('href'), apkPath);
-    const [download] = await Promise.all([page.waitForEvent('download'), apkLink.click()]);
-    assert.equal(download.suggestedFilename(), apkName);
-    assert.equal(await download.failure(), null);
+    const apkUrl =
+      'https://github.com/kevenhu001-cyber/Socrates/releases/download/android-v1.4/socrates-android-1.4-debug.apk';
+    const apkLink = options.last().locator('a[aria-describedby="apk-details"]');
+    assert.equal(await apkLink.getAttribute('href'), apkUrl);
     assert.equal(
-      (await stat(await download.path())).size,
-      (await stat(new URL(`../site${apkPath}`, import.meta.url))).size,
+      await page.locator('a[href^="/media/downloads/"]').count(),
+      0,
+      'the APK is a release asset, not a committed site file',
     );
     const [web, android] = await Promise.all([
       options.first().boundingBox(),
