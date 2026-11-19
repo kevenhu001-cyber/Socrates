@@ -29,7 +29,7 @@ import { registerStreamRoute } from '../src/routes/chat/stream.js';
 import { encrypt, encryptionKey } from '../src/lib/crypto.js';
 import { getLlmDispatcher } from '../src/services/core/llm/dispatcher.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
-import router from '../src/routes/chatTurns.js';
+import router from '../src/routes/chat/chatTurns.js';
 import { errorHandler } from '../src/middleware/error.js';
 import { listen } from './_http.js';
 

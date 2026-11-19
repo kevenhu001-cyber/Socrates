@@ -29,6 +29,10 @@ import {
 } from '../../composer-input/lifecycle';
 
 import { NewReplyPill } from './indicatorComponents';
+import { createMountContainer } from './mountContainer';
+
+const chrome = createMountContainer('chrome-container');
+const content = createMountContainer('content-container');
 
 /* Portal helpers — lazily create a body-level host element when the
    page didn't ship one in index.html. */
@@ -62,15 +66,9 @@ function workspacePageSpecs(): MountSpec[] {
   return [
     { hostId: 'scheduledPanel', label: 'scheduled-page', mount: () => undefined },
     { hostId: 'libraryPanel', label: 'workspace-page', mount: () => undefined },
-    {
-      hostId: 'libraryUploadReactRoot',
-      label: 'library-upload-input',
-      mount: (host) => {
-        return import('../../pages/workspace/LibraryUploadInput').then(({ LibraryUploadInput }) => {
-          mountOwnedRoot(host, 'library-upload-input', <LibraryUploadInput />);
-        });
-      },
-    },
+    content('libraryUploadReactRoot', 'library-upload-input', () =>
+      import('../../pages/workspace/LibraryUploadInput').then((m) => m.LibraryUploadInput),
+    ),
     { hostId: 'adminPanel', label: 'admin-page', mount: () => undefined },
     { hostId: 'spacesPanel', label: 'workspace-page', mount: () => undefined },
     { hostId: 'pluginsPanel', label: 'workspace-page', mount: () => undefined },
@@ -149,15 +147,9 @@ export function mountRegistryList(): MountSpec[] {
       },
     },
     /* 2. Overlays / modals / popovers */
-    {
-      hostId: 'cookieConsentReactRoot',
-      label: 'cookie-consent',
-      mount: (host) => {
-        return import('../../cookieConsent/CookieConsent').then(({ CookieConsent }) => {
-          mountOwnedRoot(host, 'cookie-consent', <CookieConsent />);
-        });
-      },
-    },
+    chrome('cookieConsentReactRoot', 'cookie-consent', () =>
+      import('../../cookieConsent/CookieConsent').then((m) => m.CookieConsent),
+    ),
     {
       hostId: 'cmdKReactRoot',
       label: 'cmd-k',
@@ -178,42 +170,24 @@ export function mountRegistryList(): MountSpec[] {
           return document.getElementById('sidebarNav') === host && mountSidebarNav();
         }),
     },
-    {
-      hostId: 'sidebarSearchRow',
-      label: 'sidebar-search-row',
-      mount: (host) => {
-        return import('../../sidebar-chrome/SidebarSearchRow').then(({ SidebarSearchRow }) => {
-          mountOwnedRoot(host, 'sidebar-search-row', <SidebarSearchRow />);
-        });
-      },
-    },
+    chrome('sidebarSearchRow', 'sidebar-search-row', () =>
+      import('../../sidebar-chrome/SidebarSearchRow').then((m) => m.SidebarSearchRow),
+    ),
     /* RN-1 — the landing empty state is React Native (packages/ui/src/home)
        rendered through react-native-web; the lazy import keeps RNW out of
        the entry chunk. */
-    {
-      hostId: 'homeHero',
-      label: 'home-hero',
-      mount: (host) => {
-        return import('../../home/HomeStartComponents').then(({ HomeHeroRoot }) => {
-          mountOwnedRoot(host, 'home-hero', <HomeHeroRoot />);
-        });
-      },
-    },
+    content('homeHero', 'home-hero', () =>
+      import('../../home/HomeStartComponents').then((m) => m.HomeHeroRoot),
+    ),
     /* The landing entries below the composer (chat shortcuts, learning-mode
        capsule, tutor starters) were removed on 2026-11-16: the landing is
        the greeting plus the composer, nothing else. Their specs are gone
        with the host nodes in index.html. */
-    {
-      hostId: 'learningModeBar',
-      label: 'learning-mode-bar',
-      mount: (host) => {
-        return whenIdle()
-          .then(() => import('../../tutor/QuestionChainRoot'))
-          .then(({ SessionLearningModes }) => {
-            mountOwnedRoot(host, 'learning-mode-bar', <SessionLearningModes />);
-          });
-      },
-    },
+    content('learningModeBar', 'learning-mode-bar', () =>
+      whenIdle().then(() =>
+        import('../../tutor/QuestionChainRoot').then((m) => m.SessionLearningModes),
+      ),
+    ),
     /* The header chrome — one root renders every control inside
        `<div class="top-bar" id="topBar">`. Its ids are the shell
        contract for the legacy runtime, so the React tree owns the
@@ -231,33 +205,15 @@ export function mountRegistryList(): MountSpec[] {
       label: 'recents-filter-chips',
       mount: () => hydrateRecentsFilterChips(),
     },
-    {
-      hostId: 'mistakesPanel',
-      label: 'mistakes-panel',
-      mount: (host) => {
-        return import('../../tutor/MistakeBookPanel').then(({ MistakeBookPanel }) => {
-          mountOwnedRoot(host, 'mistakes-panel', <MistakeBookPanel />);
-        });
-      },
-    },
-    {
-      hostId: 'teachingPlanContent',
-      label: 'teaching-plan',
-      mount: (host) => {
-        return import('../../tutor/KnowledgePanel').then(({ TeachingPlanPanel }) => {
-          mountOwnedRoot(host, 'teaching-plan', <TeachingPlanPanel />);
-        });
-      },
-    },
-    {
-      hostId: 'kbContent',
-      label: 'knowledge-map',
-      mount: (host) => {
-        return import('../../tutor/KnowledgePanel').then(({ KnowledgeMapPanel }) => {
-          mountOwnedRoot(host, 'knowledge-map', <KnowledgeMapPanel />);
-        });
-      },
-    },
+    content('mistakesPanel', 'mistakes-panel', () =>
+      import('../../tutor/MistakeBookPanel').then((m) => m.MistakeBookPanel),
+    ),
+    content('teachingPlanContent', 'teaching-plan', () =>
+      import('../../tutor/KnowledgePanel').then((m) => m.TeachingPlanPanel),
+    ),
+    content('kbContent', 'knowledge-map', () =>
+      import('../../tutor/KnowledgePanel').then((m) => m.KnowledgeMapPanel),
+    ),
     {
       hostId: 'composerToolsRoot',
       label: 'composer-tools-menu',
@@ -293,17 +249,9 @@ export function mountRegistryList(): MountSpec[] {
           mountSidebarChrome();
         }),
     },
-    {
-      hostId: 'sidebarFooterActions',
-      label: 'sidebar-footer-actions',
-      mount: (host) => {
-        return import('../../sidebar-chrome/SidebarFooterActions').then(
-          ({ SidebarFooterActions }) => {
-            mountOwnedRoot(host, 'sidebar-footer-actions', <SidebarFooterActions />);
-          },
-        );
-      },
-    },
+    chrome('sidebarFooterActions', 'sidebar-footer-actions', () =>
+      import('../../sidebar-chrome/SidebarFooterActions').then((m) => m.SidebarFooterActions),
+    ),
     /* 4. Workspace pages */
     ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
@@ -364,21 +312,11 @@ export function mountRegistryList(): MountSpec[] {
         }
       },
     },
-    {
-      hostId: 'workflowLayerReactRoot',
-      label: 'workflow-layer',
-      ensureHost: ensureWorkflowHost,
-      mount: (host) => {
-        return import('../../extensions/WorkflowLayer').then(({ WorkflowLayer }) => {
-          mountOwnedRoot(
-            host,
-            'workflow-layer',
-            <ErrorBoundary>
-              <WorkflowLayer />
-            </ErrorBoundary>,
-          );
-        });
-      },
-    },
+    content(
+      'workflowLayerReactRoot',
+      'workflow-layer',
+      () => import('../../extensions/WorkflowLayer').then((m) => m.WorkflowLayer),
+      ensureWorkflowHost,
+    ),
   ];
 }

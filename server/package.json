@@ -24,6 +24,7 @@
     "test:fast": "node ../scripts/run-affected-tests.mjs",
     "test:unit": "node --import tsx --import ./scripts/test-env.mjs --test test/*.test.js test/*.test.mjs",
     "test:strict": "node --import tsx scripts/run-tests.mjs --strict",
+    "test:db:memory": "node scripts/run-memory-tests.mjs",
     "test:coverage": "node --import tsx --import ./scripts/test-env.mjs --test --experimental-test-coverage --test-coverage-exclude='test/**' --test-coverage-exclude='scripts/**' --test-coverage-exclude='**/*.generated.ts' test/*.test.js test/*.test.mjs",
     "lint:boundaries": "node scripts/check-service-boundaries.mjs"
   },
@@ -70,6 +71,9 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.16",
+    "@electric-sql/pglite-pgvector": "0.0.17",
+    "@electric-sql/pglite-socket": "0.2.19",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",

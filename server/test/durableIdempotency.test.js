@@ -23,10 +23,10 @@ import { idempotencyMiddleware } from '../src/middleware/idempotency.js';
 import { invalidateAuthCache } from '../src/lib/authCache.js';
 import { runExpiredCleanup } from '../src/services/util/cleanupDb.js';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
-import projectRouter from '../src/routes/projects.js';
-import promptRouter from '../src/routes/prompts.js';
-import taskRouter from '../src/routes/scheduledTasks.js';
-import tagRouter from '../src/routes/tags.js';
+import projectRouter from '../src/routes/workspace/projects.js';
+import promptRouter from '../src/routes/workspace/prompts.js';
+import taskRouter from '../src/routes/workspace/scheduledTasks.js';
+import tagRouter from '../src/routes/sessions/tags.js';
 import { listen, httpRequest } from './_http.js';
 
 const enabled = Boolean(process.env.DATABASE_URL);

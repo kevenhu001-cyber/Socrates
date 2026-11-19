@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for src/routes/suggestions.ts.
+ * Unit tests for src/routes/chat/suggestions.ts.
  *
  * The landing suggestions are a strict three-item contract: no fallback,
  * no partial render, and no suggestions without history + the built-in
@@ -13,7 +13,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { eq } from 'drizzle-orm';
 
-import suggestionsRouter, { __test } from '../src/routes/suggestions.js';
+import suggestionsRouter, { __test } from '../src/routes/chat/suggestions.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import {
   authSessions as authSessionsTable,

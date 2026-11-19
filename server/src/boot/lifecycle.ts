@@ -33,6 +33,10 @@ export function installShutdown(server: Server): void {
         stopStatusMonitor();
       } catch {}
       /* Pi agent runs are per-turn child processes; nothing to stop here. */
+      const { stopRagChunkWorker } = await import('../services/embeddings/chunkWorkerClient.js');
+      await stopRagChunkWorker().catch((error: unknown) => {
+        console.warn('[rag] chunk worker shutdown failed:', error);
+      });
       // Pubsub holds its own long-lived LISTEN connection (not from the
       // pool), so closeDb() below does not reach it. Without this the
       // process can linger after every other handle is closed.

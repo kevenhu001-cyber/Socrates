@@ -67,7 +67,7 @@ export async function saveSession(
      * It was called here with the intent that the summary would REPLACE
      * the older turns ("older turns discarded"). It never did: this route
      * only ever upserts, and there is no DELETE on `messages` anywhere in
-     * the save path (the deletes live in routes/messages.ts for the
+     * the save path (the deletes live in routes/sessions/messages.ts for the
      * explicit discardFollowing / delete-one flows, and in the whole-
      * session teardown routes). So every message written by an earlier
      * save stayed in the table, and compression achieved nothing except:

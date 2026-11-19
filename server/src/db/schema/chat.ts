@@ -159,10 +159,10 @@ export const messages = pgTable(
     index('messages_parent_id_idx').on(table.parentId),
     index('messages_created_at_idx').on(table.createdAt),
     /* Audit P-M2 — transcript reads are all `WHERE session_id = ? ORDER BY
-     created_at`: routes/messages.ts (history rebuild, edit truncation,
-     regenerate), routes/publicShares.ts (/s/:token, LIMIT 200),
-     routes/sessions.ts (GET /:id), routes/account.ts (export) and
-     routes/suggestions.ts (DESC LIMIT).
+     created_at`: routes/sessions/messages.ts (history rebuild, edit truncation,
+     regenerate), routes/content/publicShares.ts (/s/:token, LIMIT 200),
+     routes/sessions.ts (GET /:id), routes/auth/account.ts (export) and
+     routes/chat/suggestions.ts (DESC LIMIT).
 
      Measured on 3.08M messages / 2k sessions, target session 60k rows:
        ORDER BY created_at DESC LIMIT 20  →  2.7-9.1ms  becomes  0.05ms
@@ -175,7 +175,7 @@ export const messages = pgTable(
      cost more than the sort), so this index is not a fix for that path —
      pagination would be.
 
-     messages_created_at_idx is deliberately kept: routes/usage.ts
+     messages_created_at_idx is deliberately kept: routes/operations/usage.ts
      aggregates by DATE(created_at) across all sessions and needs
      created_at leading. */
     index('messages_session_created_idx').on(table.sessionId, table.createdAt),

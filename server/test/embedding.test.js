@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for services/embeddings/embedding.ts + routes/embeddingConfig.ts —
+ * Unit tests for services/embeddings/embedding.ts + routes/knowledge/embeddingConfig.ts —
  * the vector layer of the session_chunks hybrid retrieval.
  *
  * Pure part: `isAllowedEmbeddingUrl` (the SSRF guard). Mirrors the

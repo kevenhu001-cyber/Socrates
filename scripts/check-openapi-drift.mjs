@@ -29,7 +29,7 @@
 // Exit:  0 clean-or-baselined · 1 drift · 2 extraction error
 
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -144,14 +144,25 @@ for (const { prefix, router } of mounts) {
   }
 }
 
-// A Router() file never mounted from app.ts is dead surface — worth seeing.
-const allRouteFiles = readdirSync(ROUTES_DIR).filter((f) => /\.(ts|js)$/.test(f));
-for (const f of allRouteFiles) {
-  const full = join(ROUTES_DIR, f);
-  if (!mountedFiles.has(full) && /const\s+\w+\s*=\s*Router\(/.test(readFileSync(full, 'utf8'))) {
-    console.warn(`warn: ${f} defines a Router but is not mounted from app.ts`);
+// Visit every domain so moving a router cannot hide an unmounted definition.
+function warnAboutUnmountedRouters(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const file = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      warnAboutUnmountedRouters(file);
+    } else if (
+      entry.isFile() &&
+      /\.(ts|js)$/.test(entry.name) &&
+      !mountedFiles.has(file) &&
+      /const\s+\w+\s*=\s*Router\(/.test(readFileSync(file, 'utf8'))
+    ) {
+      console.warn(
+        `warn: ${relative(ROUTES_DIR, file)} defines a Router but is not mounted from app.ts`,
+      );
+    }
   }
 }
+warnAboutUnmountedRouters(ROUTES_DIR);
 
 /* ── 2. spec paths ───────────────────────────────────────────────── */
 const specLines = readFileSync(SPEC, 'utf8').split('\n');

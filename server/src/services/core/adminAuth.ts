@@ -40,7 +40,7 @@
  *
  *   5. authLimiter (per-IP express-rate-limit) remains the outermost
  *      shared budget; the admin login mounts a dedicated, tighter
- *      limiter on top (see routes/adminAuth.ts).
+ *      limiter on top (see routes/auth/adminAuth.ts).
  *
  * Session: an HMAC-signed opaque token (random 32 bytes + expiry +
  * HMAC-SHA256 over the payload). Stateless — no DB row, TTL 8 hours.

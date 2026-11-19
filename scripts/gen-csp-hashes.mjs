@@ -28,7 +28,9 @@
  * Usage
  * -----
  *   node scripts/gen-csp-hashes.mjs           # verify (default, CI mode)
- *   node scripts/gen-csp-hashes.mjs --update  # rewrite after editing index.html
+ *   node scripts/gen-csp-hashes.mjs --suggest # show where generated files differ
+ *   node scripts/gen-csp-hashes.mjs --fix     # regenerate drifted artifacts
+ *   node scripts/gen-csp-hashes.mjs --update  # force regeneration, including an empty hash list
  *
  * Exit codes: 0 = in sync / written, 1 = drifted (CI failure).
  * Wired into `npm run lint` in frontend/, so a change to index.html that
@@ -48,7 +50,12 @@ const INDEX_HTML = `${ROOT}frontend/index.html`;
 const OUT_TS = `${ROOT}server/src/generated/cspInlineHashes.ts`;
 const OUT_NGINX = `${ROOT}ops/nginx/csp-spa.conf`;
 
-const update = process.argv.includes('--update');
+const [mode, ...extraArgs] = process.argv.slice(2);
+if (extraArgs.length || (mode && !['--suggest', '--fix', '--update'].includes(mode))) {
+  console.error('Usage: node scripts/gen-csp-hashes.mjs [--suggest|--fix|--update]');
+  process.exit(2);
+}
+const update = mode === '--update';
 
 /* ─── Canonical policy ────────────────────────────────────────────────
  *
@@ -235,39 +242,48 @@ const artifacts = [
   { path: OUT_NGINX, label: 'ops/nginx/csp-spa.conf', body: renderNginx() },
 ];
 
-if (update) {
-  for (const { path, label, body } of artifacts) {
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, body, 'utf8');
-    console.log(`[csp] wrote ${label}`);
-  }
-  console.log(`[csp] ${hashes.length} inline script hash(es):`);
-  for (const h of hashes) console.log(`  ${h}`);
-  process.exit(0);
-}
-
-const drifted = [];
-for (const { path, label, body } of artifacts) {
-  if (!existsSync(path)) {
-    drifted.push(`${label} (missing)`);
-    continue;
-  }
+const drifted = artifacts.flatMap((artifact) => {
+  const { path, body } = artifact;
+  if (!existsSync(path)) return [{ ...artifact, ownText: null }];
   /* Compare with line endings normalised. A Windows checkout can hold the
      same bytes as LF-with-CR, which made this gate report DRIFT for an
      artifact that was byte-for-byte in sync — a false merge-gate failure
      that also pushed people to run `--update` and commit a no-op diff. */
-  if (readFileSync(path, 'utf8').replace(/\r\n/g, '\n') !== body) drifted.push(label);
+  const ownText = readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+  return ownText === body ? [] : [{ ...artifact, ownText }];
+});
+
+if (update || (mode === '--fix' && drifted.length)) {
+  for (const { path, label, body } of update ? artifacts : drifted) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, body, 'utf8');
+    console.log(`[csp] regenerated ${label}`);
+  }
+  process.exit(0);
 }
 
 if (drifted.length > 0) {
   console.error(
     '[csp] DRIFT: generated CSP artifacts are stale:\n' +
-      drifted.map((d) => `        - ${d}`).join('\n') +
+      drifted
+        .map(({ label, ownText }) => `        - ${label}${ownText === null ? ' (missing)' : ''}`)
+        .join('\n') +
       '\n' +
-      '      Serving the SPA could refuse its own inline scripts.\n' +
-      '      Fix with: node scripts/gen-csp-hashes.mjs --update',
+      '      Fix with: node scripts/gen-csp-hashes.mjs --fix',
   );
   console.error(`      expected hashes: ${hashes.join(', ') || '(none)'}`);
+  if (mode === '--suggest') {
+    for (const { label, ownText, body } of drifted) {
+      if (ownText === null) continue;
+      const actual = ownText.split('\n');
+      const expected = body.split('\n');
+      let line = 0;
+      while (actual[line] === expected[line]) line++;
+      console.error(`      ${label}:${line + 1}: first differing line`);
+      console.error(`        current:  ${actual[line] ?? '(end of file)'}`);
+      console.error(`        expected: ${expected[line] ?? '(end of file)'}`);
+    }
+  }
   process.exit(1);
 }
 

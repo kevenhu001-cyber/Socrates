@@ -47,7 +47,12 @@ test('web and shared theme expose the same Lobe-aligned foundation metrics', asy
 test('CSS product aliases retain Socrates geometry while inheriting matching foundation rungs', async () => {
   const css = await readFile(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
 
-  assert.match(css, /--ui-foundation-space-md:\s*20px;/);
+  const generated = await readFile(
+    new URL('../src/styles/foundations/tokens.generated.css', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(generated, /--ui-foundation-space-md:\s*20px;/);
   assert.match(css, /--ui-control-desktop:\s*var\(--ui-foundation-control-base\);/);
   assert.match(css, /--ui-control-touch:\s*44px;/);
   assert.match(css, /--ui-space-xxs:\s*2px;/);
@@ -57,7 +62,8 @@ test('CSS product aliases retain Socrates geometry while inheriting matching fou
      sits one step above it since the 2026-10-25 roundness pass, and is
      therefore declared with explicit values instead of aliasing the
      foundation. This is what these two assertions pin down. */
-  assert.match(css, /--ui-foundation-radius-sm:\s*6px;/);
+  assert.match(generated, /--ui-foundation-radius-sm:\s*6px;/);
+  assert.doesNotMatch(css, /--ui-foundation-[\w-]+\s*:/);
   assert.match(css, /--ui-radius-sm:\s*10px;/);
   assert.match(css, /--ui-radius-control:\s*var\(--ui-radius-md\);/);
 });

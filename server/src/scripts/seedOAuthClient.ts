@@ -10,7 +10,7 @@ import 'dotenv/config';
 import { eq } from 'drizzle-orm';
 import { initDb, closeDb } from '../db/index.js';
 import { users } from '../db/schema/index.js';
-import { createOAuthClient } from '../routes/oauth.js';
+import { createOAuthClient } from '../routes/auth/oauth.js';
 import { ALL_SCOPES } from '../lib/authScopes.js';
 
 async function main() {

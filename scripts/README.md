@@ -28,6 +28,16 @@ scripts/
 └── test-deploy-flow.sh          ← 部署夹具：锁、候选构建、失败回滚（ci.yml + 本地）
 ```
 
+## 门禁诊断与修复
+
+| 命令（在仓库根目录执行） | 用途 |
+| --- | --- |
+| `node scripts/gen-csp-hashes.mjs --suggest` | 查看缺失产物，或定位 CSP 产物中第一处差异。 |
+| `node scripts/gen-csp-hashes.mjs --fix` | 根据现有策略和 HTML 重新生成有差异的 CSP 产物。 |
+| `npm --prefix frontend run lint:i18n-locales -- --suggest` | 定位缺少对应翻译的词条及其源文件行号，供人工补译。 |
+
+默认运行仍是只读检查。`--suggest` 也只读，发现漂移时返回非零退出码。
+
 ## 关于「根目录里的脚本」
 
 下列 5 个 `.sh` / `.mjs` **必须保留在 `scripts/` 根**，因为外部有不可移动的引用：

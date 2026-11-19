@@ -1,6 +1,4 @@
-// playwright.config.mjs — Wave -1 of main-js-split plan
-// Boots ./e2e/dist-server.mjs (which serves dist/) and runs the 6 critical-path
-// smoke specs in e2e/. Used as the single regression gate across every wave.
+// All three tiers share the production build and dist server.
 
 import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +6,19 @@ import { dirname } from 'node:path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const port = 4173;
+const smoke =
+  /(?:^|[/\\])(?:boot|storage-bootstrap|auth-direct-handlers|chat-send|chat-stop-resend|mount-recovery|sidebar-nav|share-view)\.spec\.mjs$/;
+const visual = /(?:^|[/\\])(?:[^/\\]*-)?(?:visual|reference|palette)(?:-[^/\\]+)?\.spec\.mjs$/;
+const theme =
+  /(?:^|[/\\])(?:theme-system|theme-contrast|sidebar-light-theme|shadcn-theme)\.spec\.mjs$/;
+const visualSpecs = [visual, theme];
+const desktop = devices['Desktop Chrome'];
+const ignoredSpecs = [
+  '**/rn-web-smoke.spec.mjs',
+  '**/tmp-*.spec.mjs',
+  '**/probe-*.spec.mjs',
+  '**/__probe*',
+];
 
 export default defineConfig({
   testDir: './e2e',
@@ -15,12 +26,7 @@ export default defineConfig({
   // keeping it out of the SPA smoke suite prevents testing the wrong server.
   // One-off debug probes (tmp-*/probe-*) are gitignored scratch files: they
   // must never be counted by — or fail — the regression gate.
-  testIgnore: [
-    '**/rn-web-smoke.spec.mjs',
-    '**/tmp-*.spec.mjs',
-    '**/probe-*.spec.mjs',
-    '**/__probe*',
-  ],
+  testIgnore: ignoredSpecs,
   fullyParallel: false, // specs share global module state via the bundled main.js
   workers: 1,
   reporter: process.env.CI
@@ -41,5 +47,12 @@ export default defineConfig({
     cwd: __dirname,
     env: { SMOKE_PORT: String(port) },
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // Keep snapshot filenames stable across the project-name migration.
+  snapshotPathTemplate:
+    '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-chromium-{platform}{ext}',
+  projects: [
+    { name: 'smoke', testMatch: smoke, use: desktop },
+    { name: 'regression', testIgnore: [...ignoredSpecs, smoke, ...visualSpecs], use: desktop },
+    { name: 'visual', testMatch: visualSpecs, use: desktop },
+  ],
 });

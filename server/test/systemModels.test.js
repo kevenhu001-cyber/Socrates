@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for routes/systemModels.ts — the admin-managed built-in
+ * Unit tests for routes/providers/systemModels.ts — the admin-managed built-in
  * (Beagle) system model surface.
  *
  * The DB-backed paths (list / upsert) need a live Postgres + an
@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 
 describe('systemModels — operator console gate + route surface', () => {
   test('module imports cleanly without ADMIN_PASSWORD set', async () => {
-    const mod = await import('../src/routes/systemModels.js');
+    const mod = await import('../src/routes/providers/systemModels.js');
     assert.ok(mod.default, 'expected the default router export');
     assert.equal(
       typeof mod.default.stack?.length,
@@ -26,13 +26,13 @@ describe('systemModels — operator console gate + route surface', () => {
   });
 
   test('the router carries the requireAdminSession middleware', async () => {
-    const mod = await import('../src/routes/systemModels.js');
+    const mod = await import('../src/routes/providers/systemModels.js');
     const middlewareEntries = mod.default.stack.filter((l) => !l.route);
     assert.ok(middlewareEntries.length >= 1, 'expected the requireAdminSession middleware layer');
   });
 
   test('the router exposes GET / and PUT /', async () => {
-    const mod = await import('../src/routes/systemModels.js');
+    const mod = await import('../src/routes/providers/systemModels.js');
     const paths = mod.default.stack
       .filter((l) => l.route)
       .map((l) => ({ path: l.route.path, methods: Object.keys(l.route.methods) }));

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { EditorContent } from '@tiptap/react';
+import type { NativeIslandEditorProps } from '@socrates/contracts';
 import { useComposerSurface } from './useComposerSurface';
 import { useComposerShape, useComposerShapeObserver } from './useComposerShape';
 import { useRichComposerEditor } from './useRichComposerEditor';
@@ -10,19 +11,12 @@ import { ComposerQueueBanner } from './ComposerQueueBanner';
 import { FormattingToolbar } from './FormattingToolbar';
 import { i18n } from '../legacy/gateway.ts';
 
-interface RichComposerProps {
-  placeholder: string;
-  onSubmit: () => void;
-  showToolbar?: boolean;
-  onEscape?: () => void;
-}
-
 export function RichComposer({
   placeholder,
   onSubmit,
   onEscape,
   showToolbar = false,
-}: RichComposerProps) {
+}: NativeIslandEditorProps) {
   const surface = useComposerSurface();
   /* The language event triggers a render without recreating the editor or
      dropping its current draft. */

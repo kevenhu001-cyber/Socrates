@@ -16,6 +16,11 @@ const options = { cwd: frontendDir, env, stdio: 'inherit' };
 
 execFileSync(
   process.execPath,
+  ['--experimental-strip-types', '../scripts/gen-ui-tokens.mjs', '--check'],
+  options,
+);
+execFileSync(
+  process.execPath,
   [join(frontendDir, 'node_modules', 'typescript', 'bin', 'tsc'), '--noEmit'],
   options,
 );

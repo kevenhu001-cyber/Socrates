@@ -13,6 +13,7 @@ export type {
   TurnClaim,
 } from './turnEvent.js';
 export type { PublicTurnActivity } from './turnActivity.js';
+export type { NativeIslandEditorProps, NativeIslandFrame } from './nativeIsland.js';
 export type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
 export type JsonObject = { [key: string]: JsonValue };
 

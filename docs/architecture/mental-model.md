@@ -14,16 +14,24 @@ index.html (host ids, no #root)
       ├─ app/bootstrap.ts
       │   ├─ auth gate (react/auth/authGateHost.tsx)
       │   └─ react/bootstrap.tsx
-      │       ├─ react/lib/boot/specs.tsx   35 mount specs
+      │       ├─ react/lib/boot/specs.tsx   shell mount specs
       │       ├─ react/lib/boot/registry.ts  ownership + failure recovery
+      │       ├─ react/lib/boot/mountContainer.tsx  shared portal containers
       │       └─ react/lib/boot/ownedRoot.ts only createRoot/hydrateRoot owner
       └─ auth/index.ts → window.__socratesMountReactCompatibility()
                           mounts the remaining hosts after auth reveals the shell
 ```
 
-The host registry is the only React composition root. There is no second
-`#root` tree; add a new surface by adding one spec, not by building a parallel
-shell.
+The host registry is the only React boot entry. The chrome and content
+containers place independent shell components in their existing host elements
+through portals. Portal content has its own error boundary, and the container
+releases it when the host is detached. Hydrated, independently mounted and
+imperative hosts still use the same registry and `ownedRoot.ts`.
+
+The platform-neutral Native Island inputs live in
+`packages/contracts/src/nativeIsland.ts`. The SPA iframe adapter maps the
+preview kind to its sandbox permissions. TipTap and the specialized
+visualization adapters own their browser resources in the SPA.
 
 ## 2. One chat turn
 
@@ -46,8 +54,8 @@ server
   routes/chat/stream.ts          POST /api/chat/stream
   routes/chat/prepare/request.ts prepareChatRequest
   routes/chat/pipeline/          SSE lifecycle, tools, finalisation
-  routes/chatTurns.ts            durable turn replay
-  routes/agentRuns.ts            workspace-agent runs (separate contract)
+  routes/chat/chatTurns.ts            durable turn replay
+  routes/workspace/agentRuns.ts            workspace-agent runs (separate contract)
 ```
 
 The live SSE request is the primary path. Durable turns exist for reload /
@@ -100,7 +108,11 @@ Rules:
 
 ## 4. Server boundaries
 
-- `routes/*` owns HTTP: auth, scope, validation, status codes.
+- `routes/<domain>/` owns HTTP authentication, scope, validation and status codes.
+  The domains are `auth`, `chat`, `content`, `integrations`, `knowledge`,
+  `learning`, `media`, `operations`, `providers`, `sessions` and `workspace`.
+  `app.ts` imports routers directly and defines the order of Express mounts
+  and shared middleware. A route's directory groups it by responsibility.
 - `routes/sessions/read.ts` owns its SQL projections and pagination. Session
   read DTOs live in `packages/contracts`, and the public schemas come from
   `docs/api/openapi.yaml`. Clients pass cursors back unchanged. The Android
@@ -112,6 +124,9 @@ Rules:
 - `routes/chat/pipeline/*` owns one streaming turn: tool loop, SSE frames,
   finalisation.
 - `services/*` owns reusable domain work; it must not import HTTP composition.
+- `services/embeddings/chunkWorkerClient.ts` sends large messages to a bounded
+  Worker queue before writing the RAG index. Short messages use the same pure
+  chunker directly. PostgreSQL writes and embedding requests stay in the index service.
 - `lib/*` is neutral primitives (errors, policy text, sanitize, prompts).
 
 ## 5. CSS ownership
@@ -125,6 +140,11 @@ Cascade order is defined only by `frontend/src/styles/index.css`:
 5. `parity/` — canonical desktop surface owners.
 6. `polish/` — cross-surface details and interaction states.
 7. `themes.css` — only active palette and legacy token bridge, imported last.
+
+Shared foundation and UI values come from `packages/theme/src/{tokens,ui}.ts`.
+`scripts/gen-ui-tokens.mjs` projects them into CSS, and the SPA build checks
+that the committed projection is current. `tokens.css` owns SPA product
+geometry and aliases.
 
 Do not add a competing palette or a second owner for a surface. The guards in
 `frontend/scripts/check-*.mjs` enforce the ownership that already exists.
@@ -140,7 +160,7 @@ Do not add a competing palette or a second owner for a surface. The guards in
 | Chat request assembly | `server/src/routes/chat/prepare/` |
 | Chat turn execution | `server/src/routes/chat/pipeline/` |
 | Cross-client type | `packages/contracts` (server Zod must stay equivalent) |
-| HTTP route | `server/src/routes/` thin handler |
+| HTTP route | `server/src/routes/<domain>/` thin handler |
 | Domain logic | `server/src/services/<domain>/` |
 
 ## 7. Verification
@@ -148,5 +168,11 @@ Do not add a competing palette or a second owner for a surface. The guards in
 - Frontend: `npm run typecheck`, focused `npm run test:one -- test/<file>.test.mjs`,
   relevant Playwright spec, `npm run build`.
 - Server: `npm run typecheck`, focused `npm test` file(s).
+- Database tests without a PostgreSQL service: `npm run test:db:memory` inside
+  `server/`. A migrated PGlite snapshot seeds a temporary in-memory database
+  per suite. The main CI job still verifies native PostgreSQL and the
+  multi-process concurrency suites.
+- Playwright: `test:e2e:smoke`, `test:e2e:regression`, and `test:e2e:visual`
+  select one tier. `test:smoke` runs all three with the same built SPA.
 - Guards: `npm run lint` (frontend chain) and root `npm run lint` for docs,
   shims, action pinning, service boundaries.

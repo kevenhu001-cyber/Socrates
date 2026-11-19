@@ -4,7 +4,7 @@ import test from 'node:test';
 import express from 'express';
 import { listen } from './_http.js';
 import { ApiError } from '../src/lib/errors.js';
-import { createIntelligentUiMediaRouter } from '../src/routes/intelligentUiMedia.js';
+import { createIntelligentUiMediaRouter } from '../src/routes/media/intelligentUiMedia.js';
 import { createRemoteCache, remoteBytes } from '../src/services/intelligentUiRemote.js';
 import {
   matchesImageQuery,

@@ -30,7 +30,7 @@ const MCP_PATHS = new Set(['/api/mcp', '/api/mcp/', '/api/mcp/docs', '/api/mcp/d
  *
  * The consent decision (POST /api/oauth/authorize) rides the sid cookie, so
  * it is ALSO listed here — but it does not rely on the blanket both-missing
- * passthrough: routes/oauth.ts re-enforces the double-submit itself by
+ * passthrough: routes/auth/oauth.ts re-enforces the double-submit itself by
  * comparing the form's hidden csrf_token field against the cookie, because a
  * plain HTML form cannot send X-CSRF-Token headers. Removing the route-level
  * check while keeping this exemption would drop CSRF protection entirely.
@@ -154,7 +154,7 @@ export function setCsrfToken(req: Request, res: Response) {
  *   The double-submit check is the SECOND line of defence. The PRIMARY
  *   defence against CSRF is the `sid` session cookie's attributes —
  *   `httpOnly: true`, `secure: true` in production, `sameSite: 'lax'`
- *   (set in routes/auth.js#getSessionCookieOptions). SameSite=Lax
+ *   (set in routes/auth/auth.ts#getSessionCookieOptions). SameSite=Lax
  *   blocks cross-origin POSTs from carrying the sid cookie, so an
  *   attacker cannot ride on a victim's authenticated session from a
  *   malicious origin. Verify those settings before changing any

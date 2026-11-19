@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for routes/tts.ts — the cloud TTS proxy (M4 of the
+ * Unit tests for routes/media/tts.ts — the cloud TTS proxy (M4 of the
  * LobeHub-alignment plan, with the M4 follow-up DB-backed persistence
  * wired in).
  *
@@ -16,7 +16,7 @@
  */
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readMessageId } from '../src/routes/tts.ts';
+import { readMessageId } from '../src/routes/media/tts.ts';
 
 describe('tts route: readMessageId', () => {
   test('accepts a canonical UUID', () => {

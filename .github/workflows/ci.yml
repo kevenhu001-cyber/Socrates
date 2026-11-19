@@ -115,6 +115,9 @@ jobs:
           node --test scripts/test-verify-sbom.mjs
           bash scripts/test-deploy-flow.sh
 
+      - name: Developer tooling regression tests
+        run: node --test test/affected-tests.test.mjs test/lint-recovery.test.mjs
+
       - name: OpenAPI drift ratchet
         run: node scripts/check-openapi-drift.mjs
 
@@ -214,7 +217,7 @@ jobs:
             exit 1
           }
           npm run parity:check
-      - name: End-to-end smoke tests
+      - name: End-to-end smoke, regression and visual tiers
         run: npm run test:smoke
       - name: Mobile composer UX smoke tests
         run: npm run test:smoke:mobile

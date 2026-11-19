@@ -713,7 +713,7 @@ export async function sendCode(email: string) {
    If a future feature genuinely needs anonymous guest sessions,
    the correct path is:
      1. Add `router.post('/guest', authLimiter, audit('login:guest'),
-        async (req, res) => loginAsGuest())` to routes/auth.js.
+        async (req, res) => loginAsGuest())` to routes/auth/auth.ts.
      2. Add a CAPTCHA or IP-based captcha so the endpoint cannot be
         abused to mass-create disposable accounts (DB bloat, cost
         abuse via the built-in LLM provider).

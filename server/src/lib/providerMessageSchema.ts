@@ -7,7 +7,7 @@ export const ProviderContentPartSchema = z
     image_url: z
       .object({
         /* 2,000,000 chars matches the persisted
-       attachment dataUrl cap (routes/sessions.ts, routes/messages.ts) and
+       attachment dataUrl cap (routes/sessions.ts, routes/sessions/messages.ts) and
        the client-side compression target in frontend/src/attachments.ts.
        The previous 500,000-char cap silently 400-rejected any image over
        ~366 KB even though the frontend accepted files up to 4 MB. */

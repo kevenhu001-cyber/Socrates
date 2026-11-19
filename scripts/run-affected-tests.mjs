@@ -15,8 +15,8 @@
  *   node scripts/run-affected-tests.mjs path/to/file.ts # Test for explicit files
  */
 
-import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -25,7 +25,6 @@ const rootDir = resolve(dirname(__filename), '..');
 const frontendDir = join(rootDir, 'frontend');
 const serverDir = join(rootDir, 'server');
 const packagesDir = join(rootDir, 'packages');
-const siteDir = join(rootDir, 'site');
 
 // Parse CLI flags
 const args = process.argv.slice(2);
@@ -64,75 +63,27 @@ function getChangedFiles() {
     return ['ALL'];
   }
 
-  const files = new Set();
-
-  try {
-    if (branchRef) {
-      const diffOut = execSync(`git diff --name-only ${branchRef}...HEAD`, {
-        cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      diffOut
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .forEach((f) => files.add(normalizePath(f)));
-    } else if (isStagedOnly) {
-      const cachedOut = execSync('git diff --name-only --cached', {
-        cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      cachedOut
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .forEach((f) => files.add(normalizePath(f)));
-    } else {
-      // 1. Unstaged and staged git diff against HEAD
-      try {
-        const headOut = execSync('git diff --name-only HEAD', {
-          cwd: rootDir,
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore'],
-        });
-        headOut
-          .split(/\r?\n/)
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((f) => files.add(normalizePath(f)));
-      } catch {
-        // Fall back if repo has no HEAD
-      }
-
-      // 2. Untracked and uncommitted files
-      const statusOut = execSync('git status --porcelain', {
-        cwd: rootDir,
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      statusOut.split(/\r?\n/).forEach((line) => {
-        if (!line.trim()) return;
-        const status = line.slice(0, 2);
-        if (status.includes('D')) return; // Ignore deleted files
-        let file = line.slice(3).trim();
-        if (file.startsWith('"') && file.endsWith('"')) {
-          file = file.slice(1, -1);
-        }
-        // Handle rename arrow "old -> new"
-        if (file.includes(' -> ')) {
-          file = file.split(' -> ')[1];
-        }
-        files.add(normalizePath(file));
-      });
-    }
-  } catch (err) {
-    console.error('⚠️  Failed to query git status:', err.message);
+  const git = (...args) => execFileSync('git', args, { cwd: rootDir, encoding: 'utf8' });
+  const paths = (...args) =>
+    git(...args)
+      .split('\0')
+      .filter(Boolean);
+  // Keep both sides of moves and include deletions: a removed source file
+  // can still affect tests for its former domain.
+  const diff = (...args) => paths('diff', '--name-only', '--no-renames', '-z', ...args, '--');
+  if (branchRef) {
+    const base = git('rev-parse', '--verify', '--end-of-options', `${branchRef}^{commit}`).trim();
+    return diff(`${base}...HEAD`);
   }
-
-  // Filter out files that don't exist anymore
-  return Array.from(files).filter((file) => existsSync(join(rootDir, file)));
+  const staged = diff('--cached');
+  if (isStagedOnly) return staged;
+  return [
+    ...new Set([
+      ...staged,
+      ...diff(),
+      ...paths('ls-files', '--others', '--exclude-standard', '-z'),
+    ]),
+  ];
 }
 
 /**
@@ -300,13 +251,19 @@ const frontendDomainMappings = [
     tests: ['ownedRoot.test.mjs', 'mountRegistry.test.mjs', 'progressiveMount.test.mjs'],
     specs: ['boot.spec.mjs', 'mount-recovery.spec.mjs'],
   },
+  {
+    match:
+      /frontend\/src\/(?:ui\/nativeIslandFrame|react\/(?:visualization\/VizModal|tool-output\/ArtifactOutput|creation\/CreationSurface))/,
+    tests: ['nativeIslandFrame.test.mjs'],
+    specs: ['native-visualization.spec.mjs', 'creation-surfaces.spec.mjs'],
+  },
 ];
 
 // Domain mapping rules for Server
 const serverDomainMappings = [
   {
-    match: /server\/src\/services\/fileParsers\//,
-    tests: ['fileParsersFormats.test.js', 'attachmentReader.test.js'],
+    match: /server\/src\/(?:services\/fileParsers\/|routes\/content\/fileExtract\.ts$)/,
+    tests: ['fileParsersFormats.test.js', 'fileParserWorker.test.mjs', 'attachmentReader.test.js'],
   },
   {
     match: /server\/src\/services\/(pyodide|codeInterpreter)/,
@@ -315,6 +272,15 @@ const serverDomainMappings = [
   {
     match: /server\/src\/services\/embeddings\//,
     tests: ['embedding.test.js', 'embeddingConfig.test.js', 'contentExtractorLifecycle.test.js'],
+  },
+  {
+    match: /server\/src\/services\/embeddings\/(?:rag|chunk)/,
+    tests: [
+      'rag.test.js',
+      'ragChunkWorker.test.mjs',
+      'chunkIndex.test.js',
+      'hybridRetrieval.test.mjs',
+    ],
   },
   {
     match: /server\/src\/services\/rag/,
@@ -339,12 +305,54 @@ const serverDomainMappings = [
     ],
   },
   {
-    match: /server\/src\/(routes|middleware)\/auth/,
-    tests: ['authHttpRoutes.test.js', 'middleware-auth.test.js', 'authCache.test.js'],
+    match: /server\/src\/(?:routes\/auth\/|middleware\/auth)/,
+    tests: [
+      'authHttpRoutes.test.js',
+      'middleware-auth.test.js',
+      'authCache.test.js',
+      'accountPreferencesRoutes.test.js',
+      'accountLearningRoutes.test.js',
+      'mobile-auth-contract.test.js',
+      'oauthFlow.test.js',
+    ],
   },
   {
-    match: /server\/src\/routes\/files/,
-    tests: ['fileManagementRoutes.test.js', 'fileParsersFormats.test.js'],
+    match: /server\/src\/routes\/content\//,
+    tests: ['fileManagementRoutes.test.js', 'contentLibraryRoutes.test.js', 'publicShares.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/content\/files\.ts$/,
+    tests: ['fileParsersFormats.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/workspace\//,
+    tests: [
+      'workspaceResources.test.js',
+      'workspaceOrganizationRoutes.test.js',
+      'executionHistoryRoutes.test.js',
+      'scheduledTaskRoutes.test.js',
+      'researchJobsDb.test.js',
+    ],
+  },
+  {
+    match: /server\/src\/routes\/(?:integrations|knowledge)\//,
+    tests: ['protocolDiscoveryRoutes.test.js', 'projectConnectorDisconnect.test.js', 'rag.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/learning\//,
+    tests: ['accountLearningRoutes.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/media\//,
+    tests: ['ttsRoute.test.js', 'intelligentUiMedia.test.js', 'vision.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/operations\//,
+    tests: ['internalMetrics.test.js', 'usageAccounting.test.js'],
+  },
+  {
+    match: /server\/src\/routes\/providers\//,
+    tests: ['systemModels.test.js', 'sessionPromptProxyRoutes.test.mjs'],
   },
   {
     match: /server\/src\/db\//,
@@ -379,6 +387,13 @@ function resolveAffected(changedFiles) {
 
   for (const file of changedFiles) {
     // 1. Direct test file edits
+    if (
+      /^(?:server\/test|frontend\/(?:test|e2e)|packages|test)\/.+\.(?:test|spec)\.[cm]?[jt]s$/.test(
+        file,
+      ) &&
+      !existsSync(join(rootDir, file))
+    )
+      continue;
     if (file.startsWith('frontend/test/') && file.endsWith('.test.mjs')) {
       const name = file.replace('frontend/test/', '');
       frontendTests.add(name);
@@ -489,6 +504,18 @@ function resolveAffected(changedFiles) {
           }
         }
       }
+    }
+
+    if (file === 'scripts/run-affected-tests.mjs') {
+      siteTests.add('test/affected-tests.test.mjs');
+      logReason(file, 'test/affected-tests.test.mjs', 'affected runner contract');
+    }
+    if (
+      file === 'scripts/gen-csp-hashes.mjs' ||
+      file === 'frontend/scripts/check-i18n-locales.mjs'
+    ) {
+      siteTests.add('test/lint-recovery.test.mjs');
+      logReason(file, 'test/lint-recovery.test.mjs', 'guard CLI contract');
     }
 
     // 4. Shared packages

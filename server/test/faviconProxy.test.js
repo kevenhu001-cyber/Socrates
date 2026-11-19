@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { listen } from './_http.js';
 import { ApiError, BadRequest } from '../src/lib/errors.js';
-import { createFaviconRouter } from '../src/routes/favicons.js';
+import { createFaviconRouter } from '../src/routes/content/favicons.js';
 import { faviconTarget, getFavicon, readFavicon, sniffImage } from '../src/services/favicons.js';
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);

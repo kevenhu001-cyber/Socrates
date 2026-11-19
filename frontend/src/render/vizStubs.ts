@@ -14,6 +14,7 @@
  * lazy module once it is warm.
  */
 import { ensureMermaid } from '../vendor/lazy.ts';
+import { NATIVE_ISLAND_SANDBOX } from '../ui/nativeIslandFrame.ts';
 let _vizId = 0;
 export let _pendingMermaid: { id: string; code: string; validated?: boolean }[] = [];
 export let _pendingViz: { id: string }[] = [];
@@ -391,7 +392,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
     srcdoc +
     '" srcdoc="' +
     srcdoc +
-    '" sandbox="allow-scripts" title="Canvas" ' +
+    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="Canvas" ` +
     'style="width:100%;border:0;background:transparent;display:block;min-height:160px">' +
     '</iframe>';
   if (
@@ -608,7 +609,7 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     srcdoc +
     '" srcdoc="' +
     srcdoc +
-    '" sandbox="allow-scripts" title="Plot of ' +
+    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="Plot of ` +
     esc(parsed.expr) +
     '" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:340px">' +

@@ -1,0 +1,738 @@
+import { Router } from 'express';
+import { eq, and, sql, inArray, isNull } from 'drizzle-orm';
+import { getDb } from '../../db/index.js';
+import {
+  files,
+  sessions,
+  executions as executionsTable,
+  shares as sharesTable,
+  sessions as sessionsTable,
+} from '../../db/schema/index.js';
+import { requireAuth, optionalAuth } from '../../middleware/auth.js';
+import { resourceScope } from '../../middleware/scopes.js';
+import { uploadLimiter } from '../../middleware/rateLimit.js';
+import { NotFound, BadRequest, PayloadTooLarge } from '../../lib/errors.js';
+import multer from 'multer';
+import crypto from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import {
+  extractText as extractDocumentText,
+  SUPPORTED_MIMES,
+} from '../../services/fileParsers/index.js';
+import {
+  TEXT_FILE_EXTENSIONS,
+  DOCUMENT_FILE_EXTENSIONS,
+  LEGACY_OFFICE_EXTENSIONS,
+  MEDIA_FILE_EXTENSIONS,
+  IMAGE_FILE_EXTENSIONS,
+  TEXTUAL_APPLICATION_MIMES,
+  formatBytes,
+  isTextReadable,
+  prewarmAttachmentExtract,
+} from '../../services/embeddings/attachmentReader.js';
+import {
+  decodeTextBuffer,
+  cleanExtractedText,
+  truncateHeadTail,
+} from '../../services/fileParsers/text.js';
+import {
+  displayFileName,
+  normalizeFileName,
+  safeStorageExtension,
+  contentDisposition,
+} from '../../lib/fileName.js';
+import { isUuid } from '../../lib/validate.js';
+import { resolveInsideRoot } from '../../lib/pathSafety.js';
+import { ensureUploadDirectory, UPLOAD_DIR } from '../../lib/uploadStorage.js';
+const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
+// Per-user total storage quota. Defaults to 250 MB which is enough
+// for ~10 mid-size PDFs at the 25 MB cap, with headroom for images
+// and audio. Override via env var for paid tiers.
+const USER_QUOTA_BYTES = (() => {
+  const raw = process.env.FILES_USER_QUOTA_BYTES;
+  const n = raw ? parseInt(raw, 10) : 250 * 1024 * 1024;
+  return Number.isFinite(n) && n > 0 ? n : 250 * 1024 * 1024;
+})();
+const MAX_PREVIEW_CHARS = 200 * 1024;
+/* Every format with a server-side extractor (PDF, DOCX/XLSX/PPTX,
+   DOC/XLS, ODT/ODS/ODP, EPUB, RTF) is previewable with the same output
+   the model gets from read_attachment. */
+const PREVIEW_PARSER_MIMES = new Set<string>(SUPPORTED_MIMES);
+
+/* Storage key = server uuid + a short ASCII extension. The user's name
+   (any script, any length) only ever lives in files.name. */
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    cb(null, `${crypto.randomUUID()}${safeStorageExtension(file.originalname)}`);
+  },
+});
+
+/* Upload allow-list. Chat attachments ride on this endpoint, so it must
+   accept every format the model can read via read_attachment (text,
+   PDF, Office, EPUB/RTF, images) plus media files kept as attachments.
+   Extension sets are shared with services/embeddings/attachmentReader.ts. */
+const ALLOWED_EXACT_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/avif',
+  'application/pdf',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/flac',
+  /* Office formats — see services/fileParsers/index.js for the
+     matching extractor set. The raw endpoint force-downloads
+     these so the browser never renders embedded script. */
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  /* Legacy Office — stored as attachments; no extractor, the model gets
+     metadata only until the file is converted. */
+  'application/msword',
+  'application/vnd.ms-excel',
+  'application/vnd.ms-powerpoint',
+  'application/epub+zip',
+  'application/rtf',
+  'text/rtf',
+  /* OpenDocument — parsed by the hand-rolled ODF extractors. */
+  'application/vnd.oasis.opendocument.text',
+  'application/vnd.oasis.opendocument.spreadsheet',
+  'application/vnd.oasis.opendocument.presentation',
+]);
+
+const upload = multer({
+  storage,
+  limits: { fileSize: MAX_SIZE },
+  /* busboy decodes the multipart `filename="…"` parameter as latin1 by
+     default, while browsers send it as raw UTF-8 bytes — that turned
+     「数学.pdf」 into "æ\u0095°å\u00ad¦.pdf". Decode it as UTF-8. (RFC 5987
+     `filename*=UTF-8''…` is honoured by busboy either way.) */
+  defParamCharset: 'utf8',
+  fileFilter: (_req, file, cb) => {
+    /* Normalize once, before storage and every later read of
+       originalname: mojibake repair (older clients/proxies), NFC, no
+       directories or control characters. */
+    file.originalname = normalizeFileName(file.originalname) || 'file';
+    const mime = String(file.mimetype || '').toLowerCase();
+    // text/html, application/xhtml+xml and image/svg+xml are explicitly
+    // blocked: a malicious upload labelled as HTML/SVG would render in
+    // the browser when /api/files/:id/raw is hit, opening an XSS
+    // surface. Other types are flagged for content-sniffing at the raw
+    // endpoint via nosniff + force-download for non-image types.
+    if (mime === 'text/html' || mime === 'application/xhtml+xml' || mime === 'image/svg+xml') {
+      cb(new BadRequest(`Unsupported file type: ${mime}`));
+      return;
+    }
+    if (
+      ALLOWED_EXACT_MIMES.has(mime) ||
+      TEXTUAL_APPLICATION_MIMES.has(mime) ||
+      mime.startsWith('text/')
+    ) {
+      cb(null, true);
+      return;
+    }
+    /* Browsers label unrecognized types as application/octet-stream;
+       admit them when the extension is a known readable format (code
+       files, documents, media). */
+    if (mime === 'application/octet-stream' || mime === 'binary/octet-stream' || !mime) {
+      const ext = path.extname(String(file.originalname || '')).toLowerCase();
+      const known =
+        TEXT_FILE_EXTENSIONS.has(ext) ||
+        DOCUMENT_FILE_EXTENSIONS.has(ext) ||
+        LEGACY_OFFICE_EXTENSIONS.has(ext) ||
+        MEDIA_FILE_EXTENSIONS.has(ext) ||
+        IMAGE_FILE_EXTENSIONS.has(ext);
+      if (known) {
+        cb(null, true);
+        return;
+      }
+    }
+    cb(new BadRequest(`Unsupported file type: ${mime || 'unknown'}`));
+  },
+});
+
+const router = Router();
+
+/* GET /api/files/:id/raw — serve raw file binary with optional auth (for public shares). */
+router.get('/:id/raw', optionalAuth, async (req, res, next) => {
+  try {
+    const db = getDb();
+    const fileId = String(req.params.id);
+    const [file] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
+    if (!file) return next();
+    let allowed = !!req.userId && file.userId === req.userId;
+    if (!allowed) {
+      let sessionId = file.sessionId;
+      if (!sessionId && file.executionId) {
+        const [exec] = await db
+          .select({ sessionId: executionsTable.sessionId })
+          .from(executionsTable)
+          .where(eq(executionsTable.id, file.executionId))
+          .limit(1);
+        sessionId = exec?.sessionId ?? null;
+      }
+      if (sessionId) {
+        const [share] = await db
+          .select({ token: sharesTable.token })
+          .from(sharesTable)
+          .innerJoin(sessionsTable, eq(sessionsTable.id, sharesTable.sessionId))
+          .where(
+            and(
+              eq(sharesTable.sessionId, sessionId),
+              inArray(sharesTable.visibility, ['public', 'unlisted']),
+              isNull(sessionsTable.archivedAt),
+            ),
+          )
+          .limit(1);
+        allowed = !!share;
+      }
+    }
+    if (!allowed) return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Content-Type', file.mimeType);
+    const inlinePreview =
+      req.query.inline === '1' &&
+      (file.mimeType.startsWith('audio/') ||
+        file.mimeType.startsWith('video/') ||
+        (file.mimeType.startsWith('text/') &&
+          file.mimeType !== 'text/html' &&
+          file.mimeType !== 'text/xhtml' &&
+          file.mimeType !== 'text/xhtml+xml') ||
+        file.mimeType === 'application/json');
+    if (
+      !file.mimeType.startsWith('image/') &&
+      file.mimeType !== 'application/pdf' &&
+      !inlinePreview
+    ) {
+      res.set('Content-Disposition', contentDisposition('attachment', file.name));
+    } else {
+      res.set('Content-Disposition', contentDisposition('inline', file.name));
+    }
+    const fileName = path.basename(file.storagePath);
+    const fileDir = path.dirname(file.storagePath);
+    return res.sendFile(fileName, { root: fileDir, dotfiles: 'allow' }, (err) => {
+      if (err) {
+        if (!res.headersSent) {
+          const failure = err as { code?: string; status?: number };
+          if (failure.status === 404 || failure.code === 'ENOENT' || failure.code === 'EACCES') {
+            return res.status(404).json({ code: 'NOT_FOUND', message: 'File not found' });
+          }
+        }
+        next(err);
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.use(requireAuth, resourceScope('files'));
+
+/* GET /api/files — list all files for the authenticated user.
+ * Supports cursor-based pagination via ?cursor=<id>&limit=<n>.
+ * Ordered by uploaded_at descending so the most recent files appear first. */
+router.get('/', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const limit = Math.min(parseInt(req.query.limit as string, 10) || 50, 200);
+    const cursor = req.query.cursor || null;
+
+    const conditions = [eq(files.userId, req.userId!)];
+    if (cursor) {
+      // Match the complete ordering and resolve the cursor within this user.
+      // Calling .where() twice replaces (rather than adds to) the owner filter.
+      conditions.push(sql`(${files.uploadedAt}, ${files.id}) < (
+        SELECT ${files.uploadedAt}, ${files.id} FROM ${files}
+        WHERE ${files.id} = ${cursor}::uuid AND ${files.userId} = ${req.userId!}
+      )`);
+    }
+
+    const rows = await db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        size: files.size,
+        kind: files.kind,
+        sha256: files.sha256,
+        sessionId: files.sessionId,
+        uploadedAt: files.uploadedAt,
+      })
+      .from(files)
+      .where(and(...conditions))
+      .orderBy(sql`${files.uploadedAt} DESC, ${files.id} DESC`)
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    if (hasMore) rows.pop();
+
+    return res.json({
+      /* displayFileName repairs names stored before the UTF-8 fix. */
+      files: rows.map((row) => ({ ...row, name: displayFileName(row.name) })),
+      nextCursor: hasMore ? rows[rows.length - 1]?.id : null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* GET /api/files/:id/content — return a safe, text-only preview.
+ * Plain text files are read directly. PDF and Office-family files use the
+ * same server-side extractors as chat attachments, so the library can show
+ * their contents without asking the user to start or reopen a conversation.
+ * The response is capped to keep a large workbook or document from turning
+ * a simple preview into an unbounded memory/JSON response. */
+router.get('/:id/content', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db
+      .select({
+        id: files.id,
+        name: files.name,
+        mimeType: files.mimeType,
+        kind: files.kind,
+        storagePath: files.storagePath,
+      })
+      .from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+
+    let text = '';
+    let meta: Record<string, unknown> = {};
+    let truncated = false;
+    const mime = String(file.mimeType || '').toLowerCase();
+    const name = displayFileName(file.name);
+    if (PREVIEW_PARSER_MIMES.has(mime)) {
+      const result = await extractDocumentText(
+        mime,
+        resolveInsideRoot(UPLOAD_DIR, file.storagePath),
+      );
+      text = String(result.text || '');
+      meta = result.meta || {};
+      truncated = !!result.truncated;
+    } else if (isTextReadable(mime, name, file.kind)) {
+      // Stream only the head of the file instead of reading it all into
+      // memory. A user can upload up to the quota (250 MB) as text, so
+      // buffering the whole file here would let a single preview consume
+      // that much server memory. The decoder tolerates a multi-byte
+      // sequence cut at the end of the head; GBK/Big5/UTF-16 files are
+      // detected instead of being shown as mojibake.
+      const headBytes = await readHead(file.storagePath, MAX_PREVIEW_CHARS * 2 + 4096);
+      const decoded = decodeTextBuffer(headBytes);
+      text = cleanExtractedText(decoded.text);
+      meta = { encoding: decoded.encoding };
+      if (headBytes.length >= MAX_PREVIEW_CHARS * 2 + 4096) truncated = true;
+      /* Head-only read: a head/tail cut here would present the middle of
+         the file as its end, so keep a plain head cut. */
+      if (text.length > MAX_PREVIEW_CHARS) {
+        text = text.slice(0, MAX_PREVIEW_CHARS);
+        truncated = true;
+      }
+    } else {
+      return res
+        .status(415)
+        .json({ ok: false, error: 'This file type cannot be previewed as text.' });
+    }
+
+    if (text.length > MAX_PREVIEW_CHARS) {
+      text = truncateHeadTail(text, MAX_PREVIEW_CHARS).text;
+      truncated = true;
+    }
+    return res.json({
+      ok: true,
+      id: file.id,
+      name,
+      mimeType: file.mimeType,
+      kind: file.kind,
+      text,
+      truncated,
+      meta,
+    });
+  } catch (err) {
+    if (err instanceof NotFound) throw err;
+    const code = (err as { code?: string })?.code;
+    const error =
+      code === 'ENCRYPTED'
+        ? 'This file is password-protected or encrypted and cannot be previewed.'
+        : code === 'EMPTY_DOCUMENT'
+          ? 'This file contains no readable content.'
+          : 'Could not parse this file for preview.';
+    return res.status(422).json({ ok: false, error, errorCode: code || 'PARSE_FAILED' });
+  }
+});
+
+/**
+ * Read only the first `maxBytes` bytes from a file, avoiding buffering
+ * the entire file into memory. This is critical for the text preview
+ * path where a user could upload a 250 MB plain-text file.
+ */
+async function readHead(storagePath: string, maxBytes: number): Promise<Buffer> {
+  const handle = await fs.open(resolveInsideRoot(UPLOAD_DIR, storagePath), 'r');
+  try {
+    const buf = Buffer.alloc(maxBytes);
+    const { bytesRead } = await handle.read(buf, 0, maxBytes, 0);
+    return buf.subarray(0, bytesRead);
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
+ * Stream the on-disk upload through SHA-256 without buffering the
+ * whole file. A 25 MB upload × concurrent requests used to spike
+ * memory; streaming keeps it flat.
+ */
+function hashFileStreaming(storagePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = createReadStream(resolveInsideRoot(UPLOAD_DIR, storagePath));
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+    stream.on('error', reject);
+  });
+}
+
+/**
+ * Compute the user's current storage footprint so the upload
+ * endpoint can reject new files that would push them over quota.
+ * Done as a single SUM aggregate rather than scanning rows.
+ */
+async function getUserStorageBytes(userId: string, tx?: unknown) {
+  const db = tx ?? getDb();
+  const [row] = await (db as ReturnType<typeof getDb>)
+    .select({ total: sql`COALESCE(SUM(${files.size}), 0)` })
+    .from(files)
+    .where(eq(files.userId, userId));
+  return Number(row?.total) || 0;
+}
+
+/* POST /api/files — upload file
+ *
+ * SECURITY:
+ *   - uploadLimiter caps uploads at 60/min/user in a bucket separate
+ *     from session/message writes, so an upload flood cannot starve
+ *     chat sends (and vice versa).
+ *   - We enforce a per-user storage quota (USER_QUOTA_BYTES) so a
+ *     single user cannot exhaust the disk. The check happens AFTER
+ *     multer saves the file (multer can't pre-check quota), but we
+ *     delete the on-disk file and roll back if the user is over.
+ */
+router.post('/', uploadLimiter, async (req, res, next) => {
+  try {
+    await ensureUploadDirectory();
+  } catch (error) {
+    next(error);
+    return;
+  }
+  upload.single('file')(req, res, async (multerErr: (Error & { code?: string }) | null) => {
+    try {
+      if (multerErr) {
+        // Multer may leave a truncated file on disk when the client aborts
+        // or exceeds LIMIT_FILE_SIZE — remove it so partial bytes never linger.
+        const partial = req.file?.path;
+        if (partial) await fs.unlink(resolveInsideRoot(UPLOAD_DIR, partial)).catch(() => {});
+        if ((multerErr as { code?: string }).code === 'LIMIT_FILE_SIZE') {
+          return next(new PayloadTooLarge(`File exceeds the ${MAX_SIZE / 1024 / 1024} MB limit`));
+        }
+        return next(multerErr);
+      }
+      if (!req.file) throw new BadRequest('No file provided');
+
+      const file = req.file;
+      // Client-supplied MIME is never trusted blindly: reject active
+      // content masquerading as an allowed type (e.g. `<svg` bytes labelled
+      // image/png). Text/code formats have no magic, so only binary kinds
+      // and active-content sniffing are enforced here.
+      const uploadPath = resolveInsideRoot(UPLOAD_DIR, String(file.path || ''));
+      try {
+        await fs.chmod(uploadPath, 0o600);
+        const verifiedMime = await assertSafeContent(
+          uploadPath,
+          String(file.mimetype || ''),
+          String(file.originalname || ''),
+        );
+        if (verifiedMime && verifiedMime !== file.mimetype) {
+          file.mimetype = verifiedMime;
+        }
+      } catch (sigErr) {
+        await fs.unlink(uploadPath).catch(() => {});
+        throw sigErr;
+      }
+      const sha256 = await hashFileStreaming(uploadPath);
+
+      /* Optional session link: an attachment uploaded from a chat composer
+       carries sessionId so the file's share/lifecycle follows that
+       conversation. The id must be a uuid AND point at one of the
+       caller's own sessions — otherwise an arbitrary value could attach
+       an upload to somebody else's session (or poison the link). */
+      let sessionId: string | null = null;
+      const rawSessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId.trim() : '';
+      if (rawSessionId && isUuid(rawSessionId)) {
+        const db = getDb();
+        const [owned] = await db
+          .select({ id: sessions.id })
+          .from(sessions)
+          .where(and(eq(sessions.id, rawSessionId), eq(sessions.userId, req.userId!)))
+          .limit(1);
+        if (owned) {
+          sessionId = rawSessionId;
+        }
+      }
+
+      const db = getDb();
+      let record;
+      try {
+        record = await db.transaction(async (tx) => {
+          /* Serialize concurrent uploads from the same user so two
+           simultaneous SUM checks cannot both pass before either
+           INSERT lands. Advisory lock is transaction-scoped. */
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${req.userId!}))`);
+          const usedBytes = await getUserStorageBytes(req.userId!, tx);
+          if (usedBytes + file.size > USER_QUOTA_BYTES) {
+            throw new PayloadTooLarge(
+              `Storage quota exceeded. You have used ${formatBytes(usedBytes)}; this upload (${formatBytes(file.size)}) would exceed the ${formatBytes(USER_QUOTA_BYTES)} limit.`,
+            );
+          }
+          const [row] = await tx
+            .insert(files)
+            .values({
+              userId: req.userId!,
+              name: normalizeFileName(file.originalname) || 'file',
+              mimeType: file.mimetype,
+              size: file.size,
+              kind: mimeKind(file.mimetype, file.originalname),
+              sha256,
+              storagePath: uploadPath,
+              sessionId,
+            })
+            .returning();
+          return row;
+        });
+      } catch (err) {
+        // Roll back the on-disk file if the quota check or insert failed.
+        // Any failure after multer saved the file must unlink — otherwise a
+        // DB outage leaves orphan bytes that count against no quota row
+        // and are never reaped.
+        if (file?.path) await fs.unlink(uploadPath).catch(() => {});
+        throw err;
+      }
+      if (!record) {
+        await fs.unlink(uploadPath).catch(() => {});
+        throw new PayloadTooLarge('Storage quota exceeded.');
+      }
+
+      /* Warm the extractor while the client is still finishing the upload
+       animation. The first read_attachment then hits the cache instead of
+       pdf.js / the Office parsers. */
+      prewarmAttachmentExtract(record);
+
+      return res.status(201).json({
+        id: record.id,
+        name: record.name,
+        mimeType: record.mimeType,
+        size: record.size,
+        kind: record.kind,
+        sha256: record.sha256,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+});
+
+/* GET /api/files/:id — file metadata */
+router.get('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+    return res.json({ ...file, name: displayFileName(file.name) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+function sniffImageMime(head: string): string | null {
+  if (head.startsWith('\u0089PNG')) return 'image/png';
+  if (head.startsWith('\u00ff\u00d8\u00ff')) return 'image/jpeg';
+  if (head.startsWith('GIF87a') || head.startsWith('GIF89a')) return 'image/gif';
+  if (head.startsWith('RIFF') && head.slice(8, 12) === 'WEBP') return 'image/webp';
+  if (head.startsWith('BM')) return 'image/bmp';
+  if (head.slice(4, 8) === 'ftyp') {
+    const brand = head.slice(8, 12);
+    if (brand.includes('avif') || brand.includes('avis')) return 'image/avif';
+    return 'image/heic';
+  }
+  return null;
+}
+
+/* Reject active content masquerading as an allowed binary type, without
+ * breaking text/code uploads (which have no magic bytes). Reads only the
+ * head of the file. Throws BadRequest on mismatch. */
+async function assertSafeContent(
+  storagePath: string,
+  mime: string,
+  originalName: string,
+): Promise<string> {
+  const m = String(mime || '').toLowerCase();
+  const ext = path.extname(String(originalName || '')).toLowerCase();
+  const isImageMimeOrExt = m.startsWith('image/') || IMAGE_FILE_EXTENSIONS.has(ext);
+  const needsCheck =
+    isImageMimeOrExt ||
+    m === 'application/pdf' ||
+    m === 'application/octet-stream' ||
+    m === 'binary/octet-stream' ||
+    !m ||
+    m.startsWith('video/') ||
+    m.startsWith('audio/') ||
+    m === 'application/msword' ||
+    m === 'application/vnd.ms-excel' ||
+    m.startsWith('application/vnd.oasis.opendocument');
+  if (!needsCheck) return m;
+  let head = '';
+  try {
+    head = (await readHead(storagePath, 4096)).toString('latin1');
+  } catch {
+    return m;
+  }
+  const trimmed = head
+    .replace(/^[\u0000-\u0020]*/, '')
+    .slice(0, 512)
+    .toLowerCase();
+  // Active content signatures are never valid file bytes for our allow-list.
+  if (
+    trimmed.startsWith('<!doctype html') ||
+    trimmed.startsWith('<html') ||
+    trimmed.startsWith('<script') ||
+    trimmed.startsWith('<svg') ||
+    trimmed.startsWith('<?xml')
+  ) {
+    // <?xml alone is ambiguous (svg vs. plain xml data) — only reject when
+    // the payload also carries svg/html markers.
+    if (trimmed.includes('<svg') || trimmed.includes('<html') || trimmed.includes('<script')) {
+      throw new BadRequest(`Unsupported file type: content does not match ${m || 'unknown type'}`);
+    }
+    if (m.startsWith('image/') || m === 'application/pdf') {
+      throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+    }
+  }
+  if (m === 'application/pdf' && !head.startsWith('%PDF')) {
+    throw new BadRequest('Unsupported file type: content does not match application/pdf');
+  }
+  if (isImageMimeOrExt) {
+    const detected = sniffImageMime(head);
+    if (detected) {
+      return detected;
+    }
+    if (m === 'image/png')
+      throw new BadRequest('Unsupported file type: content does not match image/png');
+    if (m === 'image/jpeg' || m === 'image/jpg')
+      throw new BadRequest('Unsupported file type: content does not match image/jpeg');
+    if (m === 'image/gif')
+      throw new BadRequest('Unsupported file type: content does not match image/gif');
+  }
+  /* Office binaries: OLE compound magic (D0 CF 11 E0) for legacy
+     .doc/.xls; ZIP magic (PK) for OpenDocument containers. */
+  if (
+    (m === 'application/msword' || m === 'application/vnd.ms-excel') &&
+    !head.startsWith('ÐÏ\x11à')
+  ) {
+    throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+  }
+  if (m.startsWith('application/vnd.oasis.opendocument') && !head.startsWith('PK')) {
+    throw new BadRequest(`Unsupported file type: content does not match ${m}`);
+  }
+  return m;
+}
+
+/* PATCH /api/files/:id — rename file */
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+    /* Same normalization as uploads (NFC, no path, no control/bidi
+       characters); over-long names are rejected so the user can fix them. */
+    const name = normalizeFileName(req.body?.name, 'reject');
+    if (!name) throw new BadRequest('name is required (1-255 chars, no path separators)');
+    await db.update(files).set({ name }).where(eq(files.id, req.params.id));
+    return res.json({ id: file.id, name });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* DELETE /api/files/:id */
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const db = getDb();
+    const [file] = await db
+      .select()
+      .from(files)
+      .where(and(eq(files.id, req.params.id), eq(files.userId, req.userId!)))
+      .limit(1);
+    if (!file) throw new NotFound('File not found');
+    await fs.unlink(resolveInsideRoot(UPLOAD_DIR, file.storagePath)).catch(() => {});
+    await db.delete(files).where(eq(files.id, req.params.id));
+    return res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+function mimeKind(mime: string, name?: string) {
+  const m = String(mime || '').toLowerCase();
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
+  if (m.startsWith('audio/')) return 'audio';
+  if (m === 'application/pdf') return 'pdf';
+  if (m === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    return 'docx';
+  if (m === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'xlsx';
+  if (m === 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+    return 'pptx';
+  if (m === 'application/msword') return 'doc';
+  if (m === 'application/vnd.ms-excel') return 'xls';
+  if (m === 'application/vnd.ms-powerpoint') return 'ppt';
+  if (m === 'application/epub+zip') return 'epub';
+  if (m === 'application/rtf' || m === 'text/rtf') return 'rtf';
+  if (m === 'application/vnd.oasis.opendocument.text') return 'odt';
+  if (m === 'application/vnd.oasis.opendocument.spreadsheet') return 'ods';
+  if (m === 'application/vnd.oasis.opendocument.presentation') return 'odp';
+  if (m.startsWith('text/') || TEXTUAL_APPLICATION_MIMES.has(m)) return 'text';
+  /* octet-stream uploads are classified by extension so a .py or .csv
+     file still lands in the 'text' bucket the reader can serve. */
+  if (
+    (m === 'application/octet-stream' || m === 'binary/octet-stream' || !m) &&
+    TEXT_FILE_EXTENSIONS.has(path.extname(String(name || '')).toLowerCase())
+  ) {
+    return 'text';
+  }
+  return 'other';
+}
+
+export default router;

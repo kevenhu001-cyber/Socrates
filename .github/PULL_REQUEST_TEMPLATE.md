@@ -38,7 +38,7 @@ Conventions in this repo:
      Tick every block you touched; the matching owners are auto-requested
      only when this list is honest. -->
 
-- [ ] Auth / sessions / CSRF (`server/src/middleware/`, `server/src/routes/auth.ts`, `server/src/routes/oauth.ts`, `server/src/services/{auth,adminAuth,loginLockout,oauthTokens,agentKeys}.ts`)
+- [ ] Auth / sessions / CSRF (`server/src/middleware/`, `server/src/routes/auth/auth.ts`, `server/src/routes/auth/oauth.ts`, `server/src/services/{auth,adminAuth,loginLockout,oauthTokens,agentKeys}.ts`)
 - [ ] Cryptography / secret handling (`server/src/lib/crypto.ts`, `server/src/services/apiKey.ts`, `scripts/{rotate,backup}-secrets.sh`)
 - [ ] Database schema / migrations (`server/src/db/`, `server/drizzle/`)
 - [ ] Deployment / edge (`deploy.sh`, `ops/`)

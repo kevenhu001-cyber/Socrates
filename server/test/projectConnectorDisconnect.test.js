@@ -16,7 +16,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import { eq, and } from 'drizzle-orm';
 
-import projectConnectorRouter from '../src/routes/projectConnectors.js';
+import projectConnectorRouter from '../src/routes/integrations/projectConnectors.js';
 import { errorHandler } from '../src/middleware/error.js';
 import { initDb, getDb, closeDb } from '../src/db/index.js';
 import { users, projectConnectorConnections } from '../src/db/schema/index.js';

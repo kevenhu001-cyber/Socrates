@@ -13,7 +13,7 @@ import crypto from 'node:crypto';
 import { getDb } from '../../db/index.js';
 import { files } from '../../db/schema/index.js';
 
-/* Reuse the same UPLOAD_DIR resolution as routes/files.js so executor
+/* Reuse the same UPLOAD_DIR resolution as routes/content/files.ts so executor
  * artifacts land next to user-uploaded files and are served by the
  * same /api/files/:id/raw endpoint. */
 const UPLOAD_DIR =
@@ -25,10 +25,10 @@ const UPLOAD_DIR =
 await fs.mkdir(UPLOAD_DIR, { recursive: true }).catch(() => {});
 
 /* Allow-list for executor output mime types. Mirrors the fileFilter
- * in routes/files.js:44-58 but adds image/svg+xml and image/jpeg that
+ * in routes/content/files.ts:44-58 but adds image/svg+xml and image/jpeg that
  * are common for matplotlib + seaborn output. SVG is allowed here even
  * though the /raw endpoint force-downloads it — the existing X-Content-
- * Type-Options: nosniff header at routes/files.js:151-157 keeps the
+ * Type-Options: nosniff header at routes/content/files.ts:151-157 keeps the
  * browser from executing any embedded JS. */
 const ARTIFACT_MIME_BY_EXT: Record<string, string> = {
   '.png': 'image/png',
@@ -41,7 +41,7 @@ const ARTIFACT_MIME_BY_EXT: Record<string, string> = {
   '.csv': 'text/csv',
   '.txt': 'text/plain',
   '.json': 'application/json',
-  '.html': 'text/html', // note: routes/files.js:54 blocks text/html uploads, but executor outputs are trusted (model-generated)
+  '.html': 'text/html', // note: routes/content/files.ts:54 blocks text/html uploads, but executor outputs are trusted (model-generated)
 };
 
 function inferMime(originalName?: string | null) {
@@ -49,7 +49,7 @@ function inferMime(originalName?: string | null) {
   return ARTIFACT_MIME_BY_EXT[ext] || 'application/octet-stream';
 }
 
-/* Like routes/files.js:176 mimeKind() — used by the files.kind column. */
+/* Like routes/content/files.ts:176 mimeKind() — used by the files.kind column. */
 function mimeKind(mime: string) {
   if (!mime) return 'other';
   if (mime.startsWith('image/')) return 'image';

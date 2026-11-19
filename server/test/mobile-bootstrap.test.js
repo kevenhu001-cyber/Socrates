@@ -5,7 +5,7 @@ import express from 'express';
 import mobileRouter, {
   buildMobileBootstrapConfig,
   normalizePublicAppUrl,
-} from '../src/routes/mobile.js';
+} from '../src/routes/auth/mobile.js';
 import { httpRequest, listen } from './_http.js';
 
 describe('mobile bootstrap contract', () => {

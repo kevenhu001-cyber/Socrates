@@ -3,7 +3,7 @@
  *
  * Single source of truth for the `--ui-*` token namespace. The actual
  * theme values (light/dark/accent) live in themes.css; this file owns
- * theme-independent foundation and product geometry.
+ * theme-independent product geometry and aliases to the generated foundation.
  *
  * Keep the names here aligned with src/legacy/tokens.ts so JS-driven and
  * CSS-driven values agree on the same vocabulary.
@@ -14,54 +14,6 @@
 :root {
   /* shadcn uses the same corner scale as the product. */
   --radius: var(--ui-radius-md);
-  /* Lobe UI v6 foundation metrics. Product tokens below may alias these
-     rungs where semantics match; Socrates-specific geometry is not forced
-     onto this ladder. */
-  --ui-foundation-space-xxs: 4px;
-  --ui-foundation-space-xs: 8px;
-  --ui-foundation-space-sm: 12px;
-  --ui-foundation-space-base: 16px;
-  --ui-foundation-space-md: 20px;
-  --ui-foundation-space-lg: 24px;
-  --ui-foundation-space-xl: 32px;
-  --ui-foundation-space-xxl: 48px;
-
-  --ui-foundation-radius-xs: 4px;
-  --ui-foundation-radius-sm: 6px;
-  --ui-foundation-radius-base: 8px;
-  --ui-foundation-radius-lg: 12px;
-
-  --ui-foundation-control-sm: 28px;
-  --ui-foundation-control-base: 36px;
-  --ui-foundation-control-lg: 40px;
-  --ui-foundation-control-interactive: 18px;
-  --ui-foundation-control-outline: 2px;
-  --ui-foundation-control-padding: 12px;
-  --ui-foundation-control-padding-sm: 8px;
-
-  --ui-foundation-font-size-sm: 12px;
-  --ui-foundation-font-size-base: 14px;
-  --ui-foundation-font-size-lg: 16px;
-  --ui-foundation-font-size-xl: 20px;
-  --ui-foundation-font-size-heading-1: 38px;
-  --ui-foundation-font-size-heading-2: 30px;
-  --ui-foundation-font-size-heading-3: 24px;
-  --ui-foundation-font-size-heading-4: 20px;
-  --ui-foundation-font-size-heading-5: 16px;
-  --ui-foundation-font-weight-strong: 600;
-  --ui-foundation-line-height-sm: 1.6666666667;
-  --ui-foundation-line-height-base: 1.5714285714;
-  --ui-foundation-line-height-lg: 1.5;
-
-  --ui-foundation-duration-fast: 100ms;
-  --ui-foundation-duration-mid: 200ms;
-  --ui-foundation-duration-slow: 300ms;
-  --ui-foundation-ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
-  --ui-foundation-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
-  --ui-foundation-ease-out-back: cubic-bezier(0.12, 0.4, 0.29, 1.46);
-  --ui-foundation-ease-out-circ: cubic-bezier(0.08, 0.82, 0.17, 1);
-  --ui-foundation-ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
-
   /* Socrates product spacing. The 2px optical rung is intentionally outside
      the Lobe ladder; the remaining shared rungs inherit the foundation. */
   --ui-space-xxs: 2px;

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { VizModalActions } from './VizModalActions';
+import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 
 export interface VizModalProps {
   variant: 'sandbox' | 'raw' | 'source';
@@ -19,8 +20,11 @@ function bodyFor(variant: VizModalProps['variant'], content: string) {
     return (
       <div className="viz-modal-body">
         <iframe
-          sandbox="allow-scripts"
-          title="Canvas fullscreen"
+          {...nativeIslandFrameAttributes({
+            kind: 'visualization',
+            html: content,
+            title: 'Canvas fullscreen',
+          })}
           style={{
             width: '100%',
             height: '100%',
@@ -28,7 +32,6 @@ function bodyFor(variant: VizModalProps['variant'], content: string) {
             background: 'transparent',
             display: 'block',
           }}
-          srcDoc={content}
         />
       </div>
     );

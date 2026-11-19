@@ -1,5 +1,6 @@
 import { visualizationSandboxMath } from './visualizationSandboxMath.ts';
 import { MATH_LABEL_TRIGGER } from './latex.ts';
+import { NATIVE_ISLAND_SANDBOX } from '../ui/nativeIslandFrame.ts';
 /* Sandboxed extension rendering and model-facing repair routing. */
 /* Extension content is self-contained: tags and CSP block executable/network
    escape paths, and resource URLs are limited to fragments or inline data.
@@ -138,7 +139,7 @@ export function renderExtension(
     mathScript +
     renderSource;
   return (
-    '<iframe class="visualization-extension" sandbox="allow-scripts" title="' +
+    `<iframe class="visualization-extension" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="` +
     escapeHtml(spec.title) +
     '" data-card-id="' +
     escapeHtml(cardId) +

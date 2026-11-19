@@ -1,7 +1,7 @@
 // @ts-check
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkShareAccess } from '../src/routes/publicShares.js';
+import { checkShareAccess } from '../src/routes/content/publicShares.js';
 
 describe('checkShareAccess', () => {
   const session = { id: 's-1', userId: 'u-1' };

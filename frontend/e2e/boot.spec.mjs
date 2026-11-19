@@ -10,6 +10,7 @@
 
 import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
+import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -175,6 +176,22 @@ test('page boots, dist HTML script ordering correct, inline-handler hash matches
 
   // No JS errors at boot.
   expect(consoleErrors, `unexpected JS errors: ${consoleErrors.join(' | ')}`).toEqual([]);
+});
+
+test('container portals preserve shell slots and reattach to a replaced host', async ({ page }) => {
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+  await expect(page.locator('[data-react-mount-container="content-container"]')).toHaveCount(1);
+  await expect(page.locator('[data-react-mount-container="chrome-container"]')).toHaveCount(1);
+  const hero = page.locator('#homeHero');
+  await expect(hero.locator('#topicTitle')).toHaveCount(1);
+  await hero.evaluate((host) => {
+    host.replaceWith(host.cloneNode(false));
+    window.__socratesMountReactCompatibility();
+  });
+  await expect(hero.locator('#topicTitle')).toHaveCount(1);
+  await expect(page.locator('[data-react-mount-container="content-container"]')).toHaveCount(1);
 });
 
 function collectSourceFiles(dir, out = []) {

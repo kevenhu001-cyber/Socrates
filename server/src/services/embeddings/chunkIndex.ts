@@ -24,7 +24,8 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import { getDb } from '../../db/index.js';
 import { sessionChunks } from '../../db/schema/index.js';
-import { chunkText, buildRagIndex, searchRagIndex, type RagChunk } from './rag.js';
+import { buildRagIndex, searchRagIndex, type RagChunk } from './rag.js';
+import { chunkMessageText } from './chunkWorkerClient.js';
 import { embedTexts, getActiveEmbeddingConfig } from './embedding.js';
 import { collectHybridRetrieval, type HybridRetrievalOptions } from './hybridRetrieval.js';
 
@@ -58,7 +59,7 @@ export async function indexMessageChunks(
   text: string,
 ): Promise<RagChunk[]> {
   const db = getDb();
-  const chunks = chunkText(text);
+  const chunks = await chunkMessageText(text);
   if (chunks.length === 0) {
     /* Empty / whitespace-only source — drop any stale rows from a
        previous index of the same message so a search never returns

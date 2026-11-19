@@ -1,6 +1,6 @@
 name: Server CI
 
-# Fast-feedback typecheck and service-boundary guard for server/ changes. No services.
+# Typecheck, architecture guard and PGlite-backed database tests. No services.
 #
 # Scope was narrowed on 2026-09-25 because this workflow had become a
 # liability rather than a gate:
@@ -74,3 +74,6 @@ jobs:
 
       - name: Typecheck and service boundaries
         run: npm run lint
+
+      - name: Database tests in memory
+        run: npm run test:db:memory

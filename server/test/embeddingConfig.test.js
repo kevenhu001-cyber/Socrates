@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Unit tests for routes/embeddingConfig.ts — the admin gate + the
+ * Unit tests for routes/knowledge/embeddingConfig.ts — the admin gate + the
  * request validation surface. The DB-backed paths (list / upsert /
  * delete) need a live Postgres + an authenticated admin; those are
  * covered by the running server in dev and by the e2e admin flows.
@@ -18,7 +18,7 @@ describe('embeddingConfig — operator console gate', () => {
     // check, not a boot-time assertion, so a deployment without
     // ADMIN_PASSWORD still boots the API (the console renders the
     // "disabled" message instead of the forms).
-    const mod = await import('../src/routes/embeddingConfig.js');
+    const mod = await import('../src/routes/knowledge/embeddingConfig.js');
     assert.ok(mod.default, 'expected the default router export');
     assert.equal(
       typeof mod.default.stack?.length,
@@ -28,13 +28,13 @@ describe('embeddingConfig — operator console gate', () => {
   });
 
   test('the router carries the requireAdminSession middleware', async () => {
-    const mod = await import('../src/routes/embeddingConfig.js');
+    const mod = await import('../src/routes/knowledge/embeddingConfig.js');
     const middlewareEntries = mod.default.stack.filter((l) => !l.route);
     assert.ok(middlewareEntries.length >= 1, 'expected the requireAdminSession middleware layer');
   });
 
   test('the router exposes GET /, PUT /, DELETE /:id', async () => {
-    const mod = await import('../src/routes/embeddingConfig.js');
+    const mod = await import('../src/routes/knowledge/embeddingConfig.js');
     const paths = mod.default.stack
       .filter((l) => l.route)
       .map((l) => ({ path: l.route.path, methods: Object.keys(l.route.methods) }));

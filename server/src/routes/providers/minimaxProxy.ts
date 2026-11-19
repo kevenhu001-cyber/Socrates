@@ -1,0 +1,356 @@
+import { Router } from 'express';
+import { getActiveApiKey } from '../../services/core/apiKey.js';
+import { streamChatCompletion } from '../../services/core/llm/stream.js';
+import { callChatCompletion } from '../../services/core/llm/complete.js';
+import {
+  estimateMessageTokens,
+  estimateTokens,
+  recordUsage,
+  resolveUsage,
+} from '../../services/core/usageTracker.js';
+import { requireAuth } from '../../middleware/auth.js';
+import { chatLimiter } from '../../middleware/rateLimit.js';
+import { sanitizeExtraBody } from '../../lib/sanitize.js';
+import { trackSseConnection, startSseKeepalive } from '../../lib/sse.js';
+import { getBeagleSystemPrompt } from '../../lib/prompts.js';
+import { appendAssistantInstructions, prependTeacherModePrompt } from '../chat/prepare/prompts.js';
+import { appendMemoryContext } from '../chat/prepare/context.js';
+import {
+  enforceServerSystemBoundary,
+  classifyClientSystemMessages,
+  renderClientBlocks,
+  hasClientSystemPrefix,
+} from '../chat/prepare/clientSystem.js';
+import { transformMessagesForModel } from '../chat/prepare/wire.js';
+import { SSE_PRIME } from '../chat/prepare/sse.js';
+import { appendFinalOutputConstraints, injectUserContext } from '../../lib/chatPolicy.js';
+import { isUuid } from '../../lib/validate.js';
+import { BadRequest } from '../../lib/errors.js';
+import { resolveSessionPromptOrAssemble } from '../../services/core/sessionPromptSnapshot.js';
+import { splitPromptContext, appendTurnContext } from '../../lib/chatPromptContext.js';
+import {
+  insertProviderIdentity,
+  insertResponseTypography,
+  refreshServerPrompt,
+} from '../../lib/chatPolicy.js';
+import { buildSseErrorFrame } from '../../lib/sseErrorFrame.js';
+
+const router = Router();
+
+/**
+ * Proxy for the built-in Beagle (MiniMax) provider.
+ *
+ * The SPA calls /api/minimax/v1/chat/completions directly instead of
+ * going through /api/chat (which is reserved for user-configured providers).
+ * This route reads the built-in provider key from the database so the
+ * raw BEAGLE_SYSTEM_KEY never touches the browser.
+ *
+ * Supports both streaming (?stream=true in body → SSE) and
+ * non-streaming (regular JSON) modes — same contract as the MiniMax API.
+ *
+ * SECURITY: previously this endpoint had no auth and no rate limit,
+ * so any anonymous caller could drain the server's MiniMax budget.
+ * We now require an authenticated session and apply the standard
+ * chatLimiter (60/hr/user). The built-in provider cost is paid by
+ * the operator, so anonymous access is abuse.
+ */
+router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, next) => {
+  try {
+    const provider = await getActiveApiKey(null); // null userId → built-in
+    if (!provider || !provider.keyPlaintext) {
+      return res.status(503).json({
+        code: 'NO_BUILT_IN_PROVIDER',
+        message: 'Built-in LLM provider is not configured on this server',
+      });
+    }
+
+    /* `model` is intentionally not read — see  below. */
+    const {
+      messages: rawMessages,
+      temperature,
+      max_tokens,
+      stream,
+      reasoning_effort,
+      response_speed,
+      extra_body,
+      assistantId,
+      sessionId: bodySessionId,
+    } = req.body;
+    const sessionId = req.query.sessionId ?? bodySessionId;
+    if (
+      (assistantId && !isUuid(assistantId)) ||
+      (sessionId !== undefined && !isUuid(sessionId)) ||
+      (bodySessionId !== undefined && bodySessionId !== sessionId)
+    )
+      throw new BadRequest('Invalid or conflicting assistant/session id');
+    const responseSpeed = response_speed === 'fast' ? 'fast' : 'standard';
+
+    // Legacy built-in/synchronous callers share the SAME session snapshot as
+    // /chat and /chat/stream. Switching transport must not replace the prefix.
+    const mode = req.body.mode === 'tutor' ? 'tutor' : 'chat';
+    const context = splitPromptContext(Array.isArray(rawMessages) ? rawMessages : [], mode);
+    /* the built-in provider identity
+     * (prompts/beagle.md) must NOT be frozen into the shared session
+     * snapshot. This session may later be served by the user's own BYOK
+     * provider, and a snapshot carrying "You are Beagle" would then be sent
+     * to their own upstream on every subsequent turn. The snapshot keeps only
+     * provider-independent session state; the identity is appended per
+     * request, after the snapshot has been resolved. */
+    const storedPrompt = await resolveSessionPromptOrAssemble(
+      req.userId ?? undefined,
+      sessionId,
+      async () => {
+        let initialized = enforceServerSystemBoundary(context.initialization);
+        initialized = injectUserContext(initialized, req.user, { sessionSnapshot: !!sessionId });
+        if (mode === 'tutor') initialized = await prependTeacherModePrompt(initialized);
+        initialized = await appendAssistantInstructions(
+          initialized,
+          assistantId,
+          sessionId,
+          req.userId ?? undefined,
+        );
+        initialized = await appendMemoryContext(
+          initialized,
+          req.userId ?? undefined,
+          isUuid(req.body.projectId) ? req.body.projectId : undefined,
+        );
+        initialized = appendFinalOutputConstraints(initialized);
+        return initialized[0].content as string;
+      },
+    );
+    /* the snapshot freezes turn 1's system
+       prefix. The server policy and the client's turn state (template
+       persona, tone preset, custom instructions) are re-derived on every
+       request, so a policy fix reaches the sessions that were created
+       before it and a template switched mid-session changes the persona.
+       The client re-sends its system prefix on every turn, so the blocks
+       can be classified again; a turn without one keeps the frozen
+       blocks. */
+    const clientBlocks = hasClientSystemPrefix(context.initialization)
+      ? renderClientBlocks(classifyClientSystemMessages(context.initialization))
+      : undefined;
+    const systemPrompt = insertProviderIdentity(
+      insertResponseTypography(
+        refreshServerPrompt(storedPrompt, { clientBlocks, reasoningEffort: reasoning_effort }),
+      ),
+      await getBeagleSystemPrompt(),
+    );
+    let messages = transformMessagesForModel(
+      [
+        { role: 'system', content: systemPrompt },
+        ...appendTurnContext(context.conversation, context.turnInstructions, null),
+      ],
+      provider,
+    );
+    /* the upstream model name is operator-configured
+     * and must never be settable from the client. Even though the SPA
+     * currently doesn't know the real model (we strip it from
+     * /api/config), a determined user could still smuggle a guess
+     * into req.body.model and the previous `model || provider.model`
+     * pattern would forward it to the upstream. Pin to provider.model. */
+    const upstreamModel = provider.model;
+    /* H5 audit fix. Sanitise extra_body against
+     * the same whitelist chat.js uses, so a forged payload can't smuggle
+     * `tools`, `api_key`, etc to the built-in upstream. */
+    const safeExtraBody = sanitizeExtraBody(extra_body);
+    /* OpenAI-compatible endpoints also accept ?stream=true as a
+       query parameter. Honour it so the built-in proxy matches
+       the spec — this matters for any client that toggles streaming
+       via the URL rather than the body. */
+    const wantStream = stream === true || req.query.stream === 'true' || req.query.stream === '1';
+
+    if (wantStream) {
+      // ── Streaming: SSE response ──
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+
+      /* Prime the stream — see chat/prepare/sse.ts SSE_PRIME for the full
+         rationale. 32 KB of `:` comment lines overflows EdgeOne's
+         ~8 KB first-chunk buffer and Safari's ~1 KB fetch ReadableStream
+         buffer so deltas reach the browser as soon as the upstream
+         emits them, not in one coalesced blob. */
+      try {
+        res.flushHeaders();
+        res.write(SSE_PRIME);
+        try {
+          (res as { flush?: () => void }).flush?.();
+        } catch {}
+      } catch {
+        /* socket already closed */
+      }
+
+      /* bump the active-connection counter so the
+         /api/health endpoint can report how many SSE streams are open. */
+      trackSseConnection(req.app, +1);
+
+      const abortController = new AbortController();
+      /* SSE keepalive — shared helper emits one comment immediately
+         and then every 10 s, and self-cleans on res close/finish/error.
+         Self-cleanup means the abortController below stays focused
+         on cancelling the upstream LLM fetch. */
+      startSseKeepalive(res, { intervalMs: 10_000 });
+      req.on('close', () => {
+        trackSseConnection(req.app, -1);
+        abortController.abort();
+      });
+
+      /* Token accounting for the built-in MiniMax provider. */
+      const promptTokens = estimateMessageTokens(messages);
+      let completionTokens = 0;
+      let fullText = '';
+
+      await streamChatCompletion(
+        {
+          apiBase: provider.url,
+          apiKey: provider.keyPlaintext,
+          model: upstreamModel,
+          /* the operator's statement for
+           * the built-in endpoint wins over the registry's host guess. */
+          instantEncoding: provider.instantEncoding ?? null,
+          messages: messages,
+          /* undefined → llm.js default (32 K) so a long streamed
+             answer isn't silently truncated by a small per-model cap. */
+          maxTokens: max_tokens,
+          temperature: temperature ?? 0.7,
+          signal: abortController.signal,
+          /* forward reasoning flags so the upstream
+             emits reasoning_content chunks. */
+          reasoning_effort,
+          response_speed: responseSpeed,
+          extra_body: safeExtraBody,
+          onPreferenceFallback: (detail) => {
+            try {
+              res.write(`event: preference_fallback\ndata: ${JSON.stringify(detail)}\n\n`);
+            } catch {
+              /* client disconnected */
+            }
+          },
+        },
+        // onChunk
+        (chunk) => {
+          fullText += chunk;
+          completionTokens = estimateTokens(fullText);
+          try {
+            res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
+            try {
+              (res as { flush?: () => void }).flush?.();
+            } catch {}
+          } catch {
+            /* client disconnected */
+          }
+        },
+        // onDone
+        ({ usage }) => {
+          try {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          } catch {
+            /* ignore */
+          }
+          if (req.userId) {
+            /* Built-in MiniMax provider: prefer its reported usage, fall
+               back to the chars/4 estimate when the frame is absent. */
+            const settled = resolveUsage(usage, { promptTokens, completionTokens });
+            recordUsage({
+              userId: req.userId,
+              model: upstreamModel,
+              sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
+              promptTokens: settled.promptTokens,
+              completionTokens: settled.completionTokens,
+              source: 'chat',
+              usageSource: settled.usageSource,
+            });
+          }
+        },
+        // onError
+        (err) => {
+          console.error('[minimax] stream error:', err.message);
+          // Never forward a raw upstream provider body: the message may embed
+          // the provider's response text. The shared frame keeps status/code
+          // and states whether a replay could help.
+          try {
+            res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
+          } catch {
+            /* ignore */
+          }
+          if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0))) {
+            const settled = resolveUsage(null, {
+              promptTokens,
+              completionTokens: estimateTokens(fullText),
+            });
+            recordUsage({
+              userId: req.userId,
+              model: upstreamModel,
+              sessionId: typeof req.query.sessionId === 'string' ? req.query.sessionId : null,
+              promptTokens: settled.promptTokens,
+              completionTokens: settled.completionTokens,
+              source: 'chat',
+              usageSource: settled.usageSource,
+            });
+          }
+        },
+        // forward reasoning_content deltas to the
+        // client so it can render the thinking pill.
+        (reasoning) => {
+          try {
+            res.write(
+              `data: ${JSON.stringify({ choices: [{ delta: { reasoning_content: reasoning } }] })}\n\n`,
+            );
+            try {
+              (res as { flush?: () => void }).flush?.();
+            } catch {}
+          } catch {
+            /* client disconnected */
+          }
+        },
+      );
+    } else {
+      // ── Non-streaming: JSON response ──
+      /* same as /api/chat: the non-streaming proxy
+       * waits for the upstream model however long it thinks, so it opts
+       * out of the global request deadline (see timeoutMiddleware). */
+      res.locals.timeoutMs = 0;
+      const result = await callChatCompletion({
+        apiBase: provider.url,
+        apiKey: provider.keyPlaintext,
+        model: upstreamModel,
+        messages: messages,
+        /* undefined → llm.js default (32 K) so a long response isn't
+           silently truncated by a small per-model cap. */
+        maxTokens: max_tokens,
+        temperature: temperature ?? 0.3,
+        /* forward reasoning flags. */
+        reasoning_effort,
+        response_speed: responseSpeed,
+        extra_body: safeExtraBody,
+      });
+
+      res.json({
+        /* preserve reasoning_content on the
+           response so the client can persist it for the next turn. */
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: result.content,
+              ...(result.reasoning_content ? { reasoning_content: result.reasoning_content } : {}),
+            },
+          },
+        ],
+        meta: result.meta,
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default router;

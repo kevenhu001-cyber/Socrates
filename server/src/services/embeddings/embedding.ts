@@ -118,7 +118,7 @@ export async function getActiveEmbeddingConfig(): Promise<EmbeddingProviderConfi
 /* Validate that a URL is a well-formed https endpoint. Mirrors the
    apiKeys SSRF posture: https-only, no userinfo, no fragment, no
    private/loopback/link-local hosts. Kept local rather than
-   importing from routes/apiKeys.ts (which owns the user-supplied
+   importing from routes/auth/apiKeys.ts (which owns the user-supplied
    shape) so the embedding config's own write path can share the
    same posture without introducing a cross-route import. */
 export function isAllowedEmbeddingUrl(raw: unknown): boolean {

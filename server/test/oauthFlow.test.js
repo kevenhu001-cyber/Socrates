@@ -20,7 +20,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { eq } from 'drizzle-orm';
 
-import oauthRouter, { createOAuthClient } from '../src/routes/oauth.ts';
+import oauthRouter, { createOAuthClient } from '../src/routes/auth/oauth.ts';
 import { csrfProtection } from '../src/middleware/csrf.ts';
 import { requireAuth } from '../src/middleware/auth.js';
 import { requireScope } from '../src/middleware/scopes.ts';

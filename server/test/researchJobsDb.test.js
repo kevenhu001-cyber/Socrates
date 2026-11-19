@@ -28,7 +28,7 @@ import {
   publicResearchJob,
 } from '../src/services/core/researchJobs.js';
 import { runClaimedResearch, assertResearchBudget } from '../src/services/core/researchWorker.js';
-import researchRouter from '../src/routes/researchJobs.js';
+import researchRouter from '../src/routes/workspace/researchJobs.js';
 import { listen, httpRequest } from './_http.js';
 
 describe('durable research (PostgreSQL)', { skip: !process.env.TEST_DATABASE_URL }, () => {

@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 
 import { openArtifactPreview } from '../../legacy/artifactPreview.ts';
+import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import { i18n } from '../legacy/gateway.ts';
 import { ArtifactControl } from '../toolArtifacts/ArtifactControl';
@@ -134,10 +135,12 @@ export function ArtifactOutput({ output }: ArtifactOutputProps) {
       <figure className="exec-artifact exec-artifact-html" data-artifact-id={output.fileId}>
         <iframe
           className="exec-artifact-html-frame"
-          src={url}
-          title={output.name || i18n('artifact.htmlAlt', 'Generated HTML preview')}
+          {...nativeIslandFrameAttributes({
+            kind: 'artifact',
+            url,
+            title: output.name || i18n('artifact.htmlAlt', 'Generated HTML preview'),
+          })}
           loading="lazy"
-          sandbox="allow-scripts allow-forms allow-modals allow-popups"
         />
         <figcaption className="exec-artifact-meta">
           <span className="exec-artifact-meta-name">{displayName}</span>

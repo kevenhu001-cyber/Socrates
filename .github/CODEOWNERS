@@ -22,8 +22,8 @@
 # regression here is an account-takeover class bug and is not visible in
 # any UI test.
 /server/src/middleware/                @kevenhu001-cyber
-/server/src/routes/auth.ts             @kevenhu001-cyber
-/server/src/routes/oauth.ts            @kevenhu001-cyber
+/server/src/routes/auth/auth.ts        @kevenhu001-cyber
+/server/src/routes/auth/oauth.ts       @kevenhu001-cyber
 /server/src/services/auth.ts           @kevenhu001-cyber
 /server/src/services/adminAuth.ts      @kevenhu001-cyber
 /server/src/services/loginLockout.ts   @kevenhu001-cyber

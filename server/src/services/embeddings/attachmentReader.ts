@@ -96,7 +96,7 @@ export const READ_ATTACHMENT_TOOL = {
 };
 
 /* ─── Shared file-type sets ───
- * Used here for the read dispatch and re-used by routes/files.ts for the
+ * Used here for the read dispatch and re-used by routes/content/files.ts for the
  * upload allow-list so the two never disagree about what "a text file" is. */
 
 export const TEXT_FILE_EXTENSIONS = new Set([
