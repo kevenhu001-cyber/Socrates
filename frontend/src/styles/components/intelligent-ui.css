@@ -945,7 +945,8 @@
 }
 .demo-axis text,
 .demo-axis-label {
-  fill: var(--ui-ink-tertiary);
+  color: var(--ui-ink-tertiary);
+  fill: currentColor;
   font-size: var(--ui-type-label-sm-size);
 }
 .demo-marker-label {
@@ -993,7 +994,7 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.demo-control > output span {
+.demo-control > output > span {
   color: var(--ui-ink-tertiary);
   font-size: var(--ui-type-label-sm-size);
 }

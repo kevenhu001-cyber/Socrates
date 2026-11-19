@@ -226,6 +226,9 @@ export default defineConfig({
       '@socrates/contracts': fileURLToPath(
         new URL('../packages/contracts/src/index.ts', import.meta.url),
       ),
+      '@socrates/core/demonstration': fileURLToPath(
+        new URL('../packages/core/src/demonstration.js', import.meta.url),
+      ),
       '@socrates/core': fileURLToPath(new URL('../packages/core/src/index.ts', import.meta.url)),
       /* RN-1 — shared React Native modules render through react-native-web.
          Only the narrow entries are aliased, so the web shell never pulls in

@@ -248,6 +248,17 @@ for (const { spec, content, tableRows } of CASES) {
         if (m.type() === 'error' && /global-error/.test(m.text())) errors.push(m.text());
       });
       await mockAuthedApp(page);
+      if (spec.template === 'geometry_3d') {
+        await page.addInitScript(() => {
+          const prototype = WebGL2RenderingContext.prototype;
+          const draw = prototype.drawElements;
+          window.geometryDraws = 0;
+          prototype.drawElements = function (...args) {
+            window.geometryDraws++;
+            return draw.apply(this, args);
+          };
+        });
+      }
       if (spec.template === 'math_construction') {
         // Verify the adapter without depending on the external GeoGebra CDN.
         await page.addInitScript(() => {
@@ -337,6 +348,28 @@ for (const { spec, content, tableRows } of CASES) {
             ),
           )
           .toBe(0);
+      }
+      if (spec.template === 'geometry_3d') {
+        const canvas = card.locator('canvas');
+        await canvas.scrollIntoViewIfNeeded();
+        const draws = () => page.evaluate(() => window.geometryDraws);
+        await expect.poll(draws).toBeGreaterThan(0);
+        const idle = await page.evaluate(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          const start = window.geometryDraws;
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          return window.geometryDraws - start;
+        });
+        expect(idle).toBe(0);
+        const previous = await draws();
+        const box = await canvas.boundingBox();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2 + 20, {
+          steps: 5,
+        });
+        await page.mouse.up();
+        await expect.poll(draws).toBeGreaterThan(previous);
       }
       if (spec.template === 'heatmap')
         await card.screenshot({ path: 'test-results/visualization-heatmap.png' });

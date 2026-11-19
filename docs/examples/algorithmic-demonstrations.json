@@ -4,7 +4,7 @@
     "parameters": [
       {
         "id": "N",
-        "label": "缝数 N",
+        "label": "缝数 \\(N\\)",
         "value": 6,
         "min": 2,
         "max": 12,
@@ -12,7 +12,7 @@
       },
       {
         "id": "ratio",
-        "label": "d / a",
+        "label": "\\(d/a\\)",
         "value": 4,
         "min": 1,
         "max": 8,
@@ -56,8 +56,8 @@
           0,
           1.08
         ],
-        "xLabel": "d · sinθ / 550 nm",
-        "yLabel": "I / I₀",
+        "xLabel": "\\(d \\cdot \\sin\\theta / (550\\,\\mathrm{nm})\\)",
+        "yLabel": "\\(I / I_0\\)",
         "curves": [
           {
             "expression": "intensity",
@@ -118,7 +118,7 @@
         "min": 0.2,
         "max": 2.4,
         "step": 0.01,
-        "unit": "θR"
+        "unit": "\\(\\theta_R\\)"
       },
       {
         "id": "gamma",
@@ -165,8 +165,8 @@
           0,
           "max(1.12,1.12*total)"
         ],
-        "xLabel": "θ / θR",
-        "yLabel": "I / I₀",
+        "xLabel": "\\(\\theta / \\theta_R\\)",
+        "yLabel": "\\(I / I_0\\)",
         "curves": [
           {
             "expression": "left",
@@ -210,7 +210,7 @@
           {
             "label": "当前间距",
             "expression": "s",
-            "unit": "θR",
+            "unit": "\\(\\theta_R\\)",
             "digits": 2
           }
         ]
@@ -242,7 +242,7 @@
     "parameters": [
       {
         "id": "sigma",
-        "label": "σ",
+        "label": "\\(\\sigma\\)",
         "value": 10,
         "min": 1,
         "max": 20,
@@ -250,7 +250,7 @@
       },
       {
         "id": "rho",
-        "label": "ρ",
+        "label": "\\(\\rho\\)",
         "value": 28,
         "min": 5,
         "max": 40,
@@ -258,7 +258,7 @@
       },
       {
         "id": "beta",
-        "label": "β",
+        "label": "\\(\\beta\\)",
         "value": 2.6666666667,
         "min": 1,
         "max": 5,
@@ -293,8 +293,8 @@
         ],
         "horizontal": "X",
         "vertical": "Z",
-        "xLabel": "X",
-        "yLabel": "Z",
+        "xLabel": "\\(X\\)",
+        "yLabel": "\\(Z\\)",
         "color": "blue",
         "label": "洛伦兹系统 · X–Z 相图"
       },
@@ -305,17 +305,17 @@
         "kind": "metrics",
         "values": [
           {
-            "label": "X",
+            "label": "\\(X\\)",
             "expression": "X",
             "digits": 2
           },
           {
-            "label": "Y",
+            "label": "\\(Y\\)",
             "expression": "Y",
             "digits": 2
           },
           {
-            "label": "Z",
+            "label": "\\(Z\\)",
             "expression": "Z",
             "digits": 2
           }
@@ -328,7 +328,7 @@
     "parameters": [
       {
         "id": "N",
-        "label": "谐波项数 N",
+        "label": "谐波项数 \\(N\\)",
         "value": 7,
         "min": 1,
         "max": 60,
@@ -360,8 +360,8 @@
           -1.5,
           1.5
         ],
-        "xLabel": "t (s)",
-        "yLabel": "f(t)",
+        "xLabel": "\\(t\\,(\\mathrm{s})\\)",
+        "yLabel": "\\(f(t)\\)",
         "curves": [
           {
             "expression": "square",
@@ -396,7 +396,7 @@
     "parameters": [
       {
         "id": "r",
-        "label": "增长率 r",
+        "label": "增长率 \\(r\\)",
         "value": 3.2,
         "min": 2.5,
         "max": 4,
@@ -404,7 +404,7 @@
       },
       {
         "id": "x0",
-        "label": "初始种群 x₀",
+        "label": "初始种群 \\(x_0\\)",
         "value": 0.2,
         "min": 0.01,
         "max": 0.99,
@@ -430,17 +430,17 @@
           0,
           1
         ],
-        "xLabel": "代数 n",
-        "yLabel": "xₙ",
+        "xLabel": "代数 \\(n\\)",
+        "yLabel": "\\(x_n\\)",
         "curves": [
           {
             "expression": "orbit",
-            "label": "xₙ",
+            "label": "\\(x_n\\)",
             "color": "blue"
           },
           {
             "expression": "fixed",
-            "label": "不动点 1 − 1/r",
+            "label": "不动点 \\(1-1/r\\)",
             "color": "muted",
             "dashed": true
           }
@@ -450,12 +450,12 @@
         "kind": "metrics",
         "values": [
           {
-            "label": "第 200 代的 x",
+            "label": "第 200 代的 \\(x\\)",
             "expression": "iterate(v,x0,200,r*v*(1-v))",
             "digits": 4
           },
           {
-            "label": "不动点处斜率 |2 − r|",
+            "label": "不动点处斜率 \\(|2-r|\\)",
             "expression": "abs(2-r)",
             "digits": 3
           }
@@ -527,8 +527,8 @@
           0,
           "max(5,0.6*v0^2/g)"
         ],
-        "xLabel": "x (m)",
-        "yLabel": "y (m)",
+        "xLabel": "\\(x\\,(\\mathrm{m})\\)",
+        "yLabel": "\\(y\\,(\\mathrm{m})\\)",
         "horizontal": "px",
         "vertical": "py",
         "color": "blue"

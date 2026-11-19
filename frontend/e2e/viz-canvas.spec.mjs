@@ -138,8 +138,7 @@ test('viz card renders a user canvas and flips to ready via postMessage', async 
   expect(result.ok).toBe(true);
 });
 
-test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => {
-  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+test('inline viz keeps the complete iframe srcdoc and renders it', async ({ page }) => {
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
@@ -172,42 +171,27 @@ test('viz fullscreen preserves the complete iframe srcdoc', async ({ page }) => 
     window.__socratesTestState.patch({
       session: {
         messages: [
-          { clientId: 'user-8', role: 'user', rawText: 'render fullscreen canvas', html: null },
+          { clientId: 'user-8', role: 'user', rawText: 'render inline canvas', html: null },
         ],
       },
     });
     window.__testActivateMainView('chatView');
-    await window.askChatTurn('render fullscreen canvas');
+    await window.askChatTurn('render inline canvas');
   });
 
   const card = page.locator('.viz').last();
   await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
-  const expand = card.locator('.viz-btn-expand');
-  await expect(expand).toHaveCount(1);
-  await expand.click();
-
-  const modalFrame = page.locator('.viz-modal-backdrop iframe');
-  await expect(modalFrame).toBeVisible();
-  const modalSrcdoc = await modalFrame.getAttribute('srcdoc');
-  expect(modalSrcdoc).toContain('fillRect');
-  expect(modalSrcdoc.length).toBeGreaterThan(500);
-
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.viz-modal-backdrop')).toHaveCount(0);
-  await expect(expand).toBeFocused();
-
-  const sourceButton = card.locator('.viz-btn-source');
-  await expect(sourceButton).toBeVisible();
-  await sourceButton.click();
-  const sourceModal = page.locator('.viz-source-modal');
-  await expect(sourceModal).toBeVisible();
-  await expect(sourceModal.locator('.viz-source-code')).toContainText('fillRect');
-  await sourceModal.locator('.viz-source-copy').click();
-  await expect
-    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toContain('fillRect');
-  await page.keyboard.press('Escape');
-  await expect(sourceButton).toBeFocused();
+  const frame = card.locator('iframe');
+  await expect(frame).toBeVisible();
+  const srcdoc = await frame.getAttribute('srcdoc');
+  expect(srcdoc).toContain('fillRect');
+  expect(srcdoc.length).toBeGreaterThan(500);
+  await expect(card.locator('.viz-actions')).toBeHidden();
+  const fill = await card
+    .frameLocator('iframe')
+    .locator('#cv')
+    .evaluate((canvas) => Array.from(canvas.getContext('2d').getImageData(0, 0, 1, 1).data));
+  expect(fill).toEqual([58, 109, 240, 255]);
 });
 
 test('viz card surfaces a synchronous script failure instead of claiming readiness', async ({
@@ -351,9 +335,8 @@ test('ready viz cards keep accepting late viz-error without a global registry ho
   await expect(card.locator('.viz-error-source')).toBeVisible();
 });
 
-test('viz card Preview/Code toggle switches views and hides the iframe in code view', async ({
-  page,
-}) => {
+test('viz card honors the saved code view and hides its iframe', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('socrates-viz-view', 'code'));
   await mockAuthedApp(page);
   await page.route('**/api/**/chat/stream', async (route) => {
     const htmlBody = [
@@ -385,20 +368,10 @@ test('viz card Preview/Code toggle switches views and hides the iframe in code v
   });
   const card = page.locator('.viz').last();
   await expect(card).toHaveAttribute('data-viz-state', 'ready', { timeout: 6000 });
-  // Default view is preview: code pane hidden, iframe shown.
-  await expect(card).toHaveAttribute('data-viz-view', 'preview');
-  await expect(card.locator('.viz-code-pane')).toBeHidden();
-  await expect(card.locator('iframe')).toBeVisible();
-  await expect(card.locator('.viz-code-pane')).toContainText('hello canvas');
-  // Flip to code view: source shows, iframe leaves the layout.
-  await card.locator('.viz-seg-btn[data-viz-view-opt="code"]').click();
   await expect(card).toHaveAttribute('data-viz-view', 'code');
   await expect(card.locator('.viz-code-pane')).toBeVisible();
+  await expect(card.locator('.viz-code-pane')).toContainText('hello canvas');
   await expect(card.locator('iframe')).toBeHidden();
-  // Back to preview.
-  await card.locator('.viz-seg-btn[data-viz-view-opt="preview"]').click();
-  await expect(card).toHaveAttribute('data-viz-view', 'preview');
-  await expect(card.locator('iframe')).toBeVisible();
 });
 
 test('processPendingVizActions does not trigger a document-wide [data-action] scan', async ({

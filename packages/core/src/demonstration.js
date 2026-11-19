@@ -22,13 +22,14 @@ const unary = {
   tanh: Math.tanh,
 };
 let airyTable;
+const quadratureAngles = Float64Array.from({ length: 128 }, (_, i) => ((i + 0.5) * Math.PI) / 128);
+const quadratureSines = quadratureAngles.map(Math.sin);
 function j1(x) {
   let s = 0;
-  for (let i = 0; i < 128; i++) {
-    const t = ((i + 0.5) * Math.PI) / 128;
-    s += Math.cos(t - x * Math.sin(t));
+  for (let i = 0; i < quadratureAngles.length; i++) {
+    s += Math.cos(quadratureAngles[i] - x * quadratureSines[i]);
   }
-  return s / 128;
+  return s / quadratureAngles.length;
 }
 function airy(r) {
   airyTable ??= Float64Array.from({ length: 8193 }, (_, i) =>
@@ -400,13 +401,19 @@ export function parseDemonstrationExpression(input) {
 
 /* ---------- Evaluator ---------- */
 /** Scopes may be chained (sum/iterate locals, lazy definitions); never read Object.prototype. */
+const resolveDefinition = Symbol('resolveDefinition');
 function lookup(scope, name) {
   for (
     let current = scope;
     current && current !== Object.prototype;
     current = Object.getPrototypeOf(current)
-  )
+  ) {
     if (Object.hasOwn(current, name)) return current[name];
+    if (Object.hasOwn(current, resolveDefinition)) {
+      const definition = current[resolveDefinition](name);
+      if (definition !== undefined) return definition;
+    }
+  }
   throw Error(`Unknown variable: ${name}`);
 }
 const budgetError = () => Error('Demonstration calculation budget exceeded');
@@ -1385,8 +1392,16 @@ export function validateDemonstration(input) {
 }
 
 /* ---------- Runtime ---------- */
-/** Compile once and prepare generic RK4 dynamics once per parameter set. */
+/** Synchronous entry point for server and shared consumers. */
 export function createDemonstrationRuntime(input, values = {}) {
+  const steps = compileDemonstrationRuntime(input)(values);
+  let next = steps.next();
+  while (!next.done) next = steps.next();
+  return next.value;
+}
+
+/** Share validation, expression compilation and dependency analysis across parameter changes. */
+export function compileDemonstrationRuntime(input) {
   const program = normalizeDemonstrationProgram(input);
   const validation = validateDemonstration(program);
   if (!validation.ok) {
@@ -1394,48 +1409,75 @@ export function createDemonstrationRuntime(input, values = {}) {
     if (validation.path) error.path = validation.path;
     throw error;
   }
-  const compiled = new Map(),
-    budget = { remaining: BUDGET },
-    warnings = [];
+  const compiled = new Map();
   const compile = (expression) => {
     const key = typeof expression === 'number' ? `#${expression}` : String(expression);
     if (!compiled.has(key)) compiled.set(key, parseDemonstrationExpression(expression));
     return compiled.get(key);
   };
+  const definitions = new Map(Object.entries(program.definitions ?? {}));
+  const stateNames = Object.keys(program.dynamics?.initial ?? {});
+  const flags = new Map([['x', 1], ['y', 2], ['t', 4], ...stateNames.map((name) => [name, 4])]);
+  const expressionMasks = new Map();
+  const definitionMasks = new Map();
+  function dependencies(expression) {
+    if (expressionMasks.has(expression)) return expressionMasks.get(expression);
+    const mask = astMask(compile(expression), new Set());
+    expressionMasks.set(expression, mask);
+    return mask;
+  }
+  function astMask(ast, locals) {
+    if (ast.kind === 'variable') {
+      const name = ast.name;
+      if (locals.has(name)) return 0;
+      if (!definitions.has(name)) return flags.get(name) ?? 0;
+      if (!definitionMasks.has(name))
+        definitionMasks.set(name, dependencies(definitions.get(name)));
+      return definitionMasks.get(name);
+    }
+    if (ast.kind === 'unary') return astMask(ast.arg, locals);
+    if (ast.kind === 'binary') return astMask(ast.left, locals) | astMask(ast.right, locals);
+    if (ast.kind !== 'call') return 0;
+    if (ast.name === 'sum' || ast.name === 'iterate') {
+      return (
+        astMask(ast.args[1], locals) |
+        astMask(ast.args[2], locals) |
+        astMask(ast.args[3], new Set([...locals, ast.args[0].name]))
+      );
+    }
+    return ast.args.reduce((mask, arg) => mask | astMask(arg, locals), 0);
+  }
+
+  return (values = {}) =>
+    prepareRuntime(program, definitions, stateNames, compile, dependencies, values);
+}
+
+/** Yield between batches of the unchanged RK4 integration so a host can cancel it. */
+function* prepareRuntime(program, definitions, stateNames, compile, dependencies, values) {
+  const budget = { remaining: BUDGET };
+  const warnings = [];
   const params = Object.fromEntries(
     (program.parameters ?? []).map((p) => {
       const value = numberLike(values?.[p.id]);
       return [p.id, finite(value) ? Math.max(p.min, Math.min(p.max, value)) : p.value];
     }),
   );
-  const definitions = Object.entries(program.definitions ?? {});
-  const scopeAt = (t, x, y, state, evaluate) => {
-    const scope = Object.assign(Object.create(null), params);
-    scope.x = x;
-    scope.y = y;
-    scope.t = t;
-    Object.assign(scope, state);
-    // Definitions are evaluated once per sample, only when referenced. A field
-    // must not calculate unrelated metrics/curves for every raster pixel.
-    for (const [key, expression] of definitions) {
-      let busy = false;
-      Object.defineProperty(scope, key, {
-        enumerable: true,
-        configurable: true,
-        get() {
-          if (busy) throw Error(`Definition ${key} refers to itself`);
-          busy = true;
-          let value;
-          try {
-            value = evaluate(expression, scope);
-          } finally {
-            busy = false;
-          }
-          Object.defineProperty(scope, key, { value, enumerable: true, configurable: true });
-          return value;
-        },
-      });
-    }
+  const base = Object.assign(Object.create(null), params);
+  const constants = new Map();
+  let previousTime;
+  const timeValues = new Map();
+  const scopeAt = (t, x, y, state, evaluate, reusableSample) => {
+    const scope = Object.assign(Object.create(base), state, { x, y, t });
+    if (!definitions.size) return scope;
+    const sample = reusableSample ?? new Map();
+    scope[resolveDefinition] = (name) => {
+      if (!definitions.has(name)) return undefined;
+      const expression = definitions.get(name);
+      const mask = reusableSample ? dependencies(expression) : 3;
+      const cache = mask === 0 ? constants : mask === 4 ? timeValues : sample;
+      if (!cache.has(name)) cache.set(name, evaluate(expression, scope));
+      return cache.get(name);
+    };
     return scope;
   };
   const evalRaw = (expression, scope) =>
@@ -1445,7 +1487,7 @@ export function createDemonstrationRuntime(input, values = {}) {
   const dynamics = program.dynamics;
   let duration = dynamics?.duration ?? program.duration ?? 0;
   if (dynamics) {
-    const names = Object.keys(dynamics.initial),
+    const names = stateNames,
       count = Math.ceil(dynamics.duration / dynamics.step);
     step = dynamics.duration / count;
     // Integration has its own budget, so a long ODE does not starve the views.
@@ -1500,6 +1542,7 @@ export function createDemonstrationRuntime(input, values = {}) {
         }
         current = next;
         trajectory.push({ t: i * step, state: current });
+        if (i % 32 === 0) yield;
       }
     } catch (error) {
       const t = (trajectory.length - 1) * step;
@@ -1525,15 +1568,34 @@ export function createDemonstrationRuntime(input, values = {}) {
       b = trajectory[Math.min(i + 1, trajectory.length - 1)].state;
     return Object.fromEntries(Object.keys(a).map((key) => [key, a[key] + (b[key] - a[key]) * f]));
   };
+  let sampleScope, sampleHasState;
+  const sampleValues = new Map();
+  const emptyState = Object.create(null);
   return {
     duration,
     parameters: params,
     warnings,
+    dependencies,
     resetBudget() {
       budget.remaining = BUDGET;
     },
     evaluate(expression, t = 0, x = 0, y = 0) {
-      return evalRaw(expression, scopeAt(t, x, y, stateAt(t), evalRaw));
+      const needsState = (dependencies(expression) & 4) !== 0 && stateNames.length > 0;
+      if (t !== previousTime) {
+        previousTime = t;
+        timeValues.clear();
+        sampleScope = undefined;
+      }
+      if (!sampleScope || (needsState && !sampleHasState)) {
+        sampleValues.clear();
+        sampleHasState = needsState;
+        sampleScope = scopeAt(t, x, y, needsState ? stateAt(t) : emptyState, evalRaw, sampleValues);
+      } else if (x !== sampleScope.x || y !== sampleScope.y) {
+        sampleValues.clear();
+        sampleScope.x = x;
+        sampleScope.y = y;
+      }
+      return evalRaw(expression, sampleScope);
     },
     stateAt,
   };

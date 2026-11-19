@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
-  createDemonstrationRuntime,
   normalizeDemonstrationProgram,
   validateDemonstration,
   type DemonstrationProgram,
+  type DemonstrationWarning,
   type DemonstrationParameter,
-} from '@socrates/core';
+} from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
 import { Button } from '../../ui/Button';
 import { NativeControl } from '../../ui/NativeControl';
@@ -16,21 +15,16 @@ import { BlockSkeleton } from '../BlockSkeleton';
 import { DemoPlot } from './DemonstrationPlot';
 import { DemoScene } from './DemonstrationScene';
 import { DemoField } from './DemonstrationField';
+import { demoUnit } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
+import { useDemonstrationFrames, useDemonstrationVisibility } from './useDemonstrationFrames';
+import type { ViewSample } from './demonstrationProtocol';
+
+type Preset = ReturnType<typeof useDemonstrationFrames>['preset'];
 
 const format = (value: number, digits = 3) =>
   Number.isFinite(value) ? Number(value.toFixed(digits)).toString() : '—';
-const errorPath = (error: unknown) =>
-  error && typeof error === 'object' && typeof (error as { path?: unknown }).path === 'string'
-    ? (error as { path: string }).path
-    : '';
-
 type ParsedProgram = { program: DemonstrationProgram | null; error: string; path: string };
-type Calculation = {
-  runtime: ReturnType<typeof createDemonstrationRuntime> | null;
-  error: string;
-  path: string;
-};
 type DemoView = DemonstrationProgram['views'][number];
 
 function failureHeadline(path: string): string {
@@ -48,23 +42,6 @@ function parseProgram(serialized: string): ParsedProgram {
       : { program: null, error: result.error, path: result.path ?? '' };
   } catch {
     return { program: null, error: 'Invalid demonstration', path: '' };
-  }
-}
-
-function calculate(
-  program: DemonstrationProgram | null,
-  values: Record<string, number>,
-  parsed: ParsedProgram,
-): Calculation {
-  if (!program) return { runtime: null, error: parsed.error, path: parsed.path };
-  try {
-    return { runtime: createDemonstrationRuntime(program, values), error: '', path: '' };
-  } catch (error) {
-    return {
-      runtime: null,
-      error: error instanceof Error ? error.message : 'Calculation failed',
-      path: errorPath(error),
-    };
   }
 }
 
@@ -89,12 +66,12 @@ function nextParameterValues(
   );
 }
 
-function usePlayback(duration: number, host: RefObject<HTMLElement | null>) {
+function usePlayback(program: DemonstrationProgram | null, visible: boolean) {
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [reduced, setReduced] = useState(false);
-
+  const [reduced, setReduced] = useState(
+    () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
   useEffect(() => {
     const media = matchMedia('(prefers-reduced-motion: reduce)');
     const update = () => {
@@ -102,77 +79,45 @@ function usePlayback(duration: number, host: RefObject<HTMLElement | null>) {
       if (media.matches) setPlaying(false);
     };
     update();
-    setPlaying(!media.matches && duration > 0);
+    setTime(0);
+    setPlaying(!media.matches && Boolean(program?.dynamics?.duration || program?.duration));
     media.addEventListener('change', update);
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
-    if (host.current) observer.observe(host.current);
-    return () => {
-      media.removeEventListener('change', update);
-      observer.disconnect();
-    };
-  }, [duration, host]);
-
-  useEffect(() => {
-    if (!playing || !visible || reduced || !duration) return;
-    let frame = 0;
-    let previous = performance.now();
-    const tick = (now: number) => {
-      if (document.hidden) {
-        previous = now;
+    return () => media.removeEventListener('change', update);
+  }, [program]);
+  const play = useCallback(
+    (duration: number) => {
+      if (!playing || !visible || reduced || duration <= 0) return;
+      let frame = 0;
+      let previous = performance.now();
+      const tick = (now: number) => {
+        if (now - previous >= 50) {
+          const delta = Math.min(0.1, (now - previous) / 1000);
+          previous = now;
+          setTime((value) => Math.min(duration, value + delta));
+        }
         frame = requestAnimationFrame(tick);
-        return;
-      }
-      if (now - previous >= 50) {
-        const delta = Math.min(0.1, (now - previous) / 1000);
-        previous = now;
-        setTime((value) => Math.min(duration, value + delta));
-      }
+      };
       frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [playing, visible, reduced, duration]);
-
-  useEffect(() => {
-    if (time >= duration) setPlaying(false);
-  }, [time, duration]);
-
-  return { time, setTime, playing, setPlaying, reduced };
+      return () => cancelAnimationFrame(frame);
+    },
+    [playing, visible, reduced],
+  );
+  return { time, setTime, playing, setPlaying, reduced, play };
 }
 
-function useDemonstration(input: unknown, host: RefObject<HTMLElement | null>) {
-  const serialized = JSON.stringify(input) ?? 'null';
-  const parsed = useMemo(() => parseProgram(serialized), [serialized]);
-  const program = parsed.program;
-  const previousProgram = useRef<DemonstrationProgram | null>(null);
-  const [values, setValues] = useState<Record<string, number>>({});
-  const id = useId();
-  const calculation = useMemo(() => calculate(program, values, parsed), [program, values, parsed]);
-  const duration = calculation.runtime?.duration ?? 0;
-  const playback = usePlayback(duration, host);
-  const { time, setTime, playing, setPlaying, reduced } = playback;
-
+function usePreview(visible: boolean) {
+  const [preview, setPreview] = useState(true);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const requestPreview = useCallback(() => {
+    clearTimeout(timer.current);
+    setPreview(true);
+    timer.current = setTimeout(() => setPreview(false), 120);
+  }, []);
   useEffect(() => {
-    const prior = previousProgram.current;
-    previousProgram.current = program;
-    setTime(0);
-    setValues((previous) => nextParameterValues(program, prior, previous));
-  }, [program, setTime]);
-
-  return {
-    parsed,
-    program,
-    values,
-    setValues,
-    id,
-    calculation,
-    duration,
-    time,
-    setTime,
-    playing,
-    setPlaying,
-    reduced,
-  };
+    if (visible) requestPreview();
+    return () => clearTimeout(timer.current);
+  }, [visible, requestPreview]);
+  return { preview, requestPreview };
 }
 
 function ParameterControl({
@@ -203,21 +148,26 @@ function ParameterControl({
       />
       <output htmlFor={controlId}>
         {format(value)}
-        {parameter.unit ? <span> {parameter.unit}</span> : null}
+        {parameter.unit ? (
+          <span>
+            {' '}
+            <MathText text={demoUnit(parameter.unit)} />
+          </span>
+        ) : null}
       </output>
     </div>
   );
 }
 
-function ParameterControls({
+const ParameterControls = memo(function ParameterControls({
   program,
-  runtime,
+  values,
   id,
   onChange,
   advanced = false,
 }: {
   program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
+  values: Record<string, number>;
   id: string;
   onChange: (key: string, value: number) => void;
   advanced?: boolean;
@@ -230,23 +180,23 @@ function ParameterControls({
         <ParameterControl
           key={parameter.id}
           parameter={parameter}
-          value={runtime.parameters[parameter.id]}
+          value={values[parameter.id] ?? parameter.value}
           id={id}
           onChange={onChange}
         />
       ))}
     </div>
   );
-}
+});
 
 function AdvancedParameters({
   program,
-  runtime,
+  values,
   id,
   onChange,
 }: {
   program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
+  values: Record<string, number>;
   id: string;
   onChange: (key: string, value: number) => void;
 }) {
@@ -254,63 +204,38 @@ function AdvancedParameters({
   return (
     <details className="demo-advanced">
       <summary>{i18n('intui.demo.parameters', 'More parameters')}</summary>
-      <ParameterControls program={program} runtime={runtime} id={id} onChange={onChange} advanced />
+      <ParameterControls program={program} values={values} id={id} onChange={onChange} advanced />
     </details>
   );
 }
 
 function PresetButtons({
   program,
-  runtime,
-  setTime,
-  setPlaying,
-  setValues,
+  preset,
+  onPreset,
 }: {
   program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
-  setTime: (time: number) => void;
-  setPlaying: (playing: boolean) => void;
-  setValues: Dispatch<SetStateAction<Record<string, number>>>;
+  preset: Preset;
+  onPreset: (values: Record<string, number>) => void;
 }) {
   const [error, setError] = useState('');
   if (!program.presets?.length) return null;
   return (
     <>
       <div className="demo-presets">
-        {program.presets.map((preset, index) => (
+        {program.presets.map((item, index) => (
           <Button
             key={index}
             variant="outline"
             size="sm"
-            onClick={() => {
-              try {
-                runtime.resetBudget();
-                const values = Object.fromEntries(
-                  Object.entries(preset.values).map(([key, expression]) => {
-                    const value = runtime.evaluate(expression);
-                    const parameter = program.parameters?.find((parameter) => parameter.id === key);
-                    if (
-                      !Number.isFinite(value) ||
-                      !parameter ||
-                      value < parameter.min ||
-                      value > parameter.max
-                    )
-                      throw Error(
-                        `Preset ${key}: value must be finite and within its parameter range`,
-                      );
-                    return [key, value];
-                  }),
-                );
-                setPlaying(false);
-                setTime(0);
-                setValues((previous) => ({ ...previous, ...values }));
-                setError('');
-              } catch (error) {
-                setError(error instanceof Error ? error.message : String(error));
-              }
-            }}
+            onClick={() =>
+              preset(index, (values, problem) => {
+                setError(problem?.message ?? '');
+                if (values) onPreset(values);
+              })
+            }
           >
-            <MathText text={preset.label} />
+            <MathText text={item.label} />
           </Button>
         ))}
       </div>
@@ -330,11 +255,13 @@ function TimeControls({
   reduced,
   setTime,
   setPlaying,
+  onScrub,
 }: {
   duration: number;
   time: number;
   playing: boolean;
   reduced: boolean;
+  onScrub: (time: number) => void;
   setTime: (time: number) => void;
   setPlaying: (playing: boolean | ((previous: boolean) => boolean)) => void;
 }) {
@@ -360,10 +287,7 @@ function TimeControls({
         step="any"
         value={time}
         aria-label={i18n('intui.simTime', 'Time')}
-        onChange={(event) => {
-          setPlaying(false);
-          setTime(Number(event.target.value));
-        }}
+        onChange={(event) => onScrub(Number(event.target.value))}
       />
       <output>{time.toFixed(2)} s</output>
     </div>
@@ -371,19 +295,15 @@ function TimeControls({
 }
 
 function FailureState({
-  program,
   streaming,
   error,
   path,
-  onRestore,
 }: {
-  program: DemonstrationProgram | null;
   streaming: boolean;
   error: string;
   path: string;
-  onRestore: () => void;
 }) {
-  if (streaming && !program)
+  if (streaming)
     return (
       <section className="demonstration" aria-busy="true">
         <BlockSkeleton />
@@ -392,23 +312,20 @@ function FailureState({
   return (
     <section className="demonstration demo-error" role="status">
       <DemoIssue headline={failureHeadline(path)} details={[error]} />
-      {program ? (
-        <Button size="sm" variant="outline" onClick={onRestore}>
-          {i18n('intui.demo.reset', 'Restore defaults')}
-        </Button>
-      ) : null}
     </section>
   );
 }
 
+const restoreLabel = () => i18n('intui.demo.reset', 'Restore defaults');
+
 function RuntimeWarning({
-  runtime,
+  warnings,
   onRestore,
 }: {
-  runtime: NonNullable<Calculation['runtime']>;
+  warnings: DemonstrationWarning[];
   onRestore: () => void;
 }) {
-  const warning = runtime.warnings[0];
+  const warning = warnings[0];
   if (!warning) return null;
   const headline = i18n(
     'intui.demo.dynamicsStopped',
@@ -416,188 +333,83 @@ function RuntimeWarning({
   ).replace('{t}', format(warning.time, 2));
   return (
     <div className="demo-error" role="status">
-      <DemoIssue headline={headline} details={runtime.warnings.map((item) => item.message)} />
+      <DemoIssue headline={headline} details={warnings.map((item) => item.message)} />
       <Button size="sm" variant="outline" onClick={onRestore}>
-        {i18n('intui.demo.reset', 'Restore defaults')}
+        {restoreLabel()}
       </Button>
     </div>
   );
 }
 
-function metricValue(
-  runtime: NonNullable<Calculation['runtime']>,
-  expression: string | number,
-  time: number,
-): number {
-  try {
-    return runtime.evaluate(expression, time);
-  } catch {
-    return Number.NaN;
+const DemoMetrics = memo(function DemoMetrics({
+  view,
+  values,
+}: {
+  view: Extract<DemoView, { kind: 'metrics' }>;
+  values?: number[];
+}) {
+  return (
+    <dl className="demo-metrics">
+      {view.values.map((value, index) => (
+        <div key={index}>
+          <dt>
+            <MathText text={value.label} />
+          </dt>
+          <dd>
+            {format(values?.[index] ?? Number.NaN, value.digits ?? 3)}
+            {value.unit ? (
+              <span>
+                {' '}
+                <MathText text={demoUnit(value.unit)} />
+              </span>
+            ) : null}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+});
+
+function renderView(view: DemoView, index: number, result: ViewSample | undefined) {
+  const problem = result?.kind === 'error' ? result.problem : undefined;
+  switch (view.kind) {
+    case 'controls':
+      return null;
+    case 'field':
+      return (
+        <DemoField
+          key={index}
+          view={view}
+          sample={result?.kind === 'field' ? result.sample : undefined}
+          problem={problem}
+        />
+      );
+    case 'scene':
+      return (
+        <DemoScene
+          key={index}
+          view={view}
+          sample={result?.kind === 'scene' ? result.sample : undefined}
+        />
+      );
+    case 'metrics':
+      return (
+        <DemoMetrics
+          key={index}
+          view={view}
+          values={result?.kind === 'metrics' ? result.sample : undefined}
+        />
+      );
+    default:
+      return (
+        <DemoPlot
+          key={index}
+          view={view}
+          sample={result?.kind === view.kind ? result.sample : undefined}
+          problem={problem}
+        />
+      );
   }
-}
-
-function renderView(
-  view: DemoView,
-  index: number,
-  program: DemonstrationProgram,
-  runtime: NonNullable<Calculation['runtime']>,
-  time: number,
-  id: string,
-  onChange: (key: string, value: number) => void,
-  pause: () => void,
-): ReactNode {
-  if (view.kind === 'controls')
-    return (
-      <ParameterControls
-        key={index}
-        program={program}
-        runtime={runtime}
-        id={id}
-        onChange={onChange}
-      />
-    );
-  if (view.kind === 'scene')
-    return <DemoScene key={index} view={view} runtime={runtime} time={time} />;
-  if (view.kind === 'field')
-    return <DemoField key={index} view={view} runtime={runtime} time={time} onError={pause} />;
-  if (view.kind === 'metrics')
-    return (
-      <dl className="demo-metrics" key={index}>
-        {view.values.map((value, itemIndex) => (
-          <div key={itemIndex}>
-            <dt>
-              <MathText text={value.label} />
-            </dt>
-            <dd>
-              {format(metricValue(runtime, value.expression, time), value.digits ?? 3)}
-              {value.unit ? <span> {value.unit}</span> : null}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    );
-  return <DemoPlot key={index} view={view} runtime={runtime} time={time} />;
-}
-
-function DemonstrationViews({
-  program,
-  runtime,
-  time,
-  id,
-  onChange,
-  pause,
-}: {
-  program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
-  time: number;
-  id: string;
-  onChange: (key: string, value: number) => void;
-  pause: () => void;
-}) {
-  return (
-    <div className="demo-views">
-      {program.views.map((view, index) =>
-        renderView(view, index, program, runtime, time, id, onChange, pause),
-      )}
-    </div>
-  );
-}
-
-function DemonstrationControls({
-  program,
-  runtime,
-  id,
-  onChange,
-  setTime,
-  setPlaying,
-  setValues,
-}: {
-  program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
-  id: string;
-  onChange: (key: string, value: number) => void;
-  setTime: (time: number) => void;
-  setPlaying: (playing: boolean) => void;
-  setValues: Dispatch<SetStateAction<Record<string, number>>>;
-}) {
-  const hasControlView = program.views.some((view) => view.kind === 'controls');
-  return (
-    <>
-      {!hasControlView ? (
-        <ParameterControls program={program} runtime={runtime} id={id} onChange={onChange} />
-      ) : null}
-      <AdvancedParameters program={program} runtime={runtime} id={id} onChange={onChange} />
-      <PresetButtons
-        program={program}
-        runtime={runtime}
-        setTime={setTime}
-        setPlaying={setPlaying}
-        setValues={setValues}
-      />
-    </>
-  );
-}
-
-function DemonstrationContent({
-  program,
-  runtime,
-  title,
-  id,
-  time,
-  playing,
-  reduced,
-  setTime,
-  setPlaying,
-  setValues,
-  pause,
-  onChange,
-  onRestore,
-}: {
-  program: DemonstrationProgram;
-  runtime: NonNullable<Calculation['runtime']>;
-  title?: string;
-  id: string;
-  time: number;
-  playing: boolean;
-  reduced: boolean;
-  setTime: (time: number) => void;
-  setPlaying: (playing: boolean | ((previous: boolean) => boolean)) => void;
-  setValues: Dispatch<SetStateAction<Record<string, number>>>;
-  pause: () => void;
-  onChange: (key: string, value: number) => void;
-  onRestore: () => void;
-}) {
-  return (
-    <>
-      {title ? <header className="demo-heading">{title}</header> : null}
-      <RuntimeWarning runtime={runtime} onRestore={onRestore} />
-      <DemonstrationViews
-        program={program}
-        runtime={runtime}
-        time={time}
-        id={id}
-        onChange={onChange}
-        pause={pause}
-      />
-      <DemonstrationControls
-        program={program}
-        runtime={runtime}
-        id={id}
-        onChange={onChange}
-        setTime={setTime}
-        setPlaying={setPlaying}
-        setValues={setValues}
-      />
-      <TimeControls
-        duration={runtime.duration}
-        time={time}
-        playing={playing}
-        reduced={reduced}
-        setTime={setTime}
-        setPlaying={setPlaying}
-      />
-    </>
-  );
 }
 
 export function Demonstration({
@@ -610,54 +422,120 @@ export function Demonstration({
   streaming?: boolean;
 }) {
   const host = useRef<HTMLElement>(null);
-  const model = useDemonstration(input, host);
-  const { setPlaying } = model;
-  const pause = useCallback(() => setPlaying(false), [setPlaying]);
-  const restore = () => {
-    model.setPlaying(false);
-    model.setTime(0);
-    model.setValues({});
-  };
-  if (!model.calculation.runtime || !model.program) {
-    return (
-      <FailureState
-        program={model.program}
-        streaming={streaming}
-        error={model.calculation.error}
-        path={model.calculation.path}
-        onRestore={restore}
-      />
-    );
+  const id = useId();
+  const serialized = useMemo(() => JSON.stringify(input) ?? 'null', [input]);
+  const parsed = useMemo(() => parseProgram(serialized), [serialized]);
+  const { program } = parsed;
+  const [previousProgram, setPreviousProgram] = useState(program);
+  const [values, setValues] = useState<Record<string, number>>({});
+  if (program !== previousProgram) {
+    setPreviousProgram(program);
+    setValues(nextParameterValues(program, previousProgram, values));
   }
-  const runtime = model.calculation.runtime;
-  runtime.resetBudget();
-  const update = (key: string, value: number) => {
-    model.setPlaying(false);
-    model.setTime(0);
-    model.setValues((previous) => ({ ...previous, [key]: value }));
-  };
+  const visible = useDemonstrationVisibility(host);
+  const { time, setTime, playing, setPlaying, reduced, play } = usePlayback(program, visible);
+  const { preview, requestPreview } = usePreview(visible);
+  const { snapshot, ready, problem, preset } = useDemonstrationFrames(
+    program,
+    visible,
+    values,
+    time,
+    playing,
+    preview,
+  );
+  const duration = snapshot?.duration ?? 0;
+  const fieldFailed = snapshot?.views.some(
+    (result, index) => result?.kind === 'error' && program?.views[index]?.kind === 'field',
+  );
+  useEffect(() => play(duration), [play, duration]);
+  useEffect(() => {
+    if ((snapshot && time >= duration) || problem || fieldFailed) setPlaying(false);
+    if (snapshot && time > duration) setTime(duration);
+  }, [duration, time, snapshot, problem, fieldFailed, setPlaying, setTime]);
+
+  const restore = useCallback(() => {
+    setPlaying(false);
+    setTime(0);
+    setValues({});
+  }, [setPlaying, setTime]);
+  const onChange = useCallback(
+    (key: string, value: number) => {
+      setPlaying(false);
+      setTime(0);
+      setValues((previous) => ({ ...previous, [key]: value }));
+      requestPreview();
+    },
+    [setPlaying, setTime, requestPreview],
+  );
+  const onPreset = useCallback(
+    (next: Record<string, number>) => {
+      setPlaying(false);
+      setTime(0);
+      setValues((previous) => ({ ...previous, ...next }));
+    },
+    [setPlaying, setTime],
+  );
+  const onScrub = useCallback(
+    (next: number) => {
+      setPlaying(false);
+      setTime(next);
+      requestPreview();
+    },
+    [setPlaying, setTime, requestPreview],
+  );
+
+  const controls = program ? (
+    <ParameterControls
+      key="parameters"
+      program={program}
+      values={values}
+      id={id}
+      onChange={onChange}
+    />
+  ) : null;
   return (
     <section
       className="demonstration"
       ref={host}
       aria-label={title || i18n('intui.demo.title', 'Interactive demonstration')}
-      data-demonstration="1"
+      data-demonstration={program ? '1' : undefined}
+      data-demo-quality={ready ? 'full' : snapshot ? 'preview' : undefined}
     >
-      <DemonstrationContent
-        program={model.program}
-        runtime={runtime}
-        title={title}
-        id={model.id}
-        time={model.time}
-        playing={model.playing}
-        reduced={model.reduced}
-        setTime={model.setTime}
-        setPlaying={model.setPlaying}
-        setValues={model.setValues}
-        pause={pause}
-        onChange={update}
-        onRestore={restore}
-      />
+      {program ? (
+        <>
+          {title ? <header className="demo-heading">{title}</header> : null}
+          {problem ? (
+            <div className="demo-error" role="status">
+              <DemoIssue headline={failureHeadline(problem.path)} details={[problem.message]} />
+              <Button size="sm" variant="outline" onClick={restore}>
+                {restoreLabel()}
+              </Button>
+            </div>
+          ) : null}
+          {snapshot?.warnings.length ? (
+            <RuntimeWarning warnings={snapshot.warnings} onRestore={restore} />
+          ) : null}
+          <div className="demo-views">
+            {program.views.map((view, index) =>
+              view.kind === 'controls' ? controls : renderView(view, index, snapshot?.views[index]),
+            )}
+          </div>
+          {!program.views.some((view) => view.kind === 'controls') ? controls : null}
+          <AdvancedParameters program={program} values={values} id={id} onChange={onChange} />
+          <PresetButtons program={program} preset={preset} onPreset={onPreset} />
+          <TimeControls
+            duration={duration}
+            time={Math.min(time, duration)}
+            playing={playing}
+            reduced={reduced}
+            setTime={setTime}
+            setPlaying={setPlaying}
+            onScrub={onScrub}
+          />
+        </>
+      ) : (
+        <FailureState streaming={streaming} error={parsed.error} path={parsed.path} />
+      )}
     </section>
   );
 }

@@ -1,15 +1,16 @@
-import { useId, type ReactNode } from 'react';
+import { memo, useId, type ReactNode } from 'react';
 import {
   demonstrationDomain,
   type DemonstrationObject,
-  type DemonstrationRuntime,
   type DemonstrationScene,
   type DemonstrationValue,
-} from '@socrates/core';
+} from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
 import { SvgMathText } from '../../rn/SvgMathText';
 import { i18n } from '../../legacy/gateway';
 import { demoColors } from './DemonstrationPlot';
+import type { SceneSample } from './sampleScene';
+import { demoAxisLabel } from './mathLabels';
 import { DemoIssue } from './DemonstrationIssue';
 
 type Point = [number, number];
@@ -158,107 +159,116 @@ function drawSceneObject({
 }
 
 /** Mathematical coordinates stay isotropic: circles and physical angles retain their shape. */
-export function DemoScene({
+export const DemoScene = memo(function DemoScene({
   view,
-  runtime,
-  time,
+  sample,
 }: {
   view: DemonstrationScene;
-  runtime: DemonstrationRuntime;
-  time: number;
+  sample?: SceneSample;
 }) {
   const id = useId();
   const issues: string[] = [];
-  runtime.resetBudget();
+  const evaluate = (expression: DemonstrationValue) => {
+    const value = sample?.get(expression);
+    if (typeof value === 'string') throw Error(value);
+    return value ?? Number.NaN;
+  };
   let content: ReactNode;
-  try {
-    const x = demonstrationDomain(view.x, runtime, time),
-      y = demonstrationDomain(view.y, runtime, time);
-    const scale = Math.min((WIDTH - 2 * PAD) / (x[1] - x[0]), (HEIGHT - 2 * PAD) / (y[1] - y[0]));
-    if (!Number.isFinite(scale) || scale <= 0) throw Error('Scene axis range cannot be displayed');
-    const left = (WIDTH - (x[1] - x[0]) * scale) / 2,
-      bottom = (HEIGHT + (y[1] - y[0]) * scale) / 2;
-    const read = (value: DemonstrationValue) => {
-      const result = runtime.evaluate(value, time);
-      if (!Number.isFinite(result) || Math.abs(result) > 1e6)
-        throw Error('Scene values must be finite and within ±1e6');
-      return result;
-    };
-    const project = (point: [DemonstrationValue, DemonstrationValue]): Point => {
-      const projected: Point = [
-        left + (read(point[0]) - x[0]) * scale,
-        bottom - (read(point[1]) - y[0]) * scale,
-      ];
-      if (!projected.every(Number.isFinite))
-        throw Error('Object coordinates exceed the display range');
-      return projected;
-    };
-    const top = bottom - (y[1] - y[0]) * scale,
-      right = WIDTH - left;
-    // Evaluate each object independently so an invalid component leaves the others visible.
-    const objects = view.objects.map((object, index) => {
-      try {
-        return <g key={index}>{drawSceneObject({ object, read, project, scale })}</g>;
-      } catch (error) {
-        issues.push(
-          `${object.label || `objects[${index}]`}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        return null;
-      }
-    });
-    content = (
-      <>
-        <defs>
-          <clipPath id={id}>
-            <rect x={left} y={top} width={right - left} height={bottom - top} />
-          </clipPath>
-        </defs>
-        {[0, 1, 2, 3, 4].map((index) => {
-          const fraction = index / 4,
-            px = left + (right - left) * fraction,
-            py = bottom - (bottom - top) * fraction;
-          return (
-            <g key={index}>
-              <path
-                d={`M${px} ${top}V${bottom}M${left} ${py}H${right}`}
-                stroke="var(--ui-hairline-strong)"
-                fill="none"
-              />
-              <text
-                fill="var(--ui-ink-tertiary)"
-                className="demo-axis-label"
-                x={px}
-                y={bottom + 17}
-                textAnchor="middle"
-              >
-                {tick(x[0] + (x[1] - x[0]) * fraction)}
-              </text>
-              <text
-                fill="var(--ui-ink-tertiary)"
-                className="demo-axis-label"
-                x={left - 7}
-                y={py + 4}
-                textAnchor="end"
-              >
-                {tick(y[0] + (y[1] - y[0]) * fraction)}
-              </text>
-            </g>
+  if (sample)
+    try {
+      const x = demonstrationDomain(view.x, { evaluate }),
+        y = demonstrationDomain(view.y, { evaluate });
+      const scale = Math.min((WIDTH - 2 * PAD) / (x[1] - x[0]), (HEIGHT - 2 * PAD) / (y[1] - y[0]));
+      if (!Number.isFinite(scale) || scale <= 0)
+        throw Error('Scene axis range cannot be displayed');
+      const left = (WIDTH - (x[1] - x[0]) * scale) / 2,
+        bottom = (HEIGHT + (y[1] - y[0]) * scale) / 2;
+      const read = (value: DemonstrationValue) => {
+        const result = evaluate(value);
+        if (!Number.isFinite(result) || Math.abs(result) > 1e6)
+          throw Error('Scene values must be finite and within ±1e6');
+        return result;
+      };
+      const project = (point: [DemonstrationValue, DemonstrationValue]): Point => {
+        const projected: Point = [
+          left + (read(point[0]) - x[0]) * scale,
+          bottom - (read(point[1]) - y[0]) * scale,
+        ];
+        if (!projected.every(Number.isFinite))
+          throw Error('Object coordinates exceed the display range');
+        return projected;
+      };
+      const top = bottom - (y[1] - y[0]) * scale,
+        right = WIDTH - left;
+      // Evaluate each object independently so an invalid component leaves the others visible.
+      const objects = view.objects.map((object, index) => {
+        try {
+          return <g key={index}>{drawSceneObject({ object, read, project, scale })}</g>;
+        } catch (error) {
+          issues.push(
+            `${object.label || `objects[${index}]`}: ${error instanceof Error ? error.message : String(error)}`,
           );
-        })}
-        <g clipPath={`url(#${id})`}>{objects}</g>
-        <SvgMathText
-          className="demo-axis-label"
-          x={right}
-          y={HEIGHT - 2}
-          anchor="end"
-          text={view.xLabel || ''}
-        />
-        <SvgMathText className="demo-axis-label" x={left} y={12} text={view.yLabel || ''} />
-      </>
-    );
-  } catch (error) {
-    issues.push(error instanceof Error ? error.message : String(error));
-  }
+          return null;
+        }
+      });
+      content = (
+        <>
+          <defs>
+            <clipPath id={id}>
+              <rect x={left} y={top} width={right - left} height={bottom - top} />
+            </clipPath>
+          </defs>
+          {[0, 1, 2, 3, 4].map((index) => {
+            const fraction = index / 4,
+              px = left + (right - left) * fraction,
+              py = bottom - (bottom - top) * fraction;
+            return (
+              <g key={index}>
+                <path
+                  d={`M${px} ${top}V${bottom}M${left} ${py}H${right}`}
+                  stroke="var(--ui-hairline-strong)"
+                  fill="none"
+                />
+                <text
+                  fill="var(--ui-ink-tertiary)"
+                  className="demo-axis-label"
+                  x={px}
+                  y={bottom + 17}
+                  textAnchor="middle"
+                >
+                  {tick(x[0] + (x[1] - x[0]) * fraction)}
+                </text>
+                <text
+                  fill="var(--ui-ink-tertiary)"
+                  className="demo-axis-label"
+                  x={left - 7}
+                  y={py + 4}
+                  textAnchor="end"
+                >
+                  {tick(y[0] + (y[1] - y[0]) * fraction)}
+                </text>
+              </g>
+            );
+          })}
+          <g clipPath={`url(#${id})`}>{objects}</g>
+          <SvgMathText
+            className="demo-axis-label"
+            x={right}
+            y={HEIGHT - 2}
+            anchor="end"
+            text={demoAxisLabel(view.xLabel)}
+          />
+          <SvgMathText
+            className="demo-axis-label"
+            x={left}
+            y={12}
+            text={demoAxisLabel(view.yLabel)}
+          />
+        </>
+      );
+    } catch (error) {
+      issues.push(error instanceof Error ? error.message : String(error));
+    }
   const label = view.label || i18n('intui.demo.title', 'Interactive demonstration');
   return (
     <figure className="demo-plot demo-scene">
@@ -283,4 +293,4 @@ export function DemoScene({
       ) : null}
     </figure>
   );
-}
+});

@@ -122,6 +122,8 @@ export interface DemonstrationRuntime {
   duration: number;
   parameters: Record<string, number>;
   warnings: DemonstrationWarning[];
+  /** Bit mask: x = 1, y = 2, time or dynamic state = 4. Parameters are fixed for this runtime. */
+  dependencies(expression: DemonstrationValue): number;
   resetBudget(): void;
   evaluate(expression: DemonstrationValue, time?: number, x?: number, y?: number): number;
   stateAt(time: number): Record<string, number>;
@@ -150,9 +152,13 @@ export function createDemonstrationRuntime(
   values?: Record<string, number>,
 ): DemonstrationRuntime;
 
+export function compileDemonstrationRuntime(
+  input: unknown,
+): (values?: Record<string, number>) => Generator<void, DemonstrationRuntime, void>;
+
 export function demonstrationDomain(
   bounds: [DemonstrationValue, DemonstrationValue],
-  runtime: DemonstrationRuntime,
+  runtime: Pick<DemonstrationRuntime, 'evaluate'>,
   time?: number,
   fallback?: [number, number],
 ): [number, number];

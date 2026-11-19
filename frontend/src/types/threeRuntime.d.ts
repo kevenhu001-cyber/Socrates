@@ -111,6 +111,8 @@ declare module 'three/addons/controls/OrbitControls.js' {
     enableDamping: boolean;
     target: Vector3;
     update(): void;
+    addEventListener(type: 'change', listener: () => void): void;
+    removeEventListener(type: 'change', listener: () => void): void;
     dispose(): void;
   }
 }

@@ -436,6 +436,7 @@ async function mountThree(
         isDark ? 0x475569 : 0xdbe2ea,
       );
     }
+    invalidate();
   });
   const material = new THREE.MeshStandardMaterial({
     color: 0x4f78dd,
@@ -474,24 +475,38 @@ async function mountThree(
   controls.enableDamping = true;
   controls.target.copy(center);
   let frame = 0;
-  let visible = true;
-  const draw = () => {
+  let visible = typeof IntersectionObserver !== 'function';
+  function invalidate() {
+    if (!frame && visible && !document.hidden) frame = requestAnimationFrame(draw);
+  }
+  function suspend() {
+    cancelAnimationFrame(frame);
     frame = 0;
+  }
+  function draw() {
+    frame = 0;
+    // Damping emits change while the camera is moving, then settles by itself.
     controls.update();
     renderer.render(scene, camera);
-    if (visible) frame = requestAnimationFrame(draw);
+  }
+  const onVisibilityChange = () => {
+    if (document.hidden) suspend();
+    else invalidate();
   };
-  draw();
-  /* Only animate while the card is on screen; an offscreen WebGL loop
-     keeps the main thread and GPU busy for the whole session. */
+  controls.update();
+  controls.addEventListener('change', invalidate);
+  renderer.domElement.addEventListener('webglcontextrestored', invalidate);
+  document.addEventListener('visibilitychange', onVisibilityChange);
   const visibility =
     typeof IntersectionObserver === 'function'
       ? new IntersectionObserver(([entry]) => {
-          visible = !!entry?.isIntersecting;
-          if (visible && !frame) frame = requestAnimationFrame(draw);
+          visible = Boolean(entry?.isIntersecting);
+          if (visible) invalidate();
+          else suspend();
         })
       : null;
   visibility?.observe(stage);
+  invalidate();
   let lastWidth = 0,
     lastHeight = 0;
   const resize = new ResizeObserver(() => {
@@ -503,7 +518,7 @@ async function mountThree(
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
-    if (!frame) renderer.render(scene, camera);
+    invalidate();
   });
   resize.observe(stage);
   return {
@@ -513,6 +528,7 @@ async function mountThree(
         fitCamera();
         controls.target.copy(center);
         controls.update();
+        invalidate();
       },
       getDataURL() {
         renderer.render(scene, camera);
@@ -521,7 +537,10 @@ async function mountThree(
     },
     cleanup() {
       visible = false;
-      cancelAnimationFrame(frame);
+      suspend();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      renderer.domElement.removeEventListener('webglcontextrestored', invalidate);
+      controls.removeEventListener('change', invalidate);
       resize.disconnect();
       visibility?.disconnect();
       controls.dispose();
@@ -535,6 +554,7 @@ async function mountThree(
       renderer.dispose();
       renderer.forceContextLoss();
       scene.clear();
+      renderer.domElement.remove();
     },
   };
 }

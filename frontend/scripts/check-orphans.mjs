@@ -111,6 +111,24 @@ function specifiersOf(filePath, text) {
     ) {
       specifiers.push(node.arguments[0].text);
     }
+    // Vite resolves worker entry points through this URL constructor.
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'Worker' &&
+      node.arguments?.length
+    ) {
+      const url = node.arguments[0];
+      if (
+        ts.isNewExpression(url) &&
+        ts.isIdentifier(url.expression) &&
+        url.expression.text === 'URL' &&
+        url.arguments?.length === 2 &&
+        ts.isStringLiteral(url.arguments[0]) &&
+        url.arguments[1].getText(source) === 'import.meta.url'
+      )
+        specifiers.push(url.arguments[0].text);
+    }
     ts.forEachChild(node, visit);
   };
   visit(source);

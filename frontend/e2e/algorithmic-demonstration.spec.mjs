@@ -1,6 +1,7 @@
 import { test, expect } from './_state-fixture.mjs';
 import { readFileSync } from 'node:fs';
 import { prepareChatWorkbench, expectNoGlobalError } from './_chat-workbench.mjs';
+import { publishChatRuntime } from './_lib.mjs';
 const examples = JSON.parse(
   readFileSync(
     new URL('../../docs/examples/algorithmic-demonstrations.json', import.meta.url),
@@ -33,8 +34,11 @@ for (const theme of ['light', 'dark'])
         ],
       });
       const demo = page.getByRole('region', { name: node.title, exact: true });
+      await demo.scrollIntoViewIfNeeded();
+      await expect(demo).toHaveAttribute('data-demo-quality', 'full');
       await expect(demo.locator('canvas')).toBeVisible();
       await expect(demo.locator('.demo-plot path[fill="none"]')).toHaveCount(2);
+      await expect(demo.locator('foreignObject.demo-axis-label .katex')).toHaveCount(2);
       await expect(demo.getByRole('slider')).toHaveCount(3);
       const before = await demo.locator('.demo-plot path[fill="none"]').first().getAttribute('d');
       await demo.getByRole('slider', { name: '缝数 N', exact: true }).fill('10');
@@ -49,6 +53,7 @@ for (const theme of ['light', 'dark'])
       expect(sliderBox.x).toBeGreaterThan(labelBox.x);
       expect(outputBox.x).toBeGreaterThan(sliderBox.x);
       expect(Math.abs(sliderBox.y - outputBox.y)).toBeLessThan(18);
+      await expect(demo).toHaveAttribute('data-demo-quality', 'full');
       const pixels = await demo.locator('canvas').evaluate((canvas) => {
         const c = canvas.getContext('2d');
         const row = c.getImageData(0, Math.floor(canvas.height / 2), canvas.width, 1).data;
@@ -93,12 +98,36 @@ test('Airy demonstration has algorithmic light and three separately styled curve
     ],
   });
   const demo = page.getByRole('region', { name: node.title, exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
   await expect(demo.locator('canvas')).toBeVisible();
   await expect(demo.locator('.demo-plot path[fill="none"]')).toHaveCount(3);
+  const axes = demo.locator('foreignObject.demo-axis-label');
+  await expect(axes.locator('.katex math msub')).toHaveCount(2);
+  await expect(axes.nth(0).locator('annotation')).toHaveText('\\theta / \\theta_R');
+  await expect(axes.nth(1).locator('annotation')).toHaveText('I / I_0');
+  const axisLabelClearsTicks = await axes
+    .nth(1)
+    .locator('.katex-html')
+    .evaluate((label) => {
+      const svg = label.closest('svg');
+      if (!svg) return false;
+      const title = label.getBoundingClientRect();
+      const ticks = [...svg.querySelectorAll('.demo-axis text[text-anchor="end"]')];
+      return (
+        ticks.length > 0 && ticks.every((tick) => tick.getBoundingClientRect().left >= title.right)
+      );
+    });
+  expect(axisLabelClearsTicks).toBe(true);
+  await expect(demo.locator('.demo-control output .katex math msub')).toHaveCount(1);
+  await expect(demo.locator('.demo-metrics dd .katex math msub')).toHaveCount(1);
   await expect(demo.locator('.demo-metrics')).toContainText('73.5');
   await demo.getByRole('button', { name: '0.6 · 更近', exact: true }).click();
   await expect(demo.getByRole('slider', { name: '角间距', exact: true })).toHaveValue('0.6');
   await demo.getByRole('button', { name: '1.0 · 瑞利', exact: true }).click();
+  await expect(demo.getByRole('slider', { name: '角间距', exact: true })).toHaveValue('1');
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  await expect(demo.locator('.demo-metrics')).toContainText('73.5');
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
@@ -132,6 +161,7 @@ test('unregistered Lorenz ODE produces a computed attractor and linked state val
   const demo = page.getByRole('region', { name: node.title, exact: true });
   const time = demo.getByRole('slider', { name: '时间', exact: true });
   await time.fill('20');
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
   const path = demo.locator('.demo-plot path[fill="none"]').first();
   expect((await path.getAttribute('d')).length).toBeGreaterThan(5000);
   const before = await path.getAttribute('d');
@@ -140,6 +170,7 @@ test('unregistered Lorenz ODE produces a computed attractor and linked state val
   await expect(path).not.toHaveAttribute('d', before);
   await demo.getByRole('slider', { name: 'ρ', exact: true }).fill('28');
   await time.fill('20');
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
   await page.evaluate(() => {
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   });
@@ -154,6 +185,12 @@ test('native tool events render a program, preserve controls through a patch and
   page,
 }) => {
   await prepareChatWorkbench(page, { lang: 'zh' });
+  const historicalGrating = {
+    ...examples.grating,
+    views: examples.grating.views.map((view) =>
+      view.kind === 'plot' ? { ...view, xLabel: 'd · sinθ / 550 nm', yLabel: 'I / I₀' } : view,
+    ),
+  };
   await page.evaluate(async (program) => {
     const ctl = await window.addStreamingMessage({ userPrompt: '演示光栅衍射' });
     window.__demoCtl = ctl;
@@ -187,9 +224,10 @@ test('native tool events render a program, preserve controls through a patch and
       output: 'Rendered algorithmic demonstration',
     });
     ctl.append('这些亮纹由同一组参数实时计算。');
-  }, examples.grating);
+  }, historicalGrating);
   const demo = page.locator('.demonstration');
   await expect(demo.locator('canvas')).toBeVisible();
+  await expect(demo.locator('foreignObject.demo-axis-label .katex')).toHaveCount(2);
   await demo.getByRole('slider', { name: '缝数 N', exact: true }).fill('10');
   await page.evaluate(() => {
     window.__demoEvent({
@@ -274,6 +312,7 @@ test('complex raster fields reduce sampling and keep controls available across r
     await demo.getByRole('slider', { name: 'a', exact: true }).fill(value);
     await expect(demo.locator('.demo-error')).toHaveCount(0);
   }
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
   const bright = await demo
     .locator('canvas')
     .evaluate((canvas) => canvas.getContext('2d').getImageData(160, 80, 1, 1).data[0]);
@@ -329,7 +368,120 @@ test('a bare versioned document from the screenshot renders as an interactive de
   await expect(demo.locator('.demo-plot path[fill="none"]')).toHaveCount(1);
   await demo.getByRole('slider').fill('6');
   await expect(demo.getByRole('slider')).toHaveValue('6');
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
   await expect(page.locator('#msgList')).not.toContainText('"version"');
   await page.screenshot({ path: 'test-results/recovered-bare-demonstration-phone.png' });
+  await expectNoGlobalError(page);
+});
+
+test('scrubbing keeps the latest frame and idle refinement restores exact raster samples', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const program = {
+    version: 1,
+    duration: 10,
+    parameters: [{ id: 'a', min: 0, max: 2, step: 0.1, value: 1 }],
+    views: [
+      {
+        kind: 'field',
+        x: [-1, 1],
+        y: [-1, 1],
+        height: 64,
+        gamma: 1,
+        tint: [1, 1, 1],
+        expression: '(a+x+y+t)/16',
+      },
+    ],
+  };
+  const node = { id: 'precision', type: 'demonstration', title: 'Precision', program };
+  await prepareChatWorkbench(page, {
+    messages: [
+      {
+        clientId: 'precision',
+        role: 'assistant',
+        type: 'assistant',
+        rawText: '```socrates-ui\n' + JSON.stringify(node) + '\n```',
+      },
+    ],
+  });
+  const demo = page.getByRole('region', { name: 'Precision', exact: true });
+  await demo.scrollIntoViewIfNeeded();
+  const parameter = demo.getByRole('slider', { name: 'a', exact: true });
+  const time = demo.getByRole('slider', { name: 'Time', exact: true });
+  await parameter.fill('0.2');
+  await time.fill('9');
+  await parameter.fill('1.7');
+  await time.fill('7.3');
+  await expect(demo).toHaveAttribute('data-demo-quality', 'full');
+  const pixel = await demo
+    .locator('canvas')
+    .evaluate((canvas) => Array.from(canvas.getContext('2d').getImageData(181, 23, 1, 1).data));
+  const x = -1 + (181 / 319) * 2;
+  const y = 1 - (23 / 63) * 2;
+  const channel = Math.round(((1.7 + x + y + 7.3) / 16) * 255);
+  expect(pixel).toEqual([channel, channel, channel, 255]);
+  await expectNoGlobalError(page);
+});
+
+test('visible demonstrations share a worker and release it when they leave the transcript', async ({
+  page,
+}) => {
+  const program = {
+    version: 1,
+    duration: 30,
+    views: [{ kind: 'field', x: [-1, 1], y: [-1, 1], height: 64, expression: 'sin(t+x+y)^2' }],
+  };
+  const nodes = ['first', 'second'].map((id) => ({
+    id,
+    type: 'demonstration',
+    title: id,
+    program,
+  }));
+  const tail = Array.from(
+    { length: 40 },
+    (_, index) => `Scroll probe paragraph ${index + 1}.`,
+  ).join('\n\n');
+  const workers = [];
+  page.on('worker', (worker) => {
+    if (worker.url().includes('demonstration.worker')) workers.push(worker);
+  });
+  await prepareChatWorkbench(page, {
+    viewport: { width: 1280, height: 1100 },
+    messages: [
+      {
+        clientId: 'shared-worker',
+        role: 'assistant',
+        type: 'assistant',
+        rawText:
+          nodes.map((node) => '```socrates-ui\n' + JSON.stringify(node) + '\n```').join('\n\n') +
+          '\n\n' +
+          tail,
+      },
+    ],
+  });
+  const demos = page.locator('.demonstration[data-demo-quality="full"]');
+  await page
+    .locator('.demonstration')
+    .first()
+    .evaluate((card) => card.scrollIntoView({ block: 'start' }));
+  await expect(demos).toHaveCount(2);
+  expect(workers).toHaveLength(1);
+  const parked = workers[0].waitForEvent('close');
+  await page.getByText('Scroll probe paragraph 40.', { exact: true }).scrollIntoViewIfNeeded();
+  await parked;
+  await expect(page.locator('.demonstration')).toHaveCount(2);
+  await page
+    .locator('.demonstration')
+    .first()
+    .evaluate((card) => card.scrollIntoView({ block: 'start' }));
+  await expect.poll(() => workers.length).toBe(2);
+  const closed = workers[1].waitForEvent('close');
+  await page.evaluate(() => {
+    window.__socratesTestState.patch({ session: { messages: [] } });
+  });
+  await publishChatRuntime(page, { type: 'state-synced', reason: 'demonstration-unmount' });
+  await expect(page.locator('.demonstration')).toHaveCount(0);
+  await closed;
   await expectNoGlobalError(page);
 });

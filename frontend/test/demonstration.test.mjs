@@ -146,7 +146,8 @@ test('sampling only evaluates referenced definitions and retains a finite resett
   for (let i = 0; i < 2000; i++) assert.equal(runtime.evaluate('signal', 0, 0), 0);
   assert.equal(runtime.evaluate('costly'), ((128 * 129) / 2) ** 2);
   assert.throws(() => {
-    for (let i = 0; i < 100; i++) runtime.evaluate('costly');
+    for (let i = 0; i < 100; i++)
+      runtime.evaluate('costly+x+sum(k,1,128,sum(j,1,128,k*j*x))', 0, i);
   }, /budget exceeded/);
   runtime.resetBudget();
   assert.equal(runtime.evaluate('signal', 0, 0), 0);
@@ -334,4 +335,44 @@ test('path and expression presets validate geometry, dependencies and resource l
   const invalid = structuredClone(program);
   invalid.presets[0].values.a = 'unknown';
   assert.equal(validateDemonstration(invalid).ok, false);
+});
+
+test('runtime dependencies follow definitions, lexical loop bindings and dynamic state', () => {
+  const runtime = createDemonstrationRuntime({
+    ...examples.lorenz,
+    definitions: {
+      ...examples.lorenz.definitions,
+      horizontal: 'x+2',
+      vertical: 'y+3',
+      combined: 'horizontal+vertical',
+      localOnly: 'sum(k,1,3,k^2)',
+      lexical: 'sum(k,1,3,horizontal+k)',
+      sampled: 'combined+localOnly',
+    },
+  });
+  assert.equal(runtime.dependencies('localOnly'), 0);
+  assert.equal(runtime.dependencies('lexical'), 1);
+  assert.equal(runtime.dependencies('sampled'), 3);
+  assert.equal(runtime.evaluate('lexical', 0, 10), 42);
+  assert.equal(runtime.evaluate('sampled', 0, 10, 2), 31);
+  assert.equal(runtime.evaluate('sampled', 0, -10, 5), 14);
+  const state = Object.keys(examples.lorenz.dynamics.initial)[0];
+  assert.equal(runtime.dependencies(state), 4);
+  for (const time of [0, 0.31, 20, 0.31]) {
+    runtime.evaluate('sampled', time, 1, 1);
+    assert.equal(runtime.evaluate(state, time, 1, 1), runtime.stateAt(time)[state]);
+  }
+});
+
+test('cooperative RK4 can yield and produces the same complete history as the synchronous runtime', async () => {
+  const { compileDemonstrationRuntime } = await import('@socrates/core/demonstration');
+  const job = compileDemonstrationRuntime(examples.lorenz)();
+  let result = job.next();
+  assert.equal(result.done, false);
+  while (!result.done) result = job.next();
+  const sync = createDemonstrationRuntime(examples.lorenz);
+  assert.equal(result.value.duration, 20);
+  assert.deepEqual(result.value.warnings, sync.warnings);
+  for (const time of [0, 0.023, 2.36, 15.2, 20])
+    assert.deepEqual(result.value.stateAt(time), sync.stateAt(time));
 });
