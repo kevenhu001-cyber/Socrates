@@ -1,7 +1,7 @@
 /* session/bootSessions.ts — consume the optional Recents prefetch started by
  * index.html's <head>.
  *
- * The head script fires `GET /api/v2/sessions?limit=200&archived=true` as
+ * The head script fires `GET /api/v2/sessions?limit=40&cursorVersion=2` as
  * soon as /me confirms a signed-in user. That overlaps the entry-JS download
  * and the auth → React-mount sequence, which is exactly the window where the
  * sidebar used to sit empty waiting for its own request.
@@ -40,19 +40,28 @@ export function takeBootSessionPrefetch(
   return prefetch.promise;
 }
 
-/** Resolve the prefetch into rows, or null for the normal apiFetch fallback. */
+export interface BootSessionPage {
+  sessions: SessionRow[];
+  nextCursor: string | null;
+}
+
+/** Preserve the cursor as well as rows so the sidebar can page after boot. */
 export async function readBootSessions(
   host: BootSessionHost | null | undefined,
   now = Date.now(),
-): Promise<SessionRow[] | null> {
+): Promise<BootSessionPage | null> {
   const promise = takeBootSessionPrefetch(host, now);
   if (!promise) return null;
   try {
     const response = await promise;
     if (!response || response.failed || response.status < 200 || response.status >= 300)
       return null;
-    const sessions = (response.json as { sessions?: unknown } | null | undefined)?.sessions;
-    return Array.isArray(sessions) ? (sessions as SessionRow[]) : null;
+    const payload = response.json as { sessions?: unknown; nextCursor?: unknown } | null | undefined;
+    if (!Array.isArray(payload?.sessions)) return null;
+    return {
+      sessions: payload.sessions as SessionRow[],
+      nextCursor: typeof payload.nextCursor === 'string' ? payload.nextCursor : null,
+    };
   } catch {
     return null;
   }
