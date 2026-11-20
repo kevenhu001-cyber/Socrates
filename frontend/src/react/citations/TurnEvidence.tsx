@@ -10,6 +10,7 @@ import {
 } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
 import { i18n } from '../legacy/gateway';
+import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';
 
@@ -62,11 +63,20 @@ export function TurnEvidence({
         validClaims.some((entry) => entry.citationIds.includes(citation.id)),
     ),
   );
-  const previewSources = sources.filter((source) =>
-    claim?.citationIds.some((id) =>
-      citations.some((citation) => citation.id === id && citation.sourceId === source.id),
-    ),
-  );
+  const previewSources = claim
+    ? sources.filter((source) =>
+        claim.citationIds.some((id) =>
+          citations.some((citation) => citation.id === id && citation.sourceId === source.id),
+        ),
+      )
+    : preview?.claimId?.startsWith('source-')
+      ? sources.filter((source, idx) => {
+          const key = preview.claimId.slice('source-'.length);
+          const num = Number(key);
+          if (Number.isSafeInteger(num) && num > 0) return idx === num - 1;
+          return source.id === key || source.id === preview.claimId;
+        })
+      : [];
 
   useEffect(() => {
     if (!preview) return;
@@ -108,7 +118,8 @@ export function TurnEvidence({
     if (!anchor) return;
     // A fragment alone cannot supply citation metadata.
     const claimId = anchor.getAttribute('href')!.slice(PREFIX.length);
-    if (!validClaims.some((entry) => entry.id === claimId)) return;
+    const isDirectSource = claimId.startsWith('source-') && sources.length > 0;
+    if (!validClaims.some((entry) => entry.id === claimId) && !isDirectSource) return;
     if (pinned) {
       event.preventDefault();
       event.stopPropagation();
@@ -147,6 +158,8 @@ export function TurnEvidence({
     if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
   }, [preview]);
 
+  const visibleSources = citedSources.length ? citedSources : sources;
+
   return (
     <div
       className="turn-evidence"
@@ -176,42 +189,66 @@ export function TurnEvidence({
               tabIndex={-1}
               style={{ left: preview.left, top: preview.top }}
             >
-              {previewSources.map((source) => (
-                <div key={source.id}>
-                  <a href={source.url} target="_blank" rel="noopener noreferrer">
-                    {source.title || safeHostname(source.url)}
-                    <svg
-                      className="turn-sources-external"
-                      viewBox="0 0 16 16"
-                      width="11"
-                      height="11"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}
+              {previewSources.map((source) => {
+                const host = safeHostname(source.url);
+                const favicon = source.url ? faviconProxyUrl(source.url) : null;
+                return (
+                  <div key={source.id} className="turn-source-preview-item">
+                    <div className="turn-source-preview-header">
+                      {favicon ? (
+                        <img
+                          className="turn-source-preview-favicon"
+                          src={favicon}
+                          alt=""
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <span className="turn-source-preview-icon" aria-hidden="true">
+                          🌐
+                        </span>
+                      )}
+                      <small className="turn-source-preview-host">{host}</small>
+                    </div>
+                    <a
+                      className="turn-source-preview-title"
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
-                    </svg>
-                  </a>
-                  <small>{safeHostname(source.url)}</small>
-                  {source.snippet ? (
-                    <p>
-                      <MathText text={source.snippet} />
-                    </p>
-                  ) : null}
-                </div>
-              ))}
+                      {source.title || host}
+                      <svg
+                        className="turn-sources-external"
+                        viewBox="0 0 16 16"
+                        width="11"
+                        height="11"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}
+                      >
+                        <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
+                      </svg>
+                    </a>
+                    {source.snippet ? (
+                      <p className="turn-source-preview-snippet">
+                        <MathText text={source.snippet} />
+                      </p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </aside>,
             document.body,
           )
         : null}
-      {citedSources.length ? (
+      {visibleSources.length ? (
         <TurnSources
           entryId={entryId}
-          items={citedSources.map((source) => ({
+          items={visibleSources.map((source) => ({
             id: source.id,
             title: source.title || safeHostname(source.url),
             url: source.url,

@@ -81,6 +81,11 @@ export function ThinkingSurface({
           cursor: expandable ? 'pointer' : 'auto',
         }}
       >
+        {live && indicator ? (
+          <View testID="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
+            {indicator}
+          </View>
+        ) : null}
         {icon ? (
           <View aria-hidden style={[headerGlyphStyle, { width: iconWidth }]}>
             {icon}
@@ -97,11 +102,6 @@ export function ThinkingSurface({
         >
           {label}
         </UiText>
-        {live && indicator ? (
-          <View testID="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
-            {indicator}
-          </View>
-        ) : null}
         {durationLabel ? (
           <View
             style={{

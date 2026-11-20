@@ -189,7 +189,7 @@
     border: 0;
     border-top: 1px solid var(--border);
   }
-  #appShell #msgList .msg-body a:not(.code-block-copy) {
+  #appShell #msgList .msg-body a:not(.code-block-copy):not([href^='#socrates-citation-']) {
     color: inherit;
     font-weight: var(--ui-font-weight-medium);
     text-decoration: underline;
@@ -197,7 +197,7 @@
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
   }
-  #appShell #msgList .msg-body a:not(.code-block-copy):hover {
+  #appShell #msgList .msg-body a:not(.code-block-copy):not([href^='#socrates-citation-']):hover {
     text-decoration-color: currentColor;
   }
   #appShell #msgList .msg-body blockquote {

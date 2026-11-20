@@ -132,5 +132,25 @@ export function annotateTurnProse(text, start, runtime) {
       ` [${numbers.join(', ')}](#socrates-citation-${claim.id})` +
       result.slice(at);
   }
+  if (sources.length > 0) {
+    const protectedRanges = protectedTurnRanges(result);
+    const markerRe = /(?:\[|【)(\d{1,3}(?:\s*[,，\-–~]\s*\d{1,3})*)(?:\]|】)(?!\s*[(（:[])/g;
+    const replacements = [];
+    for (const match of result.matchAll(markerRe)) {
+      const matchStart = match.index;
+      const matchEnd = match.index + match[0].length;
+      if (protectedRanges.some(([from, to]) => matchStart < to && matchEnd > from)) continue;
+      const rawNumbers = match[1]
+        .split(/[,，\-–~]/)
+        .map((n) => parseInt(n.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= sources.length);
+      if (!rawNumbers.length) continue;
+      const links = rawNumbers.map((num) => `[${num}](#socrates-citation-source-${num})`).join(' ');
+      replacements.push({ start: matchStart, end: matchEnd, text: links });
+    }
+    for (const rep of replacements.sort((a, b) => b.start - a.start)) {
+      result = result.slice(0, rep.start) + rep.text + result.slice(rep.end);
+    }
+  }
   return result;
 }

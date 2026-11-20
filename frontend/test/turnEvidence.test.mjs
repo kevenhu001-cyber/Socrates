@@ -122,3 +122,24 @@ test('storage sanitization rebases evidence and UI offsets without altering live
   assert.deepEqual(normalizeTurnRuntime(JSON.parse(JSON.stringify(stored))), stored);
   assert.equal(rebaseTurnRuntimeText(runtime, original, 'An arbitrary edit.'), null);
 });
+
+test('freestanding search citation markers bind to available runtime sources', () => {
+  const runtime = reduceTurnEvent(null, event(1, { type: 'source.upsert', source }));
+  assert.equal(
+    annotateTurnProse('According to the report [1], quantum is fast.', 0, runtime),
+    'According to the report [1](#socrates-citation-source-1), quantum is fast.',
+  );
+  assert.equal(
+    annotateTurnProse('见【1】的最新数据。', 0, runtime),
+    '见[1](#socrates-citation-source-1)的最新数据。',
+  );
+  // Markers exceeding sources count or without sources remain unchanged
+  assert.equal(
+    annotateTurnProse('Out of range [99].', 0, runtime),
+    'Out of range [99].',
+  );
+  assert.equal(
+    annotateTurnProse('Without sources [1].', 0, null),
+    'Without sources [1].',
+  );
+});
