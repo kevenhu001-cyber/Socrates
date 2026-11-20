@@ -392,7 +392,7 @@ export function renderViz(htmlStr: string, opts: { stableId?: string }) {
     srcdoc +
     '" srcdoc="' +
     srcdoc +
-    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="Canvas" ` +
+    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" tabindex="-1" title="Canvas" ` +
     'style="width:100%;border:0;background:transparent;display:block;min-height:160px">' +
     '</iframe>';
   if (
@@ -609,7 +609,7 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     srcdoc +
     '" srcdoc="' +
     srcdoc +
-    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="Plot of ` +
+    `" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" tabindex="-1" title="Plot of ` +
     esc(parsed.expr) +
     '" ' +
     'style="width:100%;border:0;background:transparent;display:block;min-height:340px">' +

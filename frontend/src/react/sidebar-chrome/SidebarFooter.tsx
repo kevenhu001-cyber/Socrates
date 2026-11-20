@@ -7,9 +7,12 @@ import { getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { openSettings } from '../settings/settings.service.ts';
+import { useMobileViewport } from './useMobileViewport.ts';
+import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
 
 export function SidebarFooter() {
   const user = useUserInfo();
+  const isMobile = useMobileViewport();
   const [open, setOpen] = useState(false);
   const accountTrigger = useRef<HTMLButtonElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -119,19 +122,35 @@ export function SidebarFooter() {
           </>
         )}
         </DeferredMenu>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="sidebar-quick-settings"
-          title={label('设置', 'Settings')}
-          aria-label={label('设置', 'Settings')}
-          onPointerEnter={preloadSettingsPage}
-          onFocus={preloadSettingsPage}
-          onClick={() => navigate('general')}
-        >
-          <Icon name="gear" />
-        </Button>
+        {isMobile ? (
+          <Button
+            type="button"
+            className="sidebar-mobile-new-chat"
+            title={label('新建会话', 'New chat')}
+            aria-label={label('新建会话', 'New chat')}
+            onClick={() => {
+              getLegacyActions().navigation.startNewChat();
+              toggleSidebar();
+            }}
+          >
+            <Icon name="plus" />
+            <span>{label('新建会话', 'New chat')}</span>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="sidebar-quick-settings"
+            title={label('设置', 'Settings')}
+            aria-label={label('设置', 'Settings')}
+            onPointerEnter={preloadSettingsPage}
+            onFocus={preloadSettingsPage}
+            onClick={() => navigate('general')}
+          >
+            <Icon name="gear" />
+          </Button>
+        )}
       </div>
     </div>
   );

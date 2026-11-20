@@ -90,6 +90,12 @@ Conventions these follow: a failing check prints the offending `file:line` and e
 
 ## Incremental testing (required)
 
+**Strict Rule — No Massive Test Suites (User Directive):**
+**严禁随意运行全量或大范围测试套件！**
+- 严禁跑完整的 `npm run test:unit`（1400+ 测试，耗时数分钟）或大范围 Playwright 套件，长周期测试会严重拖慢开发与交付进度。
+- **如果有测试需要，必须只做针对性的小测试**：仅针对本次修改涉及的具体模块运行单个测试文件（例如使用 `npm run test:one -- test/<specific>.test.mjs`）或单个相关 Playwright spec（如 `npx playwright test e2e/<specific>.spec.mjs`）。
+- 优先保持开发迭代节奏，切勿把时间耗费在全量测试等待上。
+
 **Testing cadence (user instruction, 2026-10-30):** Complete all planned changes in the current UI/UX consistency pass before starting builds or tests. Then run one consolidated verification pass scoped to the final diff. Do not alternate between implementing small batches and testing each batch. After a verification failure, fix the issue and rerun only the affected checks. This timing rule takes precedence over any earlier instruction to build or test during implementation.
 
 Do not run the full `test:unit` / Playwright suites for every change. Tests are slow

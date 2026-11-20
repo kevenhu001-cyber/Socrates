@@ -481,25 +481,6 @@
   min-width: 0;
 }
 #appShell .sidebar-quick-settings {
-  display: inline-flex;
-  flex: 0 0 34px;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--ui-radius-control);
-  color: var(--ui-text-secondary);
-}
-#appShell .sidebar-quick-settings:hover,
-#appShell .sidebar-quick-settings:focus-visible {
-  background: var(--ui-fill);
-  color: var(--foreground);
-}
-#appShell .sidebar-quick-settings svg {
-  width: 17px;
-  height: 17px;
-}
-#appShell #sidebar.collapsed .sidebar-quick-settings {
   display: none;
 }
 

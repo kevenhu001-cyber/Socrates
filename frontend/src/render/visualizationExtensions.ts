@@ -139,7 +139,7 @@ export function renderExtension(
     mathScript +
     renderSource;
   return (
-    `<iframe class="visualization-extension" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" title="` +
+    `<iframe class="visualization-extension" sandbox="${NATIVE_ISLAND_SANDBOX.visualization}" tabindex="-1" title="` +
     escapeHtml(spec.title) +
     '" data-card-id="' +
     escapeHtml(cardId) +

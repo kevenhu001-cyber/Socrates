@@ -35,6 +35,8 @@ import { createElement, ReactNode } from 'react';
 import { mountOwnedRoot } from '../react/lib/boot/ownedRoot';
 import { VizCardControls, VizErrorActions } from '../react/visualization/VizCardControls.tsx';
 import { decodeSrcdoc, openVizModal, openVizSourceModal } from './vizModals.ts';
+import { writeScrollTop } from '../legacy/scrollCoordinator.ts';
+import { uiBridge } from '../store/index.ts';
 import {
   configureVizCardRegistry,
   findLiveVizFrame,
@@ -358,8 +360,17 @@ function _markReady(id: string) {
   // Clamped to the same bounds viz-resize uses so a pathological
   // document can't grow a card without limit.
   if (entry.lastHeight && entry.lastHeight > 16) {
+    const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
+    const wasNearBottom = Boolean(
+      list &&
+        list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
+        !uiBridge.getSnapshot()._userScrolledAway,
+    );
     entry.iframe.style.height =
       Math.min(Math.max(entry.lastHeight, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H) + 'px';
+    if (wasNearBottom && list) {
+      writeScrollTop(list, list.scrollHeight, 'content');
+    }
   }
   _hideLoading(card);
   clearTimeout(entry.maxTimer);
@@ -479,7 +490,16 @@ function _handleVizResize(
   const height = Number(data.h);
   if (!isFinite(height)) return;
   const clamped = Math.min(Math.max(height, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H);
+  const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
+  const wasNearBottom = Boolean(
+    list &&
+      list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
+      !uiBridge.getSnapshot()._userScrolledAway,
+  );
   sender.iframe.style.height = clamped + 'px';
+  if (wasNearBottom && list) {
+    writeScrollTop(list, list.scrollHeight, 'content');
+  }
   /* A pending card keeps lastHeight current so a viz-ready
      arriving later doesn't snap the iframe back to a stale size. */
   const pending = _pendingReady[id];
