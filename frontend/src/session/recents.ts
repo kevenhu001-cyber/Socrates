@@ -270,7 +270,7 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
         try {
           await new Promise((resolve) => setTimeout(resolve, 400));
           page = await apiFetch<SessionListDto>(path);
-          if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response');
+          if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response', { cause: error });
           ok = true;
         } catch (retryError) {
           reportSwallow(retryError, 'session/recents.fetch.retry');
