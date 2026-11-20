@@ -9,24 +9,24 @@ test('completed tool bursts collapse while errors stay accessible', async ({ pag
     const frames = [];
     for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d', 'batch-error']) {
       frames.push(
-        'event: tool_use\\ndata: ' +
+        'event: tool_use\ndata: ' +
           JSON.stringify([{ id, name: 'web_search', input: { query: id } }]) +
-          '\\n\\n',
+          '\n\n',
       );
     }
     for (const id of ['batch-a', 'batch-b', 'batch-c', 'batch-d']) {
       frames.push(
-        'event: tool_result\\ndata: ' +
+        'event: tool_result\ndata: ' +
           JSON.stringify({ id, ok: true, status: 'completed', output: id }) +
-          '\\n\\n',
+          '\n\n',
       );
     }
     frames.push(
-      'event: tool_result\\ndata: ' +
+      'event: tool_result\ndata: ' +
         JSON.stringify({ id: 'batch-error', ok: false, status: 'failed', output: 'failure' }) +
-        '\\n\\n',
-      'data: {"choices":[{"delta":{"content":"Completed four searches; one failed."}}]}\\n\\n',
-      'data: [DONE]\\n\\n',
+        '\n\n',
+      'data: {"choices":[{"delta":{"content":"Completed four searches; one failed."}}]}\n\n',
+      'data: [DONE]\n\n',
     );
     await route.fulfill({
       status: 200,
