@@ -1,12 +1,17 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
-import { getLegacyActions } from '../legacy/gateway.ts';
+import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import { SessionListEmptyState } from './SessionListEmptyState';
 import { SessionTimeline } from './SessionTimeline';
+import { loadMoreServerSessions } from '../../session/recents.ts';
+import {
+  getSessionListPagingSnapshot,
+  subscribeSessionListPaging,
+} from '../../session/sessionListPagingState.ts';
 
 /**
  * Minute heartbeat that keeps the relative time labels ("5m ago") current.
@@ -27,6 +32,50 @@ function useMinuteTick(enabled: boolean): number {
     return () => clearInterval(id);
   }, [enabled]);
   return tick;
+}
+
+/** The sentinel stays outside the virtual window so it observes the real
+ * end of the transcript-like list without mounting off-screen rows. */
+function SessionListMore({ enabled }: { enabled: boolean }) {
+  const paging = useSyncExternalStore(
+    subscribeSessionListPaging,
+    getSessionListPagingSnapshot,
+    getSessionListPagingSnapshot,
+  );
+  const target = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!enabled || !paging.initialized || !paging.nextCursor || paging.failed || paging.loading)
+      return;
+    const node = target.current;
+    const root = node?.closest<HTMLElement>('#recentsPanel');
+    if (!node || !root || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void loadMoreServerSessions();
+      },
+      { root, rootMargin: '0px 0px 240px 0px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [enabled, paging.initialized, paging.nextCursor, paging.failed, paging.loading]);
+
+  if (!paging.initialized || !paging.nextCursor) return null;
+  return (
+    <div ref={target} className="recents-page-status" role="status" aria-live="polite">
+      {paging.failed ? (
+        <button type="button" onClick={() => void loadMoreServerSessions()}>
+          {i18n('session.retry', 'Retry loading older chats')}
+        </button>
+      ) : paging.loading ? (
+        <span>{i18n('chat.history.loadingEarlier', 'Loading older chats…')}</span>
+      ) : (
+        <button type="button" onClick={() => void loadMoreServerSessions()}>
+          {i18n('sidebar.loadOlder', 'Load older chats')}
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function SessionList() {
@@ -73,24 +122,27 @@ export function SessionList() {
     getLegacyActions().sessions.onSessionDragEnd(event);
   }, []);
 
-  if (!sessions.length) {
-    return (
-      <SessionListEmptyState searchQuery={searchQuery} filter={filter} fetchFailed={fetchFailed} />
-    );
-  }
-
   return (
-    <SessionTimeline
-      sessions={sessions}
-      currentSessionId={currentSessionId}
-      nowTick={nowTick}
-      onPick={handlePick}
-      onTag={handleTag}
-      onArchive={handleArchive}
-      onDelete={handleDelete}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    />
+    <>
+      {sessions.length ? (
+        <SessionTimeline
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          nowTick={nowTick}
+          onPick={handlePick}
+          onTag={handleTag}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        />
+      ) : (
+        <SessionListEmptyState searchQuery={searchQuery} filter={filter} fetchFailed={fetchFailed} />
+      )}
+      {/* Sidebar text filtering only affects loaded rows. Avoid paging through
+          the entire account in an attempt to satisfy a local search. */}
+      <SessionListMore enabled={sidebarOpen && !searchQuery} />
+    </>
   );
 }
 
