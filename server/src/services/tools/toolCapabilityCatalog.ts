@@ -1,5 +1,6 @@
 import { CITE_SOURCES_TOOL, PATCH_INTELLIGENT_UI_TOOL } from '../turnRuntimeTools.js';
 import { INTELLIGENT_UI_TOOL } from '../intelligentUi.js';
+import { GET_UI_CONTRACT_TOOL } from '../uiContract.js';
 import { IMAGE_SEARCH_TOOL, WEB_SEARCH_TOOL } from '../webSearch.js';
 import { WEB_FETCH_TOOL } from '../util/fetchBatch.js';
 import { READ_ATTACHMENT_TOOL } from '../embeddings/attachmentReader.js';
@@ -140,6 +141,13 @@ export function createToolRegistry({
       enabled: true,
       pure: true,
       sessionSerial: 'intelligent-ui',
+    },
+    {
+      name: 'get_ui_contract',
+      modelDefinition: GET_UI_CONTRACT_TOOL,
+      enabled: true,
+      pure: true,
+      sessionSerial: false,
     },
     {
       name: 'patch_intelligent_ui',

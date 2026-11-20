@@ -15,7 +15,10 @@ import type {
   TurnCitation,
 } from '@socrates/contracts';
 import { validateIntelligentUi } from './intelligentUi.js';
-import { normalizeIntelligentUiNode } from './intelligentUiNormalize.js';
+import {
+  normalizeIntelligentUiArgs,
+  normalizeIntelligentUiNode,
+} from './intelligentUiNormalize.js';
 import { createIntelligentUiNodeStream } from './intelligentUiStream.js';
 
 /** All modern public events for one turn share identity, ordering and time. */
@@ -39,6 +42,7 @@ export function createTurnEventController(
       nodes: TurnUiNode[];
       published: Set<string>;
       aborted: boolean;
+      deferred: boolean;
     }
   >();
   const publish = (payload: TurnEventPayload): boolean => {
@@ -75,6 +79,7 @@ export function createTurnEventController(
       nodes: [],
       published: new Set<string>(),
       aborted: false,
+      deferred: false,
     };
     surfaces.set(id, surface);
     publish({ type: 'ui.begin', surfaceId: id, toolCallId: id, textOffset });
@@ -254,18 +259,28 @@ export function createTurnEventController(
            the arguments are still streaming, so it must not see an
            XML-style `{item: ...}` program the commit path would repair. */
         const node = normalizeIntelligentUiNode(candidate) as TurnUiNode;
-        // Parents may arrive later; validate each node's data before buffering it.
+        const missingId =
+          candidate !== null &&
+          typeof candidate === 'object' &&
+          !Array.isArray(candidate) &&
+          !Object.hasOwn(candidate, 'id');
+        // Parents may arrive later; validate each node before buffering it.
         if (
           !node ||
           typeof node !== 'object' ||
           !validateIntelligentUi({ version: 1, nodes: [{ ...node, parent: undefined }] }).ok ||
-          surface.nodes.some((entry) => entry.id === node.id)
+          (!surface.deferred && !missingId && surface.nodes.some((entry) => entry.id === node.id))
         ) {
           abortSurface(delta.id);
           return;
         }
+        // Future explicit IDs might collide with any generated ID. Do not
+        // expose a provisional ID in a stream that could change on commit.
+        // Explicit-ID legacy streams still preview progressively.
+        if (missingId) surface.deferred = true;
         surface.nodes.push(node);
       }
+      if (surface.deferred) return;
       // Emit connected subtrees only; forward references remain buffered.
       let advanced = true;
       while (advanced) {
@@ -301,11 +316,14 @@ export function createTurnEventController(
       if (input !== undefined) {
         const surface = beginSurface(id, textOffset);
         if (!surface || surface.aborted) return;
-        if (ok && validateIntelligentUi(input).ok) {
+        const normalized = normalizeIntelligentUiArgs(input) as { nodes?: TurnUiNode[] };
+        if (ok && validateIntelligentUi(normalized).ok && Array.isArray(normalized?.nodes)) {
+          // The event reducer validates a copy of these nodes; publish that
+          // canonical representation rather than the unnormalized model input.
           publish({
             type: 'ui.commit',
             surfaceId: id,
-            nodes: (input as { nodes: TurnUiNode[] }).nodes,
+            nodes: normalized.nodes,
           });
         } else abortSurface(id);
       } else if (!ok) abortSurface(id);

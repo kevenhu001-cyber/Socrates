@@ -1,16 +1,13 @@
-import { INTELLIGENT_UI_CONTROL_GUIDANCE } from '@socrates/core/intelligentUiControls';
 import {
   LEARNING_KINDS,
-  LEARNING_UI_GUIDANCE,
   openUiLearningMisuse,
 } from '@socrates/core/learningUi';
-import { DEMONSTRATION_GUIDANCE, DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
+import { DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
 import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
-import { visualizationTemplateGuide, validateVisualizationSpec } from './visualization.js';
+import { VISUALIZATION_TEMPLATES, validateVisualizationSpec } from './visualization.js';
 import { validateIntelligentUi as validateEnvelope } from '@socrates/core/intelligentUiValidation';
 import { normalizeIntelligentUiArgs } from './intelligentUiNormalize.js';
 import { inspectOpenUiProgram } from './openUiProgram.js';
-import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 import type { IntelligentUiFailure } from './intelligentUiFeedback.js';
 const TYPES = [
   'panel',
@@ -45,11 +42,12 @@ export const INTELLIGENT_UI_TOOL = {
   function: {
     name: 'render_intelligent_ui',
     description:
-      'Render reader-facing visuals, learning cards and interactive UI alongside prose. Every component is a declarative JSON node with id and type inside {version: 1, nodes: [...]}. ALWAYS use this exact top-level envelope, even for one visualization: {"version":1,"nodes":[{"id":"chart","type":"visualization","template":"bar","title":"Values","accessibilitySummary":"Values by category","payload":{"categories":["A"],"series":[{"name":"Value","data":[1]}]}}]}. Do not send a bare {template,title,payload} object as tool arguments; legacy input normalization is only for backward compatibility. Five standard component families: 1) learning: quizzes, questions, flashcards and knowledge cards (kind: "quiz"|"practice"|"definition"|"flashcard"|"example"|"theorem"|"proof"|"derivation"|"key-point"|"step"); never invent OpenUI learning-card functions (Quiz, QuizCard, Question, QuestionCard, KnowledgeCard, MCQ). 2) visualization: data charts and diagrams (template, payload, title, accessibilitySummary). 3) demonstration: mathematical/physical models, ODEs, fields and scene simulations (program). 4) interactive controls/layout: panel, stack, grid, text, metric, progress, table, slider, choice, button, tabs, accordion (collapsible sections {items:[{id,title,content,defaultOpen}]}), steps (interactive process {items:[{title,description,status}],current}), badge (status pill {label,tone}). 5) media: image (src/url or query for dynamic web search, caption, alt, interactive lightbox), image-gallery (images:[{src,alt,caption}] or query, columns). Arguments are pure JSON: arrays are JSON arrays, numeric fields are JSON numbers, and version is the number 1. Never wrap a list in {"item": [...]}, never use XML-style tags, and never wrap static visual charts in OpenUI source. Choose useful components proactively. Display-only nodes and panels need no buttons; compose tabs, sliders, choices, accordions and actions when the content benefits from them. Nodes have unique id/type and optional parent. Root state and bind support local controls. Actions: set, increment, prompt, open_url. Tables use columns and rows. Tables in intelligent_ui are strictly for interactive/stateful data (bound to $state or paired with controls); for standard static comparisons, reference data, or textual summaries, ALWAYS emit standard Markdown tables in prose instead. Callouts accept tone:neutral|info|success|warning|danger; metrics accept delta and trend:up|down|flat. No HTML, CSS, JS or executable handlers. Keep essential conclusions in prose. Wrap every displayed formula or symbol (even ct, xy, dt) in LaTeX dollar delimiters, including definitions, flashcards, questions, answer options, solutions, hints, table headers/cells/captions, control labels, chart axes, legends, tooltips and diagram annotations. Use compact cards and body-sized content; never enlarge definitions or exercise text; keep executable expressions and JSON numbers in machine syntax. Derive interactive plots and metrics from the same live state, declare units, and guard invalid domains and division by zero. Use patch_intelligent_ui to modify nodes in this turn while preserving local controls.',
+      'Render charts, diagrams, learning cards, physics simulations and interactive UI. Smallest valid call: {"nodes":[{"type":"visualization","template":"bar","payload":{"categories":["A"],"series":[{"data":[1]}]}}]}. The server supplies version=1 and stable node IDs when omitted. Use explicit IDs for parent references or state bindings. For uncommon visualization payloads and advanced physics, demonstrations or OpenUI, call get_ui_contract for the exact existing contract when that tool is available. Keep the mathematical and physical data precise; only omit redundant envelope metadata. Accepts native visualization, learning, physics, demonstration, openui, layout, controls and media nodes. Strict JSON only, no XML, JS or HTML; keep essential conclusions in prose.',
+
     parameters: {
       type: 'object',
       additionalProperties: false,
-      required: ['version', 'nodes'],
+      required: ['nodes'],
       properties: {
         version: { type: 'integer', enum: [1] },
         nodes: {
@@ -60,19 +58,18 @@ export const INTELLIGENT_UI_TOOL = {
             'Keep the whole serialized nodes array under 60000 characters; a single openui source counts toward that cap.',
           items: {
             type: 'object',
-            required: ['id', 'type'],
+            required: ['type'],
             description:
-              INTELLIGENT_UI_CONTROL_GUIDANCE +
-              ' A learning node requires kind and content fields; a visualization node requires template, payload, a nonempty title and accessibilitySummary; a demonstration node requires program; a physics node requires scene; an openui node requires source.',
+              'id optional unless referenced by parent/state; version and IDs are supplied by the server. Visualization uses template+payload; title and accessibilitySummary default. Learning uses kind; physics uses scene; demonstration uses program; openui uses source. Advanced syntax: get_ui_contract.',
             properties: {
               id: { type: 'string', minLength: 1, maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
               type: { type: 'string', enum: TYPES },
               parent: { type: 'string', maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$' },
               template: {
                 type: 'string',
+                enum: VISUALIZATION_TEMPLATES,
                 description:
-                  'Required for visualization nodes. A chart node accepts the same template and payload as a visualization node, so prefer one node shape for every chart, graph and diagram. Supported templates:\n' +
-                  visualizationTemplateGuide(),
+                  'For visualization. bar/line/area/pie: payload {categories:[...],series:[{data:[1,2]}]}; function: {functions:[{expression:"sin(x)"}]}; flowchart: {nodes:[{id,label}],edges:[{from,to}]}. Other exact payloads: get_ui_contract({kind:"visualization",template:"..."}).',
               },
               payload: {
                 type: 'object',
@@ -88,10 +85,7 @@ export const INTELLIGENT_UI_TOOL = {
                 type: 'string',
                 enum: ['bar', 'line', ...LEARNING_KINDS],
                 description:
-                  'Chart nodes use bar/line; learning nodes use ' +
-                  LEARNING_KINDS.join(', ') +
-                  '. ' +
-                  LEARNING_UI_GUIDANCE,
+                  'Chart uses bar/line; learning uses the listed kinds. Advanced learning fields: get_ui_contract({kind:"learning"}).',
               },
               q: {
                 type: 'string',
@@ -132,8 +126,7 @@ export const INTELLIGENT_UI_TOOL = {
               program: {
                 ...DEMONSTRATION_PROGRAM_SCHEMA,
                 description:
-                  'Required for demonstration nodes, omitted for other node types. Keep the program under 40000 characters. ' +
-                  DEMONSTRATION_GUIDANCE,
+                  'Demonstration DSL: version is the number 1, views is a JSON array (never {"item":[...]}). For algorithms, derivatives, sum(i,first,last,expression) and dynamics call get_ui_contract({kind:"demonstration"}).',
               },
               scene: {
                 type: 'string',
@@ -145,14 +138,7 @@ export const INTELLIGENT_UI_TOOL = {
                 type: 'object',
                 additionalProperties: { type: 'number' },
                 description:
-                  'Physics nodes only. Native physics model parameters; omitted fields use defaults. For demonstration nodes put parameters inside program.parameters. Exact units and bounds by scene: ' +
-                  JSON.stringify(
-                    PHYSICS_MODELS.map((model) => ({
-                      scene: model.id,
-                      assumptions: model.assumption,
-                      parameters: model.parameters,
-                    })),
-                  ),
+                  'Physics numeric parameters; omitted parameters take reviewed defaults. For exact units and bounds, call get_ui_contract({kind:"physics"}).',
               },
               separation: {
                 type: 'number',
@@ -177,9 +163,7 @@ export const INTELLIGENT_UI_TOOL = {
                 type: 'string',
                 maxLength: 50000,
                 description:
-                  'Required for openui nodes. ' +
-                  OPENUI_TOOL_GUIDANCE +
-                  '\nFor a Visualization component, the supported templates and exact payload contracts are in the `template` and `payload` parameter descriptions above.',
+                  'Declarative OpenUI source (not JS); for exact components/signatures call get_ui_contract({kind:"openui",page:1}) and subsequent pages if needed.',
               },
               title: { description: 'Plain text or local value expression.' },
               description: { description: 'Plain text or local value expression.' },

@@ -272,3 +272,10 @@ test('buildToolErrorFeedback handles a turn with no callable tools', () => {
   });
   assert.match(feedback.modelMessage, /No native tools are callable/);
 });
+
+test('get_ui_contract canonical example matches its real executable spec', async () => {
+  const { GET_UI_CONTRACT_TOOL, uiContractContent } = await import('../src/services/uiContract.js');
+  const example = canonicalToolExample('get_ui_contract', GET_UI_CONTRACT_TOOL.function.parameters);
+  assert.deepEqual(example, { kind: 'visualization', template: 'function' });
+  assert.equal(uiContractContent(example).ok, true);
+});
