@@ -1,12 +1,88 @@
 import assert from 'node:assert/strict';
 import { EventEmitter, once } from 'node:events';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test, { after } from 'node:test';
+import { Worker } from 'node:worker_threads';
 import { shutdownPubsub } from '../src/lib/pubsub.js';
+import {
+  codeInterpreter,
+  resolvePyodideWorkerEntry,
+} from '../src/services/codeInterpreter/index.js';
 import { PyodidePool } from '../src/services/codeInterpreter/pool.js';
 import { runOnWorker } from '../src/services/codeInterpreter/workerRun.js';
 import { createSessionExecutionLock } from '../src/services/sessionExecutionLock.js';
+import { executeCodeInterpreter } from '../src/routes/chat/pipeline/executors/codeInterpreter.js';
 
 after(() => shutdownPubsub());
+
+test(
+  'a cold Python worker runs standard-library code without fetching optional assets',
+  {
+    timeout: 15_000,
+  },
+  async (t) => {
+    const networkRequests = [];
+    const offline = `
+    import { parentPort } from 'node:worker_threads';
+    globalThis.fetch = async (url) => {
+      parentPort.postMessage({ type: 'unexpected_fetch', url: String(url) });
+      throw new Error('Offline test worker');
+    };
+  `;
+    const entry = resolvePyodideWorkerEntry();
+    const worker = new Worker(entry.file, {
+      execArgv: [
+        ...(entry.execArgv ?? []),
+        '--import',
+        `data:text/javascript,${encodeURIComponent(offline)}`,
+      ],
+    });
+    t.after(() => worker.terminate());
+    worker.on('message', (message) => {
+      if (message.type === 'unexpected_fetch') networkRequests.push(message.url);
+    });
+    const scratchDir = await mkdtemp(join(tmpdir(), 'socrates-python-test-'));
+    t.after(() => rm(scratchDir, { recursive: true, force: true }));
+    const pool = new PyodidePool({ size: 1, spawnWorker: () => worker, bootTimeoutMs: 10_000 });
+    const result = await runOnWorker(
+      {
+        executionId: 'offline',
+        code: 'from math import comb\nprint(comb(8, 3))',
+        scratchDir,
+        timeoutMs: 5_000,
+        waitSignal: AbortSignal.timeout(12_000),
+      },
+      pool,
+    );
+    assert.equal(result.status, 'completed', result.errorMessage);
+    assert.match(result.stdout, /^56$/m);
+    assert.deepEqual(networkRequests, []);
+  },
+);
+
+test('successful Python executions stream no error code', async (t) => {
+  t.mock.method(codeInterpreter, 'execute', async () => ({
+    status: 'completed',
+    stdout: '56\n',
+    artifactFileIds: [],
+  }));
+  const events = [];
+  await executeCodeInterpreter(
+    { code: 'print(56)' },
+    { id: 'calc' },
+    {
+      req: {},
+      emitter: { event: (...args) => events.push(args) },
+      toolPolicy: { recordResult() {} },
+    },
+  );
+  assert.equal(events[0][0], 'tool_result');
+  assert.equal(events[0][1].ok, true);
+  assert.equal(events[0][1].errorCode, null);
+  assert.equal(events[0][1].retryable, false);
+});
 
 class WorkerFixture extends EventEmitter {
   messages = [];

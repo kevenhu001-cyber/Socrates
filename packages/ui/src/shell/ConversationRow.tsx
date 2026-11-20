@@ -108,6 +108,8 @@ export interface ConversationRowProps {
   meta?: readonly string[];
   /** Inline save error from the host's rename / move actions. */
   error?: string;
+  /** Optional decorative content before the title column. */
+  leading?: ReactNode;
   menuOpen?: boolean;
   dragging?: boolean;
   renaming?: boolean;
@@ -140,6 +142,7 @@ export function ConversationRow({
   label,
   meta,
   error,
+  leading,
   menuOpen = false,
   dragging = false,
   renaming = false,
@@ -195,6 +198,7 @@ export function ConversationRow({
           {mode.label}
         </Text>
       ) : null}
+      {leading}
       <View style={[styles.main, parts.main]}>
         <View style={[styles.titleRow, parts.titleRow]}>
           {pinned ? (

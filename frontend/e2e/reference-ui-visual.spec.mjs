@@ -6,8 +6,8 @@ import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
    app-owned surfaces at the same mobile and desktop sizes as the supplied
    references without committing generated artefacts to the repository. */
 
-/* User's 2026-10-18 phone drawer is ~65vw: 254px at 390px. */
-const MOBILE_DRAWER = 390 * 0.65;
+/* The phone reference leaves a tenth of the covered page visible. */
+const MOBILE_DRAWER = 390 * 0.9;
 const REFERENCE_CONNECTORS = [
   {
     id: 'gmail',
@@ -165,8 +165,8 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
   await page.locator('#composerToolsBtn').click();
   const toolsMenu = page.locator('#composerToolsMenu');
   await expect(toolsMenu).toBeVisible();
-  /* The card plays a 160ms scale/translate entrance; geometry assertions
-     apply to the resting state, so wait for the transform to settle. */
+  await expect(toolsMenu).toHaveAttribute('data-menu-side', 'sheet');
+  /* The phone tool menu slides up; measure it after the entrance. */
   await expect
     .poll(async () =>
       toolsMenu.evaluate((el) => {
@@ -176,19 +176,13 @@ test('reference app surfaces render at mobile and desktop target sizes', async (
     )
     .toBe(true);
   const toolsBox = await toolsMenu.boundingBox();
-  /* The reference + menu is a card as wide as the question box, on the
-     16px page gutter (--ui-mobile-page-gutter), whose bottom edge rests
-     over the box's upper half so the + row stays visible below it. */
-  expect(Math.round(toolsBox?.width ?? 0)).toBe(Math.round(mobileGeometry.composer?.width ?? -1));
-  expect(toolsBox?.height).toBeGreaterThanOrEqual(300);
-  expect(toolsBox?.y ?? -1).toBeGreaterThanOrEqual(0);
-  expect(toolsBox?.x).toBeGreaterThanOrEqual(14);
-  expect(toolsBox?.x).toBeLessThanOrEqual(18);
-  const toolsBottom = (toolsBox?.y ?? 0) + (toolsBox?.height ?? 0);
-  expect(toolsBottom).toBeGreaterThan(mobileGeometry.composer?.y ?? 0);
-  expect(toolsBottom).toBeLessThan(
-    (mobileGeometry.composer?.y ?? 0) + (mobileGeometry.composer?.height ?? 0),
-  );
+  /* The phone composer uses a full-width bottom sheet; desktop keeps an anchored card. */
+  expect(toolsBox).not.toBeNull();
+  expect(Math.round(toolsBox.x)).toBe(0);
+  expect(Math.round(toolsBox.width)).toBe(390);
+  expect(Math.round(toolsBox.y + toolsBox.height)).toBe(769);
+  expect(toolsBox.height).toBeGreaterThanOrEqual(300);
+  expect(toolsBox.height).toBeLessThanOrEqual(769 * 0.75);
   const toolsBackground = await toolsMenu.evaluate(
     (element) => getComputedStyle(element).backgroundColor,
   );

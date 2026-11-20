@@ -1,3 +1,8 @@
+.recent-item-glyph,
+.recents-search-all {
+  display: none;
+}
+
 /* Phone drawer geometry. Desktop ownership stays in parity/sidebar.css. */
 /* ─── Pass-2 merge (docs/plans/2026-11-04-sidebar-ui-consistency.md) ───
    Mobile rules relocated from components/sidebar.css then polish/sidebar.css
@@ -83,6 +88,7 @@
   #appShell .sidebar {
     position: fixed;
     inset: 0 auto 0 0;
+    border-end-end-radius: var(--ui-radius-xl);
     transform: translateX(0);
     transition:
       transform var(--ui-duration-drawer) var(--ui-ease-out),
@@ -148,9 +154,7 @@
   }
   /* Mobile drawer footer keeps footer action buttons reachable. */
 
-  /* The reference drawer keeps only the logo glyph in the header and a
-     flat recent-session list — no mode bullets, meta rows, tag pills or
-     time-group separators on phones. */
+  /* Keep recent chats in a flat list, with consistent leading icons. */
   #appShell .recents-filter-chips,
   #appShell .recents-time-label {
     display: none;
@@ -163,11 +167,10 @@
     display: none;
   }
 
-  /* Conversation row overflow menu: hidden by default so recent list is clean and calm;
-     revealed on hover, active state, or when the menu is open. */
+  /* Keep row actions tappable even on devices that report mouse hover
+     support as well as touch. Brighten them when the row is in use. */
   #appShell .recent-item-actions {
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0.7;
     transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell .recent-item:hover .recent-item-actions,
@@ -175,7 +178,6 @@
   #appShell .recent-item.active .recent-item-actions,
   #appShell .recent-item.actions-open .recent-item-actions {
     opacity: 1;
-    pointer-events: auto;
   }
   #appShell .recent-item-overflow svg {
     width: 18px;
@@ -471,9 +473,6 @@
 }
 /* ─── end of pass-2 merge; original polish/mobile-sidebar.css content below ─── */
 @media (max-width: 768px) {
-  /* Reference: ~65% width, 36px navigation/history pitch at 390px, row copy
-     one quiet step under the ink (#cacaca on black).
-     Do not inherit the desktop rail's card paint or 48px touch density. */
   #appShell #sidebar {
     --ui-ink: var(--ui-text-nav);
     --ui-card: var(--ui-bg-panel);
@@ -481,20 +480,19 @@
     background: var(--background);
   }
   #appShell .sidebar-inner {
-    padding: 0 6px 6px;
+    padding: 0 16px;
   }
   #appShell #sidebarHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: calc(var(--ui-control-touch) + 18px);
-    min-height: calc(var(--ui-control-touch) + 18px);
-    padding: 8px 10px;
+    min-height: calc(var(--ui-control-touch) + 24px + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) 0 0;
   }
   #appShell .sidebar-logo {
     display: flex;
     align-items: center;
-    padding: 0 4px;
+    padding: 0 7px;
     gap: 4px;
     min-width: 0;
   }
@@ -502,11 +500,6 @@
     display: block;
     width: 24px;
     height: 24px;
-  }
-  /* Reference drawer lockup: wordmark + ⌄, no mark. */
-  #appShell .sidebar-logo [data-part='brand-caret'] {
-    display: grid;
-    place-items: center;
   }
   #appShell .sidebar-logo > span {
     display: inline-block;
@@ -523,10 +516,10 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: var(--ui-control-md);
-    min-width: var(--ui-control-md);
-    height: var(--ui-control-md);
-    min-height: var(--ui-control-md);
+    width: var(--ui-control-touch);
+    min-width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
     padding: 0;
     border: 0;
     border-radius: var(--ui-radius-control);
@@ -565,17 +558,16 @@
   /* The nav label is a shared UiText (bodySm) whose size reads this role
      (SidebarNavButton); on the phone it takes the reference's 14px step. */
   #appShell #sidebarNav {
-    --nav-label-size: var(--ui-mobile-font-nav);
+    --nav-label-size: var(--ui-font-size-md);
   }
   #appShell #sidebarNav .sidebar-nav-btn {
     display: grid;
     grid-template-columns: 20px minmax(0, 1fr) auto;
     align-items: center;
-    /* Reference: 20px glyph at x 16, label at x 42. */
-    column-gap: 6px;
+    column-gap: 14px;
     width: 100%;
-    min-height: var(--ui-mobile-row);
-    height: var(--ui-mobile-row);
+    min-height: var(--ui-control-touch);
+    height: var(--ui-control-touch);
     padding: 0 10px;
     border-radius: var(--ui-radius-row);
     font-size: var(--ui-mobile-font-nav);
@@ -634,11 +626,7 @@
   #appShell .sidebar-project-create:active {
     background: var(--ui-bg-active);
   }
-  #appShell #sidebarNav #navNew,
-  #appShell #sidebarNav #navImages,
-  #appShell #sidebarNav #navAssistants,
-  #appShell #sidebarNav #navSkills,
-  #appShell #sidebarNav #navExam {
+  #appShell #sidebarNav :is(#navNew, #navSearch, #navImages, #navAssistants, #navSkills, #navExam) {
     display: none;
   }
   :root #appShell #sidebarNav #navSites {
@@ -673,8 +661,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 30px;
-    min-height: 30px;
+    height: var(--ui-control-sm);
+    min-height: var(--ui-control-sm);
     margin-top: 0;
     padding: 0 4px 0 10px;
   }
@@ -685,22 +673,22 @@
     letter-spacing: 0;
     color: var(--muted-foreground);
   }
-  /* Clean recents header without cluttered dots */
   #appShell .recents-head-btn {
-    display: none;
+    color: var(--ui-text-tertiary);
   }
   #appShell .sidebar-nav-sep {
     display: block;
     height: 1px;
-    margin: 8px 10px 10px;
+    margin: 12px 0 8px;
     border: 0;
     background: var(--ui-hairline-faint);
   }
   #appShell .recent-item {
     display: flex;
     align-items: center;
-    height: var(--ui-mobile-row);
-    min-height: var(--ui-mobile-row);
+    height: var(--ui-control-touch);
+    min-height: var(--ui-control-touch);
+    gap: 16px;
     padding: 0 6px 0 10px;
     border-radius: var(--ui-radius-row);
     font-size: var(--ui-mobile-font-nav);
@@ -720,6 +708,18 @@
     line-height: 24px;
     font-weight: var(--ui-font-weight-regular);
     color: var(--ui-text-nav);
+  }
+  #appShell .recent-item-glyph {
+    display: block;
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--ui-text-secondary);
+  }
+  #appShell .recents-search-all {
+    display: inline-flex;
+    padding-inline: 10px;
+    color: var(--ui-text-secondary);
   }
   #appShell .recent-item-overflow {
     display: grid;
@@ -783,9 +783,8 @@
   }
   #appShell #sidebarFooter {
     flex: 0 0 auto;
-    padding: 12px 16px max(18px, env(safe-area-inset-bottom, 18px));
-    /* Reference: a one-device-pixel line barely above the canvas. */
-    border-top: 1px solid var(--ui-hairline-faint);
+    padding: 12px 0 max(16px, env(safe-area-inset-bottom, 0px));
+    border-top: 0;
     gap: 0;
   }
   #appShell #sidebarFooter .sidebar-footer-actions {
@@ -813,17 +812,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    max-width: 38px;
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    min-width: var(--ui-control-touch);
+    max-width: var(--ui-control-touch);
     padding: 0;
     margin: 0;
-    border-radius: 50%;
-    flex: 0 0 38px;
+    border-radius: var(--ui-radius-pill);
+    flex: 0 0 var(--ui-control-touch);
     background: transparent;
     border: none;
-    transition: opacity var(--ui-duration-hover) ease, transform 0.1s ease;
+    transition:
+      opacity var(--ui-duration-hover) ease,
+      transform 0.1s ease;
   }
   #appShell #sidebarUserRow .sidebar-account-trigger:hover,
   #appShell #sidebarUserRow .sidebar-account-trigger:active,
@@ -838,28 +839,30 @@
   #appShell #sidebarUserRow .user-avatar {
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    font-size: 14px;
-    font-weight: 500;
+    flex: 0 0 var(--ui-control-touch);
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+    border-radius: var(--ui-radius-pill);
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-medium);
   }
   #appShell .sidebar-mobile-new-chat {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 38px;
+    height: var(--ui-control-touch);
     padding: 0 16px 0 12px;
-    border-radius: 9999px;
+    border-radius: var(--ui-radius-pill);
     background: var(--foreground);
     color: var(--background);
-    font-size: 14px;
-    font-weight: 500;
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
     border: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    transition: opacity var(--ui-duration-hover) ease, transform 0.1s ease;
+    transition:
+      opacity var(--ui-duration-hover) ease,
+      transform 0.1s ease;
     cursor: pointer;
   }
   #appShell .sidebar-mobile-new-chat:hover {
@@ -873,6 +876,7 @@
     width: 16px;
     height: 16px;
     stroke-width: 2.25;
+    color: inherit;
   }
   /* Reference account lockup: name 15px, plan 13px. */
   #appShell #sidebarUserRow .user-name {
@@ -886,8 +890,7 @@
     line-height: 18px;
     color: var(--ui-text-nav);
   }
-  /* Reference: the account menu is wider than the drawer (~305 of 390px) and
-     overhangs its edge; it stays 16px clear of the viewport's right side. */
+  /* Bound the portaled menu independently of the drawer. */
   #appShell .sidebar-account-menu {
     width: min(304px, calc(100vw - 24px));
     max-width: calc(100vw - 24px);
@@ -931,7 +934,7 @@
      account name the ink. The ancestor pair is written once and reused via
      :is() — repeating "#appShell #sidebar" on every line is the stacked-id
      debt the css-debt ratchet tracks. */
-  [data-mode='dark'] #appShell #sidebar svg {
+  [data-mode='dark'] #appShell #sidebar svg:not(.sidebar-mobile-new-chat svg) {
     color: var(--ui-text-nav);
 
     stroke-linecap: round;
@@ -958,9 +961,7 @@
     color: var(--ui-sidebar-glyph);
   }
 
-  /* The phone drawer is narrow (~237px): keep the identity row tight so the
-     name and plan line stay inside it. (Moved here from parity/sidebar.css —
-     the desktop owner must not carry mobile rules.) */
+  /* Keep the account identity compact on narrow screens. */
   #appShell #sidebarUserRow .sidebar-account-static {
     gap: 6px;
     padding: 4px 0;

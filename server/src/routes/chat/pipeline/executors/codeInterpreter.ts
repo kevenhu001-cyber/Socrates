@@ -184,11 +184,17 @@ export const executeCodeInterpreter: ToolExecutor = async (
     stderr: execResult.stderr || '',
     error: execResult.status !== 'completed' ? execResult.errorMessage || execResult.status : null,
     errorCode:
-      execResult.errorCode ||
-      (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
+      execResult.status === 'completed'
+        ? null
+        : execResult.errorCode ||
+          (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
     retryable: execResult.status !== 'completed' && execResult.retryable === true,
     userMessage:
-      execResult.status === 'completed' ? null : execResult.userMessage || '代码未能完成执行。',
+      execResult.status === 'completed'
+        ? null
+        : execResult.errorCode === 'python_dependency_unavailable'
+          ? '所需的 Python 依赖暂时无法加载。'
+          : execResult.userMessage || '代码未能完成执行。',
     detail: execResult.stderr || execResult.errorMessage || null,
     artifacts: execResult.artifactFileIds || [],
     executionId: execResult.executionId,

@@ -81,6 +81,9 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
         '- `NameError` → the variable was from a previous call. Recompute it in this run.',
       );
       lines.push(
+        '- `python_dependency_unavailable` → dependency loading failed and Python could not import a module. Use the standard library or a dependency-free approach; do not keep installing the same package.',
+      );
+      lines.push(
         '- `ModuleNotFoundError` → Pyodide-distribution packages are auto-loaded from imports. For a compatible pure-Python wheel only, use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` before the import. A bare `micropip.install(...)` does NOT install anything. Never use `pip install` or `subprocess` (no shell).',
       );
       lines.push(

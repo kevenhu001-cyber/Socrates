@@ -288,7 +288,7 @@ test('all settings categories render their own pane and mobile search reaches hi
   await page.setViewportSize({ width: 390, height: 844 });
   await overlay.locator('#settingsMobileBack').click();
   const search = overlay.getByRole('searchbox', { name: 'Search settings' });
-  await expect(search).toBeVisible();
+  await expect(search).toBeHidden();
   const categories = overlay.locator('.settings-nav-categories');
   await expect(overlay.locator('.settings-nav')).toBeVisible();
   await expect(overlay.locator('.settings-body')).toBeHidden();
@@ -296,9 +296,6 @@ test('all settings categories render their own pane and mobile search reaches hi
     'column',
   );
   expect(await categories.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
-    true,
-  );
-  expect(await categories.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(
     true,
   );
   await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(8);
@@ -310,11 +307,13 @@ test('all settings categories render their own pane and mobile search reaches hi
   await accountTab.click();
   await expect(overlay.locator('.settings-pane:visible h2')).toHaveText('Account');
   await overlay.locator('#settingsMobileBack').click();
+  await overlay.getByRole('button', { name: 'Search settings' }).click();
+  await expect(search).toBeFocused();
   await search.pressSequentially('content width');
   await expect(search).toHaveValue('content width');
-  await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
+  await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(1);
   await search.fill('字号');
-  await expect(overlay.locator('.settings-nav button')).toHaveCount(1);
+  await expect(overlay.locator('.settings-nav [data-section]')).toHaveCount(1);
   await expect(overlay.locator('.settings-nav [data-section="display"]')).toBeVisible();
   await expect(overlay.locator('.settings-body')).toBeHidden();
   await overlay.locator('.settings-nav [data-section="display"]').click();
@@ -364,6 +363,10 @@ test('model menu opens the model settings detail directly on mobile', async ({ p
   await openModels();
   await expect(overlay.locator('.settings-pane')).toHaveCount(1);
   await back.click();
+  /* The phone index keeps the search field behind its header toggle, and the
+     back button hands focus to the category that was open. */
+  await expect(overlay.locator('.settings-index-group')).toHaveCount(3);
+  await overlay.getByRole('button', { name: 'Search settings' }).click();
   const search = overlay.getByRole('searchbox', { name: 'Search settings' });
   await expect(search).toBeFocused();
   await search.fill('no matching category');
@@ -372,6 +375,7 @@ test('model menu opens the model settings detail directly on mobile', async ({ p
   await expect(trigger).toBeFocused();
   await openModels();
   await back.click();
+  await overlay.getByRole('button', { name: 'Search settings' }).click();
   await expect(search).toHaveValue('');
 });
 

@@ -346,11 +346,9 @@ test('phone drawer keeps nav glyphs aligned and account menu in view', async ({ 
       };
     }),
   );
-  expect(rows).toHaveLength(7);
+  expect(rows).toHaveLength(5);
   for (const row of rows) {
-    // Reference drawer density: 36px navigation/history pitch at 390px
-    // (--ui-mobile-row, calibrated against the phone reference).
-    expect(row.height).toBe(36);
+    expect(row.height).toBe(44);
     expect(Math.abs(row.glyphCenter - row.labelCenter)).toBeLessThanOrEqual(2);
   }
   // Portaled account menus stay inside the phone viewport.
@@ -386,6 +384,11 @@ test('Admin page hides the conversation top-bar controls', async ({ page }) => {
   expect(displays).toEqual(['none', 'none', 'none']);
   // Leaving the console drops the admin body class and restores chrome.
   await page.evaluate(() => window.__socratesLegacy.navigation.openNav('library'));
+  await expect(page.locator('body')).not.toHaveClass(/admin-active/);
+  /* The conversation actions are recomputed from the live view, so a
+     workspace page clears them; re-arm them to prove the console was the
+     only thing suppressing the chrome while it was open. */
+  await page.evaluate(() => window.__testShowConversationActions(true));
   await expect(page.locator('#shareBtn')).toBeVisible();
 });
 

@@ -9,6 +9,7 @@ import {
   CpuIcon,
   DatabaseIcon,
   MonitorIcon,
+  MoonIcon,
   SearchIcon,
   Settings2Icon,
   SparklesIcon,
@@ -16,7 +17,10 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from 'cn';
-import type { SettingsLabel, SettingsSection } from './settings.types';
+import { Badge } from '../ui/shadcn/badge';
+import { useUserInfo } from '../sidebar-chrome/sidebarChrome.store';
+import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
+import type { SaveSettingsPreference, SettingsLabel, SettingsSection } from './settings.types';
 import type { SettingsCategory } from './settingsNavigation';
 
 const categoryIcons: Record<SettingsSection, LucideIcon> = {
@@ -29,6 +33,92 @@ const categoryIcons: Record<SettingsSection, LucideIcon> = {
   data: DatabaseIcon,
   account: UserRoundIcon,
 };
+
+const mobileGroups = [
+  ['account', 'data'],
+  ['models', 'apps', 'personalization', 'notifications'],
+  ['general', 'display'],
+] as const;
+
+function SettingsIdentity({ label }: { label: SettingsLabel }) {
+  const user = useUserInfo();
+  const free = user.tier === 'diophantus' || user.tier === 'free';
+  return (
+    <div className="settings-index-identity">
+      <span>{user.email || user.displayName || label('访客', 'Guest')}</span>
+      <Badge variant="secondary">{free ? label('免费版', 'Free') : user.tierLabel}</Badge>
+    </div>
+  );
+}
+
+function MobileAppearance({
+  label,
+  savePreference,
+}: {
+  label: SettingsLabel;
+  savePreference: SaveSettingsPreference;
+}) {
+  const appearance = useSettingsPreferencesStore((state) => state.theme);
+  const title = label('颜色模式', 'Color mode');
+  const modes = [
+    ['light', label('浅色', 'Light')],
+    ['dark', label('深色', 'Dark')],
+    ['system', label('跟随系统', 'System')],
+  ] as const;
+  return (
+    <div className="settings-index-appearance" role="group" aria-label={title}>
+      <div className="settings-index-appearance-title">
+        <span className="settings-category-icon">
+          <MoonIcon aria-hidden />
+        </span>
+        {title}
+      </div>
+      <div className="settings-theme-options">
+        {modes.map(([mode, name]) => (
+          <Button
+            key={mode}
+            variant="ghost"
+            size="surface"
+            className="settings-theme-choice"
+            aria-pressed={appearance === mode}
+            onClick={() => {
+              if (appearance === mode) return;
+              settingsPreferenceActions.setTheme(mode);
+              void savePreference({ theme: mode });
+            }}
+          >
+            <span className="settings-theme-preview" data-preview={mode} aria-hidden />
+            <span>{name}</span>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SettingsMobileSearch({
+  label,
+  open,
+  onToggle,
+}: {
+  label: SettingsLabel;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon-lg"
+      className="settings-search-trigger"
+      aria-controls="settingsSearchInput"
+      aria-expanded={open}
+      aria-label={label('搜索设置', 'Search settings')}
+      onClick={onToggle}
+    >
+      <SearchIcon aria-hidden />
+    </Button>
+  );
+}
 
 export function SettingsMobileBack({
   label,
@@ -56,6 +146,9 @@ export function SettingsNavigation({
   label,
   query,
   section,
+  mobile,
+  searchOpen,
+  savePreference,
   onQueryChange,
   onSectionChange,
 }: {
@@ -63,6 +156,9 @@ export function SettingsNavigation({
   label: SettingsLabel;
   query: string;
   section: SettingsSection;
+  mobile: boolean;
+  searchOpen: boolean;
+  savePreference: SaveSettingsPreference;
   onQueryChange: (query: string) => void;
   onSectionChange: (section: SettingsSection) => void;
 }) {
@@ -88,9 +184,43 @@ export function SettingsNavigation({
     items[next]?.focus();
     items[next]?.click();
   };
+
+  const renderCategory = ({ key, name, description }: SettingsCategory) => {
+    const CategoryIcon = categoryIcons[key];
+    const current = !mobile && section === key;
+    return (
+      <Button
+        type="button"
+        variant={current ? 'secondary' : 'ghost'}
+        key={key}
+        data-section={key}
+        className={cn('settings-nav-item', 'justify-start', current && 'active')}
+        aria-current={current ? 'page' : undefined}
+        onClick={() => onSectionChange(key)}
+      >
+        <span className="settings-category-icon">
+          <CategoryIcon aria-hidden />
+        </span>
+        <span className="settings-category-copy">
+          <span className="settings-category-name">{name}</span>
+          <span className="settings-category-description">{description}</span>
+        </span>
+        <ChevronRightIcon className="settings-category-chevron" aria-hidden />
+      </Button>
+    );
+  };
+
+  const showOverview = mobile && !query.trim();
+  const groups = mobile
+    ? mobileGroups.map((keys) =>
+        keys.flatMap((key) => categories.filter((category) => category.key === key)),
+      )
+    : [];
+
   return (
     <nav className="settings-nav" aria-label={label('设置分类', 'Settings categories')}>
-      <InputGroup className="settings-search shrink-0">
+      {showOverview ? <SettingsIdentity label={label} /> : null}
+      <InputGroup className={cn('settings-search shrink-0', mobile && !searchOpen && 'hidden')}>
         <InputGroupInput
           id="settingsSearchInput"
           type="search"
@@ -107,31 +237,20 @@ export function SettingsNavigation({
         className="settings-nav-categories"
         role="group"
         aria-label={label('设置类别', 'Settings categories')}
-        onKeyDown={onCategoryKeyDown}
+        onKeyDown={mobile ? undefined : onCategoryKeyDown}
       >
-        {categories.map(({ key, name, description }) => {
-          const CategoryIcon = categoryIcons[key];
-          return (
-            <Button
-              type="button"
-              variant={section === key ? 'secondary' : 'ghost'}
-              key={key}
-              data-section={key}
-              className={cn('settings-nav-item', 'justify-start', section === key && 'active')}
-              aria-current={section === key ? 'page' : undefined}
-              onClick={() => onSectionChange(key)}
-            >
-              <span className="settings-category-icon">
-                <CategoryIcon aria-hidden />
-              </span>
-              <span className="settings-category-copy">
-                <span className="settings-category-name">{name}</span>
-                <span className="settings-category-description">{description}</span>
-              </span>
-              <ChevronRightIcon className="settings-category-chevron" aria-hidden />
-            </Button>
-          );
-        })}
+        {mobile
+          ? groups.map((group, index) =>
+              group.length ? (
+                <div className="settings-index-group" key={mobileGroups[index][0]}>
+                  {showOverview && index === 2 ? (
+                    <MobileAppearance label={label} savePreference={savePreference} />
+                  ) : null}
+                  {group.map(renderCategory)}
+                </div>
+              ) : null,
+            )
+          : categories.map(renderCategory)}
         {categories.length === 0 ? (
           <p className="settings-nav-empty" role="status">
             {label('没有匹配的设置。', 'No matching settings.')}

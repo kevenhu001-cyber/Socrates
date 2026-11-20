@@ -53,7 +53,6 @@
   #appShell#appShell .sidebar {
     width: min(var(--ui-sidebar-mobile), 90vw);
     min-width: min(var(--ui-sidebar-mobile), 90vw);
-    border-radius: 0;
   }
   /* The reference drawer footer is identity-only on phones — theme /
      display / settings stay reachable through desktop chrome and the

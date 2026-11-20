@@ -8,9 +8,11 @@ import { DeferredMenu } from '../menu/DeferredMenu';
 import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { openSettings } from '../settings/settings.service.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
-import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
+import { closeSidebarOnMobile } from '../../sidebar/sidebar.service.ts';
+import { useLocaleRefresh } from '../rn/WebUiTheme';
 
 export function SidebarFooter() {
+  useLocaleRefresh();
   const user = useUserInfo();
   const isMobile = useMobileViewport();
   const [open, setOpen] = useState(false);
@@ -44,83 +46,83 @@ export function SidebarFooter() {
     <div className="sidebar-footer-account-wrap">
       <div className="sidebar-footer-identity-row">
         <DeferredMenu
-        open={open}
-        onOpenChange={setOpen}
-        above
-        className="sidebar-account-menu"
-        label={label('账户', 'Account')}
-        trigger={
-          <Button
-            ref={accountTrigger}
-            variant="ghost"
-            type="button"
-            className="sidebar-account-trigger active:not-aria-[haspopup]:translate-y-0"
-            title={user.displayName}
-            aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}
-          >
-            {identity}
-          </Button>
-        }
-      >
-        {({ FoundationMenuItem }) => (
-          <>
-            <FoundationMenuItem
-              className="account-menu-identity"
-              onClick={() => {
-                close();
-                getLegacyActions().navigation.openProfile(accountTrigger.current);
-              }}
+          open={open}
+          onOpenChange={setOpen}
+          above
+          className="sidebar-account-menu"
+          label={label('账户', 'Account')}
+          trigger={
+            <Button
+              ref={accountTrigger}
+              variant="ghost"
+              type="button"
+              className="sidebar-account-trigger active:not-aria-[haspopup]:translate-y-0"
+              title={user.displayName}
+              aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}
             >
               {identity}
-              <Icon name="chevronRight" />
-            </FoundationMenuItem>
-            <ShadcnSeparator />
-            <FoundationMenuItem onClick={() => navigate('personalization')}>
-              <Icon name="sliders" />
-              {label('个性化', 'Personalization')}
-            </FoundationMenuItem>
-            <FoundationMenuItem
-              onClick={() => {
-                close();
-                getLegacyActions().navigation.openProfile(accountTrigger.current);
-              }}
-            >
-              <Icon name="user" />
-              {label('个人资料', 'Profile')}
-            </FoundationMenuItem>
-            <FoundationMenuItem
-              onPointerEnter={preloadSettingsPage}
-              onPointerDown={preloadSettingsPage}
-              onFocus={preloadSettingsPage}
-              onClick={() => navigate('general')}
-            >
-              <Icon name="gear" />
-              {label('设置', 'Settings')}
-            </FoundationMenuItem>
-            <ShadcnSeparator />
-            <FoundationMenuItem
-              onClick={() => {
-                close();
-                getLegacyActions().navigation.openCheatsheet();
-              }}
-            >
-              <Icon name="lifeBuoy" />
-              {label('帮助', 'Help')}
-              <Icon name="chevronRight" className="account-menu-trailing" />
-            </FoundationMenuItem>
-            {user.isSignedIn && (
+            </Button>
+          }
+        >
+          {({ FoundationMenuItem }) => (
+            <>
+              <FoundationMenuItem
+                className="account-menu-identity"
+                onClick={() => {
+                  close();
+                  getLegacyActions().navigation.openProfile(accountTrigger.current);
+                }}
+              >
+                {identity}
+                <Icon name="chevronRight" />
+              </FoundationMenuItem>
+              <ShadcnSeparator />
+              <FoundationMenuItem onClick={() => navigate('personalization')}>
+                <Icon name="sliders" />
+                {label('个性化', 'Personalization')}
+              </FoundationMenuItem>
               <FoundationMenuItem
                 onClick={() => {
                   close();
-                  getLegacyActions().navigation.signOut();
+                  getLegacyActions().navigation.openProfile(accountTrigger.current);
                 }}
               >
-                <Icon name="logOut" />
-                {label('退出登录', 'Sign out')}
+                <Icon name="user" />
+                {label('个人资料', 'Profile')}
               </FoundationMenuItem>
-            )}
-          </>
-        )}
+              <FoundationMenuItem
+                onPointerEnter={preloadSettingsPage}
+                onPointerDown={preloadSettingsPage}
+                onFocus={preloadSettingsPage}
+                onClick={() => navigate('general')}
+              >
+                <Icon name="gear" />
+                {label('设置', 'Settings')}
+              </FoundationMenuItem>
+              <ShadcnSeparator />
+              <FoundationMenuItem
+                onClick={() => {
+                  close();
+                  getLegacyActions().navigation.openCheatsheet();
+                }}
+              >
+                <Icon name="lifeBuoy" />
+                {label('帮助', 'Help')}
+                <Icon name="chevronRight" className="account-menu-trailing" />
+              </FoundationMenuItem>
+              {user.isSignedIn && (
+                <FoundationMenuItem
+                  onClick={() => {
+                    close();
+                    getLegacyActions().navigation.signOut();
+                  }}
+                >
+                  <Icon name="logOut" />
+                  {label('退出登录', 'Sign out')}
+                </FoundationMenuItem>
+              )}
+            </>
+          )}
         </DeferredMenu>
         {isMobile ? (
           <Button
@@ -130,7 +132,7 @@ export function SidebarFooter() {
             aria-label={label('新建会话', 'New chat')}
             onClick={() => {
               getLegacyActions().navigation.startNewChat();
-              toggleSidebar();
+              closeSidebarOnMobile();
             }}
           >
             <Icon name="plus" />

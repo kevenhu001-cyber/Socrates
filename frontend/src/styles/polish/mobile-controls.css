@@ -5,8 +5,7 @@
  */
 
 @media (max-width: 768px) {
-  /* The drawer width comes from tokens.css (254px at the reference width);
-     retain a hard viewport bound here for very narrow devices. */
+  /* Retain a hard viewport bound for very narrow devices. */
   #appShell .sidebar {
     max-width: min(var(--ui-sidebar-mobile), 90vw);
   }

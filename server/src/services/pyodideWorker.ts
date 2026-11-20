@@ -66,19 +66,9 @@ function isRunCodeRequest(value: unknown): value is RunCodeRequest {
 /**
  * Boot Pyodide. ~3-5s on a warm cache; the parent warm-pool amortises this.
  */
-/* Scientific packages to preload on boot. Pyodide 0.26 with
-   `fullStdLib:false` ships only the core interpreter; numpy / pandas /
-   matplotlib are available as prebuilt wheels via `loadPackage`. We
-   pull them at boot so the first user request doesn't pay the
-   ~30 MB download cost. If a load fails (offline, version mismatch),
-   the boot still succeeds — the user's code will see a clean
-   `ModuleNotFoundError` for the missing package instead of crashing
-   the worker. */
-const PRELOAD_PACKAGES = ['numpy', 'pandas', 'matplotlib'];
-
 /* Pyodide's matplotlib ships only DejaVu Sans,
    which has no CJK glyphs, so chart text in Chinese renders as tofu
-   on the first try. Download a CJK font on first boot, cache it,
+   on the first try. Download a CJK font on first use of matplotlib, cache it,
    register it with font_manager, and put it first in
    rcParams['font.sans-serif']. The model-facing tool description
    tells the model not to override font.sans-serif so it can't undo
@@ -104,7 +94,7 @@ const CJK_FONT_EXPECTED_BYTES = 8_331_336;
 const CJK_FONT_GIT_BLOB_SHA1 = 'fc0fda9394367c16c1af7555a2ae4d5e2e6a6f02';
 const CJK_FONT_MIN_BYTES = 100_000;
 const CJK_FONT_MAX_BYTES = 24 * 1024 * 1024;
-const CJK_FONT_BOOT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
+const CJK_FONT_TIMEOUT_MS = parseInt(process.env.EXEC_CJK_FONT_TIMEOUT_MS || '8000', 10);
 let _cjkFontPromise: Promise<string | null> | null = null;
 
 function _cjkFontPath(): string {
@@ -186,7 +176,7 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
     /* not cached yet */
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CJK_FONT_BOOT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), CJK_FONT_TIMEOUT_MS);
   try {
     const resp = await fetch(CJK_FONT_URL, { signal: controller.signal, redirect: 'error' });
     if (!resp.ok || !resp.body) {
@@ -322,25 +312,9 @@ async function bootPyodide() {
       // Default indexURL auto-detects the pyodide package's own directory
       // in Node — the WASM blob lives next to pyodide.mjs in node_modules.
       fullStdLib: false,
-      // the pool spawns this file via
-      // `new Worker(entry.file, …)` from codeInterpreter.js, so we run
-      // inside a `node:worker_threads` Worker. Workers do not inherit
-      // `process.stdout` / `process.stderr` (both are `null`), and Pyodide's
-      // default stdout/stderr bindings fall through to `fs.writeSync(undefined, …)`
-      // the first time Python prints. The earliest print() during boot is the
-      // CJK font registration's status line, which then raises
-      // `OSError: [Errno 29] I/O error` — the boot survives because the
-      // CJK block has its own try/except, but the registration silently fails
-      // (CJK text in matplotlib output renders as tofu) and the journal fills
-      // with stack traces every boot / respawn.
-      //
-      // Pyodide's documented fix is to pass explicit `stdout` / `stderr`
-      // callbacks — they are only active until `runCode()` replaces
-      // `sys.stdout` with our `_CappedStream`, so this only affects the
-      // boot phase. We forward to `console.log` / `console.warn` (the same
-      // channel the existing `console.warn('[pyodide] CJK font registration
-      // threw: …')` already uses) so the diagnostic text stays visible
-      // alongside the rest of the worker's journal.
+      // Use explicit callbacks because Pyodide's default file-descriptor
+      // bindings can raise an I/O error in a Node worker. These handle
+      // startup diagnostics; runCode() installs capped Python streams.
       stdout: (msg: string) => {
         try {
           console.log(`[pyodide-boot] ${msg}`);
@@ -357,37 +331,21 @@ async function bootPyodide() {
       },
     });
 
-    // Let Pyodide resolve dependencies and download the wheels as one batch.
-    try {
-      await pyodide.loadPackage(PRELOAD_PACKAGES, {
-        errorCallback: (message) => console.warn(`[pyodide] preload: ${message}`),
-      });
-    } catch (error) {
-      console.warn(
-        `[pyodide] preload failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
     // Install a self-contained stream class. sys.stdout and sys.stderr are
     // replaced with instances of this class on each run() call. The class
     // keeps its own buffer (no dependency on the original stream's API),
     // enforces a per-run byte cap, and exposes a getvalue() method so we
     // can pull the captured text after the run.
     //
-    // matplotlib is preloaded at boot and
-    // declares `matplotlib-pyodide` as a dependency. When user code
+    // matplotlib declares `matplotlib-pyodide` as a dependency. When user code
     // triggers pyplot's auto-backend logic, the candidate list can
     // include `module://matplotlib_pyodide.wasm_backend`, whose top-
     // level `from js import ImageData, document` raises ImportError
-    // under Node (no `js` globals). We pin the non-GUI 'Agg' backend
-    // before any user code runs so the wasm_backend is never tried.
+    // under Node (no `js` globals). Set the headless default before the
+    // first import without depending on matplotlib to boot the worker.
     pyodide.runPython(`
-import sys
-try:
-    import matplotlib
-    matplotlib.use('Agg')
-except Exception:
-    pass
+import os, sys
+os.environ['MPLBACKEND'] = 'Agg'
 
 class _CappedStream:
     """Self-contained byte-capped text stream. No wrapping of any original."""
@@ -511,11 +469,7 @@ def _socrates_make_flush(orig_flush):
     return _wrapped
 `);
 
-    // Register the optional font before advertising readiness. This keeps
-    // font/network work outside the per-execution timeout budget. Failure is
-    // intentionally non-fatal: matplotlib can continue with its default font.
-    await _ensureCjkFontRegistered();
-
+    // Acquiring a worker must not depend on downloading optional wheels or fonts.
     parentPort!.postMessage({ id: 'boot', type: 'ready', version: pyodide.version });
   } catch (err) {
     bootError = err as Error;
@@ -679,6 +633,7 @@ async function runCode({
      purpose so the exec below can report the real error through the
      normal marker path. */
   const packagesStartedAt = Date.now();
+  let dependencyLoadFailed = false;
   parentPort!.postMessage({
     id,
     type: 'phase',
@@ -687,6 +642,10 @@ async function runCode({
   });
   try {
     const loadedPackages = await pyodide.loadPackagesFromImports(code, {
+      errorCallback: (message) => {
+        dependencyLoadFailed = true;
+        console.warn(`[pyodide] dependency load: ${sanitizeLogValue(message, 160)}`);
+      },
       messageCallback: (msg: string) => {
         try {
           parentPort!.postMessage({
@@ -709,6 +668,10 @@ async function runCode({
     }
   } catch (_) {
     /* offline fetch / unparseable source — exec reports the real error */
+  }
+
+  if (Object.hasOwn(pyodide.loadedPackages, 'matplotlib')) {
+    await _ensureCjkFontRegistered();
   }
 
   const packageMs = Date.now() - packagesStartedAt;
@@ -959,10 +922,12 @@ async function runCode({
      Runtime failures (NameError, TypeError…) still count — they
      burned real worker work. */
   const errorCode =
-    status === 'failed' &&
-    errorMessage &&
-    /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage)
-      ? 'syntax_error'
+    status === 'failed' && errorMessage
+      ? /^(SyntaxError|IndentationError|TabError)\b/.test(errorMessage)
+        ? 'syntax_error'
+        : dependencyLoadFailed && /^ModuleNotFoundError\b/.test(errorMessage)
+          ? 'python_dependency_unavailable'
+          : undefined
       : undefined;
 
   // Walk the artifacts dir and report what we produced.

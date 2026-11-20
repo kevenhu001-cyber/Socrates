@@ -10,26 +10,12 @@ import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates
 import type { TextStyle } from 'react-native';
 
 const LOGO = { uri: '/logo.png' };
-/* Phone drawer wordmark: the reference sets its brand line at 20px; the CSS
-   role keeps it on the user's type scale. */
-/* Reference drawer wordmark: 18px semibold (cap + ascender ink 13px). */
 const MOBILE_BRAND_NAME = {
-  fontSize: 'var(--ui-font-size-lg)',
-  lineHeight: 28,
+  fontSize: 'var(--ui-font-size-xxl)',
+  lineHeight: 32,
 } as unknown as TextStyle;
 
-/**
- * RN-7 — the sidebar header is the shared RN shell part
- * (packages/ui/src/shell/Sidebar.tsx). This host supplies ids, copy and
- * callbacks, and keeps the structural class hooks the drawer CSS keys on
- * (`.sidebar-logo`, `.sidebar-header-actions`, and `.btn-icon`, the phone
- * tap-target marker; desktop keeps the RN part's own 32px pill).
- *
- * Both desktop and the phone drawer draw the panel glyph on the collapse
- * control, as the reference does. On the phone the header is the reference
- * lockup: the wordmark with a decorative ⌄ (no mark), then the recent-chat filter and
- * collapse. Global search and new chat live in the nav list.
- */
+/** Host bindings for the shared sidebar brand and controls. */
 export function SidebarHeader() {
   useLocaleRefresh();
   const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
@@ -59,7 +45,6 @@ export function SidebarHeader() {
         name="Socrates"
         logo={LOGO}
         compact={isMobile}
-        caret={isMobile}
         hideLogo={isMobile}
         nameStyle={isMobile ? MOBILE_BRAND_NAME : undefined}
         hostStyle={webClass('sidebar-logo')}

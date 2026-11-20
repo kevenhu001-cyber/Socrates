@@ -66,7 +66,6 @@
   --ui-control-badge: 20px;
   --ui-hit-area: 44px;
   --ui-sidebar-mobile: 254px;
-  --ui-mobile-row: 36px;
   --ui-mobile-header: 56px;
   --ui-mobile-page-gutter: 16px;
   /* Phone type steps measured off the ChatGPT phone reference (390px wide) by
@@ -189,11 +188,10 @@
   --ui-border-alpha: 0.25;
 }
 
-/* Phone drawer overrides: the drawer tracks ~65vw (capped at 280px), keeping
-   the main pane visible as in the user's 2026-10-18 phone reference. */
 @media (max-width: 768px) {
   :root {
-    --ui-sidebar-mobile: min(280px, 65vw);
+    /* Leave a tappable strip of the covered page outside the phone drawer. */
+    --ui-sidebar-mobile: min(420px, 90vw);
     /* Phone reference bubble: a pill on one line (44px tall, 22px radius). */
     --ui-radius-bubble: 22px;
   }

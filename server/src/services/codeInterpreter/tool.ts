@@ -31,7 +31,7 @@ export const CODE_INTERPRETER_TOOL = {
       `- **Never call \`input()\`.** There is no stdin — it blocks until the ${DEFAULT_TIMEOUT_MS / 1000}s timeout. Pass data as a literal, read from a file in \`/artifacts\`, or generate it inline.\n` +
       '- **Never call `plt.show()`.** matplotlib is pinned to `Agg` (no GUI). Use `plt.savefig("name.png", ...)` and the file will be returned as an artifact.\n' +
       '- **Images are not displayed automatically.** If you want the user to see a generated image (PNG/JPEG/WebP), reference it explicitly in your reply with markdown: `![description](/api/files/<fileId>/raw)`. The file id is reported back in the tool result. Otherwise describe the image or result in prose.\n' +
-      '- **Packages:** packages in the Pyodide distribution (numpy, pandas, matplotlib, scipy, sympy, scikit-learn, statsmodels, networkx, pillow, …) auto-install on `import` — just import them. For a PyPI-only pure-Python wheel use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` — micropip is async, so a bare `micropip.install(...)` call installs nothing. Never call `pip install` — there is no `subprocess`.\n' +
+      '- **Packages:** the runtime detects imports of Pyodide packages (numpy, pandas, matplotlib, scipy, sympy, …) and loads them on demand before running Python. First use may need a download. For a PyPI-only pure-Python wheel use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` — a bare `micropip.install(...)` call installs nothing. Never call `pip install` — there is no `subprocess`.\n' +
       '- **Group multi-step work in a single call.** Several independent calculations belong in one `code` body — the runner is one exec per tool call, and the per-turn tool-call budget (stated in the native-tool contract) is finite.\n\n' +
       '## When to call\n' +
       '- Arithmetic, unit conversion, numeric verification, solving an equation, "is X > Y".\n' +
@@ -54,7 +54,7 @@ export const CODE_INTERPRETER_TOOL = {
       '**Files persist. EVERYTHING ELSE DOES NOT.** Imports, function definitions, variables, module-level state — all reset between calls. Re-import or recompute anything you need; do not rely on a variable from a previous run.\n\n' +
       '## matplotlib guidance\n' +
       '- Backend is pinned to `Agg` (no display). Figures render headless.\n' +
-      '- A CJK-capable font (Noto Sans SC) is pre-installed and registered at boot; Chinese / Japanese / Korean characters in titles, labels, and legends render correctly without any extra setup. Do NOT call `matplotlib.rcParams["font.sans-serif"] = […]` or `matplotlib.font_manager.fontManager.addfont(…)` — leave the defaults alone so the pre-installed font stays active.\n' +
+      '- A CJK-capable font (Noto Sans SC) is registered on first use when available. Leave the default font configuration in place.\n' +
       '- Save with `plt.savefig("name.png", dpi=120, bbox_inches="tight")` — dpi=120 keeps PNGs under ~500 KB at typical sizes; bbox_inches="tight" crops margins.\n' +
       '- Always call `plt.tight_layout()` before savefig or labels get clipped.\n' +
       '- Close figures (`plt.close("all")` or `plt.close(fig)`) after saving — otherwise memory grows across runs.\n\n' +

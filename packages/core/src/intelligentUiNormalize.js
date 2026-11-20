@@ -86,9 +86,17 @@ export function normalizeIntelligentUiNode(raw) {
     }
   }
 
+  // Structured chart payloads use the same validation and renderer as
+  // visualization nodes. Keep the separate chart type for bound point lists.
+  if (node.type === 'chart' && (node.payload !== undefined || isRecord(node.data))) {
+    node.type = 'visualization';
+  }
+
   if (node.type === 'visualization') {
     if (!Object.hasOwn(node, 'id')) node.id = 'vis_' + Math.random().toString(36).slice(2, 8);
-    if (typeof node.template !== 'string') {
+    if (typeof node.template === 'string') {
+      node.template = node.template.trim();
+    } else {
       if (typeof node.kind === 'string') node.template = node.kind.trim();
       else if (typeof node.chartType === 'string') node.template = node.chartType.trim();
       else if (typeof node.chart === 'string') node.template = node.chart.trim();
@@ -186,7 +194,7 @@ export function normalizeIntelligentUiArgs(value) {
       ...value,
     });
     return {
-      version: 1,
+      version: value.version === undefined ? 1 : numberLike(value.version),
       nodes: [singleNode],
     };
   }
@@ -199,12 +207,9 @@ export function normalizeIntelligentUiArgs(value) {
     });
   }
 
-  // Handle { nodes: { ... } } (single node passed as object instead of array)
-  let rawNodes = value.nodes;
-  if (isRecord(rawNodes)) {
-    rawNodes = [rawNodes];
-  }
-  const nodes = asArray(rawNodes);
+  // Unwrap {item: [...]}/{items: [...]} before treating an object as one node.
+  const unwrapped = asArray(value.nodes);
+  const nodes = isRecord(unwrapped) ? [unwrapped] : unwrapped;
   if (!Array.isArray(nodes)) return value;
   // docs/plans/2026-11-20-compact-ui-contract.md.
   // Reserve every explicit ID first; generate only for absent IDs.
@@ -216,8 +221,7 @@ export function normalizeIntelligentUiArgs(value) {
       .filter(Boolean),
   );
   const normalizedNodes = nodes.map((node, index) => {
-    if (!isRecord(node) || Object.hasOwn(node, 'id'))
-      return normalizeIntelligentUiNode(node);
+    if (!isRecord(node) || Object.hasOwn(node, 'id')) return normalizeIntelligentUiNode(node);
     let id = `n${index + 1}`;
     let suffix = 2;
     while (reserved.has(id)) id = `n${index + 1}_${suffix++}`;

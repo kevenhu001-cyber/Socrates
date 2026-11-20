@@ -1,6 +1,7 @@
 import { Button as UiButton } from '../ui/Button';
 import { memo, useCallback, useState, useEffect } from 'react';
 import type React from 'react';
+import { MessageCircleIcon } from 'lucide-react';
 import { ConversationRow } from '@socrates/ui/shell';
 import { t } from '../legacy/gateway.ts';
 import { detailCache } from '../../session/detailCache.ts';
@@ -223,6 +224,7 @@ function SessionRowBase({
       label={session.label || undefined}
       meta={buildMeta(session, timeLabel)}
       error={error || undefined}
+      leading={<MessageCircleIcon className="recent-item-glyph" aria-hidden />}
       menuOpen={actionsOpen}
       dragging={dragging}
       renaming={renaming}

@@ -95,13 +95,6 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
 }
 
-@media (max-width: 720px) {
-  html[data-main-view='settingsPage'] #settingsPage .account-page-header {
-    height: 56px;
-    padding: 0 16px;
-  }
-}
-
 /* Settings v2: a quiet control document, not cards nested inside cards.
  * Intentional scoped overrides of overlays.css; account-danger remains framed. */
 html[data-main-view='settingsPage'] #settingsPage .settings-pane {
@@ -139,25 +132,172 @@ html[data-main-view='settingsPage'] #settingsPage .settings-choice {
   min-height: 52px;
 }
 @media (max-width: 720px) {
-  html[data-main-view='settingsPage'] #settingsPage .settings-nav-categories {
-    gap: 0;
+  html[data-main-view='settingsPage'] #settingsPage .account-page-header {
+    display: grid;
+    grid-template-columns: var(--ui-control-touch) minmax(0, 1fr) var(--ui-control-touch);
+    height: calc(var(--ui-mobile-header) + env(safe-area-inset-top, 0px));
+    padding: env(safe-area-inset-top, 0px) var(--ui-space-md) 0;
+    border-bottom: 0;
   }
-  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
-    min-height: 60px;
-    padding: 8px 10px;
-    border: 0;
+
+  .settings-page .account-page-title {
+    justify-self: center;
+    min-width: 0;
+    text-align: center;
+  }
+  .settings-page .account-page-header > [data-slot='button'] {
+    width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
+  }
+  .settings-page[data-mobile-index='true'] .settings-nav,
+  .settings-page[data-mobile-index='false'] .settings-body {
+    padding-inline: var(--ui-space-md);
+  }
+  .settings-page[data-mobile-index='true'] .settings-nav {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  .settings-page .settings-search.hidden {
+    display: none;
+  }
+  .settings-page .settings-nav-categories {
+    flex: none;
+    gap: var(--ui-space-md);
+    overflow: visible;
+    padding: 0;
+  }
+  .settings-index-identity,
+  .settings-index-group {
+    border-radius: var(--ui-radius-lg);
+    background: var(--ui-bg-surface);
+  }
+  .settings-index-identity {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--ui-control-touch);
+    gap: var(--ui-space-sm);
+    padding: var(--ui-space-sm) var(--ui-space-lg);
+    border: 1px solid var(--ui-border-subtle);
+    font-size: var(--ui-font-size-md);
+    font-weight: var(--ui-font-weight-medium);
+  }
+  .settings-index-identity > :first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .settings-page .settings-nav-item {
+    min-height: calc(var(--ui-control-touch) + 12px);
+    padding: var(--ui-space-xs) var(--ui-space-md);
+    border-radius: var(--ui-radius-lg);
+    border-color: transparent;
+    background: transparent;
+  }
+  .settings-page .settings-nav-item:not(:first-child) {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .settings-page .settings-nav-item:not(:last-child) {
     border-bottom: 1px solid var(--ui-border-subtle);
-    border-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .settings-page .settings-nav-item:hover {
+    background: var(--ui-fill-hover);
+  }
+  .settings-page .settings-category-icon {
+    width: var(--ui-control-sm);
+    height: var(--ui-control-sm);
     background: transparent;
   }
-  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
-    border-radius: var(--ui-radius-control);
-    border-bottom-color: transparent;
+  .settings-page .settings-category-name,
+  .settings-index-appearance-title {
+    font-size: var(--ui-font-size-md);
   }
-  html[data-main-view='settingsPage'] #settingsPage .settings-category-icon {
-    width: 32px;
-    height: 32px;
-    background: transparent;
+  .settings-page .settings-category-chevron {
+    display: block;
+    color: var(--ui-text-tertiary);
+  }
+  .settings-index-appearance {
+    --settings-preview-light: var(--ui-bg-page);
+    --settings-preview-dark: var(--ui-text-primary);
+    padding: var(--ui-space-sm) var(--ui-space-md) var(--ui-space-md);
+    border-bottom: 1px solid var(--ui-border-subtle);
+  }
+  :root[data-mode='dark'] .settings-index-appearance {
+    --settings-preview-light: var(--ui-text-primary);
+    --settings-preview-dark: var(--ui-bg-page);
+  }
+  .settings-index-appearance-title {
+    display: flex;
+    gap: var(--ui-space-sm);
+    align-items: center;
+    margin-bottom: var(--ui-space-sm);
+  }
+  .settings-theme-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--ui-space-sm);
+  }
+  .settings-theme-choice {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--ui-space-xs);
+    min-height: var(--ui-control-touch);
+    padding: var(--ui-space-xxs);
+    border-radius: var(--ui-radius-md);
+    color: var(--ui-text-secondary);
+    font-size: var(--ui-font-size-xs);
+    text-align: center;
+  }
+  .settings-theme-preview {
+    position: relative;
+    display: block;
+    aspect-ratio: 1.65;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-md);
+    background: var(--settings-preview-light);
+    color: var(--settings-preview-dark);
+  }
+  .settings-theme-preview[data-preview='dark'] {
+    background: var(--settings-preview-dark);
+    color: var(--settings-preview-light);
+  }
+  .settings-theme-preview[data-preview='system'] {
+    background: linear-gradient(
+      145deg,
+      var(--settings-preview-light) 50%,
+      var(--settings-preview-dark) 50%
+    );
+  }
+  .settings-theme-preview::before,
+  .settings-theme-preview::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: 12%;
+    top: 22%;
+    width: 32%;
+    height: 2px;
+    border-radius: var(--ui-radius-pill);
+    background: currentColor;
+    opacity: 0.45;
+  }
+  .settings-theme-preview::after {
+    top: 34%;
+    width: 22%;
+  }
+  .settings-theme-choice[aria-pressed='true'] {
+    color: var(--ui-text-primary);
+    font-weight: var(--ui-font-weight-semibold);
+  }
+  .settings-theme-choice[aria-pressed='true'] .settings-theme-preview {
+    border-color: var(--ui-focus-ring);
+    box-shadow: 0 0 0 1px var(--ui-focus-ring);
+  }
+  .settings-page > .settings-save-error {
+    margin-inline: var(--ui-space-md);
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-section:not(.settings-danger-zone) {
     padding: 0 0 20px;

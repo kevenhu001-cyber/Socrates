@@ -49,7 +49,9 @@ export function resolvePyodideWorkerEntry(): PyodideWorkerEntry {
   if (existsSync(source)) {
     return {
       file: source,
-      execArgv: [...process.execArgv, '--import', 'tsx'],
+      // Process-level flags (including flags injected by Node's test
+      // runner) are rejected when passed explicitly to a Worker.
+      execArgv: ['--import', 'tsx'],
     };
   }
 

@@ -3,6 +3,7 @@ import type { SettingsLabel, SettingsSection } from './settings.types';
 const SETTINGS_SEARCH_TERMS: Record<SettingsSection, readonly string[]> = {
   general: [
     'appearance',
+    'color mode',
     'theme',
     'theme style',
     'system',
@@ -10,6 +11,7 @@ const SETTINGS_SEARCH_TERMS: Record<SettingsSection, readonly string[]> = {
     'dark',
     'language',
     '外观',
+    '颜色模式',
     '主题',
     '主题风格',
     '跟随系统',

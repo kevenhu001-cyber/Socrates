@@ -40,6 +40,7 @@ for (const mode of ['dark', 'light']) {
   }) => {
     await page.setViewportSize({ width: 390, height: 769 });
     await mockAuthedApp(page, { lang: 'zh' });
+    await page.addInitScript((theme) => localStorage.setItem('socrates-theme', theme), mode);
     await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (route) =>
       route.fulfill({ json: { sessions: [SESSION] } }),
     );
@@ -48,10 +49,10 @@ for (const mode of ['dark', 'light']) {
     );
     await page.goto('/');
     await waitForAppShell(page);
-    await page.evaluate(async (mode) => {
-      document.documentElement.dataset.mode = mode;
+    await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
+    await page.evaluate(async () => {
       await document.fonts.ready;
-    }, mode);
+    });
 
     const frame = page.locator('#composerInputWrap [data-composer-frame]');
     await expect(frame).toBeVisible();
@@ -74,6 +75,20 @@ for (const mode of ['dark', 'light']) {
     /* The landing shortcut rail and the phone suggestion line were removed
        on 2026-11-16; the composer is the last thing on the landing now. */
     await expect(page.locator('#topicTitle')).toBeVisible();
+    await expect(page.locator('#homeHero img')).toHaveCount(0);
+    const hero = page.locator('#homeHero');
+    const fullHeight = (await hero.boundingBox()).height;
+    await page.evaluate(() =>
+      document.documentElement.style.setProperty('--keyboard-inset', '300px'),
+    );
+    await expect(page.locator('#topicTitle')).toBeInViewport();
+    await expect.poll(async () => (await hero.boundingBox()).height).toBeLessThan(fullHeight);
+    const [greetingBox, liftedComposer] = await Promise.all([
+      page.locator('#topicTitle').boundingBox(),
+      page.locator('#composerInputWrap').boundingBox(),
+    ]);
+    expect(greetingBox.y + greetingBox.height).toBeLessThan(liftedComposer.y);
+    await page.evaluate(() => document.documentElement.style.removeProperty('--keyboard-inset'));
     await assertNoOverflow(page);
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-home.png`,
@@ -98,6 +113,7 @@ for (const mode of ['dark', 'light']) {
     await expect
       .poll(async () => Math.round((await page.locator('#sidebar').boundingBox()).x))
       .toBe(0);
+    expect(Math.round((await page.locator('#sidebar').boundingBox()).width)).toBe(351);
     expect(
       rgbChannels(
         await page.locator('#sidebar').evaluate((el) => getComputedStyle(el).backgroundColor),
@@ -118,22 +134,31 @@ for (const mode of ['dark', 'light']) {
         y: node.getBoundingClientRect().y,
       })),
     );
-    /* Reference drawer: 36px rows at 14px. */
-    for (const row of geometry) expect(row.height).toBe(36);
+    for (const row of geometry) expect(row.height).toBe(44);
     const actualOrder = [...geometry].sort((a, b) => a.y - b.y).map((row) => row.id);
     expect(actualOrder.indexOf('navLibrary')).toBeLessThan(actualOrder.indexOf('navScheduled'));
     expect(actualOrder.indexOf('navScheduled')).toBeLessThan(actualOrder.indexOf('navPlugins'));
-    expect(actualOrder.slice(0, 4)).toEqual(['navNew', 'navSearch', 'navProjects', 'navLibrary']);
+    expect(actualOrder.slice(0, 4)).toEqual([
+      'navProjects',
+      'navLibrary',
+      'navScheduled',
+      'navPlugins',
+    ]);
+    expect(actualOrder).not.toContain('navNew');
+    expect(actualOrder).not.toContain('navSearch');
     expect(actualOrder).not.toContain('navImages');
     expect(actualOrder).toEqual(geometry.map(({ id }) => id));
     const recent = page.locator('.recent-item').filter({ hasText: SESSION.title });
     await expect(recent).toBeVisible();
-    expect((await recent.boundingBox()).height).toBe(36);
-    /* Reference drawer lockup: wordmark + ⌄ on the left, recent filter and the
-       sidebar glyph (not ×) on the right. */
+    expect((await recent.boundingBox()).height).toBe(44);
+    await expect(recent.locator('.recent-item-glyph')).toBeVisible();
     await expect(page.locator('.sidebar-logo [data-part="brand-name"]')).toBeVisible();
-    await expect(page.locator('.sidebar-logo [data-part="brand-caret"]')).toBeVisible();
     await expect(page.locator('#sidebarCloseBtn')).toBeVisible();
+    await expect(page.locator('.sidebar-mobile-new-chat')).toBeInViewport();
+    await expect(page.locator('.recents-search-all')).toBeInViewport();
+    const avatar = await page.locator('#sidebarUserRow .user-avatar').boundingBox();
+    expect(avatar.width).toBe(44);
+    expect(avatar.height).toBe(44);
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-drawer.png`,
     });
@@ -146,6 +171,50 @@ for (const mode of ['dark', 'light']) {
     });
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
+
+    await page.locator('.recents-search-all').click();
+    await expect(page.locator('#cmdKOverlay')).toBeVisible();
+    await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#cmdKOverlay')).toBeHidden();
+    await page.locator('#sidebarOpenBtn').click();
+    await page.locator('#sidebarUserRow .sidebar-account-trigger').click();
+    await page.locator('.sidebar-account-menu').getByRole('menuitem', { name: '设置' }).click();
+    const settings = page.locator('#settingsPage');
+    await expect(settings).toBeVisible();
+    const title = await settings.locator('#settingsTitle').boundingBox();
+    expect(title.x + title.width / 2).toBeCloseTo(195, 0);
+    await expect(settings.locator('.settings-index-identity')).toContainText('smoke@example.test');
+    await expect(settings.locator('.settings-index-group')).toHaveCount(3);
+    const appearance = settings.getByRole('group', { name: '颜色模式' });
+    await expect(appearance.getByRole('button')).toHaveCount(3);
+    await page.screenshot({
+      path: `test-results/reference-alignment-${encodeURIComponent(mode)}-settings.png`,
+    });
+    const nextMode = mode === 'light' ? 'dark' : 'light';
+    const nextTheme = appearance.getByRole('button', {
+      name: nextMode === 'light' ? '浅色' : '深色',
+    });
+    await nextTheme.click();
+    await expect(nextTheme).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveAttribute('data-mode', nextMode);
+    await page.emulateMedia({ colorScheme: mode });
+    const systemTheme = appearance.getByRole('button', { name: '跟随系统' });
+    await systemTheme.click();
+    await expect(systemTheme).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveAttribute('data-theme-preference', 'system');
+    await expect(page.locator('html')).toHaveAttribute('data-mode', mode);
+    await settings.getByRole('button', { name: '搜索设置' }).click();
+    const settingsSearch = settings.getByRole('searchbox');
+    await expect(settingsSearch).toBeFocused();
+    await settingsSearch.fill('连接');
+    await expect(settings.locator('.settings-nav [data-section]:visible')).toHaveCount(1);
+    await settings.locator('[data-section=apps]').click();
+    await expect(settings.locator('.settings-pane:visible h2')).toHaveText('应用与连接');
+    await settings.locator('#settingsMobileBack').click();
+    await expect(settingsSearch).toHaveValue('连接');
+    await settings.locator('#settingsCloseBtn').click();
+    await expect(settings).toBeHidden();
 
     await openNav(page, 'navPlugins');
     await expect(page.locator('.plugin-directory')).toBeVisible();
@@ -182,6 +251,11 @@ for (const mode of ['dark', 'light']) {
     await page.screenshot({
       path: `test-results/reference-alignment-${encodeURIComponent(mode)}-library-320.png`,
     });
+    await page.locator('#sidebarOpenBtn').click();
+    await page.getByRole('button', { name: '新建会话', exact: true }).click();
+    await expect(page.locator('#sidebar')).toHaveClass(/collapsed/);
+    await expect(page.locator('.library-row').first()).toBeHidden();
+    await expect(page.locator('#topicTitle')).toBeVisible();
 
     // The phone cleanup must not remove desktop entry points.
     await page.setViewportSize({ width: 1440, height: 900 });

@@ -21,14 +21,22 @@
 }
 
 @media (max-width: 768px) {
-  /* Phones anchor the hero in the upper-middle band, like the old greeting,
-     so it stays put while the keyboard opens. */
+  /* Center the greeting in the space actually left above the composer.
+     The shell already reserves the keyboard inset, including overlay mode. */
   #appShell #topicSetup .home-hero {
-    position: absolute;
-    inset-inline: 0;
-    top: 40.5%;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 0;
     padding: 0 var(--ui-mobile-page-gutter);
-    transform: translateY(-50%);
+    overflow: clip;
+    container: compact-greeting / size;
+  }
+  @container compact-greeting (max-height: 90px) {
+    .home-hero > * {
+      visibility: hidden;
+    }
   }
 }
 

@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { ChevronRightIcon } from 'lucide-react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/shadcn/button';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';
+import { closeSidebarOnMobile } from '../../sidebar/sidebar.service.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import { SessionListEmptyState } from './SessionListEmptyState';
 import { SessionTimeline } from './SessionTimeline';
@@ -65,13 +67,23 @@ function SessionListMore({ enabled }: { enabled: boolean }) {
   return (
     <div ref={target} className="recents-page-status" role="status" aria-live="polite">
       {paging.failed ? (
-        <Button variant="ghost" size="sm" type="button" onClick={() => void loadMoreServerSessions()}>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onClick={() => void loadMoreServerSessions()}
+        >
           {i18n('session.retry', 'Retry loading older chats')}
         </Button>
       ) : paging.loading ? (
         <span>{i18n('chat.history.loadingEarlier', 'Loading older chats…')}</span>
       ) : (
-        <Button variant="ghost" size="sm" type="button" onClick={() => void loadMoreServerSessions()}>
+        <Button
+          variant="ghost"
+          size="sm"
+          type="button"
+          onClick={() => void loadMoreServerSessions()}
+        >
           {i18n('sidebar.loadOlder', 'Load older chats')}
         </Button>
       )}
@@ -138,11 +150,29 @@ export function SessionList() {
           onDragEnd={handleDragEnd}
         />
       ) : (
-        <SessionListEmptyState searchQuery={searchQuery} filter={filter} fetchFailed={fetchFailed} />
+        <SessionListEmptyState
+          searchQuery={searchQuery}
+          filter={filter}
+          fetchFailed={fetchFailed}
+        />
       )}
       {/* Sidebar text filtering only affects loaded rows. Avoid paging through
           the entire account in an attempt to satisfy a local search. */}
       <SessionListMore enabled={sidebarOpen && !searchQuery} />
+      <Button
+        variant="ghost"
+        size="touch"
+        className="recents-search-all"
+        onClick={() => {
+          closeSidebarOnMobile();
+          getLegacyActions().cmdK.openCmdK();
+        }}
+      >
+        <span data-i18n-key="sidebar.searchAllChats">
+          {i18n('sidebar.searchAllChats', 'Search all chats')}
+        </span>
+        <ChevronRightIcon aria-hidden />
+      </Button>
     </>
   );
 }

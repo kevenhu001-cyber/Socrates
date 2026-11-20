@@ -1,7 +1,4 @@
-import {
-  LEARNING_KINDS,
-  openUiLearningMisuse,
-} from '@socrates/core/learningUi';
+import { LEARNING_KINDS, openUiLearningMisuse } from '@socrates/core/learningUi';
 import { DEMONSTRATION_PROGRAM_SCHEMA } from './demonstrationGuide.js';
 import { PHYSICS_MODELS } from '@socrates/core/physicsModelRegistry';
 import { VISUALIZATION_TEMPLATES, validateVisualizationSpec } from './visualization.js';
@@ -298,9 +295,13 @@ export function validateIntelligentUi(value: unknown): IntelligentUiValidation {
             : envelope.kind === 'learning'
               ? 'learning'
               : 'envelope';
-    const rejectedNode = (document as { nodes?: Array<Record<string, unknown>> })?.nodes?.find(
-      (node) => node?.id === envelope.nodeId,
-    );
+    const nodes = (document as { nodes?: unknown } | null)?.nodes;
+    const rejectedNode =
+      envelope.nodeId && Array.isArray(nodes)
+        ? (nodes as Array<Record<string, unknown> | null>).find(
+            (node) => node?.id === envelope.nodeId,
+          )
+        : undefined;
     return fail(envelope.error, stage, envelope.nodeId ?? null, {
       componentType: typeof rejectedNode?.type === 'string' ? rejectedNode.type : undefined,
       componentKind: typeof rejectedNode?.kind === 'string' ? rejectedNode.kind : undefined,

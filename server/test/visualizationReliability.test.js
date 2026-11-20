@@ -176,6 +176,44 @@ test('OpenUI accessibilitySummary is optional and derived from the title', () =>
   assert.equal(inspected.visualizations[0].accessibilitySummary, 'Visualization of Scores.');
 });
 
+test('wrapped nodes and the chart payload shorthand take the native validation path', () => {
+  const chart = {
+    type: 'chart',
+    template: ' bar ',
+    data: { labels: ['A'], values: ['2'] },
+  };
+  for (const nodes of [[chart], chart, { item: [chart] }, { items: chart }]) {
+    const result = validateIntelligentUi({ nodes });
+    assert.equal(result.ok, true, result.error);
+    assert.equal(result.visualizations[0].nodeId, 'n1');
+    assert.equal(result.visualizations[0].template, 'bar');
+    assert.deepEqual(result.visualizations[0].payload.series[0].data, [2]);
+  }
+  const invalid = validateIntelligentUi({
+    nodes: [{ ...chart, data: { labels: ['A'], values: ['not a number'] } }],
+  });
+  assert.equal(invalid.ok, false);
+  assert.equal(invalid.failure.stage, 'visualization');
+});
+
+test('malformed non-array nodes return structured validation feedback', async () => {
+  const events = [];
+  const outcome = await executeIntelligentUi(
+    { nodes: 'bar' },
+    { id: 'malformed-document' },
+    {
+      emitter: { event: (...args) => events.push(args) },
+      toolPolicy: { remainingRetries: () => 2 },
+    },
+  );
+  assert.equal(outcome.result.errorCode, 'invalid_tool_arguments');
+  assert.equal(outcome.result.detail.stage, 'envelope');
+  assert.equal(outcome.result.retryable, true);
+  assert.match(outcome.result.correction, /nodes/);
+  assert.equal(events[0][0], 'tool_result');
+  assert.equal(events[0][1].ok, false);
+});
+
 test('genuinely invalid data is still rejected with structured failures', () => {
   for (const [template, payload] of [
     ['radar', { indicators: [{ name: 'A' }, { name: 'B' }], series: [{ data: [1, 2] }] }],
