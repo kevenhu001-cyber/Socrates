@@ -396,17 +396,17 @@ export const zh = {
   /* These four (greeting.chat, sidebar.nav.new / .library / .more) were
        left holding the English strings when the landing was redesigned, so
        the zh locale rendered a half-English sidebar. */
-  'greeting.chat': '我们先从哪里开始呢？',
+  'greeting.chat': '随时可以开始。',
   'greeting.tutor': '我们先从哪里开始呢？',
   /* Rotating landing greeting — renderGreeting picks one entry per open. */
-  'greeting.chat.0': '我们先从哪里开始呢？',
-  'greeting.chat.1': '我们先从哪里开始呢？',
-  'greeting.chat.2': '我们先从哪里开始呢？',
-  'greeting.chat.3': '我们先从哪里开始呢？',
-  'greeting.chat.4': '我们先从哪里开始呢？',
+  'greeting.chat.0': '随时可以开始。',
+  'greeting.chat.1': '随时可以开始。',
+  'greeting.chat.2': '今天想聊点什么？',
+  'greeting.chat.3': '随时可以开始。',
+  'greeting.chat.4': '随时可以开始。',
   'greeting.chat.5': '我们先从哪里开始呢？',
-  'greeting.chat.6': '我们先从哪里开始呢？',
-  'greeting.chat.7': '我们先从哪里开始呢？',
+  'greeting.chat.6': '随时可以开始。',
+  'greeting.chat.7': '随时可以开始。',
   'greeting.tutor.0': '来一起探索吧',
   'greeting.tutor.1': '今天想弄明白什么？',
   'greeting.tutor.2': '对什么好奇？',

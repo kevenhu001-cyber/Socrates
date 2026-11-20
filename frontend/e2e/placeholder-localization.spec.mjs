@@ -85,7 +85,7 @@ test('landing greeting has no leading logo and keeps the western Geist Sans face
      CJK font fallback is measured against real Chinese glyphs. */
   const greeting = page.locator('#topicTitle');
   await expect(greeting).toHaveText(
-    /今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧|我们先从哪里开始呢？/,
+    /今天有什么计划|想做点什么|在想什么|我们从哪里开始|准备好了就开始|想聊点什么|有什么我能帮忙的|开始吧|我们先从哪里开始呢？|随时可以开始。/,
   );
   const zhStyle = await greeting.evaluate((el) => ({
     fontFamily: getComputedStyle(el).fontFamily,

@@ -24,7 +24,7 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --cg-font: var(--font-sans);
   --font-display: var(--font-sans);
   --font-serif: var(--font-sans);
-  --font-mono: 'Geist Mono', 'Noto Sans SC', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --font-mono: var(--ui-font-ui-mono);
   --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 88%, var(--ui-text-secondary));
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 90%, transparent);
   --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 94%, transparent);
@@ -696,7 +696,7 @@ html[data-theme='philosophy'][data-mode]:lang(zh) {
   --cg-font: var(--font-sans);
   --font-display: 'Newsreader', 'Charis SIL', 'Noto Sans SC', 'Georgia', serif;
   --font-serif: var(--font-display);
-  --font-mono: 'Geist Mono', 'Noto Sans SC', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  --font-mono: var(--ui-font-ui-mono);
   --ui-text-prose: color-mix(in srgb, var(--ui-text-primary) 90%, var(--ui-text-secondary));
   --ui-bg-header-glass: color-mix(in srgb, var(--ui-bg-page) 92%, transparent);
   --ui-bg-composer-glass: color-mix(in srgb, var(--ui-bg-composer) 95%, transparent);

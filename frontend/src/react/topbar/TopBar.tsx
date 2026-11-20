@@ -287,14 +287,14 @@ function ExamTitle() {
  * desktop keeps the model lockup in this slot instead.
  */
 function ConversationTitle({
-  phone,
+  phone: _phone,
   conversationActive,
 }: {
   phone: boolean;
   conversationActive: boolean;
 }) {
   const title = useSessionStore((snapshot) => snapshot.sessionTitle || snapshot.topic);
-  if (!phone || !conversationActive || !title) return null;
+  if (!conversationActive || !title) return null;
   return (
     <span className="top-conversation-title" id="topConversationTitle" title={title}>
       {title}

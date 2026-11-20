@@ -217,15 +217,45 @@
     font-style: normal;
   }
 
-  /* Inline code */
+  /* Inline code & badges (Image 2 reference) */
   #appShell #msgList .msg-body :not(pre) > code {
-    padding: 2px 5px;
-    border-radius: var(--ui-radius-sm);
+    padding: 2px 6px;
+    border: 1px solid var(--ui-border-subtle);
+    border-radius: var(--ui-radius-xs);
     background: var(--ui-bg-chip);
     color: var(--foreground);
     font-family: var(--font-mono);
     font-size: 0.875em;
     font-weight: var(--ui-font-weight-medium);
+  }
+
+  /* Action buttons in assistant messages (e.g. "继续下一批" blue pill button) */
+  #appShell #msgList .msg-body button:not(.code-block-copy) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ui-space-xs);
+    min-height: var(--ui-control-desktop);
+    padding: 0 var(--ui-space-md);
+    border: 0;
+    border-radius: var(--ui-radius-pill);
+    background: var(--ui-action);
+    color: var(--ui-on-ink, white);
+    font-family: var(--font-sans);
+    font-size: var(--ui-font-size-sm);
+    font-weight: var(--ui-font-weight-medium);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+    transition: background-color var(--ui-duration-fast) ease, transform var(--ui-duration-fast) ease;
+  }
+  #appShell #msgList .msg-body button:not(.code-block-copy):hover {
+    background: color-mix(in srgb, var(--ui-action) 88%, white);
+  }
+  #appShell #msgList .msg-body button:not(.code-block-copy):active {
+    transform: scale(0.98);
+  }
+  #appShell #msgList .msg-body button:not(.code-block-copy):focus-visible {
+    box-shadow: var(--ui-focus-shadow);
   }
 
   /* ── Code blocks: one rounded card, label + copy in a quiet header ───── */

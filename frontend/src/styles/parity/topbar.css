@@ -123,6 +123,21 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
     margin: 0;
     padding: 0;
   }
+  #appShell .top-conversation-title {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ui-space-xxs);
+    max-width: 320px;
+    overflow: hidden;
+    color: var(--foreground);
+    font-size: var(--ui-text-ui);
+    font-weight: var(--ui-font-weight-medium);
+    line-height: var(--ui-text-ui-line);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: var(--ui-space-xs);
+  }
+
   #appShell .top-bar-right {
     margin-left: auto;
   }
