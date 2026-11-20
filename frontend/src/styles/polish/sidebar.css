@@ -537,3 +537,19 @@
     min-height: 44px;
   }
 }
+
+#appShell .recents-search-all {
+  margin-top: 10px;
+}
+#appShell .recents-search-all button {
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--ui-font-weight-medium);
+  padding: 6px 0;
+}
+#appShell .recents-search-all button:hover {
+  text-decoration: underline;
+}
