@@ -42,7 +42,7 @@ for (const theme of ['light', 'dark']) {
     const ink = await page.evaluate(() => {
       const probe = document.createElement('span');
       probe.style.color = 'var(--ui-ink)';
-      document.body.append(probe);
+      (document.querySelector('#sidebar') || document.body).append(probe);
       const value = getComputedStyle(probe).color;
       probe.remove();
       return value;
@@ -89,7 +89,7 @@ for (const theme of ['light', 'dark']) {
       'extensiveThinking',
     ]) {
       const glyph = page.locator(
-        `.composer-tools-mobile-items [data-composer-action="${action}"] .composer-tools-icon svg`,
+        `.composer-tools-mobile-items [data-composer-action="${action}"] :is(.composer-tools-icon, .composer-tools-tile-icon) svg`,
       );
       await expect(glyph).toBeVisible();
       await expect(glyph).toHaveCSS('stroke-width', '1.75px');
