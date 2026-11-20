@@ -286,6 +286,11 @@
   /* The prose column's legacy icon rule sizes by these tokens. */
   --tc-icon: 16px;
   --tc-glyph: 14px;
+  border-radius: var(--ui-radius-sm);
+  transition: background-color var(--ui-duration-fast) ease;
+}
+.rn-tool-row:hover {
+  background-color: var(--ui-bg-hover, color-mix(in srgb, var(--foreground) 3%, transparent));
 }
 .rn-turn-activity {
   margin-block-end: var(--ui-gap-2);

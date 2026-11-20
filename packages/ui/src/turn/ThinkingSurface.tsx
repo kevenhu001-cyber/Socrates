@@ -103,16 +103,28 @@ export function ThinkingSurface({
           </View>
         ) : null}
         {durationLabel ? (
-          <UiText
-            testID="turn-activity-duration"
-            variant="labelSm"
-            tone="tertiary"
-            aria-live="off"
-            numberOfLines={1}
-            style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}
+          <View
+            style={{
+              paddingHorizontal: 6,
+              paddingVertical: 1,
+              borderRadius: R.pill,
+              backgroundColor: colors.fill,
+              borderWidth: 1,
+              borderColor: colors.hairline,
+              flexShrink: 0,
+            }}
           >
-            {durationLabel}
-          </UiText>
+            <UiText
+              testID="turn-activity-duration"
+              variant="labelSm"
+              tone="tertiary"
+              aria-live="off"
+              numberOfLines={1}
+              style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}
+            >
+              {durationLabel}
+            </UiText>
+          </View>
         ) : null}
         {expandable ? <Chevron open={open} tone="tertiary" /> : null}
       </Pressable>
@@ -271,15 +283,47 @@ export function ActivityStep({
       ) : null}
       {live ? <Spinner /> : null}
       {status ? (
-        <UiText
-          testID="thinking-step-status"
-          variant="labelSm"
-          tone={error ? 'ink' : 'secondary'}
-          numberOfLines={1}
-          style={{ flexShrink: 0 }}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            paddingHorizontal: 6,
+            paddingVertical: 1.5,
+            borderRadius: R.pill,
+            backgroundColor: error
+              ? 'rgba(239, 68, 68, 0.12)'
+              : live
+                ? 'rgba(245, 158, 11, 0.12)'
+                : colors.fill,
+            borderWidth: 1,
+            borderColor: error
+              ? 'rgba(239, 68, 68, 0.25)'
+              : live
+                ? 'rgba(245, 158, 11, 0.25)'
+                : colors.hairline,
+            flexShrink: 0,
+          }}
         >
-          {status}
-        </UiText>
+          <View
+            aria-hidden
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: 2.5,
+              backgroundColor: error ? '#ef4444' : live ? '#f59e0b' : '#10b981',
+            }}
+          />
+          <UiText
+            testID="thinking-step-status"
+            variant="labelSm"
+            tone={error ? 'ink' : 'secondary'}
+            numberOfLines={1}
+            style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}
+          >
+            {status}
+          </UiText>
+        </View>
       ) : null}
       {interactive ? <Chevron open={Boolean(open)} size={6} tone="tertiary" /> : null}
     </Pressable>

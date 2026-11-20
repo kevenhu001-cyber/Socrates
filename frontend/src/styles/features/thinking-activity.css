@@ -140,8 +140,12 @@
   gap: var(--ui-gap-3);
   min-width: 0;
   max-height: min(440px, 55dvh);
-  padding: var(--ui-space-sm) 0 var(--ui-space-sm) var(--ui-space-md);
-  border-inline-start: 1px solid var(--ui-border-subtle);
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  margin-block-start: var(--ui-space-xs);
+  margin-block-end: var(--ui-space-sm);
+  background: var(--ui-bg-raised);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-md);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
