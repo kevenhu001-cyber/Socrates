@@ -76,6 +76,14 @@ jobs:
             test/toolTurnPolicy.test.js \
             test/toolErrorFeedback.test.js \
             test/toolRegistry.test.js \
+            test/toolCapabilityCatalog.test.js \
+            test/toolCorrectionMessage.test.js \
+            test/intelligentUi.test.js \
+            test/intelligentUiReliability.test.js \
+            test/uiContract.test.js \
+            test/turnEvents.test.js \
+            test/demonstration.test.mjs \
+            test/visualization.test.js \
             test/agentStepProjection.test.js \
             test/codexEvents.test.js \
             test/codexCommand.test.js \

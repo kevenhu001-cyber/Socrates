@@ -199,7 +199,7 @@ describe('enforceServerSystemBoundary', () => {
        described. */
     assert.match(
       out[0].content,
-      /\{id, type: "visualization", template: \.\.\., payload: \.\.\.\}/,
+      /\{type: "visualization", template: \.\.\., payload: \.\.\.\}; id optional/,
     );
     /* The old function-call form must not come back: visuals are native JSON
        nodes only. */
@@ -995,13 +995,14 @@ describe('appendToolRoutingHints', () => {
       out[0].content,
       /Use `render_intelligent_ui` for every explicitly requested static or interactive/,
     );
-    /* The template catalogue lives in the tool's `template` / `payload`
-       parameter descriptions, not here: sending it twice cost about 2.8k
-       tokens per turn. The hint points at that single copy instead. */
-    assert.match(
-      out[0].content,
-      /in the `template` and `payload` parameter descriptions of `render_intelligent_ui`/,
+    /* Advanced docs are no longer shipped on every ordinary visual call.
+       The lookup tool is referenced only when it is available. */
+    assert.doesNotMatch(out[0].content, /Query get_ui_contract/);
+    const withDiscovery = appendToolRoutingHints(
+      [{ role: 'system', content: 'base' }],
+      ['render_intelligent_ui', 'get_ui_contract'],
     );
+    assert.match(withDiscovery[0].content, /get_ui_contract/);
     /* Demonstration view contracts live once in the tool schema's program
        description (DEMONSTRATION_GUIDANCE), delivered only when
        render_intelligent_ui is offered; the hint points at the schema. */

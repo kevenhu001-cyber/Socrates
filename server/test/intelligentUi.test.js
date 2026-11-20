@@ -106,7 +106,7 @@ test('native OpenUI nodes use the existing tool contract and retain source for c
   assert.equal(events[0][1].name, 'render_intelligent_ui');
   const nodeSchema = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties;
   assert.ok(nodeSchema.type.enum.includes('openui'));
-  assert.match(nodeSchema.source.description, /Available positional signatures/);
+  assert.match(nodeSchema.source.description, /get_ui_contract/);
   for (const invalid of ['', ' ', null, 'x'.repeat(50001)]) {
     assert.equal(
       validateIntelligentUi({ version: 1, nodes: [{ id: 'app', type: 'openui', source: invalid }] })
@@ -250,20 +250,39 @@ test('the server policy routes static and interactive visuals through Intelligen
   assert.doesNotMatch(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
 });
 
-test('render_intelligent_ui model instructions use only the declared top-level envelope', () => {
+test('render_intelligent_ui advertises a valid compact node envelope', () => {
   const parameters = INTELLIGENT_UI_TOOL.function.parameters;
-  assert.deepEqual(parameters.required, ['version', 'nodes']);
-  assert.match(INTELLIGENT_UI_TOOL.function.description, /ALWAYS use this exact top-level envelope/);
-  assert.match(INTELLIGENT_UI_TOOL.function.description, /Do not send a bare/);
-  const valid = {
-    version: 1,
-    nodes: [{
-      id: 'chart', type: 'visualization', template: 'bar', title: 'Values',
-      accessibilitySummary: 'Values by category',
-      payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
-    }],
+  assert.deepEqual(parameters.required, ['nodes']);
+  assert.deepEqual(parameters.properties.nodes.items.required, ['type']);
+  assert.match(INTELLIGENT_UI_TOOL.function.description, /server supplies version=1 and stable node IDs/);
+  const compact = {
+    nodes: [{ type: 'visualization', template: 'bar',
+      payload: { categories: ['A'], series: [{ data: [1] }] } }],
   };
-  assert.equal(validateIntelligentUi(valid).ok, true);
+  const normalized = normalizeIntelligentUiArgs(compact);
+  assert.equal(normalized.version, 1);
+  assert.equal(normalized.nodes[0].id, 'n1');
+  assert.equal(validateIntelligentUi(compact).ok, true);
+  assert.equal(validateIntelligentUi({ ...compact, version: 2 }).ok, false);
+  assert.ok(JSON.stringify(INTELLIGENT_UI_TOOL).length < 40000,
+    'model-facing schema must not embed advanced OpenUI/template manuals');
+});
+
+test('compact node IDs are stable and collision-free, explicit IDs are retained', () => {
+  const input = { nodes: [
+    { type: 'panel', id: 'n2' },
+    { type: 'text', text: 'A', parent: 'n2' },
+    { type: 'text', text: 'B', parent: 'n2' },
+  ] };
+  const once = normalizeIntelligentUiArgs(input);
+  const twice = normalizeIntelligentUiArgs(input);
+  assert.deepEqual(once, twice);
+  assert.deepEqual(once.nodes.map((node) => node.id), ['n2', 'n2_2', 'n3']);
+  assert.equal(validateIntelligentUi(input).ok, true);
+  assert.equal(validateIntelligentUi({ nodes: [
+    { type: 'text', id: 'same', text: 'A' },
+    { type: 'text', id: 'same', text: 'B' },
+  ] }).ok, false);
 });
 
 test('the generated OpenUI guidance states the Visualization argument shape', () => {
@@ -275,23 +294,23 @@ test('the generated OpenUI guidance states the Visualization argument shape', ()
   assert.match(OPENUI_TOOL_GUIDANCE, /never a versioned visualization envelope/);
 });
 
-test('the tool supplies every visualization contract before the first attempt', async () => {
-  const { INTELLIGENT_UI_TOOL } = await import('../src/services/intelligentUi.js');
+test('every template has an on-demand valid example from the original contract', async () => {
   const { VISUALIZATION_TEMPLATE_CONTRACTS } = await import('../src/services/visualization.js');
+  const { uiContractContent } = await import('../src/services/uiContract.js');
   const properties = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties;
-  const guidance = properties.template.description;
-  /* The template guide is owned by the `template` property only. The
-     `source` property points at it instead of repeating the same ~10 KB,
-     which keeps the tool schema smaller without hiding the contract. */
-  assert.match(properties.source.description, /template` and `payload` parameter descriptions/);
+  assert.match(properties.template.description, /get_ui_contract/);
+  assert.match(properties.source.description, /get_ui_contract/);
   for (const [template, contract] of Object.entries(VISUALIZATION_TEMPLATE_CONTRACTS)) {
-    assert.ok(guidance.includes(contract.guidance), template);
+    const focused = uiContractContent({ kind: 'visualization', template });
+    assert.equal(focused.ok, true, template);
+    assert.match(focused.output, /Verified example arguments/);
+    assert.ok(focused.output.includes(contract.guidance), template);
+    const marker = 'Verified example arguments: ';
+    const text = focused.output.slice(focused.output.indexOf(marker) + marker.length).trim();
+    assert.equal(validateIntelligentUi(JSON.parse(text)).ok, true, template);
     const source = `root = Col([Visualization(${JSON.stringify(template)}, "Example", ${JSON.stringify(contract.payload)}, "Summary")])`;
-    const result = validateIntelligentUi({
-      version: 1,
-      nodes: [{ id: 'app', type: 'openui', source }],
-    });
-    assert.equal(result.ok, true, `${template}: ${JSON.stringify(result)}`);
+    const result = validateIntelligentUi({ nodes: [{ type: 'openui', source }] });
+    assert.equal(result.ok, true, template);
   }
 });
 
@@ -453,12 +472,11 @@ test('learning cards normalize aliases and return located grading errors with th
   assert.match(feedback.correction, /never invent an answer/i);
   assert.equal(feedback.detail.stage, 'learning');
   assert.ok(SERVER_SYSTEM_POLICY.includes('native learning nodes'));
-  /* The per-kind field contract is delivered inside the tool schema itself,
-    so it only reaches the model when render_intelligent_ui is actually
-    offered — not as dead weight in every system prompt. */
+  /* Advanced learning guidance is available on demand rather than embedded
+     into every tool definition. */
   const kindDescription =
     INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties.kind.description;
-  assert.ok(kindDescription.includes('never OpenUI learning-card functions'));
+  assert.ok(kindDescription.includes('get_ui_contract'));
 });
 
 test('hallucinated OpenUI quiz functions get learning-specific repair instead of chart instructions', () => {

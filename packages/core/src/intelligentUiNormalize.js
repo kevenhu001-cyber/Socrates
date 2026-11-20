@@ -87,7 +87,7 @@ export function normalizeIntelligentUiNode(raw) {
   }
 
   if (node.type === 'visualization') {
-    if (!node.id) node.id = 'vis_' + Math.random().toString(36).slice(2, 8);
+    if (!Object.hasOwn(node, 'id')) node.id = 'vis_' + Math.random().toString(36).slice(2, 8);
     if (typeof node.template !== 'string') {
       if (typeof node.kind === 'string') node.template = node.kind.trim();
       else if (typeof node.chartType === 'string') node.template = node.chartType.trim();
@@ -144,22 +144,22 @@ export function normalizeIntelligentUiNode(raw) {
   }
 
   if (node.type === 'image') {
-    if (!node.id) node.id = 'img_' + Math.random().toString(36).slice(2, 8);
+    if (!Object.hasOwn(node, 'id')) node.id = 'img_' + Math.random().toString(36).slice(2, 8);
     if (!node.src && typeof node.url === 'string') node.src = node.url;
   }
 
   if (node.type === 'accordion') {
-    if (!node.id) node.id = 'acc_' + Math.random().toString(36).slice(2, 8);
+    if (!Object.hasOwn(node, 'id')) node.id = 'acc_' + Math.random().toString(36).slice(2, 8);
     if (!Array.isArray(node.items) && Array.isArray(node.sections)) node.items = node.sections;
   }
 
   if (node.type === 'steps') {
-    if (!node.id) node.id = 'step_' + Math.random().toString(36).slice(2, 8);
+    if (!Object.hasOwn(node, 'id')) node.id = 'step_' + Math.random().toString(36).slice(2, 8);
     if (!Array.isArray(node.items) && Array.isArray(node.steps)) node.items = node.steps;
   }
 
   if (node.type === 'badge') {
-    if (!node.id) node.id = 'badge_' + Math.random().toString(36).slice(2, 8);
+    if (!Object.hasOwn(node, 'id')) node.id = 'badge_' + Math.random().toString(36).slice(2, 8);
     if (!node.label && node.text) node.label = node.text;
   }
 
@@ -193,10 +193,10 @@ export function normalizeIntelligentUiArgs(value) {
 
   // Handle { node: { ... } }
   if (!value.nodes && isRecord(value.node)) {
-    return {
+    return normalizeIntelligentUiArgs({
       version: value.version === undefined ? 1 : numberLike(value.version),
-      nodes: [normalizeIntelligentUiNode(value.node)],
-    };
+      nodes: [value.node],
+    });
   }
 
   // Handle { nodes: { ... } } (single node passed as object instead of array)
@@ -206,10 +206,28 @@ export function normalizeIntelligentUiArgs(value) {
   }
   const nodes = asArray(rawNodes);
   if (!Array.isArray(nodes)) return value;
+  // docs/plans/2026-11-20-compact-ui-contract.md.
+  // Reserve every explicit ID first; generate only for absent IDs.
+  // Invalid explicitly supplied IDs must still fail ordinary validation.
+  const reserved = new Set(
+    nodes
+      .filter(isRecord)
+      .map((node) => (typeof node.id === 'string' ? node.id.trim() : ''))
+      .filter(Boolean),
+  );
+  const normalizedNodes = nodes.map((node, index) => {
+    if (!isRecord(node) || Object.hasOwn(node, 'id'))
+      return normalizeIntelligentUiNode(node);
+    let id = `n${index + 1}`;
+    let suffix = 2;
+    while (reserved.has(id)) id = `n${index + 1}_${suffix++}`;
+    reserved.add(id);
+    return normalizeIntelligentUiNode({ ...node, id });
+  });
   return {
     ...value,
     version: value.version === undefined ? 1 : numberLike(value.version),
-    nodes: nodes.map(normalizeIntelligentUiNode),
+    nodes: normalizedNodes,
   };
 }
 

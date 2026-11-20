@@ -10,11 +10,12 @@ const examples = JSON.parse(
     'utf8',
   ),
 );
-test('the native tool teaches an open mathematical program and accepts new algorithms', () => {
+test('the advanced mathematical DSL stays discoverable and executable', () => {
   const schema = INTELLIGENT_UI_TOOL.function.parameters.properties.nodes.items.properties;
   assert.ok(schema.type.enum.includes('demonstration'));
   assert.match(schema.program.description, /sum\(i,first,last,expression\)/);
   assert.match(schema.program.description, /derivatives/);
+  assert.match(schema.program.description, /get_ui_contract/);
   for (const program of Object.values(examples))
     assert.equal(
       validateIntelligentUi({
@@ -49,7 +50,7 @@ test('the program parameter is a real schema, so arrays keep their shape', () =>
   assert.equal(program.properties.presets.items.properties.values.type, 'object');
   /* The guidance must state the serialization rule before the first attempt. */
   assert.match(program.description, /version is the number 1/);
-  assert.match(program.description, /Never encode a list as \{"item": \[\.\.\.\]\}/);
+  assert.match(program.description, /views is a JSON array/);
   assert.doesNotMatch(program.description, /- \{"kind":/);
 });
 test('a plot missing every required field reports all three in one rejection', () => {

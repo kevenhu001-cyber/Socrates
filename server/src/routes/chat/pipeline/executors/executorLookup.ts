@@ -1,5 +1,6 @@
 import { executeCiteSources, executePatchIntelligentUi } from './turnRuntime.js';
 import { executeIntelligentUi } from './intelligentUi.js';
+import { executeGetUiContract } from './uiContract.js';
 /**
  * Tool executor registry (LobeHub-alignment: self-registering tools).
  *
@@ -46,6 +47,7 @@ export function createToolExecutorRegistry(): ToolExecutorRegistry {
     ['read_attachment', executeReadAttachment],
     ['save_memory', executeSaveMemory],
     ['render_intelligent_ui', executeIntelligentUi],
+    ['get_ui_contract', executeGetUiContract],
     ['patch_intelligent_ui', executePatchIntelligentUi],
     ['cite_sources', executeCiteSources],
     ['create_document', executeDocumentTool],
