@@ -12,7 +12,7 @@
  * user left the tab open before signing in) is discarded rather than shown.
  */
 import type { BootPreflightResponse } from '../auth/boot/requests.ts';
-import type { SessionRow } from './store.ts';
+import type { SessionListDto } from '@socrates/contracts';
 
 const BOOT_SESSIONS_MAX_AGE_MS = 30_000;
 
@@ -40,16 +40,11 @@ export function takeBootSessionPrefetch(
   return prefetch.promise;
 }
 
-export interface BootSessionPage {
-  sessions: SessionRow[];
-  nextCursor: string | null;
-}
-
 /** Preserve the cursor as well as rows so the sidebar can page after boot. */
 export async function readBootSessions(
   host: BootSessionHost | null | undefined,
   now = Date.now(),
-): Promise<BootSessionPage | null> {
+): Promise<SessionListDto | null> {
   const promise = takeBootSessionPrefetch(host, now);
   if (!promise) return null;
   try {
@@ -59,7 +54,7 @@ export async function readBootSessions(
     const payload = response.json as { sessions?: unknown; nextCursor?: unknown } | null | undefined;
     if (!Array.isArray(payload?.sessions)) return null;
     return {
-      sessions: payload.sessions as SessionRow[],
+      sessions: payload.sessions as SessionListDto['sessions'],
       nextCursor: typeof payload.nextCursor === 'string' ? payload.nextCursor : null,
     };
   } catch {
