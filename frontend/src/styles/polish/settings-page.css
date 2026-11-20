@@ -101,3 +101,66 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     padding: 0 16px;
   }
 }
+
+/* Settings v2: a quiet control document, not cards nested inside cards.
+ * Intentional scoped overrides of overlays.css; account-danger remains framed. */
+html[data-main-view='settingsPage'] #settingsPage .settings-pane {
+  gap: 24px;
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-section:not(.settings-danger-zone) {
+  gap: 18px;
+  margin: 0;
+  padding: 0 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-section-head > h3 {
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-card--toggle {
+  padding: 0;
+  min-height: 48px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
+  background: var(--ui-fill-hover);
+  border-radius: var(--ui-radius-control);
+  box-shadow: none;
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+html[data-main-view='settingsPage'] #settingsPage .settings-choice {
+  min-height: 52px;
+}
+@media (max-width: 720px) {
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-categories {
+    gap: 0;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
+    min-height: 60px;
+    padding: 8px 10px;
+    border: 0;
+    border-bottom: 1px solid var(--ui-border-subtle);
+    border-radius: 0;
+    background: transparent;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
+    border-radius: var(--ui-radius-control);
+    border-bottom-color: transparent;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-category-icon {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-section:not(.settings-danger-zone) {
+    padding: 0 0 20px;
+    gap: 14px;
+  }
+}

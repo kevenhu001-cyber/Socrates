@@ -16,12 +16,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function parseRemoteHit(value: unknown): CmdKRemoteDoc | null {
   if (!isRecord(value) || (typeof value.id !== 'string' && typeof value.id !== 'number'))
     return null;
-  if (typeof value.title !== 'string') return null;
+  // Message hits from /api/search have a snippet and sessionId but no title.
+  // Previously they were discarded, so the search appeared to miss old chats.
+  const title =
+    typeof value.title === 'string' && value.title.trim()
+      ? value.title
+      : value.kind === 'message' ? 'Message' : typeof value.topic === 'string' ? value.topic : '';
+  if (!title) return null;
   return {
     kind: 'remote',
     id: String(value.id),
     sessionId: typeof value.sessionId === 'string' ? value.sessionId : undefined,
-    title: value.title,
+    title,
     snippet: typeof value.snippet === 'string' ? value.snippet : '',
   };
 }
@@ -37,6 +43,12 @@ let _cmdKIndexDirty = false;
 let _cmdKResults: CmdKResult[] = [];
 let _cmdKSelected = 0;
 let _cmdKRecent: string[] = [];
+let remoteSearchTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearRemoteSearchTimer() {
+  if (remoteSearchTimer !== null) clearTimeout(remoteSearchTimer);
+  remoteSearchTimer = null;
+}
 function replaceCmdKResults(results: CmdKResult[]) {
   _cmdKResults = results;
 }
@@ -54,6 +66,7 @@ function markCmdKIndexDirty() {
 }
 
 export function resetCmdKSearchState() {
+  clearRemoteSearchTimer();
   _cmdKIndex = null;
   _cmdKIndexDirty = false;
   _cmdKResults = [];
@@ -164,6 +177,7 @@ function rebuildCmdKIndex() {
 
 function openCmdK() {
   if (!getCurrentUser()) return;
+  clearRemoteSearchTimer();
   if (!_cmdKIndex || _cmdKIndexDirty) {
     rebuildCmdKIndex();
     _cmdKIndexDirty = false;
@@ -184,65 +198,56 @@ function openCmdK() {
 }
 
 function closeCmdK() {
+  clearRemoteSearchTimer();
   _cmdKOpen = false;
   const overlay = getCmdKOverlay();
   if (overlay) overlay.classList.add('hidden');
   _publishCmdKState();
 }
 
+/** Local results render on the input frame; server search is debounced
+ * because the local index contains only the pages already fetched. */
+function fetchRemoteCmdKResults(q: string) {
+  void apiFetch('/api/search', {
+    method: 'POST',
+    body: { q, scope: 'all', limit: 20 },
+  })
+    .then((payload: unknown) => {
+      if (!isRecord(payload) || !Array.isArray(payload.hits)) return;
+      if ((getCmdKInput()?.value || '').trim() !== q) return;
+      const remote = payload.hits.flatMap((hit) => {
+        const parsed = parseRemoteHit(hit);
+        return parsed ? [parsed] : [];
+      });
+      const seen = new Set(_cmdKResults.map((hit) => hit.item.id));
+      const newResults: RemoteCmdKResult[] = remote
+        .filter((hit) => !seen.has(hit.id))
+        .map((item) => ({ item, _remote: true }));
+      if (newResults.length) {
+        replaceCmdKResults([..._cmdKResults, ...newResults]);
+        _publishCmdKState();
+      }
+    })
+    .catch((error) => reportSwallow(error, 'legacy/cmdK.remoteSearch', 'expected'));
+}
+
 function onCmdKInput(q: string) {
   q = (q || '').trim();
+  clearRemoteSearchTimer();
   if (!q) {
-    _cmdKResults = [];
+    replaceCmdKResults([]);
     _cmdKSelected = 0;
     _publishCmdKState();
     return;
   }
   const hits = _cmdKIndex ? _cmdKIndex.search(q, { limit: 20 }) : [];
-  try {
-    apiFetch('/api/search', {
-      method: 'POST',
-      body: { q: q, scope: 'all', limit: 20 },
-    })
-      .then(function (payload: unknown) {
-        const r =
-          isRecord(payload) && Array.isArray(payload.hits)
-            ? {
-                hits: payload.hits.flatMap((hit) => {
-                  const parsed = parseRemoteHit(hit);
-                  return parsed ? [parsed] : [];
-                }),
-              }
-            : null;
-        if (r && r.hits.length) {
-          const cur = (getCmdKInput()?.value || '').trim();
-          if (cur !== q) return;
-          const seen: Record<string, boolean> = {};
-          _cmdKResults.forEach(function (h) {
-            const it = h.item;
-            if (it && it.id) seen[it.id] = true;
-          });
-          const serverHits: RemoteCmdKResult[] = r.hits
-            .filter(function (hit) {
-              return hit.id && !seen[hit.id];
-            })
-            .map((item) => ({ item, _remote: true }));
-          if (!serverHits.length) return;
-          const mergedResults: CmdKResult[] = [..._cmdKResults, ...serverHits];
-          replaceCmdKResults(mergedResults);
-          _publishCmdKState();
-        }
-      })
-      .catch(function () {
-        /* offline or 404 — ignore */
-      });
-  } catch (_) {
-    reportSwallow(_, 'empty catch: legacy/cmdK.impl.ts');
-    /* swallow */
-  }
   replaceCmdKResults([...hits]);
   _cmdKSelected = 0;
   _publishCmdKState();
+  remoteSearchTimer = setTimeout(() => {
+    remoteSearchTimer = null;
+    fetchRemoteCmdKResults(q);
+  }, 200);
 }
 
 function updateCmdKSelected() {

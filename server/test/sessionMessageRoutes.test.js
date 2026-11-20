@@ -63,6 +63,25 @@ test('session pagination is owner-scoped, excludes archived rows, and returns a 
   assert.equal(next.body.nextCursor, null);
 });
 
+test('session-list filters keep pinned and archived chats independently accessible', async () => {
+  const active = await session(f.owner, { pinned: true });
+  const other = await session(f.owner, { pinned: false });
+  const archived = await session(f.owner, { pinned: true, archivedAt: new Date() });
+  await session(f.other, { pinned: true, archivedAt: new Date() });
+
+  const pins = await f.request('/api/sessions?pinnedOnly=true');
+  assert.deepEqual(pins.body.sessions.map((row) => row.id), [active.id]);
+
+  const archives = await f.request('/api/sessions?archivedOnly=true');
+  // Earlier tests in this suite may have left other owned archived rows.
+  assert.ok(archives.body.sessions.some((row) => row.id === archived.id));
+  assert.ok(!archives.body.sessions.some((row) => row.id === active.id));
+
+  const allPins = await f.request('/api/sessions?archived=true&pinnedOnly=true');
+  assert.ok(allPins.body.sessions.some((row) => row.id === archived.id));
+  assert.ok(!pins.body.sessions.some((row) => row.id === other.id));
+});
+
 test('session detail retains message metadata without duplicating content and hides foreign ids', async () => {
   const s = await session();
   const m = await message(s, {

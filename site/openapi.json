@@ -5737,6 +5737,24 @@
             }
           },
           {
+            "name": "archivedOnly",
+            "in": "query",
+            "description": "List only archived sessions. Takes precedence over archived; intended for the Storage dialog.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "pinnedOnly",
+            "in": "query",
+            "description": "List only pinned sessions so old pinned chats remain visible with recent-page pagination.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
             "name": "cursorVersion",
             "in": "query",
             "description": "Set to 2 for a cursor that preserves timestamp precision and handles tied timestamps.",

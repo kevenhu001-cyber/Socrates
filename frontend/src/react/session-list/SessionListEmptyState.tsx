@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { getLegacyActions, t } from '../legacy/gateway.ts';
+import { Button } from '../ui/shadcn/button';
+import { getLegacyActions, i18n, t } from '../legacy/gateway.ts';
 import { clearRecentsFilter } from '../../sidebar/sidebar.service';
 
 interface SessionListEmptyStateProps {
@@ -42,6 +43,16 @@ export function SessionListEmptyState({
           {t('session.clearSearch')}
         </a>{' '}
         {t('session.showAllHint')}
+        <div className="recents-search-all">
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            onClick={() => getLegacyActions().cmdK.openCmdK()}
+          >
+            {i18n('sidebar.searchAllHistory', 'Search all conversations')}
+          </Button>
+        </div>
       </>
     );
   } else if (fetchFailed && !filter) {

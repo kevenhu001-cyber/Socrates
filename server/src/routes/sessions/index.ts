@@ -44,11 +44,13 @@ router.use(requireAuth, resourceScope('sessions'));
 
 router.get('/', async (req, res, next) => {
   try {
-    const { limit, cursor, archived, cursorVersion } = req.query;
+    const { limit, cursor, archived, archivedOnly, pinnedOnly, cursorVersion } = req.query;
     return res.json(
       await readSessionList(getDb(), req.userId!, {
         limit: sessionReadLimit(limit, 50),
         archived: archived === 'true',
+        archivedOnly: archivedOnly === 'true',
+        pinnedOnly: pinnedOnly === 'true',
         cursor: parseSessionListCursor(cursor),
         versionedCursor: cursorVersion === '2',
       }),

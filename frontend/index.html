@@ -85,7 +85,7 @@
         if (!r || r.failed || r.status !== 200) return;
         w.__bootApi.sessions = {
           startedAt: Date.now(),
-          promise: get('/api/v2/sessions?limit=200&archived=true', 'low'),
+          promise: get('/api/v2/sessions?limit=40&cursorVersion=2', 'low'),
         };
       }, function () { /* /me failed — the normal fetch path handles it */ });
       w.__bootApi.csrf = fetch('/api/v2/auth/csrf-token?cb=' + Date.now(), opts).then(function () {

@@ -4,7 +4,7 @@
  * via FoundationDialog.
  */
 import { installStorageBridge } from '../react/storageModal/storageModal.bridge';
-import { getArchivedSessions } from '../session/recents';
+import { ensureArchivedSessions, getArchivedSessions } from '../session/recents';
 
 let _storageOpen = false;
 
@@ -32,6 +32,9 @@ function _publishStorageState(): void {
 export function openStorageModal(): void {
   _storageOpen = true;
   _publishStorageState();
+  // The archive list is no longer loaded with every sidebar prefetch.
+  // Publish optimistic local archives immediately, then append server pages.
+  void ensureArchivedSessions();
 }
 
 export function closeStorageModal(): void {

@@ -45,7 +45,7 @@ test('rejects a prefetch older than the 30s window', async () => {
 
 test('accepts a prefetch that is still inside the window', async () => {
   const host = hostWith(ok({ sessions: ROWS }), Date.now() - 29_000);
-  assert.deepEqual(await readBootSessions(host), ROWS);
+  assert.deepEqual(await readBootSessions(host), { sessions: ROWS, nextCursor: null });
 });
 
 test('rejects a clock-skewed future timestamp', async () => {
@@ -78,10 +78,16 @@ test('falls back for a malformed body', async () => {
 
 test('an empty session list is a valid result, not a failure', async () => {
   const host = hostWith(ok({ sessions: [] }));
-  assert.deepEqual(await readBootSessions(host), []);
+  assert.deepEqual(await readBootSessions(host), { sessions: [], nextCursor: null });
 });
 
 test('falls back when the request promise rejects', async () => {
   const host = hostWith(Promise.reject(new Error('offline')));
   assert.equal(await readBootSessions(host), null);
+});
+
+test('preserves a versioned pagination cursor from the preflight', async () => {
+  const cursor = 'v2:2026-01-01T00:00:00.000000Z|aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const host = hostWith(ok({ sessions: ROWS, nextCursor: cursor }));
+  assert.deepEqual(await readBootSessions(host), { sessions: ROWS, nextCursor: cursor });
 });

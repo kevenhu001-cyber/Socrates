@@ -39,7 +39,8 @@ export function SidebarFooter() {
   );
   return (
     <div className="sidebar-footer-account-wrap">
-      <DeferredMenu
+      <div className="sidebar-footer-identity-row">
+        <DeferredMenu
         open={open}
         onOpenChange={setOpen}
         above
@@ -117,7 +118,21 @@ export function SidebarFooter() {
             )}
           </>
         )}
-      </DeferredMenu>
+        </DeferredMenu>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="sidebar-quick-settings"
+          title={label('设置', 'Settings')}
+          aria-label={label('设置', 'Settings')}
+          onPointerEnter={preloadSettingsPage}
+          onFocus={preloadSettingsPage}
+          onClick={() => navigate('general')}
+        >
+          <Icon name="gear" />
+        </Button>
+      </div>
     </div>
   );
 }
