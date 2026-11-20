@@ -1076,6 +1076,18 @@ function validateValueAgainstSchema(
       errors.push(`${path}: must be at least ${min} characters`);
     if (max !== null && value.length > max)
       errors.push(`${path}: must be at most ${max} characters`);
+    /* Enforce declared identifier / URL patterns before invoking a tool.
+       Previously these were advertised to providers but ignored by our
+       own pre-execution validator, causing an avoidable later rejection. */
+    if (typeof schema.pattern === 'string') {
+      try {
+        if (!new RegExp(schema.pattern).test(value))
+          errors.push(`${path}: does not match required pattern ${schema.pattern}`);
+      } catch {
+        // Registry schemas are trusted, but a broken pattern must fail closed.
+        errors.push(`${path}: invalid pattern constraint`);
+      }
+    }
   }
   if (typeof value === 'number' && (types.includes('number') || types.includes('integer'))) {
     const min = typeof schema.minimum === 'number' ? schema.minimum : null;

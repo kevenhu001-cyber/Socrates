@@ -13,6 +13,7 @@ import { getExecutionsPerDay } from '../../../../lib/tiers.js';
 import { codeInterpreter } from '../../../../services/codeInterpreter/index.js';
 import type { ToolExecutor, ToolExecutionResult } from './types.js';
 import type { ToolResult } from '../types.js';
+import { canRetryCorrectedCodeExecution } from '../toolResultPolicy.js';
 
 export const executeCodeInterpreter: ToolExecutor = async (
   args,
@@ -162,9 +163,14 @@ export const executeCodeInterpreter: ToolExecutor = async (
         : null;
   if (execResult.status !== 'completed') {
     toolPolicy.recordResult('code_interpreter', false, execResult.errorCode || 'execution_failed');
-    execResult.retryable = !stopMessage && toolPolicy.remainingRetries('code_interpreter') > 0;
+    const retriesLeft = toolPolicy.remainingRetries('code_interpreter');
+    execResult.retryable = canRetryCorrectedCodeExecution(execResult, retriesLeft);
     if (!execResult.retryable) {
-      execResult.userMessage = stopMessage || '代码执行连续多次失败，本次不再自动重试。';
+      execResult.userMessage =
+        stopMessage ||
+        (retriesLeft > 0
+          ? '代码执行环境不可用或缺少执行条件，本轮不再重试。'
+          : '代码执行连续多次失败，本次不再自动重试。');
     }
   } else {
     toolPolicy.recordResult('code_interpreter', true);
@@ -180,7 +186,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     errorCode:
       execResult.errorCode ||
       (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
-    retryable: execResult.retryable !== false,
+    retryable: execResult.status !== 'completed' && execResult.retryable === true,
     userMessage:
       execResult.status === 'completed' ? null : execResult.userMessage || '代码未能完成执行。',
     detail: execResult.stderr || execResult.errorMessage || null,

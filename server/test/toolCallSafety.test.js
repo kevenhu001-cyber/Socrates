@@ -423,6 +423,26 @@ test('validateToolArguments enforces numeric and string bounds', () => {
   assert.equal(validateToolArguments({ query: 'q'.repeat(401) }, schema).ok, false);
 });
 
+test('validateToolArguments checks declared patterns before an executor runs', () => {
+  const schema = {
+    type: 'object',
+    properties: {
+      nodes: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { id: { type: 'string', pattern: '^[A-Za-z0-9._:-]+$' } },
+          required: ['id'],
+        },
+      },
+    },
+  };
+  assert.equal(validateToolArguments({ nodes: [{ id: 'chart-1' }] }, schema).ok, true);
+  const rejected = validateToolArguments({ nodes: [{ id: 'bad id' }] }, schema);
+  assert.equal(rejected.ok, false);
+  assert.match(rejected.fieldErrors.join(' '), /nodes\[0\]\.id: does not match required pattern/);
+});
+
 test('validateToolArguments enforces enums and array item counts', () => {
   const schema = {
     type: 'object',
