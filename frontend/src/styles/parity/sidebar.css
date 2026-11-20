@@ -403,10 +403,25 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     padding-top: 0;
   }
 
-  /* One line per chat, like chatgpt.com: title only; the relative time
-     stays available as the row's tooltip (title attribute set by React). */
+  /* ZCode's task row is a two-line block: the title, then a quiet meta
+     line under it. The recents row was a single 36px line with the meta
+     hidden, so the list carried no sense of when a chat happened and every
+     row repeated the same decorative bubble. The row now grows to hold
+     its meta line; the phone drawer keeps its own single-line density
+     (polish/mobile-sidebar.css hides the meta line there). */
   #appShell #sidebar .recent-item {
     gap: 8px;
+    height: auto;
+    min-height: 48px;
+  }
+  /* An idle row carries no leading glyph: the slot exists so the titles
+     keep one alignment, the way the reference keeps an empty status slot
+     in front of a task that has nothing to report. */
+  #appShell #sidebar .recent-item-glyph {
+    visibility: hidden;
+    width: 16px;
+    height: 16px;
+    flex: none;
   }
   #appShell #sidebar .recent-mode-badge {
     flex: 0 0 6px;
@@ -438,8 +453,22 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* The relative time comes back into the row, as a quiet meta line under
+     the title. It used to be hidden and only reachable as a tooltip. */
   #appShell #sidebar .recent-item-meta {
-    display: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin-block-start: 2px;
+    color: var(--ui-text-tertiary);
+    font-size: var(--ui-font-size-xxs);
+    line-height: 14px;
+  }
+  #appShell #sidebar .recent-item-meta > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   #appShell #sidebar .recent-item-actions {
     display: flex;

@@ -71,7 +71,7 @@ export function VirtualSessionTimeline({
     const result = [0];
     for (const entry of entries)
       result.push(
-        result[result.length - 1] + (heights.current.get(entry.key) ?? (entry.session ? 36 : 32)),
+        result[result.length - 1] + (heights.current.get(entry.key) ?? (entry.session ? 48 : 32)),
       );
     return result;
     // Measurements are external geometry, revision changes when they change.

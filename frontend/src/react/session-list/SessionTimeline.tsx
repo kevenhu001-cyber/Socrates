@@ -2,8 +2,7 @@ import React, { useEffect, useReducer, useSyncExternalStore, useMemo } from 'rea
 import type { SessionItem } from '../../legacy/sessionListState.ts';
 import type { SessionRowProps } from './SessionRow';
 import { SessionRow } from './SessionRow';
-import { formatRelativeTime } from './sessionList.store';
-import { timeGroupLabel } from './sessionListModel';
+import { formatRelativeTimeLabel, timeGroupLabel } from './sessionListModel';
 import { groupSessionsByProject } from './projectGroups';
 import { useSessionOrganization } from '../../sidebar/organization.store';
 import { getCachedProjects, subscribeToProjectCache } from '../../projects/projectCache';
@@ -123,7 +122,7 @@ export function SessionTimeline({
     <SessionRow
       session={session}
       isActive={session.id === currentSessionId}
-      timeLabel={formatRelativeTime(session.updatedAt || session.createdAt)}
+      timeLabel={formatRelativeTimeLabel(session.updatedAt || session.createdAt)}
       onPick={onPick}
       onTag={onTag}
       onArchive={onArchive}

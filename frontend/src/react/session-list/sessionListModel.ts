@@ -1,5 +1,5 @@
 import type { SessionItem } from '../../legacy/sessionListState.ts';
-import { formatRelativeTime } from './sessionList.store';
+import { i18n } from '../legacy/gateway';
 
 const MONTH_NAMES = [
   'January',
@@ -47,13 +47,40 @@ export function modeLabel(session: SessionItem): { key: string; cls: string } {
   return { key: 'tutor.modeTutor', cls: 'mode-tutor' };
 }
 
+/* The row carries its own relative time now (the meta line under the title),
+   so the label has to speak the user's language. The legacy formatter is
+   English-only and stays where the legacy surfaces use it. */
+export function formatRelativeTimeLabel(value: string | number | null | undefined): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return '';
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  if (mins < 1) return i18n('recents.time.justNow', 'Just now');
+  if (mins < 60) return i18n('recents.time.minutes', '{n}m ago').replace('{n}', String(mins));
+  if (hours < 24) return i18n('recents.time.hours', '{n}h ago').replace('{n}', String(hours));
+  if (days < 7) return i18n('recents.time.days', '{n}d ago').replace('{n}', String(days));
+  if (weeks < 5) return i18n('recents.time.weeks', '{n}w ago').replace('{n}', String(weeks));
+  return i18n('recents.time.months', '{n}mo ago').replace('{n}', String(months));
+}
+
 export function buildMeta(session: SessionItem, timeLabel?: string): string[] {
   const meta = [
-    timeLabel ?? formatRelativeTime(session.updatedAt || session.createdAt || Date.now()),
+    timeLabel ?? formatRelativeTimeLabel(session.updatedAt || session.createdAt || Date.now()),
   ];
-  if (session.totalQ) meta.push(String(session.totalQ) + ' Qs');
+  if (session.totalQ) {
+    meta.push(i18n('recents.meta.qCount', '{n} Qs').replace('{n}', String(session.totalQ)));
+  }
   if (session.branchedFrom) {
-    meta.push(session.branchedFrom.reExplain ? 'Re-explained' : 'Branched');
+    meta.push(
+      session.branchedFrom.reExplain
+        ? i18n('recents.meta.reExplained', 'Re-explained')
+        : i18n('recents.meta.branched', 'Branched'),
+    );
   }
   return meta;
 }
