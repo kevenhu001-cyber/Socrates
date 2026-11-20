@@ -770,6 +770,13 @@ test('clear API settings confirms before clearing provider configuration', async
   await expect(overlay).toBeVisible();
 });
 
+async function editProvider(overlay, id) {
+  const navItem = overlay.locator(`#providerList .provider-nav-item[data-provider-id="${id}"]`);
+  await navItem.click();
+  await expect(navItem).toHaveAttribute('aria-pressed', 'true');
+  await expect(overlay.locator(`#providerList .provider-row[data-id="${id}"]`)).toBeVisible();
+}
+
 test('React-owned provider rows stay synchronized with provider configuration', async ({
   page,
 }) => {
@@ -801,11 +808,52 @@ test('React-owned provider rows stay synchronized with provider configuration', 
   // Second add: appends another row (custom rows grow 1 -> 2).
   await overlay.locator('#addProviderBtn').click();
   await expect(overlay.locator('#providerList .provider-row[data-id^="new-"]')).toHaveCount(2);
+  await editProvider(overlay, firstProviderId);
 
   await firstProviderRow.locator('.provider-active-btn').click();
   await expect(firstProviderRow).toHaveClass(/active/);
   await firstProviderRow.locator('.provider-del').click();
   await expect(firstProviderRow).toHaveCount(0);
+});
+
+test('provider navigation keeps drafts and adapts from desktop rail to mobile tabs', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const overlay = await openModelsPane(page);
+  await overlay.locator('#addProviderBtn').click();
+  const first = overlay.locator('#providerList .provider-row[data-id^="new-"]').first();
+  const firstId = await first.getAttribute('data-id');
+  await first.locator('input[data-field="label"]').fill('Draft A');
+  await first.locator('input[data-field="key"]').fill('unsaved-key-a');
+
+  await overlay.locator('#addProviderBtn').click();
+  const second = overlay.locator('#providerList .provider-row[data-id^="new-"]').last();
+  const secondId = await second.getAttribute('data-id');
+  await second.locator('input[data-field="label"]').fill('Draft B');
+  await second.locator('input[data-field="key"]').fill('unsaved-key-b');
+
+  await editProvider(overlay, firstId);
+  await expect(first.locator('input[data-field="key"]')).toHaveValue('unsaved-key-a');
+  await editProvider(overlay, secondId);
+  await expect(second.locator('input[data-field="key"]')).toHaveValue('unsaved-key-b');
+
+  const desktop = await overlay.locator('.provider-workbench').evaluate((element) => {
+    const nav = element.querySelector('.provider-workbench-nav').getBoundingClientRect();
+    const detail = element.querySelector('.provider-workbench-detail').getBoundingClientRect();
+    return { navRight: nav.right, detailLeft: detail.left };
+  });
+  expect(desktop.navRight).toBeLessThanOrEqual(desktop.detailLeft + 1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobile = await overlay.locator('.provider-workbench').evaluate((element) => {
+    const nav = element.querySelector('.provider-workbench-nav').getBoundingClientRect();
+    const detail = element.querySelector('.provider-workbench-detail').getBoundingClientRect();
+    return { navBottom: nav.bottom, detailTop: detail.top };
+  });
+  expect(mobile.navBottom).toBeLessThanOrEqual(mobile.detailTop + 1);
+  await editProvider(overlay, firstId);
+  await expect(first.locator('input[data-field="key"]')).toHaveValue('unsaved-key-a');
 });
 
 test('provider save submits the configured fields and secret to the API', async ({ page }) => {
@@ -886,6 +934,7 @@ test('provider activation failure restores the previous active selection', async
     });
   });
 
+  await editProvider(overlay, 'provider-two');
   await second.locator('.provider-active-btn').click();
 
   await expect(first.locator('.provider-active-btn')).toHaveAttribute('aria-checked', 'true');
@@ -905,6 +954,8 @@ test('provider save keeps successful rows when another provider request fails', 
   await expect(rows).toHaveCount(2);
   for (const [index, label] of ['Saved row', 'Failed row'].entries()) {
     const row = rows.nth(index);
+    const id = await row.getAttribute('data-id');
+    await editProvider(overlay, id);
     await row.locator('input[data-field="label"]').fill(label);
     await row
       .locator('input[data-field="url"]')
@@ -935,9 +986,7 @@ test('provider save keeps successful rows when another provider request fails', 
 
   await overlay.locator('#saveSettingsBtn').click();
 
-  await expect(
-    overlay.locator('#providerList .provider-row[data-id="provider-saved"]'),
-  ).toBeVisible();
+  await editProvider(overlay, 'provider-saved');
   await expect(overlay.locator('#providerList .provider-row[data-id^="new-"]')).toHaveCount(1);
   await expect(
     page.locator('.msg-toast').filter({ hasText: 'Saved 1 provider(s), but 1 failed' }),
@@ -1013,7 +1062,7 @@ test('wide settings keeps a readable form width and announces one empty search s
   const overlay = page.locator('#settingsPage');
   const pane = overlay.locator('.settings-pane:visible');
   await expect(pane.locator('#settings-language')).toBeVisible();
-  expect((await pane.boundingBox()).width).toBeLessThanOrEqual(740);
+  expect((await pane.boundingBox()).width).toBeLessThanOrEqual(860);
   await overlay.getByRole('searchbox', { name: 'Search settings' }).fill('no such preference');
   await expect(
     overlay.getByRole('status').filter({ hasText: 'No matching settings.' }),

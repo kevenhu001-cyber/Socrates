@@ -93,11 +93,10 @@
     /* Geist input: the system radius, the default hairline and the raised
        surface. The field used to be a transparent nav row that only gained
        a fill on hover, which made it hard to read as a text field at rest. */
-    border: 0;
-    border-radius: var(--ui-radius-pill);
-    background: var(--ui-card);
+    /* Border, radius and fill are owned by parity/sidebar.css. Keep
+       geometry and palette single-sourced to satisfy surface ownership. */
     color: var(--foreground);
-    box-shadow: var(--ui-elevation-ring);
+    box-shadow: none;
     transition:
       background-color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
       color var(--ui-duration-hover) cubic-bezier(0.16, 1, 0.3, 1),
@@ -148,7 +147,7 @@
     /* 8px from the panel edge + 4px of its own = 12px from the rail edge,
        which is where the reference draws the group header — a shade left of
        the row icons it introduces. */
-    padding: 14px var(--ui-space-xs) 4px;
+    padding: 16px var(--ui-space-xs) 5px;
   }
   #appShell #sidebar .recents-title {
     color: var(--ui-text-muted);
@@ -182,8 +181,8 @@
   }
   #appShell #sidebar .recent-item {
     gap: 0;
-    padding-inline: 8px;
-    border-radius: var(--ui-radius-sm);
+    padding-inline: 10px;
+    border-radius: var(--ui-radius-control);
     color: var(--foreground);
     transition:
       background-color var(--ui-duration-hover) var(--ui-ease-apple, ease),
@@ -220,6 +219,12 @@
     transition:
       background-color var(--ui-duration-hover) ease,
       color var(--ui-duration-hover) ease;
+  }
+  /* Keyboard-open menus get the same discoverability as pointer hover.
+     Virtualized rows already retain focus and menu anchors. */
+  #appShell #sidebar .recent-item:focus-within .recent-item-actions {
+    opacity: 1;
+    pointer-events: auto;
   }
   #appShell #sidebar .recent-item-overflow:hover {
     background: var(--accent);

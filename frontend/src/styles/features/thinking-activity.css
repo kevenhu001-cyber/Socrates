@@ -139,10 +139,35 @@
   flex-direction: column;
   gap: var(--ui-gap-3);
   min-width: 0;
-  max-height: min(360px, 50dvh);
+  max-height: min(440px, 55dvh);
+  padding: var(--ui-space-sm) 0 var(--ui-space-sm) var(--ui-space-md);
+  border-inline-start: 1px solid var(--ui-border-subtle);
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+}
+
+/* A ZCode-style settled batch adds one quiet nested rail. Only terminal,
+   non-actionable calls are grouped; the actual result rows stay unchanged. */
+.rn-turn-activity .thinking-tool-batch-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-inline-start: 2px;
+  padding-inline-start: var(--ui-space-sm);
+  border-inline-start: 1px solid var(--ui-border-subtle);
+}
+
+.rn-turn-activity .thinking-tool-batch[data-testid='tool-call-batch'] {
+  min-width: 0;
+}
+
+/* A long code result scrolls inside its own detail instead of growing the
+   transcript, while headings and copy actions retain their normal hit area. */
+.rn-turn-activity [data-testid='tool-detail'] {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .rn-turn-activity .thinking-step-detail-body .rn-tool-actions {
   margin-block: 0;
