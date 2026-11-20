@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { canRetryCorrectedCodeExecution } from '../src/routes/chat/pipeline/toolResultPolicy.js';
+import { canRetryCorrectedCodeExecution, normalizeToolResultRetryability } from '../src/routes/chat/pipeline/toolResultPolicy.js';
 
 test('corrected Python code can retry user syntax/runtime errors within budget', () => {
   for (const errorCode of ['syntax_error', 'code_execution_failed', 'code_too_large', 'output_limit_exceeded']) {
@@ -23,4 +23,9 @@ test('unrecoverable sandbox, authorization and timeout errors never prompt same-
   assert.equal(canRetryCorrectedCodeExecution({ status: 'completed' }, 2), false);
   assert.equal(canRetryCorrectedCodeExecution({ status: 'timeout' }, 2), false);
   assert.equal(canRetryCorrectedCodeExecution({ status: 'cancelled' }, 2), false);
+});
+
+test('successful tool results are never marked retryable in the provider policy', () => {
+  assert.equal(normalizeToolResultRetryability({ status: 'completed' }).retryable, false);
+  assert.equal(normalizeToolResultRetryability({ status: 'completed', retryable: true }).retryable, false);
 });

@@ -431,48 +431,7 @@ test('validateToolArguments checks declared patterns before an executor runs', (
         type: 'array',
         items: {
           type: 'object',
-          properties: {
-            id: { type: 'string', pattern: '^[A-Za-z0-9._:-]+
-  const schema = {
-    type: 'object',
-    properties: {
-      freshness: { type: 'string', enum: ['day', 'week', 'month'] },
-      sites: { type: 'array', minItems: 1, maxItems: 3, items: { type: 'string' } },
-    },
-  };
-  assert.equal(validateToolArguments({ freshness: 'year' }, schema).ok, false);
-  assert.equal(validateToolArguments({ freshness: 'week' }, schema).ok, true);
-  assert.equal(validateToolArguments({ sites: [] }, schema).ok, false);
-  assert.equal(validateToolArguments({ sites: ['a', 'b', 'c', 'd'] }, schema).ok, false);
-  const badItem = validateToolArguments({ sites: ['a', 7] }, schema);
-  assert.equal(badItem.ok, false);
-  assert.match(badItem.fieldErrors.join(' '), /sites\[1\]/);
-});
-
-test('validateToolArguments tolerates null optionals and missing schemas', () => {
-  /* OpenAI-compatible providers legitimately emit null for unset
-     optional fields; only required fields must reject null. */
-  assert.equal(validateToolArguments({ query: 'q', count: null }, SEARCH_SCHEMA).ok, true);
-  assert.equal(validateToolArguments({ anything: 'goes' }, null).ok, true);
-  assert.equal(validateToolArguments({ anything: 'goes' }, undefined).ok, true);
-  /* Unknown keys are ignored — repair already strips wrappers. */
-  assert.equal(validateToolArguments({ query: 'q', extra: 1 }, SEARCH_SCHEMA).ok, true);
-});
-
-test('validateToolArguments bounds error volume on hostile payloads', () => {
-  const schema = {
-    type: 'object',
-    properties: Object.fromEntries(
-      Array.from({ length: 20 }, (_, i) => [`f${i}`, { type: 'string' }]),
-    ),
-    required: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-  };
-  const result = validateToolArguments({}, schema);
-  assert.equal(result.ok, false);
-  assert.ok(result.fieldErrors.length <= 8, 'error list must stay bounded');
-});
- },
-          },
+          properties: { id: { type: 'string', pattern: '^[A-Za-z0-9._:-]+$' } },
           required: ['id'],
         },
       },
@@ -481,7 +440,7 @@ test('validateToolArguments bounds error volume on hostile payloads', () => {
   assert.equal(validateToolArguments({ nodes: [{ id: 'chart-1' }] }, schema).ok, true);
   const rejected = validateToolArguments({ nodes: [{ id: 'bad id' }] }, schema);
   assert.equal(rejected.ok, false);
-  assert.match(rejected.fieldErrors.join(' '), /nodes\\[0\\]\\.id: does not match required pattern/);
+  assert.match(rejected.fieldErrors.join(' '), /nodes\[0\]\.id: does not match required pattern/);
 });
 
 test('validateToolArguments enforces enums and array item counts', () => {

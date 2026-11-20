@@ -186,7 +186,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
     errorCode:
       execResult.errorCode ||
       (execResult.status === 'skipped' ? 'code_interpreter_unavailable' : 'execution_failed'),
-    retryable: execResult.retryable !== false,
+    retryable: execResult.status !== 'completed' && execResult.retryable === true,
     userMessage:
       execResult.status === 'completed' ? null : execResult.userMessage || '代码未能完成执行。',
     detail: execResult.stderr || execResult.errorMessage || null,
