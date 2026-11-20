@@ -128,25 +128,30 @@ function RoundControl({
       disabled={disabled}
       onPress={onPress}
       {...dataSet({ composerControl: control, i18nTitle: i18nKey, i18nAria: i18nKey, voicePhase })}
-      style={({ pressed, hovered }: PressState) => ({
-        width: COMPOSER_CONTROL_SIZE,
-        height: COMPOSER_CONTROL_SIZE,
-        borderRadius: uiRadius.pill,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: disabled ? 0.45 : 1,
-        backgroundColor: disabled
-          ? 'transparent'
-          : filled
-            ? colors.action
-            : pressed
-              ? colors.fillPressed
-              : active
-                ? colors.fillHover
-                : hovered
-                  ? colors.fill
-                  : 'transparent',
-      })}
+      style={({ pressed, hovered }: PressState) =>
+        ({
+          width: COMPOSER_CONTROL_SIZE,
+          height: COMPOSER_CONTROL_SIZE,
+          borderRadius: uiRadius.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: disabled ? 0.45 : 1,
+          backgroundColor: disabled
+            ? 'transparent'
+            : filled
+              ? colors.action
+              : pressed
+                ? colors.fillPressed
+                : active
+                  ? colors.fillHover
+                  : hovered
+                    ? colors.fill
+                    : 'transparent',
+          transform: [{ scale: !disabled && pressed ? 0.94 : 1 }],
+          transitionProperty: 'background-color, transform, opacity',
+          transitionDuration: '150ms',
+        }) as object
+      }
     >
       {children}
     </Pressable>
@@ -195,30 +200,43 @@ export function ComposerControls({
           aria-expanded={effort.expanded}
           onPress={effort.onPress}
           {...dataSet({ chatConfigTrigger: '' })}
-          style={({ pressed, hovered }: PressState) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 4,
-            height: COMPOSER_CONTROL_SIZE,
-            paddingLeft: compact ? 10 : 12,
-            paddingRight: 10,
-            borderRadius: uiRadius.pill,
-            backgroundColor: pressed
-              ? colors.fillPressed
-              : hovered || effort.expanded
-                ? colors.fillHover
-                : 'transparent',
-          })}
+          style={({ pressed, hovered }: PressState) =>
+            ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: compact ? 4 : 6,
+              height: COMPOSER_CONTROL_SIZE,
+              paddingLeft: compact ? 10 : 12,
+              paddingRight: 10,
+              borderRadius: uiRadius.pill,
+              borderWidth: compact ? 0 : 1,
+              borderColor: hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
+              backgroundColor: compact
+                ? pressed
+                  ? colors.fillPressed
+                  : hovered || effort.expanded
+                    ? colors.fillHover
+                    : 'transparent'
+                : pressed
+                  ? colors.fillPressed
+                  : hovered || effort.expanded
+                    ? colors.fillHover
+                    : colors.fill,
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+              transitionProperty: 'background-color, border-color, transform',
+              transitionDuration: '150ms',
+            }) as object
+          }
         >
           {compact ? null : (
-            <UiText variant="bodySm" numberOfLines={1}>
+            <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
               {effort.caption}
             </UiText>
           )}
           {effort.value ? (
             <UiText
-              variant={compact ? 'body' : 'bodySm'}
-              tone={compact ? 'tertiary' : undefined}
+              variant={compact ? 'body' : 'labelSm'}
+              tone={compact ? 'tertiary' : 'ink'}
               numberOfLines={1}
               style={compact ? { lineHeight: 20 } : undefined}
               aria-hidden
@@ -234,10 +252,19 @@ export function ComposerControls({
       {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
         <UiText
           variant="eyebrow"
-          tone="tertiary"
+          tone="secondary"
           numberOfLines={1}
           aria-hidden
           {...dataSet({ composerVoiceTimer: '' })}
+          style={
+            {
+              fontVariant: ['tabular-nums'],
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              borderRadius: uiRadius.pill,
+              backgroundColor: colors.fill,
+            } as object
+          }
         >
           {mic.timerLabel}
         </UiText>
@@ -282,18 +309,23 @@ export function ComposerControls({
           ready: primary.ready ? 'true' : 'false',
           sending: primary.sending ? 'true' : 'false',
         })}
-        style={{
-          width: COMPOSER_CONTROL_SIZE,
-          height: COMPOSER_CONTROL_SIZE,
-          borderRadius: uiRadius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          /* Site send disc: a quiet grey disc while there is nothing to
-             send, the action disc once there is (and while it means Stop).
-             Phones keep the action colour at half strength when empty. */
-          backgroundColor: enabled || compact ? colors.action : colors.fill,
-          opacity: !enabled && compact ? 0.5 : undefined,
-        }}
+        style={({ pressed, hovered }: PressState) =>
+          ({
+            width: COMPOSER_CONTROL_SIZE,
+            height: COMPOSER_CONTROL_SIZE,
+            borderRadius: uiRadius.pill,
+            alignItems: 'center',
+            justifyContent: 'center',
+            /* Site send disc: a quiet grey disc while there is nothing to
+               send, the action disc once there is (and while it means Stop).
+               Phones keep the action colour at half strength when empty. */
+            backgroundColor: enabled || compact ? colors.action : colors.fill,
+            opacity: !enabled && compact ? 0.5 : undefined,
+            transform: [{ scale: enabled && pressed ? 0.93 : 1 }],
+            transitionProperty: 'background-color, transform, opacity',
+            transitionDuration: '150ms',
+          }) as object
+        }
       >
         <View nativeID="composerPrimaryBtnContent">
           <UiIcon

@@ -24,19 +24,19 @@ const DESKTOP_COMPOSER_QUERY = '(min-width: 769px)';
  * the e2e specs and `composerShapeGeometry.ts` read them. */
 const CHIP_BOX = [
   'inline-flex items-center justify-start gap-1.5 grow-0 shrink basis-auto min-w-0 max-w-[220px]',
-  'h-(--composer-control) rounded-md border border-border bg-secondary px-2.5 py-0 pr-1',
-  'text-sm font-normal leading-5 text-secondary-foreground whitespace-normal',
+  'h-(--composer-control) rounded-md border border-border/80 bg-secondary px-2.5 py-0 pr-1',
+  'text-sm font-normal leading-5 text-secondary-foreground whitespace-normal transition-all duration-150 hover:border-border',
 ].join(' ');
 const TOOL_CHIP_BOX = [
   'inline-flex items-center gap-1 grow-0 shrink-0 basis-auto',
-  'h-(--composer-control) rounded-md px-3 py-0 pl-2 font-medium leading-5',
+  'h-(--composer-control) rounded-md border border-border/80 px-3 py-0 pl-2 font-medium leading-5 transition-all duration-150 hover:border-border',
 ].join(' ');
 const CHIP_ICON_BOX =
   'grid shrink-0 grow-0 basis-4 place-items-center w-4 h-4 overflow-hidden rounded-sm';
 const CHIP_LABEL_BOX = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap';
 const CHIP_REMOVE_BOX = [
   'grid shrink-0 grow-0 basis-(--ui-control-xs) place-items-center size-(--ui-control-xs)',
-  'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:size-3.5',
+  'rounded-sm p-0 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors duration-150 [&_svg]:size-3.5',
 ].join(' ');
 
 function useWebSearchOn(): boolean {

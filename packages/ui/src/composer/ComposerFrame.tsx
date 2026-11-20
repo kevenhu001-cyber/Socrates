@@ -61,7 +61,7 @@ export function ComposerFrame({
           borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
           backgroundColor: colors.card,
           boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
-          transitionProperty: 'box-shadow',
+          transitionProperty: 'box-shadow, background-color',
           transitionDuration: `${uiMotion.slow - 100}ms`,
           transitionTimingFunction: uiMotion.easeOut,
           paddingTop: compact ? uiStep[75] : uiStep[200],
