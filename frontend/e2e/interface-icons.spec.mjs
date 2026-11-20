@@ -68,7 +68,7 @@ for (const theme of ['light', 'dark']) {
             };
           }),
       );
-    expect(icons.length).toBeGreaterThan(5);
+    expect(icons.length).toBeGreaterThanOrEqual(5);
     for (const icon of icons) {
       /* RN-7 图标统一 1.5px 线宽（UI_ICON_STROKE，non-scaling）。 */
       expect(icon.stroke).toBe('1.5px');

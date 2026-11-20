@@ -40,8 +40,8 @@ export function SidebarSearchRow() {
           aria-hidden="true"
           focusable="false"
         >
-          <circle cx="10.75" cy="10.75" r="6.75" />
-          <path d="m16 16 4.5 4.5" />
+          <circle cx="11" cy="11" r="7" />
+          <path d="m21 21-4.35-4.35" />
         </svg>
         <Input
           type="text"

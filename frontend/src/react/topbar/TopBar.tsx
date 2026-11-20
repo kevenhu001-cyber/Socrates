@@ -132,20 +132,20 @@ function SidebarToggle() {
       style={{ display: isMobile ? (isOpen ? 'none' : undefined) : 'none' }}
       onClick={() => toggleSidebar()}
     >
-      {/* Reference phone glyph: a soft frame with a short rail stroke, drawn at 20px. */}
+      {/* Reference phone glyph: a soft frame with a short rail stroke. */}
       <svg
         className="glyph-panel"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth={1.9}
+        strokeWidth={1.75}
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden="true"
         focusable="false"
       >
-        <rect x="2.75" y="4.25" width="18.5" height="15.5" rx="4.5" />
-        <path d="M8 9v6" />
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M9 3v18" />
       </svg>
       {/* Phone navigation uses the reference's quiet, two-line menu glyph. */}
       <svg
@@ -153,12 +153,12 @@ function SidebarToggle() {
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth={2}
+        strokeWidth={1.75}
         strokeLinecap="round"
         aria-hidden="true"
       >
         <path d="M4 8h16" />
-        <path d="M4 15h11" />
+        <path d="M4 16h11" />
       </svg>
       <span className="mobile-sidebar-status" aria-hidden="true" />
     </Button>
