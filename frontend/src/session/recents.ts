@@ -16,6 +16,12 @@ import {
 } from './store.ts';
 import { createReconciler } from './recentsReconcile.ts';
 import { readBootSessions } from './bootSessions.ts';
+import {
+  RECENTS_PAGE_SIZE,
+  getSessionListPagingSnapshot,
+  patchSessionListPaging,
+  resetSessionListPaging,
+} from './sessionListPagingState.ts';
 import { getKnownTagsFromSessions } from '../legacy/recentsModel.ts';
 import { apiFetch } from '../util/api/index.ts';
 import { detailCache } from './detailCache.ts';
@@ -102,9 +108,113 @@ function _saveCurrentSession(): unknown {
   }
   return null;
 }
-function _currentUser(): { tier?: string } | null {
-  return (getCurrentUser() as { tier?: string } | null) || null;
+function _currentUser(): { id?: string; tier?: string } | null {
+  return (getCurrentUser() as { id?: string; tier?: string } | null) || null;
 }
+
+/* The cache holds the visible pages, pinned chats and archives. A response
+ * for one page must never replace data from other pages. */
+function mergeSessionPages(...pages: ReadonlyArray<ReadonlyArray<SessionRow>>): SessionRow[] {
+  const seen = new Map<string, SessionRow>();
+  for (const page of pages)
+    for (const row of page)
+      if (row?.id && !seen.has(row.id)) seen.set(row.id, row);
+  return Array.from(seen.values());
+}
+
+let listUserId: string | null = null;
+let pinnedReady = false;
+let archivedReady = false;
+let archivedRequest: Promise<void> | null = null;
+let olderRequest: Promise<void> | null = null;
+
+async function fetchPinnedSessions(): Promise<SessionRow[]> {
+  if (pinnedReady) return [];
+  const rows: SessionRow[] = [];
+  let cursor: string | null = null;
+  const seen = new Set<string>();
+  do {
+    const query = new URLSearchParams({
+      limit: '200', pinnedOnly: 'true', cursorVersion: '2',
+    });
+    if (cursor) query.set('cursor', cursor);
+    const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
+    if (!Array.isArray(page?.sessions)) throw new Error('Invalid pinned sessions response');
+    rows.push(...page.sessions);
+    cursor = typeof page.nextCursor === 'string' ? page.nextCursor : null;
+    if (cursor && seen.has(cursor)) throw new Error('Pinned sessions cursor did not advance');
+    if (cursor) seen.add(cursor);
+  } while (cursor);
+  pinnedReady = true;
+  return rows;
+}
+
+/** Fetch older metadata only when a user scrolls near the end of the sidebar. */
+export async function loadMoreServerSessions(): Promise<void> {
+  const state = getSessionListPagingSnapshot();
+  if (!state.initialized || !state.nextCursor || state.loading || olderRequest) return;
+  const cursor = state.nextCursor;
+  const owner = listUserId;
+  patchSessionListPaging({ loading: true, failed: false });
+  const run = async () => {
+    try {
+      const query = new URLSearchParams({
+        limit: String(RECENTS_PAGE_SIZE), cursorVersion: '2', cursor,
+      });
+      const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
+      if (!Array.isArray(page?.sessions)) throw new Error('Invalid session page');
+      if (listUserId !== owner || getSessionListPagingSnapshot().nextCursor !== cursor) return;
+      serverCache.sessions = mergeSessionPages(serverCache.sessions, page.sessions);
+      patchSessionListPaging({
+        nextCursor: typeof page.nextCursor === 'string' && page.nextCursor !== cursor
+          ? page.nextCursor : null,
+        loading: false,
+        failed: false,
+        loadedPages: state.loadedPages + 1,
+      });
+      _renderRecents();
+    } catch (error) {
+      if (listUserId !== owner) return;
+      patchSessionListPaging({ loading: false, failed: true });
+      reportSwallow(error, 'session/recents.loadMoreServerSessions', 'expected');
+    }
+  };
+  olderRequest = run().finally(() => { olderRequest = null; });
+  return olderRequest;
+}
+
+/** Archives are cold data; the Storage dialog fetches them only when opened. */
+export function ensureArchivedSessions(): Promise<void> {
+  if (archivedReady) return Promise.resolve();
+  if (archivedRequest) return archivedRequest;
+  const owner = listUserId;
+  archivedRequest = (async () => {
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const query = new URLSearchParams({
+        limit: '100', archivedOnly: 'true', cursorVersion: '2',
+      });
+      if (cursor) query.set('cursor', cursor);
+      const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
+      if (!Array.isArray(page?.sessions)) throw new Error('Invalid archived sessions response');
+      if (owner !== listUserId) return;
+      serverCache.sessions = mergeSessionPages(
+        page.sessions.filter((row) => Boolean(row.archivedAt)),
+        serverCache.sessions,
+      );
+      _renderArchivedList();
+      cursor = typeof page.nextCursor === 'string' ? page.nextCursor : null;
+      if (cursor && seen.has(cursor)) throw new Error('Archived sessions cursor did not advance');
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    archivedReady = true;
+  })()
+    .catch((error) => reportSwallow(error, 'session/recents.ensureArchivedSessions', 'expected'))
+    .finally(() => { archivedRequest = null; });
+  return archivedRequest;
+}
+
 
 export function getRecents(): SessionRow[] {
   /* P2.3 — sweep local expired archives first so the Recents
@@ -120,65 +230,76 @@ export function getKnownTags(): string[] {
 }
 
 export async function refreshServerSessions(): Promise<SessionRow[]> {
-  if (!_currentUser()) return [];
-  /* the previous `console.warn("[DEL-BUG] ...")`
-     tracing logs (incl. a `new Error().stack` capture on every call)
-     were left over from a delete-flow debugging session and flooded
-     the console on every login / save / delete. Demoted to
-     console.debug so they stay available under Verbose level without
-     polluting the default console. */
-  let ok = false;
-  /* Include archived rows so the Storage modal can list them without a
-     second fetch. getRecents()/getVisibleSessions still hide archivedAt. */
-  /* the <head> script started this exact request
-     when /me confirmed the user, so it may already be in flight (or done)
-     by the time the sidebar asks. Take the one-shot handoff; a missing,
-     stale, or failed prefetch falls through to the normal apiFetch path
-     below, retry included. */
-  const prefetched = await readBootSessions(window);
-  if (prefetched) {
-    serverCache.sessions = prefetched;
-    ok = true;
-  } else {
+  const user = _currentUser();
+  if (!user) {
+    listUserId = null;
+    serverCache.sessions = [];
+    resetSessionListPaging();
+    return [];
+  }
+  const owner = user.id || null;
+  if (listUserId !== owner) {
+    listUserId = owner;
+    serverCache.sessions = [];
+    pinnedReady = false;
+    archivedReady = false;
+    resetSessionListPaging();
+  }
+
+  // The first-page preflight runs in the HTML head. Fetch pinned chats
+  // independently to keep older pinned conversations visible on page one.
+  const pinnedPromise = fetchPinnedSessions()
+    .catch((error): SessionRow[] => {
+      reportSwallow(error, 'session/recents.pinned', 'expected');
+      return [];
+    });
+  let page: SessionListDto | null = await readBootSessions(window);
+  let ok = Boolean(page);
+  if (!page) {
+    const path = '/api/sessions?limit=' + RECENTS_PAGE_SIZE + '&cursorVersion=2';
     try {
-      const r = await apiFetch<SessionListDto>('/api/sessions?limit=200&archived=true');
-      serverCache.sessions = r && Array.isArray(r.sessions) ? r.sessions : [];
+      page = await apiFetch<SessionListDto>(path);
+      if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response');
       ok = true;
-    } catch (e) {
-      /* retry ONCE on transient failures (network
-         blip, 5xx, 429). This covers the "some devices" report where a
-         flaky connection or a momentary 502/503 left the user with an
-         empty Recents list. Non-retryable errors (401/403/404) skip the
-         retry so we don't waste a roundtrip on a definitely-broken
-         request. The original bug silently swallowed ALL errors here,
-         leaving serverCache.sessions=[] and showing "No recent sessions yet."
-         even when the user had sessions on the server. */
-      const status = errorStatus(e);
+    } catch (error) {
+      const status = errorStatus(error);
       const retryable =
-        status === 0 ||
-        status === 408 ||
-        status === 429 ||
-        (typeof status === 'number' && status >= 500 && status < 600);
+        status === undefined || status === 0 || status === 408 || status === 429 ||
+        (status >= 500 && status < 600);
       if (retryable) {
         try {
-          await new Promise(function (res) {
-            setTimeout(res, 400);
-          });
-          const r2 = await apiFetch<SessionListDto>('/api/sessions?limit=200&archived=true');
-          serverCache.sessions = r2 && Array.isArray(r2.sessions) ? r2.sessions : [];
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          page = await apiFetch<SessionListDto>(path);
+          if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response');
           ok = true;
         } catch (retryError) {
-          /* still failing — surface below */
           reportSwallow(retryError, 'session/recents.fetch.retry');
         }
       }
     }
   }
+
+  const pinned = await pinnedPromise;
+  if (owner !== listUserId) return serverCache.sessions.slice();
+  if (ok && page) {
+    const previous = getSessionListPagingSnapshot();
+    serverCache.sessions = mergeSessionPages(page.sessions, pinned, serverCache.sessions);
+    patchSessionListPaging({
+      nextCursor: previous.loadedPages > 1
+        ? previous.nextCursor
+        : (typeof page.nextCursor === 'string' ? page.nextCursor : null),
+      initialized: true,
+      failed: false,
+      loadedPages: Math.max(1, previous.loadedPages),
+    });
+  } else if (pinned.length) {
+    serverCache.sessions = mergeSessionPages(pinned, serverCache.sessions);
+  }
   serverCache.fetchFailed = !ok;
   return serverCache.sessions.slice();
 }
-/* the one place that owns "when is it worth re-fetching
-   all 200 rows". saveCurrentSession() used to await this fetch on EVERY
+/* The reconciler refreshes the first page only, preserving older pages.
+   It still coalesces saves instead of fetching on every turn. saveCurrentSession() used to await this fetch on EVERY
    successful save, which both amplified the background load and stretched
    `saveInFlight` — and loadSession() drained `saveInFlight`, so the drain
    became the session switch's critical path. Saves now patch their own row
