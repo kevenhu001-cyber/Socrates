@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import { Button } from '../ui/shadcn/button';
 import { getLegacyActions, i18n } from '../legacy/gateway.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
@@ -64,15 +65,15 @@ function SessionListMore({ enabled }: { enabled: boolean }) {
   return (
     <div ref={target} className="recents-page-status" role="status" aria-live="polite">
       {paging.failed ? (
-        <button type="button" onClick={() => void loadMoreServerSessions()}>
+        <Button variant="ghost" size="sm" type="button" onClick={() => void loadMoreServerSessions()}>
           {i18n('session.retry', 'Retry loading older chats')}
-        </button>
+        </Button>
       ) : paging.loading ? (
         <span>{i18n('chat.history.loadingEarlier', 'Loading older chats…')}</span>
       ) : (
-        <button type="button" onClick={() => void loadMoreServerSessions()}>
+        <Button variant="ghost" size="sm" type="button" onClick={() => void loadMoreServerSessions()}>
           {i18n('sidebar.loadOlder', 'Load older chats')}
-        </button>
+        </Button>
       )}
     </div>
   );
