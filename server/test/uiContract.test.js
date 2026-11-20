@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { after } from 'node:test';
+
+// Importing the full executor registry starts the shared PostgreSQL listener.
+// Close it explicitly: the strict suite starts one Node process per test file.
+after(async () => {
+  const { shutdownPubsub } = await import('../src/lib/pubsub.js');
+  await shutdownPubsub();
+});
 
 import { GET_UI_CONTRACT_TOOL, uiContractContent } from '../src/services/uiContract.js';
 import { validateIntelligentUi, INTELLIGENT_UI_TOOL } from '../src/services/intelligentUi.js';
