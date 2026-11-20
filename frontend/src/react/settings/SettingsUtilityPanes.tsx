@@ -12,15 +12,15 @@ export function NotificationsSettingsPane({ hidden, label }: SettingsPaneProps) 
           <BellIcon aria-hidden />
         </span>
         <div className="settings-info-copy">
-          <h3>{label('Android 应用通知', 'Android notifications')}</h3>
+          <h3>{label('系统通知权限', 'Notification permissions')}</h3>
           <p>
             {label(
-              '在 Android 系统设置中管理 Socrates 的通知权限。',
-              'Manage Socrates notification permissions in Android system settings.',
+              '在浏览器或设备系统设置中管理 Socrates 的推送与通知权限。',
+              'Manage Socrates notification and push permissions in your browser or device system settings.',
             )}
           </p>
         </div>
-        <span className="settings-info-badge">Android</span>
+        <span className="settings-info-badge">{label('系统管理', 'System')}</span>
       </section>
     </section>
   );

@@ -259,10 +259,10 @@
   body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
     #appShell#appShell#appShell
     #navNew.sidebar-nav-btn {
-    background: rgb(255 255 255 / 10%) !important;
+    background: transparent !important;
   }
   #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-    background: rgb(255 255 255 / 10%) !important;
+    background: transparent !important;
   }
 }
 
@@ -271,11 +271,11 @@
     body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
     #appShell#appShell#appShell
     #navNew.sidebar-nav-btn {
-    background: rgb(0 0 0 / 5%) !important;
+    background: transparent !important;
   }
 
   [data-mode='light'] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-    background: rgb(0 0 0 / 5%) !important;
+    background: transparent !important;
   }
 }
 

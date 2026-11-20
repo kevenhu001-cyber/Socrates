@@ -139,7 +139,7 @@ export function getSettingsNavigation(
     {
       key: 'notifications',
       name: label('通知', 'Notifications'),
-      description: label('Android 通知权限', 'Android notifications'),
+      description: label('通知偏好与权限', 'Preferences and permissions'),
     },
     {
       key: 'personalization',

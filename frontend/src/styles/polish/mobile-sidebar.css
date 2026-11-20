@@ -54,13 +54,13 @@
     )
     #appShell
     .sidebar-nav-btn[data-nav='new'] {
-    background: var(--ui-bg-raised);
+    background: transparent;
     color: var(--foreground);
   }
 }
 
 @media (max-width: 768px) {
-  #appShell .nav-kbd {
+  #appShell :is(.nav-kbd, .sidebar-search-kbd) {
     display: none;
   }
 }

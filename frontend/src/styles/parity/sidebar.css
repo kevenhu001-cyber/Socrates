@@ -355,6 +355,29 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
   #appShell #sidebar .sidebar-search input:focus-visible {
     box-shadow: none;
   }
+  #appShell #sidebar .sidebar-search-kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding: 1px 5px;
+    border: 1px solid var(--ui-border-strong);
+    border-radius: var(--ui-radius-xs);
+    background: var(--secondary);
+    color: var(--ui-text-tertiary);
+    font-family: var(--font-mono);
+    font-size: var(--ui-font-size-xxs);
+    line-height: var(--ui-text-ui-line);
+    cursor: pointer;
+    user-select: none;
+    transition:
+      color var(--ui-duration-hover) ease,
+      border-color var(--ui-duration-hover) ease;
+  }
+  #appShell #sidebar .sidebar-search:hover .sidebar-search-kbd {
+    color: var(--foreground);
+    border-color: var(--ui-hairline-strong);
+  }
 
   /* ── History ─────────────────────────────────────────────────────────── */
   #appShell #recentsPanel {
