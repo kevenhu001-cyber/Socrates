@@ -1,8 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import {
-  normalizeIntelligentUiImageUrl,
-  type IntelligentUiNode,
-} from '@socrates/core';
+import { normalizeIntelligentUiImageUrl, type IntelligentUiNode } from '@socrates/core';
 import { MathText } from '../rn/useInlineMath';
 import { Button as BaseButton } from '../ui/Button';
 import { useRemote, MEDIA_API } from './openui/remoteData';
@@ -17,13 +14,7 @@ interface SearchImageResult {
   license?: string;
 }
 
-export function UiImage({
-  node,
-  context,
-}: {
-  node: IntelligentUiNode;
-  context: RenderContext;
-}) {
+export function UiImage({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
 
@@ -48,7 +39,9 @@ export function UiImage({
   const finalSrc = directSrc || resolvedSearchImage?.url || null;
   const finalTitle = title || resolvedSearchImage?.title || query;
   const finalAlt = alt || finalTitle || caption || 'Image';
-  const sourceUrl = resolvedSearchImage?.sourceUrl || (typeof node.sourceUrl === 'string' ? node.sourceUrl : undefined);
+  const sourceUrl =
+    resolvedSearchImage?.sourceUrl ||
+    (typeof node.sourceUrl === 'string' ? node.sourceUrl : undefined);
 
   const style: CSSProperties = {
     aspectRatio: Math.min(4, Math.max(0.4, aspectRatio)),

@@ -29,8 +29,7 @@ test('recent chats are cursor-paged, old pinned chats survive and archives load 
     let rows = visible;
     if (url.searchParams.has('archivedOnly'))
       rows = sessions.filter((session) => session.archivedAt);
-    else if (url.searchParams.has('pinnedOnly'))
-      rows = visible.filter((session) => session.pinned);
+    else if (url.searchParams.has('pinnedOnly')) rows = visible.filter((session) => session.pinned);
 
     const cursor = Number(url.searchParams.get('cursor')?.replace('page-', '') || 0);
     const limit = Number(url.searchParams.get('limit') || 40);
@@ -53,14 +52,16 @@ test('recent chats are cursor-paged, old pinned chats survive and archives load 
   expect(requests.some((query) => query.includes('pinnedOnly=true'))).toBe(true);
 
   const history = page.locator('#recentsPanel');
-  await history.evaluate((element) => { element.scrollTop = element.scrollHeight; });
-  await expect.poll(() => requests.filter((query) => query.includes('cursor=page-')).length)
+  await history.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect
+    .poll(() => requests.filter((query) => query.includes('cursor=page-')).length)
     .toBeGreaterThan(0);
   expect(await list.locator('.recent-item').count()).toBeLessThan(70);
   expect(requests.some((query) => query.includes('archivedOnly=true'))).toBe(false);
 
   await page.evaluate(() => window.__socratesLegacy.navigation.openStorageModal());
-  await expect.poll(() => requests.some((query) => query.includes('archivedOnly=true')))
-    .toBe(true);
+  await expect.poll(() => requests.some((query) => query.includes('archivedOnly=true'))).toBe(true);
   await expect(page.locator('#storageModalOverlay')).toContainText('Chat 104');
 });

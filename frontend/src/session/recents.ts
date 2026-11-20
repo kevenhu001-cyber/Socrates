@@ -117,8 +117,7 @@ function _currentUser(): { id?: string; tier?: string } | null {
 function mergeSessionPages(...pages: ReadonlyArray<ReadonlyArray<SessionRow>>): SessionRow[] {
   const seen = new Map<string, SessionRow>();
   for (const page of pages)
-    for (const row of page)
-      if (row?.id && !seen.has(row.id)) seen.set(row.id, row);
+    for (const row of page) if (row?.id && !seen.has(row.id)) seen.set(row.id, row);
   return Array.from(seen.values());
 }
 
@@ -135,7 +134,9 @@ async function fetchPinnedSessions(): Promise<SessionRow[]> {
   const seen = new Set<string>();
   do {
     const query = new URLSearchParams({
-      limit: '200', pinnedOnly: 'true', cursorVersion: '2',
+      limit: '200',
+      pinnedOnly: 'true',
+      cursorVersion: '2',
     });
     if (cursor) query.set('cursor', cursor);
     const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
@@ -159,15 +160,19 @@ export async function loadMoreServerSessions(): Promise<void> {
   const run = async () => {
     try {
       const query = new URLSearchParams({
-        limit: String(RECENTS_PAGE_SIZE), cursorVersion: '2', cursor,
+        limit: String(RECENTS_PAGE_SIZE),
+        cursorVersion: '2',
+        cursor,
       });
       const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
       if (!Array.isArray(page?.sessions)) throw new Error('Invalid session page');
       if (listUserId !== owner || getSessionListPagingSnapshot().nextCursor !== cursor) return;
       serverCache.sessions = mergeSessionPages(serverCache.sessions, page.sessions);
       patchSessionListPaging({
-        nextCursor: typeof page.nextCursor === 'string' && page.nextCursor !== cursor
-          ? page.nextCursor : null,
+        nextCursor:
+          typeof page.nextCursor === 'string' && page.nextCursor !== cursor
+            ? page.nextCursor
+            : null,
         loading: false,
         failed: false,
         loadedPages: state.loadedPages + 1,
@@ -179,7 +184,9 @@ export async function loadMoreServerSessions(): Promise<void> {
       reportSwallow(error, 'session/recents.loadMoreServerSessions', 'expected');
     }
   };
-  olderRequest = run().finally(() => { olderRequest = null; });
+  olderRequest = run().finally(() => {
+    olderRequest = null;
+  });
   return olderRequest;
 }
 
@@ -193,7 +200,9 @@ export function ensureArchivedSessions(): Promise<void> {
     const seen = new Set<string>();
     do {
       const query = new URLSearchParams({
-        limit: '100', archivedOnly: 'true', cursorVersion: '2',
+        limit: '100',
+        archivedOnly: 'true',
+        cursorVersion: '2',
       });
       if (cursor) query.set('cursor', cursor);
       const page = await apiFetch<SessionListDto>('/api/sessions?' + query);
@@ -211,10 +220,11 @@ export function ensureArchivedSessions(): Promise<void> {
     archivedReady = true;
   })()
     .catch((error) => reportSwallow(error, 'session/recents.ensureArchivedSessions', 'expected'))
-    .finally(() => { archivedRequest = null; });
+    .finally(() => {
+      archivedRequest = null;
+    });
   return archivedRequest;
 }
-
 
 export function getRecents(): SessionRow[] {
   /* P2.3 — sweep local expired archives first so the Recents
@@ -248,11 +258,10 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
 
   // The first-page preflight runs in the HTML head. Fetch pinned chats
   // independently to keep older pinned conversations visible on page one.
-  const pinnedPromise = fetchPinnedSessions()
-    .catch((error): SessionRow[] => {
-      reportSwallow(error, 'session/recents.pinned', 'expected');
-      return [];
-    });
+  const pinnedPromise = fetchPinnedSessions().catch((error): SessionRow[] => {
+    reportSwallow(error, 'session/recents.pinned', 'expected');
+    return [];
+  });
   let page: SessionListDto | null = await readBootSessions(window);
   let ok = Boolean(page);
   if (!page) {
@@ -264,7 +273,10 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
     } catch (error) {
       const status = errorStatus(error);
       const retryable =
-        status === undefined || status === 0 || status === 408 || status === 429 ||
+        status === undefined ||
+        status === 0 ||
+        status === 408 ||
+        status === 429 ||
         (status >= 500 && status < 600);
       if (retryable) {
         try {
@@ -273,7 +285,11 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
           if (Array.isArray(page?.sessions)) {
             ok = true;
           } else {
-            reportSwallow(new Error('Invalid recents response'), 'session/recents.fetch.retry', 'expected');
+            reportSwallow(
+              new Error('Invalid recents response'),
+              'session/recents.fetch.retry',
+              'expected',
+            );
           }
         } catch (retryError) {
           reportSwallow(retryError, 'session/recents.fetch.retry');
@@ -288,9 +304,12 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
     const previous = getSessionListPagingSnapshot();
     serverCache.sessions = mergeSessionPages(page.sessions, pinned, serverCache.sessions);
     patchSessionListPaging({
-      nextCursor: previous.loadedPages > 1
-        ? previous.nextCursor
-        : (typeof page.nextCursor === 'string' ? page.nextCursor : null),
+      nextCursor:
+        previous.loadedPages > 1
+          ? previous.nextCursor
+          : typeof page.nextCursor === 'string'
+            ? page.nextCursor
+            : null,
       initialized: true,
       failed: false,
       loadedPages: Math.max(1, previous.loadedPages),

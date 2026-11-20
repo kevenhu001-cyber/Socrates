@@ -103,5 +103,8 @@ test('validateIntelligentUi accepts image, accordion, steps, and badge nodes', (
   const normalized = normalizeIntelligentUiArgs(doc);
   assert.equal(normalized.version, 1);
   assert.equal(normalized.nodes.length, 5);
-  assert.equal(normalized.nodes[0].src, 'https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg');
+  assert.equal(
+    normalized.nodes[0].src,
+    'https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg',
+  );
 });

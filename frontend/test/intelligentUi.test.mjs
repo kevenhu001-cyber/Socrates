@@ -148,7 +148,9 @@ test('image URLs are restricted to absolute credential-free HTTP(S)', () => {
     'http://example.com/reference.png',
   );
   assert.equal(
-    normalizeIntelligentUiImageUrl('/api/v2/intelligent-ui/image?url=https%3A%2F%2Fexample.com%2Fpic.jpg'),
+    normalizeIntelligentUiImageUrl(
+      '/api/v2/intelligent-ui/image?url=https%3A%2F%2Fexample.com%2Fpic.jpg',
+    ),
     '/api/v2/intelligent-ui/image?url=https%3A%2F%2Fexample.com%2Fpic.jpg',
   );
   assert.equal(normalizeIntelligentUiImageUrl('/relative.png'), null);

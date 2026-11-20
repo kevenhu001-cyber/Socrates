@@ -274,32 +274,58 @@ test('streamed demonstration nodes are normalized before the live preview', () =
   assert.ok(Array.isArray(added.node.program.views));
 });
 
-
 test('compact streamed UI commits canonical IDs and supports patches', () => {
   const f = fixture();
-  const input = { nodes: [
-    { type: 'text', text: 'Original text' },
-    { type: 'visualization', template: 'bar',
-      payload: { categories: ['A'], series: [{ data: [1] }] } },
-  ] };
+  const input = {
+    nodes: [
+      { type: 'text', text: 'Original text' },
+      {
+        type: 'visualization',
+        template: 'bar',
+        payload: { categories: ['A'], series: [{ data: [1] }] },
+      },
+    ],
+  };
   const raw = JSON.stringify(input);
   const partial = raw.slice(0, raw.indexOf('},{') + 2);
-  f.ctl.toolArguments({
-    id: 'compact', name: 'render_intelligent_ui', arguments: partial,
-  }, 0);
-  assert.equal(f.events.some((event) => event.type === 'ui.add'), false);
-  f.ctl.toolArguments({
-    id: 'compact', name: 'render_intelligent_ui', arguments: raw,
-  }, 0);
-  assert.equal(f.events.some((event) => event.type === 'ui.add'), false);
+  f.ctl.toolArguments(
+    {
+      id: 'compact',
+      name: 'render_intelligent_ui',
+      arguments: partial,
+    },
+    0,
+  );
+  assert.equal(
+    f.events.some((event) => event.type === 'ui.add'),
+    false,
+  );
+  f.ctl.toolArguments(
+    {
+      id: 'compact',
+      name: 'render_intelligent_ui',
+      arguments: raw,
+    },
+    0,
+  );
+  assert.equal(
+    f.events.some((event) => event.type === 'ui.add'),
+    false,
+  );
   f.ctl.toolResult('compact', true, input);
   const surface = f.runtime().uiSurfaces.find((entry) => entry.id === 'compact');
   assert.equal(surface.phase, 'committed');
-  assert.deepEqual(surface.nodes.map((node) => node.id), ['n1', 'n2']);
-  assert.deepEqual(f.events.find((event) => event.type === 'ui.commit')
-    .nodes.map((node) => node.id), ['n1', 'n2']);
+  assert.deepEqual(
+    surface.nodes.map((node) => node.id),
+    ['n1', 'n2'],
+  );
+  assert.deepEqual(
+    f.events.find((event) => event.type === 'ui.commit').nodes.map((node) => node.id),
+    ['n1', 'n2'],
+  );
   const edit = f.ctl.patchUi({
-    surfaceId: 'compact', revision: 0,
+    surfaceId: 'compact',
+    revision: 0,
     operations: [{ op: 'patch', nodeId: 'n1', props: { text: 'Edited' } }],
   });
   assert.equal(edit.ok, true, edit.error);
@@ -308,16 +334,29 @@ test('compact streamed UI commits canonical IDs and supports patches', () => {
 
 test('compact stream reserves explicit IDs occurring after generated nodes', () => {
   const f = fixture();
-  const input = { nodes: [
-    { type: 'text', text: 'Automatic' },
-    { type: 'text', id: 'n1', text: 'Explicit' },
-  ] };
-  f.ctl.toolArguments({
-    id: 'mixed', name: 'render_intelligent_ui', arguments: JSON.stringify(input),
-  }, 0);
-  assert.equal(f.events.some((event) => event.type === 'ui.add'), false);
+  const input = {
+    nodes: [
+      { type: 'text', text: 'Automatic' },
+      { type: 'text', id: 'n1', text: 'Explicit' },
+    ],
+  };
+  f.ctl.toolArguments(
+    {
+      id: 'mixed',
+      name: 'render_intelligent_ui',
+      arguments: JSON.stringify(input),
+    },
+    0,
+  );
+  assert.equal(
+    f.events.some((event) => event.type === 'ui.add'),
+    false,
+  );
   f.ctl.toolResult('mixed', true, input);
-  assert.deepEqual(f.runtime().uiSurfaces[0].nodes.map((node) => node.id), ['n1_2', 'n1']);
+  assert.deepEqual(
+    f.runtime().uiSurfaces[0].nodes.map((node) => node.id),
+    ['n1_2', 'n1'],
+  );
 });
 
 test('malformed explicit IDs are never silently regenerated', async () => {
@@ -325,15 +364,20 @@ test('malformed explicit IDs are never silently regenerated', async () => {
   const { validateIntelligentUi } = await import('../src/services/intelligentUi.js');
   for (const invalid of ['', '   ', null, 12, false]) {
     for (const kind of ['text', 'visualization', 'image', 'accordion', 'steps', 'badge']) {
-      const fields = kind === 'visualization'
-        ? { template: 'bar', payload: { categories: ['A'], series: [{ data: [1] }] } }
-        : kind === 'image' ? { src: 'https://example.com/picture.png' }
-          : { text: 'Text', items: [], label: 'Label' };
+      const fields =
+        kind === 'visualization'
+          ? { template: 'bar', payload: { categories: ['A'], series: [{ data: [1] }] } }
+          : kind === 'image'
+            ? { src: 'https://example.com/picture.png' }
+            : { text: 'Text', items: [], label: 'Label' };
       const input = { nodes: [{ type: kind, ...fields, id: invalid }] };
       const normalized = normalizeIntelligentUiArgs(input);
       assert.notEqual(normalized.nodes[0].id, 'n1', kind);
-      assert.equal(validateIntelligentUi(input).ok, false,
-        `accepted invalid ID ${JSON.stringify(invalid)} on ${kind}`);
+      assert.equal(
+        validateIntelligentUi(input).ok,
+        false,
+        `accepted invalid ID ${JSON.stringify(invalid)} on ${kind}`,
+      );
     }
   }
   const legacy = { node: { type: 'text', text: 'Compact single node' } };

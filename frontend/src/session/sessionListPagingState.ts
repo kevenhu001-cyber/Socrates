@@ -30,9 +30,14 @@ export function subscribeSessionListPaging(listener: () => void): () => void {
 
 export function patchSessionListPaging(patch: Partial<SessionListPagingSnapshot>): void {
   const next = { ...snapshot, ...patch };
-  if (Object.keys(patch).every(
-    (key) => snapshot[key as keyof SessionListPagingSnapshot] === next[key as keyof SessionListPagingSnapshot],
-  )) return;
+  if (
+    Object.keys(patch).every(
+      (key) =>
+        snapshot[key as keyof SessionListPagingSnapshot] ===
+        next[key as keyof SessionListPagingSnapshot],
+    )
+  )
+    return;
   snapshot = next;
   for (const listener of listeners) listener();
 }

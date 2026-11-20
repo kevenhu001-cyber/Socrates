@@ -21,7 +21,11 @@ function parseRemoteHit(value: unknown): CmdKRemoteDoc | null {
   const title =
     typeof value.title === 'string' && value.title.trim()
       ? value.title
-      : value.kind === 'message' ? 'Message' : typeof value.topic === 'string' ? value.topic : '';
+      : value.kind === 'message'
+        ? 'Message'
+        : typeof value.topic === 'string'
+          ? value.topic
+          : '';
   if (!title) return null;
   return {
     kind: 'remote',

@@ -802,9 +802,8 @@ function UiImageGallery({ node, context }: { node: IntelligentUiNode; context: R
   const query = asProse(resolve(node.query, context));
   const searchPath =
     !directImages.length && query ? `${MEDIA_API}/images?q=${encodeURIComponent(query)}` : null;
-  const { data: remoteResults, loading } = useRemote<
-    Array<{ url: string; title: string; sourceUrl: string }>
-  >(searchPath);
+  const { data: remoteResults, loading } =
+    useRemote<Array<{ url: string; title: string; sourceUrl: string }>>(searchPath);
 
   const images: GalleryImage[] = directImages.length
     ? directImages

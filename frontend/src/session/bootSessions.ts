@@ -51,7 +51,8 @@ export async function readBootSessions(
     const response = await promise;
     if (!response || response.failed || response.status < 200 || response.status >= 300)
       return null;
-    const payload = response.json as { sessions?: unknown; nextCursor?: unknown } | null | undefined;
+    const payload = response.json as
+      { sessions?: unknown; nextCursor?: unknown } | null | undefined;
     if (!Array.isArray(payload?.sessions)) return null;
     return {
       sessions: payload.sessions as SessionListDto['sessions'],

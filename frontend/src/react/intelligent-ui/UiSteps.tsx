@@ -1,6 +1,13 @@
 import type { IntelligentUiNode } from '@socrates/core';
 import { MathText } from '../rn/useInlineMath';
-import { asNumber, asProse, isRecord, resolve, setBoundValue, type RenderContext } from './renderRuntime';
+import {
+  asNumber,
+  asProse,
+  isRecord,
+  resolve,
+  setBoundValue,
+  type RenderContext,
+} from './renderRuntime';
 
 interface StepItem {
   id: string;
@@ -9,17 +16,12 @@ interface StepItem {
   status?: 'completed' | 'current' | 'upcoming';
 }
 
-export function UiSteps({
-  node,
-  context,
-}: {
-  node: IntelligentUiNode;
-  context: RenderContext;
-}) {
+export function UiSteps({ node, context }: { node: IntelligentUiNode; context: RenderContext }) {
   const bind = typeof node.bind === 'string' ? node.bind : '';
-  const rawCurrent = bind && context.state[bind] !== undefined
-    ? context.state[bind]
-    : resolve(node.current, context);
+  const rawCurrent =
+    bind && context.state[bind] !== undefined
+      ? context.state[bind]
+      : resolve(node.current, context);
   const currentIndex = Math.max(0, Math.round(asNumber(rawCurrent, 0)));
 
   const rawItems = Array.isArray(node.items)
@@ -33,7 +35,8 @@ export function UiSteps({
     let status: 'completed' | 'current' | 'upcoming';
     if (typeof item.status === 'string') {
       const s = item.status.toLowerCase();
-      status = s === 'completed' || s === 'done' ? 'completed' : s === 'current' ? 'current' : 'upcoming';
+      status =
+        s === 'completed' || s === 'done' ? 'completed' : s === 'current' ? 'current' : 'upcoming';
     } else {
       status = index < currentIndex ? 'completed' : index === currentIndex ? 'current' : 'upcoming';
     }
@@ -62,18 +65,20 @@ export function UiSteps({
             role="listitem"
             onClick={isClickable ? () => handleStepClick(index) : undefined}
             tabIndex={isClickable ? 0 : undefined}
-            onKeyDown={isClickable ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                handleStepClick(index);
-              }
-            } : undefined}
+            onKeyDown={
+              isClickable
+                ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleStepClick(index);
+                    }
+                  }
+                : undefined
+            }
             aria-current={isCurrent ? 'step' : undefined}
           >
             <div className="intui-step-indicator">
-              <span className="intui-step-circle">
-                {isCompleted ? '✓' : index + 1}
-              </span>
+              <span className="intui-step-circle">{isCompleted ? '✓' : index + 1}</span>
               {index < items.length - 1 && <span className="intui-step-line" aria-hidden="true" />}
             </div>
 

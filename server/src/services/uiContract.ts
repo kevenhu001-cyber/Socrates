@@ -11,7 +11,14 @@ import { OPENUI_TOOL_GUIDANCE } from './openUiPrompt.generated.js';
 import { VISUALIZATION_TEMPLATES, VISUALIZATION_TEMPLATE_CONTRACTS } from './visualization.js';
 
 const PAGE_SIZE = 5000;
-const KINDS = ['visualization', 'learning', 'physics', 'demonstration', 'openui', 'controls'] as const;
+const KINDS = [
+  'visualization',
+  'learning',
+  'physics',
+  'demonstration',
+  'openui',
+  'controls',
+] as const;
 
 export const GET_UI_CONTRACT_TOOL = {
   type: 'function' as const,
@@ -32,9 +39,9 @@ export const GET_UI_CONTRACT_TOOL = {
   },
 };
 
-export function uiContractContent(args: Record<string, unknown>):
-  | { ok: true; output: string; page: number; pages: number }
-  | { ok: false; error: string } {
+export function uiContractContent(
+  args: Record<string, unknown>,
+): { ok: true; output: string; page: number; pages: number } | { ok: false; error: string } {
   const kind = args.kind;
   if (typeof kind !== 'string' || !KINDS.some((candidate) => candidate === kind))
     return { ok: false, error: 'Choose a kind from the get_ui_contract schema.' };
@@ -42,32 +49,48 @@ export function uiContractContent(args: Record<string, unknown>):
   if (kind === 'visualization') {
     const template = args.template;
     if (template === undefined)
-      content = 'Available templates: ' + VISUALIZATION_TEMPLATES.join(', ') +
+      content =
+        'Available templates: ' +
+        VISUALIZATION_TEMPLATES.join(', ') +
         '. Provide template to retrieve its exact payload structure and executable example.';
-    else if (typeof template !== 'string' || !Object.hasOwn(VISUALIZATION_TEMPLATE_CONTRACTS, template))
+    else if (
+      typeof template !== 'string' ||
+      !Object.hasOwn(VISUALIZATION_TEMPLATE_CONTRACTS, template)
+    )
       return { ok: false, error: 'Unknown visualization template.' };
     else {
-      const contract = VISUALIZATION_TEMPLATE_CONTRACTS[template as keyof typeof VISUALIZATION_TEMPLATE_CONTRACTS];
+      const contract =
+        VISUALIZATION_TEMPLATE_CONTRACTS[template as keyof typeof VISUALIZATION_TEMPLATE_CONTRACTS];
       content = [
         'Native tool: render_intelligent_ui. Arguments are one JSON object with nodes array; version and id are optional.',
         'Template: ' + template,
         contract.guidance,
-        'Verified example arguments: ' + JSON.stringify({
-          nodes: [{
-            type: 'visualization', template, title: 'Example',
-            accessibilitySummary: 'Example of ' + template,
-            payload: contract.payload,
-          }],
-        }),
+        'Verified example arguments: ' +
+          JSON.stringify({
+            nodes: [
+              {
+                type: 'visualization',
+                template,
+                title: 'Example',
+                accessibilitySummary: 'Example of ' + template,
+                payload: contract.payload,
+              },
+            ],
+          }),
       ].join('\n');
     }
   } else if (kind === 'learning') {
     content = LEARNING_UI_GUIDANCE;
   } else if (kind === 'physics') {
-    content = 'Physics node: {"type":"physics","scene":"<scene>","parameters":{...}}\n' +
-      JSON.stringify(PHYSICS_MODELS.map((model) => ({
-        scene: model.id, assumptions: model.assumption, parameters: model.parameters,
-      })));
+    content =
+      'Physics node: {"type":"physics","scene":"<scene>","parameters":{...}}\n' +
+      JSON.stringify(
+        PHYSICS_MODELS.map((model) => ({
+          scene: model.id,
+          assumptions: model.assumption,
+          parameters: model.parameters,
+        })),
+      );
   } else if (kind === 'demonstration') {
     content = DEMONSTRATION_GUIDANCE;
   } else if (kind === 'openui') {
@@ -80,8 +103,11 @@ export function uiContractContent(args: Record<string, unknown>):
   if (typeof page !== 'number' || !Number.isInteger(page) || page < 1 || page > pages)
     return { ok: false, error: `page must be an integer between 1 and ${pages}` };
   return {
-    ok: true, page, pages,
-    output: `Contract ${kind}${args.template ? ':' + args.template : ''}, page ${page}/${pages}:\n` +
+    ok: true,
+    page,
+    pages,
+    output:
+      `Contract ${kind}${args.template ? ':' + args.template : ''}, page ${page}/${pages}:\n` +
       content.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
   };
 }

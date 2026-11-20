@@ -254,35 +254,55 @@ test('render_intelligent_ui advertises a valid compact node envelope', () => {
   const parameters = INTELLIGENT_UI_TOOL.function.parameters;
   assert.deepEqual(parameters.required, ['nodes']);
   assert.deepEqual(parameters.properties.nodes.items.required, ['type']);
-  assert.match(INTELLIGENT_UI_TOOL.function.description, /server supplies version=1 and stable node IDs/);
+  assert.match(
+    INTELLIGENT_UI_TOOL.function.description,
+    /server supplies version=1 and stable node IDs/,
+  );
   const compact = {
-    nodes: [{ type: 'visualization', template: 'bar',
-      payload: { categories: ['A'], series: [{ data: [1] }] } }],
+    nodes: [
+      {
+        type: 'visualization',
+        template: 'bar',
+        payload: { categories: ['A'], series: [{ data: [1] }] },
+      },
+    ],
   };
   const normalized = normalizeIntelligentUiArgs(compact);
   assert.equal(normalized.version, 1);
   assert.equal(normalized.nodes[0].id, 'n1');
   assert.equal(validateIntelligentUi(compact).ok, true);
   assert.equal(validateIntelligentUi({ ...compact, version: 2 }).ok, false);
-  assert.ok(JSON.stringify(INTELLIGENT_UI_TOOL).length < 40000,
-    'model-facing schema must not embed advanced OpenUI/template manuals');
+  assert.ok(
+    JSON.stringify(INTELLIGENT_UI_TOOL).length < 40000,
+    'model-facing schema must not embed advanced OpenUI/template manuals',
+  );
 });
 
 test('compact node IDs are stable and collision-free, explicit IDs are retained', () => {
-  const input = { nodes: [
-    { type: 'panel', id: 'n2' },
-    { type: 'text', text: 'A', parent: 'n2' },
-    { type: 'text', text: 'B', parent: 'n2' },
-  ] };
+  const input = {
+    nodes: [
+      { type: 'panel', id: 'n2' },
+      { type: 'text', text: 'A', parent: 'n2' },
+      { type: 'text', text: 'B', parent: 'n2' },
+    ],
+  };
   const once = normalizeIntelligentUiArgs(input);
   const twice = normalizeIntelligentUiArgs(input);
   assert.deepEqual(once, twice);
-  assert.deepEqual(once.nodes.map((node) => node.id), ['n2', 'n2_2', 'n3']);
+  assert.deepEqual(
+    once.nodes.map((node) => node.id),
+    ['n2', 'n2_2', 'n3'],
+  );
   assert.equal(validateIntelligentUi(input).ok, true);
-  assert.equal(validateIntelligentUi({ nodes: [
-    { type: 'text', id: 'same', text: 'A' },
-    { type: 'text', id: 'same', text: 'B' },
-  ] }).ok, false);
+  assert.equal(
+    validateIntelligentUi({
+      nodes: [
+        { type: 'text', id: 'same', text: 'A' },
+        { type: 'text', id: 'same', text: 'B' },
+      ],
+    }).ok,
+    false,
+  );
 });
 
 test('the generated OpenUI guidance states the Visualization argument shape', () => {

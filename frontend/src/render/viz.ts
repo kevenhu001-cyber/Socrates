@@ -363,8 +363,8 @@ function _markReady(id: string) {
     const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
     const wasNearBottom = Boolean(
       list &&
-        list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
-        !uiBridge.getSnapshot()._userScrolledAway,
+      list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
+      !uiBridge.getSnapshot()._userScrolledAway,
     );
     entry.iframe.style.height =
       Math.min(Math.max(entry.lastHeight, VIZ_IFRAME_MIN_H), VIZ_IFRAME_MAX_H) + 'px';
@@ -493,8 +493,8 @@ function _handleVizResize(
   const list = typeof document !== 'undefined' ? document.getElementById('msgList') : null;
   const wasNearBottom = Boolean(
     list &&
-      list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
-      !uiBridge.getSnapshot()._userScrolledAway,
+    list.scrollHeight - list.scrollTop - list.clientHeight <= 128 &&
+    !uiBridge.getSnapshot()._userScrolledAway,
   );
   sender.iframe.style.height = clamped + 'px';
   if (wasNearBottom && list) {

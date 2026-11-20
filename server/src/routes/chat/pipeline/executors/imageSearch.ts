@@ -85,7 +85,9 @@ export const executeImageSearch: ToolExecutor = async (
       const bingResults = await imageSearch(searchQuery, searchCount);
       if (Array.isArray(bingResults) && bingResults.length > 0) {
         for (const r of bingResults) {
-          if (results.some((existing) => existing.url === r.url || existing.sourceUrl === r.sourceUrl)) {
+          if (
+            results.some((existing) => existing.url === r.url || existing.sourceUrl === r.sourceUrl)
+          ) {
             continue;
           }
           results.push({
@@ -138,8 +140,7 @@ export const executeImageSearch: ToolExecutor = async (
 
   result = {
     status: 'completed',
-    output:
-      'No images found for this query. Try different or broader search keywords.',
+    output: 'No images found for this query. Try different or broader search keywords.',
     results: [],
     retryable: false,
   };
