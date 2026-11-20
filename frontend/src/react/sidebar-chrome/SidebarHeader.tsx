@@ -67,7 +67,7 @@ export function SidebarHeader() {
       <SidebarHeaderActions hostStyle={webClass('sidebar-header-actions')}>
         <SidebarIconAction
           id="sidebarSearchBtn"
-          icon="sliders"
+          icon="search"
           label={searchLabel}
           i18nKey="sidebar.filterRecents"
           controls="sidebarSearch"
