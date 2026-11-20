@@ -250,6 +250,22 @@ test('the server policy routes static and interactive visuals through Intelligen
   assert.doesNotMatch(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
 });
 
+test('render_intelligent_ui model instructions use only the declared top-level envelope', () => {
+  const parameters = INTELLIGENT_UI_TOOL.function.parameters;
+  assert.deepEqual(parameters.required, ['version', 'nodes']);
+  assert.match(INTELLIGENT_UI_TOOL.function.description, /ALWAYS use this exact top-level envelope/);
+  assert.match(INTELLIGENT_UI_TOOL.function.description, /Do not send a bare/);
+  const valid = {
+    version: 1,
+    nodes: [{
+      id: 'chart', type: 'visualization', template: 'bar', title: 'Values',
+      accessibilitySummary: 'Values by category',
+      payload: { categories: ['A'], series: [{ name: 'Value', data: [1] }] },
+    }],
+  };
+  assert.equal(validateIntelligentUi(valid).ok, true);
+});
+
 test('the generated OpenUI guidance states the Visualization argument shape', () => {
   const description = OPENUI_SCHEMA['$defs'].Visualization.description;
   assert.match(

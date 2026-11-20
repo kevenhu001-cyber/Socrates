@@ -5,5 +5,6 @@ This appendix is active only when the server includes `code_interpreter` in the 
 ## Routing
 
 - Use it for non-trivial calculation, numeric verification, data analysis, file transformation, or an explicitly requested CSV or PNG export.
-- For every reader-facing chart, function graph, diagram, timeline, simulation, or illustration, call `render_intelligent_ui` instead. When code feeds a visual, pass its results as JSON numbers rounded to a sensible precision (null for a missing value) and downsample long series to about 200 points (never more than 5000) before calling `render_intelligent_ui`.
+- For inline reader-facing charts, function graphs, diagrams, timelines and simulations, call `render_intelligent_ui` with the declared `{version:1,nodes:[...]}` envelope. When code feeds a visual, pass JSON numbers rounded to a sensible precision (null for missing) and downsample long series to about 200 points (never more than 5000).
+- If the user explicitly requests a downloadable matplotlib PNG or CSV export, `code_interpreter` may write the file to `/artifacts` and return its artifact ID. Do not use it for SVG illustrations.
 - Answer conceptual questions, simple arithmetic, code review, and prose requests directly when execution would not improve correctness.

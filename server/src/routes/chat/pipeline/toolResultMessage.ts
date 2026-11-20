@@ -75,13 +75,13 @@ export function formatToolResultContent(toolName: string, result: ToolResult): s
         "- `SyntaxError: 'await' outside function` → you wrote top-level `await`. Put the awaited statements inside `async def main():` and call `asyncio.run(main())` at the end.",
       );
       lines.push(
-        '- `SyntaxError` (other) / `IndentationError` → re-read the source as if it were the body of `def __main__():`; fix indentation; nothing is permitted at module scope that would not be valid in `python -c`.',
+        '- `SyntaxError` (other) / `IndentationError` → check module-level Python syntax and indentation. This is a synchronous module execution, not a Jupyter cell.',
       );
       lines.push(
         '- `NameError` → the variable was from a previous call. Recompute it in this run.',
       );
       lines.push(
-        '- `ModuleNotFoundError` → use `import micropip; micropip.install("pkg")` at the top. NEVER use `pip install` or `subprocess` (the runner is WASM, no shell, no network).',
+        '- `ModuleNotFoundError` → Pyodide-distribution packages are auto-loaded from imports. For a compatible pure-Python wheel only, use `import micropip, asyncio; asyncio.run(micropip.install("pkg"))` before the import. A bare `micropip.install(...)` does NOT install anything. Never use `pip install` or `subprocess` (no shell).',
       );
       lines.push(
         '- `FileNotFoundError` → you guessed a path without reading the `[scratch]` header. Re-read the header; if the file is not listed, write it yourself in this run.',

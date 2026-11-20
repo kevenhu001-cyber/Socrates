@@ -50,3 +50,38 @@ export function canRetryIdenticalToolCall(result: ToolResult, pure: boolean): bo
     ].includes(code)
   );
 }
+
+/**
+ * A corrected Python program can recover from user-code failures, but a new
+ * LLM hop cannot repair missing authentication, a dead worker or an exhausted
+ * execution queue. Distinguish these deterministic/runtime conditions instead
+ * of treating every failed code execution as retryable.
+ *
+ * "retryable" here means the model may send DIFFERENT code, never repeat the
+ * same side-effecting invocation (the duplicate-call guard remains active).
+ */
+const NON_RETRYABLE_CODE_ERRORS = new Set([
+  'missing_user',
+  'session_not_owned',
+  'code_interpreter_disabled',
+  'code_interpreter_unavailable',
+  'pyodide_worker_boot_failed',
+  'pyodide_worker_failed',
+  'pyodide_worker_invalid_result',
+  'execution_queue_timeout',
+  'execution_timeout',
+  'execution_cancelled',
+  'daily_execution_limit_reached',
+  'illustration_not_supported',
+]);
+
+export function canRetryCorrectedCodeExecution(
+  result: ToolResult,
+  remainingRetries: number,
+): boolean {
+  return (
+    result.status === 'failed' &&
+    remainingRetries > 0 &&
+    !NON_RETRYABLE_CODE_ERRORS.has(String(result.errorCode || ''))
+  );
+}
