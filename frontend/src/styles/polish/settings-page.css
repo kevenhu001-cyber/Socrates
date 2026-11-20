@@ -69,13 +69,32 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 }
 
 @media (min-width: 721px) {
+  /* Place the back action inside the left rail, as in ZCode Settings, rather
+     than reserving a separate full-width banner above both columns. */
+  html[data-main-view='settingsPage'] #settingsPage .settings-page {
+    position: relative;
+    --settings-navigation-width: clamp(208px, 21vw, 268px);
+  }
+
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(208px, 21vw, 268px) minmax(0, 1fr);
+    grid-template-columns: var(--settings-navigation-width) minmax(0, 1fr);
+  }
+
+  html[data-main-view='settingsPage'] #settingsPage .account-page-header {
+    position: absolute;
+    z-index: 2;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--settings-navigation-width);
+    height: 56px;
+    padding: 0 12px;
+    border-bottom: 0;
+    background: var(--ui-bg-surface);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
     gap: 10px;
-    padding: 22px 12px 24px clamp(20px, 3vw, 40px);
+    padding: 64px 12px 24px clamp(20px, 3vw, 40px);
     background: var(--ui-bg-surface);
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-search {
