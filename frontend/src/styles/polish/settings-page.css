@@ -83,7 +83,7 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
     gap: 9px;
-    min-height: 38px;
+    min-height: var(--ui-control-md);
     padding: 6px 10px;
     border-radius: var(--ui-radius-sm);
     color: var(--ui-text-secondary);
@@ -190,7 +190,7 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 38px;
+  min-height: var(--ui-control-md);
   padding: 7px 9px;
   border: 0;
   border-radius: var(--ui-radius-control);
