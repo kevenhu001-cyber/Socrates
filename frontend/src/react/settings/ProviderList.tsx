@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { CheckIcon } from 'lucide-react';
+import { Button } from '../ui/shadcn/button';
 import { RadioGroup, RadioGroupItem } from '../ui/shadcn/radio-group';
 import {
   Card,
@@ -67,9 +68,10 @@ export function ProviderList({
             aria-label={i18n('settings.models', 'Models')}
           >
             {providers.map((provider) => (
-              <button
+              <Button
                 key={provider.id}
                 type="button"
+                variant="ghost"
                 className={`provider-nav-item${selectedId === provider.id ? ' selected' : ''}`}
                 data-provider-id={provider.id}
                 aria-pressed={selectedId === provider.id}
@@ -91,7 +93,7 @@ export function ProviderList({
                     aria-label={language === 'zh' ? '配置存在错误' : 'Configuration error'}
                   />
                 ) : null}
-              </button>
+              </Button>
             ))}
           </nav>
           <RadioGroup
