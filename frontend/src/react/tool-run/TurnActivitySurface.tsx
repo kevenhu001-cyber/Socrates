@@ -201,6 +201,51 @@ const ToolStep = memo(function ToolStep({
   );
 });
 
+/**
+ * ZCode-inspired compact batch: completed, non-interactive tool rows can be
+ * collapsed together without concealing an approval, an error or active work.
+ * The underlying ToolStep (and its result renderer) remains the single owner.
+ */
+const MIN_BATCH_SIZE = 4;
+
+function canBatchTool(call: ToolCallRecord): boolean {
+  if (toolRunStateOf(call) !== 'done') return false;
+  const view = toolRunView(call);
+  return !view.approval && !view.agentRun && !view.sections.some((section) => section.kind === 'error');
+}
+
+function ToolBatch({
+  calls,
+  live,
+  readOnly,
+}: {
+  calls: ReadonlyArray<ToolCallRecord>;
+  live: boolean;
+  readOnly?: boolean;
+}): ReactElement {
+  const [open, setOpen] = useState(false);
+  const title = tf('think.summaryToolsTitle', 'Used {n} tools', { n: calls.length });
+  return (
+    <div className="thinking-tool-batch" data-testid="tool-call-batch">
+      <ActivityStep
+        testID="tool-batch-toggle"
+        label={title}
+        icon={<StepGlyph html={interfaceIcon('thinking')} />}
+        expandable
+        open={open}
+        onToggle={() => setOpen((previous) => !previous)}
+        detail={
+          <div className="thinking-tool-batch-content">
+            {calls.map((call) => (
+              <ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />
+            ))}
+          </div>
+        }
+      />
+    </div>
+  );
+}
+
 function rowsFor(
   steps: ThinkingStep[],
   calls: ReadonlyArray<ToolCallRecord>,
@@ -231,9 +276,28 @@ function rowsFor(
       rows.push(<SummaryStep key={entry.step.id} step={entry.step} />);
       continue;
     }
+    let batch: ToolCallRecord[] = [];
+    const flushBatch = () => {
+      if (batch.length >= MIN_BATCH_SIZE) {
+        rows.push(
+          <ToolBatch key={`batch-${batch[0].id}`} calls={batch} live={live} readOnly={readOnly} />,
+        );
+      } else {
+        for (const call of batch) {
+          rows.push(<ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />);
+        }
+      }
+      batch = [];
+    };
     for (const call of entry.tools) {
-      rows.push(<ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />);
+      if (canBatchTool(call)) {
+        batch.push(call);
+      } else {
+        flushBatch();
+        rows.push(<ToolStep key={call.id} call={call} live={live} readOnly={readOnly} />);
+      }
     }
+    flushBatch();
   }
   return rows;
 }
