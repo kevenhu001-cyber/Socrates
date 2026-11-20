@@ -816,6 +816,46 @@ test('React-owned provider rows stay synchronized with provider configuration', 
   await expect(firstProviderRow).toHaveCount(0);
 });
 
+test('provider navigation keeps drafts and adapts from desktop rail to mobile tabs', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const overlay = await openModelsPane(page);
+  await overlay.locator('#addProviderBtn').click();
+  const first = overlay.locator('#providerList .provider-row[data-id^="new-"]').first();
+  const firstId = await first.getAttribute('data-id');
+  await first.locator('input[data-field="label"]').fill('Draft A');
+  await first.locator('input[data-field="key"]').fill('unsaved-key-a');
+
+  await overlay.locator('#addProviderBtn').click();
+  const second = overlay.locator('#providerList .provider-row[data-id^="new-"]').last();
+  const secondId = await second.getAttribute('data-id');
+  await second.locator('input[data-field="label"]').fill('Draft B');
+  await second.locator('input[data-field="key"]').fill('unsaved-key-b');
+
+  await editProvider(overlay, firstId);
+  await expect(first.locator('input[data-field="key"]')).toHaveValue('unsaved-key-a');
+  await editProvider(overlay, secondId);
+  await expect(second.locator('input[data-field="key"]')).toHaveValue('unsaved-key-b');
+
+  const desktop = await overlay.locator('.provider-workbench').evaluate((element) => {
+    const nav = element.querySelector('.provider-workbench-nav').getBoundingClientRect();
+    const detail = element.querySelector('.provider-workbench-detail').getBoundingClientRect();
+    return { navRight: nav.right, detailLeft: detail.left };
+  });
+  expect(desktop.navRight).toBeLessThanOrEqual(desktop.detailLeft + 1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobile = await overlay.locator('.provider-workbench').evaluate((element) => {
+    const nav = element.querySelector('.provider-workbench-nav').getBoundingClientRect();
+    const detail = element.querySelector('.provider-workbench-detail').getBoundingClientRect();
+    return { navBottom: nav.bottom, detailTop: detail.top };
+  });
+  expect(mobile.navBottom).toBeLessThanOrEqual(mobile.detailTop + 1);
+  await editProvider(overlay, firstId);
+  await expect(first.locator('input[data-field="key"]')).toHaveValue('unsaved-key-a');
+});
+
 test('provider save submits the configured fields and secret to the API', async ({ page }) => {
   const overlay = await openModelsPane(page);
   await overlay.locator('#addProviderBtn').click();
