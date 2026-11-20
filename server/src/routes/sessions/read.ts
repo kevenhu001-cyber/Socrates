@@ -1,4 +1,4 @@
-import { and, count, desc, eq, exists, inArray, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, exists, inArray, isNull, isNotNull, sql, type SQL } from 'drizzle-orm';
 import type {
   SessionDetailDto,
   SessionListDto,
@@ -64,13 +64,17 @@ export async function readSessionList(
   options: {
     limit: number;
     archived: boolean;
+    archivedOnly: boolean;
+    pinnedOnly: boolean;
     cursor: SessionListCursor | null;
     versionedCursor: boolean;
   },
 ): Promise<SessionListDto> {
-  const { limit, archived, cursor, versionedCursor } = options;
+  const { limit, archived, archivedOnly, pinnedOnly, cursor, versionedCursor } = options;
   const conditions = [eq(sessions.userId, userId)];
-  if (!archived) conditions.push(isNull(sessions.archivedAt));
+  if (archivedOnly) conditions.push(isNotNull(sessions.archivedAt));
+  else if (!archived) conditions.push(isNull(sessions.archivedAt));
+  if (pinnedOnly) conditions.push(eq(sessions.pinned, true));
   if (cursor?.id) {
     conditions.push(
       sql`(${sessions.updatedAt}, ${sessions.id}) < (${cursor.updatedAt}::timestamptz, ${cursor.id}::uuid)`,
