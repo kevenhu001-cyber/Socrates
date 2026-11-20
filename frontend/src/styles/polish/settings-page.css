@@ -70,15 +70,46 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
 
 @media (min-width: 721px) {
   html[data-main-view='settingsPage'] #settingsPage .settings-shell {
-    grid-template-columns: clamp(232px, 20vw, 288px) minmax(0, 1fr);
+    grid-template-columns: clamp(208px, 21vw, 268px) minmax(0, 1fr);
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav {
-    padding: 24px 16px 24px clamp(24px, 4vw, 48px);
+    gap: 10px;
+    padding: 22px 12px 24px clamp(20px, 3vw, 40px);
+    background: var(--ui-bg-surface);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-search {
+    margin-bottom: 8px;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
+    gap: 9px;
+    min-height: 38px;
+    padding: 6px 10px;
+    border-radius: var(--ui-radius-sm);
+    color: var(--ui-text-secondary);
+    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:hover,
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:focus-visible {
+    background: var(--ui-fill);
+    color: var(--foreground);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item[aria-current='page'] {
+    color: var(--foreground);
+    font-weight: var(--ui-font-weight-medium);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-category-icon {
+    width: 22px;
+    height: 22px;
+    color: inherit;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-category-icon svg {
+    width: 16px;
+    height: 16px;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-body {
-    padding: 28px clamp(28px, 4vw, 64px) 48px;
+    padding: 30px clamp(24px, 4vw, 64px) 52px;
   }
 
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
@@ -89,9 +120,13 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     display: none;
   }
 
-  /* Cap the form measure without constraining the full-viewport shell. */
+  /* ZCode's restrained document column: clear headings and wide form rows. */
   html[data-main-view='settingsPage'] #settingsPage .settings-pane {
-    max-width: 740px;
+    max-width: 800px;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .settings-choice {
+    min-height: 56px;
+    gap: 24px;
   }
 }
 
@@ -119,6 +154,7 @@ html[data-main-view='settingsPage'] #settingsPage .settings-section:not(.setting
 html[data-main-view='settingsPage'] #settingsPage .settings-section-head > h3 {
   font-size: var(--ui-font-size-md);
   font-weight: var(--ui-font-weight-semibold);
+  letter-spacing: -0.01em;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-card--toggle {
   padding: 0;
@@ -128,8 +164,8 @@ html[data-main-view='settingsPage'] #settingsPage .settings-card--toggle {
   background: transparent;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
-  background: var(--ui-fill-hover);
-  border-radius: var(--ui-radius-control);
+  background: var(--ui-bg-selected);
+  border-radius: var(--ui-radius-sm);
   box-shadow: none;
 }
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active:focus-visible {
