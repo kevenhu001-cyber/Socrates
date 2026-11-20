@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Button } from '../ui/shadcn/button';
 import { getLegacyActions, i18n, t } from '../legacy/gateway.ts';
 import { clearRecentsFilter } from '../../sidebar/sidebar.service';
 
@@ -43,12 +44,14 @@ export function SessionListEmptyState({
         </a>{' '}
         {t('session.showAllHint')}
         <div className="recents-search-all">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             type="button"
             onClick={() => getLegacyActions().cmdK.openCmdK()}
           >
             {i18n('sidebar.searchAllHistory', 'Search all conversations')}
-          </button>
+          </Button>
         </div>
       </>
     );
