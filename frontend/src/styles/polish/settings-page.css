@@ -112,17 +112,13 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     padding: 30px clamp(24px, 4vw, 64px) 52px;
   }
 
-  html[data-main-view='settingsPage'] #settingsPage .settings-nav-item {
-    min-height: var(--ui-control-md);
-  }
-
   html[data-main-view='settingsPage'] #settingsPage .settings-category-description {
     display: none;
   }
 
   /* ZCode's restrained document column: clear headings and wide form rows. */
   html[data-main-view='settingsPage'] #settingsPage .settings-pane {
-    max-width: 800px;
+    max-width: 860px;
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-choice {
     min-height: 56px;
@@ -163,6 +159,154 @@ html[data-main-view='settingsPage'] #settingsPage .settings-card--toggle {
   border-radius: 0;
   background: transparent;
 }
+
+/* ZCode model settings: a stable provider rail and a single editable detail
+   panel. This is scoped to Settings and does not change shared provider data. */
+html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 216px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-bg-surface);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-workbench-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 8px;
+  overflow-y: auto;
+  border-inline-end: 1px solid var(--ui-border-subtle);
+  background: var(--ui-bg-raised);
+  scrollbar-width: thin;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: transparent;
+  color: var(--ui-text-secondary);
+  font: inherit;
+  font-size: var(--ui-font-size-sm);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:hover,
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:focus-visible {
+  background: var(--ui-fill);
+  color: var(--foreground);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+  outline: none;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-item.selected {
+  background: var(--ui-bg-selected);
+  color: var(--foreground);
+  font-weight: var(--ui-font-weight-medium);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-active {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--ui-text-secondary);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-nav-error {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--ui-radius-pill);
+  background: var(--destructive);
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-workbench-detail {
+  min-width: 0;
+  padding: 18px;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-editor[hidden] {
+  display: none;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-editor > .provider-row {
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-editor .provider-fields {
+  gap: 14px;
+}
+
+html[data-main-view='settingsPage'] #settingsPage .provider-editor .provider-fields .settings-choice {
+  min-width: 0;
+}
+
+@media (min-width: 721px) and (max-width: 1050px) {
+  html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
+    grid-template-columns: minmax(128px, 168px) minmax(0, 1fr);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .provider-workbench-detail {
+    padding: 12px;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .provider-editor .provider-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  html[data-main-view='settingsPage'] #settingsPage .provider-workbench {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html[data-main-view='settingsPage'] #settingsPage .provider-workbench-nav {
+    flex-direction: row;
+    gap: 5px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--ui-border-subtle);
+    scrollbar-width: thin;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
+    width: auto;
+    max-width: 180px;
+    min-height: 40px;
+    flex: none;
+  }
+  html[data-main-view='settingsPage'] #settingsPage .provider-workbench-detail {
+    padding: 14px;
+  }
+}
+
 html[data-main-view='settingsPage'] #settingsPage .settings-nav-item.active {
   background: var(--ui-bg-selected);
   border-radius: var(--ui-radius-sm);
