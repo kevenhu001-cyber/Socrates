@@ -73,7 +73,9 @@ test('session-list filters keep pinned and archived chats independently accessib
   assert.deepEqual(pins.body.sessions.map((row) => row.id), [active.id]);
 
   const archives = await f.request('/api/sessions?archivedOnly=true');
-  assert.deepEqual(archives.body.sessions.map((row) => row.id), [archived.id]);
+  // Earlier tests in this suite may have left other owned archived rows.
+  assert.ok(archives.body.sessions.some((row) => row.id === archived.id));
+  assert.ok(!archives.body.sessions.some((row) => row.id === active.id));
 
   const allPins = await f.request('/api/sessions?archived=true&pinnedOnly=true');
   assert.ok(allPins.body.sessions.some((row) => row.id === archived.id));
