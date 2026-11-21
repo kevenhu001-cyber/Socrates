@@ -2,9 +2,9 @@
  * Sidebar chrome: mobile drawer dismissal and the native view-switch adapter.
  * React owns the search row, panel selection, and panel visibility.
  */
-import { toggleSidebar, projectSidebarOpen } from '../sidebar/sidebar.service.ts';
+import { dismissSidebarOnMobile, projectSidebarOpen } from '../sidebar/sidebar.service.ts';
 import { isMobileViewport } from '../sidebar/breakpoints.ts';
-import { toggleSidebarPanelView } from '../sidebar/sidebar.store.ts';
+import { setSidebarSearchOpen, toggleSidebarPanelView } from '../sidebar/sidebar.store.ts';
 import { renderRecents } from './recentsView.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
@@ -57,18 +57,29 @@ export function initSidebarChrome() {
       ? (e.target as Element)
       : ((e.target as Node)?.parentElement as Element | null);
     if (!target?.closest || isInteractiveControl(target)) return;
-    if (isMobileViewport()) toggleSidebar();
+    dismissSidebarOnMobile();
   });
-  /* Backdrop tap on mobile also closes. The document-level handler above
-     already handles backdrop clicks (the backdrop is outside #sidebar, not
-     a form control, and is inside the mobile viewport's click region), so
-     this listener is intentionally a no-op for non-backdrop targets and
-     simply guarded against double-firing. */
   const sbBackdrop = document.getElementById('sidebarBackdrop');
-  if (sbBackdrop)
-    sbBackdrop.addEventListener('click', function (e) {
-      e.stopPropagation();
-      const sbEl = sidebar ?? document.getElementById('sidebar');
-      if (isMobileViewport() && sbEl && !sbEl.classList.contains('collapsed')) toggleSidebar();
-    });
+  sbBackdrop?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    dismissSidebarOnMobile();
+  });
+  sidebar?.addEventListener('keydown', (event) => {
+    if (
+      event.key !== 'Escape' ||
+      event.isComposing ||
+      event.defaultPrevented ||
+      !isMobileViewport() ||
+      sidebar.classList.contains('ctx-menu-block')
+    )
+      return;
+    if (event.target === document.getElementById('sidebarSearch')) {
+      setSidebarSearchOpen(false);
+      document.getElementById('sidebarSearchBtn')?.focus({ preventScroll: true });
+    } else if (!dismissSidebarOnMobile()) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  });
 }

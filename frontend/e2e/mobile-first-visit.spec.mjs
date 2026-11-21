@@ -96,6 +96,42 @@ test('picking a recent on a phone closes the drawer', async ({ page }) => {
   await expect(page.locator('#sidebarBackdrop')).not.toHaveClass(/show/);
 });
 
+test('phone drawer pins chats through the row menu and shows their pinned status', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockAuthedApp(page);
+  const session = await seedOneSession(page);
+  await page.route(new RegExp(`/api/(?:v2/)?sessions/${SESSION_ID}(?:\\?|$)`), async (route) => {
+    if (route.request().method() !== 'PATCH') {
+      await route.fallback();
+      return;
+    }
+    Object.assign(session, route.request().postDataJSON());
+    await route.fulfill({ json: { session } });
+  });
+  await page.goto('/');
+  await waitForAppShell(page);
+  await page.locator('#sidebarOpenBtn').click();
+
+  const row = page.locator(`.recent-item[data-recent-actual="${SESSION_ID}"]`);
+  const more = row.getByRole('button', { name: 'Session actions' });
+  const pinned = row.getByRole('img', { name: 'Pinned' });
+  await expect(row.locator('.recent-item-actions button')).toHaveCount(1);
+  await expect(more).toHaveCSS('width', '44px');
+  await expect(more).toHaveCSS('height', '44px');
+  await expect(pinned).toHaveCount(0);
+  await more.click();
+  await page.getByRole('menuitem', { name: 'Pin chat' }).click();
+  await expect(pinned).toBeVisible();
+  expect(session.pinned).toBe(true);
+
+  await more.click();
+  await page.getByRole('menuitem', { name: 'Unpin' }).click();
+  await expect(pinned).toHaveCount(0);
+  expect(session.pinned).toBe(false);
+});
+
 test('picking a recent on desktop leaves the rail open', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await mockAuthedApp(page);

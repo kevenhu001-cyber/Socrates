@@ -1,9 +1,10 @@
 import { useLayoutEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { t } from '../legacy/gateway.ts';
 import { useUserInfo } from './sidebarChrome.store';
 import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';
-import { toggleSidebar } from '../../sidebar/sidebar.service.ts';
+import { dismissSidebarOnMobile, toggleSidebar } from '../../sidebar/sidebar.service.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
@@ -21,11 +22,9 @@ export function SidebarHeader() {
   const sidebarOpen = useSidebarStore((snapshot) => snapshot.isOpen);
   const searchOpen = useSidebarStore((snapshot) => snapshot.searchOpen);
   /* The fold is store state; the `#sidebar` host (outside React) only
-     mirrors it as a class for the drawer's grid transition. */
+     mirrors it as a class to reveal the search row. */
   useLayoutEffect(() => {
     document.getElementById('sidebar')?.classList.toggle('search-open', searchOpen);
-    if (searchOpen)
-      window.requestAnimationFrame(() => document.getElementById('sidebarSearch')?.focus());
   }, [searchOpen]);
   const isMobile = useMobileViewport();
   const closeButtonHidden = isMobile && !sidebarOpen;
@@ -59,7 +58,12 @@ export function SidebarHeader() {
           expanded={searchOpen}
           iconSize={iconSize}
           hostStyle={webClass(isMobile && 'btn-icon', 'sidebar-search-btn')}
-          onPress={() => setSidebarSearchOpen(!searchOpen)}
+          onPress={() => {
+            // Reveal and focus in the same tap so mobile browsers can open the keyboard.
+            flushSync(() => setSidebarSearchOpen(!searchOpen));
+            if (!searchOpen)
+              document.getElementById('sidebarSearch')?.focus({ preventScroll: true });
+          }}
         />
         <SidebarIconAction
           id="sidebarCloseBtn"
@@ -72,7 +76,8 @@ export function SidebarHeader() {
           iconSize={iconSize}
           hostStyle={webClass(isMobile && 'btn-icon')}
           onPress={() => {
-            toggleSidebar();
+            if (isMobile) dismissSidebarOnMobile();
+            else toggleSidebar();
           }}
         />
       </SidebarHeaderActions>

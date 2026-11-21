@@ -134,12 +134,16 @@ export function refreshRecentsFilterChipData(): void {
  * dispatches here, and the `collapsed` class plus the `socrates-sb`
  * preference are written back from this one place. Boot hydration, viewport
  * transitions and sign-out reset use this directly; toggleSidebar() adds the
- * desktop FLIP on top. The mobile backdrop stays with the callers — each has
- * its own nuance about when the overlay may appear.
+ * desktop FLIP on top.
  */
 export function projectSidebarOpen(open: boolean, opts: { persist?: boolean } = {}): void {
   const sidebar = document.getElementById('sidebar');
-  if (sidebar) sidebar.classList.toggle('collapsed', !open);
+  const mobile = isMobileViewport();
+  if (sidebar) {
+    sidebar.classList.toggle('collapsed', !open);
+    sidebar.inert = mobile && !open;
+  }
+  document.getElementById('sidebarBackdrop')?.classList.toggle('show', mobile && open);
   setSidebarOpen(open);
   if (opts.persist) {
     try {
@@ -171,13 +175,17 @@ export function toggleSidebar(): void {
 
   /* The store decides; class, backdrop and the persisted preference follow. */
   const open = !useSidebarStore.getState().isOpen;
+  const keyboardOpening =
+    !desktop && open && document.activeElement?.matches('#sidebarOpenBtn:focus-visible');
   projectSidebarOpen(open, { persist: true });
-  const backdrop = document.getElementById('sidebarBackdrop');
-  if (isMobileViewport() && open) backdrop?.classList.add('show');
-  else backdrop?.classList.remove('show');
-
   if (desktop && main) {
     animateDesktopSidebarMotion(sidebar, main, beforeInset, open);
+  } else if (keyboardOpening) {
+    requestAnimationFrame(() => {
+      if (isMobileViewport() && useSidebarStore.getState().isOpen) {
+        document.getElementById('sidebarCloseBtn')?.focus({ preventScroll: true });
+      }
+    });
   }
 }
 
@@ -192,5 +200,16 @@ export function closeSidebarOnMobile(): boolean {
   if (window.innerWidth >= DESKTOP_VIEWPORT_MIN_PX) return false;
   if (!useSidebarStore.getState().isOpen) return false;
   toggleSidebar();
+  return true;
+}
+
+/** Return focus to the opener after an explicit dismissal. */
+export function dismissSidebarOnMobile(): boolean {
+  if (!closeSidebarOnMobile()) return false;
+  requestAnimationFrame(() => {
+    if (isMobileViewport() && !useSidebarStore.getState().isOpen) {
+      document.getElementById('sidebarOpenBtn')?.focus({ preventScroll: true });
+    }
+  });
   return true;
 }

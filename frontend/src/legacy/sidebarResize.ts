@@ -210,17 +210,11 @@ export function onViewportResize() {
   /* If the width did not change, this is a height-only resize
      (e.g. keyboard open/close on Android). Do not touch the sidebar. */
   if (sameWidth) return;
-  const bd = document.getElementById('sidebarBackdrop');
   /* The store is the open-state truth; the projection writes the class and
      the persisted preference from one place (sidebar.service.projectSidebarOpen). */
-  if (isMobileViewport()) {
-    if (useSidebarStore.getState().isOpen) {
-      projectSidebarOpen(false, { persist: true });
-    }
-    if (bd) bd.classList.remove('show');
-  } else if (bd) {
-    bd.classList.remove('show');
-  }
+  const mobile = isMobileViewport();
+  const open = useSidebarStore.getState().isOpen;
+  projectSidebarOpen(!mobile && open, { persist: mobile && open });
 }
 
 // Side-effect: this ESM module has one canonical importer in main.ts, so its

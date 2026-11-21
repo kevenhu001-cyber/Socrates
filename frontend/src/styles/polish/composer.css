@@ -74,16 +74,21 @@ body #composerToolsMenu.composer-tools-menu {
 }
 body #composerToolsMenu.composer-tools-menu.hidden {
   opacity: 0;
-  transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
+  transform: translateY(var(--_ct-dir, -2px)) scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
 }
 body #composerToolsMenu.composer-tools-menu[data-menu-side='above'] {
   --_ct-dir: 2px;
   transform-origin: bottom left;
 }
+body #composerToolsMenu.composer-tools-menu[data-menu-side='sheet'] {
+  --_ct-dir: var(--ui-step-150);
+  --_ct-scale: 1;
+}
 @starting-style {
   body #composerToolsMenu.composer-tools-menu:not(.hidden) {
     opacity: 0;
-    transform: translateY(var(--_ct-dir, -2px)) scale(var(--ui-overlay-enter-scale));
+    transform: translateY(var(--_ct-dir, -2px))
+      scale(var(--_ct-scale, var(--ui-overlay-enter-scale)));
   }
 }
 @media (prefers-reduced-motion: reduce) {

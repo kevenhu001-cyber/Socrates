@@ -406,17 +406,18 @@ html[data-theme='socrates'][data-mode]:lang(zh) {
   --ui-bg-chip: var(--ui-bg-hover);
   --ui-bg-chip-hover: var(--geist-gray-alpha-200);
   --ui-bg-segment-active: var(--ui-bg-surface);
-  --ui-shadow-control: 0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%);
-  --ui-shadow-popover:
-    0 0 0 1px rgb(0 0 0 / 5%), 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 12%);
-  --ui-shadow-dialog:
-    0 0 0 1px rgb(0 0 0 / 6%), 0 2px 4px rgb(0 0 0 / 4%), 0 24px 56px -20px rgb(0 0 0 / 18%);
+  /* A zero-blur edge keeps floating surfaces visible on near-white paper
+     and still composes with the keyboard focus ring. */
+  --ui-shadow-control: var(--ui-elevation-ring);
+  --ui-shadow-popover: 0 0 0 1px var(--ui-border-default);
+  --ui-shadow-dialog: var(--ui-shadow-popover);
+  --ui-elevation-raised: var(--ui-elevation-ring);
   /* The composer is a hairline capsule on a near-white page, so its resting
      edge is the default rule. --ui-border-strong is held back for the
      focus-within state: with both states on the same border the capsule
      showed no focus cue at all. */
   --ui-composer-border: var(--ui-border-default);
-  --ui-composer-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 12px 32px -12px rgb(0 0 0 / 10%);
+  --ui-composer-shadow: none;
   --ui-bubble-shadow: none;
   --ui-tool-chip-text: var(--ui-text-secondary);
   --ui-tool-chip-hover-bg: var(--ui-bg-hover);
@@ -659,7 +660,7 @@ html[data-theme='socrates'][data-mode='light'] {
   --ui-text-nav: var(--ui-text-primary);
   --ui-hairline-faint: rgb(0 0 0 / 6%);
   --ui-icon-secondary: var(--geist-gray-700);
-  --ui-segment-thumb-shadow: 0 0 0 1px rgb(0 0 0 / 4%), 0 1px 3px rgb(0 0 0 / 6%);
+  --ui-segment-thumb-shadow: var(--ui-elevation-ring);
   --cg-surface-raised: var(--ui-bg-raised);
   /* Same four-step ladder as dark mode, running the other way.
    *

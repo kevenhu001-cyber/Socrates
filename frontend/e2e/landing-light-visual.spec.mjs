@@ -74,7 +74,7 @@ test('light conversation home has a neutral readable palette and balanced compos
   /* Paper-canvas policy (2026-11-06): the canvas is the one-percent tint
      under the paper (#fcfcfc), the shell paints the rail surface one step
      down (#f3f3f3) around it, and the composer stays the white paper
-     (#ffffff), so it reads as raised because of its shadow, not its fill.
+     (#ffffff), with a hairline marking the edge of the input.
      The surface-ladder guard encodes the same order: sidebar < canvas <
      paper. */
   expect(geometry.pageBackground).toBe('rgb(252, 252, 252)');

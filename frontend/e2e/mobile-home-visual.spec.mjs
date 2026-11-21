@@ -2,6 +2,48 @@ import { test, expect } from '@playwright/test';
 import { gotoAndSettle } from './_lib.mjs';
 import { mockAuthedApp, waitForAppShell } from './_mock-api.mjs';
 
+test('mobile drawer search focuses immediately and Escape restores focus', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await mockAuthedApp(page);
+  await gotoAndSettle(page, '/');
+  await waitForAppShell(page);
+
+  const drawer = page.locator('#sidebar');
+  const opener = page.locator('#sidebarOpenBtn');
+  const searchButton = page.locator('#sidebarSearchBtn');
+  const search = page.locator('#sidebarSearch');
+
+  await expect(drawer).toHaveAttribute('inert', '');
+  await opener.press('Enter');
+  await expect(page.locator('#sidebarCloseBtn')).toBeFocused();
+  await expect(drawer).not.toHaveAttribute('inert', '');
+
+  const focusDuringClick = await searchButton.evaluate((button) => {
+    button.click();
+    return document.activeElement?.id;
+  });
+  expect(focusDuringClick).toBe('sidebarSearch');
+  await search.fill('calculus');
+  await search.press('Escape');
+  await expect(search).toBeHidden();
+  const searchRowHeight = await drawer
+    .locator('.sidebar-search-row')
+    .evaluate((row) => row.getBoundingClientRect().height);
+  expect(searchRowHeight).toBe(0);
+  await expect(searchButton).toBeFocused();
+  await searchButton.press('Escape');
+  await expect(drawer).toHaveAttribute('inert', '');
+  await expect(opener).toBeFocused();
+
+  await opener.click();
+  const backdrop = page.locator('#sidebarBackdrop');
+  await expect(backdrop).toHaveClass(/show/);
+  await backdrop.click({ position: { x: 375, y: 400 } });
+  await expect(drawer).toHaveAttribute('inert', '');
+  await expect(opener).toBeFocused();
+});
+
 test('mobile conversation home matches the compact dark reference layout', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -71,44 +113,30 @@ test('mobile conversation home matches the compact dark reference layout', async
   expect(geometry.background).toBe('rgb(0, 0, 0)');
   expect(geometry.pageToken).toBe('#000');
 
-  /* P_greeting-mobile-center — the landing greeting must be visually
-     centred horizontally on the viewport and sit just above the optical
-     middle on phones. The previous absolute + dual left/right inset could
-     land sub-pixel off when the parent's 16px padding and the viewport
-     settled (URL-bar collapse, soft keyboard); the absolute box anchored
-     at 40.5% of the surface always lands the line on the reference hero
-     position regardless of those shifts. */
+  /* Center the greeting in the live space above the bottom composer. */
   const centering = await page.evaluate(() => {
-    /* RN-1: #topicTitle is the React Native hero text; its host #homeHero
-       carries the absolute anchor. */
     const greet = document.querySelector('#topicTitle');
-    const box = greet?.getBoundingClientRect();
-    const surface = document.getElementById('topicSetup')?.getBoundingClientRect();
-    const style = greet ? getComputedStyle(greet) : null;
-    const hostStyle = getComputedStyle(document.getElementById('homeHero'));
+    const box = greet.getBoundingClientRect();
+    const hero = document.getElementById('homeHero').getBoundingClientRect();
     return {
-      x: box?.x,
-      width: box?.width,
-      centerY: box ? box.top + box.height / 2 : undefined,
-      surfaceTop: surface?.top,
-      surfaceHeight: surface?.height,
+      x: box.x,
+      width: box.width,
+      centerY: box.top + box.height / 2,
+      heroCenterY: hero.top + hero.height / 2,
       viewportWidth: window.innerWidth,
-      position: hostStyle.position,
-      textAlign: style?.textAlign,
+      textAlign: getComputedStyle(greet).textAlign,
+      mark: getComputedStyle(greet, '::before').backgroundImage,
     };
   });
-  expect(centering.position, 'greeting is positioned against the live landing surface').toBe(
-    'absolute',
-  );
   expect(centering.textAlign).toBe('center');
+  expect(centering.mark).toBe('none');
   /* ±1px slack covers browser sub-pixel rendering and any safe-area
      asymmetry on the top-bar that does not propagate into the
      greeting's parent flex column. */
   expect(
     Math.abs(centering.x + centering.width / 2 - centering.viewportWidth / 2),
   ).toBeLessThanOrEqual(1);
-  const expectedCenterY = (centering.surfaceTop ?? 0) + (centering.surfaceHeight ?? 0) * 0.405;
-  expect(Math.abs(centering.centerY - expectedCenterY)).toBeLessThanOrEqual(1);
+  expect(Math.abs(centering.centerY - centering.heroCenterY)).toBeLessThanOrEqual(1);
 
   await page.screenshot({
     path: 'test-results/mobile-home-reference-collapsed.png',
@@ -269,17 +297,20 @@ test('mobile conversation home matches the compact dark reference layout', async
   );
   await expect(menu).toContainText('Camera');
   await expect(menu).toContainText('Photos');
-  await expect(menu).toContainText('Upload files');
+  await expect(menu).toContainText('Local files');
   await expect(menu).toContainText('Create image');
   await expect(menu).toContainText('Web search');
   await expect(menu.locator('.composer-tools-disclosure')).toHaveCount(0);
-  const menuBox = await menu.boundingBox();
   /* The phone add-content menu is a full-width bottom sheet. */
   const viewport = page.viewportSize();
   await expect(menu).toHaveAttribute('data-menu-side', 'sheet');
-  expect(Math.round(menuBox?.width ?? 0)).toBe(viewport.width);
-  expect(Math.round(menuBox?.x ?? -1)).toBe(0);
-  expect(Math.round((menuBox?.y ?? 0) + (menuBox?.height ?? 0))).toBe(viewport.height);
+  await expect
+    .poll(async () => {
+      const box = await menu.boundingBox();
+      return box && [Math.round(box.width), Math.round(box.x), Math.round(box.y + box.height)];
+    })
+    .toEqual([viewport.width, 0, viewport.height]);
+  const menuBox = await menu.boundingBox();
   expect(menuBox?.y ?? -1).toBeGreaterThanOrEqual(0);
 
   await page.screenshot({ path: 'test-results/mobile-home-reference-menu.png', fullPage: true });

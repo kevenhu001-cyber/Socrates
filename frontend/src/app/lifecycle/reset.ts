@@ -118,8 +118,6 @@ function closeMobileSidebarAfterReset() {
   /* The store is the open-state truth; skip when the drawer is already closed. */
   if (!useSidebarStore.getState().isOpen) return;
   projectSidebarOpen(false, { persist: true });
-  const backdrop = document.getElementById('sidebarBackdrop');
-  if (backdrop) backdrop.classList.remove('show');
 }
 
 function publishResetState() {

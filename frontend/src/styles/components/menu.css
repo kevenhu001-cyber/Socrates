@@ -73,10 +73,7 @@ body #composerToolsMenu.composer-tools-menu {
     0 16px 36px rgba(0, 0, 0, 0.45);
 }
 [data-mode='light'] body #composerToolsMenu.composer-tools-menu {
-  box-shadow:
-    0 0 1px rgba(0, 0, 0, 0.15),
-    0 0 4px rgba(0, 0, 0, 0.03),
-    0 12px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--ui-shadow-menu);
 }
 
 #composerToolsMenu .composer-tools-desktop-items,
@@ -290,7 +287,6 @@ body #composerToolsMenu.composer-tools-menu {
   }
   [data-mode='light'] body #composerToolsMenu.composer-tools-menu {
     background: var(--ui-bg-surface);
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
   }
   body #composerToolsMenu.composer-tools-menu::before {
     content: none;

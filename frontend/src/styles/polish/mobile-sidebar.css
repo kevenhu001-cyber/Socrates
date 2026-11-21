@@ -60,7 +60,7 @@
 }
 
 @media (max-width: 768px) {
-  #appShell :is(.nav-kbd, .sidebar-search-kbd) {
+  #appShell .nav-kbd {
     display: none;
   }
 }
@@ -90,9 +90,7 @@
     inset: 0 auto 0 0;
     border-end-end-radius: var(--ui-radius-xl);
     transform: translateX(0);
-    transition:
-      transform var(--ui-duration-drawer) var(--ui-ease-out),
-      box-shadow var(--ui-duration-drawer) ease;
+    transition: transform var(--ui-duration-drawer) var(--ui-ease-out);
     z-index: var(--ui-z-drawer);
   }
   [data-mode='dark'] #appShell .sidebar {
@@ -101,53 +99,39 @@
       4px 0 28px -4px rgb(0 0 0 / 55%);
   }
   #appShell .sidebar.collapsed {
-    transform: translateX(-100%);
-    box-shadow: none;
+    /* Keep the static edge shadow outside the viewport as well. */
+    transform: translateX(calc(-100% - var(--ui-control-sm)));
+    pointer-events: none;
   }
   #appShell .sidebar-backdrop {
+    display: block;
     background: var(--ui-backdrop);
     z-index: var(--ui-z-backdrop, 80);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    transition: opacity var(--ui-duration-drawer) ease;
+    animation: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity var(--ui-duration-drawer) var(--ui-ease-out),
+      visibility 0s linear var(--ui-duration-drawer);
+  }
+  #appShell .sidebar-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
   }
   #appShell .sidebar-header .compose-btn {
     display: none;
   }
-  /* The mobile drawer collapses the search row on grid-template-rows; the
-     old 54px max-height was a guess at the content height. The clip margin
-     drops to zero while the row is closed so the closing content does not
-     spill past the shrinking track, and the closed row leaves the
-     accessibility tree — the search field inside it used to stay focusable
-     while invisible. */
+  /* Commit the search row in one layout so it can receive focus on tap and
+     the recent list doesn't resize on every animation frame. */
   #appShell .sidebar-search-row {
-    --sidebar-search-rows: 0fr;
-    --sidebar-search-clip-margin: 0px;
-    grid-template-rows: var(--sidebar-search-rows);
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
-      opacity var(--ui-duration-fast) ease,
-      padding var(--ui-duration-normal) ease,
-      visibility 0s linear var(--ui-duration-normal);
+    display: none;
   }
   #appShell .sidebar.search-open .sidebar-search-row {
-    --sidebar-search-rows: 1fr;
-    --sidebar-search-clip-margin: 6px;
+    display: grid;
     padding-bottom: 8px;
-    opacity: 1;
-    visibility: visible;
-    transition:
-      grid-template-rows var(--ui-duration-normal) var(--ui-ease-out),
-      opacity var(--ui-duration-fast) ease,
-      padding var(--ui-duration-normal) ease,
-      visibility 0s;
-  }
-  #appShell .sidebar:not(.search-open) .sidebar-search-row {
-    pointer-events: none;
   }
   #appShell .sidebar-nav {
     padding-top: 4px;
@@ -268,7 +252,6 @@
   #appShell .sidebar-search input {
     color: var(--foreground);
     background: color-mix(in srgb, var(--foreground) 1%, transparent);
-    transform: translateZ(0);
   }
 }
 
@@ -552,7 +535,7 @@
   #appShell #sidebarNav {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: var(--ui-step-25);
     padding: 0;
   }
   /* The nav label is a shared UiText (bodySm) whose size reads this role
@@ -679,7 +662,7 @@
   #appShell .sidebar-nav-sep {
     display: block;
     height: 1px;
-    margin: 12px 0 8px;
+    margin: 12px 0 10px;
     border: 0;
     background: var(--ui-hairline-faint);
   }
@@ -724,11 +707,10 @@
   #appShell .recent-item-overflow {
     display: grid;
     place-items: center;
-    width: var(--ui-control-sm);
-    min-width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
+    width: var(--ui-control-touch);
+    min-width: var(--ui-control-touch);
+    height: var(--ui-control-touch);
     padding: 0;
-    margin-inline-start: 4px;
     border: 0;
     border-radius: var(--ui-radius-control);
     background: transparent;
@@ -737,44 +719,13 @@
       background-color var(--ui-duration-hover) ease,
       color var(--ui-duration-hover) ease;
   }
-  #appShell .recent-item-overflow:hover {
+  #appShell .recent-item-overflow:is(:hover, [aria-expanded='true']) {
     background: var(--accent);
     color: var(--foreground);
   }
-  #appShell .recent-item-overflow:active {
+  #appShell .recent-item-overflow:is(:active, .is-pressed) {
     background: var(--ui-bg-active);
     color: var(--foreground);
-  }
-  /* Reference rows: ⋯ then a pin toggle, both always visible on touch. The
-     toggle replaces the leading pinned mark, so a pinned row shows one pin. */
-  #appShell .recent-item .recent-item-pin-toggle {
-    display: grid;
-    place-items: center;
-    width: var(--ui-control-sm);
-    min-width: var(--ui-control-sm);
-    height: var(--ui-control-sm);
-    padding: 0;
-    border: 0;
-    border-radius: var(--ui-radius-control);
-    background: transparent;
-    color: var(--ui-text-muted);
-    transition:
-      background-color var(--ui-duration-hover) ease,
-      color var(--ui-duration-hover) ease;
-  }
-  #appShell .recent-item .recent-item-pin-toggle svg {
-    width: 18px;
-    height: 18px;
-  }
-  #appShell .recent-item .recent-item-pin-toggle[aria-pressed='true'] {
-    color: var(--ui-text-primary);
-  }
-  #appShell .recent-item .recent-item-pin-toggle:active {
-    background: var(--ui-bg-active);
-    color: var(--ui-text-primary);
-  }
-  #appShell .recent-item .recent-item-pin-icon {
-    display: none;
   }
   #appShell .recent-item.active,
   #appShell .recent-item.actions-open {
@@ -784,7 +735,7 @@
   #appShell #sidebarFooter {
     flex: 0 0 auto;
     padding: 12px 0 max(16px, env(safe-area-inset-bottom, 0px));
-    border-top: 0;
+    border-top: 1px solid var(--ui-hairline-faint);
     gap: 0;
   }
   #appShell #sidebarFooter .sidebar-footer-actions {
@@ -822,16 +773,13 @@
     flex: 0 0 var(--ui-control-touch);
     background: transparent;
     border: none;
-    transition:
-      opacity var(--ui-duration-hover) ease,
-      transform 0.1s ease;
+    transition: opacity var(--ui-duration-hover) ease;
   }
   #appShell #sidebarUserRow .sidebar-account-trigger:hover,
   #appShell #sidebarUserRow .sidebar-account-trigger:active,
   #appShell #sidebarUserRow .sidebar-account-trigger[aria-expanded='true'] {
     background: transparent;
     opacity: 0.82;
-    transform: scale(0.96);
   }
   #appShell #sidebarUserRow .sidebar-account-trigger .user-identity {
     display: none;
@@ -860,16 +808,13 @@
     font-weight: var(--ui-font-weight-medium);
     letter-spacing: -0.01em;
     border: none;
-    transition:
-      opacity var(--ui-duration-hover) ease,
-      transform 0.1s ease;
+    transition: opacity var(--ui-duration-hover) ease;
     cursor: pointer;
   }
   #appShell .sidebar-mobile-new-chat:hover {
     opacity: 0.92;
   }
   #appShell .sidebar-mobile-new-chat:active {
-    transform: scale(0.97);
     opacity: 0.85;
   }
   #appShell .sidebar-mobile-new-chat svg {
@@ -972,13 +917,8 @@
    the phone drawer relied on the global .01ms blanket instead, which still
    commits a transition on every frame of the slide. Same explicit cut here. */
 @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
-  #appShell .sidebar {
-    transition: none;
-  }
+  #appShell .sidebar,
   #appShell .sidebar-backdrop {
-    transition: none;
-  }
-  #appShell .sidebar-search-row {
     transition: none;
   }
 }

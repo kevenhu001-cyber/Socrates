@@ -53,10 +53,10 @@ function contrast(foreground, background) {
 
 async function snapshotPalette(page) {
   return page.evaluate(() => {
-    const style = (selector) => {
+    const style = (selector, pseudo) => {
       const node = document.querySelector(selector);
       if (!node) return null;
-      const computed = getComputedStyle(node);
+      const computed = getComputedStyle(node, pseudo);
       return {
         background: computed.backgroundColor,
         color: computed.color,
@@ -70,6 +70,7 @@ async function snapshotPalette(page) {
       bubble: style('#msgList .msg.user .msg-body'),
       avatar: style('#appShell .user-avatar'),
       composer: style('#composerInputWrap [data-composer-frame]'),
+      composerEdge: style('#composerInputWrap [data-composer-frame]', '::before'),
       send: { ...style('#composerPrimaryBtn'), color: style('#composerPrimaryBtn svg').stroke },
     };
   });
@@ -88,6 +89,8 @@ test('light conversation surface keeps readable brand and action colours', async
   });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
   await expect(page.locator('#msgList .msg.user .msg-body')).toBeVisible();
+  await expect(page.locator('.top-bar')).toHaveCSS('backdrop-filter', 'none');
+  const idlePalette = await snapshotPalette(page);
   await page.locator('#composerRoot .rich-composer-editor').fill('Check send colour');
   /* The send disc only takes the action colour once the draft has committed
      through React; a raw fill followed by an immediate read sees the
@@ -126,8 +129,11 @@ test('light conversation surface keeps readable brand and action colours', async
   expect(avatarBg).toEqual([15, 127, 107]);
   expect(contrast(avatarFg, avatarBg)).toBeGreaterThanOrEqual(4.5);
 
-  // Composer hairline is actually painted in light mode.
-  expect(palette.composer.shadow).not.toBe('none');
+  // The light composer has a solid edge and a visible editor focus cue.
+  expect(idlePalette.composer.shadow).toBe('none');
+  expect(idlePalette.composerEdge.borderWidth).toBe('1px');
+  expect(palette.composer.shadow).toBe('none');
+  expect(palette.composerEdge.borderColor).not.toBe(idlePalette.composerEdge.borderColor);
 
   // A control glyph must clear WCAG's 3:1 non-text contrast on blue.
   const sendBg = parseRgb(palette.send.background);
@@ -135,6 +141,11 @@ test('light conversation surface keeps readable brand and action colours', async
   expect(sendBg).not.toBeNull();
   expect(sendBg).toEqual([61, 102, 192]);
   expect(contrast(sendFg, sendBg)).toBeGreaterThanOrEqual(3);
+
+  await page.locator('#composerToolsBtn').click();
+  const menu = page.locator('#composerToolsMenu');
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveCSS('box-shadow', / 0px 0px 0px 1px$/);
 });
 
 test('dark conversation surface retains the blue send control', async ({ page }) => {
@@ -188,6 +199,9 @@ test('mobile light conversation inverts header controls and the canvas fade', as
     viewport: WORKBENCH_VIEWPORTS.mobile,
   });
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
+  const palette = await snapshotPalette(page);
+  expect(palette.composer.shadow).toBe('none');
+  expect(palette.composerEdge.borderWidth).toBe('1px');
 
   const mobile = await page.evaluate(() => {
     const pick = (selector, props) => {

@@ -60,9 +60,7 @@ test('mobile composer groups tools and reflects the active tool', async ({ page 
   await expect(page.locator('#composerToolsBtn')).toBeFocused();
 });
 
-test('mobile plugin status explains the empty state and opens the connector directory', async ({
-  page,
-}) => {
+test('mobile Plugins shortcut opens the connector directory', async ({ page }) => {
   await mockAuthedApp(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoAndSettle(page, '/');
@@ -72,10 +70,9 @@ test('mobile plugin status explains the empty state and opens the connector dire
   await page.locator('#composerToolsBtn').click();
 
   const menu = page.locator('#composerToolsMenu');
-  await expect(menu.locator('.composer-tools-plugin-state')).toContainText(
-    /No connected apps yet|还没有已连接应用/,
-  );
-  await menu.getByRole('menuitem', { name: /Manage apps|管理应用/ }).click();
+  const plugins = menu.getByRole('menuitem', { name: /^Plugins:/ });
+  await expect(plugins).toBeVisible();
+  await plugins.click();
   await expect(page.locator('#pluginsPanel')).toBeVisible();
   await expect(menu).toHaveClass(/hidden/);
 });
@@ -87,7 +84,15 @@ test('phone composer hit areas reach into the visual gap without stealing adjace
   await mockAuthedApp(page);
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
-  await page.locator('#composerRoot .rich-composer-editor').fill('A question');
+  const send = page.locator('#composerPrimaryBtn');
+  const editor = page.locator('#composerRoot .rich-composer-editor');
+  const actionFill = 'rgb(61, 102, 192)';
+  await expect(send).toBeDisabled();
+  await expect(send).not.toHaveCSS('background-color', actionFill);
+  await expect(page.locator('#composerToolsBtn')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await editor.fill('A question');
+  await expect(send).toBeEnabled();
+  await expect(send).toHaveCSS('background-color', actionFill);
   const targets = await page.evaluate(() => {
     const mic = document.getElementById('composerMicBtn').getBoundingClientRect();
     const send = document.getElementById('composerPrimaryBtn').getBoundingClientRect();

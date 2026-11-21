@@ -83,7 +83,7 @@ export interface ComposerControlsProps {
   effort: ComposerEffortControl;
   mic: ComposerMicControl;
   primary: ComposerPrimaryControl;
-  /** Phone rail: plain-text effort, half-strength empty send disc. */
+  /** Phone rail: compact effort control. */
   compact?: boolean;
 }
 
@@ -145,10 +145,9 @@ function RoundControl({
                 : active
                   ? colors.fillHover
                   : hovered
-                    ? colors.fill
+                    ? colors.fillHover
                     : 'transparent',
-          transform: [{ scale: !disabled && pressed ? 0.94 : 1 }],
-          transitionProperty: 'background-color, transform, opacity',
+          transitionProperty: 'background-color, opacity',
           transitionDuration: '150ms',
         }) as object
       }
@@ -211,19 +210,14 @@ export function ComposerControls({
               borderRadius: uiRadius.pill,
               borderWidth: compact ? 0 : 1,
               borderColor: hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
-              backgroundColor: compact
-                ? pressed
-                  ? colors.fillPressed
-                  : hovered || effort.expanded
-                    ? colors.fillHover
-                    : 'transparent'
-                : pressed
-                  ? colors.fillPressed
-                  : hovered || effort.expanded
-                    ? colors.fillHover
+              backgroundColor: pressed
+                ? colors.fillPressed
+                : hovered || effort.expanded
+                  ? colors.fillHover
+                  : compact
+                    ? 'transparent'
                     : colors.fill,
-              transform: [{ scale: pressed ? 0.97 : 1 }],
-              transitionProperty: 'background-color, border-color, transform',
+              transitionProperty: 'background-color, border-color',
               transitionDuration: '150ms',
             }) as object
           }
@@ -316,13 +310,9 @@ export function ComposerControls({
             borderRadius: uiRadius.pill,
             alignItems: 'center',
             justifyContent: 'center',
-            /* Site send disc: a quiet grey disc while there is nothing to
-               send, the action disc once there is (and while it means Stop).
-               Phones keep the action colour at half strength when empty. */
-            backgroundColor: enabled || compact ? colors.action : colors.fill,
-            opacity: !enabled && compact ? 0.5 : undefined,
-            transform: [{ scale: enabled && pressed ? 0.93 : 1 }],
-            transitionProperty: 'background-color, transform, opacity',
+            backgroundColor: enabled ? colors.action : colors.fill,
+            opacity: pressed || primary.sending ? 0.78 : hovered && enabled ? 0.9 : undefined,
+            transitionProperty: 'background-color, opacity',
             transitionDuration: '150ms',
           }) as object
         }
@@ -331,7 +321,7 @@ export function ComposerControls({
           <UiIcon
             name={stop ? 'stop' : 'arrow-up'}
             size={18}
-            color={enabled || compact ? colors.onAction : colors.inkTertiary}
+            color={enabled ? colors.onAction : colors.inkTertiary}
           />
         </View>
       </Pressable>

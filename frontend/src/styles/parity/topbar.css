@@ -109,6 +109,14 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
   body[data-transcript-scrolled='true'] #appShell .top-bar::after {
     opacity: 1;
   }
+  [data-mode='light'] #appShell .top-bar {
+    background: var(--ui-bg-page);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  [data-mode='light'] #appShell .top-bar::after {
+    background: var(--ui-hairline);
+  }
 
   #appShell .top-bar-left,
   #appShell .top-bar-right {

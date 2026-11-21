@@ -96,63 +96,42 @@ function SessionRowControls({
     setRenaming,
     loadProjects,
   } = actions;
-  const pinKey = session.pinned ? 'session.ctxUnpin' : 'session.ctxPin';
   return (
-    <>
-      <SessionRowActionMenu
-        session={session}
-        open={open}
-        onOpenChange={onOpenChange}
-        projects={projects}
-        loadingProjects={loadingProjects}
-        projectError={projectError}
-        saveError={error}
-        saving={saving}
-        onClose={closeMenu}
-        onBack={resetProjects}
-        onChooseProject={(projectId) => void update({ projectId })}
-        onRename={(event) => {
-          closeMenu();
-          event.stopPropagation();
-          setRenaming(true);
-        }}
-        onTag={(event) => {
-          closeMenu();
-          onTag(session.id, event);
-        }}
-        onPin={() => {
-          closeMenu();
-          void update({ pinned: !session.pinned });
-        }}
-        onArchive={(event) => {
-          closeMenu();
-          onArchive(session.id, event);
-        }}
-        onDelete={(event) => {
-          closeMenu();
-          onDelete(session.id, event);
-        }}
-        onMoveToProject={loadProjects}
-      />
-      {/* Reference drawer rows carry a pin toggle beside ⋯ on touch screens;
-          the shell CSS shows it in the phone drawer only. Same action as the
-          menu's 置顶 / 取消置顶 item. */}
-      <UiButton
-        className="btn-icon recent-item-pin-toggle"
-        type="button"
-        title={t(pinKey)}
-        aria-label={t(pinKey)}
-        aria-pressed={Boolean(session.pinned)}
-        data-i18n-title={pinKey}
-        data-i18n-aria={pinKey}
-        onClick={(event) => {
-          event.stopPropagation();
-          void update({ pinned: !session.pinned });
-        }}
-      >
-        <Icon name="pin" size={16} />
-      </UiButton>
-    </>
+    <SessionRowActionMenu
+      session={session}
+      open={open}
+      onOpenChange={onOpenChange}
+      projects={projects}
+      loadingProjects={loadingProjects}
+      projectError={projectError}
+      saveError={error}
+      saving={saving}
+      onClose={closeMenu}
+      onBack={resetProjects}
+      onChooseProject={(projectId) => void update({ projectId })}
+      onRename={(event) => {
+        closeMenu();
+        event.stopPropagation();
+        setRenaming(true);
+      }}
+      onTag={(event) => {
+        closeMenu();
+        onTag(session.id, event);
+      }}
+      onPin={() => {
+        closeMenu();
+        void update({ pinned: !session.pinned });
+      }}
+      onArchive={(event) => {
+        closeMenu();
+        onArchive(session.id, event);
+      }}
+      onDelete={(event) => {
+        closeMenu();
+        onDelete(session.id, event);
+      }}
+      onMoveToProject={loadProjects}
+    />
   );
 }
 

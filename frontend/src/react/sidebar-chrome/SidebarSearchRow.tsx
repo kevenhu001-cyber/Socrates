@@ -1,6 +1,6 @@
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { i18n } from '../legacy/gateway';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
 import { renderRecents, setRecentsSearch } from '../../legacy/recentsView.ts';
 import {
@@ -57,17 +57,6 @@ export function SidebarSearchRow() {
           onChange={(event) => setRecentsSearch(event.currentTarget.value)}
           onFocus={showRecents}
         />
-        <kbd
-          className="sidebar-search-kbd"
-          title={i18n('cmdK.shortcut', '⌘K')}
-          aria-hidden="true"
-          onClick={(event) => {
-            event.stopPropagation();
-            getLegacyActions().cmdK.openCmdK();
-          }}
-        >
-          ⌘K
-        </kbd>
       </div>
       <Button
         id="tabKnowledge"
