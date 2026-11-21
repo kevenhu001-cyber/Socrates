@@ -48,69 +48,45 @@ function fittedRange(curves: Point[][]): [number, number] {
  * a gap in the line, not a failure of the view; a curve with no finite samples
  * is reported by name while the other curves still draw.
  */
-function* sample(
+function* sampleCurvePoints(
   view: PlotView,
-  runtime: DemonstrationRuntime,
+  curve: { expression: DemonstrationValue; label?: string },
   time: number,
   samples: number,
-  cache: PlotCache,
-): Generator<void, PlotSample, void> {
-  runtime.resetBudget();
-  const issues: Issue[] = [];
-  const xDomain = demonstrationDomain(view.x, runtime, time);
-  const read = (expression: DemonstrationValue, t: number, x: number) =>
-    runtime.evaluate(expression, t, x);
-  const sources =
-    view.kind === 'plot'
-      ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label }))
-      : [{ expression: view.vertical, label: view.label }];
-  const curves: Point[][] = [];
-  for (const [index, curve] of sources.entries()) {
-    const reusable =
-      view.kind === 'plot' &&
-      ![...view.x, curve.expression].some((expression) => runtime.dependencies(expression) & 4);
-    const key = `${index}:${samples}`;
-    let sampled = reusable ? cache.get(key) : undefined;
-    if (!sampled) {
-      const points: Point[] = [];
-      let finite = 0,
-        firstError = '';
-      for (let i = 0; i <= samples; i++) {
-        try {
-          const t = view.kind === 'trajectory' ? (time * i) / samples : time;
-          const x =
-            view.kind === 'trajectory'
-              ? read(view.horizontal, t, 0)
-              : xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / samples;
-          const y = read(curve.expression, t, x);
-          if (Number.isFinite(x) && Number.isFinite(y)) {
-            points.push([x, y]);
-            finite++;
-          } else points.push(null);
-        } catch (error) {
-          if (isDemonstrationBudgetError(error)) throw error;
-          firstError ||= errorMessage(error);
-          points.push(null);
-        }
-        if (i % 32 === 0) yield;
-      }
-      sampled = {
-        points,
-        issue: finite
-          ? undefined
-          : {
-              part: 'curve',
-              index,
-              label: curve.label ?? (view.kind === 'trajectory' ? view.yLabel : undefined),
-              detail: firstError || 'No finite values in this range',
-            },
-      };
-      if (reusable) cache.set(key, sampled);
+  xDomain: [number, number],
+  read: (expression: DemonstrationValue, t: number, x: number) => number,
+): Generator<void, { points: Point[]; finite: number; firstError: string }, void> {
+  const points: Point[] = [];
+  let finite = 0,
+    firstError = '';
+  for (let i = 0; i <= samples; i++) {
+    try {
+      const t = view.kind === 'trajectory' ? (time * i) / samples : time;
+      const x =
+        view.kind === 'trajectory'
+          ? read(view.horizontal, t, 0)
+          : xDomain[0] + ((xDomain[1] - xDomain[0]) * i) / samples;
+      const y = read(curve.expression, t, x);
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        points.push([x, y]);
+        finite++;
+      } else points.push(null);
+    } catch (error) {
+      if (isDemonstrationBudgetError(error)) throw error;
+      firstError ||= errorMessage(error);
+      points.push(null);
     }
-    curves.push(sampled.points);
-    if (sampled.issue) issues.push(sampled.issue);
+    if (i % 32 === 0) yield;
   }
-  const yDomain = demonstrationDomain(view.y, runtime, time, fittedRange(curves));
+  return { points, finite, firstError };
+}
+
+function samplePlotMarkers(
+  view: PlotView,
+  time: number,
+  read: (expression: DemonstrationValue, t: number, x: number) => number,
+  issues: Issue[],
+): Point[] {
   const markers: Point[] = [];
   if (view.kind === 'plot')
     view.markers?.forEach((marker, index) => {
@@ -137,6 +113,59 @@ function* sample(
       if (isDemonstrationBudgetError(error)) throw error;
     }
   }
+  return markers;
+}
+
+function* sample(
+  view: PlotView,
+  runtime: DemonstrationRuntime,
+  time: number,
+  samples: number,
+  cache: PlotCache,
+): Generator<void, PlotSample, void> {
+  runtime.resetBudget();
+  const issues: Issue[] = [];
+  const xDomain = demonstrationDomain(view.x, runtime, time);
+  const read = (expression: DemonstrationValue, t: number, x: number) =>
+    runtime.evaluate(expression, t, x);
+  const sources =
+    view.kind === 'plot'
+      ? view.curves.map((curve) => ({ expression: curve.expression, label: curve.label }))
+      : [{ expression: view.vertical, label: view.label }];
+  const curves: Point[][] = [];
+  for (const [index, curve] of sources.entries()) {
+    const reusable =
+      view.kind === 'plot' &&
+      ![...view.x, curve.expression].some((expression) => runtime.dependencies(expression) & 4);
+    const key = `${index}:${samples}`;
+    let sampled = reusable ? cache.get(key) : undefined;
+    if (!sampled) {
+      const { points, finite, firstError } = yield* sampleCurvePoints(
+        view,
+        curve,
+        time,
+        samples,
+        xDomain,
+        read,
+      );
+      sampled = {
+        points,
+        issue: finite
+          ? undefined
+          : {
+              part: 'curve',
+              index,
+              label: curve.label ?? (view.kind === 'trajectory' ? view.yLabel : undefined),
+              detail: firstError || 'No finite values in this range',
+            },
+      };
+      if (reusable) cache.set(key, sampled);
+    }
+    curves.push(sampled.points);
+    if (sampled.issue) issues.push(sampled.issue);
+  }
+  const yDomain = demonstrationDomain(view.y, runtime, time, fittedRange(curves));
+  const markers = samplePlotMarkers(view, time, read, issues);
   const { sx, sy } = plotProjection(xDomain, yDomain);
   return {
     xDomain,

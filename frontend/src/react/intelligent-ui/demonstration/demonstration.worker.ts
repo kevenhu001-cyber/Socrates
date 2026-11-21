@@ -79,28 +79,33 @@ function* sampleView(
   }
 }
 
-function* calculate(card: Card, request: JobRequest): Generator<void, WorkerReply, void> {
-  const reply = { card: request.card, id: request.id };
-  if (request.type === 'preset') {
-    const state = card.state;
-    const preset = card.program.presets?.[request.index];
-    if (!state || state.revision !== request.revision || !preset)
-      return { ...reply, type: 'cancelled' };
-    const runtime = state.runtime;
-    runtime.resetBudget();
-    const values = Object.fromEntries(
-      Object.entries(preset.values).map(([key, expression]) => {
-        const value = runtime.evaluate(expression);
-        const parameter = card.program.parameters?.find((item) => item.id === key);
-        if (!parameter || !Number.isFinite(value) || value < parameter.min || value > parameter.max)
-          throw Error(`Preset ${key}: value must be finite and within its parameter range`);
-        return [key, value];
-      }),
-    );
-    return { ...reply, type: 'preset', values };
-  }
+function calculatePreset(
+  card: Card,
+  request: Extract<JobRequest, { type: 'preset' }>,
+  reply: { card: number; id: number },
+): WorkerReply {
+  const state = card.state;
+  const preset = card.program.presets?.[request.index];
+  if (!state || state.revision !== request.revision || !preset)
+    return { ...reply, type: 'cancelled' };
+  const runtime = state.runtime;
+  runtime.resetBudget();
+  const values = Object.fromEntries(
+    Object.entries(preset.values).map(([key, expression]) => {
+      const value = runtime.evaluate(expression);
+      const parameter = card.program.parameters?.find((item) => item.id === key);
+      if (!parameter || !Number.isFinite(value) || value < parameter.min || value > parameter.max)
+        throw Error(`Preset ${key}: value must be finite and within its parameter range`);
+      return [key, value];
+    }),
+  );
+  return { ...reply, type: 'preset', values };
+}
 
-  const { input, known } = request;
+function* ensureCardState(
+  card: Card,
+  input: Extract<JobRequest, { type: 'frame' }>['input'],
+): Generator<void, NonNullable<Card['state']>, void> {
   let state = card.state;
   if (!state || state.revision !== input.revision) {
     card.prepare ??= compileDemonstrationRuntime(card.program);
@@ -116,6 +121,42 @@ function* calculate(card: Card, request: JobRequest): Generator<void, WorkerRepl
     };
     card.state = state;
   }
+  return state;
+}
+
+function* sampleViewWithTiming(
+  view: Exclude<Card['program']['views'][number], { kind: 'controls' }>,
+  state: NonNullable<Card['state']>,
+  time: number,
+  preview: boolean,
+  index: number,
+): Generator<void, ViewSample, void> {
+  try {
+    const iterator = sampleView(view, state, time, preview, index);
+    let elapsed = 0;
+    for (;;) {
+      const started = performance.now();
+      const step = iterator.next();
+      elapsed += performance.now() - started;
+      if (step.done) {
+        if (!preview && elapsed > 24) state.slowViews.add(index);
+        return step.value;
+      }
+      yield;
+    }
+  } catch (error) {
+    return { kind: 'error', problem: errorMessage(error) };
+  }
+}
+
+function* calculate(card: Card, request: JobRequest): Generator<void, WorkerReply, void> {
+  const reply = { card: request.card, id: request.id };
+  if (request.type === 'preset') {
+    return calculatePreset(card, request, reply);
+  }
+
+  const { input, known } = request;
+  const state = yield* ensureCardState(card, input);
   const patches: ViewPatch[] = [];
   const { duration, warnings } = state.runtime;
   const time = Math.min(duration, input.time);
@@ -127,24 +168,7 @@ function* calculate(card: Card, request: JobRequest): Generator<void, WorkerRepl
       coarse && (input.preview || (input.playing && !fixed && state.slowViews.has(index)));
     const quality = preview ? 'preview' : 'full';
     if (fixed && (known[index] === 'full' || known[index] === quality)) continue;
-    let result: ViewSample;
-    try {
-      const iterator = sampleView(view, state, time, preview, index);
-      let elapsed = 0;
-      for (;;) {
-        const started = performance.now();
-        const step = iterator.next();
-        elapsed += performance.now() - started;
-        if (step.done) {
-          result = step.value;
-          break;
-        }
-        yield;
-      }
-      if (!preview && elapsed > 24) state.slowViews.add(index);
-    } catch (error) {
-      result = { kind: 'error', problem: errorMessage(error) };
-    }
+    const result = yield* sampleViewWithTiming(view, state, time, preview, index);
     patches.push({ index, result, quality });
     yield;
   }

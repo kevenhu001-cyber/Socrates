@@ -69,6 +69,59 @@ function writeColor(
   pixels[offset + 3] = 255;
 }
 
+function* sampleGridRow(
+  y: number,
+  worldY: number,
+  width: number,
+  stride: number,
+  xs: number[],
+  variesX: boolean,
+  view: DemonstrationField,
+  runtime: DemonstrationRuntime,
+  time: number,
+  pixels: Uint8ClampedArray,
+  words: Uint32Array,
+  gamma: number,
+  exposure: number,
+  tint: [number, number, number],
+  onError: (error: unknown) => void,
+  onValid: () => void,
+) {
+  for (let x = 0; x < width; x += stride) {
+    const offset = y * width + x;
+    if (x === 0 || variesX) {
+      let value = 0;
+      try {
+        value = runtime.evaluate(view.expression, time, xs[x], worldY);
+        onValid();
+      } catch (error) {
+        if (isDemonstrationBudgetError(error)) throw error;
+        onError(error);
+      }
+      writeColor(pixels, offset * 4, value, view.palette, gamma, exposure, tint);
+    }
+    const color = words[variesX ? offset : y * width];
+    words.fill(color, offset, y * width + Math.min(width, x + stride));
+    if (x % 32 === 0) yield;
+  }
+}
+
+function fillStrideRows(
+  y: number,
+  height: number,
+  stride: number,
+  width: number,
+  variesY: boolean,
+  words: Uint32Array,
+) {
+  const startRow = y + (y === 0 || variesY ? 1 : 0);
+  const endRow = Math.min(height, y + stride);
+  for (let row = startRow; row < endRow; row++) {
+    const source = variesY ? y * width : 0;
+    words.copyWithin(row * width, source, source + width);
+  }
+}
+
 function* sampleGrid(
   view: DemonstrationField,
   runtime: DemonstrationRuntime,
@@ -97,28 +150,30 @@ function* sampleGrid(
   for (let y = 0; y < height; y += stride) {
     const worldY = yDomain[1] - (y / (height - 1)) * (yDomain[1] - yDomain[0]);
     if (y === 0 || variesY) {
-      for (let x = 0; x < width; x += stride) {
-        const offset = y * width + x;
-        if (x === 0 || variesX) {
-          let value = 0;
-          try {
-            value = runtime.evaluate(view.expression, time, xs[x], worldY);
-            valid = true;
-          } catch (error) {
-            if (isDemonstrationBudgetError(error)) throw error;
-            firstError ||= errorMessage(error);
-          }
-          writeColor(pixels, offset * 4, value, view.palette, gamma, exposure, tint);
-        }
-        const color = words[variesX ? offset : y * width];
-        words.fill(color, offset, y * width + Math.min(width, x + stride));
-        if (x % 32 === 0) yield;
-      }
+      yield* sampleGridRow(
+        y,
+        worldY,
+        width,
+        stride,
+        xs,
+        variesX,
+        view,
+        runtime,
+        time,
+        pixels,
+        words,
+        gamma,
+        exposure,
+        tint,
+        (error) => {
+          firstError ||= errorMessage(error);
+        },
+        () => {
+          valid = true;
+        },
+      );
     }
-    for (let row = y + (y === 0 || variesY ? 1 : 0); row < Math.min(height, y + stride); row++) {
-      const source = variesY ? y * width : 0;
-      words.copyWithin(row * width, source, source + width);
-    }
+    fillStrideRows(y, height, stride, width, variesY, words);
     yield;
   }
   if (!valid) throw Error(firstError);

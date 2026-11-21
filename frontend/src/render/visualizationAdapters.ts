@@ -573,13 +573,7 @@ async function mountThree(
       },
     },
     cleanup() {
-      visible = false;
-      suspend();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      renderer.domElement.removeEventListener('webglcontextrestored', invalidate);
-      controls.removeEventListener('change', invalidate);
-      resize.disconnect();
-      visibility?.disconnect();
+      life.disconnect();
       controls.dispose();
       stopWatchingTheme?.();
       scene.traverse((object) => {

@@ -221,7 +221,7 @@ async function startAssistantChat(item: CreationItem) {
 
 async function submitCreationImage(
   preferences: CreationSurfacePreferences,
-  editor: CreationEditorState | null,
+  editor: CreationEditor,
   setBusy: (busy: boolean) => void,
   closeEditor: () => void,
   load: () => Promise<void>,
