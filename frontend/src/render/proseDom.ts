@@ -58,6 +58,53 @@ function compatibleNode(current: Node, next: Node): boolean {
   return current.nodeType === next.nodeType && current.nodeName === next.nodeName;
 }
 
+function reconcileNonTableChildren(
+  current: Node,
+  existingChildren: Node[],
+  children: Node[],
+  inTable: boolean,
+): void {
+  let prefix = 0;
+  const maxPrefix = Math.min(existingChildren.length, children.length);
+  while (prefix < maxPrefix && compatibleNode(existingChildren[prefix], children[prefix])) {
+    reconcile(existingChildren[prefix], children[prefix], inTable);
+    prefix += 1;
+  }
+  let currentEnd = existingChildren.length - 1;
+  let nextEnd = children.length - 1;
+  while (
+    currentEnd >= prefix &&
+    nextEnd >= prefix &&
+    compatibleNode(existingChildren[currentEnd], children[nextEnd])
+  ) {
+    reconcile(existingChildren[currentEnd], children[nextEnd], inTable);
+    currentEnd -= 1;
+    nextEnd -= 1;
+  }
+  /* Anchor insertion at the first surviving suffix node, not at a node
+     that the removal loop is about to detach. */
+  const reference = existingChildren[currentEnd + 1] || null;
+  for (let index = prefix; index <= currentEnd; index++)
+    current.removeChild(existingChildren[index]);
+  for (let index = prefix; index <= nextEnd; index++) {
+    current.insertBefore(children[index].cloneNode(true), reference);
+  }
+}
+
+function reconcileTableChildren(
+  current: Node,
+  existingChildren: Node[],
+  children: Node[],
+  withinTable: boolean,
+): void {
+  children.forEach((child, index) => {
+    const existing = existingChildren[index];
+    if (existing) reconcile(existing, child, withinTable);
+    else current.appendChild(child.cloneNode(true));
+  });
+  while (current.childNodes.length > children.length) current.removeChild(current.lastChild!);
+}
+
 function reconcile(current: Node, next: Node, inTable = false, root = false): void {
   if (current.isEqualNode(next)) return;
   const currentElement = asElement(current);
@@ -81,46 +128,11 @@ function reconcile(current: Node, next: Node, inTable = false, root = false): vo
   const existingChildren = [...current.childNodes];
   const withinTable = inTable || !!nextElement.matches(TABLE_ROOT);
 
-  /* Tables keep the index-based append/remove walk: a growing row must not
-     lose its table, focus or scroll offset. Outside tables, align the common
-     prefix and suffix first, then replace only the middle. That preserves a
-     paragraph and its text node when an inline element starts or ends in the
-     middle of a sentence, instead of rebuilding the whole paragraph. */
   if (!tablePath || root) {
-    let prefix = 0;
-    const maxPrefix = Math.min(existingChildren.length, children.length);
-    while (prefix < maxPrefix && compatibleNode(existingChildren[prefix], children[prefix])) {
-      reconcile(existingChildren[prefix], children[prefix], inTable);
-      prefix += 1;
-    }
-    let currentEnd = existingChildren.length - 1;
-    let nextEnd = children.length - 1;
-    while (
-      currentEnd >= prefix &&
-      nextEnd >= prefix &&
-      compatibleNode(existingChildren[currentEnd], children[nextEnd])
-    ) {
-      reconcile(existingChildren[currentEnd], children[nextEnd], inTable);
-      currentEnd -= 1;
-      nextEnd -= 1;
-    }
-    /* Anchor insertion at the first surviving suffix node, not at a node
-       that the removal loop is about to detach. */
-    const reference = existingChildren[currentEnd + 1] || null;
-    for (let index = prefix; index <= currentEnd; index++)
-      current.removeChild(existingChildren[index]);
-    for (let index = prefix; index <= nextEnd; index++) {
-      current.insertBefore(children[index].cloneNode(true), reference);
-    }
-    return;
+    reconcileNonTableChildren(current, existingChildren, children, inTable);
+  } else {
+    reconcileTableChildren(current, existingChildren, children, withinTable);
   }
-
-  children.forEach((child, index) => {
-    const existing = existingChildren[index];
-    if (existing) reconcile(existing, child, withinTable);
-    else current.appendChild(child.cloneNode(true));
-  });
-  while (current.childNodes.length > children.length) current.removeChild(current.lastChild!);
 }
 
 export function updateProseDom(host: HTMLElement, html: string): void {

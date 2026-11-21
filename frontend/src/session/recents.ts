@@ -239,6 +239,65 @@ export function getKnownTags(): string[] {
   return getKnownTagsFromSessions(serverCache.sessions) as string[];
 }
 
+async function fetchRecentsPageWithRetry(
+  path: string,
+): Promise<{ page: SessionListDto | null; ok: boolean }> {
+  try {
+    const page = await apiFetch<SessionListDto>(path);
+    if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response');
+    return { page, ok: true };
+  } catch (error) {
+    const status = errorStatus(error);
+    const retryable =
+      status === undefined ||
+      status === 0 ||
+      status === 408 ||
+      status === 429 ||
+      (status >= 500 && status < 600);
+    if (!retryable) return { page: null, ok: false };
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const retryPage = await apiFetch<SessionListDto>(path);
+      if (Array.isArray(retryPage?.sessions)) {
+        return { page: retryPage, ok: true };
+      }
+      reportSwallow(
+        new Error('Invalid recents response'),
+        'session/recents.fetch.retry',
+        'expected',
+      );
+    } catch (retryError) {
+      reportSwallow(retryError, 'session/recents.fetch.retry');
+    }
+    return { page: null, ok: false };
+  }
+}
+
+function applyRecentsPageResult(
+  page: SessionListDto | null,
+  pinned: SessionRow[],
+  ok: boolean,
+): void {
+  if (ok && page) {
+    const previous = getSessionListPagingSnapshot();
+    serverCache.sessions = mergeSessionPages(page.sessions, pinned, serverCache.sessions);
+    patchSessionListPaging({
+      nextCursor:
+        previous.loadedPages > 1
+          ? previous.nextCursor
+          : typeof page.nextCursor === 'string'
+            ? page.nextCursor
+            : null,
+      initialized: true,
+      failed: false,
+      loadedPages: Math.max(1, previous.loadedPages),
+    });
+  } else if (pinned.length) {
+    serverCache.sessions = mergeSessionPages(pinned, serverCache.sessions);
+  }
+  serverCache.fetchFailed = !ok;
+}
+
 export async function refreshServerSessions(): Promise<SessionRow[]> {
   const user = _currentUser();
   if (!user) {
@@ -266,58 +325,14 @@ export async function refreshServerSessions(): Promise<SessionRow[]> {
   let ok = Boolean(page);
   if (!page) {
     const path = '/api/sessions?limit=' + RECENTS_PAGE_SIZE + '&cursorVersion=2';
-    try {
-      page = await apiFetch<SessionListDto>(path);
-      if (!Array.isArray(page?.sessions)) throw new Error('Invalid recents response');
-      ok = true;
-    } catch (error) {
-      const status = errorStatus(error);
-      const retryable =
-        status === undefined ||
-        status === 0 ||
-        status === 408 ||
-        status === 429 ||
-        (status >= 500 && status < 600);
-      if (retryable) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 400));
-          page = await apiFetch<SessionListDto>(path);
-          if (Array.isArray(page?.sessions)) {
-            ok = true;
-          } else {
-            reportSwallow(
-              new Error('Invalid recents response'),
-              'session/recents.fetch.retry',
-              'expected',
-            );
-          }
-        } catch (retryError) {
-          reportSwallow(retryError, 'session/recents.fetch.retry');
-        }
-      }
-    }
+    const result = await fetchRecentsPageWithRetry(path);
+    page = result.page;
+    ok = result.ok;
   }
 
   const pinned = await pinnedPromise;
   if (owner !== listUserId) return serverCache.sessions.slice();
-  if (ok && page) {
-    const previous = getSessionListPagingSnapshot();
-    serverCache.sessions = mergeSessionPages(page.sessions, pinned, serverCache.sessions);
-    patchSessionListPaging({
-      nextCursor:
-        previous.loadedPages > 1
-          ? previous.nextCursor
-          : typeof page.nextCursor === 'string'
-            ? page.nextCursor
-            : null,
-      initialized: true,
-      failed: false,
-      loadedPages: Math.max(1, previous.loadedPages),
-    });
-  } else if (pinned.length) {
-    serverCache.sessions = mergeSessionPages(pinned, serverCache.sessions);
-  }
-  serverCache.fetchFailed = !ok;
+  applyRecentsPageResult(page, pinned, ok);
   return serverCache.sessions.slice();
 }
 /* The reconciler refreshes the first page only, preserving older pages.

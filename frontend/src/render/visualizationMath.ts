@@ -90,6 +90,18 @@ function typesetTextLeaves(host: Node, render: Typeset): void {
   }
 }
 
+function collectSvgTexts(roots: Node[], texts: Set<SVGTextElement>) {
+  for (const root of roots) {
+    const element = elementFor(root);
+    const label = element?.closest<SVGTextElement>('text');
+    if (label?.namespaceURI === SVG) texts.add(label);
+    if (root.nodeType === 1) {
+      for (const text of (root as Element).querySelectorAll<SVGTextElement>('text'))
+        if (text.namespaceURI === SVG) texts.add(text);
+    }
+  }
+}
+
 /** Typeset renderer-owned SVG labels without rebuilding the plot or its state.
  * Keep the original text as the engine's layout and pointer-event target.
  * The overlay uses SVG coordinates, so zoom and responsive transforms apply.
@@ -134,22 +146,7 @@ export function installVisualizationMath(host: HTMLElement): () => void {
         'class',
       ],
     });
-  const paint = () => {
-    frame = 0;
-    if (!visible || disposed) return;
-    observer.disconnect();
-    const roots = [...dirty].filter((node) => host.contains(node));
-    dirty.clear();
-    const texts = new Set<SVGTextElement>();
-    for (const root of roots) {
-      const element = elementFor(root);
-      const label = element?.closest<SVGTextElement>('text');
-      if (label?.namespaceURI === SVG) texts.add(label);
-      if (root.nodeType === 1) {
-        for (const text of (root as Element).querySelectorAll<SVGTextElement>('text'))
-          if (text.namespaceURI === SVG) texts.add(text);
-      }
-    }
+  function pruneStaleLabels(texts: Set<SVGTextElement>) {
     for (const [text, overlay] of labels) {
       if (!host.contains(text) || texts.has(text)) {
         overlay.remove();
@@ -157,6 +154,16 @@ export function installVisualizationMath(host: HTMLElement): () => void {
         labels.delete(text);
       }
     }
+  }
+  const paint = () => {
+    frame = 0;
+    if (!visible || disposed) return;
+    observer.disconnect();
+    const roots = [...dirty].filter((node) => host.contains(node));
+    dirty.clear();
+    const texts = new Set<SVGTextElement>();
+    collectSvgTexts(roots, texts);
+    pruneStaleLabels(texts);
     try {
       for (const text of texts) typesetSvgText(text, labels, render);
       for (const root of roots) typesetTextLeaves(root, render);

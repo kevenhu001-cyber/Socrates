@@ -152,9 +152,49 @@ function LiveOutputSection({ view }: LiveOutputSectionProps) {
   );
 }
 
-export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailProps) {
+function ToolImagesSection({ images }: { images: ReturnType<typeof imageOutputsOf> }) {
+  if (!images.length) return null;
+  return (
+    <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
+      {images.map((image) => (
+        <ImageOutput
+          key={image.id}
+          uri={image.uri}
+          alt={image.name || translate('tool.detail.images', 'Images')}
+        />
+      ))}
+    </DetailSection>
+  );
+}
+
+function ToolArgsCollapsible({ args, width }: { args: Array<{ text: string }>; width: number }) {
   const [showInput, setShowInput] = useState(false);
   const inputId = useId();
+  if (!args.length) return null;
+  return (
+    <div className="thinking-tool-input">
+      <UiButton
+        testID="tool-input-toggle"
+        variant="ghost"
+        size={width < 768 ? 'lg' : 'sm'}
+        label={translate('tool.detail.input', 'Input')}
+        leading={<Chevron open={showInput} />}
+        aria-expanded={showInput}
+        aria-controls={inputId}
+        onPress={() => setShowInput((previous) => !previous)}
+      />
+      <div id={inputId} hidden={!showInput} data-testid="tool-detail-section-input">
+        {showInput
+          ? args.map((section, index) => (
+              <CodeBlock key={index} text={section.text} onCopy={copyText} {...copyLabels()} />
+            ))
+          : null}
+      </div>
+    </div>
+  );
+}
+
+export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailProps) {
   const { width } = useWindowDimensions();
   const args = view.tech.filter((section) => section.kind === 'args');
   const facts = view.tech.filter((section) => section.kind === 'fact');
@@ -173,41 +213,11 @@ export function ToolRunDetail({ view, call, inFlight = false }: ToolRunDetailPro
           <ResultSection key={`${section.kind}-${index}`} section={section} entryKey={entryKey} />
         ) : null,
       )}
-      {images.length ? (
-        <DetailSection title={translate('tool.detail.images', 'Images')} kind="images">
-          {images.map((image) => (
-            <ImageOutput
-              key={image.id}
-              uri={image.uri}
-              alt={image.name || translate('tool.detail.images', 'Images')}
-            />
-          ))}
-        </DetailSection>
-      ) : null}
+      <ToolImagesSection images={images} />
       {errors.map((section, index) => (
         <ResultSection key={`error-${index}`} section={section} entryKey={entryKey} />
       ))}
-      {args.length ? (
-        <div className="thinking-tool-input">
-          <UiButton
-            testID="tool-input-toggle"
-            variant="ghost"
-            size={width < 768 ? 'lg' : 'sm'}
-            label={translate('tool.detail.input', 'Input')}
-            leading={<Chevron open={showInput} />}
-            aria-expanded={showInput}
-            aria-controls={inputId}
-            onPress={() => setShowInput((previous) => !previous)}
-          />
-          <div id={inputId} hidden={!showInput} data-testid="tool-detail-section-input">
-            {showInput
-              ? args.map((section, index) => (
-                  <CodeBlock key={index} text={section.text} onCopy={copyText} {...copyLabels()} />
-                ))
-              : null}
-          </div>
-        </div>
-      ) : null}
+      <ToolArgsCollapsible args={args} width={width} />
       {facts.length ? (
         <DetailSection title={translate('tool.techDetails', 'Technical details')} kind="technical">
           {facts.map((section, index) => (

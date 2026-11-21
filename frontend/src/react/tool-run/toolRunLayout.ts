@@ -197,17 +197,14 @@ function layoutOptionsKey(opts?: {
   };
 }
 
-export function buildTurnLayout(
-  rawText: string,
-  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
-  opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean; restoredFromHistory?: boolean },
-): TurnSegment[] {
-  const raw = String(rawText || '');
-  const callsInput = toolCalls ?? null;
-  const options = layoutOptionsKey(opts);
+function tryGetCachedLayout(
+  raw: string,
+  callsInput: ReadonlyArray<ToolCallRecord> | null,
+  options: { inlineThink: boolean; defer: boolean; restored: boolean },
+): TurnSegment[] | null {
   const cached = liveLayoutCache;
+  if (!cached) return null;
   if (
-    cached &&
     cached.raw === raw &&
     sameCalls(cached.calls, callsInput) &&
     cached.inlineThink === options.inlineThink &&
@@ -216,12 +213,7 @@ export function buildTurnLayout(
   ) {
     return cached.segments;
   }
-
-  /* Append-only plain prose: no `<` means no think/scaffold tag, and an
-     absent or empty tool list means there is nothing to splice. The previous
-     layout must itself have been that same shape. */
   if (
-    cached &&
     cached.textOnly &&
     (!callsInput || callsInput.length === 0) &&
     raw.length > cached.raw.length &&
@@ -238,24 +230,44 @@ export function buildTurnLayout(
     };
     return segments;
   }
+  return null;
+}
 
-  const think = opts?.inlineThink ? [] : findThinkRanges(raw);
-  const defer = opts?.deferOpenParagraph === true;
-  const rowAnchor =
-    opts?.restoredFromHistory && !defer ? restoredToolRowAnchorOffset : toolRowAnchorOffset;
-  const calls = (
-    opts?.restoredFromHistory
-      ? restoredToolCalls(raw, toolCalls)
-      : sortableToolCalls(raw, toolCalls)
-  ).filter((call) => {
+function filterMountableCalls(
+  raw: string,
+  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
+  defer: boolean,
+  restored: boolean,
+  rowAnchor: (r: string, o: number) => number,
+): ToolCallRecord[] {
+  const baseCalls = restored
+    ? restoredToolCalls(raw, toolCalls)
+    : sortableToolCalls(raw, toolCalls);
+  return baseCalls.filter((call) => {
     if (!defer) return true;
-    /* Approvals need a human decision: never hide them behind prose. */
     if (call.approval && call.approval.approvalId) return true;
-    /* mount only behind a finished paragraph. */
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(raw, rowAnchor(raw, persistedOffset));
     return isRowMountableAt(raw, visual);
   });
+}
+
+export function buildTurnLayout(
+  rawText: string,
+  toolCalls: ReadonlyArray<ToolCallRecord> | null | undefined,
+  opts?: { inlineThink?: boolean; deferOpenParagraph?: boolean; restoredFromHistory?: boolean },
+): TurnSegment[] {
+  const raw = String(rawText || '');
+  const callsInput = toolCalls ?? null;
+  const options = layoutOptionsKey(opts);
+  const cached = tryGetCachedLayout(raw, callsInput, options);
+  if (cached) return cached;
+
+  const think = opts?.inlineThink ? [] : findThinkRanges(raw);
+  const defer = opts?.deferOpenParagraph === true;
+  const restored = opts?.restoredFromHistory === true;
+  const rowAnchor = restored && !defer ? restoredToolRowAnchorOffset : toolRowAnchorOffset;
+  const calls = filterMountableCalls(raw, toolCalls, defer, restored, rowAnchor);
   const segments: TurnSegment[] = [];
 
   const pushProse = (start: number, end: number): void => {
