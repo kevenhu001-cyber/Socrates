@@ -33,32 +33,15 @@ function ToolbarButton({
   );
 }
 
-function FormattingToolbar({ editor }: { editor: Editor }) {
-  const [, setRevision] = useState(0);
-  useEffect(() => {
-    const refresh = () => setRevision((value) => value + 1);
-    editor.on('selectionUpdate', refresh);
-    editor.on('transaction', refresh);
-    return () => {
-      editor.off('selectionUpdate', refresh);
-      editor.off('transaction', refresh);
-    };
-  }, [editor]);
-
-  const run = (command: () => boolean) => () => {
-    command();
-    editor.commands.focus();
-  };
-  const setLink = () => {
-    const previous = editor.getAttributes('link').href as string | undefined;
-    const href = window.prompt('Link URL', previous ?? 'https://');
-    if (href === null) return;
-    if (!href.trim()) editor.chain().focus().extendMarkRange('link').unsetLink().run();
-    else editor.chain().focus().extendMarkRange('link').setLink({ href: href.trim() }).run();
-  };
-
+function HeadingButtons({
+  editor,
+  run,
+}: {
+  editor: Editor;
+  run: (command: () => boolean) => () => void;
+}) {
   return (
-    <div className="rich-composer-toolbar" role="toolbar" aria-label="Formatting">
+    <>
       {[1, 2, 3].map((level) => (
         <ToolbarButton
           key={level}
@@ -75,7 +58,21 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
           H{level}
         </ToolbarButton>
       ))}
-      <span className="rich-composer-divider" />
+    </>
+  );
+}
+
+function InlineStyleButtons({
+  editor,
+  run,
+  setLink,
+}: {
+  editor: Editor;
+  run: (command: () => boolean) => () => void;
+  setLink: () => void;
+}) {
+  return (
+    <>
       <ToolbarButton
         label="Bold"
         active={editor.isActive('bold')}
@@ -107,7 +104,19 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
       <ToolbarButton label="Link" active={editor.isActive('link')} onClick={setLink}>
         ↗
       </ToolbarButton>
-      <span className="rich-composer-divider" />
+    </>
+  );
+}
+
+function BlockStyleButtons({
+  editor,
+  run,
+}: {
+  editor: Editor;
+  run: (command: () => boolean) => () => void;
+}) {
+  return (
+    <>
       <ToolbarButton
         label="Bullet list"
         active={editor.isActive('bulletList')}
@@ -143,6 +152,41 @@ function FormattingToolbar({ editor }: { editor: Editor }) {
       >
         {'</>'}
       </ToolbarButton>
+    </>
+  );
+}
+
+function FormattingToolbar({ editor }: { editor: Editor }) {
+  const [, setRevision] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRevision((value) => value + 1);
+    editor.on('selectionUpdate', refresh);
+    editor.on('transaction', refresh);
+    return () => {
+      editor.off('selectionUpdate', refresh);
+      editor.off('transaction', refresh);
+    };
+  }, [editor]);
+
+  const run = (command: () => boolean) => () => {
+    command();
+    editor.commands.focus();
+  };
+  const setLink = () => {
+    const previous = editor.getAttributes('link').href as string | undefined;
+    const href = window.prompt('Link URL', previous ?? 'https://');
+    if (href === null) return;
+    if (!href.trim()) editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    else editor.chain().focus().extendMarkRange('link').setLink({ href: href.trim() }).run();
+  };
+
+  return (
+    <div className="rich-composer-toolbar" role="toolbar" aria-label="Formatting">
+      <HeadingButtons editor={editor} run={run} />
+      <span className="rich-composer-divider" />
+      <InlineStyleButtons editor={editor} run={run} setLink={setLink} />
+      <span className="rich-composer-divider" />
+      <BlockStyleButtons editor={editor} run={run} />
       <span className="rich-composer-divider" />
       <ToolbarButton
         label="Undo"

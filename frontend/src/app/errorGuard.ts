@@ -56,6 +56,112 @@ function isExpectedTurnAbort(payload: unknown): boolean {
   return isHidden && (String(name || '') === 'TypeError' || /fetch/i.test(sig));
 }
 
+function shortCorrel() {
+  // 8 hex chars from time + 4 random hex — enough for a user to
+  // quote in a bug report; not enough to be a guessable secret.
+  return (
+    Date.now().toString(36).slice(-6) +
+    Math.floor(Math.random() * 0xffff)
+      .toString(16)
+      .padStart(4, '0')
+  );
+}
+
+function ensureBanner() {
+  let el = document.getElementById('__socrates_global_err_banner');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = '__socrates_global_err_banner';
+  el.setAttribute('role', 'status');
+  el.style.cssText = [
+    'position:fixed',
+    'left:16px',
+    'right:16px',
+    'bottom:16px',
+    'z-index:2147483647',
+    'padding:10px 14px',
+    'border-radius:8px',
+    'background:rgba(178,34,34,0.92)',
+    'color:#fff',
+    'font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+    'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
+    'display:flex',
+    'align-items:center',
+    'justify-content:space-between',
+    'gap:12px',
+    'pointer-events:auto',
+  ].join(';');
+  document.body.appendChild(el);
+  return el;
+}
+
+function showBanner(correl: string, hint: string | null) {
+  try {
+    const el = ensureBanner();
+    // Clear any previous banner content first (multiple errors
+    // before the user dismisses — keep the latest).
+    while (el.firstChild) el.removeChild(el.firstChild);
+
+    const msg = document.createElement('span');
+    msg.textContent = hint;
+    const id = document.createElement('code');
+    id.textContent = '#' + correl;
+    id.style.cssText =
+      'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
+
+    const btnHost = document.createElement('span');
+    btnHost.className = 'global-error-banner-dismiss-host';
+    renderDismissButton(btnHost, () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    });
+
+    el.appendChild(msg);
+    el.appendChild(id);
+    el.appendChild(btnHost);
+    // Auto-dismiss after 12 s so it doesn't pile up.
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 12000);
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
+    /* banner creation failed — swallow */
+  }
+}
+
+function reportError(correl: string, label: string, payload: unknown) {
+  try {
+    const message = payloadField(payload, 'message');
+    const stack = payloadField(payload, 'stack');
+    const data = JSON.stringify({
+      correl: correl,
+      label: label,
+      msg: message ? String(message) : typeof payload === 'string' ? payload : String(payload),
+      stack: stack ? String(stack) : '',
+      href: typeof window !== 'undefined' && window.location ? window.location.href : '',
+      ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    });
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      navigator.sendBeacon(CLIENT_ERROR_PATH, new Blob([data], { type: 'application/json' }));
+    } else if (typeof fetch !== 'undefined') {
+      fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(function () {
+        /* noop: beacon fallback error */
+      });
+    }
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
+    /* swallow */
+  }
+}
+
+function showErrorBanner(correl: string, label: string) {
+  if (typeof document === 'undefined' || !document.body) return;
+  const hint =
+    label === 'unhandledrejection'
+      ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
+      : 'Something broke. Try refreshing — if it repeats, share the code below.';
+  showBanner(correl, hint);
+}
+
 export function installGlobalErrorGuard() {
   if (typeof window === 'undefined') return;
   if (__socratesGlobalErrorHandlerInstalled) return;
@@ -63,114 +169,6 @@ export function installGlobalErrorGuard() {
   // Re-entrancy flag — if our own banner code throws, we MUST NOT
   // dispatch the handler again (would loop and lock the page).
   let inHandler = false;
-
-  function shortCorrel() {
-    // 8 hex chars from time + 4 random hex — enough for a user to
-    // quote in a bug report; not enough to be a guessable secret.
-    return (
-      Date.now().toString(36).slice(-6) +
-      Math.floor(Math.random() * 0xffff)
-        .toString(16)
-        .padStart(4, '0')
-    );
-  }
-
-  function ensureBanner() {
-    let el = document.getElementById('__socrates_global_err_banner');
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = '__socrates_global_err_banner';
-    el.setAttribute('role', 'status');
-    el.style.cssText = [
-      'position:fixed',
-      'left:16px',
-      'right:16px',
-      'bottom:16px',
-      'z-index:2147483647',
-      'padding:10px 14px',
-      'border-radius:8px',
-      'background:rgba(178,34,34,0.92)',
-      'color:#fff',
-      'font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
-      'box-shadow:0 4px 16px rgba(0,0,0,0.18)',
-      'display:flex',
-      'align-items:center',
-      'justify-content:space-between',
-      'gap:12px',
-      'pointer-events:auto',
-    ].join(';');
-    document.body.appendChild(el);
-    return el;
-  }
-
-  function showBanner(correl: string, hint: string | null) {
-    try {
-      const el = ensureBanner();
-      // Clear any previous banner content first (multiple errors
-      // before the user dismisses — keep the latest).
-      while (el.firstChild) el.removeChild(el.firstChild);
-
-      const msg = document.createElement('span');
-      msg.textContent = hint;
-      const id = document.createElement('code');
-      id.textContent = '#' + correl;
-      id.style.cssText =
-        'background:rgba(0,0,0,0.25);padding:2px 6px;border-radius:4px;font-size:12px';
-
-      const btnHost = document.createElement('span');
-      btnHost.className = 'global-error-banner-dismiss-host';
-      renderDismissButton(btnHost, () => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      });
-
-      el.appendChild(msg);
-      el.appendChild(id);
-      el.appendChild(btnHost);
-      // Auto-dismiss after 12 s so it doesn't pile up.
-      setTimeout(() => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      }, 12000);
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
-      /* banner creation failed — swallow */
-    }
-  }
-
-  function reportError(correl: string, label: string, payload: unknown) {
-    try {
-      const message = payloadField(payload, 'message');
-      const stack = payloadField(payload, 'stack');
-      const data = JSON.stringify({
-        correl: correl,
-        label: label,
-        msg: message ? String(message) : typeof payload === 'string' ? payload : String(payload),
-        stack: stack ? String(stack) : '',
-        href: typeof window !== 'undefined' && window.location ? window.location.href : '',
-        ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-      });
-      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-        navigator.sendBeacon(CLIENT_ERROR_PATH, new Blob([data], { type: 'application/json' }));
-      } else if (typeof fetch !== 'undefined') {
-        fetch(CLIENT_ERROR_PATH, { method: 'POST', body: data, keepalive: true }).catch(
-          function () {
-            /* noop: beacon fallback error */
-          },
-        );
-      }
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: app/errorGuard.ts');
-      /* swallow */
-    }
-  }
-
-  function showErrorBanner(correl: string, label: string) {
-    if (typeof document === 'undefined' || !document.body) return;
-    const hint =
-      label === 'unhandledrejection'
-        ? 'Something went off-script. Try refreshing — if it repeats, share the code below.'
-        : 'Something broke. Try refreshing — if it repeats, share the code below.';
-    showBanner(correl, hint);
-  }
 
   function handle(label: string, payload: unknown) {
     if (inHandler) return;

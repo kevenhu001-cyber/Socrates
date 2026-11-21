@@ -134,6 +134,97 @@ function PromptTemplateList({
   );
 }
 
+function PromptEditorFormFields({
+  template,
+  categories,
+}: {
+  template: PromptTemplateData;
+  categories: string[];
+}) {
+  return (
+    <div className="prompt-templates-body prompt-editor" key={template.id}>
+      <div className="prompt-editor-grid">
+        <Label className="prompt-editor-label" htmlFor="ptTitle">
+          Title
+          <Input
+            className="prompt-editor-input"
+            id="ptTitle"
+            maxLength={80}
+            defaultValue={template.title}
+            placeholder={i18n('prompt.placeholderTitle', 'Title')}
+          />
+        </Label>
+        <Label className="prompt-editor-label" htmlFor="ptShortcut">
+          Shortcut
+          <Input
+            className="prompt-editor-input prompt-editor-shortcut"
+            id="ptShortcut"
+            maxLength={20}
+            pattern="^/[a-z0-9-]+$"
+            defaultValue={template.shortcut}
+            placeholder={i18n('prompt.placeholderShortcut', '/my-skill')}
+          />
+        </Label>
+      </div>
+      <Label className="prompt-editor-label" htmlFor="ptDescription">
+        Description
+        <Input
+          className="prompt-editor-input"
+          id="ptDescription"
+          maxLength={200}
+          defaultValue={template.description || ''}
+          placeholder={i18n('prompt.placeholderDesc', 'What this skill does')}
+        />
+      </Label>
+      <div className="prompt-editor-grid">
+        <Label className="prompt-editor-label" htmlFor="ptIcon">
+          Icon
+          <Input
+            className="prompt-editor-input prompt-editor-icon"
+            id="ptIcon"
+            maxLength={4}
+            defaultValue={template.icon || 'pg'}
+          />
+        </Label>
+        <Label className="prompt-editor-label" htmlFor="ptCategory">
+          Category
+          <NativeSelect
+            className="prompt-editor-input"
+            id="ptCategory"
+            defaultValue={template.category || 'other'}
+          >
+            {categories.map((category) => (
+              <NativeSelectOption key={category} value={category}>
+                {category}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Label>
+      </div>
+      <Label className="prompt-editor-label" htmlFor="ptBody">
+        Body
+        <Textarea
+          className="prompt-editor-textarea"
+          id="ptBody"
+          rows={4}
+          defaultValue={template.body || ''}
+          placeholder={i18n('prompt.placeholderBody', 'Template instructions')}
+        />
+      </Label>
+      <Label className="prompt-editor-label" htmlFor="ptSystemPrompt">
+        System prompt
+        <Textarea
+          className="prompt-editor-textarea"
+          id="ptSystemPrompt"
+          rows={6}
+          defaultValue={template.systemPrompt || ''}
+          placeholder={i18n('prompt.placeholderSystem', 'System prompt')}
+        />
+      </Label>
+    </div>
+  );
+}
+
 function PromptTemplateEditor({
   template,
   existing,
@@ -159,86 +250,7 @@ function PromptTemplateEditor({
           <X aria-hidden="true" />
         </Button>
       </div>
-      <div className="prompt-templates-body prompt-editor" key={template.id}>
-        <div className="prompt-editor-grid">
-          <Label className="prompt-editor-label" htmlFor="ptTitle">
-            Title
-            <Input
-              className="prompt-editor-input"
-              id="ptTitle"
-              maxLength={80}
-              defaultValue={template.title}
-              placeholder={i18n('prompt.placeholderTitle', 'Title')}
-            />
-          </Label>
-          <Label className="prompt-editor-label" htmlFor="ptShortcut">
-            Shortcut
-            <Input
-              className="prompt-editor-input prompt-editor-shortcut"
-              id="ptShortcut"
-              maxLength={20}
-              pattern="^/[a-z0-9-]+$"
-              defaultValue={template.shortcut}
-              placeholder={i18n('prompt.placeholderShortcut', '/my-skill')}
-            />
-          </Label>
-        </div>
-        <Label className="prompt-editor-label" htmlFor="ptDescription">
-          Description
-          <Input
-            className="prompt-editor-input"
-            id="ptDescription"
-            maxLength={200}
-            defaultValue={template.description || ''}
-            placeholder={i18n('prompt.placeholderDesc', 'What this skill does')}
-          />
-        </Label>
-        <div className="prompt-editor-grid">
-          <Label className="prompt-editor-label" htmlFor="ptIcon">
-            Icon
-            <Input
-              className="prompt-editor-input prompt-editor-icon"
-              id="ptIcon"
-              maxLength={4}
-              defaultValue={template.icon || 'pg'}
-            />
-          </Label>
-          <Label className="prompt-editor-label" htmlFor="ptCategory">
-            Category
-            <NativeSelect
-              className="prompt-editor-input"
-              id="ptCategory"
-              defaultValue={template.category || 'other'}
-            >
-              {categories.map((category) => (
-                <NativeSelectOption key={category} value={category}>
-                  {category}
-                </NativeSelectOption>
-              ))}
-            </NativeSelect>
-          </Label>
-        </div>
-        <Label className="prompt-editor-label" htmlFor="ptBody">
-          Body
-          <Textarea
-            className="prompt-editor-textarea"
-            id="ptBody"
-            rows={4}
-            defaultValue={template.body || ''}
-            placeholder={i18n('prompt.placeholderBody', 'Template instructions')}
-          />
-        </Label>
-        <Label className="prompt-editor-label" htmlFor="ptSystemPrompt">
-          System prompt
-          <Textarea
-            className="prompt-editor-textarea"
-            id="ptSystemPrompt"
-            rows={6}
-            defaultValue={template.systemPrompt || ''}
-            placeholder={i18n('prompt.placeholderSystem', 'System prompt')}
-          />
-        </Label>
-      </div>
+      <PromptEditorFormFields template={template} categories={categories} />
       <div className="modal-foot">
         <div className="modal-spacer" />
         <Button

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 
@@ -19,29 +19,24 @@ import { positionComposerToolsMenu } from './composerTools.position';
 
 const MENU_ID = 'composerToolsMenu';
 
-function ComposerToolsMenu() {
-  const snapshot = useComposerToolsSnapshot();
-  const { pick } = useComposerToolsDispatch();
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const selectionSnapshot = useComposerPluginSelectionSnapshot();
-  const selectedPluginCount = snapshot.mode ? selectionSnapshot[snapshot.mode].length : 0;
-  const activeKey =
-    getActiveTemplateExtensionKey() ??
-    (isWebSearchOn() ? 'webSearch' : null) ??
-    (isDeepResearchOn() ? 'deepResearch' : null) ??
-    (isExtensiveThinkingOn() ? 'extensiveThinking' : null);
-
+function useComposerToolsPositionEffect(
+  menuRef: RefObject<HTMLDivElement | null>,
+  isOpen: boolean,
+  triggerId: string | null,
+  mode: 'chat' | 'writer' | 'assistant' | null,
+  selectedPluginCount: number,
+) {
   useLayoutEffect(() => {
     const menu = menuRef.current;
-    const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
-    if (!snapshot.isOpen || !menu || !trigger) return undefined;
+    const trigger = triggerId ? document.getElementById(triggerId) : null;
+    if (!isOpen || !menu || !trigger) return undefined;
 
     let frame = 0;
     const schedulePosition = () => {
       if (frame) window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        positionComposerToolsMenu(menu, trigger, snapshot.mode);
+        positionComposerToolsMenu(menu, trigger, mode);
       });
     };
     schedulePosition();
@@ -62,15 +57,16 @@ function ComposerToolsMenu() {
       viewport?.removeEventListener('resize', schedulePosition);
       viewport?.removeEventListener('scroll', schedulePosition);
     };
-  }, [snapshot.isOpen, snapshot.mode, snapshot.triggerId, selectedPluginCount]);
+  }, [isOpen, mode, triggerId, selectedPluginCount, menuRef]);
+}
 
+function useComposerToolsDismissalEffect(
+  menuRef: RefObject<HTMLDivElement | null>,
+  isOpen: boolean,
+  triggerId: string | null,
+) {
   useEffect(() => {
-    document.body.classList.toggle('composer-tools-open', snapshot.isOpen);
-    return () => document.body.classList.remove('composer-tools-open');
-  }, [snapshot.isOpen]);
-
-  useEffect(() => {
-    if (!snapshot.isOpen) return undefined;
+    if (!isOpen) return undefined;
     const handleDocumentClick = (event: MouseEvent) => {
       const target =
         event.target instanceof Element
@@ -78,12 +74,12 @@ function ComposerToolsMenu() {
           : event.target instanceof Node
             ? event.target.parentElement
             : null;
-      const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
+      const trigger = triggerId ? document.getElementById(triggerId) : null;
       if (target && (menuRef.current?.contains(target) || trigger?.contains(target))) return;
       closeComposerTools();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
-      const trigger = snapshot.triggerId ? document.getElementById(snapshot.triggerId) : null;
+      const trigger = triggerId ? document.getElementById(triggerId) : null;
       if (event.key === 'Escape') {
         event.preventDefault();
         closeComposerTools();
@@ -120,7 +116,35 @@ function ComposerToolsMenu() {
       document.removeEventListener('click', handleDocumentClick);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [snapshot.isOpen, snapshot.triggerId]);
+  }, [isOpen, triggerId, menuRef]);
+}
+
+function ComposerToolsMenu() {
+  const snapshot = useComposerToolsSnapshot();
+  const { pick } = useComposerToolsDispatch();
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const selectionSnapshot = useComposerPluginSelectionSnapshot();
+  const selectedPluginCount = snapshot.mode ? selectionSnapshot[snapshot.mode].length : 0;
+  const activeKey =
+    getActiveTemplateExtensionKey() ??
+    (isWebSearchOn() ? 'webSearch' : null) ??
+    (isDeepResearchOn() ? 'deepResearch' : null) ??
+    (isExtensiveThinkingOn() ? 'extensiveThinking' : null);
+
+  useComposerToolsPositionEffect(
+    menuRef,
+    snapshot.isOpen,
+    snapshot.triggerId,
+    snapshot.mode,
+    selectedPluginCount,
+  );
+
+  useEffect(() => {
+    document.body.classList.toggle('composer-tools-open', snapshot.isOpen);
+    return () => document.body.classList.remove('composer-tools-open');
+  }, [snapshot.isOpen]);
+
+  useComposerToolsDismissalEffect(menuRef, snapshot.isOpen, snapshot.triggerId);
 
   return (
     <>
