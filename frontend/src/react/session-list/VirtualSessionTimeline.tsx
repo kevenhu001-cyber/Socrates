@@ -40,16 +40,37 @@ function visibleRange(offsets: number[], top: number, height: number) {
   };
 }
 
-/** Variable-height window with sparse retained rows for menus, rename and drag.
- * Gaps stay in normal flow, so retained rows never move or remount on scroll. */
-export function VirtualSessionTimeline({
-  entries,
-  renderSession,
-}: {
-  entries: TimelineEntry[];
-  renderSession: (session: SessionItem, retain: (id: string, active: boolean) => void) => ReactNode;
-}) {
-  const rootRef = useRef<HTMLDivElement>(null);
+function useTimelineScrollListener(
+  rootRef: React.RefObject<HTMLDivElement | null>,
+  updateRange: (root: HTMLElement, host: HTMLElement) => void,
+) {
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const host = root?.closest<HTMLElement>('#recentsPanel');
+    if (!root || !host) return undefined;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      updateRange(root, host);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    host.addEventListener('scroll', schedule, { passive: true });
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
+    observer?.observe(host);
+    return () => {
+      host.removeEventListener('scroll', schedule);
+      observer?.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [updateRange, rootRef]);
+}
+
+function useTimelineVirtualization(
+  entries: TimelineEntry[],
+  rootRef: React.RefObject<HTMLDivElement | null>,
+) {
   const heights = useRef(new Map<string, number>());
   const measurement = useRef({ entries, offsets: [0] });
   const rowObserver = useRef<ResizeObserver | null>(null);
@@ -57,6 +78,7 @@ export function VirtualSessionTimeline({
   const [measureRevision, setMeasureRevision] = useState(0);
   const [retained, setRetained] = useState<ReadonlySet<string>>(new Set());
   const [focused, setFocused] = useState<string | null>(null);
+
   const retain = useCallback((id: string, active: boolean) => {
     setRetained((previous) => {
       if (previous.has(id) === active) return previous;
@@ -66,6 +88,7 @@ export function VirtualSessionTimeline({
       return next;
     });
   }, []);
+
   const offsets = useMemo(() => {
     void measureRevision;
     const result = [0];
@@ -74,8 +97,8 @@ export function VirtualSessionTimeline({
         result[result.length - 1] + (heights.current.get(entry.key) ?? (entry.session ? 48 : 32)),
       );
     return result;
-    // Measurements are external geometry, revision changes when they change.
   }, [entries, measureRevision]);
+
   const [{ start, end }, setRange] = useState(() => visibleRange(offsets, 0, 600));
   const indices = useMemo(
     () =>
@@ -103,29 +126,9 @@ export function VirtualSessionTimeline({
     const root = rootRef.current;
     const host = root?.closest<HTMLElement>('#recentsPanel');
     if (root && host) updateRange(root, host);
-  }, [entries, offsets, updateRange]);
+  }, [entries, offsets, updateRange, rootRef]);
 
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    const host = root?.closest<HTMLElement>('#recentsPanel');
-    if (!root || !host) return undefined;
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      updateRange(root, host);
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    host.addEventListener('scroll', schedule, { passive: true });
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
-    observer?.observe(host);
-    return () => {
-      host.removeEventListener('scroll', schedule);
-      observer?.disconnect();
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [updateRange]);
+  useTimelineScrollListener(rootRef, updateRange);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -162,7 +165,7 @@ export function VirtualSessionTimeline({
       rowObserver.current = null;
       observed.clear();
     };
-  }, []);
+  }, [rootRef]);
 
   useLayoutEffect(() => {
     const live = new Set(entries.map((entry) => entry.key));
@@ -184,7 +187,27 @@ export function VirtualSessionTimeline({
       observer.observe(element);
       observed.add(element);
     }
-  }, [indices]);
+  }, [indices, rootRef]);
+
+  return {
+    offsets,
+    indices,
+    retain,
+    setFocused,
+  };
+}
+
+/** Variable-height window with sparse retained rows for menus, rename and drag.
+ * Gaps stay in normal flow, so retained rows never move or remount on scroll. */
+export function VirtualSessionTimeline({
+  entries,
+  renderSession,
+}: {
+  entries: TimelineEntry[];
+  renderSession: (session: SessionItem, retain: (id: string, active: boolean) => void) => ReactNode;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { offsets, indices, retain, setFocused } = useTimelineVirtualization(entries, rootRef);
 
   let previousEnd = 0;
   return (
