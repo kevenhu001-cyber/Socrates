@@ -226,6 +226,72 @@ function performMistakeRedo(
  * supplies the few cross-feature actions (session save, scrolling, and quiz
  * mounting) so this module stays independent from the main application file.
  */
+function persistMistakeRemote(
+  apiFetch: MistakeBookOptions['apiFetch'],
+  sessionId: string | null | undefined,
+  mistakeData: {
+    nodeName: string | null;
+    questionContent: string;
+    userAnswer: string | null;
+    correctAnswer: string | null;
+    source: string;
+  },
+) {
+  let sid = sessionId;
+  if (
+    typeof sid !== 'string' ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)
+  )
+    sid = null;
+  try {
+    apiFetch('/api/mistakes', {
+      method: 'POST',
+      body: {
+        sessionId: sid,
+        nodeName: mistakeData.nodeName || null,
+        questionContent: mistakeData.questionContent || '',
+        userAnswer: mistakeData.userAnswer != null ? String(mistakeData.userAnswer) : null,
+        correctAnswer: mistakeData.correctAnswer != null ? String(mistakeData.correctAnswer) : null,
+        source: mistakeData.source || 'quiz',
+      },
+    }).catch(function (error) {
+      reportSwallow(error, 'legacy/mistakeBook.persistMistake');
+    });
+  } catch (error) {
+    reportSwallow(error, 'legacy/mistakeBook.persistMistakeCatch');
+  }
+}
+
+function refreshRepeatedMistake(
+  state: MistakeBookState,
+  saveCurrentSession: () => void,
+  existing: MistakeEntry[],
+  same: MistakeEntry,
+  userAnswer: string | null,
+  judgedAnswer: string | null,
+) {
+  const answerChanged = same.userAnswer !== userAnswer;
+  const refreshed: MistakeEntry = {
+    ...same,
+    userAnswer,
+    judgedAnswer: judgedAnswer ?? same.judgedAnswer,
+    timestamp: Date.now(),
+  };
+  /* A different wrong answer may be a different slip: let the model rewrite it. */
+  if (answerChanged) delete refreshed.analysis;
+  state.setMistakes([refreshed, ...existing.filter((item) => item.id !== same.id)]);
+  saveCurrentSession();
+  if (!answerChanged) return;
+  void import('../tutor/mistakeAnalysis.ts')
+    .then(({ analyzeMistake }) => analyzeMistake(same.id))
+    .catch((error) => reportSwallow(error, 'legacy/mistakeBook.reanalyze'));
+}
+
+/**
+ * Owns the mistake-book UI and persistence workflow. The chat controller
+ * supplies the few cross-feature actions (session save, scrolling, and quiz
+ * mounting) so this module stays independent from the main application file.
+ */
 export function createMistakeBook({
   state,
   apiFetch,
@@ -237,62 +303,6 @@ export function createMistakeBook({
     saveCurrentSession,
     appendAssistantMessage,
   };
-
-  function persistMistake(mistakeData: {
-    nodeName: string | null;
-    questionContent: string;
-    userAnswer: string | null;
-    correctAnswer: string | null;
-    source: string;
-  }) {
-    let sid = state.getSession().currentSessionId;
-    if (
-      typeof sid !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)
-    )
-      sid = null;
-    try {
-      apiFetch('/api/mistakes', {
-        method: 'POST',
-        body: {
-          sessionId: sid,
-          nodeName: mistakeData.nodeName || null,
-          questionContent: mistakeData.questionContent || '',
-          userAnswer: mistakeData.userAnswer != null ? String(mistakeData.userAnswer) : null,
-          correctAnswer:
-            mistakeData.correctAnswer != null ? String(mistakeData.correctAnswer) : null,
-          source: mistakeData.source || 'quiz',
-        },
-      }).catch(function (error) {
-        reportSwallow(error, 'legacy/mistakeBook.persistMistake');
-      });
-    } catch (error) {
-      reportSwallow(error, 'legacy/mistakeBook.persistMistakeCatch');
-    }
-  }
-
-  function refreshRepeatedMistake(
-    existing: MistakeEntry[],
-    same: MistakeEntry,
-    userAnswer: string | null,
-    judgedAnswer: string | null,
-  ) {
-    const answerChanged = same.userAnswer !== userAnswer;
-    const refreshed: MistakeEntry = {
-      ...same,
-      userAnswer,
-      judgedAnswer: judgedAnswer ?? same.judgedAnswer,
-      timestamp: Date.now(),
-    };
-    /* A different wrong answer may be a different slip: let the model rewrite it. */
-    if (answerChanged) delete refreshed.analysis;
-    state.setMistakes([refreshed, ...existing.filter((item) => item.id !== same.id)]);
-    saveCurrentSession();
-    if (!answerChanged) return;
-    void import('../tutor/mistakeAnalysis.ts')
-      .then(({ analyzeMistake }) => analyzeMistake(same.id))
-      .catch((error) => reportSwallow(error, 'legacy/mistakeBook.reanalyze'));
-  }
 
   function recordMistake(rec: Record<string, unknown>) {
     const type = typeof rec.type === 'string' ? rec.type : 'quiz';
@@ -308,7 +318,7 @@ export function createMistakeBook({
     const existing = readMistakes(state);
     const same = findSameMistake(existing, { type, q: question, quizSlotId });
     if (same) {
-      refreshRepeatedMistake(existing, same, userAnswer, judgedAnswer);
+      refreshRepeatedMistake(state, saveCurrentSession, existing, same, userAnswer, judgedAnswer);
       return;
     }
     const { kbNodes, currentNode } = state.getKnowledge();
@@ -329,7 +339,7 @@ export function createMistakeBook({
       quizSlotId,
     };
     state.setMistakes([mistake, ...existing]);
-    persistMistake({
+    persistMistakeRemote(apiFetch, state.getSession().currentSessionId, {
       nodeName: mistake.node || null,
       questionContent: mistake.q,
       userAnswer: mistake.userAnswer,

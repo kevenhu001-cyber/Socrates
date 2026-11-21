@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
 import { normalizeVisualizationSpec } from '@socrates/core/visualizationNormalize';
 import { getLegacyActions } from '../legacy/gateway';
 import { asVisualizationSpec } from '../../render/visualizationSpec';
@@ -53,42 +53,17 @@ function restoreFocusIndex(root: HTMLElement, index: number): void {
   if (next?.isConnected) next.focus({ preventScroll: true });
 }
 
-/** One lifecycle for native chart nodes and OpenUI visualizations. */
-export function NativeVisualization({
-  streaming = false,
-  serverSpecs = NO_SERVER_SPECS,
-  ...props
-}: NativeVisualizationProps & {
-  streaming?: boolean;
-  serverSpecs?: Parameters<typeof matchServerVisualization>[0];
-}) {
-  const host = useRef<HTMLDivElement>(null);
+function useNativeVisualizationLifecycle(
+  host: RefObject<HTMLDivElement | null>,
+  specKey: string,
+  id: string,
+  streaming: boolean,
+  attempt: number,
+) {
   const mounted = useRef<MountedCard | null>(null);
   const generation = useRef(0);
   const active = useRef<AbortController | null>(null);
-  const id = useId();
-  const [attempt, setAttempt] = useState(0);
   const [phase, setPhase] = useState<MountPhase>({ kind: 'loading' });
-  const { template, title, payload, caption, accessibilitySummary } = props;
-  const propsKey = useMemo(
-    () => JSON.stringify({ version: 1, template, title, payload, caption, accessibilitySummary }),
-    [template, title, payload, caption, accessibilitySummary],
-  );
-  /* The server's normalized spec describes the program's INITIAL state.
-       Once local controls change the props it no longer applies. */
-  const initialKey = useRef<string | null>(null);
-  if (!streaming && initialKey.current === null) initialKey.current = propsKey;
-  const specKey = useMemo(() => {
-    const server =
-      propsKey === initialKey.current
-        ? matchServerVisualization(serverSpecs, props.template, props.title)
-        : null;
-    const source = server
-      ? { ...server, nodeId: undefined, index: undefined }
-      : JSON.parse(propsKey);
-    return JSON.stringify(normalizeVisualizationSpec(source).spec);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- props are fully captured by propsKey
-  }, [propsKey, serverSpecs]);
 
   useEffect(() => {
     /* Mount once the data is complete: a half-streamed payload would draw,
@@ -143,7 +118,8 @@ export function NativeVisualization({
           details: String((error as Error)?.message || error).slice(0, 300),
         });
       });
-  }, [specKey, id, streaming, attempt]);
+  }, [specKey, id, streaming, attempt, host]);
+
   useEffect(
     () => () => {
       ++generation.current;
@@ -153,6 +129,44 @@ export function NativeVisualization({
     },
     [],
   );
+
+  return phase;
+}
+
+/** One lifecycle for native chart nodes and OpenUI visualizations. */
+export function NativeVisualization({
+  streaming = false,
+  serverSpecs = NO_SERVER_SPECS,
+  ...props
+}: NativeVisualizationProps & {
+  streaming?: boolean;
+  serverSpecs?: Parameters<typeof matchServerVisualization>[0];
+}) {
+  const host = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const [attempt, setAttempt] = useState(0);
+  const { template, title, payload, caption, accessibilitySummary } = props;
+  const propsKey = useMemo(
+    () => JSON.stringify({ version: 1, template, title, payload, caption, accessibilitySummary }),
+    [template, title, payload, caption, accessibilitySummary],
+  );
+  /* The server's normalized spec describes the program's INITIAL state.
+       Once local controls change the props it no longer applies. */
+  const initialKey = useRef<string | null>(null);
+  if (!streaming && initialKey.current === null) initialKey.current = propsKey;
+  const specKey = useMemo(() => {
+    const server =
+      propsKey === initialKey.current
+        ? matchServerVisualization(serverSpecs, props.template, props.title)
+        : null;
+    const source = server
+      ? { ...server, nodeId: undefined, index: undefined }
+      : JSON.parse(propsKey);
+    return JSON.stringify(normalizeVisualizationSpec(source).spec);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- props are fully captured by propsKey
+  }, [propsKey, serverSpecs]);
+
+  const phase = useNativeVisualizationLifecycle(host, specKey, id, streaming, attempt);
 
   const spec = useMemo(() => JSON.parse(specKey) as Record<string, unknown>, [specKey]);
   return (

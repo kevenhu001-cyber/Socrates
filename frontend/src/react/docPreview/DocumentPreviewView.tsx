@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { getApiFetch, i18n } from '../legacy/gateway.ts';
 import { Button } from '../ui/Button';
 import type {
@@ -177,22 +177,17 @@ async function loadServerText(fileId: string): Promise<TextPayload> {
  * pdf/docx/pptx/xlsx, to the server text reader for the parsed formats, or
  * to a failure notice that keeps the download action reachable.
  */
-export function DocumentPreviewView({
-  source,
-  kind,
-}: {
-  source: DocumentPreviewSource;
-  kind: PreviewKind;
-}) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+function useDocumentPreviewEngine(
+  source: DocumentPreviewSource,
+  kind: PreviewKind,
+  inlineUrl: string,
+  containerRef: RefObject<HTMLDivElement | null>,
+) {
   const engineRef = useRef<PreviewEngine | null>(null);
   const [phase, setPhase] = useState<PreviewPhase>('loading');
   const [statusText, setStatusText] = useState('');
   const [text, setText] = useState<TextPayload | null>(null);
   const [counter, setCounter] = useState<PdfCounter>({ page: 1, pages: 0, zoomLabel: '100%' });
-
-  const inlineUrl = '/api/v2/files/' + encodeURIComponent(source.fileId) + '/raw?inline=1';
-  const downloadUrl = '/api/v2/files/' + encodeURIComponent(source.fileId) + '/raw';
 
   useEffect(() => {
     let cancelled = false;
@@ -280,7 +275,27 @@ export function DocumentPreviewView({
       engineRef.current?.destroy();
       engineRef.current = null;
     };
-  }, [source.fileId, kind, inlineUrl]);
+  }, [source.fileId, kind, inlineUrl, containerRef]);
+
+  return { engineRef, phase, statusText, text, counter };
+}
+
+export function DocumentPreviewView({
+  source,
+  kind,
+}: {
+  source: DocumentPreviewSource;
+  kind: PreviewKind;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inlineUrl = '/api/v2/files/' + encodeURIComponent(source.fileId) + '/raw?inline=1';
+  const downloadUrl = '/api/v2/files/' + encodeURIComponent(source.fileId) + '/raw';
+  const { engineRef, phase, statusText, text, counter } = useDocumentPreviewEngine(
+    source,
+    kind,
+    inlineUrl,
+    containerRef,
+  );
 
   return (
     <div className="doc-preview-body">
