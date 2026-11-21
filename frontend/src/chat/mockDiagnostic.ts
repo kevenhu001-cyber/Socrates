@@ -93,22 +93,8 @@ export function aiGenerate(topic: string): {
   return { domain: domain, nodes: nodes, diagQuestions: diagQs };
 }
 
-/* Generate varied mock diagnostic questions for fallback */
-/* Mock diagnostic questions for fallback when no API is configured.
-   Each question is bound to a nodeIdx 0..4 (matching the fixed KB
-   skeleton in aiGenerate) and to a subarea label. */
-export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
-  /* The 5 fixed mock KB node names — used both to name the subareas and
-     to seed the KB so the question's nodeIdx actually lines up.
-     aligned with the 5 knowledge dimensions. */
-  const subareaNames = [
-    'Basic concepts of ' + domain,
-    'Core principles of ' + domain,
-    'Practical applications of ' + domain,
-    'Common problems and pitfalls in ' + domain,
-    'Critical analysis and advanced ' + domain,
-  ];
-  const templates: MockDiagTemplate[] = [
+function buildBasicDiagTemplates(domain: string, subareaNames: string[]): MockDiagTemplate[] {
+  return [
     {
       knowledgePoint: 'core definitions and key vocabulary',
       subarea: subareaNames[0],
@@ -167,6 +153,11 @@ export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
         ],
       ],
     },
+  ];
+}
+
+function buildAdvancedDiagTemplates(domain: string, subareaNames: string[]): MockDiagTemplate[] {
+  return [
     {
       knowledgePoint: 'real-world application cases',
       subarea: subareaNames[2],
@@ -234,6 +225,27 @@ export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
         ],
       ],
     },
+  ];
+}
+
+/* Generate varied mock diagnostic questions for fallback */
+/* Mock diagnostic questions for fallback when no API is configured.
+   Each question is bound to a nodeIdx 0..4 (matching the fixed KB
+   skeleton in aiGenerate) and to a subarea label. */
+export function generateMockDiagQs(domain: string): MockDiagQuestion[] {
+  /* The 5 fixed mock KB node names — used both to name the subareas and
+     to seed the KB so the question's nodeIdx actually lines up.
+     aligned with the 5 knowledge dimensions. */
+  const subareaNames = [
+    'Basic concepts of ' + domain,
+    'Core principles of ' + domain,
+    'Practical applications of ' + domain,
+    'Common problems and pitfalls in ' + domain,
+    'Critical analysis and advanced ' + domain,
+  ];
+  const templates = [
+    ...buildBasicDiagTemplates(domain, subareaNames),
+    ...buildAdvancedDiagTemplates(domain, subareaNames),
   ];
   /* Shuffle order so successive mocks feel different. */
   const pool = templates.slice();

@@ -85,7 +85,7 @@ function PluginDirectoryBody({
   newPlugins: PluginItem[];
   configured: boolean;
   dispatch: PluginDirectoryProps['dispatch'];
-  onSelectPlugin: (plugin: PluginItem) => void;
+  onSelectPlugin: (id: string) => void;
 }) {
   return (
     <div className="plugin-directory-body">

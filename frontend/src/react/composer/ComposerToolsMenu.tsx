@@ -16,6 +16,7 @@ import {
 } from './composerTools.store';
 import { ComposerToolMenuItems } from './ComposerToolMenuItems';
 import { positionComposerToolsMenu } from './composerTools.position';
+import type { ComposerMode } from './types';
 
 const MENU_ID = 'composerToolsMenu';
 
@@ -23,7 +24,7 @@ function useComposerToolsPositionEffect(
   menuRef: RefObject<HTMLDivElement | null>,
   isOpen: boolean,
   triggerId: string | null,
-  mode: 'chat' | 'writer' | 'assistant' | null,
+  mode: ComposerMode | null,
   selectedPluginCount: number,
 ) {
   useLayoutEffect(() => {

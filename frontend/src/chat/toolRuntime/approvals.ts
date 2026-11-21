@@ -55,6 +55,71 @@ interface ApprovalRuntimeOptions<
   translate: (key: string, fallback: string) => string;
 }
 
+function pollCompletedRun(
+  runId: string,
+  entryId: string,
+  entryName: string,
+  recordToolResult: (result: ApprovalResult) => void,
+): void {
+  const startedAt = Date.now();
+  const poll = async (): Promise<void> => {
+    if (Date.now() - startedAt > 120_000) return;
+    try {
+      const response = await apiFetch<AgentRunPollResponse>(
+        '/api/agent-runs/' + encodeURIComponent(runId),
+      );
+      const run = response && response.run;
+      if (
+        run &&
+        ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))
+      ) {
+        recordToolResult({
+          id: entryId,
+          name: entryName,
+          ok: run.status === 'completed',
+          status: run.status,
+          output: run.summary || '',
+          error: run.error || undefined,
+          artifacts: response.artifacts || [],
+        });
+        return;
+      }
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts');
+      /* a refresh/reconnect can retry on the next tick */
+    }
+    window.setTimeout(() => {
+      void poll();
+    }, 900);
+  };
+  window.setTimeout(() => {
+    void poll();
+  }, 900);
+}
+
+function findTargetApprovalEntry<
+  TEntry extends ApprovalToolCall,
+  TMessage extends ApprovalMessage<TEntry>,
+>(
+  message: TMessage,
+  approval: ToolApproval,
+  findEntry: (message: TMessage | null, id: string) => TEntry | null,
+): TEntry | null {
+  let entry: TEntry | null = approval.id ? findEntry(message, String(approval.id)) : null;
+  if (!entry && Array.isArray(message.toolCalls)) {
+    /* A provider adapter may omit the presentation id. Attach the approval
+       to the most recent active workspace-agent call in this message. */
+    for (let index = message.toolCalls.length - 1; index >= 0; index--) {
+      const candidate = message.toolCalls[index];
+      if (candidate && candidate.name === 'workspace_agent' && !candidate._toolResultApplied) {
+        entry = candidate;
+        break;
+      }
+    }
+  }
+  return entry;
+}
+
 /** Own the decision POST, feedback state and paused-run completion polling. */
 export function createApprovalRuntime<
   TEntry extends ApprovalToolCall,
@@ -116,40 +181,12 @@ export function createApprovalRuntime<
       if (entry) entry.approval = { ...entry.approval, ...approval, status: decision };
       options.notifyToolRun(message);
       if (decision !== 'decline') {
-        const startedAt = Date.now();
-        const poll = async (): Promise<void> => {
-          if (Date.now() - startedAt > 120_000) return;
-          try {
-            const response = await apiFetch<AgentRunPollResponse>(
-              '/api/agent-runs/' + encodeURIComponent(approval.runId),
-            );
-            const run = response && response.run;
-            if (
-              run &&
-              ['completed', 'failed', 'interrupted', 'disconnected'].includes(String(run.status))
-            ) {
-              options.recordToolResult({
-                id: entryId,
-                name: entry ? entry.name : 'workspace_agent',
-                ok: run.status === 'completed',
-                status: run.status,
-                output: run.summary || '',
-                error: run.error || undefined,
-                artifacts: response.artifacts || [],
-              });
-              return;
-            }
-          } catch (_) {
-            reportEmptyCatch(_, 'empty catch: chat/toolRuntime/approvals.ts');
-            /* a refresh/reconnect can retry on the next tick */
-          }
-          window.setTimeout(() => {
-            void poll();
-          }, 900);
-        };
-        window.setTimeout(() => {
-          void poll();
-        }, 900);
+        pollCompletedRun(
+          approval.runId,
+          entryId,
+          entry ? entry.name : 'workspace_agent',
+          options.recordToolResult,
+        );
       }
     } catch (err) {
       setApprovalUi(
@@ -190,18 +227,7 @@ export function createApprovalRuntime<
   function recordToolApproval(approval: ToolApproval): void {
     const message = options.activeMessage();
     if (!message || !approval || !approval.runId || !approval.approvalId) return;
-    let entry: TEntry | null = approval.id ? options.findEntry(message, String(approval.id)) : null;
-    if (!entry && Array.isArray(message.toolCalls)) {
-      /* A provider adapter may omit the presentation id. Attach the approval
-         to the most recent active workspace-agent call in this message. */
-      for (let index = message.toolCalls.length - 1; index >= 0; index--) {
-        const candidate = message.toolCalls[index];
-        if (candidate && candidate.name === 'workspace_agent' && !candidate._toolResultApplied) {
-          entry = candidate;
-          break;
-        }
-      }
-    }
+    const entry = findTargetApprovalEntry(message, approval, options.findEntry);
     if (!entry) {
       options.pushOrphan(
         message,
