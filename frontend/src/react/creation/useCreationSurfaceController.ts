@@ -205,6 +205,60 @@ function useCreationEditor(
   };
 }
 
+async function startAssistantChat(item: CreationItem) {
+  const didReset = await getLegacyActions().navigation.resetApp();
+  if (didReset === false) return;
+  sessionStorage.setItem('socrates-active-assistant', item.id);
+  let starter = '';
+  try {
+    starter = JSON.parse(item.source || '{}').starter || '';
+  } catch (cause) {
+    reportSwallow(cause, 'creation.startAssistantChat.parseStarter');
+  }
+  if (starter) setComposerMarkdown('topic', starter);
+  focusComposer('topic');
+}
+
+async function submitCreationImage(
+  preferences: CreationSurfacePreferences,
+  editor: CreationEditorState | null,
+  setBusy: (busy: boolean) => void,
+  closeEditor: () => void,
+  load: () => Promise<void>,
+) {
+  const text = currentCopy();
+  const prompt = preferences.imagePrompt.trim();
+  if (!prompt) {
+    notice(text.noPrompt);
+    return;
+  }
+  const model = preferences.imageModel.trim();
+  if (model) {
+    try {
+      localStorage.setItem('socrates-image-model', model);
+    } catch (cause) {
+      reportSwallow(cause, 'creation.saveImageModel');
+    }
+  }
+  const reference = editor?.type === 'images' ? editor.item : null;
+  const url = reference ? `/api/creations/images/${reference.id}/edit` : '/api/creations/images';
+  setBusy(true);
+  try {
+    await api(url, { method: 'POST', body: { prompt, model } });
+    closeEditor();
+    await load();
+  } catch (cause) {
+    const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
+    notice(
+      code === 'IMAGE_PROVIDER_NOT_CONFIGURED'
+        ? text.imageUnavailable
+        : (cause as Error)?.message || text.error,
+    );
+  } finally {
+    setBusy(false);
+  }
+}
+
 export function useCreationSurfaceController(
   name: CreationName,
   preferences: CreationSurfacePreferences,
@@ -233,20 +287,6 @@ export function useCreationSurfaceController(
     generateSite,
     submitEditor,
   } = useCreationEditor(name, load, setBusy);
-
-  async function startAssistantChat(item: CreationItem) {
-    const didReset = await getLegacyActions().navigation.resetApp();
-    if (didReset === false) return;
-    sessionStorage.setItem('socrates-active-assistant', item.id);
-    let starter = '';
-    try {
-      starter = JSON.parse(item.source || '{}').starter || '';
-    } catch (cause) {
-      reportSwallow(cause, 'creation.startAssistantChat.parseStarter');
-    }
-    if (starter) setComposerMarkdown('topic', starter);
-    focusComposer('topic');
-  }
 
   async function startNewCreation() {
     if (name === 'images') {
@@ -295,39 +335,7 @@ export function useCreationSurfaceController(
     return handlers[action]?.();
   }
 
-  async function submitImage() {
-    const text = currentCopy();
-    const prompt = preferences.imagePrompt.trim();
-    if (!prompt) {
-      notice(text.noPrompt);
-      return;
-    }
-    const model = preferences.imageModel.trim();
-    if (model) {
-      try {
-        localStorage.setItem('socrates-image-model', model);
-      } catch (cause) {
-        reportSwallow(cause, 'creation.saveImageModel');
-      }
-    }
-    const reference = editor?.type === 'images' ? editor.item : null;
-    const url = reference ? `/api/creations/images/${reference.id}/edit` : '/api/creations/images';
-    setBusy(true);
-    try {
-      await api(url, { method: 'POST', body: { prompt, model } });
-      closeEditor();
-      await load();
-    } catch (cause) {
-      const code = cause && typeof cause === 'object' && 'code' in cause ? cause.code : undefined;
-      notice(
-        code === 'IMAGE_PROVIDER_NOT_CONFIGURED'
-          ? text.imageUnavailable
-          : (cause as Error)?.message || text.error,
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
+  const submitImage = () => submitCreationImage(preferences, editor, setBusy, closeEditor, load);
 
   return {
     items,

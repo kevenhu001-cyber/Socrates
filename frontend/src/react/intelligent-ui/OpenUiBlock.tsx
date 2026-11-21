@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
 import { i18n } from '../legacy/gateway';
 import { IntelligentSurface } from './IntelligentSurface';
@@ -155,15 +156,12 @@ function useFirstPaintHold(source: string, open: boolean) {
   };
 }
 
-/** OpenUI is loaded only when a response actually contains an OpenUI program. */
-export default function OpenUiBlock({
-  source,
-  open = false,
-  readOnly = false,
-  embedded = false,
-}: OpenUiBlockProps) {
-  const host = useRef<HTMLDivElement>(null);
-  const { program, skeleton, holdFootprint } = useFirstPaintHold(source, open);
+function useOpenUiProgramState(
+  source: string,
+  open: boolean,
+  readOnly: boolean,
+  hostRef: RefObject<HTMLDivElement | null>,
+) {
   const [currentState, setCurrentState] = useState<{
     source: string;
     value: Record<string, unknown>;
@@ -200,16 +198,29 @@ export default function OpenUiBlock({
   );
   const onAction = useCallback(
     (event: ActionEvent) => {
-      if (!open) runOpenUiAction(event, host.current, readOnly);
+      if (!open) runOpenUiAction(event, hostRef.current, readOnly);
     },
-    [open, readOnly],
+    [open, readOnly, hostRef],
   );
-  const labels = Object.fromEntries(
-    Object.entries(remoteLabelDefaults).map(([key, fallback]) => [
-      key,
-      i18n(`intui.${key}`, fallback),
-    ]),
-  ) as typeof remoteLabelDefaults;
+  return {
+    currentState,
+    runtimeErrors,
+    setRuntimeErrors,
+    hasRoot,
+    onStateUpdate,
+    onParseResult,
+    onError,
+    onAction,
+  };
+}
+
+function useOpenUiDiagnostics(
+  source: string,
+  open: boolean,
+  currentState: { source: string; value: Record<string, unknown> },
+  runtimeErrors: { source: string; messages: string[] },
+  hasRoot: { source: string; present: boolean } | null,
+) {
   const tooLarge = source.length > 50000;
   const issues = useMemo(
     () => (open || source.length > 50000 ? [] : programIssues(source)),
@@ -233,6 +244,44 @@ export default function OpenUiBlock({
         (hasRoot?.source === source && !hasRoot.present) ||
         issues.length > 0)),
   );
+  return { tooLarge, issues, stateIssue, unavailable };
+}
+
+/** OpenUI is loaded only when a response actually contains an OpenUI program. */
+export default function OpenUiBlock({
+  source,
+  open = false,
+  readOnly = false,
+  embedded = false,
+}: OpenUiBlockProps) {
+  const host = useRef<HTMLDivElement>(null);
+  const { program, skeleton, holdFootprint } = useFirstPaintHold(source, open);
+  const {
+    currentState,
+    runtimeErrors,
+    setRuntimeErrors,
+    hasRoot,
+    onStateUpdate,
+    onParseResult,
+    onError,
+    onAction,
+  } = useOpenUiProgramState(source, open, readOnly, host);
+
+  const labels = Object.fromEntries(
+    Object.entries(remoteLabelDefaults).map(([key, fallback]) => [
+      key,
+      i18n(`intui.${key}`, fallback),
+    ]),
+  ) as typeof remoteLabelDefaults;
+
+  const { tooLarge, issues, stateIssue, unavailable } = useOpenUiDiagnostics(
+    source,
+    open,
+    currentState,
+    runtimeErrors,
+    hasRoot,
+  );
+
   const repair = () => {
     if (readOnly || open) return;
     const problems =

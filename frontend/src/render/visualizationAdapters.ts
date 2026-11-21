@@ -377,6 +377,102 @@ async function mountMermaid(
   };
 }
 
+type ThreeModule = typeof import('three');
+type ThreeControlsModule = typeof import('three/addons/controls/OrbitControls.js');
+
+function initThreeLightingAndGrid(
+  THREE: ThreeModule,
+  scene: InstanceType<ThreeModule['Scene']>,
+  invalidate: () => void,
+) {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x273149, 2.1));
+  const key = new THREE.DirectionalLight(0xffffff, 2.5);
+  key.position.set(5, 8, 4);
+  scene.add(key);
+  const isDarkInitial =
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-mode') === 'dark';
+  const gridHelper = new THREE.GridHelper(
+    12,
+    12,
+    isDarkInitial ? 0x94a3b8 : 0x8893a5,
+    isDarkInitial ? 0x334155 : 0xdbe2ea,
+  );
+  scene.add(gridHelper);
+  return watchTheme((mode) => {
+    const isDark = mode === 'dark';
+    if (Array.isArray(gridHelper.material)) {
+      gridHelper.material.forEach((mat) => {
+        if ('color' in mat)
+          (mat as { color: { setHex: (hex: number) => void } }).color.setHex(
+            isDark ? 0x475569 : 0xdbe2ea,
+          );
+      });
+    } else if ('color' in gridHelper.material) {
+      (gridHelper.material as { color: { setHex: (hex: number) => void } }).color.setHex(
+        isDark ? 0x475569 : 0xdbe2ea,
+      );
+    }
+    invalidate();
+  });
+}
+
+function bindThreeVisibilityAndResize(
+  renderer: InstanceType<ThreeModule['WebGLRenderer']>,
+  camera: InstanceType<ThreeModule['PerspectiveCamera']>,
+  controls: InstanceType<ThreeControlsModule['OrbitControls']>,
+  stage: HTMLElement,
+  invalidate: () => void,
+  suspend: () => void,
+) {
+  const onVisibilityChange = () => {
+    if (document.hidden) suspend();
+    else invalidate();
+  };
+  controls.update();
+  controls.addEventListener('change', invalidate);
+  renderer.domElement.addEventListener('webglcontextrestored', invalidate);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  let visible = typeof IntersectionObserver !== 'function';
+  const visibility =
+    typeof IntersectionObserver === 'function'
+      ? new IntersectionObserver(([entry]) => {
+          visible = Boolean(entry?.isIntersecting);
+          if (visible) invalidate();
+          else suspend();
+        })
+      : null;
+  visibility?.observe(stage);
+  invalidate();
+  let lastWidth = 0,
+    lastHeight = 0;
+  const resize = new ResizeObserver(() => {
+    const width = Math.max(stage.clientWidth, 1),
+      height = Math.max(stage.clientHeight, 1);
+    if (width === lastWidth && height === lastHeight) return;
+    lastWidth = width;
+    lastHeight = height;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height, false);
+    invalidate();
+  });
+  resize.observe(stage);
+
+  return {
+    isVisible: () => visible,
+    disconnect: () => {
+      visible = false;
+      suspend();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      renderer.domElement.removeEventListener('webglcontextrestored', invalidate);
+      controls.removeEventListener('change', invalidate);
+      resize.disconnect();
+      visibility?.disconnect();
+    },
+  };
+}
+
 async function mountThree(
   spec: VizSpec,
   stage: HTMLElement,
@@ -408,36 +504,22 @@ async function mountThree(
   renderer.setSize(Math.max(stage.clientWidth, 1), Math.max(stage.clientHeight, 1), false);
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
   stage.appendChild(renderer.domElement);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x273149, 2.1));
-  const key = new THREE.DirectionalLight(0xffffff, 2.5);
-  key.position.set(5, 8, 4);
-  scene.add(key);
-  const isDarkInitial =
-    typeof document !== 'undefined' &&
-    document.documentElement.getAttribute('data-mode') === 'dark';
-  const gridHelper = new THREE.GridHelper(
-    12,
-    12,
-    isDarkInitial ? 0x94a3b8 : 0x8893a5,
-    isDarkInitial ? 0x334155 : 0xdbe2ea,
-  );
-  scene.add(gridHelper);
-  const stopWatchingTheme = watchTheme((mode) => {
-    const isDark = mode === 'dark';
-    if (Array.isArray(gridHelper.material)) {
-      gridHelper.material.forEach((mat) => {
-        if ('color' in mat)
-          (mat as { color: { setHex: (hex: number) => void } }).color.setHex(
-            isDark ? 0x475569 : 0xdbe2ea,
-          );
-      });
-    } else if ('color' in gridHelper.material) {
-      (gridHelper.material as { color: { setHex: (hex: number) => void } }).color.setHex(
-        isDark ? 0x475569 : 0xdbe2ea,
-      );
-    }
-    invalidate();
-  });
+
+  let frame = 0;
+  function invalidate() {
+    if (!frame && life?.isVisible() && !document.hidden) frame = requestAnimationFrame(draw);
+  }
+  function suspend() {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  }
+  function draw() {
+    frame = 0;
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  const stopWatchingTheme = initThreeLightingAndGrid(THREE, scene, invalidate);
   const material = new THREE.MeshStandardMaterial({
     color: 0x4f78dd,
     roughness: 0.42,
@@ -474,53 +556,8 @@ async function mountThree(
   const controls = new controlsModule.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.target.copy(center);
-  let frame = 0;
-  let visible = typeof IntersectionObserver !== 'function';
-  function invalidate() {
-    if (!frame && visible && !document.hidden) frame = requestAnimationFrame(draw);
-  }
-  function suspend() {
-    cancelAnimationFrame(frame);
-    frame = 0;
-  }
-  function draw() {
-    frame = 0;
-    // Damping emits change while the camera is moving, then settles by itself.
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  const onVisibilityChange = () => {
-    if (document.hidden) suspend();
-    else invalidate();
-  };
-  controls.update();
-  controls.addEventListener('change', invalidate);
-  renderer.domElement.addEventListener('webglcontextrestored', invalidate);
-  document.addEventListener('visibilitychange', onVisibilityChange);
-  const visibility =
-    typeof IntersectionObserver === 'function'
-      ? new IntersectionObserver(([entry]) => {
-          visible = Boolean(entry?.isIntersecting);
-          if (visible) invalidate();
-          else suspend();
-        })
-      : null;
-  visibility?.observe(stage);
-  invalidate();
-  let lastWidth = 0,
-    lastHeight = 0;
-  const resize = new ResizeObserver(() => {
-    const width = Math.max(stage.clientWidth, 1),
-      height = Math.max(stage.clientHeight, 1);
-    if (width === lastWidth && height === lastHeight) return;
-    lastWidth = width;
-    lastHeight = height;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height, false);
-    invalidate();
-  });
-  resize.observe(stage);
+
+  const life = bindThreeVisibilityAndResize(renderer, camera, controls, stage, invalidate, suspend);
   return {
     handled: true,
     chart: {
