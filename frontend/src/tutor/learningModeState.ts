@@ -6,11 +6,7 @@
  * The mode travels to the server on every tutor turn as `learningMode`; the
  * server-owned prompt for that mode decides what the model does.
  */
-import {
-  DEFAULT_LEARNING_MODE,
-  isLearningModeId,
-  type LearningModeId,
-} from '@socrates/core';
+import { DEFAULT_LEARNING_MODE, isLearningModeId, type LearningModeId } from '@socrates/core';
 import { getAppMode } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 
