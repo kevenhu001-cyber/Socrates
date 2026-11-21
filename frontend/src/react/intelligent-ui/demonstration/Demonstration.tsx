@@ -412,27 +412,13 @@ function renderView(view: DemoView, index: number, result: ViewSample | undefine
   }
 }
 
-export function Demonstration({
-  program: input,
-  title,
-  streaming = false,
-}: {
-  program: unknown;
-  title?: string;
-  streaming?: boolean;
-}) {
-  const host = useRef<HTMLElement>(null);
-  const id = useId();
-  const serialized = useMemo(() => JSON.stringify(input) ?? 'null', [input]);
-  const parsed = useMemo(() => parseProgram(serialized), [serialized]);
-  const { program } = parsed;
+function useDemonstrationState(program: DemonstrationProgram | null, visible: boolean) {
   const [previousProgram, setPreviousProgram] = useState(program);
   const [values, setValues] = useState<Record<string, number>>({});
   if (program !== previousProgram) {
     setPreviousProgram(program);
     setValues(nextParameterValues(program, previousProgram, values));
   }
-  const visible = useDemonstrationVisibility(host);
   const { time, setTime, playing, setPlaying, reduced, play } = usePlayback(program, visible);
   const { preview, requestPreview } = usePreview(visible);
   const { snapshot, ready, problem, preset } = useDemonstrationFrames(
@@ -484,7 +470,53 @@ export function Demonstration({
     [setPlaying, setTime, requestPreview],
   );
 
-  const controls = program ? (
+  return {
+    values,
+    time,
+    setTime,
+    playing,
+    setPlaying,
+    reduced,
+    snapshot,
+    ready,
+    problem,
+    preset,
+    duration,
+    restore,
+    onChange,
+    onPreset,
+    onScrub,
+  };
+}
+
+function DemonstrationBody({
+  program,
+  title,
+  id,
+  state,
+}: {
+  program: DemonstrationProgram;
+  title?: string;
+  id: string;
+  state: ReturnType<typeof useDemonstrationState>;
+}) {
+  const {
+    values,
+    time,
+    setTime,
+    playing,
+    setPlaying,
+    reduced,
+    snapshot,
+    problem,
+    preset,
+    duration,
+    restore,
+    onChange,
+    onPreset,
+    onScrub,
+  } = state;
+  const controls = (
     <ParameterControls
       key="parameters"
       program={program}
@@ -492,47 +524,72 @@ export function Demonstration({
       id={id}
       onChange={onChange}
     />
-  ) : null;
+  );
+  const hasEmbeddedControls = program.views.some((view) => view.kind === 'controls');
+
+  return (
+    <>
+      {title ? <header className="demo-heading">{title}</header> : null}
+      {problem ? (
+        <div className="demo-error" role="status">
+          <DemoIssue headline={failureHeadline(problem.path)} details={[problem.message]} />
+          <Button size="sm" variant="outline" onClick={restore}>
+            {restoreLabel()}
+          </Button>
+        </div>
+      ) : null}
+      {snapshot?.warnings.length ? (
+        <RuntimeWarning warnings={snapshot.warnings} onRestore={restore} />
+      ) : null}
+      <div className="demo-views">
+        {program.views.map((view, index) =>
+          view.kind === 'controls' ? controls : renderView(view, index, snapshot?.views[index]),
+        )}
+      </div>
+      {!hasEmbeddedControls ? controls : null}
+      <AdvancedParameters program={program} values={values} id={id} onChange={onChange} />
+      <PresetButtons program={program} preset={preset} onPreset={onPreset} />
+      <TimeControls
+        duration={duration}
+        time={Math.min(time, duration)}
+        playing={playing}
+        reduced={reduced}
+        setTime={setTime}
+        setPlaying={setPlaying}
+        onScrub={onScrub}
+      />
+    </>
+  );
+}
+
+export function Demonstration({
+  program: input,
+  title,
+  streaming = false,
+}: {
+  program: unknown;
+  title?: string;
+  streaming?: boolean;
+}) {
+  const host = useRef<HTMLElement>(null);
+  const id = useId();
+  const serialized = useMemo(() => JSON.stringify(input) ?? 'null', [input]);
+  const parsed = useMemo(() => parseProgram(serialized), [serialized]);
+  const { program } = parsed;
+  const visible = useDemonstrationVisibility(host);
+  const state = useDemonstrationState(program, visible);
+  const quality = state.ready ? 'full' : state.snapshot ? 'preview' : undefined;
+
   return (
     <section
       className="demonstration"
       ref={host}
       aria-label={title || i18n('intui.demo.title', 'Interactive demonstration')}
       data-demonstration={program ? '1' : undefined}
-      data-demo-quality={ready ? 'full' : snapshot ? 'preview' : undefined}
+      data-demo-quality={quality}
     >
       {program ? (
-        <>
-          {title ? <header className="demo-heading">{title}</header> : null}
-          {problem ? (
-            <div className="demo-error" role="status">
-              <DemoIssue headline={failureHeadline(problem.path)} details={[problem.message]} />
-              <Button size="sm" variant="outline" onClick={restore}>
-                {restoreLabel()}
-              </Button>
-            </div>
-          ) : null}
-          {snapshot?.warnings.length ? (
-            <RuntimeWarning warnings={snapshot.warnings} onRestore={restore} />
-          ) : null}
-          <div className="demo-views">
-            {program.views.map((view, index) =>
-              view.kind === 'controls' ? controls : renderView(view, index, snapshot?.views[index]),
-            )}
-          </div>
-          {!program.views.some((view) => view.kind === 'controls') ? controls : null}
-          <AdvancedParameters program={program} values={values} id={id} onChange={onChange} />
-          <PresetButtons program={program} preset={preset} onPreset={onPreset} />
-          <TimeControls
-            duration={duration}
-            time={Math.min(time, duration)}
-            playing={playing}
-            reduced={reduced}
-            setTime={setTime}
-            setPlaying={setPlaying}
-            onScrub={onScrub}
-          />
-        </>
+        <DemonstrationBody program={program} title={title} id={id} state={state} />
       ) : (
         <FailureState streaming={streaming} error={parsed.error} path={parsed.path} />
       )}
