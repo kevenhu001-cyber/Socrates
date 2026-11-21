@@ -114,28 +114,7 @@ function useControlTitles(tools: string, effort: string, voice: string, primary:
   }, [tools, effort, voice, primary]);
 }
 
-/**
- * React owns the complete composer shell. The stable outer host stays in the
- * document so the landing/chat transition can move it without rebuilding the
- * editor; legacy controllers keep targeting the same ids inside this tree.
- */
-export function ComposerShell({
-  placeholder,
-  onSubmit,
-  onPrimarySubmit,
-  onStop,
-  onEscape,
-}: ComposerShellProps) {
-  const primaryClickGuard = useRef(false);
-  const [languageRevision, refreshLanguage] = useReducer((value: number) => value + 1, 0);
-  const composerTools = useComposerToolsSnapshot();
-  const surface = useComposerSurface();
-  const hasDraft = useStore(composerLifecycleStore, (state) =>
-    Boolean(state.drafts[surface].trim()),
-  );
-  const attachments = useAttachments();
-  const streaming = useIsChatStreaming();
-  const sending = useSendGlyphStore((state) => state.isSending);
+function useComposerVoiceState() {
   const voicePhaseRaw = useVoiceInputStore((state) => state.phase);
   const voiceSeconds = useVoiceInputStore((state) => state.elapsedSeconds);
   const voiceAnalyser = useVoiceInputStore((state) => state.analyser);
@@ -162,6 +141,135 @@ export function ComposerShell({
     voicePhase === 'recording'
       ? i18n('voice.timer', 'Recording {seconds}s').replace('{seconds}', String(voiceSeconds))
       : '';
+  return {
+    voicePhase,
+    voiceActive,
+    voiceRecording,
+    voiceUnavailable,
+    voiceLabel,
+    voiceTimerLabel,
+    voiceAnalyser,
+  };
+}
+
+function usePrimaryClickHandler(
+  streaming: boolean,
+  canSend: boolean,
+  onStop: () => void,
+  onPrimarySubmit: () => void,
+) {
+  const primaryClickGuard = useRef(false);
+  return () => {
+    if (streaming) {
+      onStop();
+      return;
+    }
+    if (!canSend || primaryClickGuard.current) return;
+    primaryClickGuard.current = true;
+    const release = () => {
+      primaryClickGuard.current = false;
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(release);
+    else setTimeout(release, 16);
+    onPrimarySubmit();
+  };
+}
+
+function buildComposerControls(opts: {
+  toolsLabel: string;
+  composerTools: { isOpen: boolean; triggerId: string | null };
+  phone: boolean;
+  effortValue: string;
+  effort: string;
+  effortAccessibleLabel: string;
+  configuration: { open: boolean; triggerId: string | null };
+  voiceLabel: string;
+  voicePhase: 'idle' | 'recording' | 'transcribing';
+  voiceTimerLabel: string;
+  voiceUnavailable: string | null;
+  streaming: boolean;
+  primaryLabel: string;
+  canSend: boolean;
+  sending: boolean;
+  handlePrimaryClick: () => void;
+}) {
+  return {
+    tools: {
+      label: opts.toolsLabel,
+      i18nKey: 'chrome.addToolsFiles',
+      expanded: opts.composerTools.isOpen && opts.composerTools.triggerId === 'composerToolsBtn',
+      onPress: () => {
+        const trigger = anchor('composerToolsBtn');
+        if (trigger) toggleComposerTools(trigger, readComposerSurface());
+      },
+    },
+    effort: {
+      visible: opts.phone,
+      caption: i18n('effort.label', 'Effort'),
+      value: opts.effortValue,
+      level: opts.effort,
+      accessibilityLabel: opts.effortAccessibleLabel,
+      expanded: opts.configuration.open && opts.configuration.triggerId === 'effortTrigger',
+      onPress: () => {
+        const trigger = anchor('effortTrigger');
+        if (trigger) openChatConfiguration(trigger);
+      },
+    },
+    mic: {
+      label: opts.voiceLabel,
+      i18nKey: 'chrome.voiceInput',
+      listening: opts.voicePhase === 'recording',
+      phase: opts.voicePhase,
+      timerLabel: opts.voiceTimerLabel,
+      showTimer: !opts.phone,
+      disabled: opts.voiceUnavailable !== null,
+      onPress: () => {
+        const target = readComposerSurface();
+        void import('../../legacy/voiceInput.ts')
+          .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
+          .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
+      },
+    },
+    primary: {
+      mode: (opts.streaming ? 'stop' : 'send') as 'stop' | 'send',
+      label: opts.primaryLabel,
+      ready: opts.canSend,
+      sending: opts.sending,
+      onPress: opts.handlePrimaryClick,
+    },
+  };
+}
+
+/**
+ * React owns the complete composer shell. The stable outer host stays in the
+ * document so the landing/chat transition can move it without rebuilding the
+ * editor; legacy controllers keep targeting the same ids inside this tree.
+ */
+export function ComposerShell({
+  placeholder,
+  onSubmit,
+  onPrimarySubmit,
+  onStop,
+  onEscape,
+}: ComposerShellProps) {
+  const [languageRevision, refreshLanguage] = useReducer((value: number) => value + 1, 0);
+  const composerTools = useComposerToolsSnapshot();
+  const surface = useComposerSurface();
+  const hasDraft = useStore(composerLifecycleStore, (state) =>
+    Boolean(state.drafts[surface].trim()),
+  );
+  const attachments = useAttachments();
+  const streaming = useIsChatStreaming();
+  const sending = useSendGlyphStore((state) => state.isSending);
+  const {
+    voicePhase,
+    voiceActive,
+    voiceRecording,
+    voiceUnavailable,
+    voiceLabel,
+    voiceTimerLabel,
+    voiceAnalyser,
+  } = useComposerVoiceState();
   const phone = useComposerPhone();
   const focused = useEditorFocus();
   const configuration = useChatConfigurationSnapshot();
@@ -177,20 +285,7 @@ export function ComposerShell({
     surface === 'chat'
       ? i18n('chat.placeholder', 'Ask Socrates')
       : i18n('topic.inputPlaceholder', placeholder);
-  const handlePrimaryClick = () => {
-    if (streaming) {
-      onStop();
-      return;
-    }
-    if (!canSend || primaryClickGuard.current) return;
-    primaryClickGuard.current = true;
-    const release = () => {
-      primaryClickGuard.current = false;
-    };
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(release);
-    else setTimeout(release, 16);
-    onPrimarySubmit();
-  };
+  const handlePrimaryClick = usePrimaryClickHandler(streaming, canSend, onStop, onPrimarySubmit);
 
   useEffect(() => {
     const onLanguageChange = () => refreshLanguage();
@@ -261,54 +356,24 @@ export function ComposerShell({
               hidden
             />
           }
-          controls={{
-            tools: {
-              label: toolsLabel,
-              i18nKey: 'chrome.addToolsFiles',
-              expanded: composerTools.isOpen && composerTools.triggerId === 'composerToolsBtn',
-              onPress: () => {
-                const trigger = anchor('composerToolsBtn');
-                if (trigger) toggleComposerTools(trigger, readComposerSurface());
-              },
-            },
-            effort: {
-              /* Phones always show the level ("中 ⌄"), as the reference does:
-                 the header no longer carries a model chip there, so this pill
-                 is the phone's way into model and reasoning settings. */
-              visible: phone,
-              caption: i18n('effort.label', 'Effort'),
-              value: effortValue,
-              level: effort,
-              accessibilityLabel: effortAccessibleLabel,
-              expanded: configuration.open && configuration.triggerId === 'effortTrigger',
-              onPress: () => {
-                const trigger = anchor('effortTrigger');
-                if (trigger) openChatConfiguration(trigger);
-              },
-            },
-            mic: {
-              label: voiceLabel,
-              i18nKey: 'chrome.voiceInput',
-              listening: voicePhase === 'recording',
-              phase: voicePhase,
-              timerLabel: voiceTimerLabel,
-              showTimer: !phone,
-              disabled: voiceUnavailable !== null,
-              onPress: () => {
-                const target = readComposerSurface();
-                void import('../../legacy/voiceInput.ts')
-                  .then(({ toggleSpeechInput }) => toggleSpeechInput(target))
-                  .catch((error) => reportSwallow(error, 'react/composer-input.voiceInput'));
-              },
-            },
-            primary: {
-              mode: streaming ? 'stop' : 'send',
-              label: primaryLabel,
-              ready: canSend,
-              sending,
-              onPress: handlePrimaryClick,
-            },
-          }}
+          controls={buildComposerControls({
+            toolsLabel,
+            composerTools,
+            phone,
+            effortValue,
+            effort,
+            effortAccessibleLabel,
+            configuration,
+            voiceLabel,
+            voicePhase,
+            voiceTimerLabel,
+            voiceUnavailable,
+            streaming,
+            primaryLabel,
+            canSend,
+            sending,
+            handlePrimaryClick,
+          })}
         />
       </WebUiTheme>
     </>

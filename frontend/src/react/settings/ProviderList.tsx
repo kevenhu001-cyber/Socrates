@@ -24,6 +24,109 @@ function initialProviderId(providers: SettingsProviderSnapshot[]): string | null
  * of activating that provider for chat. Keep every form mounted (but hide all
  * except the selected one) so unsaved API keys and drafts survive navigation.
  */
+function ProviderWorkbenchNav({
+  providers,
+  selectedId,
+  activeId,
+  providerErrors,
+  language,
+  onSelect,
+}: {
+  providers: SettingsProviderSnapshot[];
+  selectedId: string | null;
+  activeId: string | null;
+  providerErrors: Record<string, Record<string, string>>;
+  language: string;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <nav className="provider-workbench-nav" aria-label={i18n('settings.models', 'Models')}>
+      {providers.map((provider) => (
+        <Button
+          key={provider.id}
+          type="button"
+          variant="ghost"
+          className={`provider-nav-item${selectedId === provider.id ? ' selected' : ''}`}
+          data-provider-id={provider.id}
+          aria-pressed={selectedId === provider.id}
+          aria-controls={`provider-editor-${provider.id}`}
+          onClick={() => onSelect(provider.id)}
+        >
+          <span className="provider-nav-name">
+            {provider.label || provider.model || i18n('provider.label', 'Display name')}
+          </span>
+          {provider.id === activeId ? (
+            <CheckIcon
+              className="provider-nav-active"
+              aria-label={i18n('settings.activeModel', 'Active model')}
+            />
+          ) : null}
+          {Object.keys(providerErrors[provider.id] || {}).length > 0 ? (
+            <span
+              className="provider-nav-error"
+              aria-label={language === 'zh' ? '配置存在错误' : 'Configuration error'}
+            />
+          ) : null}
+        </Button>
+      ))}
+    </nav>
+  );
+}
+
+function BuiltInProviderCard({
+  builtIn,
+  selectedId,
+  hasCustomProviders,
+}: {
+  builtIn: SettingsProviderSnapshot;
+  selectedId: string | null;
+  hasCustomProviders: boolean;
+}) {
+  return (
+    <div
+      id={`provider-editor-${builtIn.id}`}
+      className="provider-editor"
+      hidden={selectedId !== builtIn.id}
+    >
+      <Card
+        className={`provider-row built-in-row${builtIn.isActive ? ' active' : ''}`}
+        data-id={builtIn.id}
+      >
+        <CardHeader>
+          <CardTitle>{builtIn.label || builtIn.model || 'Built-in AI'}</CardTitle>
+          <CardDescription>{builtIn.model}</CardDescription>
+          <CardAction>
+            <RadioGroupItem
+              value={builtIn.id}
+              className="provider-active-btn"
+              title={
+                builtIn.isActive
+                  ? i18n('settings.activeModel', 'Active model')
+                  : i18n('settings.setActiveModel', 'Set as active')
+              }
+              aria-label={
+                builtIn.isActive
+                  ? i18n('settings.activeModel', 'Active model')
+                  : i18n('settings.setActiveModel', 'Set as active')
+              }
+            />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {builtIn.isActive ? (
+            <Badge variant="secondary">{i18n('settings.builtInTag', 'Built-in · Active')}</Badge>
+          ) : null}
+        </CardContent>
+      </Card>
+      {!hasCustomProviders ? (
+        <div className="provider-empty">
+          {i18n('settings.noCustomProviders', 'No custom providers yet.')}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function ProviderList({
   id,
   providers,
@@ -60,36 +163,14 @@ export function ProviderList({
     <div className={`provider-list ui-collapse${externalApiOn ? '' : ' collapsed'}`} id={id}>
       <div className="ui-collapse-inner">
         <div className="provider-workbench">
-          <nav className="provider-workbench-nav" aria-label={i18n('settings.models', 'Models')}>
-            {providers.map((provider) => (
-              <Button
-                key={provider.id}
-                type="button"
-                variant="ghost"
-                className={`provider-nav-item${selectedId === provider.id ? ' selected' : ''}`}
-                data-provider-id={provider.id}
-                aria-pressed={selectedId === provider.id}
-                aria-controls={`provider-editor-${provider.id}`}
-                onClick={() => setSelectedId(provider.id)}
-              >
-                <span className="provider-nav-name">
-                  {provider.label || provider.model || i18n('provider.label', 'Display name')}
-                </span>
-                {provider.id === activeId ? (
-                  <CheckIcon
-                    className="provider-nav-active"
-                    aria-label={i18n('settings.activeModel', 'Active model')}
-                  />
-                ) : null}
-                {Object.keys(providerErrors[provider.id] || {}).length > 0 ? (
-                  <span
-                    className="provider-nav-error"
-                    aria-label={language === 'zh' ? '配置存在错误' : 'Configuration error'}
-                  />
-                ) : null}
-              </Button>
-            ))}
-          </nav>
+          <ProviderWorkbenchNav
+            providers={providers}
+            selectedId={selectedId}
+            activeId={activeId}
+            providerErrors={providerErrors}
+            language={language}
+            onSelect={setSelectedId}
+          />
           <RadioGroup
             className="provider-workbench-detail"
             aria-label={i18n('settings.models', 'Models')}
@@ -117,49 +198,11 @@ export function ProviderList({
               </div>
             ))}
             {builtIn ? (
-              <div
-                id={`provider-editor-${builtIn.id}`}
-                className="provider-editor"
-                hidden={selectedId !== builtIn.id}
-              >
-                <Card
-                  className={`provider-row built-in-row${builtIn.isActive ? ' active' : ''}`}
-                  data-id={builtIn.id}
-                >
-                  <CardHeader>
-                    <CardTitle>{builtIn.label || builtIn.model || 'Built-in AI'}</CardTitle>
-                    <CardDescription>{builtIn.model}</CardDescription>
-                    <CardAction>
-                      <RadioGroupItem
-                        value={builtIn.id}
-                        className="provider-active-btn"
-                        title={
-                          builtIn.isActive
-                            ? i18n('settings.activeModel', 'Active model')
-                            : i18n('settings.setActiveModel', 'Set as active')
-                        }
-                        aria-label={
-                          builtIn.isActive
-                            ? i18n('settings.activeModel', 'Active model')
-                            : i18n('settings.setActiveModel', 'Set as active')
-                        }
-                      />
-                    </CardAction>
-                  </CardHeader>
-                  <CardContent>
-                    {builtIn.isActive ? (
-                      <Badge variant="secondary">
-                        {i18n('settings.builtInTag', 'Built-in · Active')}
-                      </Badge>
-                    ) : null}
-                  </CardContent>
-                </Card>
-                {customProviders.length === 0 ? (
-                  <div className="provider-empty">
-                    {i18n('settings.noCustomProviders', 'No custom providers yet.')}
-                  </div>
-                ) : null}
-              </div>
+              <BuiltInProviderCard
+                builtIn={builtIn}
+                selectedId={selectedId}
+                hasCustomProviders={customProviders.length > 0}
+              />
             ) : null}
             {providers.length === 0 ? (
               <div className="provider-empty">

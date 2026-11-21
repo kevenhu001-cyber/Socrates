@@ -11,6 +11,107 @@ import { useMobileViewport } from './useMobileViewport.ts';
 import { closeSidebarOnMobile } from '../../sidebar/sidebar.service.ts';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 
+function UserIdentityPill({ user, tier }: { user: ReturnType<typeof useUserInfo>; tier: string }) {
+  return (
+    <>
+      <span className="user-avatar" aria-hidden="true">
+        {user.initials}
+      </span>
+      <span className="user-identity">
+        <span className="user-name">{user.displayName}</span>
+        <span className="user-plan">
+          <span className={`tier-badge ${user.tier}`}>{tier}</span>
+        </span>
+      </span>
+    </>
+  );
+}
+
+function AccountMenuItems({
+  user,
+  tier,
+  accountTrigger,
+  close,
+  navigate,
+  label,
+  FoundationMenuItem,
+}: {
+  user: ReturnType<typeof useUserInfo>;
+  tier: string;
+  accountTrigger: React.RefObject<HTMLButtonElement | null>;
+  close: () => void;
+  navigate: (section: 'general' | 'personalization') => void;
+  label: (zh: string, en: string) => string;
+  FoundationMenuItem: React.ComponentType<{
+    className?: string;
+    onClick?: () => void;
+    onPointerEnter?: () => void;
+    onPointerDown?: () => void;
+    onFocus?: () => void;
+    children: React.ReactNode;
+  }>;
+}) {
+  return (
+    <>
+      <FoundationMenuItem
+        className="account-menu-identity"
+        onClick={() => {
+          close();
+          getLegacyActions().navigation.openProfile(accountTrigger.current);
+        }}
+      >
+        <UserIdentityPill user={user} tier={tier} />
+        <Icon name="chevronRight" />
+      </FoundationMenuItem>
+      <ShadcnSeparator />
+      <FoundationMenuItem onClick={() => navigate('personalization')}>
+        <Icon name="sliders" />
+        {label('个性化', 'Personalization')}
+      </FoundationMenuItem>
+      <FoundationMenuItem
+        onClick={() => {
+          close();
+          getLegacyActions().navigation.openProfile(accountTrigger.current);
+        }}
+      >
+        <Icon name="user" />
+        {label('个人资料', 'Profile')}
+      </FoundationMenuItem>
+      <FoundationMenuItem
+        onPointerEnter={preloadSettingsPage}
+        onPointerDown={preloadSettingsPage}
+        onFocus={preloadSettingsPage}
+        onClick={() => navigate('general')}
+      >
+        <Icon name="gear" />
+        {label('设置', 'Settings')}
+      </FoundationMenuItem>
+      <ShadcnSeparator />
+      <FoundationMenuItem
+        onClick={() => {
+          close();
+          getLegacyActions().navigation.openCheatsheet();
+        }}
+      >
+        <Icon name="lifeBuoy" />
+        {label('帮助', 'Help')}
+        <Icon name="chevronRight" className="account-menu-trailing" />
+      </FoundationMenuItem>
+      {user.isSignedIn && (
+        <FoundationMenuItem
+          onClick={() => {
+            close();
+            getLegacyActions().navigation.signOut();
+          }}
+        >
+          <Icon name="logOut" />
+          {label('退出登录', 'Sign out')}
+        </FoundationMenuItem>
+      )}
+    </>
+  );
+}
+
 export function SidebarFooter() {
   useLocaleRefresh();
   const user = useUserInfo();
@@ -29,19 +130,6 @@ export function SidebarFooter() {
       returnFocus: accountTrigger.current,
     });
   };
-  const identity = (
-    <>
-      <span className="user-avatar" aria-hidden="true">
-        {user.initials}
-      </span>
-      <span className="user-identity">
-        <span className="user-name">{user.displayName}</span>
-        <span className="user-plan">
-          <span className={`tier-badge ${user.tier}`}>{tier}</span>
-        </span>
-      </span>
-    </>
-  );
   return (
     <div className="sidebar-footer-account-wrap">
       <div className="sidebar-footer-identity-row">
@@ -60,68 +148,20 @@ export function SidebarFooter() {
               title={user.displayName}
               aria-label={[user.displayName, tier].filter(Boolean).join(' · ')}
             >
-              {identity}
+              <UserIdentityPill user={user} tier={tier} />
             </Button>
           }
         >
           {({ FoundationMenuItem }) => (
-            <>
-              <FoundationMenuItem
-                className="account-menu-identity"
-                onClick={() => {
-                  close();
-                  getLegacyActions().navigation.openProfile(accountTrigger.current);
-                }}
-              >
-                {identity}
-                <Icon name="chevronRight" />
-              </FoundationMenuItem>
-              <ShadcnSeparator />
-              <FoundationMenuItem onClick={() => navigate('personalization')}>
-                <Icon name="sliders" />
-                {label('个性化', 'Personalization')}
-              </FoundationMenuItem>
-              <FoundationMenuItem
-                onClick={() => {
-                  close();
-                  getLegacyActions().navigation.openProfile(accountTrigger.current);
-                }}
-              >
-                <Icon name="user" />
-                {label('个人资料', 'Profile')}
-              </FoundationMenuItem>
-              <FoundationMenuItem
-                onPointerEnter={preloadSettingsPage}
-                onPointerDown={preloadSettingsPage}
-                onFocus={preloadSettingsPage}
-                onClick={() => navigate('general')}
-              >
-                <Icon name="gear" />
-                {label('设置', 'Settings')}
-              </FoundationMenuItem>
-              <ShadcnSeparator />
-              <FoundationMenuItem
-                onClick={() => {
-                  close();
-                  getLegacyActions().navigation.openCheatsheet();
-                }}
-              >
-                <Icon name="lifeBuoy" />
-                {label('帮助', 'Help')}
-                <Icon name="chevronRight" className="account-menu-trailing" />
-              </FoundationMenuItem>
-              {user.isSignedIn && (
-                <FoundationMenuItem
-                  onClick={() => {
-                    close();
-                    getLegacyActions().navigation.signOut();
-                  }}
-                >
-                  <Icon name="logOut" />
-                  {label('退出登录', 'Sign out')}
-                </FoundationMenuItem>
-              )}
-            </>
+            <AccountMenuItems
+              user={user}
+              tier={tier}
+              accountTrigger={accountTrigger}
+              close={close}
+              navigate={navigate}
+              label={label}
+              FoundationMenuItem={FoundationMenuItem}
+            />
           )}
         </DeferredMenu>
         {isMobile ? (

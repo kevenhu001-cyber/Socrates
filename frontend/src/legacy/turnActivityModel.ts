@@ -199,47 +199,81 @@ function activityLabelFor(
  * A mounted running tool owns activity; a deferred tool retains its status.
  * Transport completion is distinct from playback completion: a done event
  * cannot mount actions while the final text is still draining. */
+type RuntimeActivities = NonNullable<ChatMessage['turnRuntime']>['activities'];
+
+function findRunningActivityStartedAt(
+  activities: RuntimeActivities,
+  activityStatus: TurnActivityStatus | undefined,
+): number | undefined {
+  if (!activityStatus) return undefined;
+  const matchKind =
+    activityStatus.phase === 'thinking'
+      ? 'reasoning'
+      : activityStatus.phase === 'waiting'
+        ? 'waiting'
+        : activityStatus.phase === 'synthesizing'
+          ? 'synthesis'
+          : null;
+  if (!matchKind) return undefined;
+  for (const entry of activities) {
+    if (entry.phase === 'running' && entry.kind === matchKind) {
+      return entry.startedAt;
+    }
+  }
+  return undefined;
+}
+
+function deriveSummaries(
+  message: ChatMessage,
+  live: boolean,
+  activities: RuntimeActivities,
+  activity: PublicTurnActivity | null,
+) {
+  const { reasoningSummaries, publicSummary } = reasoningSummaryState(activities, activity);
+  const intentSummary = live ? message._taskSummary?.trim() || '' : '';
+  const outcomeSummary = !live ? message.summary?.trim() || '' : '';
+  const reasoningDurationSec = reasoningDurationSeconds(activities, message.reasoningDurationSec);
+  return {
+    reasoningSummaries,
+    publicSummary,
+    intentSummary,
+    outcomeSummary,
+    reasoningDurationSec,
+  };
+}
+
+function isLiveTurn(message: ChatMessage, options: PresentationOptions): boolean {
+  if (options.live !== undefined) return options.live;
+  return message.type === 'streaming' && message._streamSettled !== true;
+}
+
 export function deriveTurnPresentationState(
   message: ChatMessage,
   options: PresentationOptions = {},
 ) {
-  const live = options.live ?? (message.type === 'streaming' && message._streamSettled !== true);
+  const live = isLiveTurn(message, options);
   const activity = normalizePublicTurnActivity(message._activity);
   const status = selectedStatus(message, activity, live, options);
   const activities = message.turnRuntime?.activities || [];
-  const { reasoningSummaries, publicSummary } = reasoningSummaryState(activities, activity);
-  const intentSummary = live ? message._taskSummary?.trim() || '' : '';
-  const activityStatus = activityStatusFor(
-    status,
-    live,
-    options,
-    options.answerStarted ?? hasVisibleAnswerText(message),
-  );
-  let activityStartedAt: number | undefined;
-  for (const entry of activities) {
-    if (entry.phase !== 'running') continue;
-    if (
-      (activityStatus?.phase === 'thinking' && entry.kind === 'reasoning') ||
-      (activityStatus?.phase === 'waiting' && entry.kind === 'waiting') ||
-      (activityStatus?.phase === 'synthesizing' && entry.kind === 'synthesis')
-    ) {
-      activityStartedAt = entry.startedAt;
-    }
-  }
+  const summaries = deriveSummaries(message, live, activities, activity);
+  const answerStarted = options.answerStarted ?? hasVisibleAnswerText(message);
+  const activityStatus = activityStatusFor(status, live, options, answerStarted);
+  const activityStartedAt = findRunningActivityStartedAt(activities, activityStatus);
+
   return {
     activityStatus,
     activityStartedAt,
-    activityLabel: activityLabelFor(activityStatus, intentSummary),
+    activityLabel: activityLabelFor(activityStatus, summaries.intentSummary),
     activityLive: live && Boolean(activityStatus),
     activities,
-    reasoningSummaries,
-    showReasoningSummary: Boolean(publicSummary),
+    reasoningSummaries: summaries.reasoningSummaries,
+    showReasoningSummary: Boolean(summaries.publicSummary),
     primaryActivity: activity,
     status,
-    intentSummary,
-    outcomeSummary: !live ? message.summary?.trim() || '' : '',
-    publicSummary,
-    reasoningDurationSec: reasoningDurationSeconds(activities, message.reasoningDurationSec),
+    intentSummary: summaries.intentSummary,
+    outcomeSummary: summaries.outcomeSummary,
+    publicSummary: summaries.publicSummary,
+    reasoningDurationSec: summaries.reasoningDurationSec,
     showToolbar: !live,
     showCursor: live && !status && !options.hasRunningRow,
     isSettled: !live,
