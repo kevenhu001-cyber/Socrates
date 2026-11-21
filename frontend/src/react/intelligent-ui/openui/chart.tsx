@@ -99,6 +99,213 @@ function Legend({ series }: { series: string[] }) {
   );
 }
 
+function CartesianBars({
+  rows,
+  series,
+  stacked,
+  tops,
+  band,
+  xAt,
+  y,
+}: {
+  rows: Record<string, unknown>[];
+  series: string[];
+  stacked: boolean;
+  tops: number[][];
+  band: number;
+  xAt: (i: number) => number;
+  y: (v: number) => number;
+}) {
+  const inner = Math.min(band * 0.6, 44 * Math.max(1, stacked ? 1 : series.length));
+  if (stacked) {
+    return (
+      <>
+        {rows.map((_, i) =>
+          series.map((s, si) => {
+            const top = y(tops[i][si]);
+            const base = y(tops[i][si - 1] ?? 0);
+            return (
+              <path
+                key={`${i}-${s}`}
+                d={barPath(
+                  xAt(i) - inner / 2,
+                  top,
+                  inner,
+                  Math.max(0, base - top),
+                  3,
+                  si === series.length - 1,
+                )}
+                fill={seriesColor(si)}
+              />
+            );
+          }),
+        )}
+      </>
+    );
+  }
+  const each = inner / series.length;
+  return (
+    <>
+      {rows.map((row, i) =>
+        series.map((s, si) => {
+          const v = num(row[s]);
+          return (
+            <path
+              key={`${i}-${s}`}
+              d={barPath(
+                xAt(i) - inner / 2 + each * si + 1,
+                Math.min(y(v), y(0)),
+                Math.max(1, each - 2),
+                Math.abs(y(0) - y(v)),
+                3,
+                v >= 0,
+              )}
+              fill={seriesColor(si)}
+            />
+          );
+        }),
+      )}
+    </>
+  );
+}
+
+function CartesianLines({
+  rows,
+  series,
+  type,
+  stacked,
+  tops,
+  hover,
+  xAt,
+  y,
+}: {
+  rows: Record<string, unknown>[];
+  series: string[];
+  type: string;
+  stacked: boolean;
+  tops: number[][];
+  hover: number | null;
+  xAt: (i: number) => number;
+  y: (v: number) => number;
+}) {
+  return (
+    <>
+      {series.map((s, si) => {
+        const top = (i: number) => (stacked ? tops[i][si] : num(rows[i][s]));
+        const base = (i: number) => (stacked ? (tops[i][si - 1] ?? 0) : 0);
+        const points = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(top(i)).toFixed(1)}`);
+        const under = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(base(i)).toFixed(1)}`).reverse();
+        return (
+          <g key={s}>
+            {/* A flat translucent fill: no gradient bands at any zoom. */}
+            {type === 'area' && rows.length > 1 && (
+              <path
+                d={`M${points.join('L')}L${under.join('L')}Z`}
+                fill={seriesColor(si)}
+                fillOpacity={stacked ? 0.32 : 0.12}
+              />
+            )}
+            <path
+              d={`M${points.join('L')}`}
+              fill="none"
+              stroke={seriesColor(si)}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+            {(rows.length <= 16 || hover !== null) &&
+              rows.map((_, i) =>
+                rows.length <= 16 || i === hover ? (
+                  <circle
+                    key={i}
+                    cx={xAt(i)}
+                    cy={y(top(i))}
+                    r={i === hover ? 4.5 : 3}
+                    fill={seriesColor(si)}
+                    stroke="var(--iui-canvas)"
+                    strokeWidth={1.5}
+                  />
+                ) : null,
+              )}
+          </g>
+        );
+      })}
+    </>
+  );
+}
+
+function CartesianGrid({
+  ticks,
+  padLeft,
+  w,
+  y,
+  format,
+}: {
+  ticks: number[];
+  padLeft: number;
+  w: number;
+  y: (v: number) => number;
+  format: (v: number, tick?: boolean) => string;
+}) {
+  return (
+    <>
+      {ticks.map((t) => (
+        <g key={t}>
+          {/* Solid hairlines; the zero line carries the axis weight. */}
+          <line
+            x1={padLeft}
+            x2={padLeft + w}
+            y1={y(t)}
+            y2={y(t)}
+            className={t === 0 ? 'iui-chart-baseline' : 'iui-chart-grid'}
+          />
+          <text x={padLeft - 10} y={y(t) + 4} textAnchor="end" className="iui-chart-tick">
+            {format(t, true)}
+          </text>
+        </g>
+      ))}
+    </>
+  );
+}
+
+function CartesianTooltip({
+  tip,
+  series,
+  x,
+  hover,
+  xAt,
+  width,
+  padTop,
+  format,
+}: {
+  tip: Record<string, unknown>;
+  series: string[];
+  x: string;
+  hover: number;
+  xAt: (i: number) => number;
+  width: number;
+  padTop: number;
+  format: (v: number) => string;
+}) {
+  return (
+    <div
+      className="iui-chart-tooltip"
+      style={{ left: Math.min(Math.max(xAt(hover), 70), width - 70), top: padTop }}
+    >
+      <strong>
+        <MathText text={label(tip, x)} />
+      </strong>
+      {series.map((s, si) => (
+        <span key={s}>
+          <i style={{ background: seriesColor(si) }} />
+          {series.length > 1 ? <MathText text={`${s} `} /> : ''}
+          <b>{format(num(tip[s]))}</b>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function Cartesian({ spec, width }: { spec: Spec; width: number }) {
   const [hover, setHover] = useState<number | null>(null);
   const { rows, series, type, height, format, x } = spec;
@@ -141,21 +348,7 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
         onPointerMove={onMove}
         onPointerLeave={() => setHover(null)}
       >
-        {ticks.map((t) => (
-          <g key={t}>
-            {/* Solid hairlines; the zero line carries the axis weight. */}
-            <line
-              x1={pad.left}
-              x2={pad.left + w}
-              y1={y(t)}
-              y2={y(t)}
-              className={t === 0 ? 'iui-chart-baseline' : 'iui-chart-grid'}
-            />
-            <text x={pad.left - 10} y={y(t) + 4} textAnchor="end" className="iui-chart-tick">
-              {format(t, true)}
-            </text>
-          </g>
-        ))}
+        <CartesianGrid ticks={ticks} padLeft={pad.left} w={w} y={y} format={format} />
         {rows.map((row, i) =>
           shown(i) ? (
             <SvgMathText
@@ -178,91 +371,29 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
             className="iui-chart-hover"
           />
         )}
-        {type === 'bar' &&
-          rows.map((row, i) => {
-            /* Slim bars with air between them read as data, not as blocks. */
-            const inner = Math.min(band * 0.6, 44 * Math.max(1, stacked ? 1 : series.length));
-            if (stacked)
-              return series.map((s, si) => {
-                const top = y(tops[i][si]);
-                const base = y(tops[i][si - 1] ?? 0);
-                return (
-                  <path
-                    key={`${i}-${s}`}
-                    d={barPath(
-                      xAt(i) - inner / 2,
-                      top,
-                      inner,
-                      Math.max(0, base - top),
-                      3,
-                      si === series.length - 1,
-                    )}
-                    fill={seriesColor(si)}
-                  />
-                );
-              });
-            const each = inner / series.length;
-            return series.map((s, si) => {
-              const v = num(row[s]);
-              return (
-                <path
-                  key={`${i}-${s}`}
-                  d={barPath(
-                    xAt(i) - inner / 2 + each * si + 1,
-                    Math.min(y(v), y(0)),
-                    Math.max(1, each - 2),
-                    Math.abs(y(0) - y(v)),
-                    3,
-                    v >= 0,
-                  )}
-                  fill={seriesColor(si)}
-                />
-              );
-            });
-          })}
-        {(type === 'line' || type === 'area') &&
-          series.map((s, si) => {
-            const top = (i: number) => (stacked ? tops[i][si] : num(rows[i][s]));
-            const base = (i: number) => (stacked ? (tops[i][si - 1] ?? 0) : 0);
-            const points = rows.map((_, i) => `${xAt(i).toFixed(1)},${y(top(i)).toFixed(1)}`);
-            const under = rows
-              .map((_, i) => `${xAt(i).toFixed(1)},${y(base(i)).toFixed(1)}`)
-              .reverse();
-            return (
-              <g key={s}>
-                {/* A flat translucent fill: no gradient bands at any zoom. */}
-                {type === 'area' && rows.length > 1 && (
-                  <path
-                    d={`M${points.join('L')}L${under.join('L')}Z`}
-                    fill={seriesColor(si)}
-                    fillOpacity={stacked ? 0.32 : 0.12}
-                  />
-                )}
-                <path
-                  d={`M${points.join('L')}`}
-                  fill="none"
-                  stroke={seriesColor(si)}
-                  strokeWidth={2}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-                {(rows.length <= 16 || hover !== null) &&
-                  rows.map((_, i) =>
-                    rows.length <= 16 || i === hover ? (
-                      <circle
-                        key={i}
-                        cx={xAt(i)}
-                        cy={y(top(i))}
-                        r={i === hover ? 4.5 : 3}
-                        fill={seriesColor(si)}
-                        stroke="var(--iui-canvas)"
-                        strokeWidth={1.5}
-                      />
-                    ) : null,
-                  )}
-              </g>
-            );
-          })}
+        {type === 'bar' && (
+          <CartesianBars
+            rows={rows}
+            series={series}
+            stacked={Boolean(stacked)}
+            tops={tops}
+            band={band}
+            xAt={xAt}
+            y={y}
+          />
+        )}
+        {(type === 'line' || type === 'area') && (
+          <CartesianLines
+            rows={rows}
+            series={series}
+            type={type}
+            stacked={Boolean(stacked)}
+            tops={tops}
+            hover={hover}
+            xAt={xAt}
+            y={y}
+          />
+        )}
         {hover !== null && type !== 'bar' && (
           <line
             x1={xAt(hover)}
@@ -274,21 +405,16 @@ function Cartesian({ spec, width }: { spec: Spec; width: number }) {
         )}
       </svg>
       {tip && (
-        <div
-          className="iui-chart-tooltip"
-          style={{ left: Math.min(Math.max(xAt(hover!), 70), width - 70), top: pad.top }}
-        >
-          <strong>
-            <MathText text={label(tip, x)} />
-          </strong>
-          {series.map((s, si) => (
-            <span key={s}>
-              <i style={{ background: seriesColor(si) }} />
-              {series.length > 1 ? <MathText text={`${s} `} /> : ''}
-              <b>{format(num(tip[s]))}</b>
-            </span>
-          ))}
-        </div>
+        <CartesianTooltip
+          tip={tip}
+          series={series}
+          x={x}
+          hover={hover!}
+          xAt={xAt}
+          width={width}
+          padTop={pad.top}
+          format={format}
+        />
       )}
     </div>
   );

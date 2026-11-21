@@ -7,6 +7,107 @@ import { Button } from '../../ui/Button';
 import { i18n } from '../../legacy/gateway';
 import { projectile } from './projectile';
 
+interface SimulationControlConfig {
+  label: string;
+  unit: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  set: (val: number) => void;
+}
+
+function SimulationParameters({
+  controls,
+  id,
+  onReset,
+}: {
+  controls: SimulationControlConfig[];
+  id: string;
+  onReset: () => void;
+}) {
+  return (
+    <div className="iui-simulation-controls">
+      {controls.map((c, n) => (
+        <div className="iui-simulation-parameter" key={c.unit}>
+          <Label htmlFor={`${id}-${n}`}>{c.label}</Label>
+          <NativeControl
+            id={`${id}-${n}`}
+            type="range"
+            min={c.min}
+            max={c.max}
+            step={c.step}
+            value={c.value}
+            onChange={(e) => {
+              onReset();
+              c.set(Number(e.target.value));
+            }}
+          />
+          <output htmlFor={`${id}-${n}`}>
+            {c.value} {c.unit}
+          </output>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SimulationGraph({
+  title,
+  path,
+  result,
+  x,
+  y,
+}: {
+  title: string;
+  path: string;
+  result: ReturnType<typeof projectile>;
+  x: (v: number) => number;
+  y: (v: number) => number;
+}) {
+  return (
+    <svg viewBox="0 0 600 264" role="img" aria-label={title}>
+      <path d="M24 16V236H580" fill="none" stroke="var(--iui-border)" />
+      <path d={path} fill="none" stroke="var(--iui-muted)" strokeDasharray="5 5" />
+      <circle cx={x(result.x)} cy={y(result.y)} r="7" fill="var(--primary)" />
+      <text x="24" y="257" fill="currentColor">
+        0 m
+      </text>
+      <text x="576" y="257" textAnchor="end" fill="currentColor">
+        {result.range.toFixed(1)} m
+      </text>
+    </svg>
+  );
+}
+
+function useProjectileAnimation(
+  playing: boolean,
+  duration: number,
+  setPlaying: (p: boolean) => void,
+) {
+  const [time, setTime] = useState(0);
+
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0,
+      previous = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min((now - previous) / 1000, 0.05);
+      previous = now;
+      setTime((t) => Math.min(duration, t + dt));
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing, duration]);
+
+  useEffect(() => {
+    if (time >= duration) setPlaying(false);
+  }, [time, duration, setPlaying]);
+
+  return { time, setTime };
+}
+
 export const Simulation = defineComponent({
   name: 'Simulation',
   props: z.object({
@@ -22,43 +123,32 @@ export const Simulation = defineComponent({
     const [speed, setSpeed] = useState(props.speed ?? 20),
       [angle, setAngle] = useState(props.angle ?? 45),
       [gravity, setGravity] = useState(props.gravity ?? 9.81);
-    const [time, setTime] = useState(0),
-      [playing, setPlaying] = useState(false);
+    const [playing, setPlaying] = useState(false);
+    const result = projectile(speed, angle, gravity, 0);
+    const { time, setTime } = useProjectileAnimation(playing, result.duration, setPlaying);
+
     useEffect(() => {
       setSpeed(props.speed ?? 20);
       setAngle(props.angle ?? 45);
       setGravity(props.gravity ?? 9.81);
       setTime(0);
       setPlaying(false);
-    }, [props.speed, props.angle, props.gravity]);
-    const result = projectile(speed, angle, gravity, time);
-    useEffect(() => {
-      if (!playing) return;
-      let frame = 0,
-        previous = performance.now();
-      const tick = (now: number) => {
-        const dt = Math.min((now - previous) / 1000, 0.05);
-        previous = now;
-        setTime((t) => Math.min(result.duration, t + dt));
-        frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(frame);
-    }, [playing, result.duration]);
-    useEffect(() => {
-      if (time >= result.duration) setPlaying(false);
-    }, [time, result.duration]);
-    const x = (v: number) => 24 + (v / Math.max(result.range, 1)) * 552;
-    const y = (v: number) => 236 - (v / Math.max(result.height, 1)) * 200;
+    }, [props.speed, props.angle, props.gravity, setTime]);
+
+    const liveResult = projectile(speed, angle, gravity, time);
+    const x = (v: number) => 24 + (v / Math.max(liveResult.range, 1)) * 552;
+    const y = (v: number) => 236 - (v / Math.max(liveResult.height, 1)) * 200;
     const path = Array.from({ length: 61 }, (_, n) => {
-      const p = projectile(speed, angle, gravity, (result.duration * n) / 60);
+      const p = projectile(speed, angle, gravity, (liveResult.duration * n) / 60);
       return `${n ? 'L' : 'M'}${x(p.x)},${y(p.y)}`;
     }).join(' ');
+
     const reset = () => {
       setPlaying(false);
       setTime(0);
     };
-    const controls = [
+
+    const controls: SimulationControlConfig[] = [
       {
         label: i18n('intui.simSpeed', 'Speed'),
         unit: 'm/s',
@@ -87,6 +177,7 @@ export const Simulation = defineComponent({
         set: setGravity,
       },
     ];
+
     return (
       <section className="iui-card iui-flow iui-simulation" aria-label={props.title}>
         <header>
@@ -95,41 +186,11 @@ export const Simulation = defineComponent({
             {i18n('intui.simIdeal', 'Ideal projectile · no air resistance · axes auto-scale')}
           </p>
         </header>
-        <div className="iui-simulation-controls">
-          {controls.map((c, n) => (
-            <div className="iui-simulation-parameter" key={c.unit}>
-              <Label htmlFor={`${id}-${n}`}>{c.label}</Label>
-              <NativeControl
-                id={`${id}-${n}`}
-                type="range"
-                min={c.min}
-                max={c.max}
-                step={c.step}
-                value={c.value}
-                onChange={(e) => {
-                  reset();
-                  c.set(Number(e.target.value));
-                }}
-              />
-              <output htmlFor={`${id}-${n}`}>
-                {c.value} {c.unit}
-              </output>
-            </div>
-          ))}
-        </div>
-        <svg viewBox="0 0 600 264" role="img" aria-label={props.title}>
-          <path d="M24 16V236H580" fill="none" stroke="var(--iui-border)" />
-          <path d={path} fill="none" stroke="var(--iui-muted)" strokeDasharray="5 5" />
-          <circle cx={x(result.x)} cy={y(result.y)} r="7" fill="var(--primary)" />
-          <text x="24" y="257" fill="currentColor">
-            0 m
-          </text>
-          <text x="576" y="257" textAnchor="end" fill="currentColor">
-            {result.range.toFixed(1)} m
-          </text>
-        </svg>
+        <SimulationParameters controls={controls} id={id} onReset={reset} />
+        <SimulationGraph title={props.title} path={path} result={liveResult} x={x} y={y} />
         <output className="iui-simulation-readout">
-          t = {time.toFixed(2)} s · x = {result.x.toFixed(2)} m · y = {result.y.toFixed(2)} m
+          t = {time.toFixed(2)} s · x = {liveResult.x.toFixed(2)} m · y = {liveResult.y.toFixed(2)}{' '}
+          m
         </output>
         <div className="iui-simulation-parameter">
           <Label htmlFor={`${id}-time`}>{i18n('intui.simTime', 'Time')}</Label>
@@ -137,7 +198,7 @@ export const Simulation = defineComponent({
             id={`${id}-time`}
             type="range"
             min={0}
-            max={result.duration}
+            max={liveResult.duration}
             step={0.01}
             value={time}
             onChange={(e) => {
@@ -152,7 +213,7 @@ export const Simulation = defineComponent({
             variant="default"
             aria-pressed={playing}
             onClick={() => {
-              if (time >= result.duration) setTime(0);
+              if (time >= liveResult.duration) setTime(0);
               setPlaying(!playing);
             }}
           >

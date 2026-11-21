@@ -314,6 +314,127 @@ export const MapMarker = defineComponent({
   component: () => null,
 });
 
+function useMapLibreLifecycle(
+  root: RefObject<HTMLDivElement | null>,
+  canvas: RefObject<HTMLDivElement | null>,
+  attempt: number,
+) {
+  const map = useRef<MapLibreMap | null>(null);
+  const pins = useRef<Array<{ marker: Marker; root: OwnedRootHandle }>>([]);
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const activePins = pins.current;
+    let active = true;
+    let instance: MapLibreMap | null = null;
+    let observer: ResizeObserver | null = null;
+    let theme: MutationObserver | null = null;
+    setReady(false);
+    setError(false);
+    loadMapLibre()
+      .then((lib) => {
+        if (!active || !canvas.current || !root.current) return;
+        instance = new lib.Map({
+          container: canvas.current,
+          style: vectorStyle(root.current),
+          center: [0, 20],
+          zoom: 1,
+          scrollZoom: false,
+          dragRotate: false,
+          pitchWithRotate: false,
+          attributionControl: { compact: true },
+          cooperativeGestures: true,
+          transformRequest: (url) => {
+            const target = new URL(url, location.href);
+            if (
+              target.origin !== location.origin ||
+              !target.pathname.startsWith(`${MEDIA_API}/maps/`)
+            )
+              throw new Error('Blocked external map resource');
+            return { url: target.href, credentials: 'same-origin' };
+          },
+        });
+        instance.touchZoomRotate.disableRotation();
+        instance.addControl(new lib.NavigationControl({ showCompass: false }), 'bottom-right');
+        instance.on('style.load', () => {
+          if (active) setReady(true);
+        });
+        instance.on('error', () => {
+          if (active) setError(true);
+        });
+        map.current = instance;
+        observer = new ResizeObserver(() => instance?.resize());
+        observer.observe(canvas.current);
+        theme = new MutationObserver(() => {
+          if (root.current && instance) {
+            setReady(false);
+            instance.setStyle(vectorStyle(root.current), { diff: false });
+          }
+        });
+        theme.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['data-mode'],
+        });
+      })
+      .catch(() => {
+        if (active) setError(true);
+      });
+    return () => {
+      active = false;
+      observer?.disconnect();
+      theme?.disconnect();
+      clearMapPins(activePins);
+      instance?.remove();
+      map.current = null;
+    };
+  }, [attempt, canvas, root]);
+
+  return { map, pins, ready, error, setError };
+}
+
+function useMapRouteOverlay(
+  map: RefObject<MapLibreMap | null>,
+  ready: boolean,
+  route: ReturnType<typeof useRemote<Route>>,
+  routeEnabled: boolean | undefined,
+  root: RefObject<HTMLDivElement | null>,
+) {
+  useEffect(() => {
+    const instance = map.current;
+    if (!ready || !instance) return;
+    const points =
+      routeEnabled &&
+      !route.error &&
+      route.data?.profile === 'driving' &&
+      Array.isArray(route.data.points)
+        ? route.data.points.filter(
+            (point) => Array.isArray(point) && coordinate(point[1], point[0]),
+          )
+        : [];
+    const data = {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: points.length > 1 ? points : [] },
+    };
+    const source = instance.getSource('socrates-route') as GeoJSONSource | undefined;
+    if (source) source.setData(data);
+    else {
+      instance.addSource('socrates-route', { type: 'geojson', data });
+      instance.addLayer({
+        id: 'socrates-route-line',
+        type: 'line',
+        source: 'socrates-route',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': getComputedStyle(root.current!).getPropertyValue('--ui-info').trim(),
+          'line-width': 4,
+        },
+      });
+    }
+  }, [ready, route.data, route.error, routeEnabled, map, root]);
+}
+
 export const MapView = defineComponent({
   name: 'Map',
   props: z.object({
@@ -352,79 +473,11 @@ export const MapView = defineComponent({
     );
     const root = useRef<HTMLDivElement>(null);
     const canvas = useRef<HTMLDivElement>(null);
-    const map = useRef<MapLibreMap | null>(null);
-    const pins = useRef<Array<{ marker: Marker; root: OwnedRootHandle }>>([]);
     const select = useRef(selection.setValue);
     select.current = selection.setValue;
-    const [ready, setReady] = useState(false);
-    const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
 
-    useEffect(() => {
-      const activePins = pins.current;
-      let active = true;
-      let instance: MapLibreMap | null = null;
-      let observer: ResizeObserver | null = null;
-      let theme: MutationObserver | null = null;
-      setReady(false);
-      setError(false);
-      loadMapLibre()
-        .then((lib) => {
-          if (!active || !canvas.current || !root.current) return;
-          instance = new lib.Map({
-            container: canvas.current,
-            style: vectorStyle(root.current),
-            center: [0, 20],
-            zoom: 1,
-            scrollZoom: false,
-            dragRotate: false,
-            pitchWithRotate: false,
-            attributionControl: { compact: true },
-            cooperativeGestures: true,
-            transformRequest: (url) => {
-              const target = new URL(url, location.href);
-              if (
-                target.origin !== location.origin ||
-                !target.pathname.startsWith(`${MEDIA_API}/maps/`)
-              )
-                throw new Error('Blocked external map resource');
-              return { url: target.href, credentials: 'same-origin' };
-            },
-          });
-          instance.touchZoomRotate.disableRotation();
-          instance.addControl(new lib.NavigationControl({ showCompass: false }), 'bottom-right');
-          instance.on('style.load', () => {
-            if (active) setReady(true);
-          });
-          instance.on('error', () => {
-            if (active) setError(true);
-          });
-          map.current = instance;
-          observer = new ResizeObserver(() => instance?.resize());
-          observer.observe(canvas.current);
-          theme = new MutationObserver(() => {
-            if (root.current && instance) {
-              setReady(false);
-              instance.setStyle(vectorStyle(root.current), { diff: false });
-            }
-          });
-          theme.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['data-mode'],
-          });
-        })
-        .catch(() => {
-          if (active) setError(true);
-        });
-      return () => {
-        active = false;
-        observer?.disconnect();
-        theme?.disconnect();
-        clearMapPins(activePins);
-        instance?.remove();
-        map.current = null;
-      };
-    }, [attempt]);
+    const { map, pins, ready, error, setError } = useMapLibreLifecycle(root, canvas, attempt);
 
     useEffect(() => {
       const activePins = pins.current;
@@ -452,7 +505,7 @@ export const MapView = defineComponent({
         active = false;
         clearMapPins(activePins);
       };
-    }, [ready, signature, selected]);
+    }, [ready, signature, selected, map, pins, setError]);
 
     useEffect(() => {
       if (!ready || !map.current || !routingKey || streaming) return;
@@ -461,41 +514,9 @@ export const MapView = defineComponent({
         return [lat, lng] as LatLng;
       });
       map.current.fitBounds(boundsOf(coordinates), { padding: 60, maxZoom: 14, duration: 0 });
-    }, [ready, routingKey, streaming]);
+    }, [ready, routingKey, streaming, map]);
 
-    useEffect(() => {
-      const instance = map.current;
-      if (!ready || !instance) return;
-      const points =
-        props.route &&
-        !route.error &&
-        route.data?.profile === 'driving' &&
-        Array.isArray(route.data.points)
-          ? route.data.points.filter(
-              (point) => Array.isArray(point) && coordinate(point[1], point[0]),
-            )
-          : [];
-      const data = {
-        type: 'Feature' as const,
-        properties: {},
-        geometry: { type: 'LineString' as const, coordinates: points.length > 1 ? points : [] },
-      };
-      const source = instance.getSource('socrates-route') as GeoJSONSource | undefined;
-      if (source) source.setData(data);
-      else {
-        instance.addSource('socrates-route', { type: 'geojson', data });
-        instance.addLayer({
-          id: 'socrates-route-line',
-          type: 'line',
-          source: 'socrates-route',
-          layout: { 'line-cap': 'round', 'line-join': 'round' },
-          paint: {
-            'line-color': getComputedStyle(root.current!).getPropertyValue('--ui-info').trim(),
-            'line-width': 4,
-          },
-        });
-      }
-    }, [ready, route.data, route.error, props.route]);
+    useMapRouteOverlay(map, ready, route, props.route, root);
 
     const height = Math.min(560, Math.max(240, props.height ?? 360));
     const recenter = () => {
