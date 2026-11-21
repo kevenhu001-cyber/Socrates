@@ -122,16 +122,13 @@ function flushVisibleText(
   }
 }
 
-export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
+function resolvePlayerDependencies(options: StreamPlayerOptions) {
   const now = options.now || (() => performance.now());
   const raf =
     options.raf ||
     ((cb: () => void) => {
       requestAnimationFrame(cb);
     });
-  const onFrame = options.onFrame;
-  const onDone = options.onDone;
-  const onStateChange = options.onStateChange;
   const isHidden =
     options.isHidden ||
     (() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
@@ -145,6 +142,42 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     0,
     options.config?.starveAfterMs ?? DEFAULT_PLAYBACK_CONFIG.starveAfterMs,
   );
+  const subscribeVisibility = options.onVisibilityChange || subscribeDocumentVisibility;
+  return { now, raf, isHidden, delay, starveAfterMs, subscribeVisibility };
+}
+
+function flushTerminalPlayer(
+  clock: PlaybackClock,
+  full: string,
+  onFrame: StreamPlayerOptions['onFrame'],
+  onStateChange: StreamPlayerOptions['onStateChange'],
+  onDone: StreamPlayerOptions['onDone'],
+  lastState: PlaybackState,
+  doneFired: boolean,
+): { nextState: PlaybackState; doneFired: boolean } {
+  /* End-of-turn safety: make everything visible and paint synchronously,
+     bypassing the adaptive rate. Used by abort/teardown paths that must
+     not animate. */
+  flushVisibleText(clock, full, onFrame);
+  const nextState = publishStateChange(lastState, 'done', onStateChange);
+  let nextDoneFired = doneFired;
+  if (!nextDoneFired) {
+    nextDoneFired = true;
+    try {
+      onDone?.();
+    } catch (_) {
+      reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
+    }
+  }
+  return { nextState, doneFired: nextDoneFired };
+}
+
+export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
+  const { now, raf, isHidden, delay, starveAfterMs, subscribeVisibility } =
+    resolvePlayerDependencies(options);
+  const onFrame = options.onFrame;
+  const onDone = options.onDone;
+  const onStateChange = options.onStateChange;
   let cancelIdle: (() => void) | null = null;
 
   let full = '';
@@ -154,7 +187,6 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   let doneFired = false;
   let lastState: PlaybackState = 'idle';
   let firstPaint = true;
-  const subscribeVisibility = options.onVisibilityChange || subscribeDocumentVisibility;
   const handleVisibility = () =>
     handleVisibilityChange(
       () => {
@@ -167,8 +199,6 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     );
   let unsubscribeVisibility: (() => void) | null = subscribeVisibility(handleVisibility) ?? null;
   function paintHidden(): void {
-    // A queued foreground frame may survive the tab switch. Invalidate it
-    // before catching up synchronously, so it cannot re-arm a second loop.
     generation += 1;
     scheduled = false;
     tick(generation)();
@@ -176,8 +206,6 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
 
   function tick(captured: number) {
     return () => {
-      /* A frame queued before dispose() is stale; drop it. Pushes after
-         dispose() schedule with the fresh generation. */
       if (captured !== generation) return;
       scheduled = false;
       const r = firstPaint || isHidden() ? clock.revealNow(now()) : clock.tick(now());
@@ -202,8 +230,6 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
         }
         return; // clock is terminal; stop the loop
       }
-      /* An empty buffer needs one delayed state check, not a frame loop.
-         Keep animation frames available for input and scrolling during gaps. */
       if (clock.playedLen() < clock.totalLen()) {
         schedule();
       } else if (r.state === 'playing') {
@@ -224,11 +250,9 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
   return {
     push(delta: string): void {
       if (!delta) return;
-      // Tool handoffs can cancel a scheduled render and resume this player.
       if (!unsubscribeVisibility)
         unsubscribeVisibility = subscribeVisibility(handleVisibility) ?? null;
       cancelIdle = disposeCallback(cancelIdle);
-      // Idle time must not become playback credit for a new network burst.
       if (clock.playedLen() === clock.totalLen()) clock.tick(now());
       full += delta;
       clock.push(full.length, now());
@@ -244,22 +268,19 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
     flushNow(): void {
       cancelIdle = disposeCallback(cancelIdle);
       unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
-      /* End-of-turn safety: make everything visible and paint synchronously,
-         bypassing the adaptive rate. Used by abort/teardown paths that must
-         not animate. */
-      flushVisibleText(clock, full, onFrame);
-      // Reflect terminal state; drop any pending frame.
+      const res = flushTerminalPlayer(
+        clock,
+        full,
+        onFrame,
+        onStateChange,
+        onDone,
+        lastState,
+        doneFired,
+      );
+      lastState = res.nextState;
+      doneFired = res.doneFired;
       generation += 1;
       scheduled = false;
-      lastState = publishStateChange(lastState, 'done', onStateChange);
-      if (!doneFired) {
-        doneFired = true;
-        try {
-          onDone?.();
-        } catch (_) {
-          reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
-        }
-      }
     },
     getState(): PlaybackState {
       return clock.state();
