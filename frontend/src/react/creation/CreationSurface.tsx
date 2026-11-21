@@ -166,6 +166,191 @@ function assistantDescription(item: CreationItem) {
   }
 }
 
+function CreationImageGallery({
+  items,
+  onAction,
+  text,
+}: {
+  items: CreationItem[];
+  onAction: (action: string, id?: string) => void;
+  text: ReturnType<typeof currentCopy>;
+}) {
+  return (
+    <div className="creation-gallery">
+      {items.map((item) => (
+        <div className="creation-image-card" key={item.id}>
+          <Button
+            variant="ghost"
+            className="h-auto w-full rounded-none p-0"
+            onClick={() => onAction('view-image', item.id)}
+            aria-label={item.name || ''}
+          >
+            <img src={imageUrl(item.id)} loading="lazy" alt={item.name || ''} />
+          </Button>
+          <span>{item.name}</span>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="creation-image-edit"
+            data-action="edit-image"
+            onClick={() => onAction('edit-image', item.id)}
+          >
+            {text.edit}
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CreationSitesTable({
+  items,
+  siteView,
+  onAction,
+  text,
+}: {
+  items: CreationItem[];
+  siteView: 'grid' | 'list';
+  onAction: (action: string, id?: string) => void;
+  text: ReturnType<typeof currentCopy>;
+}) {
+  const locale = getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US';
+  return (
+    <div className={`creation-table creation-sites-table ${siteView === 'grid' ? 'is-grid' : ''}`}>
+      <div className="creation-table-head">
+        <span>{text.sites}</span>
+        <span>{text.sharedWith}</span>
+        <span />
+      </div>
+      {items.map((item) => {
+        const date = new Date(item.updatedAt || item.createdAt || Date.now()).toLocaleDateString(
+          locale,
+          { month: 'short', day: 'numeric' },
+        );
+        const visibility =
+          item.visibility === 'private'
+            ? text.private
+            : item.visibility === 'public'
+              ? text.public
+              : text.unlisted;
+        return (
+          <div className="creation-row" key={item.id}>
+            <Button
+              variant="ghost"
+              className="creation-site-main"
+              data-action="edit"
+              onClick={() => onAction('edit', item.id)}
+            >
+              <iframe
+                className="creation-site-thumb"
+                tabIndex={-1}
+                {...nativeIslandFrameAttributes({
+                  kind: 'creation',
+                  html: item.source || '',
+                  title: item.title || '',
+                })}
+              />
+              <span>
+                <strong>{item.title}</strong>
+                <small>{date}</small>
+              </span>
+            </Button>
+            <Badge variant="outline" className="creation-site-visibility">
+              {visibility}
+            </Badge>
+            <div className="creation-row-actions">
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`${text.name}: ${item.title || ''}`}
+                    >
+                      <Icon name="more" size={16} data-icon="inline-start" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end" className="w-36">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem nativeButton onClick={() => onAction('preview', item.id)}>
+                      {text.preview}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem nativeButton onClick={() => onAction('edit', item.id)}>
+                      {text.edit}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      nativeButton
+                      variant="destructive"
+                      onClick={() => onAction('delete', item.id)}
+                    >
+                      {text.delete}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CreationStandardTable({
+  items,
+  onAction,
+  text,
+}: {
+  items: CreationItem[];
+  onAction: (action: string, id?: string) => void;
+  text: ReturnType<typeof currentCopy>;
+}) {
+  return (
+    <div className="creation-table">
+      <div className="creation-table-head">
+        <span>{text.name}</span>
+        <span />
+      </div>
+      {items.map((item) => (
+        <div className="creation-row" key={item.id}>
+          <div>
+            <strong>{item.title}</strong>
+            <small>{assistantDescription(item)}</small>
+          </div>
+          <div className="creation-row-actions">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-action="use"
+              onClick={() => onAction('use', item.id)}
+            >
+              {text.use}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              data-action="edit"
+              onClick={() => onAction('edit', item.id)}
+            >
+              {text.edit}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              data-action="delete"
+              onClick={() => onAction('delete', item.id)}
+              aria-label={text.delete}
+            >
+              <Trash2 data-icon="inline-start" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function CreationList({
   name,
   items,
@@ -209,163 +394,21 @@ function CreationList({
   if (!visibleItems.length) return <CreationEmpty name={name} />;
 
   if (name === 'images') {
-    return (
-      <div className="creation-gallery">
-        {visibleItems.map((item) => (
-          <div className="creation-image-card" key={item.id}>
-            <Button
-              variant="ghost"
-              className="h-auto w-full rounded-none p-0"
-              onClick={() => onAction('view-image', item.id)}
-              aria-label={item.name || ''}
-            >
-              <img src={imageUrl(item.id)} loading="lazy" alt={item.name || ''} />
-            </Button>
-            <span>{item.name}</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="creation-image-edit"
-              data-action="edit-image"
-              onClick={() => onAction('edit-image', item.id)}
-            >
-              {text.edit}
-            </Button>
-          </div>
-        ))}
-      </div>
-    );
+    return <CreationImageGallery items={visibleItems} onAction={onAction} text={text} />;
   }
 
   if (name === 'sites') {
-    const locale = getCurrentLanguage() === 'zh' ? 'zh-CN' : 'en-US';
     return (
-      <div
-        className={`creation-table creation-sites-table ${siteView === 'grid' ? 'is-grid' : ''}`}
-      >
-        <div className="creation-table-head">
-          <span>{text.sites}</span>
-          <span>{text.sharedWith}</span>
-          <span />
-        </div>
-        {visibleItems.map((item) => {
-          const date = new Date(item.updatedAt || item.createdAt || Date.now()).toLocaleDateString(
-            locale,
-            { month: 'short', day: 'numeric' },
-          );
-          const visibility =
-            item.visibility === 'private'
-              ? text.private
-              : item.visibility === 'public'
-                ? text.public
-                : text.unlisted;
-          return (
-            <div className="creation-row" key={item.id}>
-              <Button
-                variant="ghost"
-                className="creation-site-main"
-                data-action="edit"
-                onClick={() => onAction('edit', item.id)}
-              >
-                <iframe
-                  className="creation-site-thumb"
-                  tabIndex={-1}
-                  {...nativeIslandFrameAttributes({
-                    kind: 'creation',
-                    html: item.source || '',
-                    title: item.title || '',
-                  })}
-                />
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>{date}</small>
-                </span>
-              </Button>
-              <Badge variant="outline" className="creation-site-visibility">
-                {visibility}
-              </Badge>
-              <div className="creation-row-actions">
-                <DropdownMenu modal={false}>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`${text.name}: ${item.title || ''}`}
-                      >
-                        <Icon name="more" size={16} data-icon="inline-start" />
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="w-36">
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem nativeButton onClick={() => onAction('preview', item.id)}>
-                        {text.preview}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem nativeButton onClick={() => onAction('edit', item.id)}>
-                        {text.edit}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        nativeButton
-                        variant="destructive"
-                        onClick={() => onAction('delete', item.id)}
-                      >
-                        {text.delete}
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <CreationSitesTable
+        items={visibleItems}
+        siteView={siteView}
+        onAction={onAction}
+        text={text}
+      />
     );
   }
 
-  return (
-    <div className="creation-table">
-      <div className="creation-table-head">
-        <span>{text.name}</span>
-        <span />
-      </div>
-      {visibleItems.map((item) => (
-        <div className="creation-row" key={item.id}>
-          <div>
-            <strong>{item.title}</strong>
-            <small>{assistantDescription(item)}</small>
-          </div>
-          <div className="creation-row-actions">
-            <Button
-              variant="ghost"
-              size="sm"
-              data-action="use"
-              onClick={() => onAction('use', item.id)}
-            >
-              {text.use}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              data-action="edit"
-              onClick={() => onAction('edit', item.id)}
-            >
-              {text.edit}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              data-action="delete"
-              onClick={() => onAction('delete', item.id)}
-              aria-label={text.delete}
-            >
-              <Trash2 data-icon="inline-start" />
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  return <CreationStandardTable items={visibleItems} onAction={onAction} text={text} />;
 }
 
 function ImageComposer({
