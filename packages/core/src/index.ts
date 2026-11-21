@@ -223,3 +223,8 @@ export {
   type LearningUiNode,
   type LearningUiKind,
 } from './learningUi.js';
+
+export * from './examModel.ts';
+export * from './thinkModel.ts';
+export * from './knowledgeGraph.ts';
+export * from './studyModel.ts';
