@@ -31,6 +31,104 @@ async function start(page) {
   });
 }
 
+test('visual creation is visible before arguments or prose catch up', async ({ page }) => {
+  await start(page);
+  await page.evaluate(() => {
+    window.__turnEventCtl.append('Here is the comparison');
+    window.__turnEvent({
+      type: 'ui.begin',
+      surfaceId: 'early-viz',
+      toolCallId: 'early-viz',
+      textOffset: 30,
+    });
+  });
+  const message = page.locator('#msgList .msg.assistant').last();
+  const attachment = message.locator('[data-tool-anchor="early-viz"]');
+  const pending = attachment.locator('[data-viz-state="receiving"]');
+  await expect(pending.getByRole('status')).toHaveText('Creating the visualization…');
+  await expect(message).toContainText('Here is the comparison');
+  await page.evaluate(() => {
+    // The original offset now exists, but the paragraph still has no terminator.
+    window.__turnEventCtl.append(' of four views');
+  });
+  await expect(message).toContainText('of four views');
+  await expect(pending).toBeVisible();
+  await page.screenshot({ path: 'test-results/visualization-creating.png' });
+
+  const chartNodes = [
+    [
+      'combo',
+      'Actual and target',
+      [
+        { name: 'Actual', kind: 'bar', data: [8, 5] },
+        { name: 'Target', kind: 'line', data: [7, 7] },
+      ],
+    ],
+    [
+      'stacked_bar',
+      'Energy total',
+      [
+        { name: 'Solar', data: [4, 6] },
+        { name: 'Wind', data: [3, 2] },
+      ],
+    ],
+    ['donut', 'Study time', [{ data: [60, 40] }]],
+    ['funnel', 'Learner journey', [{ data: [16, 9] }]],
+  ].map(([template, title, series]) => ({
+    id: template,
+    type: 'visualization',
+    template,
+    title,
+    payload: { categories: ['First', 'Second'], series },
+  }));
+  await page.evaluate((chartNodes) => {
+    window.__turnEvent({
+      type: 'ui.commit',
+      surfaceId: 'early-viz',
+      nodes: [
+        ...chartNodes,
+        {
+          id: 'dashboard',
+          type: 'openui',
+          source:
+            'root = Col([Slider($done, 0, 12, 1, "Tasks completed"), Meter("Tasks", $done, 12), Metric("Remaining", 12 - $done)])\n$done = 4',
+        },
+      ],
+    });
+  }, chartNodes);
+  await expect(pending).toHaveCount(0);
+  for (const { id } of chartNodes) {
+    const chart = attachment.locator(`[data-intui-id="${id}"] .visualization-stage svg`);
+    await expect(chart).toBeVisible();
+    expect(await chart.locator('path').count()).toBeGreaterThan(0);
+  }
+  const dashboard = attachment.locator('.intui-openui');
+  const meter = dashboard.getByRole('meter', { name: 'Tasks' });
+  await expect(meter).toHaveAttribute('aria-valuenow', '4');
+  await dashboard.getByRole('slider').press('ArrowRight');
+  await expect(meter).toHaveAttribute('aria-valuenow', '5');
+  await expect(dashboard.getByText('7', { exact: true })).toBeVisible();
+  expect(
+    await meter.evaluate((track) => track.parentElement.getBoundingClientRect().height),
+  ).toBeLessThan(64);
+  await page.screenshot({ path: 'test-results/visualization-presets.png' });
+  await page.evaluate(() => {
+    window.__turnEvent({
+      type: 'ui.begin',
+      surfaceId: 'stopping',
+      toolCallId: 'stopping',
+      textOffset: 30,
+    });
+  });
+  const stopping = message.locator('[data-tool-anchor="stopping"] [data-viz-state="receiving"]');
+  await expect(stopping).toBeVisible();
+  await page.evaluate(() => {
+    window.__turnEvent({ type: 'turn.done', phase: 'stopped' });
+    window.__turnEventCtl.finish();
+  });
+  await expect(stopping).toHaveCount(0);
+});
+
 test('nodes stream before tool_use, retain local state through commit, and coexist with prose and activity', async ({
   page,
 }) => {
@@ -152,6 +250,21 @@ test('rejected previews disappear and malformed events never mount unsafe UI', a
   await expect(message.locator('.intui')).toBeVisible();
   await page.evaluate(() => window.__turnEvent({ type: 'ui.abort', surfaceId: 'bad' }));
   await expect(message.locator('.intui')).toHaveCount(0);
+  await page.evaluate(() => {
+    window.__turnEventCtl.recordToolUse({
+      id: 'bad',
+      name: 'render_intelligent_ui',
+      input: { version: 1, nodes: [] },
+    });
+    window.__turnEventCtl.recordToolResult({
+      id: 'bad',
+      name: 'render_intelligent_ui',
+      ok: false,
+      status: 'failed',
+      error: 'Could not validate the visual',
+    });
+  });
+  await expect(message.locator('[data-tool-anchor="bad"][data-tool-failed]')).toBeVisible();
   await page.evaluate(() => window.__turnEventCtl.finish());
 });
 

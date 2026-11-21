@@ -59,11 +59,6 @@ function useFieldName(label: unknown, statementId?: string) {
   return (typeof label === 'string' && label) || statementId || id;
 }
 
-const numberText = (value: unknown) => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
-  return value.toLocaleString('en-US', { maximumFractionDigits: 2 });
-};
-
 interface SliderDisplayProps {
   min: number;
   max: number;
@@ -80,7 +75,12 @@ function sliderDisplay(props: SliderDisplayProps, fieldValue: unknown) {
   const value = Number.isFinite(raw) ? Math.min(max, Math.max(min, raw)) : min;
   const unit = props.unit ?? '';
   const prefix = /^[$€£¥₹]/.test(unit);
-  const readout = prefix ? `${unit}${numberText(value)}` : `${numberText(value)}${unit}`;
+  const [digits, exponent] = String(step).split('e');
+  const decimals = (digits.split('.')[1]?.length ?? 0) - Number(exponent ?? 0);
+  const formatted = value.toLocaleString('en-US', {
+    maximumFractionDigits: Math.min(20, Math.max(2, decimals)),
+  });
+  const readout = prefix ? `${unit}${formatted}` : `${formatted}${unit}`;
   const marks = (props.marks ?? []).filter(
     (mark) => mark && Number.isFinite(mark.value) && mark.value >= min && mark.value <= max,
   );
@@ -258,6 +258,50 @@ export const Input = defineComponent({
             const parsed = Number(text.replace(/,/g, ''));
             if (text.trim() === '') field.setValue(null as unknown as number);
             else if (Number.isFinite(parsed)) field.setValue(parsed);
+          }}
+          onBlur={() => setDraft(null)}
+        />
+      </Field>
+    );
+  },
+});
+
+export const NumberField = defineComponent({
+  name: 'NumberField',
+  props: z.object({
+    value: reactive(z.number()),
+    label: z.string(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    step: z.number().positive().optional(),
+  }),
+  description:
+    'Precise numeric input with keyboard stepping. Bind the first argument to numeric state. Initial value must be within the optional inclusive bounds. Omit bounds with null and put units in the label.',
+  component: function NumberFieldView({ props, statementId }) {
+    const field = useStateField(useFieldName(props.label, statementId), props.value);
+    const [draft, setDraft] = useState<string | null>(null);
+    return (
+      <Field label={props.label}>
+        <ShadcnInput
+          className="iui-input iui-number-field"
+          type="number"
+          value={draft ?? field.value ?? ''}
+          min={props.min}
+          max={props.max}
+          step={props.step ?? 1}
+          aria-invalid={draft !== null || undefined}
+          onChange={(event) => {
+            const { value, valueAsNumber, validity } = event.currentTarget;
+            if (
+              !Number.isFinite(valueAsNumber) ||
+              validity.rangeUnderflow ||
+              validity.rangeOverflow
+            ) {
+              setDraft(value);
+              return;
+            }
+            setDraft(null);
+            field.setValue(valueAsNumber);
           }}
           onBlur={() => setDraft(null)}
         />

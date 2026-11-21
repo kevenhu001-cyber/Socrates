@@ -3,6 +3,8 @@ import { Separator as ShadcnSeparator } from '../../ui/Separator';
 import { defineComponent, FormNameContext } from '@openuidev/react-lang';
 import { useId, type CSSProperties } from 'react';
 import { z } from 'zod/v4';
+import { VisualDisclosure } from '@socrates/ui/visual-components';
+import { MathText } from '../../rn/useInlineMath';
 import {
   bg,
   children,
@@ -182,6 +184,18 @@ export const Divider = defineComponent({
   props: z.object({}),
   description: '',
   component: () => <ShadcnSeparator className="iui-divider" />,
+});
+
+export const Disclosure = defineComponent({
+  name: 'Disclosure',
+  props: z.object({ label: z.string(), children, defaultOpen: z.boolean().optional() }),
+  description:
+    'Expandable supporting content. Use for derivation steps, assumptions or optional controls; keep the primary result visible.',
+  component: ({ props, renderNode }) => (
+    <VisualDisclosure label={<MathText text={props.label} />} defaultOpen={props.defaultOpen}>
+      {renderNode(props.children)}
+    </VisualDisclosure>
+  ),
 });
 
 export const Spacer = defineComponent({

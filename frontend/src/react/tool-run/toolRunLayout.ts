@@ -246,6 +246,9 @@ function filterMountableCalls(
   return baseCalls.filter((call) => {
     if (!defer) return true;
     if (call.approval && call.approval.approvalId) return true;
+    // Inline visuals provide progress while the model is paused mid-paragraph.
+    // The layout still places the card after the whole prose block.
+    if (call.name === 'render_intelligent_ui') return true;
     const persistedOffset = Math.min(call.textOffset as number, raw.length);
     const visual = snapToolOffsetOutOfBlock(raw, rowAnchor(raw, persistedOffset));
     return isRowMountableAt(raw, visual);

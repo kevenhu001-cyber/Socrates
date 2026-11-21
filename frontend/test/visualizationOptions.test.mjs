@@ -131,6 +131,46 @@ test('category charts without labels synthesize readable ordinal categories', ()
   assert.equal(option.series[0].type, 'bar');
 });
 
+test('combo charts mix renderers and stacked bars share a stack', () => {
+  const payload = {
+    categories: ['Week 1', 'Week 2'],
+    series: [
+      { kind: 'bar', data: [7, 9] },
+      { kind: 'line', data: [6, 8] },
+      { kind: 'area', data: [5, 7] },
+    ],
+  };
+  const combo = optionForChart({ template: 'combo', payload }, colors);
+  assert.deepEqual(
+    combo.series.map(({ type }) => type),
+    ['bar', 'line', 'line'],
+  );
+  assert.ok(combo.series[2].areaStyle);
+  assert.equal(combo.series[1].areaStyle, undefined);
+  const stacked = optionForChart({ template: 'stacked_bar', payload }, colors);
+  assert.ok(stacked.series.every(({ stack, type }) => type === 'bar' && stack === 'total'));
+});
+
+test('funnel stages keep input order and donut charts draw a ring', () => {
+  const payload = {
+    categories: ['Start', 'Middle', 'End'],
+    series: [{ data: [4, 8, 0] }],
+  };
+  const funnel = optionForChart({ template: 'funnel', payload }, colors).series[0];
+  assert.equal(funnel.type, 'funnel');
+  assert.equal(funnel.sort, 'none');
+  assert.deepEqual(
+    funnel.data.map(({ name, value }) => [name, value]),
+    [
+      ['Start', 4],
+      ['Middle', 8],
+      ['End', 0],
+    ],
+  );
+  const donut = optionForChart({ template: 'donut', payload }, colors).series[0];
+  assert.ok(Array.isArray(donut.radius));
+});
+
 test('function chart surfaces invalid expressions to the repair affordance', () => {
   assert.throws(
     () =>

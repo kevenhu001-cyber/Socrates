@@ -22,6 +22,123 @@ function message(source, id = 'openui-history') {
   };
 }
 
+test('OpenUI exploration controls update a comparison locally and retain inputs through disclosure', async ({
+  page,
+}) => {
+  const program = `root = Col([Title("Study pace"), comparison, balance, precision, details])
+$actual = 2.5
+$adjustment = 0
+comparison = ComparisonBars([{label:"Actual",value:$actual},{label:"Target",value:6}],"h",8)
+balance = Meter("Difference", $actual - 6, 6, -6, "h")
+precision = Slider($adjustment, 0, 0.01, 0.001, "Fine adjustment", " s")
+details = Disclosure("Edit exact hours", [NumberField($actual, "Study hours", 0, 8, 0.25), Text("With adjustment: " + ($actual + $adjustment))])`;
+  await prepareChatWorkbench(page, {
+    messages: [message(program)],
+    viewport: WORKBENCH_VIEWPORTS.mobile,
+  });
+  const ui = page.locator('.intui-openui');
+  const toggle = ui.getByRole('button', { name: 'Edit exact hours' });
+  const input = ui.getByRole('spinbutton', { name: 'Study hours' });
+  const actual = ui.getByRole('meter', { name: 'Actual' });
+  const target = ui.getByRole('meter', { name: 'Target' });
+  const balance = ui.getByRole('meter', { name: 'Difference' });
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(input).toHaveCount(0);
+  await expect(actual).toHaveAttribute('aria-valuemax', '8');
+  await expect(target).toHaveAttribute('aria-valuemax', '8');
+  await expect(balance).toHaveAttribute('aria-valuemin', '-6');
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await input.fill('4.25');
+  await expect(actual).toHaveAttribute('aria-valuetext', '4.25 h');
+  await expect(balance).toHaveAttribute('aria-valuetext', '-1.75 h (-6–6 h)');
+  await input.fill('9');
+  await expect(input).toHaveAttribute('aria-invalid', 'true');
+  await expect(actual).toHaveAttribute('aria-valuenow', '4.25');
+  await input.press('Tab');
+  await expect(input).toHaveValue('4.25');
+  const slider = ui.getByRole('slider', { name: 'Fine adjustment' });
+  await slider.press('ArrowRight');
+  await expect(slider).toHaveAttribute('aria-valuetext', '0.001 s');
+  await toggle.click();
+  await expect(input).toBeHidden();
+  await toggle.click();
+  await expect(input).toHaveValue('4.25');
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+  ).toBeLessThanOrEqual(1);
+  await ui.screenshot({ path: 'test-results/openui-exploration.png' });
+});
+
+test('OpenUI playback drives local values and switched views preserve their state', async ({
+  page,
+}) => {
+  const program = `root = Col([player, live, views])
+$step = 0
+player = StepPlayer($step, ["Initial amount", "Double the amount", "Double again"], "Doubling", 450)
+live = Metric("Amount", [2,4,8][$step])
+views = ViewSwitcher("Results", [{id:"notes",label:"Explanation",children:[note]},{id:"table",label:"Measurements",children:[data]}])
+note = Flashcard("How does the amount grow?", "It doubles at each step.", "Review")
+data = Table([{key:"name",label:"Stage"},{key:"result",label:"Result"}], [{name:"First",result:12},{name:"Second",result:2},{name:"Unmeasured"}], "Observed values", true)`;
+  await prepareChatWorkbench(page, {
+    messages: [message(program)],
+    viewport: WORKBENCH_VIEWPORTS.mobile,
+  });
+  const ui = page.locator('.intui-openui');
+  const player = ui.getByRole('region', { name: 'Doubling' });
+  const position = player.getByRole('slider', { name: 'Step position' });
+  await expect(player.getByRole('button', { name: 'Previous' })).toBeDisabled();
+  await position.press('ArrowRight');
+  await expect(position).toHaveAttribute('aria-valuetext', '2 / 3 · Double the amount');
+  await expect(ui.locator('[data-iui-result]').getByText('4', { exact: true })).toBeVisible();
+  await player.getByRole('button', { name: 'Play' }).click();
+  const replay = player.getByRole('button', { name: 'Replay' });
+  await expect(replay).toBeVisible();
+  await expect(ui.locator('[data-iui-result]').getByText('8', { exact: true })).toBeVisible();
+  await replay.click();
+  await expect(position).toHaveValue('0');
+  await position.press('End');
+  await expect(player.getByRole('button', { name: 'Next' })).toBeDisabled();
+  await expect(replay).toBeVisible();
+
+  const explanation = ui.getByRole('tab', { name: 'Explanation' });
+  const measurements = ui.getByRole('tab', { name: 'Measurements' });
+  const flash = ui.getByRole('button', { name: 'Review' });
+  await flash.click();
+  await expect(flash).toHaveAccessibleDescription('It doubles at each step.');
+  await expect(ui.getByRole('table')).toHaveCount(0);
+  await explanation.press('ArrowRight');
+  await expect(measurements).toBeFocused();
+  await measurements.press('Enter');
+  const table = ui.getByRole('table', { name: 'Observed values' });
+  const sort = table.getByRole('button', { name: 'Result' });
+  const cells = table.locator('tbody tr td:first-child');
+  await sort.click();
+  await expect(cells).toHaveText(['Second', 'First', 'Unmeasured']);
+  await expect(table.getByRole('columnheader', { name: 'Result' })).toHaveAttribute(
+    'aria-sort',
+    'ascending',
+  );
+  await sort.click();
+  await expect(cells).toHaveText(['First', 'Second', 'Unmeasured']);
+  await explanation.click();
+  await expect(flash).toHaveAttribute('aria-pressed', 'true');
+  await measurements.click();
+  await expect(table.getByRole('columnheader', { name: 'Result' })).toHaveAttribute(
+    'aria-sort',
+    'descending',
+  );
+  const spaceBelowTabs = await table.evaluate((element) => {
+    const tabList = element.closest('.iui-view-switcher').querySelector('[role="tablist"]');
+    return element.getBoundingClientRect().top - tabList.getBoundingClientRect().bottom;
+  });
+  expect(spaceBelowTabs).toBeGreaterThanOrEqual(0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+  ).toBeLessThanOrEqual(1);
+  await ui.screenshot({ path: 'test-results/openui-step-playback.png' });
+});
+
 for (const mode of ['light', 'dark', 'mobile']) {
   test(`OpenUI history renders working controls, charts and flashcards (${mode})`, async ({
     page,

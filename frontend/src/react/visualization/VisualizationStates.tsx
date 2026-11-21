@@ -157,13 +157,11 @@ export function VisualizationSkeleton({
 }: VisualizationSkeletonProps) {
   const label =
     phase === 'receiving'
-      ? i18n('viz.state.receiving', 'Receiving data…')
+      ? i18n('viz.state.receiving', 'Creating the visualization…')
       : i18n('viz.state.loadingRenderer', 'Loading the chart renderer…');
   return (
     <section
       className="viz-state-skeleton"
-      aria-busy="true"
-      aria-label={label}
       data-viz-state={phase}
       data-renderer={visualizationRendererKind(template)}
     >
@@ -172,9 +170,10 @@ export function VisualizationSkeleton({
           <h3 className="viz-skeleton-title">
             <MathText text={title} />
           </h3>
-        ) : (
-          <span className="viz-skeleton-title-bar skeleton-shimmer" aria-hidden="true" />
-        )}
+        ) : null}
+        <p className="viz-skeleton-status" role="status">
+          {label}
+        </p>
       </header>
       <div className="viz-skeleton-stage" aria-hidden="true">
         <div className="viz-skeleton-bars">

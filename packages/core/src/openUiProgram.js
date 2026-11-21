@@ -21,6 +21,7 @@ export function openUiProgramIssues(parsed, declarations) {
     issues.add('Query and Mutation are not available; use supplied data');
   const bindings = {
     Input: 'value',
+    NumberField: 'value',
     TextArea: 'value',
     Select: 'value',
     Slider: 'value',
@@ -29,8 +30,19 @@ export function openUiProgramIssues(parsed, declarations) {
     SegmentedControl: 'value',
     DatePicker: 'value',
     Timer: 'seconds',
+    StepPlayer: 'index',
   };
-  const layouts = new Set(['Col', 'Row', 'Grid', 'Box', 'Card', 'Form', 'Carousel']);
+  const layouts = new Set([
+    'Col',
+    'Row',
+    'Grid',
+    'Box',
+    'Card',
+    'Form',
+    'Carousel',
+    'Disclosure',
+    'ViewSwitcher',
+  ]);
   const live = new Set();
   const inputs = new Set();
   const writes = new Map();
@@ -140,7 +152,10 @@ export function openUiProgramIssues(parsed, declarations) {
         // Labels may themselves be reactive outputs; the editable value is not.
         for (const [key, item] of Object.entries(fields)) if (key !== bindings[name]) consume(item);
       } else if (!layouts.has(name)) consume(fields);
-      else for (const [key, item] of Object.entries(fields)) if (key !== 'children') consume(item);
+      else {
+        const childSlot = name === 'ViewSwitcher' ? 'views' : 'children';
+        for (const [key, item] of Object.entries(fields)) if (key !== childSlot) consume(item);
+      }
     }
     for (const item of Object.values(value)) walk(item, submitted, depth + 1);
   };

@@ -110,6 +110,20 @@ test('every documented template example passes the same validator that executes 
   }
 });
 
+test('combo rejects unsupported series kinds and funnel rejects negative stage measurements', () => {
+  const combo = visualizationTemplateExample('combo');
+  combo.payload = { categories: ['A'], series: [{ kind: 'pie', data: [10] }] };
+  const invalidCombo = validateVisualizationSpec(combo);
+  assert.equal(invalidCombo.ok, false);
+  assert.ok(invalidCombo.issues.some(({ path }) => path === 'payload.series.0.kind'));
+
+  const funnel = visualizationTemplateExample('funnel');
+  funnel.payload = { categories: ['Start', 'End'], series: [{ data: [10, -2] }] };
+  const invalidFunnel = validateVisualizationSpec(funnel);
+  assert.equal(invalidFunnel.ok, false);
+  assert.ok(invalidFunnel.issues.some(({ path }) => path === 'payload.series.0.data.1'));
+});
+
 test('semantic diagnostics preserve the rejected template for a targeted correction example', () => {
   /* A reversed domain is now repaired by the shared normalizer (swapped,
      with a warning); an expression with no finite values in its domain is

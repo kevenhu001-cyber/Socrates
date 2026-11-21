@@ -172,9 +172,19 @@ export function intelligentUiFeedback(
   if (
     failure.failures.some(
       (item) =>
-        ['line', 'area', 'bar', 'histogram', 'pie', 'radar', 'paper_chart'].includes(
-          item.template || '',
-        ) &&
+        [
+          'line',
+          'area',
+          'bar',
+          'stacked_bar',
+          'combo',
+          'histogram',
+          'pie',
+          'donut',
+          'funnel',
+          'radar',
+          'paper_chart',
+        ].includes(item.template || '') &&
         (item.stage === 'payload_shape' || item.stage === 'semantic'),
     )
   )

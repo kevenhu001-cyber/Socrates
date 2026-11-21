@@ -18,6 +18,8 @@ import {
 import { ToolRunDisclosureProvider } from './ToolRunDisclosure';
 import { TurnStatus } from './TurnStatus.js';
 import { TurnSegmentContent } from './TurnSegmentContent';
+import { ToolRunAttachments } from './ToolRunAttachments';
+import { ToolRunRows } from './ToolRunRows';
 import { useProseRenderer, useScaffoldTurnProse } from './proseRenderer';
 import { useLocaleRefresh } from '../rn/WebUiTheme';
 import { stripLegacyTerminalHtml } from './toolRunLegacyHtml';
@@ -74,7 +76,11 @@ function segmentKey(segment: TurnSegment): string {
   return 'think-' + segment.start;
 }
 
-function callsForMessage(message: ChatMessage): ToolCallRecord[] {
+function callsForMessage(
+  message: ChatMessage,
+  rawTextLength: number,
+  live: boolean,
+): ToolCallRecord[] {
   const storedCalls = Array.isArray(message.toolCalls)
     ? (message.toolCalls as ToolCallRecord[])
     : [];
@@ -82,7 +88,12 @@ function callsForMessage(message: ChatMessage): ToolCallRecord[] {
   const calls = storedCalls.map((call) => {
     const uiSurface = surfaces.find((surface) => surface.toolCallId === call.id);
     return uiSurface
-      ? { ...call, textOffset: uiSurface.textOffset, _run: call._run, uiSurface }
+      ? {
+          ...call,
+          textOffset: live ? Math.min(uiSurface.textOffset, rawTextLength) : uiSurface.textOffset,
+          _run: call._run,
+          uiSurface,
+        }
       : call;
   });
   for (const surface of surfaces) {
@@ -91,7 +102,8 @@ function callsForMessage(message: ChatMessage): ToolCallRecord[] {
     calls.push({
       id: surface.toolCallId,
       name: 'render_intelligent_ui',
-      textOffset: surface.textOffset,
+      // The event's offset counts upstream text, which can be ahead of playback.
+      textOffset: live ? Math.min(surface.textOffset, rawTextLength) : surface.textOffset,
       status: surface.phase === 'committed' ? 'completed' : 'running',
       uiSurface: surface,
     });
@@ -167,19 +179,41 @@ function TurnSegmentsView({
 }): React.ReactElement {
   return (
     <>
-      {segments.map((segment, index) => (
-        <TurnSegmentContent
-          key={segmentKey(segment)}
-          segment={segment}
-          turnRuntime={message.turnRuntime}
-          index={index}
-          growingIndex={growingIndex}
-          messageId={messageId}
-          tools={calls}
-          readOnly={readOnly}
-          prose={prose}
-        />
-      ))}
+      {segments.flatMap((segment, index) => {
+        if (segment.kind === 'group' || segment.kind === 'tool') {
+          const members = segment.kind === 'group' ? groupOutputCalls(segment) : [segment.call];
+          // Parallel tools can join a group after its first output has mounted.
+          // Keep attachments keyed by call at the transcript level across regrouping.
+          return [
+            <ToolRunRows
+              key={segmentKey(segment)}
+              calls={members}
+              messageId={messageId}
+              readOnly={readOnly}
+            />,
+            ...members.map((call) => (
+              <ToolRunAttachments
+                key={`output-${call.id}`}
+                call={call}
+                tools={calls}
+                readOnly={readOnly}
+              />
+            )),
+          ];
+        }
+        return (
+          <TurnSegmentContent
+            key={segmentKey(segment)}
+            segment={segment}
+            turnRuntime={message.turnRuntime}
+            index={index}
+            growingIndex={growingIndex}
+            tools={calls}
+            readOnly={readOnly}
+            prose={prose}
+          />
+        );
+      })}
     </>
   );
 }
@@ -229,13 +263,16 @@ export function AssistantTurn({ message, html, readOnly, live }: AssistantTurnPr
      time; a language switch must repaint the already-rendered answer too. */
   useLocaleRefresh();
   const rawText = typeof message.rawText === 'string' ? message.rawText : '';
+  const isLive = Boolean(live);
   /* callsForMessage derives purely from the message snapshot: reconcile keeps
      unchanged rows at a stable identity and snapshots changed rows into fresh
      frozen objects, so memoizing on the row gives "rebuild only when the row
      actually changed" instead of on every parent re-render. */
-  const calls = useMemo(() => callsForMessage(message), [message]);
+  const calls = useMemo(
+    () => callsForMessage(message, rawText.length, isLive),
+    [message, rawText.length, isLive],
+  );
   const storedHtml = typeof html === 'string' ? html : '';
-  const isLive = Boolean(live);
   const isSettling = useStreamSettling(isLive);
 
   /* Tool-call states ride on the message snapshot (see above); the layout is

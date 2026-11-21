@@ -90,13 +90,20 @@ const categoryChartPayload = z
   })
   .passthrough();
 
-const piePayload = z
+const sharePayload = z
   .object({
     categories: z.array(categorySchema).min(1).max(100),
     series: z.array(numericSeriesSchema).length(1),
     description: z.string().max(800).optional(),
   })
   .passthrough();
+
+const comboPayload = categoryChartPayload.extend({
+  series: z
+    .array(numericSeriesSchema.extend({ kind: z.enum(['bar', 'line', 'area']) }))
+    .min(1)
+    .max(20),
+});
 
 const scatterPayload = z
   .object({
@@ -269,8 +276,10 @@ const envelope = z
 
 function schemaFor(template: string): z.ZodTypeAny {
   if (template === 'function') return functionPayload;
-  if (['line', 'area', 'bar', 'histogram'].includes(template)) return categoryChartPayload;
-  if (template === 'pie') return piePayload;
+  if (['line', 'area', 'bar', 'stacked_bar', 'histogram'].includes(template))
+    return categoryChartPayload;
+  if (template === 'combo') return comboPayload;
+  if (['pie', 'donut', 'funnel'].includes(template)) return sharePayload;
   if (template === 'scatter') return scatterPayload;
   if (template === 'heatmap') return heatmapPayload;
   if (template === 'radar') return radarPayload;
@@ -334,6 +343,26 @@ export const VISUALIZATION_TEMPLATE_CONTRACTS = {
     guidance: `Use categories plus an array of one or more numeric series. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. Keep labels short. ${POINT_RULE}`,
     payload: COMMON_NUMERIC_PAYLOAD,
   },
+  stacked_bar: {
+    guidance: `Compare totals and their composition across categories. Each named series is one contribution to the stack, with one value per category. Use common units. Positive and negative values stack separately. ${NUMBER_RULE} ${POINT_RULE}`,
+    payload: {
+      categories: ['Jan', 'Feb', 'Mar'],
+      series: [
+        { name: 'Solar', data: [4, 6, 8] },
+        { name: 'Wind', data: [7, 5, 6] },
+      ],
+    },
+  },
+  combo: {
+    guidance: `Combine bar, line and area on a shared y axis. Give each series kind "bar", "line" or "area", a distinct name, and one value per category. Use the same units for all series. ${NUMBER_RULE} ${POINT_RULE}`,
+    payload: {
+      categories: ['Jan', 'Feb', 'Mar'],
+      series: [
+        { name: 'Actual', kind: 'bar', data: [7, 9, 8] },
+        { name: 'Target', kind: 'line', data: [8, 8, 9] },
+      ],
+    },
+  },
   scatter: {
     guidance: `payload.series is an array of {name?,data:[[x,y],...]}; every data item is one numeric [x,y] pair or {x,y}. Do not send categories. ${POINT_RULE}`,
     payload: {
@@ -354,6 +383,20 @@ export const VISUALIZATION_TEMPLATE_CONTRACTS = {
   pie: {
     guidance: `Use exactly one series and provide categories plus the same number of non-negative numeric values. ${NUMBER_RULE} Pie data represents parts of one whole.`,
     payload: { categories: ['A', 'B', 'C'], series: [{ name: 'Share', data: [45, 35, 20] }] },
+  },
+  donut: {
+    guidance: `Show parts of one whole as a ring. Supply categories and one series with a non-negative value per category and at least one positive value. ${NUMBER_RULE}`,
+    payload: {
+      categories: ['Study', 'Practice', 'Review'],
+      series: [{ name: 'Minutes', data: [30, 20, 10] }],
+    },
+  },
+  funnel: {
+    guidance: `Show measurements at successive stages. Supply categories in process order and one series with a non-negative value per stage and at least one positive value. Stage order stays as supplied. ${NUMBER_RULE}`,
+    payload: {
+      categories: ['Visited', 'Started', 'Completed'],
+      series: [{ name: 'Learners', data: [120, 80, 45] }],
+    },
   },
   histogram: {
     guidance: `Use categories as precomputed bin labels and numeric series as non-negative bin counts. ${NUMBER_RULE} If categories is present, every series.data has exactly one value per category. Do not ask this renderer to calculate raw observations into bins.`,
@@ -660,7 +703,11 @@ export function validateVisualizationSpec(input: unknown) {
         );
     });
   };
-  if (['line', 'area', 'bar', 'histogram', 'paper_chart'].includes(parsed.data.template)) {
+  if (
+    ['line', 'area', 'bar', 'stacked_bar', 'combo', 'histogram', 'paper_chart'].includes(
+      parsed.data.template,
+    )
+  ) {
     const chartData =
       parsed.data.template === 'paper_chart'
         ? (data as z.infer<typeof paperChartPayload>)
@@ -680,16 +727,22 @@ export function validateVisualizationSpec(input: unknown) {
       }),
     );
   }
-  if (parsed.data.template === 'pie') {
-    const pie = data as z.infer<typeof piePayload>;
-    const values = pie.series[0]?.data || [];
-    if (values.length !== pie.categories.length)
+  if (['pie', 'donut', 'funnel'].includes(parsed.data.template)) {
+    const share = data as z.infer<typeof sharePayload>;
+    const values = share.series[0]?.data || [];
+    if (values.length !== share.categories.length)
       addIssue('payload.series.0.data', 'must contain one value for each category.');
     if (!values.some((value) => (value ?? 0) > 0))
-      addIssue('payload.series.0.data', 'at least one pie value must be greater than zero.');
+      addIssue(
+        'payload.series.0.data',
+        `at least one ${parsed.data.template} value must be greater than zero.`,
+      );
     values.forEach((value, index) => {
       if ((value ?? 0) < 0)
-        addIssue(`payload.series.0.data.${index}`, 'pie values must be non-negative.');
+        addIssue(
+          `payload.series.0.data.${index}`,
+          `${parsed.data.template} values must be non-negative.`,
+        );
     });
   }
   if (parsed.data.template === 'scatter' && Object.hasOwn(data as object, 'categories')) {

@@ -279,6 +279,9 @@ export default defineConfig({
       '@socrates/ui/exam-model': fileURLToPath(
         new URL('../packages/ui/src/examModel.ts', import.meta.url),
       ),
+      '@socrates/ui/visual-components': fileURLToPath(
+        new URL('../packages/ui/src/visualComponents.tsx', import.meta.url),
+      ),
     },
     /* packages/ have no node_modules of their own: resolve their bare React
        imports from this app so the shell and the shared modules share one
