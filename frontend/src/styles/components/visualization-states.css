@@ -113,7 +113,7 @@
 .viz-skeleton-caption {
   margin: 0;
   padding: 10px 0 12px;
-  border-top: 1px solid hsl(var(--border-100) / 0.6);
+  border-top: 1px solid var(--ui-border-subtle);
   color: var(--muted-foreground);
   font-size: 12px;
   line-height: 1.45;
