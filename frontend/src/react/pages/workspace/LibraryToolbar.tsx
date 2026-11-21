@@ -29,6 +29,112 @@ export interface LibraryToolbarProps {
   onNewMenuOpenChange: (open: boolean) => void;
 }
 
+function LibraryHead({
+  newMenuOpen,
+  onNewMenuOpenChange,
+}: {
+  newMenuOpen: boolean;
+  onNewMenuOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <div className="library-head">
+      <div className="library-head-left">
+        <h1 id="library-directory-title">{i18n('sidebar.library.title', '资料库')}</h1>
+        <p className="library-desktop-desc">
+          {i18n('library.directoryDesc', 'Files and items you have added or created.')}
+        </p>
+      </div>
+      <div className="library-head-actions">
+        <div className="library-new-wrap">
+          <Button
+            type="button"
+            className="library-new-pill rounded-full"
+            aria-haspopup="menu"
+            aria-expanded={newMenuOpen}
+            onClick={() => onNewMenuOpenChange(!newMenuOpen)}
+          >
+            <span>{i18n('library.new', '新建')}</span>
+            <ChevronDownIcon />
+          </Button>
+          {newMenuOpen ? (
+            <div className="library-new-menu" role="menu">
+              <Button
+                type="button"
+                variant="ghost"
+                role="menuitem"
+                className="w-full justify-start"
+                onClick={() => {
+                  onNewMenuOpenChange(false);
+                  document.getElementById('libraryUploadInput')?.click();
+                }}
+              >
+                {i18n('library.upload', '上传文件')}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LibraryTypeFilter({
+  typeFilter,
+  onTypeFilterChange,
+  filterOpen,
+  onFilterOpenChange,
+}: {
+  typeFilter: string;
+  onTypeFilterChange: (type: string) => void;
+  filterOpen: boolean;
+  onFilterOpenChange: (open: boolean) => void;
+}) {
+  const activeTypeLabel = (
+    FILE_TYPE_FILTERS.find((filter) => filter.id === typeFilter) || FILE_TYPE_FILTERS[0]
+  ).fallback;
+  const filterLabel = i18n('library.filterByType', 'Filter by file type');
+
+  return (
+    <div className="library-tool-btn-wrap">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        className="library-tool-btn"
+        aria-label={filterLabel}
+        aria-pressed={typeFilter !== 'all'}
+        aria-expanded={filterOpen}
+        aria-haspopup="menu"
+        title={typeFilter === 'all' ? filterLabel : filterLabel + ': ' + activeTypeLabel}
+        onClick={() => onFilterOpenChange(!filterOpen)}
+      >
+        <FilterIcon />
+      </Button>
+      {filterOpen ? (
+        <div className="library-filter-menu" role="menu">
+          {FILE_TYPE_FILTERS.map((filter) => (
+            <Button
+              key={filter.id}
+              type="button"
+              variant="ghost"
+              size="sm"
+              role="menuitemradio"
+              aria-checked={typeFilter === filter.id}
+              className="library-filter-option w-full justify-start aria-checked:bg-muted aria-checked:text-foreground"
+              onClick={() => {
+                onTypeFilterChange(filter.id);
+                onFilterOpenChange(false);
+              }}
+            >
+              {i18n(filter.labelKey, filter.fallback)}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function LibraryToolbar({
   query,
   dispatch,
@@ -41,91 +147,18 @@ export function LibraryToolbar({
   newMenuOpen,
   onNewMenuOpenChange,
 }: LibraryToolbarProps) {
-  const activeTypeLabel = (
-    FILE_TYPE_FILTERS.find((filter) => filter.id === typeFilter) || FILE_TYPE_FILTERS[0]
-  ).fallback;
-  const filterLabel = i18n('library.filterByType', 'Filter by file type');
-
   return (
     <>
-      <div className="library-head">
-        <div className="library-head-left">
-          <h1 id="library-directory-title">{i18n('sidebar.library.title', '资料库')}</h1>
-          <p className="library-desktop-desc">
-            {i18n('library.directoryDesc', 'Files and items you have added or created.')}
-          </p>
-        </div>
-        <div className="library-head-actions">
-          <div className="library-new-wrap">
-            <Button
-              type="button"
-              className="library-new-pill rounded-full"
-              aria-haspopup="menu"
-              aria-expanded={newMenuOpen}
-              onClick={() => onNewMenuOpenChange(!newMenuOpen)}
-            >
-              <span>{i18n('library.new', '新建')}</span>
-              <ChevronDownIcon />
-            </Button>
-            {newMenuOpen ? (
-              <div className="library-new-menu" role="menu">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  role="menuitem"
-                  className="w-full justify-start"
-                  onClick={() => {
-                    onNewMenuOpenChange(false);
-                    document.getElementById('libraryUploadInput')?.click();
-                  }}
-                >
-                  {i18n('library.upload', '上传文件')}
-                </Button>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
+      <LibraryHead newMenuOpen={newMenuOpen} onNewMenuOpenChange={onNewMenuOpenChange} />
 
       <div className="library-toolbar">
         <div className="library-toolbar-controls">
-          <div className="library-tool-btn-wrap">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-lg"
-              className="library-tool-btn"
-              aria-label={filterLabel}
-              aria-pressed={typeFilter !== 'all'}
-              aria-expanded={filterOpen}
-              aria-haspopup="menu"
-              title={typeFilter === 'all' ? filterLabel : filterLabel + ': ' + activeTypeLabel}
-              onClick={() => onFilterOpenChange(!filterOpen)}
-            >
-              <FilterIcon />
-            </Button>
-            {filterOpen ? (
-              <div className="library-filter-menu" role="menu">
-                {FILE_TYPE_FILTERS.map((filter) => (
-                  <Button
-                    key={filter.id}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    role="menuitemradio"
-                    aria-checked={typeFilter === filter.id}
-                    className="library-filter-option w-full justify-start aria-checked:bg-muted aria-checked:text-foreground"
-                    onClick={() => {
-                      onTypeFilterChange(filter.id);
-                      onFilterOpenChange(false);
-                    }}
-                  >
-                    {i18n(filter.labelKey, filter.fallback)}
-                  </Button>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <LibraryTypeFilter
+            typeFilter={typeFilter}
+            onTypeFilterChange={onTypeFilterChange}
+            filterOpen={filterOpen}
+            onFilterOpenChange={onFilterOpenChange}
+          />
           <div className="library-toolbar-divider" />
           <ToggleGroup
             className="library-view-switcher"

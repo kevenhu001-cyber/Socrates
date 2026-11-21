@@ -23,6 +23,114 @@ function isInstalled(plugin: PluginItem): boolean {
   return plugin.connection?.status === 'connected' || plugin.connection?.status === 'initiated';
 }
 
+function PluginDirectoryHead({
+  query,
+  setQuery,
+  setScope,
+  searchLabel,
+}: {
+  query: string;
+  setQuery: (q: string) => void;
+  setScope: (scope: 'public' | 'personal') => void;
+  searchLabel: string;
+}) {
+  return (
+    <div className="plugin-directory-head">
+      <div className="plugin-directory-heading">
+        <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
+        <p className="plugin-directory-desc">
+          {i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
+        </p>
+      </div>
+      <div className="plugin-directory-tools">
+        <ShadcnLabel className="plugin-directory-search">
+          <SearchIcon />
+          <ShadcnInput
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={searchLabel}
+            aria-label={searchLabel}
+          />
+        </ShadcnLabel>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          className="plugin-directory-add-btn rounded-full"
+          aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
+          onClick={() => {
+            setScope('public');
+            setQuery('');
+            document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
+          }}
+        >
+          <PlusIcon />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PluginDirectoryBody({
+  visiblePlugins,
+  popularPlugins,
+  newPlugins,
+  configured,
+  dispatch,
+  onSelectPlugin,
+}: {
+  visiblePlugins: PluginItem[];
+  popularPlugins: PluginItem[];
+  newPlugins: PluginItem[];
+  configured: boolean;
+  dispatch: PluginDirectoryProps['dispatch'];
+  onSelectPlugin: (plugin: PluginItem) => void;
+}) {
+  return (
+    <div className="plugin-directory-body">
+      {visiblePlugins.length === 0 ? (
+        <div className="plugin-directory-empty">
+          <strong>{i18n('plugins.noMatch', 'No matching plugins')}</strong>
+          <span>{i18n('plugins.tryDifferent', 'Try a different search.')}</span>
+        </div>
+      ) : null}
+      {popularPlugins.length > 0 ? (
+        <section className="plugin-directory-section">
+          <h3>{i18n('plugins.popular', 'Popular')}</h3>
+          <div className="plugin-directory-list">
+            {popularPlugins.map((plugin) => (
+              <PluginDirectoryCard
+                key={plugin.id}
+                plugin={plugin}
+                configured={configured}
+                dispatch={dispatch}
+                onSelect={onSelectPlugin}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+      {newPlugins.length > 0 ? (
+        <section className="plugin-directory-section">
+          <h3>{i18n('plugins.new', 'New and notable')}</h3>
+          <div className="plugin-directory-list">
+            {newPlugins.map((plugin) => (
+              <PluginDirectoryCard
+                key={plugin.id}
+                plugin={plugin}
+                configured={configured}
+                dispatch={dispatch}
+                onSelect={onSelectPlugin}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
 export function PluginDirectory({
   plugins,
   configured,
@@ -58,40 +166,12 @@ export function PluginDirectory({
       className="workspace-surface plugin-directory"
       aria-labelledby="plugin-directory-title"
     >
-      <div className="plugin-directory-head">
-        <div className="plugin-directory-heading">
-          <h2 id="plugin-directory-title">{i18n('sidebar.plugins.title', 'Plugins')}</h2>
-          <p className="plugin-directory-desc">
-            {i18n('plugins.directoryDesc', 'Connect apps so Socrates can use them in chat.')}
-          </p>
-        </div>
-        <div className="plugin-directory-tools">
-          <ShadcnLabel className="plugin-directory-search">
-            <SearchIcon />
-            <ShadcnInput
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={searchLabel}
-              aria-label={searchLabel}
-            />
-          </ShadcnLabel>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-lg"
-            className="plugin-directory-add-btn rounded-full"
-            aria-label={getCurrentLang() === 'zh' ? '添加插件' : 'Add plugin'}
-            onClick={() => {
-              setScope('public');
-              setQuery('');
-              document.querySelector<HTMLInputElement>('.plugin-directory-search input')?.focus();
-            }}
-          >
-            <PlusIcon />
-          </Button>
-        </div>
-      </div>
+      <PluginDirectoryHead
+        query={query}
+        setQuery={setQuery}
+        setScope={setScope}
+        searchLabel={searchLabel}
+      />
 
       <InstalledPluginStrip
         plugins={installedPlugins}
@@ -123,46 +203,15 @@ export function PluginDirectory({
         </ToggleGroupItem>
       </ToggleGroup>
 
-      <div className="plugin-directory-body">
-        {visiblePlugins.length === 0 ? (
-          <div className="plugin-directory-empty">
-            <strong>{i18n('plugins.noMatch', 'No matching plugins')}</strong>
-            <span>{i18n('plugins.tryDifferent', 'Try a different search.')}</span>
-          </div>
-        ) : null}
-        {popularPlugins.length > 0 ? (
-          <section className="plugin-directory-section">
-            <h3>{i18n('plugins.popular', 'Popular')}</h3>
-            <div className="plugin-directory-list">
-              {popularPlugins.map((plugin) => (
-                <PluginDirectoryCard
-                  key={plugin.id}
-                  plugin={plugin}
-                  configured={configured}
-                  dispatch={dispatch}
-                  onSelect={onSelectPlugin}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-        {newPlugins.length > 0 ? (
-          <section className="plugin-directory-section">
-            <h3>{i18n('plugins.new', 'New and notable')}</h3>
-            <div className="plugin-directory-list">
-              {newPlugins.map((plugin) => (
-                <PluginDirectoryCard
-                  key={plugin.id}
-                  plugin={plugin}
-                  configured={configured}
-                  dispatch={dispatch}
-                  onSelect={onSelectPlugin}
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-      </div>
+      <PluginDirectoryBody
+        visiblePlugins={visiblePlugins}
+        popularPlugins={popularPlugins}
+        newPlugins={newPlugins}
+        configured={configured}
+        dispatch={dispatch}
+        onSelectPlugin={onSelectPlugin}
+      />
+
       {!configured && !openConnectorAvailable && plugins.length > 0 ? (
         <p className="plugin-directory-note">
           {i18n('plugins.serverSetupNeeded', 'Connector service needs setup')}

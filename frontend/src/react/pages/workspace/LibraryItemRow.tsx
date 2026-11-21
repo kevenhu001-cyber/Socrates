@@ -8,29 +8,21 @@ import type { LibraryDisplayItem } from './library.types';
 import { getFileTypeCategory, fileTypeGlyph } from './libraryFileTypes';
 import { fileSize, i18n, libraryDate, MoreIcon } from './workspaceUi';
 
-function LibraryItemRow({
+function LibraryItemName({
+  isRenaming,
+  name,
   item,
   itemKey,
-  tab,
-  selection,
-  renameItem,
   dispatch,
 }: {
+  isRenaming: boolean;
+  name: string;
   item: LibraryDisplayItem;
   itemKey: string;
-  tab: string;
-  selection: Record<string, boolean>;
-  renameItem: string | null;
   dispatch: ReturnType<typeof useWorkspaceDispatch>;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const name = item.name || item.title || i18n('library.untitled', 'Untitled');
-  const isSelected = !!selection[item.id];
-  const isRenaming = renameItem === item.id;
-
-  let nameEl: React.ReactNode;
   if (isRenaming) {
-    nameEl = (
+    return (
       <ShadcnInput
         className="library-rename-input"
         type="text"
@@ -45,22 +37,36 @@ function LibraryItemRow({
         }}
       />
     );
-  } else {
-    nameEl = (
-      <strong
-        className="library-item-name"
-        onClick={(e) => {
-          e.stopPropagation();
-          dispatch.startRename(item.id, itemKey);
-        }}
-        title={i18n('library.clickToRename', 'Click to rename')}
-      >
-        {name}
-      </strong>
-    );
   }
+  return (
+    <strong
+      className="library-item-name"
+      onClick={(e) => {
+        e.stopPropagation();
+        dispatch.startRename(item.id, itemKey);
+      }}
+      title={i18n('library.clickToRename', 'Click to rename')}
+    >
+      {name}
+    </strong>
+  );
+}
 
-  const actions = (
+function LibraryRowActions({
+  name,
+  item,
+  itemKey,
+  tab,
+  dispatch,
+}: {
+  name: string;
+  item: LibraryDisplayItem;
+  itemKey: string;
+  tab: string;
+  dispatch: ReturnType<typeof useWorkspaceDispatch>;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  return (
     <div className="library-row-menu-wrap">
       <UiButton
         type="button"
@@ -118,6 +124,26 @@ function LibraryItemRow({
       )}
     </div>
   );
+}
+
+function LibraryItemRow({
+  item,
+  itemKey,
+  tab,
+  selection,
+  renameItem,
+  dispatch,
+}: {
+  item: LibraryDisplayItem;
+  itemKey: string;
+  tab: string;
+  selection: Record<string, boolean>;
+  renameItem: string | null;
+  dispatch: ReturnType<typeof useWorkspaceDispatch>;
+}) {
+  const name = item.name || item.title || i18n('library.untitled', 'Untitled');
+  const isSelected = !!selection[item.id];
+  const isRenaming = renameItem === item.id;
 
   return (
     <div className={'workspace-row library-row' + (isSelected ? ' library-row-selected' : '')}>
@@ -143,14 +169,28 @@ function LibraryItemRow({
         className="workspace-row-copy"
         onClick={() => dispatch.openItem(item.id, item.kind || 'file', itemKey)}
       >
-        {nameEl}
+        <LibraryItemName
+          isRenaming={isRenaming}
+          name={name}
+          item={item}
+          itemKey={itemKey}
+          dispatch={dispatch}
+        />
         <span className="library-mobile-meta">
           {libraryDate(item.uploadedAt || item.updatedAt)}
         </span>
       </div>
       <span className="library-updated">{libraryDate(item.uploadedAt || item.updatedAt)}</span>
       <span className="library-size">{fileSize(item)}</span>
-      <span className="library-row-actions">{actions}</span>
+      <span className="library-row-actions">
+        <LibraryRowActions
+          name={name}
+          item={item}
+          itemKey={itemKey}
+          tab={tab}
+          dispatch={dispatch}
+        />
+      </span>
     </div>
   );
 }
