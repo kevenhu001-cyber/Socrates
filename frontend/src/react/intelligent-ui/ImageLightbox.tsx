@@ -20,6 +20,215 @@ interface ImageLightboxProps {
   onClose: () => void;
 }
 
+function useLightboxKeyboardNav({
+  open,
+  onClose,
+  handlePrev,
+  handleNext,
+  handleZoomIn,
+  handleZoomOut,
+  handleResetZoom,
+}: {
+  open: boolean;
+  onClose: () => void;
+  handlePrev: () => void;
+  handleNext: () => void;
+  handleZoomIn: () => void;
+  handleZoomOut: () => void;
+  handleResetZoom: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') handlePrev();
+      else if (e.key === 'ArrowRight') handleNext();
+      else if (e.key === '+' || e.key === '=') handleZoomIn();
+      else if (e.key === '-') handleZoomOut();
+      else if (e.key === '0') handleResetZoom();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose, handlePrev, handleNext, handleZoomIn, handleZoomOut, handleResetZoom]);
+}
+
+interface LightboxToolbarProps {
+  imagesCount: number;
+  currentIndex: number;
+  currentImage: LightboxImageItem;
+  zoom: number;
+  copied: boolean;
+  handleZoomIn: () => void;
+  handleZoomOut: () => void;
+  handleResetZoom: () => void;
+  handleCopy: () => void;
+  onClose: () => void;
+}
+
+function LightboxToolbar({
+  imagesCount,
+  currentIndex,
+  currentImage,
+  zoom,
+  copied,
+  handleZoomIn,
+  handleZoomOut,
+  handleResetZoom,
+  handleCopy,
+  onClose,
+}: LightboxToolbarProps) {
+  return (
+    <div className="intui-lightbox-toolbar">
+      <div className="intui-lightbox-meta">
+        {imagesCount > 1 && (
+          <span className="intui-lightbox-counter">
+            {currentIndex + 1} / {imagesCount}
+          </span>
+        )}
+        {currentImage.title && (
+          <span className="intui-lightbox-title">
+            <MathText text={currentImage.title} />
+          </span>
+        )}
+      </div>
+
+      <div className="intui-lightbox-actions">
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleZoomOut}
+          disabled={zoom <= 0.6}
+          aria-label="Zoom out"
+          title="Zoom out (-)"
+        >
+          <span>−</span>
+        </BaseButton>
+        <span className="intui-lightbox-zoom-level">{Math.round(zoom * 100)}%</span>
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleZoomIn}
+          disabled={zoom >= 3}
+          aria-label="Zoom in"
+          title="Zoom in (+)"
+        >
+          <span>+</span>
+        </BaseButton>
+        {zoom !== 1 && (
+          <BaseButton
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleResetZoom}
+            aria-label="Reset zoom"
+            title="Reset zoom (0)"
+          >
+            1:1
+          </BaseButton>
+        )}
+
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleCopy}
+          aria-label="Copy image link"
+          title={copied ? 'Link copied!' : 'Copy link'}
+        >
+          <span>{copied ? '✓' : 'Copy'}</span>
+        </BaseButton>
+
+        {currentImage.sourceUrl && (
+          <a
+            href={currentImage.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="intui-lightbox-link-btn"
+            title="View source page"
+          >
+            Source ↗
+          </a>
+        )}
+
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          aria-label="Close"
+          className="intui-lightbox-close"
+        >
+          <Icon name="close" size={16} />
+        </BaseButton>
+      </div>
+    </div>
+  );
+}
+
+interface LightboxImageStageProps {
+  currentImage: LightboxImageItem;
+  imagesCount: number;
+  zoom: number;
+  handlePrev: () => void;
+  handleNext: () => void;
+  onClose: () => void;
+}
+
+function LightboxImageStage({
+  currentImage,
+  imagesCount,
+  zoom,
+  handlePrev,
+  handleNext,
+  onClose,
+}: LightboxImageStageProps) {
+  return (
+    <div
+      className="intui-lightbox-content"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {imagesCount > 1 && (
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="intui-lightbox-nav intui-lightbox-prev"
+          onClick={handlePrev}
+          aria-label="Previous image"
+        >
+          ‹
+        </BaseButton>
+      )}
+
+      <div className="intui-lightbox-img-wrapper" style={{ transform: `scale(${zoom})` }}>
+        <img
+          src={currentImage.src}
+          alt={currentImage.alt || currentImage.caption || 'Image'}
+          referrerPolicy="no-referrer"
+          draggable={false}
+        />
+      </div>
+
+      {imagesCount > 1 && (
+        <BaseButton
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="intui-lightbox-nav intui-lightbox-next"
+          onClick={handleNext}
+          aria-label="Next image"
+        >
+          ›
+        </BaseButton>
+      )}
+    </div>
+  );
+}
+
 export function ImageLightbox({ images, initialIndex = 0, open, onClose }: ImageLightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [zoom, setZoom] = useState(1);
@@ -44,9 +253,9 @@ export function ImageLightbox({ images, initialIndex = 0, open, onClose }: Image
     setZoom(1);
   }, [images.length]);
 
-  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.3, 3));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.3, 0.5));
-  const handleResetZoom = () => setZoom(1);
+  const handleZoomIn = useCallback(() => setZoom((prev) => Math.min(prev + 0.3, 3)), []);
+  const handleZoomOut = useCallback(() => setZoom((prev) => Math.max(prev - 0.3, 0.5)), []);
+  const handleResetZoom = useCallback(() => setZoom(1), []);
 
   const handleCopy = async () => {
     if (!currentImage?.src) return;
@@ -59,19 +268,15 @@ export function ImageLightbox({ images, initialIndex = 0, open, onClose }: Image
     }
   };
 
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft') handlePrev();
-      else if (e.key === 'ArrowRight') handleNext();
-      else if (e.key === '+' || e.key === '=') handleZoomIn();
-      else if (e.key === '-') handleZoomOut();
-      else if (e.key === '0') handleResetZoom();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, onClose, handlePrev, handleNext]);
+  useLightboxKeyboardNav({
+    open,
+    onClose,
+    handlePrev,
+    handleNext,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+  });
 
   if (!open || !currentImage) return null;
 
@@ -85,134 +290,27 @@ export function ImageLightbox({ images, initialIndex = 0, open, onClose }: Image
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="intui-lightbox-toolbar">
-        <div className="intui-lightbox-meta">
-          {images.length > 1 && (
-            <span className="intui-lightbox-counter">
-              {currentIndex + 1} / {images.length}
-            </span>
-          )}
-          {currentImage.title && (
-            <span className="intui-lightbox-title">
-              <MathText text={currentImage.title} />
-            </span>
-          )}
-        </div>
+      <LightboxToolbar
+        imagesCount={images.length}
+        currentIndex={currentIndex}
+        currentImage={currentImage}
+        zoom={zoom}
+        copied={copied}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleResetZoom={handleResetZoom}
+        handleCopy={handleCopy}
+        onClose={onClose}
+      />
 
-        <div className="intui-lightbox-actions">
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomOut}
-            disabled={zoom <= 0.6}
-            aria-label="Zoom out"
-            title="Zoom out (-)"
-          >
-            <span>−</span>
-          </BaseButton>
-          <span className="intui-lightbox-zoom-level">{Math.round(zoom * 100)}%</span>
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleZoomIn}
-            disabled={zoom >= 3}
-            aria-label="Zoom in"
-            title="Zoom in (+)"
-          >
-            <span>+</span>
-          </BaseButton>
-          {zoom !== 1 && (
-            <BaseButton
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleResetZoom}
-              aria-label="Reset zoom"
-              title="Reset zoom (0)"
-            >
-              1:1
-            </BaseButton>
-          )}
-
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleCopy}
-            aria-label="Copy image link"
-            title={copied ? 'Link copied!' : 'Copy link'}
-          >
-            <span>{copied ? '✓' : 'Copy'}</span>
-          </BaseButton>
-
-          {currentImage.sourceUrl && (
-            <a
-              href={currentImage.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="intui-lightbox-link-btn"
-              title="View source page"
-            >
-              Source ↗
-            </a>
-          )}
-
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            aria-label="Close"
-            className="intui-lightbox-close"
-          >
-            <Icon name="close" size={16} />
-          </BaseButton>
-        </div>
-      </div>
-
-      <div
-        className="intui-lightbox-content"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
-      >
-        {images.length > 1 && (
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="intui-lightbox-nav intui-lightbox-prev"
-            onClick={handlePrev}
-            aria-label="Previous image"
-          >
-            ‹
-          </BaseButton>
-        )}
-
-        <div className="intui-lightbox-img-wrapper" style={{ transform: `scale(${zoom})` }}>
-          <img
-            src={currentImage.src}
-            alt={currentImage.alt || currentImage.caption || 'Image'}
-            referrerPolicy="no-referrer"
-            draggable={false}
-          />
-        </div>
-
-        {images.length > 1 && (
-          <BaseButton
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="intui-lightbox-nav intui-lightbox-next"
-            onClick={handleNext}
-            aria-label="Next image"
-          >
-            ›
-          </BaseButton>
-        )}
-      </div>
+      <LightboxImageStage
+        currentImage={currentImage}
+        imagesCount={images.length}
+        zoom={zoom}
+        handlePrev={handlePrev}
+        handleNext={handleNext}
+        onClose={onClose}
+      />
 
       {currentImage.caption && (
         <div className="intui-lightbox-caption">

@@ -34,6 +34,35 @@ function buildRanges(count: number, binWidth: number, binCount: number): Spectru
   return ranges;
 }
 
+function isAnalyserUsable(analyser: AnalyserNode | null): analyser is AnalyserNode {
+  return Boolean(
+    analyser &&
+    typeof analyser.getFloatFrequencyData === 'function' &&
+    analyser.context &&
+    analyser.frequencyBinCount > 0,
+  );
+}
+
+function computeRangePeak(range: SpectrumRange | undefined, data: Float32Array): number {
+  if (!range) return -Infinity;
+  if (range.to - range.from <= 1) {
+    const base = Math.min(data.length - 2, Math.floor(range.center));
+    const weight = range.center - base;
+    return data[base] * (1 - weight) + data[base + 1] * weight;
+  }
+  let peak = -Infinity;
+  for (let bin = range.from; bin < range.to; bin += 1) {
+    peak = Math.max(peak, data[bin]);
+  }
+  return peak;
+}
+
+function computeTargetLevel(peak: number, tilt: number): number {
+  if (!Number.isFinite(peak)) return 0;
+  const db = peak + tilt;
+  return Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
+}
+
 export function VoiceSpectrum({ analyser }: { analyser: AnalyserNode | null }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [count, setCount] = useState(0);
@@ -66,12 +95,7 @@ export function VoiceSpectrum({ analyser }: { analyser: AnalyserNode | null }) {
 
     const draw = () => {
       frame = requestAnimationFrame(draw);
-      const usable = Boolean(
-        analyser &&
-        typeof analyser.getFloatFrequencyData === 'function' &&
-        analyser.context &&
-        analyser.frequencyBinCount > 0,
-      );
+      const usable = isAnalyserUsable(analyser);
       if (analyser && usable) {
         if (data.length !== analyser.frequencyBinCount) {
           data = new Float32Array(analyser.frequencyBinCount);
@@ -89,32 +113,20 @@ export function VoiceSpectrum({ analyser }: { analyser: AnalyserNode | null }) {
         }
       }
       for (let index = 0; index < count; index += 1) {
-        let target = 0;
-        if (analyser && usable) {
-          const range = ranges[index];
-          let peak = -Infinity;
-          if (range) {
-            if (range.to - range.from <= 1) {
-              const base = Math.min(data.length - 2, Math.floor(range.center));
-              const weight = range.center - base;
-              peak = data[base] * (1 - weight) + data[base + 1] * weight;
-            } else {
-              for (let bin = range.from; bin < range.to; bin += 1) {
-                peak = Math.max(peak, data[bin]);
-              }
-            }
-            const db = peak + tilts[index];
-            target = Math.min(1, Math.max(0, (db - DB_FLOOR) / (DB_CEIL - DB_FLOOR)));
-          }
+        if (usable) {
+          const peak = computeRangePeak(ranges[index], data);
+          targets[index] = computeTargetLevel(peak, tilts[index]);
+        } else {
+          targets[index] = 0;
         }
-        targets[index] = target;
       }
       for (let index = 0; index < count; index += 1) {
         const prev = targets[Math.max(0, index - 1)];
         const next = targets[Math.min(count - 1, index + 1)];
         const target = (prev + targets[index] * 2 + next) / 4;
         /* Rise almost immediately, fall slower: no flicker, no long tail. */
-        levels[index] += (target - levels[index]) * (target > levels[index] ? 0.8 : 0.35);
+        const factor = target > levels[index] ? 0.8 : 0.35;
+        levels[index] += (target - levels[index]) * factor;
         const height = BAR_MIN + (BAR_MAX - BAR_MIN) * levels[index];
         const bar = bars[index];
         if (bar) bar.style.transform = `scaleY(${height / BAR_MIN})`;
