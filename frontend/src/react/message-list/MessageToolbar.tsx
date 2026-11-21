@@ -132,20 +132,14 @@ interface MessageToolbarActionsProps {
   contextMenu?: { open: boolean; setOpen: (open: boolean) => void };
 }
 
-function MessageToolbarActions({
-  role,
-  callbacks,
-  copied,
-  liked,
-  onCopy,
-  onThumbsUp,
-  likeButtonRef,
-  compact,
-  contextMenu,
-}: MessageToolbarActionsProps): React.ReactElement {
-  const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
-
-  /* Reuse the same actions for the latest toolbar and history menu. */
+function buildOverflowActions(
+  role: 'user' | 'assistant' | 'system',
+  callbacks: MessageToolbarCallbacks,
+  copyLabel: string,
+  copied: boolean,
+  onCopy: () => void,
+  onThumbsUp: () => void,
+): { primaryActions: OverflowAction[]; secondaryActions: OverflowAction[] } {
   const primaryActions: OverflowAction[] =
     role === 'user'
       ? [
@@ -203,6 +197,30 @@ function MessageToolbarActions({
       onClick: () => callbacks.onReExplain?.(),
     },
   ];
+
+  return { primaryActions, secondaryActions };
+}
+
+function MessageToolbarActions({
+  role,
+  callbacks,
+  copied,
+  liked,
+  onCopy,
+  onThumbsUp,
+  likeButtonRef,
+  compact,
+  contextMenu,
+}: MessageToolbarActionsProps): React.ReactElement {
+  const copyLabel = copied ? i18n('message.copied', 'Copied') : i18n('message.copy', 'Copy');
+  const { primaryActions, secondaryActions } = buildOverflowActions(
+    role,
+    callbacks,
+    copyLabel,
+    copied,
+    onCopy,
+    onThumbsUp,
+  );
 
   if (compact)
     return (

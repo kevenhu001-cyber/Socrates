@@ -53,6 +53,67 @@ export function hideNewReplyPill() {
   if (pill) pill.classList.remove('visible');
 }
 
+function bindScrollGestureListeners(releasePin: () => void, clearUpIntent: () => void) {
+  document.addEventListener(
+    'wheel',
+    function (ev) {
+      markUserScrollIntent();
+      if (ev.deltaY < 0) releasePin();
+      else if (ev.deltaY > 0) clearUpIntent();
+    },
+    { passive: true, capture: true },
+  );
+
+  let touchY: number | null = null;
+  document.addEventListener(
+    'touchstart',
+    function (ev) {
+      touchY = ev.touches && ev.touches.length ? ev.touches[0].clientY : null;
+    },
+    { passive: true, capture: true },
+  );
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.target === scrollContainer()) recordScrollIntent();
+    },
+    { passive: true, capture: true },
+  );
+
+  document.addEventListener(
+    'touchmove',
+    function (ev) {
+      if (touchY == null || !ev.touches || !ev.touches.length) return;
+      const y = ev.touches[0].clientY;
+      if (y !== touchY) recordScrollIntent();
+      if (Math.abs(y - touchY) > 4) lastUserScrollIntentAt = Date.now();
+      if (y - touchY > 4) releasePin(); /* finger down = scrolling up */
+      else if (touchY - y > 4) clearUpIntent();
+      touchY = y;
+    },
+    { passive: true, capture: true },
+  );
+
+  document.addEventListener(
+    'keydown',
+    function (ev) {
+      const el = ev.target;
+      const tag = el && (el as Element).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (el && (el as HTMLElement).isContentEditable))
+        return;
+      if (ev.key === 'ArrowUp' || ev.key === 'PageUp' || ev.key === 'Home') {
+        releasePin();
+      } else if (ev.key === 'End') {
+        markUserScrollIntent();
+        clearUpIntent();
+      } else if (ev.key === 'ArrowDown' || ev.key === 'PageDown' || ev.key === ' ') {
+        recordScrollIntent();
+      }
+    },
+    true,
+  );
+}
+
 /* Idempotent: window flag prevents re-registering on hot-reload. */
 let wired = false;
 export function wireScrollPill() {
@@ -92,64 +153,9 @@ export function wireScrollPill() {
     }
   }
 
-  document.addEventListener(
-    'wheel',
-    function (ev) {
-      markUserScrollIntent();
-      if (ev.deltaY < 0) releasePin();
-      else if (ev.deltaY > 0) upIntentAt = 0;
-    },
-    { passive: true, capture: true },
-  );
-
-  let touchY: number | null = null;
-  document.addEventListener(
-    'touchstart',
-    function (ev) {
-      touchY = ev.touches && ev.touches.length ? ev.touches[0].clientY : null;
-    },
-    { passive: true, capture: true },
-  );
-  document.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (event.target === scrollContainer()) recordScrollIntent();
-    },
-    { passive: true, capture: true },
-  );
-
-  document.addEventListener(
-    'touchmove',
-    function (ev) {
-      if (touchY == null || !ev.touches || !ev.touches.length) return;
-      const y = ev.touches[0].clientY;
-      if (y !== touchY) recordScrollIntent();
-      if (Math.abs(y - touchY) > 4) lastUserScrollIntentAt = Date.now();
-      if (y - touchY > 4) releasePin(); /* finger down = scrolling up */
-      else if (touchY - y > 4) upIntentAt = 0;
-      touchY = y;
-    },
-    { passive: true, capture: true },
-  );
-
-  document.addEventListener(
-    'keydown',
-    function (ev) {
-      const el = ev.target;
-      const tag = el && (el as Element).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (el && (el as HTMLElement).isContentEditable))
-        return;
-      if (ev.key === 'ArrowUp' || ev.key === 'PageUp' || ev.key === 'Home') {
-        releasePin();
-      } else if (ev.key === 'End') {
-        markUserScrollIntent();
-        upIntentAt = 0;
-      } else if (ev.key === 'ArrowDown' || ev.key === 'PageDown' || ev.key === ' ') {
-        recordScrollIntent();
-      }
-    },
-    true,
-  );
+  bindScrollGestureListeners(releasePin, () => {
+    upIntentAt = 0;
+  });
 
   /* A scroll event that arrives in the same frame as a layout change
      (scrollHeight or clientHeight moved) is usually the browser clamping
