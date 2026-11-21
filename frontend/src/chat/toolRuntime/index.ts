@@ -727,6 +727,78 @@ function createExecutionStartHandler(
   };
 }
 
+interface ToolDisposerDeps {
+  lifecycle: ToolRuntimeLifecycle;
+  flushPendingToolPublish: () => void;
+  getMessage: () => ToolMessage | null;
+  pendingDeltas: ToolCallDelta[];
+  getDeltaFrame: () => number | null;
+  setDeltaFrame: (frame: number | null) => void;
+  cancelFrame: (frame: number) => void;
+  executionConnections: Map<string, ExecutionConnection>;
+  closeConnection: (connection: ExecutionConnection) => void;
+  stillOwnsSlot: () => boolean;
+  notifyToolRun: (message: ToolMessage | null) => void;
+}
+
+function createToolRuntimeDisposer(deps: ToolDisposerDeps) {
+  function dispose(): void {
+    if (deps.lifecycle.disposed) return;
+    /* A turn can finish before the scheduled progress paint. Commit the
+       latest draft before finishRender reads the session snapshot. */
+    deps.flushPendingToolPublish();
+    const message = deps.getMessage();
+    const hasPendingApproval = !!(
+      message &&
+      Array.isArray(message.toolCalls) &&
+      message.toolCalls.some(
+        (entry) =>
+          !!(
+            entry &&
+            entry.approval &&
+            (!entry.approval.status || entry.approval.status === 'pending')
+          ),
+      )
+    );
+    if (hasPendingApproval) {
+      /* The stream can finish while a Codex turn is paused for approval.
+       * Keep the runtime state alive so the declarative approval row stays
+       * actionable after finish(). */
+      deps.lifecycle.postFinishApprovalMessage = message;
+      deps.pendingDeltas.length = 0;
+      Array.from(deps.executionConnections.values()).forEach(deps.closeConnection);
+      deps.executionConnections.clear();
+      return;
+    }
+    deps.lifecycle.disposed = true;
+    deps.pendingDeltas.length = 0;
+    const deltaFrame = deps.getDeltaFrame();
+    if (deltaFrame != null) {
+      deps.cancelFrame(deltaFrame);
+      deps.setDeltaFrame(null);
+    }
+    Array.from(deps.executionConnections.values()).forEach(deps.closeConnection);
+    deps.executionConnections.clear();
+  }
+
+  function cancel(): void {
+    const message = deps.stillOwnsSlot() ? deps.getMessage() : null;
+    if (message && Array.isArray(message.toolCalls)) {
+      for (let i = 0; i < message.toolCalls.length; i++) {
+        const entry = message.toolCalls[i];
+        if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
+        setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
+      }
+      /* Runs settle as stopped, not spinning: the declarative renderer reads
+         run.phase off the entry, so the cancel has to publish. */
+      deps.notifyToolRun(message);
+    }
+    dispose();
+  }
+
+  return { dispose, cancel };
+}
+
 /* ------------------------------------------------------------------ */
 /*  createToolRuntime                                                  */
 /* ------------------------------------------------------------------ */
@@ -831,64 +903,27 @@ export function createToolRuntime(options: ToolRuntimeOptions): ToolRuntime {
     notifyToolRun,
   );
 
-  function dispose(): void {
-    if (lifecycle.disposed) return;
-    /* A turn can finish before the scheduled progress paint. Commit the
-       latest draft before finishRender reads the session snapshot. */
-    flushPendingToolPublish();
-    const message = getMessage();
-    const hasPendingApproval = !!(
-      message &&
-      Array.isArray(message.toolCalls) &&
-      message.toolCalls.some(
-        (entry) =>
-          !!(
-            entry &&
-            entry.approval &&
-            (!entry.approval.status || entry.approval.status === 'pending')
-          ),
-      )
-    );
-    if (hasPendingApproval) {
-      /* The stream can finish while a Codex turn is paused for approval.
-       * Keep the runtime state alive so the declarative approval row stays
-       * actionable after finish(). */
-      lifecycle.postFinishApprovalMessage = message;
-      pendingDeltas.length = 0;
-      Array.from(executionConnections.values()).forEach(closeConnection);
-      executionConnections.clear();
-      return;
-    }
-    lifecycle.disposed = true;
-    pendingDeltas.length = 0;
-    if (deltaFrame != null) {
-      cancelFrame(deltaFrame);
-      deltaFrame = null;
-    }
-    Array.from(executionConnections.values()).forEach(closeConnection);
-    executionConnections.clear();
-  }
+  const { dispose, cancel } = createToolRuntimeDisposer({
+    lifecycle,
+    flushPendingToolPublish,
+    getMessage,
+    pendingDeltas,
+    getDeltaFrame: () => deltaFrame,
+    setDeltaFrame: (frame) => {
+      deltaFrame = frame;
+    },
+    cancelFrame,
+    executionConnections,
+    closeConnection,
+    stillOwnsSlot,
+    notifyToolRun,
+  });
 
   /* Text streaming after a tool row used to break live grouping. Grouping is
      derived by the declarative renderer from adjacency in rawText, so this
      is a no-op kept for the public interface. */
   function noteTextDelta(): void {
     /* no-op */
-  }
-
-  function cancel(): void {
-    const message = stillOwnsSlot() ? getMessage() : null;
-    if (message && Array.isArray(message.toolCalls)) {
-      for (let i = 0; i < message.toolCalls.length; i++) {
-        const entry = message.toolCalls[i];
-        if (!entry || (getRun(entry) && isTerminalToolPhase(getRun(entry)!.phase))) continue;
-        setRun(entry, TOOL_RUN_PHASES.cancelled, { endedAt: Date.now() });
-      }
-      /* Runs settle as stopped, not spinning: the declarative renderer reads
-         run.phase off the entry, so the cancel has to publish. */
-      notifyToolRun(message);
-    }
-    dispose();
   }
 
   return {

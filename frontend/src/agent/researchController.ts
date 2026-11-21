@@ -154,6 +154,89 @@ function startResearchWatcher(job: ResearchJob, epoch: number, deps: ResearchWat
     });
 }
 
+interface ResearchActionsDeps {
+  ports: ResearchClientPorts;
+  snapshot: () => ResearchSnapshot;
+  signal: () => AbortSignal;
+  generation: () => number;
+  current: (epoch: number) => boolean;
+  emit: (patch: Partial<ResearchSnapshot>) => void;
+  patchView: (id: string, patch: Partial<ResearchView>) => void;
+  accept: ResearchAcceptor;
+  watch: (job: ResearchJob, epoch: number) => void;
+}
+
+function createResearchJobActions(deps: ResearchActionsDeps) {
+  async function submit(query?: string) {
+    const snap = deps.snapshot();
+    const scope = snap.scope;
+    if (!scope || snap.submitting) return;
+    if (query && snap.pending && snap.pending.query !== query.trim()) {
+      deps.emit({ issue: 'submit' });
+      return;
+    }
+    const epoch = deps.generation();
+    // A response lost after acceptance retains the original key, including
+    // across reload. Never silently replace an unresolved submission.
+    const body = snap.pending || {
+      query: (query || '').trim(),
+      sessionId: scope.sessionId,
+      projectId: scope.projectId,
+      idempotencyKey: deps.ports.key(),
+    };
+    if (!body.query) return;
+    deps.ports.pending(scope, body);
+    deps.emit({ pending: body, submitting: true, issue: null });
+    try {
+      const job = await deps.ports.create(body, deps.signal());
+      deps.ports.pending(scope, null);
+      if (!deps.current(epoch)) return;
+      deps.emit({ pending: null, submitting: false });
+      await deps.accept(job, epoch);
+      deps.watch(job, epoch);
+      return job;
+    } catch {
+      if (deps.current(epoch)) deps.emit({ submitting: false, issue: 'submit' });
+    }
+  }
+
+  async function control(id: string, action: 'cancel' | 'retry') {
+    const epoch = deps.generation();
+    const view = deps.snapshot().jobs.find((entry) => entry.job.id === id);
+    if (!view || view.busy) return;
+    deps.patchView(id, { busy: true });
+    try {
+      const job = await deps.ports.control(id, action, deps.signal());
+      await deps.accept(job, epoch);
+      deps.watch(job, epoch);
+    } catch {
+      if (deps.current(epoch)) deps.emit({ issue: 'action' });
+    } finally {
+      if (deps.current(epoch)) deps.patchView(id, { busy: false });
+    }
+  }
+
+  async function refine(id: string, instruction: string) {
+    const epoch = deps.generation();
+    const view = deps.snapshot().jobs.find((entry) => entry.job.id === id);
+    if (!view || view.busy || !active(view.job) || !instruction.trim()) return;
+    deps.patchView(id, { busy: true });
+    try {
+      const result = await deps.ports.refine(id, instruction.trim(), deps.signal());
+      await deps.accept(result.previous, epoch);
+      await deps.accept(result.job, epoch);
+      deps.watch(result.job, epoch);
+      return result.job;
+    } catch {
+      if (deps.current(epoch)) deps.emit({ issue: 'action' });
+    } finally {
+      if (deps.current(epoch)) deps.patchView(id, { busy: false });
+    }
+  }
+
+  return { submit, control, refine };
+}
+
 /** Owns subscriptions for one account/session. Every async completion checks
  * its captured generation before changing UI or delivering a report. */
 export function createResearchController(ports: ResearchClientPorts) {
@@ -196,6 +279,18 @@ export function createResearchController(ports: ResearchClientPorts) {
       accept,
     });
 
+  const { submit, control, refine } = createResearchJobActions({
+    ports,
+    snapshot: () => snapshot,
+    signal: () => abort.signal,
+    generation: () => generation,
+    current,
+    emit,
+    patchView,
+    accept,
+    watch,
+  });
+
   async function refresh() {
     const epoch = generation;
     const scope = snapshot.scope;
@@ -231,72 +326,6 @@ export function createResearchController(ports: ResearchClientPorts) {
       void refresh().then(() => {
         if (current(epoch) && snapshot.pending) void submit();
       });
-    }
-  }
-
-  async function submit(query?: string) {
-    const scope = snapshot.scope;
-    if (!scope || snapshot.submitting) return;
-    if (query && snapshot.pending && snapshot.pending.query !== query.trim()) {
-      emit({ issue: 'submit' });
-      return;
-    }
-    const epoch = generation;
-    // A response lost after acceptance retains the original key, including
-    // across reload. Never silently replace an unresolved submission.
-    const body = snapshot.pending || {
-      query: (query || '').trim(),
-      sessionId: scope.sessionId,
-      projectId: scope.projectId,
-      idempotencyKey: ports.key(),
-    };
-    if (!body.query) return;
-    ports.pending(scope, body);
-    emit({ pending: body, submitting: true, issue: null });
-    try {
-      const job = await ports.create(body, abort.signal);
-      ports.pending(scope, null);
-      if (!current(epoch)) return;
-      emit({ pending: null, submitting: false });
-      await accept(job, epoch);
-      watch(job, epoch);
-      return job;
-    } catch {
-      if (current(epoch)) emit({ submitting: false, issue: 'submit' });
-    }
-  }
-
-  async function control(id: string, action: 'cancel' | 'retry') {
-    const epoch = generation;
-    const view = snapshot.jobs.find((entry) => entry.job.id === id);
-    if (!view || view.busy) return;
-    patchView(id, { busy: true });
-    try {
-      const job = await ports.control(id, action, abort.signal);
-      await accept(job, epoch);
-      watch(job, epoch);
-    } catch {
-      if (current(epoch)) emit({ issue: 'action' });
-    } finally {
-      if (current(epoch)) patchView(id, { busy: false });
-    }
-  }
-
-  async function refine(id: string, instruction: string) {
-    const epoch = generation;
-    const view = snapshot.jobs.find((entry) => entry.job.id === id);
-    if (!view || view.busy || !active(view.job) || !instruction.trim()) return;
-    patchView(id, { busy: true });
-    try {
-      const result = await ports.refine(id, instruction.trim(), abort.signal);
-      await accept(result.previous, epoch);
-      await accept(result.job, epoch);
-      watch(result.job, epoch);
-      return result.job;
-    } catch {
-      if (current(epoch)) emit({ issue: 'action' });
-    } finally {
-      if (current(epoch)) patchView(id, { busy: false });
     }
   }
 
