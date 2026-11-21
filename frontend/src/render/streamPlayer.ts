@@ -146,6 +146,16 @@ function resolvePlayerDependencies(options: StreamPlayerOptions) {
   return { now, raf, isHidden, delay, starveAfterMs, subscribeVisibility };
 }
 
+function notifyPlayerDone(onDone: StreamPlayerOptions['onDone'], doneFired: boolean): boolean {
+  if (doneFired) return true;
+  try {
+    onDone?.();
+  } catch (_) {
+    reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
+  }
+  return true;
+}
+
 function flushTerminalPlayer(
   clock: PlaybackClock,
   full: string,
@@ -155,31 +165,17 @@ function flushTerminalPlayer(
   lastState: PlaybackState,
   doneFired: boolean,
 ): { nextState: PlaybackState; doneFired: boolean } {
-  /* End-of-turn safety: make everything visible and paint synchronously,
-     bypassing the adaptive rate. Used by abort/teardown paths that must
-     not animate. */
   flushVisibleText(clock, full, onFrame);
   const nextState = publishStateChange(lastState, 'done', onStateChange);
-  let nextDoneFired = doneFired;
-  if (!nextDoneFired) {
-    nextDoneFired = true;
-    try {
-      onDone?.();
-    } catch (_) {
-      reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
-    }
-  }
+  const nextDoneFired = notifyPlayerDone(onDone, doneFired);
   return { nextState, doneFired: nextDoneFired };
 }
 
 export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
+  const { onFrame, onDone, onStateChange } = options;
   const { now, raf, isHidden, delay, starveAfterMs, subscribeVisibility } =
     resolvePlayerDependencies(options);
-  const onFrame = options.onFrame;
-  const onDone = options.onDone;
-  const onStateChange = options.onStateChange;
   let cancelIdle: (() => void) | null = null;
-
   let full = '';
   const clock: PlaybackClock = createPlaybackClock(options.config, now());
   let scheduled = false;
@@ -220,14 +216,7 @@ export function createStreamPlayer(options: StreamPlayerOptions): StreamPlayer {
       lastState = publishStateChange(lastState, r.state, onStateChange);
       if (clock.isDone()) {
         unsubscribeVisibility = disposeCallback(unsubscribeVisibility);
-        if (!doneFired) {
-          doneFired = true;
-          try {
-            onDone?.();
-          } catch (_) {
-            reportEmptyCatch(_, 'empty catch: render/streamPlayer.ts'); /* listener threw */
-          }
-        }
+        doneFired = notifyPlayerDone(onDone, doneFired);
         return; // clock is terminal; stop the loop
       }
       if (clock.playedLen() < clock.totalLen()) {
