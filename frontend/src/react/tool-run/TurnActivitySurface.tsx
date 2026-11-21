@@ -128,6 +128,75 @@ function hasDetail(view: ToolRunView): boolean {
   );
 }
 
+interface ToolStepPresentation {
+  view: ToolRunView;
+  state: ReturnType<typeof toolRunStateOf>;
+  running: boolean;
+  inFlight: boolean;
+  expandable: boolean;
+  title: string;
+  statusLabel: string | undefined;
+  meta: string | undefined;
+  sites: string[];
+}
+
+function resolveToolStepPresentation(call: ToolCallRecord, live: boolean): ToolStepPresentation {
+  const view = toolRunView(call);
+  const state = toolRunStateOf(call);
+  const running = live && state === 'running';
+  const inFlight = live && (state === 'running' || state === 'awaiting');
+  const expandable = hasDetail(view);
+  const label = toolRunLabel(call, state);
+  const status = STATUS_COPY[state];
+  const isUnknownStatus = state === 'running' && !live;
+  const resolvedStatus = isUnknownStatus
+    ? i18n('tool.status.unknown', 'Status unknown')
+    : i18n(status.key, status.fallback);
+  const verb = toolVerbOf(view.name);
+  const showAction = state === 'awaiting' || state === 'stopped' || isUnknownStatus;
+  const actionTarget = toolTargetOf(view.name, call.input);
+  const actionTitle = [i18n(verb.key, verb.fallback), actionTarget].filter(Boolean).join(' · ');
+  const title = showAction ? actionTitle : label.text;
+  const sites = toolActivitySites(call);
+  const statusLabel = resolvedStatus === title ? undefined : resolvedStatus;
+  const meta = sites.length > 0 ? label.meta?.[0] : undefined;
+
+  return {
+    view,
+    state,
+    running,
+    inFlight,
+    expandable,
+    title,
+    statusLabel,
+    meta,
+    sites,
+  };
+}
+
+function ToolStepDetailBody({
+  view,
+  call,
+  inFlight,
+  readOnly,
+  state,
+}: {
+  view: ToolRunView;
+  call: ToolCallRecord;
+  inFlight: boolean;
+  readOnly?: boolean;
+  state: ReturnType<typeof toolRunStateOf>;
+}): ReactElement {
+  return (
+    <div className="thinking-step-detail-body" data-testid="tool-detail">
+      <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
+      {view.agentRun ? (
+        <ToolRunAgentSteps run={view.agentRun} live={inFlight} state={agentRunStateOf(state)} />
+      ) : null}
+    </div>
+  );
+}
+
 /** One tool call as one row. The detail opens inline, not in a drawer. */
 const ToolStep = memo(function ToolStep({
   call,
@@ -139,62 +208,42 @@ const ToolStep = memo(function ToolStep({
   readOnly?: boolean;
 }): ReactElement {
   useLocaleRefresh();
-  const view = toolRunView(call);
-  const state = toolRunStateOf(call);
-  const running = live && state === 'running';
-  const inFlight = live && (state === 'running' || state === 'awaiting');
-  const disclosure = useToolRunDisclosure(view.id);
-  const expandable = hasDetail(view);
-  const label = toolRunLabel(call, state);
-  const status = STATUS_COPY[state];
-  const statusLabel =
-    state === 'running' && !live
-      ? i18n('tool.status.unknown', 'Status unknown')
-      : i18n(status.key, status.fallback);
-  const verb = toolVerbOf(view.name);
-  const showAction = state === 'awaiting' || state === 'stopped' || (state === 'running' && !live);
-  const title = showAction
-    ? [i18n(verb.key, verb.fallback), toolTargetOf(view.name, call.input)]
-        .filter(Boolean)
-        .join(' · ')
-    : label.text;
-  const sites = toolActivitySites(call);
+  const pres = resolveToolStepPresentation(call, live);
+  const disclosure = useToolRunDisclosure(pres.view.id);
+  const onToggle = pres.expandable ? () => disclosure.setOpen(!disclosure.open) : undefined;
+  const detail = pres.expandable ? (
+    <ToolStepDetailBody
+      view={pres.view}
+      call={call}
+      inFlight={pres.inFlight}
+      readOnly={readOnly}
+      state={pres.state}
+    />
+  ) : null;
+
   return (
     <div
-      className={`rn-tool-row${inFlight ? ' is-live' : ''}`}
-      data-tcid={view.id}
-      data-tool={view.name}
-      data-state={state}
+      className={`rn-tool-row${pres.inFlight ? ' is-live' : ''}`}
+      data-tcid={pres.view.id}
+      data-tool={pres.view.name}
+      data-state={pres.state}
       data-react-owned="1"
-      data-error={state === 'error' ? '1' : undefined}
+      data-error={pres.state === 'error' ? '1' : undefined}
     >
       <WebUiTheme>
         <ActivityStep
-          testID={`tool-row-${view.id}`}
-          label={title}
-          live={running}
-          status={statusLabel === title ? undefined : statusLabel}
-          metadata={sites.length ? label.meta?.[0] : undefined}
-          error={state === 'error'}
-          icon={<ToolActivityIcon name={view.name} sites={sites} />}
-          iconWidth={sites.length > 1 ? 30 : undefined}
-          expandable={expandable}
+          testID={`tool-row-${pres.view.id}`}
+          label={pres.title}
+          live={pres.running}
+          status={pres.statusLabel}
+          metadata={pres.meta}
+          error={pres.state === 'error'}
+          icon={<ToolActivityIcon name={pres.view.name} sites={pres.sites} />}
+          iconWidth={pres.sites.length > 1 ? 30 : undefined}
+          expandable={pres.expandable}
           open={disclosure.open}
-          onToggle={expandable ? () => disclosure.setOpen(!disclosure.open) : undefined}
-          detail={
-            expandable ? (
-              <div className="thinking-step-detail-body" data-testid="tool-detail">
-                <ToolRunDetail view={view} call={call} inFlight={inFlight} readOnly={readOnly} />
-                {view.agentRun ? (
-                  <ToolRunAgentSteps
-                    run={view.agentRun}
-                    live={inFlight}
-                    state={agentRunStateOf(state)}
-                  />
-                ) : null}
-              </div>
-            ) : null
-          }
+          onToggle={onToggle}
+          detail={detail}
         />
       </WebUiTheme>
     </div>
@@ -330,6 +379,101 @@ function useActivityDuration(props: TurnActivitySurfaceProps): number | undefine
   return reasoningDurationSec;
 }
 
+function useTurnIntent(intentSummary?: string): string {
+  const previousIntent = useRef('');
+  const trimmed = intentSummary?.trim();
+  if (trimmed) {
+    previousIntent.current = trimmed;
+  }
+  return trimmed || previousIntent.current;
+}
+
+function resolveSurfaceHeaderCopy(
+  header: ReturnType<typeof thinkingHeaderOf>,
+  hasDetails: boolean,
+  isLive: boolean,
+  hasSteps: boolean,
+  hasIntent: boolean,
+): { label: string; durationLabel: string | undefined } {
+  if (!isLive && !hasDetails) {
+    return {
+      label: i18n('think.complete', 'Finished thinking'),
+      durationLabel: undefined,
+    };
+  }
+  const label = thinkingLabelOf(header, thinkingLabels(hasSteps, hasIntent));
+  const durationLabel =
+    header.durationSec === null
+      ? undefined
+      : tf('think.rn.elapsed', '{sec}s', { sec: header.durationSec });
+  return { label, durationLabel };
+}
+
+function shouldShowActivityCue(
+  isLive: boolean,
+  phase: string | undefined,
+  isOpen: boolean,
+  calls: ReadonlyArray<ToolCallRecord>,
+  activeToolId?: string,
+): boolean {
+  if (!isLive) return false;
+  if (phase === 'tool-awaiting' || phase === 'answering') return false;
+  const isRunningActiveTool =
+    isOpen &&
+    phase === 'tool-running' &&
+    Boolean(activeToolId) &&
+    calls.some((call) => call.id === activeToolId);
+  return !isRunningActiveTool;
+}
+
+function buildTurnActivityDataAttrs(
+  isLive: boolean,
+  hasSteps: boolean,
+  showActivityCue: boolean,
+  phase: string | undefined,
+  answerStarted: boolean | undefined,
+  isOpen: boolean,
+) {
+  return {
+    className: `rn-turn-activity${isLive ? ' is-live' : ''}`,
+    'data-turn-surface-part': 'activity',
+    'data-activity-timeline': hasSteps ? 'true' : undefined,
+    'data-live': showActivityCue ? 'true' : undefined,
+    'data-phase': isLive ? phase : undefined,
+    'data-answer-started': answerStarted ? 'true' : undefined,
+    'data-open': isOpen ? 'true' : 'false',
+  };
+}
+
+function resolveStatusLabel(
+  isOpen: boolean,
+  status: TurnActivityStatus | undefined,
+  fallbackLabel: string | undefined,
+): string | undefined {
+  if (isOpen && status?.phase === 'waiting') {
+    return status.label;
+  }
+  return fallbackLabel;
+}
+
+function isTurnSurfaceEmpty(
+  isLive: boolean,
+  hasDetails: boolean,
+  durationSec: number | null,
+): boolean {
+  return !isLive && !hasDetails && durationSec === null;
+}
+
+function resolveSurfaceIconProps(isLive: boolean, activeTool?: ToolCallRecord, toolName?: string) {
+  const resolvedToolName = isLive ? toolName : undefined;
+  const sites = resolvedToolName ? toolActivitySites(activeTool) : [];
+  const icon = resolvedToolName ? (
+    <ToolActivityIcon name={resolvedToolName} sites={sites} />
+  ) : undefined;
+  const iconWidth = sites.length > 1 ? 30 : undefined;
+  return { icon, iconWidth };
+}
+
 export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
   const {
     activities = NO_ACTIVITIES,
@@ -340,9 +484,7 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     status,
   } = props;
   const [isOpen, setIsOpen] = useState(false);
-  const previousIntent = useRef('');
-  const intent = props.intentSummary?.trim() || previousIntent.current;
-  if (props.intentSummary?.trim()) previousIntent.current = intent;
+  const intent = useTurnIntent(props.intentSummary);
   const bodyId = useId();
   useLocaleRefresh();
 
@@ -355,48 +497,50 @@ export function TurnActivitySurface(props: TurnActivitySurfaceProps) {
     [steps, calls, intent, isLive, readOnly],
   );
   const durationSec = useActivityDuration(props);
+  const statusLabel = resolveStatusLabel(isOpen, status, props.statusLabel);
   const header = thinkingHeaderOf({
     live: isLive,
     durationSec,
     toolCount: calls.length,
-    statusLabel: isOpen && status?.phase === 'waiting' ? status.label : props.statusLabel,
+    statusLabel,
   });
   const hasDetails = rows.length > 0;
-  if (!isLive && !hasDetails && header.durationSec === null) return null;
+  if (isTurnSurfaceEmpty(isLive, hasDetails, header.durationSec)) return null;
 
-  const label =
-    !isLive && !hasDetails
-      ? i18n('think.complete', 'Finished thinking')
-      : thinkingLabelOf(header, thinkingLabels(steps.length > 0, Boolean(intent)));
-  const durationLabel =
-    header.durationSec === null
-      ? undefined
-      : tf('think.rn.elapsed', '{sec}s', { sec: header.durationSec });
-  const openRunningRow =
-    isOpen && status?.phase === 'tool-running' && calls.some((call) => call.id === activeTool?.id);
-  const showActivityCue =
-    isLive && status?.phase !== 'tool-awaiting' && status?.phase !== 'answering' && !openRunningRow;
-  const toolName = isLive ? status?.toolName : undefined;
-  const sites = toolName ? toolActivitySites(activeTool) : [];
+  const { label, durationLabel } = resolveSurfaceHeaderCopy(
+    header,
+    hasDetails,
+    isLive,
+    steps.length > 0,
+    Boolean(intent),
+  );
+  const showActivityCue = shouldShowActivityCue(
+    isLive,
+    status?.phase,
+    isOpen,
+    calls,
+    activeTool?.id,
+  );
+  const { icon, iconWidth } = resolveSurfaceIconProps(isLive, activeTool, status?.toolName);
+  const containerAttrs = buildTurnActivityDataAttrs(
+    isLive,
+    steps.length > 0,
+    showActivityCue,
+    status?.phase,
+    props.answerStarted,
+    isOpen,
+  );
 
   return (
-    <div
-      className={`rn-turn-activity${isLive ? ' is-live' : ''}`}
-      data-turn-surface-part="activity"
-      data-activity-timeline={steps.length ? 'true' : undefined}
-      data-live={showActivityCue ? 'true' : undefined}
-      data-phase={isLive ? status?.phase : undefined}
-      data-answer-started={props.answerStarted ? 'true' : undefined}
-      data-open={isOpen ? 'true' : 'false'}
-    >
+    <div {...containerAttrs}>
       <WebUiTheme>
         <ThinkingSurface
           label={label}
           durationLabel={durationLabel}
           live={isLive}
           indicator={showActivityCue ? <ThinkingSpark /> : undefined}
-          icon={toolName ? <ToolActivityIcon name={toolName} sites={sites} /> : undefined}
-          iconWidth={sites.length > 1 ? 30 : undefined}
+          icon={icon}
+          iconWidth={iconWidth}
           expandable={hasDetails}
           open={isOpen}
           onToggle={() => setIsOpen((previous) => !previous)}
