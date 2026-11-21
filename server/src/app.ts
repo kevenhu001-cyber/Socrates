@@ -16,46 +16,10 @@ import {
   clientErrorLabel,
 } from './middleware/clientError.js';
 import crypto from 'node:crypto';
-import authRouter from './routes/auth/auth.js';
-import sessionRouter from './routes/sessions/index.js';
-/* landing-page starter prompts, derived from the
-   user's recent sessions via the LLM. Mounted before /api/chat so its
-   /api/suggestions/* paths are not claimed by the chat router. */
-import suggestionsRouter from './routes/chat/suggestions.js';
-import intelligentUiMediaRouter from './routes/media/intelligentUiMedia.js';
-import faviconRouter from './routes/content/favicons.js';
-import chatRouter from './routes/chat/index.js';
-import chatTurnsRouter from './routes/chat/chatTurns.js';
-import ttsRouter from './routes/media/tts.js';
-import ragRouter from './routes/knowledge/rag.js';
-import embeddingConfigRouter from './routes/knowledge/embeddingConfig.js';
-import systemModelsRouter from './routes/providers/systemModels.js';
-import adminAuthRouter from './routes/auth/adminAuth.js';
-import apiKeyRouter from './routes/auth/apiKeys.js';
-import shareRouter from './routes/content/share.js';
-import publicShareRouter from './routes/content/publicShares.js';
-import messageRouter from './routes/sessions/messages.js';
-import userRouter from './routes/auth/users.js';
-import projectRouter from './routes/workspace/projects.js';
-import tagRouter from './routes/sessions/tags.js';
-import fileRouter from './routes/content/files.js';
-import fileExtractRouter from './routes/content/fileExtract.js';
-import migrateRouter from './routes/content/migrate.js';
-import artifactRouter from './routes/content/artifacts.js';
-import creationsRouter from './routes/content/creations.js';
-import memoryRouter from './routes/knowledge/memory.js';
-import promptRouter from './routes/workspace/prompts.js';
-import notificationRouter from './routes/workspace/notifications.js';
-import usageRouter from './routes/operations/usage.js';
-import accountRouter from './routes/auth/account.js';
-import importRouter from './routes/content/import.js';
-import classroomRouter from './routes/learning/classroom.js';
-import minimaxRouter from './routes/providers/minimaxProxy.js';
-import mistakesRouter from './routes/learning/mistakes.js';
-import knowledgeBoundaryRouter from './routes/learning/knowledgeBoundary.js';
-import visionRouter from './routes/media/vision.js';
-import agentRunsRouter from './routes/workspace/agentRuns.js';
-import researchJobsRouter from './routes/workspace/researchJobs.js';
+import path from 'node:path';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { githubWebhookHandler } from './routes/integrations/connectors.js';
 import statusRouter from './routes/operations/status.js';
 import internalMetricsRouter from './routes/operations/internalMetrics.js';
 import mobileRouter from './routes/auth/mobile.js';
@@ -64,21 +28,15 @@ import mcpDocsRouter from './routes/integrations/mcpDocs.js';
 import nlwebRouter from './routes/knowledge/nlweb.js';
 import oauthRouter from './routes/auth/oauth.js';
 import { buildAuthorizationServerMetadata } from './lib/oauthMeta.js';
-import { apiDefaultLimiter } from './middleware/rateLimit.js';
-import { idempotencyMiddleware } from './middleware/idempotency.js';
-import { recordRequestSample } from './services/util/statusMonitor.js';
-import { recordHttpMetrics } from './lib/telemetry.js';
-import executionRouter from './routes/workspace/execution.js';
-import scheduledTasksRouter from './routes/workspace/scheduledTasks.js';
-import pluginsRouter from './routes/integrations/plugins.js';
-import connectorRouter, { githubWebhookHandler } from './routes/integrations/connectors.js';
-import projectConnectorRouter from './routes/integrations/projectConnectors.js';
-import searchRouter from './routes/knowledge/search.js';
-import publicSitesRouter from './routes/content/publicSites.js';
 import { getDb } from './db/index.js';
 import { apiKeys } from './db/schema/index.js';
 import { sql, and, eq, isNotNull } from 'drizzle-orm';
 import { getStatus as getPubsubStatus } from './lib/pubsub.js';
+import { apiDefaultLimiter } from './middleware/rateLimit.js';
+import { idempotencyMiddleware } from './middleware/idempotency.js';
+import { recordRequestSample } from './services/util/statusMonitor.js';
+import { recordHttpMetrics } from './lib/telemetry.js';
+import { mountDomainRoutes } from './routes/mountApiRoutes.js';
 
 const app = express();
 
@@ -469,8 +427,8 @@ app.use('/api', (req, res, next) => {
    Idempotency-Key middleware sits beside it: writes that carry a key
    get their JSON response replayed on retry (24 h). */
 app.use('/api', apiDefaultLimiter, idempotencyMiddleware);
-// Private, default-disabled process diagnostics. The same mount is reached
-// through /api/v2 by apiV2Rewrite above; route itself never trusts proxy headers.
+
+// Private, default-disabled process diagnostics.
 app.use('/api/_internal/metrics', internalMetricsRouter);
 app.get('/api/health', async (_req, res) => {
   try {
@@ -491,47 +449,31 @@ app.get('/api/health', async (_req, res) => {
 });
 
 /* ─── Hello (smoke-test / connectivity check) ─── */
-/* Simple GET returning a static greeting. No auth, no DB, no state. */
 app.get('/api/hello', (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.json({ message: 'hello' });
 });
 
 /* ─── Public system status feed (status.topodrive.top) ─── */
-/* Unauthenticated, no secrets. Mounted before auth-gated routes. */
 app.use('/api/status', statusRouter);
 
-// Android shell bootstrap (public, secret-free). Mounted before auth routes
-// so a fresh install can verify its same-origin API contract before login.
+// Android shell bootstrap (public, secret-free)
 app.use('/api/mobile', mobileRouter);
 
-// Model Context Protocol endpoint (Streamable HTTP).
-// Public discovery surface; six read-only tools, no write capability. Mounted
-// alongside the other public routers so the CSRF middleware doesn't block
-// non-browser MCP clients. See server/src/middleware/csrf.ts#MCP_PATHS.
+// Model Context Protocol endpoint (Streamable HTTP)
 app.use('/api/mcp', mcpRouter);
 
-// Phase D — OAuth 2.0 authorization server (authorization_code + PKCE S256,
-// refresh rotation, RFC 7009 revocation). The token/revoke endpoints carry no
-// ambient sid cookie, so csrf.ts#OAUTH_TOKEN_PATHS skips them; the consent
-// screen enforces its own hidden-field double-submit inside the router.
+// Phase D — OAuth 2.0 authorization server
 app.use('/api/oauth', oauthRouter);
 
-/* the "learn" half of MCP coverage. Separate server instance
- * from the product surface at /api/mcp; tools answer documentation
- * questions only. */
+// MCP documentation surface
 app.use('/api/mcp/docs', mcpDocsRouter);
 
-// NLWeb-conformant natural-language query surface over Socrates'
-// public corpus. /api/nlweb/ask + /stream, with the short /api/ask alias.
+// NLWeb query surface
 app.use('/api/nlweb', nlwebRouter);
 app.use('/api', nlwebRouter);
 
-/* Phase D discovery — RFC 8414 §2 authorization-server metadata plus the
- * RFC 8414 §5 path-inserted form for our pathed issuer
- * (https://app.topodrive.top/api/oauth → /.well-known/oauth-authorization-server/api/oauth),
- * and an OIDC-style alias. Mounted BEFORE the SPA fallback so these paths are
- * served as JSON on any host that proxies to Express. */
+/* Phase D discovery */
 const oauthServerMetadata = buildAuthorizationServerMetadata();
 function sendOauthMetadata(_req: express.Request, res: express.Response) {
   res.set('Cache-Control', 'public, max-age=300');
@@ -562,18 +504,8 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
   ]);
 });
 
-// Public configuration endpoint (no auth required).
-// Tells the SPA whether the built-in Beagle provider is available.
-// The raw key is NEVER sent to the client — the server proxies
-// all Beagle requests via /api/minimax/v1/chat/completions.
-//
-// do NOT expose the real upstream model name
-// (e.g. "deepseek-v4-flash") here. "Beagle" is an alias; surfacing
-// the underlying model lets any unauthenticated visitor learn the
-// operator's LLM choice. The actual model is selected server-side
-// from the DB at chat time, so the SPA doesn't need to know.
+// Public configuration endpoint
 let cachedBeagleKeyResult: { hasBeagleKey: boolean; expiry: number } | null = null;
-
 app.get('/api/config', async (_req, res) => {
   res.set('Cache-Control', 'no-store');
   const now = Date.now();
@@ -599,158 +531,12 @@ app.get('/api/config', async (_req, res) => {
   }
   res.json({
     hasBeagleKey,
-    /* expose only a boolean capability hint, never the
-     * underlying model name. The SPA needs to know whether the built-in
-     * provider is reasoning-capable so chat.js can set reasoning_effort
-     * and pick longer stream timeouts; it doesn't need to know WHICH
-     * model that is. Operator controls via BEAGLE_IS_REASONING env
-     * (default true; set to "false" to disable for non-reasoning upstreams). */
     isReasoning: process.env.BEAGLE_IS_REASONING !== 'false',
   });
 });
 
-// Auth (Phase 1)
-app.use('/api/auth', authRouter);
-
-// Sessions (Phase 2)
-app.use('/api/sessions', sessionRouter);
-
-// three landing-page starter prompts generated by the
-// built-in Beagle model from real history and preferences. Mounted before
-// /api/chat so its /api/suggestions/* paths are not claimed by that router.
-app.use('/api/suggestions', suggestionsRouter);
-app.use('/api/intelligent-ui', intelligentUiMediaRouter);
-app.use('/api/favicons', faviconRouter);
-app.use('/api/tts', ttsRouter);
-// session-scoped BM25 retrieval over a session's
-// own history. Used by the chat surface to surface related past
-// messages; the search is in-memory over session_chunks and is
-// owned-checked before any retrieval.
-app.use('/api/rag', ragRouter);
-// Admin-managed embedding provider config. Gates the vector layer of
-// the /api/rag hybrid search; requires role='admin'.
-app.use('/api/embedding-config', embeddingConfigRouter);
-// Admin-managed built-in (Beagle) system model. The admin picks which
-// OpenAI-compatible provider backs the anonymous/default path.
-app.use('/api/system-models', systemModelsRouter);
-// Independent password login for the /admin operator console. Mounted
-// before requireAuth-gated routers so the operator does not need a
-// user account to reach the config forms.
-app.use('/api/admin-auth', adminAuthRouter);
-
-// Chat (Phase 2) — includes execution SSE stream at /api/chat/executions/:id/stream
-app.use('/api/chat', chatRouter);
-
-// Chat turns (M1 async) — detached turn rows + ?after= event replay.
-// Mounted beside /api/chat; shares its resource scope via the router.
-app.use('/api/chat-turns', chatTurnsRouter);
-
-// Execution SSE stream — standalone endpoint for real-time code execution progress
-// Mounted at /api/executions/:id/stream for frontend EventSource consumption.
-// Uses its own router (not chatRouter) to avoid exposing all chat routes
-// under /api/executions/.
-app.use('/api/executions', executionRouter);
-
-// API keys (Phase 3)
-app.use('/api/api-key', apiKeyRouter);
-
-// Share — mounted as sub-route of sessions for :id parameter
-app.use('/api/sessions/:id/share', shareRouter);
-
-// Public share lookup by token (no auth — share token is the credential)
-app.use('/api/shares', publicShareRouter);
-
-// Messages (Phase 3)
-app.use('/api/messages', messageRouter);
-
-// Users (Phase 3)
-app.use('/api/users', userRouter);
-
-// Search & Web Retrieval (/api/search, /api/web-search, /api/image-search, /api/fetch-batch)
-app.use('/api', searchRouter);
-
-// Projects (Phase 4)
-app.use('/api/projects', projectRouter);
-
-/* ─── Scheduled Tasks ─── */
-app.use('/api/scheduled-tasks', scheduledTasksRouter);
-
-/* Unified Agent Runtime — native tools and Codex share durable runs,
- * approvals, events, workspaces, and recovery through this surface. */
-app.use('/api/agent-runs', agentRunsRouter);
-app.use('/api/research-jobs', researchJobsRouter);
-
-/* ─── Plugins ─── */
-app.use('/api/plugins', pluginsRouter);
-app.use('/api/connectors', connectorRouter);
-app.use('/api/project-connectors', projectConnectorRouter);
-
-// Files (Phase 4) — PDF text extraction is mounted FIRST so its
-// `/extract` path doesn't get swallowed by fileRouter's `/:id` lookup.
-// The /raw endpoint is mounted BEFORE the tagRouter (which mounts at
-// /api with requireAuth) so unauthenticated share viewers can load
-// artifact images without hitting the requireAuth middleware.
-//
-// Access control (audit follow-up — UUID unguessability alone is not
-// authorization): the owner may always read; anyone else may read only
-// when the file's session (direct, or via its code-interpreter
-// execution) carries an active public/unlisted share on a non-archived
-// session. Everything else gets 404 so the endpoint is not an
-app.use('/api/files', fileExtractRouter);
-app.use('/api/files', fileRouter);
-
-// Tags (Phase 4) — mounted at /api so it matches /api/sessions/:id/tags
-// All routes in this router require auth.
-app.use('/api', tagRouter);
-
-// Migrate (Phase 4)
-app.use('/api/migrate', migrateRouter);
-
-// Artifacts (Phase 5)
-app.use('/api/artifacts', artifactRouter);
-app.use('/api/creations', creationsRouter);
-
-// Memory (Phase 5)
-app.use('/api/memory', memoryRouter);
-
-// Prompts (Phase 5)
-app.use('/api/prompts', promptRouter);
-
-// Notifications (Phase 5)
-app.use('/api/notifications', notificationRouter);
-
-// Usage (Phase 5)
-app.use('/api/usage', usageRouter);
-
-// Account dashboard (Phase 3)
-app.use('/api/account', accountRouter);
-
-// Import (Phase 5)
-app.use('/api/import', importRouter);
-
-// Classroom (Phase 6)
-app.use('/api/classroom', classroomRouter);
-
-app.use('/api/minimax', minimaxRouter);
-
-// Mistakes (错题本) — first-class CRUD
-app.use('/api/mistakes', mistakesRouter);
-
-// Knowledge boundary — aggregate kbNodes across sessions
-app.use('/api/knowledge-boundary', knowledgeBoundaryRouter);
-
-/* Vision — mmx CLI-backed image recognition. Used by the frontend
-   when the user attaches an image so the LLM gets image context
-   even on non-vision upstreams (the description is prepended to
-   the user message; image_url parts are still sent to vision-capable
-   models for accuracy). Auth required so unauthenticated visitors
-   can't run arbitrary mmx invocations. */
-app.use('/api/vision', visionRouter);
-
-/* ─── Codex agent runtime (embedded harness) ───
- * Mounted before the SPA fallback. All routes require auth; the client
- * never supplies config/policy — the server builds the per-thread
- * provider + workspace + approval/sandbox overrides from the DB. */
+/* Mount all modular domain API routes */
+mountDomainRoutes(app);
 
 /* ────────────────────────────
    Static SPA — serve the built frontend from frontend/dist/
@@ -761,16 +547,9 @@ app.use('/api/vision', visionRouter);
    can host the whole app. Mounted AFTER all /api routes so the
    static handler never wins over an API match.
    ──────────────────────────── */
-import path from 'node:path';
-import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
-// Published Socrates sites are static HTML documents in the versioned
-// artifact store. A sandboxed CSP keeps author content isolated from the
-// authenticated app even though the URL uses the same host.
-app.use('/s', publicSitesRouter);
 app.use(
   express.static(FRONTEND_DIST, {
     // index.html is the SPA shell — let the route below handle
