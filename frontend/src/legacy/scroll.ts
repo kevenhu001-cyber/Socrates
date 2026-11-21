@@ -776,6 +776,68 @@ function createPinMetrics(
    the visual motion and the JS no longer resets scrollTop every
    frame mid-animation. The bounded composer-follow sequence below only
      runs while a focus/composer transition is active. */
+function createComposerFollowController(
+  list: TurnAnchorList | HTMLElement | null,
+  pinState: PinState,
+  userScrolledAway: () => boolean,
+  rememberMetrics: () => void,
+) {
+  let composerFollowFrame = 0;
+  let composerFollowUntil = 0;
+
+  function stopComposerFollow() {
+    if (composerFollowFrame) {
+      cancelAnimationFrame(composerFollowFrame);
+      composerFollowFrame = 0;
+    }
+    composerFollowUntil = 0;
+  }
+
+  function keyboardTransitionActive() {
+    const phase =
+      document.documentElement && document.documentElement.dataset
+        ? document.documentElement.dataset.keyboardPhase
+        : '';
+    return phase === 'opening' || phase === 'closing';
+  }
+
+  function runComposerFollow() {
+    composerFollowFrame = 0;
+    if (keyboardTransitionActive()) {
+      stopComposerFollow();
+      return;
+    }
+    if (
+      !list ||
+      userScrolledAway() ||
+      !pinState.lastPinned ||
+      (list.querySelector && list.querySelector('.turn-viewport-anchor'))
+    ) {
+      stopComposerFollow();
+      return;
+    }
+    smoothScrollToBottom(list, { smooth: false });
+    rememberMetrics();
+    if (Date.now() < composerFollowUntil) {
+      composerFollowFrame = requestAnimationFrame(runComposerFollow);
+    } else {
+      composerFollowUntil = 0;
+    }
+  }
+
+  function armComposerFollow() {
+    if (!list || userScrolledAway() || !pinState.lastPinned) return;
+    composerFollowUntil = Date.now() + 420;
+    if (!composerFollowFrame) composerFollowFrame = requestAnimationFrame(runComposerFollow);
+  }
+
+  return {
+    armComposerFollow,
+    stopComposerFollow,
+    keyboardTransitionActive,
+  };
+}
+
 export function initChatComposerReserve(options: { list?: TurnAnchorList | null } = {}) {
   options = options || {};
   const list = options.list || document.getElementById('msgList');
@@ -801,65 +863,12 @@ export function initChatComposerReserve(options: { list?: TurnAnchorList | null 
   /* Scroll events may arrive after layout growth but before its observer.
      They must not consume the previous message-height measurement. */
   let contentMetrics: ContentMetrics | null = null;
-  let composerFollowFrame = 0;
-  let composerFollowUntil = 0;
   /* True while another controller owns the viewport (see scheduleContentFollow).
      Carries the reader's pin membership across a held window. */
   let followOwnedElsewhere = false;
-  /* The transcript viewport height as the ResizeObserver last saw it. Only
-     this observer writes the value. The shared metrics snapshot
-     is refreshed by the content-follow path and by the scroll listener, so by
-     the time a composer resize is delivered it can already describe the
-     shrunken viewport — and the pin recovery below would read "the reader
-     sits 188px above the bottom" and refuse to re-pin a reader who never left
-     the bottom. */
-  /* A CSS focus transition can resize the flex viewport between two
-     ResizeObserver deliveries. Keep the bottom anchor alive only for the
-     short, observable composer transition; this is a bounded rAF sequence,
-     not a permanent measurement loop or a height reserve. Any wheel/touch
-     intent flips _userScrolledAway and stops it on the next frame. */
-  function stopComposerFollow() {
-    if (composerFollowFrame) {
-      cancelAnimationFrame(composerFollowFrame);
-      composerFollowFrame = 0;
-    }
-    composerFollowUntil = 0;
-  }
-  function keyboardTransitionActive() {
-    const phase =
-      document.documentElement && document.documentElement.dataset
-        ? document.documentElement.dataset.keyboardPhase
-        : '';
-    return phase === 'opening' || phase === 'closing';
-  }
-  function runComposerFollow() {
-    composerFollowFrame = 0;
-    if (keyboardTransitionActive()) {
-      stopComposerFollow();
-      return;
-    }
-    if (
-      !list ||
-      userScrolledAway() ||
-      !pinState.lastPinned ||
-      (list.querySelector && list.querySelector('.turn-viewport-anchor'))
-    ) {
-      stopComposerFollow();
-      return;
-    }
-    smoothScrollToBottom(list, { smooth: false });
-    rememberMetrics();
-    if (Date.now() < composerFollowUntil) {
-      composerFollowFrame = requestAnimationFrame(runComposerFollow);
-    } else {
-      composerFollowUntil = 0;
-    }
-  }
-  function armComposerFollow() {
-    if (!list || userScrolledAway() || !pinState.lastPinned) return;
-    composerFollowUntil = Date.now() + 420;
-    if (!composerFollowFrame) composerFollowFrame = requestAnimationFrame(runComposerFollow);
-  }
+
+  const { armComposerFollow, stopComposerFollow, keyboardTransitionActive } =
+    createComposerFollowController(list, pinState, userScrolledAway, rememberMetrics);
 
   /* Composer geometry is now owned by flex layout and legacy/keyboard.
      Observe the resulting chat-column resize once per layout notification;

@@ -119,6 +119,88 @@ function whenIdle(timeout = 1200): Promise<void> {
   });
 }
 
+function overlayAndModalSpecs(): MountSpec[] {
+  return [
+    chrome('cookieConsentReactRoot', 'cookie-consent', () =>
+      import('../../cookieConsent/CookieConsent').then((m) => m.CookieConsent),
+    ),
+    {
+      hostId: 'cmdKReactRoot',
+      label: 'cmd-k',
+      ensureHost: (doc) => ensureBodyChild(doc, 'cmdKReactRoot'),
+      mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()),
+    },
+    {
+      hostId: 'findBar',
+      label: 'find-in-session',
+      mount: () =>
+        import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()),
+    },
+    {
+      hostId: 'composerToolsRoot',
+      label: 'composer-tools-menu',
+      ensureHost: (doc) => ensureBodyChild(doc, 'composerToolsRoot'),
+      mount: (host) =>
+        import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu(host)),
+    },
+    {
+      hostId: 'moreNavPopoverRoot',
+      label: 'more-popover',
+      mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()),
+    },
+    {
+      hostId: 'shareModalReactRoot',
+      label: 'share-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'shareModalReactRoot'),
+      mount: () => import('../../shareModal').then((m) => m.mountShareModal()),
+    },
+    {
+      hostId: 'usageModalReactRoot',
+      label: 'usage-modal',
+      ensureHost: (doc) => ensureBodyChild(doc, 'usageModalReactRoot'),
+      mount: () => import('../../usageModal').then((m) => m.mountUsageModal()),
+    },
+  ];
+}
+
+function composerShellSpec(
+  legacyComposer: ReturnType<typeof getLegacyActions>['composer'],
+): MountSpec {
+  return {
+    hostId: 'composerInputWrap',
+    label: 'composer-shell',
+    mount: async (host) => {
+      const showBasicEditor = window.setTimeout(() => {
+        if (host.isConnected) mountBasicComposer(host);
+      }, 300);
+      try {
+        const { ComposerShell } = await retryImport(() => import('../../composer-input'));
+        if (document.getElementById('composerInputWrap') !== host) {
+          releaseBasicComposer(host);
+          return false;
+        }
+        mountOwnedRoot(
+          host,
+          'composer-shell',
+          <ErrorBoundary>
+            <ComposerShell
+              placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
+              onSubmit={() => submitComposer(legacyComposer)}
+              onPrimarySubmit={() => submitPrimaryComposer(legacyComposer)}
+              onStop={() => legacyComposer.stopChatResponse()}
+              onEscape={() => handleComposerEscape(legacyComposer)}
+            />
+          </ErrorBoundary>,
+        );
+        releaseBasicComposer(host);
+      } finally {
+        window.clearTimeout(showBasicEditor);
+        if (!host.isConnected) releaseBasicComposer(host);
+      }
+    },
+  };
+}
+
 export function mountRegistryList(): MountSpec[] {
   const legacyComposer = getLegacyActions().composer;
   return [
@@ -147,21 +229,7 @@ export function mountRegistryList(): MountSpec[] {
       },
     },
     /* 2. Overlays / modals / popovers */
-    chrome('cookieConsentReactRoot', 'cookie-consent', () =>
-      import('../../cookieConsent/CookieConsent').then((m) => m.CookieConsent),
-    ),
-    {
-      hostId: 'cmdKReactRoot',
-      label: 'cmd-k',
-      ensureHost: (doc) => ensureBodyChild(doc, 'cmdKReactRoot'),
-      mount: () => import('../../cmdk/CommandPalette').then((m) => m.mountCmdK()),
-    },
-    {
-      hostId: 'findBar',
-      label: 'find-in-session',
-      mount: () =>
-        import('../../find-in-session/FindInSession').then((m) => m.hydrateFindInSession()),
-    },
+    ...overlayAndModalSpecs(),
     {
       hostId: 'sidebarNav',
       label: 'sidebar-nav',
@@ -179,22 +247,11 @@ export function mountRegistryList(): MountSpec[] {
     content('homeHero', 'home-hero', () =>
       import('../../home/HomeStartComponents').then((m) => m.HomeHeroRoot),
     ),
-    /* The landing entries below the composer (chat shortcuts, learning-mode
-       capsule, tutor starters) were removed on 2026-11-16: the landing is
-       the greeting plus the composer, nothing else. Their specs are gone
-       with the host nodes in index.html. */
     content('learningModeBar', 'learning-mode-bar', () =>
       whenIdle().then(() =>
         import('../../tutor/QuestionChainRoot').then((m) => m.SessionLearningModes),
       ),
     ),
-    /* The header chrome — one root renders every control inside
-       `<div class="top-bar" id="topBar">`. Its ids are the shell
-       contract for the legacy runtime, so the React tree owns the
-       markup while the runtime keeps toggling classes and text.
-       dynamically imported: the header is not on
-       the first-paint path either, and the primitive it pulls in would
-       otherwise grow the entry chunk past its gzip budget. */
     {
       hostId: 'topBar',
       label: 'top-bar',
@@ -214,30 +271,6 @@ export function mountRegistryList(): MountSpec[] {
     content('kbContent', 'knowledge-map', () =>
       import('../../tutor/KnowledgePanel').then((m) => m.KnowledgeMapPanel),
     ),
-    {
-      hostId: 'composerToolsRoot',
-      label: 'composer-tools-menu',
-      ensureHost: (doc) => ensureBodyChild(doc, 'composerToolsRoot'),
-      mount: (host) =>
-        import('../../composer/ComposerToolsMenu').then((m) => m.hydrateComposerToolsMenu(host)),
-    },
-    {
-      hostId: 'moreNavPopoverRoot',
-      label: 'more-popover',
-      mount: () => import('../../morePopover').then((m) => m.hydrateMorePopover()),
-    },
-    {
-      hostId: 'shareModalReactRoot',
-      label: 'share-modal',
-      ensureHost: (doc) => ensureBodyChild(doc, 'shareModalReactRoot'),
-      mount: () => import('../../shareModal').then((m) => m.mountShareModal()),
-    },
-    {
-      hostId: 'usageModalReactRoot',
-      label: 'usage-modal',
-      ensureHost: (doc) => ensureBodyChild(doc, 'usageModalReactRoot'),
-      mount: () => import('../../usageModal').then((m) => m.mountUsageModal()),
-    },
     /* 3. Sidebar chrome — one root owns the header and portaled user
        footer; they share the bridge snapshot (sidebar-chrome/mount.tsx). */
     {
@@ -256,9 +289,6 @@ export function mountRegistryList(): MountSpec[] {
     ...workspacePageSpecs(),
     /* 5. Lazy portal roots */
     ...lazyPortalSpecs(),
-    /* its shared RN shell pulls React Native Web's
-       virtual-list and animation code. Reserve the host while the feature
-       chunk loads so legacy rendering cannot race the React owner. */
     {
       hostId: 'recentsList',
       label: 'session-list',
@@ -268,50 +298,8 @@ export function mountRegistryList(): MountSpec[] {
           mountSessionList();
         }),
     },
-    /* 6. Global React roots — composer, message list, workflow layer.
-       RichComposer pulls the whole tiptap/prosemirror
-       editor chain (vendor-editor, ~460 KB). Mount it via dynamic import so
-       that chunk leaves the first-paint preload graph; the shell's composer
-       area keeps its reserved height until the component mounts moments
-       after reveal.
-       ONE editor for the whole app. The typed controller
-       owns the surface state and slot placement while this root stays
-       mounted, preserving each draft, token, focus and chip. The typed
-       lifecycle commands branch on the live surface, so the editor does not
-       remount when the view flips. */
-    {
-      hostId: 'composerInputWrap',
-      label: 'composer-shell',
-      mount: async (host) => {
-        const showBasicEditor = window.setTimeout(() => {
-          if (host.isConnected) mountBasicComposer(host);
-        }, 300);
-        try {
-          const { ComposerShell } = await retryImport(() => import('../../composer-input'));
-          if (document.getElementById('composerInputWrap') !== host) {
-            releaseBasicComposer(host);
-            return false;
-          }
-          mountOwnedRoot(
-            host,
-            'composer-shell',
-            <ErrorBoundary>
-              <ComposerShell
-                placeholder={i18n('topic.inputPlaceholder', 'What would you like to explore?')}
-                onSubmit={() => submitComposer(legacyComposer)}
-                onPrimarySubmit={() => submitPrimaryComposer(legacyComposer)}
-                onStop={() => legacyComposer.stopChatResponse()}
-                onEscape={() => handleComposerEscape(legacyComposer)}
-              />
-            </ErrorBoundary>,
-          );
-          releaseBasicComposer(host);
-        } finally {
-          window.clearTimeout(showBasicEditor);
-          if (!host.isConnected) releaseBasicComposer(host);
-        }
-      },
-    },
+    /* 6. Global React roots — composer, message list, workflow layer. */
+    composerShellSpec(legacyComposer),
     content(
       'workflowLayerReactRoot',
       'workflow-layer',

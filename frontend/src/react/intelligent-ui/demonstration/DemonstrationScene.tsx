@@ -158,6 +158,78 @@ function drawSceneObject({
   );
 }
 
+function SceneGridTicks({
+  left,
+  right,
+  top,
+  bottom,
+  x,
+  y,
+}: {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  x: [number, number];
+  y: [number, number];
+}) {
+  return (
+    <>
+      {[0, 1, 2, 3, 4].map((index) => {
+        const fraction = index / 4,
+          px = left + (right - left) * fraction,
+          py = bottom - (bottom - top) * fraction;
+        return (
+          <g key={index}>
+            <path
+              d={`M${px} ${top}V${bottom}M${left} ${py}H${right}`}
+              stroke="var(--ui-hairline-strong)"
+              fill="none"
+            />
+            <text
+              fill="var(--ui-ink-tertiary)"
+              className="demo-axis-label"
+              x={px}
+              y={bottom + 17}
+              textAnchor="middle"
+            >
+              {tick(x[0] + (x[1] - x[0]) * fraction)}
+            </text>
+            <text
+              fill="var(--ui-ink-tertiary)"
+              className="demo-axis-label"
+              x={left - 7}
+              y={py + 4}
+              textAnchor="end"
+            >
+              {tick(y[0] + (y[1] - y[0]) * fraction)}
+            </text>
+          </g>
+        );
+      })}
+    </>
+  );
+}
+
+function buildSceneObjects(
+  objects: DemonstrationScene['objects'],
+  read: (value: DemonstrationValue) => number,
+  project: (point: [DemonstrationValue, DemonstrationValue]) => Point,
+  scale: number,
+  issues: string[],
+) {
+  return objects.map((object, index) => {
+    try {
+      return <g key={index}>{drawSceneObject({ object, read, project, scale })}</g>;
+    } catch (error) {
+      issues.push(
+        `${object.label || `objects[${index}]`}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  });
+}
+
 /** Mathematical coordinates stay isotropic: circles and physical angles retain their shape. */
 export const DemoScene = memo(function DemoScene({
   view,
@@ -201,16 +273,7 @@ export const DemoScene = memo(function DemoScene({
       const top = bottom - (y[1] - y[0]) * scale,
         right = WIDTH - left;
       // Evaluate each object independently so an invalid component leaves the others visible.
-      const objects = view.objects.map((object, index) => {
-        try {
-          return <g key={index}>{drawSceneObject({ object, read, project, scale })}</g>;
-        } catch (error) {
-          issues.push(
-            `${object.label || `objects[${index}]`}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          return null;
-        }
-      });
+      const objects = buildSceneObjects(view.objects, read, project, scale, issues);
       content = (
         <>
           <defs>
@@ -218,38 +281,7 @@ export const DemoScene = memo(function DemoScene({
               <rect x={left} y={top} width={right - left} height={bottom - top} />
             </clipPath>
           </defs>
-          {[0, 1, 2, 3, 4].map((index) => {
-            const fraction = index / 4,
-              px = left + (right - left) * fraction,
-              py = bottom - (bottom - top) * fraction;
-            return (
-              <g key={index}>
-                <path
-                  d={`M${px} ${top}V${bottom}M${left} ${py}H${right}`}
-                  stroke="var(--ui-hairline-strong)"
-                  fill="none"
-                />
-                <text
-                  fill="var(--ui-ink-tertiary)"
-                  className="demo-axis-label"
-                  x={px}
-                  y={bottom + 17}
-                  textAnchor="middle"
-                >
-                  {tick(x[0] + (x[1] - x[0]) * fraction)}
-                </text>
-                <text
-                  fill="var(--ui-ink-tertiary)"
-                  className="demo-axis-label"
-                  x={left - 7}
-                  y={py + 4}
-                  textAnchor="end"
-                >
-                  {tick(y[0] + (y[1] - y[0]) * fraction)}
-                </text>
-              </g>
-            );
-          })}
+          <SceneGridTicks left={left} right={right} top={top} bottom={bottom} x={x} y={y} />
           <g clipPath={`url(#${id})`}>{objects}</g>
           <SvgMathText
             className="demo-axis-label"
