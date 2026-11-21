@@ -106,7 +106,9 @@ html[data-main-view='settingsPage'] #settingsTitle:focus-visible {
     padding: 6px 10px;
     border-radius: var(--ui-radius-sm);
     color: var(--ui-text-secondary);
-    transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+    transition:
+      background-color var(--ui-duration-hover) ease,
+      color var(--ui-duration-hover) ease;
   }
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:hover,
   html[data-main-view='settingsPage'] #settingsPage .settings-nav-item:focus-visible {
@@ -212,7 +214,9 @@ html[data-main-view='settingsPage'] #settingsPage .provider-nav-item {
   font-size: var(--ui-font-size-sm);
   text-align: start;
   cursor: pointer;
-  transition: background-color var(--ui-duration-hover) ease, color var(--ui-duration-hover) ease;
+  transition:
+    background-color var(--ui-duration-hover) ease,
+    color var(--ui-duration-hover) ease;
 }
 
 html[data-main-view='settingsPage'] #settingsPage .provider-nav-item:hover,
@@ -278,7 +282,11 @@ html[data-main-view='settingsPage'] #settingsPage .provider-editor .provider-fie
   gap: 14px;
 }
 
-html[data-main-view='settingsPage'] #settingsPage .provider-editor .provider-fields .settings-choice {
+html[data-main-view='settingsPage']
+  #settingsPage
+  .provider-editor
+  .provider-fields
+  .settings-choice {
   min-width: 0;
 }
 

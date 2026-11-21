@@ -4,7 +4,7 @@
  * old drawer/bottom-sheet host is gone; the content blocks stay shared.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Image, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
 import { R, S, focusRing, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

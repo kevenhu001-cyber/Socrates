@@ -5,7 +5,7 @@
  * re-mounts the question (the existing redo flow).
  */
 import { useState, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, View } from '../react-web';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

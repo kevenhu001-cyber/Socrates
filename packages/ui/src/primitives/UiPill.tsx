@@ -1,4 +1,4 @@
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from '../react-web';
 import { uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from './theme';
 import { UiText } from './UiText';

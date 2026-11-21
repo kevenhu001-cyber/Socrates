@@ -9,7 +9,7 @@
  * markdown rendering from there). White/grey only, no dots.
  */
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
 import { R, S, shadow } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

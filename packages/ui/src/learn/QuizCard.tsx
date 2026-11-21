@@ -5,7 +5,7 @@
  * opens the explanation, and offers a retry after a wrong answer.
  */
 import { useReducer, type ReactNode } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from '../react-web';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';

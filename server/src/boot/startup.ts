@@ -247,6 +247,17 @@ function startMonitor(): void {
   })();
 }
 
+/** Start standalone worker daemons (for dedicated background worker processes). */
+export function startWorkerDaemons(): void {
+  console.log(
+    '[worker] Starting background worker daemons (scheduler, research, agent recovery, monitor)...',
+  );
+  startSchedulerDaemon();
+  startResearchDaemon();
+  recoverAgentRuns();
+  startMonitor();
+}
+
 /** Start every fire-and-forget boot task. External LLM probes are opt-in so a
  * quiet server stays quiet and deploy/restart cycles do not create upstream
  * traffic unrelated to an actual user request. */
@@ -259,8 +270,14 @@ export function startBackgroundTasks(): void {
   sweepStaleScratchDirs();
   if (envFlag('LLM_WARMUP_ENABLED')) warmLlmProvider();
   if (envFlag('LLM_KEEP_WARM_ENABLED')) startLlmKeepWarmWorker();
-  startSchedulerDaemon();
-  startResearchDaemon();
-  recoverAgentRuns();
-  startMonitor();
+
+  /* Support decoupled worker architecture: when running stateless API web nodes
+   * behind a load balancer, DISABLE_BACKGROUND_DAEMONS=1 prevents competing DB leases
+   * and event-loop interference from scheduled tasks and research workers. */
+  if (envFlag('DISABLE_BACKGROUND_DAEMONS')) {
+    console.log('[boot] Background polling daemons skipped (DISABLE_BACKGROUND_DAEMONS=1)');
+    return;
+  }
+
+  startWorkerDaemons();
 }

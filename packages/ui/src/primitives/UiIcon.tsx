@@ -13,7 +13,7 @@
  * Shape tuples: p=path, c=circle(cx,cy,r), r=rect(x,y,w,h,rx), l=line.
  * Dots are drawn as tiny stroked circles (the ⋯ of More), never zero-length paths.
  */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import type { ComponentType } from 'react';
 import { useUiTheme } from './theme';
 

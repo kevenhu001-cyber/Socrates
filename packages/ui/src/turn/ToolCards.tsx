@@ -5,7 +5,7 @@
  * Status is spoken as a word (进行中 / 完成 / 失败 / 待审批) — never a dot.
  */
 import { type ReactNode } from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from '../react-web';
 import { uiFont } from '@socrates/theme';
 import { H, R, S, insetRing, shadow, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';

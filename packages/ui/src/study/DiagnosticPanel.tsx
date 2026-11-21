@@ -6,7 +6,7 @@
  * (`renderRich`), so math and links keep the shell's renderer.
  */
 import { type ReactNode } from 'react';
-import { Pressable, View, useWindowDimensions } from 'react-native';
+import { Pressable, View, useWindowDimensions } from '../react-web';
 import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';

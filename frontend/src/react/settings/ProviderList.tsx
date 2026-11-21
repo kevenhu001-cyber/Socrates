@@ -57,16 +57,10 @@ export function ProviderList({
   const builtIn = providers.find((provider) => provider.isBuiltIn);
 
   return (
-    <div
-      className={`provider-list ui-collapse${externalApiOn ? '' : ' collapsed'}`}
-      id={id}
-    >
+    <div className={`provider-list ui-collapse${externalApiOn ? '' : ' collapsed'}`} id={id}>
       <div className="ui-collapse-inner">
         <div className="provider-workbench">
-          <nav
-            className="provider-workbench-nav"
-            aria-label={i18n('settings.models', 'Models')}
-          >
+          <nav className="provider-workbench-nav" aria-label={i18n('settings.models', 'Models')}>
             {providers.map((provider) => (
               <Button
                 key={provider.id}

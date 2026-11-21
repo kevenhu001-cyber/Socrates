@@ -5,7 +5,7 @@
  * Commands (go, confidence, note, snapshot) belong to the host.
  */
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, TextInput, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, ScrollView, TextInput, View, useWindowDimensions } from '../react-web';
 import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { Chevron, useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';

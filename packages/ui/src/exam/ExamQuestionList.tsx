@@ -1,6 +1,6 @@
 /** Question list: one card per question, answered in place. */
 import { memo } from 'react';
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { examAnswerValue, type ExamAnswers, type ExamQuestion } from '../examModel';
 import { dataSet } from '../learn/parts';
 import { R, S, insetRing } from '../look';

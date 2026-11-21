@@ -1,5 +1,5 @@
 /** Setup screen: paper settings before generation. */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { EXAM_DIFFICULTIES, type ExamDraft, type ExamDraftPatch } from '../examModel';
 import { dataSet } from '../learn/parts';
 import { S } from '../look';

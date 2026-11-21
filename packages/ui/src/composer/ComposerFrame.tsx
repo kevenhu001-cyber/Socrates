@@ -13,7 +13,7 @@
  * row as slots; everything else is drawn here.
  */
 import { useState, type ReactNode } from 'react';
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { uiRadius, uiShadow, uiStep, uiMotion } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { dataSet } from '../learn/parts';

@@ -18,7 +18,7 @@
  * focus ring.
  */
 import type { ReactNode } from 'react';
-import { Pressable, View, type PressableStateCallbackType } from 'react-native';
+import { Pressable, View, type PressableStateCallbackType } from '../react-web';
 import { uiRadius } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

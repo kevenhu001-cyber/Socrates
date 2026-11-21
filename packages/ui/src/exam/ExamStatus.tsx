@@ -1,5 +1,5 @@
 /** Loading / empty / error states. Copy is already baked by the host. */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { R, S, insetRing } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useUiTheme } from '../primitives/theme';

@@ -106,7 +106,7 @@ test('history falls back to the per-session local memory mirror', () => {
   }
 });
 
-test('history falls back to the rendered message list when memory is unavailable', async () => {
+test('history returns empty array when in-memory and local memory are unavailable (DOM fallback retired)', async () => {
   const { JSDOM } = await import('jsdom');
   const dom = new JSDOM(
     '<div id="msgList"><div class="user"><div class="msg-body">Thinking... DOM question</div></div><div class="assistant"><div class="msg-body">DOM answer</div></div></div>',
@@ -119,10 +119,7 @@ test('history falls back to the rendered message list when memory is unavailable
   globalThis.document = dom.window.document;
 
   try {
-    assert.deepEqual(extractHistory(), [
-      { role: 'user', content: 'DOM question' },
-      { role: 'assistant', content: 'DOM answer' },
-    ]);
+    assert.deepEqual(extractHistory(), []);
   } finally {
     if (previousLocalStorage === undefined) delete globalThis.localStorage;
     else globalThis.localStorage = previousLocalStorage;

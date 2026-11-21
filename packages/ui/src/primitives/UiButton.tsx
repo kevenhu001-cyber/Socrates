@@ -6,7 +6,7 @@ import {
   type PressableProps,
   type StyleProp,
   type ViewStyle,
-} from 'react-native';
+} from '../react-web';
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from './theme';
 import { UiText } from './UiText';

@@ -23,3 +23,11 @@ export {
   type UiIconRenderer,
   type UiIconRendererProps,
 } from './UiIcon';
+export {
+  Switch,
+  type SwitchProps,
+  type TextStyle,
+  type ViewStyle,
+  type StyleProp,
+  useWindowDimensions,
+} from '../react-web';

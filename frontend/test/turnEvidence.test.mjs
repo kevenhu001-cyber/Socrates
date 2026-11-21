@@ -134,12 +134,6 @@ test('freestanding search citation markers bind to available runtime sources', (
     '见[1](#socrates-citation-source-1)的最新数据。',
   );
   // Markers exceeding sources count or without sources remain unchanged
-  assert.equal(
-    annotateTurnProse('Out of range [99].', 0, runtime),
-    'Out of range [99].',
-  );
-  assert.equal(
-    annotateTurnProse('Without sources [1].', 0, null),
-    'Without sources [1].',
-  );
+  assert.equal(annotateTurnProse('Out of range [99].', 0, runtime), 'Out of range [99].');
+  assert.equal(annotateTurnProse('Without sources [1].', 0, null), 'Without sources [1].');
 });

@@ -321,44 +321,17 @@ function historyFromLocalMemory(record: ReturnType<typeof loadLocalMemory>): His
   return out.length ? out : null;
 }
 
-function historyFromDom(list: HTMLElement | null): HistoryEntry[] {
-  if (!list) return [];
-  const out: HistoryEntry[] = [];
-  const children = list.children;
-  for (let i = children.length - 1; i >= 0 && out.length < HISTORY_MAX_TURNS * 2; i--) {
-    const element = children[i];
-    const isUser = element.classList.contains('user');
-    if (!isUser && !element.classList.contains('assistant')) continue;
-    const body = element.querySelector<HTMLElement>('.msg-body');
-    if (!body) continue;
-    let text = (body.innerText || body.textContent || '').trim();
-    if (!text) continue;
-    /* Strip leaked UI affordances that may have been serialised into history. */
-    text = truncateHistoryText(cleanTurnText(text), true);
-    out.unshift({ role: isUser ? 'user' : 'assistant', content: text });
-  }
-  return out;
-}
-
 export function extractHistory(): HistoryEntry[] {
-  /* P1.1 — three-tier source-of-truth, preferred in order:
+  /* Two-tier clean source-of-truth:
      1. sessionStore message rawText (authoritative, in-memory, never
        re-rendered, never has half-streamed text)
      2. localStorage mirror (good for cross-tab / post-reload)
-     3. live DOM (legacy fallback — only used when neither 1 nor 2
-       is available, e.g. a session that was loaded from the server
-       but the in-memory list hasn't been hydrated yet) */
+     (Legacy DOM traversal fallback historyFromDom has been permanently retired) */
   const inMemory = historyFromStateMessages(sessionStore.getState().messages);
   if (inMemory) return inMemory;
-  /* if currentSessionId is null (state was reset
-     but no session loaded yet), skip the localStorage fallback.
-     _memKey(null) resolves to "socrates-memory-default" which is a
-     shared key that may contain stale messages from a previous
-     session — reading it would inject wrong history into the LLM
-     context ("会话串台"). */
   const sid = sessionStore.getState().currentSessionId;
   if (!sid) return [];
   const fromStorage = historyFromLocalMemory(loadLocalMemory(sid as string));
   if (fromStorage) return fromStorage;
-  return historyFromDom(document.getElementById('msgList'));
+  return [];
 }

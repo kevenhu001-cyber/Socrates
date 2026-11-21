@@ -5,7 +5,7 @@
  * are due and opens the review (packages/ui/src/learn/ReviewSession) on
  * press. No count badge, no colour, no dot.
  */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { S } from '../look';
 import { PillAction } from '../learn/parts';
 

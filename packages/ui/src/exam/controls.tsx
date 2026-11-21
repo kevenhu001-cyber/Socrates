@@ -9,7 +9,7 @@
  * no hue, no dots.
  */
 import { useState, type ReactNode } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from '../react-web';
 import { uiType } from '@socrates/theme';
 import { UiIcon, type UiGlyphName } from '../primitives';
 import { useUiTheme } from '../primitives/theme';

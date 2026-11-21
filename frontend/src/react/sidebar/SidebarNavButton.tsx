@@ -1,7 +1,6 @@
 import { t as translate } from '../legacy/gateway.ts';
 import { SidebarNavRow } from '@socrates/ui/shell';
-import type { UiGlyphName } from '@socrates/ui/primitives';
-import type { TextStyle } from 'react-native';
+import type { UiGlyphName, TextStyle } from '@socrates/ui/primitives';
 import { webClass } from '../rn/webHost';
 import { navButtonId, type NavButtonSpec } from './sidebarNav.items';
 

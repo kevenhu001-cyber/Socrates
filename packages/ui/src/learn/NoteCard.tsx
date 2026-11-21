@@ -4,7 +4,7 @@
  * key point. Bodies are host-rendered markdown + KaTeX.
  */
 import { useState } from 'react';
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { S } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';

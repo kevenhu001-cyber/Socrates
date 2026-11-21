@@ -4,7 +4,7 @@
  * Grading and reporting for practice stay with the host (`onSubmitAnswer`).
  */
 import { useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput, View } from '../react-web';
 import { uiType } from '@socrates/theme';
 import { H, R, S, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';

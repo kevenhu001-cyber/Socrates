@@ -1,4 +1,4 @@
-import { Text, type TextProps } from 'react-native';
+import { Text, type TextProps } from '../react-web';
 import { uiType, type UiTypeToken } from '@socrates/theme';
 import { useUiTheme } from './theme';
 
@@ -8,6 +8,7 @@ export interface UiTextProps extends TextProps {
   variant?: UiTypeToken;
   tone?: UiTextTone;
   align?: 'auto' | 'left' | 'center' | 'right';
+  [key: string]: unknown;
 }
 
 /** Text drawn from the shared type ladder. Hierarchy is size and weight, never hue. */

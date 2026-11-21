@@ -14,7 +14,7 @@
  * once. That is the only movement; reduced motion shows it in place.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Pressable, View } from '../react-web';
 import { uiMotion } from '@socrates/theme';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';

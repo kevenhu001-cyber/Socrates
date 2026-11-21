@@ -1,5 +1,5 @@
 import { useRef, type ComponentType } from 'react';
-import { Pressable, Switch, View, type SwitchProps } from 'react-native';
+import { Pressable, Switch, View, type SwitchProps } from '../react-web';
 import { uiControl, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

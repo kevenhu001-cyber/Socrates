@@ -6,7 +6,7 @@
  * the rest one at a time.
  */
 import { useState } from 'react';
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { R, S, insetRing } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

@@ -24,7 +24,7 @@ import {
   ScrollView,
   View,
   useWindowDimensions,
-} from 'react-native';
+} from '../react-web';
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

@@ -279,12 +279,11 @@ export default defineConfig({
       '@socrates/ui/exam-model': fileURLToPath(
         new URL('../packages/ui/src/examModel.ts', import.meta.url),
       ),
-      'react-native': 'react-native-web',
     },
     /* packages/ have no node_modules of their own: resolve their bare React
        imports from this app so the shell and the shared modules share one
        React instance. */
-    dedupe: ['react', 'react-dom', 'react-native-web'],
+    dedupe: ['react', 'react-dom'],
     /* Platform files win on web (`Foo.web.tsx` before `Foo.tsx`), matching
        Metro's resolution for apps/socrates. */
     extensions: [
@@ -302,9 +301,7 @@ export default defineConfig({
     ],
   },
   optimizeDeps: {
-    /* react-native-web ships CommonJS helpers (fbjs, inline-style-prefixer);
-       pre-bundle them so the dev server does not crawl them on first use. */
-    include: ['react-native-web'],
+    include: [],
   },
   build: {
     outDir: 'dist',

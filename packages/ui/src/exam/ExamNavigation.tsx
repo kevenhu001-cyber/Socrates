@@ -1,5 +1,5 @@
 /** Question navigation: step buttons, counter and the numbered pill row. */
-import { Pressable, View } from 'react-native';
+import { Pressable, View } from '../react-web';
 import { dataSet } from '../learn/parts';
 import { R, S, insetRing } from '../look';
 import { useUiTheme } from '../primitives/theme';

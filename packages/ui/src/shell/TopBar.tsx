@@ -14,7 +14,7 @@
  * decides visibility from its own stores; nothing here reads the document.
  */
 import type { ReactNode } from 'react';
-import { Pressable, Text, View, type PressableStateCallbackType } from 'react-native';
+import { Pressable, Text, View, type PressableStateCallbackType } from '../react-web';
 import { uiControl, uiMotion, uiRadius, uiShadow, uiStep } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

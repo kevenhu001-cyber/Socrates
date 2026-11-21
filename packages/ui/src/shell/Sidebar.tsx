@@ -31,7 +31,7 @@ import {
   type ViewStyle,
   type ImageStyle,
   type TextStyle,
-} from 'react-native';
+} from '../react-web';
 import { uiControl, uiMotion, uiRadius, uiStep } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

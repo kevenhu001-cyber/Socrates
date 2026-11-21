@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from './react-web';
 import type { ExamData } from '@socrates/contracts';
 import { getThemePaletteHex, uiColors, type ThemeMode } from '@socrates/theme';
 import {

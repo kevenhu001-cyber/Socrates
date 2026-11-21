@@ -5,7 +5,7 @@
  * On the back the learner rates recall: remembered / fuzzy / forgot.
  */
 import { useEffect, useReducer, useRef } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
+import { Animated, Easing, Pressable, View } from '../react-web';
 import { uiMotion } from '@socrates/theme';
 import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';

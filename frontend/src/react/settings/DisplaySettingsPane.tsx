@@ -1,4 +1,4 @@
-import { Switch, type SwitchProps } from 'react-native';
+import { Switch, type SwitchProps } from '@socrates/ui/primitives';
 import { SettingsSwitch, SettingsSegmentedControl } from '@socrates/ui/settings';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';

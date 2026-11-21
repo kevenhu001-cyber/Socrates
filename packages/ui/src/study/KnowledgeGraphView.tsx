@@ -5,7 +5,7 @@
  * Pure RN Views (no SVG dependency), so the web shell and the app share it.
  */
 import { useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { Animated, PanResponder, Pressable, View, type LayoutChangeEvent } from '../react-web';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';

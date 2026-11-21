@@ -211,7 +211,9 @@ const MIN_BATCH_SIZE = 4;
 function canBatchTool(call: ToolCallRecord): boolean {
   if (toolRunStateOf(call) !== 'done') return false;
   const view = toolRunView(call);
-  return !view.approval && !view.agentRun && !view.sections.some((section) => section.kind === 'error');
+  return (
+    !view.approval && !view.agentRun && !view.sections.some((section) => section.kind === 'error')
+  );
 }
 
 function ToolBatch({

@@ -10,7 +10,7 @@
  * selection changes in place.
  */
 import { useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Animated, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
 import { R, S, focusRing, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';

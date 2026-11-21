@@ -12,7 +12,7 @@ import {
   useWindowDimensions,
   type StyleProp,
   type ViewStyle,
-} from 'react-native';
+} from '../react-web';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';

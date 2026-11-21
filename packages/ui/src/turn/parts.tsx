@@ -4,7 +4,7 @@
  * Nothing here draws a dot; state is carried by text, lines and glyphs.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Platform, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Platform, View } from '../react-web';
 import { uiMotion } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
 

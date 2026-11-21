@@ -8,7 +8,7 @@
  * The host supplies already-public copy only (see thinkingModel).
  */
 import { useId, type ReactNode } from 'react';
-import { Animated, Pressable, View, useWindowDimensions } from 'react-native';
+import { Animated, Pressable, View, useWindowDimensions } from '../react-web';
 import { R, S, focusRing, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';

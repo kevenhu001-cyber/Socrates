@@ -8,7 +8,7 @@ import { dismissSidebarOnMobile, toggleSidebar } from '../../sidebar/sidebar.ser
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useDomTitle, webClass } from '../rn/webHost';
 import { SidebarBrand, SidebarHeaderActions, SidebarIconAction } from '@socrates/ui/shell';
-import type { TextStyle } from 'react-native';
+import type { TextStyle } from '@socrates/ui/primitives';
 
 const LOGO = { uri: '/logo.png' };
 const MOBILE_BRAND_NAME = {

@@ -16,7 +16,7 @@
  * l=line(x1,y1,x2,y2), pl=polyline(points).
  */
 import React, { createContext, useContext } from 'react';
-import Svg, { Circle, Line, Path, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Path, Polyline, Rect } from './react-web';
 
 type Shape =
   | ['p', string]

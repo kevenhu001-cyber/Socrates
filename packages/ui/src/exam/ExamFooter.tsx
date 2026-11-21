@@ -1,5 +1,5 @@
 /** Footer actions: the host decides which commands exist for the current mode. */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import { S } from '../look';
 import { UiButton } from '../primitives/UiButton';
 import type { ExamAction, ExamCommandHandler } from './model';

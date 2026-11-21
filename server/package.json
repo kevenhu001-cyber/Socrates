@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.runtime.ts",
+    "worker": "tsx src/worker.runtime.ts",
     "start": "node src/index.js",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",

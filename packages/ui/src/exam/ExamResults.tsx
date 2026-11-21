@@ -1,5 +1,5 @@
 /** Graded results: score card plus one row per question. */
-import { View } from 'react-native';
+import { View } from '../react-web';
 import type { ExamResults as ExamResultsData } from '../examModel';
 import { VerdictGlyph, dataSet } from '../learn/parts';
 import { R, S, insetRing } from '../look';

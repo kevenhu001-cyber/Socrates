@@ -1,5 +1,4 @@
 import { useId, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
 import {
   CodeBlock,
   Chevron,
@@ -9,7 +8,7 @@ import {
   SourceList,
   sourceCardsOf,
 } from '@socrates/ui/turn';
-import { UiButton } from '@socrates/ui/primitives';
+import { UiButton, useWindowDimensions } from '@socrates/ui/primitives';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';
