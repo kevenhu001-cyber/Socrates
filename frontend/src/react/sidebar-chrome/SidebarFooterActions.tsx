@@ -142,6 +142,178 @@ function ThemeSelection({ theme, themeStyle }: { theme: string; themeStyle: stri
   );
 }
 
+function FontSizePreferenceRow({ currentFont }: { currentFont?: number }) {
+  return (
+    <div className="display-prefs-row">
+      <div className="display-prefs-label">
+        <span data-i18n-key="sidebar.textSize">{t('sidebar.textSize', 'Text size')}</span>
+      </div>
+      <div
+        className="display-prefs-segs"
+        id="displayPrefsFontSegs"
+        role="radiogroup"
+        data-i18n-aria="sidebar.textSize"
+        aria-label={t('sidebar.textSize', 'Text size')}
+      >
+        {DISPLAY_FONT_STEPS.map((step, index) => (
+          <Button
+            key={step}
+            variant="ghost"
+            size="xs"
+            type="button"
+            className={`display-prefs-seg${currentFont === step ? ' on' : ''}`}
+            role="radio"
+            aria-checked={currentFont === step}
+            data-font={step}
+            onClick={() => setDisplayFont(step)}
+          >
+            {FONT_LABELS[index]}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ContentWidthPreferenceRow({ currentWidth }: { currentWidth?: number }) {
+  const keys = ['sidebar.narrow', 'sidebar.medium', 'sidebar.wide', 'sidebar.fullWidth'];
+  const fallbacks = ['Narrow', 'Medium', 'Wide', 'Full width'];
+  return (
+    <div className="display-prefs-row">
+      <div className="display-prefs-label">
+        <span data-i18n-key="sidebar.contentWidth">
+          {t('sidebar.contentWidth', 'Content width')}
+        </span>
+      </div>
+      <div
+        className="display-prefs-segs"
+        id="displayPrefsWidthSegs"
+        role="radiogroup"
+        data-i18n-aria="sidebar.contentWidth"
+        aria-label={t('sidebar.contentWidth', 'Content width')}
+      >
+        {DISPLAY_WIDTH_STEPS.map((step, index) => (
+          <Button
+            key={step}
+            variant="ghost"
+            size="xs"
+            type="button"
+            className={`display-prefs-seg${currentWidth === step ? ' on' : ''}`}
+            role="radio"
+            aria-checked={currentWidth === step}
+            data-width={step}
+            title={t(keys[index], fallbacks[index])}
+            data-i18n-title={keys[index]}
+            onClick={() => setDisplayWidth(step)}
+          >
+            {WIDTH_LABELS[index]}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BackgroundThemeRows({
+  darkBg,
+  lightBg,
+  showGrid,
+  updateDarkBackground,
+  updateLightBackground,
+}: {
+  darkBg?: string;
+  lightBg?: string;
+  showGrid?: boolean;
+  updateDarkBackground: (val: string) => void;
+  updateLightBackground: (val: string) => void;
+}) {
+  return (
+    <>
+      <div className="display-prefs-row display-prefs-toggle-row">
+        <div className="display-prefs-label">
+          <span data-i18n-key="chrome.backgroundGrid">
+            {t('chrome.backgroundGrid', 'Background grid')}
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          type="button"
+          className={`grid-toggle${showGrid !== false ? ' on' : ''}`}
+          id="gridToggle"
+          role="switch"
+          aria-checked={showGrid !== false}
+          title={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
+          aria-label={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
+          data-i18n-title="chrome.toggleBackgroundGrid"
+          data-i18n-aria="chrome.toggleBackgroundGrid"
+          onClick={toggleGrid}
+        >
+          <span className="toggle-knob" />
+        </Button>
+      </div>
+
+      <div className="display-prefs-row">
+        <div className="display-prefs-label">
+          <span data-i18n-key="chrome.darkModeBg">{t('chrome.darkModeBg', 'Dark mode BG')}</span>
+        </div>
+        <div className="display-prefs-bg-picker">
+          <NativeControl
+            type="color"
+            id="displayPrefsBgDark"
+            value={darkBg || DEFAULT_DARK_PICKER}
+            onChange={(event) => updateDarkBackground(event.currentTarget.value)}
+            onInput={(event) => updateDarkBackground(event.currentTarget.value)}
+            title={t('chrome.darkModePageBg', 'Dark mode page background')}
+            data-i18n-title="chrome.darkModePageBg"
+          />
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            type="button"
+            className="display-prefs-bg-reset"
+            id="displayPrefsBgDarkReset"
+            title={t('chrome.resetDarkBg', 'Reset dark mode to theme default')}
+            data-i18n-title="chrome.resetDarkBg"
+            onClick={resetBackgroundDark}
+          >
+            ↺
+          </Button>
+        </div>
+      </div>
+
+      <div className="display-prefs-row">
+        <div className="display-prefs-label">
+          <span data-i18n-key="chrome.lightModeBg">{t('chrome.lightModeBg', 'Light mode BG')}</span>
+        </div>
+        <div className="display-prefs-bg-picker">
+          <NativeControl
+            type="color"
+            id="displayPrefsBgLight"
+            value={lightBg || DEFAULT_LIGHT_PICKER}
+            onChange={(event) => updateLightBackground(event.currentTarget.value)}
+            onInput={(event) => updateLightBackground(event.currentTarget.value)}
+            title={t('chrome.lightModePageBg', 'Light mode page background')}
+            data-i18n-title="chrome.lightModePageBg"
+          />
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            type="button"
+            className="display-prefs-bg-reset"
+            id="displayPrefsBgLightReset"
+            title={t('chrome.resetLightBg', 'Reset light mode to theme default')}
+            data-i18n-title="chrome.resetLightBg"
+            onClick={resetBackgroundLight}
+          >
+            ↺
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function DisplayPreferences({ open, onClose }: { open: boolean; onClose: () => void }) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [display, setDisplay] = useState(() => ({ ...displayPrefs }));
@@ -217,154 +389,15 @@ function DisplayPreferences({ open, onClose }: { open: boolean; onClose: () => v
       aria-hidden={!open}
     >
       <ThemeSelection theme={theme} themeStyle={themeStyle} />
-
-      <div className="display-prefs-row">
-        <div className="display-prefs-label">
-          <span data-i18n-key="sidebar.textSize">{t('sidebar.textSize', 'Text size')}</span>
-        </div>
-        <div
-          className="display-prefs-segs"
-          id="displayPrefsFontSegs"
-          role="radiogroup"
-          data-i18n-aria="sidebar.textSize"
-          aria-label={t('sidebar.textSize', 'Text size')}
-        >
-          {DISPLAY_FONT_STEPS.map((step, index) => (
-            <Button
-              key={step}
-              variant="ghost"
-              size="xs"
-              type="button"
-              className={`display-prefs-seg${display.font === step ? ' on' : ''}`}
-              role="radio"
-              aria-checked={display.font === step}
-              data-font={step}
-              onClick={() => setDisplayFont(step)}
-            >
-              {FONT_LABELS[index]}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      <div className="display-prefs-row">
-        <div className="display-prefs-label">
-          <span data-i18n-key="sidebar.contentWidth">
-            {t('sidebar.contentWidth', 'Content width')}
-          </span>
-        </div>
-        <div
-          className="display-prefs-segs"
-          id="displayPrefsWidthSegs"
-          role="radiogroup"
-          data-i18n-aria="sidebar.contentWidth"
-          aria-label={t('sidebar.contentWidth', 'Content width')}
-        >
-          {DISPLAY_WIDTH_STEPS.map((step, index) => {
-            const keys = ['sidebar.narrow', 'sidebar.medium', 'sidebar.wide', 'sidebar.fullWidth'];
-            const fallbacks = ['Narrow', 'Medium', 'Wide', 'Full width'];
-            return (
-              <Button
-                key={step}
-                variant="ghost"
-                size="xs"
-                type="button"
-                className={`display-prefs-seg${display.width === step ? ' on' : ''}`}
-                role="radio"
-                aria-checked={display.width === step}
-                data-width={step}
-                title={t(keys[index], fallbacks[index])}
-                data-i18n-title={keys[index]}
-                onClick={() => setDisplayWidth(step)}
-              >
-                {WIDTH_LABELS[index]}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="display-prefs-row display-prefs-toggle-row">
-        <div className="display-prefs-label">
-          <span data-i18n-key="chrome.backgroundGrid">
-            {t('chrome.backgroundGrid', 'Background grid')}
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          type="button"
-          className={`grid-toggle${display.showGrid !== false ? ' on' : ''}`}
-          id="gridToggle"
-          role="switch"
-          aria-checked={display.showGrid !== false}
-          title={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
-          aria-label={t('chrome.toggleBackgroundGrid', 'Toggle background grid')}
-          data-i18n-title="chrome.toggleBackgroundGrid"
-          data-i18n-aria="chrome.toggleBackgroundGrid"
-          onClick={toggleGrid}
-        >
-          <span className="toggle-knob" />
-        </Button>
-      </div>
-
-      <div className="display-prefs-row">
-        <div className="display-prefs-label">
-          <span data-i18n-key="chrome.darkModeBg">{t('chrome.darkModeBg', 'Dark mode BG')}</span>
-        </div>
-        <div className="display-prefs-bg-picker">
-          <NativeControl
-            type="color"
-            id="displayPrefsBgDark"
-            value={display.darkBg || DEFAULT_DARK_PICKER}
-            onChange={(event) => updateDarkBackground(event.currentTarget.value)}
-            onInput={(event) => updateDarkBackground(event.currentTarget.value)}
-            title={t('chrome.darkModePageBg', 'Dark mode page background')}
-            data-i18n-title="chrome.darkModePageBg"
-          />
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            type="button"
-            className="display-prefs-bg-reset"
-            id="displayPrefsBgDarkReset"
-            title={t('chrome.resetDarkBg', 'Reset dark mode to theme default')}
-            data-i18n-title="chrome.resetDarkBg"
-            onClick={resetBackgroundDark}
-          >
-            ↺
-          </Button>
-        </div>
-      </div>
-
-      <div className="display-prefs-row">
-        <div className="display-prefs-label">
-          <span data-i18n-key="chrome.lightModeBg">{t('chrome.lightModeBg', 'Light mode BG')}</span>
-        </div>
-        <div className="display-prefs-bg-picker">
-          <NativeControl
-            type="color"
-            id="displayPrefsBgLight"
-            value={display.lightBg || DEFAULT_LIGHT_PICKER}
-            onChange={(event) => updateLightBackground(event.currentTarget.value)}
-            onInput={(event) => updateLightBackground(event.currentTarget.value)}
-            title={t('chrome.lightModePageBg', 'Light mode page background')}
-            data-i18n-title="chrome.lightModePageBg"
-          />
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            type="button"
-            className="display-prefs-bg-reset"
-            id="displayPrefsBgLightReset"
-            title={t('chrome.resetLightBg', 'Reset light mode to theme default')}
-            data-i18n-title="chrome.resetLightBg"
-            onClick={resetBackgroundLight}
-          >
-            ↺
-          </Button>
-        </div>
-      </div>
+      <FontSizePreferenceRow currentFont={display.font} />
+      <ContentWidthPreferenceRow currentWidth={display.width} />
+      <BackgroundThemeRows
+        darkBg={display.darkBg}
+        lightBg={display.lightBg}
+        showGrid={display.showGrid}
+        updateDarkBackground={updateDarkBackground}
+        updateLightBackground={updateLightBackground}
+      />
     </div>
   );
 }

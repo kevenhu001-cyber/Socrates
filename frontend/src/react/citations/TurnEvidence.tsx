@@ -24,60 +24,49 @@ function safeHostname(url: string): string {
   }
 }
 
-/** Links are inserted from validated annotations, never guessed from [n] text. */
-export function TurnEvidence({
-  runtime,
-  text,
-  entryId,
-  children,
-}: {
-  runtime?: TurnRuntime | null;
-  text: string;
-  entryId: string;
-  children: ReactNode;
-}) {
-  const [preview, setPreview] = useState<{
-    claimId: string;
-    left: number;
-    top: number;
-    pinned: boolean;
-  } | null>(null);
-  const dialogRef = useRef<HTMLElement | null>(null);
-  const anchorRef = useRef<HTMLAnchorElement | null>(null);
-  const suppressFocus = useRef(false);
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const cancelHoverClose = () => clearTimeout(hoverTimer.current);
-  useEffect(() => () => clearTimeout(hoverTimer.current), []);
-  const sources = runtime?.sources || [];
-  const citations = runtime?.citations || [];
-  const validClaims = (runtime?.claims || []).filter(
-    (entry) =>
-      text.slice(entry.start, entry.end) === entry.quote &&
-      isCitableTurnRange(text, entry.start, entry.end),
-  );
-  const claim = validClaims.find((entry) => entry.id === preview?.claimId);
-  const citedSources = sources.filter((source) =>
-    citations.some(
-      (citation) =>
-        citation.sourceId === source.id &&
-        validClaims.some((entry) => entry.citationIds.includes(citation.id)),
-    ),
-  );
-  const previewSources = claim
-    ? sources.filter((source) =>
-        claim.citationIds.some((id) =>
-          citations.some((citation) => citation.id === id && citation.sourceId === source.id),
-        ),
-      )
-    : preview?.claimId?.startsWith('source-')
-      ? sources.filter((source, idx) => {
-          const key = preview.claimId.slice('source-'.length);
-          const num = Number(key);
-          if (Number.isSafeInteger(num) && num > 0) return idx === num - 1;
-          return source.id === key || source.id === preview.claimId;
-        })
-      : [];
+type PreviewState = {
+  claimId: string;
+  left: number;
+  top: number;
+  pinned: boolean;
+};
 
+type TurnSourceItem = NonNullable<TurnRuntime['sources']>[number];
+type TurnCitationItem = NonNullable<TurnRuntime['citations']>[number];
+type TurnClaimItem = NonNullable<TurnRuntime['claims']>[number];
+
+function resolvePreviewSources(
+  sources: TurnSourceItem[],
+  citations: TurnCitationItem[],
+  validClaims: TurnClaimItem[],
+  preview: PreviewState | null,
+): TurnSourceItem[] {
+  const claim = validClaims.find((entry) => entry.id === preview?.claimId);
+  if (claim) {
+    return sources.filter((source) =>
+      claim.citationIds.some((id) =>
+        citations.some((citation) => citation.id === id && citation.sourceId === source.id),
+      ),
+    );
+  }
+  if (preview?.claimId?.startsWith('source-')) {
+    return sources.filter((source, idx) => {
+      const key = preview.claimId.slice('source-'.length);
+      const num = Number(key);
+      if (Number.isSafeInteger(num) && num > 0) return idx === num - 1;
+      return source.id === key || source.id === preview.claimId;
+    });
+  }
+  return [];
+}
+
+function useSourcePreviewDismiss(
+  preview: PreviewState | null,
+  dialogRef: React.RefObject<HTMLElement | null>,
+  anchorRef: React.RefObject<HTMLAnchorElement | null>,
+  suppressFocus: React.MutableRefObject<boolean>,
+  setPreview: (val: PreviewState | null) => void,
+) {
   useEffect(() => {
     if (!preview) return;
     if (preview.pinned) dialogRef.current?.focus();
@@ -110,13 +99,158 @@ export function TurnEvidence({
       window.removeEventListener('resize', moved);
       window.removeEventListener('scroll', moved, true);
     };
-  }, [preview]);
+  }, [preview, dialogRef, anchorRef, suppressFocus, setPreview]);
+}
+
+function useSourcePreviewPosition(
+  preview: PreviewState | null,
+  dialogRef: React.RefObject<HTMLElement | null>,
+  anchorRef: React.RefObject<HTMLAnchorElement | null>,
+  setPreview: React.Dispatch<React.SetStateAction<PreviewState | null>>,
+) {
+  useLayoutEffect(() => {
+    if (!preview) return;
+    const node = dialogRef.current;
+    const anchor = anchorRef.current;
+    if (!node || !anchor) return;
+    const rect = anchor.getBoundingClientRect();
+    const height = node.offsetHeight;
+    const gap = 8;
+    const below = rect.bottom + gap;
+    const top =
+      below + height > window.innerHeight - 16 ? Math.max(16, rect.top - gap - height) : below;
+    if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
+  }, [preview, dialogRef, anchorRef, setPreview]);
+}
+
+function SourcePreviewItem({ source }: { source: TurnSourceItem }) {
+  const host = safeHostname(source.url);
+  const favicon = source.url ? faviconProxyUrl(source.url) : null;
+  return (
+    <div className="turn-source-preview-item">
+      <div className="turn-source-preview-header">
+        {favicon ? (
+          <img
+            className="turn-source-preview-favicon"
+            src={favicon}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span className="turn-source-preview-icon" aria-hidden="true">
+            🌐
+          </span>
+        )}
+        <small className="turn-source-preview-host">{host}</small>
+      </div>
+      <a
+        className="turn-source-preview-title"
+        href={source.url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {source.title || host}
+        <svg
+          className="turn-sources-external"
+          viewBox="0 0 16 16"
+          width="11"
+          height="11"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}
+        >
+          <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
+        </svg>
+      </a>
+      {source.snippet ? (
+        <p className="turn-source-preview-snippet">
+          <MathText text={source.snippet} />
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function SourcePreviewDialog({
+  dialogRef,
+  preview,
+  sources,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  dialogRef: React.RefObject<HTMLElement | null>;
+  preview: PreviewState;
+  sources: TurnSourceItem[];
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  return createPortal(
+    <aside
+      ref={dialogRef}
+      className="turn-source-preview"
+      role="dialog"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      aria-label={i18n('citation.preview', 'Source preview')}
+      tabIndex={-1}
+      style={{ left: preview.left, top: preview.top }}
+    >
+      {sources.map((source) => (
+        <SourcePreviewItem key={source.id} source={source} />
+      ))}
+    </aside>,
+    document.body,
+  );
+}
+
+/** Links are inserted from validated annotations, never guessed from [n] text. */
+export function TurnEvidence({
+  runtime,
+  text,
+  entryId,
+  children,
+}: {
+  runtime?: TurnRuntime | null;
+  text: string;
+  entryId: string;
+  children: ReactNode;
+}) {
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+  const anchorRef = useRef<HTMLAnchorElement | null>(null);
+  const suppressFocus = useRef(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cancelHoverClose = () => clearTimeout(hoverTimer.current);
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
+
+  const sources = runtime?.sources || [];
+  const citations = runtime?.citations || [];
+  const validClaims = (runtime?.claims || []).filter(
+    (entry) =>
+      text.slice(entry.start, entry.end) === entry.quote &&
+      isCitableTurnRange(text, entry.start, entry.end),
+  );
+  const citedSources = sources.filter((source) =>
+    citations.some(
+      (citation) =>
+        citation.sourceId === source.id &&
+        validClaims.some((entry) => entry.citationIds.includes(citation.id)),
+    ),
+  );
+  const previewSources = resolvePreviewSources(sources, citations, validClaims, preview);
+
+  useSourcePreviewDismiss(preview, dialogRef, anchorRef, suppressFocus, setPreview);
+  useSourcePreviewPosition(preview, dialogRef, anchorRef, setPreview);
 
   const show = (event: SyntheticEvent, pinned = false) => {
     if (suppressFocus.current || !(event.target instanceof Element)) return;
     const anchor = event.target.closest<HTMLAnchorElement>(`a[href^="${PREFIX}"]`);
     if (!anchor) return;
-    // A fragment alone cannot supply citation metadata.
     const claimId = anchor.getAttribute('href')!.slice(PREFIX.length);
     const isDirectSource = claimId.startsWith('source-') && sources.length > 0;
     if (!validClaims.some((entry) => entry.id === claimId) && !isDirectSource) return;
@@ -140,24 +274,6 @@ export function TurnEvidence({
     if (!preview?.pinned) hoverTimer.current = setTimeout(() => setPreview(null), 240);
   };
 
-  // Keep the preview clear of its own citation. A popover that covers the
-  // trigger cannot be dismissed: removing it hands the pointer back to the
-  // citation, the browser re-fires mouseover and the preview opens again.
-  // Sit below the citation, and flip above it when the viewport has no room.
-  useLayoutEffect(() => {
-    if (!preview) return;
-    const node = dialogRef.current;
-    const anchor = anchorRef.current;
-    if (!node || !anchor) return;
-    const rect = anchor.getBoundingClientRect();
-    const height = node.offsetHeight;
-    const gap = 8;
-    const below = rect.bottom + gap;
-    const top =
-      below + height > window.innerHeight - 16 ? Math.max(16, rect.top - gap - height) : below;
-    if (top !== preview.top) setPreview((current) => (current ? { ...current, top } : current));
-  }, [preview]);
-
   const visibleSources = citedSources.length ? citedSources : sources;
 
   return (
@@ -177,74 +293,15 @@ export function TurnEvidence({
       }}
     >
       {children}
-      {preview && previewSources.length
-        ? createPortal(
-            <aside
-              ref={dialogRef}
-              className="turn-source-preview"
-              role="dialog"
-              onMouseEnter={cancelHoverClose}
-              onMouseLeave={hoverClose}
-              aria-label={i18n('citation.preview', 'Source preview')}
-              tabIndex={-1}
-              style={{ left: preview.left, top: preview.top }}
-            >
-              {previewSources.map((source) => {
-                const host = safeHostname(source.url);
-                const favicon = source.url ? faviconProxyUrl(source.url) : null;
-                return (
-                  <div key={source.id} className="turn-source-preview-item">
-                    <div className="turn-source-preview-header">
-                      {favicon ? (
-                        <img
-                          className="turn-source-preview-favicon"
-                          src={favicon}
-                          alt=""
-                          loading="lazy"
-                          referrerPolicy="no-referrer"
-                        />
-                      ) : (
-                        <span className="turn-source-preview-icon" aria-hidden="true">
-                          🌐
-                        </span>
-                      )}
-                      <small className="turn-source-preview-host">{host}</small>
-                    </div>
-                    <a
-                      className="turn-source-preview-title"
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {source.title || host}
-                      <svg
-                        className="turn-sources-external"
-                        viewBox="0 0 16 16"
-                        width="11"
-                        height="11"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        style={{ display: 'inline-block', marginLeft: 4, verticalAlign: 'middle' }}
-                      >
-                        <path d="M12 9v4H3V4h4M9 3h4v4M6.5 9.5 13 3" />
-                      </svg>
-                    </a>
-                    {source.snippet ? (
-                      <p className="turn-source-preview-snippet">
-                        <MathText text={source.snippet} />
-                      </p>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </aside>,
-            document.body,
-          )
-        : null}
+      {preview && previewSources.length ? (
+        <SourcePreviewDialog
+          dialogRef={dialogRef}
+          preview={preview}
+          sources={previewSources}
+          onMouseEnter={cancelHoverClose}
+          onMouseLeave={hoverClose}
+        />
+      ) : null}
       {visibleSources.length ? (
         <TurnSources
           entryId={entryId}
