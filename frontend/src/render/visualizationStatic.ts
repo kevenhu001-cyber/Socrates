@@ -1,6 +1,6 @@
 /* Built-in table and SVG structure renderers for native visualization cards. */
 import { renderInlineMathHtml } from './inlineMath.ts';
-import type { VizItem, VizNode, VizShape, VizSpec } from './visualizationSpec.ts';
+import type { VizEdge, VizItem, VizNode, VizShape, VizSpec } from './visualizationSpec.ts';
 
 type EscapeHtml = (value: unknown) => string;
 type Translate = (key: string, fallback?: string) => string;
@@ -174,18 +174,12 @@ export function renderVisualizationTable(
   );
 }
 
-export function renderStructureVisualization(
-  spec: VizSpec,
-  markerId: string,
-  escapeHtml: EscapeHtml,
-  fontFamily: string,
-  truncateLabel: TruncateLabel,
-): string {
-  const payload = spec.payload || {};
-  const nodes: VizNode[] = payload.nodes || payload.items || [];
-  const edges = payload.edges || [];
-  const isHierarchy = spec.template === 'tree' || spec.template === 'mindmap';
-  const width = 760;
+function computeStructureLayout(
+  nodes: VizNode[],
+  edges: VizEdge[],
+  isHierarchy: boolean,
+  width: number,
+): { height: number; positions: Record<string, Point> } {
   let height = Math.max(260, 130 + Math.ceil(nodes.length / 3) * 95);
   const positions: Record<string, Point> = {};
   if (isHierarchy) {
@@ -243,29 +237,17 @@ export function renderStructureVisualization(
       };
     });
   }
-  /* every rendered structure diagram
-     used to define `<marker id="visual-arrow">` at the SVG root.
-     When two diagrams render in the same DOM, the second's
-     `marker-end="url(#visual-arrow)"` resolves to the FIRST
-     diagram's marker (collision on the global id). Give each
-     diagram a per-instance marker id, derived from a monotonically
-     increasing counter so re-renders don't collide either. */
-  /* inline attributes guarantee the diagram renders
-     correctly when exported as a standalone SVG (XMLSerializer) where
-     the page's CSS classes are unavailable. text-anchor/dominant-baseline
-     center labels inside nodes regardless of external styles. */
-  let svg =
-    '<svg class="visualization-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' +
-    width +
-    ' ' +
-    height +
-    '" role="img" aria-label="' +
-    escapeHtml(spec.accessibilitySummary) +
-    '" style="font-family:' +
-    fontFamily +
-    '"><defs><marker id="' +
-    markerId +
-    '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+  return { height, positions };
+}
+
+function renderStructureEdges(
+  edges: VizEdge[],
+  positions: Record<string, Point>,
+  isHierarchy: boolean,
+  markerId: string,
+  escapeHtml: EscapeHtml,
+): string {
+  let svg = '';
   edges.forEach(function (edge) {
     const a = positions[edge.from],
       b = positions[edge.to];
@@ -318,6 +300,16 @@ export function renderStructureVisualization(
       escapeHtml(edge.label || '') +
       '</text>';
   });
+  return svg;
+}
+
+function renderStructureNodes(
+  nodes: VizNode[],
+  positions: Record<string, Point>,
+  escapeHtml: EscapeHtml,
+  truncateLabel: TruncateLabel,
+): string {
+  let svg = '';
   nodes.forEach(function (node, index) {
     const point = positions[nodeIdOf(node, index)];
     svg +=
@@ -345,7 +337,51 @@ export function renderStructureVisualization(
         : '') +
       '</g>';
   });
-  return svg + '</svg>';
+  return svg;
+}
+
+export function renderStructureVisualization(
+  spec: VizSpec,
+  markerId: string,
+  escapeHtml: EscapeHtml,
+  fontFamily: string,
+  truncateLabel: TruncateLabel,
+): string {
+  const payload = spec.payload || {};
+  const nodes: VizNode[] = payload.nodes || payload.items || [];
+  const edges = payload.edges || [];
+  const isHierarchy = spec.template === 'tree' || spec.template === 'mindmap';
+  const width = 760;
+  const { height, positions } = computeStructureLayout(nodes, edges, isHierarchy, width);
+
+  /* every rendered structure diagram
+     used to define `<marker id="visual-arrow">` at the SVG root.
+     When two diagrams render in the same DOM, the second's
+     `marker-end="url(#visual-arrow)"` resolves to the FIRST
+     diagram's marker (collision on the global id). Give each
+     diagram a per-instance marker id, derived from a monotonically
+     increasing counter so re-renders don't collide either. */
+  /* inline attributes guarantee the diagram renders
+     correctly when exported as a standalone SVG (XMLSerializer) where
+     the page's CSS classes are unavailable. text-anchor/dominant-baseline
+     center labels inside nodes regardless of external styles. */
+  const svgHeader =
+    '<svg class="visualization-diagram" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' +
+    width +
+    ' ' +
+    height +
+    '" role="img" aria-label="' +
+    escapeHtml(spec.accessibilitySummary) +
+    '" style="font-family:' +
+    fontFamily +
+    '"><defs><marker id="' +
+    markerId +
+    '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="currentColor"/></marker></defs>';
+
+  const edgesSvg = renderStructureEdges(edges, positions, isHierarchy, markerId, escapeHtml);
+  const nodesSvg = renderStructureNodes(nodes, positions, escapeHtml, truncateLabel);
+
+  return svgHeader + edgesSvg + nodesSvg + '</svg>';
 }
 
 function svgStart(

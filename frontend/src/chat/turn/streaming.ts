@@ -188,10 +188,101 @@ function prepareStreamingShell(opts: StreamingOptions) {
   };
 }
 
+function createTurnRecordingApi(context: StreamingContext) {
+  return {
+    recordTurnSnapshot: function (payload: unknown) {
+      if (!context.stillOwnsSlot()) return;
+      const message = sessionBridge.getSnapshot().messages[context.msgIdx];
+      const runtime = normalizeTurnRuntime(payload);
+      if (
+        !runtime ||
+        (message.turnRuntime &&
+          (message.turnRuntime.turnId !== runtime.turnId || message.turnRuntime.seq >= runtime.seq))
+      )
+        return;
+      context.patchOwnedMessage({ turnRuntime: runtime }, false);
+      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
+    },
+    recordTurnEvent: function (payload: unknown) {
+      if (!context.stillOwnsSlot()) return;
+      const message = sessionBridge.getSnapshot().messages[context.msgIdx];
+      const runtime = reduceTurnEvent(message.turnRuntime, payload);
+      if (!runtime || runtime === message.turnRuntime) return;
+      context.patchOwnedMessage({ turnRuntime: runtime }, false);
+      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
+    },
+    recordTurnActivity: function (payload: unknown) {
+      if (!context.stillOwnsSlot()) return;
+      const activity = normalizePublicTurnActivity(payload);
+      if (!activity) return;
+      context.patchOwnedMessage({ _activity: activity }, false);
+      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
+    },
+    recordTurnSummary: function (text: unknown, phase?: string) {
+      if (!context.stillOwnsSlot()) return;
+      const value = String(text || '').trim();
+      if (!value) return;
+      context.patchOwnedMessage(
+        phase === 'initial' ? { _taskSummary: value } : { summary: value },
+        false,
+      );
+      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
+    },
+  };
+}
+
+function createThinkingStreamApi(context: StreamingContext) {
+  const state = context.state;
+  return {
+    appendThinking: function (delta: string) {
+      if (!context.stillOwnsSlot()) return;
+      if (typeof delta !== 'string' || !delta.length) return;
+      if (!state.fullReasoning) state.thinkStarted = Date.now();
+      state.fullReasoning += delta;
+      const seconds = Math.max(0, Math.floor((Date.now() - state.thinkStarted) / 1000));
+      state.reasoningDurationSec = seconds;
+      if (
+        state.toolRuntime &&
+        typeof state.toolRuntime.hasActiveTools === 'function' &&
+        state.toolRuntime.hasActiveTools()
+      )
+        return;
+      try {
+        context.ensureThinkCtl().append(delta || '');
+      } catch (error) {
+        reportSwallow(error, 'streamingTurn._preRev1.appendDelta');
+      }
+      if (context.stillOwnsSlot()) {
+        context.patchOwnedMessage(
+          { reasoningContent: state.fullReasoning, reasoningDurationSec: seconds },
+          true,
+        );
+        publishReactChatRuntime({
+          type: 'stream-delta',
+          messageId: context.clientId,
+          textLength: state.full.length,
+        });
+      }
+    },
+    finalizeThinking: function () {
+      if (state.thinkCtl && typeof state.thinkCtl.finalize === 'function') {
+        try {
+          state.thinkCtl.finalize();
+        } catch (error) {
+          reportSwallow(error, 'streamingTurn._preRev1.finalizeThinking');
+        }
+      }
+    },
+  };
+}
+
 function createStreamingTurnApi(
   context: StreamingContext,
 ): import('./state.ts').StreamingTurnController & { finalizeThinking(): void } {
   const state = context.state;
+  const recordingApi = createTurnRecordingApi(context);
+  const thinkingApi = createThinkingStreamApi(context);
+
   function finalizeStreamThinking(reason: string) {
     if (!state.thinkCtl || typeof state.thinkCtl.finalize !== 'function') return;
     try {
@@ -244,84 +335,9 @@ function createStreamingTurnApi(
     recordToolApproval: context.toolRuntime.recordToolApproval,
     recordAgentStep: context.toolRuntime.recordAgentStep,
     recordAgentPlan: context.toolRuntime.recordAgentPlan,
-    recordTurnSnapshot: function (payload: unknown) {
-      if (!context.stillOwnsSlot()) return;
-      const message = sessionBridge.getSnapshot().messages[context.msgIdx];
-      const runtime = normalizeTurnRuntime(payload);
-      if (
-        !runtime ||
-        (message.turnRuntime &&
-          (message.turnRuntime.turnId !== runtime.turnId || message.turnRuntime.seq >= runtime.seq))
-      )
-        return;
-      context.patchOwnedMessage({ turnRuntime: runtime }, false);
-      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
-    },
-    recordTurnEvent: function (payload: unknown) {
-      if (!context.stillOwnsSlot()) return;
-      const message = sessionBridge.getSnapshot().messages[context.msgIdx];
-      const runtime = reduceTurnEvent(message.turnRuntime, payload);
-      if (!runtime || runtime === message.turnRuntime) return;
-      context.patchOwnedMessage({ turnRuntime: runtime }, false);
-      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
-    },
-    recordTurnActivity: function (payload: unknown) {
-      if (!context.stillOwnsSlot()) return;
-      const activity = normalizePublicTurnActivity(payload);
-      if (!activity) return;
-      context.patchOwnedMessage({ _activity: activity }, false);
-      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
-    },
-    recordTurnSummary: function (text: unknown, phase?: string) {
-      if (!context.stillOwnsSlot()) return;
-      const value = String(text || '').trim();
-      if (!value) return;
-      context.patchOwnedMessage(
-        phase === 'initial' ? { _taskSummary: value } : { summary: value },
-        false,
-      );
-      publishReactChatRuntime({ type: 'tool-run-updated', messageId: context.clientId });
-    },
+    ...recordingApi,
     append: appendStreamDelta,
-    appendThinking: function (delta: string) {
-      if (!context.stillOwnsSlot()) return;
-      if (typeof delta !== 'string' || !delta.length) return;
-      if (!state.fullReasoning) state.thinkStarted = Date.now();
-      state.fullReasoning += delta;
-      const seconds = Math.max(0, Math.floor((Date.now() - state.thinkStarted) / 1000));
-      state.reasoningDurationSec = seconds;
-      if (
-        state.toolRuntime &&
-        typeof state.toolRuntime.hasActiveTools === 'function' &&
-        state.toolRuntime.hasActiveTools()
-      )
-        return;
-      try {
-        context.ensureThinkCtl().append(delta || '');
-      } catch (error) {
-        reportSwallow(error, 'streamingTurn._preRev1.appendDelta');
-      }
-      if (context.stillOwnsSlot()) {
-        context.patchOwnedMessage(
-          { reasoningContent: state.fullReasoning, reasoningDurationSec: seconds },
-          true,
-        );
-        publishReactChatRuntime({
-          type: 'stream-delta',
-          messageId: context.clientId,
-          textLength: state.full.length,
-        });
-      }
-    },
-    finalizeThinking: function () {
-      if (state.thinkCtl && typeof state.thinkCtl.finalize === 'function') {
-        try {
-          state.thinkCtl.finalize();
-        } catch (error) {
-          reportSwallow(error, 'streamingTurn._preRev1.finalizeThinking');
-        }
-      }
-    },
+    ...thinkingApi,
     setRetryStatus: function (rawNotice: unknown) {
       const notice = rawNotice as { retryNumber?: number | string; maxRetries?: number | string };
       if (!context.stillOwnsSlot()) return;
@@ -539,27 +555,14 @@ function createStreamingToolRuntime(
   return runtime;
 }
 
-export function addStreamingMessage(opts: StreamingOptions = {}) {
-  opts = opts || {};
-  const retryViewport = streamRetryViewport.consumeViewport();
-  const shell = prepareStreamingShell(opts);
-  const onRetry = shell.onRetry;
-  const list = shell.list;
-  const clientId = shell.clientId;
-  const msgIdx = shell.msgIdx;
-
-  /* Shared turn state — passed to every helper factory below so the
-     extracted modules can read/mutate the same closure-bound values
-     the original in-function locals held. Anything the streaming hot
-     path mutates (full, finished, _disposed, thinkCtl, inlineToolRows,
-     _elapsedTick) lives on this object; functions close over it. */
-  const state: StreamingState = {
-    /* identity / scroll host, set once */
-    list: list,
-    clientId: clientId,
-    msgIdx: msgIdx,
-    onRetry: onRetry,
-    /* mutable streaming data */
+function createInitialStreamingState(
+  shell: ReturnType<typeof prepareStreamingShell>,
+): StreamingState {
+  return {
+    list: shell.list,
+    clientId: shell.clientId,
+    msgIdx: shell.msgIdx,
+    onRetry: shell.onRetry,
     full: '',
     fullReasoning: '',
     firstDelta: true,
@@ -572,7 +575,6 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
     thinkCtl: null,
     inlineToolRows: [],
     _streamPlayer: null,
-    /* runtime singletons (filled in below) */
     toolRuntime: null!,
     _smooth: false,
     cancelScheduledRender: function () {
@@ -584,13 +586,54 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
     patchOwnedMessage: function () {
       return null;
     },
-
-    // Only turnState owns the active controller and global streaming flags.
     ret: null,
-    /* utilities */
     t: _t,
     appMode: _appMode,
   };
+}
+
+function createSessionStoreAdapter() {
+  return {
+    read(key: string) {
+      if (key === 'currentSessionId') return sessionBridge.getSnapshot().currentSessionId;
+      if (key === 'messages') return sessionBridge.getSnapshot().messages;
+      return undefined;
+    },
+    dispatch(action: unknown) {
+      const update = action as {
+        type?: string;
+        index?: number;
+        clientId?: string;
+        patch?: Record<string, unknown>;
+        deferNotify?: boolean;
+      };
+      if (update && update.type === 'session/update-message') {
+        return updateSessionMessage(
+          Number(update.index),
+          update.clientId,
+          update.patch || {},
+          update.deferNotify === true,
+        );
+      }
+      return undefined;
+    },
+  };
+}
+
+export function addStreamingMessage(opts: StreamingOptions = {}) {
+  opts = opts || {};
+  const retryViewport = streamRetryViewport.consumeViewport();
+  const shell = prepareStreamingShell(opts);
+  const list = shell.list;
+  const clientId = shell.clientId;
+  const msgIdx = shell.msgIdx;
+
+  /* Shared turn state — passed to every helper factory below so the
+     extracted modules can read/mutate the same closure-bound values
+     the original in-function locals held. Anything the streaming hot
+     path mutates (full, finished, _disposed, thinkCtl, inlineToolRows,
+     _elapsedTick) lives on this object; functions close over it. */
+  const state: StreamingState = createInitialStreamingState(shell);
   /* `full` is the ARRIVED text (persistence and tool textOffsets index into it). `visibleLen`
      is how much of it the playback clock has revealed; the live bubble paints
      `full.slice(0,visibleLen)`. With smooth streaming off, the two are kept
@@ -640,31 +683,11 @@ export function addStreamingMessage(opts: StreamingOptions = {}) {
      OUR placeholder (by clientId), so no cross-session pollution is
      possible even in the race window. */
   const ownerSessionId = sessionBridge.getSnapshot().currentSessionId || null;
-  const messageOwnership = createMessageOwnership(state, ownerSessionId, {
-    read(key: string) {
-      if (key === 'currentSessionId') return sessionBridge.getSnapshot().currentSessionId;
-      if (key === 'messages') return sessionBridge.getSnapshot().messages;
-      return undefined;
-    },
-    dispatch(action: unknown) {
-      const update = action as {
-        type?: string;
-        index?: number;
-        clientId?: string;
-        patch?: Record<string, unknown>;
-        deferNotify?: boolean;
-      };
-      if (update && update.type === 'session/update-message') {
-        return updateSessionMessage(
-          Number(update.index),
-          update.clientId,
-          update.patch || {},
-          update.deferNotify === true,
-        );
-      }
-      return undefined;
-    },
-  });
+  const messageOwnership = createMessageOwnership(
+    state,
+    ownerSessionId,
+    createSessionStoreAdapter(),
+  );
   const ownsMessageSlot = messageOwnership.ownsMessageSlot;
   const stillOwnsSlot = messageOwnership.stillOwnsSlot;
   const patchOwnedMessage = messageOwnership.patchOwnedMessage;

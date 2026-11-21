@@ -473,28 +473,8 @@ function parsePlotRangeNumber(tok: string) {
   return isFinite(n) ? n : 0;
 }
 
-export function renderPlot(spec: string, opts: { stableId?: string }) {
-  opts = opts || {};
-  /* see renderViz for rationale. */
-  const id = opts.stableId || 'viz-card-' + ++_vizId;
-  const title = 'Plot';
-  const parsed = parsePlotSpec(spec);
-  // Serialize the plot spec. We do NOT inject this into the iframe
-  // HTML via a separate <script> that runs AFTER the canvas script
-  // — that race was the original bug. Instead we inline the
-  // payload into a single <script> that runs BEFORE the canvas
-  // init script by placing it at the top of <body>. The init
-  // script then reads the payload from a global window.__plot
-  // variable.
-  const payloadJson = JSON.stringify({
-    expr: parsed.expr,
-    xMin: parsed.xMin,
-    xMax: parsed.xMax,
-    color: parsed.color,
-    width: parsed.width,
-    error: parsed.error || null,
-  });
-  const innerHtml =
+function buildPlotInnerHtml(): string {
+  return (
     '<canvas id="cv" style="display:block;width:100%;height:340px;background:transparent"></canvas>' +
     '<script>(function(){' +
     // Read the payload from the global set by the parent-of-this
@@ -576,7 +556,11 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     '}' +
     'window.addEventListener("message",function(e){if(e.data&&e.data.type==="socrates-theme-change"){document.documentElement.setAttribute("data-mode",e.data.mode);draw();}});' +
     'draw();' +
-    '})();</script>';
+    '})();</script>'
+  );
+}
+
+function buildPlotDoc(id: string, payloadJson: string): string {
   // CRITICAL: set window.__plot BEFORE the canvas init script runs.
   // The previous version placed the setAttribute call AFTER the
   // canvas init, which made the canvas read null and silently fail
@@ -587,7 +571,7 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     typeof document !== 'undefined'
       ? document.documentElement.getAttribute('data-mode') || 'light'
       : 'light';
-  const doc =
+  return (
     '<!DOCTYPE html><html data-mode="' +
     escAttr(currentMode) +
     '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -597,9 +581,34 @@ export function renderPlot(spec: string, opts: { stableId?: string }) {
     ';</script>' +
     '</head><body>' +
     setupScript +
-    innerHtml +
+    buildPlotInnerHtml() +
     vizRuntime(id) +
-    '</body></html>';
+    '</body></html>'
+  );
+}
+
+export function renderPlot(spec: string, opts: { stableId?: string }) {
+  opts = opts || {};
+  /* see renderViz for rationale. */
+  const id = opts.stableId || 'viz-card-' + ++_vizId;
+  const title = 'Plot';
+  const parsed = parsePlotSpec(spec);
+  // Serialize the plot spec. We do NOT inject this into the iframe
+  // HTML via a separate <script> that runs AFTER the canvas script
+  // — that race was the original bug. Instead we inline the
+  // payload into a single <script> that runs BEFORE the canvas
+  // init script by placing it at the top of <body>. The init
+  // script then reads the payload from a global window.__plot
+  // variable.
+  const payloadJson = JSON.stringify({
+    expr: parsed.expr,
+    xMin: parsed.xMin,
+    xMax: parsed.xMax,
+    color: parsed.color,
+    width: parsed.width,
+    error: parsed.error || null,
+  });
+  const doc = buildPlotDoc(id, payloadJson);
   const srcdoc = encodeSrcdoc(doc);
   const bodyHtml =
     vizLoadingHtml() +
