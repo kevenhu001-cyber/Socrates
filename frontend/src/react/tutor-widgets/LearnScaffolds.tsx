@@ -55,7 +55,7 @@ import type {
   ParsedFlashcard,
   ParsedKeyPoint,
   ParsedProof,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 
 /** The shell's i18n lookup for the few labels the shared cards do not own. */
 function tr(key: string, fallback: string): string {

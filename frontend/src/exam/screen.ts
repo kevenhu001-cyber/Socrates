@@ -1,7 +1,7 @@
 /** Turns the SPA exam store snapshot into the shared `ExamScreen` union.
  *  Pure: no store writes, no DOM. `ExamView.tsx` only wires callbacks. */
 import type { ExamAction, ExamScreen } from '@socrates/ui/exam';
-import { examAnsweredIndices } from '@socrates/ui/exam-model';
+import { examAnsweredIndices } from '@socrates/core';
 import type { ExamFormDraft, ExamProgress } from '../state/exam.ts';
 import { toExamAnswers, toExamQuestions } from './adapt.ts';
 import type { ExamChromeCopy } from './copy.ts';

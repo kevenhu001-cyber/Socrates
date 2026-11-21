@@ -8,7 +8,7 @@
  * server mirror, fetched once per page when signed in).
  */
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { mergeSessionMistakes, type SessionMistake } from '@socrates/ui/study-model';
+import { mergeSessionMistakes, type SessionMistake } from '@socrates/core';
 import { useKbStore } from '../../store/index.ts';
 import {
   getMistakeArchiveVersion,

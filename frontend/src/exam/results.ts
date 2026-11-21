@@ -1,5 +1,5 @@
-import type { ExamResults } from '@socrates/ui/exam-model';
-import { examResults } from '@socrates/ui/exam-model';
+import type { ExamResults } from '@socrates/core';
+import { examResults } from '@socrates/core';
 import type { ExamQuestion } from './types.ts';
 import { toExamAnswers, toExamQuestions } from './adapt.ts';
 import { examUiL } from './ui.ts';

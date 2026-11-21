@@ -10,7 +10,7 @@ import {
   DEFAULT_LEARNING_MODE,
   isLearningModeId,
   type LearningModeId,
-} from '@socrates/ui/think-model';
+} from '@socrates/core';
 import { getAppMode } from '../config/providers.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
 

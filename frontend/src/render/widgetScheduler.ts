@@ -14,7 +14,7 @@ import type {
   ParsedFlashcard,
   ParsedKeyPoint,
   ParsedProof,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 
 export interface WidgetPlaceholder<Parsed = unknown> {
   id: string;

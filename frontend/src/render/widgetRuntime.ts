@@ -10,7 +10,7 @@ import {
   parseAnswerKey,
   type ParsedQuiz,
   type ParsedPractice,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 
 type TeachingProgress = Pick<SessionSnapshot, 'teachingStage' | 'practiceAttempts'>;
 

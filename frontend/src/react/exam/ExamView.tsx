@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ExamFooter, ExamNavigation, ExamPanel, type ExamCommand } from '@socrates/ui/exam';
-import type { ExamDraftPatch } from '@socrates/ui/exam-model';
+import type { ExamDraftPatch } from '@socrates/core';
 import { dispatchExam, useExamStore, useUiStore } from '../../store/index.ts';
 import { getProviderConfigSnapshot } from '../../config/providerConfig.service.ts';
 import { examNavCurrentIdx, examNavJump, examNavStep } from '../../exam/navigation.ts';

@@ -37,7 +37,7 @@ import {
   parsePracticeInner,
   parseQuizInner,
   parseTheoremInner,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 
 /* ---------------------------------------------------------------------
  * socraticDirectives / tutorSocratic directive logic (Requirement 4.1, 4.3)

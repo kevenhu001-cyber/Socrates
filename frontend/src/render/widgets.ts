@@ -25,7 +25,7 @@ import type {
   ParsedFlashcard,
   ParsedKeyPoint,
   ParsedProof,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 import type {
   ParsedStep,
   PracticeMountData,

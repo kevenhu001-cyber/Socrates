@@ -21,14 +21,14 @@ import { sanitizeUrls } from '../util/safe.ts';
 import { sanitizeHtml } from './sanitizeHtml.ts';
 import { installCodeBlockCopy } from './markdownCodeCopy.ts';
 import { installMarkedExtensions } from './markdownExtensions.ts';
-import { stripTags } from '@socrates/ui/learn-model';
 import {
+  stripTags,
   markdownCodeRanges,
   scaffoldMarkupMatches,
   SCAFFOLD_TAGS,
   type ScaffoldMarkupMatch,
   type ScaffoldTag,
-} from '@socrates/ui/learn-split';
+} from '@socrates/core';
 import {
   findStreamScaffold,
   pendingScaffoldOpener,

@@ -17,15 +17,17 @@
  * practice slot through `data-quiz-id` / `data-practice-id`, everything else
  * gets a generated id.
  */
-import { splitScaffolds, type ScaffoldBlock, type ScaffoldTag } from '@socrates/ui/learn-split';
-import type {
-  ParsedDefinition,
-  ParsedDerivation,
-  ParsedExample,
-  ParsedFlashcard,
-  ParsedKeyPoint,
-  ParsedProof,
-} from '@socrates/ui/learn-model';
+import {
+  splitScaffolds,
+  type ScaffoldBlock,
+  type ScaffoldTag,
+  type ParsedDefinition,
+  type ParsedDerivation,
+  type ParsedExample,
+  type ParsedFlashcard,
+  type ParsedKeyPoint,
+  type ParsedProof,
+} from '@socrates/core';
 import type { PracticeMountData, QuizMountData, TheoremMountData } from './widgetRuntime.ts';
 
 export interface ScaffoldPlaceholder<Parsed = unknown> {

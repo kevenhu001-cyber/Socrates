@@ -1,6 +1,6 @@
 import { setComposerMarkdown } from '../composer/controller.ts';
 import { reportSwallow } from '../util/reportSwallow.ts';
-import type { ChainCandidate } from '@socrates/ui/think-model';
+import type { ChainCandidate } from '@socrates/core';
 import { followQuestionChain } from './questionChain.ts';
 import { requestMistakeRedo } from '../legacy/mistakeBookCommands.ts';
 

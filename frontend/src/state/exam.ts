@@ -1,5 +1,5 @@
-import type { ExamDraft } from '@socrates/ui/exam-model';
-import { createExamDraft } from '@socrates/ui/exam-model';
+import type { ExamDraft } from '@socrates/core';
+import { createExamDraft } from '@socrates/core';
 import type { ExamQuestion } from '../exam/types.ts';
 
 export type ExamFormDraft = ExamDraft;

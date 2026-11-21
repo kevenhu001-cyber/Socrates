@@ -5,8 +5,8 @@
  * `prompt` / `options` / `index`. Keep every conversion here: `navigation.ts`
  * and `persistence.ts` must not learn the shared shape.
  */
-import type { ExamAnswers, ExamQuestion } from '@socrates/ui/exam-model';
-import { examQuestionsFromRaw } from '@socrates/ui/exam-model';
+import type { ExamAnswers, ExamQuestion } from '@socrates/core';
+import { examQuestionsFromRaw } from '@socrates/core';
 import type { ExamQuestion as RawExamQuestion } from './types.ts';
 
 /** Raw questions keep their array position: answers are keyed by it, and
