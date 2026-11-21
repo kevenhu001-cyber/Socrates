@@ -6,8 +6,6 @@
  *  - LatestTutorQuestionChain   under the latest settled tutor reply in the transcript;
  *  - SessionLearningModes the capsule menu next to the conversation composer.
  */
-/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
-import '../rn/rnwGlobal';
 import { useEffect, useSyncExternalStore } from 'react';
 import { extractNextQuestions } from '@socrates/core/learningBlocks';
 import { useSessionStore } from '../../store/index.ts';

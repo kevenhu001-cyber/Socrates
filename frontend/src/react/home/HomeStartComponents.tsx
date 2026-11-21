@@ -7,8 +7,6 @@
  * the phone suggestion line and the tutor starter cards) were removed on
  * 2026-11-16: the landing is the greeting plus the composer, nothing else.
  */
-/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
-import '../rn/rnwGlobal';
 import { useSyncExternalStore } from 'react';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero } from '@socrates/ui/home';

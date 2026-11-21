@@ -1,5 +1,4 @@
 import { useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import '../rn/rnwGlobal';
 import { Button } from '../ui/shadcn/button';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';

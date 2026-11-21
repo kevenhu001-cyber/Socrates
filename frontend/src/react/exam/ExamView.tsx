@@ -1,5 +1,3 @@
-/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
-import '../rn/rnwGlobal';
 import { useCallback, useEffect, useState } from 'react';
 import { ExamFooter, ExamNavigation, ExamPanel, type ExamCommand } from '@socrates/ui/exam';
 import type { ExamDraftPatch } from '@socrates/ui/exam-model';

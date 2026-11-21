@@ -1,5 +1,3 @@
-/* Must run before any react-native-web module evaluates (see rnwGlobal.ts). */
-import '../rn/rnwGlobal';
 import {
   useEffect,
   useLayoutEffect,

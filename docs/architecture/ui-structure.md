@@ -306,9 +306,9 @@ RN-13 的优化在 RN-14 合入后又做过一次 reconcile（`afb52980`）。
 接入面（2026-11-05 统计）：`frontend/src` 有 41 个文件、52 处 `@socrates/ui/*` 子路径引用，
 分布为 learn-model 10、exam-model 8、turn 6、think-model 5、shell 5、study 4、primitives 4、
 exam 3、think 2、learn 2、study-model 1、home 1、composer 1。Web 宿主适配集中在
-`frontend/src/react/rn/`：`rnwGlobal` 先于任何 RNW 模块求值，`WebUiTheme` 用 `var(--ui-*)`
+`frontend/src/react/rn/`：纯 Web 适配层，`WebUiTheme` 用 `var(--ui-*)`
 让 `[data-mode]` 切主题不触发 React 渲染，`webHost.ts` 把宿主的结构 class、`title`、
-行级 ARIA / 拖拽挂到 RNW 元素上。共享包自己不写 Web class。
+行级 ARIA / 拖拽挂到标准 Web 原语元素上。共享包自己不写 Web class。
 
 **已迁移的整块表面（2026-11-05）**：考试。`packages/ui/src/exam/` 下 8 个文件
 （`ExamPanel`、`ExamSetup`、`ExamQuestionList`、`ExamResults`、`ExamStatus`、`ExamNavigation`、

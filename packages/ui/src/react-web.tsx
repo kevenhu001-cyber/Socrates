@@ -144,6 +144,24 @@ export class AnimatedValue {
   removeListener(_id: unknown) {}
 }
 
+function extractClassNames(style: unknown, classes: string[] = []): string[] {
+  if (!style) return classes;
+  if (Array.isArray(style)) {
+    for (const item of style) extractClassNames(item, classes);
+    return classes;
+  }
+  if (typeof style === 'object') {
+    const obj = style as Record<string, unknown>;
+    if (obj.$$css) {
+      for (const [k, v] of Object.entries(obj)) {
+        if (k !== '$$css' && typeof v === 'string') classes.push(v);
+      }
+    }
+    if (typeof obj.className === 'string') classes.push(obj.className);
+  }
+  return classes;
+}
+
 export function flattenStyle(style: unknown): React.CSSProperties {
   if (!style) return {};
   if (Array.isArray(style)) {
@@ -155,6 +173,7 @@ export function flattenStyle(style: unknown): React.CSSProperties {
   if (typeof style === 'object') {
     const res: Record<string, unknown> = {};
     for (const [key, val] of Object.entries(style as Record<string, unknown>)) {
+      if (key === '$$css' || key === 'socratesHost') continue;
       if (val instanceof AnimatedValue) {
         res[key] = val._val;
       } else if (key === 'transform' && Array.isArray(val)) {
@@ -179,6 +198,16 @@ export function flattenStyle(style: unknown): React.CSSProperties {
   return style as React.CSSProperties;
 }
 
+export function resolveStyleAndClass(style: unknown, baseClassName?: string) {
+  const extraClasses = extractClassNames(style);
+  const flat = flattenStyle(style);
+  const all = [baseClassName, ...extraClasses].filter(Boolean).join(' ');
+  return {
+    style: Object.keys(flat).length ? flat : undefined,
+    className: all || undefined,
+  };
+}
+
 export const StyleSheet = {
   create<T extends Record<string, unknown>>(styles: T): T {
     return styles;
@@ -196,15 +225,17 @@ export const Platform = {
 
 export type View = HTMLElement;
 export const View = forwardRef<HTMLDivElement, ViewProps>(function View(
-  { style, testID, nativeID, id, ...props },
+  { style, className, testID, nativeID, id, ...props },
   ref,
 ) {
+  const resolved = resolveStyleAndClass(style, className);
   return (
     <div
       ref={ref}
       id={nativeID || id}
       data-testid={testID}
-      style={flattenStyle(style)}
+      style={resolved.style}
+      className={resolved.className}
       {...props}
     />
   );
@@ -212,10 +243,20 @@ export const View = forwardRef<HTMLDivElement, ViewProps>(function View(
 
 export type Text = HTMLSpanElement;
 export const Text = forwardRef<HTMLSpanElement, TextProps>(function Text(
-  { style, testID, nativeID, id, numberOfLines, ellipsizeMode: _e, selectable: _s, ...props },
+  {
+    style,
+    className,
+    testID,
+    nativeID,
+    id,
+    numberOfLines,
+    ellipsizeMode: _e,
+    selectable: _s,
+    ...props
+  },
   ref,
 ) {
-  const flat = flattenStyle(style);
+  const resolved = resolveStyleAndClass(style, className);
   const clampStyle: React.CSSProperties | undefined = numberOfLines
     ? {
         display: '-webkit-box',
@@ -224,12 +265,14 @@ export const Text = forwardRef<HTMLSpanElement, TextProps>(function Text(
         overflow: 'hidden',
       }
     : undefined;
+  const mergedStyle = clampStyle ? { ...resolved.style, ...clampStyle } : resolved.style;
   return (
     <span
       ref={ref}
       id={nativeID || id}
       data-testid={testID}
-      style={{ ...flat, ...clampStyle }}
+      style={mergedStyle}
+      className={resolved.className}
       {...props}
     />
   );
@@ -239,6 +282,7 @@ export type Pressable = HTMLButtonElement;
 export const Pressable = forwardRef<HTMLButtonElement, PressableProps>(function Pressable(
   {
     style,
+    className,
     onPress,
     onPressIn,
     onPressOut,
@@ -262,6 +306,7 @@ export const Pressable = forwardRef<HTMLButtonElement, PressableProps>(function 
       ? (style as (state: PressableStateCallbackType) => unknown)({ hovered, pressed })
       : style;
   const content = typeof children === 'function' ? children({ hovered, pressed }) : children;
+  const resolved = resolveStyleAndClass(resolvedStyle, className);
 
   return (
     <button
@@ -298,8 +343,9 @@ export const Pressable = forwardRef<HTMLButtonElement, PressableProps>(function 
         font: 'inherit',
         color: 'inherit',
         cursor: disabled ? 'default' : 'pointer',
-        ...flattenStyle(resolvedStyle),
+        ...resolved.style,
       }}
+      className={resolved.className}
       {...props}
     >
       {content}
@@ -322,6 +368,7 @@ export type ScrollView = HTMLDivElement;
 export const ScrollView = forwardRef<HTMLDivElement, ScrollViewProps>(function ScrollView(
   {
     style,
+    className,
     contentContainerStyle,
     children,
     testID,
@@ -335,15 +382,20 @@ export const ScrollView = forwardRef<HTMLDivElement, ScrollViewProps>(function S
   },
   ref,
 ) {
+  const resolved = resolveStyleAndClass(style, className);
+  const innerResolved = resolveStyleAndClass(contentContainerStyle);
   return (
     <div
       ref={ref}
       id={nativeID || id}
       data-testid={testID}
-      style={{ overflow: 'auto', ...flattenStyle(style) }}
+      style={{ overflow: 'auto', ...resolved.style }}
+      className={resolved.className}
       {...props}
     >
-      <div style={flattenStyle(contentContainerStyle)}>{children}</div>
+      <div style={innerResolved.style} className={innerResolved.className}>
+        {children}
+      </div>
     </div>
   );
 });
@@ -369,6 +421,7 @@ export type TextInput = HTMLInputElement;
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
   {
     style,
+    className,
     value,
     onChangeText,
     placeholder,
@@ -385,6 +438,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   ref,
 ) {
   const isReadOnly = editable === false;
+  const resolved = resolveStyleAndClass(style, className);
   if (multiline) {
     return (
       <textarea
@@ -395,7 +449,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         readOnly={isReadOnly}
         onChange={(e) => onChangeText?.(e.target.value)}
         placeholder={placeholder}
-        style={flattenStyle(style)}
+        style={resolved.style}
+        className={resolved.className}
         {...(props as unknown as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
       />
     );
@@ -409,16 +464,29 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       readOnly={isReadOnly}
       onChange={(e) => onChangeText?.(e.target.value)}
       placeholder={placeholder}
-      style={flattenStyle(style)}
+      style={resolved.style}
+      className={resolved.className}
       {...props}
     />
   );
 });
 
 export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
-  { value, onValueChange, disabled, style, testID, nativeID, id, accessibilityLabel, ...props },
+  {
+    value,
+    className,
+    onValueChange,
+    disabled,
+    style,
+    testID,
+    nativeID,
+    id,
+    accessibilityLabel,
+    ...props
+  },
   ref,
 ) {
+  const resolved = resolveStyleAndClass(style, className);
   return (
     <input
       type="checkbox"
@@ -429,7 +497,8 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
       checked={!!value}
       disabled={disabled}
       onChange={(e) => onValueChange?.(e.target.checked)}
-      style={{ cursor: disabled ? 'default' : 'pointer', ...flattenStyle(style) }}
+      style={{ cursor: disabled ? 'default' : 'pointer', ...resolved.style }}
+      className={resolved.className}
       {...props}
     />
   );
@@ -450,6 +519,7 @@ export const Modal = function Modal({
   visible = true,
   children,
   style,
+  className,
   testID,
   nativeID,
   id,
@@ -459,11 +529,13 @@ export const Modal = function Modal({
   ...props
 }: ModalProps) {
   if (!visible) return null;
+  const resolved = resolveStyleAndClass(style, className);
   return (
     <div
       id={nativeID || id}
       data-testid={testID}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, ...flattenStyle(style) }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, ...resolved.style }}
+      className={resolved.className}
       {...props}
     >
       {children}
@@ -500,6 +572,7 @@ export interface ImageProps extends Omit<
 export const Image = function Image({
   source,
   style,
+  className,
   onLoad,
   testID,
   nativeID,
@@ -510,13 +583,15 @@ export const Image = function Image({
   ...props
 }: ImageProps) {
   const src = typeof source === 'string' ? source : source?.uri;
+  const resolved = resolveStyleAndClass(style, className);
   return (
     <img
       id={nativeID || id}
       data-testid={testID}
       aria-label={accessibilityLabel}
       src={src}
-      style={flattenStyle(style)}
+      style={resolved.style}
+      className={resolved.className}
       onLoad={(e) => {
         const target = e.target as HTMLImageElement;
         onLoad?.({

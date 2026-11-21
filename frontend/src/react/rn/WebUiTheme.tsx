@@ -3,7 +3,6 @@
  * references (so [data-mode] repaints without a React render) and the type
  * ladder follows the shell's text-size preference.
  */
-import './rnwGlobal';
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { getLocaleRevision, subscribeLocale } from '../../i18n/localeRevision.ts';
 import { uiColorsCssVars } from '@socrates/theme';

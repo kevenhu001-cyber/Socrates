@@ -125,11 +125,11 @@ browserWindow.renderRecents = renderRecents;
 browserWindow.resendLastUserMessage = resendLastUserMessage;
 browserWindow.setChatStopState = setChatStopState;
 browserWindow.handleSendClick = handleSendClick;
-type DangerConfirmsModule = typeof import('../legacy/dangerConfirms.js');
+type DangerConfirmsModule = typeof import('../legacy/dangerConfirms.ts');
 let _dangerImport: Promise<DangerConfirmsModule> | null = null;
 function _loadDangerConfirms() {
   if (!_dangerImport) {
-    _dangerImport = import('../legacy/dangerConfirms.js');
+    _dangerImport = import('../legacy/dangerConfirms.ts');
     _dangerImport.catch(function (err) {
       _dangerImport = null;
       console.error('[dangerConfirms] failed to load', err);

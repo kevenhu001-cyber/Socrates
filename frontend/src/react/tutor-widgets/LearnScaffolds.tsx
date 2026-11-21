@@ -1,7 +1,7 @@
 import { sessionBridge } from '../../store/index.ts';
 /**
  * RN-3 web adapters for the shared learning scaffolds (packages/ui/src/learn).
- * Every surface mounts through WebUiTheme (rnwGlobal first); content fields
+ * Every surface mounts through WebUiTheme; content fields
  * are rendered by the shell's markdown + KaTeX pipeline into `.sc-rich`
  * blocks, and grading / reporting stays in render/widgetRuntime.ts.
  */
