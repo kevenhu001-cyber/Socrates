@@ -20,7 +20,7 @@ import {
   type RecallRating,
   type ReviewCard,
   type ReviewDeck,
-} from '@socrates/ui/learn-model';
+} from '@socrates/core';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { REVIEW_DECK_BASE, learnerStorageKey } from './learnerStorage.ts';
 

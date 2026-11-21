@@ -9,8 +9,10 @@ import {
   splitDerivationSteps,
   derivationStepSource,
   stripTags,
-} from '@socrates/ui/learn-model';
-import { hasScaffoldMarkup, SCAFFOLD_TAGS, type ScaffoldTag } from '@socrates/ui/learn-split';
+  hasScaffoldMarkup,
+  SCAFFOLD_TAGS,
+  type ScaffoldTag,
+} from '@socrates/core';
 
 /* Stream-time scaffold plugins. */
 interface StreamScaffoldPlugin {
