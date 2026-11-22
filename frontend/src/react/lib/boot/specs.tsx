@@ -244,7 +244,7 @@ export function mountRegistryList(): MountSpec[] {
     ),
     content('learningModeBar', 'learning-mode-bar', () =>
       whenIdle().then(() =>
-        import('../../tutor/QuestionChainRoot').then((m) => m.SessionLearningModes),
+        import('../../tutor/LearningModeBar').then((m) => m.SessionLearningModes),
       ),
     ),
     {

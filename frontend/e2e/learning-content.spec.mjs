@@ -191,7 +191,6 @@ test('retired next-question blocks stay hidden and learners continue through the
   const seen = await setupTutor(page);
   await startLesson(page);
   await expect(page.locator('[data-testid^="question-chain-next-"]')).toHaveCount(0);
-  await expect(page.locator('[data-testid="learning-mode-trigger"]')).toHaveCount(0);
   await expect(page.locator('.msg.assistant').last()).not.toContainText('next-questions');
   await expect(page.locator('.msg.assistant').last()).not.toContainText(NEXT[0]);
   seen.reply = '继续推下去。\n\n<next-questions>["半截的问题';

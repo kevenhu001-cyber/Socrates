@@ -1,10 +1,8 @@
 /**
- * RN-4 — "Think out loud": the question chain and the five learning modes,
- * DOM-free. The web shell mounts them through react-native-web
- * (frontend/src/react/tutor/QuestionChainRoot.tsx and
- * frontend/src/react/home/LearningModes.tsx); other React Native hosts can reuse them.
+ * RN-4 — the five learning modes and the review entry, DOM-free. The web
+ * shell mounts the capsule from frontend/src/react/tutor/LearningModeBar.tsx;
+ * another React host can reuse the same module.
  */
-export { QuestionChain, type QuestionChainProps, type QuestionChainStrings } from './QuestionChain';
 export {
   LearningModeSwitch,
   type LearningModeOption,
