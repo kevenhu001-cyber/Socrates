@@ -81,6 +81,7 @@
 | 0018 | 事务性幂等回执 | Accepted | 0003 |
 | 0019 | 服务依赖边界 | Accepted | 0010 |
 | 0020 | Lobe-aligned design foundation | Accepted | 0012、0013 |
+| 0021 | 独立 Kotlin + Jetpack Compose Android 客户端 | Accepted | 0001、0025 |
 | 0022 | SPA 导航与页面生命周期收敛 | Accepted | 0003、0012、0013 |
 | 0023 | 采用 Geist 中性色阶并重做应用外壳 | Accepted | 0020、0003 |
 | 0024 | shadcn shell 几何归属 | Accepted | 0013、0023 |
