@@ -4,14 +4,13 @@
  * the card change sides); under reduced motion it cross-fades instead.
  * On the back the learner rates recall: remembered / fuzzy / forgot.
  */
-import { useEffect, useReducer, useRef } from 'react';
-import { Animated, Easing, Pressable, View } from '../react-web';
-import { uiMotion } from '@socrates/theme';
+import { useEffect, useReducer, useRef, type CSSProperties } from 'react';
 import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { nativeDriver, useReducedMotion } from '../turn/parts';
+import { useReducedMotion } from '../turn/parts';
+import { dataAttributes } from '../domProps';
 import { useLearnHost } from './host';
 import {
   RECALL_RATINGS,
@@ -20,7 +19,20 @@ import {
   type FlashcardState,
   type RecallRating,
 } from './model';
-import { ActionRow, PillAction, Rich, ScaffoldCard, dataSet } from './parts';
+import { ActionRow, PillAction, Rich, ScaffoldCard } from './parts';
+
+const BUTTON_RESET: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  width: '100%',
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
 
 export interface FlashcardCardProps {
   front: string;
@@ -52,79 +64,35 @@ export function FlashcardCard({
   const { subtle } = sheets(colors);
   const reduced = useReducedMotion();
   const [state, dispatch] = useReducer(flashcardReducer, initialState, resumeFlashcardState);
-  /* `shown` lags `state.face` by half a turn so the content swaps edge-on. */
-  const [shown, setShown] = useReducer(
-    (_: 'front' | 'back', next: 'front' | 'back') => next,
-    state.face,
-  );
   const reported = useRef(state);
   useEffect(() => {
     if (reported.current === state) return;
     reported.current = state;
     onStateChange?.(state);
   }, [state, onStateChange]);
-  const turn = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(1)).current;
   const { hovered, focused, handlers } = usePressFeedback();
-
-  useEffect(() => {
-    if (state.face === shown) return;
-    const half = Math.round(uiMotion.medium * 0.8);
-    if (reduced) {
-      Animated.timing(fade, {
-        toValue: 0,
-        duration: uiMotion.fast,
-        useNativeDriver: nativeDriver,
-      }).start(() => {
-        setShown(state.face);
-        Animated.timing(fade, {
-          toValue: 1,
-          duration: uiMotion.fast,
-          useNativeDriver: nativeDriver,
-        }).start();
-      });
-      return;
-    }
-    Animated.timing(turn, {
-      toValue: 1,
-      duration: half,
-      easing: Easing.in(Easing.quad),
-      useNativeDriver: nativeDriver,
-    }).start(() => {
-      setShown(state.face);
-      turn.setValue(-1);
-      Animated.timing(turn, {
-        toValue: 0,
-        duration: half,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: nativeDriver,
-      }).start();
-    });
-  }, [state.face, shown, reduced, turn, fade]);
-
-  const rotateY = turn.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ['-90deg', '0deg', '90deg'],
-  });
   const flip = () => dispatch({ type: 'flip' });
   const rate = (rating: RecallRating) => {
     dispatch({ type: 'rate', rating });
     onRate?.(rating);
   };
-  const onBack = shown === 'back';
+  const onBack = state.face === 'back';
 
   return (
     <ScaffoldCard kind="flashcard" label={strings.label.flashcard} testID={testID}>
-      <Pressable
-        role="button"
+      <button
+        type="button"
         aria-label={`${strings.flashcardAria}: ${onBack ? strings.flashcardBack : strings.flashcardFront}`}
-        onPress={flip}
-        testID="flashcard-face"
+        onClick={flip}
+        data-testid="flashcard-face"
         {...handlers}
-        {...dataSet({ face: shown })}
+        {...dataAttributes({ face: state.face })}
+        style={BUTTON_RESET}
       >
-        <Animated.View
+        <span
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             minHeight: 80,
             padding: S[100],
             gap: S[75],
@@ -133,8 +101,6 @@ export function FlashcardCard({
             boxShadow: insetRing(hovered ? colors.hairlineStrong : colors.hairline),
             ...focusRing(colors, focused),
             ...transition('box-shadow', reduced),
-            opacity: fade,
-            transform: [{ perspective: 900 }, { rotateY }],
           }}
         >
           <UiText variant="labelSm" tone="tertiary">
@@ -145,10 +111,11 @@ export function FlashcardCard({
           ) : (
             <Rich source={front} part="flashcard-front" />
           )}
-        </Animated.View>
-      </Pressable>
-      <View
+        </span>
+      </button>
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -162,10 +129,11 @@ export function FlashcardCard({
              pills wrap on a phone. Without them the group took its one-line
              width (wider than a 390 card), and focusing a pill past the edge
              scrolled the card's overflow-hidden box, cutting off its left side. */
-          <View
+          <div
             role="group"
             aria-label={strings.flashcardRate}
             style={{
+              display: 'flex',
               flexDirection: 'row',
               flexWrap: 'wrap',
               alignItems: 'center',
@@ -188,7 +156,7 @@ export function FlashcardCard({
                 data={{ rating }}
               />
             ))}
-          </View>
+          </div>
         ) : (
           <UiText variant="labelSm" tone="tertiary" style={{ flexShrink: 1 }}>
             {strings.flashcardPrompt}
@@ -202,7 +170,7 @@ export function FlashcardCard({
             onPress={flip}
           />
         </ActionRow>
-      </View>
+      </div>
       {onBack && state.rating ? (
         <UiText variant="labelSm" tone="secondary" testID="flashcard-note" aria-live="polite">
           {strings.ratingNote[state.rating]}

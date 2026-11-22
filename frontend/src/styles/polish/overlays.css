@@ -154,6 +154,35 @@ body.composer-tools-open.composer-tools-open::after {
   z-index: calc(var(--ui-z-popover) - 1);
 }
 
+/* Review flashcards: a centred dialog on desktop and a full-width bottom
+   sheet below 640px. The shared component owns the content; this file owns
+   the placement so it does not need a viewport read. */
+.review-session-panel {
+  position: absolute;
+  top: 12%;
+  align-self: center;
+  width: min(560px, calc(100% - 48px));
+  max-height: 76%;
+  border-radius: var(--ui-radius-card);
+}
+.review-session-grabber {
+  display: none;
+}
+@media (max-width: 640px) {
+  .review-session-panel {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    max-height: 90%;
+    border-radius: var(--ui-radius-card) var(--ui-radius-card) 0 0;
+  }
+  .review-session-grabber {
+    display: block;
+  }
+}
+
 /* ── Motion: one entrance for dialogs, menus and popovers ──
    Menus and dialogs share a short fade + scale
    ease-out (tokens.css --ui-duration-overlay / --ui-overlay-enter-scale).

@@ -8,13 +8,13 @@
  * Needs a LearnHostProvider above it (the flashcard reads its copy and
  * markdown rendering from there). White/grey only, no dots.
  */
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
-import { R, S, shadow } from '../look';
+import { useState, type CSSProperties } from 'react';
+import { dataAttributes } from '../domProps';
+import { S, shadow } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { FlashcardCard } from './FlashcardCard';
-import { ActionRow, PillAction, dataSet } from './parts';
+import { ActionRow, PillAction } from './parts';
 import type { RecallRating } from './model';
 
 export interface ReviewStrings {
@@ -52,7 +52,14 @@ export interface ReviewSessionProps {
   onClose: () => void;
 }
 
-const COMPACT = 640;
+const BUTTON_RESET: CSSProperties = {
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+};
 
 export function ReviewSession({
   cards,
@@ -61,8 +68,6 @@ export function ReviewSession({
   onClose,
 }: ReviewSessionProps) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
-  const compact = width < COMPACT;
   const [position, setPosition] = useState(0);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const card = cards[position] ?? null;
@@ -75,80 +80,62 @@ export function ReviewSession({
     setNotes((current) => ({ ...current, [card.id]: typeof note === 'string' ? note : '' }));
   };
 
-  const panel = compact
-    ? {
-        position: 'absolute' as const,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        maxHeight: '90%' as const,
-        borderTopLeftRadius: R.stage,
-        borderTopRightRadius: R.stage,
-      }
-    : {
-        position: 'absolute' as const,
-        top: '12%' as const,
-        alignSelf: 'center' as const,
-        width: Math.min(560, width - 48),
-        maxHeight: '76%' as const,
-        borderRadius: R.stage,
-      };
-
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose}>
-      <View style={{ flex: 1 }}>
-        <Pressable
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+      <div style={{ display: 'flex', flex: 1 }}>
+        <button
+          type="button"
           aria-label={strings.close}
-          onPress={onClose}
+          onClick={onClose}
           style={{
+            ...BUTTON_RESET,
             position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
+            inset: 0,
             backgroundColor: 'rgba(0,0,0,0.16)',
           }}
         />
-        <View
+        <div
           role="dialog"
           aria-modal
           aria-label={strings.title}
-          testID="review-session"
-          {...dataSet({ reviewPosition: card ? position + 1 : 0, reviewTotal: cards.length })}
-          style={[
-            panel,
-            {
-              backgroundColor: colors.card,
-              boxShadow: shadow(colors, 'dialog'),
-              overflow: 'hidden',
-            },
-          ]}
+          data-testid="review-session"
+          {...dataAttributes({
+            reviewPosition: card ? position + 1 : 0,
+            reviewTotal: cards.length,
+          })}
+          className="review-session-panel"
+          style={{
+            backgroundColor: colors.card,
+            boxShadow: shadow(colors, 'dialog'),
+            overflow: 'hidden',
+          }}
         >
-          {compact ? (
-            <View
-              aria-hidden
-              style={{
-                alignSelf: 'center',
-                width: 36,
-                height: 4,
-                borderRadius: R.pill,
-                backgroundColor: colors.hairlineStrong,
-                marginTop: S[75],
-              }}
-            />
-          ) : null}
-          <View
+          <span
+            aria-hidden
+            className="review-session-grabber"
             style={{
+              alignSelf: 'center',
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: colors.hairlineStrong,
+              marginTop: S[75],
+            }}
+          />
+          <div
+            style={{
+              display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
               gap: S[100],
-              paddingHorizontal: S[300],
+              paddingInline: S[300],
               paddingTop: S[300],
               paddingBottom: S[200],
             }}
           >
-            <View
+            <div
               style={{
+                display: 'flex',
                 flex: 1,
                 minWidth: 0,
                 flexDirection: 'row',
@@ -169,7 +156,7 @@ export function ReviewSession({
                     .replace('{total}', String(cards.length))}
                 </UiText>
               ) : null}
-            </View>
+            </div>
             <PillAction
               size="sm"
               tone="soft"
@@ -178,54 +165,65 @@ export function ReviewSession({
               onPress={onClose}
               testID="review-close"
             />
-          </View>
-          <ScrollView
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: S[300],
-              paddingBottom: S[300],
-              gap: S[200],
-            }}
-          >
-            {card ? (
-              <>
-                <FlashcardCard
-                  key={card.id}
-                  front={card.front}
-                  back={card.back}
-                  onRate={rate}
-                  note={rated ? notes[card.id] || null : null}
-                  testID="review-card"
-                />
-                {rated ? (
+          </div>
+          <div style={{ overflow: 'auto', flexGrow: 0, flexShrink: 1 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                paddingInline: S[300],
+                paddingBottom: S[300],
+                gap: S[200],
+              }}
+            >
+              {card ? (
+                <>
+                  <FlashcardCard
+                    key={card.id}
+                    front={card.front}
+                    back={card.back}
+                    onRate={rate}
+                    note={rated ? notes[card.id] || null : null}
+                    testID="review-card"
+                  />
+                  {rated ? (
+                    <ActionRow end>
+                      <PillAction
+                        tone="solid"
+                        label={last ? strings.finish : strings.next}
+                        testID="review-next"
+                        onPress={() => setPosition((current) => current + 1)}
+                      />
+                    </ActionRow>
+                  ) : null}
+                </>
+              ) : (
+                <div
+                  data-testid="review-done"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: S[200],
+                    paddingTop: S[100],
+                  }}
+                >
+                  <UiText variant="bodySm" tone="secondary">
+                    {strings.done}
+                  </UiText>
                   <ActionRow end>
                     <PillAction
                       tone="solid"
-                      label={last ? strings.finish : strings.next}
-                      testID="review-next"
-                      onPress={() => setPosition((current) => current + 1)}
+                      label={strings.close}
+                      testID="review-done-close"
+                      onPress={onClose}
                     />
                   </ActionRow>
-                ) : null}
-              </>
-            ) : (
-              <View testID="review-done" style={{ gap: S[200], paddingTop: S[100] }}>
-                <UiText variant="bodySm" tone="secondary">
-                  {strings.done}
-                </UiText>
-                <ActionRow end>
-                  <PillAction
-                    tone="solid"
-                    label={strings.close}
-                    testID="review-done-close"
-                    onPress={onClose}
-                  />
-                </ActionRow>
-              </View>
-            )}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
