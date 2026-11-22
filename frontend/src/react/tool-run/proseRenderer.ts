@@ -14,7 +14,7 @@ import {
 import { getLegacyActions } from '../legacy/gateway.ts';
 import { stripLegacyToolHtml } from './toolRunModel.js';
 import { getMathRenderRevision, subscribeMathRenderRevision } from '../../render/mathRevision.ts';
-import { getCurrentLang } from '../legacy/gateway.ts';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { escHTML } from '../../render/text.ts';
 
 const IMPURE_OUTPUT = /class="viz"|-slot"|canvas-block/;

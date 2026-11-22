@@ -7,7 +7,7 @@ import { groupSessionsByProject } from './projectGroups';
 import { useSessionOrganization } from '../../sidebar/organization.store';
 import { getCachedProjects, subscribeToProjectCache } from '../../projects/projectCache';
 import { VirtualSessionTimeline, type TimelineEntry } from './VirtualSessionTimeline';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { SessionGroupHeading } from './SessionGroupHeading';
 

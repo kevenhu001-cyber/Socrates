@@ -9,7 +9,7 @@ import { Icon } from '../../legacy/Icon';
 import { ShareLinkPanel } from './ShareLinkPanel';
 import { ShareVisibilityOptions } from './ShareVisibilityOptions';
 import { shareText } from './shareText';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 const OVERLAY_ID = 'shareOverlay';

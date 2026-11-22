@@ -1,4 +1,4 @@
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 
 /** One short, located line plus the calculation detail behind a disclosure. */
 export function DemoIssue({ headline, details }: { headline: string; details: string[] }) {

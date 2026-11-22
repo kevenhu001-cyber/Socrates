@@ -8,7 +8,7 @@ import {
 } from '../../config/chatPreferences';
 import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { setActiveProvider } from '../../config/providerConfig.service.ts';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { openSettings } from '../settings/settings.service.ts';

@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import { openArtifactPreview } from '../../legacy/artifactPreview.ts';
 import { nativeIslandFrameAttributes } from '../../ui/nativeIslandFrame';
 import { reportSwallow } from '../../util/reportSwallow.ts';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { ArtifactControl } from '../toolArtifacts/ArtifactControl';
 import type { ArtifactOutput as ArtifactOutputData } from '../tool-run/toolRunModel';
 

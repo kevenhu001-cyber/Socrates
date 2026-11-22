@@ -1,7 +1,8 @@
 import { stripIntelligentUiBlocks } from '@socrates/core';
 import type { ChatMessage } from '../types/domain';
 import type { MessageToolbarCallbacks } from './types';
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { stripHtmlTags } from '../../util/stripHtml.ts';
 
 function messageIdOf(message: ChatMessage): string | null {

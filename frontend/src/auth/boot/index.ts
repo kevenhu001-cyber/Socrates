@@ -6,7 +6,7 @@ import {
   setServerBuiltInKeyAvailable,
 } from '../../config/providerConfig.service.ts';
 import { showToast } from '../../legacy/toast.js';
-import { i18n } from '../../react/legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { openMobileTargetFromUrl } from '../../native/mobileWebSessionBridge.ts';
 import { captureBrowserLoginRequest } from '../../native/browserLoginHandoff.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';

@@ -4,7 +4,7 @@ import { Button } from '../ui/shadcn/button';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useNavigationStore } from '../../sidebar/navigation.store';
 import { useLocaleRefresh, WebUiTheme } from '../rn/WebUiTheme';
-import { getCurrentLang } from '../legacy/gateway';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { AccountPageHeader } from '../settings/AccountPageHeader';
 import { openSettings } from '../settings/settings.service';
 import { useProfileDispatch, useProfileSnapshot } from './profile.store';

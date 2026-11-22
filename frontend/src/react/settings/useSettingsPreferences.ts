@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  getApiFetch,
-  getCurrentLang,
-  getCurrentUser,
-  getLegacyActions,
-} from '../legacy/gateway.ts';
+import { getApiFetch, getCurrentUser, getLegacyActions } from '../legacy/gateway.ts';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { setThemePreference } from '../../displayPrefs.ts';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';
 import type {

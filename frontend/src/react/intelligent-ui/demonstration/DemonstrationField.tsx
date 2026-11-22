@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 import type { DemonstrationField } from '@socrates/core/demonstration';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
 import { DemoIssue } from './DemonstrationIssue';
 import { FIELD_WIDTH, fieldHeight, type FieldSample } from './sampleField';

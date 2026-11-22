@@ -2,7 +2,8 @@ import { Separator as ShadcnSeparator } from '../ui/Separator';
 import { Button } from '../ui/shadcn/button';
 import { Icon } from '../../legacy/Icon';
 import { useCallback, useEffect, useReducer, useState } from 'react';
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { useSessionOrganization, type SessionOrganization } from '../../sidebar/organization.store';
 

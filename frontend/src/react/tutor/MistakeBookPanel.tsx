@@ -13,7 +13,7 @@ import {
 } from '../../tutor/mistakeAnalysis.ts';
 import { nextQuestionFromAnyMistake, redoAnyMistake } from '../../tutor/mistakeCrossSession.ts';
 import { useAllSessionMistakes } from './useAllSessionMistakes';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useInlineMath } from '../rn/useInlineMath';
 

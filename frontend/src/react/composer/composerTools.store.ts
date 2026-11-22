@@ -5,7 +5,8 @@ import {
   publishComposerToolsState,
   useComposerToolsState,
 } from './composerTools.state';
-import { getLegacyActions, t as legacyT } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { t as legacyT } from '../../ui/legacyI18n.ts';
 import { loadPluginCatalog, normalisePluginId } from '../../composer/pluginCatalog.ts';
 import type { ComposerMode, ComposerToolsAction, ComposerToolsSnapshot } from './types';
 

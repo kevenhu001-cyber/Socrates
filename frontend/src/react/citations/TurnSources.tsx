@@ -1,4 +1,4 @@
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { Button } from '../ui/Button';
 import { openSourcesPanel } from '../sources/mount';
 import { useSourcesPanel } from '../sources/sourcesStore';

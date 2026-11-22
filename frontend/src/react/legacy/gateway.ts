@@ -4,7 +4,8 @@
 // React code MUST NOT read window.* directly. This file is the only exception.
 //
 // Usage:
-//   import { getLegacyActions, t } from '../legacy/gateway.ts';
+//   import { getLegacyActions } from '../legacy/gateway.ts';
+//   import { t } from '../../ui/legacyI18n.ts';
 //
 //   const { messages } = getLegacyActions();
 //
@@ -12,11 +13,9 @@
 
 import type { LegacyActions } from './types';
 import { apiFetch } from '../../util/api/index.ts';
-import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import { isDeepResearchEnabled } from '../../config/deepResearchMode.ts';
 import { webSearchOn, extensiveThinkingOn } from '../../config/providers.ts';
 import { getCurrentUser as getAppCurrentUser } from '../../app/lifecycle/index.ts';
-import { t as appT } from '../../i18n/index.ts';
 
 /** Standalone globals retained by the legacy shell. Keep their
  * compatibility shapes local to this boundary instead of bypassing types. */
@@ -96,51 +95,6 @@ export function resetBridgeCache(): void {
   _bridge = null;
 }
 
-// ─── i18n utility ────────────────────────────────────────────────────────────
-
-/**
- * Translate a key using the legacy i18n system (window.t).
- * Falls back to the key itself if the translation function is unavailable.
- */
-export function t(key: string, ...args: unknown[]): string {
-  if (typeof window !== 'undefined') {
-    const fn = window.t;
-    if (typeof fn === 'function') return fn(key, ...args);
-  }
-  return appT(key);
-}
-
-/**
- * Translate a key with a fallback for the React tree.
- * - Returns the translated string when the key resolves in the active
- *   language or the English fallback.
- * - Returns `fallback` when the key is missing (legacy `t()` returns the
- *   key string on miss, which is ugly in the UI).
- *
- * This consolidates the per-component `i18n(key, fallback)` helpers that
- * were duplicated across 8 React files and keeps the fallback visible
- * at the call site so the English copy stays co-located with the JSX.
- */
-export function i18n(key: string, fallback: string): string {
-  const v = t(key);
-  return v !== key ? v : fallback;
-}
-
-/**
- * Repaint every `[data-i18n-*]` node in the active locale.
- *
- * The legacy i18n pass runs during module evaluation, which is before the
- * React auth gate mounts; surfaces that render `data-i18n-key` nodes after
- * that point have to replay it.
- */
-export function applyLegacyI18n(): void {
-  try {
-    window.applyI18n?.();
-  } catch {
-    /* empty-catch: intentional — translation is best-effort */
-  }
-}
-
 // ─── Typed accessors for lazily-published legacy globals ─────────────────────
 
 /**
@@ -186,11 +140,6 @@ export function isExtensiveThinkingOn(): boolean {
     return standaloneWindow().extensiveThinkingOn!;
   }
   return extensiveThinkingOn;
-}
-
-/** Active UI language code tracked by the legacy i18n layer (defaults to zh). */
-export function getCurrentLang(): 'zh' | 'en' {
-  return getCurrentLanguage();
 }
 
 /**

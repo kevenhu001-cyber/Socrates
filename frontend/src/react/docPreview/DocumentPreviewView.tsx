@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { getApiFetch, i18n } from '../legacy/gateway.ts';
+import { getApiFetch } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { Button } from '../ui/Button';
 import type {
   DocumentPreviewSource,

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
 import {
   CONSENT_ACCEPT,

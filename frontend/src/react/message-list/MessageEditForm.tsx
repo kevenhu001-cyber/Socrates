@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { useMobileViewport } from '../sidebar-chrome/useMobileViewport';
 
 /* The editor is the user bubble in its edit state (chat-demo reference):

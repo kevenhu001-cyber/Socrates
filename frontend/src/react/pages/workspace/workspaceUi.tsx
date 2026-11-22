@@ -2,7 +2,7 @@ import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
 import { ListFilter } from 'lucide-react';
-import { t as _t } from '../../legacy/gateway.ts';
+import { t as _t } from '../../../ui/legacyI18n.ts';
 
 function i18n(key: string, fallback: string): string {
   const v = _t(key);

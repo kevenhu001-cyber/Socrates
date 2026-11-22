@@ -11,7 +11,7 @@ import { PhysicsLab } from './physics/PhysicsLab';
 import { LazyOpenUiBlock } from './LazyOpenUiBlock';
 import { Icon } from '../../legacy/Icon';
 import { DeferredMenu } from '../menu/DeferredMenu';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { UiImage } from './UiImage';
 import { UiAccordion } from './UiAccordion';
 import { UiSteps } from './UiSteps';

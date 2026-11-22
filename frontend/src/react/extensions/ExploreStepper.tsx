@@ -2,7 +2,7 @@ import { useEffect, useReducer, useSyncExternalStore } from 'react';
 
 import type { AgentRunEvent } from '../../extensions/types';
 import { getAgentRunSnapshot, subscribeToAgentRuns } from '../../extensions/agentRunStore';
-import { t } from '../legacy/gateway';
+import { t } from '../../ui/legacyI18n.ts';
 
 export type WorkflowStage = 'planning' | 'searching' | 'reading' | 'synthesizing';
 

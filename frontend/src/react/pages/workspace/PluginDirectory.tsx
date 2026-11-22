@@ -3,7 +3,7 @@ import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { useMemo, useState } from 'react';
-import { getCurrentLang } from '../../legacy/gateway.ts';
+import { getCurrentLang } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import type { PluginItem } from './types';
 import { i18n, installedRank, PlusIcon, SearchIcon } from './workspaceUi';

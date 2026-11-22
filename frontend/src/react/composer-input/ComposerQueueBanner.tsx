@@ -10,7 +10,7 @@ import {
 import { setComposerMarkdown, focusComposer } from '../../composer/controller.ts';
 import { useCurrentSessionId } from '../session-list/sessionList.store.ts';
 import { syncComposerShellFlags } from '../../legacy/composerShape.ts';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import type { ComposerSurface } from '../../composer/types.ts';
 
 export function ComposerQueueBanner({ surface }: { surface: ComposerSurface }) {

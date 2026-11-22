@@ -1,6 +1,6 @@
 import { useLayoutEffect } from 'react';
 import { flushSync } from 'react-dom';
-import { t } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 import { useUserInfo } from './sidebarChrome.store';
 import { setSidebarSearchOpen, useSidebarStore } from '../../sidebar/sidebar.store.ts';
 import { useMobileViewport } from './useMobileViewport.ts';

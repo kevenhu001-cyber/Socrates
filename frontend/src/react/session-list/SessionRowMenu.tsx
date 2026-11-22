@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { DeferredMenu } from '../menu/DeferredMenu';
-import { t } from '../legacy/gateway';
+import { t } from '../../ui/legacyI18n.ts';
 import { SessionMenuActions } from './SessionMenuActions';
 import { SessionMenuProjectPicker } from './SessionMenuProjectPicker';
 import type { SessionRowMenuProps } from './types';

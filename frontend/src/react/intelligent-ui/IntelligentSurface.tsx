@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react';
 import { MathText } from '../rn/useInlineMath';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 export type IntelligentDisplayMode = 'inline' | 'compact' | 'carousel' | 'fullscreen' | 'pip';
 

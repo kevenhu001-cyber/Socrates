@@ -22,7 +22,7 @@ import {
 } from '@socrates/ui/think';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { useInlineMath } from '../rn/useInlineMath';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { useKbStore } from '../../store/index.ts';
 import { useIsChatStreaming } from '../useChatRuntime.ts';
 import {

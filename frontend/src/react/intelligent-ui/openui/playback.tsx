@@ -2,7 +2,7 @@ import { defineComponent, reactive, useIsStreaming, useStateField } from '@openu
 import { VisualStepFrame } from '@socrates/ui/visual-components';
 import { useEffect, useState } from 'react';
 import { z } from 'zod/v4';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { MathText } from '../../rn/useInlineMath';
 import { Button } from '../../ui/Button';
 import { NativeControl } from '../../ui/NativeControl';

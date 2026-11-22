@@ -3,7 +3,7 @@ import { defineComponent } from '@openuidev/react-lang';
 import { calculatorStep, initialCalculatorState } from '@socrates/core';
 import { useReducer, type KeyboardEvent } from 'react';
 import { z } from 'zod/v4';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { cx } from './style';
 
 /* Key order and role. The role drives the visual hierarchy: functions stay

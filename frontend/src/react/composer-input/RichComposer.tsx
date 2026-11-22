@@ -9,7 +9,7 @@ import { useComposerPresentation } from './useComposerPresentation';
 import { ComposerPluginChips, useWebSearchOn } from './ComposerPluginChips';
 import { ComposerQueueBanner } from './ComposerQueueBanner';
 import { FormattingToolbar } from './FormattingToolbar';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 export function RichComposer({
   placeholder,

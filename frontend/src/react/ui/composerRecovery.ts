@@ -6,7 +6,8 @@ import {
 } from '../../composer/controller.ts';
 import { composerLifecycleStore } from '../../composer/lifecycle.store.ts';
 import { submitComposer } from '../composer-input/lifecycle';
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 const basicComposers = new WeakMap<HTMLElement, () => void>();
 

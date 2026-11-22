@@ -1,10 +1,6 @@
 import type { ReactElement } from 'react';
-import {
-  getApiFetch,
-  getConnectorIconMarkupFn,
-  getLegacyActions,
-  i18n,
-} from '../../legacy/gateway.ts';
+import { getApiFetch, getConnectorIconMarkupFn, getLegacyActions } from '../../legacy/gateway.ts';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { dispatchSession, sessionStore } from '../../../store/index.ts';
 import { openLibraryDetail } from '../../../legacy/libraryDetail.ts';

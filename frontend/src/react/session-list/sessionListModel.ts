@@ -1,5 +1,5 @@
 import type { SessionItem } from '../../legacy/sessionListState.ts';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 const MONTH_NAMES = [
   'January',

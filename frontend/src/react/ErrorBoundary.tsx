@@ -1,6 +1,6 @@
 import { Button as UiButton } from './ui/Button';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { i18n } from './legacy/gateway';
+import { i18n } from '../ui/legacyI18n.ts';
 
 interface Props {
   children: ReactNode;

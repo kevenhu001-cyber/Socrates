@@ -12,7 +12,7 @@ import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { visualizationTableRows } from '@socrates/core/visualizationNormalize';
 import { Button } from '../ui/shadcn/button';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { visualizationRendererKind } from '../../render/visualizationRendererKind';
 
 export type VizFailureReason =

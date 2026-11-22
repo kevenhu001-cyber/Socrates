@@ -2,7 +2,7 @@ import { Button as UiButton } from '../ui/Button';
 import { useEffect, useMemo, useState } from 'react';
 import type { Message, ResearchJob } from '@socrates/contracts';
 import { fetchResearchReport } from '../../agent/researchJobsClient.ts';
-import { t } from '../legacy/gateway';
+import { t } from '../../ui/legacyI18n.ts';
 import {
   FoundationDialog,
   FoundationDialogClose,

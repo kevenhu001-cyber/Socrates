@@ -9,7 +9,7 @@ import {
 import { NativeControl } from '../ui/NativeControl';
 import { ComposerFrame } from '@socrates/ui/composer';
 import { WebUiTheme } from '../rn/WebUiTheme';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { ComposerAttachmentChips } from '../attachments/AttachmentChipsRow';
 import { useAttachments } from '../attachments/attachments.store';
 import {

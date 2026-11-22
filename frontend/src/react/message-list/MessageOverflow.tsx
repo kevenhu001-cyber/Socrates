@@ -1,7 +1,7 @@
 import { Icon } from '../../legacy/Icon';
 import { INTERFACE_ICON_STROKE } from '../../legacy/icons/interfaceIcons';
 import { useRef, useState, useSyncExternalStore, type MouseEvent, type ReactNode } from 'react';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { DeferredMenu } from '../menu/DeferredMenu';
 import { ToolButton } from './ToolButton';
 

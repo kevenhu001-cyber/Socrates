@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore }
 import { ChevronRightIcon } from 'lucide-react';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/shadcn/button';
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { setCurrentSessionId, useSessionListSnapshot } from './sessionList.store';
 import { useSidebarStore } from '../../sidebar/sidebar.store.ts';

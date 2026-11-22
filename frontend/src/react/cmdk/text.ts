@@ -1,4 +1,4 @@
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 /**
  * Resolve a palette string at render time.

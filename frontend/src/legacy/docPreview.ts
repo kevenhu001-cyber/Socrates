@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { openDetailSurface } from './detailSurface.ts';
-import { i18n } from '../react/legacy/gateway.ts';
+import { i18n } from '../ui/legacyI18n.ts';
 import { getFileExtension, formatFileSize } from '../react/attachments/FileCard.tsx';
 import { previewKindFor } from '../react/docPreview/kinds.ts';
 import type { DocumentPreviewSource, PreviewKind } from '../react/docPreview/types.ts';

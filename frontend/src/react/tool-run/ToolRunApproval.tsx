@@ -7,7 +7,8 @@
  * buttons; the DOM wrapper keeps the region semantics and data hooks.
  */
 import { ToolApprovalCard, type ApprovalDecisionView } from '@socrates/ui/turn';
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import type { ApprovalDecision, ApprovalView } from './toolRunModel';
 import { reportSwallow as reportEmptyCatch } from '../../util/reportSwallow.ts';

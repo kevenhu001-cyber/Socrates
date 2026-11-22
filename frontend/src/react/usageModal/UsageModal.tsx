@@ -7,7 +7,7 @@ import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { cn } from 'cn';
 import { installModalA11y } from '../../legacy/modalA11y.ts';
 
-import { t as _t } from '../legacy/gateway.ts';
+import { t as _t } from '../../ui/legacyI18n.ts';
 import {
   beagleUsageSummary,
   collectUsageEntries,

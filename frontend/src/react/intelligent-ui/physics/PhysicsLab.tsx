@@ -1,6 +1,6 @@
 import { physicsDemonstrationProgram, physicsModelDefinition } from '@socrates/core';
 import { Demonstration } from '../demonstration/Demonstration';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 
 export interface PhysicsLabProps {
   scene: string;

@@ -4,7 +4,7 @@ import { defineComponent } from '@openuidev/react-lang';
 import { useEffect, useId, useState } from 'react';
 import { z } from 'zod/v4';
 import { Button } from '../../ui/Button';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { projectile } from './projectile';
 
 interface SimulationControlConfig {

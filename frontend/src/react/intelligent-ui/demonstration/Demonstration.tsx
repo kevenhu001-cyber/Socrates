@@ -10,7 +10,7 @@ import { MathText } from '../../rn/useInlineMath';
 import { Button } from '../../ui/Button';
 import { NativeControl } from '../../ui/NativeControl';
 import { Label } from '../../ui/shadcn/label';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { BlockSkeleton } from '../BlockSkeleton';
 import { DemoPlot } from './DemonstrationPlot';
 import { DemoScene } from './DemonstrationScene';

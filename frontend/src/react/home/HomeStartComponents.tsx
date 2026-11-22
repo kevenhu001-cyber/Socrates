@@ -10,7 +10,7 @@
 import { useSyncExternalStore } from 'react';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { HomeHero } from '@socrates/ui/home';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { getGreeting, subscribeGreeting } from '../../legacy/greetingState.ts';
 
 function t(key: string, fallback: string): string {

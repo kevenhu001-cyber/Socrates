@@ -1,6 +1,6 @@
 import { normalizeLearningUiNode, type IntelligentUiNode } from '@socrates/core';
 import { MathText } from '../rn/useInlineMath';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 interface FallbackOption {
   letter: string;

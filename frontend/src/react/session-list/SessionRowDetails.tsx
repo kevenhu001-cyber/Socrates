@@ -1,7 +1,7 @@
 import { Input as ShadcnInput } from '../ui/shadcn/input';
 import { Button as UiButton } from '../ui/Button';
 import React from 'react';
-import { t } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 import { setRecentsFilter } from '../../sidebar/sidebar.service';
 import type { SessionItem } from '../../legacy/sessionListState.ts';
 

@@ -17,7 +17,7 @@ import { Label } from '../ui/shadcn/label';
 import { NativeSelect, NativeSelectOption } from '../ui/shadcn/native-select';
 import { Textarea } from '../ui/shadcn/textarea';
 import { FoundationDialog, FoundationDialogTitle } from '../dialog/FoundationDialog';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import {
   closePromptTemplatesModal,
   onPromptRowDelete,

@@ -2,7 +2,7 @@ import { Label as ShadcnLabel } from '../../ui/shadcn/label';
 import { Input as ShadcnInput } from '../../ui/shadcn/input';
 import { Button } from '../../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
-import { t as translate } from '../../legacy/gateway.ts';
+import { t as translate } from '../../../ui/legacyI18n.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
 import { triggerLibraryUpload } from './LibraryUploadInput';

@@ -5,7 +5,7 @@
  * missing i18n entry never breaks the canvas UI.
  */
 
-import { t } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 
 type Translator = (key: string, fallback?: string) => string;
 

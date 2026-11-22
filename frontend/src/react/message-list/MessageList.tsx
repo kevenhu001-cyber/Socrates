@@ -23,7 +23,7 @@ import {
   subscribeHistoryPaging,
   type HistoryPagingSnapshot,
 } from '../../session/historyPagingState.ts';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 /* RN-13 — the row renderer (toolbar, attachments, edit form, tool-run models,
    assistant turn boundary) is only needed once a transcript has messages, so

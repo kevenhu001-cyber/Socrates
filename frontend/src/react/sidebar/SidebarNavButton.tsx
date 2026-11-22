@@ -1,4 +1,4 @@
-import { t as translate } from '../legacy/gateway.ts';
+import { t as translate } from '../../ui/legacyI18n.ts';
 import { SidebarNavRow } from '@socrates/ui/shell';
 import type { UiGlyphName, TextStyle } from '@socrates/ui/primitives';
 import { webClass } from '../rn/webHost';

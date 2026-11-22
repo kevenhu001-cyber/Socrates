@@ -3,7 +3,7 @@ import { memo, useCallback, useState, useEffect } from 'react';
 import type React from 'react';
 import { MessageCircleIcon } from 'lucide-react';
 import { ConversationRow } from '@socrates/ui/shell';
-import { t } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 import { detailCache } from '../../session/detailCache.ts';
 import type { SessionItem } from '../../legacy/sessionListState.ts';
 import { Icon } from '../../legacy/Icon';

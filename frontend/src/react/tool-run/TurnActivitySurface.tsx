@@ -16,7 +16,7 @@ import {
 } from '@socrates/ui/turn';
 import type { TurnActivityEntry } from '@socrates/contracts';
 import type { TurnActivityStatus } from '../../legacy/turnActivityModel';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import { ToolActivityIcon, toolActivitySites } from './ToolActivityIcon';
 import { ThinkingSpark } from './ThinkingSpark';

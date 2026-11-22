@@ -15,7 +15,7 @@ import {
   type ReactNode,
   type RefObject,
 } from 'react';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { IntelligentSurface } from './IntelligentSurface';
 import { WebUiTheme } from '../rn/WebUiTheme';
 import { BlockSkeleton } from './BlockSkeleton';

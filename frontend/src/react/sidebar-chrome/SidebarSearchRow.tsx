@@ -1,6 +1,6 @@
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { useAllSessionMistakes } from '../tutor/useAllSessionMistakes';
 import { renderRecents, setRecentsSearch } from '../../legacy/recentsView.ts';
 import {

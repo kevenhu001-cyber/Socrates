@@ -1,5 +1,5 @@
 import { DeferredMenu } from '../menu/DeferredMenu';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { useState } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { reportSwallow } from '../../util/reportSwallow';

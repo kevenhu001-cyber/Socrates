@@ -5,7 +5,7 @@ import {
   type IntelligentUiState,
 } from '@socrates/core';
 
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import type { ToolCallRecord } from '../tool-run/toolRunModel';
 import { IntelligentSurface, type IntelligentDisplayMode } from './IntelligentSurface';
 import { UiNode } from './IntelligentUiNodes';

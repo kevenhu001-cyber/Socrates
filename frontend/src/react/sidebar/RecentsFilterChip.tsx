@@ -1,5 +1,5 @@
 import { Button } from '../ui/shadcn/button';
-import { t } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 import type { ChipDescriptor } from './recentsFilterChips.model';
 
 /*

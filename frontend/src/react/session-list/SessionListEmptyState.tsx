@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { getLegacyActions, i18n, t } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { i18n, t } from '../../ui/legacyI18n.ts';
 import { clearRecentsFilter } from '../../sidebar/sidebar.service';
 
 interface SessionListEmptyStateProps {

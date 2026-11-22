@@ -1,6 +1,6 @@
 import { useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import { useExamStore, useSessionStore, useUiStore } from '../../store/index.ts';
 import {

@@ -1,6 +1,6 @@
 import { Button } from '../ui/shadcn/button';
 import { NativeControl } from '../ui/NativeControl';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { openSettings } from '../settings/settings.service.ts';
 import { preloadSettingsPage } from '../settings/settings.preload.ts';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';

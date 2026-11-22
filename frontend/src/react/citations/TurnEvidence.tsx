@@ -9,7 +9,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import type { TurnRuntime } from '@socrates/contracts';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { MathText } from '../rn/useInlineMath';
 import { TurnSources } from './TurnSources';

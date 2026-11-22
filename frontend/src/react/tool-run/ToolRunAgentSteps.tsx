@@ -10,7 +10,7 @@ import {
 } from '../../legacy/agentSteps.ts';
 import { agentStepIcon } from '../../legacy/icons/toolIcons.ts';
 import type { ToolRunView } from './toolRunModel';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 export interface ToolRunAgentStepsProps {
   run: NonNullable<ToolRunView['agentRun']>;

@@ -4,7 +4,7 @@ import { Button } from '../ui/shadcn/button';
 import { Textarea } from '../ui/shadcn/textarea';
 import { openVizModalRaw } from '../../render/vizStubs.ts';
 import { esc } from '../../render/text.ts';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 export interface CodeBlockActionsProps {
   codeElement: HTMLElement;

@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { KnowledgeMap, defaultKnowledgeStrings, type KnowledgeStrings } from '@socrates/ui/study';
 import { useKbStore, useSessionStore } from '../../store/index.ts';
 import { getCurrentLanguage } from '../../i18n/languageState.ts';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 import {
   jumpToKnowledgeNode,

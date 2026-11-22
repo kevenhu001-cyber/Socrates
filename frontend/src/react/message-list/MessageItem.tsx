@@ -14,7 +14,7 @@ import type { MessageItemProps } from './types';
 import { useMessagePostRender } from './useMessagePostRender';
 import { commitUserMessageEdit } from '../../chat/editBranch.ts';
 import { stripMarkdown } from '../../render/markdown.ts';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 type LiveFields = ChatMessage & {
   _turnAnchorMinHeight?: number;

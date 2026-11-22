@@ -3,7 +3,7 @@
    come from the grid, not the workbook theme. */
 
 import { parseXlsx, readArchive, type XlsxSheet } from './ooxml.ts';
-import { i18n } from '../../legacy/gateway.ts';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import type { PreviewEngine, PreviewEngineCallbacks } from '../types.ts';
 
 function tableEl(sheet: XlsxSheet): HTMLTableElement {

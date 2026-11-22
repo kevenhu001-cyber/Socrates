@@ -4,7 +4,8 @@ import { mountOwnedRoot } from '../lib/boot/ownedRoot';
 import type { Root } from 'react-dom/client';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
 
-import { getLegacyActions, i18n } from '../legacy/gateway.ts';
+import { getLegacyActions } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { openNav } from '../../sidebar/navigation.service';
 import { useNavigationStore } from '../../sidebar/navigation.store';
 import { SidebarNavButton } from './SidebarNavButton';

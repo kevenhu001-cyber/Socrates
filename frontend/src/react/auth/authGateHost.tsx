@@ -1,6 +1,6 @@
 import { flushSync } from 'react-dom';
 import { mountOwnedRoot, type OwnedRootHandle } from '../lib/boot/ownedRoot';
-import { applyLegacyI18n } from '../legacy/gateway';
+import { applyLegacyI18n } from '../../ui/legacyI18n.ts';
 import { AuthGate } from './AuthGate';
 
 let gateRoot: OwnedRootHandle | null = null;

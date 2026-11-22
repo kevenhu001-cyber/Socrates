@@ -21,7 +21,8 @@ import { mountBasicComposer, releaseBasicComposer } from '../../ui/composerRecov
    tick later. RN sidebar and transcript hosts are reserved while their
    rendering trees load, independently of authentication/config requests. */
 import { hydrateRecentsFilterChips } from '../../sidebar/RecentsFilterChips';
-import { getLegacyActions, i18n } from '../../legacy/gateway.ts';
+import { getLegacyActions } from '../../legacy/gateway.ts';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import {
   handleComposerEscape,
   submitComposer,

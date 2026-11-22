@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { i18n } from '../../legacy/gateway.ts';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { getCachedProjects } from '../../../projects/projectCache.ts';
 import { Button } from '../../ui/shadcn/button';
 import { Input } from '../../ui/shadcn/input';

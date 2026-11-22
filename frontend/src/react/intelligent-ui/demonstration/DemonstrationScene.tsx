@@ -7,7 +7,7 @@ import {
 } from '@socrates/core/demonstration';
 import { MathText } from '../../rn/useInlineMath';
 import { SvgMathText } from '../../rn/SvgMathText';
-import { i18n } from '../../legacy/gateway';
+import { i18n } from '../../../ui/legacyI18n.ts';
 import { demoColors } from './DemonstrationPlot';
 import type { SceneSample } from './sampleScene';
 import { demoAxisLabel } from './mathLabels';

@@ -6,7 +6,8 @@ import {
   FoundationDialogDescription,
   FoundationDialogTitle,
 } from '../dialog/FoundationDialog';
-import { getLegacyActions, i18n } from '../legacy/gateway';
+import { getLegacyActions } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import type { ConfirmSnapshot } from './types';
 import { getConfirmReturnFocus } from './confirm.hooks';
 import { setModalOpen } from '../../legacy/modalA11y.ts';

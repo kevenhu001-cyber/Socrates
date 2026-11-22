@@ -9,7 +9,7 @@ import { registerAssistantTurnRenderer } from '../legacy/assistantTurnRenderer';
 import { publishReactChatRuntime } from '../legacy/reactBridge';
 import { mountBasicComposer } from './ui/composerRecovery';
 import { showMountRecovery } from './ui/mountRecovery';
-import { i18n } from './legacy/gateway';
+import { i18n } from '../ui/legacyI18n.ts';
 import { preloadAssistantTurn } from './tool-run/LazyAssistantTurn';
 import { reportSwallow } from '../util/reportSwallow.ts';
 import { canReloadComposer, reloadWithComposerDrafts } from '../composer/reloadDrafts.ts';

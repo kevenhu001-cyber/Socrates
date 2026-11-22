@@ -1,4 +1,4 @@
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 /**
  * The one placeholder an interactive block shows before it has anything of

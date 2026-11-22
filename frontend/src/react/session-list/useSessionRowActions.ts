@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getApiFetch, getCurrentLang, getLegacyActions } from '../legacy/gateway.ts';
+import { getApiFetch, getLegacyActions } from '../legacy/gateway.ts';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { refreshCachedProjects } from '../../projects/projectCache.ts';
 
 export interface SessionRowUpdate {

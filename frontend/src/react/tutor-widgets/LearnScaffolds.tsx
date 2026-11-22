@@ -37,7 +37,7 @@ import {
   type ReviewCard,
 } from '@socrates/ui/learn';
 import { WebUiTheme, useLocaleRefresh } from '../rn/WebUiTheme';
-import { getCurrentLang } from '../legacy/gateway';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import { reportSwallow } from '../../util/reportSwallow.ts';
 import {
   revealPracticeAnswer,

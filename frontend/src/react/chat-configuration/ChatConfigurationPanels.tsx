@@ -3,7 +3,7 @@ import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
 import { Button as UiButton } from '../ui/Button';
 import type { ReasoningEffort, ResponseSpeed } from '../../config/chatPreferences';
 import type { ChatProviderOption } from './types';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 
 const EFFORT_STOPS: ReasoningEffort[] = ['instant', 'low', 'medium', 'high'];
 

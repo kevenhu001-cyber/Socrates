@@ -1,7 +1,8 @@
 import { Icon } from '../../legacy/Icon';
 import type { RefObject } from 'react';
 import type { FoundationMenuItem } from '../menu/FoundationMenu';
-import { getLegacyActionsOrNull, t } from '../legacy/gateway.ts';
+import { getLegacyActionsOrNull } from '../legacy/gateway.ts';
+import { t } from '../../ui/legacyI18n.ts';
 import { sidebarIcons } from '../../sidebar/sidebarIcons';
 import type { SessionRowMenuProps } from './types';
 

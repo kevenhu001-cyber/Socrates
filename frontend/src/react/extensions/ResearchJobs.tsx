@@ -6,7 +6,7 @@ import type { FormEvent } from 'react';
 import type { AgentRunEvent } from '../../extensions/types';
 import { researchClient, installResearchTracking } from '../../agent/researchJobsClient.ts';
 import type { ResearchView } from '../../agent/researchController.ts';
-import { t } from '../legacy/gateway';
+import { t } from '../../ui/legacyI18n.ts';
 import { ExploreStepper } from './ExploreStepper';
 import { ResearchReportDialog } from './ResearchReportDialog';
 

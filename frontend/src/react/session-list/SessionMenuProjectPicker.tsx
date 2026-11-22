@@ -1,4 +1,4 @@
-import { getCurrentLang } from '../legacy/gateway.ts';
+import { getCurrentLang } from '../../ui/legacyI18n.ts';
 import type { RefObject } from 'react';
 import type { FoundationMenuItem } from '../menu/FoundationMenu';
 import type { SessionProjectOption } from './types';

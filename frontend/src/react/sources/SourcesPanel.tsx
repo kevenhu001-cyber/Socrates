@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
 import { Button } from '../ui/Button';
-import { i18n } from '../legacy/gateway';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { MathText } from '../rn/useInlineMath';
 import { closeSources, useSourcesPanel, type SourcesPanelItem } from './sourcesStore';

@@ -12,7 +12,7 @@ import {
 } from '../ui/shadcn/card';
 import { TrashIcon } from 'lucide-react';
 import { Field, FieldGroup, FieldLabel } from '../ui/shadcn/field';
-import { i18n } from '../legacy/gateway.ts';
+import { i18n } from '../../ui/legacyI18n.ts';
 import { ProviderTextField } from './ProviderTextField';
 import { PreferenceSelect } from './PreferenceSelect';
 import { INSTANT_ENCODING_OPTIONS } from '../../config/providerConfig.types.ts';

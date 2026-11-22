@@ -8,7 +8,7 @@
 
 import { dispatchSession, sessionStore } from '../store/index.ts';
 import { apiFetch } from '../util/api/index.ts';
-import { i18n } from '../react/legacy/gateway.ts';
+import { i18n } from '../ui/legacyI18n.ts';
 import { showToast } from './toast.js';
 import { publishReactChatRuntime } from './reactBridge.ts';
 import { queueMessageOp } from '../session/mutationOutbox.ts';
