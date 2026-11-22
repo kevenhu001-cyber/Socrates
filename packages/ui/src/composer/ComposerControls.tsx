@@ -18,16 +18,14 @@
  * focus ring.
  */
 import type { ReactNode } from 'react';
-import { Pressable, View, type PressableStateCallbackType } from '../react-web';
 import { uiRadius } from '@socrates/theme';
+import { dataAttributes } from '../domProps';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { UiIcon } from '../primitives/UiIcon';
-import { dataSet } from '../learn/parts';
+import { usePressFeedback } from '../primitives/UiButton';
 
 export const COMPOSER_CONTROL_SIZE = 36;
-
-type PressState = PressableStateCallbackType & { hovered?: boolean };
 
 export interface ComposerToolsControl {
   label: string;
@@ -115,45 +113,56 @@ function RoundControl({
   onPress: () => void;
 }) {
   const { colors } = useUiTheme();
+  const { pressed, hovered, handlers } = usePressFeedback();
   const active = expanded === true || ariaPressed === true;
   return (
-    <Pressable
-      nativeID={id}
-      role="button"
+    <button
+      type="button"
+      id={id}
       aria-label={label}
       aria-expanded={expanded}
       aria-pressed={ariaPressed}
       aria-haspopup={haspopup}
       aria-disabled={disabled}
       disabled={disabled}
-      onPress={onPress}
-      {...dataSet({ composerControl: control, i18nTitle: i18nKey, i18nAria: i18nKey, voicePhase })}
-      style={({ pressed, hovered }: PressState) =>
-        ({
-          width: COMPOSER_CONTROL_SIZE,
-          height: COMPOSER_CONTROL_SIZE,
-          borderRadius: uiRadius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: disabled ? 0.45 : 1,
-          backgroundColor: disabled
-            ? 'transparent'
-            : filled
-              ? colors.action
-              : pressed
-                ? colors.fillPressed
-                : active
+      onClick={onPress}
+      {...handlers}
+      {...dataAttributes({
+        composerControl: control,
+        i18nTitle: i18nKey,
+        i18nAria: i18nKey,
+        voicePhase,
+      })}
+      style={{
+        display: 'flex',
+        width: COMPOSER_CONTROL_SIZE,
+        height: COMPOSER_CONTROL_SIZE,
+        margin: 0,
+        padding: 0,
+        border: 0,
+        borderRadius: uiRadius.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'inherit',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
+        backgroundColor: disabled
+          ? 'transparent'
+          : filled
+            ? colors.action
+            : pressed
+              ? colors.fillPressed
+              : active
+                ? colors.fillHover
+                : hovered
                   ? colors.fillHover
-                  : hovered
-                    ? colors.fillHover
-                    : 'transparent',
-          transitionProperty: 'background-color, opacity',
-          transitionDuration: '150ms',
-        }) as object
-      }
+                  : 'transparent',
+        transitionProperty: 'background-color, opacity',
+        transitionDuration: '150ms',
+      }}
     >
       {children}
-    </Pressable>
+    </button>
   );
 }
 
@@ -165,6 +174,8 @@ export function ComposerControls({
   compact = false,
 }: ComposerControlsProps) {
   const { colors } = useUiTheme();
+  const effortPress = usePressFeedback();
+  const primaryPress = usePressFeedback();
   const stop = primary.mode === 'stop';
   const enabled = stop || primary.ready;
   return (
@@ -181,46 +192,53 @@ export function ComposerControls({
         <UiIcon name="plus" size={20} color={tools.expanded ? colors.ink : colors.inkSecondary} />
       </RoundControl>
 
-      <View style={{ flex: 1, minWidth: 0 }} {...dataSet({ composerSpacer: '' })} />
+      <div style={{ flex: 1, minWidth: 0 }} {...dataAttributes({ composerSpacer: '' })} />
 
-      <View
-        {...dataSet({
+      <div
+        {...dataAttributes({
           composerControl: 'effort',
           effort: effort.level,
           visible: effort.visible ? 'true' : 'false',
         })}
         style={{ display: effort.visible ? 'flex' : 'none', flexDirection: 'row' }}
       >
-        <Pressable
-          nativeID="effortTrigger"
-          role="button"
+        <button
+          type="button"
+          id="effortTrigger"
           aria-label={effort.accessibilityLabel}
           aria-haspopup="dialog"
           aria-expanded={effort.expanded}
-          onPress={effort.onPress}
-          {...dataSet({ chatConfigTrigger: '' })}
-          style={({ pressed, hovered }: PressState) =>
-            ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: compact ? 4 : 6,
-              height: COMPOSER_CONTROL_SIZE,
-              paddingLeft: compact ? 10 : 12,
-              paddingRight: 10,
-              borderRadius: uiRadius.pill,
-              borderWidth: compact ? 0 : 1,
-              borderColor: hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
-              backgroundColor: pressed
-                ? colors.fillPressed
-                : hovered || effort.expanded
-                  ? colors.fillHover
-                  : compact
-                    ? 'transparent'
-                    : colors.fill,
-              transitionProperty: 'background-color, border-color',
-              transitionDuration: '150ms',
-            }) as object
-          }
+          onClick={effort.onPress}
+          {...effortPress.handlers}
+          {...dataAttributes({ chatConfigTrigger: '' })}
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: compact ? 4 : 6,
+            height: COMPOSER_CONTROL_SIZE,
+            margin: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            paddingLeft: compact ? 10 : 12,
+            paddingRight: 10,
+            borderRadius: uiRadius.pill,
+            borderWidth: compact ? 0 : 1,
+            borderColor:
+              effortPress.hovered || effort.expanded ? colors.hairlineStrong : colors.hairline,
+            backgroundColor: effortPress.pressed
+              ? colors.fillPressed
+              : effortPress.hovered || effort.expanded
+                ? colors.fillHover
+                : compact
+                  ? 'transparent'
+                  : colors.fill,
+            color: 'inherit',
+            font: 'inherit',
+            cursor: 'pointer',
+            transitionProperty: 'background-color, border-color',
+            transitionDuration: '150ms',
+          }}
         >
           {compact ? null : (
             <UiText variant="labelSm" tone="secondary" numberOfLines={1}>
@@ -234,14 +252,14 @@ export function ComposerControls({
               numberOfLines={1}
               style={compact ? { lineHeight: 20 } : undefined}
               aria-hidden
-              {...dataSet({ effortValue: '' })}
+              {...dataAttributes({ effortValue: '' })}
             >
               {effort.value}
             </UiText>
           ) : null}
           <UiIcon name="chevron-down" size={compact ? 14 : 16} color={colors.inkTertiary} />
-        </Pressable>
-      </View>
+        </button>
+      </div>
 
       {mic.phase === 'recording' && mic.showTimer && mic.timerLabel ? (
         <UiText
@@ -249,16 +267,14 @@ export function ComposerControls({
           tone="secondary"
           numberOfLines={1}
           aria-hidden
-          {...dataSet({ composerVoiceTimer: '' })}
-          style={
-            {
-              fontVariant: ['tabular-nums'],
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-              borderRadius: uiRadius.pill,
-              backgroundColor: colors.fill,
-            } as object
-          }
+          {...dataAttributes({ composerVoiceTimer: '' })}
+          style={{
+            fontVariant: ['tabular-nums'],
+            paddingHorizontal: 8,
+            paddingVertical: 2,
+            borderRadius: uiRadius.pill,
+            backgroundColor: colors.fill,
+          }}
         >
           {mic.timerLabel}
         </UiText>
@@ -290,41 +306,51 @@ export function ComposerControls({
         />
       </RoundControl>
 
-      <Pressable
-        nativeID="composerPrimaryBtn"
-        role="button"
+      <button
+        type="button"
+        id="composerPrimaryBtn"
         aria-label={primary.label}
         aria-disabled={!enabled}
         disabled={!enabled}
-        onPress={primary.onPress}
-        {...dataSet({
+        onClick={primary.onPress}
+        {...primaryPress.handlers}
+        {...dataAttributes({
           composerControl: 'send',
           stop: stop ? '1' : '0',
           ready: primary.ready ? 'true' : 'false',
           sending: primary.sending ? 'true' : 'false',
         })}
-        style={({ pressed, hovered }: PressState) =>
-          ({
-            width: COMPOSER_CONTROL_SIZE,
-            height: COMPOSER_CONTROL_SIZE,
-            borderRadius: uiRadius.pill,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: enabled ? colors.action : colors.fill,
-            opacity: pressed || primary.sending ? 0.78 : hovered && enabled ? 0.9 : undefined,
-            transitionProperty: 'background-color, opacity',
-            transitionDuration: '150ms',
-          }) as object
-        }
+        style={{
+          display: 'flex',
+          width: COMPOSER_CONTROL_SIZE,
+          height: COMPOSER_CONTROL_SIZE,
+          margin: 0,
+          padding: 0,
+          border: 0,
+          borderRadius: uiRadius.pill,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: enabled ? colors.action : colors.fill,
+          color: 'inherit',
+          cursor: enabled ? 'pointer' : 'default',
+          opacity:
+            primaryPress.pressed || primary.sending
+              ? 0.78
+              : primaryPress.hovered && enabled
+                ? 0.9
+                : undefined,
+          transitionProperty: 'background-color, opacity',
+          transitionDuration: '150ms',
+        }}
       >
-        <View nativeID="composerPrimaryBtnContent">
+        <div id="composerPrimaryBtnContent">
           <UiIcon
             name={stop ? 'stop' : 'arrow-up'}
             size={18}
             color={enabled ? colors.onAction : colors.inkTertiary}
           />
-        </View>
-      </Pressable>
+        </div>
+      </button>
     </>
   );
 }

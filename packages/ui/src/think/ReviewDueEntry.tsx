@@ -5,7 +5,6 @@
  * are due and opens the review (packages/ui/src/learn/ReviewSession) on
  * press. No count badge, no colour, no dot.
  */
-import { View } from '../react-web';
 import { S } from '../look';
 import { PillAction } from '../learn/parts';
 
@@ -21,7 +20,14 @@ export function ReviewDueEntry({
   testID = 'review-due-entry',
 }: ReviewDueEntryProps) {
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', paddingTop: S[100] }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        paddingTop: S[100],
+      }}
+    >
       <PillAction
         size="sm"
         label={label}
@@ -29,6 +35,6 @@ export function ReviewDueEntry({
         testID={testID}
         data={{ reviewEntry: '1' }}
       />
-    </View>
+    </div>
   );
 }

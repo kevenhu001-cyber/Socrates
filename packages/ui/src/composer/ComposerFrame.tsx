@@ -13,10 +13,10 @@
  * row as slots; everything else is drawn here.
  */
 import { useState, type ReactNode } from 'react';
-import { View } from '../react-web';
 import { uiRadius, uiShadow, uiStep, uiMotion } from '@socrates/theme';
+import { dataAttributes } from '../domProps';
+import { domStyle } from '../domStyle';
 import { useUiTheme } from '../primitives/theme';
-import { dataSet } from '../learn/parts';
 import { ComposerControls, type ComposerControlsProps } from './ComposerControls';
 
 export interface ComposerFrameProps {
@@ -50,54 +50,58 @@ export function ComposerFrame({
   const [hovered, setHovered] = useState(false);
   const shadow = shadows ?? uiShadow.light;
   return (
-    <View
-      {...dataSet({ composerFrame: '', focused: focused ? 'true' : 'false' })}
+    <div
+      {...dataAttributes({ composerFrame: '', focused: focused ? 'true' : 'false' })}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
-      style={
-        {
-          width: '100%',
-          /* Phones: the reference box's corner measures 26px (circle fit). */
-          borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
-          backgroundColor: colors.card,
-          boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
-          transitionProperty: 'box-shadow, background-color',
-          transitionDuration: `${uiMotion.slow - 100}ms`,
-          transitionTimingFunction: uiMotion.easeOut,
-          paddingTop: compact ? uiStep[75] : uiStep[200],
-          paddingBottom: uiStep[75],
-          paddingHorizontal: uiStep[75],
-        } as object
-      }
+      style={domStyle({
+        width: '100%',
+        /* Phones: the reference box's corner measures 26px (circle fit). */
+        borderRadius: compact ? uiRadius.card + uiStep[25] : uiRadius.card,
+        backgroundColor: colors.card,
+        boxShadow: focused ? shadow.fieldFocus : hovered ? shadow.fieldHover : shadow.field,
+        transitionProperty: 'box-shadow, background-color',
+        transitionDuration: `${uiMotion.slow - 100}ms`,
+        transitionTimingFunction: uiMotion.easeOut,
+        paddingTop: compact ? uiStep[75] : uiStep[200],
+        paddingBottom: uiStep[75],
+        paddingHorizontal: uiStep[75],
+      })}
     >
       {top ? (
-        <View
-          {...dataSet({ composerSlot: 'top' })}
-          style={{
+        <div
+          {...dataAttributes({ composerSlot: 'top' })}
+          style={domStyle({
             paddingHorizontal: compact ? uiStep[75] : uiStep[100],
             marginBottom: topVisible ? uiStep[75] : 0,
-          }}
+          })}
         >
           {top}
-        </View>
+        </div>
       ) : null}
-      <View
-        {...dataSet({ composerSlot: 'body' })}
-        style={{
+      <div
+        {...dataAttributes({ composerSlot: 'body' })}
+        style={domStyle({
           paddingHorizontal: compact ? uiStep[75] : uiStep[100],
           minHeight: 26,
           marginBottom: uiStep[75],
-        }}
+        })}
       >
         {body}
-      </View>
-      <View
-        {...dataSet({ composerSlot: 'rail' })}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: uiStep[50], minHeight: 36 }}
+      </div>
+      <div
+        {...dataAttributes({ composerSlot: 'rail' })}
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: uiStep[50],
+          minHeight: 36,
+        }}
       >
         <ComposerControls {...controls} compact={compact} />
-      </View>
+      </div>
       {hidden}
-    </View>
+    </div>
   );
 }
