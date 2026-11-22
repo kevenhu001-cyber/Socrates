@@ -298,7 +298,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
         try {
           res.write(`data: ${JSON.stringify({ delta: chunk })}\n\n`);
         } catch {
-          /* client gone */
+          /* empty-catch: intentional — client disconnected during the regenerated reply */
         }
       },
       async () => {
@@ -335,14 +335,14 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
             res.write('data: [DONE]\n\n');
             res.end();
           } catch {
-            /* client gone */
+            /* empty-catch: intentional — client disconnected before the terminal frame */
           }
         } catch (err) {
           try {
             res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
             res.end();
           } catch {
-            /* ignore */
+            /* empty-catch: intentional — client disconnected while the error frame was written */
           }
         }
       },
@@ -351,7 +351,7 @@ router.patch('/:id', writeLimiter, regenerateLimiter, async (req, res, next) => 
           res.write(`data: ${JSON.stringify(buildSseErrorFrame(err))}\n\n`);
           res.end();
         } catch {
-          /* ignore */
+          /* empty-catch: intentional — client disconnected while the error frame was written */
         }
       },
     );

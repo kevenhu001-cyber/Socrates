@@ -357,7 +357,7 @@ app.use(
         const host = new URL(origin).host.toLowerCase();
         if (ALLOWED_HOSTS.has(host)) return cb(null, true);
       } catch (_) {
-        /* fall through */
+        /* empty-catch: intentional — a malformed Origin never matches the allow-list */
       }
       cb(null, false);
     },
@@ -527,7 +527,7 @@ app.get('/api/config', async (_req, res) => {
     hasBeagleKey = !!row;
     cachedBeagleKeyResult = { hasBeagleKey, expiry: now + 30_000 };
   } catch (_) {
-    /* best-effort */
+    /* empty-catch: intentional — the built-in key probe is best-effort; the cached answer stays false */
   }
   res.json({
     hasBeagleKey,

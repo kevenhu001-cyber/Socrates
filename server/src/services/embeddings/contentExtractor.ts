@@ -230,7 +230,9 @@ class WorkerSlot {
     if (this.worker) {
       try {
         termination = this.worker.terminate();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — the worker is already dead; nothing left to terminate */
+      }
     }
     if (this._inflightReject) {
       const r = this._inflightReject;
@@ -287,7 +289,9 @@ class ExtractorPool {
         if (termination) {
           try {
             await termination;
-          } catch {}
+          } catch {
+            /* empty-catch: intentional — a rejected termination only means the worker was already gone */
+          }
         }
       }),
     );
@@ -412,6 +416,8 @@ export function extractArticleSync(html: string, url: string) {
         method: 'readability',
       };
     }
-  } catch {}
+  } catch {
+    /* empty-catch: intentional — readability could not parse this document; the caller falls back */
+  }
   return null;
 }

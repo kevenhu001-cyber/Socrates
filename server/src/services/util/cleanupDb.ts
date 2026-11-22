@@ -164,7 +164,7 @@ export async function runExpiredCleanup() {
           await codeInterpreter.reapExecutionScratch(row.id, row.userId);
           reapedScratch++;
         } catch (_) {
-          /* ignore — directory may not exist */
+          /* empty-catch: intentional — the scratch directory may not exist for this execution */
         }
       }
     }

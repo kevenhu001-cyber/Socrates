@@ -26,7 +26,7 @@ function executablePath(bin: string): string {
       accessSync(candidate, constants.X_OK);
       return realpathSync(candidate);
     } catch {
-      /* Try the next executable search directory. */
+      /* empty-catch: intentional — not executable here; try the next PATH candidate */
     }
   }
   throw new Error(`agent_executable_unavailable: ${bin}`);
@@ -131,12 +131,12 @@ export function killAgentProcessGroup(child: {
       process.kill(-child.pid, 'SIGKILL');
       return;
     } catch {
-      /* Already exited; try the direct handle. */
+      /* empty-catch: intentional — the process group is gone; try the direct handle below */
     }
   }
   try {
     child.kill('SIGKILL');
   } catch {
-    /* Already reaped. */
+    /* empty-catch: intentional — the child was already reaped */
   }
 }

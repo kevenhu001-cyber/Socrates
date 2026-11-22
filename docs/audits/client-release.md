@@ -1,5 +1,9 @@
 # Socrates Android release APK — local build (P0 parity pre-flight)
 
+> **历史记录（2026-09-03）。** 本文描述的是 2026-10-12 已整体移除的 `mobile/` 客户端
+> （commit `06eb47a4`；后续收敛见 ADR 0025）。当前唯一生产客户端是 `frontend/`，
+> 文中的构建步骤、路径与验收结论都不再适用，仅作留档。
+
 **Date:** 2026-09-03
 **Workflow:** local `mobile/android/gradlew :app:assembleRelease`
 **Profile:** Release (R8 minification enabled)
@@ -10,9 +14,9 @@
 
 ## Pre-flight P0 fixes bundled in this build
 
-Mobile ↔ frontend 1:1 alignment work landed in `mobile/` before this build (see
-[`mobile/docs/ui-gap-audit.md`](../../mobile/docs/ui-gap-audit.md) for the full
-audit). Items shipped in the APK that addresses P0 gaps flagged by the audit:
+Mobile ↔ frontend 1:1 alignment work landed in `mobile/` before this build (the
+full audit lived at `mobile/docs/ui-gap-audit.md`, removed with that tree). Items
+shipped in the APK that addresses P0 gaps flagged by the audit:
 
 ### Screens
 
@@ -179,5 +183,5 @@ verification. The APK lands under
   product navigation list — see audit §1.13).
 - Reasoning click-to-expand drawer (mobile keeps the inline card for now).
 
-These are tracked in [`mobile/docs/ui-gap-audit.md`](../../mobile/docs/ui-gap-audit.md)
-§1.12 / §3.9 / §1.13 / §5.5.
+These were tracked in `mobile/docs/ui-gap-audit.md` (removed with the `mobile/`
+tree) §1.12 / §3.9 / §1.13 / §5.5.

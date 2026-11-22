@@ -952,7 +952,9 @@ function normalizeFunctionPayload(payload, warnings) {
           parseFunctionExpression(rewritten);
           fn.expression = rewritten;
           if (!fn.label) fn.label = original.trim().slice(0, 80);
-        } catch {}
+        } catch {
+          /* empty-catch: intentional — an unparseable rewrite keeps the original expression */
+        }
       }
     }
     return dropUndefined(fn);
@@ -1178,7 +1180,9 @@ export function normalizeVisualizationSpec(input) {
       Array.isArray(payload.items)
     )
       normalizeItems(template, payload, warnings);
-  } catch {}
+  } catch {
+    /* empty-catch: intentional — a normalizer failure leaves the raw spec plus collected warnings */
+  }
   return { spec: normalized, warnings: [...new Set(warnings)].slice(0, 8) };
 }
 

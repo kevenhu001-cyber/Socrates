@@ -262,7 +262,7 @@ export function buildToolErrorFeedback(input: ToolErrorFeedbackInput): ToolError
     try {
       example = JSON.stringify(input.exampleOverride);
     } catch {
-      /* keep the canonical fallback */
+      /* empty-catch: intentional — an unserialisable override keeps the canonical example */
     }
   }
   const schemaText = describeToolSchema(schema);

@@ -130,8 +130,7 @@ export function startSseKeepalive(res: Response, opts: SseKeepaliveOpts = {}) {
   try {
     writeSseComment(res, text);
   } catch {
-    /* socket may already be closed — that's fine, the timers below
-       will detect it via the close listener. */
+    /* empty-catch: intentional — the socket may already be closed; the timers detect it */
   }
 
   const timer = setInterval(() => {

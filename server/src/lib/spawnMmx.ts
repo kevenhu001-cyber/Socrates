@@ -75,7 +75,7 @@ export function isMmxCliAvailable(): boolean {
         mmxAvailable = true;
         return true;
       } catch {
-        /* not in this directory */
+        /* empty-catch: intentional — the binary is not in this directory; try the next one */
       }
     }
   }
@@ -128,7 +128,7 @@ export function runMmx(
       try {
         proc.kill('SIGTERM');
       } catch (err) {
-        /* process already exited */
+        /* empty-catch: intentional — the process exited before the timeout fired */
       }
     }, timeoutMs);
 

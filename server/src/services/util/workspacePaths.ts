@@ -133,7 +133,7 @@ export function removeProjectWorkspace(userId: string | null, projectKey: string
     const dir = path.join(WORKSPACE_ROOT, `u_${safeUser}`, `p_${safeProject}`);
     rmSync(dir, { recursive: true, force: true });
   } catch {
-    /* best-effort cleanup */
+    /* empty-catch: intentional — best-effort project workspace cleanup */
   }
 }
 
@@ -145,6 +145,6 @@ export function removeSessionWorkspace(userId: string | null, sessionId: string)
     const dir = path.join(WORKSPACE_ROOT, `u_${safeUser}`, `s_${safeSession}`);
     rmSync(dir, { recursive: true, force: true });
   } catch {
-    /* best-effort cleanup */
+    /* empty-catch: intentional — best-effort session workspace cleanup */
   }
 }

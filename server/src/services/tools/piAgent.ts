@@ -345,7 +345,7 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
       try {
         input.onEvent?.(event);
       } catch {
-        /* consumer errors never break the run */
+        /* empty-catch: intentional — a consumer callback must not break the agent run */
       }
     };
 
@@ -513,7 +513,7 @@ export function runPiAgentTask(input: PiAgentRunInput): Promise<PiAgentRunResult
           try {
             handleRecord(JSON.parse(line) as Record<string, unknown>);
           } catch {
-            /* non-JSON banner lines are ignored */
+            /* empty-catch: intentional — non-JSON banner lines on stdout are ignored */
           }
         }
         newline = stdoutBuffer.indexOf('\n');

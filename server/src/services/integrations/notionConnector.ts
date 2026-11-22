@@ -73,7 +73,7 @@ async function notionJson(url: string, options: RequestInit): Promise<Record<str
   try {
     body = (await response.json()) as Record<string, unknown>;
   } catch (_) {
-    /* handled below */
+    /* empty-catch: intentional — a non-JSON body is normalized into the error below */
   }
   if (!response.ok || !body || body.error) {
     throw connectorHttpError(

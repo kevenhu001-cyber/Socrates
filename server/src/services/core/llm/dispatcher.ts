@@ -104,7 +104,7 @@ export function startLlmKeepWarmWorker(targetBaseUrl?: string): void {
         dispatcher: getLlmDispatcher(),
       } as unknown as RequestInit).catch(() => {});
     } catch {
-      // Swallowed: network probes never throw
+      // empty-catch: intentional — a network probe never throws; it only warms the dispatcher
     }
   }, 8_000);
 

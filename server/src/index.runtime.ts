@@ -57,7 +57,7 @@ async function main() {
     try {
       socket.setNoDelay(true);
     } catch {
-      /* socket closed already */
+      /* empty-catch: intentional — the socket closed before the option was applied */
     }
   });
 

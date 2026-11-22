@@ -107,7 +107,7 @@ export function inferIntelligentUiExample(
     try {
       doc = JSON.parse(rawArgsText);
     } catch {
-      /* ignore */
+      /* empty-catch: intentional — unparseable raw args leave doc null */
     }
   }
   const firstNode =

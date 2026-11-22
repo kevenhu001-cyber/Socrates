@@ -180,7 +180,7 @@ function registerTools(server: McpServer): void {
           .limit(1);
         hasBeagleKey = !!row;
       } catch {
-        // Best-effort, same fall-back as the inline /api/config handler.
+        // empty-catch: intentional — best-effort key probe, same fallback as the inline /api/config handler
       }
       const body = {
         hasBeagleKey,

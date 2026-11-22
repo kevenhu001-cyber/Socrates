@@ -125,7 +125,7 @@ export function serializedDocumentBlocks(text: string): SerializedUiBlock[] {
       blocks.push({ start, end: fenced ? tokens.lastIndex : end, source, open: false });
       if (!fenced) tokens.lastIndex = end;
     } catch {
-      /* incomplete or ordinary JSON is left readable */
+      /* empty-catch: intentional — incomplete or ordinary JSON is left as readable text */
     }
   }
   return blocks;

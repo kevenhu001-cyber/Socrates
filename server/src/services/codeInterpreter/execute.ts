@@ -59,7 +59,9 @@ export async function executeCode(
     if (typeof opts.onProgress === 'function') {
       try {
         opts.onProgress({ phase: 'skipped', reason: 'runner_disabled' });
-      } catch (_) {}
+      } catch (_) {
+        /* empty-catch: intentional — progress is best-effort; the skipped result is still returned */
+      }
     }
     return {
       status: 'skipped',
@@ -93,7 +95,9 @@ export async function executeCode(
     if (typeof onProgress === 'function') {
       try {
         onProgress({ phase: 'skipped', reason: 'missing_user' });
-      } catch (_) {}
+      } catch (_) {
+        /* empty-catch: intentional — progress is best-effort; the failed result is still returned */
+      }
     }
     return {
       status: 'failed',
@@ -125,7 +129,9 @@ export async function executeCode(
     if (typeof onProgress === 'function') {
       try {
         onProgress({ phase: 'skipped', reason: 'invalid_session' });
-      } catch (_) {}
+      } catch (_) {
+        /* empty-catch: intentional — progress is best-effort; the failed result is still returned */
+      }
     }
     return {
       status: 'failed',

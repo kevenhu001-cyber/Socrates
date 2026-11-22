@@ -1004,7 +1004,7 @@ export async function deleteAccount(userId: string, email?: string | null) {
     try {
       await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase()));
     } catch (e) {
-      /* non-fatal — orphaned lockout is bounded harm */
+      /* empty-catch: intentional — an orphaned lockout row is bounded harm; login already succeeded */
     }
   }
 }

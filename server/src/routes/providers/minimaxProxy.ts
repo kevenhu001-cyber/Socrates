@@ -180,9 +180,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
         res.write(SSE_PRIME);
         try {
           (res as { flush?: () => void }).flush?.();
-        } catch {}
+        } catch {
+          /* empty-catch: intentional — res.flush is absent on some compression stacks */
+        }
       } catch {
-        /* socket already closed */
+        /* empty-catch: intentional — socket already closed before the SSE prime was written */
       }
 
       /* bump the active-connection counter so the
@@ -228,7 +230,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             try {
               res.write(`event: preference_fallback\ndata: ${JSON.stringify(detail)}\n\n`);
             } catch {
-              /* client disconnected */
+              /* empty-catch: intentional — client disconnected while writing the preference-fallback event */
             }
           },
         },
@@ -240,9 +242,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
             try {
               (res as { flush?: () => void }).flush?.();
-            } catch {}
+            } catch {
+              /* empty-catch: intentional — res.flush is absent on some compression stacks */
+            }
           } catch {
-            /* client disconnected */
+            /* empty-catch: intentional — client disconnected during a content chunk */
           }
         },
         // onDone
@@ -251,7 +255,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             res.write('data: [DONE]\n\n');
             res.end();
           } catch {
-            /* ignore */
+            /* empty-catch: intentional — client disconnected before the terminal frame */
           }
           if (req.userId) {
             /* Built-in MiniMax provider: prefer its reported usage, fall
@@ -279,7 +283,7 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             res.write('data: [DONE]\n\n');
             res.end();
           } catch {
-            /* ignore */
+            /* empty-catch: intentional — client disconnected while the error frame was written */
           }
           if (req.userId && (fullText.length > 0 || (promptTokens && promptTokens > 0))) {
             const settled = resolveUsage(null, {
@@ -306,9 +310,11 @@ router.post('/v1/chat/completions', requireAuth, chatLimiter, async (req, res, n
             );
             try {
               (res as { flush?: () => void }).flush?.();
-            } catch {}
+            } catch {
+              /* empty-catch: intentional — res.flush is absent on some compression stacks */
+            }
           } catch {
-            /* client disconnected */
+            /* empty-catch: intentional — client disconnected during a reasoning delta */
           }
         },
       );

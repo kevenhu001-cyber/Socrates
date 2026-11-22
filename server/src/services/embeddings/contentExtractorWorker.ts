@@ -106,7 +106,7 @@ function stripJunk(doc: DomDocument) {
     try {
       doc.querySelectorAll(sel).forEach((el) => el.remove());
     } catch {
-      /* selector may be unsupported in some jsdom versions — skip */
+      /* empty-catch: intentional — some jsdom versions reject an unsupported selector; others still run */
     }
   }
   doc
@@ -151,7 +151,7 @@ function shape(article: ReadabilityArticle, doc: DomDocument, method: string, ma
       }
     }
   } catch {
-    /* date is best-effort */
+    /* empty-catch: intentional — the publish date is best-effort; null is a valid result */
   }
 
   return {
@@ -207,7 +207,9 @@ function extractByTextDensity(doc: DomDocument, url: string, maxChars: number) {
   let siteName: string | null = null;
   try {
     siteName = new URL(url).hostname;
-  } catch {}
+  } catch {
+    /* empty-catch: intentional — an invalid URL leaves the site name null */
+  }
   return {
     title: title.trim(),
     byline: null,

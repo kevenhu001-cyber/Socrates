@@ -43,7 +43,7 @@ async function zoteroJson(path: string, apiKey: string): Promise<unknown> {
   try {
     body = await response.json();
   } catch (_) {
-    /* error is normalized below */
+    /* empty-catch: intentional — a non-JSON body is normalized into the error below */
   }
   if (response.status === 401 || response.status === 403) {
     throw new ZoteroConnectorError(

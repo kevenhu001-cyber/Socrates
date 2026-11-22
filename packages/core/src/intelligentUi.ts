@@ -290,7 +290,7 @@ export function parseIntelligentUiRecords(source: string): IntelligentUiNode[] {
     const node = normalizeNode(value);
     if (node) return [node];
   } catch {
-    /* JSONL or an incomplete streaming tail: parse complete lines below */
+    /* empty-catch: intentional — JSONL or an incomplete streaming tail; complete lines parse below */
   }
   const nodes: IntelligentUiNode[] = [];
   const seen = new Set<string>();
@@ -306,8 +306,7 @@ export function parseIntelligentUiRecords(source: string): IntelligentUiNode[] {
       seen.add(node.id);
       nodes.push(node);
     } catch {
-      /* Streaming contract: malformed or incomplete lines are not fatal.
-         A later render receives the longer source and retries the line. */
+      /* empty-catch: intentional — a malformed or incomplete stream line is retried on the next render */
     }
   }
   return nodes;

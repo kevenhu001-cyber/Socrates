@@ -110,7 +110,7 @@ export const executeWebSearch: ToolExecutor = async (
       try {
         normalizedUrl = new URL(url).href;
       } catch {
-        /* Invalid search URLs never receive source IDs. */
+        /* empty-catch: intentional — an invalid search URL never receives a source ID */
       }
       const registered = sources.find((entry) => entry.url === normalizedUrl);
       return `[${idx}] ${title}${registered ? `\n    Source ID: ${registered.id}` : ''}\n    URL: ${url}\n${date}${source}    Snippet: ${snippet}`;

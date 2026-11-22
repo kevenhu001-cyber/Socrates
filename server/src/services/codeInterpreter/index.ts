@@ -180,7 +180,7 @@ export const codeInterpreter = {
         await fs.rm(dir, { recursive: true, force: true });
         removed++;
       } catch (_) {
-        /* skip — race with delete or transient ENOENT */
+        /* empty-catch: intentional — a concurrent delete or transient ENOENT skips this dir */
       }
     };
     const visit = async (dir: string, depth: number): Promise<void> => {

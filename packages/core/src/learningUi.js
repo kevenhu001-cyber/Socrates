@@ -250,7 +250,7 @@ export function openUiLearningMisuse(issues) {
       const parsed = JSON.parse(issue);
       if (parsed && typeof parsed.component === 'string') name = parsed.component;
     } catch {
-      /* not a JSON issue */
+      /* empty-catch: intentional — the issue is not JSON; the regex fallback below handles it */
     }
     if (!name) {
       const match = issue.match(/component\s+"([A-Za-z0-9_-]{1,40})"/i);

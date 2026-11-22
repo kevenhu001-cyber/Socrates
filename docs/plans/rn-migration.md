@@ -1,11 +1,11 @@
 # 历史文档：旧 mobile React Native 迁移路线
 
-> **2026-10-06 起已冻结。** 本文描述旧 `mobile/` 的历史实现与验收，
-> 勾选项不适用于新 Universal App，也不表示新客户端已验收。
-> 当前主应用位于 `apps/socrates/` + `packages/`，进展与签收以
-> [Universal App 迁移路线](universal-app-migration.md) 为准。
-> 旧客户端仅允许 release-blocking 安全、崩溃、数据丢失修复，见
-> [冻结说明](../../mobile/FROZEN.md)。以下保留历史记录。
+> **2026-10-06 起已冻结；2026-11-16 起彻底过期。** 本文描述旧 `mobile/` 的历史实现与验收，
+> 勾选项不适用于任何现存客户端，也不表示新客户端已验收。
+> `mobile/`（2026-10-12，commit `06eb47a4`）与 `apps/socrates/`（2026-11-16，ADR 0025）
+> 均已移除，`mobile/FROZEN.md` 也随之删除。当前唯一生产客户端是 `frontend/` 的 SPA 原地
+> RN 化，进展见 [SPA-RN 收敛方案](2026-11-05-spa-rn-convergence.md) 与
+> [ADR 0025](../adr/0025-remove-universal-app-spa-only-rn.md)。以下保留历史记录。
 
 ## 目标
 

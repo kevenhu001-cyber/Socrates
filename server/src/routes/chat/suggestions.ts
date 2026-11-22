@@ -113,7 +113,7 @@ function buildPromptMessages(
     try {
       preferenceLines.push(`- Preferences: ${truncate(JSON.stringify(context.preferences), 1200)}`);
     } catch (_) {
-      /* ignore non-serialisable preference blobs */
+      /* empty-catch: intentional — a non-serialisable preference blob is skipped from the prompt */
     }
   }
   const memoryLines = context.memories
@@ -172,7 +172,7 @@ function parseSuggestionsArray(content: string): unknown[] | null {
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) return parsed;
   } catch (_) {
-    /* try the bracket-balanced slice below */
+    /* empty-catch: intentional — not bare JSON; the bracket-balanced slice below gets a turn */
   }
 
   const open = trimmed.indexOf('[');

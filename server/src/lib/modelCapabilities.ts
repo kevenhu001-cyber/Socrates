@@ -658,7 +658,7 @@ export function instantEncodingFor(
     try {
       host = new URL(apiBase).hostname;
     } catch {
-      /* URL validated at provider configuration */
+      /* empty-catch: intentional — the URL was validated when the provider was configured */
     }
     if (host && scoped.host.test(host)) return scoped.encoding;
   }

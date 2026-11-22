@@ -162,7 +162,7 @@ export function artifactFromFence(input: {
       const parsed: unknown = JSON.parse(input.text);
       if (isVisualizationSpec(parsed)) return descriptorFromVisualization(parsed, input.mode, id);
     } catch {
-      /* not JSON — fall through to a source preview */
+      /* empty-catch: intentional — a non-JSON fence falls through to the source preview */
     }
   }
   const firstLine = input.text.split('\n').find((line) => line.trim()) || kind;

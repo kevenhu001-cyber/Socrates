@@ -144,7 +144,7 @@ function parseVariants(content: unknown): string[] {
         return arr.filter((x) => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim());
       }
     } catch {
-      /* fall through */
+      /* empty-catch: intentional — the model reply was not a JSON array; the next strategy runs */
     }
   }
 

@@ -253,7 +253,7 @@ export async function streamChatCompletion(
           arguments: entry.function.arguments,
         });
       } catch {
-        /* ignore listener errors */
+        /* empty-catch: intentional — a consumer callback threw; stream parsing must continue */
       }
     };
     const _accumulateToolCall = (
@@ -340,7 +340,7 @@ export async function streamChatCompletion(
                 return;
               }
             } catch {
-              /* ignore */
+              /* empty-catch: intentional — the line looked like JSON but is not a provider error payload */
             }
           }
           continue;
@@ -379,7 +379,7 @@ export async function streamChatCompletion(
               try {
                 onReasoning(reasoning);
               } catch {
-                /* ignore */
+                /* empty-catch: intentional — a reasoning listener threw; the stream must keep parsing */
               }
             }
           }
@@ -411,7 +411,7 @@ export async function streamChatCompletion(
           const content = delta.content || '';
           if (content) onChunk(content);
         } catch {
-          // Skip malformed frames
+          // empty-catch: intentional — skip malformed SSE frames from the provider
         }
       }
     }
@@ -443,7 +443,7 @@ export async function streamChatCompletion(
               try {
                 onReasoning(reasoning);
               } catch {
-                /* ignore */
+                /* empty-catch: intentional — a reasoning listener threw; the non-stream path must keep parsing */
               }
             }
           }
@@ -461,7 +461,7 @@ export async function streamChatCompletion(
           if (content) onChunk(content);
         }
       } catch {
-        /* skip */
+        /* empty-catch: intentional — skip a malformed frame from the non-stream payload */
       }
     }
 
@@ -494,7 +494,7 @@ export async function streamChatCompletion(
             final: true,
           });
         } catch {
-          /* ignore listener errors */
+          /* empty-catch: intentional — a consumer callback threw during the final tool-delta flush */
         }
       }
     }
@@ -520,7 +520,7 @@ export async function streamChatCompletion(
           try {
             onToolUse({ id: tc.id, type: 'function', function: { ...tc.function } });
           } catch {
-            /* ignore listener errors */
+            /* empty-catch: intentional — a tool-use listener threw; the remaining calls still dispatch */
           }
         }
       } else {
@@ -549,7 +549,7 @@ export async function streamChatCompletion(
       try {
         await reader.cancel();
       } catch {
-        /* upstream may already have failed */
+        /* empty-catch: intentional — the upstream body may already have failed; cleanup must not mask the result */
       }
       reader.releaseLock();
     }

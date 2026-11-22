@@ -26,7 +26,7 @@ router.post('/web-search', requireAuth, searchLimiter, async (req, res, next) =>
       const cfg = await getActiveApiKey(req.userId);
       if (cfg && cfg.keyHint) apiKeyHint = `${cfg.keyHint}:${cfg.url || ''}:${cfg.model || ''}`;
     } catch {
-      /* leave placeholder hint */
+      /* empty-catch: intentional — leave the placeholder hint when the key lookup fails */
     }
     const locale = (req.headers['accept-language'] || '').split(',')[0].trim() || undefined;
     const results = await webSearch(query, count, {

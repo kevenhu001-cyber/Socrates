@@ -410,7 +410,7 @@ router.get('/me', requireAuth, async (req, res, next) => {
         new Intl.DateTimeFormat('en-US', { timeZone: candidate }).format();
         timeZone = candidate;
       } catch {
-        /* malformed or unsupported zone — browser fallback wins */
+        /* empty-catch: intentional — malformed or unsupported zone; the browser fallback wins */
       }
     }
     return res.json({ user: { ...user, timeZone } });

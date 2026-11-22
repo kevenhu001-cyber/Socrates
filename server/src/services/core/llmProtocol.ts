@@ -146,7 +146,7 @@ export function applyProviderControls(
   try {
     host = new URL(opts.apiBase).hostname;
   } catch {
-    /* URL validated at provider configuration */
+    /* empty-catch: intentional — the URL was validated when the provider was configured */
   }
   if (host === 'api.deepseek.com' && opts.userId) {
     body.user_id = `socrates_${createHash('sha256').update(opts.userId).digest('hex').slice(0, 32)}`;

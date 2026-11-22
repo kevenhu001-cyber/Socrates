@@ -422,7 +422,7 @@ router.post('/subscribe', async (req, res, next) => {
     try {
       await sendStatusSubscriptionEmail(email, confirmUrl);
     } catch (_) {
-      /* email delivery failure is not fatal — the subscriber row exists */
+      /* empty-catch: intentional — email delivery is not fatal; the subscriber row already exists */
     }
     return res.status(201).json({ status: 'subscribed' });
   } catch (err) {

@@ -173,7 +173,7 @@ async function _downloadCjkFontOnce(): Promise<string | null> {
       }
     }
   } catch (_) {
-    /* not cached yet */
+    /* empty-catch: intentional — no validated cache entry yet; the download path below is the normal flow */
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CJK_FONT_TIMEOUT_MS);
@@ -231,7 +231,7 @@ function _registerCjkFontInPyodide(fontPath: string): string | null {
     try {
       pyodide.FS.mkdirTree('/usr/share/fonts');
     } catch (_) {
-      /* dir exists */
+      /* empty-catch: intentional — the MEMFS font directory already exists */
     }
     pyodide.FS.writeFile(memfsPath, new Uint8Array(bytes));
     const family = pyodide.runPython(`
@@ -319,14 +319,14 @@ async function bootPyodide() {
         try {
           console.log(`[pyodide-boot] ${msg}`);
         } catch (_) {
-          /* worker torn down */
+          /* empty-catch: intentional — boot log after the worker was torn down */
         }
       },
       stderr: (msg: string) => {
         try {
           console.warn(`[pyodide-boot] ${msg}`);
         } catch (_) {
-          /* worker torn down */
+          /* empty-catch: intentional — boot log after the worker was torn down */
         }
       },
     });
@@ -530,7 +530,7 @@ async function runCode({
         elapsedMs: Date.now() - startedAt,
       });
     } catch (_) {
-      /* parent closed */
+      /* empty-catch: intentional — parent port closed; the final result still carries stdout/stderr */
     }
   };
   pyodide.globals.set('_socrates_out_hook_js', makeHook('stdout'));
@@ -550,12 +550,12 @@ async function runCode({
   try {
     pyodide.FS.mkdirTree('/artifacts');
   } catch (err) {
-    /* directory already exists */
+    /* empty-catch: intentional — the MEMFS mount point already exists */
   }
   try {
     pyodide.FS.unmount('/artifacts');
   } catch (err) {
-    /* not mounted yet */
+    /* empty-catch: intentional — nothing mounted yet on a fresh runtime */
   }
   pyodide.FS.mount(pyodide.FS.filesystems.NODEFS, { root: artifactsDir }, '/artifacts');
   pyodide.runPython(`import os; os.chdir('/artifacts')`);
@@ -616,7 +616,7 @@ async function runCode({
       );
     }
   } catch (_) {
-    /* non-fatal */
+    /* empty-catch: intentional — the scratch listing is diagnostic; a print failure must not fail the run */
   }
 
   /* scan the user's imports and install
@@ -657,7 +657,7 @@ async function runCode({
             elapsedMs: Date.now() - startedAt,
           });
         } catch (_) {
-          /* parent closed */
+          /* empty-catch: intentional — parent port closed during package auto-install */
         }
       },
     });
@@ -667,7 +667,7 @@ async function runCode({
       pyodide.runPython(`print(${JSON.stringify(note)}, flush=True)`);
     }
   } catch (_) {
-    /* offline fetch / unparseable source — exec reports the real error */
+    /* empty-catch: intentional — offline auto-install probe; exec reports the real import error */
   }
 
   if (Object.hasOwn(pyodide.loadedPackages, 'matplotlib')) {
@@ -881,7 +881,9 @@ async function runCode({
     if (signal) signal.removeEventListener('abort', onAbort);
     try {
       pyodide.FS.unmount('/artifacts');
-    } catch (_) {}
+    } catch (_) {
+      /* empty-catch: intentional — unmount is best-effort while tearing the run down */
+    }
   }
 
   const durationMs = Date.now() - startedAt;
@@ -893,7 +895,7 @@ async function runCode({
     stdoutText = pyodide.runPython('_stdout_cap.getvalue()') || '';
     stderrText = pyodide.runPython('_stderr_cap.getvalue()') || '';
   } catch (_) {
-    /* shim may have raised mid-write */
+    /* empty-catch: intentional — the stream shim may have raised mid-write; the run already reports its failure */
   }
 
   // If we deferred the errorMessage in the catch block above, parse it now
@@ -952,7 +954,9 @@ async function runCode({
         absPath: filePath,
       });
     }
-  } catch (_) {}
+  } catch (_) {
+    /* empty-catch: intentional — the artifacts dir is absent when the run failed before mounting, or a file vanished between readdir and stat */
+  }
 
   // Drop interrupt buffer reference so subsequent runs re-wire cleanly.
   if (interruptBufferUint8) {

@@ -448,7 +448,7 @@ async function runWebSearch(
       writable: false,
     });
   } catch {
-    /* metadata is best-effort */
+    /* empty-catch: intentional — attaching diagnostic metadata is best-effort */
   }
 
   try {
@@ -461,7 +461,7 @@ async function runWebSearch(
       result: finalResults,
     });
   } catch {
-    /* cache is best-effort */
+    /* empty-catch: intentional — writing the search cache is best-effort */
   }
 
   return finalResults;
@@ -566,7 +566,9 @@ export function parseBingImageHtml(html: string): ImageResult[] {
       seen.add(imgUrl);
       results.push({ title, url: imgUrl, thumbnailUrl: thumbUrl, sourceUrl });
       if (results.length >= MAX_NEWS_RESULTS) break;
-    } catch (_) {}
+    } catch (_) {
+      /* empty-catch: intentional — one malformed news item is skipped, the rest still parse */
+    }
   }
   if (!results.length) {
     const imgRe =

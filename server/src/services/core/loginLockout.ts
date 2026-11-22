@@ -59,7 +59,7 @@ async function pruneExpired() {
         ),
       );
   } catch (_) {
-    /* prune failures are non-fatal */
+    /* empty-catch: intentional — pruning stale failure rows is non-fatal */
   }
 }
 
@@ -168,6 +168,6 @@ export async function recordSuccess(email: string) {
     const db = getDb();
     await db.delete(loginFailures).where(eq(loginFailures.email, email.toLowerCase()));
   } catch (_) {
-    /* non-fatal */
+    /* empty-catch: intentional — clearing the lockout is best-effort after a successful login */
   }
 }

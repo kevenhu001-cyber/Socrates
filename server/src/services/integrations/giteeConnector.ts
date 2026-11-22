@@ -63,7 +63,7 @@ async function giteeJson<T = unknown>(url: string, options?: RequestInit): Promi
   try {
     body = (await response.json()) as Record<string, unknown>;
   } catch (_) {
-    /* handled below */
+    /* empty-catch: intentional — a non-JSON body is normalized into the error below */
   }
   if (!response.ok || !body || body.error || body.message === '401 Unauthorized') {
     throw connectorHttpError(

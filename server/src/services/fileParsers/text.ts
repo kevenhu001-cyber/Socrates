@@ -81,7 +81,7 @@ export function decodeTextBuffer(input: Uint8Array): DecodedText {
     try {
       return { text: new TextDecoder('utf-16be').decode(buf.subarray(2)), encoding: 'utf-16be' };
     } catch {
-      /* codec unavailable — fall through */
+      /* empty-catch: intentional — the runtime has no utf-16be codec; fall through to detection */
     }
   }
   const sample = buf.subarray(0, 256 * 1024);
@@ -100,7 +100,7 @@ export function decodeTextBuffer(input: Uint8Array): DecodedText {
     try {
       return { text: new TextDecoder(best.label).decode(buf), encoding: best.label };
     } catch {
-      /* fall through */
+      /* empty-catch: intentional — the detected label is unsupported here; fall back to utf-8 */
     }
   }
   return { text: new TextDecoder('utf-8').decode(buf), encoding: 'utf-8 (lossy)' };

@@ -54,7 +54,7 @@ async function feishuJson(url: string, options: RequestInit): Promise<Record<str
   try {
     body = (await response.json()) as Record<string, unknown>;
   } catch (_) {
-    /* handled below */
+    /* empty-catch: intentional — a non-JSON body is normalized into the error below */
   }
   if (!response.ok || !body || body.code !== 0) {
     throw new Error(`Feishu request failed (${response.status || 0})`);

@@ -232,7 +232,7 @@ async function notifySubscribers(component: string, from: string, to: string) {
         statusUrl: STATUS_BASE_URL + '/',
       });
     } catch (_) {
-      /* individual send failure is non-fatal */
+      /* empty-catch: intentional — one failed alert send must not stop the rest */
     }
   }
 }

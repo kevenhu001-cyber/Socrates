@@ -76,7 +76,7 @@ export const executeImageSearch: ToolExecutor = async (
       }));
     }
   } catch {
-    // Media service unavailable, fall through to direct image search
+    // empty-catch: intentional — media service unavailable, fall through to direct image search
   }
 
   // If media search didn't yield enough, fall back or complement with direct Bing image search
@@ -100,7 +100,7 @@ export const executeImageSearch: ToolExecutor = async (
         }
       }
     } catch {
-      // Bing fallback failed
+      // empty-catch: intentional — the Bing fallback failed; the caller reports no images
     }
   }
 

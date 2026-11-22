@@ -139,7 +139,7 @@ export const executeCodeInterpreter: ToolExecutor = async (
         elapsedMs: p.elapsedMs || 0,
       });
     } catch (_) {
-      /* client closed */
+      /* empty-catch: intentional — the SSE client closed while a progress frame was written */
     }
   };
 

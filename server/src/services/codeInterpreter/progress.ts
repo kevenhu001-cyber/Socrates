@@ -44,6 +44,8 @@ export function emitProgress(
   if (typeof onProgress === 'function') {
     try {
       onProgress(event);
-    } catch (_) {}
+    } catch (_) {
+      /* empty-catch: intentional — a progress listener threw; the run continues */
+    }
   }
 }

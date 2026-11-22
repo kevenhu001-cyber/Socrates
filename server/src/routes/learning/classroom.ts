@@ -188,7 +188,7 @@ router.get('/classes/:id/dashboard', async (req, res, next) => {
           if (prev === undefined || rank > prev) nodeMap.set(name, rank);
         }
       } catch (_) {
-        /* defensive: ignore malformed kbNodes */
+        /* empty-catch: intentional — malformed kbNodes JSON is skipped, not fatal */
       }
 
       // mistakes JSONB: count frequency per node name for hotspots.
@@ -206,7 +206,7 @@ router.get('/classes/:id/dashboard', async (req, res, next) => {
           hotspotMap.set(name, (hotspotMap.get(name) || 0) + 1);
         }
       } catch (_) {
-        /* defensive: ignore malformed mistakes */
+        /* empty-catch: intentional — malformed mistakes JSON is skipped, not fatal */
       }
 
       // lastActiveAt = most recent session.updatedAt for the student.

@@ -229,7 +229,7 @@ export function parseToolArguments(
         return { ok: true, value: value as Record<string, unknown> };
       }
     } catch {
-      // Try the next conservative representation.
+      // empty-catch: intentional — try the next conservative argument representation
     }
   }
   return { ok: false, error: TOOL_ARGUMENT_ERRORS.parse };
@@ -681,7 +681,7 @@ function coerceValueToSchema(
           return serialized;
         }
       } catch {
-        /* fall through */
+        /* empty-catch: intentional — an unserialisable value keeps its raw form */
       }
       return value;
     }
@@ -738,7 +738,7 @@ function coerceValueToSchema(
               );
             }
           } catch {
-            /* fall through to delimiter split */
+            /* empty-catch: intentional — fall through to the delimiter split below */
           }
         }
         /* A delimited list is the other unambiguous single-value form.

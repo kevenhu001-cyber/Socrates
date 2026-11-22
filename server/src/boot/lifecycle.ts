@@ -23,15 +23,21 @@ export function installShutdown(server: Server): void {
       try {
         const { stopChatTurnRecovery } = await import('../services/core/chatTurns.js');
         stopChatTurnRecovery();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — recovery may never have started; shutdown continues */
+      }
       try {
         const { stopScheduler } = await import('../services/core/scheduler.js');
         stopScheduler();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — scheduler may never have started; shutdown continues */
+      }
       try {
         const { stopStatusMonitor } = await import('../services/util/statusMonitor.js');
         stopStatusMonitor();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — status monitor may never have started; shutdown continues */
+      }
       /* Pi agent runs are per-turn child processes; nothing to stop here. */
       const { stopRagChunkWorker } = await import('../services/embeddings/chunkWorkerClient.js');
       await stopRagChunkWorker().catch((error: unknown) => {
@@ -43,7 +49,9 @@ export function installShutdown(server: Server): void {
       try {
         const { shutdownPubsub } = await import('../lib/pubsub.js');
         await shutdownPubsub();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — pubsub may be down already; the process is exiting */
+      }
       await closeDb().catch(() => {});
       console.log('[db] Pool closed');
       process.exit(0);

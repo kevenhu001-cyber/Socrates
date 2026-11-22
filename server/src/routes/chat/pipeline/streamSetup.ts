@@ -57,9 +57,11 @@ export function startSseStream({
       res.write(SSE_PRIME);
       try {
         (res as { flush?: () => void }).flush?.();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — res.flush is absent on some compression stacks */
+      }
     } catch {
-      /* socket already closed — the req.on('close') guard below handles it */
+      /* empty-catch: intentional — socket already closed; the req.on('close') guard below handles it */
     }
   }
 

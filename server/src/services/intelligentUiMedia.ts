@@ -157,7 +157,7 @@ export async function searchUiImages(query: string): Promise<UiSearchImage[]> {
         );
       }
     } catch {
-      /* Provider fallback below also covers temporary Wikimedia failures. */
+      /* empty-catch: intentional — the provider fallback below also covers temporary Wikimedia failures */
     }
     if (!results.length) {
       try {
@@ -182,7 +182,7 @@ export async function searchUiImages(query: string): Promise<UiSearchImage[]> {
             add(item.thumbnail, item.title, item.url);
         }
       } catch {
-        /* Bing remains a fallback if this public search endpoint changes. */
+        /* empty-catch: intentional — the public search endpoint may change; Bing is the fallback */
       }
     }
     if (!results.length) {

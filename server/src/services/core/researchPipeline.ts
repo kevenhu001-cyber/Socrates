@@ -64,7 +64,7 @@ export async function executeResearch(
           .map((item) => item.trim().slice(0, 200))
           .slice(0, 6);
     } catch {
-      /* Invalid model JSON uses the bounded deterministic plan. */
+      /* empty-catch: intentional — invalid model JSON falls back to the bounded deterministic plan */
     }
     steps.plan =
       plan.length >= 2
@@ -97,7 +97,7 @@ export async function executeResearch(
             content: source.content.slice(0, 4000),
           });
       } catch {
-        /* Invalid search URLs are not evidence. */
+        /* empty-catch: intentional — an invalid search URL is not evidence and is dropped */
       }
     }
     if (!unique.size) throw new Error('research_no_sources');

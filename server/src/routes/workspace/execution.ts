@@ -109,13 +109,17 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
           })}\n\n`,
         );
         (res as { flush?: () => void }).flush?.();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — client closed the progress stream */
+      }
     };
     const onResult = (event: ProgressEvent) => {
       try {
         res.write(`event: result\ndata: ${JSON.stringify(event)}\n\n`);
         (res as { flush?: () => void }).flush?.();
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — client closed the result stream */
+      }
       /* A result is terminal. Leaving this EventSource open kept its
        * subscriber and keepalive timer alive until the mobile/web client
        * happened to close it, which accumulated idle sockets during a busy
@@ -132,19 +136,27 @@ router.get('/:id/stream', requireAuth, async (req, res, next) => {
       if (unsubProgress) {
         try {
           unsubProgress();
-        } catch {}
+        } catch {
+          /* empty-catch: intentional — subscriber teardown on a closed SSE request */
+        }
       }
       if (unsubResult) {
         try {
           unsubResult();
-        } catch {}
+        } catch {
+          /* empty-catch: intentional — subscriber teardown on a closed SSE request */
+        }
       }
       try {
         unsubscribeExecution(executionId, onProgress);
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — best-effort unsubscribe; the request is already gone */
+      }
       try {
         unsubscribeExecutionResult(executionId, onResult);
-      } catch {}
+      } catch {
+        /* empty-catch: intentional — best-effort unsubscribe; the request is already gone */
+      }
     });
   } catch (err) {
     next(err);

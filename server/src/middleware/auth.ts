@@ -175,7 +175,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
   try {
     if (await resolveAuthContext(req)) return next();
   } catch (_) {
-    // Optional authentication must never turn a public route into a 500.
+    // empty-catch: intentional — optional authentication must never turn a public route into a 500
   }
 
   req.userId = null;

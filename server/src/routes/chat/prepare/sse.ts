@@ -72,7 +72,7 @@ export function writeSsePrime(res: import('express').Response): boolean {
     try {
       (res as { flush?: () => void }).flush?.();
     } catch {
-      /* best effort */
+      /* empty-catch: intentional — res.flush is absent on some compression stacks */
     }
     return true;
   } catch {
@@ -121,7 +121,7 @@ export function endSseWithError(
     res.write('data: [DONE]\n\n');
     res.end();
   } catch {
-    /* socket closed */
+    /* empty-catch: intentional — the error frame was written to an already-closed socket */
   }
 }
 

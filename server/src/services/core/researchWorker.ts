@@ -137,7 +137,7 @@ export async function runClaimedResearch(job: ResearchJob, portsFactory = provid
       const latest = await getResearchJob(job.userId, job.id);
       await saveResearchCheckpoint(job, latest.steps, 'failed', { error: code });
     } catch {
-      /* Cancellation, deletion or lease takeover already owns state. */
+      /* empty-catch: intentional — cancellation, deletion or lease takeover already owns the job state */
     }
   } finally {
     clearInterval(heartbeat);

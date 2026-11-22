@@ -207,7 +207,7 @@ async function authenticateClient(req: Request): Promise<OAuthClient | null> {
           clientSecret = safeDecode(decoded.slice(idx + 1));
         }
       } catch (_) {
-        /* fall through to body credentials */
+        /* empty-catch: intentional — no usable Basic header; fall through to body credentials */
       }
     }
   }

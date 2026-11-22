@@ -150,7 +150,7 @@ export function intelligentUiControlIssues(node) {
           const url = new URL(action.url);
           safe = ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password;
         } catch {
-          /* Invalid URLs are rejected. */
+          /* empty-catch: intentional — an unparseable URL is rejected by the check below */
         }
         require(safe, 'action.url', 'Expected an absolute credential-free HTTP(S) URL');
       }

@@ -170,7 +170,9 @@ export function scoreSpamPenalty(
     if (/\.pdf(\?|$)/i.test(url) && !/(^|\.)arxiv\.org$/i.test(host)) {
       penalty += 6;
     }
-  } catch {}
+  } catch {
+    /* empty-catch: intentional — an unparseable URL keeps an empty host and only loses the PDF penalty */
+  }
   return penalty;
 }
 

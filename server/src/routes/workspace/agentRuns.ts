@@ -99,7 +99,7 @@ async function streamRun(req: Request, res: Response, runId: string, run: Promis
     try {
       trackSseConnection(req.app, -1);
     } catch {
-      /* ignore */
+      /* empty-catch: intentional — the connection counter is a metric; teardown must not throw */
     }
   };
   req.on('close', finish);
@@ -222,7 +222,7 @@ router.get('/:id/events', requireAuth, async (req, res, next) => {
       try {
         trackSseConnection(req.app, -1);
       } catch {
-        /* ignore */
+        /* empty-catch: intentional — the connection counter is a metric; teardown must not throw */
       }
     });
   } catch (err) {

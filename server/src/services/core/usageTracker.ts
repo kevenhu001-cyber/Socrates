@@ -241,7 +241,7 @@ export function recordUsage({
             });
             return;
           } catch {
-            /* ignore fallback error */
+            /* empty-catch: intentional — the fallback write is best-effort; the warning below reports the original failure */
           }
         }
         console.warn('[usage] record failed:', errStr);

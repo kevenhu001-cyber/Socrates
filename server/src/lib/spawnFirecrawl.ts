@@ -63,7 +63,7 @@ export function isFirecrawlCliAvailable(): boolean {
         firecrawlAvailable = true;
         return true;
       } catch {
-        /* not in this directory */
+        /* empty-catch: intentional — the binary is not in this directory; try the next one */
       }
     }
   }
@@ -115,7 +115,7 @@ export function runFirecrawl(
       try {
         proc.kill('SIGTERM');
       } catch (err) {
-        /* process already exited */
+        /* empty-catch: intentional — the process exited before the timeout fired */
       }
     }, timeoutMs);
 

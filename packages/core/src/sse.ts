@@ -23,7 +23,7 @@ export function dispatchChatSseFrame(frame: string, handlers: ChatSseHandlers) {
   try {
     parsed = JSON.parse(payload);
   } catch {
-    /* keep a useful text payload */
+    /* empty-catch: intentional — a non-JSON payload is kept as useful text */
   }
 
   if (event === 'error') {

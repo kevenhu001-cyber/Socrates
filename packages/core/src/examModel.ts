@@ -435,7 +435,7 @@ export function parseExamQuestionResponse(response: string, index: number): Exam
         };
       }
     } catch {
-      /* try the next brace start */
+      /* empty-catch: intentional — this brace start did not parse; try the next one */
     }
     cursor = start + 1;
   }

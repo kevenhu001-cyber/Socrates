@@ -14,7 +14,9 @@ import type { ErrorLocale } from '../../../lib/errorMessages.js';
 function flush(response: Response): void {
   try {
     (response as { flush?: () => void }).flush?.();
-  } catch {}
+  } catch {
+    /* empty-catch: intentional — res.flush is absent on some compression stacks */
+  }
 }
 
 export class SseEmitter {
@@ -35,7 +37,7 @@ export class SseEmitter {
       this.response.write(payload);
       flush(this.response);
     } catch {
-      /* socket closed — abortController handles cleanup */
+      /* empty-catch: intentional — socket closed; abortController handles cleanup */
     }
   }
 
@@ -82,7 +84,7 @@ export class SseEmitter {
       this.response.write('data: [DONE]\n\n');
       this.response.end();
     } catch {
-      /* ignore */
+      /* empty-catch: intentional — terminal frame on an already-closed socket */
     }
   }
 
@@ -102,7 +104,7 @@ export class SseEmitter {
       this.response.write('data: [DONE]\n\n');
       this.response.end();
     } catch {
-      /* ignore */
+      /* empty-catch: intentional — error and terminal frames on an already-closed socket */
     }
   }
 }

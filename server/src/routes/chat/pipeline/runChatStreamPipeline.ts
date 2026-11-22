@@ -180,7 +180,7 @@ async function executeChatStreamPipeline(
         abortController.abort('turn_interrupted');
       }
     } catch {
-      /* a failed poll must not kill the stream */
+      /* empty-catch: intentional — a failed interrupt poll must not kill the live stream */
     }
   };
   const clearTurnTimer = () => {

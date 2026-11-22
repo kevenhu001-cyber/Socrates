@@ -55,7 +55,7 @@ function extractDate(
       const d = new Date(publishedDate);
       if (!isNaN(d as unknown as number)) return d.toISOString().slice(0, 10);
     } catch {
-      /* fall through */
+      /* empty-catch: intentional — an unparseable published date falls through to the snippet */
     }
   }
   if (!snippet) return null;

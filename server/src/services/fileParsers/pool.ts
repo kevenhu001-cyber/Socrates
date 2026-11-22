@@ -174,7 +174,7 @@ export class WorkerSlot {
         try {
           await this.spawn();
         } catch {
-          // Fall through to await chain
+          // empty-catch: intentional — spawn failure falls through to the claim chain, which retries
         }
       }
       await this._claimChain;
