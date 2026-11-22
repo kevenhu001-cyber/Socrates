@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Root } from 'react-dom/client';
 import { cn } from 'cn';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { installModalA11y } from '../../legacy/modalA11y.ts';
 
 import { useCmdKCommands, useCmdKSnapshot } from './cmdk.store';
@@ -122,16 +123,8 @@ export interface CmdKReactRootHandle {
 
 const rootSlot = createRootSlot('cmd-k');
 
-/**
- * Mount the React-owned Command Palette into its own body-level root.
- */
 export function mountCmdK(): void {
-  let container = document.getElementById('cmdKReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'cmdKReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('cmdKReactRoot');
   rootSlot.mount(container, <CommandPalette />);
 }
 

@@ -1,4 +1,5 @@
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { useCallback, useEffect, useState } from 'react';
 import { getLegacyActions } from '../legacy/gateway';
 import { reportSwallow } from '../../util/reportSwallow';
@@ -62,12 +63,6 @@ function ConfirmDialog() {
  * share visibility/copy through the confirm state module.
  */
 export function mountConfirmDialog(): void {
-  let container = document.getElementById('confirmDialogReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'confirmDialogReactRoot';
-    document.body.appendChild(container);
-  }
-
+  const container = ensureBodyContainer('confirmDialogReactRoot');
   mountOwnedRoot(container, 'confirm-dialog', <ConfirmDialog />);
 }

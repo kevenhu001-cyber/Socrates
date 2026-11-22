@@ -1,6 +1,7 @@
 import { Button as UiButton } from '../ui/Button';
 import { useRef } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import {
   FoundationDialog,
   FoundationDialogClose,
@@ -99,12 +100,7 @@ function StorageModal() {
 const rootSlot = createRootSlot('storage-modal');
 
 export function mountStorageModal(): void {
-  let container = document.getElementById('storageModalReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'storageModalReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('storageModalReactRoot');
   rootSlot.mount(container, <StorageModal />, installStorageBridge);
 }
 

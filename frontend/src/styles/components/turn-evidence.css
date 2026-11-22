@@ -13,7 +13,7 @@
   color: var(--ui-text-secondary);
   background: var(--ui-bg-panel);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-medium);
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -73,7 +73,7 @@
   flex-shrink: 0;
 }
 .turn-source-preview-icon {
-  font-size: 12px;
+  font-size: var(--ui-font-size-xxs);
   line-height: 1;
 }
 .turn-source-preview-host {

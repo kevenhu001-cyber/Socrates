@@ -23,9 +23,7 @@
       opacity var(--ui-duration-fast) ease;
   }
 
-  #appShell .top-bar .toggle-sidebar:active,
-  #appShell .top-bar .mobile-newchat-btn:active,
-  #appShell .top-bar .icon-btn:active {
+  #appShell .top-bar :is(.toggle-sidebar, .mobile-newchat-btn, .icon-btn):active {
     opacity: var(--press-opacity, var(--ui-press-opacity-sm, 0.72));
   }
 }
@@ -60,12 +58,9 @@
    Upgrade button; the pricing entry point is the account menu's "Upgrade
    plan" item, identical on desktop and phone. */
 @media (max-width: 768px) {
-  #appShell #pluginWorkspaceTabs,
-  body #appShell #pluginWorkspaceTabs,
-  body.plugins-active #appShell #pluginWorkspaceTabs,
-  body.workspace-active #appShell #pluginWorkspaceTabs,
-  body.workspace-active #appShell .mobile-newchat-btn,
-  body.plugins-active #appShell .mobile-newchat-btn {
+  :is(body, body.plugins-active, body.workspace-active)
+    #appShell
+    :is(#pluginWorkspaceTabs, .mobile-newchat-btn) {
     display: none;
   }
 }

@@ -5,6 +5,7 @@ import { ToggleGroup, ToggleGroupItem } from '../../ui/shadcn/toggle-group';
 import { t as translate } from '../../legacy/gateway.ts';
 import type { useWorkspaceDispatch } from './workspace.hooks';
 import { ChevronDownIcon, FilterIcon, GridIcon, i18n, ListIcon, SearchIcon } from './workspaceUi';
+import { triggerLibraryUpload } from './LibraryUploadInput';
 
 const FILE_TYPE_FILTERS = [
   { id: 'all', labelKey: 'library.filter.all', fallback: 'All' },
@@ -65,7 +66,7 @@ function LibraryHead({
                 className="w-full justify-start"
                 onClick={() => {
                   onNewMenuOpenChange(false);
-                  document.getElementById('libraryUploadInput')?.click();
+                  triggerLibraryUpload();
                 }}
               >
                 {i18n('library.upload', '上传文件')}

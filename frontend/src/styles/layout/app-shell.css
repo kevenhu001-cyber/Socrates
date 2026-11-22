@@ -65,7 +65,7 @@
   background: var(--ui-bg-raised);
 }
 #appShell #pluginWorkspaceTabs[hidden] {
-  display: none !important;
+  display: none;
 }
 #appShell #pluginWorkspaceTabs .plugin-workspace-tab {
   flex: 1 1 50%;

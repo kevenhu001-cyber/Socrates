@@ -958,7 +958,7 @@
   #appShell .scheduled-directory .workspace-page-head h1 {
     position: static;
     margin: 0;
-    font-size: 28px;
+    font-size: var(--ui-text-hero);
     line-height: 36px;
     z-index: auto;
   }

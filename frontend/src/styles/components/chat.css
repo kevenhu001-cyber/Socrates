@@ -514,7 +514,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   background: color-mix(in srgb, var(--ui-bg-subtle) 40%, transparent);
   color: var(--muted-foreground);
   font-family: var(--font-sans);
-  font-size: var(--ui-font-size-xs, 12px);
+  font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium);
   letter-spacing: -0.01em;
   cursor: pointer;

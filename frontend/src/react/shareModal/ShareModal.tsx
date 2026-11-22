@@ -1,5 +1,6 @@
 import { Button as UiButton } from '../ui/Button';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { useEffect } from 'react';
 import { cn } from 'cn';
 
@@ -72,12 +73,7 @@ const rootSlot = createRootSlot('share-modal');
  * Mount the React-owned share modal into its own body-level root.
  */
 export function mountShareModal(): void {
-  let container = document.getElementById('shareModalReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'shareModalReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('shareModalReactRoot');
   rootSlot.mount(container, <ShareModal />);
 }
 

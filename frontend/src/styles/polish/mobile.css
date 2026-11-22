@@ -21,22 +21,9 @@
      radius, chatgpt-aligned). This file no longer redefines it. */
 
   /* Mobile tools sheet: fixes.css's open-state rule uses the shared popover
-     radius; these tokens outrank mobile-parity's light-mode paint pins. */
+     radius; these tokens define the mobile tools menu finish. */
   body #composerToolsMenu.composer-tools-menu {
-    border-color: var(--ui-border-subtle) !important;
-    box-shadow: var(--ui-shadow-menu) !important;
-  }
-
-  /* The greeting stays on screen — and at full size — when the composer
-     takes focus. The restore layer hid it once the keyboard owned the
-     lower half of the viewport; the resting 35% anchor already clears the
-     keyboard band, so no re-anchoring is needed. No shrink, no dim, no
-     jump. */
-  :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-open='true'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='opening'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='open'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='closing'] #appShell#appShell #topicTitle.greeting {
-    visibility: visible !important;
+    border-color: var(--ui-border-subtle);
+    box-shadow: var(--ui-shadow-menu);
   }
 }

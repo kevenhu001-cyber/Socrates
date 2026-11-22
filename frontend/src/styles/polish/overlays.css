@@ -76,7 +76,7 @@
   font-size: var(--ui-font-size-sm);
 }
 .chat-config-row small {
-  font-size: 11.5px;
+  font-size: var(--ui-font-size-xxs);
 }
 .chat-config-row > svg {
   width: 17px;
@@ -541,7 +541,7 @@ body.composer-tools-open.composer-tools-open::after {
   overflow: hidden;
   max-width: 100%;
   color: var(--ui-text-tertiary);
-  font-size: var(--ui-font-size-xxs, 11px);
+  font-size: var(--ui-font-size-xxs);
   line-height: 15px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1244,7 +1244,7 @@ body.composer-tools-open.composer-tools-open::after {
   flex: 1;
 }
 .settings-memory-key {
-  font-size: 11px;
+  font-size: var(--ui-font-size-xxs);
   font-weight: var(--ui-font-weight-semibold);
   padding: 2px 6px;
   border-radius: var(--ui-radius-xs);
@@ -1277,7 +1277,7 @@ body.composer-tools-open.composer-tools-open::after {
   min-width: 0;
 }
 .settings-empty-hint {
-  font-size: 12.5px;
+  font-size: var(--ui-font-size-xs);
   color: var(--muted-foreground);
   padding: 12px 4px;
   font-style: italic;

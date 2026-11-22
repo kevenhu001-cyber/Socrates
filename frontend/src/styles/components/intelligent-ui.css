@@ -435,7 +435,7 @@
   border-bottom: 1px solid var(--ui-border-strong);
   background: transparent;
   color: var(--ui-text-primary);
-  font-size: var(--ui-font-size-xs, 12px);
+  font-size: var(--ui-font-size-xs);
   font-weight: var(--ui-font-weight-medium, 500);
   text-align: start;
 }

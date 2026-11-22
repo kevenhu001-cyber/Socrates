@@ -54,19 +54,6 @@
      plain layout (no transform — transforms on scrolled/fixed surfaces
      mis-position on recent iOS and fight the browser's own pan). */
 
-  /* The reference keeps only the header and composer once the topic input
-     owns focus (and the keyboard owns the lower half of the screen); the
-     absolutely-centred greeting would otherwise stay painted in the
-     middle of the black band. The focused attribute covers both the
-     overlay and layout-resize keyboard modes. */
-  :root[data-topic-input-focus]:not(#_n) #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-open='true'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='opening'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='open'] #appShell#appShell #topicTitle.greeting,
-  :root[data-keyboard-phase='closing'] #appShell#appShell #topicTitle.greeting {
-    visibility: hidden !important;
-  }
-
   /* Home shortcuts are desktop-only. polish/home.css owns their styles;
      polish/mobile-shell.css owns their visibility on phones. */
 
@@ -229,16 +216,6 @@
 
   /* Active-chat multiline drafts need a full control tier plus breathing room;
      keep the landing composer at its compact 104px reference height. */
-}
-
-[data-mode='light'] body #composerToolsMenu {
-  background: var(--ui-bg-page) !important;
-  border-color: rgb(0 0 0 / 12%) !important;
-}
-
-[data-mode='light'] body #composerToolsMenu .composer-tools-copy span,
-[data-mode='light'] body #composerToolsMenu .composer-tools-plugin-name {
-  color: var(--cg-text) !important;
 }
 
 /* The legacy workbench layer has a more specific 108px multiline rule. Keep

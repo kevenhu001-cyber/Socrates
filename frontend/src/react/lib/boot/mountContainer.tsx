@@ -84,3 +84,14 @@ export function createMountContainer(label: string) {
     };
   };
 }
+
+/** Ensure a body-level container exists for portals/dialog roots. */
+export function ensureBodyContainer(id: string, doc: Document = document): HTMLElement {
+  let host = doc.getElementById(id);
+  if (!host) {
+    host = doc.createElement('div');
+    host.id = id;
+    doc.body.appendChild(host);
+  }
+  return host;
+}

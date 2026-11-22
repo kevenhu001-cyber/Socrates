@@ -23,8 +23,8 @@ export const StepPlayer = defineComponent({
     const isStreaming = useIsStreaming();
     const steps = (props.steps ?? []).slice(0, 32);
     const last = Math.max(0, steps.length - 1);
-    const index = Number.isFinite(value) ? Math.max(0, Math.min(last, Math.round(value))) : 0;
-    const interval = Math.min(10000, Math.max(400, props.intervalMs ?? 1200));
+    const index = normalizeStepIndex(value, last);
+    const interval = clampStepInterval(props.intervalMs);
     const [playing, setPlaying] = useState(false);
 
     useEffect(() => {
@@ -48,11 +48,11 @@ export const StepPlayer = defineComponent({
       if (!active && index >= last) setValue(0);
       setPlaying(!active);
     };
-    const playLabel = active
-      ? i18n('intui.simPause', 'Pause')
-      : index === last && !disabled
-        ? i18n('intui.stepReplay', 'Replay')
-        : i18n('intui.simPlay', 'Play');
+    const { label: playLabel, glyph: playGlyph } = resolvePlayButtonConfig(
+      active,
+      index === last,
+      disabled,
+    );
 
     return (
       <section className="iui-step-player" aria-label={props.label}>
@@ -88,7 +88,7 @@ export const StepPlayer = defineComponent({
             disabled={disabled}
             onClick={play}
           >
-            <Glyph name={active ? 'pause' : index === last ? 'rotate-ccw' : 'play'} size={14} />
+            <Glyph name={playGlyph} size={14} />
             {playLabel}
           </Button>
           <Button
@@ -103,3 +103,26 @@ export const StepPlayer = defineComponent({
     );
   },
 });
+
+function normalizeStepIndex(value: unknown, last: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(last, Math.round(value as number)));
+}
+
+function clampStepInterval(intervalMs?: number): number {
+  return Math.min(10000, Math.max(400, intervalMs ?? 1200));
+}
+
+function resolvePlayButtonConfig(
+  active: boolean,
+  isLast: boolean,
+  disabled: boolean,
+): { label: string; glyph: 'pause' | 'rotate-ccw' | 'play' } {
+  if (active) {
+    return { label: i18n('intui.simPause', 'Pause'), glyph: 'pause' };
+  }
+  if (isLast && !disabled) {
+    return { label: i18n('intui.stepReplay', 'Replay'), glyph: 'rotate-ccw' };
+  }
+  return { label: i18n('intui.simPlay', 'Play'), glyph: 'play' };
+}

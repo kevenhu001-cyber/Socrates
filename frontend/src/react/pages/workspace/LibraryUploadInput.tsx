@@ -2,6 +2,10 @@ import type { ChangeEvent } from 'react';
 import { NativeControl } from '../../ui/NativeControl';
 import { uploadLibraryFiles } from './workspace.service';
 
+export function triggerLibraryUpload(): void {
+  document.getElementById('libraryUploadInput')?.click();
+}
+
 export function LibraryUploadInput() {
   const handleChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;

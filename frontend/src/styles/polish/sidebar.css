@@ -263,7 +263,7 @@
     flex-basis: 28px;
     width: 28px;
     height: 28px;
-    font-size: 11px;
+    font-size: var(--ui-font-size-xxs);
     border-radius: 50%;
   }
   #appShell #sidebarUserRow .user-name {
@@ -271,7 +271,7 @@
     line-height: 16px;
   }
   #appShell #sidebarUserRow .user-plan {
-    font-size: 11px;
+    font-size: var(--ui-font-size-xxs);
     line-height: 14px;
   }
   #appShell #sidebarUserRow .tier-badge {
@@ -374,18 +374,14 @@
    the selected conversation from competing with the transcript. */
 #appShell .recent-tag-pill {
   border-radius: var(--ui-radius-sm, 6px);
-  font-size: 10px;
+  font-size: var(--ui-font-size-xxs);
 }
-#appShell .recent-item-tag-btn,
-#appShell .recent-item-archive,
-#appShell .recent-item-del {
+#appShell :is(.recent-item-tag-btn, .recent-item-archive, .recent-item-del) {
   width: 24px;
   height: 24px;
   border-radius: var(--ui-radius-sm, 6px);
 }
-#appShell .recent-item-tag-btn svg,
-#appShell .recent-item-archive svg,
-#appShell .recent-item-del svg {
+#appShell :is(.recent-item-tag-btn, .recent-item-archive, .recent-item-del) svg {
   width: 14px;
   height: 14px;
 }

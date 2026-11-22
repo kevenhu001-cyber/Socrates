@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { Button } from '../ui/shadcn/button';
 import { Input } from '../ui/shadcn/input';
 import { Label } from '../ui/shadcn/label';
@@ -325,12 +326,7 @@ function PromptTemplatesModal(): ReactNode {
 const rootSlot = createRootSlot('prompt-templates');
 
 export function mountPromptTemplatesModal(): void {
-  let container = document.getElementById('promptTemplatesReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'promptTemplatesReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('promptTemplatesReactRoot');
   rootSlot.mount(container, <PromptTemplatesModal />);
 }
 

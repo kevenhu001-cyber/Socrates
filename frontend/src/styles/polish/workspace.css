@@ -92,7 +92,7 @@
      head in features/surfaces.css. Library and Sites are both 28px/36px. */
   #appShell .projects-directory .workspace-page-head h1 {
     position: static;
-    font-size: 28px;
+    font-size: var(--ui-text-hero);
     line-height: 36px;
     z-index: auto;
   }
@@ -119,7 +119,7 @@
     /* mobile-parity.css still pins every .workspace-create-button to 42px
        for the directory pages that keep the reference rhythm; projects
        converges on the 40px density Library already uses. */
-    min-height: 40px !important;
+    min-height: 40px;
     padding: 0 16px;
     font-size: var(--ui-font-size-md);
     font-weight: var(--ui-font-weight-medium);
@@ -182,7 +182,7 @@
 
 #appShell .library-head-left h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: var(--ui-text-hero);
   line-height: 36px;
   font-weight: var(--ui-font-weight-semibold);
   letter-spacing: -0.02em;
@@ -467,7 +467,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13.5px;
+  font-size: var(--ui-font-size-xs);
   color: var(--ui-text-tertiary);
   margin-top: 2px;
 }
@@ -525,7 +525,7 @@
 }
 
 #appShell .plugin-detail-desc {
-  font-size: 14.5px;
+  font-size: var(--ui-font-size-sm);
   line-height: 1.6;
   color: var(--muted-foreground);
   margin: 0;
@@ -610,7 +610,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13.5px;
+  font-size: var(--ui-font-size-xs);
 }
 
 #appShell .plugin-detail-security-label {
@@ -626,7 +626,7 @@
   margin: 6px 0 0;
   padding-top: 10px;
   border-top: 1px solid var(--ui-border-subtle);
-  font-size: 12.5px;
+  font-size: var(--ui-font-size-xs);
   line-height: 1.5;
   color: var(--ui-text-tertiary);
 }

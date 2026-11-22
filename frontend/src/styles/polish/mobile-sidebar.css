@@ -203,7 +203,7 @@
 @media (max-width: 768px) {
   #appShell .sidebar-nav-btn .nav-kbd {
     color: var(--ui-text-muted);
-    font-size: 11px;
+    font-size: var(--ui-font-size-xxs);
   }
 }
 
@@ -350,7 +350,7 @@
 
 @media (max-width: 768px) {
   #appShell .recent-item-meta {
-    font-size: 11px;
+    font-size: var(--ui-font-size-xxs);
     color: var(--ui-text-muted);
   }
 }
@@ -426,7 +426,7 @@
     padding: 36px 24px;
     text-align: center;
     color: var(--muted-foreground);
-    font-size: 13.5px;
+    font-size: var(--ui-font-size-xs);
     line-height: 20px;
   }
   #appShell .recents-empty-text a {
@@ -444,7 +444,7 @@
    The outline needs no `!important`: the transparent one restore/fixes.css
    already applies paints nothing either, so the result is the same and the
    forced-colours fallback there stays in charge of the outline. */
-  #appShell#appShell#appShell .sidebar-search input:focus-visible {
+  :root:not(#_focus-a):not(#_focus-b) #appShell .sidebar-search input:focus-visible {
     outline: none;
     box-shadow: none;
   }
@@ -529,7 +529,7 @@
     background: transparent;
   }
   #appShell .sidebar-search input {
-    font-size: calc(16px * var(--app-type-scale));
+    font-size: var(--ui-font-size-md);
     line-height: 24px;
   }
   #appShell #sidebarNav {
@@ -856,7 +856,7 @@
     width: 24px;
     height: 24px;
     flex: 0 0 24px;
-    font-size: 10px;
+    font-size: var(--ui-font-size-xxs);
     border-radius: 50%;
     background: var(--ui-avatar-bg);
     color: var(--primary-foreground);

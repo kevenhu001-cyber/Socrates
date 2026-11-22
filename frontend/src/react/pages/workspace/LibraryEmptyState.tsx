@@ -2,6 +2,8 @@ import { i18n } from './workspaceUi';
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '../../ui/shadcn/empty';
 import { Button } from '../../ui/shadcn/button';
 
+import { triggerLibraryUpload } from './LibraryUploadInput';
+
 interface LibraryEmptyStateProps {
   query: string;
   chip: 'recommend' | 'favorite' | 'folder' | 'images' | 'all';
@@ -36,10 +38,7 @@ export function LibraryEmptyState({ query, chip, canUpload }: LibraryEmptyStateP
         )}
       </EmptyHeader>
       {canUpload && (
-        <Button
-          type="button"
-          onClick={() => document.getElementById('libraryUploadInput')?.click()}
-        >
+        <Button type="button" onClick={() => triggerLibraryUpload()}>
           {i18n('library.upload', 'Upload file')}
         </Button>
       )}

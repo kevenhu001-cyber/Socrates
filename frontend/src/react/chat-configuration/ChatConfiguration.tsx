@@ -10,6 +10,7 @@ import { resolveEffectiveEffort } from '../../config/effectiveEffort';
 import { setActiveProvider } from '../../config/providerConfig.service.ts';
 import { i18n } from '../legacy/gateway.ts';
 import { mountOwnedRoot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { openSettings } from '../settings/settings.service.ts';
 import {
   closeChatConfiguration,
@@ -170,11 +171,6 @@ export function ChatConfiguration() {
 }
 
 export function mountChatConfiguration(): void {
-  let host = document.getElementById('chatConfigurationReactRoot');
-  if (!host) {
-    host = document.createElement('div');
-    host.id = 'chatConfigurationReactRoot';
-    document.body.appendChild(host);
-  }
+  const host = ensureBodyContainer('chatConfigurationReactRoot');
   mountOwnedRoot(host, 'chat-configuration', <ChatConfiguration />, installChatConfigurationBridge);
 }

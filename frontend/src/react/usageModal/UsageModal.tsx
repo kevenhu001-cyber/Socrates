@@ -3,6 +3,7 @@ import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
 import { Button } from '../ui/shadcn/button';
 import { ToggleGroup, ToggleGroupItem } from '../ui/shadcn/toggle-group';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import { cn } from 'cn';
 import { installModalA11y } from '../../legacy/modalA11y.ts';
 
@@ -463,12 +464,7 @@ const rootSlot = createRootSlot('usage-modal');
  * Mount the React-owned usage modal into its own body-level root.
  */
 export function mountUsageModal(): void {
-  let container = document.getElementById('usageModalReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'usageModalReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('usageModalReactRoot');
   rootSlot.mount(container, <UsageModal />);
 }
 

@@ -29,21 +29,15 @@ import {
 } from '../../composer-input/lifecycle';
 
 import { NewReplyPill } from './indicatorComponents';
-import { createMountContainer } from './mountContainer';
+import { createMountContainer, ensureBodyContainer } from './mountContainer';
 
 const chrome = createMountContainer('chrome-container');
 const content = createMountContainer('content-container');
 
 /* Portal helpers — lazily create a body-level host element when the
    page didn't ship one in index.html. */
-function ensureBodyChild(doc: Document, id: string): HTMLElement | null {
-  let host = doc.getElementById(id);
-  if (!host) {
-    host = doc.createElement('div');
-    host.id = id;
-    doc.body.appendChild(host);
-  }
-  return host;
+function ensureBodyChild(doc: Document, id: string): HTMLElement {
+  return ensureBodyContainer(id, doc);
 }
 
 function ensureWorkflowHost(doc: Document): HTMLElement | null {

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { createRootSlot } from '../lib/boot/ownedRoot';
+import { ensureBodyContainer } from '../lib/boot/mountContainer';
 import {
   FoundationDialog,
   FoundationDialogClose,
@@ -109,12 +110,7 @@ function Cheatsheet() {
 const rootSlot = createRootSlot('cheatsheet');
 
 export function mountCheatsheet(): void {
-  let container = document.getElementById('cheatsheetReactRoot');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'cheatsheetReactRoot';
-    document.body.appendChild(container);
-  }
+  const container = ensureBodyContainer('cheatsheetReactRoot');
   rootSlot.mount(container, <Cheatsheet />, installCheatsheetBridge);
 }
 
