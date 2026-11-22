@@ -19,7 +19,6 @@
     "./shell": "./src/shell/index.ts",
     "./settings": "./src/settings/index.tsx",
     "./exam": "./src/exam/index.ts",
-    "./exam-model": "./src/examModel.ts",
     "./visual-components": "./src/visualComponents.tsx",
     "./package.json": "./package.json"
   },

@@ -12,7 +12,7 @@ import type {
   ExamQuestion,
   ExamQuestionType,
   ExamResults,
-} from '../examModel';
+} from '@socrates/core';
 
 export type { ExamAnswers, ExamDraft, ExamDraftPatch, ExamQuestion, ExamQuestionType, ExamResults };
 

@@ -1,6 +1,6 @@
 /** Setup screen: paper settings before generation. */
 import { View } from '../react-web';
-import { EXAM_DIFFICULTIES, type ExamDraft, type ExamDraftPatch } from '../examModel';
+import { EXAM_DIFFICULTIES, type ExamDraft, type ExamDraftPatch } from '@socrates/core';
 import { dataSet } from '../learn/parts';
 import { S } from '../look';
 import { UiText } from '../primitives/UiText';

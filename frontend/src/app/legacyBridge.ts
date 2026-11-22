@@ -7,12 +7,8 @@ import { updateSessionMetadata } from '../session/rowActions.ts';
  * except the documented optional surfaces that remain window.* reads).
  */
 import { setChatStopState, handleSendClick, stopChatResponse } from '../chat/turn/composer.ts';
-import { resendLastUserMessage } from '../chat/turn/resend.ts';
 import {
-  setCurrentUser,
   markAuthSuccess,
-  isInAuthGraceWindow,
-  clearPerUserClientState,
   toggleAppMode,
   resetApp,
   startNewChat,
@@ -25,7 +21,6 @@ import { askChatTurn } from '../chat/turn/controller.js';
 import { addStreamingMessage } from '../chat/turn/loadStreamingTurn.ts';
 import { loadSession } from '../session/loader.ts';
 import {
-  refreshServerSessions,
   retryRecentsFetch,
   actuallyDeleteSession,
   archiveSession,
@@ -83,7 +78,6 @@ import {
   dispatchExtension,
 } from '../extensions/index.ts';
 import { toggleSidebar } from '../sidebar/sidebar.service.ts';
-import { toggleSidebarView } from '../legacy/sidebarChrome.ts';
 import { toggleDisplayPrefs } from '../displayPrefs.ts';
 import { openStorageModal, closeStorageModal } from '../legacy/storage.js';
 import { openPromptTemplatesModal, closePromptTemplatesModal } from '../legacy/promptTemplates.ts';
@@ -118,11 +112,8 @@ import { runtimeWindow as browserWindow } from '../types/runtimeWindow.ts';
 
 browserWindow.askChatTurn = askChatTurn;
 browserWindow.addStreamingMessage = addStreamingMessage;
-browserWindow.toggleSidebarView = toggleSidebarView;
 browserWindow.loadSession = loadSession;
-browserWindow.refreshServerSessions = refreshServerSessions;
 browserWindow.renderRecents = renderRecents;
-browserWindow.resendLastUserMessage = resendLastUserMessage;
 browserWindow.setChatStopState = setChatStopState;
 browserWindow.handleSendClick = handleSendClick;
 type DangerConfirmsModule = typeof import('../legacy/dangerConfirms.ts');
@@ -138,10 +129,7 @@ function _loadDangerConfirms() {
   return _dangerImport;
 }
 
-browserWindow.setCurrentUser = setCurrentUser;
 browserWindow.markAuthSuccess = markAuthSuccess;
-browserWindow.isInAuthGraceWindow = isInAuthGraceWindow;
-browserWindow.clearPerUserClientState = clearPerUserClientState;
 browserWindow.addMessage = addMessage;
 browserWindow.askNextQuestion = askNextQuestion;
 browserWindow.saveCurrentSession = saveCurrentSession;
@@ -153,7 +141,6 @@ browserWindow.fetchWebContext = function (
     return m.fetchWebContext(query, opts);
   });
 };
-browserWindow.openAttachmentPicker = openAttachmentPicker;
 browserWindow.renderAssistantHTML = renderAssistantHTML;
 browserWindow.showToast = showToast;
 browserWindow.resetApp = resetApp;

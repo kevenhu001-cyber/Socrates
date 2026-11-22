@@ -276,9 +276,6 @@ export default defineConfig({
       '@socrates/ui/exam': fileURLToPath(
         new URL('../packages/ui/src/exam/index.ts', import.meta.url),
       ),
-      '@socrates/ui/exam-model': fileURLToPath(
-        new URL('../packages/ui/src/examModel.ts', import.meta.url),
-      ),
       '@socrates/ui/visual-components': fileURLToPath(
         new URL('../packages/ui/src/visualComponents.tsx', import.meta.url),
       ),
