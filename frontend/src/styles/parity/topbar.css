@@ -48,8 +48,8 @@ html[data-main-view='settingsPage'] #appShell .top-bar {
 
 @media (max-width: 768px) {
   body[data-conversation-active='true'] #appShell .top-bar-left {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 
