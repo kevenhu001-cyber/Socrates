@@ -1,4 +1,5 @@
 import React, { forwardRef, type ReactNode } from 'react';
+import { dataAttributes, type DataSet } from './domProps';
 
 export type FontVariant = string | string[];
 
@@ -14,8 +15,6 @@ export type PressableStateCallbackType = {
   hovered?: boolean;
   focused?: boolean;
 };
-
-export type DataSet = Record<string, string | number | boolean | undefined | null>;
 
 export interface PressableProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -211,24 +210,6 @@ export function resolveStyleAndClass(style: unknown, baseClassName?: string) {
     style: Object.keys(flat).length ? flat : undefined,
     className: all || undefined,
   };
-}
-
-/**
- * react-native-web maps the `dataSet` prop to `data-*` attributes. The local
- * shim has to do the same: spreading `dataSet` onto a DOM node renders
- * `dataset="[object Object]"` and every `[data-…]` selector in the app and its
- * e2e specs silently stops matching.
- */
-export function dataAttributes(
-  dataSet?: Record<string, string | number | boolean | undefined | null>,
-): Record<string, string> {
-  if (!dataSet) return {};
-  const out: Record<string, string> = {};
-  for (const [key, value] of Object.entries(dataSet)) {
-    if (value === undefined || value === null) continue;
-    out[`data-${key.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`)}`] = String(value);
-  }
-  return out;
 }
 
 export const StyleSheet = {
@@ -530,6 +511,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
   return (
     <input
       type="checkbox"
+      role="switch"
       ref={ref}
       id={nativeID || id}
       data-testid={testID}

@@ -19,7 +19,7 @@
  * press handlers. `hostStyle` lets a web host attach its structural class
  * hooks through react-native-web's compiled-style escape hatch.
  */
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   Image,
   Pressable,
@@ -34,7 +34,7 @@ import {
 } from '../react-web';
 import { uiControl, uiMotion, uiRadius, uiStep } from '@socrates/theme';
 import { useUiTheme } from '../primitives/theme';
-import { UiText } from '../primitives/UiText';
+import { UiText, type UiTextStyle } from '../primitives/UiText';
 import { UiIcon, type UiGlyphName } from '../primitives/UiIcon';
 import { dataSet } from '../learn/parts';
 
@@ -322,7 +322,7 @@ export function SidebarNavRow({
           variant="bodySm"
           numberOfLines={1}
           {...dataSet({ i18nKey })}
-          style={[{ fontWeight: active ? '500' : '400', flexShrink: 1 }, labelStyle]}
+          style={[{ fontWeight: active ? '500' : '400', flexShrink: 1 }, labelStyle as UiTextStyle]}
         >
           {label}
         </UiText>
