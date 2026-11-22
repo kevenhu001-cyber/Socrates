@@ -1,22 +1,19 @@
 /**
- * Shared pieces of the RN-3 learning scaffolds: the hairline-headed card,
- * the rich-field slot, a disclosure pill and the small text actions.
- * State is carried by ink, grey, glyphs and words — never by colour hue,
- * and nothing here draws a dot.
+ * Shared pieces of the learning scaffolds: the hairline-headed card, the
+ * rich-field slot, a disclosure pill and the small text actions. State is
+ * carried by ink, grey, glyphs and words — never by colour hue, and nothing
+ * here draws a dot.
+ *
+ * React DOM by design (ADR 0027). Geometry and the host's structural class
+ * hooks still come from the shell CSS where a surface owns them.
  */
 import { type ReactNode } from 'react';
-import {
-  Animated,
-  Pressable,
-  View,
-  useWindowDimensions,
-  type StyleProp,
-  type ViewStyle,
-} from '../react-web';
+import { dataAttributes } from '../domProps';
+import { domStyle, type ViewStyle } from '../domStyle';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { Chevron, useReducedMotion, useReveal } from '../turn/parts';
+import { Chevron, useReducedMotion } from '../turn/parts';
 import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 
@@ -34,8 +31,7 @@ export const CARD_PAD_COMPACT = S[100];
 export const CARD_COMPACT_WIDTH = 769;
 
 export function useCardPad(): number {
-  const { width } = useWindowDimensions();
-  return width < CARD_COMPACT_WIDTH ? CARD_PAD_COMPACT : CARD_PAD;
+  return CARD_PAD;
 }
 
 /**
@@ -61,12 +57,14 @@ export function ScaffoldCard({
   const pad = useCardPad();
   const { colors } = useUiTheme();
   return (
-    <View
-      testID={testID ?? `scaffold-${kind}`}
+    <div
+      data-testid={testID ?? `scaffold-${kind}`}
       role="group"
       aria-label={accessibilityLabel ?? label}
-      {...dataSet({ scaffold: kind })}
+      {...dataAttributes({ scaffold: kind })}
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         borderRadius: R.card,
         backgroundColor: colors.card,
         borderWidth: 1,
@@ -74,26 +72,39 @@ export function ScaffoldCard({
         overflow: 'hidden',
       }}
     >
-      <View
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: S[100],
           minHeight: H.action,
-          paddingHorizontal: pad,
-          paddingVertical: S[50],
+          paddingLeft: pad,
+          paddingRight: pad,
+          paddingTop: S[50],
+          paddingBottom: S[50],
         }}
       >
         <UiText variant="labelSm" tone="ink" numberOfLines={1} style={{ flexShrink: 1 }}>
           {label}
         </UiText>
         {trailing ?? null}
-      </View>
-      <View style={{ paddingHorizontal: pad, paddingTop: pad, paddingBottom: pad, gap: S[100] }}>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          paddingLeft: pad,
+          paddingRight: pad,
+          paddingTop: pad,
+          paddingBottom: pad,
+          gap: S[100],
+        }}
+      >
         {children}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -109,14 +120,17 @@ export function Tag({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      testID={testID}
+    <div
+      data-testid={testID}
       style={{
+        display: 'flex',
         alignSelf: 'flex-start',
         flexShrink: 0,
         height: H.tag,
+        alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 10,
+        paddingLeft: 10,
+        paddingRight: 10,
         borderRadius: R.pill,
         backgroundColor: tone === 'ink' ? colors.ink : tone === 'line' ? colors.card : colors.fill,
       }}
@@ -129,7 +143,7 @@ export function Tag({
       >
         {label}
       </UiText>
-    </View>
+    </div>
   );
 }
 
@@ -150,45 +164,39 @@ export function Sheet({
   label?: string;
   testID?: string;
   live?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: ViewStyle;
   /** Ink ring: the sheet that carries the right answer / the key idea. */
   emphasis?: boolean;
 }) {
   const { colors } = useUiTheme();
   const { subtle } = sheets(colors);
   return (
-    <View
-      testID={testID}
+    <div
+      data-testid={testID}
       aria-live={live ? 'polite' : undefined}
-      style={[
+      style={domStyle([
         {
+          display: 'flex',
+          flexDirection: 'column',
           gap: S[75],
           padding: S[200],
           borderRadius: R.row,
           backgroundColor: emphasis ? colors.card : subtle,
         },
         style,
-      ]}
+      ])}
     >
       {label ? <SectionLabel>{label}</SectionLabel> : null}
       {children}
-    </View>
+    </div>
   );
 }
 
 /** One markdown field, rendered by the host. */
-export function Rich({
-  source,
-  part,
-  style,
-}: {
-  source: string;
-  part: string;
-  style?: StyleProp<ViewStyle>;
-}) {
+export function Rich({ source, part, style }: { source: string; part: string; style?: ViewStyle }) {
   const { renderRich } = useLearnHost();
   if (!source) return null;
-  return <View style={[{ minWidth: 0 }, style]}>{renderRich(source, part)}</View>;
+  return <div style={domStyle([{ minWidth: 0 }, style])}>{renderRich(source, part)}</div>;
 }
 
 /** Quiet eyebrow above a sub-section ("Hint 1", "Explanation"). */
@@ -202,7 +210,7 @@ export function SectionLabel({ children }: { children: string }) {
 
 /**
  * Sub-section inside a card (hints, solutions, explanation): a tinted
- * `.rc-face` sheet that fades in once when it opens.
+ * `.rc-face` sheet. It mounts fully visible, so the sheet never flashes.
  */
 export function Section({
   label,
@@ -217,13 +225,10 @@ export function Section({
   live?: boolean;
   emphasis?: boolean;
 }) {
-  const reveal = useReveal(true, 4);
   return (
-    <Animated.View style={reveal}>
-      <Sheet label={label} testID={testID} live={live} emphasis={emphasis}>
-        {children}
-      </Sheet>
-    </Animated.View>
+    <Sheet label={label} testID={testID} live={live} emphasis={emphasis}>
+      {children}
+    </Sheet>
   );
 }
 
@@ -290,36 +295,49 @@ export function PillAction({
         : undefined;
   const pad = size === 'sm' ? S[100] : S[200];
   return (
-    <Pressable
-      role="button"
-      testID={testID}
+    <button
+      type="button"
+      data-testid={testID}
       aria-label={accessibilityLabel ?? label}
       aria-expanded={expanded}
       aria-pressed={selected}
       aria-controls={controls}
       aria-disabled={disabled || undefined}
       disabled={disabled}
-      onPress={onPress}
+      onClick={onPress}
       {...handlers}
-      {...dataSet(data ?? {})}
-      style={{ alignSelf: 'flex-start' }}
+      {...dataAttributes(data ?? {})}
+      style={{
+        display: 'inline-flex',
+        alignSelf: 'flex-start',
+        margin: 0,
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'inherit',
+        font: 'inherit',
+        cursor: disabled ? 'default' : 'pointer',
+      }}
     >
-      <Animated.View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: S[50],
-          height: size === 'sm' ? 32 : H.action,
-          paddingLeft: leading ? pad - 2 : pad,
-          paddingRight: chevron ? pad - 4 : pad,
-          borderRadius: R.pill,
-          backgroundColor: background,
-          boxShadow: ring,
-          opacity: disabled ? 0.4 : 1,
-          ...focusRing(colors, focused),
-          ...transition('background-color, box-shadow', reduced),
-          transform: [{ scale }],
-        }}
+      <span
+        style={domStyle([
+          {
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: S[50],
+            height: size === 'sm' ? 32 : H.action,
+            paddingLeft: leading ? pad - 2 : pad,
+            paddingRight: chevron ? pad - 4 : pad,
+            borderRadius: R.pill,
+            backgroundColor: background,
+            boxShadow: ring,
+            opacity: disabled ? 0.4 : 1,
+            ...focusRing(colors, focused),
+            ...transition('background-color, box-shadow, transform', reduced),
+            transform: `scale(${scale})`,
+          },
+        ])}
       >
         {leading ?? null}
         <UiText variant="labelSm" tone={tone === 'solid' ? 'onInk' : 'ink'} numberOfLines={1}>
@@ -332,15 +350,16 @@ export function PillAction({
             tone={tone === 'solid' ? 'ink' : 'secondary'}
           />
         ) : null}
-      </Animated.View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
 export function ActionRow({ children, end }: { children: ReactNode; end?: boolean }) {
   return (
-    <View
+    <div
       style={{
+        display: 'flex',
         flexDirection: 'row',
         flexWrap: 'wrap',
         alignItems: 'center',
@@ -349,7 +368,7 @@ export function ActionRow({ children, end }: { children: ReactNode; end?: boolea
       }}
     >
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -368,9 +387,10 @@ export function VerdictGlyph({
   const { colors } = useUiTheme();
   const right = verdict === 'correct';
   return (
-    <View
+    <div
       aria-hidden
       style={{
+        display: 'flex',
         width: size,
         height: size,
         borderRadius: R.pill,
@@ -387,6 +407,6 @@ export function VerdictGlyph({
       >
         {right ? '✓' : '✕'}
       </UiText>
-    </View>
+    </div>
   );
 }
