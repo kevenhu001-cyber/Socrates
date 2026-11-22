@@ -235,6 +235,19 @@
   }
 }
 
+/* The disclosure rows keep the shipped desktop density and use the phone
+   touch rung below the split, matching the rest of the shell. */
+.rn-turn-activity-toggle,
+.rn-thinking-step {
+  min-height: 32px;
+}
+@media (max-width: 768px) {
+  .rn-turn-activity-toggle,
+  .rn-thinking-step {
+    min-height: var(--ui-control-touch);
+  }
+}
+
 /* The 12px running-step arc. It lives in the host CSS so the shared component
    stays DOM-free and every live row shares one compositor animation. */
 .socrates-step-spinner {

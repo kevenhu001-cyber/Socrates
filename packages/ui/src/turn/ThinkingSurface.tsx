@@ -7,13 +7,24 @@
  *
  * The host supplies already-public copy only (see thinkingModel).
  */
-import { useId, type ReactNode } from 'react';
-import { Animated, Pressable, View, useWindowDimensions } from '../react-web';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { dataAttributes } from '../domProps';
 import { R, S, focusRing, transition } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
 import { Chevron, Spinner, useReducedMotion, useReveal } from './parts';
+
+const BUTTON_RESET: CSSProperties = {
+  display: 'inline-flex',
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
 
 export interface ThinkingSurfaceProps {
   /** Current action, or a neutral settled disclosure label. */
@@ -48,31 +59,31 @@ export function ThinkingSurface({
   children,
 }: ThinkingSurfaceProps) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
   const reveal = useReveal(open, 2);
   return (
-    <View testID="turn-activity" style={{ alignSelf: 'stretch' }}>
-      <Pressable
-        testID="turn-activity-toggle"
+    <div data-testid="turn-activity" style={{ alignSelf: 'stretch' }}>
+      <button
+        type="button"
+        data-testid="turn-activity-toggle"
+        className="rn-turn-activity-toggle"
         role="button"
         disabled={!expandable}
         aria-expanded={expandable ? open : undefined}
         aria-controls={expandable ? bodyId : undefined}
         aria-disabled={!expandable}
-        onPress={onToggle}
+        onClick={onToggle}
         {...handlers}
         style={{
+          ...BUTTON_RESET,
           alignSelf: 'flex-start',
           maxWidth: '100%',
           minWidth: 0,
-          flexDirection: 'row',
           flexWrap: 'nowrap',
           alignItems: 'center',
           gap: S[75],
-          minHeight: width < 768 ? 44 : 32,
-          paddingHorizontal: S[75],
+          paddingInline: S[75],
           marginLeft: -S[75],
           borderRadius: R.row,
           backgroundColor: expandable && hovered ? colors.fill : 'transparent',
@@ -82,14 +93,14 @@ export function ThinkingSurface({
         }}
       >
         {live && indicator ? (
-          <View testID="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
+          <span data-testid="turn-activity-indicator" aria-hidden style={headerGlyphStyle}>
             {indicator}
-          </View>
+          </span>
         ) : null}
         {icon ? (
-          <View aria-hidden style={[headerGlyphStyle, { width: iconWidth }]}>
+          <span aria-hidden style={{ ...headerGlyphStyle, width: iconWidth }}>
             {icon}
-          </View>
+          </span>
         ) : null}
         <UiText
           testID="turn-activity-label"
@@ -103,14 +114,15 @@ export function ThinkingSurface({
           {label}
         </UiText>
         {durationLabel ? (
-          <View
+          <span
             style={{
-              paddingHorizontal: 6,
-              paddingVertical: 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              paddingInline: 6,
+              paddingBlock: 1,
               borderRadius: R.pill,
               backgroundColor: colors.fill,
-              borderWidth: 1,
-              borderColor: colors.hairline,
+              border: `1px solid ${colors.hairline}`,
               flexShrink: 0,
             }}
           >
@@ -124,29 +136,35 @@ export function ThinkingSurface({
             >
               {durationLabel}
             </UiText>
-          </View>
+          </span>
         ) : null}
         {expandable ? <Chevron open={open} tone="tertiary" /> : null}
-      </Pressable>
-      <Animated.View
-        testID="turn-activity-body"
-        nativeID={bodyId}
+      </button>
+      <div
+        data-testid="turn-activity-body"
+        id={bodyId}
         aria-hidden={!open}
-        style={[{ display: open ? 'flex' : 'none', marginTop: S[50], marginBottom: S[75] }, reveal]}
+        style={{
+          display: open ? 'flex' : 'none',
+          flexDirection: 'column',
+          marginTop: S[50],
+          marginBottom: S[75],
+        }}
       >
         {children}
-      </Animated.View>
-    </View>
+      </div>
+    </div>
   );
 }
 
-const headerGlyphStyle = {
+const headerGlyphStyle: CSSProperties = {
+  display: 'inline-flex',
   width: 18,
   height: 18,
   flexShrink: 0,
   alignItems: 'center',
   justifyContent: 'center',
-} as const;
+};
 
 export interface ActivityStepProps {
   /** Step glyph, drawn by the host. */
@@ -175,19 +193,18 @@ export interface ActivityStepProps {
 export function ThinkingTimeline({ children }: { children?: ReactNode }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      testID="thinking-timeline"
+    <div
+      data-testid="thinking-timeline"
       style={{
         alignSelf: 'stretch',
         minWidth: 0,
         marginLeft: S[75],
         paddingLeft: S[75],
-        borderLeftWidth: 1,
-        borderLeftColor: colors.hairline,
+        borderLeft: `1px solid ${colors.hairline}`,
       }}
     >
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -213,7 +230,6 @@ export function ActivityStep({
   testID,
 }: ActivityStepProps) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const { hovered, focused, handlers } = usePressFeedback();
   const reveal = useReveal(Boolean(open), 2);
@@ -221,26 +237,27 @@ export function ActivityStep({
   const interactive = Boolean(expandable && onToggle);
 
   const row = (
-    <Pressable
-      testID={testID ?? 'thinking-step'}
+    <button
+      type="button"
+      data-testid={testID ?? 'thinking-step'}
+      className="rn-thinking-step"
       role={interactive ? 'button' : undefined}
       disabled={!interactive}
       aria-expanded={interactive ? Boolean(open) : undefined}
       aria-controls={interactive ? detailId : undefined}
       aria-label={interactive ? [label, status, metadata].filter(Boolean).join(' · ') : undefined}
-      onPress={onToggle}
+      onClick={onToggle}
       {...handlers}
-      {...{ dataSet: { state: live ? 'running' : error ? 'error' : 'done' } }}
+      {...dataAttributes({ state: live ? 'running' : error ? 'error' : 'done' })}
       style={{
+        ...BUTTON_RESET,
         alignSelf: 'flex-start',
         maxWidth: '100%',
         minWidth: 0,
-        flexDirection: 'row',
         flexWrap: 'nowrap',
         alignItems: 'center',
         gap: ROW_GAP,
-        minHeight: width < 768 ? 44 : 32,
-        paddingHorizontal: ROW_PAD,
+        paddingInline: ROW_PAD,
         borderRadius: R.row,
         backgroundColor: interactive && hovered ? colors.fill : 'transparent',
         ...focusRing(colors, focused),
@@ -248,9 +265,10 @@ export function ActivityStep({
         cursor: interactive ? 'pointer' : 'auto',
       }}
     >
-      <View
+      <span
         aria-hidden
         style={{
+          display: 'inline-flex',
           width: iconWidth,
           height: ROW_ICON,
           flexShrink: 0,
@@ -259,7 +277,7 @@ export function ActivityStep({
         }}
       >
         {icon}
-      </View>
+      </span>
       <UiText
         testID="thinking-step-title"
         variant="bodySm"
@@ -283,31 +301,33 @@ export function ActivityStep({
       ) : null}
       {live ? <Spinner /> : null}
       {status ? (
-        <View
+        <span
           style={{
-            flexDirection: 'row',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 4,
-            paddingHorizontal: 6,
-            paddingVertical: 1.5,
+            paddingInline: 6,
+            paddingBlock: 1.5,
             borderRadius: R.pill,
             backgroundColor: error
               ? 'rgba(239, 68, 68, 0.12)'
               : live
                 ? 'rgba(245, 158, 11, 0.12)'
                 : colors.fill,
-            borderWidth: 1,
-            borderColor: error
-              ? 'rgba(239, 68, 68, 0.25)'
-              : live
-                ? 'rgba(245, 158, 11, 0.25)'
-                : colors.hairline,
+            border: `1px solid ${
+              error
+                ? 'rgba(239, 68, 68, 0.25)'
+                : live
+                  ? 'rgba(245, 158, 11, 0.25)'
+                  : colors.hairline
+            }`,
             flexShrink: 0,
           }}
         >
-          <View
+          <span
             aria-hidden
             style={{
+              display: 'block',
               width: 5,
               height: 5,
               borderRadius: 2.5,
@@ -323,37 +343,35 @@ export function ActivityStep({
           >
             {status}
           </UiText>
-        </View>
+        </span>
       ) : null}
       {interactive ? <Chevron open={Boolean(open)} size={6} tone="tertiary" /> : null}
-    </Pressable>
+    </button>
   );
 
   return (
-    <View style={{ minWidth: 0 }}>
+    <div style={{ minWidth: 0 }}>
       {row}
       {preview && !open ? (
-        <View style={{ minWidth: 0, paddingLeft: DETAIL_INSET, paddingBottom: S[100] }}>
+        <div style={{ minWidth: 0, paddingLeft: DETAIL_INSET, paddingBottom: S[100] }}>
           {preview}
-        </View>
+        </div>
       ) : null}
       {detail && open ? (
-        <Animated.View
-          testID="thinking-step-detail"
-          nativeID={detailId}
-          style={[
-            {
-              minWidth: 0,
-              paddingLeft: DETAIL_INSET + iconWidth - ROW_ICON,
-              paddingTop: S[50],
-              paddingBottom: S[100],
-            },
-            reveal,
-          ]}
+        <div
+          data-testid="thinking-step-detail"
+          id={detailId}
+          style={{
+            ...reveal,
+            minWidth: 0,
+            paddingLeft: DETAIL_INSET + iconWidth - ROW_ICON,
+            paddingTop: S[50],
+            paddingBottom: S[100],
+          }}
         >
           {detail}
-        </Animated.View>
+        </div>
       ) : null}
-    </View>
+    </div>
   );
 }

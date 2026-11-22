@@ -5,7 +5,6 @@
  * Status is spoken as a word (进行中 / 完成 / 失败 / 待审批) — never a dot.
  */
 import { type ReactNode } from 'react';
-import { View, useWindowDimensions } from '../react-web';
 import { uiFont } from '@socrates/theme';
 import { H, R, S, insetRing, shadow, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
@@ -45,12 +44,13 @@ export function ToolApprovalCard({
   onDecide,
 }: ToolApprovalCardProps) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   return (
-    <View
-      testID="tool-approval"
+    <div
+      data-testid="tool-approval"
       style={{
+        display: 'flex',
+        flexDirection: 'column',
         gap: S[200],
         padding: S[300],
         borderRadius: R.card,
@@ -58,13 +58,14 @@ export function ToolApprovalCard({
         boxShadow: shadow(colors, 'raised'),
       }}
     >
-      <View style={{ gap: S[75] }}>
-        <View
+      <div style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}>
+        <div
           style={{
+            display: 'flex',
+            alignItems: 'center',
             alignSelf: 'flex-start',
             height: H.tag,
-            justifyContent: 'center',
-            paddingHorizontal: 10,
+            paddingInline: 10,
             borderRadius: R.pill,
             backgroundColor: colors.fill,
           }}
@@ -72,17 +73,19 @@ export function ToolApprovalCard({
           <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }}>
             {badge}
           </UiText>
-        </View>
+        </div>
         <UiText testID="tool-approval-title" variant="label" tone="ink">
           {title}
         </UiText>
         <UiText variant="bodySm" tone="secondary">
           {description}
         </UiText>
-      </View>
+      </div>
       {facts.length ? (
-        <View
+        <div
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             gap: S[75],
             padding: S[200],
             borderRadius: R.row,
@@ -91,17 +94,17 @@ export function ToolApprovalCard({
           }}
         >
           {facts.map((fact) => (
-            <View
+            <div
               key={fact.label}
-              style={{ flexDirection: 'row', gap: S[100], alignItems: 'baseline' }}
+              style={{ display: 'flex', flexDirection: 'row', gap: S[100], alignItems: 'baseline' }}
             >
               <UiText variant="labelSm" tone="tertiary" style={{ width: 56, fontWeight: '400' }}>
                 {fact.label}
               </UiText>
               <MonoText style={{ flex: 1 }}>{fact.value}</MonoText>
-            </View>
+            </div>
           ))}
-        </View>
+        </div>
       ) : null}
       {status ? (
         <UiText
@@ -115,21 +118,21 @@ export function ToolApprovalCard({
         </UiText>
       ) : null}
       {showControls && decisions.length ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[75] }}>
+        <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: S[75] }}>
           {decisions.map((decision) => (
             <UiButton
               key={decision.id}
               testID={`tool-approval-${decision.id}`}
               label={decision.label}
               variant={decision.variant}
-              size={width < 768 ? 'lg' : 'sm'}
+              size="sm"
               onPress={() => onDecide(decision.id)}
               {...{ dataSet: { approvalAction: decision.id } }}
             />
           ))}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   );
 }
 
@@ -144,19 +147,19 @@ export function ToolErrorNotice({
   onRetry?: () => void;
 }) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   return (
-    <View
-      testID="tool-error"
+    <div
+      data-testid="tool-error"
       role="alert"
       style={{
+        display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: S[100],
         minHeight: H.option,
-        paddingVertical: S[75],
+        paddingBlock: S[75],
         paddingLeft: S[100],
         paddingRight: S[75],
         borderRadius: R.row,
@@ -164,9 +167,10 @@ export function ToolErrorNotice({
         boxShadow: insetRing(colors.hairlineStrong),
       }}
     >
-      <View
+      <span
         aria-hidden
         style={{
+          display: 'inline-flex',
           width: 20,
           height: 20,
           borderRadius: R.pill,
@@ -178,7 +182,7 @@ export function ToolErrorNotice({
         <UiText variant="labelSm" tone="secondary" style={{ fontSize: 11, lineHeight: 20 }}>
           ✕
         </UiText>
-      </View>
+      </span>
       <UiText
         testID="tool-error-message"
         variant="bodySm"
@@ -192,11 +196,11 @@ export function ToolErrorNotice({
           testID="tool-error-retry"
           label={retryLabel}
           variant="secondary"
-          size={width < 768 ? 'lg' : 'sm'}
+          size="sm"
           onPress={onRetry}
         />
       ) : null}
-    </View>
+    </div>
   );
 }
 

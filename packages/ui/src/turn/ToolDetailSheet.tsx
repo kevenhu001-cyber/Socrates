@@ -3,8 +3,7 @@
  * images. The call's detail now opens inline beneath its step row, so the
  * old drawer/bottom-sheet host is gone; the content blocks stay shared.
  */
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Image, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { R, S, focusRing, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -13,6 +12,17 @@ import { MonoText, monoFamily } from './ToolCards';
 import type { SourceCardView } from './toolCardModel';
 
 export const SHEET_BREAKPOINT = 768;
+
+const BUTTON_RESET: CSSProperties = {
+  display: 'flex',
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
 
 export function DetailSection({
   title,
@@ -24,12 +34,15 @@ export function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <View testID={`tool-detail-section-${kind}`} style={{ gap: S[75] }}>
+    <div
+      data-testid={`tool-detail-section-${kind}`}
+      style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+    >
       <UiText variant="labelSm" tone="tertiary">
         {title}
       </UiText>
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -61,7 +74,6 @@ export function CodeBlock({
   testID,
 }: CodeBlockProps) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
   const { subtle } = sheets(colors);
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -75,24 +87,31 @@ export function CodeBlock({
     timer.current = setTimeout(() => setState('idle'), 1500);
   };
   return (
-    <View style={{ gap: S[75] }}>
-      <ScrollView
-        testID={testID}
-        horizontal={false}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}>
+      <div
+        data-testid={testID}
         style={{
+          overflow: 'auto',
           maxHeight,
           borderRadius: R.row,
           backgroundColor: subtle,
           boxShadow: insetRing(tone === 'error' ? colors.hairlineStrong : colors.hairline),
         }}
-        contentContainerStyle={{ paddingHorizontal: S[200], paddingVertical: S[100] }}
       >
-        <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>
-          {text}
-        </MonoText>
-      </ScrollView>
-      <View
-        style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: S[75] }}
+        <div style={{ paddingInline: S[200], paddingBlock: S[100] }}>
+          <MonoText testID="tool-code-output" style={{ fontFamily: monoFamily, lineHeight: 20 }}>
+            {text}
+          </MonoText>
+        </div>
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          gap: S[75],
+        }}
       >
         {extra}
         {onCopy ? (
@@ -100,15 +119,15 @@ export function CodeBlock({
             testID="tool-code-copy"
             label={state === 'copied' ? copiedLabel : state === 'failed' ? failedLabel : copyLabel}
             variant="secondary"
-            size={width < SHEET_BREAKPOINT ? 'lg' : 'sm'}
+            size="sm"
             aria-live="polite"
             onPress={() => {
               void copy();
             }}
           />
         ) : null}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -117,10 +136,11 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
   const [failed, setFailed] = useState(!source.favicon);
   if (failed || !source.favicon) {
     return (
-      <View
-        testID="tool-source-monogram"
+      <span
+        data-testid="tool-source-monogram"
         aria-hidden
         style={{
+          display: 'inline-flex',
           width: 20,
           height: 20,
           borderRadius: 6,
@@ -136,13 +156,14 @@ function SourceFavicon({ source }: { source: SourceCardView }) {
         >
           {source.monogram}
         </UiText>
-      </View>
+      </span>
     );
   }
   return (
-    <Image
+    <img
       aria-hidden
-      source={{ uri: source.favicon }}
+      src={source.favicon}
+      alt=""
       onError={() => setFailed(true)}
       style={{ width: 20, height: 20, borderRadius: 6 }}
     />
@@ -161,22 +182,24 @@ function SourceCard({
   const { hovered, focused, handlers } = usePressFeedback();
   const link = Boolean(source.url && onOpen);
   return (
-    <Pressable
-      testID="tool-source"
+    <button
+      type="button"
+      data-testid="tool-source"
       role={link ? 'link' : undefined}
       aria-label={[source.title, source.host].filter(Boolean).join(' · ')}
       disabled={!link}
-      onPress={() => {
+      onClick={() => {
         if (source.url && onOpen) onOpen(source.url);
       }}
       {...handlers}
       style={{
+        ...BUTTON_RESET,
         flexDirection: 'row',
         alignItems: 'center',
         gap: S[100],
         minHeight: 52,
-        paddingVertical: S[75],
-        paddingHorizontal: S[100],
+        paddingBlock: S[75],
+        paddingInline: S[100],
         borderRadius: R.row,
         backgroundColor: hovered && link ? subtle : colors.card,
         boxShadow: insetRing(hovered && link ? colors.hairlineStrong : colors.hairline),
@@ -184,7 +207,7 @@ function SourceCard({
       }}
     >
       <SourceFavicon source={source} />
-      <View style={{ flex: 1, minWidth: 0 }}>
+      <span style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
         <UiText testID="tool-source-title" variant="labelSm" tone="ink" numberOfLines={1}>
           {source.title}
         </UiText>
@@ -199,8 +222,8 @@ function SourceCard({
             {source.host}
           </UiText>
         ) : null}
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -213,11 +236,14 @@ export function SourceList({
   onOpen?: (url: string) => void;
 }) {
   return (
-    <View testID="tool-sources" style={{ gap: S[75] }}>
+    <div
+      data-testid="tool-sources"
+      style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+    >
       {sources.map((source) => (
         <SourceCard key={source.key} source={source} onOpen={onOpen} />
       ))}
-    </View>
+    </div>
   );
 }
 
@@ -226,19 +252,21 @@ export function ImageOutput({ uri, alt }: { uri: string; alt: string }) {
   const { colors } = useUiTheme();
   const [ratio, setRatio] = useState(4 / 3);
   return (
-    <Image
-      testID="tool-image-output"
-      accessibilityLabel={alt}
-      source={{ uri }}
-      resizeMode="contain"
+    <img
+      data-testid="tool-image-output"
+      alt={alt}
+      src={uri}
       onLoad={(event) => {
-        const source = (event.nativeEvent as { source?: { width?: number; height?: number } })
-          .source;
-        if (source?.width && source?.height) setRatio(source.width / source.height);
+        const image = event.currentTarget;
+        if (image.naturalWidth && image.naturalHeight) {
+          setRatio(image.naturalWidth / image.naturalHeight);
+        }
       }}
       style={{
+        display: 'block',
         width: '100%',
         aspectRatio: ratio,
+        objectFit: 'contain',
         borderRadius: R.row,
         backgroundColor: colors.fill,
       }}
