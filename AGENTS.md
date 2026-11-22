@@ -1,140 +1,258 @@
 # Socrates agent guide
 
+This file is the engineering contract for anyone — human or agent — changing this repository.
+`CLAUDE.md` is a symlink to it. For how the system works today read
+[`docs/architecture/`](docs/architecture/README.md); for why a decision was made read
+[`docs/adr/`](docs/adr/README.md). This file covers where work belongs, what must not break, and how
+to verify a change.
+
 ## Task entrypoints and ownership
 
-- `frontend/` owns the Vite SPA, tutor/chat flows, exam UI, visualization cards, and Playwright coverage. Start with `frontend/src/main.ts`, then follow extracted modules under `frontend/src/`. Verify with `npm run lint`, `npm run test:unit`, `npm run build`, and the relevant Playwright specs.
-- `server/` owns Express APIs, Drizzle/PostgreSQL persistence, LLM/tool execution, authentication, and the Python sandbox. The source entry is `server/src/index.runtime.ts`; `server/src/index.js` is only a compatibility shim that imports `../dist/index.runtime.js` for existing systemd units. Verify with `npm run typecheck` and `npm test`.
-  - `npm test` runs `scripts/run-tests.mjs`, which spawns one Node process per file with `--import dotenv/config`. DB-backed suites skip unless `DATABASE_URL` is set.
-  - For a one-shot local run that mirrors CI's loader (no per-file spawn, `tsx` resolving the `.js` imports back to the `.ts` source — F-016 in `docs/audits/2026-09-20-structural-review.md`): `npm run test:unit`. DB-backed suites still skip here too unless `DATABASE_URL` is set.
-  - `npm run test:db:memory` runs the PGlite-compatible database suites with the real migrations and pgvector in memory. Append test filenames to select suites. The main Server CI job exercises real PostgreSQL and the cross-process concurrency contract.
-- `mobile/` was **retired and completely removed in commit 06eb47a4 on 2026-10-12**. The Expo Universal App in `apps/socrates/` was **removed on 2026-11-16** (the "SPA-first RN convergence" decision, `docs/plans/2026-11-05-spa-rn-convergence.md`): the project now has a single production client, `frontend/`, and RN UI is consumed in place through `react-native-web`. `frontend/` is both the visual/functional baseline and the sole migration target — do not reintroduce a parallel app shell.
-- `apps/socrates-android/` is the explicitly user-requested **standalone Kotlin + Jetpack Compose Android client** (ADR `docs/adr/0021-native-android-client.md`). It is the only other active client, talks to the same `/api/v2` API, and depends on `@socrates/core` for shared logic (wired via `app/build.gradle.kts`). Verify with `./gradlew assembleDebug testDebugUnitTest lintDebug` from that directory and `connectedDebugAndroidTest` on a device; preserve `/api/v2` compatibility and unknown session/message wire fields. Its independent CI lane is `native-android-build.yml`.
-- `desktop/` contains **only a gitignored web export** (`desktop/dist/`). It is not a source tree and owns nothing — do not commit it or document it as a component.
-- `packages/` owns the shared TypeScript packages (`@socrates/core`, `@socrates/contracts`, `@socrates/theme`, `@socrates/ui`) consumed by `frontend/` (and `@socrates/core` by `apps/socrates-android/`). All packages must stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`); enforced by `scripts/check-packages-dom.mjs`. Published by path, not by npm. `frontend/` imports only narrow `@socrates/ui/*` subpaths — the root barrel was removed and `frontend/scripts/check-ui-entry.mjs` keeps it that way.
-- **React DOM is the only UI stack (ADR 0027).** `packages/ui` components are plain React DOM components; the former React Native conversion is retired. The local `packages/ui/src/react-web.tsx` shim is frozen: do not add imports, do not add RN-shaped props, and `check-rn-shim.mjs` holds its direct importer count shrink-only (currently 38). Migrate one surface at a time to DOM elements + CSS and lower the baseline; delete the shim when it reaches 0. Heavy editors (TipTap/tldraw/HTML-viz/Mermaid/Three.js) stay Web-only native islands, never in shared core. Transcript body stays as server-rendered HTML; only shells/toolbars/tool rows are migrated.
-- `site/` is a separate static marketing/docs site deployed to its own vhost. It is not part of the SPA build.
-- `chat-demo/` is the **upstream DeepSeek web client** (`deepseek-ai/chat-demo`, MIT), vendored as a **read-only reference sample** for its chat/markdown/Mermaid/KaTeX rendering approaches. It is not a Socrates component, it is not built by any of our pipelines, and it owns nothing. **Do not modify its contents** — read it, cite it in design notes, and port ideas by writing new code under `frontend/` or `packages/`. Its own `package.json`, `pnpm-lock.yaml`, and `.github/workflows/` are upstream artifacts; leave them alone.
-- `tools-rust/` owns the Rust crates (`protocol`, `format`, `stream`, `fetch`, `wasm`). The WASM output is consumed by the frontend via `npm run build:wasm`.
-- `open-connector/` **was removed on 2026-09-26** (ADR `docs/adr/0014-open-connector-removal-cloud-only.md`). The vendored `oomol-lab/OpenConnector` fork and its localhost sidecar (`openConnectorSidecar.ts`, `OC_SIDECAR_*` envs, `scripts/gen-oc-cloud-auth.mjs`) are gone; Socrates reaches every OpenConnector app through the OOMOL-hosted runtime (`@oomol-lab/connector` + `OOMOL_PROJECT_API_KEY`). The surviving integration surface is `server/src/services/integrations/openConnector{ChatTools,Catalog,AppInventory,CloudAuth.generated}.ts` (the generated auth file is now a hand-maintained frozen snapshot — no generator), the chat executor `server/src/routes/chat/pipeline/executors/openConnector.ts`, and `server/src/routes/integrations/projectConnectors.ts` + their tests. Historical descriptions of a sidecar topology (e.g. F-003 in `docs/audits/2026-09-20-structural-review.md`) are stale snapshots.
-- `capacitor/` **was removed on 2026-10-15** (ADR `docs/adr/0016-capacitor-shell-removal.md`), together with `.github/workflows/build-capacitor-apk.yml` — its only consumer, a `workflow_dispatch`-only manual job that never took part in the merge gate. This closes the F-007 "half-alive" question in `docs/audits/2026-09-20-structural-review.md` (that audit is a dated snapshot — leave its text as-is). The dead frontend Capacitor bridge (`capacitorBridge.js`, `main.js` hook, and the `window.Capacitor` boot probe in `index.html`) was completely removed on 2026-10-16 with synchronized CSP hashes, fully completing the shell retirement.
+- `frontend/` owns the Vite SPA: chat and tutor flows, exam UI, visualization and learning cards, the
+  typed state layer, and the Playwright suites. Start at `frontend/src/main.ts`, then follow the
+  extracted modules under `frontend/src/`. Verify with `npm run lint`, focused
+  `npm run test:one -- test/<file>.test.mjs` files, `npm run build`, and the relevant Playwright spec.
+- `server/` owns the Express API, Drizzle/PostgreSQL persistence, LLM and tool execution,
+  authentication, the Python sandbox and the workspace agent. The source entry is
+  `server/src/index.runtime.ts`; `server/src/index.js` is only a compatibility shim for existing
+  systemd units and imports `../dist/index.runtime.js`. `routes/<domain>/` owns HTTP concerns,
+  `services/<domain>/` owns domain work and must not import HTTP composition, `lib/` holds neutral
+  primitives. Verify with `npm run typecheck`, `npm run lint:boundaries`, and focused test files.
+  - `npm test` runs `scripts/run-tests.mjs`, which spawns one Node process per test file with
+    `--import dotenv/config`. DB-backed suites skip unless a test database is configured.
+  - `npm run test:unit` is the one-shot runner with the same loader (`tsx` resolves the `.js` imports
+    back to `.ts` source) — use it for a single file, not the whole suite.
+  - `npm run test:db:memory` runs the PGlite-compatible suites with the real migrations and pgvector
+    in memory; append filenames to select suites. Server CI still exercises real PostgreSQL and the
+    cross-process concurrency contract.
+- `apps/socrates-android/` is the standalone Kotlin + Jetpack Compose client (ADR
+  [`0021`](docs/adr/0021-native-android-client.md)). It is the only other active client, talks to the
+  same `/api/v2` API, and depends on `@socrates/core` through `app/build.gradle.kts`. Verify with
+  `./gradlew assembleDebug testDebugUnitTest lintDebug` in that directory and
+  `connectedDebugAndroidTest` on a device; preserve `/api/v2` compatibility and unknown
+  session/message wire fields. Its CI lane is `native-android-build.yml`.
+- `packages/` owns the shared TypeScript packages (`@socrates/core`, `@socrates/contracts`,
+  `@socrates/theme`, `@socrates/ui`) consumed by `frontend/` and, for `core`, by the Android client.
+  All packages must stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`), enforced by
+  `scripts/check-packages-dom.mjs`. They are published by path, not to npm. `frontend/` imports only
+  narrow `@socrates/ui/*` subpaths — the root barrel was removed and `check-ui-entry.mjs` keeps it
+  that way.
+- **React DOM is the only UI stack (ADR [`0027`](docs/adr/0027-react-dom-only-retire-rn-shim.md)).**
+  `packages/ui` components are plain React DOM components; the React Native conversion is retired.
+  The local `packages/ui/src/react-web.tsx` shim is frozen: do not add imports, do not add RN-shaped
+  props, and `check-rn-shim.mjs` holds its direct importer count shrink-only (currently 38). Migrate
+  one surface at a time to DOM elements + CSS and lower the baseline; delete the shim when it reaches
+  zero. Heavy editors (TipTap/tldraw/HTML-viz/Mermaid/Three.js) stay Web-only native islands, never in
+  shared core. The transcript body stays server-rendered HTML; only shells, toolbars and tool rows are
+  migrated.
+- `site/` is the static marketing and docs site on its own vhost (EN + `site/zh/`). It is not part of
+  the SPA build and has its own tests (`npm run test:site`).
+- `tools-rust/` owns the Rust crates (`protocol`, `format`, `stream`, `fetch`, `wasm`). The WASM
+  output is consumed by the frontend through `npm run build:wasm`; TypeScript fallbacks must keep
+  working when no artifact is built.
+- `prompts/` owns server-injected prompt text (`teacher-mode.md`, `learning-modes.md`,
+  `code-interpreter.md`, `beagle.md`). Changing it changes model behaviour without a type error:
+  verify with the affected server tests and a focused chat run.
+- `chat-demo/` is the vendored upstream DeepSeek web client (`deepseek-ai/chat-demo`, MIT), kept as a
+  **read-only reference sample** for chat/markdown/Mermaid/KaTeX rendering. It is not a Socrates
+  component, is not built by any pipeline, and owns nothing. **Do not modify its contents** — read
+  it, cite it in design notes, and port ideas by writing new code under `frontend/` or `packages/`.
+  Its `package.json`, `pnpm-lock.yaml` and `.github/workflows/` are upstream artifacts; leave them
+  alone.
+
+**Retired trees — do not resurrect or document as components:** `mobile/` (removed 2026-10-12),
+`capacitor/` (ADR [`0016`](docs/adr/0016-capacitor-shell-removal.md)), `open-connector/` (ADR
+[`0014`](docs/adr/0014-open-connector-removal-cloud-only.md)), the Expo Universal App
+`apps/socrates/` (ADR [`0025`](docs/adr/0025-remove-universal-app-spa-only-rn.md)), and the
+`desktop/` web export. Their workflows were removed with them. `docs/audits/**` may still describe
+them — those files are dated snapshots, not current state.
 
 ## Boundaries and risk routes
 
-- Do not commit generated `dist/`, test reports, secrets, or deployment state.
-- Treat `frontend/src/main.ts` (it composes extracted modules, and `batchStorage.ts` must remain its first side-effect import), `server/src/app.ts`, `server/src/boot/` (startup/lifecycle stages), auth, migrations, and `deploy.sh` as high-churn or high-impact surfaces. Prefer extracted modules and add focused regression coverage. Keep `e2e/storage-bootstrap.spec.mjs` as the import-order contract when editing the frontend entrypoint. Larger companion files that also warrant the same caution: `frontend/src/styles/legacy/` (the old `styles.css` monolith was split into order-sensitive slices; cascade order is defined by `styles/index.css` → `legacy/index.css`), `frontend/src/i18n/index.ts` (locale tables live in `frontend/src/i18n/{en,zh}.ts`), `frontend/src/chat/turn/` (the streaming-turn core that used to be the single `chat/streamingTurn.ts` file now lives as `chat/turn/streaming.ts` plus its sibling lifecycle modules), `frontend/src/render/{markdown.ts,viz.ts}`.
-- **CSS contract (2026-09-30):** `frontend/src/styles/themes.css` is imported exactly once and last; it is the sole active palette plus the bridge for `--cg-*`, `--chatgpt-*`, `--conversation-*`, and legacy HSL channels. `legacy/` and `restore/` are compatibility geometry only. Current desktop surface owners are `parity/{sidebar,topbar,composer-unified,transcript}.css`, with scoped auxiliaries enforced by `npm run lint:surface-css`; never add a competing palette or desktop owner to compatibility CSS.
-- **Control sizing (2026-10-10):** `tokens.css` declares `--ui-control-sm/md/touch` = 32/40/44px, but the **shipped desktop density is 36px** (topbar `#topModelSwitcher`/`#findBtn`, Library toolbar, directory tabs) and the search pill is 42px; `polish/buttons.css`'s `.btn`/`.btn-icon` grammar is barely used in markup (12 `.btn-icon` vs a long tail of `exam-btn`/`settings-btn`/… feature classes). Mobile is a **separate, reference-pinned density** — `polish/mobile-directories.css` (36px search, 40px tabs) is asserted by `e2e/reference-ui-visual.spec.mjs` against `docs/ref/mobile-reference-2026-10-04.md`; do not align mobile to desktop. New work should pick the ladder rung that matches the surface it sits on rather than assuming one global size, and `npm run lint:button-sizes` blocks new literal off-ladder heights.
-- `deploy.sh` must remain single-writer, preserve `dist.previous`, and restore the previous backend after a failed restart or health gate. If changing its swap/rollback flow, test the lock, candidate cleanup, and error trap paths.
-- `.github/workflows/ci.yml` is the frontend/server merge gate. Keep type checks, build, unit tests, and frontend Playwright smoke tests intact; preserve concurrency cancellation and failure artifacts. **CI coverage as of 2026-11-16**: `ci.yml` is the gate (jobs: Repo sanity, Site, Frontend, Server, Shared packages & Rust protocol); `server-ci.yml` covers `server/`; `security.yml` is the supply-chain/SAST + weekly advisory gate (deliberately not path-filtered); `image.yml` builds and verifies a signed OCI image of the API server on every push — it does **not** deploy, `deploy.sh` still builds on the host; `native-android-build.yml` covers `apps/socrates-android/`; `agent-tooling-ci.yml` covers `tools-rust/`-related harnesses. (Legacy `mobile-apk.yml`, `build-apk.yml`, `release-clients.yml`, and `android-device-smoke.yml` were retired in commit `06eb47a4`; `capacitor/` + `build-capacitor-apk.yml` were removed 2026-10-15 in ADR 0016; `universal-app-build.yml` and the Universal App web-smoke job were removed 2026-11-16). Shared-package tests run in the Frontend job via `npm run test:shared`. `site/` and `packages/` are verified through the changes filter and shared unit/DOM-free tests — the marketing site now has its own `site` job in `ci.yml` (`npm run test:site`). **Coverage policy (2026-11-22):** `frontend` and `server` measure only their own `src/**`; coverage is advisory on pull requests and blocking on `main`. Theme/contrast specs stay blocking, while screenshot and golden-geometry specs are advisory (`test:e2e:required` vs `test:e2e:visual`).
-- **Brand assets — favicon is locked to `logo.png`.** `frontend/public/favicon.png` and `site/favicon.png` must stay byte-identical to their respective `logo.png` siblings (currently 2077 bytes each). Do not replace either favicon with a tray variant, an emoji, a service icon, or any auto-generated image. If the logo itself is updated, re-copy `logo.png` over `favicon.png` in the same directory; both files move together.
-- **Site static assets are cache-busted by query string.** `site/*.css` and `site/*.js` are served with `cache-control: public, max-age=604800, immutable`, so a browser keeps the old bytes for a week unless the URL changes. Every asset the site references carries `?cb=<version>`: `chrome.css` / `public.css` / `fonts.css` / `chrome.js` / `motion.js` / `locale.js` take their version from `scripts/sync-site-chrome.mjs` (bump the constant, then run `npm run site:sync`), while a stylesheet linked by hand (e.g. `inner.css`) carries its own version in the pages that link it. **Changing a site stylesheet without bumping its version publishes a fix that nobody sees.**
-- **`allowScripts` is an allow-list, not a switch.** `server/package.json` and `frontend/package.json` declare the reviewed entries by name — never `"*"`. Do not widen this back to `"*"`. If a new dependency needs a script, add it by name and say why in the commit. The current entries:
-  - `esbuild` — its postinstall fetches the platform binary; without it `vite build` fails.
-  - `protobufjs` (server only, transitive via `@grpc/proto-loader` → `@opentelemetry/sdk-node`) — its postinstall is a version-scheme advisory: it warns when a dependent declares `^7.x` where protobufjs wants `~7.x` for API compatibility. Advisory only, but it is the signal that a gRPC/proto caller is outside the supported range, so let it print.
-  - `@openuidev/lang-core` (both trees) — its postinstall is the vendor's **install telemetry**: it writes `~/.config/openui/telemetry.json` and sends a pseudonymous `openui_lang_core_installed` event to PostHog (salted project id, node/OS/npm versions, CI + docker flags, and the IP PostHog observes). It is not needed for the build, but it is allow-listed so the vendor's disclosure notice is shown and the install is reported as the vendor documents. Set `DO_NOT_TRACK=1` or `OPENUI_TELEMETRY_DISABLED=1` in the install environment to keep the script running while suppressing the egress.
-- **CI installs with `--ignore-scripts` where it can.** `server-ci.yml` and the Security workflow's audit jobs use it because a typecheck or an advisory lookup never needs a package's install hook. The main `ci.yml` jobs do not, because they build.
+- Do not commit generated `dist/`, test reports, screenshots, secrets, or deployment state.
+- Treat `frontend/src/main.ts` (it composes extracted modules, and `batchStorage.ts` must remain its
+  first side-effect import), `server/src/app.ts`, `server/src/boot/`, auth, migrations and
+  `deploy.sh` as high-churn or high-impact surfaces. Prefer extracted modules and add focused
+  regression coverage. Keep `e2e/storage-bootstrap.spec.mjs` as the import-order contract when
+  editing the frontend entrypoint.
+- Other files that warrant the same caution: `frontend/src/styles/legacy/` (the old `styles.css`
+  monolith split into order-sensitive slices; cascade order is defined by `styles/index.css` →
+  `legacy/index.css`), `frontend/src/i18n/index.ts` (locale tables live in `frontend/src/i18n/{en,zh}.ts`),
+  `frontend/src/chat/turn/` (the streaming-turn core), and `frontend/src/render/{markdown.ts,viz.ts}`.
+- **CSS contract.** `frontend/src/styles/themes.css` is imported exactly once and last; it is the sole
+  active palette plus the bridge for `--cg-*`, `--chatgpt-*`, `--conversation-*` and legacy HSL
+  channels. `legacy/` and `restore/` are compatibility geometry only. Current desktop surface owners
+  are `parity/{sidebar,topbar,composer-unified,transcript}.css`, with scoped auxiliaries enforced by
+  `npm run lint:surface-css`; never add a competing palette or a second desktop owner to
+  compatibility CSS.
+- **Control sizing.** `tokens.css` declares `--ui-control-sm/md/touch` = 32/40/44 px, but the shipped
+  desktop density is 36 px (topbar `#topModelSwitcher`/`#findBtn`, Library toolbar, directory tabs)
+  and the search pill is 42 px; `polish/buttons.css`'s `.btn`/`.btn-icon` grammar is barely used in
+  markup. Mobile is a **separate, reference-pinned density** — `polish/mobile-directories.css`
+  (36 px search, 40 px tabs) is asserted by `e2e/reference-ui-visual.spec.mjs` against
+  `docs/ref/mobile-reference-2026-10-04.md`; do not align mobile to desktop. Pick the ladder rung that
+  matches the surface, and `npm run lint:button-sizes` blocks new literal off-ladder heights.
+- `deploy.sh` must remain single-writer, preserve `dist.previous`, and restore the previous backend
+  after a failed restart or health gate. If you change its swap/rollback flow, test the lock,
+  candidate cleanup and error-trap paths. The CI merge gate is advisory by default
+  (`--require-ci` / `DEPLOY_REQUIRE_CI_CHECK=1` makes it enforcing) — keep the verdict recorded in
+  `.deploy-state.json` either way.
+- `.github/workflows/ci.yml` is the frontend/server merge gate: `changes` classification → `sanity`,
+  `site`, `frontend`, `server`, `shared` → `gate`. Keep type checks, build, unit tests and the
+  required Playwright tiers intact; preserve concurrency cancellation and failure artifacts.
+  Companion workflows: `server-ci.yml` (server against real PostgreSQL), `security.yml`
+  (supply-chain/SAST plus a weekly advisory gate, deliberately not path-filtered), `image.yml`
+  (builds and verifies a signed OCI image; it does **not** deploy), `native-android-build.yml`, and
+  `agent-tooling-ci.yml`. Coverage is measured per project over its own `src/**`: advisory on pull
+  requests, blocking on `main`. Theme/contrast specs are blocking; screenshot and golden-geometry
+  specs are advisory (`test:e2e:required` vs `test:e2e:visual`).
+- **Brand assets — favicon is locked to `logo.png`.** `frontend/public/favicon.png` and
+  `site/favicon.png` must stay byte-identical to their `logo.png` siblings (currently 2077 bytes
+  each). Do not replace either favicon with a tray variant, an emoji, a service icon or a generated
+  image. If the logo changes, re-copy it over `favicon.png` in the same directory; both files move
+  together.
+- **Site static assets are cache-busted by query string.** `site/*.css` and `site/*.js` are served
+  with `cache-control: public, max-age=604800, immutable`, so a browser keeps the old bytes for a
+  week unless the URL changes. Every asset the site references carries `?cb=<version>`: `chrome.css`,
+  `public.css`, `fonts.css`, `chrome.js`, `motion.js` and `locale.js` take theirs from
+  `scripts/sync-site-chrome.mjs` (bump the constant, then run `npm run site:sync`), while a
+  stylesheet linked by hand (e.g. `inner.css`) carries its own version in the pages that link it.
+  **Changing a site stylesheet without bumping its version publishes a fix nobody sees.**
+- **`allowScripts` is an allow-list, not a switch.** `server/package.json` and
+  `frontend/package.json` declare reviewed entries by name — never `"*"`. If a new dependency needs an
+  install script, add it by name and say why in the commit. Current entries: `esbuild` (postinstall
+  fetches the platform binary; without it `vite build` fails), `protobufjs` (server only, transitive
+  via `@grpc/proto-loader` → `@opentelemetry/sdk-node`; its postinstall is a version-scheme advisory
+  worth seeing), and `@openuidev/lang-core` (both trees; its postinstall writes
+  `~/.config/openui/telemetry.json` and sends a pseudonymous install event to PostHog — set
+  `DO_NOT_TRACK=1` or `OPENUI_TELEMETRY_DISABLED=1` to keep the script but suppress egress).
+- **CI installs with `--ignore-scripts` where it can.** `server-ci.yml` and the Security audit jobs
+  use it because a typecheck or an advisory lookup never needs an install hook. The main `ci.yml`
+  jobs do not, because they build.
 
 ## Next checks
 
-- Unsure which document describes the current system? Start at `docs/architecture/README.md` — it indexes the current architecture docs. `docs/audits/**` and `docs/plans/**` are dated snapshots of earlier states of the repo, kept for rationale and history; do not treat them as current reality (see `docs/audits/README.md`).
-- Frontend behavior/UI: build first, then run a focused Playwright spec; inspect a screenshot for visual work.
-  Choose `test:e2e:smoke`, `test:e2e:regression`, `test:e2e:theme`, or `test:e2e:visual` for one tier. `test:e2e:required` runs smoke + regression + theme; `test:smoke` runs every tier including the advisory visual pass.
-- Server or schema: run typecheck and focused tests; document migration/rollback implications.
-- Cross-client API changes: update the OpenAPI description and check `apps/socrates-android/` + `packages/contracts` compatibility.
-- Deployment changes: use a non-production dry-run environment or shell-level validation before operating on web roots or services.
-- Model-capability / provider-contract work: read `docs/plans/2026-10-23-stability-hardening-handoff.md` first. It carries the current verification baseline, the rules for extending `server/src/lib/modelCapabilities.ts`, and the open backlog. Only models whose vendor documentation has been checked may be added to that registry.
+- Unsure which document describes the current system? Start at
+  [`docs/architecture/README.md`](docs/architecture/README.md). `docs/audits/**` and `docs/plans/**`
+  are dated snapshots; do not treat them as current reality (see
+  [`docs/audits/README.md`](docs/audits/README.md)).
+- Frontend behaviour/UI: build first, then run a focused Playwright spec; inspect a screenshot for
+  visual work. Choose `test:e2e:smoke`, `test:e2e:regression`, `test:e2e:theme` or `test:e2e:visual`
+  for one tier; `test:e2e:required` runs smoke + regression + theme.
+- Server or schema: run typecheck and focused tests; document migration and rollback implications.
+- Cross-client API changes: update the OpenAPI description and check `apps/socrates-android/` plus
+  `packages/contracts` compatibility.
+- Deployment changes: validate on a non-production dry run or with shell-level checks before touching
+  web roots or services.
+- Model-capability or provider-contract work: read
+  [`docs/plans/2026-10-23-stability-hardening-handoff.md`](docs/plans/2026-10-23-stability-hardening-handoff.md)
+  first — it carries the verification baseline, the rules for extending
+  `server/src/lib/modelCapabilities.ts`, and the open backlog. Only models whose vendor
+  documentation has been checked may be added to that registry.
 
 ## Architecture guards (run inside `npm run lint`)
 
-`npm run lint` is not just `tsc` + `eslint` — it ends in a chain of custom ratchets. When you add a new guard, add it to both `lint` and a `lint:<name>` script, and give it a `--update` baseline that may only shrink.
+`npm run lint` is not just `tsc` + ESLint — it ends in a chain of custom ratchets. When you add a
+guard, add it to both `lint` and a `lint:<name>` script, and give it an `--update` baseline that may
+only shrink.
 
 | Guard | Enforces |
 |---|---|
-| `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary inside `src/react` (the legacy i18n globals live in `ui/legacyI18n.ts`, outside the scanned tree, and the gateway keeps the action surface). No blanket `__socrates*` bridge exemption remains |
-| `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new string-keyed `stateStore.dispatch` writes. The baseline is currently 0 (the string-keyed facade is retired) and may only shrink (also `lint:state-ownership`) |
-| `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` instead. Shrink-only baseline (also `lint:button-primitive`) |
-| `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes `lint:react-roots` and a shrink-only `--update` baseline |
-| `check-css-debt.mjs` | `!important` / hex colors / literal radii / stacked IDs stay at or below their frozen counts; the cascade order in `index.html` is proved against `styles/index.css` (nested `@import`s included), and no `@import` may sit after a style rule — the browser drops those silently |
-| `check-frozen-liveness.mjs` | A rule in the frozen compatibility trees (`styles/legacy/`, `styles/restore/`) whose selector names no class emitted anywhere in `frontend/src`, `frontend/test`, `frontend/e2e`, `packages/`, `server/src` or `index.html` cannot style anything. Counted per file with an all-of identity-class rule (an ancestor that never renders kills its descendants) and a shrink-only baseline; generic state words (`.selected`, `.ok`, `.active`) never decide liveness. Passed 2026-11-22 with 0 dead rules (516 selectors retired) via `scripts/retire-frozen-css.mjs`, which prunes one dead selector from a list while keeping live siblings (also `lint:frozen-liveness`) |
-| `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below its baseline (also `lint:button-sizes`) |
-| `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/30/40/80/90/200/400/1600) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below its baseline (also `lint:z-index`) |
-| `../scripts/check-empty-catch.mjs` | Every empty `catch` in `frontend/src`, `server/src` and `packages/*/src` is either instrumented or carries a reasoned `empty-catch: intentional — …` marker; per-tree baseline may only shrink (AST-based, so strings/regexes never count) |
+| `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary inside `src/react` (the legacy i18n globals live in `ui/legacyI18n.ts`, outside the scanned tree). No blanket `__socrates*` bridge exemption remains |
+| `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new string-keyed `stateStore.dispatch` writes. Baseline 0, shrink-only (also `lint:state-ownership`) |
+| `check-state-facade.mjs` | Rejects imports of the retired `state/store.ts` facade and any `window.stateStore` access. The file was deleted, so typed hooks and bridges in `store/index.ts` are the only state API. Baseline 0, shrink-only (also `lint:state-facade`) |
+| `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` (also `lint:button-primitive`) |
+| `check-button-sizes.mjs` | Interactive controls reach the size ladder (`--ui-control-sm` 32 / `md` 40 / `touch` 44) instead of a literal px height; off-ladder count stays at or below baseline (also `lint:button-sizes`) |
+| `check-shadcn-adoption.mjs` | Shared control primitives are adopted: raw controls, unadapted primitives, compatibility controls, retained markup and legacy DOM/template controls each stay at or below their frozen per-bucket count (also `lint:shadcn`) |
+| `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes a shrink-only baseline (also `lint:react-roots`) |
+| `check-css-debt.mjs` | `!important`, hex colours, literal radii, stacked IDs and literal font sizes stay at or below their frozen counts; the cascade order in `index.html` is proved against `styles/index.css` (nested `@import`s included), and no `@import` may sit after a style rule — browsers drop those silently |
+| `check-frozen-liveness.mjs` | A rule in the frozen compatibility trees (`styles/legacy/`, `styles/restore/`) whose selector names no class emitted anywhere in `frontend/src`, `frontend/test`, `frontend/e2e`, `packages/`, `server/src` or `index.html` cannot style anything. Counted per file with an all-of identity-class rule and a shrink-only baseline; generic state words (`.selected`, `.ok`, `.active`) never decide liveness (also `lint:frozen-liveness`) |
+| `check-z-index.mjs` | Live sheets use the `--ui-z-*` rungs (20/30/40/80/90/200/400/1600) instead of literal `z-index` ≥ 10 (local 0–9 allowed); off-token count stays at or below baseline (also `lint:z-index`) |
+| `../scripts/check-empty-catch.mjs` | Every empty `catch` in `frontend/src`, `server/src` and `packages/*/src` is either instrumented or carries a reasoned `empty-catch: intentional — …` marker; per-tree baseline may only shrink (AST-based, so strings and regexes never count) |
 | `check-composer-css.mjs` | Exactly one owner for composer CSS: `styles/parity/composer-unified.css` |
-| `check-surface-ownership.mjs` | Sidebar / topbar / transcript each have one desktop owner under `styles/parity/` |
-| `check-surface-ladder.mjs` | The four-step background ladder holds for **every** theme discovered in `themes.css`: exactly four rungs, no pure black (except a theme whose baseline declares `blackCanvas`; then only its dark page rung is `#000000`, as the ChatGPT phone reference does), role order, steps inside the 1.5%–7% band, and the legacy HSL channels tracking the rungs they carry. Themes are cross-checked against the runtime `THEME_STYLES` list, so a theme registered in one place but not the other fails. The baseline records each theme's scale / shared-projection policy (also `lint:surface-ladder`) |
+| `check-surface-ownership.mjs` | Sidebar, topbar and transcript each have one desktop owner under `styles/parity/` |
+| `check-surface-ladder.mjs` | The four-step background ladder holds for every theme discovered in `themes.css`: exactly four rungs, no pure black (unless the theme's baseline declares `blackCanvas`), role order, steps inside the 1.5%–7% band, and legacy HSL channels tracking the rungs they carry. Themes are cross-checked against the runtime `THEME_STYLES` list (also `lint:surface-ladder`) |
 | `check-focus-ring.mjs` | Focus states use the `--ui-focus-shadow` double ring with a ≥3:1 outer ring; no bare visible `outline` survives, and every `!important` that clears an outline carries a forced-colors fallback (also `lint:focus-ring`) |
-| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark canvas steps medium and bold down to 450 / 600 (also `lint:font-weight`) |
-| `check-prompt-dashes.mjs` | Prompt text uses a single dash convention; the baseline records the entries that are deliberately exempt (also `lint:prompt-dashes`) |
+| `check-font-weight.mjs` | Font weights come from tokens, not literals, and the dark canvas steps medium and bold down to 450/600 (also `lint:font-weight`) |
+| `check-cjk-punctuation-fonts.mjs` | Chinese punctuation keeps full-width metrics. A `@font-face` without a `unicode-range` may claim every code point, and Geist Sans carries narrow glyphs for U+3000-303F / U+FF00-FFEF. Covers `frontend/src/styles` (every face declares a range) and `site/` (a face may omit it only when it points at an explicitly subsetted file) (also `lint:cjk-punctuation-fonts`) |
+| `check-prompt-dashes.mjs` | Prompt text uses a single dash convention; the baseline records deliberately exempt entries (also `lint:prompt-dashes`) |
 | `check-mobile-css.mjs` | Mobile CSS stays in the mobile owner files |
 | `check-i18n-locales.mjs` | `en` and `zh` carry the same key set |
 | `check-e2e-artifacts.mjs` | e2e writes screenshots under `test-results/`, never to absolute paths like `/tmp` (which break on non-POSIX runners and leak across runs) |
-| `check-chat-layering.mjs` | `src/chat/**` must not import `src/react/**` — `src/react/types/**` is the allowed shared contract. The legacy chat layer must not depend on the React component tree; put shared pieces in `src/ui/` or `src/react/types/`. The baseline is currently 0 and may only shrink. |
-| `check-legacy-js.mjs` | No first-party `.js` / `.mjs` / `.cjs` / `.jsx` files under `frontend/src` (`vendor-files/` is third-party); `allowJs` is disabled and the baseline is empty (also `lint:legacy-js`) |
-| `check-orphans.mjs` | Every module under `frontend/src` has at least one inbound import from `src`, `test`, `e2e`, or `scripts`. A file nothing imports is a module every reader has to open and classify; the baseline is empty (currently 0) and may only shrink (also `lint:orphans`) |
-| `check-state-facade.mjs` | Rejects imports of the RETIRED `state/store.ts` facade and any `window.stateStore` access. The facade file was deleted on 2026-11-17, so the typed hooks and bridges in `store/index.ts` are the only state API and the baseline is currently 0 (and may only shrink) (also `lint:state-facade`) |
-| `check-external-hosts.mjs` | The SPA keeps every runtime byte on our own origin. Scans `index.html` + `src/**` (comments stripped, `src/vendor-files/**` skipped) and fails on any absolute `http(s)` host that is not allowlisted — our own domains, provider base URLs shown as placeholder text, `www.w3.org` XML namespaces, and GeoGebra's CDN (the one deliberately remaining third-party host, lazily loaded for `math_construction` cards). Baseline is empty and may only shrink (also `lint:external-hosts`) |
-| `../scripts/check-packages-dom.mjs` | `packages/*` stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`); platform diffs live in host adapters such as `frontend/src/react/rn/` (also `lint:packages-dom`) |
-| `../scripts/check-core-declarations.mjs` | Every hand-written `packages/core/src/*.d.ts` still describes its `.js` sibling: same exported runtime values, same parameter count and names (type-only exports are not compared). `packages/core` ships `.js` with `allowJs` off, so a drifted declaration is believed by TypeScript and never checked. Shrink-only baseline (also `lint:core-declarations`) |
-| `../scripts/gen-csp-hashes.mjs` | CSP drift gate: regenerates `ops/nginx/csp-spa.conf` and the `script-src` hashes for the two inline `index.html` scripts; lint fails when the committed artifacts drift (also `lint:csp-hashes`) |
-| `../scripts/check-doc-paths.mjs` | Entry docs (`README.md`, `README.zh.md`, `AGENTS.md`, `CLAUDE.md`) only link to paths that exist. Catches the class that left `mobile/` and its APK workflows advertised in the README for days after the tree was deleted; `docs/audits/**` are dated snapshots and are not scanned (also `lint:docs`) |
-| `check-cjk-punctuation-fonts.mjs` | Chinese punctuation keeps full-width metrics. A `@font-face` without a `unicode-range` may claim every code point, and Geist Sans (first in the stack) carries narrow glyphs for U+3000-303F / U+FF00-FFEF — so ，。！？；：（） rendered at half width even though the text was full width in the DOM. Covers `frontend/src/styles` (strict: every face declares a range) and `site/` (a face may omit the range only when it points at an explicitly subsetted file, e.g. `*-latin-*.woff2`) (also `lint:cjk-punctuation-fonts`) |
-| `../scripts/check-forwarding-shims.mjs` | Freezes the count of re-export-only files (`export * from './canonical.js'`) in `frontend/src` and `server/src`. New code imports the canonical module; deleting a shell lowers the baseline with `--update`. The baseline is currently 0 (also `lint:shims`) |
-| `../scripts/check-milestone-markers.mjs` | Freezes the `P_*` / `main.js` / `B6 batch` / `region N` / `Wave N` dialect that `docs/architecture/naming.md` forbids. New code states the invariant and links an ADR; the baseline is currently 0 and may only shrink (also `lint:markers`) |
+| `check-chat-layering.mjs` | `src/chat/**` must not import `src/react/**`; `src/react/types/**` is the allowed shared contract. Baseline 0, shrink-only |
+| `check-legacy-js.mjs` | No first-party `.js` / `.mjs` / `.cjs` / `.jsx` under `frontend/src` (`vendor-files/` is third-party); `allowJs` is disabled and the baseline is empty (also `lint:legacy-js`) |
+| `check-orphans.mjs` | Every module under `frontend/src` has at least one inbound import from `src`, `test`, `e2e` or `scripts`. Baseline 0, shrink-only (also `lint:orphans`) |
+| `check-external-hosts.mjs` | The SPA keeps every runtime byte on our own origin. Scans `index.html` + `src/**` (comments stripped, `vendor-files/**` skipped) and fails on any absolute `http(s)` host that is not allowlisted — our domains, provider base URLs shown as placeholder text, `www.w3.org` namespaces, and GeoGebra's CDN (the one remaining third-party host, lazily loaded for `math_construction` cards). Baseline empty, shrink-only (also `lint:external-hosts`) |
 | `check-ui-entry.mjs` | `frontend/src` may only import narrow `@socrates/ui/*` subpaths; any import from the removed root barrel `@socrates/ui` fails with `file:line` (also `lint:ui-entry`) |
-| `check-rn-shim.mjs` | `packages/ui/src` may not gain new importers of the frozen `react-web` shim (ADR 0027: React DOM is the only UI stack). The direct-importer count is shrink-only (currently 38) and `react-native*` dependencies are rejected (also `lint:rn-shim`) |
-| `../scripts/check-explicit-any.mjs` | Production TypeScript under `frontend/src`, `server/src`, and `packages/*/src` contains no explicit `any`; baseline is zero and may only shrink (also `lint:explicit-any`) |
-| `../scripts/check-action-pinning.mjs` | Every third-party GitHub Action in `.github/workflows/` is pinned to a 40-hex commit SHA, never a tag (a tag is a mutable pointer an upstream owner can repoint at new code that then runs with this repo's token and secrets). `scripts/pin-actions.mjs` re-pins via `git ls-remote`; the baseline is zero and may only shrink (also `lint:action-pinning`) |
-| `../scripts/check-bundle-size.mjs` | The built SPA bundle stays under an explicit ceiling: entry JS (raw + gzip), total JS, largest single chunk, total CSS. It measures the BUILD artifact, so it runs in CI after `npm run build` instead of inside `npm run lint` (lint never builds); `node scripts/check-bundle-size.mjs --update` is the explicit act that raises a ceiling (also `lint:bundle`) |
+| `check-rn-shim.mjs` | `packages/ui/src` may not gain new importers of the frozen `react-web` shim. The direct-importer count is shrink-only (currently 38) and `react-native*` dependencies are rejected (also `lint:rn-shim`) |
+| `../scripts/check-packages-dom.mjs` | `packages/*` stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`); platform diffs live in host adapters such as `frontend/src/react/rn/` (also `lint:packages-dom`) |
+| `../scripts/check-explicit-any.mjs` | Production TypeScript under `frontend/src`, `server/src` and `packages/*/src` contains no explicit `any`; baseline 0, shrink-only (also `lint:explicit-any`) |
+| `../scripts/check-core-declarations.mjs` | Every hand-written `packages/core/src/*.d.ts` still describes its `.js` sibling: same exported runtime values, same parameter count and names (type-only exports are not compared). `packages/core` ships `.js` with `allowJs` off, so a drifted declaration would be believed and never checked. Shrink-only (also `lint:core-declarations`) |
+| `../scripts/check-forwarding-shims.mjs` | Freezes the count of re-export-only files (`export * from './canonical.js'`) in `frontend/src` and `server/src`. New code imports the canonical module; deleting a shell lowers the baseline with `--update`. Baseline 0 (also `lint:shims`) |
+| `../scripts/check-milestone-markers.mjs` | Freezes the `P_*` / `main.js` / `B6 batch` / `region N` / `Wave N` dialect that [`docs/architecture/naming.md`](docs/architecture/naming.md) forbids. New code states the invariant and links an ADR; baseline 0, shrink-only (also `lint:markers`) |
+| `../scripts/check-doc-paths.mjs` | Entry docs (`README.md`, `README.zh.md`, `AGENTS.md`, `CLAUDE.md`) only link to paths that exist. `docs/audits/**` are dated snapshots and are not scanned (also `lint:docs`) |
+| `../scripts/check-drizzle-drift.mjs` | Migrations and `server/drizzle/meta/*_snapshot.json` stay in sync, so `db:generate` cannot re-emit an already-applied change in non-idempotent form (also `lint:drizzle`) |
+| `../scripts/gen-csp-hashes.mjs` | CSP drift gate: regenerates `ops/nginx/csp-spa.conf` and the `script-src` hashes for the two inline `index.html` scripts; lint fails when the committed artifacts drift (also `lint:csp-hashes`) |
+| `../scripts/check-action-pinning.mjs` | Every third-party GitHub Action in `.github/workflows/` is pinned to a 40-hex commit SHA, never a tag — a tag is a mutable pointer an upstream owner can repoint at code that then runs with this repo's token and secrets. `scripts/pin-actions.mjs` re-pins via `git ls-remote`; baseline 0, shrink-only (also `lint:action-pinning`) |
+| `../scripts/check-bundle-size.mjs` | The built SPA bundle stays under an explicit ceiling: entry JS (raw + gzip), total JS, largest single chunk, total CSS. It measures the BUILD artifact, so it runs in CI after `npm run build` rather than inside `npm run lint`; `--update` is the explicit act that raises a ceiling (also `lint:bundle`) |
 
-Conventions these follow: a failing check prints the offending `file:line` and exits 1; a baseline lives next to the script as `<name>.baseline.json` and can only move down; a `--update` run regenerates it and prints what it dropped, so a shrinking ratchet is an explicit act.
+Conventions these follow: a failing check prints the offending `file:line` and exits 1; a baseline
+lives next to the script as `<name>.baseline.json` and can only move down; `--update` regenerates it
+and prints what it dropped, so a shrinking ratchet is an explicit act.
 
-**Formatting** is Prettier (`.prettierrc.json`, `.prettierignore`) and is now part of `npm run lint` via `lint:format`. `npm run format` writes it. The tree is formatted; generated artifacts (`*.generated.*`, `tokens.generated.css`, `fonts-cjk.css`, `server/src/generated`), HTML/CSP-bearing files, and non-code surfaces (`site/`, `docs/`, `apps/`, `tools-rust/`, Markdown) are excluded so a format pass cannot invalidate a byte-identical generator or a CSP hash.
+**Formatting** is Prettier (`.prettierrc.json`, `.prettierignore`) and is part of `npm run lint` via
+`lint:format`; `npm run format` writes it. Generated artifacts (`*.generated.*`,
+`tokens.generated.css`, `fonts-cjk.css`, `server/src/generated`), HTML/CSP-bearing files, and
+non-code surfaces (`site/`, `docs/`, `apps/`, `tools-rust/`, Markdown) are excluded so a format pass
+cannot invalidate a byte-identical generator or a CSP hash.
 
 ## Incremental testing (required)
 
-**Strict Rule — No Massive Test Suites (User Directive):**
+**Strict rule — no massive test suites (user directive).**
 **严禁随意运行全量或大范围测试套件！**
+
 - 严禁跑完整的 `npm run test:unit`（1400+ 测试，耗时数分钟）或大范围 Playwright 套件，长周期测试会严重拖慢开发与交付进度。
-- **如果有测试需要，必须只做针对性的小测试**：仅针对本次修改涉及的具体模块运行单个测试文件（例如使用 `npm run test:one -- test/<specific>.test.mjs`）或单个相关 Playwright spec（如 `npx playwright test e2e/<specific>.spec.mjs`）。
+- **如果有测试需要，必须只做针对性的小测试**：仅针对本次修改涉及的具体模块运行单个测试文件（例如 `npm run test:one -- test/<specific>.test.mjs`）或单个相关 Playwright spec（如 `npx playwright test e2e/<specific>.spec.mjs`）。
 - 优先保持开发迭代节奏，切勿把时间耗费在全量测试等待上。
 
-**Testing cadence (user instruction, 2026-10-30):** Complete all planned changes in the current UI/UX consistency pass before starting builds or tests. Then run one consolidated verification pass scoped to the final diff. Do not alternate between implementing small batches and testing each batch. After a verification failure, fix the issue and rerun only the affected checks. This timing rule takes precedence over any earlier instruction to build or test during implementation.
+**Testing cadence (user instruction).** Complete all planned changes in the current pass before
+starting builds or tests, then run one consolidated verification pass scoped to the final diff. Do
+not alternate between small implementation batches and testing each one. After a failure, fix the
+issue and rerun only the affected checks. This timing rule takes precedence over any earlier
+instruction to build or test during implementation.
 
-Do not run the full `test:unit` / Playwright suites for every change. Tests are slow
-(unit ≈2 min, full Playwright much longer), so map the diff to tests and run only those.
-Prefer the automated affected test runner:
-- `npm run test:fast` — runs only the test files affected by your current git changes (staged, unstaged, untracked).
-- `node scripts/run-affected-tests.mjs --dry-run` — inspect mapped tests without executing.
+Use the affected-test runner instead of guessing:
+
+- `npm run test:fast` — only the test files affected by the current git changes (staged, unstaged,
+  untracked).
+- `node scripts/run-affected-tests.mjs --dry-run` — inspect the mapping without executing.
 - `node scripts/run-affected-tests.mjs --e2e` — also include affected Playwright specs.
-- `npm run test:fast -- <path>` — test for specific modified files.
+- `npm run test:fast -- <path>` — test specific modified files.
 
-When running manually:
-1. Find the change set: `git status --short` + `git diff --name-only HEAD` (or diff
-   against the last verified commit you recorded).
-2. Map changed files to specs:
-   - `frontend/src/styles*` (tokens/themes/shell CSS) → `e2e/landing-light-visual`,
-     `e2e/chat-light-palette`, `e2e/theme-system`, `e2e/chat-workbench`,
-     `e2e/home-customization`.
-   - `frontend/src/ui/sidebarResize.ts`, sidebar chrome/nav → `e2e/sidebar-resize`,
-     `e2e/sidebar-compat`, `e2e/sidebar-nav`.
-   - Composer (`react/composer-input`, `ui/composerTools`, `#chatInputWrap`) →
-     `e2e/composer-*`, `e2e/chat-workbench`, `e2e/repro-input-overlap`.
-   - `frontend/src/chat/*` / `render/*` → `e2e/chat-send`, `e2e/chat-stop-resend`,
-     `e2e/streaming-render`, `e2e/message-list-compat`, plus `test/<module>.test.mjs`.
-   - New modules with no matching spec: run only the smallest relevant unit file
-     (`npm run test:one -- test/<file>.test.mjs`) and add a focused
-     spec instead of relying on the full suite. Bare `node --experimental-strip-types
-     --test` cannot resolve the `@socrates/*` / `@/*` imports — those workspace
-     packages are published by path (tsconfig `paths`, no npm entry for all of
-     them), so per-file runs must go through the same `tsx` loader `test:unit`
-     uses; `test:one` is exactly that loader scoped to the files you pass.
-3. Run a subset, e.g.:
-   `npx playwright test --config=playwright.config.mjs e2e/<spec>.spec.mjs --workers=1`
-4. If a spec or test fails, treat it as a defect to fix — do not rebuild
-   `git stash`-clean HEAD to prove it is "pre-existing" first. Root-cause
-   and repair the underlying issue directly (stale assertion, broken
-   guarantee, harness bug); time saved on re-verification goes into the
-   fix. If the failure turns out to be environmental (DNS, snapshots
-   regenerated only for another platform), fix the artifact or document
-   it, then move on. A "pre-existing" label is only a comment in the
-   change description, never a reason to stop.
+When running manually, map the diff to specs:
+
+| Changed | Run |
+| --- | --- |
+| `frontend/src/styles*` (tokens/themes/shell CSS) | `e2e/landing-light-visual`, `e2e/chat-light-palette`, `e2e/theme-system`, `e2e/chat-workbench`, `e2e/home-customization` |
+| `frontend/src/ui/sidebarResize.ts`, sidebar chrome/nav | `e2e/sidebar-resize`, `e2e/sidebar-compat`, `e2e/sidebar-nav` |
+| composer (`react/composer-input`, `ui/composerTools`, `#chatInputWrap`) | `e2e/composer-*`, `e2e/chat-workbench`, `e2e/repro-input-overlap` |
+| `frontend/src/chat/*`, `frontend/src/render/*` | `e2e/chat-send`, `e2e/chat-stop-resend`, `e2e/streaming-render`, `e2e/message-list-compat`, plus `test/<module>.test.mjs` |
+| new module with no matching spec | the smallest relevant `test:one` file, and add a focused spec instead of relying on the full suite |
+
+Bare `node --experimental-strip-types --test` cannot resolve the `@socrates/*` and `@/*` imports —
+those packages are published by path (tsconfig `paths`, no npm entry for all of them), so per-file
+runs must go through the same `tsx` loader `test:unit` uses; `test:one` is exactly that loader scoped
+to the files you pass.
+
+Run a subset with:
+
+```bash
+npx playwright test --config=playwright.config.mjs e2e/<spec>.spec.mjs --workers=1
+```
+
+If a spec or test fails, treat it as a defect to fix — do not rebuild `git stash`-clean HEAD to prove
+it is "pre-existing" first. Root-cause and repair the underlying issue (stale assertion, broken
+guarantee, harness bug); time saved on re-verification goes into the fix. If the failure is
+environmental (DNS, snapshots regenerated only for another platform), fix the artifact or document
+it, then move on. A "pre-existing" label is a comment in the change description, never a reason to
+stop.

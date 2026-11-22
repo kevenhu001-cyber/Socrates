@@ -1,746 +1,596 @@
 <div align="center">
 
-<img src="docs/assets/hero.svg" alt="Socrates — AI-powered Socratic tutor" width="100%"/>
+<img src="docs/assets/hero.svg" alt="Socrates — an AI tutor built around the question" width="100%"/>
 
 <br/>
 
-[![App status](https://img.shields.io/badge/app-online-d8a85b?style=flat-square)](https://app.topodrive.top/)
-[![Backend](https://img.shields.io/badge/backend-TypeScript%20%2B%20Node.js-3178c6?style=flat-square&logo=typescript&logoColor=white)](server/)
-[![Frontend](https://img.shields.io/badge/frontend-Vite%20SPA%20%2B%20RN%20Web-3DDC84?style=flat-square&logo=react&logoColor=white)](frontend/)
+[![CI](https://github.com/kevenhu001-cyber/Socrates/actions/workflows/ci.yml/badge.svg)](https://github.com/kevenhu001-cyber/Socrates/actions/workflows/ci.yml)
+[![Web](https://img.shields.io/badge/web-React%2019%20%2B%20TypeScript%20%2B%20Vite-3178c6?style=flat-square&logo=react&logoColor=white)](frontend/)
+[![API](https://img.shields.io/badge/api-Node.js%20%2B%20Express%205%20%2B%20PostgreSQL-339933?style=flat-square&logo=nodedotjs&logoColor=white)](server/)
 [![Android](https://img.shields.io/badge/android-Kotlin%20%2B%20Compose-3DDC84?style=flat-square&logo=android&logoColor=white)](apps/socrates-android/)
-[![Database](https://img.shields.io/badge/database-PostgreSQL%2014%2B-4169e1?style=flat-square&logo=postgresql&logoColor=white)](server/src/db/)
-[![Source availability](https://img.shields.io/badge/source-available-555555?style=flat-square)](#source-availability-and-use)
+[![License](https://img.shields.io/badge/license-source--available-555555?style=flat-square)](#license)
 
-**Socrates — AI-powered Socratic tutor**  
-Streaming chat with reasoning models, interactive viz canvases, KaTeX math,
-document extraction (PDF/DOCX/XLSX/PPTX/EPUB/RTF), projects & tags, agent mode,
-cross-session memory. The SPA renders shared React Native components in place
-via `react-native-web`, and a standalone native Android client is available.
+**Socrates — an AI tutor for people who want to understand.**
 
-[中文版说明 →](README.zh.md) ·
-[Live app](https://app.topodrive.top/) ·
-[OpenAPI spec](docs/api/openapi.yaml)
+Socrates is a full-stack learning workspace. A Socratic teacher prompt, streaming chat with
+reasoning models, generated learning cards, a knowledge-boundary graph, diagnostics, exams and a
+mistake book share one conversation surface with document extraction, web research, a Python
+sandbox, connector-backed tools and a native Android client.
+
+[中文说明](README.zh.md) · [Live app](https://app.topodrive.top/) · [Marketing site](https://topodrive.top/) · [OpenAPI spec](docs/api/openapi.yaml) · [Architecture map](docs/architecture/mental-model.md)
 
 </div>
 
 ---
 
-## Table of contents
+## Contents
 
-- [Why Socrates](#why-socrates)
+- [What Socrates is](#what-socrates-is)
 - [Screenshots](#screenshots)
-- [Features](#features)
+- [What it does](#what-it-does)
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Repository layout](#repository-layout)
-- [Quick start](#quick-start)
-  - [1. Frontend (Vite SPA)](#1-frontend-vite-spa)
-  - [2. Backend API server](#2-backend-api-server)
+- [Getting started](#getting-started)
 - [Configuration](#configuration)
-- [Custom rendering pipeline](#custom-rendering-pipeline)
-- [API reference](#api-reference)
+- [Quality gates](#quality-gates)
+- [Continuous integration](#continuous-integration)
 - [Deployment](#deployment)
 - [Security model](#security-model)
-- [Repository visibility](#repository-visibility)
-- [Roadmap](#roadmap)
+- [Documentation map](#documentation-map)
 - [Contributing](#contributing)
-- [Source availability and use](#source-availability-and-use)
+- [License](#license)
 - [Support](#support)
 
 ---
 
-## Why Socrates
+## What Socrates is
 
-Most AI chat UIs are a textarea and a log. Socrates is built around a
-single insight: **learning is a Socratic act, not a Q&A act.** The
-shipped `prompts/teacher-mode.md` system prompt steers the model into
-the role of a patient teacher who answers with examples before
-definitions and uses guided questions instead of flat denials:
+Most AI chat products are a textarea and a transcript. Socrates is built around a different
+premise: **understanding is produced by a question, not by an answer.** The shipped
+[`prompts/teacher-mode.md`](prompts/teacher-mode.md) system prompt turns the model into a patient
+teacher that leads with examples, asks before telling, and replaces "you are wrong" with
+"look at it from another angle":
 
 > 就像一位耐心温和的老师在跟你聊天。平时正常对话，不刻意教东西。
+>
 > - 对方问问题或遇到困难时，再拿出老师的引导感
 > - 对方只是闲聊（比如打招呼），正常回应就好
 > - 讲东西时先举例子再讲概念，用"换个角度想想"代替"你错了"
 > - 偶尔用引导式提问代替直接给答案
 
-The rest of the app is plumbing that makes the Socratic experience
-feel real:
+Everything else in the repository exists to make that interaction hold up in daily use: a
+transport that renders the model's output while it is still being written, a set of learning
+records that survive the session, and the ordinary workspace furniture (projects, files, search,
+sharing) that a tool needs once it has more than three conversations.
 
-- **Streaming chat** with a custom line-by-line markdown renderer
-  (see [Custom rendering pipeline](#custom-rendering-pipeline))
-  so `# Title` becomes an `<h1>` the moment the model types `# `,
-  not after the model finishes its turn.
-- **Reasoning models** (DeepSeek R1, QwQ, etc.) stream `<think>…</think>`
-  blocks into a collapsible details; the markdown before and after
-  the think block is rendered as proper HTML in the live view.
-- **A notebook of viz canvases** — drop an `` ```html `` / `` ```viz `` fenced block
-  into the chat and the model can ship an interactive React/HTML/SVG
-  artifact, sandboxed in a same-origin iframe.
-- **Document extraction** — attach PDF, DOCX, XLSX, PPTX, EPUB, or RTF
-  files and the server parses them into plain text for the LLM context.
-- **Projects, tags, pin, archive, share links, custom instructions,
-  Cmd-K search, slash-command palette, prompt templates** — the
-  operating-system features a learning app needs once you have more
-  than three sessions.
-- **Bring your own API key.** Socrates never charges for model usage.
-  Configure OpenAI / Anthropic / MiniMax / any OpenAI-compatible
-  endpoint in *Account → API keys* and the backend proxies the
-  requests (so your key stays on the server, not the browser).
+The product ships as **two first-party clients** over one API: a Vite/React web SPA and a
+standalone Kotlin/Compose Android app. Both speak `/api/v2` (nginx rewrites it to the server's
+`/api`), and both share protocol and session types through `packages/contracts` and
+`packages/core`.
 
 ## Screenshots
 
-The marketing site ([`site/`](site/)) is what the public sees; the
-SPA (`frontend/`) is what learners use. Both are shipped from the
-same repo. The four panels below are the live captures that
-ship with the repo; any image not in `screenshot_*.png` at the
-repo root is **not** referenced from `README.md` (audit 2026-09-20,
-F-006).
-
-> Capture convention: append-only `screenshot_<n>_<view>[_zh].png` at the
-> repo root; PRs that update a screenshot should re-use the same filename
-> when the meaning hasn't changed, and bump the index when it has.
+These are the reference captures the visual regression suite compares against
+(`docs/assets/parity-2026-10-19/`), not marketing renders. The UI is bilingual; the Chinese
+captures show the default locale.
 
 <div align="center">
 
-| App home (EN) | App product view |
+| Home — dark | Home — light |
 | --- | --- |
-| ![Home (EN)](screenshot_1_home.png) | ![Product (EN)](screenshot_2_product.png) |
-| `screenshot_1_home.png` | `screenshot_2_product.png` |
+| ![Home, dark theme](docs/assets/parity-2026-10-19/home-dark.png) | ![Home, light theme](docs/assets/parity-2026-10-19/home-light.png) |
 
-| App home (中文) | App product view (中文) |
+| Narrow viewport — English | |
 | --- | --- |
-| ![首页 (中文)](screenshot_3_zh_home.png) | ![产品视图 (中文)](screenshot_4_zh_product.png) |
-| `screenshot_3_zh_home.png` | `screenshot_4_zh_product.png` |
+| ![Narrow viewport, English](docs/assets/parity-2026-10-19/home-narrow.png) | |
 
 </div>
 
-The SPA is a Vite-bundled **React/TypeScript** application with the Socratic
-dialogue happening in the center, viz iframes inline as the model emits them,
-a knowledge map sidebar on the left, and a status/stats footer at the bottom.
-All first-party frontend source is TypeScript (`allowJs` is disabled); typed
-bridge objects (`window.__socrates*Bridge`, `window.__socratesLegacy`) preserve
-the compatibility boundary between React surfaces and the app runtime.
-Vendored UMD libraries remain under `frontend/src/vendor-files/`.
-Production is reachable at
-<https://app.topodrive.top/>; the project-local [`deploy.sh`](deploy.sh)
-builds and copies the bundle into the nginx web root.
+## What it does
 
-## Features
+### Teach and learn
 
-### Chat & streaming
+- **Tutor mode.** The composer's mode switch swaps in the teacher prompt and the learning
+  pipeline; chat mode leaves the model as a general assistant. The two share one transcript, so a
+  conversation can move between explaining and asking.
+- **Learning modes.** `prompts/learning-modes.md` defines server-owned behaviour per mode (focus,
+  practice, review, …). The client sends only a mode id; the pedagogy stays on the server and is
+  injected for the current turn only.
+- **Learning cards.** The model answers with a typed `{version:1,nodes:[...]}` envelope and the
+  client renders native blocks — steps, accordions, images, badges, demonstrations — instead of
+  raw HTML. Anything the contract cannot express degrades to prose.
+- **Knowledge boundary.** A deterministic force-directed graph of what the learner has
+  internalised, is fuzzy about, or has not touched, with confidence, notes and change history per
+  node.
+- **Diagnostics and exams.** A diagnostic flow generates questions, scores answers by rule,
+  reports insight and can be re-run. Exams are generated, persisted server-side, answered and
+  reviewed with the same scoring path.
+- **Mistake book and review.** Mistakes are collected per session and across sessions, grouped for
+  practice, and resurfaced through a spaced-repetition review deck and question chains.
 
-- **Line-by-line progressive markdown.** ATX headings (`#`–`######`),
-  `-` / `*` / `+` unordered lists, `1.` ordered lists, ```` ``` ```` fences,
-  `>` blockquotes, `---` horizontal rules, blank-line paragraph
-  breaks, and inline `**bold**` / `*italic*` / `` `code` `` /
-  `[link](url)` all stream in. The renderer is purpose-built
-  (see [Custom rendering pipeline](#custom-rendering-pipeline)) —
-  no flicker between raw and rendered, no escaping bugs.
-- **`<think>` / `</think>` reasoning blocks.** Models that expose
-  chain-of-thought get a collapsible details card; the live
-  pre-think and post-think content render as proper HTML.
-- **Viz / HTML fences.** Drop `` ```html `` or `` ```viz `` in the chat and the
-  body becomes a sandboxed iframe (not a `<pre><code>` of raw
-  HTML). Mid-stream, a loading card replaces the body so the user
-  never sees raw `<div>` characters stream in.
-- **KaTeX math** (display `$$…$$` and inline `$…$`) with a fallback
-  to escaped text on parser failure.
-- **highlight.js** for code blocks at finish time.
-- **Per-message toolbar** (Copy / Edit / Delete / Regenerate /
-  Thumbs) so you can redo a single turn without nuking the session.
-- **Live "new reply" pill** when you've scrolled up — lets you
-  jump back without forcing auto-scroll.
+### Converse
 
-### Organization
+- **Streaming chat over SSE**, with a purpose-built progressive markdown renderer: headings, lists,
+  fences, blockquotes and inline emphasis appear the moment their opener arrives, and the final
+  pass upgrades the same DOM with KaTeX, syntax highlighting and interactive cards.
+- **Reasoning models.** ` thinking…</think>` blocks stream into a collapsible card while the text
+  before and after them still renders as live HTML.
+- **Per-message actions** — copy, edit, delete, regenerate, branch, re-explain from another angle,
+  feedback — plus in-session find (`Ctrl/⌘-F`), global search (`Ctrl/⌘-K`), a slash-command
+  palette, prompt templates and a keyboard cheatsheet.
+- **Attachments.** Images and audio go to a multimodal provider; PDF, DOCX, XLSX, PPTX, EPUB and RTF
+  are parsed to text server-side before they enter the context.
+- **Tools during a turn.** Web search (MiniMax, Bing, SearXNG and Firecrawl behind one interface),
+  page fetch, Python execution, image search, memory writes, connector calls, site creation and
+  visualization rendering all run through the same tool loop and surface as inspectable tool cards.
 
-- **Projects** (folders) with sidebar chips, drag-to-reorder, and
-  per-project system instructions.
-- **Tags** — multi-tag per session, sidebar filter, "no tag" pill.
-- **Pin (sticky)** for Recents — pinned items sort to the top.
-- **Archive / Trash** with 30-day retention and a Storage modal.
-- **Custom instructions** (Claude-style) stored in `localStorage`
-  and synced to the server.
-- **Cmd-K / Ctrl-K global search** over session titles and
-  content (powered by fuse.js).
-- **Slash-command palette** (`/clear`, `/title`, `/regen`, etc.)
-  and a **prompt templates manager** (your own reusable prompts).
-- **Keyboard shortcut suite** with a cheatsheet modal.
+### Work in a workspace
 
-### Backend
-
-- **Express 5 + Drizzle ORM + PostgreSQL** with a typed schema
-  (see [`server/src/db/schema/index.ts`](server/src/db/schema/index.ts)).
-- **Cookie-based auth** (`sid` cookie + CSRF double-submit), with
-  pending-registration email verification, captcha, and 401-replay
-  handling on the client.
-- **Bring-your-own-key** LLM proxy that streams from any
-  OpenAI-compatible endpoint (OpenAI, Anthropic via proxy, MiniMax,
-  self-hosted, etc.). The proxy never logs the API key in plaintext
-  and is the only thing that talks to the upstream provider.
-- **Document extraction** — server-side parsing of PDF, DOCX, XLSX,
-  PPTX, EPUB, and RTF via dedicated parser modules; the extracted
-  text is injected into the LLM context.
-- **Web search** — parallel fan-out across MiniMax, Bing, and SearXNG
-  with automatic fallback for low-latency results.
-- **File / image upload** via `multer`, with a persisted thumbnail path for previews.
-- **Public share links** (`/s/:token`) for read-only viewing of a
-  single session.
-- **Usage tracking** (token counters, billing dashboard) per user.
-- **Cross-session memory store** that the model can write to and
-  re-read.
-- **Push notifications** (FCM) for new replies.
-- **Team workspaces** (multi-user under one billing entity).
-- **Voice transcription** endpoint for audio messages.
-
-### Shared RN UI in the SPA
-
-- The SPA renders shared React Native components from `@socrates/ui/*` in place
-  through `react-native-web`. UI is authored once in [`packages/ui/`](packages/ui/)
-  and mounted into the SPA via narrow subpath imports; heavy editors
-  (TipTap/tldraw/HTML-viz/Mermaid/Three.js) stay Web-only native islands.
-- A standalone native Android client lives in
-  [`apps/socrates-android/`](apps/socrates-android/). The retired `mobile/` tree
-  (2026-10-12) and Expo Universal App (`apps/socrates/`, 2026-11-16) are gone; see
-  `AGENTS.md` for the current ownership map.
-
-### Marketing & docs
-
-- The marketing site ([`site/`](site/)) is a parallel set of static
-  pages with shared typography and design tokens, a Chinese translation in `site/zh/`,
-  pricing tiers, and terms / privacy.
-- The OpenAPI spec lives at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
-- The `prompts/` directory ships the Socratic teacher system prompt
-  verbatim.
+- **Projects** with per-project instructions and a memory scope (`default` or `project-only`), so a
+  project chat cannot read personal memories it was not meant to see.
+- **Library and creations.** Uploaded files, generated artifacts and published pages have one
+  browsable home with search, metadata, rename, delete and "attach to conversation".
+- **Plugins and connectors.** MCP servers, OOMOL-hosted OpenConnector apps and project-scoped
+  connectors are installed per account and offered to the model as tools.
+- **Scheduled tasks and background runs.** Cron-like tasks, durable workspace-agent runs and
+  research jobs keep executing after the tab closes, with leases, replayable events and artifacts.
+- **Sharing.** Read-only session links and public sites (`/s/:token`) with the same transcript
+  renderer in a forced read-only mode.
+- **Usage and keys.** Per-user token accounting, a usage dashboard, and bring-your-own-key provider
+  configuration.
 
 ## Architecture
 
-The repository has one production web client (`frontend/`, React + TypeScript)
-and one standalone Android client (`apps/socrates-android/`, Kotlin + Compose).
-Both talk to the same `/api/v2` API and share protocol/session types through
-`packages/contracts` and `packages/core`. React Native components in
-`packages/ui/` are mounted inside the SPA through `react-native-web`; there is
-no separate Expo/Universal App shell.
-
-For the composition roots, state ownership, one-turn flow, and "where does
-new code go", start with
-[`docs/architecture/mental-model.md`](docs/architecture/mental-model.md).
+The repository is a monorepo of independent npm projects (no workspace hoisting): one SPA, one API
+server, four shared packages, one Android app, a static marketing site, and a Rust crate group.
 
 ```mermaid
 flowchart LR
-  subgraph Client["Client"]
-    SPA["Web SPA<br/>(React + TypeScript)"]
-    APK["Android<br/>(Kotlin + Compose)"]
+  subgraph Clients
+    SPA["Web SPA<br/>React 19 · TypeScript · Vite"]
+    AND["Android<br/>Kotlin · Compose"]
   end
 
-  subgraph Edge["nginx (topodrive.top)"]
-    APP["app.topodrive.top<br/>(static SPA)"]
-    API["api.topodrive.top<br/>(reverse proxy)"]
+  subgraph Edge["nginx"]
+    APP["app.topodrive.top<br/>static SPA"]
+    PROXY["/api/v2 → /api"]
   end
 
-  subgraph Server["Backend (Node 22+ ESM)"]
-    EX["Express 5"]
-    AUTH["Auth + CSRF"]
-    CHAT["Chat / Agent<br/>(SSE streaming)"]
-    MEM["Memory / Projects / Tags / Archive"]
-    FILES["Files / Uploads /<br/>Document Extraction"]
-    WEB["Web Search<br/>(MiniMax+Bing+SearXNG)"]
-    SHARE["Share / Public links"]
+  subgraph Server["API server · Express 5 · Node.js"]
+    MW["auth · CSRF · rate limit · CSP"]
+    ROUTES["routes/*<br/>auth · chat · sessions · content<br/>knowledge · learning · media<br/>workspace · operations · providers"]
+    CHAT["chat pipeline<br/>prepare → stream → tools → finalize"]
+    SVC["services/*<br/>llm · rag · search · parsers<br/>code interpreter · connectors"]
   end
 
-  DB[("PostgreSQL<br/>(Drizzle)")]
-  LLM(["OpenAI-compatible<br/>LLM provider<br/>(user's own key)"])
-  FCM(["FCM push"])
+  PG[("PostgreSQL<br/>Drizzle · pgvector")]
+  LLM(["User's LLM provider"])
+  EXT(["Search engines<br/>MCP · connectors"])
 
-  SPA -->|HTTPS| APP
-  SPA -->|HTTPS SSE / REST| API
-  APK -->|HTTPS| API
-  API --> EX
-  EX --> AUTH
-  EX --> CHAT
-  EX --> MEM
-  EX --> FILES
-  EX --> WEB
-  EX --> SHARE
-  AUTH --> DB
-  CHAT --> DB
+  SPA --> APP
+  SPA -->|SSE + REST| PROXY
+  AND --> PROXY
+  PROXY --> MW --> ROUTES
+  ROUTES --> CHAT
+  ROUTES --> SVC
+  CHAT --> PG
+  SVC --> PG
   CHAT -->|streaming completion| LLM
-  MEM --> DB
-  FILES --> DB
-  WEB -->|parallel| SE["Search Engines"]
-  SHARE --> DB
-  EX -->|push| FCM
+  SVC --> EXT
 ```
 
-### Data flow for a single chat turn
+**Server boundaries.** `routes/<domain>/` owns HTTP concerns (authentication, scope, validation,
+status codes); `services/<domain>/` owns reusable domain work and may not import HTTP composition;
+`lib/` holds neutral primitives. `routes/chat/prepare/` assembles a request (wire schema, prompt
+snapshot, RAG, memory, tool catalogue, limits) and `routes/chat/pipeline/` executes exactly one
+streaming turn (tool loop, SSE frames, finalisation). The boundary is enforced by
+`server/scripts/check-service-boundaries.mjs`.
+
+**Client boundaries.** `frontend/src/chat/` (transport, session, streaming) never imports
+`frontend/src/react/`; the allowed shared contract is `frontend/src/react/types/`. React reads and
+writes state through the typed hooks in `frontend/src/store/`, not through window globals. Shared
+presentational components live in `packages/ui/` as plain React DOM components and are mounted
+through narrow subpaths; `packages/*` must stay DOM-free, which
+[`scripts/check-packages-dom.mjs`](scripts/check-packages-dom.mjs) enforces.
+
+### One chat turn
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as User (browser)
+  participant U as User
   participant SPA as SPA
   participant API as API (Express)
   participant DB as PostgreSQL
-  participant LLM as LLM provider
+  participant P as LLM provider
 
-  U->>SPA: types message, hits Send
-  SPA->>API: POST /api/chat/stream (SSE)
-  API->>DB: load user, session, active API key
-  API->>LLM: POST /chat/completions (stream=true)
-  loop for each SSE chunk
-    LLM-->>API: data: {delta}
-    API-->>SPA: data: {delta}
-    SPA->>SPA: append delta to bubble,<br/>re-render markdown in-place
+  U->>SPA: types a message, presses Send
+  SPA->>API: POST /api/chat/stream (SSE, sid + CSRF)
+  API->>DB: load user, session, active provider key
+  API->>DB: read session prompt snapshot + RAG hits + memories
+  API->>P: POST /chat/completions (stream: true, tools)
+  loop each frame
+    P-->>API: delta / tool call
+    API-->>SPA: SSE data frame (text, tool, error)
+    SPA->>SPA: append delta, re-render markdown in place
   end
-  LLM-->>API: data: [DONE]
-  API->>DB: persist assistant message
-  API-->>SPA: SSE end
-  SPA->>SPA: final full-render pass<br/>(KaTeX, highlight.js)
+  P-->>API: [DONE]
+  API->>DB: persist message, turn events, usage
+  API-->>SPA: stream end
+  SPA->>SPA: final render (KaTeX, highlight, cards)
 ```
+
+The live SSE request is the primary path. `/api/chat-turns` exists so a reload or a dropped
+connection can replay the events of a turn that is still running; it is a recovery channel, not a
+second transport. A turn is claimed atomically before preparation, so a duplicate submit receives a
+`CONFLICT` with a reconnect id instead of executing the tools twice.
+
+### Streaming renderer
+
+Two renderers share one module, [`frontend/src/render/markdown.ts`](frontend/src/render/markdown.ts):
+
+| Renderer | Used when | What it does |
+| --- | --- | --- |
+| `formatMsgProgressive` | every animation frame while streaming | line-by-line state machine; emits headings, lists, fences, quotes and inline emphasis as soon as the syntax is complete |
+| `formatMsg` | turn finished, history reopened, copy/export | full pipeline: `marked` + KaTeX + highlight.js + visualization/card mounting |
+
+Chat-template leakage (`<|im_start|>`, `[INST]…[/INST]`) is stripped once per frame so it never
+flickers on screen, and escaping uses nonce placeholders rather than escape-then-restore, which
+breaks when a message legitimately contains `<code>`.
 
 ## Tech stack
 
 | Layer | Technology | Notes |
 | --- | --- | --- |
-| Web SPA | React + TypeScript, Vite build | [`frontend/`](frontend/) — first-party source is TypeScript; vendored UMD files are isolated under `src/vendor-files/` |
-| Markdown | `marked` 13 + custom progressive renderer | see [Custom rendering pipeline](#custom-rendering-pipeline) |
-| Math | `katex` 0.16.9 (vendored, see [`frontend/src/vendor-files/katex/`](frontend/src/vendor-files/katex/)) | display + inline modes |
-| Code highlight | `highlight.js` (vendored + loaded lazily at finish time) | see [`frontend/src/vendor-files/highlight.min.js`](frontend/src/vendor-files/highlight.min.js) |
-| Search | `fuse.js` for the Cmd-K palette | |
-| Auth | Cookie (`sid`) + CSRF double-submit | see [`server/src/middleware/auth.ts`](server/src/middleware/auth.ts) and [`server/src/middleware/csrf.ts`](server/src/middleware/csrf.ts) |
-| Backend | TypeScript, Express 5, Node.js ESM | [`server/src/`](server/src/) |
-| ORM | Drizzle ORM 0.40+ + `drizzle-kit` migrations | [`server/src/db/`](server/src/db/) |
-| Database | PostgreSQL 14+ | `DATABASE_URL` env var |
-| LLM proxy | `fetch` to any OpenAI-compatible endpoint | [`server/src/services/core/llm/stream.ts`](server/src/services/core/llm/stream.ts) |
-| Document parsing | mammoth, SheetJS, jszip+xml2js, EPub, rtf2text | [`server/src/services/fileParsers/`](server/src/services/fileParsers/) |
-| Web search | MiniMax + Bing (parallel race), SearXNG fallback | [`server/src/services/webSearch.ts`](server/src/services/webSearch.ts) |
-| Uploads | `multer`; thumbnails are stored as supplied derivatives | |
-| Email | `nodemailer` (SMTP) for verification, magic-link reset | |
-| Code execution | Pyodide WASM (Python sandbox) | [`server/src/services/codeInterpreter/index.ts`](server/src/services/codeInterpreter/index.ts) |
-| Shared RN UI | React Native components rendered in the SPA via `react-native-web` | [`packages/ui/`](packages/ui/), [`frontend/src/react/rn/`](frontend/src/react/rn/) |
-| Native Android | Kotlin + Jetpack Compose client over `/api/v2` | [`apps/socrates-android/`](apps/socrates-android/) |
-| Shared packages | `@socrates/{core,contracts,theme,ui}` | [`packages/`](packages/) — DOM-free, enforced by `scripts/check-packages-dom.mjs` |
-| CI | GitHub Actions: SPA gate, server, security/SAST, OCI image, native Android build, Rust tooling | [`ci.yml`](.github/workflows/ci.yml), [`native-android-build.yml`](.github/workflows/native-android-build.yml) |
-| Edge | nginx reverse proxy + static file server | [deploy.sh](deploy.sh) |
-| Vendored scripts | KaTeX + highlight.js + Plotly + Mermaid + ECharts (UMD under [`frontend/src/vendor-files/`](frontend/src/vendor-files/)); marked + DOMPurify + fuse.js come from npm — no CDN fallback | see [vendored-scripts-README](frontend/src/vendor-files/README.md) |
+| Web client | React 19, TypeScript, Vite | [`frontend/`](frontend/); the static shell hosts React islands through one root registry |
+| Client state | Zustand readers over an immutable bridge | [`frontend/src/store/`](frontend/src/store/) |
+| Rich text | TipTap 3 | composer only; the transcript body stays server-rendered HTML |
+| Visualization | tldraw 5.5, Three.js, Mermaid, ECharts, Plotly, MapLibre | lazily loaded, Web-only islands |
+| Math & code | KaTeX, highlight.js | vendored UMD under `frontend/src/vendor-files/`, no CDN fallback |
+| Markdown | `marked` 13 + custom progressive renderer | see [Streaming renderer](#streaming-renderer) |
+| API | Node.js 20.19+/22.12+/24+, Express 5, TypeScript | [`server/`](server/) |
+| Data | PostgreSQL 16 + pgvector, Drizzle ORM 0.45 | CI and the OCI image run `pgvector/pgvector:pg16`; migrations in [`server/drizzle/`](server/drizzle/) |
+| Retrieval | BM25 chunks + optional pgvector re-ranking, embeddings service | degraded mode when no embedding provider is configured |
+| Python sandbox | Pyodide in a bounded worker pool | [`server/src/services/codeInterpreter/`](server/src/services/codeInterpreter/) |
+| Workspace agent | `pi` coding agent under Bubblewrap | filesystem/PID isolation, not a full execution-node policy |
+| Observability | OpenTelemetry traces + metrics (OTLP/HTTP) | off unless `OTEL_EXPORTER_OTLP_ENDPOINT` is set |
+| Shared packages | `@socrates/core`, `@socrates/contracts`, `@socrates/theme`, `@socrates/ui` | [`packages/`](packages/), DOM-free, linked by path |
+| Android | Kotlin, Jetpack Compose, Gradle | [`apps/socrates-android/`](apps/socrates-android/) |
+| Native helpers | Rust crates: protocol, format, stream, fetch, wasm | [`tools-rust/`](tools-rust/) |
+| Marketing site | Static HTML/CSS/JS with its own Node test suite | [`site/`](site/) |
+| CI | GitHub Actions: CI gate, server, security, OCI image, Android, agent tooling | [`.github/workflows/`](.github/workflows/) |
+| Edge | nginx: static SPA + `/api/v2` reverse proxy + CSP include | [`ops/nginx/`](ops/nginx/) |
 
 ## Repository layout
 
-```
+```text
 Socrates/
-├── frontend/               # Vite SPA (React + TypeScript)
-│   ├── index.html
+├── frontend/                 Vite SPA — the only production web client
+│   ├── index.html            static shell, mount hosts, CSP hashes
 │   ├── src/
-│   │   ├── main.ts         # Entrypoint; composes extracted modules
-│   │   ├── styles/         # All CSS — index.css entry, themes.css,
-│   │   │                   #  legacy/ slices, parity/ surface owners
-│   │   ├── state/          # Domain state bridges (session, kb, ui, ...)
-│   │   ├── store/          # createDomainStore factory + index hooks
-│   │   ├── i18n/index.ts   # language switching + lazy locale tables
-│   │   ├── i18n/{en,zh}.ts # locale dictionaries
-│   │   ├── types/          # TypeScript type definitions
-│   │   │                   #  (runtimeWindow.ts — typed window.* bridge)
-│   │   ├── react/          # React/TS UI layers (islands + pages)
-│   │   │   ├── bootstrap.tsx
-│   │   │   ├── useChatRuntime.ts
-│   │   │   ├── message-list/
-│   │   │   ├── session-list/
-│   │   │   ├── sidebar/
-│   │   │   ├── composer/
-│   │   │   ├── cmdk/
-│   │   │   ├── settings/
-│   │   │   ├── pages/
-│   │   │   ├── legacy/     # Typed bridge (gateway.ts)
-│   │   │   └── ...
-│   │   ├── app/            # Boot wiring + legacyBridge.ts (window.* bridges)
-│   │   ├── ui/             # Typed UI runtime modules
-│   │   │   └── ...
-│   │   ├── render/         # Markdown renderers (markdown.ts hosts
-│   │   │                   #  formatMsg / formatMsgProgressive)
-│   │   ├── chat/           # Chat logic
-│   │   ├── session/
-│   │   ├── sidebar/
-│   │   ├── storage/
-│   │   ├── auth/
-│   │   ├── extensions/     # Composer extension declarations
-│   │   ├── vendor-files/   # Vendored UMD libs (KaTeX, hljs, Plotly, ...)
-│   │   └── ...
-│   ├── dist/               # Built bundle (gitignored)
-│   ├── e2e/                # Playwright e2e tests
-│   └── package.json
-├── site/                   # Marketing site (topodrive.top)
-│   ├── index.html
-│   ├── inner.css
-│   └── zh/                 # Chinese translations
-├── server/                 # TypeScript / Express 5 / Drizzle / PostgreSQL
-│   ├── package.json
-│   ├── drizzle/            # Migrations
-│   └── src/
-│       ├── index.js        # Stable production compatibility shim
-│       ├── index.runtime.ts # Thin boot sequencer (~64 lines)
-│       ├── boot/           # startup.ts / lifecycle.ts boot stages
-│       ├── app.ts          # Express app, middleware wiring
-│       ├── db/             # Drizzle schema, migrations, client
-│       ├── lib/            # errors, crypto helpers
-│       ├── middleware/     # auth, csrf, error
-│       ├── routes/         # auth, chat, sessions, share, files, ...
-│       └── services/       # llm, webSearch, fileParsers, codeInterpreter, ...
-├── apps/
-│   └── socrates-android/   # Standalone Kotlin + Compose native client
+│   │   ├── main.ts           boot composition (batchStorage.ts first)
+│   │   ├── app/ auth/        startup, auth gate, legacy bridge
+│   │   ├── chat/             transport, turns, streaming, send pipeline
+│   │   ├── session/          history, paging, persistence
+│   │   ├── render/           progressive + full markdown renderers
+│   │   ├── tutor/ exam/      teaching flows, diagnostics, exams
+│   │   ├── react/            React surfaces (islands + pages)
+│   │   ├── store/            typed state factory and hooks
+│   │   ├── styles/           single CSS entry, ordered cascade
+│   │   └── vendor-files/     vendored UMD libraries
+│   ├── e2e/                  Playwright suites (smoke/regression/theme/visual)
+│   ├── test/                 Node unit tests
+│   └── dev-stub/             local API stub used by `vite dev`
+├── server/                   Express API
+│   ├── src/
+│   │   ├── index.runtime.ts  runtime entry (index.js is the systemd shim)
+│   │   ├── app.ts            middleware order + router mounts
+│   │   ├── boot/             startup and lifecycle stages
+│   │   ├── routes/           auth, chat, sessions, content, knowledge,
+│   │   │                     learning, media, workspace, operations, providers
+│   │   ├── services/         llm, rag, search, parsers, sandbox, connectors
+│   │   ├── db/               Drizzle schema and client
+│   │   └── lib/              neutral primitives
+│   ├── drizzle/              SQL migrations + metadata
+│   └── test/                 per-file test suite
 ├── packages/
-│   ├── core/               # SSE framing, turn runtime, session pure functions
-│   ├── contracts/          # API and cross-client contracts
-│   ├── theme/              # Shared tokens and RN color values
-│   └── ui/                 # Shared RN components, consumed by the SPA as narrow subpaths
-│                           #   DOM-free; mounted through react-native-web
-├── prompts/
-│   └── teacher-mode.md     # The Socratic system prompt (verbatim)
+│   ├── core/                 SSE framing, turn runtime, learning/exam models
+│   ├── contracts/            cross-client protocol types
+│   ├── theme/                design tokens shared by web and native
+│   └── ui/                   shared React DOM components (narrow subpaths)
+├── apps/socrates-android/    standalone Kotlin + Compose client
+├── site/                     marketing site (EN + zh), tests, OpenAPI export
+├── tools-rust/               Rust crates and the WASM build
+├── prompts/                  teacher mode, learning modes, provider prompts
 ├── docs/
-│   ├── adr/                # Architecture decision records
-│   ├── api/openapi.yaml    # Full REST + SSE API spec
-│   ├── audits/             # Dated audit/review snapshots
-│   ├── plans/              # Design & migration plans
-│   ├── ref/                # Reference captures & playbooks
-│   ├── assets/hero.svg     # README hero image
-│   └── STRUCTURE.md        # docs/ placement convention
-├── tools-rust/             # Rust mechanism library (native + WASM)
-├── ops/nginx/              # CSP + performance nginx snippets
-├── scripts/                # Operator & CI utility scripts
-├── deploy.sh               # nginx copy + reload helper
-├── README.md               # English
-└── README.zh.md            # 中文
+│   ├── architecture/         current system description — start here
+│   ├── adr/                  architecture decision records
+│   ├── api/openapi.yaml      HTTP contract (OpenAPI 3.1)
+│   ├── audits/               dated, immutable review snapshots
+│   ├── plans/                dated plans and handoffs
+│   ├── ref/                  reference captures and measurement playbooks
+│   ├── ops/runbook.md        operational runbook
+│   └── STRUCTURE.md          where a new document belongs
+├── scripts/                  guards, generators, CI utilities
+├── ops/nginx/                CSP snippet, proxy examples, perf config
+├── tasks/                    active task ledger + frozen historical evidence
+├── test/                     root tests (site, OpenAPI, affected-test mapping)
+├── chat-demo/                vendored upstream DeepSeek client — read-only reference
+├── deploy.sh                 production release script
+├── AGENTS.md                 engineering rules for agents and contributors
+└── README.md / README.zh.md
 ```
 
-## Quick start
+## Getting started
 
-You need three things running:
+### Prerequisites
 
-1. The frontend SPA ([`frontend/`](frontend/)) — Vite dev server or built bundle.
-2. The API server ([`server/`](server/)) — Node 22+, PostgreSQL 14+.
-3. (Optional) An LLM provider — the user configures their own
-   OpenAI-compatible key in *Account → API keys*, or the built-in
-   "Beagle" provider is auto-seeded if the operator's `BEAGLE_SYSTEM_KEY`
-   env var is set.
+- **Node.js** `^20.19` or `^22.12` or `>=24` (the server declares this range; Volta pins 22.23.1)
+- **PostgreSQL 16** with the `vector` extension (the version CI and the OCI image use) for semantic retrieval
+- **npm 10+**
+- Optional: Rust toolchain (`tools-rust/`), JDK 17 + Android SDK 35 (Android client)
 
-### 1. Frontend (Vite SPA)
+### 1. Clone and install
+
+Each project owns its lockfile, so install at each level:
 
 ```bash
-cd frontend
-npm install
-npm run dev        # Dev server at http://localhost:5173
-# or
-npm run build      # Production build → dist/
+git clone https://github.com/kevenhu001-cyber/Socrates.git
+cd Socrates
+
+npm ci                    # root tooling: prettier, yaml, playwright
+npm --prefix server ci
+npm --prefix frontend ci
 ```
 
-### 2. Backend API server
+### 2. Database
+
+```bash
+createdb socrates
+```
+
+Migrations create the schema. Migration `0031` installs pgvector when the extension is available
+and skips the vector column when it is not — retrieval then runs BM25-only instead of failing.
+
+### 3. API server
 
 ```bash
 cd server
-npm install
-
-# Configure environment
-export DATABASE_URL="postgres://user:pass@localhost:5432/socrates"
-export PORT=8080
-
-# Migrate the schema
+cp .env.example .env      # set DATABASE_URL and SESSION_SECRET at minimum
 npm run db:migrate
-
-# Run the dev server (auto-reload)
-npm run dev
-
-# Or production
-npm run build
-npm start
+npm run dev               # http://localhost:8080
 ```
 
-The server listens on `http://0.0.0.0:8080` by default.
+`SESSION_SECRET` is mandatory when `NODE_ENV=production` (it encrypts stored provider keys); local
+development falls back to a development secret. `server/.env.example` lists every variable the
+process reads, grouped by feature.
 
-## Configuration
-
-All configuration is via environment variables on the server side;
-the SPA reads no config from disk (its settings live in
-`localStorage`).
-
-| Var | Required | Default | Purpose |
-| --- | --- | --- | --- |
-| `DATABASE_URL` | yes | — | PostgreSQL connection string |
-| `PORT` | no | `8080` | HTTP listen port |
-| `NODE_ENV` | no | `development` | `production` flips cookie `secure` flag and disables verbose logs |
-| `COOKIE_DOMAIN` | no | auto | Set when the API and SPA are on different subdomains |
-| `COOKIE_SECURE` | no | `true` in production | Force `Secure` flag on the `sid` cookie |
-| `BEAGLE_SYSTEM_KEY` | no | — | If set, a built-in "Beagle" LLM provider is auto-seeded so the app works out-of-the-box for new users |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_FROM` | no | — | Required for email verification and password reset |
-| `FCM_SERVER_KEY` | no | — | Push notifications for the Android client |
-| `BEAGLE_BUILT_IN.key` | no | empty | If set, the built-in provider uses this key (overrides `BEAGLE_SYSTEM_KEY`) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | — | **Turns tracing on.** OTLP/HTTP base URL of a collector (e.g. `http://collector:4318`). Unset means no SDK is loaded at all — see [`server/src/lib/telemetry.ts`](server/src/lib/telemetry.ts) |
-| `OTEL_SERVICE_NAME` | no | `socrates-api` | Service name on exported spans |
-| `OTEL_TRACES_SAMPLER_ARG` | no | `1.0` | Sampling ratio when tracing is enabled |
-
-The user configures their own provider at runtime in
-*Account → API keys* — the backend never logs the key in plaintext,
-and the browser never sees it after the user saves it (it lives
-encrypted at rest in the `api_keys` table).
-
-## Custom rendering pipeline
-
-Socrates ships **two** markdown renderers and switches between them
-based on whether the model has finished its turn:
-
-| Renderer | Where | Used when |
-| --- | --- | --- |
-| `formatMsgProgressive` | [`frontend/src/render/markdown.ts`](frontend/src/render/markdown.ts) | Mid-stream, every animation frame. Line-by-line state machine, no `marked` dependency, handles ATX headings, lists, code fences, blockquotes, HRs, and inline `**bold**` / `*italic*` / `` `code` `` / `[link](url)`. |
-| `formatMsg` | [`frontend/src/render/markdown.ts`](frontend/src/render/markdown.ts) | At `finish()` time, when the user re-opens a saved message, or when copying/exporting. Full pipeline: `marked` + KaTeX + highlight.js + viz iframe + think-block handling. |
-
-The key design rules:
-
-- **Block elements appear the instant the opener lands.** `# ` →
-  `<h1>` on the same frame the space is typed.
-- **`<think>…</think>` slices render as HTML too.** Pre-think content
-  goes into a `<div class="think-prefix">`, post-think content into
-  `<div class="think-suffix">`. The think block itself uses the full
-  `formatMsg` path so its inline code, math, and links all work.
-- **Chat-template artifacts are stripped at the frame level.**
-  Some reasoning models leak `<|im_start|>…<|im_end|>` or `[INST]…[/INST]`
-  into the stream; `stripChatArtifacts(t)` runs once per render so
-  the user never sees them flicker by.
-- **Escaping uses nonce placeholders** — the naive "escape → markup → restore"
-  pattern breaks when user text contains the literal string `<code>`.
-
-## API reference
-
-The full REST + SSE spec lives at
-[`docs/api/openapi.yaml`](docs/api/openapi.yaml) (OpenAPI 3.1). The
-short version of the chat streaming surface:
-
-```http
-POST /api/chat/stream
-Cookie: sid=...
-X-CSRF-Token: ...
-Content-Type: application/json
-
-{
-  "sessionId": "uuid",
-  "messages": [{"role": "user", "content": "Explain Bayes' theorem"}],
-  "model": "gpt-4o-mini",
-  "temperature": 0.7,
-  "maxTokens": 4096
-}
-```
-
-```http
-HTTP/1.1 200 OK
-Content-Type: text/event-stream
-
-data: {"delta":"Bayes"}
-data: {"delta":"' theorem"}
-data: {"delta":" says..."}
-data: [DONE]
-```
-
-Other notable endpoints: `/api/agent/run` (tool-using agent),
-`/api/search` (Cmd-K), `/api/fetch-batch` (URL scraping),
-`/api/files/extract` (document text extraction),
-`/api/share/:token` (public read-only), `/api/memory/*`
-(cross-session memory), `/api/usage/*` (token tracking),
-`/api/agent/files/*` (agent workspace file access).
-
-## Deployment
-
-The included [`deploy.sh`](deploy.sh) is the canonical "ship it"
-script for the production environment. It:
-
-1. Installs lockfile-pinned dependencies for the frontend and
-   backend (`npm ci --include=dev`).
-2. Builds the Vite SPA (`npm run build`) and copies `dist/` into
-   `/var/www/app.topodrive.top/`.
-3. Compiles the TypeScript backend into an isolated candidate
-   directory (`server/.dist-next.<rand>/`). Only after the build
-   succeeds does the candidate get swapped into `server/dist/`;
-   the previous `dist/` is preserved as `dist.previous/` for
-   one-step rollback. `server/src/index.js` (the stable systemd
-   shim) delegates to `dist/index.runtime.js`.
-4. Builds and copies the marketing site (`site/`) into
-   `/var/www/topodrive.top/`.
-5. Restarts the backend via `systemctl restart socrates-api`. If
-   the restart or the post-restart health check fails, the previous
-   backend build is restored automatically before the script exits
-   with a non-zero status — operators never have to chase a
-   half-deployed binary by hand.
-6. Validates the deploy gate (frontend `index.html` MD5,
-   `/api/health` reachable from the local host) and writes the
-   result to the state file. A failed gate keeps the previous
-   known-good state recorded, and prints the exact rollback command.
-
-```bash
-./deploy.sh                              # build + deploy
-```
-
-Deployments are serialized with `flock`; a second invocation exits
-immediately while another deploy owns the lock. Deployment paths and
-the nginx status-site configuration can be overridden with
-`FRONTEND_DIR`, `SERVER_DIR`, `APP_WEB_ROOT`, `SITE_WEB_ROOT`,
-`SITE_DIR`, `STATUS_DIR`, and `NGINX_SITE_CONF`. The default values
-remain production-compatible. The frontend keeps one `.previous`
-snapshot and the backend keeps one `dist.previous` tree, so operators
-should archive a known-good release separately when a longer rollback
-window is required.
-
-For the local frontend merge gate:
+### 4. Web client
 
 ```bash
 cd frontend
-npm run lint
-npm run test:unit
-npm run build
-npm run test:smoke
+API_PORT=8080 npm run dev    # http://localhost:5173
 ```
 
-CI runs these checks serially, cancels superseded push runs, and uploads
-the Playwright HTML report as the `playwright-report` artifact.
+The Vite proxy targets port `3037` by default; either point it at the server (`API_PORT=8080`) or
+run the server on `3037` (`PORT=3037 npm start`). When no API is listening, the dev server answers
+with the local stub in `frontend/dev-stub/` so the shell and composer stay usable;
+`LOCAL_AUTH_BYPASS=0 npm run dev` disables that path.
 
-The backend runs as a systemd unit (`Restart=always`). The
-server is stateless beyond PostgreSQL, so horizontal scaling is
-just a matter of running more processes behind the same nginx.
+Production build:
 
-The native Android client is built by
-[`native-android-build.yml`](.github/workflows/native-android-build.yml) (manual
-dispatch): it runs `assembleDebug` and unit/lint checks and uploads the debug APK
-and test reports. [`image.yml`](.github/workflows/image.yml) builds and verifies a
-signed OCI image of the API server on every push but does **not** deploy —
-`deploy.sh` still builds on the host. There is currently no signed store-release
-pipeline.
+```bash
+cd frontend
+npm run build                # → frontend/dist/
+```
+
+### 5. Android client (optional)
+
+```bash
+cd apps/socrates-android
+./gradlew assembleDebug testDebugUnitTest lintDebug
+```
+
+Requires JDK 17 and Android SDK 35 / Build Tools 35.0.0; point `ANDROID_HOME` or a local
+`local.properties` at the SDK. See [`apps/socrates-android/README.md`](apps/socrates-android/README.md)
+for API configuration, network-security policy and the current feature-parity status.
+
+## Configuration
+
+The server is configured entirely through environment variables; the SPA stores its settings in the
+browser and reads no config from disk.
+
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | yes | — | PostgreSQL connection string |
+| `SESSION_SECRET` | production | dev fallback | HKDF seed for the AES keys that encrypt stored provider credentials |
+| `PORT` | no | `8080` | HTTP listen port |
+| `NODE_ENV` | no | `development` | `production` enables fail-fast secrets, secure cookies and quieter logs |
+| `APP_URL` / `CORS_ALLOWED_HOSTS` | no | — | Public origin and allowed cross-origin hosts |
+| `BEAGLE_SYSTEM_KEY` | no | — | Seeds the built-in "Beagle" provider so a fresh install works without user keys |
+| `OOMOL_PROJECT_API_KEY` | no | — | OOMOL-hosted connector runtime used by the app integrations |
+| `SMTP_*` | no | — | Verification mail, password reset |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | no | — | Turns tracing on; unset loads no SDK at all |
+| `INTERNAL_METRICS_TOKEN` | no | — | Enables `GET /api/_internal/metrics` behind a bearer token |
+| `SCHEDULER_ENABLED` | no | on | `0` disables automatic scheduled-task polling |
+| `PI_AGENT_ENABLED` / `PI_AGENT_ISOLATION` | no | on / `bubblewrap` | Workspace-agent toggle and isolation mode |
+| `EXEC_*` | no | see template | Python sandbox limits: pool size, timeouts, output and artifact caps |
+
+`server/.env.example` is the authoritative list (114 variables at the time of writing), grouped by
+core server, chat, workspace agent, sandbox, connectors, mail, admin, observability and Android.
+
+## Quality gates
+
+Nothing in this repository is "done" until the relevant gates pass. They are cheap to run
+individually and expensive to run all at once, so the tooling is built for targeted verification.
+
+```bash
+npm run lint          # frontend lint chain + server boundaries + drizzle, docs,
+                      # shims, markers, formatting, core declarations, action pinning
+npm run typecheck     # server + frontend
+npm run verify        # typecheck + lint + shared-package tests
+npm run test:fast     # tests mapped to the files you actually changed
+```
+
+`npm run lint` is not just `tsc` plus ESLint. It ends in roughly thirty ratchets that freeze a
+debt count and may only shrink: raw `<button>` elements, off-ladder control heights, literal
+`z-index`, `!important` and hex colours in live CSS, dead rules in frozen CSS, explicit `any`,
+empty `catch` blocks, forwarding shims, untyped frontend JS, orphan modules, leaked external hosts,
+unpinned GitHub Actions, CSP drift, OpenAPI drift, Drizzle snapshot drift and more. The full table
+with what each guard protects lives in [`AGENTS.md`](AGENTS.md).
+
+Focused suites:
+
+| Command | Scope |
+| --- | --- |
+| `npm --prefix frontend run test:unit` | frontend unit tests (Node test runner via `tsx`) |
+| `npm --prefix server run test` | one process per test file; DB suites skip without a database |
+| `npm --prefix server run test:db:memory` | PGlite + real migrations + pgvector, no PostgreSQL service |
+| `npm --prefix frontend run test:e2e:smoke` | Playwright smoke tier |
+| `npm --prefix frontend run test:e2e:required` | smoke + regression + theme (the blocking set) |
+| `npm --prefix frontend run test:e2e:visual` | screenshot/golden geometry (advisory) |
+| `npm run test:site` | marketing site layout, content, fonts, motion, OpenAPI export |
+| `npm run test:openapi` | published OpenAPI document |
+
+Server tests refuse to run against a database whose name does not contain a separated `test` or
+`qa` component; `TEST_DATABASE_URL` takes precedence over `.env`.
+
+## Continuous integration
+
+| Workflow | Trigger | What it proves |
+| --- | --- | --- |
+| [`ci.yml`](.github/workflows/ci.yml) | push, PR | change classification → repo sanity, site, frontend (lint, build, bundle budget, unit, required e2e), server, shared packages + Rust protocol; a single `gate` job |
+| [`server-ci.yml`](.github/workflows/server-ci.yml) | server paths | full server suite against real PostgreSQL, boundary and lint checks |
+| [`security.yml`](.github/workflows/security.yml) | push, PR, weekly | CodeQL, dependency audit against the shrink-only advisory baseline, SBOM |
+| [`image.yml`](.github/workflows/image.yml) | server paths | builds and verifies a signed OCI image of the API; it does **not** deploy |
+| [`native-android-build.yml`](.github/workflows/native-android-build.yml) | Android paths | `assembleDebug`, unit tests, lint, debug APK artifact |
+| [`agent-tooling-ci.yml`](.github/workflows/agent-tooling-ci.yml) | tool-calling paths | server tooling and frontend agent-UI checks |
+
+Coverage is measured per project over its own `src/**`, advisory on pull requests and blocking on
+`main`. Theme and contrast specs are blocking; screenshot and golden-geometry specs are advisory.
+
+## Deployment
+
+Production is a single nginx host plus a systemd unit (`socrates-api`). [`deploy.sh`](deploy.sh) is
+the only supported release path:
+
+```bash
+./deploy.sh                 # SPA build + backend build + migrations + restart + gates
+./deploy.sh --site-only     # publish site/ only; no build, migration or restart
+./deploy.sh --require-ci    # also require a green GitHub Actions run before deploying
+```
+
+A full release installs lockfile-pinned dependencies, builds the SPA into the web root, compiles
+the server into an isolated candidate directory and swaps it in only after the build succeeds
+(keeping `dist.previous/`), runs migrations, restarts the service, then validates the result:
+frontend document checksum, `/api/health` from the host, the status page bytes and the public DNS
+path. If a restart or health gate fails, the previous backend build is restored automatically and
+the script exits non-zero. Deployments are serialized with `flock`; a second invocation exits
+immediately.
+
+The CI merge gate is **advisory by default** — a red run is recorded in `.deploy-state.json` but
+does not block — and becomes enforcing with `--require-ci` or `DEPLOY_REQUIRE_CI_CHECK=1`. A
+rollback of application code does **not** roll back a database migration; the runbook in
+[`docs/ops/runbook.md`](docs/ops/runbook.md) covers backup, isolated restore drills and the exact
+manual rollback commands.
+
+The server is stateless beyond PostgreSQL, so horizontal scaling is a matter of more processes
+behind the same nginx. `image.yml` already builds an OCI image on every push; switching deployment
+to pull that digest instead of building on the host is a separate, deliberately unmade change.
 
 ## Security model
 
-- **Auth.** Passwords hashed with bcrypt. Sessions are 64-char
-  random tokens in the `sid` cookie, `HttpOnly` and `SameSite=Lax`,
-  server-side expiry enforced.
-- **CSRF.** Double-submit cookie pattern. The `csrf` cookie is
-  read by the SPA and echoed in the `X-CSRF-Token` header; the
-  middleware rejects any state-changing request whose header
-  doesn't match the cookie.
-- **API keys.** Stored encrypted at rest; the SPA only sees a
-  masked preview (`sk-…abcd`). The proxy holds the key in memory
-  only for the duration of a single request.
-- **Viz iframes.** Sandboxed (`sandbox="allow-scripts"`, no
-  `allow-same-origin` by default), so a model that emits malicious
-  HTML can't touch the parent DOM or the user's cookies.
-- **Document uploads.** Non-image files are force-downloaded via
-  `Content-Disposition: attachment`; HTML/XHTML uploads are blocked
-  at the multer level to prevent XSS.
-- **CSP.** Shipped, from a single generated source. `server/src/app.ts`
-  sets the policy on every Express response via helmet, and
-  [`ops/nginx/csp-spa.conf`](ops/nginx/csp-spa.conf) carries the same
-  policy for the nginx-served SPA document (the API and the SPA are the
-  same origin behind the `/api/v2` reverse proxy). Both artifacts — plus
-  the `script-src` `'sha256-…'` hashes of the two pre-paint inline
-  scripts in `index.html` — are emitted by
-  [`scripts/gen-csp-hashes.mjs`](scripts/gen-csp-hashes.mjs); `npm run lint`
-  in `frontend/` fails when they drift. `object-src` and `frame-ancestors`
-  are `'none'`, `base-uri` / `form-action` are `'self'`, and `'unsafe-eval'`
-  is only present under an explicit `ALLOW_DEV_EVAL=1`.
-  `deploy.sh` installs the snippet and wires the `include` into
-  every HTML-serving nginx location block on each deploy
-  (`install_spa_csp` → `ops/nginx/insert-csp-include.awk`): backup-first,
-  `nginx -t`-validated, restored on failure, idempotent per block. Verify
-  with `curl -sI https://app.topodrive.top/ | grep -i content-security`.
+- **Authentication.** bcrypt password hashes; 64-character session tokens in an `HttpOnly`,
+  `SameSite=Lax` `sid` cookie with server-side expiry. Login attempts are rate-limited and locked
+  out per account and IP.
+- **CSRF.** Double-submit cookie: the SPA echoes the `csrf` cookie in `X-CSRF-Token`, and
+  state-changing requests without a match are rejected.
+- **Provider keys.** Encrypted at rest with a key derived from `SESSION_SECRET`; the browser only
+  ever receives a masked preview, and the proxy holds the plaintext for one request.
+- **Content Security Policy.** One generated source produces both the Express header and the nginx
+  snippet, including the `sha256` hashes of the pre-paint inline scripts in `index.html`;
+  `frontend` lint fails when either drifts. `script-src` carries `'unsafe-inline'` deliberately:
+  viz cards are model-authored inline-script documents inside `srcdoc` iframes, which inherit the
+  parent policy, so a hash-only policy disables every interactive visualization. The hashes are
+  still generated so the policy can be tightened once those documents are served from a real
+  same-origin URL.
+- **Sandboxed rendering.** Model-authored HTML/SVG runs in `sandbox="allow-scripts"` iframes without
+  `allow-same-origin`, so it cannot reach the parent DOM or the user's cookies.
+- **Uploads.** Non-image files are served with `Content-Disposition: attachment`; HTML/XHTML uploads
+  are rejected at the multer layer.
+- **Code execution.** Python runs in Pyodide workers with per-run timeouts, output/artifact caps, a
+  scratch directory TTL and an optional CJK font bundle; no host Python process is involved.
+- **Workspace agent.** `pi` runs inside Bubblewrap with only the turn's workspace writable; the host
+  home, application secrets and other workspaces are hidden. Isolation failure refuses the run
+  rather than falling back to host execution. This is filesystem/PID isolation, not a complete
+  multi-tenant execution policy — network egress and cgroup quotas belong to the host.
+- **Operations.** `GET /api/_internal/metrics` is disabled unless `INTERNAL_METRICS_TOKEN` is set,
+  and then requires a bearer token; scrapes are excluded from business metrics.
 
-  `script-src` carries `'unsafe-inline'` rather than relying on the hashes,
-  and that is a deliberate, measured trade. An `<iframe srcdoc>` inherits the
-  embedding document's CSP, and the viz cards render model-authored HTML whose
-  scripts are inline by construction — a hash-only parent policy blocked every
-  interactive visualization (23 failing Playwright specs, each card stuck in
-  `loading`). `sandbox="allow-scripts"` does not change this: CSP inheritance
-  follows the local scheme, not the origin. The hashes are still generated and
-  still drift-checked so the policy can be tightened the moment the viz iframes
-  are served from a real same-origin URL, where their own response CSP applies
-  instead of the parent's — the pattern `/s/:token` already uses. Note that a
-  policy cannot carry both: browsers ignore `'unsafe-inline'` whenever a hash
-  is present, so `server/test/csp.test.js` asserts the two never coexist.
-  `frontend/e2e/dist-server.mjs` serves this exact header, so every Playwright
-  run exercises the production policy.
+## Documentation map
 
-  One known consequence: Cloudflare's edge-injected
-  `static.cloudflareinsights.com/beacon.min.js` is now blocked by
-  `script-src 'self'`. Nothing in the app depends on it and no user-facing
-  behaviour changes, but Cloudflare Web Analytics will stop receiving page
-  views. Add that host to `script-src` in `scripts/gen-csp-hashes.mjs` if the
-  analytics matter more than refusing a third-party script the application
-  never requested.
-- **Email verification.** Required before the first session can
-  be created; rate-limited per IP.
+`docs/` distinguishes **current specification** from **history**. Read the left column as truth, the
+right column as rationale.
 
-## Repository visibility
-
-This repository is **public**. The public-facing surfaces include:
-
-- The marketing site at <https://topodrive.top/>
-- The live app at <https://app.topodrive.top/>
-- The native Android client's distribution channel (when published)
-
-For source-code use and modification, see
-[Source availability and use](#source-availability-and-use).
-
-## Roadmap
-
-Roughly in priority order, no dates:
-
-- [x] **Document extraction** — PDF, DOCX, XLSX, PPTX, EPUB, RTF parsing
-- [x] **Web search** — low-latency parallel search with fallback
-- [x] **Memory/performance tuning** — reduced memory footprint for constrained servers
-- [x] **SSE reliability** — silence watchdog, proper error events, graceful timeouts
-- [ ] **Better RAG** — vector index over past sessions for smarter context retrieval
-- [ ] **Workspace sharing** — real-time co-editing of sessions
-- [ ] **Mobile PWA** — manifest + service worker for installability
-- [ ] **Sandboxed code execution** — run Python snippets in the viz sandbox
-- [ ] **Per-message cost estimate** — computed from the provider's pricing endpoint
+| Path | What it is | Trust it for |
+| --- | --- | --- |
+| [`docs/architecture/mental-model.md`](docs/architecture/mental-model.md) | composition roots, one turn, state ownership, server boundaries | how the system works today — start here |
+| [`docs/architecture/README.md`](docs/architecture/README.md) | index and reading rules | which document to trust |
+| [`docs/architecture/naming.md`](docs/architecture/naming.md) | file/type naming rules | where a new module belongs |
+| [`docs/architecture/ui-structure.md`](docs/architecture/ui-structure.md) | frontend architecture in detail (Chinese) | UI lifecycle, styling ownership, migration debt |
+| [`docs/adr/`](docs/adr/README.md) | architecture decision records | why a decision was made, and what was rejected |
+| [`docs/api/openapi.yaml`](docs/api/openapi.yaml) | OpenAPI 3.1 contract | request/response shapes shared by web, Android and server |
+| [`docs/audits/`](docs/audits/README.md) | dated review snapshots | history only — several describe trees that no longer exist |
+| [`docs/plans/`](docs/plans/) | dated plans and handoffs | intent and sequencing, not current behaviour |
+| [`docs/ref/`](docs/ref/) | reference captures and measurement playbooks | the measurement they record, at its date |
+| [`docs/ops/runbook.md`](docs/ops/runbook.md) | release, rollback, backup and restore | operating the production host |
+| [`docs/STRUCTURE.md`](docs/STRUCTURE.md) | where a new document goes | documentation placement |
+| [`AGENTS.md`](AGENTS.md) | ownership map, risk routes, guard table, testing rules | the engineering contract |
 
 ## Contributing
 
-PRs from outside the core team aren't currently accepted. If you have a feature
-request or a bug report, please email [help@addtech.site](mailto:help@addtech.site)
-or open a ticket in the internal tracker.
+PRs from outside the core team are not currently accepted. Bug reports and feature requests are
+welcome at [help@addtech.site](mailto:help@addtech.site).
 
-For core contributors:
+For contributors with write access:
 
-1. Branch off `main` (`git checkout -b pX.Y/short-name`).
-2. Make your change. Keep edits scoped.
-3. Run the linters:
-   ```bash
-   cd server && npm run lint
-   ```
-4. Push and open a PR.
-5. Merge via squash.
+1. Branch from `main` (`git checkout -b pX.Y/short-name`).
+2. Keep the change scoped and add focused regression coverage — not a full-suite run.
+3. Verify with the smallest relevant gate: `npm run test:fast`, a single `test:one` file, or one
+   Playwright spec. Run `npm run lint` before pushing.
+4. Open a PR and squash-merge.
 
-## Source availability and use
+Read [`AGENTS.md`](AGENTS.md) before touching `frontend/src/main.ts`, `server/src/app.ts`, auth,
+migrations or `deploy.sh`: it lists the high-churn surfaces, the guard ratchets and the required
+verification per area.
 
-Code in this repository that Jiacheng Hu owns or is authorized to license is
-available under a custom source-available license, not an OSI-approved
-open-source license. You may use, modify, and redistribute the original or
-modified covered code free of charge for non-commercial purposes, provided
-you retain the copyright and license notices. Any commercial use requires
-separate authorization. Third-party code remains subject to its own license.
-See [LICENSE](LICENSE) for the full bilingual terms.
+## License
 
-For end-user terms, see [site/terms.html](site/terms.html).
+Code in this repository that the copyright holder owns or is authorised to license is available
+under a custom **source-available** license, not an OSI-approved open-source license. You may use,
+modify and redistribute the original or modified covered code free of charge for non-commercial
+purposes provided you retain the copyright and license notices. Commercial use requires separate
+authorisation. Third-party components remain under their own licenses.
+
+See [`LICENSE`](LICENSE) for the full bilingual terms and [`site/terms.html`](site/terms.html) for
+end-user terms. The vendored [`chat-demo/`](chat-demo/README.md) tree is MIT-licensed upstream code
+and is not a Socrates component.
 
 ## Support
 
-- **App issues** — email [help@addtech.site](mailto:help@addtech.site)
-  or use the in-app *Help* entry.
-- **API spec questions** — read [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
-  first, then ping the backend on-call.
-- **Native Android build failures** — the `native-android-build.yml` logs include
-  the Gradle stack; confirm JDK 17, the Android SDK packages pinned in that
-  workflow, and Gradle dependencies.
+- **Product and account issues** — [help@addtech.site](mailto:help@addtech.site) or the in-app Help
+  entry.
+- **API questions** — read [`docs/api/openapi.yaml`](docs/api/openapi.yaml) first, then
+  [`docs/architecture/mental-model.md`](docs/architecture/mental-model.md) for the server
+  boundaries.
+- **Android build failures** — confirm JDK 17, Android SDK 35 and the Gradle versions pinned in the
+  project; the `native-android-build.yml` log carries the full stack trace.
 
 <div align="center">
 
 Built with care, for learners everywhere.
 
-[中文版说明 →](README.zh.md)
+[中文说明 →](README.zh.md)
 
 </div>
-
-## Standalone native Android app
-
-The independently maintained native Android app lives in [`apps/socrates-android`](apps/socrates-android/). It was added at the user's request and talks to the same `/api/v2` API. See its README for JDK/SDK requirements, API configuration, network-security policy, build/test commands, and device-performance caveats.

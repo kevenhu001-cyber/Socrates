@@ -30,7 +30,7 @@ else
       # Documentation / repository metadata. docs/api/openapi.yaml is still
       # guarded by the always-on Repo sanity job.
       docs/*|README.md|README.zh.md|AGENTS.md|CLAUDE.md|.gitignore|.hintrc|\
-      .github/PULL_REQUEST_TEMPLATE.md|.github/CODEOWNERS|LICENSE|design-qa.md)
+      .github/PULL_REQUEST_TEMPLATE.md|.github/CODEOWNERS|LICENSE)
         ;;
 
       # The classifier and the main workflow are protected by the always-on

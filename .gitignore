@@ -28,17 +28,6 @@ android/signing.properties
 # still carries it. Never add another one.
 *.apk
 
-# ─── React Native / Expo generated state ───
-mobile/node_modules/
-mobile/.expo/
-mobile/android/
-mobile/ios/
-mobile/.eas/
-mobile/dist/
-mobile/dist-visual/
-mobile/dist-web/
-mobile/scripts/visual/out/
-
 # ── OS files ──
 .DS_Store
 Thumbs.db
@@ -93,7 +82,7 @@ server.log.bak.*
 .deploy-state.json
 .deploy-state.site.json
 
-# ── Local runtime state (SQLite DB for mobile, project id) ──
+# ── Local runtime state (scratch DB, project id) ──
 .freebuff/
 
 # ── Temp / debug / scratch files ──
@@ -106,8 +95,6 @@ server/test_browser.mjs
 server/_test_date.mjs
 graphify-out/
 graphify-out-*/
-mobile/e2e-artifacts/
-mobile/docs/qa-*.xml
 debug.log
 # esbuild/Playwright transform + node compile cache; swept into 3f195e49 by an
 # over-broad `git add`. Regenerable, and the cache key embeds the Node version.
@@ -119,13 +106,6 @@ frontend/.tmp-esbuild/
 /-
 /-*/
 nul
-# ── Stale desktop/ release output (no first-party source dir under desktop/) ──
-desktop/dist/
-desktop/dist-*/
-desktop/build/
-desktop/.cache/
-desktop/socrates-desktop-web-*.tar.gz
-
 # ── E2E diagnostic / scratch artifacts ──
 # One-off probes that surface during playwright debugging. Note that the
 # legitimate shared helpers _lib.mjs and _mock-api.mjs are intentionally
@@ -152,10 +132,9 @@ frontend/.tmp-repro/
 # Regenerable build output dumped at the repo root (commit 5ddb172b).
 /build.log
 
-# Stray debug screenshots at the repo root. The documented convention
-# (README "Capture convention", audit F-006) is that only
-# screenshot_<n>_<view>[_zh].png is referenced from README.md; anything else
-# at the root is a one-off capture.
+# Stray debug screenshots at the repo root. README screenshots live under
+# docs/assets/ and are whitelisted below; anything captured at the root is a
+# one-off and does not belong in the tree.
 /form-label-issue.png
 /debug-*.png
 /repro-*.png
@@ -164,7 +143,6 @@ frontend/index.html.bak
 
 # ── UI mockup screenshots (not needed in version control) ──
 *.png
-!/screenshot_*.png
 !site/media/*.png
 !assets/buildResources/icon_android_1024.png
 !assets/buildResources/icon_android_foreground_1024.png
@@ -175,6 +153,13 @@ frontend/index.html.bak
 
 # ── Local Playwright debug probe scripts/artifacts ──
 frontend/debug/
+# One-off capture/inspect scripts belong in frontend/scripts/ (or nowhere).
+# Root-level shot*/shoot*/dbg*/tmp* files are scratch work, not project tooling.
+/frontend/shot*.mjs
+/frontend/shoot*.mjs
+/frontend/dbg*.mjs
+/frontend/tmp-*.mjs
+/frontend/.tmp-*.mjs
 
 # ── Large planning docs (not needed in version control) ──
 UI-UX-UPGRADE-ACTION-PLAN.md

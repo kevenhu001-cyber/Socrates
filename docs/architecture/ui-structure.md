@@ -22,7 +22,7 @@
 | `site/` | 独立营销和文档站 | 独立部署，静态资源修改要同步 cache-busting 版本 |
 
 `mobile/`、`capacitor/`、`apps/socrates/`（Expo Universal App）均已删除。
-`desktop/dist/` 是 gitignored 导出物，没有源代码归属。
+`desktop/` 导出物也已删除，仓库不再保留桌面端代码。
 
 SPA 是唯一生产 Web 端；React DOM 是唯一 UI 栈。`react-web` shim 只减不增，不能作为新组件的
 依赖。未移交表面继续保留现有宿主 ID、密度、截图与样式优先级契约。
