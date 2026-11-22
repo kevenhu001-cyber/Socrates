@@ -44,7 +44,7 @@ export function usePressFeedback() {
       onPointerLeave: leave,
       onFocus: (event: unknown) => setFocused(isKeyboardFocus(event)),
       onBlur: () => setFocused(false),
-      /* RN aliases still consumed by the frozen react-web shim. */
+      /* RN prop aliases stay on the public surface for existing callers. */
       onPressIn: press,
       onPressOut: release,
       onHoverIn: enter,

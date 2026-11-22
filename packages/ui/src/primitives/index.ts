@@ -2,8 +2,8 @@
  * Shared primitives: token-driven React DOM building blocks.
  *
  * ADR 0027: these are plain DOM elements plus CSS, not React Native views.
- * The RN-shaped style aliases come from `domStyle.ts` and disappear with the
- * frozen `react-web` shim.
+ * Legacy style aliases live in `domStyle.ts` for existing call sites; new work
+ * passes `CSSProperties` directly.
  */
 export type { TextStyle, ViewStyle } from '../domStyle';
 export { UiThemeProvider, useUiTheme, type UiFontWeight, type UiThemeValue } from './theme';

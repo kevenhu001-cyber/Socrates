@@ -104,9 +104,26 @@ function knowledgeStrings(): KnowledgeStrings {
   };
 }
 
+const WIDE_QUERY = '(min-width: 769px)';
+
+function subscribeWide(onChange: () => void): () => void {
+  const media = window.matchMedia(WIDE_QUERY);
+  media.addEventListener('change', onChange);
+  return () => media.removeEventListener('change', onChange);
+}
+
+function getWide(): boolean {
+  return window.matchMedia(WIDE_QUERY).matches;
+}
+
+function useWide(): boolean {
+  return useSyncExternalStore(subscribeWide, getWide, () => true);
+}
+
 /** RN-5: the map, list and node detail are the shared RN panel
  * (packages/ui/src/study); this adapter wires the KB store and commands. */
 export function KnowledgeMapPanel() {
+  const wide = useWide();
   const nodes = useKbStore((snapshot) => snapshot.kbNodes);
   const currentNode = useKbStore((snapshot) => snapshot.currentNode);
   const history = useKbStore((snapshot) => snapshot.boundariesHistory);
@@ -122,6 +139,7 @@ export function KnowledgeMapPanel() {
         history={history}
         updatedLabel={new Date().toISOString().slice(0, 10)}
         strings={knowledgeStrings()}
+        wide={wide}
         onSnapshot={saveKnowledgeBoundarySnapshot}
         onGo={(index) => {
           void jumpToKnowledgeNode(index);

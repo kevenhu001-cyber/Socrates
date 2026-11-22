@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 /*
- * scripts/check-rn-shim.mjs — shrink-only ratchet for the frozen RN shim.
+ * scripts/check-rn-shim.mjs — keeps the retired RN shim at zero.
  *
  * ADR 0027 makes React DOM the only UI stack. packages/ui/src/react-web.tsx
- * is the leftover React Native compatibility layer: components still import
- * View/Text/Pressable and RN-shaped props from it. The file is frozen — this
- * guard counts the files that import it directly and lets the number only go
- * down. Migrating a component to DOM elements lowers the baseline with
- * --update; adding an import fails.
+ * reached zero importers on 2026-11-23 and was deleted; this guard counts any
+ * new file that tries to import it (the baseline is 0) and rejects a recreated
+ * shim. Adding an import fails.
  *
  * It also fails if package.json reintroduces a react-native dependency, which
  * would recreate the runtime this migration is removing.
@@ -33,9 +31,15 @@ function walk(dir, out = []) {
   return out;
 }
 
+const shim = join(UI_SRC, 'react-web.tsx');
+if (existsSync(shim)) {
+  console.error('rn-shim check FAILED: packages/ui/src/react-web.tsx was deleted on 2026-11-23.');
+  console.error('  Do not recreate the RN shim; use React DOM elements and CSS.');
+  process.exit(1);
+}
+
 const importers = [];
 for (const file of walk(UI_SRC)) {
-  if (file === join(UI_SRC, 'react-web.tsx')) continue;
   const text = readFileSync(file, 'utf8');
   if (/from\s+'(?:\.{1,2}\/)+react-web(?:\.tsx)?'/.test(text)) importers.push(file);
 }
@@ -65,7 +69,7 @@ if (!baseline || UPDATE) {
     `${JSON.stringify(
       {
         files: count,
-        note: 'Files under packages/ui/src importing the frozen react-web shim. May only go down. Lower with --update after migrating a component to DOM.',
+        note: 'Files under packages/ui/src importing the retired react-web shim. The shim was deleted on 2026-11-23; the count stays at 0.',
         generatedBy: 'check-rn-shim.mjs --update',
       },
       null,

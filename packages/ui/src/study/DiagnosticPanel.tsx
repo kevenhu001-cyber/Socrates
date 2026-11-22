@@ -5,14 +5,14 @@
  * Question / option / notice copy arrives as host-rendered rich content
  * (`renderRich`), so math and links keep the shell's renderer.
  */
-import { type ReactNode } from 'react';
-import { Pressable, View, useWindowDimensions } from '../react-web';
+import { type CSSProperties, type ReactNode } from 'react';
+import { dataAttributes } from '../domProps';
 import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { PillAction, dataSet } from '../learn/parts';
+import { PillAction } from '../learn/parts';
 import { diagnosticReport, type DiagnosticResultNode } from './model';
 import { fill } from './strings';
 
@@ -90,6 +90,17 @@ export type RenderDiagnosticText = (text: string, part: string) => ReactNode;
 
 const plainText: RenderDiagnosticText = (text) => text;
 
+const BUTTON_RESET: CSSProperties = {
+  display: 'flex',
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
+
 export function DiagnosticPanel({
   screen,
   onCommand,
@@ -127,24 +138,22 @@ function Card({
   data?: Record<string, string>;
 }) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
-  const pad = width < 769 ? S[300] : S[400];
   return (
-    <View
-      {...dataSet(data ?? {})}
+    <div
+      className="diag-card"
+      {...dataAttributes(data ?? {})}
       style={{
         alignSelf: 'center',
         width: '100%',
         maxWidth,
         gap: S[300],
-        padding: pad,
         borderRadius: R.stage,
         backgroundColor: colors.card,
         boxShadow: shadow(colors, 'raised'),
       }}
     >
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -152,7 +161,7 @@ function Bar({ percent, label }: { percent: number; label?: string }) {
   const { colors } = useUiTheme();
   const value = Math.max(0, Math.min(100, Math.round(percent)));
   return (
-    <View
+    <div
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
@@ -166,10 +175,10 @@ function Bar({ percent, label }: { percent: number; label?: string }) {
         overflow: 'hidden',
       }}
     >
-      <View
+      <div
         style={{ height: 4, width: `${value}%`, borderRadius: R.pill, backgroundColor: colors.ink }}
       />
-    </View>
+    </div>
   );
 }
 
@@ -182,22 +191,38 @@ function Loading({
 }) {
   return (
     <Card data={{ diagScreen: 'loading' }}>
-      <View style={{ alignItems: 'center', gap: S[200], paddingVertical: S[300] }}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: S[200],
+          paddingBlock: S[300],
+        }}
+      >
         <UiText variant="bodySm" tone="secondary" align="center" aria-live="polite">
           {screen.loadingText}
         </UiText>
-        <View style={{ width: '100%', maxWidth: 300, gap: S[75] }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            maxWidth: 300,
+            gap: S[75],
+          }}
+        >
           <Bar percent={screen.percent} label={screen.loadingText} />
           <UiText variant="labelSm" tone="tertiary" align="center">
             {screen.step}
           </UiText>
-        </View>
+        </div>
         <PillAction
           label={screen.cancelLabel}
           onPress={() => onCommand('cancel')}
           data={{ diagCommand: 'cancel' }}
         />
-      </View>
+      </div>
     </Card>
   );
 }
@@ -221,20 +246,22 @@ function OptionRow({
   const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   return (
-    <Pressable
+    <button
+      type="button"
       role="radio"
       aria-checked={selected}
-      onPress={() => onCommand('select', index)}
+      onClick={() => onCommand('select', index)}
       {...handlers}
-      {...dataSet({ diagCommand: 'select', diagIndex: index })}
+      {...dataAttributes({ diagCommand: 'select', diagIndex: index })}
       style={{
+        ...BUTTON_RESET,
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: S[100],
         minHeight: H.option + 4,
         paddingLeft: S[100],
         paddingRight: S[200],
-        paddingVertical: S[100],
+        paddingBlock: S[100],
         borderRadius: R.row,
         backgroundColor: selected || hovered ? subtle : colors.card,
         boxShadow: insetRing(
@@ -245,9 +272,10 @@ function OptionRow({
         ...transition('background-color, box-shadow', reduced),
       }}
     >
-      <View
+      <span
         aria-hidden
         style={{
+          display: 'inline-flex',
           width: 24,
           height: 24,
           borderRadius: R.pill,
@@ -260,11 +288,11 @@ function OptionRow({
         <UiText variant="labelSm" tone={selected ? 'onInk' : 'secondary'}>
           {option.letter}
         </UiText>
-      </View>
-      <View style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
+      </span>
+      <span style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
         {renderRich(option.text, 'diag-option')}
-      </View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -282,12 +310,13 @@ function Question({
   const advance = screen.isLast ? 'finish' : 'next';
   return (
     <Card data={{ diagScreen: 'question' }}>
-      <View
+      <div
         style={{
+          display: 'flex',
           alignSelf: 'flex-start',
           height: H.tag,
-          justifyContent: 'center',
-          paddingHorizontal: 10,
+          alignItems: 'center',
+          paddingInline: 10,
           borderRadius: R.pill,
           backgroundColor: colors.fill,
         }}
@@ -299,9 +328,13 @@ function Question({
         >
           {screen.numberLabel}
         </UiText>
-      </View>
-      <View>{renderRich(screen.questionHtml, 'diag-question')}</View>
-      <View role="radiogroup" aria-label={screen.numberLabel} style={{ gap: S[75] }}>
+      </div>
+      <div>{renderRich(screen.questionHtml, 'diag-question')}</div>
+      <div
+        role="radiogroup"
+        aria-label={screen.numberLabel}
+        style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+      >
         {screen.options.map((option, index) => (
           <OptionRow
             key={`${option.letter}-${index}`}
@@ -312,21 +345,23 @@ function Question({
             renderRich={renderRich}
           />
         ))}
-      </View>
-      <View
+      </div>
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: S[75],
           paddingTop: S[200],
-          borderTopWidth: 1,
-          borderTopColor: colors.hairline,
+          borderTop: `1px solid ${colors.hairline}`,
         }}
       >
-        <View
-          style={{ opacity: screen.isFirst ? 0 : 1 }}
-          pointerEvents={screen.isFirst ? 'none' : 'auto'}
+        <div
+          style={{
+            opacity: screen.isFirst ? 0 : 1,
+            pointerEvents: screen.isFirst ? 'none' : 'auto',
+          }}
           aria-hidden={screen.isFirst || undefined}
         >
           <PillAction
@@ -334,8 +369,8 @@ function Question({
             onPress={() => onCommand('previous')}
             data={{ diagCommand: 'previous' }}
           />
-        </View>
-        <View style={{ flexDirection: 'row', gap: S[75] }}>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: S[75] }}>
           <PillAction
             tone="soft"
             label={screen.labels.skip}
@@ -349,8 +384,8 @@ function Question({
             onPress={() => onCommand(advance)}
             data={{ diagCommand: advance }}
           />
-        </View>
-      </View>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -374,18 +409,27 @@ function Results({
   const aiNext = insight?.nextStep?.trim() || '';
   const aiSummary = insight?.summary?.trim() || '';
   return (
-    <View
-      {...dataSet({ diagScreen: 'results' })}
-      style={{ alignSelf: 'center', width: '100%', maxWidth: 640, gap: S[300] }}
+    <div
+      {...dataAttributes({ diagScreen: 'results' })}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignSelf: 'center',
+        width: '100%',
+        maxWidth: 640,
+        gap: S[300],
+      }}
     >
       <UiText variant="title" align="center" role="heading" aria-level={2}>
         {screen.title}
       </UiText>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[100] }}>
-        <View
-          {...dataSet({ diagCoverage: report.coverage })}
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: S[100] }}>
+        <div
+          {...dataAttributes({ diagCoverage: report.coverage })}
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             flexGrow: 1,
             flexBasis: 240,
             gap: S[100],
@@ -398,8 +442,14 @@ function Results({
           <UiText variant="labelSm" tone="tertiary">
             {copy.coverage}
           </UiText>
-          <View
-            style={{ flexDirection: 'row', alignItems: 'baseline', gap: S[75], marginTop: 'auto' }}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              gap: S[75],
+              marginTop: 'auto',
+            }}
           >
             <UiText
               variant="title"
@@ -408,12 +458,14 @@ function Results({
             <UiText variant="labelSm" tone="secondary">
               {fill(copy.coverageOf, { n: report.familiar, total: report.total })}
             </UiText>
-          </View>
+          </div>
           <Bar percent={report.coverage} label={copy.coverage} />
-        </View>
-        <View
-          {...dataSet({ diagNext: '1' })}
+        </div>
+        <div
+          {...dataAttributes({ diagNext: '1' })}
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             flexGrow: 1,
             flexBasis: 240,
             gap: S[75],
@@ -428,11 +480,15 @@ function Results({
           </UiText>
           {aiNext ? (
             <>
-              <UiText variant="bodySm" {...dataSet({ diagAiNext: '1' })}>
+              <UiText variant="bodySm" {...dataAttributes({ diagAiNext: '1' })}>
                 {renderText(aiNext, 'diag-ai-next')}
               </UiText>
               {aiSummary ? (
-                <UiText variant="bodySm" tone="secondary" {...dataSet({ diagAiSummary: '1' })}>
+                <UiText
+                  variant="bodySm"
+                  tone="secondary"
+                  {...dataAttributes({ diagAiSummary: '1' })}
+                >
                   {renderText(aiSummary, 'diag-ai-summary')}
                 </UiText>
               ) : null}
@@ -460,21 +516,21 @@ function Results({
                   variant="labelSm"
                   tone="tertiary"
                   aria-live="polite"
-                  {...dataSet({ diagAnalyzing: '1' })}
+                  {...dataAttributes({ diagAnalyzing: '1' })}
                 >
                   {copy.analyzing}
                 </UiText>
               ) : null}
             </>
           )}
-        </View>
-      </View>
+        </div>
+      </div>
 
-      <View style={{ gap: S[100] }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: S[100] }}>
         <UiText variant="labelSm" tone="secondary" style={{ paddingHorizontal: S[50] }}>
           {copy.gaps}
         </UiText>
-        <View
+        <div
           role="list"
           aria-label={copy.gaps}
           style={{
@@ -488,25 +544,26 @@ function Results({
             const familiar = node.status === 'fuzzy';
             const reason = insight?.reasons?.[node.order]?.trim() || '';
             return (
-              <View
+              <div
                 key={`${node.name}-${node.order}`}
                 role="listitem"
                 aria-label={`${fill(copy.rankLabel, { n: node.rank })} ${node.name}, ${familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}`}
-                {...dataSet({ diagRank: node.rank, diagStatus: node.status })}
+                {...dataAttributes({ diagRank: node.rank, diagStatus: node.status })}
                 style={{
+                  display: 'flex',
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: S[100],
                   minHeight: 56,
-                  paddingHorizontal: S[200],
-                  paddingVertical: S[100],
-                  borderTopWidth: index ? 1 : 0,
-                  borderTopColor: colors.hairline,
+                  paddingInline: S[200],
+                  paddingBlock: S[100],
+                  borderTop: index ? `1px solid ${colors.hairline}` : undefined,
                 }}
               >
-                <View
+                <span
                   aria-hidden
                   style={{
+                    display: 'inline-flex',
                     minWidth: 32,
                     height: 24,
                     borderRadius: R.pill,
@@ -523,25 +580,28 @@ function Results({
                   >
                     {String(node.rank).padStart(2, '0')}
                   </UiText>
-                </View>
-                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                </span>
+                <span
+                  style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: 2 }}
+                >
                   <UiText variant="label">{renderText(node.name, 'diag-node')}</UiText>
                   {reason ? (
                     <UiText
                       variant="labelSm"
                       tone="secondary"
                       style={{ fontWeight: '400' }}
-                      {...dataSet({ diagReason: node.order })}
+                      {...dataAttributes({ diagReason: node.order })}
                     >
                       {renderText(reason, 'diag-reason')}
                     </UiText>
                   ) : null}
-                </View>
-                <View
+                </span>
+                <span
                   style={{
+                    display: 'inline-flex',
                     height: H.tag,
-                    justifyContent: 'center',
-                    paddingHorizontal: 10,
+                    alignItems: 'center',
+                    paddingInline: 10,
                     borderRadius: R.pill,
                     backgroundColor: familiar ? colors.card : colors.fill,
                     boxShadow: familiar ? insetRing(colors.ink, 1.5) : undefined,
@@ -554,17 +614,17 @@ function Results({
                   >
                     {familiar ? screen.statusLabels.fuzzy : screen.statusLabels.blank}
                   </UiText>
-                </View>
-              </View>
+                </span>
+              </div>
             );
           })}
-        </View>
+        </div>
         <UiText variant="labelSm" tone="tertiary" align="center">
           {screen.summary}
         </UiText>
-      </View>
+      </div>
 
-      <View
+      <div
         style={{
           padding: S[200],
           borderRadius: R.card,
@@ -573,17 +633,17 @@ function Results({
         }}
       >
         {renderRich(screen.noticeHtml, 'diag-notice')}
-      </View>
+      </div>
 
-      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
         <PillAction
           tone="solid"
           label={screen.continueLabel}
           onPress={() => onCommand('proceed')}
           data={{ diagCommand: 'proceed' }}
         />
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -596,7 +656,16 @@ function Failure({
 }) {
   return (
     <Card maxWidth={520} data={{ diagScreen: 'error' }}>
-      <View style={{ alignItems: 'center', gap: S[100], paddingVertical: S[300] }} role="alert">
+      <div
+        role="alert"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: S[100],
+          paddingBlock: S[300],
+        }}
+      >
         <UiText variant="titleSm" align="center">
           {screen.title}
         </UiText>
@@ -605,7 +674,7 @@ function Failure({
             {screen.reason}
           </UiText>
         ) : null}
-        <View style={{ flexDirection: 'row', gap: S[75], marginTop: S[75] }}>
+        <div style={{ display: 'flex', flexDirection: 'row', gap: S[75], marginTop: S[75] }}>
           <PillAction
             tone="solid"
             label={screen.retryLabel}
@@ -617,8 +686,8 @@ function Failure({
             onPress={() => onCommand('builtin')}
             data={{ diagCommand: 'builtin' }}
           />
-        </View>
-      </View>
+        </div>
+      </div>
     </Card>
   );
 }

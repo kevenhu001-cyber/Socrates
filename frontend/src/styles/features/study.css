@@ -1,0 +1,12 @@
+/* Study surfaces shared by the diagnostic panel, knowledge map and
+   mistake book. Geometry lives here; the components own colour and type. */
+.diag-card {
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+}
+@media (max-width: 768px) {
+  .diag-card {
+    padding: 24px;
+  }
+}

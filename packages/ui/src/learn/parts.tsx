@@ -17,14 +17,6 @@ import { Chevron, useReducedMotion } from '../turn/parts';
 import { H, R, S, focusRing, insetRing, sheets, transition } from '../look';
 import { useLearnHost } from './host';
 
-/** react-native-web turns `dataSet` into `data-*` attributes; native ignores it. */
-export function dataSet(values: Record<string, string | number | undefined>): object {
-  const clean: Record<string, string> = {};
-  for (const [key, value] of Object.entries(values))
-    if (value !== undefined) clean[key] = String(value);
-  return { dataSet: clean };
-}
-
 export const CARD_PAD = S[100];
 /** Phones: the card keeps 12px of air so the reply column stays readable. */
 export const CARD_PAD_COMPACT = S[100];

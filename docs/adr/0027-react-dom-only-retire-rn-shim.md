@@ -36,6 +36,14 @@
 4. **文档同步。** `AGENTS.md`、`docs/architecture/ui-structure.md` 不再把 RN 写成
    目标；ADR 0025 的 RN 部分以本 ADR 为准。
 
+## 结果（2026-11-23）
+
+迁移完成：`packages/ui/src/react-web.tsx` 的直接 importer 从 40 降到 0，shim 文件已删除；
+`check-rn-shim.mjs` 的基线为 0，并继续拒绝 `react-native*` 依赖。最后一个迁移面是
+`study`（诊断、错题本、知识图谱、知识地图），其中知识图谱改用 `ResizeObserver` 测量与
+指针拖动，恢复了对 DOM 布局真实宽度的依赖。`dataSet` 已由 `domProps.ts` 的
+`dataAttributes()` 取代；共享组件只使用 React DOM 元素与 CSS。
+
 ## 备选方案
 
 - **保留 shim，只把它做得更像 RN** —— 正是本 ADR 要结束的状态；每补一个 RN 语义

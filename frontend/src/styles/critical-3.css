@@ -37,6 +37,7 @@
 @import './features/thinking-activity.css';
 @import './components/visualization-states.css';
 @import './features/learn-scaffolds.css';
+@import './features/study.css';
 @import './restore/chatgpt-ui.css';
 @import './restore/chatgpt-v2.css';
 @import './restore/ref-baseline.css';

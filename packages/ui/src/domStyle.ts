@@ -1,11 +1,10 @@
 /**
  * Convert the RN-shaped style objects still passed by a few callers into CSS.
  *
- * This is a small, DOM-free shim for style *data*, not a React Native layer:
+ * This is a small, DOM-free helper for style *data*, not a React Native layer:
  * it flattens arrays, maps the handful of axis aliases that appear in the
  * shared components, and leaves real CSS properties alone. New work should
- * pass CSSProperties directly; the alias support disappears with the frozen
- * react-web shim.
+ * pass CSSProperties directly; the aliases remain only for existing call sites.
  */
 import type { CSSProperties } from 'react';
 

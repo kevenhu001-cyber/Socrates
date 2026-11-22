@@ -2,8 +2,8 @@
  * DOM prop helpers shared by the packages/ui components.
  *
  * These are plain React DOM helpers, not a React Native compatibility layer:
- * `dataSet` exists only while the frozen `react-web` shim is being retired and
- * maps camelCase keys to `data-*` attributes exactly once, here.
+ * `dataSet` keeps the camelCase call sites that predate the migration and maps
+ * them to `data-*` attributes exactly once, here.
  */
 export type DataSet = Record<string, string | number | boolean | undefined | null>;
 

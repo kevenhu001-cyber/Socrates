@@ -4,14 +4,14 @@
  * detail in a right-hand drawer on wide screens and a bottom sheet on phones.
  * Commands (go, confidence, note, snapshot) belong to the host.
  */
-import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, TextInput, View, useWindowDimensions } from '../react-web';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { dataAttributes } from '../domProps';
 import { H, R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { Chevron, useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { PillAction, dataSet } from '../learn/parts';
+import { PillAction } from '../learn/parts';
 import { KnowledgeGraphView, MasterySwatch } from './KnowledgeGraphView';
 import {
   conceptRelations,
@@ -26,6 +26,16 @@ import {
 } from './model';
 import { defaultKnowledgeStrings, fill, type KnowledgeStrings } from './strings';
 
+const BUTTON_RESET: CSSProperties = {
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
+
 export interface KnowledgeMapProps {
   nodes: readonly KnowledgeNodeInput[];
   currentNode: number;
@@ -33,8 +43,8 @@ export interface KnowledgeMapProps {
   /** Shown after "Last updated" (host formats the date). */
   updatedLabel: string;
   strings?: KnowledgeStrings;
-  /** Breakpoint for drawer vs. bottom sheet. */
-  wideBreakpoint?: number;
+  /** Host viewport width: drawer at ≥769px, bottom sheet below. */
+  wide?: boolean;
   onSnapshot: () => void;
   onGo: (index: number) => void;
   onConfidence: (index: number, value: number) => void;
@@ -55,29 +65,35 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
 
   if (!nodes.length) {
     return (
-      <View
-        style={{ paddingVertical: S[300], paddingHorizontal: S[75] }}
-        {...dataSet({ kbEmpty: '1' })}
+      <div
+        style={{ paddingBlock: S[300], paddingInline: S[75] }}
+        {...dataAttributes({ kbEmpty: '1' })}
       >
         <UiText variant="bodySm" tone="tertiary" align="center">
           {strings.empty}
         </UiText>
-      </View>
+      </div>
     );
   }
   const choose = (index: number) => setSelected((current) => (current === index ? null : index));
   const history = snapshotHistory(props.history);
   return (
-    <View style={{ gap: S[200] }} {...dataSet({ kbMap: '1' })}>
-      <View
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: S[200] }}
+      {...dataAttributes({ kbMap: '1' })}
+    >
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: S[75],
         }}
       >
-        <View style={{ flexShrink: 1, minWidth: 0, gap: 2 }}>
+        <div
+          style={{ display: 'flex', flexDirection: 'column', flexShrink: 1, minWidth: 0, gap: 2 }}
+        >
           <UiText variant="label" numberOfLines={1}>
             {strings.title}
           </UiText>
@@ -87,20 +103,20 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
             style={{ fontWeight: '400' }}
             numberOfLines={1}
           >{`${strings.lastUpdated}: ${props.updatedLabel}`}</UiText>
-        </View>
+        </div>
         <PillAction
           size="sm"
           label={strings.snapshot}
           onPress={props.onSnapshot}
           data={{ kbSnapshot: '1' }}
         />
-      </View>
+      </div>
       {props.conceptStatus === 'loading' || props.conceptStatus === 'error' ? (
         <UiText
           variant="labelSm"
           tone="tertiary"
           aria-live="polite"
-          {...dataSet({ kbConceptStatus: props.conceptStatus })}
+          {...dataAttributes({ kbConceptStatus: props.conceptStatus })}
         >
           {props.conceptStatus === 'loading' ? strings.updating : strings.updateFailed}
         </UiText>
@@ -114,12 +130,12 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
       />
       <KnowledgeList nodes={nodes} strings={strings} onSelect={choose} />
       {history.length ? (
-        <View style={{ gap: S[75] }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}>
           <UiText variant="labelSm" tone="tertiary">
             {strings.history}
           </UiText>
           <HistoryRows rows={history} />
-        </View>
+        </div>
       ) : null}
       {selected !== null && nodes[selected] ? (
         <KnowledgeNodeSheet
@@ -127,7 +143,7 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
           nodes={nodes}
           history={history}
           strings={strings}
-          wideBreakpoint={props.wideBreakpoint ?? 768}
+          wide={props.wide ?? true}
           onClose={() => setSelected(null)}
           onSelect={setSelected}
           onGo={() => props.onGo(selected)}
@@ -136,7 +152,7 @@ export function KnowledgeMap(props: KnowledgeMapProps) {
           onNote={(value) => props.onNote(selected, value)}
         />
       ) : null}
-    </View>
+    </div>
   );
 }
 
@@ -149,22 +165,18 @@ function HistoryRows({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      role="list"
-      aria-label={label}
-      style={{ borderTopWidth: 1, borderTopColor: colors.hairline }}
-    >
+    <div role="list" aria-label={label} style={{ borderTop: `1px solid ${colors.hairline}` }}>
       {rows.map((row, index) => (
-        <View
+        <div
           key={`${row.date}-${index}`}
           role="listitem"
-          {...dataSet({ kbHistoryRow: index })}
+          {...dataAttributes({ kbHistoryRow: index })}
           style={{
+            display: 'flex',
             flexDirection: 'row',
             gap: S[100],
-            paddingVertical: S[75],
-            borderBottomWidth: 1,
-            borderBottomColor: colors.hairline,
+            paddingBlock: S[75],
+            borderBottom: `1px solid ${colors.hairline}`,
           }}
         >
           <UiText variant="labelSm" tone="tertiary" style={{ fontVariant: ['tabular-nums'] }}>
@@ -173,9 +185,9 @@ function HistoryRows({
           <UiText variant="labelSm" tone="secondary" style={{ flexShrink: 1 }}>
             {row.summary}
           </UiText>
-        </View>
+        </div>
       ))}
-    </View>
+    </div>
   );
 }
 
@@ -197,18 +209,21 @@ function KnowledgeRow({
   const { subtle } = sheets(colors);
   const { hovered, focused, handlers } = usePressFeedback();
   return (
-    <Pressable
+    <button
+      type="button"
       role="button"
       aria-label={name}
-      onPress={() => onSelect(index)}
+      onClick={() => onSelect(index)}
       {...handlers}
-      {...dataSet({ kbNode: index, kbStatus: status })}
+      {...dataAttributes({ kbNode: index, kbStatus: status })}
       style={{
+        ...BUTTON_RESET,
+        display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         gap: S[75],
         minHeight: H.row,
-        paddingHorizontal: S[100],
+        paddingInline: S[100],
         borderRadius: R.row,
         backgroundColor: hovered ? subtle : 'transparent',
         ...focusRing(colors, focused),
@@ -229,7 +244,7 @@ function KnowledgeRow({
         </UiText>
       ) : null}
       <Chevron size={6} tone={hovered ? 'ink' : 'tertiary'} />
-    </Pressable>
+    </button>
   );
 }
 
@@ -244,21 +259,22 @@ function KnowledgeList({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View style={{ gap: S[200] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[200] }}>
       {knowledgeSections(nodes).map((section) => (
-        <View
+        <div
           key={section.status}
           role="group"
           aria-label={strings.section[section.status]}
-          style={{ gap: S[50] }}
-          {...dataSet({ kbSection: section.status })}
+          style={{ display: 'flex', flexDirection: 'column', gap: S[50] }}
+          {...dataAttributes({ kbSection: section.status })}
         >
-          <View
+          <div
             style={{
+              display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: S[100],
+              paddingInline: S[100],
               paddingBottom: S[50],
             }}
           >
@@ -270,7 +286,7 @@ function KnowledgeList({
             >
               {String(section.entries.length)}
             </UiText>
-          </View>
+          </div>
           {section.entries.map(({ node, index, name }) => {
             const parts: string[] = [];
             if (section.status === 'internalized')
@@ -279,7 +295,7 @@ function KnowledgeList({
               );
             else if (node.questions) parts.push(fill(strings.questions, { n: node.questions }));
             return (
-              <View key={`${index}-${name}`}>
+              <div key={`${index}-${name}`}>
                 <KnowledgeRow
                   index={index}
                   name={name}
@@ -288,13 +304,15 @@ function KnowledgeList({
                   onSelect={onSelect}
                 />
                 {section.status === 'fuzzy' && (node.system_note || node.user_note) ? (
-                  <View
+                  <div
                     style={{
+                      display: 'flex',
+                      flexDirection: 'column',
                       marginLeft: S[100],
                       marginRight: S[50],
                       marginBottom: S[50],
-                      paddingHorizontal: S[100],
-                      paddingVertical: S[75],
+                      paddingInline: S[100],
+                      paddingBlock: S[75],
                       gap: 2,
                       borderRadius: R.row,
                       backgroundColor: sheets(colors).subtle,
@@ -315,14 +333,14 @@ function KnowledgeList({
                         style={{ fontWeight: '400' }}
                       >{`${strings.userTag} · ${node.user_note}`}</UiText>
                     ) : null}
-                  </View>
+                  </div>
                 ) : null}
-              </View>
+              </div>
             );
           })}
-        </View>
+        </div>
       ))}
-    </View>
+    </div>
   );
 }
 
@@ -337,15 +355,21 @@ function DetailSection({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      style={{ gap: S[75], paddingTop: S[200], borderTopWidth: 1, borderTopColor: colors.hairline }}
-      {...dataSet(data ?? {})}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: S[75],
+        paddingTop: S[200],
+        borderTop: `1px solid ${colors.hairline}`,
+      }}
+      {...dataAttributes(data ?? {})}
     >
-      <UiText variant="labelSm" tone="tertiary" {...dataSet({ kbDetailLabel: '1' })}>
+      <UiText variant="labelSm" tone="tertiary" {...dataAttributes({ kbDetailLabel: '1' })}>
         {label}
       </UiText>
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -360,10 +384,11 @@ function ConfidenceSteps({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
+    <div
       role="group"
       aria-label={strings.detail.confidence}
       style={{
+        display: 'flex',
         flexDirection: 'row',
         alignSelf: 'flex-start',
         gap: 2,
@@ -377,14 +402,17 @@ function ConfidenceSteps({
         const on = step === value;
         const label = fill(strings.detail.confidenceSet, { n: step });
         return (
-          <Pressable
+          <button
             key={step}
+            type="button"
             role="button"
             aria-label={label}
             aria-pressed={on}
-            onPress={() => onChange(nextConfidence(value, step))}
-            {...dataSet({ kbConf: step })}
+            onClick={() => onChange(nextConfidence(value, step))}
+            {...dataAttributes({ kbConf: step })}
             style={{
+              ...BUTTON_RESET,
+              display: 'inline-flex',
               width: 36,
               height: 28,
               borderRadius: R.pill,
@@ -400,10 +428,10 @@ function ConfidenceSteps({
             >
               {String(step)}
             </UiText>
-          </Pressable>
+          </button>
         );
       })}
-    </View>
+    </div>
   );
 }
 
@@ -412,7 +440,7 @@ function KnowledgeNodeSheet({
   nodes,
   history,
   strings,
-  wideBreakpoint,
+  wide,
   onClose,
   onSelect,
   onGo,
@@ -424,7 +452,7 @@ function KnowledgeNodeSheet({
   nodes: readonly KnowledgeNodeInput[];
   history: Array<{ date: string; summary: string }>;
   strings: KnowledgeStrings;
-  wideBreakpoint: number;
+  wide: boolean;
   onClose: () => void;
   onSelect: (index: number) => void;
   onGo: () => void;
@@ -433,8 +461,10 @@ function KnowledgeNodeSheet({
   onNote: (value: string) => void;
 }) {
   const { colors, fontFamily } = useUiTheme();
-  const screen = useWindowDimensions();
-  const wide = screen.width >= wideBreakpoint;
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    sheetRef.current?.focus();
+  }, []);
   const node = nodes[index]!;
   const name = knowledgeNodeName(node, index);
   const status = normalizeKnowledgeStatus(node.status);
@@ -445,280 +475,307 @@ function KnowledgeNodeSheet({
   const definition = typeof node.definition === 'string' ? node.definition.trim() : '';
   const confidence = typeof node.confidence_score === 'number' ? node.confidence_score : 0;
   const d = strings.detail;
-  const panelStyle = wide
+  const panelStyle: CSSProperties = wide
     ? {
-        position: 'absolute' as const,
+        position: 'absolute',
         top: S[100],
         right: S[100],
         bottom: S[100],
-        width: Math.min(420, screen.width - 48),
+        width: 'min(420px, calc(100vw - 48px))',
         borderRadius: R.stage,
       }
     : {
-        position: 'absolute' as const,
+        position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
-        maxHeight: Math.round(screen.height * 0.86),
+        maxHeight: '86vh',
         borderTopLeftRadius: R.stage,
         borderTopRightRadius: R.stage,
       };
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose}>
-      <View style={{ flex: 1 }}>
-        <Pressable
-          aria-label={d.close}
-          onPress={onClose}
-          style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            backgroundColor: 'rgba(0,0,0,0.16)',
-          }}
-        />
-        <View
-          role="dialog"
-          aria-modal
-          aria-label={name}
-          {...dataSet({ kbNodeDetail: index, kbPresentation: wide ? 'drawer' : 'sheet' })}
-          style={[
-            panelStyle,
-            {
-              backgroundColor: colors.card,
-              boxShadow: shadow(colors, 'dialog'),
-              overflow: 'hidden',
-            },
-          ]}
-        >
-          {!wide ? (
-            <View
-              aria-hidden
-              style={{
-                alignSelf: 'center',
-                width: 36,
-                height: 4,
-                borderRadius: R.pill,
-                backgroundColor: colors.hairlineStrong,
-                marginTop: S[75],
-              }}
-            />
-          ) : null}
-          <View
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+      <button
+        type="button"
+        aria-label={d.close}
+        onClick={onClose}
+        style={{
+          ...BUTTON_RESET,
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.16)',
+        }}
+      />
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal
+        aria-label={name}
+        tabIndex={-1}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation();
+            onClose();
+          }
+        }}
+        {...dataAttributes({ kbNodeDetail: index, kbPresentation: wide ? 'drawer' : 'sheet' })}
+        style={{
+          ...panelStyle,
+          display: 'flex',
+          flexDirection: 'column',
+          backgroundColor: colors.card,
+          boxShadow: shadow(colors, 'dialog'),
+          overflow: 'hidden',
+        }}
+      >
+        {!wide ? (
+          <div
+            aria-hidden
             style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              gap: S[100],
-              paddingHorizontal: S[300],
-              paddingTop: S[300],
-              paddingBottom: S[200],
+              alignSelf: 'center',
+              width: 36,
+              height: 4,
+              borderRadius: R.pill,
+              backgroundColor: colors.hairlineStrong,
+              marginTop: S[75],
             }}
+          />
+        ) : null}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: S[100],
+            paddingInline: S[300],
+            paddingTop: S[300],
+            paddingBottom: S[200],
+          }}
+        >
+          <div
+            style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: S[75] }}
           >
-            <View style={{ flex: 1, minWidth: 0, gap: S[75] }}>
-              <UiText variant="title">{name}</UiText>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
-                <View
-                  {...dataSet({ kbDetailStatus: status })}
-                  style={{
-                    height: H.tag,
-                    justifyContent: 'center',
-                    paddingHorizontal: 10,
-                    borderRadius: R.pill,
-                    backgroundColor:
-                      status === 'internalized'
-                        ? colors.ink
-                        : status === 'blank'
-                          ? colors.fill
-                          : colors.card,
-                    boxShadow: status === 'fuzzy' ? insetRing(colors.ink, 1.5) : undefined,
-                  }}
-                >
-                  <UiText
-                    variant="labelSm"
-                    tone={
-                      status === 'internalized' ? 'onInk' : status === 'fuzzy' ? 'ink' : 'tertiary'
-                    }
-                  >
-                    {strings.status[status]}
-                  </UiText>
-                </View>
-              </View>
-            </View>
-            <PillAction
-              size="sm"
-              tone="soft"
-              label="✕"
-              accessibilityLabel={d.close}
-              onPress={onClose}
-              data={{ kbDetailClose: '1' }}
-            />
-          </View>
-          <ScrollView
-            style={{ flexGrow: 0, flexShrink: 1 }}
-            contentContainerStyle={{
-              paddingHorizontal: S[300],
-              paddingBottom: S[300],
-              gap: S[200],
-            }}
-          >
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: S[75] }}>
-              <PillAction
-                tone="solid"
-                label={d.go}
-                accessibilityLabel={d.goTitle}
-                onPress={onGo}
-                data={{ kbGo: index }}
-              />
-              {onPractice ? (
-                <PillAction
-                  label={d.practice}
-                  accessibilityLabel={d.practiceTitle}
-                  onPress={onPractice}
-                  data={{ kbPractice: index }}
-                />
-              ) : null}
-            </View>
-            {definition ? (
-              <DetailSection label={d.definition} data={{ kbDefinitionSection: '1' }}>
-                <UiText variant="bodySm" {...dataSet({ kbDefinition: '1' })}>
-                  {definition}
-                </UiText>
-              </DetailSection>
-            ) : null}
-            <DetailSection label={d.systemNote}>
-              <UiText
-                variant="bodySm"
-                tone={node.system_note ? 'ink' : 'tertiary'}
-                {...dataSet({ kbSystemNote: '1' })}
+            <UiText variant="title">{name}</UiText>
+            <div
+              style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: S[75] }}
+            >
+              <span
+                {...dataAttributes({ kbDetailStatus: status })}
+                style={{
+                  display: 'inline-flex',
+                  height: H.tag,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingInline: 10,
+                  borderRadius: R.pill,
+                  backgroundColor:
+                    status === 'internalized'
+                      ? colors.ink
+                      : status === 'blank'
+                        ? colors.fill
+                        : colors.card,
+                  boxShadow: status === 'fuzzy' ? insetRing(colors.ink, 1.5) : undefined,
+                }}
               >
-                {node.system_note || d.noSystemNote}
+                <UiText
+                  variant="labelSm"
+                  tone={
+                    status === 'internalized' ? 'onInk' : status === 'fuzzy' ? 'ink' : 'tertiary'
+                  }
+                >
+                  {strings.status[status]}
+                </UiText>
+              </span>
+            </div>
+          </div>
+          <PillAction
+            size="sm"
+            tone="soft"
+            label="✕"
+            accessibilityLabel={d.close}
+            onPress={onClose}
+            data={{ kbDetailClose: '1' }}
+          />
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 0,
+            flexShrink: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            paddingInline: S[300],
+            paddingBottom: S[300],
+            gap: S[200],
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: S[75] }}>
+            <PillAction
+              tone="solid"
+              label={d.go}
+              accessibilityLabel={d.goTitle}
+              onPress={onGo}
+              data={{ kbGo: index }}
+            />
+            {onPractice ? (
+              <PillAction
+                label={d.practice}
+                accessibilityLabel={d.practiceTitle}
+                onPress={onPractice}
+                data={{ kbPractice: index }}
+              />
+            ) : null}
+          </div>
+          {definition ? (
+            <DetailSection label={d.definition} data={{ kbDefinitionSection: '1' }}>
+              <UiText variant="bodySm" {...dataAttributes({ kbDefinition: '1' })}>
+                {definition}
               </UiText>
             </DetailSection>
-            <DetailSection label={d.confidence}>
-              <ConfidenceSteps value={confidence} strings={strings} onChange={onConfidence} />
-            </DetailSection>
-            <DetailSection label={d.connections}>
-              {concepts.length ? (
-                concepts.map((relation) => (
-                  <View
-                    key={`c-${relation.index}`}
+          ) : null}
+          <DetailSection label={d.systemNote}>
+            <UiText
+              variant="bodySm"
+              tone={node.system_note ? 'ink' : 'tertiary'}
+              {...dataAttributes({ kbSystemNote: '1' })}
+            >
+              {node.system_note || d.noSystemNote}
+            </UiText>
+          </DetailSection>
+          <DetailSection label={d.confidence}>
+            <ConfidenceSteps value={confidence} strings={strings} onChange={onConfidence} />
+          </DetailSection>
+          <DetailSection label={d.connections}>
+            {concepts.length ? (
+              concepts.map((relation) => (
+                <div
+                  key={`c-${relation.index}`}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: S[75],
+                    padding: S[100],
+                    borderRadius: R.row,
+                    backgroundColor: sheets(colors).subtle,
+                    boxShadow: insetRing(colors.hairline),
+                  }}
+                  {...dataAttributes({ kbRelation: 'concept', kbRelationTo: relation.index })}
+                >
+                  <div
                     style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
                       gap: S[75],
-                      padding: S[100],
-                      borderRadius: R.row,
-                      backgroundColor: sheets(colors).subtle,
-                      boxShadow: insetRing(colors.hairline),
                     }}
-                    {...dataSet({ kbRelation: 'concept', kbRelationTo: relation.index })}
                   >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: S[75],
-                      }}
-                    >
-                      {relation.relation ? (
-                        <UiText variant="labelSm" tone="tertiary">
-                          {relation.relation}
-                        </UiText>
-                      ) : null}
-                      <PillAction
-                        size="sm"
-                        label={relation.name}
-                        accessibilityLabel={fill(d.open, { name: relation.name })}
-                        onPress={() => onSelect(relation.index)}
-                        chevron={false}
-                      />
-                    </View>
-                    <UiText
-                      variant="labelSm"
-                      tone="secondary"
-                      style={{ fontWeight: '400' }}
-                      {...dataSet({ kbRelationWhy: '1' })}
-                    >
-                      {relation.why}
-                    </UiText>
-                  </View>
-                ))
-              ) : relations.length ? (
-                relations.map((relation) => (
-                  <View
-                    key={relation.role}
-                    style={{
-                      gap: S[75],
-                      padding: S[100],
-                      borderRadius: R.row,
-                      backgroundColor: sheets(colors).subtle,
-                      boxShadow: insetRing(colors.hairline),
-                    }}
-                    {...dataSet({ kbRelation: relation.role })}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
+                    {relation.relation ? (
                       <UiText variant="labelSm" tone="tertiary">
-                        {relation.role === 'before' ? d.before : d.after}
+                        {relation.relation}
                       </UiText>
-                      <PillAction
-                        size="sm"
-                        label={relation.name}
-                        accessibilityLabel={fill(d.open, { name: relation.name })}
-                        onPress={() => onSelect(relation.index)}
-                        chevron={false}
-                      />
-                    </View>
-                    <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }}>
-                      {relation.role === 'before'
-                        ? fill(d.whyBefore, { a: relation.name, b: name })
-                        : fill(d.whyAfter, { a: name, b: relation.name })}
+                    ) : null}
+                    <PillAction
+                      size="sm"
+                      label={relation.name}
+                      accessibilityLabel={fill(d.open, { name: relation.name })}
+                      onPress={() => onSelect(relation.index)}
+                      chevron={false}
+                    />
+                  </div>
+                  <UiText
+                    variant="labelSm"
+                    tone="secondary"
+                    style={{ fontWeight: '400' }}
+                    {...dataAttributes({ kbRelationWhy: '1' })}
+                  >
+                    {relation.why}
+                  </UiText>
+                </div>
+              ))
+            ) : relations.length ? (
+              relations.map((relation) => (
+                <div
+                  key={relation.role}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: S[75],
+                    padding: S[100],
+                    borderRadius: R.row,
+                    backgroundColor: sheets(colors).subtle,
+                    boxShadow: insetRing(colors.hairline),
+                  }}
+                  {...dataAttributes({ kbRelation: relation.role })}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: S[75],
+                    }}
+                  >
+                    <UiText variant="labelSm" tone="tertiary">
+                      {relation.role === 'before' ? d.before : d.after}
                     </UiText>
-                  </View>
-                ))
-              ) : (
-                <UiText variant="labelSm" tone="tertiary">
-                  {d.noConnections}
-                </UiText>
-              )}
-            </DetailSection>
-            <DetailSection label={d.yourNote}>
-              <TextInput
-                key={index}
-                multiline
-                numberOfLines={3}
-                aria-label={d.yourNote}
-                placeholder={d.notePlaceholder}
-                placeholderTextColor={colors.inkTertiary}
-                defaultValue={node.user_note || ''}
-                onChangeText={onNote}
-                {...dataSet({ kbUserNote: index })}
-                style={{
-                  minHeight: 72,
-                  borderWidth: 0,
-                  boxShadow: insetRing(colors.hairlineStrong),
-                  borderRadius: R.row,
-                  paddingHorizontal: S[100],
-                  paddingVertical: S[75],
-                  color: colors.ink,
-                  fontFamily,
-                  fontSize: 14,
-                  lineHeight: 22,
-                  textAlignVertical: 'top',
-                }}
-              />
-            </DetailSection>
-            <DetailSection label={d.history}>
-              {history.length ? (
-                <HistoryRows rows={history} label={d.history} />
-              ) : (
-                <UiText variant="labelSm" tone="tertiary">
-                  {d.noHistory}
-                </UiText>
-              )}
-            </DetailSection>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+                    <PillAction
+                      size="sm"
+                      label={relation.name}
+                      accessibilityLabel={fill(d.open, { name: relation.name })}
+                      onPress={() => onSelect(relation.index)}
+                      chevron={false}
+                    />
+                  </div>
+                  <UiText variant="labelSm" tone="secondary" style={{ fontWeight: '400' }}>
+                    {relation.role === 'before'
+                      ? fill(d.whyBefore, { a: relation.name, b: name })
+                      : fill(d.whyAfter, { a: name, b: relation.name })}
+                  </UiText>
+                </div>
+              ))
+            ) : (
+              <UiText variant="labelSm" tone="tertiary">
+                {d.noConnections}
+              </UiText>
+            )}
+          </DetailSection>
+          <DetailSection label={d.yourNote}>
+            <textarea
+              key={index}
+              rows={3}
+              aria-label={d.yourNote}
+              placeholder={d.notePlaceholder}
+              defaultValue={node.user_note || ''}
+              onChange={(event) => onNote(event.currentTarget.value)}
+              {...dataAttributes({ kbUserNote: index })}
+              style={{
+                minHeight: 72,
+                border: 0,
+                boxShadow: insetRing(colors.hairlineStrong),
+                borderRadius: R.row,
+                paddingInline: S[100],
+                paddingBlock: S[75],
+                color: colors.ink,
+                fontFamily,
+                fontSize: 14,
+                lineHeight: 22,
+                resize: 'vertical',
+              }}
+            />
+          </DetailSection>
+          <DetailSection label={d.history}>
+            {history.length ? (
+              <HistoryRows rows={history} label={d.history} />
+            ) : (
+              <UiText variant="labelSm" tone="tertiary">
+                {d.noHistory}
+              </UiText>
+            )}
+          </DetailSection>
+        </div>
+      </div>
+    </div>
   );
 }

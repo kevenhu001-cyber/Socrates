@@ -2,16 +2,15 @@
  * Pill-node knowledge graph: hairline edges along the learning path, label
  * pills whose ink weight carries mastery (solid ink = internalized, ink
  * outline = fuzzy, hairline = blank). Drag to pan, pill buttons to zoom.
- * Pure RN Views (no SVG dependency), so the web shell and the app share it.
+ * Pure DOM: no SVG dependency, so the shell and the app share it.
  */
-import { useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, Pressable, View, type LayoutChangeEvent } from '../react-web';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { dataAttributes } from '../domProps';
 import { R, S, focusRing, insetRing, shadow, sheets, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { dataSet } from '../learn/parts';
 import {
   GRAPH_ZOOM_STEP,
   buildKnowledgeGraph,
@@ -23,14 +22,27 @@ import {
 } from './model';
 import { fill, type KnowledgeStrings } from './strings';
 
+const BUTTON_RESET: CSSProperties = {
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
+
 export function MasterySwatch({ status, label }: { status: KnowledgeStatus; label: string }) {
   const { colors } = useUiTheme();
   const look = pillLook(status, colors);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: S[75] }}>
-      <View
+    <span
+      style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: S[75] }}
+    >
+      <span
         aria-hidden
         style={{
+          display: 'inline-block',
           width: 18,
           height: 10,
           borderRadius: R.pill,
@@ -41,7 +53,7 @@ export function MasterySwatch({ status, label }: { status: KnowledgeStatus; labe
       <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
         {label}
       </UiText>
-    </View>
+    </span>
   );
 }
 
@@ -75,19 +87,22 @@ function GraphPill({
   const look = pillLook(box.status, colors);
   const description = `${box.name}, ${strings.status[box.status]}${box.questions ? `, ${fill(strings.questions, { n: box.questions })}` : ''}`;
   return (
-    <Pressable
+    <button
+      type="button"
       role="button"
       aria-label={description}
       aria-current={box.active ? 'step' : undefined}
-      onPress={() => onPress(box.index)}
+      onClick={() => onPress(box.index)}
       {...handlers}
-      {...dataSet({
+      {...dataAttributes({
         kbGraphNode: box.index,
         kbStatus: box.status,
         kbActive: box.active ? '1' : undefined,
         kbQuestions: box.questions,
       })}
       style={{
+        ...BUTTON_RESET,
+        display: 'flex',
         position: 'absolute',
         left: box.x,
         top: box.y,
@@ -101,7 +116,7 @@ function GraphPill({
             .join(', ') || undefined,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: S[75],
+        paddingInline: S[75],
         outlineStyle: focused || box.active ? 'solid' : undefined,
         outlineWidth: focused ? 2 : box.active ? 1 : 0,
         outlineColor: colors.ink,
@@ -112,7 +127,7 @@ function GraphPill({
       <UiText variant="eyebrow" tone={look.tone} numberOfLines={1} style={{ letterSpacing: 0 }}>
         {box.label}
       </UiText>
-    </Pressable>
+    </button>
   );
 }
 
@@ -133,16 +148,19 @@ function ZoomButton({
   const { colors } = useUiTheme();
   const { hovered, focused, handlers } = usePressFeedback();
   return (
-    <Pressable
+    <button
+      type="button"
       role="button"
       aria-label={accessibilityLabel}
-      onPress={onPress}
+      onClick={onPress}
       {...handlers}
-      {...dataSet(data)}
+      {...dataAttributes(data)}
       style={{
+        ...BUTTON_RESET,
+        display: 'inline-flex',
         minWidth: 28,
         height: 28,
-        paddingHorizontal: wide ? S[75] : 0,
+        paddingInline: wide ? S[75] : 0,
         borderRadius: R.pill,
         alignItems: 'center',
         justifyContent: 'center',
@@ -157,7 +175,7 @@ function ZoomButton({
       >
         {label}
       </UiText>
-    </Pressable>
+    </button>
   );
 }
 
@@ -178,66 +196,106 @@ export function KnowledgeGraphView({
 }) {
   const { colors } = useUiTheme();
   const graph = useMemo(() => buildKnowledgeGraph(nodes, activeIndex), [nodes, activeIndex]);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height });
   const [zoom, setZoom] = useState<number | null>(null);
-  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const panStart = useRef({ x: 0, y: 0 });
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const drag = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    baseX: number;
+    baseY: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressClick = useRef(false);
   const fit = fitZoom(graph, viewport);
   const scale = zoom ?? fit;
 
-  const responder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_event, gesture) =>
-          Math.abs(gesture.dx) + Math.abs(gesture.dy) > 6,
-        onPanResponderGrant: () => {
-          pan.stopAnimation((value) => {
-            panStart.current = value;
-          });
-        },
-        onPanResponderMove: (_event, gesture) => {
-          pan.setValue({ x: panStart.current.x + gesture.dx, y: panStart.current.y + gesture.dy });
-        },
-      }),
-    [pan],
-  );
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const measure = () => {
+      const width = stage.getBoundingClientRect().width;
+      setViewport((current) => (Math.abs(current.width - width) > 1 ? { width, height } : current));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(stage);
+    return () => observer.disconnect();
+  }, [height]);
 
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width } = event.nativeEvent.layout;
-    if (Math.abs(width - viewport.width) > 1) setViewport({ width, height });
-  };
   const resetView = () => {
     setZoom(null);
-    pan.setValue({ x: 0, y: 0 });
-    panStart.current = { x: 0, y: 0 };
+    setPan({ x: 0, y: 0 });
+    drag.current = null;
   };
 
   if (!graph.nodes.length) return null;
   return (
-    <View style={{ gap: S[100] }} {...dataSet({ kbGraph: '1' })}>
-      <View
-        onLayout={onLayout}
+    <div
+      style={{ display: 'flex', flexDirection: 'column', gap: S[100] }}
+      {...dataAttributes({ kbGraph: '1' })}
+    >
+      <div
+        ref={stageRef}
         role="group"
         aria-label={strings.graphLabel}
-        {...responder.panHandlers}
+        onClickCapture={(event) => {
+          if (!suppressClick.current) return;
+          suppressClick.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          suppressClick.current = false;
+          drag.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            baseX: pan.x,
+            baseY: pan.y,
+            moved: false,
+          };
+        }}
+        onPointerMove={(event) => {
+          const current = drag.current;
+          if (!current || current.pointerId !== event.pointerId) return;
+          const dx = event.clientX - current.startX;
+          const dy = event.clientY - current.startY;
+          if (!current.moved && Math.abs(dx) + Math.abs(dy) > 6) current.moved = true;
+          if (current.moved) setPan({ x: current.baseX + dx, y: current.baseY + dy });
+        }}
+        onPointerUp={() => {
+          suppressClick.current = drag.current?.moved === true;
+          drag.current = null;
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+        }}
         style={{
+          position: 'relative',
           height,
           /* Site `.m-graph-stage`: the graph sits on a #f9f9f9 stage. */
           borderRadius: R.sheet,
           backgroundColor: sheets(colors).subtle,
           boxShadow: insetRing(colors.hairline),
           overflow: 'hidden',
+          cursor: 'grab',
+          touchAction: 'none',
         }}
       >
         {viewport.width ? (
-          <Animated.View
+          <div
             style={{
               position: 'absolute',
               left: (viewport.width - graph.width) / 2,
               top: (height - graph.height) / 2,
               width: graph.width,
               height: graph.height,
-              transform: [{ translateX: pan.x }, { translateY: pan.y }, { scale }],
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
             }}
           >
             {graph.edges.map((edge) => {
@@ -245,10 +303,10 @@ export function KnowledgeGraphView({
                 selectedIndex !== null &&
                 (edge.from === selectedIndex || edge.to === selectedIndex);
               return (
-                <View
+                <div
                   key={`${edge.from}-${edge.to}`}
                   aria-hidden
-                  {...dataSet({ kbGraphEdge: `${edge.from}-${edge.to}` })}
+                  {...dataAttributes({ kbGraphEdge: `${edge.from}-${edge.to}` })}
                   style={{
                     position: 'absolute',
                     left: (edge.x1 + edge.x2) / 2 - edge.length / 2,
@@ -257,7 +315,7 @@ export function KnowledgeGraphView({
                     height: 1,
                     backgroundColor: lit ? colors.ink : colors.inkTertiary,
                     opacity: lit ? 1 : 0.4,
-                    transform: [{ rotate: `${edge.angle}deg` }],
+                    transform: `rotate(${edge.angle}deg)`,
                   }}
                 />
               );
@@ -270,14 +328,15 @@ export function KnowledgeGraphView({
                 onPress={onSelect}
               />
             ))}
-          </Animated.View>
+          </div>
         ) : null}
         {/* Zoom: one white capsule on the stage (site `.ui-seg` on white). */}
-        <View
+        <div
           style={{
             position: 'absolute',
             right: S[75],
             bottom: S[75],
+            display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             gap: 2,
@@ -306,31 +365,33 @@ export function KnowledgeGraphView({
             onPress={() => setZoom(clampZoom(scale * GRAPH_ZOOM_STEP))}
             data={{ kbZoom: 'in' }}
           />
-        </View>
-      </View>
-      <View
+        </div>
+      </div>
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           flexWrap: 'wrap',
           alignItems: 'center',
           columnGap: S[200],
           rowGap: S[50],
-          paddingHorizontal: S[50],
+          paddingInline: S[50],
         }}
       >
         <MasterySwatch status="internalized" label={strings.status.internalized} />
         <MasterySwatch status="fuzzy" label={strings.status.fuzzy} />
         <MasterySwatch status="blank" label={strings.status.blank} />
-      </View>
+      </div>
       {/* 两段说明只用间距分开（不用「·」）。 */}
-      <View
+      <div
         style={{
+          display: 'flex',
           flexDirection: 'row',
           flexWrap: 'wrap',
           columnGap: S[100],
-          paddingHorizontal: S[50],
+          paddingInline: S[50],
         }}
-        {...dataSet({ kbEdgeKind: graph.edgeKind })}
+        {...dataAttributes({ kbEdgeKind: graph.edgeKind })}
       >
         <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
           {strings.captionMastery}
@@ -338,7 +399,7 @@ export function KnowledgeGraphView({
         <UiText variant="labelSm" tone="tertiary" style={{ fontWeight: '400' }}>
           {graph.edgeKind === 'concept' ? strings.captionConcepts : strings.caption}
         </UiText>
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
