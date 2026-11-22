@@ -4,7 +4,6 @@
  * key point. Bodies are host-rendered markdown + KaTeX.
  */
 import { useState } from 'react';
-import { View } from '../react-web';
 import { S } from '../look';
 import { UiText } from '../primitives/UiText';
 import { useLearnHost } from './host';
@@ -13,11 +12,11 @@ import { ActionRow, PillAction, Rich, ScaffoldCard, Section } from './parts';
 
 function Qed() {
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end' }}>
       <UiText variant="label" tone="ink" testID="proof-qed" aria-label="QED">
         ∎
       </UiText>
-    </View>
+    </div>
   );
 }
 
@@ -25,11 +24,11 @@ function ProofBody({ title, body, part }: { title?: string; body: string; part: 
   const { strings } = useLearnHost();
   if (title && title.trim() === strings.label.proof) title = '';
   return (
-    <View style={{ gap: S[75] }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}>
       {title ? <Rich source={title} part={`${part}-title`} /> : null}
       <Rich source={body} part={`${part}-body`} />
       {proofNeedsQed(body) ? <Qed /> : null}
-    </View>
+    </div>
   );
 }
 

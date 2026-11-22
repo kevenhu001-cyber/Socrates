@@ -6,7 +6,6 @@
  * the rest one at a time.
  */
 import { useState } from 'react';
-import { View } from '../react-web';
 import { R, S, insetRing } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -52,13 +51,21 @@ function StepRow({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View testID={`${kind}-step-${step.n}`} style={{ flexDirection: 'row', gap: S[200] }}>
-      <View aria-hidden style={{ width: 32, alignItems: 'center' }}>
-        <View
+    <div
+      data-testid={`${kind}-step-${step.n}`}
+      style={{ display: 'flex', flexDirection: 'row', gap: S[200] }}
+    >
+      <div
+        aria-hidden
+        style={{ display: 'flex', flexDirection: 'column', width: 32, alignItems: 'center' }}
+      >
+        <div
           style={{
+            display: 'flex',
             minWidth: 32,
             height: 24,
-            paddingHorizontal: 6,
+            paddingLeft: 6,
+            paddingRight: 6,
             borderRadius: R.pill,
             alignItems: 'center',
             justifyContent: 'center',
@@ -73,9 +80,9 @@ function StepRow({
           >
             {String(step.n).padStart(2, '0')}
           </UiText>
-        </View>
+        </div>
         {last ? null : (
-          <View
+          <div
             style={{
               flex: 1,
               width: 1,
@@ -86,11 +93,11 @@ function StepRow({
             }}
           />
         )}
-      </View>
-      <View style={{ flex: 1, minWidth: 0, paddingTop: 1, paddingBottom: last ? 0 : S[300] }}>
+      </div>
+      <div style={{ flex: 1, minWidth: 0, paddingTop: 1, paddingBottom: last ? 0 : S[300] }}>
         <Rich source={step.body} part={`${kind}-step`} />
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -122,7 +129,7 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
       }
     >
       {title && title.trim() !== label ? <Rich source={title} part={`${kind}-title`} /> : null}
-      <View role="group" aria-label={title || label}>
+      <div role="group" aria-label={title || label}>
         {visible.map((step, index) => (
           <StepRow
             key={`${step.n}-${index}`}
@@ -132,7 +139,7 @@ export function StepsCard({ kind, title, steps, testID }: StepsCardProps) {
             last={index === visible.length - 1}
           />
         ))}
-      </View>
+      </div>
       {stepping && !isFullyRevealed(reveal) ? (
         <ActionRow>
           <PillAction

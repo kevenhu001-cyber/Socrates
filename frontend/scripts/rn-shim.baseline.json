@@ -1,5 +1,5 @@
 {
-  "files": 27,
+  "files": 23,
   "note": "Files under packages/ui/src importing the frozen react-web shim. May only go down. Lower with --update after migrating a component to DOM.",
   "generatedBy": "check-rn-shim.mjs --update"
 }

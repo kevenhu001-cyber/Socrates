@@ -4,8 +4,8 @@
  * Grading and reporting for practice stay with the host (`onSubmitAnswer`).
  */
 import { useRef, useState } from 'react';
-import { TextInput, View } from '../react-web';
 import { uiType } from '@socrates/theme';
+import { dataAttributes } from '../domProps';
 import { H, R, S, insetRing, sheets } from '../look';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
@@ -18,7 +18,7 @@ import {
   revealState,
   type RevealState,
 } from './model';
-import { ActionRow, PillAction, Rich, ScaffoldCard, Section, VerdictGlyph, dataSet } from './parts';
+import { ActionRow, PillAction, Rich, ScaffoldCard, Section, VerdictGlyph } from './parts';
 
 export type AnswerFeedbackState = '' | 'ok' | 'bad' | 'recorded';
 
@@ -129,43 +129,43 @@ function AnswerBox({
     setDone(true);
   };
   return (
-    <View style={{ gap: S[100] }}>
-      <TextInput
-        multiline
-        numberOfLines={3}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: S[100] }}>
+      <textarea
+        rows={3}
         value={value}
-        onChangeText={setValue}
-        editable={!done}
+        onChange={(event) => setValue(event.currentTarget.value)}
+        disabled={done}
         placeholder={strings.answerPlaceholder}
-        placeholderTextColor={colors.inkTertiary}
         aria-label={strings.answerPlaceholder}
-        testID="practice-input"
+        data-testid="practice-input"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={
-          {
-            minHeight: 84,
-            paddingHorizontal: S[200],
-            paddingVertical: S[100],
-            borderRadius: R.row,
-            borderWidth: 0,
-            /* Site question box: hairline ring at rest, a deeper ring plus a
-             4px halo on focus — never a colour. */
-            boxShadow: focused
-              ? `${insetRing(colors.inkTertiary)}, 0 0 0 4px ${colors.fill}`
-              : insetRing(colors.hairlineStrong),
-            backgroundColor: done ? subtle : colors.card,
-            color: colors.ink,
-            fontFamily,
-            fontSize: uiType.bodySm.size * typeScale,
-            lineHeight: uiType.bodySm.lineHeight * typeScale,
-            textAlignVertical: 'top',
-            outlineStyle: 'none',
-          } as object
-        }
-      />
-      <View
         style={{
+          boxSizing: 'border-box',
+          minHeight: 84,
+          paddingLeft: S[200],
+          paddingRight: S[200],
+          paddingTop: S[100],
+          paddingBottom: S[100],
+          borderRadius: R.row,
+          borderWidth: 0,
+          /* Site question box: hairline ring at rest, a deeper ring plus a
+             4px halo on focus — never a colour. */
+          boxShadow: focused
+            ? `${insetRing(colors.inkTertiary)}, 0 0 0 4px ${colors.fill}`
+            : insetRing(colors.hairlineStrong),
+          backgroundColor: done ? subtle : colors.card,
+          color: colors.ink,
+          fontFamily,
+          fontSize: uiType.bodySm.size * typeScale,
+          lineHeight: `${uiType.bodySm.lineHeight * typeScale}px`,
+          resize: 'vertical',
+          outlineStyle: 'none',
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
           flexDirection: 'row',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -174,12 +174,13 @@ function AnswerBox({
           minHeight: H.action,
         }}
       >
-        <View
-          testID="practice-feedback"
+        <div
+          data-testid="practice-feedback"
           role="status"
           aria-live="polite"
-          {...dataSet({ state: feedback.state })}
+          {...dataAttributes({ state: feedback.state })}
           style={{
+            display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
             gap: S[75],
@@ -202,7 +203,7 @@ function AnswerBox({
               {feedback.text}
             </UiText>
           ) : null}
-        </View>
+        </div>
         <ActionRow>
           {hasAnswerKey ? (
             <PillAction
@@ -221,8 +222,8 @@ function AnswerBox({
             onPress={submit}
           />
         </ActionRow>
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 

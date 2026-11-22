@@ -5,7 +5,7 @@
  * opens the explanation, and offers a retry after a wrong answer.
  */
 import { useReducer, type ReactNode } from 'react';
-import { Animated, Pressable, View } from '../react-web';
+import { dataAttributes } from '../domProps';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
@@ -22,16 +22,7 @@ import {
   type QuizOptionMark,
   type QuizVerdict,
 } from './model';
-import {
-  ActionRow,
-  PillAction,
-  Rich,
-  ScaffoldCard,
-  Section,
-  Tag,
-  VerdictGlyph,
-  dataSet,
-} from './parts';
+import { ActionRow, PillAction, Rich, ScaffoldCard, Section, Tag, VerdictGlyph } from './parts';
 
 export interface QuizResult {
   verdict: QuizVerdict;
@@ -93,24 +84,40 @@ function OptionRow({
     mark === 'correct' || mark === 'missed' ? 'correct' : mark === 'incorrect' ? 'incorrect' : null;
   const checked = mark === 'selected' || mark === 'correct' || mark === 'incorrect';
   return (
-    <Pressable
+    <button
+      type="button"
       role={multi ? 'checkbox' : 'radio'}
       aria-checked={checked}
       aria-disabled={disabled || undefined}
       aria-label={`${option.letter}. ${option.text}`}
       disabled={disabled}
-      onPress={onPress}
-      testID={`quiz-option-${option.letter}`}
+      onClick={onPress}
+      data-testid={`quiz-option-${option.letter}`}
       {...handlers}
-      {...dataSet({ letter: option.letter, mark })}
+      {...dataAttributes({ letter: option.letter, mark })}
+      style={{
+        display: 'block',
+        width: '100%',
+        margin: 0,
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'inherit',
+        font: 'inherit',
+        textAlign: 'start',
+        outline: 'none',
+        cursor: disabled ? 'default' : 'pointer',
+      }}
     >
-      <Animated.View
+      <span
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'flex-start',
           gap: S[100],
           minHeight: H.option,
-          paddingVertical: 10,
+          paddingTop: 10,
+          paddingBottom: 10,
           paddingLeft: S[100],
           paddingRight: S[200],
           borderRadius: R.row,
@@ -118,15 +125,17 @@ function OptionRow({
           boxShadow: ring,
           opacity: mark === 'muted' ? 0.5 : 1,
           ...focusRing(colors, focused),
-          ...transition('background-color, box-shadow, opacity', reduced),
-          transform: [{ scale }],
+          ...transition('background-color, box-shadow, opacity, transform', reduced),
+          transform: `scale(${scale})`,
         }}
       >
-        <View
+        <span
           aria-hidden
           style={{
+            display: 'flex',
             width: 24,
             height: 24,
+            flexShrink: 0,
             borderRadius: multi ? 7 : R.pill,
             alignItems: 'center',
             justifyContent: 'center',
@@ -146,19 +155,19 @@ function OptionRow({
           >
             {option.letter}
           </UiText>
-        </View>
+        </span>
         <Rich
           source={option.text}
           part="quiz-option"
           style={{ flex: 1, paddingTop: 1, opacity: mark === 'incorrect' ? 0.7 : 1 }}
         />
         {verdict ? (
-          <View style={{ paddingTop: 2 }}>
+          <span style={{ paddingTop: 2 }}>
             <VerdictGlyph verdict={verdict} />
-          </View>
+          </span>
         ) : null}
-      </Animated.View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -244,9 +253,13 @@ export function QuizCard({
       }
     >
       <Rich source={question} part="quiz-q" />
-      <View role={multi ? 'group' : 'radiogroup'} aria-label={question} style={{ gap: S[75] }}>
+      <div
+        role={multi ? 'group' : 'radiogroup'}
+        aria-label={question}
+        style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+      >
         {options.map((option) => (
-          <View key={option.letter}>
+          <div key={option.letter}>
             <OptionRow
               option={option}
               multi={multi}
@@ -257,9 +270,16 @@ export function QuizCard({
             {answered &&
             state.verdict === 'incorrect' &&
             (state.selected.includes(option.letter) || answerKey.includes(option.letter)) ? (
-              <View
-                testID={`quiz-option-explanation-${option.letter}`}
-                style={{ paddingHorizontal: S[200], paddingVertical: S[100] }}
+              <div
+                data-testid={`quiz-option-explanation-${option.letter}`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  paddingLeft: S[200],
+                  paddingRight: S[200],
+                  paddingTop: S[100],
+                  paddingBottom: S[100],
+                }}
               >
                 <UiText variant="labelSm" tone="secondary">
                   {answerKey.includes(option.letter)
@@ -274,14 +294,15 @@ export function QuizCard({
                   }
                   part="quiz-option-explanation"
                 />
-              </View>
+              </div>
             ) : null}
-          </View>
+          </div>
         ))}
-      </View>
+      </div>
       {readOnly ? null : (
-        <View
+        <div
           style={{
+            display: 'flex',
             flexDirection: 'row',
             flexWrap: 'wrap',
             alignItems: 'center',
@@ -290,12 +311,18 @@ export function QuizCard({
             minHeight: H.action,
           }}
         >
-          <View
-            testID="quiz-feedback"
+          <div
+            data-testid="quiz-feedback"
             role="status"
             aria-live="polite"
-            {...dataSet({ verdict: state.verdict ?? '' })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: S[75], flexShrink: 1 }}
+            {...dataAttributes({ verdict: state.verdict ?? '' })}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: S[75],
+              flexShrink: 1,
+            }}
           >
             {answered && state.verdict !== 'recorded' && answerKey.length ? (
               <VerdictGlyph verdict={state.verdict === 'correct' ? 'correct' : 'incorrect'} />
@@ -309,7 +336,7 @@ export function QuizCard({
                 {state.feedback}
               </UiText>
             ) : null}
-          </View>
+          </div>
           <ActionRow>
             {answered && state.verdict === 'incorrect' ? (
               <PillAction
@@ -329,7 +356,7 @@ export function QuizCard({
               />
             ) : null}
           </ActionRow>
-        </View>
+        </div>
       )}
       {explanationBody ? (
         <Section label={strings.quizExplanation} testID="quiz-explanation">
