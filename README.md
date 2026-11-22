@@ -10,9 +10,9 @@ An AI learning workspace built for curiosity, reasoning, and lasting understandi
 
 <br />
 
-<img src="https://cdn.esawebb.org/archives/images/publicationjpg/weic2205a.jpg" alt="The Cosmic Cliffs in the Carina Nebula, observed by the James Webb Space Telescope" width="100%" />
+<img src="site/media/socrates-nasa-endeavour-limb-v2.jpg" alt="Space Shuttle Endeavour silhouetted against the layered atmosphere of Earth, photographed from the International Space Station" width="100%" />
 
-<sub>Cosmic Cliffs, NGC 3324 · James Webb Space Telescope · Image: NASA, ESA, CSA, and STScI · [Original photograph](https://esawebb.org/images/weic2205a/)</sub>
+<sub>Space Shuttle Endeavour over Earth · NASA/JSC · ISS022-E-062673 · Authentic spacecraft photography</sub>
 
 <br /><br />
 
@@ -173,6 +173,6 @@ Sessions use server-side expiry; provider credentials are encrypted at rest; sta
 
 Socrates is **source-available, not OSI-approved open source**. Non-commercial use is permitted under the conditions in [LICENSE](LICENSE); commercial use requires separate authorization. Third-party dependencies and media retain their own terms.
 
-Cover photograph: *Cosmic Cliffs* by the James Webb Space Telescope — **Image: NASA, ESA, CSA, and STScI**, sourced from [ESA/Webb](https://esawebb.org/images/weic2205a/) under its [image reuse policy](https://esawebb.org/copyright/). Image is presented without artistic modification. The real spacecraft photograph used by the product website is credited separately to **NASA/JSC, ISS022-E-062673**.
+Cover photograph: **NASA/JSC, ISS022-E-062673** — Space Shuttle Endeavour at Earth’s atmospheric limb, photographed from the International Space Station. The image is reused from the repository’s existing [NASA photo asset](site/media/socrates-nasa-endeavour-limb-v2.jpg), also used on the [product website](https://topodrive.top/), and is displayed without artificial star fields or added graphics.
 
-<sub>Socrates is an independent project; NASA, ESA, CSA, and STScI do not endorse it.</sub>
+<sub>Socrates is an independent project and is not affiliated with or endorsed by NASA.</sub>
