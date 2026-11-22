@@ -15,12 +15,6 @@
 .agent-tool-card {
   font-size: calc(12px * var(--app-font-scale, 1));
 }
-.agent-tool-card:hover {
-  background: var(--tool-card-bg-hover);
-}
-.agent-tool-card.open {
-  box-shadow: 0 2px 10px hsl(0 0% 0%/0.05);
-}
 /* Grayscale tool icons — every tool reads as a neutral glyph; the
    tool name carries the identity. No per-tool colour chips. */
 .agent-tool-card.code {
@@ -41,30 +35,6 @@
    styles below. */
 /* Grayscale rail — a single neutral grey accent replaces the per-tool
    colour rails. */
-/* Code block inside an agent-tool-card (e.g. python source from
-   code_interpreter, or a Bash command). Renders between the
-   head and the .agent-tool-out — visible by default so the user
-   immediately sees what code was generated. Only the .agent-tool-out
-   block (stdout/stderr/artifacts) still collapses with the card. */
-/* Blinking caret on the last line of the code block while the LLM
-   is still streaming the JSON arguments — gives the user a clear
-   "more is coming" cue without re-running the slow typewriter
-   setTimeout loop. */
-@keyframes code-caret-blink {
-  50% {
-    opacity: 0;
-  }
-}
-/* Truncated-code marker: a small red dot at the end when the
-   upstream was cut off mid-stream (e.g. max_tokens hit). A title
-   tooltip explains the marker; the live stream also clears the
-   marker if a final frame arrives. */
-@keyframes truncation-pulse {
-  50% {
-    opacity: 0.4;
-  }
-}
-/* Legacy alias used by older tool card builds (.agent-tool-code-wrap). */
 
 /* Broken-artifact placeholder shown when an inline image (matplotlib
    PNG, etc.) fails to load. Replaces the <img> on error so the
@@ -107,12 +77,6 @@
    <pre> underneath streams stdout/stderr as it arrives. We cap
    height at 200px so a runaway print loop scrolls instead of
    pushing the page. */
-
-@keyframes agent-tool-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 
 .agent-tool-stream {
   margin: 0;
@@ -367,9 +331,6 @@
   background: var(--tool-card-bg-hover);
   box-shadow: none;
 }
-.agent-tool-card.open {
-  box-shadow: 0 4px 14px hsl(0 0% 0%/0.05);
-}
 .wsr-title {
   letter-spacing: 0;
 }
@@ -377,11 +338,6 @@
 .agent-tool-stream {
   padding: 0;
   max-height: 180px;
-}
-.exec-artifact {
-  border: 0;
-  border-radius: var(--tool-card-radius-sm);
-  background: transparent;
 }
 .exec-artifact::before {
   display: none;
@@ -551,15 +507,6 @@
 
 /* Final run footer — small status chip below the last assistant
    message. */
-
-@keyframes textShimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: 0% 0;
-  }
-}
 @keyframes ui-status-dot-pulse {
   50% {
     opacity: 0.35;

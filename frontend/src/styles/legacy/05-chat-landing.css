@@ -95,19 +95,6 @@
    查找资料), shown under the landing composer like ChatGPT. Pill
    buttons with an icon + label; hover raises the surface subtly. */
 
-/* UI-align: staggered waterfall entrance for suggestion chips
-   (open-webui Suggestions.svelte — fadeInUp 200ms, 45ms/item). */
-@keyframes chipWaterfall {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Reasoning-effort selector (高/中/低) inside the
    composer footer. Compact pill trigger + a small pop-up menu that
    opens upward (the picker sits at the bottom of the composer). */

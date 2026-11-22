@@ -530,50 +530,13 @@
   gap: 4px;
   flex: none;
 }
-/* Stream tail fade — freshly revealed text of the LIVE tail
-   (render/tailReveal.ts). Opacity only: no rise, no blur, and the spans
-   stay `display:inline` so line breaking — CJK included — never changes.
-   The span's negative animation-delay resumes the fade across re-renders.
-   The streaming cursor lives in polish/transcript.css. */
-.stream-fade {
-  display: inline;
-  animation: streamFade 0.25s ease-out both;
-}
-@keyframes streamFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .stream-fade {
-    animation: none;
-  }
-}
-
 /* In-progress streaming placeholders (table / code block) */
-.table-stream-placeholder {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  margin: 8px 0;
-  border-radius: var(--ui-radius-control);
-  border: 1px dashed hsl(var(--border-200));
-  background: hsl(var(--surface-100) / 0.5);
-  color: hsl(var(--text-400));
-  font-size: 0.9em;
-}
 
 .stream-code-pending {
   display: block;
   margin: 10px 0;
   padding: 10px 14px;
   border-radius: var(--ui-radius-control);
-  border: 1px solid hsl(var(--border-150));
-  background: hsl(var(--surface-150) / 0.4);
 }
 .stream-code-pending-header {
   display: inline-flex;
@@ -586,7 +549,6 @@
 .stream-code-badge {
   padding: 1px 6px;
   border-radius: var(--ui-radius-xs);
-  background: hsl(var(--surface-250) / 0.6);
   font-weight: var(--ui-font-weight-medium);
 }
 

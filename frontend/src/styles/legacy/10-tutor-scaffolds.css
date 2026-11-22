@@ -164,18 +164,6 @@
   display: none;
 }
 
-/* Panel enter animation */
-@keyframes panelFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* Mistake book */
 .mistake-q {
   font-size: calc(12px * var(--sidebar-font-scale));

@@ -523,17 +523,6 @@ body.sidebar-resizing {
 
 /* Long-press context menu for recent items. */
 
-@keyframes contextMenuIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Block pointer events on all recent items while context menu is
    open. Prevents mobile synthetic clicks from navigating. */
 #sidebar.ctx-menu-block .recent-item {

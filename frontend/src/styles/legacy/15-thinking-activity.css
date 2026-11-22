@@ -257,15 +257,6 @@
    like an indented execution trace instead of a nested dashboard card. */
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card {
   display: block;
-  margin: 14px 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card {
-  display: block;
   margin: 6px 0;
   border: 0;
   border-radius: 0;
@@ -392,11 +383,6 @@
   flex: 0 0 17px;
   color: currentColor;
   opacity: 0.9;
-}
-.agent-step-icon svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.5;
 }
 .agent-step-label {
   flex: 0 0 auto;

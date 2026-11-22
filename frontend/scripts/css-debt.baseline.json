@@ -10,12 +10,12 @@
       "shadcnVarReads": 627
     },
     "frozen": {
-      "important": 296,
+      "important": 295,
       "hexColor": 28,
-      "literalRadius": 124,
+      "literalRadius": 123,
       "stackedId": 27,
       "literalFontSize": 225,
-      "legacyChannel": 513,
+      "legacyChannel": 506,
       "shadcnVarReads": 110
     }
   },

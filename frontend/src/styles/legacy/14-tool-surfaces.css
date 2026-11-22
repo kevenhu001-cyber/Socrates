@@ -349,16 +349,6 @@
 .msg.assistant .msg-body:has(.agent-tool-card) code {
   background: var(--tool-activity-code-bg);
 }
-/* An author-level `display` beats the UA `[hidden]{display:none}` rule, so the
-   collapsed aggregate needs its own author-level hide or a closed group shows
-   everything it just hid behind a chevron. */
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card {
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
 
 @media (max-width: 768px) {
   .msg.assistant .msg-body:has(.agent-run-host),
@@ -371,14 +361,6 @@
 /* Tool results remain the only contained surface in the answer. This is
    the file/action card language visible in the reference page; the card's
    existing head/body controls and keyboard handlers are unchanged. */
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card {
-  margin: 16px 0 0;
-  border: 1px solid var(--tool-card-border);
-  border-radius: 12px;
-  background: var(--tool-card-bg);
-  box-shadow: none;
-  overflow: hidden;
-}
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card:hover {
   border-color: var(--tool-card-border-strong);
   box-shadow: none;

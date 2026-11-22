@@ -319,20 +319,6 @@
   box-sizing: border-box;
 }
 
-/* Pulse-ring variant — concentric expanding rings, good for larger
-   loading blocks that need a bolder visual. */
-
-@keyframes pulseRing {
-  0% {
-    transform: scale(0.6);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
 /* Concentric ring rotation — new "thinking" animation system.
    Replaces the old flashing/pulsing dot with smooth rotating rings.
    Usage: <span class="thinking-ring"></span> or add .thinking-ring to any inline element. */
@@ -538,16 +524,6 @@
   .admin-login {
     margin: 32px auto;
     padding: 22px;
-  }
-}
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

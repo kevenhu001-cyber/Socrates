@@ -16,23 +16,10 @@
 }
 /* One shell, one selector for the width, radius,
    border, shadow and focus feedback. */
-.composer-input-wrap .attachment-chips {
-  order: 0;
-  flex-basis: 100%;
-}
 
 /* UI-align: send-btn mirrors start-btn. Same 30px circle footprint and
    15px SVG so the run control does not change size between landing and
    in-chat. */
-
-/* Mic button (data-action="toggleSpeechInput") — sit inside the composer
-   footer as a 30px circular control. The footer's parent
-   grid handles placement; this rule only owns the visual footprint. */
-@keyframes voiceGlyph {
-  to {
-    transform: translateY(-1px);
-  }
-}
 
 /* Open WebUI-inspired rich composer. Tiptap is the only text state source;
    the surrounding attachment/tool controls keep the Socrates theme. */
@@ -174,13 +161,6 @@
      translated over the contenteditable. On focus the same grid becomes
      two rows (editor above, controls below); no moving control ever crosses
      placeholder or typed text during the shell's height transition. */
-  .rich-composer[data-surface='chat'] > div:last-child {
-    width: 100%;
-    min-width: 0;
-  }
-  .rich-composer[data-surface='chat'] .rich-composer-toolbar {
-    display: none;
-  }
   /* UI-align: keep send-btn at 30px to mirror start-btn on landing. */
 
   /* Voice input: the collapsed mobile row is already three columns
@@ -285,19 +265,6 @@
 }
 
 /* Suggestion chips under the input (removed 2026-07-20 per user request) */
-
-/* Mic button (next to attach) */
-
-@keyframes voicePulse {
-  50% {
-    box-shadow: 0 0 0 6px hsl(var(--accent-000) / 0);
-  }
-}
-@keyframes voiceGlyph {
-  to {
-    transform: translateY(-1px);
-  }
-}
 
 /* Send / start stays an arrow while idle and while text is present. Voice
    capture uses the separate full-width recording surface below. */

@@ -177,18 +177,8 @@
 /* chatDomain element was removed from index.html — topicBadge is the
    sole session indicator now. Hide any stale nodes defensively. */
 /* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
-   Animated so the text/background/color crossfade between Tutor and Chat
-   instead of snapping instantly. The `badgeSwap` keyframe runs once per
-   class change (driven by JS clearing & re-adding the class). */
-
-@keyframes badgeSwap {
-  0% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
-}
+   The text/background/color crossfade between Tutor and Chat instead of
+   snapping instantly, driven by JS clearing and re-adding the class. */
 /* The top-bar container class, still used by the plugin
    workspace tabs (#pluginWorkspaceTabs). The shared Chat/Tutor control is
    rendered in the React top-bar. */
@@ -318,17 +308,6 @@ body.admin-active #chatStats {
    Alerts stack upward from the bottom-right. */
 
 /* Type-specific colors (automatic dark mode via design tokens) */
-
-@keyframes alertSlideIn {
-  from {
-    transform: translateX(40px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
 
 /* minimal transient toast used by showToast() in legacy/toast.ts, whose
    error variant marks session save failures. Lives in the bottom-right at

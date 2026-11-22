@@ -28,12 +28,6 @@
     color: var(--cg-text) !important;
   }
 
-  /* The reference hamburger carries no badge; the status dot is static
-     decoration with no state behind it, so keep it off. */
-  #appShell#appShell .mobile-sidebar-status {
-    display: none !important;
-  }
-
   #appShell#appShell .top-mode-tabs {
     gap: 0;
   }

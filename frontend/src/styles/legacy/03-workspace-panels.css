@@ -460,19 +460,6 @@
   background: hsl(var(--bg-300));
 }
 
-/* ─── Clerk User Button (Motion style) ─── */
-
-@keyframes clerkMenuEnter {
-  0% {
-    opacity: 0;
-    transform: scale(0.92) translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 /* Display / reading preferences (font size + content width) */
 .display-prefs-popover {
   position: fixed;
