@@ -235,6 +235,22 @@
   }
 }
 
+/* The 12px running-step arc. It lives in the host CSS so the shared component
+   stays DOM-free and every live row shares one compositor animation. */
+.socrates-step-spinner {
+  animation: socrates-step-spin var(--ui-duration-spin) linear infinite;
+}
+@keyframes socrates-step-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .socrates-step-spinner {
+    animation: none;
+  }
+}
+
 /* The sweep itself. Shared with the visualization card's skeleton
    (components/visualization-states.css), which asks for the same band. */
 @keyframes thinking-text-shimmer {
