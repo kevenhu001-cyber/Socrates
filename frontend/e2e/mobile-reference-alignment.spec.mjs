@@ -120,11 +120,14 @@ for (const mode of ['dark', 'light']) {
       ),
     ).toEqual(mode === 'dark' ? [0, 0, 0] : [252, 252, 252]);
     const searchRow = page.locator('#sidebarSearchRow');
-    expect((await searchRow.boundingBox()).height).toBe(0);
+    /* Phones commit the row with display: none so the recents list never
+       resizes frame by frame while the drawer opens. */
+    await expect(searchRow).toBeHidden();
     await page.locator('#sidebarSearchBtn').click();
+    await expect(searchRow).toBeVisible();
     await expect(page.locator('#sidebarSearch')).toBeVisible();
     await page.locator('#sidebarSearchBtn').click();
-    await expect.poll(async () => (await searchRow.boundingBox()).height).toBe(0);
+    await expect(searchRow).toBeHidden();
     const nav = page.locator('#sidebarNav');
     const rows = nav.locator('.sidebar-nav-btn:visible');
     const geometry = await rows.evaluateAll((nodes) =>

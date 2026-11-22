@@ -1,29 +1,47 @@
 /**
- * RN-7 — the conversation header, drawn in the marketing site's chrome
- * language (site chrome.css nav pills, product.css segmented jump-nav,
- * home-refresh.css `.demo-chat-head`): a quiet bar on the page colour with
- * a hairline under it, ghost 36px pills that take a 4% fill on hover and
- * 8% while their menu is open, and one segmented track (4% fill, white
- * raised thumb) for 聊天 / 辅导.
+ * The conversation header, drawn in the marketing site's chrome language
+ * (site chrome.css nav pills, product.css segmented jump-nav, home-refresh.css
+ * `.demo-chat-head`): a quiet bar on the page colour with a hairline under it,
+ * ghost 36px pills that take a 4% fill on hover and 8% while their menu is
+ * open, and one segmented track (4% fill, white raised thumb) for 聊天 / 辅导.
  *
  * Progress reads as words and a hairline bar, never as dots: the tutor
  * capsule follows the live teaching stage, and practice reads
  * "基础题 已尝试 2 次".
  *
- * DOM-free: the web host passes ids (`nativeID`), labels and handlers and
- * decides visibility from its own stores; nothing here reads the document.
+ * React DOM by design (ADR 0027). The web host passes ids, labels and handlers
+ * and decides visibility from its own stores; nothing here reads the document.
  */
-import type { ReactNode } from 'react';
-import { Pressable, Text, View, type PressableStateCallbackType } from '../react-web';
+import type { CSSProperties, ReactNode } from 'react';
 import { uiControl, uiMotion, uiRadius, uiShadow, uiStep } from '@socrates/theme';
+import { dataAttributes } from '../domProps';
+import { domStyle } from '../domStyle';
 import { useUiTheme } from '../primitives/theme';
+import { usePressFeedback } from '../primitives/UiButton';
 import { UiText } from '../primitives/UiText';
 import { UiIcon, type UiGlyphName } from '../primitives/UiIcon';
-import { dataSet } from '../learn/parts';
-
-type PressState = PressableStateCallbackType & { hovered?: boolean; focused?: boolean };
 
 const PILL = uiControl.pill;
+
+const BUTTON_RESET: CSSProperties = {
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  cursor: 'pointer',
+};
+
+function clamp(lines?: number): CSSProperties | undefined {
+  if (!lines || lines < 1) return undefined;
+  return {
+    display: '-webkit-box',
+    WebkitLineClamp: lines,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  };
+}
 
 /* ── Icon action (find, share, new chat, incognito) ──────────────────── */
 
@@ -56,17 +74,21 @@ export function TopBarAction({
   onPress,
 }: TopBarActionProps) {
   const { colors } = useUiTheme();
+  const { pressed: down, hovered, handlers } = usePressFeedback();
   const size = touch ? uiControl.hit : PILL;
   return (
-    <Pressable
-      nativeID={id}
+    <button
+      type="button"
+      id={id}
       role="button"
       aria-label={label}
       aria-pressed={pressed}
-      onPress={onPress}
-      {...dataSet({ topbarAction: part ?? id, visible: visible ? 'true' : 'false' })}
-      style={({ pressed: down, hovered }: PressState) =>
-        ({
+      onClick={onPress}
+      {...dataAttributes({ topbarAction: part ?? id, visible: visible ? 'true' : 'false' })}
+      {...handlers}
+      style={domStyle([
+        BUTTON_RESET,
+        {
           display: visible ? 'flex' : 'none',
           flexDirection: 'row',
           alignItems: 'center',
@@ -74,7 +96,10 @@ export function TopBarAction({
           gap: uiStep[75] - 2,
           height: size,
           minWidth: size,
-          paddingHorizontal: caption ? uiControl.padNav : 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          paddingLeft: caption ? uiControl.padNav : 0,
+          paddingRight: caption ? uiControl.padNav : 0,
           borderRadius: uiRadius.pill,
           backgroundColor: down
             ? colors.fillPressed
@@ -85,8 +110,8 @@ export function TopBarAction({
                 : 'transparent',
           transitionProperty: 'background-color',
           transitionDuration: `${uiMotion.fast}ms`,
-        }) as object
-      }
+        },
+      ])}
     >
       <UiIcon
         name={icon}
@@ -98,7 +123,7 @@ export function TopBarAction({
           {caption}
         </UiText>
       ) : null}
-    </Pressable>
+    </button>
   );
 }
 
@@ -128,29 +153,32 @@ export function TopBarModelSwitcher({
   onPress,
 }: TopBarModelSwitcherProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
+  const { pressed, hovered, handlers } = usePressFeedback();
   /* Desktop: a 15px wordmark beside a 14px model name on one 22px line. The
      old 18px lockup read as a page title and crowded the centred mode switch;
      the phone chip keeps its 14/22 step. */
   const brandSize = Math.round((compact ? 14 : 15) * typeScale * 10) / 10;
-  const brandLine = Math.round((compact ? 22 : 22) * typeScale * 10) / 10;
+  const brandLine = Math.round(22 * typeScale * 10) / 10;
   const modelSize = Math.round(14 * typeScale * 10) / 10;
-  const modelLine = brandLine;
   const showSettings = compact && !model;
   return (
-    <Pressable
-      nativeID="topModelSwitcher"
+    <button
+      type="button"
+      id="topModelSwitcher"
       role="button"
       aria-label={accessibilityLabel}
       aria-haspopup="dialog"
       aria-expanded={expanded}
-      onPress={onPress}
-      {...dataSet({
+      onClick={onPress}
+      {...dataAttributes({
         chatConfigTrigger: '',
         topbarModel: compact ? 'chip' : 'lockup',
         visible: visible ? 'true' : 'false',
       })}
-      style={({ pressed, hovered }: PressState) =>
-        ({
+      {...handlers}
+      style={domStyle([
+        BUTTON_RESET,
+        {
           display: visible ? 'flex' : 'none',
           flexDirection: 'row',
           alignItems: 'center',
@@ -159,6 +187,8 @@ export function TopBarModelSwitcher({
           minWidth: 0,
           maxWidth: narrow ? 68 : compact ? 76 : 360,
           height: PILL,
+          paddingTop: 0,
+          paddingBottom: 0,
           paddingLeft: showSettings ? 0 : compact ? uiStep[100] - 2 : uiControl.padNav,
           paddingRight: showSettings ? 0 : uiStep[75] + (compact ? 0 : 2),
           width: showSettings ? PILL : undefined,
@@ -173,50 +203,54 @@ export function TopBarModelSwitcher({
                 : 'transparent',
           transitionProperty: 'background-color',
           transitionDuration: `${uiMotion.fast}ms`,
-        }) as object
-      }
+        },
+      ])}
     >
       {showSettings ? (
-        <View {...dataSet({ part: 'model-settings' })}>
+        <div {...dataAttributes({ part: 'model-settings' })}>
           <UiIcon name="sliders" size={18} color={colors.inkSecondary} />
-        </View>
+        </div>
       ) : null}
       {compact ? null : (
-        <Text
-          {...dataSet({ part: 'model-brand' })}
-          numberOfLines={1}
-          style={{
-            fontFamily,
-            fontSize: brandSize,
-            lineHeight: brandLine,
-            fontWeight: '600',
-            color: colors.ink,
-          }}
+        <span
+          {...dataAttributes({ part: 'model-brand' })}
+          style={domStyle([
+            {
+              fontFamily,
+              fontSize: brandSize,
+              lineHeight: `${brandLine}px`,
+              fontWeight: '600',
+              color: colors.ink,
+            },
+            clamp(1),
+          ])}
         >
           {brand}
-        </Text>
+        </span>
       )}
-      <Text
-        nativeID="topModelSwitcherModel"
-        {...dataSet({ part: 'model-name' })}
-        numberOfLines={1}
-        style={{
-          display: model ? 'flex' : 'none',
-          flexShrink: 1,
-          minWidth: 0,
-          fontFamily,
-          fontSize: modelSize,
-          lineHeight: modelLine,
-          fontWeight: compact ? '500' : '400',
-          color: compact ? colors.ink : colors.inkSecondary,
-        }}
+      <span
+        id="topModelSwitcherModel"
+        {...dataAttributes({ part: 'model-name' })}
+        style={domStyle([
+          {
+            display: model ? 'block' : 'none',
+            flexShrink: 1,
+            minWidth: 0,
+            fontFamily,
+            fontSize: modelSize,
+            lineHeight: `${brandLine}px`,
+            fontWeight: compact ? '500' : '400',
+            color: compact ? colors.ink : colors.inkSecondary,
+          },
+          clamp(1),
+        ])}
       >
         {model}
-      </Text>
+      </span>
       {showSettings || narrow ? null : (
         <UiIcon name="chevron-down" size={compact ? 12 : 14} color={colors.inkTertiary} />
       )}
-    </Pressable>
+    </button>
   );
 }
 
@@ -240,6 +274,61 @@ export interface TopBarModeSwitchProps {
   /** Web passes `var(--ui-elevation-raised)` so the active mode decides. */
   thumbShadow?: string;
   onSelect: (mode: string) => void;
+}
+
+function ModeOptionButton({
+  option,
+  selected,
+  width,
+  height,
+  onSelect,
+}: {
+  option: TopBarModeOption;
+  selected: boolean;
+  width: number;
+  height: number;
+  onSelect: (mode: string) => void;
+}) {
+  const { hovered, handlers } = usePressFeedback();
+  return (
+    <button
+      type="button"
+      id={option.id}
+      role="tab"
+      aria-selected={selected}
+      tabIndex={selected ? 0 : -1}
+      onClick={() => onSelect(option.mode)}
+      {...dataAttributes({ mode: option.mode })}
+      {...handlers}
+      style={domStyle([
+        BUTTON_RESET,
+        {
+          width,
+          height,
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: uiRadius.pill,
+          background: 'transparent',
+        },
+      ])}
+    >
+      <UiText
+        /* The reference sets the segments at 14px (glyph advance 13.7). */
+        variant="bodySm"
+        tone={selected || hovered ? 'ink' : 'secondary'}
+        numberOfLines={1}
+        style={{
+          fontWeight: selected ? '500' : '400',
+          transitionProperty: 'color',
+          transitionDuration: `${uiMotion.fast}ms`,
+        }}
+      >
+        {option.label}
+      </UiText>
+    </button>
+  );
 }
 
 /**
@@ -270,27 +359,29 @@ export function TopBarModeSwitch({
   const trackInset = compact ? 1.5 : 0;
   const height = PILL;
   return (
-    <View
-      nativeID="topModeSwitch"
+    <div
+      id="topModeSwitch"
       role="tablist"
       aria-label={accessibilityLabel}
       aria-hidden={!visible}
-      {...dataSet({ active: value, topbarModes: '' })}
-      style={{
-        display: visible ? 'flex' : 'none',
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: inset,
-        height,
-        borderRadius: uiRadius.pill,
-        backgroundColor: compact ? 'transparent' : colors.fill,
-        position: 'relative',
-      }}
+      {...dataAttributes({ active: value, topbarModes: '' })}
+      style={domStyle([
+        {
+          display: visible ? 'flex' : 'none',
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: inset,
+          height,
+          borderRadius: uiRadius.pill,
+          backgroundColor: compact ? 'transparent' : colors.fill,
+          position: 'relative',
+        },
+      ])}
     >
       {compact ? (
-        <View
+        <div
           aria-hidden
-          {...dataSet({ part: 'mode-track' })}
+          {...dataAttributes({ part: 'mode-track' })}
           style={{
             position: 'absolute',
             left: 0,
@@ -302,66 +393,35 @@ export function TopBarModeSwitch({
           }}
         />
       ) : null}
-      <View
+      <div
         aria-hidden
-        {...dataSet({ part: 'mode-thumb' })}
-        style={
-          {
-            position: 'absolute',
-            top: inset,
-            bottom: inset,
-            left: inset,
-            width: optionWidth,
-            borderRadius: uiRadius.pill,
-            backgroundColor: colors.card,
-            boxShadow: thumbShadow ?? uiShadow.light.raised,
-            transform: [{ translateX: index * optionWidth }],
-            transitionProperty: reducedMotion ? 'none' : 'transform',
-            transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
-            transitionTimingFunction: uiMotion.easeOut,
-          } as object
-        }
+        {...dataAttributes({ part: 'mode-thumb' })}
+        style={{
+          position: 'absolute',
+          top: inset,
+          bottom: inset,
+          left: inset,
+          width: optionWidth,
+          borderRadius: uiRadius.pill,
+          backgroundColor: colors.card,
+          boxShadow: thumbShadow ?? uiShadow.light.raised,
+          transform: `translateX(${index * optionWidth}px)`,
+          transitionProperty: reducedMotion ? 'none' : 'transform',
+          transitionDuration: reducedMotion ? '0ms' : `${uiMotion.medium}ms`,
+          transitionTimingFunction: uiMotion.easeOut,
+        }}
       />
-      {options.map((option) => {
-        const selected = option.mode === value;
-        return (
-          <Pressable
-            key={option.mode}
-            nativeID={option.id}
-            role="tab"
-            aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
-            onPress={() => onSelect(option.mode)}
-            {...dataSet({ mode: option.mode })}
-            style={{
-              width: optionWidth,
-              height: height - inset * 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: uiRadius.pill,
-            }}
-          >
-            {({ hovered }: PressState) => (
-              <UiText
-                /* The reference sets the segments at 14px (glyph advance 13.7). */
-                variant="bodySm"
-                tone={selected || hovered ? 'ink' : 'secondary'}
-                numberOfLines={1}
-                style={
-                  {
-                    fontWeight: selected ? '500' : '400',
-                    transitionProperty: 'color',
-                    transitionDuration: `${uiMotion.fast}ms`,
-                  } as object
-                }
-              >
-                {option.label}
-              </UiText>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
+      {options.map((option) => (
+        <ModeOptionButton
+          key={option.mode}
+          option={option}
+          selected={option.mode === value}
+          width={optionWidth}
+          height={height - inset * 2}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -382,24 +442,26 @@ function Capsule({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
-      nativeID={id}
+    <div
+      id={id}
       role={role}
       aria-label={label}
-      {...dataSet({ part })}
+      {...dataAttributes({ part })}
       style={{
+        display: 'flex',
         flexDirection: 'row',
         alignItems: 'center',
         gap: uiStep[75],
         height: 28,
-        paddingHorizontal: uiStep[100] - 2,
+        paddingLeft: uiStep[100] - 2,
+        paddingRight: uiStep[100] - 2,
         borderRadius: uiRadius.pill,
         backgroundColor: colors.fill,
         flexShrink: 0,
       }}
     >
       {children}
-    </View>
+    </div>
   );
 }
 
@@ -433,9 +495,9 @@ export function TopBarStageProgress({
       <UiText variant="labelSm" numberOfLines={1} nativeID="tutorMasteryStageLabel">
         {stage}
       </UiText>
-      <View
+      <div
         aria-hidden
-        {...dataSet({ part: 'stage-bar', step, total })}
+        {...dataAttributes({ part: 'stage-bar', step, total })}
         style={{
           width: 40,
           height: 3,
@@ -444,7 +506,7 @@ export function TopBarStageProgress({
           overflow: 'hidden',
         }}
       >
-        <View
+        <div
           style={{
             width: `${fraction * 100}%`,
             height: '100%',
@@ -452,7 +514,7 @@ export function TopBarStageProgress({
             backgroundColor: colors.ink,
           }}
         />
-      </View>
+      </div>
       <UiText
         variant="labelSm"
         tone="tertiary"

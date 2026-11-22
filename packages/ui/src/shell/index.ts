@@ -1,6 +1,7 @@
 /**
- * RN-7 — shell chrome (top bar and the sidebar's outer shell), DOM-free. The
- * web shell renders these through react-native-web inside its host nodes.
+ * Shell chrome (top bar and the sidebar's outer shell) as plain React DOM.
+ * The web host owns nodes, stores and handlers; these components draw the
+ * chrome and report presses (ADR 0027).
  */
 export {
   TopBarAction,

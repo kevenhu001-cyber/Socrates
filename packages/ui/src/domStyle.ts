@@ -31,6 +31,37 @@ function transformToCss(value: readonly unknown[]): string {
 }
 
 /**
+ * Collect the class names a host attached through the shim's compiled-style
+ * escape hatch (`{ $$css: true, socratesHost: '...' }`). Migrated DOM parts
+ * still need those structural hooks for the shell CSS.
+ */
+export function domClassName(...styles: unknown[]): string | undefined {
+  const classes = new Set<string>();
+  const visit = (style: unknown): void => {
+    if (!style) return;
+    if (Array.isArray(style)) {
+      for (const entry of style) visit(entry);
+      return;
+    }
+    if (typeof style === 'string') {
+      classes.add(style);
+      return;
+    }
+    if (typeof style !== 'object') return;
+    const record = style as Record<string, unknown>;
+    if (record.$$css) {
+      for (const [key, value] of Object.entries(record)) {
+        if (key !== '$$css' && typeof value === 'string' && value) classes.add(value);
+      }
+    } else if (typeof record.className === 'string') {
+      classes.add(record.className);
+    }
+  };
+  for (const style of styles) visit(style);
+  return classes.size ? [...classes].join(' ') : undefined;
+}
+
+/**
  * Flatten one style or an array of styles. False/null entries are skipped so
  * `cond && style` works the same way it does in the React Native tree.
  */

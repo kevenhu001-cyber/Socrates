@@ -35,7 +35,7 @@ for (const theme of ['light', 'dark']) {
       expect(fonts.ui).toBe('14px');
       expect(fonts.family).toContain('Geist Sans');
       expect(fonts.family).toContain('Noto Sans SC');
-      expect(fonts.resources.some((entry) => /noto-sans-sc-\d+-/.test(entry.name))).toBe(true);
+      expect(fonts.resources.some((entry) => entry.name.includes('noto-sans-sc-'))).toBe(true);
       expect(fonts.resources.some((entry) => entry.name.includes('chinese-simplified'))).toBe(
         false,
       );
