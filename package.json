@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint:explicit-any": "node scripts/check-explicit-any.mjs",
+    "lint:empty-catch": "node scripts/check-empty-catch.mjs",
     "lint:shims": "node scripts/check-forwarding-shims.mjs",
     "lint:action-pinning": "node scripts/check-action-pinning.mjs",
     "lint:bundle": "node scripts/check-bundle-size.mjs",

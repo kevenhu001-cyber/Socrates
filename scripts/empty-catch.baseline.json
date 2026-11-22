@@ -1,0 +1,12 @@
+{
+  "counts": {
+    "frontend": 0,
+    "server": 130,
+    "packages/contracts": 0,
+    "packages/core": 9,
+    "packages/theme": 0,
+    "packages/ui": 1
+  },
+  "note": "Empty catch blocks (try { ... } catch (_) {} / catch {}) per source tree. May only go down. Run with --update after an intentional reduction.",
+  "generatedBy": "check-empty-catch.mjs --update"
+}

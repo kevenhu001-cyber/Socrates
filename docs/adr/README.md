@@ -85,6 +85,7 @@
 | 0023 | 采用 Geist 中性色阶并重做应用外壳 | Accepted | 0020、0003 |
 | 0024 | shadcn shell 几何归属 | Accepted | 0013、0023 |
 | 0025 | 移除 Expo Universal App，SPA 成为唯一生产客户端并原地 RN 化 | Accepted | 0001、0016、0021、SPA-RN 收敛方案 |
+| 0026 | `xlsx` 允许从 SheetJS CDN 安装（有记录的供应链例外） | Accepted | 2026-10-30 技术债复核 |
 
 > 0004–0008 为预留号段（留给在审/草稿中的 P1 决策），当前未分配。新 ADR 从 0021 起取号。
 

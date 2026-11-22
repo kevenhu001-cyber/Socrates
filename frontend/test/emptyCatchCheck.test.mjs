@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { collectEmptyCatchSites } from '../scripts/check-empty-catch.mjs';
+import { collectEmptyCatchSites } from '../../scripts/check-empty-catch.mjs';
 
 test('empty catch parser counts real JS, TS and JSX catches exactly once', () => {
   const source = `

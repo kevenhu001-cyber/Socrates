@@ -78,9 +78,7 @@ const MOUNT_SOURCES = [APP_TS, MOUNT_API_ROUTES].filter((f) => existsSync(f));
  * mountApiRoutes.ts imports './x.js'). */
 function routerImports(src, srcDir) {
   const map = new Map();
-  for (const m of src.matchAll(
-    /import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'(\.[^']+)\.js'/g,
-  )) {
+  for (const m of src.matchAll(/import\s+(\w+)\s*(?:,\s*\{[^}]*\})?\s*from\s+'(\.[^']+)\.js'/g)) {
     const base = resolve(srcDir, m[2]);
     // Only routers under server/src/routes are route files; anything else
     // imported here (middleware, lib helpers) is not a router.
