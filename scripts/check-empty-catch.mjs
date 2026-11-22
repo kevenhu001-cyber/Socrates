@@ -48,8 +48,32 @@ import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const requireFrontend = createRequire(join(ROOT, 'frontend', 'package.json'));
-const ts = requireFrontend('typescript');
+
+/* Resolve TypeScript from the tree that invoked the check first. The frontend
+   and server both declare it at different major versions, and Server CI
+   installs only `server/`, so a hard-coded frontend require crashed that lane
+   with MODULE_NOT_FOUND before it could count anything. */
+function loadTypeScript() {
+  const candidates = [
+    join(process.cwd(), 'package.json'),
+    join(ROOT, 'frontend', 'package.json'),
+    join(ROOT, 'server', 'package.json'),
+  ];
+  for (const manifest of candidates) {
+    try {
+      const loaded = createRequire(manifest)('typescript');
+      // TypeScript 7 ships the native compiler with no JS compiler API.
+      if (typeof loaded.createSourceFile === 'function') return loaded;
+    } catch {
+      // Try the next declared tree; the final miss is reported below.
+    }
+  }
+  throw new Error(
+    'check-empty-catch: no TypeScript compiler API found; run this from frontend/ or the repository root',
+  );
+}
+
+const ts = loadTypeScript();
 
 const BASELINE = join(ROOT, 'scripts', 'empty-catch.baseline.json');
 const UPDATE = process.argv.includes('--update');

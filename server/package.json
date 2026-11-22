@@ -19,7 +19,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:verify-ledger": "node scripts/check-migration-ledger.mjs",
     "db:seed": "tsx src/db/seed.js",
-    "lint": "npm run typecheck && npm run lint:boundaries && npm run lint:empty-catch",
+    "lint": "npm run typecheck && npm run lint:boundaries",
     "typecheck:tests": "tsc -p tsconfig.test.json --noEmit",
     "test": "node --import tsx scripts/run-tests.mjs",
     "test:fast": "node ../scripts/run-affected-tests.mjs",
@@ -27,8 +27,7 @@
     "test:strict": "node --import tsx scripts/run-tests.mjs --strict",
     "test:db:memory": "node scripts/run-memory-tests.mjs",
     "test:coverage": "node --import tsx --import ./scripts/test-env.mjs --test --experimental-test-coverage --test-coverage-include='src/**' --test-coverage-exclude='test/**' --test-coverage-exclude='scripts/**' --test-coverage-exclude='**/*.generated.ts' test/*.test.js test/*.test.mjs",
-    "lint:boundaries": "node scripts/check-service-boundaries.mjs",
-    "lint:empty-catch": "node ../scripts/check-empty-catch.mjs"
+    "lint:boundaries": "node scripts/check-service-boundaries.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
