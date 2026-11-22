@@ -10,9 +10,9 @@
 
 <br />
 
-<img src="https://cdn.esawebb.org/archives/images/publicationjpg/weic2205a.jpg" alt="詹姆斯·韦布空间望远镜拍摄的船底座星云「宇宙悬崖」" width="100%" />
+<img src="site/media/socrates-nasa-endeavour-limb-v2.jpg" alt="从国际空间站拍摄的奋进号航天飞机与地球大气层弧光" width="100%" />
 
-<sub>船底座星云 NGC 3324 · 詹姆斯·韦布空间望远镜 · Image: NASA, ESA, CSA, and STScI · [查看原始影像](https://esawebb.org/images/weic2205a/)</sub>
+<sub>奋进号航天飞机与地球大气层 · NASA/JSC · ISS022-E-062673 · 真实航天摄影</sub>
 
 <br /><br />
 
@@ -173,6 +173,6 @@ npm run test:fast
 
 Socrates 采用**自定义源码可见许可，不属于 OSI 认可的开源许可证**。在遵循 [LICENSE](LICENSE) 条款的前提下允许非商业使用，商业用途需要另行授权。第三方代码、图片及素材遵循各自的许可。
 
-封面照片是韦布空间望远镜拍摄的船底座星云「宇宙悬崖」：**Image: NASA, ESA, CSA, and STScI**。图片来自 [ESA/Webb](https://esawebb.org/images/weic2205a/)，按其[图片使用条款](https://esawebb.org/copyright/)署名；未进行艺术化修改。产品官网使用的真实航天摄影另署名为 **NASA/JSC, ISS022-E-062673**。
+封面采用 **NASA/JSC, ISS022-E-062673** 真实航天摄影：国际空间站视角下，奋进号航天飞机与地球大气层的交界景观。图片直接使用仓库中已有的 [NASA 摄影素材](site/media/socrates-nasa-endeavour-limb-v2.jpg)，亦用于[产品官网](https://topodrive.top/)，没有添加虚构星空、霓虹光效或宣传文字。
 
-<sub>Socrates 是独立项目，与 NASA、ESA、CSA 或 STScI 不存在官方背书关系。</sub>
+<sub>Socrates 是独立项目，与 NASA 不存在官方合作或背书关系。</sub>
