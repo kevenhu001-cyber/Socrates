@@ -45,21 +45,78 @@ const VERBOSE = process.argv.includes('--verbose');
 const FROZEN_DIRS = ['legacy', 'restore'];
 const SOURCE_EXT = ['.ts', '.tsx', '.js', '.mjs', '.html'];
 const SKIP_DIRS = new Set([
-  'node_modules', 'dist', '.git', 'test-results', 'debug', 'coverage',
-  'styles', 'vendor-files', '.vite',
+  'node_modules',
+  'dist',
+  '.git',
+  'test-results',
+  'debug',
+  'coverage',
+  'styles',
+  'vendor-files',
+  '.vite',
 ]);
 
 /* State words that ride on top of an identity class. They carry no meaning on
  * their own, so letting them decide liveness would keep every `.selected`
  * rule alive even after its component is gone. */
 const GENERIC_STATE = new Set([
-  'selected', 'active', 'open', 'closed', 'opened', 'ok', 'bad', 'err', 'error',
-  'warn', 'warning', 'loading', 'loaded', 'disabled', 'hidden', 'visible',
-  'correct', 'wrong', 'done', 'current', 'expanded', 'collapsed', 'on', 'off',
-  'recorded', 'pending', 'success', 'fail', 'failed', 'empty', 'live', 'settled',
-  'in', 'out', 'all', 'none', 'checked', 'focus', 'hovered', 'dark', 'light',
-  'mobile', 'desktop', 'true', 'false', 'first', 'last', 'even', 'odd',
-  'assistant', 'user', 'system', 'file', 'code', 'read', 'write', 'edit',
+  'selected',
+  'active',
+  'open',
+  'closed',
+  'opened',
+  'ok',
+  'bad',
+  'err',
+  'error',
+  'warn',
+  'warning',
+  'loading',
+  'loaded',
+  'disabled',
+  'hidden',
+  'visible',
+  'correct',
+  'wrong',
+  'done',
+  'current',
+  'expanded',
+  'collapsed',
+  'on',
+  'off',
+  'recorded',
+  'pending',
+  'success',
+  'fail',
+  'failed',
+  'empty',
+  'live',
+  'settled',
+  'in',
+  'out',
+  'all',
+  'none',
+  'checked',
+  'focus',
+  'hovered',
+  'dark',
+  'light',
+  'mobile',
+  'desktop',
+  'true',
+  'false',
+  'first',
+  'last',
+  'even',
+  'odd',
+  'assistant',
+  'user',
+  'system',
+  'file',
+  'code',
+  'read',
+  'write',
+  'edit',
 ]);
 
 function walk(dir, exts, out = []) {
@@ -67,7 +124,8 @@ function walk(dir, exts, out = []) {
   try {
     entries = readdirSync(dir, { withFileTypes: true });
   } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return out;
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')
+      return out;
     throw error;
   }
   for (const entry of entries) {
@@ -133,12 +191,16 @@ for (const { rel, file } of frozenFiles()) {
   let rules = 0;
   ast.walkRules((rule) => {
     const parent = rule.parent;
-    if (parent && parent.type === 'atrule' && /keyframes|-webkit-keyframes/.test(parent.name)) return;
+    if (parent && parent.type === 'atrule' && /keyframes|-webkit-keyframes/.test(parent.name))
+      return;
     const classes = identityClasses(rule.selector);
     if (!classes.length) return; // element/id-only rule — not class-addressable
     rules += 1;
     if (classes.some((cls) => referenced(cls))) return;
-    dead.push({ line: rule.source.start.line, selector: rule.selector.replace(/\s+/g, ' ').trim() });
+    dead.push({
+      line: rule.source.start.line,
+      selector: rule.selector.replace(/\s+/g, ' ').trim(),
+    });
   });
   results.push({ file: rel, rules, dead });
 }
@@ -187,11 +249,15 @@ if (grew.length) {
 
 /* A rule count that fell without --update is a win, not a failure: printed so
  * the author can lock it in with --update, but the gate stays green. */
-const shrank = results.filter((r) => previous[r.file] !== undefined && r.dead.length < previous[r.file]);
+const shrank = results.filter(
+  (r) => previous[r.file] !== undefined && r.dead.length < previous[r.file],
+);
 if (shrank.length) {
   console.log(
     `frozen-liveness: ${shrank.length} file(s) below baseline — run --update to lock the reduction in.`,
   );
 }
 
-console.log(`frozen-liveness check passed (${totalDead} dead rules across ${results.length} files).`);
+console.log(
+  `frozen-liveness check passed (${totalDead} dead rules across ${results.length} files).`,
+);

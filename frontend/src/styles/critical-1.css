@@ -1,6 +1,6 @@
 /* critical-1.css — first-paint slice 1/6 (render-blocking).
  *
- * P_perf-css-split — the 955 KB single stylesheet blocked first paint on
+ * The 955 KB single stylesheet blocked first paint on
  * parse + transfer. It is now delivered as ordered slices: `critical-*`
  * slices stay render-blocking, `deferred-*` slices load with media=print
  * (lowest fetch priority, applied on load). The <link> order in

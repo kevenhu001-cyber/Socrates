@@ -445,7 +445,7 @@
   padding: 1px 6px;
   border-radius: 3px;
 }
-/* P_perf-sidebar — The sidebar's collapse animation already runs on
+/* The sidebar's collapse animation already runs on
    `transform: translateX` (compositor-only, no layout). Animating
    `.main`'s padding-left at the same time re-laid-out the chat panel,
    the message list, and the input bar every frame for 350ms — the
@@ -469,7 +469,7 @@ body.sidebar-resizing .main {
     padding-left: 0;
   }
 }
-/* P_perf-main-bg — the grid is a static backdrop: no clip mask, no pinned
+/* The grid is a static backdrop: no clip mask, no pinned
    compositor layer. The previous clip-path:circle(150%) clipped nothing
    (a 150% radius covers the whole box) while forcing a mask layer, and
    the permanent will-change:transform + translateZ(0) pinned a
@@ -546,7 +546,7 @@ html[data-show-grid='false'] .main-bg {
 .new-reply-pill {
   position: absolute;
   right: 20px;
-  /* P_chat-reserve — `--chat-input-bar-height` no longer exists; the
+  /* `--chat-input-bar-height` no longer exists; the
      composer is now in the flex flow and JS no longer reports its
      height. Use a generous constant above the (typical ~70-90px) bar
      plus the keyboard inset, so the pill always floats above the bar
@@ -609,7 +609,7 @@ html[data-show-grid='false'] .main-bg {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
-/* P_pill-anchor-composer — anchor the new-reply pill to the composer's
+/* Anchor the new-reply pill to the composer's
    top edge instead of chat-view's top edge. Earlier the pill floated
    relative to chat-view (the composer + find-bar wrapper), which meant
    when find-bar opened the pill ended up 40+px above the composer with

@@ -15,7 +15,7 @@
   font-weight: 100 900;
   font-display: swap;
   src: url('../../assets/fonts/geist-sans-variable.woff2') format('woff2');
-  /* P_cjk-punctuation-full-width — Geist carries narrow, Latin-proportioned
+  /* Geist carries narrow, Latin-proportioned
      glyphs for the CJK punctuation blocks (U+3000-303F and U+FF00-FFEF).
      A face without a unicode-range may be used for every code point, so the
      browser handed ，。！？；：（） to Geist — the first family in the stack —

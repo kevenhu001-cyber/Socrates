@@ -67,6 +67,7 @@ export function SidebarNavButton({
           : undefined
       }
       activeShadow="var(--ui-elevation-raised)"
+      backgroundVar="--sidebar-nav-bg"
       hostStyle={webClass('sidebar-nav-btn', active && 'active')}
       badgeStyle={webClass('nav-new-badge')}
       labelStyle={LABEL_STYLE}

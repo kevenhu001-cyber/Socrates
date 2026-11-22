@@ -14,7 +14,7 @@
 
 /* ChatGPT-like empty state: quiet background, centered greeting, and a
    single broad composer that reads as the primary action. */
-/* P_has-invalidation — see legacy/layoutStateMirror.js. */
+/* See legacy/layoutStateMirror.ts. */
 :where(:root[data-topic-setup-open]) .main:not(#_n):not(._n) .main-bg {
   opacity: 0.1;
 }
@@ -28,7 +28,7 @@
     box-sizing: border-box;
     justify-content: center;
     gap: 0;
-    /* P_topic-lower — shift the centered group slightly below true center
+    /* Shift the centered group slightly below true center
      so the greeting + input doesn't feel "too high" on tall viewports.
      The 6vh bias pushes the visual center down (was 4vh; bumped so the
      greeting + input sits closer to the optical center, not the
@@ -51,7 +51,7 @@
 .topic-sub {
   margin: 0 0 22px;
 }
-/* P_composer-single — the landing chip geometry is the reference for the
+/* The landing chip geometry is the reference for the
    single shell (union of both predecessors' rules). */
 .composer-input-wrap .attachment-chips {
   order: 0;

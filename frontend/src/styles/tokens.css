@@ -25,7 +25,7 @@
   --ui-space-xxl: var(--ui-foundation-space-xl);
 
   /* Radii — the Socrates corner ladder.
-     P_roundness (2026-10-25) — "尽量不要使用方形": every rung below the
+     The 2026-10-25 roundness pass ("尽量不要使用方形"): every rung below the
      chatgpt-pinned ones moved up one step, and --ui-radius-control was
      decoupled from --ui-radius-row so a rounder control radius no longer
      drags the pinned 10px sidebar row along with it. The pinned rungs keep

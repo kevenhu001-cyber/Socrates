@@ -56,7 +56,7 @@
 .chat-config-row:focus-visible {
   background: var(--ui-bg-hover-ghost);
 }
-/* P_model-capability-registry — a control the active model cannot honour
+/* A control the active model cannot honour
    (Instant on a model that always reasons) is shown, but not offered. */
 .chat-config-row:disabled {
   opacity: 0.5;

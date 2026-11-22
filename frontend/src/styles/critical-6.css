@@ -1,6 +1,6 @@
 /* critical-6.css — first-paint slice 6/6 (render-blocking).
  *
- * P_perf-css-split — remaining polish details and mobile directory shells.
+ * Remaining polish details and mobile directory shells.
  * themes.css still closes the cascade as its own final <link> (sole palette
  * owner, imported exactly once and last). See critical-1.css for the
  * contract. */

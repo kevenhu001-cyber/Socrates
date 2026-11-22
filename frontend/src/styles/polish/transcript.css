@@ -217,7 +217,7 @@
    on desktop, components/chat on phones. Both the ordinary paragraph and
    the split-block seam below consume that same inherited value. */
 
-/* P_turn-surface-single — one assistant body owns every phase from the first
+/* One assistant body owns every phase from the first
    waiting frame through the final answer. Activity/status, tool rows, prose,
    cursor and terminal notices may change their content, but they never switch
    the message to a second bubble/card renderer. This explicit selector also
@@ -296,7 +296,7 @@
   opacity: 0;
   pointer-events: none;
 }
-/* P_stream-cursor-flow — the dot trails the turn after the prose blocks. As
+/* The dot trails the turn after the prose blocks. As
    an inline-block there it opened a line box of its own (~34px) that vanished
    at finish, pulling the toolbar and everything under it up. At zero height it
    hangs in the toolbar row instead — that row is laid out, just transparent,
@@ -430,7 +430,7 @@
   transform-origin: center center;
 }
 
-/* P_perf-finish-motion — finishing a streamed turn is a micro interaction,
+/* Finishing a streamed turn is a micro interaction,
    not a page transition. Cursor-out and toolbar-in use the same fast token
    instead of stacking 150/180/300 ms clocks. */
 @media (prefers-reduced-motion: reduce) {

@@ -339,9 +339,10 @@
 /* Focus keeps the same hairline edge — only the fill lifts a step. */
 
 /* legacy/01-sidebar.css used to give .sidebar backdrop-filter: blur(12px)
-   for a translucent desktop rail (removed — see P_perf-no-sidebar-blur:
-   the rail is opaque now, so there is nothing to blur on either
-   viewport). The mobile override below stays as a belt-and-braces guard
+   for a translucent desktop rail. The rail is opaque now, so there is
+   nothing to blur on either viewport; this note stays so the removal is
+   not reintroduced by a later translucent skin. The mobile override below
+   stays as a belt-and-braces guard
    so any future translucency cannot reintroduce the WebKit quirk where
    the blinking caret inside a backdrop-filtered fixed element never
    paints. */

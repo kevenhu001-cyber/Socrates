@@ -26,7 +26,7 @@
   background: none;
 }
 
-/* P_mode-segment-top — the chat header owns this control, and workspace /
+/* The chat header owns this control, and workspace /
    exam / admin views own their own. Hide the pill outside the chat surface or it
    floats over a Plugins or Library page, which has no session mode to
    switch. No !important: the body:is() prefix plus the #appShell id already

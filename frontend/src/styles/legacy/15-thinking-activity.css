@@ -6,7 +6,7 @@
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* P_perf-mobile-backdrop — backdrop-filter blur is one of the most
+/* Backdrop-filter blur is one of the most
    expensive effects on low-end phones and makes overlay open/close
    visibly janky. Mobile overlays keep the dim scrim but drop the blur. */
 @media (max-width: 768px) {

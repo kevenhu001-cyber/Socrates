@@ -39,7 +39,7 @@
 }
 .main-inner.hidden {
   display: none;
-} /* P_topic-kb-local — the landing must not reflow when the virtual
+} /* The landing must not reflow when the virtual
    keyboard opens or closes: the focused input keeps its exact position
    and the disclaimer below stays put (the keyboard may cover it — that
    is intended, it must never "avoid" the keyboard). The controller only
@@ -91,7 +91,7 @@
 /* .start-btn has no :hover rule — drop transition: all (was paying compositor
    cost watching properties that never animate). Active state still flips
    color/background instantly. */
-/* P_chatgpt-landing — composer quick-action chips row (撰写或编辑 /
+/* Composer quick-action chips row (撰写或编辑 /
    查找资料), shown under the landing composer like ChatGPT. Pill
    buttons with an icon + label; hover raises the surface subtly. */
 
@@ -108,10 +108,10 @@
   }
 }
 
-/* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
+/* Reasoning-effort selector (高/中/低) inside the
    composer footer. Compact pill trigger + a small pop-up menu that
    opens upward (the picker sits at the bottom of the composer). */
-/* P_effort-glyph — three ascending bars. Default render shows all three
+/* Three ascending bars. Default render shows all three
    as outline ghosts; the .effort-picker[data-effort="…"] rules below
    fill the active number of bars (1 = low, 2 = medium, 3 = high) so the
    icon doubles as a level indicator next to the text label. */

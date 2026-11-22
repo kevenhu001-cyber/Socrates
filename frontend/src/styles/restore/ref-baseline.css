@@ -50,15 +50,6 @@
 @media (max-width: 768px) {
   #appShell #navNew.sidebar-nav-btn {
     color: var(--cg-text);
-    background: transparent !important;
-  }
-}
-
-@media (max-width: 768px) {
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell
-    #navNew.sidebar-nav-btn {
-    background: var(--cg-surface-hover) !important;
   }
 }
 
@@ -117,7 +108,6 @@
   [data-mode='light'] #appShell .sidebar-nav-btn:hover,
   [data-mode='light'] #appShell .sidebar-nav-btn:focus-visible {
     color: var(--cg-text) !important;
-    background: var(--cg-surface-hover) !important;
   }
 }
 
@@ -125,7 +115,6 @@
   [data-mode='light'] #appShell .sidebar-nav-btn.active,
   [data-mode='light'] #appShell .sidebar-nav-btn[aria-current='page'] {
     color: var(--cg-text) !important;
-    background: var(--cg-surface-hover) !important;
   }
 }
 
@@ -236,16 +225,16 @@ body.workspace-active #appShell .main-page {
    9. Live OpenConnector Plugins Grid Refinement (2-column layout matching reference)
    -------------------------------------------------------------------------- */
 
-/* P_directory-tools — the header tools row holds only the search field
+/* The header tools row holds only the search field
    (each directory row carries its own connect button, so there is no
    header-level add action). Let the search fill the row so the input
    renders at a usable width instead of collapsing to the icon. */
 
-/* P_directory-mono-tiles — single-color brand marks need a light tile to
+/* Single-color brand marks need a light tile to
    read on the dark directory (same pattern as the legacy connector tile
    list in styles.css). Multi-color marks keep the raised dark tile. */
 
-/* P_directory-oc-tiles — plugin ids for OpenConnector apps are namespaced
+/* Plugin ids for OpenConnector apps are namespaced
    (`oc_<service>`, e.g. `oc_telegram` → class `connector-oc_telegram`), so
    the legacy-form selectors above never match them. Mirror the white-tile
    treatment for the namespaced classes, plus dark single-color marks that
@@ -284,14 +273,16 @@ body.workspace-active #appShell .main-page {
 
   /* .sidebar is always .main's preceding sibling; the former
      `#appShell:has(.sidebar.collapsed) .main` duplicate made every DOM
-     insertion re-style the shell (P_has-invalidation). */
+     insertion re-style the shell. */
 
   /* Top segmented control: reference is 214 x 32, optically centred on the
      content pane rather than on the full viewport (the rail is asymmetric). */
 
   /* Home: one optical group centred in the pane below the 44px top bar. */
 
-  #appShell #topicSetup > .topic-title, #appShell #topicSetup > .topic-sub, #appShell #topicSetup > .mobile-starter-prompts {
+  #appShell #topicSetup > .topic-title,
+  #appShell #topicSetup > .topic-sub,
+  #appShell #topicSetup > .mobile-starter-prompts {
     top: 0;
     left: 0;
   }
@@ -300,7 +291,7 @@ body.workspace-active #appShell .main-page {
      52px midline. The attach action uses a quiet raised surface while the
      primary voice/send action keeps the high-contrast fill. */
 
-  /* P_effort-send-adjacency — the mic track is gone, so the send button
+  /* The mic track is gone, so the send button
      takes grid column 4 directly after the effort picker. Leaving it on
      column 5 creates an empty track that reads as a gap between the
      effort pill and the send button. */
@@ -328,7 +319,7 @@ body.workspace-active #appShell .main-page {
     overflow: visible !important;
   }
 
-  /* P_has-invalidation — see legacy/layoutStateMirror.js. */
+  /* See legacy/layoutStateMirror.ts. */
   :where(:root[data-plugins-panel-open])
     body.workspace-active:not(#_n):not(._n)
     #appShell
@@ -462,13 +453,13 @@ body.workspace-active #appShell .main-page {
 /* Landing shortcut styling lives in polish/home.css. */
 
 @media (max-width: 768px) {
-  /* P_mobile-charcoal-canvas — the --cg-page/--cg-rail pins that used to live
+  /* The --cg-page/--cg-rail pins that used to live
      here are owned by the themes.css bridge; mobile and desktop share the
      same page token. */
 
   /* Phone visibility is handled by polish/mobile-shell.css. */
 
-  /* P_mobile-canvas-fade — the legacy conversation layer fades
+  /* The legacy conversation layer fades
      .chat-input-bar into the canvas colour. Land the fade on the active
      --cg-page so the safe-area strip below the composer matches the page
      in both modes. */
@@ -489,51 +480,10 @@ body.workspace-active #appShell .main-page {
   }
 }
 
-/* --------------------------------------------------------------------------
-   Final override: no idle selected-state wash on sidebar nav.
-   Nav rows stay transparent until hovered; the current section keeps its
-   brighter text color. The doubled #appShell id outranks every earlier
-   pill rule (active / aria-current / home-state / light-mode repairs),
-   and this block sits last so it also wins ties. Hover keeps its wash.
-   -------------------------------------------------------------------------- */
-@media (max-width: 768px) {
-  #appShell#appShell .sidebar-nav-btn.active,
-  #appShell#appShell .sidebar-nav-btn[aria-current='page'],
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell
-    #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-  #appShell#appShell .sidebar-nav-btn,
-  #appShell#appShell #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell .sidebar-nav-btn:hover,
-  #appShell#appShell .sidebar-nav-btn:focus-visible {
-    background: var(--cg-surface-hover) !important;
-  }
-}
-
-/* #navNew carries an extra id in its transparent resting rule, so the
-   generic doubled-id hover wash above loses the specificity tie. Re-assert
-   the wash for the primary entry so it responds to hover like every other
-   row. The home-state selector needs the same body:not prefix as its
-   transparent counterpart to win that tie too. */
-@media (max-width: 768px) {
-  #appShell#appShell #navNew.sidebar-nav-btn:hover,
-  #appShell#appShell #navNew.sidebar-nav-btn:focus-visible,
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell
-    #navNew.sidebar-nav-btn:hover,
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell
-    #navNew.sidebar-nav-btn:focus-visible {
-    background: var(--cg-surface-hover) !important;
-  }
-}
+/* Mobile sidebar nav background states are owned by
+   polish/mobile-sidebar.css, the canonical phone drawer owner. Its later
+   cascade position keeps the same resting / hover / selected values without
+   !important or a stacked #appShell selector. */
 
 /* --------------------------------------------------------------------------
    Final override: desktop chat composer matches the topic composer pill
@@ -742,7 +692,7 @@ body.workspace-active #appShell .main-page {
 
   body #composerToolsMenu:not(.hidden) {
     border: 1px solid var(--cg-border) !important;
-    /* P_roundness — the tools card is a floating surface, but its pixels are
+    /* The tools card is a floating surface, but its pixels are
        committed to the repo (composer-tools-visual-baseline, rendered on
        Linux), so it keeps its own pinned step instead of the shared popover
        one. */

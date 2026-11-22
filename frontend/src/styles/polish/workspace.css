@@ -664,7 +664,7 @@
   border: 1px solid var(--ui-border-subtle);
 }
 
-/* P_ring-page — keep the page-level loading affordance as a compact rotating
+/* Keep the page-level loading affordance as a compact rotating
    ring. The content placeholders below are the surfaces that use shimmer. */
 #appShell .workspace-loading-spinner-box {
   position: relative;

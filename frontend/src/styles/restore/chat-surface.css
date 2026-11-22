@@ -102,7 +102,8 @@ body,
   }
 }
 
-#appShell#appShell #topicSetup .topic-sub, #appShell#appShell #topicSetup .mobile-starter-prompts {
+#appShell#appShell #topicSetup .topic-sub,
+#appShell#appShell #topicSetup .mobile-starter-prompts {
   display: none !important;
 }
 
@@ -207,7 +208,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
 
 @media (max-width: 768px) {
   #appShell#appShell #topicSetup {
-    /* P_topic-kb-avoid — the safe-area bottom stays CONSTANT and the
+    /* The safe-area bottom stays CONSTANT and the
        keyboard inset adds on top of it, so the landing composer tracks
        the keyboard edge exactly 1:1 from the very first frame (no dead
        zone, no first-frame snap). max() collapses to the resting
@@ -217,7 +218,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 
   #appShell#appShell #topicSetup .topic-title.greeting {
-    /* P_greeting-mobile-center — keep the composer in its bottom action
+    /* Keep the composer in its bottom action
        band, but position the greeting independently in the live landing
        viewport. A static flex item inherits the bottom justification and
        drifts when the mobile browser changes its URL-bar/dvh height. The
@@ -231,7 +232,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
     text-align: center !important;
     /* top/width/max-width/font-size moved on — polish/composer.css owns
        the greeting's placement and size on phones. */
-    /* P_greeting-optical-center — negative letter-spacing adds a
+    /* Negative letter-spacing adds a
        trailing -0.01em after the last character that is included in
        the layout width but not visible, so text-align:center centers
        a box ~0.01em narrower than the visible text and the optical
@@ -245,7 +246,7 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   }
 
   #appShell#appShell #chatInputBar {
-    /* P_composer-unify — same 12px gutter as .topic-setup on the landing
+    /* Same 12px gutter as .topic-setup on the landing
        page, so the conversation composer sits exactly where the landing one
        does. Same constant safe-area as the base rule above — strictly linear
        lift, no first-frame snap. */

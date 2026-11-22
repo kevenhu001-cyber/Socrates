@@ -6,7 +6,7 @@
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* P_chat-reserve — the chat composer was previously `position:absolute`
+/* The chat composer was previously `position:absolute`
    docked to the bottom of `.chat-view`. That overlap pattern forced the
    transcript (.msg-list) to reserve space at the bottom with a JS-measured
    `padding-bottom` to keep the last message from sliding under the composer.
@@ -32,7 +32,7 @@
      reading-column max-width as before, so the composer visually
      lines up with the centred message text. */
   max-width: calc(58rem * var(--app-width-scale, 1));
-  /* P_input-lift — keep a small breathing gap below the chat composer so
+  /* Keep a small breathing gap below the chat composer so
      the input sits ~6px above the bottom edge on desktop and mobile.
      The gap stays CONSTANT through the lift (the keyboard adds travel on
      top of it via padding-bottom): collapsing it as --keyboard-inset rose
@@ -58,7 +58,7 @@
   padding-bottom: var(--keyboard-inset, 0px);
 }
 
-/* P_composer-anim-no-fr — when the engine does not interpolate fr
+/* When the engine does not interpolate fr
    grid track sizes (the focus-in animation would otherwise snap),
    swap the chat-composer-body layout to a fixed min-height that
    animates between two known values via the same transition curve.
@@ -121,9 +121,9 @@
 .chat-page > #msgList {
   display: flex;
 }
-/* P_has-invalidation — no ancestor-level :has() here: it made every DOM
+/* No ancestor-level :has() here: it made every DOM
    insertion under the shell re-style the whole app (see
-   legacy/layoutStateMirror.js). `:not(#_n):not(._n)` never excludes anything; it
+   legacy/layoutStateMirror.ts). `:not(#_n):not(._n)` never excludes anything; it
    only keeps the specificity identical to the :has() form it replaced. */
 :where(:root[data-chat-view-open], :root[data-routed-session='true'])
   #mainContent:not(#_n):not(._n)
@@ -189,7 +189,7 @@
     opacity: 1;
   }
 }
-/* P_chatgpt-top — the top-bar container class, still used by the plugin
+/* The top-bar container class, still used by the plugin
    workspace tabs (#pluginWorkspaceTabs). The shared Chat/Tutor control is
    rendered in the React top-bar. */
 .top-mode-tabs {
@@ -226,7 +226,7 @@ body.admin-active #shareBtn,
 body.admin-active #chatStats {
   display: none !important;
 }
-/* P_hide-mode-switch-in-conversation — see the canonical rule in
+/* See the canonical rule in
    00-foundations.css. The attribute reflects the live conversation state, so
    the mode dropdown is hidden only while a conversation is active and
    reappears when the user returns to the topic-input page. */
@@ -295,7 +295,7 @@ body.admin-active #chatStats {
   flex-direction: column;
   align-items: flex-end;
 }
-/* P_bubble — user bubbles fill the chat column, no manual width cap.
+/* User bubbles fill the chat column, no manual width cap.
  * Previously capped at max-width:75%, which created visible asymmetry with
  * assistant bubbles (max-width:100% at line 855). The column itself is
  * bounded by .main-inner, which the user can adjust via --app-width-scale. */
@@ -306,7 +306,7 @@ body.admin-active #chatStats {
   border-radius: 24px;
   max-width: 90%;
 }
-/* P_attachments — attachment chip strip inside a user bubble. Sits
+/* Attachment chip strip inside a user bubble. Sits
    below the text body, same horizontal padding so it lines up. */
 .msg.assistant[data-stream-settled] .stream-cursor {
   opacity: 0;
@@ -330,8 +330,8 @@ body.admin-active #chatStats {
   }
 }
 
-/* P_msg-toast — minimal transient toast used by showToast() and the
-   save-failed error variant in main.js. Lives in the bottom-right at
+/* minimal transient toast used by showToast() in legacy/toast.ts, whose
+   error variant marks session save failures. Lives in the bottom-right at
    z-index 1500 — above all modals (max 1300) so the user always sees
    the notification, but below the alert container (2000) so queued
    alert() notifications can still stack on top. Without this block
@@ -643,10 +643,10 @@ mark.find-hl.find-hl-active {
 .chat-input-bar {
   width: 100%;
   flex-shrink: 0;
-  /* P_pill-anchor-composer — become the positioning ancestor for the
+  /* Become the positioning ancestor for the
      new-reply pill, which was moved inside this bar so it tracks the
      composer's top edge instead of chat-view's.
-     P_chat-reserve — composer is now part of the flex column flow.
+     Composer is now part of the flex column flow.
      Its height is whatever the chip strip + wrap + footer naturally
      add up to, so flex-shrink on the sibling `.msg-list` (flex:1 1 auto)
      leaves the right amount of room. There is no longer a floating
@@ -658,7 +658,7 @@ mark.find-hl.find-hl-active {
   position: relative;
   left: auto;
   right: auto;
-  /* (see P_chat-reserve above — `bottom` removed because the bar
+  /* (See the composer-flow note above — `bottom` removed because the bar
      no longer floats; keyboard inset is applied to `.chat-view`'s
      `padding-bottom` instead.) */
   bottom: auto;

@@ -128,7 +128,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     margin: 0;
     padding: 0 8px;
   }
-  /* P_sidebar-parity — 图1 leads the drawer with a large wordmark rather
+  /* 图1 leads the drawer with a large wordmark rather
      than a logo chip. Give it the room and weight to read as the rail's
      title; the 24px mark stays as the anchor to the left. */
   #appShell #sidebarHeader .sidebar-logo {
@@ -193,12 +193,12 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     flex-direction: column;
     gap: var(--ui-space-xxs);
     margin: 0;
-    /* P_sidebar-parity — the reference rail breathes between destinations:
+    /* The reference rail breathes between destinations:
        a little air above, more below, instead of one packed list. Only the
        nav block gets it; the conversation list below stays dense. */
     padding: var(--ui-space-xs) var(--ui-space-sm) var(--ui-space-md);
   }
-  /* P_sidebar-parity — hairline between the destination block and the
+  /* Hairline between the destination block and the
      conversation history, inset to the icon gutter so it reads as a
      divider between two lists rather than a full-bleed rule. */
   #appShell #sidebar .sidebar-nav-sep {
@@ -524,7 +524,7 @@ html[data-main-view='settingsPage'] #appShell #sidebar {
     gap: 0;
   }
 
-  /* P_sidebar-parity — 图1 closes the drawer on a single full-width blue
+  /* 图1 closes the drawer on a single full-width blue
      pill. It is the one solid brand surface here, so it reads as the
      drawer's primary action; the account row above keeps its neutral
      treatment. Sits below the account row, not beside it, so the pill can

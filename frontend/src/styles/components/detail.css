@@ -25,7 +25,7 @@
   background: var(--background);
   color: var(--foreground);
   border-inline-start: 1px solid var(--border);
-  /* P_roundness — the drawer is the one framed surface that carried no
+  /* The drawer is the one framed surface that carried no
      corner at all and read as a hard rectangle against the page. It is
      docked to the right edge, so only the two leading corners round. */
   border-start-start-radius: var(--ui-radius-xl);

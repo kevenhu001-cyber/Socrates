@@ -9,7 +9,7 @@
      polish/mobile-sidebar.css (pass-2 merge) — this file keeps no sidebar
      rules. The backdrop is a flat --ui-backdrop dim with no blur: blur is
      the most expensive effect on low-end phones and runs on every open
-     while the drawer slides in (see P_perf-mobile-backdrop in legacy/15). */
+     while the drawer slides in (see legacy/15-thinking-activity.css). */
 
   /* Top bar icons keep 40px touch targets, quieter color. */
   #appShell .top-bar .toggle-sidebar,

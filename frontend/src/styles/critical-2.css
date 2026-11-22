@@ -1,6 +1,6 @@
 /* critical-2.css — first-paint slice 2/6 (render-blocking).
  *
- * P_perf-css-split — topbar menus, chat landing, and transcript compat.
+ * Topbar menus, chat landing, and transcript compat.
  * L07 (composer-settings) stays here, not in a deferred slice: it defines
  * the generic ringSpin/fadeIn keyframes referenced by tutor/viz spinners,
  * and a frozen spinner during the thinking state would read as a hang.

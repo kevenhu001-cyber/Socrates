@@ -182,7 +182,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   }
 }
 
-/* P_transcript-bottom-anchor — a short conversation sat at the TOP of the
+/* A short conversation sat at the TOP of the
    transcript, so a two-message exchange left the rest of the reading area
    empty: 570px of void on a 1440×900 desktop (74% of the 766px transcript)
    and 481px on a 390×844 phone (71% of 677px). Worse, on the desktop the
@@ -215,7 +215,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   margin-top: auto;
 }
 
-/* P_stream-finish-clip — #msgList is a flex column, and the turn-anchor
+/* #msgList is a flex column, and the turn-anchor
    reserve gives the newest row an explicit min-height, which replaces the
    automatic "never smaller than my content" minimum. With the default
    flex-shrink:1 a long answer was squeezed back to the reserve and its
@@ -246,7 +246,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
   text-align: center;
 }
 
-/* P_perf-scroll — long-conversation scrolling: settled assistant turns skip
+/* Long-conversation scrolling: settled assistant turns skip
    layout/paint while off-screen. Scoped to [data-stream-settled] so the live
    streaming row — whose height the streaming turn's rAF scheduler measures
    and the turn anchor reads — is never size-contained. `auto` in
@@ -258,7 +258,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
    re-measure the transcript every frame and an unpainted row would report
    the intrinsic guess. Message virtualization (P2) remains the full fix. */
 @media (min-width: 769px) {
-  /* P_cv-remembered-size — `auto` only has a remembered size to fall back on
+  /* `auto` only has a remembered size to fall back on
      once the browser has recorded one, and it records it only while the
      row already carries `contain-intrinsic-size: auto`. Declared solely on
      the size-contained selectors below, a row that just crossed into them
@@ -286,7 +286,7 @@ body[data-conversation-active='true']:not(.exam-active):not(.workspace-active)
     content-visibility: auto;
     contain-intrinsic-size: auto 240px;
   }
-  /* P_perf-stream-long — user rows too. Without this every streamed frame
+  /* User rows too. Without this every streamed frame
      in a long conversation re-laid-out and re-painted all of the user
      bubbles (the settled assistant rows were already skipped), which halved
      the frame rate of an answer streaming into a 200-message session.

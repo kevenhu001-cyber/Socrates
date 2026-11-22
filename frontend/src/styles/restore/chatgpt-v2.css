@@ -4,10 +4,12 @@
  */
 
 @media (min-width: 769px) {
-  #appShell #topicSetup > .topic-title, #appShell #topicSetup > .topic-sub, #appShell #topicSetup > .mobile-starter-prompts {
+  #appShell #topicSetup > .topic-title,
+  #appShell #topicSetup > .topic-sub,
+  #appShell #topicSetup > .mobile-starter-prompts {
     position: relative;
   }
-  /* P_chatgpt-composer-desktop — the home composer geometry is borrowed
+  /* The home composer geometry is borrowed
      from the ChatGPT reference surface: 768px width, 52px height, 28px
      fully-rounded pill, no idle border, and 36px square buttons. The grid
      keeps the attach button (col 1) on the left, the editor (col 2)
@@ -20,7 +22,7 @@
      The editor's own padding (14px 6px below) absorbs the visual
      spacing so the placeholder sits on the optical midline of the
      52px pill instead of hugging the top edge. */
-  /* P_chatgpt-effort-trigger — the reasoning-effort button on the home
+  /* The reasoning-effort button on the home
      composer is a fully rounded 60×36 pill that shows the current
      effort label (高/中/低) plus a small caret. The shared shell rule
      below keeps the picker min-height at 34px and the trigger corners
@@ -105,7 +107,7 @@
   }
 }
 
-/* P_topbar-sidebar-toggle — the collapse above hides both side groups at
+/* The collapse above hides both side groups at
    every viewport, which removes the sidebar open button on desktop once
    the sidebar is closed. Restore the three-zone rhythm on desktop (the
    mode tabs stay absolutely centered, so the sides don't shift them). */
@@ -116,7 +118,7 @@
   }
 }
 
-/* P_mobile-composer-center — the 14px nudge below is a desktop-only
+/* The 14px nudge below is a desktop-only
    sidebar-alignment offset. Left unscoped it leaks onto phones, where
    the 14px-gutter #topicSetup turns it into a 28px-left / 0-right pill.
    Desktop keeps the offset (ref-baseline pins it to 0 via !important);
@@ -134,7 +136,7 @@
 }
 
 @media (max-width: 768px) {
-  /* P_mobile-composer-outline — on phones the page canvas drops to pure
+  /* On phones the page canvas drops to pure
      black (see ref-baseline.css), which would leave the borderless pill
      invisible. Re-add a hairline stroke here and lift the surface one
      step above the canvas so the composer's silhouette stays readable. */
@@ -259,14 +261,14 @@ html[data-mode='light'] #appShell {
 }
 
 @media (max-width: 768px) {
-  /* P_mobile-composer-outline — must live AFTER the shared rule above:
+  /* This block must live AFTER the shared rule above:
      that rule paints every input surface with `--cg-surface` (#212121),
      which disappears against the #000 mobile canvas. This block wins the
      cascade on phones and gives the composer a hairline stroke plus one
      step of surface lift so its silhouette stays readable. */
 }
 
-/* P_chatgpt-send-removal — the duplicate idle-state rule that lived
+/* The duplicate idle-state rule that lived
    here used `--cg-surface-hover`, which paints the send/voice control
    in the same dark gray as the rest of the chrome and overrode the
    ChatGPT-style white override above. The two definitions had to agree

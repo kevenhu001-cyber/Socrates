@@ -50,8 +50,8 @@
 
 /* Chat mode — strip every Tutor-only UI element in one place.
    `appMode` is mirrored onto <body data-app-mode> by syncAppModeUI
-   in main.js. .tutor-only is added in index.html (knowledgePanel,
-   mistakesPanel, diagnosticView) and tutorSocratic.js (mode banner,
+   in config/providers.ts. .tutor-only is added in index.html (knowledgePanel,
+   mistakesPanel, diagnosticView) and tutorSocratic.ts (mode banner,
    practice chip, diagnostic banner, mistake filter bar). */
 body[data-app-mode='chat'] .tutor-only {
   display: none !important;
@@ -195,7 +195,7 @@ body[data-app-mode='chat'] .tutor-only {
     font-size: 11px;
     padding: 4px 10px;
   }
-  /* P_pill-anchor-composer — keep parity with the desktop rule above:
+  /* Keep parity with the desktop rule above:
      anchor to chat-input-bar so the pill tracks the composer. */
   .chat-input-bar > .new-reply-pill {
     right: 10px;
@@ -234,7 +234,7 @@ body[data-app-mode='chat'] .tutor-only {
 /* Chat-first tool runs. One answer owns one quiet, collapsible activity
    group; individual cards are evidence, not a competing dashboard. */
 
-/* P_tool-inline-status — bare 16px icon slot. No chip, no tinted
+/* Bare 16px icon slot. No chip, no tinted
    fill: state is carried by color alone so a settled row reads as a
    quiet line of prose. Spinner and tool glyph share the same fixed
    slot, so settling never reflows the label. */
@@ -268,7 +268,7 @@ body[data-app-mode='chat'] .tutor-only {
    .is-visible after a few seconds in flight (or on settle) and the chip
    expands + fades in as a quiet "still alive" cue. */
 
-/* P_codex-approval — inline, reviewable approval surface for the unified
+/* Inline, reviewable approval surface for the unified
    workspace agent. It intentionally sits inside the tool row so the user
    sees the exact action in the same conversation without a modal detour. */
 /* Anchored host for a tool run's visual output (charts, image
@@ -303,20 +303,20 @@ body[data-app-mode='chat'] .tutor-only {
   cursor: pointer;
   padding: 0;
 }
-/* P_tool-live-group — merged sibling rows of a same-category group stay
+/* Merged sibling rows of a same-category group stay
    hidden inside the slot while the collapsed head shows the running
    count; the row becomes visible again when it settles and replaces the
    head. The selector is scoped to the slot so serialized rows in history
    are never affected. */
 
-/* P_tool_live_card — fade-out applied to a tool row that is being
+/* Fade-out applied to a tool row that is being
    replaced in the live slot. Only opacity/transform animate so the
    frame stays GPU-composited. The class is removed by the JS
    cleanup; the @media (prefers-reduced-motion: reduce) override
    below shortens the duration to effectively zero while still
    keeping the keyframe accessible to cleanup. */
 
-/* P_tool-inline-reduced-motion — static, half-opacity cues replace the
+/* Static, half-opacity cues replace the
    spinner / shimmer / settle animation so reduced-motion users still
    see state without movement. */
 @media (prefers-reduced-motion: reduce) {
@@ -325,13 +325,13 @@ body[data-app-mode='chat'] .tutor-only {
   }
 }
 
-/* P_declarative-tool-run — AssistantTurn wraps each prose slice of rawText in
+/* AssistantTurn wraps each prose slice of rawText in
    its own element so a tool row can sit between two slices. `display:contents`
    takes the wrapper out of the box tree, so margins collapse and flow exactly
    as they did when the whole answer was one HTML string. Structural selectors
    (`:first-child`, `:last-child`, `+`) still see the wrapper, though: a live
    turn splits its prose into one wrapper per settled block, which is why the
-   paragraph seam rule (P_stream-seam) sits next to `p:last-child` in
+   paragraph seam rule sits next to `p:last-child` in
    polish/transcript.css — it has to outrank that `#appShell` rule. */
 .agent-tool-card[data-tool-state='cancelled'] {
   border-color: var(--ui-hairline-strong);

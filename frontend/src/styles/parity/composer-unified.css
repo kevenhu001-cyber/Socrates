@@ -17,7 +17,7 @@
  *       [data-composer-slot=rail]           + ······ effort  mic  send
  */
 
-/* P_composer-single — parking slots for the moving shell. */
+/* Parking slots for the moving shell. */
 #appShell .composer-slot {
   display: contents;
 }

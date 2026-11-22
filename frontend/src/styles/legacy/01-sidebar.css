@@ -8,8 +8,8 @@
 
 /* UI-align: opaque sidebar surface (open-webui desktop look).
     Mobile keeps a solid background — see the 768px override below.
-    P_perf-no-sidebar-blur — the previous 0.72-alpha + blur(12px) frosted
-    glass forced the compositor to re-blur the whole transcript behind the
+    The previous 0.72-alpha + blur(12px) frosted glass forced the
+    compositor to re-blur the whole transcript behind the
     rail on every scroll/slide frame (backdrop-filter re-runs whenever the
     backdrop repaints, and the sidebar permanently overlays .main). An
     opaque fill is visually identical once content scrolls under it and
@@ -57,7 +57,7 @@ body.sidebar-resizing .sidebar {
   position: relative;
   z-index: 1;
 }
-/* P_recent-list-resize — drag the recent panel's right edge to
+/* Drag the recent panel's right edge to
    resize the recents list directly. The handle sits inside the
    recents-panel (right:0, width:10px), so it only appears when
    the Recents tab is active. col-resize cursor never bleeds into
@@ -84,7 +84,7 @@ body.sidebar-resizing .sidebar {
   background: transparent;
   pointer-events: none;
 }
-/* P_a11y-focus-resize — keyboard users need to see the resize handle when
+/* Keyboard users need to see the resize handle when
    it has focus. The default global focus ring (added for WCAG 2.4.7) is
    too thick for a 10px-wide column-edge handle, so use a 1px inset ring
    along the right edge where the cursor sits.
@@ -273,7 +273,7 @@ body.sidebar-resizing {
 .knowledge-panel.hidden {
   display: none;
 }
-/* P_a11y-focus-graph — the default button focus ring is a 2px solid offset
+/* The default button focus ring is a 2px solid offset
    box, which clips a 9px-radius SVG node and looks like a separate UI
    element. The circle already gets a colored ring on :focus-visible
    above, so only suppress the rectangular outline. */

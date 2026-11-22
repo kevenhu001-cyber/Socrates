@@ -102,7 +102,7 @@
   color: hsl(0 50% 75%);
   border-color: hsl(0 40% 40%/0.5);
 }
-/* P_progress — live execution block. The badge is a small pill
+/* Live execution block. The badge is a small pill
    in the top-left with the current phase + elapsed seconds; the
    <pre> underneath streams stdout/stderr as it arrives. We cap
    height at 200px so a runaway print loop scrolls instead of
@@ -357,7 +357,8 @@
 
 /* Tool cards — clean, minimal ChatGPT-style disclosure.
    The chat content is primary; tool details are available on demand. */
-.agent-tool-card, .agent-tool-card.code {
+.agent-tool-card,
+.agent-tool-card.code {
   background: var(--tool-card-bg);
   border: 0;
   box-shadow: none;

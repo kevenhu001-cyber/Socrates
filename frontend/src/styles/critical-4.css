@@ -1,6 +1,6 @@
 /* critical-4.css — first-paint slice 4/6 (render-blocking).
  *
- * P_perf-css-split — canonical desktop surface owners (parity/*, single
+ * Canonical desktop surface owners (parity/*, single
  * owner per surface enforced by check-surface-ownership.mjs) plus the
  * first polish run. The desktop sidebar / topbar / composer / transcript
  * paint from this slice. See critical-1.css for the contract. */

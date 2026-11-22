@@ -172,7 +172,7 @@
      and then the iframe content. The JS-side max-wait timer is a
      separate fallback (VIZ_MAX_WAIT_MS = 5000) that surfaces a
      "Canvas took too long" banner. */
-/* P_viz-no-blank — the iframe is left visible while in the
+/* The iframe is left visible while in the
    "loading" state. The skeleton-fadeout animation above takes
    the .viz-loading overlay out of view after ~800ms; once it
    is gone, the iframe content is already on screen. Previously
@@ -376,7 +376,7 @@
     display: none;
   }
 }
-/* P_viz-btn-reduced-motion — when the user opts out of motion,
+/* When the user opts out of motion,
    the `.viz:hover` reveal never fires (no hover intent) and the
    0.35 opacity leaves ghost buttons. Force the buttons to full
    opacity so they're discoverable via keyboard or screen reader
@@ -403,7 +403,7 @@
   margin: 14px 0 6px;
   line-height: 1.3;
 }
-/* P_h3-cjk-contrast — the previous 1.05em + weight 500 + --text-100 was
+/* The previous 1.05em + weight 500 + --text-100 was
    visually indistinguishable from body text in CJK runs (Chinese chars
    look almost identical at 1.05em vs 1em, and `--text-100` matches body
    colour on the dark canvas). Bumping to 1.18em + weight 600 +
@@ -490,7 +490,7 @@
   opacity: 0.92;
   transform: scale(1.005);
 }
-/* P_code-block-header — a minimal header bar atop <pre> blocks with
+/* A minimal header bar atop <pre> blocks with
    the language label + an expand button. Always visible at low opacity,
    brightens on hover. Reuses the viz-btn visual language. */
 .msg-body .code-block-header {
@@ -530,7 +530,7 @@
   gap: 4px;
   flex: none;
 }
-/* P_smooth-stream tail fade — freshly revealed text of the LIVE tail
+/* Stream tail fade — freshly revealed text of the LIVE tail
    (render/tailReveal.ts). Opacity only: no rise, no blur, and the spans
    stay `display:inline` so line breaking — CJK included — never changes.
    The span's negative animation-delay resumes the fade across re-renders.

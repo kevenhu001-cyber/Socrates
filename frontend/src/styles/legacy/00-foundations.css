@@ -6,7 +6,7 @@
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* P_perf-self-host — foundations/fonts.css owns the locally hosted brand
+/* foundations/fonts.css owns the locally hosted brand
    fonts. Keep this compatibility layer free of independent font imports. */
 
 :root {
@@ -147,7 +147,7 @@ body {
   --sidebar-font-scale: calc(var(--app-font-scale, 1) * 0.92);
 }
 
-/* ── Tool card design tokens (P_tool-card-minimal) ─────────────────
+/* ── Tool card design tokens ─────────────────
    A grayscale, ChatGPT-style visual language shared by every
    tool-card surface: composer tools menu, inline tool rows, agent
    tool card (share/history), sources card, skill row, and storage
@@ -167,7 +167,7 @@ body {
   --tool-card-icon-hover: hsl(var(--text-100));
   --tool-card-focus: hsla(222, 12%, 10%, 0.35);
 }
-/* ── Inline tool row tokens (P_tool-inline-minimal) ────────────────
+/* ── Inline tool row tokens ────────────────
    Borderless row language: a bare line icon plus one muted text line.
    Live rows and serialized history rows read from the same tokens so
    old message HTML re-renders in the same visual language. */
@@ -232,10 +232,10 @@ body {
   color: hsl(var(--text-000));
 }
 /* ─── A11y utilities ── */
-/* P_a11y-visually-hidden — screen-reader-only text. The 1px size and
+/* Screen-reader-only text. The 1px size and
    clip-path trick keep the element in the accessibility tree without
    taking layout space. Used for icon-only buttons that need a label. */
-/* P_reduced-motion — honour the OS-level "reduce motion" preference.
+/* Honour the OS-level "reduce motion" preference.
    Scope: animations, transitions, view transitions. Layout-affecting
    transforms (sidebar drag) are kept so resize still feels responsive.
    Unlike the blanket approach, we preserve color/opacity/box-shadow

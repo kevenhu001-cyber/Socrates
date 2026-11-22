@@ -6,12 +6,12 @@
    restore layer. Keep this file's position in legacy/index.css stable.
    ========================================================================== */
 
-/* P_composer-single: one shell so the composer does
+/* One shell so the composer does
    not change skin between landing and in-chat. Identical width, radius,
    border, shadow, and focus feedback — only the inner Tiptap surface and
    the footer controls differ between the two surfaces.
 
-   P_composer-geometry-tokens — the three caps below are declared on this
+   The three caps below are declared on this
    element because 13-composer-rich.css and 16-final-contract.css read them
    from it (`.rich-composer[data-surface="chat"] .tiptap` max-height, and the
    focused wrap min-height). They were dropped from this rule when the
@@ -23,10 +23,10 @@
    intent documented at the consumers ("~280px ≈ 9 visible lines" on the
    desktop rail, and the keyboard cap that must stay above 132px on phones). */
 
-/* P_attachments — paperclip button to the left of the hint. Same
+/* Paperclip button to the left of the hint. Same
    circle footprint as the send button so the footer stays balanced
    regardless of attach state. */
-/* P_attachments — chip strip rendered above the textarea. Hidden
+/* Chip strip rendered above the textarea. Hidden
    when there are no pending attachments. Card-style chips (chatgpt.com /
    Vercel parity): a kind-tinted icon tile or square image thumb, a
    two-line name+meta column, and a floating remove affordance. */
@@ -200,7 +200,7 @@
 .attachment-chip.pending {
   border-color: var(--ui-border-default);
 }
-/* P_attachments-progress — determinate upload progress on every pending
+/* Determinate upload progress on every pending
    chip: a hairline bar pinned to the chip's bottom edge, plus a % badge
    on image chips (their name+meta column stays hidden, so the veil
    spinner alone used to be the only signal). Token radii only — the
@@ -272,7 +272,7 @@
   width: 11px;
   height: 11px;
 }
-/* P_file-attachments — chip row inside a sent user bubble. Reuses the
+/* Chip row inside a sent user bubble. Reuses the
    composer chip look; durable-file chips are links so the raw upload is
    one click away (opens in a new tab, authorized by the session). */
 /* Drag-over visual — the wrap gets a subtle accent border when the

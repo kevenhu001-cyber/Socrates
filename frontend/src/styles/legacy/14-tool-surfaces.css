@@ -384,7 +384,7 @@
   box-shadow: none;
 }
 
-/* ── Canvas block (P_canvas-mode) ─────────────────────────────────
+/* ── Canvas block ─────────────────────────────────
    ChatGPT-style editable reply surface. Seamless, unboxed feel with
    quiet chrome and zero visual clutter. */
 .canvas-block {

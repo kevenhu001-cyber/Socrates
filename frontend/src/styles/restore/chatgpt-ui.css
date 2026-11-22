@@ -210,7 +210,7 @@ body,
 /* One-row idle composer. The existing editor still expands to the legacy
    multiline grid when its controller adds .composer-multiline. */
 
-/* P_mic-dedup — with the mic track gone the topic send button shifts one
+/* With the mic track gone the topic send button shifts one
    column left; the in-chat composer keeps its own mic and stays on 5. */
 
 /* In-session composer is structurally nested one level deeper. */
@@ -661,7 +661,7 @@ body.workspace-active #appShell .workspace-row:hover {
     display: none !important;
   }
 
-  /* P_mic-dedup — topic send fills the old mic track's neighbour slot. */
+  /* Topic send fills the old mic track's neighbour slot. */
 
   .composer-tools-plugin-list,
   .scheduled-recommendations {
@@ -688,9 +688,9 @@ body.workspace-active #appShell .workspace-row:hover {
   /* A measured multiline draft and a selected plugin stack share the same
      two-tier rhythm: content above, controls below. */
 
-  /* P_mic-dedup — topic multiline send shifts into the vacated mic track. */
+  /* Topic multiline send shifts into the vacated mic track. */
 
-  /* P_mic-dedup — topic chips send shifts into the vacated mic track. */
+  /* Topic chips send shifts into the vacated mic track. */
 }
 
 /* The phone add menu's bottom-sheet pins (full-width, grabber, scrim) were

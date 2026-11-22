@@ -10,6 +10,9 @@
  * points at a refactor batch that no longer exists, so a reader cannot verify
  * it and cannot use it.
  *
+ * Stylesheets are scanned too: CSS comments explain the cascade, so they are
+ * documentation of the shipped system, not an exemption from the naming rule.
+ *
  * This is a freeze, not a cleanup: the baseline may only shrink. New code
  * states the invariant ("why this must stay true") and links an ADR instead.
  *
@@ -33,7 +36,7 @@ const SKIP_DIRS = new Set([
   'coverage',
   'generated',
 ]);
-const SOURCE_EXT = /\.(?:ts|tsx|js|mjs|cjs)$/;
+const SOURCE_EXT = /\.(?:ts|tsx|js|mjs|cjs|css)$/;
 
 /* Each pattern is a code the naming rule names explicitly, or the
  * "extracted from <deleted file> at line N" shape that replaces a reason. */

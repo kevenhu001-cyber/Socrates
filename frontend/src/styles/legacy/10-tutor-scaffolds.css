@@ -190,7 +190,7 @@
    whether the request is in flight or the page is hung. We make it
    slightly bolder than the default and add a subtle background so
    it reads as a "live indicator" rather than a stray inline label. */
-/* P_thinking-clickable — the "Thinking…" pill and placeholder open the
+/* The "Thinking…" pill and placeholder open the
    right-side thinking panel. They keep the live indicator look but gain
    an explicit affordance: pointer cursor, hover accent, focus ring. */
 .shimmer-text {

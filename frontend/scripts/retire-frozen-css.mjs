@@ -30,7 +30,17 @@ const DRY = process.argv.includes('--dry');
 const targets = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 
 const SOURCE_EXT = ['.ts', '.tsx', '.js', '.mjs', '.html'];
-const SKIP = new Set(['node_modules', 'dist', '.git', 'test-results', 'debug', 'coverage', 'styles', 'vendor-files', '.vite']);
+const SKIP = new Set([
+  'node_modules',
+  'dist',
+  '.git',
+  'test-results',
+  'debug',
+  'coverage',
+  'styles',
+  'vendor-files',
+  '.vite',
+]);
 
 function walk(dir, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -56,11 +66,56 @@ const corpus = [
 
 /* Generic state words never carry identity on their own. */
 const GENERIC = new Set([
-  'selected','active','open','closed','opened','ok','bad','err','error','warn','warning',
-  'loading','loaded','disabled','hidden','visible','correct','wrong','done','current',
-  'expanded','collapsed','on','off','recorded','pending','success','fail','failed','empty',
-  'live','settled','in','out','all','none','checked','focus','hovered','dark','light',
-  'mobile','desktop','first','last','even','odd','assistant','user','system',
+  'selected',
+  'active',
+  'open',
+  'closed',
+  'opened',
+  'ok',
+  'bad',
+  'err',
+  'error',
+  'warn',
+  'warning',
+  'loading',
+  'loaded',
+  'disabled',
+  'hidden',
+  'visible',
+  'correct',
+  'wrong',
+  'done',
+  'current',
+  'expanded',
+  'collapsed',
+  'on',
+  'off',
+  'recorded',
+  'pending',
+  'success',
+  'fail',
+  'failed',
+  'empty',
+  'live',
+  'settled',
+  'in',
+  'out',
+  'all',
+  'none',
+  'checked',
+  'focus',
+  'hovered',
+  'dark',
+  'light',
+  'mobile',
+  'desktop',
+  'first',
+  'last',
+  'even',
+  'odd',
+  'assistant',
+  'user',
+  'system',
 ]);
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const referenced = (cls) => new RegExp('(?<![\\w-])' + escapeRe(cls) + '(?![\\w-])').test(corpus);
@@ -103,7 +158,9 @@ for (const target of targets) {
   if (DRY) {
     for (const e of edits) {
       const label = e.keep ? `shrink -> ${e.keep.join(', ')}` : 'remove';
-      console.log(`  L${e.rule.source.start.line}  ${label}\n      ${e.rule.selector.replace(/\s+/g, ' ').slice(0, 100)}`);
+      console.log(
+        `  L${e.rule.source.start.line}  ${label}\n      ${e.rule.selector.replace(/\s+/g, ' ').slice(0, 100)}`,
+      );
     }
     console.log(`${target}: ${edits.length} rules would change`);
     continue;

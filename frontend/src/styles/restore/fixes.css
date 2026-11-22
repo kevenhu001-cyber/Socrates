@@ -134,7 +134,7 @@
     padding: 2px;
   }
 
-  /* P_has-invalidation — see legacy/layoutStateMirror.js. */
+  /* See legacy/layoutStateMirror.ts. */
   :where(:root[data-topic-setup-open]) #appShell#appShell #mainInner:not(#_n):not(._n) {
     padding-bottom: 0 !important;
   }
@@ -241,64 +241,10 @@
      chat-surface.css cannot win the tie. */
 }
 
-/* Sidebar rows — reference is a 36px row, 14px/20px at weight 400 with
-   -0.2px tracking, 10px radius, 6px/10px padding. Phone drawer rows keep
-   their taller touch target (mobile-parity pins 40px there). */
-
-/* "New chat" is the reference's only filled row: a 10% white wash (5% black
-   on the light rail) that also answers hover. The body:not() prefix mirrors
-   the home-state rule in ref-baseline.css so this wins that tie. */
-@media (max-width: 768px) {
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-  #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-}
-
-@media (max-width: 768px) {
-  [data-mode='light']
-    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-
-  [data-mode='light'] #appShell#appShell#appShell #navNew.sidebar-nav-btn {
-    background: transparent !important;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-  #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn:hover,
-  body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn:focus-visible {
-    background: rgb(255 255 255 / 10%) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  [data-mode='light'] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:hover,
-  [data-mode='light'] #appShell#appShell#appShell #sidebarNav .sidebar-nav-btn:focus-visible,
-  [data-mode='light']
-    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn:hover,
-  [data-mode='light']
-    body:not([data-conversation-active='true']):not(.workspace-active):not(.exam-active)
-    #appShell#appShell#appShell
-    #navNew.sidebar-nav-btn:focus-visible {
-    background: rgb(0 0 0 / 5%) !important;
-  }
-}
+/* Phone drawer row backgrounds are owned by polish/mobile-sidebar.css.
+   The reference row metrics that used to be described here were retired with
+   the mobile-parity merge; the canonical phone owner now carries both the
+   resting transparency and the hover/focus wash. */
 
 /* Light needs no override: --ui-text-muted is #737373 (≈9:1 on the white
    page), so the 14px legal line clears AA from the shared token. Do not

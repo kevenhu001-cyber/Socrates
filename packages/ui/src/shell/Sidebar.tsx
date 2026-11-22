@@ -250,6 +250,13 @@ export interface SidebarNavRowProps {
   hostStyle?: StyleProp<ViewStyle>;
   badgeStyle?: StyleProp<TextStyle>;
   labelStyle?: StyleProp<TextStyle>;
+  /**
+   * Web-only escape hatch: read the row's state paint from this CSS custom
+   * property and use the inline palette only as its fallback. The phone
+   * drawer sets the property to its reference values; native hosts omit it
+   * and keep the inline palette.
+   */
+  backgroundVar?: string;
   onPress: () => void;
 }
 
@@ -267,6 +274,7 @@ export function SidebarNavRow({
   hostStyle,
   badgeStyle,
   labelStyle,
+  backgroundVar,
   onPress,
 }: SidebarNavRowProps) {
   const { colors, fontFamily, typeScale } = useUiTheme();
@@ -281,26 +289,30 @@ export function SidebarNavRow({
       aria-controls={menu ? menu.controls : undefined}
       onPress={onPress}
       {...dataSet({ nav: navKey, i18nTitle: i18nKey })}
-      style={({ pressed, hovered, focused }: PressState) => [
-        styles.row,
-        hostStyle,
-        /* Resting rows set no paint of their own, so a host can still mark
-           a row as the implied current place (new chat on the empty home). */
-        active
-          ? {
-              backgroundColor: colors.card,
-              boxShadow: activeShadow ?? `0 0 0 1px ${colors.hairline}`,
-            }
+      style={({ pressed, hovered, focused }: PressState) => {
+        const statePaint = active
+          ? colors.card
           : pressed
-            ? { backgroundColor: colors.fillPressed }
+            ? colors.fillPressed
             : hovered || focused || menu?.expanded
-              ? { backgroundColor: colors.fill }
-              : null,
-        {
-          transitionProperty: 'background-color',
-          transitionDuration: `${uiMotion.fast}ms`,
-        } as object,
-      ]}
+              ? colors.fill
+              : 'transparent';
+        return [
+          styles.row,
+          hostStyle,
+          /* Resting rows paint transparent unless the host supplies a
+             background variable, so a host can still mark a row as the
+             implied current place (new chat on the empty home). */
+          {
+            backgroundColor: backgroundVar ? `var(${backgroundVar}, ${statePaint})` : statePaint,
+            ...(active ? { boxShadow: activeShadow ?? `0 0 0 1px ${colors.hairline}` } : null),
+          },
+          {
+            transitionProperty: 'background-color',
+            transitionDuration: `${uiMotion.fast}ms`,
+          } as object,
+        ];
+      }}
     >
       <View aria-hidden style={styles.glyph} {...dataSet({ part: 'nav-glyph' })}>
         <UiIcon name={icon} size={20} color={colors.ink} />

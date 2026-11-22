@@ -14,7 +14,7 @@
 .chat-input-bar {
   background: transparent;
 }
-/* P_composer-single — one shell, one selector for the width, radius,
+/* One shell, one selector for the width, radius,
    border, shadow and focus feedback. */
 .composer-input-wrap .attachment-chips {
   order: 0;
@@ -188,7 +188,7 @@
      collapsed composer body reserves only 44px of height. Hide the
      button until focus expands the wrap into its two-row layout, where
      the .composer-focused block places it next to the send button. */
-  /* P_kb-cap-editor — while the mobile composer is focused, the available
+  /* While the mobile composer is focused, the available
      space above the virtual keyboard can shrink by --keyboard-inset. With many
      attachment chips + a full multi-line editor + the 44px footer the
      focused wrap can exceed that space, and main-content's overflow:hidden
@@ -232,7 +232,13 @@
     transform: none;
   }
   /* Disable transform-on-press/hover for all interactive controls. */
-  .icon-btn:active, .recent-item:active, .recent-item-del:active, .recent-item-del:hover, .user-row:active, .new-reply-pill:active, .new-reply-pill:hover {
+  .icon-btn:active,
+  .recent-item:active,
+  .recent-item-del:active,
+  .recent-item-del:hover,
+  .user-row:active,
+  .new-reply-pill:active,
+  .new-reply-pill:hover {
     transform: none !important;
   }
   /* Disable icon micro-rotations. */

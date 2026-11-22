@@ -441,7 +441,7 @@
  * label. No background fill, no border, no uppercase letter-spacing.
  * Two colors are enough to distinguish Chat (cool blue) from Tutor
  * (warm amber) without dominating the row. */
-/* P_recent-minimal-badge — the colored dot is enough to identify
+/* The colored dot is enough to identify
  * the row type at a glance; the text label used to eat ~40px of
  * horizontal space and clip the title. Now the badge is just a 6px
  * dot. The full text label still ships in `data-mode-label` so the
