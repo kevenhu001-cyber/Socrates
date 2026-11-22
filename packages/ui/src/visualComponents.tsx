@@ -1,12 +1,11 @@
 import { useId, useState, type ReactNode } from 'react';
 import { uiRadius, uiSpace } from '@socrates/theme';
-import { UiText } from './primitives/UiText';
+import { UiText, type UiTextStyle } from './primitives/UiText';
 import { useUiTheme } from './primitives/theme';
-import { Platform, Pressable, View } from './react-web';
 
 // CSS interprets the shared numeric line heights as multipliers in the web host.
-const webLineHeight = Platform.select({ web: { lineHeight: 'normal' } });
-const numericTextStyle = [webLineHeight, { fontVariant: ['tabular-nums'] }];
+const webLineHeight: UiTextStyle = { lineHeight: 'normal' };
+const numericTextStyle: UiTextStyle[] = [webLineHeight, { fontVariant: ['tabular-nums'] }];
 
 export function VisualStepFrame({
   label,
@@ -21,7 +20,7 @@ export function VisualStepFrame({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
+    <div
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -31,7 +30,7 @@ export function VisualStepFrame({
         borderRadius: uiRadius.md,
       }}
     >
-      <View
+      <div
         style={{
           display: 'flex',
           flexDirection: 'row',
@@ -46,11 +45,11 @@ export function VisualStepFrame({
         <UiText variant="labelSm" tone="secondary" style={numericTextStyle}>
           {position}
         </UiText>
-      </View>
+      </div>
       <UiText aria-live={playing ? 'off' : 'polite'} variant="bodySm" style={webLineHeight}>
         {children}
       </UiText>
-    </View>
+    </div>
   );
 }
 
@@ -65,7 +64,7 @@ export function VisualMetric({
 }) {
   const { colors } = useUiTheme();
   return (
-    <View
+    <div
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -87,7 +86,7 @@ export function VisualMetric({
           {detail}
         </UiText>
       )}
-    </View>
+    </div>
   );
 }
 
@@ -119,8 +118,8 @@ export function VisualMeter({
   const rangeText =
     min === 0 ? `${value} / ${measurement(max)}` : `${readout} (${min}–${measurement(max)})`;
   return (
-    <View style={{ display: 'flex', flexDirection: 'column', gap: uiSpace[1], minWidth: 0 }}>
-      <View
+    <div style={{ display: 'flex', flexDirection: 'column', gap: uiSpace[1], minWidth: 0 }}>
+      <div
         aria-hidden={true}
         style={{
           display: 'flex',
@@ -136,8 +135,8 @@ export function VisualMeter({
         <UiText variant="labelSm" tone="secondary" style={numericTextStyle}>
           {showRange ? rangeText : readout}
         </UiText>
-      </View>
-      <View
+      </div>
+      <div
         role="meter"
         aria-label={labelText}
         aria-valuemin={min}
@@ -151,7 +150,7 @@ export function VisualMeter({
           overflow: 'hidden',
         }}
       >
-        <View
+        <div
           style={{
             height: '100%',
             width: `${percent}%`,
@@ -159,8 +158,8 @@ export function VisualMeter({
             borderRadius: uiRadius.pill,
           }}
         />
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }
 
@@ -178,22 +177,30 @@ export function VisualDisclosure({
   // A closed panel mounts its content on first open, then retains local inputs.
   const [expanded, setExpanded] = useState(() => (defaultOpen === true ? true : null));
   return (
-    <View style={{ minWidth: 0 }}>
-      <Pressable
+    <div style={{ minWidth: 0 }}>
+      <button
+        type="button"
         className="iui-disclosure-toggle"
         aria-expanded={expanded === true}
         aria-controls={id}
-        onPress={() => setExpanded((open) => !open)}
+        onClick={() => setExpanded((open) => !open)}
         style={{
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: uiSpace[2],
+          width: '100%',
           paddingLeft: uiSpace[3],
           paddingRight: uiSpace[3],
+          paddingTop: 0,
+          paddingBottom: 0,
+          border: 0,
           borderRadius: uiRadius.sm,
           backgroundColor: colors.fill,
+          color: 'inherit',
+          font: 'inherit',
+          cursor: 'pointer',
         }}
       >
         <UiText variant="label" style={webLineHeight}>
@@ -202,9 +209,9 @@ export function VisualDisclosure({
         <UiText aria-hidden variant="label" tone="secondary" style={webLineHeight}>
           {expanded ? '−' : '+'}
         </UiText>
-      </Pressable>
-      <View
-        nativeID={id}
+      </button>
+      <div
+        id={id}
         style={{
           display: expanded ? 'flex' : 'none',
           flexDirection: 'column',
@@ -213,7 +220,7 @@ export function VisualDisclosure({
         }}
       >
         {expanded !== null ? children : null}
-      </View>
-    </View>
+      </div>
+    </div>
   );
 }

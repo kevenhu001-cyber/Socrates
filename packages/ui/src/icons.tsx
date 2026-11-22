@@ -1,8 +1,9 @@
 /**
- * Shell icons — the React Native port of the baseline SPA's inline SVGs.
+ * Shell icons — the shared DOM glyphs, copied from the baseline SPA's inline
+ * SVGs.
  *
- * Every shape below is copied verbatim from the frontend sources so the
- * React Native host draws the same glyph geometry as the SPA:
+ * Every shape below is copied verbatim from the frontend sources so the shell
+ * draws the same glyph geometry as the SPA:
  *   - `frontend/src/react/sidebar/SidebarNav.tsx` (nav rows)
  *   - `frontend/src/react/sidebar-chrome/SidebarHeader.tsx` (new chat / toggle / search)
  *   - `frontend/src/react/message-list/MessageToolbar.tsx` (message toolbar)
@@ -16,7 +17,6 @@
  * l=line(x1,y1,x2,y2), pl=polyline(points).
  */
 import React, { createContext, useContext } from 'react';
-import Svg, { Circle, Line, Path, Polyline, Rect } from './react-web';
 
 type Shape =
   | ['p', string]
@@ -330,7 +330,7 @@ export interface IconProps {
   /** Optional non-square SVG box for baseline icons with a squashed viewBox. */
   width?: number;
   height?: number;
-  /** Baseline icons use `currentColor`; RN needs the resolved color. */
+  /** Baseline icons use `currentColor`; the shared component takes the resolved color. */
   color: string;
   /** Optional per-surface stroke override (the message toolbar uses 1.7). */
   strokeWidth?: number;
@@ -366,7 +366,7 @@ export function Icon({ name, size = 20, width, height, color, strokeWidth }: Ico
     );
   const g = GLYPHS[name];
   return (
-    <Svg
+    <svg
       width={width ?? size}
       height={height ?? size}
       viewBox={`0 0 ${g.vb} ${g.vb}`}
@@ -378,11 +378,11 @@ export function Icon({ name, size = 20, width, height, color, strokeWidth }: Ico
     >
       {g.shapes.map((shape, index) => {
         const key = `${name}-${index}`;
-        if (shape[0] === 'p') return <Path key={key} d={shape[1]} />;
-        if (shape[0] === 'c') return <Circle key={key} cx={shape[1]} cy={shape[2]} r={shape[3]} />;
+        if (shape[0] === 'p') return <path key={key} d={shape[1]} />;
+        if (shape[0] === 'c') return <circle key={key} cx={shape[1]} cy={shape[2]} r={shape[3]} />;
         if (shape[0] === 'r')
           return (
-            <Rect
+            <rect
               key={key}
               x={shape[1]}
               y={shape[2]}
@@ -392,10 +392,10 @@ export function Icon({ name, size = 20, width, height, color, strokeWidth }: Ico
             />
           );
         if (shape[0] === 'l')
-          return <Line key={key} x1={shape[1]} y1={shape[2]} x2={shape[3]} y2={shape[4]} />;
-        return <Polyline key={key} points={shape[1]} />;
+          return <line key={key} x1={shape[1]} y1={shape[2]} x2={shape[3]} y2={shape[4]} />;
+        return <polyline key={key} points={shape[1]} />;
       })}
-    </Svg>
+    </svg>
   );
 }
 
