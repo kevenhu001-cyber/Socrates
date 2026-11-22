@@ -13,7 +13,6 @@
  * Shape tuples: p=path, c=circle(cx,cy,r), r=rect(x,y,w,h,rx), l=line.
  * Dots are drawn as tiny stroked circles (the ⋯ of More), never zero-length paths.
  */
-import { View } from '../react-web';
 import type { ComponentType } from 'react';
 import { useUiTheme } from './theme';
 
@@ -182,7 +181,9 @@ export interface UiIconProps {
 /** A decorative line glyph. Accessible names belong on the control around it. */
 export function UiIcon({ name, size = 18, color }: UiIconProps) {
   const { colors, iconRenderer: Renderer } = useUiTheme();
-  if (!Renderer) return <View style={{ width: size, height: size }} />;
+  if (!Renderer) {
+    return <span aria-hidden style={{ display: 'inline-block', width: size, height: size }} />;
+  }
   return (
     <Renderer
       name={name}

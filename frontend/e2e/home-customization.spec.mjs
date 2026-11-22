@@ -140,7 +140,9 @@ test('light conversation is readable and find opens at the upper right', async (
     const value = (selector, property) =>
       getComputedStyle(document.querySelector(selector))[property];
     return {
-      page: value('.main-content', 'backgroundColor'),
+      // `.main-content` is a transparent layout layer; the page colour lives
+      // on the document canvas.
+      page: value('body', 'backgroundColor'),
       topBar: value('.top-bar', 'backgroundColor'),
       text: value('#msgList .msg.assistant .msg-body', 'color'),
     };

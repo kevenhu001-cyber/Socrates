@@ -8,7 +8,8 @@ import {
   SourceList,
   sourceCardsOf,
 } from '@socrates/ui/turn';
-import { UiButton, useWindowDimensions } from '@socrates/ui/primitives';
+import { UiButton } from '@socrates/ui/primitives';
+import { useWindowDimensions } from '../rn/useWindowDimensions';
 import { faviconProxyUrl } from '../../legacy/faviconProxy';
 import { basename, tf, translate } from '../../legacy/toolPresentationModel.ts';
 import { copyText, openExternal } from './copyText';

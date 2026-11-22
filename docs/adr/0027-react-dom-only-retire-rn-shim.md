@@ -29,7 +29,7 @@
    不是 React Native 组件；布局用 CSS（class 或 CSS 属性），不用 RN style key。
 2. **`packages/ui/src/react-web.tsx` 冻结。** 不再新增 importer，不再为它补 RN
    语义；直接 importer 的文件数由 `check-rn-shim.mjs` 以 shrink-only baseline
-   守住，当前 40 个文件，只允许下降。
+   守住，只允许下降（当前值见 `frontend/scripts/rn-shim.baseline.json`）。
 3. **逐面迁移。** 每次选一个组件面（先 `primitives/UiText`、`settings`，再
    `composer`、`turn`、`shell`、`learn`、`study`、`exam`），把它改成 DOM 元素与
    CSS，删掉对 shim 的 import；迁移到 0 时删除 shim 与 `dataSet` 这类 RN 词汇。
@@ -40,7 +40,7 @@
 
 - **保留 shim，只把它做得更像 RN** —— 正是本 ADR 要结束的状态；每补一个 RN 语义
   （`dataSet`、View 的 flex 默认）都在加深耦合。
-- **一次性重写 `packages/ui`** —— 10k+ 行、40 个文件，视觉风险不可控；按面迁移
+- **一次性重写 `packages/ui`** —— 10k+ 行、数十个文件，视觉风险不可控；按面迁移
   可以用现有视觉 spec 逐批验收。
 - **把 `packages/ui` 合并回 `frontend/`** —— 会破坏 `@socrates/core` 与 Android
   客户端的共享边界，且不解决 RN 形状 API 本身。

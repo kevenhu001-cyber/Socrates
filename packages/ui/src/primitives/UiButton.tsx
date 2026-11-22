@@ -1,13 +1,7 @@
-import { useRef, useState, type ReactNode } from 'react';
-import {
-  Animated,
-  Platform,
-  Pressable,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from '../react-web';
+import { useState, type ButtonHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 import { uiMotion, uiRadius, uiSpace } from '@socrates/theme';
+import { dataAttributes, type DataSet } from '../domProps';
+import { domStyle } from '../domStyle';
 import { useUiTheme } from './theme';
 import { UiText } from './UiText';
 
@@ -18,60 +12,71 @@ const HEIGHT: Record<UiButtonSize, number> = { sm: 32, md: 40, lg: 48 };
 const PAD_X: Record<UiButtonSize, number> = { sm: uiSpace[3], md: uiSpace[4], lg: uiSpace[5] };
 
 /** Shared press + focus feedback: a small press-in scale (the touch was
- * received) and a visible focus ring for keyboard users. Nothing else moves. */
+ * received) and a visible focus ring for keyboard users. Nothing else moves.
+ *
+ * The returned `scale` is a plain number so DOM components can use it
+ * directly; the remaining `onPress*` / `onHover*` names keep the frozen shim
+ * and its callers working until each surface migrates. */
 export function usePressFeedback() {
-  const scale = useRef(new Animated.Value(1)).current;
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  /* Pointer presses focus the control too; only keyboard focus shows the
-     ring (focus-visible), so a click never leaves a black outline behind. */
-  const pointer = useRef(false);
-  const native = Platform.OS !== 'web';
-  const to = (value: number) =>
-    Animated.timing(scale, {
-      toValue: value,
-      duration: uiMotion.fast,
-      useNativeDriver: native,
-    }).start();
+  const [pressed, setPressed] = useState(false);
+
+  const press = () => setPressed(true);
+  const release = () => setPressed(false);
+  const enter = () => setHovered(true);
+  const leave = () => {
+    setHovered(false);
+    setPressed(false);
+  };
+
   return {
-    scale,
+    scale: pressed ? 0.97 : 1,
+    pressed,
     hovered,
     focused,
     handlers: {
-      onPressIn: () => {
-        pointer.current = true;
-        setFocused(false);
-        to(0.97);
-      },
-      onPressOut: () => to(1),
-      onHoverIn: () => setHovered(true),
-      onHoverOut: () => setHovered(false),
-      onFocus: (event: unknown) => setFocused(isKeyboardFocus(event, pointer.current)),
-      onBlur: () => {
-        pointer.current = false;
-        setFocused(false);
-      },
+      /* DOM names are used by migrated components. */
+      onPointerDown: press,
+      onPointerUp: release,
+      onPointerCancel: release,
+      onPointerEnter: enter,
+      onPointerLeave: leave,
+      onFocus: (event: unknown) => setFocused(isKeyboardFocus(event)),
+      onBlur: () => setFocused(false),
+      /* RN aliases still consumed by the frozen react-web shim. */
+      onPressIn: press,
+      onPressOut: release,
+      onHoverIn: enter,
+      onHoverOut: leave,
     },
   };
 }
 
-/** Web: ask the focused node for `:focus-visible` (the browser's own
- * keyboard-vs-pointer heuristic). Native: focus without a press is keyboard. */
-function isKeyboardFocus(event: unknown, pressed: boolean): boolean {
-  const target = (
-    event as { nativeEvent?: { target?: { matches?: (selector: string) => boolean } } } | null
-  )?.nativeEvent?.target;
+/** Ask the focused node for `:focus-visible` (the browser's own
+ * keyboard-vs-pointer heuristic). Unknown hosts fall back to showing the
+ * ring rather than hiding a keyboard cue. */
+function isKeyboardFocus(event: unknown): boolean {
+  const node = event as {
+    currentTarget?: { matches?: (selector: string) => boolean };
+    target?: { matches?: (selector: string) => boolean };
+    nativeEvent?: { target?: { matches?: (selector: string) => boolean } };
+  } | null;
+  const target = node?.currentTarget ?? node?.nativeEvent?.target ?? node?.target;
   if (target && typeof target.matches === 'function') {
     try {
       return target.matches(':focus-visible');
-    } catch (_) {
-      return !pressed;
+    } catch {
+      return true;
     }
   }
-  return !pressed;
+  return true;
 }
 
-export interface UiButtonProps extends Omit<PressableProps, 'children' | 'style'> {
+export interface UiButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  'style' | 'children'
+> {
   label: string;
   variant?: UiButtonVariant;
   size?: UiButtonSize;
@@ -79,12 +84,24 @@ export interface UiButtonProps extends Omit<PressableProps, 'children' | 'style'
   leading?: ReactNode;
   /** Marks a toggle button as on (ghost/secondary render as filled ink). */
   selected?: boolean;
-  style?: StyleProp<ViewStyle>;
+  style?: unknown;
+  /** RN alias kept while callers migrate. DOM callers should use onClick. */
+  onPress?: (event: MouseEvent<HTMLButtonElement>) => void;
+  accessibilityRole?: string;
+  accessibilityLabel?: string;
+  accessibilityState?: { selected?: boolean; disabled?: boolean; [key: string]: unknown };
+  testID?: string;
+  nativeID?: string;
+  dataSet?: DataSet;
+  focusable?: boolean;
 }
 
 /**
  * Pill button. `primary` is the black capsule, `secondary` the pale grey
  * capsule, `ghost` a transparent capsule that fills on hover.
+ *
+ * React DOM by design (ADR 0027): a plain `<button>` with an inline flex
+ * label, no React Native layer.
  */
 export function UiButton({
   label,
@@ -93,6 +110,17 @@ export function UiButton({
   leading,
   selected,
   style,
+  onPress,
+  accessibilityRole,
+  accessibilityLabel,
+  accessibilityState,
+  testID,
+  nativeID,
+  dataSet,
+  focusable,
+  disabled,
+  type,
+  onClick,
   ...rest
 }: UiButtonProps) {
   const { colors } = useUiTheme();
@@ -109,30 +137,54 @@ export function UiButton({
       : hovered
         ? colors.fill
         : 'transparent';
+  const pressedState =
+    (accessibilityState && 'selected' in accessibilityState
+      ? accessibilityState.selected
+      : selected) ?? (rest['aria-pressed'] as boolean | undefined);
+  const disabledState = accessibilityState?.disabled;
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={selected === undefined ? undefined : { selected }}
+    <button
       {...rest}
+      type={type ?? 'button'}
+      disabled={disabled}
+      id={nativeID || (rest.id as string | undefined)}
+      data-testid={testID}
+      role={accessibilityRole ?? (rest.role as string | undefined) ?? 'button'}
+      aria-label={accessibilityLabel ?? (rest['aria-label'] as string | undefined)}
+      aria-pressed={pressedState}
+      aria-disabled={disabledState || undefined}
+      tabIndex={focusable === false ? -1 : rest.tabIndex}
+      {...dataAttributes(dataSet)}
       {...handlers}
-      style={style}
+      onClick={onPress ?? onClick}
+      style={{
+        appearance: 'none',
+        background: 'none',
+        border: 'none',
+        padding: 0,
+        margin: 0,
+        font: 'inherit',
+        color: 'inherit',
+        cursor: disabled ? 'default' : 'pointer',
+        ...domStyle(style),
+        ...(focused ? { outline: `2px solid ${colors.ink}`, outlineOffset: 2 } : {}),
+      }}
     >
-      <Animated.View
+      <span
         style={{
+          display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: uiSpace[2],
           height: HEIGHT[size],
-          paddingHorizontal: PAD_X[size],
+          paddingLeft: PAD_X[size],
+          paddingRight: PAD_X[size],
           borderRadius: uiRadius.pill,
           backgroundColor: background,
-          outlineStyle: focused ? 'solid' : undefined,
-          outlineWidth: focused ? 2 : 0,
-          outlineColor: colors.ink,
-          outlineOffset: 2,
-          transform: [{ scale }],
+          transform: `scale(${scale})`,
+          transition: `transform ${uiMotion.fast}ms ease`,
         }}
       >
         {leading}
@@ -143,7 +195,7 @@ export function UiButton({
         >
           {label}
         </UiText>
-      </Animated.View>
-    </Pressable>
+      </span>
+    </button>
   );
 }

@@ -1,7 +1,11 @@
 /**
- * RN-1 primitives: token-driven building blocks for the new white / grey UI.
- * DOM-free; the web shell renders them through react-native-web.
+ * Shared primitives: token-driven React DOM building blocks.
+ *
+ * ADR 0027: these are plain DOM elements plus CSS, not React Native views.
+ * The RN-shaped style aliases come from `domStyle.ts` and disappear with the
+ * frozen `react-web` shim.
  */
+export type { TextStyle, ViewStyle } from '../domStyle';
 export { UiThemeProvider, useUiTheme, type UiFontWeight, type UiThemeValue } from './theme';
 export { UiText, type UiTextProps, type UiTextTone } from './UiText';
 export {
@@ -23,11 +27,3 @@ export {
   type UiIconRenderer,
   type UiIconRendererProps,
 } from './UiIcon';
-export {
-  Switch,
-  type SwitchProps,
-  type TextStyle,
-  type ViewStyle,
-  type StyleProp,
-  useWindowDimensions,
-} from '../react-web';

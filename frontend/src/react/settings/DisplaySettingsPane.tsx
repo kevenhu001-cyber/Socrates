@@ -1,4 +1,3 @@
-import { Switch, type SwitchProps } from '@socrates/ui/primitives';
 import { SettingsSwitch, SettingsSegmentedControl } from '@socrates/ui/settings';
 import { Label as ShadcnLabel } from '../ui/shadcn/label';
 import { NativeControl as ShadcnNativeControl } from '../ui/NativeControl';
@@ -12,12 +11,6 @@ import {
 } from '../../displayPrefs.ts';
 import { settingsPreferenceActions, useSettingsPreferencesStore } from './settings.store';
 import type { SettingsPaneProps } from './settings.types';
-
-function WebSwitch({ thumbColor, ...props }: SwitchProps) {
-  // RN Web exposes a separate thumb color for the checked state.
-  const webProps = { activeThumbColor: thumbColor };
-  return <Switch {...props} thumbColor={thumbColor} {...webProps} />;
-}
 
 /**
  * Display: text size, content width, grid and background. Every control writes
@@ -77,7 +70,6 @@ export function DisplaySettingsPane({ hidden, label }: SettingsPaneProps) {
           {gridLabel}
           <WebUiTheme>
             <SettingsSwitch
-              control={WebSwitch}
               label={gridLabel}
               value={display.showGrid}
               onValueChange={settingsPreferenceActions.setGrid}
