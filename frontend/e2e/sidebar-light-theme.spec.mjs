@@ -11,9 +11,16 @@ const SESSIONS = [
 ].map((title, i) => ({
   id: `s${i}`,
   title,
+  topic: title,
+  mode: 'chat',
+  phase: 'chat',
+  kind: 'chat',
   messageCount: 4,
   updatedAt: new Date(Date.now() - i * 3600e3).toISOString(),
   createdAt: new Date().toISOString(),
+  pinned: false,
+  archivedAt: null,
+  tags: [],
 }));
 
 test('capture light mode sidebar screenshots', async ({ page }) => {
@@ -23,13 +30,19 @@ test('capture light mode sidebar screenshots', async ({ page }) => {
     localStorage.setItem('socrates-sb', '1');
   });
   await mockAuthedApp(page, { lang: 'zh' });
-  await page.route('**/api/**/sessions**', (r) =>
+  await page.route(/\/api\/(?:v2\/)?sessions(?:\?|$)/, (r) =>
     r.request().method() === 'GET'
-      ? r.fulfill({ contentType: 'application/json', body: JSON.stringify({ sessions: SESSIONS }) })
+      ? r.fulfill({
+          contentType: 'application/json',
+          body: JSON.stringify({ sessions: SESSIONS, nextCursor: null }),
+        })
       : r.fallback(),
   );
   await gotoAndSettle(page, '/');
   await waitForAppShell(page);
+  // The boot preflight and the React session list settle after the shell is
+  // visible. Read colours only after a real row has rendered.
+  await expect(page.locator('#recentsList .recent-item-text').first()).toBeVisible();
 
   // Read computed styles of sidebar elements in desktop light mode
   const styles = await page.evaluate(() => {

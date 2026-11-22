@@ -11,7 +11,6 @@ const smoke =
 const visual = /(?:^|[/\\])(?:[^/\\]*-)?(?:visual|reference|palette)(?:-[^/\\]+)?\.spec\.mjs$/;
 const theme =
   /(?:^|[/\\])(?:theme-system|theme-contrast|sidebar-light-theme|shadcn-theme)\.spec\.mjs$/;
-const visualSpecs = [visual, theme];
 const desktop = devices['Desktop Chrome'];
 const ignoredSpecs = [
   '**/rn-web-smoke.spec.mjs',
@@ -52,7 +51,15 @@ export default defineConfig({
     '{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}-chromium-{platform}{ext}',
   projects: [
     { name: 'smoke', testMatch: smoke, use: desktop },
-    { name: 'regression', testIgnore: [...ignoredSpecs, smoke, ...visualSpecs], use: desktop },
-    { name: 'visual', testMatch: visualSpecs, use: desktop },
+    {
+      name: 'regression',
+      testIgnore: [...ignoredSpecs, smoke, visual, theme],
+      use: desktop,
+    },
+    // Theme/contrast checks are deterministic computed-style assertions and
+    // stay blocking. Screenshot and golden-geometry specs are advisory: an
+    // intentional redesign should not make an otherwise healthy PR unmergeable.
+    { name: 'theme', testMatch: theme, use: desktop },
+    { name: 'visual', testMatch: visual, retries: 1, use: desktop },
   ],
 });

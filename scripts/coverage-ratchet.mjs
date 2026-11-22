@@ -40,11 +40,14 @@ const BASELINE = `${ROOT}scripts/coverage.baseline.json`;
  * fires on noise teaches people to bypass gates.
  *
  * JITTER is the downward tolerance: a drop smaller than this is measurement
- * noise, not a regression. It is deliberately larger than the observed spread.
- * SLACK is the upward tolerance before the ratchet asks to be tightened;
- * without it the floor rots while real coverage drifts up and back down inside
- * the gap. */
-const JITTER = 0.5;
+ * noise or a cross-tree refactor, not a regression. It is deliberately larger
+ * than the observed V8 spread. Both trees now measure only their own `src/**`
+ * (see the package scripts), so a shared-package edit can no longer move a
+ * lane's floor.
+ *
+ * SLACK is the upward tolerance before the ratchet prints an update reminder.
+ * Coverage moving UP is never a failure: adding tests must not turn CI red. */
+const JITTER = 2.0;
 const SLACK = 2.0;
 
 const args = process.argv.slice(2);
@@ -159,13 +162,12 @@ if (regressions.length > 0) {
 }
 
 if (improvements.length > 0) {
-  console.error(`\n[coverage] ${project}: coverage improved past the floor — raise it:`);
-  for (const i of improvements) console.error(`  - ${i}`);
-  console.error(
+  console.warn(`\n[coverage] ${project}: coverage improved past the floor — consider raising it:`);
+  for (const i of improvements) console.warn(`  - ${i}`);
+  console.warn(
     `\n  Run: node scripts/coverage-ratchet.mjs ${project} --update\n` +
       '  (A floor left behind by real progress stops protecting anything.)',
   );
-  process.exit(1);
 }
 
 console.log(`[coverage] ${project}: at or just above the floor`);

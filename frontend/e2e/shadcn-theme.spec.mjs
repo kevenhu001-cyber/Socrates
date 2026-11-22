@@ -60,11 +60,16 @@ for (const style of ['socrates', 'philosophy']) {
         expect(semantic).toBe(legacy);
       }
       await settings.locator('.settings-nav [data-section="personalization"]').click();
+      const body = settings.locator('.settings-body');
+      await expect(body).toBeVisible();
+      expect(
+        await body.evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft)),
+      ).toBeGreaterThan(0);
       const section = settings.locator('.settings-pane:visible .settings-section').first();
       await expect(section).toBeVisible();
-      expect(
-        await section.evaluate((node) => parseFloat(getComputedStyle(node).paddingLeft)),
-      ).toBeGreaterThan(0);
+      // Settings v2 is a quiet document: the section owns a divider, not a
+      // card inset. The page padding is asserted on .settings-body above.
+      await expect(section).toHaveCSS('border-bottom-width', '1px');
       const tones = settings.locator('#tonePresetOptions');
       await expect(tones.getByRole('button').first()).toHaveCSS('border-width', '1px');
       await expect(tones.getByRole('button', { pressed: true })).not.toHaveCSS(

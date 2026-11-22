@@ -67,8 +67,20 @@ else
         server=true
         ;;
 
-      # packages/ is shared source. Be conservative because the dependency
-      # graph is intentionally source-linked rather than published packages.
+      # packages/ is shared source. The dependency graph is intentionally
+      # source-linked rather than published, so classify by the actual
+      # consumers instead of waking every product lane for every package.
+      # UI and theme are frontend-only; contracts and core are consumed by
+      # both product lanes. Unknown packages stay conservative below.
+      packages/ui/*|packages/theme/*)
+        frontend=true
+        shared=true
+        ;;
+      packages/contracts/*|packages/core/*)
+        frontend=true
+        server=true
+        shared=true
+        ;;
       packages/*)
         frontend=true
         server=true

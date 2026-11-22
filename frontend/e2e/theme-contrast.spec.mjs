@@ -119,6 +119,8 @@ test('light muted labels clear AA and the placeholder keeps its reference tone',
   page,
 }) => {
   await openApp(page, { mode: 'light' });
+  // Recents are restored from the boot preflight after the shell paints.
+  await expect(page.locator('#recentsList .recents-time-label').first()).toBeVisible();
   const probe = await page.evaluate(() => {
     const pick = (selector) => {
       const node = document.querySelector(selector);
@@ -255,6 +257,8 @@ test('light palette roles clear AA on every light surface they sit on', async ({
 
 test('dark palette roles clear AA on every dark surface they sit on', async ({ page }) => {
   await openApp(page, { mode: 'dark' });
+  // Recents are restored from the boot preflight after the shell paints.
+  await expect(page.locator('#recentsList .recents-time-label').first()).toBeVisible();
   const probe = await page.evaluate(() => {
     const host = document.createElement('div');
     host.setAttribute('aria-hidden', 'true');
@@ -376,7 +380,24 @@ for (const mode of ['dark', 'light']) {
     await expect(section).toBeVisible();
     const colors = await section.evaluate((element) => {
       const style = getComputedStyle(element);
-      return { background: style.backgroundColor, text: style.color };
+      // Settings v2 keeps the section transparent and paints on the page.
+      // Walk up to the first opaque surface, then fall back to the palette.
+      let background = '';
+      for (let node = element; node; node = node.parentElement) {
+        const value = getComputedStyle(node).backgroundColor;
+        if (!/rgba?\(.*,\s*0(\.0+)?\)$/.test(value) && value !== 'transparent') {
+          background = value;
+          break;
+        }
+      }
+      if (!background) {
+        const probe = document.createElement('span');
+        probe.style.backgroundColor = 'var(--ui-bg-page)';
+        document.body.appendChild(probe);
+        background = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+      }
+      return { background, text: style.color };
     });
     expect(contrast(rgb(colors.text), rgb(colors.background))).toBeGreaterThanOrEqual(4.5);
   });

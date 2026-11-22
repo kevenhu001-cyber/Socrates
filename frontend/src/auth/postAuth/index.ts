@@ -20,10 +20,10 @@ import { fetchWithAuthGraceRetry, restoreRoutedSession } from './flow.ts';
 import { migrateLegacyStorage } from './migration.ts';
 import { renderRecents } from '../../legacy/recentsView.ts';
 import { restoreComposerReloadDrafts } from '../../composer/reloadDrafts.ts';
+import { refreshServerSessions } from '../../session/recents.ts';
 
 /** Legacy boot hooks still published on the window by app entry. */
 interface PostAuthLegacyWindow extends Window {
-  refreshServerSessions?: () => Promise<unknown>;
   initialLoad?: () => void;
 }
 
@@ -54,10 +54,12 @@ function replayQueuedMessageEdits(): void {
 }
 
 async function fetchBootstrapData(): Promise<void> {
-  const win = window as PostAuthLegacyWindow;
   const isInGraceWindow = () => isInAuthGraceWindow();
   await Promise.all([
-    fetchWithAuthGraceRetry(win.refreshServerSessions, { isInGraceWindow }),
+    // Own the call directly. This used to read a window hook that app entry
+    // no longer publishes, which left the boot-prefetched Recents list
+    // unread and the sidebar empty after every sign-in.
+    fetchWithAuthGraceRetry(refreshServerSessions, { isInGraceWindow }),
     fetchWithAuthGraceRetry(refreshApiConfig, { isInGraceWindow }),
     loadUserMemories().catch(() => null),
   ]);

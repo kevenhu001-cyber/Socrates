@@ -1,19 +1,22 @@
 # UI 结构与迁移边界
 
-更新：2026-11-17。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
+更新：2026-11-22。本文描述当前代码的职责、生命周期协议和剩余迁移债务。
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
+2026-11-22：ADR 0027 将 **React DOM 定为唯一 UI 栈**。`packages/ui` 组件是普通 React DOM
+组件；本地 `packages/ui/src/react-web.tsx` shim 已冻结，直接 importer 只减不增（当前 38）。
+下方 RN-1～RN-14 章节只记录历史迁移过程，不是新代码规范。
 2026-11-17：字符串键状态 facade `state/store.ts` 及其浏览器全局 `window.stateStore` 已退役（文件已删除）；
 状态访问只经 `frontend/src/store/index.ts` 的类型化 hooks 与 bridge，代码树里残留的 `stateStore` 字样只是过期注释。
 2026-11-16：Expo Universal App（`apps/socrates/`）及其专属包、barrel、CI lane 已删除；
-`frontend/` 是唯一生产 Web 客户端，RN UI 就地通过 `react-native-web` 接入。
+`frontend/` 是唯一生产 Web 客户端。
 
 ## 客户端职责
 
 | 目录 | 当前职责 | 共享与隔离边界 |
 |---|---|---|
-| `frontend/` | 唯一生产 Vite SPA，视觉与功能基准，原地 RN 化目标 | React 渐进接管静态 shell；共享 RN 组件经窄子路径 + `react-native-web` 挂载 |
-| `packages/ui/` | 共享 RN 组件（仅子模块，无根 barrel） | DOM-free；SPA 经 RN Web + Web host adapter 使用，不迁入 react-dom / DOM 逻辑 |
+| `frontend/` | 唯一生产 Vite SPA，视觉与功能基准，React DOM 迁移目标 | React 渐进接管静态 shell；共享组件经窄子路径 + Web host adapter 挂载 |
+| `packages/ui/` | 共享 React DOM 呈现组件（仅子模块，无根 barrel） | DOM-free；SPA 经 Web host adapter 使用，不读 DOM 逻辑 |
 | `packages/theme/` | 共享 token 与 RN 色值；新 UI token 生成源 | `ui.ts` 生成新 UI CSS 变量；SPA 现有几何仍归 tokens.css，最终调色板及别名桥接归 themes.css |
 | `apps/socrates-android/` | 独立 Kotlin + Compose Android | ADR 0021 例外，共享 `/api/v2` 协议与 `@socrates/core` |
 | `site/` | 独立营销和文档站 | 独立部署，静态资源修改要同步 cache-busting 版本 |
@@ -21,8 +24,8 @@
 `mobile/`、`capacitor/`、`apps/socrates/`（Expo Universal App）均已删除。
 `desktop/dist/` 是 gitignored 导出物，没有源代码归属。
 
-SPA 是唯一生产 Web 端；RN Web 的增量接入不代表全功能已签收，也不授权批量改写移动参考。
-RN-1 的新视觉方向适用于明确迁移的模块；未移交表面继续保留现有宿主 ID、密度、截图与样式优先级契约。
+SPA 是唯一生产 Web 端；React DOM 是唯一 UI 栈。`react-web` shim 只减不增，不能作为新组件的
+依赖。未移交表面继续保留现有宿主 ID、密度、截图与样式优先级契约。
 `packages/ui` 只持有共享呈现，Web 宿主、认证时序、DOM 测量和兼容动作仍留在 frontend 的适配边界。
 
 ## SPA 入口与依赖方向
@@ -183,10 +186,10 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 |---|---|---|
 | 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
 | window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` facade 已于 2026-11-17 退役，不再有生产调用；认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 聊天历史与诊断／搜索的状态读取已迁到类型化 store，无需再分域迁移。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
-| `legacy/` / `restore/` | `lint:css-debt` 实测冻结区 `!important` 388、硬编码半径 166、硬编码字号 336、legacy 通道 768。对应的已提交上限是 389／166／337／769。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
-| RN 化签收 | 考试已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）均使用共享 `@socrates/ui/settings` 组件接入，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。 | 从现有设置行中挑选低耦合偏好行迁移。宿主分工、批次和验收范围见 [SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。 |
+| `legacy/` / `restore/` | `lint:css-debt` 冻结区上限：`!important` 295、硬编码颜色 28、硬编码半径 123、堆叠 ID 27、硬编码字号 225、legacy 通道 506。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
+| React DOM 迁移签收 | 考试已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）均使用共享 `@socrates/ui/settings` 组件接入，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。剩余 38 个文件仍直接引用 `react-web` shim。 | 从 `packages/ui/src/primitives` 与 `shell` 开始改为 DOM + CSS，删掉 shim import 后用 `lint:rn-shim --update` 降低基线。 |
 
-DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，共 242 处、105 个文件。这个计数包含
+DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，当前 282 处、97 个文件（以 `rg` 输出为准）。这个计数包含
 读取和挂载宿主的查找。`window.stateStore` 的清理已经完成：facade 于 2026-11-17 退役，代码树里残留的 `stateStore` 字样是过期注释，只有两个遗留 e2e 仍引用该全局（`e2e/zz-ui-repro.spec.mjs` 直接调用，`e2e/storage-bootstrap.spec.mjs` 断言它不存在）。
 
 ## 验证记录与入口
@@ -238,6 +241,11 @@ frontend lint 包含类型与全部 24 项架构护栏；测试截图和报告�
 白板颜色回归同时核对编辑器段落与其父级文字颜色一致，防止 prose palette 再次渗入。
 最终桌面白板与手机只读分享截图人工检查通过；验收副本保存在当前 chat 的 visualizations 目录，
 避免后续 Playwright 清理 test-results 时丢失已交付证据。
+
+## 历史：RN 轮次（2026-11-01 至 2026-11-16）
+
+> 以下章节记录 React Native / react-native-web 迁移的历史过程。ADR 0027 之后 React DOM 是唯一
+> UI 栈，这些轮次不再定义新代码的写法；新增工作按「DOM 元素 + CSS」迁移并降低 shim 基线。
 
 ## RN-1：react-native-web 接入与首页空状态（2026-11-01）
 
@@ -353,7 +361,8 @@ exports。`frontend/scripts/check-ui-entry.mjs` 在 lint 中禁止 SPA 引用根
 **验证边界**
 
 - `ci.yml` 的 Frontend lane 跑 lint、build、bundle 预算、`test:unit`、根 `npm run test:shared`
-  与 Playwright smoke；Shared lane 跑 Rust protocol 与 core 的 TS conformance。
+  与 `test:e2e:required`（smoke + regression + theme）；截图/视觉参考由 `test:e2e:visual`
+  单独跑，PR 上仅作提示。Shared lane 跑 Rust protocol 与 core 的 TS conformance。
 - 共享包测试：`packages/ui/src` 下 24 个 `*.test.ts`，由根 `scripts/run-shared-tests.mjs`
   逐文件起独立进程执行（resolver 从 `frontend/` 解析 react/zustand/marked）。
 - `native-android-build.yml` 手动触发，产出原生 Android 调试 APK 与测试报告，不在合并门禁里。
@@ -361,5 +370,6 @@ exports。`frontend/scripts/check-ui-entry.mjs` 在 lint 中禁止 SPA 引用根
 
 **下一步顺序**
 
-设置分类导航和显示页网格开关已接入，后续从字号和内容宽度的分组控件继续。执行细节见
-[SPA 优先的 RN 收敛方案](../plans/2026-11-05-spa-rn-convergence.md)。独立 Android 客户端继续使用 Compose，并共享 API 与核心逻辑。
+设置分类导航和显示页网格开关已接入，后续从字号和内容宽度的分组控件继续。先迁
+`packages/ui/src/primitives` 与 `shell`，再按表面逐个删除 `react-web` shim import。约束见
+[ADR 0027](../adr/0027-react-dom-only-retire-rn-shim.md)。独立 Android 客户端继续使用 Compose，并共享 API 与核心逻辑。

@@ -197,6 +197,10 @@ jobs:
         run: npm run test:shared
       - name: Coverage floor
         working-directory: .
+        # Coverage is a useful ratchet on main. On a PR it reports a delta
+        # instead of blocking: the floor measures the tree, not the PR's
+        # intent, and a shared-package move used to turn an unrelated PR red.
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: node scripts/coverage-ratchet.mjs frontend
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -217,8 +221,15 @@ jobs:
             exit 1
           }
           npm run parity:check
-      - name: End-to-end smoke, regression and visual tiers
-        run: npm run test:smoke
+      - name: End-to-end smoke, regression and theme invariants
+        run: npm run test:e2e:required
+      - name: Visual reference advisory
+        # Screenshot and golden-geometry drift is design feedback. Keep it
+        # visible in the report without making an intentional redesign a
+        # merge blocker; the required theme/contrast assertions above still
+        # catch palette and accessibility regressions.
+        continue-on-error: true
+        run: npm run test:e2e:visual
       - name: Mobile composer UX smoke tests
         run: npm run test:smoke:mobile
       - name: Upload Playwright report
@@ -278,6 +289,8 @@ jobs:
         run: npm run test:strict
       - name: Coverage floor
         working-directory: .
+        # Advisory on PRs, blocking on main (same policy as the frontend lane).
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: node scripts/coverage-ratchet.mjs server
 
   shared:

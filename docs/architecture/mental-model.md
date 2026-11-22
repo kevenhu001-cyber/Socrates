@@ -172,7 +172,8 @@ Do not add a competing palette or a second owner for a surface. The guards in
   `server/`. A migrated PGlite snapshot seeds a temporary in-memory database
   per suite. The main CI job still verifies native PostgreSQL and the
   multi-process concurrency suites.
-- Playwright: `test:e2e:smoke`, `test:e2e:regression`, and `test:e2e:visual`
-  select one tier. `test:smoke` runs all three with the same built SPA.
+- Playwright: `test:e2e:smoke`, `test:e2e:regression`, `test:e2e:theme`, and
+  `test:e2e:visual` select one tier. `test:e2e:required` runs smoke + regression +
+  theme (the blocking set); `test:e2e:visual` is the advisory screenshot pass.
 - Guards: `npm run lint` (frontend chain) and root `npm run lint` for docs,
   shims, action pinning, service boundaries.
