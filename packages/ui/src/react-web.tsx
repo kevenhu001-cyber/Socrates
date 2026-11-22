@@ -15,6 +15,8 @@ export type PressableStateCallbackType = {
   focused?: boolean;
 };
 
+export type DataSet = Record<string, string | number | boolean | undefined | null>;
+
 export interface PressableProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
   'style' | 'children'
@@ -33,7 +35,7 @@ export interface PressableProps extends Omit<
   focusable?: boolean;
   hitSlop?: unknown;
   role?: string;
-  dataSet?: Record<string, unknown>;
+  dataSet?: DataSet;
   style?: unknown | ((state: PressableStateCallbackType) => unknown);
   children?: ReactNode | ((state: PressableStateCallbackType) => ReactNode);
 }
@@ -41,6 +43,7 @@ export interface PressableProps extends Omit<
 export interface TextProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'style'> {
   testID?: string;
   nativeID?: string;
+  dataSet?: DataSet;
   numberOfLines?: number;
   ellipsizeMode?: string;
   selectable?: boolean;
@@ -53,6 +56,7 @@ export interface TextProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, '
 export interface ViewProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
   testID?: string;
   nativeID?: string;
+  dataSet?: DataSet;
   style?: unknown;
   accessibilityRole?: string;
   accessibilityLabel?: string;
@@ -74,6 +78,7 @@ export interface SwitchProps extends Omit<
   testID?: string;
   nativeID?: string;
   accessibilityLabel?: string;
+  dataSet?: DataSet;
 }
 
 export type LayoutChangeEvent = {
@@ -208,6 +213,24 @@ export function resolveStyleAndClass(style: unknown, baseClassName?: string) {
   };
 }
 
+/**
+ * react-native-web maps the `dataSet` prop to `data-*` attributes. The local
+ * shim has to do the same: spreading `dataSet` onto a DOM node renders
+ * `dataset="[object Object]"` and every `[data-…]` selector in the app and its
+ * e2e specs silently stops matching.
+ */
+export function dataAttributes(
+  dataSet?: Record<string, string | number | boolean | undefined | null>,
+): Record<string, string> {
+  if (!dataSet) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(dataSet)) {
+    if (value === undefined || value === null) continue;
+    out[`data-${key.replace(/[A-Z]/g, (ch) => `-${ch.toLowerCase()}`)}`] = String(value);
+  }
+  return out;
+}
+
 export const StyleSheet = {
   create<T extends Record<string, unknown>>(styles: T): T {
     return styles;
@@ -225,17 +248,22 @@ export const Platform = {
 
 export type View = HTMLElement;
 export const View = forwardRef<HTMLDivElement, ViewProps>(function View(
-  { style, className, testID, nativeID, id, ...props },
+  { style, className, testID, nativeID, id, dataSet, ...props },
   ref,
 ) {
   const resolved = resolveStyleAndClass(style, className);
+  /* RN's View is a flex column by default. A plain <div> is block, which
+     stacked the composer rail and every other row that relied on the
+     default — restore the RN base before the caller's own style. */
+  const base: React.CSSProperties = { display: 'flex', flexDirection: 'column' };
   return (
     <div
       ref={ref}
       id={nativeID || id}
       data-testid={testID}
-      style={resolved.style}
+      style={{ ...base, ...resolved.style }}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     />
   );
@@ -252,6 +280,7 @@ export const Text = forwardRef<HTMLSpanElement, TextProps>(function Text(
     numberOfLines,
     ellipsizeMode: _e,
     selectable: _s,
+    dataSet,
     ...props
   },
   ref,
@@ -273,6 +302,7 @@ export const Text = forwardRef<HTMLSpanElement, TextProps>(function Text(
       data-testid={testID}
       style={mergedStyle}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     />
   );
@@ -295,6 +325,7 @@ export const Pressable = forwardRef<HTMLButtonElement, PressableProps>(function 
     focusable,
     tabIndex,
     children,
+    dataSet,
     ...props
   },
   ref,
@@ -346,6 +377,7 @@ export const Pressable = forwardRef<HTMLButtonElement, PressableProps>(function 
         ...resolved.style,
       }}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     >
       {content}
@@ -362,6 +394,7 @@ export interface ScrollViewProps extends Omit<React.HTMLAttributes<HTMLDivElemen
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
   keyboardShouldPersistTaps?: string;
+  dataSet?: DataSet;
 }
 
 export type ScrollView = HTMLDivElement;
@@ -378,6 +411,7 @@ export const ScrollView = forwardRef<HTMLDivElement, ScrollViewProps>(function S
     showsHorizontalScrollIndicator: _shi,
     showsVerticalScrollIndicator: _svi,
     keyboardShouldPersistTaps: _k,
+    dataSet,
     ...props
   },
   ref,
@@ -391,6 +425,7 @@ export const ScrollView = forwardRef<HTMLDivElement, ScrollViewProps>(function S
       data-testid={testID}
       style={{ overflow: 'auto', ...resolved.style }}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     >
       <div style={innerResolved.style} className={innerResolved.className}>
@@ -415,6 +450,7 @@ export interface TextInputProps extends Omit<
   editable?: boolean;
   testID?: string;
   nativeID?: string;
+  dataSet?: DataSet;
 }
 
 export type TextInput = HTMLInputElement;
@@ -433,6 +469,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     testID,
     nativeID,
     id,
+    dataSet,
     ...props
   },
   ref,
@@ -451,6 +488,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         placeholder={placeholder}
         style={resolved.style}
         className={resolved.className}
+        {...dataAttributes(dataSet)}
         {...(props as unknown as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
       />
     );
@@ -466,6 +504,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       placeholder={placeholder}
       style={resolved.style}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     />
   );
@@ -482,6 +521,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     nativeID,
     id,
     accessibilityLabel,
+    dataSet,
     ...props
   },
   ref,
@@ -499,6 +539,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
       onChange={(e) => onValueChange?.(e.target.checked)}
       style={{ cursor: disabled ? 'default' : 'pointer', ...resolved.style }}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     />
   );
@@ -512,6 +553,7 @@ export interface ModalProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
   nativeID?: string;
   transparent?: boolean;
   animationType?: string;
+  dataSet?: DataSet;
   onRequestClose?: () => void;
 }
 
@@ -526,6 +568,7 @@ export const Modal = function Modal({
   transparent: _tr,
   animationType: _at,
   onRequestClose: _orc,
+  dataSet,
   ...props
 }: ModalProps) {
   if (!visible) return null;
@@ -536,6 +579,7 @@ export const Modal = function Modal({
       data-testid={testID}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, ...resolved.style }}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       {...props}
     >
       {children}
@@ -567,6 +611,7 @@ export interface ImageProps extends Omit<
   accessibilityLabel?: string;
   accessibilityIgnoresInvertColors?: boolean;
   resizeMode?: string;
+  dataSet?: DataSet;
 }
 
 export const Image = function Image({
@@ -580,6 +625,7 @@ export const Image = function Image({
   accessibilityLabel,
   accessibilityIgnoresInvertColors: _aiic,
   resizeMode: _r,
+  dataSet,
   ...props
 }: ImageProps) {
   const src = typeof source === 'string' ? source : source?.uri;
@@ -592,6 +638,7 @@ export const Image = function Image({
       src={src}
       style={resolved.style}
       className={resolved.className}
+      {...dataAttributes(dataSet)}
       onLoad={(e) => {
         const target = e.target as HTMLImageElement;
         onLoad?.({
