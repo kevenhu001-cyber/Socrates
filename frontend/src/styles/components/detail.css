@@ -157,3 +157,33 @@
   display: block;
   padding: 0 0 8px;
 }
+
+/* Shared learning-mode track: the selected segment is the white capsule and
+   the rest stay quiet on the grey rail. Phones scroll the rail sideways
+   instead of wrapping it, with the tighter 9px segment inset. */
+.learning-mode-track {
+  display: flex;
+  flex-direction: row;
+  align-self: flex-start;
+}
+.learning-mode-track.is-centered {
+  align-self: center;
+}
+.learning-mode-option {
+  padding-inline: 12px;
+}
+@media (max-width: 768px) {
+  .learning-mode-track,
+  .learning-mode-track.is-centered {
+    align-self: stretch;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .learning-mode-track::-webkit-scrollbar {
+    display: none;
+  }
+  .learning-mode-option {
+    padding-inline: 9px;
+  }
+}

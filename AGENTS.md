@@ -40,7 +40,7 @@ to verify a change.
 - **React DOM is the only UI stack (ADR [`0027`](docs/adr/0027-react-dom-only-retire-rn-shim.md)).**
   `packages/ui` components are plain React DOM components; the React Native conversion is retired.
   The local `packages/ui/src/react-web.tsx` shim is frozen: do not add imports, do not add RN-shaped
-  props, and `check-rn-shim.mjs` holds its direct importer count shrink-only (currently 9). Migrate
+  props, and `check-rn-shim.mjs` holds its direct importer count shrink-only (currently 8). Migrate
   one surface at a time to DOM elements + CSS and lower the baseline; delete the shim when it reaches
   zero. Heavy editors (TipTap/tldraw/HTML-viz/Mermaid/Three.js) stay Web-only native islands, never in
   shared core. The transcript body stays server-rendered HTML; only shells, toolbars and tool rows are
@@ -184,7 +184,7 @@ only shrink.
 | `check-orphans.mjs` | Every module under `frontend/src` has at least one inbound import from `src`, `test`, `e2e` or `scripts`. Baseline 0, shrink-only (also `lint:orphans`) |
 | `check-external-hosts.mjs` | The SPA keeps every runtime byte on our own origin. Scans `index.html` + `src/**` (comments stripped, `vendor-files/**` skipped) and fails on any absolute `http(s)` host that is not allowlisted — our domains, provider base URLs shown as placeholder text, `www.w3.org` namespaces, and GeoGebra's CDN (the one remaining third-party host, lazily loaded for `math_construction` cards). Baseline empty, shrink-only (also `lint:external-hosts`) |
 | `check-ui-entry.mjs` | `frontend/src` may only import narrow `@socrates/ui/*` subpaths; any import from the removed root barrel `@socrates/ui` fails with `file:line` (also `lint:ui-entry`) |
-| `check-rn-shim.mjs` | `packages/ui/src` may not gain new importers of the frozen `react-web` shim. The direct-importer count is shrink-only (currently 9) and `react-native*` dependencies are rejected (also `lint:rn-shim`) |
+| `check-rn-shim.mjs` | `packages/ui/src` may not gain new importers of the frozen `react-web` shim. The direct-importer count is shrink-only (currently 8) and `react-native*` dependencies are rejected (also `lint:rn-shim`) |
 | `../scripts/check-packages-dom.mjs` | `packages/*` stay DOM-free (no `document`/`window`/`localStorage`/`react-dom`); platform diffs live in host adapters such as `frontend/src/react/rn/` (also `lint:packages-dom`) |
 | `../scripts/check-explicit-any.mjs` | Production TypeScript under `frontend/src`, `server/src` and `packages/*/src` contains no explicit `any`; baseline 0, shrink-only (also `lint:explicit-any`) |
 | `../scripts/check-core-declarations.mjs` | Every hand-written `packages/core/src/*.d.ts` still describes its `.js` sibling: same exported runtime values, same parameter count and names (type-only exports are not compared). `packages/core` ships `.js` with `allowJs` off, so a drifted declaration would be believed and never checked. Shrink-only (also `lint:core-declarations`) |

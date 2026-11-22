@@ -9,15 +9,26 @@
  * Phones scroll the track sideways rather than wrapping it. No motion: the
  * selection changes in place.
  */
-import { useRef, useState } from 'react';
-import { Animated, Pressable, ScrollView, View, useWindowDimensions } from '../react-web';
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { dataAttributes } from '../domProps';
 import { R, S, focusRing, transition } from '../look';
 import { useReducedMotion } from '../turn/parts';
 import { useUiTheme } from '../primitives/theme';
 import { UiText } from '../primitives/UiText';
 import { usePressFeedback } from '../primitives/UiButton';
-import { PillAction, dataSet } from '../learn/parts';
+import { PillAction } from '../learn/parts';
 import { stepLearningMode, type LearningModeId } from './model';
+
+const BUTTON_RESET: CSSProperties = {
+  display: 'inline-flex',
+  background: 'none',
+  border: 0,
+  padding: 0,
+  margin: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textAlign: 'inherit',
+};
 
 export const LEARNING_MODE_COMPACT_WIDTH = 769;
 
@@ -51,7 +62,6 @@ function ModeOption({
   option,
   selected,
   tabStop,
-  compact,
   nodeRef,
   onPress,
   onArrow,
@@ -59,47 +69,42 @@ function ModeOption({
   option: LearningModeOption;
   selected: boolean;
   tabStop: boolean;
-  compact: boolean;
-  nodeRef: (node: View | null) => void;
+  nodeRef: (node: HTMLButtonElement | null) => void;
   onPress: () => void;
   onArrow: (delta: 1 | -1) => void;
 }) {
   const { colors } = useUiTheme();
   const reduced = useReducedMotion();
   const { scale, hovered, focused, handlers } = usePressFeedback();
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      onArrow(1);
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      onArrow(-1);
+    }
+  };
   return (
-    <Pressable
+    <button
       ref={nodeRef}
+      type="button"
       role="radio"
       aria-checked={selected}
       aria-label={option.label}
-      testID={`learning-mode-${option.id}`}
-      onPress={onPress}
+      data-testid={`learning-mode-${option.id}`}
+      onClick={onPress}
+      onKeyDown={onKeyDown}
       {...handlers}
-      {...dataSet({ mode: option.id })}
-      focusable={tabStop}
-      {...{
-        onKeyDown: (event: {
-          key?: string;
-          nativeEvent?: { key?: string };
-          preventDefault?: () => void;
-        }) => {
-          const key = event.key ?? event.nativeEvent?.key;
-          if (key === 'ArrowRight' || key === 'ArrowDown') {
-            event.preventDefault?.();
-            onArrow(1);
-          } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
-            event.preventDefault?.();
-            onArrow(-1);
-          }
-        },
-      }}
+      {...dataAttributes({ mode: option.id })}
+      tabIndex={tabStop ? undefined : -1}
+      style={BUTTON_RESET}
     >
-      <Animated.View
+      <span
+        className="learning-mode-option"
         style={{
+          display: 'flex',
           height: 32,
-          /* Phones: tighter capsules so all five fit a 390px row. */
-          paddingHorizontal: compact ? 9 : S[100],
           borderRadius: R.pill,
           alignItems: 'center',
           justifyContent: 'center',
@@ -111,14 +116,14 @@ function ModeOption({
             : undefined,
           ...focusRing(colors, focused),
           ...transition('background-color, box-shadow', reduced),
-          transform: [{ scale }],
+          transform: `scale(${scale})`,
         }}
       >
         <UiText variant="labelSm" tone={selected ? 'ink' : 'secondary'} numberOfLines={1}>
           {option.label}
         </UiText>
-      </Animated.View>
-    </Pressable>
+      </span>
+    </button>
   );
 }
 
@@ -136,22 +141,19 @@ function ModeTrack({
   centered: boolean;
 }) {
   const { colors } = useUiTheme();
-  const { width } = useWindowDimensions();
-  const compact = width < LEARNING_MODE_COMPACT_WIDTH;
-  const optionRefs = useRef(new Map<LearningModeId, View>());
+  const optionRefs = useRef(new Map<LearningModeId, HTMLButtonElement>());
   /* Arrow keys only move focus: every mode runs an action (pre-fill, open a
      panel), so selection waits for Enter / Space / a press. */
   const focusMode = (id: LearningModeId) => {
-    (optionRefs.current.get(id) as unknown as { focus?: () => void } | undefined)?.focus?.();
+    optionRefs.current.get(id)?.focus();
   };
-  const track = (
-    <View
+  return (
+    <div
       role="radiogroup"
       aria-label={label}
-      testID="learning-mode-track"
+      data-testid="learning-mode-track"
+      className={`learning-mode-track${centered ? ' is-centered' : ''}`}
       style={{
-        flexDirection: 'row',
-        alignSelf: centered && !compact ? 'center' : 'flex-start',
         gap: 2,
         padding: 3,
         borderRadius: R.pill,
@@ -164,7 +166,6 @@ function ModeTrack({
           option={option}
           selected={option.id === value}
           tabStop={value === null ? index === 0 : option.id === value}
-          compact={compact}
           nodeRef={(node) => {
             if (node) optionRefs.current.set(option.id, node);
             else optionRefs.current.delete(option.id);
@@ -173,17 +174,7 @@ function ModeTrack({
           onArrow={(delta) => focusMode(stepLearningMode(option.id, delta))}
         />
       ))}
-    </View>
-  );
-  if (!compact) return track;
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingRight: S[75] }}
-    >
-      {track}
-    </ScrollView>
+    </div>
   );
 }
 
@@ -216,18 +207,22 @@ export function LearningModeSwitch({
 
   if (variant === 'row') {
     return (
-      <View testID={testID} style={{ gap: S[75] }} {...dataSet({ mode: value ?? 'none' })}>
+      <div
+        data-testid={testID}
+        style={{ display: 'flex', flexDirection: 'column', gap: S[75] }}
+        {...dataAttributes({ mode: value ?? 'none' })}
+      >
         <ModeTrack options={options} value={value} onChange={onChange} label={label} centered />
         {hint}
-      </View>
+      </div>
     );
   }
 
   return (
-    <View
-      testID={testID}
-      style={{ gap: S[75], alignItems: 'flex-start' }}
-      {...dataSet({ mode: value ?? 'none', open: open ? 'true' : 'false' })}
+    <div
+      data-testid={testID}
+      style={{ display: 'flex', flexDirection: 'column', gap: S[75], alignItems: 'flex-start' }}
+      {...dataAttributes({ mode: value ?? 'none', open: open ? 'true' : 'false' })}
     >
       <PillAction
         size="sm"
@@ -239,7 +234,7 @@ export function LearningModeSwitch({
         onPress={() => setOpen((value) => !value)}
       />
       {open ? (
-        <View style={{ gap: S[75], alignSelf: 'stretch' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: S[75], alignSelf: 'stretch' }}>
           <ModeTrack
             options={options}
             value={value}
@@ -251,8 +246,8 @@ export function LearningModeSwitch({
             }}
           />
           {hint}
-        </View>
+        </div>
       ) : null}
-    </View>
+    </div>
   );
 }
