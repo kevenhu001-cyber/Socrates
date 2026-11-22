@@ -2,7 +2,7 @@
  * Exam surface copy. Hosts translate; the English table keeps native builds
  * and tests readable. Function entries take the numbers the surface knows.
  */
-import type { ExamQuestionType } from '../examModel';
+import type { ExamQuestionType } from '@socrates/core';
 
 export interface ExamTypeCardCopy {
   title: string;

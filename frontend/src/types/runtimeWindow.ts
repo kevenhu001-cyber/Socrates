@@ -6,26 +6,19 @@ export type RuntimeWindow = Window & {
   addStreamingMessage: (typeof import('../chat/turn/loadStreamingTurn'))['addStreamingMessage'];
   askChatTurn: (typeof import('../chat/turn/controller'))['askChatTurn'];
   askNextQuestion: (typeof import('../tutor/socraticTurn'))['askNextQuestion'];
-  clearPerUserClientState: (typeof import('../app/lifecycle/clientState'))['clearPerUserClientState'];
   fetchWebContext: (typeof import('../chat/webSearch'))['fetchWebContext'];
   handleSendClick: (typeof import('../chat/turn/composer'))['handleSendClick'];
-  isInAuthGraceWindow: (typeof import('../app/lifecycle'))['isInAuthGraceWindow'];
   loadSession: (typeof import('../session/loader'))['loadSession'];
   markAuthSuccess: (typeof import('../app/lifecycle'))['markAuthSuccess'];
-  openAttachmentPicker: (typeof import('../attachments/render'))['openAttachmentPicker'];
-  refreshServerSessions: (typeof import('../session/recents'))['refreshServerSessions'];
   renderAssistantHTML: (typeof import('../render/assistantHtml'))['buildAssistantHtml'];
   renderRecents: (typeof import('../legacy/recentsView'))['renderRecents'];
-  resendLastUserMessage: (typeof import('../chat/turn/resend'))['resendLastUserMessage'];
   resetApp: (typeof import('../app/lifecycle'))['resetApp'];
   saveCurrentSession: (typeof import('../session/persistence'))['saveCurrentSession'];
   setChatStopState: (typeof import('../chat/turn/composer'))['setChatStopState'];
-  setCurrentUser: (typeof import('../app/lifecycle'))['setCurrentUser'];
   showToast: (typeof import('../legacy/toast'))['showToast'];
   startNewChat: (typeof import('../app/lifecycle'))['startNewChat'];
   startSession: (typeof import('../chat/sessionBootstrap'))['startSession'];
   submitChatMessage: (typeof import('../chat/sendPipeline'))['submitChatMessage'];
-  toggleSidebarView: (typeof import('../legacy/sidebarChrome'))['toggleSidebarView'];
 };
 
 function currentRuntimeWindow(): RuntimeWindow | undefined {

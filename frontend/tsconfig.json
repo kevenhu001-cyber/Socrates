@@ -45,7 +45,6 @@
       "@socrates/ui/shell": ["../packages/ui/src/shell/index.ts"],
       "@socrates/ui/settings": ["../packages/ui/src/settings/index.tsx"],
       "@socrates/ui/exam": ["../packages/ui/src/exam/index.ts"],
-      "@socrates/ui/exam-model": ["../packages/ui/src/examModel.ts"],
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"]
     }

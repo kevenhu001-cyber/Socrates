@@ -1,6 +1,6 @@
 /** Screen dispatcher: draws whichever state the host selected. */
 import type { ReactNode } from 'react';
-import type { ExamDraftPatch } from '../examModel';
+import type { ExamDraftPatch } from '@socrates/core';
 import { ExamFooter } from './ExamFooter';
 import { ExamNavigation } from './ExamNavigation';
 import { ExamQuestionList } from './ExamQuestionList';

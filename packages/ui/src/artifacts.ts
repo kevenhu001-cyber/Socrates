@@ -14,7 +14,7 @@
 import type { ArtifactBridgeMessage, ToolCall } from '@socrates/contracts';
 import { getThemePaletteHex, type ThemeMode } from '@socrates/theme';
 import { buildArtifactDocument, buildEmbeddedDocument, escapeHtml } from './artifactDocument';
-import { safeLink } from './urlSafety';
+import { safeLink } from '@socrates/core';
 import {
   buildVisualizationDocument,
   isVisualizationSpec,
