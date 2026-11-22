@@ -1,7 +1,10 @@
 // frontend/src/react/legacy/gateway.ts
 // Single typed entry point for React code to access legacy window.* functions.
 //
-// React code MUST NOT read window.* directly. This file is the only exception.
+// React code MUST NOT read window.* directly. Inside src/react, this file is
+// the only exception. The one shared tie that is not the action surface — the
+// legacy i18n globals (window.t / window.applyI18n) — lives in
+// src/ui/legacyI18n.ts, because the non-React shell needs it too.
 //
 // Usage:
 //   import { getLegacyActions } from '../legacy/gateway.ts';

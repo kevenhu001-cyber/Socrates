@@ -3,7 +3,10 @@
  * scripts/check-react-globals.mjs — React→legacy global coupling ratchet.
  *
  * src/react/legacy/gateway.ts states the contract: React code MUST NOT read
- * window.* directly; the typed gateway is the only allowed legacy boundary.
+ * window.* directly; inside src/react the typed gateway is the only allowed
+ * legacy boundary. The legacy i18n globals (window.t / window.applyI18n) are
+ * wrapped by src/ui/legacyI18n.ts instead, because the non-React shell needs
+ * that bridge too — it sits outside this scan by design, not by accident.
  * Ordinary browser APIs (window.location, window.addEventListener, …) are
  * legitimate; app-owned globals do not get a blanket exemption.
  *

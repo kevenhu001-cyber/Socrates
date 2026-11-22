@@ -50,7 +50,7 @@
 
 | Guard | Enforces |
 |---|---|
-| `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary. No blanket `__socrates*` bridge exemption remains |
+| `check-react-globals.mjs` | React does not read legacy `window.*` globals directly; `react/legacy/gateway.ts` is the only legacy boundary inside `src/react` (the legacy i18n globals live in `ui/legacyI18n.ts`, outside the scanned tree, and the gateway keeps the action surface). No blanket `__socrates*` bridge exemption remains |
 | `check-state-ownership.mjs` | React state access converges on `store/index.ts` typed hooks: no new string-keyed `stateStore.dispatch` writes. The baseline is currently 0 (the string-keyed facade is retired) and may only shrink (also `lint:state-ownership`) |
 | `check-button-primitive.mjs` | Raw JSX `<button>` elements under `src/react/**` (outside `src/react/ui/`) stay at or below their frozen count — counted from the TypeScript AST, so an HTML template string is not mistaken for an element. Use the shared primitives in `src/react/ui/` instead. Shrink-only baseline (also `lint:button-primitive`) |
 | `check-react-roots.mjs` | React root creation and hydration stay in `react/lib/boot/ownedRoot.ts`; retired transcript mount globals cannot return. Includes `lint:react-roots` and a shrink-only `--update` baseline |
