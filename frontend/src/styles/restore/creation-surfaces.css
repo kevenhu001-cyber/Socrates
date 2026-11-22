@@ -623,34 +623,6 @@
   min-height: var(--ui-control-sm);
   font-size: 20px;
 }
-#appShell #sitesPanel .creation-site-row-menu {
-  position: absolute;
-  z-index: 20;
-  right: 0;
-  top: calc(100% + 4px);
-  display: grid;
-  width: 134px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--ui-shadow-popover);
-}
-#appShell #sitesPanel .creation-site-row-menu button {
-  min-height: var(--ui-control-sm);
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  text-align: left;
-  color: inherit;
-  background: transparent;
-  font-size: var(--ui-font-size-sm);
-}
-#appShell #sitesPanel .creation-site-row-menu button:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
 
 @media (max-width: 768px) {
   #appShell #sitesPanel {

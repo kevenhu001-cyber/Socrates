@@ -111,33 +111,10 @@
 /* P_chatgpt-landing — reasoning-effort selector (高/中/低) inside the
    composer footer. Compact pill trigger + a small pop-up menu that
    opens upward (the picker sits at the bottom of the composer). */
-.effort-caret {
-  width: 12px;
-  height: 12px;
-  opacity: 0.65;
-  transition: transform 0.18s ease;
-}
 /* P_effort-glyph — three ascending bars. Default render shows all three
    as outline ghosts; the .effort-picker[data-effort="…"] rules below
    fill the active number of bars (1 = low, 2 = medium, 3 = high) so the
    icon doubles as a level indicator next to the text label. */
-.effort-glyph {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 15px;
-}
-.effort-picker[data-effort='low'] .effort-glyph [data-bar='1'],
-.effort-picker[data-effort='medium'] .effort-glyph [data-bar='1'],
-.effort-picker[data-effort='medium'] .effort-glyph [data-bar='2'],
-.effort-picker[data-effort='high'] .effort-glyph [data-bar='1'],
-.effort-picker[data-effort='high'] .effort-glyph [data-bar='2'],
-.effort-picker[data-effort='high'] .effort-glyph [data-bar='3'] {
-  fill: currentColor;
-  opacity: 1;
-}
-.effort-picker[data-open='true'] .effort-glyph {
-  color: hsl(var(--text-200));
-}
 /* Markdown tables inside the diagnostic question text. The card itself is the
    React `DiagnosticView`, so only the injected prose needs a skin. */
 .diag-text td {
@@ -245,72 +222,3 @@
   flex-shrink: 0;
 }
 /* Task 6.4 — cross-session knowledge-boundary section. */
-
-.kb-cross-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 2px 4px;
-}
-.kb-cross-count {
-  font-size: calc(10px * var(--sidebar-font-scale));
-  color: hsl(var(--text-400));
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: hsl(var(--bg-300));
-}
-.kb-cross-count.kb-cross-internalized {
-  color: hsl(145 50% 65%);
-  background: hsl(145 50% 50%/0.14);
-}
-.kb-cross-count.kb-cross-fuzzy {
-  color: hsl(43 77% 70%);
-  background: hsl(43 77% 62%/0.14);
-}
-.kb-cross-count.kb-cross-blank {
-  color: hsl(var(--text-500));
-  background: hsl(var(--bg-300));
-}
-.kb-cross-nodes {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.kb-cross-node {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: 7px;
-  font-size: calc(11.5px * var(--sidebar-font-scale));
-  color: hsl(var(--text-300));
-}
-.kb-cross-node-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kb-cross-node-status {
-  font-size: calc(9px * var(--sidebar-font-scale));
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-}
-.kb-cross-status-internalized .kb-cross-node-status {
-  color: hsl(145 50% 65%);
-}
-.kb-cross-status-fuzzy .kb-cross-node-status {
-  color: hsl(43 77% 70%);
-}
-.kb-cross-status-blank .kb-cross-node-status {
-  color: hsl(var(--text-500));
-}
-.kb-cross-empty {
-  font-size: calc(11px * var(--sidebar-font-scale));
-  color: hsl(var(--text-500));
-  padding: 6px 2px;
-  line-height: 1.5;
-}

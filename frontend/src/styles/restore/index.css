@@ -71,6 +71,18 @@
  * features/) has superseded is the sanctioned digestion path — the
  * projects-directory head/filter rules migrated to polish/workspace.css
  * on 2026-10-02 under exactly this rule.
+ *
+ * Dead-rule retirement (2026-11-22): every rule whose selector names a class
+ * no source file emits was removed from this directory and from legacy/.
+ * That pass deleted 516 selectors across both trees. A rule whose classes are
+ * gone cannot match anything, so it can only confuse the reader about who
+ * owns a surface. `npm run lint:frozen-liveness` now machine-checks this: a
+ * frozen rule is counted dead when NONE of its identity classes appears in
+ * frontend/src, frontend/test, frontend/e2e, packages/, server/src or
+ * index.html, and the per-file counts may only shrink. Use
+ * `scripts/retire-frozen-css.mjs` to remove them — it prunes one dead
+ * selector out of a list while leaving live siblings in place, which is why
+ * the raw selector count and the rule count can differ.
  */
 
 @import './chatgpt-ui.css';

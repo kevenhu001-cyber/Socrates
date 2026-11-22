@@ -445,22 +445,6 @@
   padding: 1px 6px;
   border-radius: 3px;
 }
-.tier-badge.tier-diophantus {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-400));
-}
-.tier-badge.tier-riemann {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-300));
-}
-.tier-badge.tier-descartes {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-200));
-}
-.tier-badge.tier-euclid {
-  background: hsl(var(--text-200));
-  color: hsl(var(--bg-100));
-}
 /* P_perf-sidebar — The sidebar's collapse animation already runs on
    `transform: translateX` (compositor-only, no layout). Animating
    `.main`'s padding-left at the same time re-laid-out the chat panel,

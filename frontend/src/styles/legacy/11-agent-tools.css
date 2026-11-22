@@ -21,58 +21,8 @@
 .agent-tool-card.open {
   box-shadow: 0 2px 10px hsl(0 0% 0%/0.05);
 }
-.agent-tool-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  -webkit-user-select: none;
-  user-select: none;
-  transition: background 0.12s ease;
-}
-.agent-tool-head:hover {
-  background: var(--tool-card-bg-hover);
-}
-.agent-tool-head:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-  border-radius: var(--tool-card-radius);
-}
-.agent-tool-icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: hsl(var(--bg-300));
-  color: var(--tool-card-icon);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-weight: var(--ui-font-weight-bold);
-  font-size: calc(11px * var(--app-font-scale, 1));
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.agent-tool-icon svg {
-  display: block;
-}
 /* Grayscale tool icons — every tool reads as a neutral glyph; the
    tool name carries the identity. No per-tool colour chips. */
-.agent-tool-card.read .agent-tool-icon,
-.agent-tool-card.write .agent-tool-icon,
-.agent-tool-card.edit .agent-tool-icon,
-.agent-tool-card.bash .agent-tool-icon,
-.agent-tool-card.glob .agent-tool-icon,
-.agent-tool-card.grep .agent-tool-icon,
-.agent-tool-card.webfetch .agent-tool-icon,
-.agent-tool-card.websearch .agent-tool-icon,
-.agent-tool-card.codeint .agent-tool-icon,
-.agent-tool-card.code .agent-tool-icon {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-300));
-  box-shadow: none;
-}
 .agent-tool-card.code {
   background: hsl(var(--bg-100) / 0.7);
 }
@@ -81,71 +31,6 @@
 }
 /* Subtle "py" tag after the Python card name — muted grey, no brand
    colour. */
-.agent-tool-card.code .agent-tool-name::after {
-  content: ' · py';
-  color: hsl(var(--text-500));
-  font-weight: var(--ui-font-weight-medium);
-  font-size: calc(10px * var(--app-font-scale, 1));
-  letter-spacing: 0.5px;
-  margin-left: 2px;
-}
-[data-theme='socrates'][data-mode='dark'] .agent-tool-icon {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-400));
-}
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.read .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.write .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.edit .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.bash .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.glob .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.grep .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.webfetch .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.websearch .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.codeint .agent-tool-icon,
-[data-theme='socrates'][data-mode='dark'] .agent-tool-card.code .agent-tool-icon {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-400));
-}
-.agent-tool-name {
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--text-100));
-  font-size: calc(12px * var(--app-font-scale, 1));
-  flex-shrink: 0;
-  letter-spacing: -0.005em;
-}
-.agent-tool-input {
-  flex: 1;
-  font-family: var(--font-mono);
-  font-size: calc(11px * var(--app-font-scale, 1));
-  color: var(--tool-card-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  opacity: 0.8;
-}
-.agent-tool-chev {
-  margin-left: auto;
-  font-size: calc(10px * var(--app-font-scale, 1));
-  color: var(--tool-card-text-subtle);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
-  opacity: 0.6;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-}
-.agent-tool-chev svg {
-  display: block;
-  width: 14px;
-  height: 14px;
-}
-.agent-tool-card.open .agent-tool-chev {
-  transform: rotate(180deg);
-  opacity: 0.95;
-}
 
 /* Accent rail on the leading edge of the body — gives each tool
    card a glanceable identity without painting the whole border.
@@ -154,130 +39,26 @@
    / bash / glob / grep / webfetch / websearch / codeint) get a
    matching rail automatically via the per-tool .agent-tool-body
    styles below. */
-.agent-tool-body {
-  position: relative;
-  padding: 0;
-}
-.agent-tool-card .agent-tool-body::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  border-radius: 2px 0 0 0;
-  opacity: 0.85;
-  pointer-events: none;
-}
 /* Grayscale rail — a single neutral grey accent replaces the per-tool
    colour rails. */
-.agent-tool-card.tool-blue .agent-tool-body::before,
-.agent-tool-card.tool-green .agent-tool-body::before,
-.agent-tool-card.tool-amber .agent-tool-body::before,
-.agent-tool-card.tool-teal .agent-tool-body::before,
-.agent-tool-card.tool-purple .agent-tool-body::before,
-.agent-tool-card.tool-orange .agent-tool-body::before,
-.agent-tool-card.tool-python .agent-tool-body::before,
-.agent-tool-card.read .agent-tool-body::before,
-.agent-tool-card.write .agent-tool-body::before,
-.agent-tool-card.edit .agent-tool-body::before,
-.agent-tool-card.bash .agent-tool-body::before,
-.agent-tool-card.glob .agent-tool-body::before,
-.agent-tool-card.grep .agent-tool-body::before,
-.agent-tool-card.webfetch .agent-tool-body::before,
-.agent-tool-card.websearch .agent-tool-body::before,
-.agent-tool-card.code .agent-tool-body::before,
-.agent-tool-card.codeint .agent-tool-body::before {
-  background: hsl(var(--border-300) / 0.5);
-}
-
-.agent-tool-out {
-  font-family: var(--font-mono);
-  font-size: calc(11px * var(--app-font-scale, 1));
-  color: hsl(var(--text-300));
-  background: hsl(var(--bg-000) / 0.32);
-  padding: 8px 12px;
-  border-top: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.5;
-  max-height: 280px;
-  overflow-y: auto;
-}
-.agent-tool-out[hidden] {
-  display: none;
-}
-.agent-tool-out.error {
-  color: hsl(0 60% 50%);
-  background: hsl(0 50% 95%);
-}
 /* Code block inside an agent-tool-card (e.g. python source from
    code_interpreter, or a Bash command). Renders between the
    head and the .agent-tool-out — visible by default so the user
    immediately sees what code was generated. Only the .agent-tool-out
    block (stdout/stderr/artifacts) still collapses with the card. */
-.agent-tool-code {
-  margin: 0;
-  padding: 10px 12px;
-  font-family: var(--font-mono);
-  font-size: calc(11.5px * var(--app-font-scale, 1));
-  line-height: 1.55;
-  white-space: pre;
-  overflow-x: auto;
-  color: hsl(var(--text-100));
-  max-height: 280px;
-  overflow-y: auto;
-  tab-size: 4;
-  background: hsl(var(--bg-000) / 0.38);
-  border-top: 0;
-}
-.agent-tool-code[hidden] {
-  display: none;
-}
-.agent-tool-code code {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  background: transparent;
-  padding: 0;
-}
 /* Blinking caret on the last line of the code block while the LLM
    is still streaming the JSON arguments — gives the user a clear
    "more is coming" cue without re-running the slow typewriter
    setTimeout loop. */
-.agent-tool-code-streaming::after {
-  content: '▍';
-  margin-left: 1px;
-  animation: code-caret-blink 0.9s steps(2) infinite;
-}
 @keyframes code-caret-blink {
   50% {
     opacity: 0;
   }
 }
-[data-theme='socrates'][data-mode='dark'] .agent-tool-code {
-  background: hsl(220 25% 14%/0.5);
-}
 /* Truncated-code marker: a small red dot at the end when the
    upstream was cut off mid-stream (e.g. max_tokens hit). A title
    tooltip explains the marker; the live stream also clears the
    marker if a final frame arrives. */
-.agent-tool-code-truncated {
-  box-shadow: inset 2px 0 0 hsl(0 65% 50%);
-  position: relative;
-}
-.agent-tool-code-truncated::before {
-  content: '';
-  position: absolute;
-  right: 6px;
-  top: 6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: hsl(0 65% 50%);
-  box-shadow: 0 0 0 2px hsl(0 65% 50%/0.18);
-  animation: truncation-pulse 1.4s ease-in-out infinite;
-}
 @keyframes truncation-pulse {
   50% {
     opacity: 0.4;
@@ -349,57 +130,10 @@
   min-width: 0;
 }
 
-[data-theme='socrates'][data-mode='dark'] .agent-tool-out.error {
-  background: hsl(0 30% 18%);
-  color: hsl(0 55% 70%);
-}
-
 /* Status badge: small monospaced glyph in the card header next to the
    chevron. Empty by default (display:none) so other tool cards pay no
    visual cost. The 4 runtime statuses map to ✓ / ✗ / ⏱ / – with a
    color cue that survives on both cream and dark backgrounds. */
-.agent-tool-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  margin-left: 6px;
-  border-radius: 3px;
-  font-size: calc(9.5px * var(--app-font-scale, 1));
-  font-family: var(--font-mono);
-  font-weight: var(--ui-font-weight-bold);
-  line-height: 1;
-}
-.agent-tool-status:empty {
-  display: none;
-}
-.agent-tool-status.ok {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-400));
-}
-.agent-tool-status.err {
-  background: hsl(0 60% 92%);
-  color: hsl(0 60% 42%);
-}
-.agent-tool-status.warn {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-400));
-}
-
-[data-theme='socrates'][data-mode='dark'] .agent-tool-status.ok {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-400));
-}
-[data-theme='socrates'][data-mode='dark'] .agent-tool-status.err {
-  background: hsl(0 40% 22%);
-  color: hsl(0 60% 78%);
-}
-[data-theme='socrates'][data-mode='dark'] .agent-tool-status.warn {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-400));
-}
 
 /* Inline artifacts produced by the code interpreter (matplotlib PNGs,
    CSV exports, etc.). The figure wrapper (.exec-artifact) holds the
@@ -446,46 +180,6 @@
 .exec-artifact-image:hover {
   opacity: 0.92;
 }
-.exec-artifact-actions {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  opacity: 0.4;
-  transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.exec-artifact:hover .exec-artifact-actions,
-.exec-artifact:focus-within .exec-artifact-actions {
-  opacity: 1;
-}
-.exec-artifact-download {
-  width: 24px;
-  height: 24px;
-  border-radius: 5px;
-  background: hsl(var(--bg-200) / 0.92);
-  color: hsl(var(--text-400));
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.12s ease;
-}
-.exec-artifact-download:hover {
-  color: hsl(var(--text-100));
-  background: hsl(var(--bg-300) / 0.95);
-  transform: translateY(-1px);
-}
-
-.exec-artifact-download svg {
-  width: 12px;
-  height: 12px;
-  display: block;
-}
 .exec-artifact-meta {
   background: hsl(var(--bg-200) / 0.4);
 }
@@ -493,10 +187,6 @@
   font-family: var(--font-mono);
   min-width: 0;
   flex: 1;
-}
-.exec-artifact-meta-size {
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
 }
 .exec-artifact-link {
   display: inline-flex;
@@ -528,64 +218,11 @@
 
 /* Web Search results — structured list inside the websearch tool card.
    Shows title (clickable link), URL + date, and a brief snippet per result. */
-.agent-tool-card.websearch .agent-tool-out {
-  max-height: 480px;
-  white-space: normal;
-  padding: 6px 0 8px;
-}
 /* Web search results — left-rail index + body. Mirrors the layout
    modern search UIs use (Perplexity / Google SGE / ChatGPT search)
    so the result is immediately recognisable. The header is a
    one-liner summary; each result is its own card with a small
    monogram, host, date, and a 3-line snippet clamp. */
-.web-search-results {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.wsr-header {
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  padding: 0 12px 6px;
-  font-style: italic;
-  letter-spacing: 0.01em;
-}
-.wsr-item {
-  display: flex;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 0;
-  transition: background 0.12s;
-}
-.wsr-item:hover {
-  background: hsl(var(--accent-000) / 0.04);
-}
-.wsr-item + .wsr-item {
-  border-top: 0.5px solid hsl(var(--border-300) / 0.18);
-}
-.wsr-index {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-400));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  line-height: 1;
-  margin-top: 1px;
-}
-.wsr-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 .wsr-title {
   display: block;
   font-family: var(--font-sans, system-ui);
@@ -601,74 +238,8 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.wsr-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  overflow: hidden;
-}
-.wsr-host {
-  font-weight: var(--ui-font-weight-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 60%;
-}
-.wsr-date {
-  color: hsl(var(--text-500));
-  font-style: italic;
-  flex-shrink: 0;
-}
-.wsr-date::before {
-  content: '·';
-  margin-right: 6px;
-  color: hsl(var(--text-500) / 0.6);
-}
-.wsr-snippet {
-  font-size: calc(11.5px * var(--app-font-scale, 1));
-  color: hsl(var(--text-300));
-  margin-top: 2px;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 [data-theme='socrates'][data-mode='dark'] .wsr-title {
   color: hsl(var(--accent-000));
-}
-[data-theme='socrates'][data-mode='dark'] .wsr-meta,
-[data-theme='socrates'][data-mode='dark'] .wsr-date {
-  color: hsl(var(--text-500));
-}
-[data-theme='socrates'][data-mode='dark'] .wsr-snippet {
-  color: hsl(var(--text-300));
-}
-[data-theme='socrates'][data-mode='dark'] .wsr-index {
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-500));
-}
-@media (max-width: 480px) {
-  .agent-tool-head {
-    align-items: flex-start;
-    gap: 6px;
-  }
-  .agent-tool-input {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    line-height: 1.35;
-  }
-  .agent-tool-code,
-  .agent-tool-out {
-    padding: 8px;
-    max-height: 220px;
-  }
-  .agent-tool-card.websearch .agent-tool-out {
-    max-height: 55vh;
-  }
 }
 
 /* Codex project workspace history — intentionally compact so the project
@@ -786,9 +357,7 @@
 
 /* Tool cards — clean, minimal ChatGPT-style disclosure.
    The chat content is primary; tool details are available on demand. */
-.agent-tool-card,
-.agent-tool-card.code,
-.agent-tool-card.codeint {
+.agent-tool-card, .agent-tool-card.code {
   background: var(--tool-card-bg);
   border: 0;
   box-shadow: none;
@@ -800,135 +369,8 @@
 .agent-tool-card.open {
   box-shadow: 0 4px 14px hsl(0 0% 0%/0.05);
 }
-.agent-tool-head {
-  min-height: 36px;
-  gap: 8px;
-  background: transparent;
-  border-radius: var(--tool-card-radius-sm) var(--tool-card-radius-sm) 0 0;
-}
-.agent-tool-head:hover {
-  background: var(--tool-card-bg-hover);
-}
-.agent-tool-card .agent-tool-body::before {
-  display: none;
-}
-.agent-tool-name,
-.agent-tool-input,
 .wsr-title {
   letter-spacing: 0;
-}
-.agent-tool-icon,
-.agent-tool-card.codeint .agent-tool-icon,
-.agent-tool-card.websearch .agent-tool-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: transparent !important;
-  color: var(--tool-card-icon) !important;
-  font-size: calc(9.5px * var(--app-font-scale, 1));
-}
-.agent-tool-name {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--text-100));
-}
-.agent-tool-input {
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  opacity: 0.7;
-  color: hsl(var(--text-400));
-}
-.agent-tool-status {
-  min-width: 0;
-  height: auto;
-  margin-left: auto;
-  padding: 0 0 0 8px;
-  background: transparent !important;
-  color: var(--tool-card-text-subtle) !important;
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.agent-tool-status.err,
-.agent-tool-status.warn {
-  color: hsl(0 55% 52%) !important;
-}
-.agent-tool-card[data-tool-state='running'] .agent-tool-status::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 5px;
-  border-radius: 50%;
-  background: hsl(var(--text-400));
-  animation: ui-status-dot-pulse var(--ui-duration-pulse) ease-in-out infinite;
-}
-.agent-tool-chev {
-  margin-left: 2px;
-}
-.agent-tool-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 30px;
-  padding: 5px 12px;
-  border-top: 0;
-  background: var(--tool-card-bg-sunken);
-  color: var(--tool-card-text-subtle);
-}
-.agent-tool-toolbar[hidden] {
-  display: none;
-}
-
-.agent-tool-code,
-.agent-tool-out {
-  background: hsl(var(--bg-000) / 0.32);
-  border-top: 0;
-}
-.agent-tool-code {
-  padding: 8px 11px;
-  font-size: calc(11px * var(--app-font-scale, 1));
-  max-height: 300px;
-  line-height: 1.52;
-}
-.agent-tool-out {
-  padding: 8px 11px;
-  font-size: calc(10.75px * var(--app-font-scale, 1));
-  max-height: 320px;
-  line-height: 1.5;
-}
-.agent-tool-output-text {
-  min-width: 0;
-}
-.agent-tool-output-pre {
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  line-height: inherit;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.agent-tool-output-text.is-collapsed .agent-tool-output-pre {
-  max-height: 13.5em;
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent);
-  mask-image: linear-gradient(180deg, #000 72%, transparent);
-}
-.agent-tool-output-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 7px;
-  padding-top: 7px;
-  border-top: 0;
-  color: var(--tool-card-text-subtle);
-}
-.agent-tool-output-summary {
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-variant-numeric: tabular-nums;
 }
 
 .agent-tool-stream {
@@ -975,11 +417,6 @@
   color: hsl(var(--text-400));
 }
 
-.agent-tool-card.websearch .agent-tool-out {
-  padding: 0;
-  max-height: 520px;
-}
-
 /* Open WebUI-style tool disclosure: a quiet status row until the reader
    explicitly opens Input/Output evidence. */
 .agent-tool-card {
@@ -992,193 +429,6 @@
   border: 0;
   box-shadow: none;
 }
-.agent-tool-head {
-  min-height: 30px;
-  gap: 7px;
-  border-radius: 7px;
-  color: hsl(var(--text-400));
-}
-.agent-tool-head:hover {
-  background: hsl(var(--bg-200) / 0.42);
-  color: hsl(var(--text-200));
-}
-.agent-tool-icon {
-  display: none !important;
-}
-.agent-tool-state-icon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.agent-tool-card[data-tool-state='running'] .agent-tool-state-icon::before {
-  content: '';
-  width: 12px;
-  height: 12px;
-  border: 1.5px solid hsl(var(--border-300));
-  border-top-color: hsl(var(--accent-000));
-  border-radius: 50%;
-  animation: loadingSpin var(--ui-duration-spin) linear infinite;
-}
-.agent-tool-card[data-tool-state='complete'] .agent-tool-state-icon::before {
-  content: '✓';
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: hsl(var(--text-400));
-  color: hsl(var(--bg-100));
-  font-size: 10px;
-  font-weight: var(--ui-font-weight-bold);
-}
-.agent-tool-card[data-tool-state='error'] .agent-tool-state-icon::before {
-  content: '!';
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: hsl(0 58% 52%);
-  color: white;
-  font-size: 10px;
-  font-weight: var(--ui-font-weight-bold);
-}
-.agent-tool-card[data-tool-state='cancelled'] .agent-tool-state-icon::before {
-  content: '■';
-  font-size: 10px;
-  color: hsl(var(--text-500));
-}
-.agent-tool-name {
-  flex: 0 0 auto;
-  font-size: calc(13px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  color: hsl(var(--text-200));
-}
-.agent-tool-input {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: calc(12px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  opacity: 1;
-}
-.agent-tool-status {
-  font-size: calc(11px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-regular);
-  color: hsl(var(--text-500)) !important;
-}
-.agent-tool-chev {
-  font-size: 10px;
-  color: hsl(var(--text-500));
-  transition: transform 0.2s;
-}
-.agent-tool-body {
-  margin: 0;
-  padding: 10px 12px;
-  border-top: 0;
-  background: var(--tool-card-bg-sunken);
-}
-.agent-tool-section + .agent-tool-section {
-  margin-top: 10px;
-}
-.agent-tool-section-head {
-  min-height: 20px;
-  margin-bottom: 5px;
-  padding: 0 1px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--tool-card-text-subtle);
-  font: var(--ui-font-weight-medium) calc(10px * var(--app-font-scale, 1))/1 var(--font-sans);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.agent-tool-section-head .agent-tool-action {
-  margin-left: auto;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.agent-tool-code,
-.agent-tool-out {
-  border: 0;
-  border-radius: var(--tool-card-radius-sm);
-  background: hsl(var(--bg-200) / 0.5);
-}
-.agent-tool-code {
-  margin: 0;
-  padding: 9px 11px;
-  max-height: 300px;
-}
-.agent-tool-out {
-  padding: 9px 11px;
-  max-height: 320px;
-}
-.agent-tool-output-section:has(.agent-tool-out:empty) {
-  display: none;
-}
-.agent-tool-input-section:has(.agent-tool-code[hidden]) {
-  display: none;
-}
-.agent-tool-card.websearch .agent-tool-out {
-  border-radius: 0 0 var(--tool-card-radius-sm) var(--tool-card-radius-sm);
-  overflow: hidden;
-}
-.agent-tool-card.websearch .web-search-results {
-  border-top: 0;
-}
-.agent-tool-card.open .agent-tool-chev {
-  transform: rotate(180deg);
-}
-.web-search-results {
-  border-top: 0;
-}
-.wsr-header {
-  display: flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 7px 12px;
-  border-bottom: 0;
-  color: var(--tool-card-text-muted);
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-}
-.wsr-summary {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wsr-copy-all {
-  flex: 0 0 auto;
-  margin-left: 10px;
-}
-.wsr-item {
-  padding: 9px 12px;
-  gap: 9px;
-}
-.wsr-item:hover {
-  background: var(--tool-card-bg-hover);
-}
-.wsr-index {
-  min-width: 24px;
-  width: auto;
-  height: 20px;
-  padding: 0 4px;
-  border: 1px solid hsl(var(--border-300) / 0.35);
-  border-radius: 5px;
-  background: hsl(var(--bg-200) / 0.45);
-  color: hsl(var(--text-400));
-  font-size: calc(10px * var(--app-font-scale, 1));
-  line-height: 18px;
-}
-.wsr-item-muted {
-  opacity: 0.72;
-}
 .wsr-title {
   color: hsl(var(--text-100));
   font-weight: var(--ui-font-weight-semibold);
@@ -1190,77 +440,6 @@
 .wsr-title.is-disabled {
   color: hsl(var(--text-400));
   pointer-events: none;
-}
-.wsr-meta {
-  gap: 7px;
-}
-.wsr-host {
-  max-width: 72%;
-  font-weight: var(--ui-font-weight-medium);
-  color: hsl(var(--text-400));
-}
-.wsr-source {
-  font-family: var(--font-mono);
-  font-size: calc(10px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  text-transform: lowercase;
-}
-.wsr-source::before {
-  content: '·';
-  margin-right: 7px;
-  color: hsl(var(--text-500) / 0.55);
-}
-.wsr-snippet {
-  font-size: calc(11.5px * var(--app-font-scale, 1));
-  line-height: 1.48;
-}
-.wsr-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-.wsr-copy {
-  border: 0;
-  background: transparent;
-  color: hsl(var(--text-300));
-  padding: 0;
-  font: inherit;
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.wsr-copy:hover {
-  color: hsl(var(--text-100));
-}
-@media (max-width: 480px) {
-  .agent-tool-status {
-    margin-left: 0;
-    padding-left: 0;
-  }
-  .agent-tool-head {
-    align-items: center;
-  }
-  .wsr-index {
-    width: 18px;
-    height: 18px;
-    line-height: 16px;
-  }
-  .wsr-snippet {
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
-  .agent-tool-toolbar {
-    gap: 8px;
-  }
-
-  .wsr-header {
-    align-items: flex-start;
-  }
-  .wsr-summary {
-    white-space: normal;
-  }
 }
 
 /* Link previews — rendered inside the user's chat bubble when their
@@ -1371,35 +550,6 @@
 
 /* Final run footer — small status chip below the last assistant
    message. */
-.agent-run-footer {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 3px 10px;
-  border-radius: 10px;
-  background: hsl(var(--bg-200));
-  color: hsl(var(--text-400));
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  letter-spacing: 0.02em;
-}
-.agent-run-footer.error {
-  background: hsl(0 50% 95%);
-  color: hsl(0 60% 40%);
-}
-.agent-run-footer.stopped {
-  background: hsl(45 50% 92%);
-  color: hsl(36 60% 32%);
-}
-[data-theme='socrates'][data-mode='dark'] .agent-run-footer.error {
-  background: hsl(0 30% 18%);
-  color: hsl(0 55% 70%);
-}
-[data-theme='socrates'][data-mode='dark'] .agent-run-footer.stopped {
-  background: hsl(45 30% 18%);
-  color: hsl(45 70% 70%);
-}
 
 @keyframes textShimmer {
   from {

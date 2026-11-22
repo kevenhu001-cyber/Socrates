@@ -300,79 +300,24 @@
   width: 18px;
   height: 18px;
 }
-.connector-github {
-  background: #24292f;
-  color: #fff;
-  border-color: #24292f;
-}
-.connector-notion {
-  background: #fff;
-  color: #111;
-  border: 1px solid hsl(var(--border-300) / 0.6);
-}
 .connector-zotero {
   background: var(--ui-ink);
   color: var(--ui-on-ink);
   border-color: var(--ui-ink);
 }
-.connector-baidu-netdisk,
-.connector-gitee,
-.connector-feishu,
-.connector-gmail,
-.connector-googledrive,
-.connector-googlecalendar,
-.connector-todoist,
-.connector-ticktick,
-.connector-discord,
-.connector-tencent_docs,
-.connector-one_drive,
-.connector-onedrive,
-.connector-outlook,
-.connector-gitlab,
-.connector-qq_mail,
-.connector-qq-mail,
 .connector-arxiv {
   background: #fff;
   color: #111;
   border-color: hsl(var(--border-300) / 0.42);
 }
-.connector-baidu-netdisk svg,
-.connector-gitee svg,
-.connector-feishu svg,
-.connector-gmail svg,
-.connector-googledrive svg,
-.connector-googlecalendar svg,
-.connector-todoist svg,
-.connector-ticktick svg,
-.connector-discord svg,
-.connector-tencent_docs svg,
-.connector-one_drive svg,
-.connector-onedrive svg,
-.connector-outlook svg,
-.connector-gitlab svg,
-.connector-qq_mail svg,
-.connector-qq-mail svg,
 .connector-arxiv svg {
   width: 19px;
   height: 19px;
-}
-.connector-connect {
-  flex: 0 0 auto;
-  min-height: 29px;
-  padding: 5px 10px;
-  font-size: 10.5px;
-}
-.connector-disconnect {
-  flex: 0 0 auto;
 }
 .connector-actions {
   display: flex;
   align-items: center;
   gap: 5px;
-}
-.connector-coming-soon {
-  flex: 0 0 auto;
-  border-radius: 6px;
 }
 .zotero-item,
 .arxiv-paper {

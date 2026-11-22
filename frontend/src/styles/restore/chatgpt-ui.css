@@ -154,18 +154,6 @@ body,
 
 /* Top bar and landing */
 
-@media (max-width: 768px) {
-  #appShell .top-mode-tabs .app-mode-toggle {
-    padding: 7px 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell .top-mode-tabs .app-mode-toggle:hover {
-    color: var(--cg-text);
-  }
-}
-
 #appShell .top-bar .toggle-sidebar {
   width: 34px;
   height: 34px;
@@ -221,11 +209,6 @@ body,
 
 /* One-row idle composer. The existing editor still expands to the legacy
    multiline grid when its controller adds .composer-multiline. */
-
-#appShell .effort-trigger .effort-glyph {
-  width: 14px;
-  height: 14px;
-}
 
 /* P_mic-dedup — with the mic track gone the topic send button shifts one
    column left; the in-chat composer keeps its own mic and stays on 5. */
@@ -352,35 +335,6 @@ body,
    mirroring the reference screenshot. Workflows and connectors share one
    row rhythm (icon + single-line title/description); the footer input
    filters both sections at once. UI-only: picking behavior is unchanged. */
-#composerToolsMenu .composer-tools-desktop-items.composer-tools-expanded {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-#composerToolsMenu .composer-tools-expanded .composer-tools-item {
-  min-height: 34px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
-
-#composerToolsMenu .composer-tools-expanded .composer-tools-copy {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-
-#composerToolsMenu .composer-tools-expanded .composer-tools-copy > span {
-  flex: 0 0 auto;
-  max-width: 38%;
-}
-
-#composerToolsMenu .composer-tools-expanded .composer-tools-copy small {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: 12px;
-}
 
 #composerToolsMenu .composer-tools-plugins {
   margin-top: 2px;
@@ -611,17 +565,6 @@ body.workspace-active #appShell .workspace-danger:hover {
 
 /* Existing library/projects controls inherit the same page rhythm. */
 
-.library-tab {
-  min-height: 34px;
-  border-radius: 17px;
-  color: var(--cg-text-muted);
-}
-
-.library-tab.active {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-}
-
 body.workspace-active #appShell .workspace-row {
   border-bottom: 1px solid var(--cg-border);
   border-radius: 0;
@@ -705,11 +648,6 @@ body.workspace-active #appShell .workspace-row:hover {
 
   #appShell .top-mode-tabs {
     min-width: 166px;
-  }
-
-  #appShell .top-mode-tabs .app-mode-toggle {
-    padding-inline: 10px;
-    font-size: 13px;
   }
 
   #appShell #mainInner,
@@ -909,41 +847,11 @@ body.workspace-active #appShell #mainInner {
   height: 18px;
 }
 
-.workspace-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 48px;
-  margin-bottom: 24px;
-}
-
-.workspace-tabs,
 .plugin-directory-tabs {
   display: flex;
   align-items: center;
   gap: 4px;
   margin: 0;
-}
-
-.workspace-tabs button {
-  min-height: 40px;
-  padding: 8px 18px;
-  border: 0;
-  border-radius: 20px;
-  color: var(--cg-text-muted);
-  background: transparent;
-  font: var(--ui-font-weight-medium) 14px/22px var(--cg-font);
-  cursor: pointer;
-}
-
-.workspace-tabs button:hover {
-  color: var(--cg-text);
-}
-
-.workspace-tabs button.active {
-  color: var(--cg-text);
-  background: var(--cg-surface-hover);
-  font-weight: var(--ui-font-weight-semibold);
 }
 
 .workspace-table {

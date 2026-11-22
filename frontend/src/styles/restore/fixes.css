@@ -134,13 +134,6 @@
     padding: 2px;
   }
 
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    flex: 1 1 50%;
-    min-width: 0;
-    height: 26px;
-    min-height: 26px;
-  }
-
   /* P_has-invalidation — see legacy/layoutStateMirror.js. */
   :where(:root[data-topic-setup-open]) #appShell#appShell #mainInner:not(#_n):not(._n) {
     padding-bottom: 0 !important;

@@ -232,14 +232,7 @@
     transform: none;
   }
   /* Disable transform-on-press/hover for all interactive controls. */
-  .icon-btn:active,
-  .recent-item:active,
-  .recent-item-del:active,
-  .recent-item-del:hover,
-  .kb-node:active,
-  .user-row:active,
-  .new-reply-pill:active,
-  .new-reply-pill:hover {
+  .icon-btn:active, .recent-item:active, .recent-item-del:active, .recent-item-del:hover, .user-row:active, .new-reply-pill:active, .new-reply-pill:hover {
     transform: none !important;
   }
   /* Disable icon micro-rotations. */
@@ -323,10 +316,6 @@
    webhint no-inline-styles violations. */
 .logo-img {
   border-radius: 4px;
-  flex-shrink: 0;
-}
-.sidebar-logo-img {
-  border-radius: 3px;
   flex-shrink: 0;
 }
 .auth-inline-link-right {

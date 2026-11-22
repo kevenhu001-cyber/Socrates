@@ -237,29 +237,6 @@
   display: none;
 }
 
-.connector-coming-soon {
-  padding: 0;
-  background: transparent;
-  color: var(--tool-card-text-subtle);
-  font-size: var(--tool-card-meta-size);
-  font-weight: var(--tool-card-meta-weight);
-}
-.connector-connect.workspace-secondary {
-  min-height: 32px;
-  padding: 7px 12px;
-  border: 1px solid var(--tool-card-border-strong);
-  border-radius: var(--tool-card-radius-sm);
-  background: transparent;
-  color: var(--tool-card-text-muted);
-  font-size: var(--tool-card-desc-size);
-  font-weight: var(--tool-card-title-weight);
-}
-.connector-connect.workspace-secondary:hover {
-  background: var(--tool-card-bg-hover);
-  color: var(--tool-card-text);
-  border-color: var(--tool-card-border-strong);
-}
-
 /* Expandable tool execution cards — borderless, same line language as
    the live inline rows: bare tool glyph + quiet text, sunken indented
    body when expanded. */
@@ -277,124 +254,12 @@
 .agent-tool-card.open {
   box-shadow: none;
 }
-.agent-tool-head {
-  gap: var(--inline-row-gap);
-  min-height: var(--inline-row-height);
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: background-color 0.16s ease;
-}
-.agent-tool-head:hover {
-  background: var(--inline-hover-bg);
-}
-.agent-tool-head:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-  border-radius: 4px;
-}
-.agent-tool-icon {
-  display: inline-flex !important;
-  width: var(--inline-icon-size);
-  height: var(--inline-icon-size);
-  border-radius: 0;
-  background: transparent !important;
-  color: hsl(var(--text-400)) !important;
-  box-shadow: none !important;
-}
-.agent-tool-icon svg {
-  width: var(--inline-icon-glyph);
-  height: var(--inline-icon-glyph);
-}
-.agent-tool-name {
-  font-size: 13px;
-  font-weight: var(--ui-font-weight-regular);
-  color: hsl(var(--text-300));
-}
-.agent-tool-input {
-  font-size: 12px;
-  color: hsl(var(--text-500));
-  opacity: 1;
-}
-.agent-tool-chev {
-  color: hsl(var(--text-500));
-  opacity: 0;
-  transition:
-    transform 0.22s var(--ease-out),
-    opacity 0.18s ease;
-}
-.agent-tool-head:hover .agent-tool-chev {
-  opacity: 0.55;
-}
-.agent-tool-card.open .agent-tool-chev {
-  opacity: 0.7;
-}
-.agent-tool-card .agent-tool-body::before {
-  display: none;
-}
-.agent-tool-body {
-  margin: 2px 4px 6px var(--inline-detail-indent);
-  border-radius: var(--inline-radius);
-  background: var(--inline-sunken-bg);
-}
-.agent-tool-out,
-.agent-tool-code {
-  border-top: 0;
-  background: transparent;
-}
-.agent-tool-out {
-  padding: 8px 10px;
-  color: hsl(var(--text-400));
-}
-.agent-tool-code {
-  padding: 8px 10px;
-  color: var(--tool-card-text);
-}
-.agent-tool-code-streaming::after {
-  color: var(--tool-card-icon);
-}
-.agent-tool-out.error {
-  color: var(--tool-card-danger);
-  background: var(--tool-card-danger-soft);
-}
-
-.agent-tool-status.ok,
-.agent-tool-status.warn {
-  background: transparent;
-  color: hsl(var(--text-500));
-}
-.agent-tool-status.err {
-  background: transparent;
-}
 .agent-tool-card[data-tool-state='cancelled'] {
   border-color: transparent;
 }
 /* State presentation mirrors the inline rows: while running only the
    spinner ring shows; once settled the badge disappears and the bare
    tool icon carries the line (red on error, faint when cancelled). */
-.agent-tool-state-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  color: hsl(var(--text-400));
-}
-.agent-tool-card[data-tool-state='running'] .agent-tool-icon {
-  display: none !important;
-}
-.agent-tool-card[data-tool-state='complete'] .agent-tool-state-icon {
-  display: none;
-}
-.agent-tool-card[data-tool-state='error'] .agent-tool-state-icon {
-  display: none;
-}
-.agent-tool-card[data-tool-state='error'] .agent-tool-icon {
-  color: hsl(0 55% 52%) !important;
-}
-.agent-tool-card[data-tool-state='cancelled'] .agent-tool-state-icon {
-  display: none;
-}
-.agent-tool-card[data-tool-state='cancelled'] .agent-tool-icon {
-  color: hsl(var(--text-500)) !important;
-}
 
 /* Inline tool activity and grouped tool output — final layer keeps the
    borderless row language: tight radius, quiet hover, inherited label
@@ -494,69 +359,12 @@
   background: transparent;
   box-shadow: none;
 }
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head {
-  min-height: 25px;
-  padding: 0;
-  gap: 12px;
-  border-radius: 8px;
-  background: transparent;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover {
-  background: transparent;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:focus-visible {
-  outline: 2px solid transparent;
-  outline-offset: 4px;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon {
-  display: none;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 0;
-  background: transparent !important;
-  color: var(--tool-activity-row) !important;
-  box-shadow: none !important;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 1.8;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name {
-  color: var(--tool-activity-row);
-  font-size: 14px;
-  font-weight: var(--ui-font-weight-regular);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input,
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-status,
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-chev {
-  color: var(--tool-activity-row);
-  font-size: 12px;
-  font-weight: var(--ui-font-weight-regular);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body {
-  margin: 10px 0 0 32px;
-  border: 0;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code {
-  border-color: var(--tool-activity-border);
-  border-radius: 10px;
-  background: var(--tool-activity-code-bg);
-  color: var(--tool-activity-text);
-}
 
 @media (max-width: 768px) {
   .msg.assistant .msg-body:has(.agent-run-host),
   .msg.assistant .msg-body:has(.agent-tool-card) {
     padding: 18px 16px 20px;
     border-radius: 14px;
-  }
-  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body {
-    margin-left: 0;
-    padding-left: 28px;
   }
 }
 
@@ -574,65 +382,6 @@
 .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-card:hover {
   border-color: var(--tool-card-border-strong);
   box-shadow: none;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head {
-  min-height: 54px;
-  padding: 10px 14px;
-  gap: 12px;
-  border-radius: 10px;
-  background: transparent;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head:hover {
-  background: var(--tool-card-bg-hover);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-state-icon {
-  display: none;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon {
-  display: flex !important;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--tool-card-bg-sunken) !important;
-  color: var(--tool-card-icon) !important;
-  box-shadow: none !important;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-icon svg {
-  width: 18px;
-  height: 18px;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-name {
-  color: var(--tool-card-text);
-  font-size: 14px;
-  font-weight: var(--ui-font-weight-semibold);
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-input {
-  color: var(--tool-card-text-muted);
-  font-size: 12px;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body {
-  margin: 0;
-  padding: 0 14px 14px 58px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-out,
-.msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-code {
-  border-color: var(--tool-card-border);
-  border-radius: 10px;
-  background: var(--tool-card-bg-sunken);
-  color: var(--tool-card-text);
-}
-
-@media (max-width: 768px) {
-  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-head {
-    min-height: 50px;
-    padding: 9px 12px;
-  }
-  .msg.assistant .msg-body:has(.agent-tool-card) .agent-tool-body {
-    padding: 0 12px 12px 12px;
-  }
 }
 
 /* ── Canvas block (P_canvas-mode) ─────────────────────────────────

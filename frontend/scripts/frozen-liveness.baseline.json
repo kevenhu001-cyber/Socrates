@@ -1,0 +1,31 @@
+{
+  "description": "Dead rules per frozen stylesheet (no identity class emitted by any first-party source). Shrink-only.",
+  "generatedBy": "check-frozen-liveness.mjs --update",
+  "dead": {
+    "legacy/00-foundations.css": 0,
+    "legacy/01-sidebar.css": 0,
+    "legacy/02-modals-library.css": 0,
+    "legacy/03-workspace-panels.css": 0,
+    "legacy/04-topbar-menus.css": 0,
+    "legacy/05-chat-landing.css": 0,
+    "legacy/06-chat-transcript.css": 0,
+    "legacy/07-composer-settings.css": 0,
+    "legacy/08-exam.css": 0,
+    "legacy/09-viz-markdown.css": 0,
+    "legacy/10-tutor-scaffolds.css": 0,
+    "legacy/11-agent-tools.css": 0,
+    "legacy/12-tutor-inline-tools.css": 0,
+    "legacy/13-composer-rich.css": 0,
+    "legacy/14-tool-surfaces.css": 0,
+    "legacy/15-thinking-activity.css": 0,
+    "legacy/16-final-contract.css": 0,
+    "restore/chat-surface.css": 0,
+    "restore/chatgpt-parity.css": 0,
+    "restore/chatgpt-ui.css": 0,
+    "restore/chatgpt-v2.css": 0,
+    "restore/creation-surfaces.css": 0,
+    "restore/fixes.css": 0,
+    "restore/mobile-parity.css": 0,
+    "restore/ref-baseline.css": 0
+  }
+}

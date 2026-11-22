@@ -50,21 +50,6 @@ body,
   }
 }
 
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    border-radius: 999px !important;
-    color: var(--conversation-text-muted) !important;
-    font-weight: var(--ui-font-weight-medium) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs .app-mode-toggle.active {
-    color: var(--conversation-text) !important;
-    box-shadow: none !important;
-  }
-}
-
 #appShell#appShell #sidebarOpenBtn {
   width: 40px !important;
   min-width: 40px !important;
@@ -117,9 +102,7 @@ body,
   }
 }
 
-#appShell#appShell #topicSetup .topic-sub,
-#appShell#appShell #topicSetup .mobile-starter-prompts,
-#appShell#appShell #topicSetup .cg-history {
+#appShell#appShell #topicSetup .topic-sub, #appShell#appShell #topicSetup .mobile-starter-prompts {
   display: none !important;
 }
 
@@ -129,10 +112,6 @@ body,
 /* Shared composer -------------------------------------------------------- */
 
 /* A genuinely wrapped draft may grow; focus and button state may not. */
-
-#appShell#appShell .effort-trigger .effort-glyph {
-  display: none !important;
-}
 
 /* Legacy topic rules predate the dedicated microphone and still target the
  * primary action as column four. Scope these placements to each actual
@@ -366,20 +345,6 @@ body #composerToolsMenu .composer-tools-plugin-item:hover {
   #appShell#appShell .top-mode-tabs {
     border-color: var(--chat-line) !important;
     background: var(--chat-surface) !important;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    padding: 0 10px !important;
-    font-size: 13px !important;
-    letter-spacing: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell#appShell .top-mode-tabs .app-mode-toggle.active {
-    background: var(--chat-control) !important;
   }
 }
 

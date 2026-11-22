@@ -162,25 +162,6 @@
   background: transparent;
   color: hsl(265 65% 65%);
 }
-.attachment-chip-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.attachment-chip-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: var(--ui-font-weight-medium, 500);
-  max-width: 160px;
-}
-.attachment-chip-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: calc(10.5px * var(--app-font-scale, 1));
-  color: var(--ui-text-muted);
-}
 /* Image attachments read as a square thumbnail card — the filename
    stays on the chip title instead of squeezing under the tile. */
 .attachment-chip.is-image {
@@ -224,47 +205,6 @@
    on image chips (their name+meta column stays hidden, so the veil
    spinner alone used to be the only signal). Token radii only — the
    css-debt ratchet forbids new literal px border-radius values. */
-.attachment-chip-progress {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  bottom: 5px;
-  height: 3px;
-  border-radius: var(--ui-radius-pill);
-  background: hsl(var(--bg-300));
-  overflow: hidden;
-  pointer-events: none;
-}
-.attachment-chip.is-image .attachment-chip-progress {
-  left: 6px;
-  right: 6px;
-}
-.attachment-chip-progress-fill {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: inherit;
-  background: hsl(var(--accent-000));
-  transition: width 120ms linear;
-}
-@media (prefers-reduced-motion: reduce) {
-  .attachment-chip-progress-fill {
-    transition: none;
-  }
-}
-.attachment-chip-pct {
-  position: absolute;
-  right: 6px;
-  bottom: 9px;
-  padding: 1px 6px;
-  border-radius: var(--ui-radius-pill);
-  background: hsl(0 0% 10%/0.72);
-  color: hsl(var(--always-white));
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-variant-numeric: tabular-nums;
-  line-height: 1.5;
-  pointer-events: none;
-}
 /* A pending upload is cancelled through the remove disc — keep it
    discoverable instead of hover-only while the transfer runs. */
 .attachment-chip.pending .attachment-chip-remove {
@@ -273,9 +213,6 @@
 /* Error: red hairline + red meta; the retry affordance stays inline. */
 .attachment-chip.error {
   border-color: hsl(0 72% 55%/0.55);
-}
-.attachment-chip.error .attachment-chip-meta {
-  color: hsl(0 72% 60%);
 }
 .attachment-chip-retry {
   display: inline-flex;
@@ -338,18 +275,6 @@
 /* P_file-attachments — chip row inside a sent user bubble. Reuses the
    composer chip look; durable-file chips are links so the raw upload is
    one click away (opens in a new tab, authorized by the session). */
-a.attachment-chip-link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-a.attachment-chip-link:hover {
-  border-color: var(--ui-border-strong);
-  background: var(--ui-bg-hover);
-}
-a.attachment-chip-link:hover .attachment-chip-name {
-  text-decoration: underline;
-}
 /* Drag-over visual — the wrap gets a subtle accent border when the
    user drags files over the input. */
 .chat-input-bar.drag-over-doc {
@@ -480,25 +405,6 @@ a.attachment-chip-link:hover .attachment-chip-name {
 /* Admin modal — system model + embedding provider config. Shares the
    modal-overlay / modal-card / modal-head conventions above; adds the
    two-section form layout and the admin gate error styling. */
-.admin-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.admin-modal {
-  background: hsl(var(--bg-000));
-  border: 0.5px solid hsl(var(--border-300) / 0.15);
-  border-radius: 16px;
-  width: 90%;
-  max-width: 520px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--ui-shadow-dialog);
-  animation: slideUp 0.2s var(--ease-out);
-}
 .admin-body {
   padding: 0 18px 18px;
   display: flex;
@@ -545,7 +451,6 @@ a.attachment-chip-link:hover .attachment-chip-name {
   font-size: 14px;
   color: hsl(var(--text-400));
 }
-.admin-gate-error,
 .admin-error {
   margin: 14px 18px;
   padding: 12px 14px;
@@ -644,23 +549,6 @@ a.attachment-chip-link:hover .attachment-chip-name {
     opacity: 1;
     transform: translateY(0);
   }
-}
-.settings-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.settings-label {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-medium);
-  color: hsl(var(--text-400));
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.settings-hint {
-  font-size: calc(11px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  line-height: 1.4;
 }
 
 .settings-actions {
@@ -866,39 +754,6 @@ a.attachment-chip-link:hover .attachment-chip-name {
   font-size: calc(9px * var(--app-font-scale, 1));
   color: hsl(var(--text-500));
   padding-right: 4px;
-}
-.usage-cal-day.lv0 {
-  background: hsl(var(--bg-200));
-}
-.usage-cal-day.lv1 {
-  background: hsl(145 40% 70%/0.3);
-}
-.usage-cal-day.lv2 {
-  background: hsl(145 45% 55%/0.45);
-}
-.usage-cal-day.lv3 {
-  background: hsl(145 50% 40%/0.6);
-}
-.usage-cal-day.lv4 {
-  background: hsl(145 55% 30%/0.75);
-}
-.usage-cal-day.lv5 {
-  background: hsl(145 60% 22%/0.9);
-}
-[data-theme='socrates'][data-mode='dark'] .usage-cal-day.lv1 {
-  background: hsl(145 40% 50%/0.25);
-}
-[data-theme='socrates'][data-mode='dark'] .usage-cal-day.lv2 {
-  background: hsl(145 45% 45%/0.35);
-}
-[data-theme='socrates'][data-mode='dark'] .usage-cal-day.lv3 {
-  background: hsl(145 50% 35%/0.5);
-}
-[data-theme='socrates'][data-mode='dark'] .usage-cal-day.lv4 {
-  background: hsl(145 55% 30%/0.6);
-}
-[data-theme='socrates'][data-mode='dark'] .usage-cal-day.lv5 {
-  background: hsl(145 60% 25%/0.75);
 }
 .usage-legend {
   display: flex;

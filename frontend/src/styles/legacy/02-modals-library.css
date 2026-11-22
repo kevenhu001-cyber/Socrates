@@ -765,22 +765,6 @@
   display: none;
 }
 
-.library-tab {
-  padding: 4px 10px;
-  border: none;
-  background: transparent;
-  font-size: calc(12px * var(--sidebar-font-scale));
-  cursor: pointer;
-  transition:
-    background 0.12s,
-    color 0.12s;
-  font-family: var(--font-sans);
-}
-.library-tab:hover {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-200));
-}
-
 .library-selection-bar {
   display: none;
   align-items: center;
@@ -829,14 +813,6 @@
 }
 .library-row-selected {
   background: hsl(var(--bg-300) / 0.72);
-}
-.library-name {
-  cursor: text;
-  border-bottom: 1px dashed transparent;
-  transition: border-color 0.12s;
-}
-.library-name:hover {
-  border-bottom-color: hsl(var(--text-400));
 }
 .library-rename-input {
   width: 100%;

@@ -338,20 +338,6 @@
   overflow: auto;
   background: hsl(var(--bg-200) / 0.6);
 }
-.img-lightbox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 100%;
-  max-height: 100%;
-}
-.img-lightbox img {
-  max-width: 100%;
-  max-height: calc(100vh - 140px);
-  object-fit: contain;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px hsl(var(--always-black) / 0.3);
-}
 .viz-modal-body iframe {
   width: 100%;
   height: 100%;
@@ -580,10 +566,6 @@
   color: hsl(var(--text-400));
   font-size: 0.9em;
 }
-.table-stream-icon {
-  font-size: 1.1em;
-  opacity: 0.7;
-}
 
 .stream-code-pending {
   display: block;
@@ -664,19 +646,10 @@
 .katex .mord {
   color: hsl(var(--text-100));
 }
-.katex .mbin {
-  color: hsl(var(--accent-000));
-}
-.katex .mrel {
-  color: hsl(var(--accent-000));
-}
 /* Force all KaTeX output to use normal (non-italic) style. KaTeX
    applies italic to variables by default, which can look odd in
    mixed-language chat. Use !important to override KaTeX's inline
    style="font-style:italic" on mathnormal spans. */
-.katex .mathnormal {
-  font-style: normal !important;
-}
 
 @media (max-width: 768px) {
   .sidebar {
@@ -973,11 +946,6 @@ html[data-boot-state='auth'] .boot-loading {
 }
 .auth-foot a:hover {
   text-decoration: underline;
-}
-.auth-footnote {
-  font-size: calc(11.5px * var(--app-font-scale, 1));
-  margin-top: 18px;
-  letter-spacing: -0.005em;
 }
 .auth-inline-link {
   font-size: calc(12px * var(--app-font-scale, 1));

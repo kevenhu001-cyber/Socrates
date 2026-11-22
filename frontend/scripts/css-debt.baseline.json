@@ -10,13 +10,13 @@
       "shadcnVarReads": 627
     },
     "frozen": {
-      "important": 383,
-      "hexColor": 38,
-      "literalRadius": 165,
+      "important": 311,
+      "hexColor": 28,
+      "literalRadius": 124,
       "stackedId": 38,
-      "literalFontSize": 327,
-      "legacyChannel": 745,
-      "shadcnVarReads": 123
+      "literalFontSize": 225,
+      "legacyChannel": 513,
+      "shadcnVarReads": 110
     }
   },
   "generatedBy": "check-css-debt.mjs --update"

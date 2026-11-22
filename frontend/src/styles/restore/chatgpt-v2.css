@@ -4,10 +4,7 @@
  */
 
 @media (min-width: 769px) {
-  #appShell #topicSetup > .topic-title,
-  #appShell #topicSetup > .topic-sub,
-  #appShell #topicSetup > .mobile-starter-prompts,
-  #appShell #topicSetup > .cg-history {
+  #appShell #topicSetup > .topic-title, #appShell #topicSetup > .topic-sub, #appShell #topicSetup > .mobile-starter-prompts {
     position: relative;
   }
   /* P_chatgpt-composer-desktop — the home composer geometry is borrowed
@@ -29,10 +26,6 @@
      below keeps the picker min-height at 34px and the trigger corners
      at 17px; both fall short of the reference geometry, so this block
      forces the bigger pill and lets the caret drive the open state. */
-  #appShell #composerInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
-    width: 16px;
-    height: 16px;
-  }
   body.workspace-active #appShell #mainInner {
     width: 100%;
     max-width: none;
@@ -41,13 +34,6 @@
     box-sizing: border-box;
     max-width: 732px;
     padding: 60px 0 72px;
-  }
-}
-
-@media (max-width: 768px) {
-  #appShell .sidebar-logo .cg-sidebar-caret,
-  #appShell .sidebar-nav-btn .nav-kbd {
-    display: none !important;
   }
 }
 

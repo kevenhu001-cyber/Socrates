@@ -165,10 +165,6 @@ body.sidebar-resizing {
 /* Compose (new chat) button — the sidebar's primary action anchor.
    Gets a subtle amber tint on hover so it reads as the accent action,
    echoing the brand accent used on the logo's italic "S". */
-.compose-btn:hover {
-  color: hsl(var(--accent-000));
-  background: hsl(var(--accent-000) / 0.1);
-}
 /* Unified search + view-switch row. Replaces the old three text tabs.
    The search box is the default way to filter the single session list;
    the tutor-only icon buttons open the Knowledge / Mistakes views. */
@@ -277,118 +273,10 @@ body.sidebar-resizing {
 .knowledge-panel.hidden {
   display: none;
 }
-.kb-section-title {
-  font-size: calc(10px * var(--sidebar-font-scale));
-  font-weight: var(--ui-font-weight-medium);
-  color: hsl(var(--text-500));
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 6px 12px 2px;
-}
-.kb-node {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: calc(12px * var(--sidebar-font-scale));
-  transition:
-    background 0.18s var(--ease-out),
-    transform 0.14s var(--ease-out);
-}
-.kb-node:hover {
-  background: hsl(var(--bg-300));
-}
-
-.kb-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.kb-dot.internalized {
-  background: hsl(145 50% 50%);
-}
-.kb-dot.fuzzy {
-  background: hsl(43 77% 62%);
-}
-.kb-dot.blank {
-  background: hsl(var(--text-500));
-}
-.kb-name {
-  flex: 1;
-  color: hsl(var(--text-200));
-}
-.kb-count {
-  font-size: calc(10px * var(--sidebar-font-scale));
-  color: hsl(var(--text-500));
-}
-.kb-empty {
-  text-align: center;
-  color: hsl(var(--text-500));
-  font-size: calc(12px * var(--sidebar-font-scale));
-  padding: 32px 12px;
-  line-height: 1.6;
-}
-.kb-graph-wrap {
-  margin: 0 0 12px;
-  padding: 0 12px;
-}
-.kb-graph-caption {
-  font-size: calc(10px * var(--sidebar-font-scale));
-  color: hsl(var(--text-500));
-  margin-bottom: 6px;
-}
-.kb-graph {
-  width: 100%;
-  height: auto;
-  display: block;
-  background: hsl(var(--bg-200) / 0.4);
-  border: 1px solid hsl(var(--border-300) / 0.3);
-  border-radius: 10px;
-}
-.kb-graph-edges line {
-  stroke: hsl(var(--border-300));
-  stroke-width: 1.2;
-}
-.kb-graph-node {
-  cursor: pointer;
-}
-.kb-graph-node circle {
-  stroke: hsl(var(--bg-100));
-  stroke-width: 1.5;
-  transition: stroke 0.15s ease;
-}
-.kb-graph-node text {
-  font-size: 9px;
-  fill: hsl(var(--text-400));
-  pointer-events: none;
-}
-.kb-graph-node:hover circle,
-.kb-graph-node:focus-visible circle {
-  stroke: hsl(var(--accent-000));
-  stroke-width: 2;
-}
 /* P_a11y-focus-graph — the default button focus ring is a 2px solid offset
    box, which clips a 9px-radius SVG node and looks like a separate UI
    element. The circle already gets a colored ring on :focus-visible
    above, so only suppress the rectangular outline. */
-.kb-graph-node:focus {
-  outline: none;
-}
-.kb-graph-node-internalized circle {
-  fill: hsl(145 50% 50%);
-}
-.kb-graph-node-fuzzy circle {
-  fill: hsl(43 77% 62%);
-}
-.kb-graph-node-blank circle {
-  fill: hsl(var(--text-500));
-}
-.kb-graph-node-active circle {
-  stroke: hsl(var(--accent-000));
-  stroke-width: 2.5;
-}
 .recents-panel {
   flex: 1;
   overflow-y: auto;

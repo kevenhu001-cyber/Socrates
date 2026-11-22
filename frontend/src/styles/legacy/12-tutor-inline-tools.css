@@ -14,105 +14,6 @@
  * ===================================================================== */
 
 /* KB file header with snapshot button. */
-.kb-file-header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 8px 12px 10px;
-  border-bottom: 0.5px solid hsl(var(--border-300) / 0.15);
-  margin-bottom: 6px;
-}
-.kb-file-title {
-  font-size: calc(13px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--text-200));
-}
-.kb-file-meta {
-  font-size: calc(11px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-  flex: 1;
-}
-.kb-file-snapshot {
-  background: transparent;
-  border: 0.5px solid hsl(var(--border-300) / 0.3);
-  color: hsl(var(--text-300));
-  padding: 3px 10px;
-  border-radius: 6px;
-  font-size: calc(11px * var(--app-font-scale, 1));
-  cursor: pointer;
-  transition:
-    background 0.08s,
-    color 0.08s;
-}
-.kb-file-snapshot:hover {
-  background: hsl(var(--bg-300));
-  color: hsl(var(--text-100));
-}
-
-.kb-node-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: var(--ui-font-weight-medium);
-}
-.kb-verify-tag {
-  font-size: calc(10px * var(--app-font-scale, 1));
-  color: hsl(145 50% 55%);
-  background: hsl(145 50% 45%/0.12);
-  padding: 1px 6px;
-  border-radius: 5px;
-  font-weight: var(--ui-font-weight-medium);
-}
-.kb-node-system-note,
-.kb-node-user-note {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  line-height: 1.5;
-  color: hsl(var(--text-300));
-  padding: 4px 0 2px 6px;
-  border-left: 2px solid hsl(var(--border-300) / 0.2);
-  margin-top: 4px;
-}
-.kb-tag-system {
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--accent-000));
-  margin-right: 4px;
-  letter-spacing: 0.04em;
-}
-.kb-tag-user {
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  color: hsl(var(--text-400));
-  margin-right: 4px;
-  letter-spacing: 0.04em;
-}
-.kb-section-title-secondary {
-  color: hsl(var(--text-500));
-}
-.kb-history-list {
-  list-style: none;
-  padding: 4px 12px 8px;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.kb-history-item {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: calc(12px * var(--app-font-scale, 1));
-  color: hsl(var(--text-400));
-  font-variant-numeric: tabular-nums;
-}
-.kb-history-date {
-  color: hsl(var(--text-500));
-  flex-shrink: 0;
-}
-.kb-history-summary {
-  flex: 1;
-}
 
 /* Teaching-plan progress bar. */
 .teaching-plan-progress {
@@ -140,13 +41,6 @@
 }
 
 /* Mistake book filter bar. */
-.mistake-filter-bar {
-  display: flex;
-  gap: 6px;
-  padding: 8px 12px;
-  border-bottom: 0.5px solid hsl(var(--border-300) / 0.08);
-  background: transparent;
-}
 
 /* =====================================================================
  * v3.0 design — Long-term plan setup (topic-setup screen)
@@ -257,31 +151,6 @@ body[data-app-mode='chat'] .tutor-only {
 /* §9.4 — resolved mistake cards are visually muted. The user
  * still sees them (the audit noted they should be retained as
  * reference) but they no longer compete with unresolved ones. */
-.mistake-card-resolved {
-  opacity: 0.6;
-  background: hsl(var(--bg-200) / 0.4);
-  border-color: hsl(var(--border-300) / 0.15);
-}
-.mistake-card-resolved .mistake-q {
-  text-decoration: line-through;
-  text-decoration-color: hsl(var(--text-500) / 0.4);
-}
-.mistake-resolved-tag {
-  display: inline-block;
-  background: hsl(145 50% 45%/0.18);
-  color: hsl(145 50% 50%);
-  padding: 1px 8px;
-  border-radius: 99px;
-  font-size: calc(10px * var(--app-font-scale, 1));
-  font-weight: var(--ui-font-weight-semibold);
-  letter-spacing: 0.04em;
-  margin-left: auto;
-  text-transform: uppercase;
-}
-[data-theme='socrates'][data-mode='dark'] .mistake-resolved-tag {
-  background: hsl(145 50% 50%/0.22);
-  color: hsl(145 50% 70%);
-}
 
 /* ────── Responsive: small screens ≤ 480 px ────── */
 @media (max-width: 480px) {
@@ -311,21 +180,8 @@ body[data-app-mode='chat'] .tutor-only {
     padding: 4px 6px;
     font-size: calc(11px * var(--app-font-scale, 1));
   }
-  .diag-card {
-    padding: 16px;
-    margin: 0 4px;
-  }
   .diag-text {
     font-size: calc(14px * var(--app-font-scale, 1));
-  }
-  .diag-opt {
-    padding: 9px 10px;
-    font-size: calc(13px * var(--app-font-scale, 1));
-  }
-  .diag-opt-letter {
-    width: 20px;
-    height: 20px;
-    font-size: calc(10px * var(--app-font-scale, 1));
   }
   .auth-gate {
     padding: 24px 12px;
@@ -366,9 +222,6 @@ body[data-app-mode='chat'] .tutor-only {
     font-size: calc(14px * var(--app-font-scale, 1));
     padding: 10px 48px 10px 16px;
   }
-  .diag-card {
-    padding: 32px;
-  }
   .diag-text {
     font-size: calc(17px * var(--app-font-scale, 1));
   }
@@ -401,9 +254,6 @@ body[data-app-mode='chat'] .tutor-only {
 }
 /* Settle crossfade: the spinner fades out while the tool glyph eases
    in on the same slot (.is-settling is added by toolInline.ts). */
-.tool-inline-tool-icon.is-settling svg:not(.tool-inline-spinner) {
-  animation: inline-icon-enter var(--crossfade-duration) ease both;
-}
 @keyframes inline-icon-enter {
   from {
     opacity: 0;

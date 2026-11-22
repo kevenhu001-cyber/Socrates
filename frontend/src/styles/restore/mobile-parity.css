@@ -38,16 +38,6 @@
     gap: 0;
   }
 
-  #appShell#appShell .top-mode-tabs .app-mode-toggle {
-    background: transparent !important;
-  }
-
-  #appShell#appShell .top-mode-tabs .app-mode-toggle.active {
-    color: var(--cg-text) !important;
-    background: var(--cg-surface) !important;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 12%) !important;
-  }
-
   /* In-flow surfaces need no paint compensation: the visual-viewport pan
      is already subtracted from --keyboard-inset by legacy/keyboard/index.ts,
      so the composer position tracks the visible keyboard edge 1:1 with
@@ -74,9 +64,6 @@
   /* Reasoning-effort pill. */
 
   /* Reference pill shows the label + caret only. */
-  #appShell#appShell #composerInputWrap:not(.voice-recording-active) .effort-trigger .effort-glyph {
-    display: none !important;
-  }
 
   /* Mic — light circle. */
 
@@ -223,13 +210,7 @@
    cascade: 96px for the editor tier plus a 42px control tier. */
 @media (max-width: 768px) {
   /* Prevent iOS Safari auto-zoom and align all system/dialog inputs */
-  #appShell .workspace-field input,
-  #appShell .workspace-field textarea,
-  #appShell .settings-field input,
-  #appShell .settings-field textarea,
-  #appShell #sidebarSearch,
-  #appShell .modal input,
-  #appShell .modal textarea {
+  #appShell .workspace-field input, #appShell .workspace-field textarea, #appShell #sidebarSearch, #appShell .modal input, #appShell .modal textarea {
     font-size: 16px !important;
     border-radius: 10px !important;
   }

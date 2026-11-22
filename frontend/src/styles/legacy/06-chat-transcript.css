@@ -174,16 +174,8 @@
 
 /* chat-header is now legacy — content lives in .top-bar. The rule
    below is kept so old selectors don't break, but it's hidden. */
-.chat-header {
-  display: none;
-}
 /* chatDomain element was removed from index.html — topicBadge is the
    sole session indicator now. Hide any stale nodes defensively. */
-
-.chat-stats {
-  font-size: calc(12px * var(--app-font-scale, 1));
-  color: hsl(var(--text-500));
-}
 /* U-H2 — chat-header mode badge (Tutor/Chat), a pill next to chatStats.
    Animated so the text/background/color crossfade between Tutor and Chat
    instead of snapping instantly. The `badgeSwap` keyframe runs once per
@@ -249,43 +241,11 @@ body.admin-active #chatStats {
 
 /* The incognito top-bar control remains mounted for compatibility but is
    hidden; the active action lives in the sidebar's More menu. */
-.mobile-incognito-btn {
-  display: none;
-}
 @media (max-width: 640px) {
   /* Right-side incognito toggle — moved into the sidebar 更多 popover so
      the mobile header matches the single-icon reference. The element
      stays mounted (syncIncognitoBtn still mirrors aria state onto it)
      but never renders in the top bar. */
-  .mobile-incognito-btn {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 0;
-    background: transparent;
-    color: hsl(var(--text-300));
-    cursor: pointer;
-    flex-shrink: 0;
-    transition:
-      color 0.06s,
-      background 0.06s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .mobile-incognito-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-  .mobile-incognito-btn:hover {
-    color: hsl(var(--text-100));
-    background: hsl(var(--bg-300));
-  }
-  .mobile-incognito-btn[aria-pressed='true'] {
-    color: hsl(var(--accent-000));
-    background: hsl(var(--accent-000) / 0.12);
-  }
 }
 
 .msg-list {

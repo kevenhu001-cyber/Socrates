@@ -112,15 +112,6 @@ body {
    only the named element (a message row finishing its stream) morphs.
    The group rule also shrinks the default UA morph duration so the
    collapse of streaming-only chrome reads as a quick settle, not a wipe. */
-html.vt-scoped-swap::view-transition-old(root),
-html.vt-scoped-swap::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-html.vt-scoped-swap::view-transition-group(*) {
-  animation-duration: 0.18s;
-  animation-timing-function: var(--ease-out, ease-out);
-}
 @keyframes vt-fade-out {
   from {
     opacity: 1;
