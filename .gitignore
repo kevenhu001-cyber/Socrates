@@ -149,6 +149,8 @@ frontend/probe-*.mjs
 .vite-dev.log
 *.tmp-repro/
 frontend/.tmp-repro/
+# Regenerable build output dumped at the repo root (commit 5ddb172b).
+/build.log
 
 # Stray debug screenshots at the repo root. The documented convention
 # (README "Capture convention", audit F-006) is that only
