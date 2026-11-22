@@ -4,7 +4,7 @@
 历史迁移计划中的旧目录 / 旧工作流不能作为当前入口清单。
 前端 JavaScript → TypeScript 迁移已完成；窗口桥接和旧 DOM 写入者仍按领域逐步退役。
 2026-11-22：ADR 0027 将 **React DOM 定为唯一 UI 栈**。`packages/ui` 组件是普通 React DOM
-组件；本地 `packages/ui/src/react-web.tsx` shim 已冻结，直接 importer 只减不增（当前 8）。
+组件；本地 `packages/ui/src/react-web.tsx` shim 已冻结，直接 importer 只减不增（当前 7）。
 下方 RN-1～RN-14 章节只记录历史迁移过程，不是新代码规范。
 2026-11-17：字符串键状态 facade `state/store.ts` 及其浏览器全局 `window.stateStore` 已退役（文件已删除）；
 状态访问只经 `frontend/src/store/index.ts` 的类型化 hooks 与 bridge，代码树里残留的 `stateStore` 字样只是过期注释。
@@ -187,7 +187,7 @@ dynamic import 与退役全局字段；类型 import、注释和字符串不计�
 | 旧 DOM 与 React | 主页面由 React 接管，静态挂载宿主、未接管时的 DOM fallback、分享只读渲染与认证后的挂载仍在生产链路中。`app/legacyBridge.ts` 继续向 React gateway 和旧入口提供动作。 | 下一项 DOM 宿主工作选附件。盘点 `attachments/render.ts` 的 `socrates:composerready` 与 `DOMContentLoaded` 接线，由 composer 宿主显式绑定和释放对应节点。覆盖宿主重挂载、粘贴、拖放和文件选择。消息另按 live／未挂载／分享三态排查写入者，保留旧消息的 HTML 读取。 |
 | window bridge / 自定义事件 | 侧栏和模型菜单都调用类型化设置服务，`socrates:settings-section` 的两个派发点和监听已移除。`window.stateStore` facade 已于 2026-11-17 退役，不再有生产调用；认证后的 `__socratesMountReactCompatibility` 仍有生产调用和浏览器回归依赖。 | 聊天历史与诊断／搜索的状态读取已迁到类型化 store，无需再分域迁移。图表预热另梳理 typed publisher 与浏览器事件两条路径。认证挂载独立提交，保持 auth gate 后加载与 share 的轻量路径，跑 `boot`、`storage-bootstrap`、`mount-recovery`、`message-list-compat` 和 `share-view`。 |
 | `legacy/` / `restore/` | `lint:css-debt` 冻结区上限：`!important` 295、硬编码颜色 28、硬编码半径 123、堆叠 ID 27、硬编码字号 225、legacy 通道 506。`legacy/08-exam.css` 的 `.exam-view-body` 与 `.exam-view-footer` 仍由考试的 Web 宿主使用。 | 每次移交记录旧 selector 在静态 shell、React、动态类名和 fallback 的消费者。确认无消费者后单独清理，跑 `lint:css-debt` 和受影响的视口回归。`themes.css` 保持最后导入。 |
-| React DOM 迁移签收 | 考试已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）均使用共享 `@socrates/ui/settings` 组件接入，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。剩余 8 个文件仍直接引用 `react-web` shim。 | 从 `packages/ui/src/primitives` 与 `shell` 开始改为 DOM + CSS，删掉 shim import 后用 `lint:rn-shim --update` 降低基线。 |
+| React DOM 迁移签收 | 考试已签收。设置「对话背景网格」（开关）与「文字大小」、「内容宽度」（分段单选组）均使用共享 `@socrates/ui/settings` 组件接入，现有 React/shadcn 弹窗持有标签行几何、焦点和分类懒加载。剩余 7 个文件仍直接引用 `react-web` shim。 | 从 `packages/ui/src/primitives` 与 `shell` 开始改为 DOM + CSS，删掉 shim import 后用 `lint:rn-shim --update` 降低基线。 |
 
 DOM 体量以第一方 TS/TSX 中字面 `getElementById(` 为抽样指标，当前 282 处、97 个文件（以 `rg` 输出为准）。这个计数包含
 读取和挂载宿主的查找。`window.stateStore` 的清理已经完成：facade 于 2026-11-17 退役，代码树里残留的 `stateStore` 字样是过期注释，只有两个遗留 e2e 仍引用该全局（`e2e/zz-ui-repro.spec.mjs` 直接调用，`e2e/storage-bootstrap.spec.mjs` 断言它不存在）。

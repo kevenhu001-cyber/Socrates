@@ -17,12 +17,33 @@ function t(key: string, fallback: string): string {
   return i18n(key, fallback);
 }
 
+const COMPACT_QUERY = '(max-width: 768px)';
+
+function subscribeCompact(listener: () => void): () => void {
+  const query = window.matchMedia(COMPACT_QUERY);
+  query.addEventListener('change', listener);
+  return () => query.removeEventListener('change', listener);
+}
+
+function compactSnapshot(): boolean {
+  return window.matchMedia(COMPACT_QUERY).matches;
+}
+
+function useCompactLayout(): boolean {
+  return useSyncExternalStore(subscribeCompact, compactSnapshot, () => false);
+}
+
 export function HomeHeroRoot() {
   useLocaleRefresh();
   const greeting = useSyncExternalStore(subscribeGreeting, getGreeting);
+  const compact = useCompactLayout();
   return (
     <WebUiTheme>
-      <HomeHero titleId="topicTitle" title={greeting || t('greeting.chat', 'Ready when you are')} />
+      <HomeHero
+        compact={compact}
+        titleId="topicTitle"
+        title={greeting || t('greeting.chat', 'Ready when you are')}
+      />
     </WebUiTheme>
   );
 }
