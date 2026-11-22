@@ -216,6 +216,9 @@ test('opening a mobile tool detail does not move or duplicate call outputs', asy
   await expect(body.locator('.exec-artifact')).toHaveCount(0);
 
   await body.locator('[data-testid="turn-activity-toggle"]').click();
+  /* Four settled calls collapse into one batch inside the activity body. */
+  const batch = body.locator('[data-testid="tool-batch-toggle"]');
+  if (await batch.isVisible()) await batch.click();
   await body.locator('[data-testid="tool-row-search-1"]').click();
   /* The detail opens inline beneath its row; outputs above and below keep
      their nodes. */
@@ -406,8 +409,9 @@ test('a visualization stays visible across the running → result transition', a
   const skeleton = message.locator('.viz-state-skeleton').last();
   await expect(skeleton).toBeVisible();
   await expect(skeleton).toContainText('Probe transition');
-  await expect(skeleton).toHaveAttribute('aria-label', 'Receiving data…');
-  await expect(skeleton).not.toContainText('Receiving data');
+  await expect(skeleton.locator('.viz-skeleton-status')).toContainText(
+    'Creating the visualization…',
+  );
   const stage = skeleton.locator('.viz-skeleton-stage');
   expect(await stage.evaluate((node) => getComputedStyle(node, '::after').animationName)).toBe(
     'ui-shimmer-sweep',
