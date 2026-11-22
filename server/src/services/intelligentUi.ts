@@ -66,7 +66,7 @@ export const INTELLIGENT_UI_TOOL = {
                 type: 'string',
                 enum: VISUALIZATION_TEMPLATES,
                 description:
-                  'For visualization. bar/line/area/pie: payload {categories:[...],series:[{data:[1,2]}]}; function: {functions:[{expression:"sin(x)"}]}; flowchart: {nodes:[{id,label}],edges:[{from,to}]}. Other exact payloads: get_ui_contract({kind:"visualization",template:"..."}).',
+                  'For visualization. bar/line/area/stacked_bar: payload {categories:[...],series:[{name,data:[1,2]}]}; pie/donut/funnel: same shape with one non-negative series; combo: each series adds kind "bar", "line" or "area" and shares a y axis; function: {functions:[{expression:"sin(x)"}]}; flowchart: {nodes:[{id,label}],edges:[{from,to}]}. Other exact payloads: get_ui_contract({kind:"visualization",template:"..."}).',
               },
               payload: {
                 type: 'object',
@@ -160,7 +160,7 @@ export const INTELLIGENT_UI_TOOL = {
                 type: 'string',
                 maxLength: 50000,
                 description:
-                  'Declarative OpenUI source (not JS); for exact components/signatures call get_ui_contract({kind:"openui",page:1}) and subsequent pages if needed.',
+                  'Declarative OpenUI source with root = Col([...]). Use StepPlayer for local staged playback, ViewSwitcher for alternate views, Table with sortable=true for local sorting, and NumberField or Slider for bound inputs. For exact signatures and examples call get_ui_contract({kind:"openui",page:1}) when supplied, then read further pages as needed.',
               },
               title: { description: 'Plain text or local value expression.' },
               description: { description: 'Plain text or local value expression.' },

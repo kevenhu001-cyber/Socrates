@@ -17,6 +17,7 @@ import {
 } from 'react';
 import { i18n } from '../legacy/gateway';
 import { IntelligentSurface } from './IntelligentSurface';
+import { WebUiTheme } from '../rn/WebUiTheme';
 import { BlockSkeleton } from './BlockSkeleton';
 import { runOpenUiAction } from './openui/actionBridge';
 import { library } from './openui/library';
@@ -78,16 +79,18 @@ function OpenUiProgram({
   if (tooLarge) return null;
   return (
     <RemoteLabels.Provider value={labels}>
-      <Renderer
-        response={source}
-        library={library}
-        isStreaming={open}
-        onAction={onAction}
-        onError={onError}
-        onParseResult={onParseResult}
-        onStateUpdate={onStateUpdate}
-        publishObservability={false}
-      />
+      <WebUiTheme>
+        <Renderer
+          response={source}
+          library={library}
+          isStreaming={open}
+          onAction={onAction}
+          onError={onError}
+          onParseResult={onParseResult}
+          onStateUpdate={onStateUpdate}
+          publishObservability={false}
+        />
+      </WebUiTheme>
     </RemoteLabels.Provider>
   );
 }

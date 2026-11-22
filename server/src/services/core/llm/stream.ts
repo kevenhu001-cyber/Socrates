@@ -222,23 +222,34 @@ export async function streamChatCompletion(
        the per-delta callbacks to at most one per ~30 ms (or every 64
        bytes of accumulated arguments) so the client gets a smooth
        typewriter effect instead of jittery 1-char bursts. */
-    let _lastDeltaEmit = 0;
-    let _lastDeltaBytes = 0;
-    const _emitToolDelta = (
-      entry: { __index: number; id?: string; function: { name: string; arguments: string } },
-      full: string,
-    ) => {
+    const lastToolDeltas = new Map<
+      number,
+      { at: number; bytes: number; id?: string; name: string }
+    >();
+    const _emitToolDelta = (entry: {
+      __index: number;
+      id?: string;
+      function: { name: string; arguments: string };
+    }) => {
       if (typeof onToolCallDelta !== 'function') return;
       const now = Date.now();
       const bytes = (entry.function.arguments || '').length;
-      if (now - _lastDeltaEmit < 30 && bytes - _lastDeltaBytes < 64) return;
-      _lastDeltaEmit = now;
-      _lastDeltaBytes = bytes;
+      const name = entry.function.name;
+      const last = lastToolDeltas.get(entry.__index);
+      if (
+        last &&
+        last.id === entry.id &&
+        last.name === name &&
+        now - last.at < 30 &&
+        bytes - last.bytes < 64
+      )
+        return;
+      lastToolDeltas.set(entry.__index, { at: now, bytes, id: entry.id, name });
       try {
         onToolCallDelta({
           index: entry.__index,
           id: entry.id,
-          name: entry.function.name,
+          name,
           arguments: entry.function.arguments,
         });
       } catch {
@@ -298,7 +309,7 @@ export async function streamChatCompletion(
         __argStream: argStream,
       };
       toolCallAcc.set(slot, next);
-      _emitToolDelta(next, next.function.arguments);
+      _emitToolDelta(next);
     };
 
     readStream: while (true) {

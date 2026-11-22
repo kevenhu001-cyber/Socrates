@@ -60,8 +60,7 @@ const TEMPLATE_ALIASES = {
   column: 'bar',
   piechart: 'pie',
   pie_chart: 'pie',
-  donut: 'pie',
-  doughnut: 'pie',
+  doughnut: 'donut',
   scatterplot: 'scatter',
   scatter_plot: 'scatter',
   'number-line': 'number_line',
@@ -307,7 +306,7 @@ function seriesListOf(payload) {
       if (Array.isArray(data)) entry.data = data;
       else if (isRecord(entry.data)) entry.data = Object.values(entry.data);
     }
-    if (entry.type && !entry.kind && ['line', 'bar', 'scatter'].includes(entry.type))
+    if (entry.type && !entry.kind && ['line', 'area', 'bar', 'scatter'].includes(entry.type))
       entry.kind = entry.type;
     for (const key of [
       'title',
@@ -465,7 +464,10 @@ function reconcileLengths(template, payload, warnings) {
       trimmed += entry.data.length - categories.length;
       return { ...entry, data: entry.data.slice(0, categories.length) };
     }
-    if (entry.data.length < categories.length && template !== 'boxplot' && template !== 'pie') {
+    if (
+      entry.data.length < categories.length &&
+      !['boxplot', 'pie', 'donut', 'funnel'].includes(template)
+    ) {
       padded += categories.length - entry.data.length;
       return {
         ...entry,

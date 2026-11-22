@@ -995,6 +995,9 @@ describe('appendToolRoutingHints', () => {
       out[0].content,
       /Use `render_intelligent_ui` for every explicitly requested static or interactive/,
     );
+    assert.match(out[0].content, /declare \$step = 0, bind StepPlayer/);
+    assert.match(out[0].content, /Use ViewSwitcher/);
+    assert.match(out[0].content, /Table\(columns, rows, caption, true\)/);
     /* Advanced docs are no longer shipped on every ordinary visual call.
        The lookup tool is referenced only when it is available. */
     assert.doesNotMatch(out[0].content, /Query get_ui_contract/);
@@ -1002,7 +1005,7 @@ describe('appendToolRoutingHints', () => {
       [{ role: 'system', content: 'base' }],
       ['render_intelligent_ui', 'get_ui_contract'],
     );
-    assert.match(withDiscovery[0].content, /get_ui_contract/);
+    assert.match(withDiscovery[0].content, /get_ui_contract\(\{kind:"openui",page:1\}\)/);
     /* Demonstration view contracts live once in the tool schema's program
        description (DEMONSTRATION_GUIDANCE), delivered only when
        render_intelligent_ui is offered; the hint points at the schema. */

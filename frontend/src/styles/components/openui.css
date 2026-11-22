@@ -213,6 +213,67 @@
 .intui-openui .iui-textarea {
   resize: vertical;
 }
+.intui-openui .iui-number-field {
+  max-inline-size: 14rem;
+  font-variant-numeric: tabular-nums;
+}
+.intui-openui .iui-disclosure-toggle {
+  width: 100%;
+  min-height: var(--ui-control-touch);
+  text-align: start;
+}
+.intui-openui .iui-disclosure-toggle:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
+.intui-openui .iui-step-player {
+  display: grid;
+  gap: var(--ui-space-xs);
+  min-width: 0;
+}
+.intui-openui .iui-step-range {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--ui-action);
+}
+.intui-openui .iui-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-xs);
+}
+.intui-openui .iui-step-actions > * {
+  min-height: var(--ui-control-touch);
+}
+.intui-openui .iui-view-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-sm);
+  min-width: 0;
+}
+.intui-openui .iui-view-options {
+  align-self: flex-start;
+  flex-wrap: wrap;
+  height: auto;
+  max-width: 100%;
+}
+.intui-openui .iui-view-options [data-slot='tabs-trigger'] {
+  min-height: var(--ui-control-touch);
+  white-space: normal;
+}
+.intui-openui .iui-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  min-height: var(--ui-control-sm);
+  cursor: pointer;
+}
+.intui-openui .iui-table-sort:focus-visible,
+.intui-openui .iui-step-range:focus-visible {
+  box-shadow: var(--ui-focus-shadow);
+}
 .intui-openui :is(.iui-check, .iui-slider-head, .iui-timer-actions) {
   display: flex;
   align-items: center;
@@ -642,7 +703,15 @@
 /* Keep inputs editable, but never present a known-invalid value as a result. */
 .intui-openui
   .iui-program[data-invalid-result='true']
-  :is(.iui-text, .iui-title, .iui-chart, .iui-table-wrap, .iui-svg, [data-openui-visualization]) {
+  :is(
+    .iui-text,
+    .iui-title,
+    .iui-chart,
+    .iui-table-wrap,
+    .iui-svg,
+    [data-openui-visualization],
+    [data-iui-result]
+  ) {
   display: none;
 }
 

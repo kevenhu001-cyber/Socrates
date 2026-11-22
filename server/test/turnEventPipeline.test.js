@@ -26,10 +26,24 @@ test(
     const frames = [];
     let requests = 0,
       previewBeforeComplete = false,
+      beganBeforeArguments = false,
+      sentPrefix = false,
       released = false,
       providerStream;
+    const sendPrefix = () => {
+      if (sentPrefix || !providerStream) return;
+      sentPrefix = true;
+      providerStream.enqueue(
+        encoder.encode(
+          frame({
+            choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: prefix } }] } }],
+          }),
+        ),
+      );
+    };
     const release = () => {
       if (released || !providerStream) return;
+      sendPrefix();
       released = true;
       providerStream.enqueue(
         encoder.encode(
@@ -59,6 +73,14 @@ test(
     res.flushHeaders = () => {};
     res.write = (text) => {
       frames.push(text);
+      if (
+        text.startsWith('event: turn_event') &&
+        text.includes('"type":"ui.begin"') &&
+        !sentPrefix
+      ) {
+        beganBeforeArguments = true;
+        sendPrefix();
+      }
       if (text.startsWith('event: turn_event') && text.includes('"type":"ui.add"') && !released) {
         previewBeforeComplete = !frames.some((entry) => entry.startsWith('event: tool_use'));
         release();
@@ -93,13 +115,20 @@ test(
                             index: 0,
                             id: 'ui-test',
                             type: 'function',
-                            function: { name: 'render_intelligent_ui', arguments: prefix },
+                            function: { name: 'render_', arguments: '' },
                           },
                         ],
                       },
                     },
                   ],
-                }),
+                }) +
+                  frame({
+                    choices: [
+                      {
+                        delta: { tool_calls: [{ index: 0, function: { name: 'intelligent_ui' } }] },
+                      },
+                    ],
+                  }),
               ),
             );
           },
@@ -135,6 +164,7 @@ test(
     } finally {
       clearTimeout(fallback);
     }
+    assert.equal(beganBeforeArguments, true);
     assert.equal(previewBeforeComplete, true);
     const events = frames
       .filter((text) => text.startsWith('event: turn_event'))

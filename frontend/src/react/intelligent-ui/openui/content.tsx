@@ -1,7 +1,7 @@
 import { MathText } from '../../rn/useInlineMath';
 import { Button as UiButton } from '../../ui/Button';
 import { defineComponent } from '@openuidev/react-lang';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { z } from 'zod/v4';
 import { children, color, cx, fg, webUrl } from './style';
 
@@ -134,70 +134,124 @@ export const Flashcard = defineComponent({
   description: 'A study card that flips on click.',
   component: function FlashcardView({ props }) {
     const [flipped, setFlipped] = useState(false);
+    const faceId = useId();
     return (
       <UiButton
         className="iui-flashcard"
         type="button"
         aria-label={props.label ?? props.front}
+        aria-describedby={flipped || props.label ? faceId : undefined}
         aria-pressed={flipped}
-        onClick={() => setFlipped(!flipped)}
+        onClick={() => setFlipped((value) => !value)}
       >
-        <span className="iui-caption">
-          <MathText text={props.label ?? ''} />
-        </span>
-        <span>
+        {props.label ? (
+          <span className="iui-caption">
+            <MathText text={props.label} />
+          </span>
+        ) : null}
+        <span id={faceId}>
           <MathText text={flipped ? props.back : props.front} />
         </span>
       </UiButton>
     );
   },
 });
+const tableCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+function tableCell(row: Record<string, unknown>, key: string) {
+  const value = row && Object.prototype.hasOwnProperty.call(row, key) ? row[key] : undefined;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  return typeof value === 'string' || typeof value === 'boolean' ? value : null;
+}
+
 export const Table = defineComponent({
   name: 'Table',
   props: z.object({
     columns: z.array(z.object({ key: z.string(), label: z.string() })),
     rows: z.array(z.record(z.string(), z.unknown())),
     caption: z.string().optional(),
+    sortable: z.boolean().optional(),
   }),
-  description: 'Data table. columns are {key,label}; rows use those keys.',
-  component: ({ props }) => (
-    <div
-      className="ds-table-wrap iui-table-wrap"
-      role="region"
-      tabIndex={0}
-      aria-label={props.caption || 'Data table'}
-    >
-      <table className="ds-table iui-table">
-        {props.caption ? (
-          <caption>
-            <MathText text={props.caption ?? ''} />
-          </caption>
-        ) : null}
-        <thead>
-          <tr>
-            {props.columns.slice(0, 12).map((col) => (
-              <th scope="col" key={col.key}>
-                <MathText text={col.label} />
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {props.rows.slice(0, 100).map((row, i) => (
-            <tr key={i}>
-              {props.columns.slice(0, 12).map((col) => (
-                <td key={col.key}>
-                  {['string', 'number', 'boolean'].includes(typeof row[col.key]) ? (
-                    <MathText text={String(row[col.key])} />
-                  ) : (
-                    ''
-                  )}
-                </td>
-              ))}
+  description:
+    'Data table. columns are {key,label}; rows use those keys. Set sortable=true to let readers reorder by any column. Only the first 100 supplied rows are shown and sortable.',
+  component: function TableView({ props }) {
+    const [sort, setSort] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(
+      null,
+    );
+    const columns = (props.columns ?? []).slice(0, 12);
+    const activeSort = props.sortable && columns.some((col) => col.key === sort?.key) ? sort : null;
+    const rows = (props.rows ?? []).slice(0, 100).map((row, index) => ({ row, index }));
+    if (activeSort) {
+      const direction = activeSort.direction === 'ascending' ? 1 : -1;
+      rows.sort((a, b) => {
+        const left = tableCell(a.row, activeSort.key);
+        const right = tableCell(b.row, activeSort.key);
+        if (left === null || right === null)
+          return (left === null ? 1 : 0) - (right === null ? 1 : 0);
+        if (typeof left === 'number' && typeof right !== 'number') return -1;
+        if (typeof right === 'number' && typeof left !== 'number') return 1;
+        const order =
+          typeof left === 'number' && typeof right === 'number'
+            ? left - right
+            : tableCollator.compare(String(left), String(right));
+        return order * direction;
+      });
+    }
+    return (
+      <div
+        className="ds-table-wrap iui-table-wrap"
+        role="region"
+        tabIndex={0}
+        aria-label={props.caption || 'Data table'}
+      >
+        <table className="ds-table iui-table">
+          {props.caption ? (
+            <caption>
+              <MathText text={props.caption ?? ''} />
+            </caption>
+          ) : null}
+          <thead>
+            <tr>
+              {columns.map((col) => {
+                const direction = activeSort?.key === col.key ? activeSort.direction : undefined;
+                return (
+                  <th scope="col" key={col.key} aria-sort={direction}>
+                    {props.sortable ? (
+                      <UiButton
+                        className="iui-table-sort"
+                        onClick={() =>
+                          setSort({
+                            key: col.key,
+                            direction: direction === 'ascending' ? 'descending' : 'ascending',
+                          })
+                        }
+                      >
+                        <MathText text={col.label} />
+                        <span aria-hidden>
+                          {direction === 'ascending' ? '↑' : direction === 'descending' ? '↓' : '↕'}
+                        </span>
+                      </UiButton>
+                    ) : (
+                      <MathText text={col.label} />
+                    )}
+                  </th>
+                );
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  ),
+          </thead>
+          <tbody>
+            {rows.map(({ row, index }) => (
+              <tr key={index}>
+                {columns.map((col) => (
+                  <td key={col.key}>
+                    <MathText text={String(tableCell(row, col.key) ?? '')} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  },
 });

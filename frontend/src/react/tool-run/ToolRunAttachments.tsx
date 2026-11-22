@@ -150,8 +150,7 @@ function renderUnresolvedIntelligentUi(
   readOnly?: boolean,
 ): ReactElement | null {
   if (hasVisualization) return null;
-  if (state === 'done') return renderIntelligentUiFailure(call, tools, readOnly);
-  if (state === 'running' || state === 'awaiting') {
+  if (call.uiSurface?.phase === 'streaming' || state === 'running' || state === 'awaiting') {
     const partialInfo = extractPartialVisualizationInfo(call.input, call.argumentsText);
     return (
       <div className="tool-inline-attachments" data-tool-anchor={call.id} data-tool-loading="true">
@@ -163,6 +162,7 @@ function renderUnresolvedIntelligentUi(
       </div>
     );
   }
+  if (state === 'done') return renderIntelligentUiFailure(call, tools, readOnly);
   return null;
 }
 
@@ -173,8 +173,8 @@ function renderIntelligentUiAttachment(
 ): ReactElement | null | false {
   const state = toolRunStateOf(call);
   const surface = call.uiSurface;
-  if (surface?.phase === 'aborted' && state !== 'done') return false;
   if (state === 'error') return renderIntelligentUiFailure(call, tools, readOnly);
+  if (surface?.phase === 'aborted' && state !== 'done') return false;
   if (state === 'stopped') return null;
 
   const { source, hasVisualization } = resolveIntelligentUiSource(call, surface);

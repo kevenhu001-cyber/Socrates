@@ -250,6 +250,37 @@ test('the server policy routes static and interactive visuals through Intelligen
   assert.doesNotMatch(SERVER_SYSTEM_POLICY, /render_visualization` for a static chart/);
 });
 
+test('OpenUI dashboards can bind metrics and meters to local input', () => {
+  const source =
+    'root = Col([Slider($done, 0, 12, 1, "Tasks completed"), Meter("Tasks", $done, 12), Metric("Remaining", 12 - $done)])\n$done = 4';
+  const result = validateIntelligentUi({
+    nodes: [{ type: 'openui', source }],
+  });
+  assert.equal(result.ok, true, result.error);
+});
+
+test('OpenUI comparison bars consume numeric input and disclosure is a layout', () => {
+  const program = `root = Col([Disclosure("Options", [NumberField($hours,"Hours",0,12,0.25)]), ComparisonBars([{label:"Actual",value:$hours}], "h", 12)])
+$hours = 4`;
+  const validate = (source) => validateIntelligentUi({ nodes: [{ type: 'openui', source }] });
+  const result = validate(program);
+  assert.equal(result.ok, true, result.error);
+  const unused = validate(program.replace('value:$hours', 'value:4'));
+  assert.equal(unused.ok, false);
+  assert.match(unused.error, /no result binding/);
+});
+
+test('OpenUI playback must bind its position to a displayed result', () => {
+  const program = `root = Col([StepPlayer($step, ["Start", "Double"], "Example"), ViewSwitcher("Views", [{id:"summary",label:"Summary",children:[Metric("Result", [2,4][$step])]},{id:"detail",label:"Details",children:[Table([{key:"n",label:"Number"}],[{n:4}],"Values",true)]}])])
+$step = 0`;
+  const validate = (source) => validateIntelligentUi({ nodes: [{ type: 'openui', source }] });
+  const result = validate(program);
+  assert.equal(result.ok, true, result.error);
+  const unused = validate(program.replace('[$step]', '[0]'));
+  assert.equal(unused.ok, false);
+  assert.match(unused.error, /no result binding/);
+});
+
 test('render_intelligent_ui advertises a valid compact node envelope', () => {
   const parameters = INTELLIGENT_UI_TOOL.function.parameters;
   assert.deepEqual(parameters.required, ['nodes']);

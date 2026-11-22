@@ -250,7 +250,7 @@ function functionChartOption(
   };
 }
 
-function pieChartOption(
+function shareChartOption(
   spec: VizSpec,
   colors: VizColors,
   fontFamily: string,
@@ -259,6 +259,12 @@ function pieChartOption(
 ): ChartOption {
   const payload = spec.payload;
   const categories = payload.categories || [];
+  const data = (payload.series?.[0]?.data || []).flatMap((value, index) =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? [{ name: String(categories[index] ?? index + 1), value }]
+      : [],
+  );
+  const funnel = spec.template === 'funnel';
   return {
     backgroundColor: 'transparent',
     textStyle,
@@ -272,22 +278,37 @@ function pieChartOption(
       textStyle: { color: colors.text, fontFamily },
       formatter: (name: string) => truncateLabel(name, 22),
     },
-    series: (payload.series || []).map((series) => ({
-      type: 'pie',
-      radius: spec.template === 'pie' ? '58%' : ['38%', '62%'],
-      center: ['50%', '45%'],
-      avoidLabelOverlap: true,
-      data: series.data.map((value, index) =>
-        typeof value === 'object' ? value : { name: String(categories[index] || index + 1), value },
-      ),
-      label: {
-        color: colors.text,
-        fontFamily,
-        formatter: (params: { name: string }) => truncateLabel(params.name, 18),
+    series: [
+      {
+        ...(funnel
+          ? {
+              type: 'funnel',
+              sort: 'none',
+              min: 0,
+              max: Math.max(1, ...data.map((item) => item.value)),
+              gap: 4,
+              left: '15%',
+              width: '70%',
+              top: 14,
+              bottom: 54,
+            }
+          : {
+              type: 'pie',
+              radius: spec.template === 'donut' ? ['36%', '62%'] : '58%',
+              center: ['50%', '45%'],
+              avoidLabelOverlap: true,
+              emphasis: { scaleSize: 4 },
+            }),
+        data,
+        label: {
+          color: colors.text,
+          fontFamily,
+          position: funnel ? 'right' : undefined,
+          formatter: (params: { name: string }) => truncateLabel(params.name, funnel ? 12 : 18),
+        },
+        labelLayout: { hideOverlap: true, moveOverlap: 'shiftY' },
       },
-      labelLayout: { hideOverlap: true, moveOverlap: 'shiftY' },
-      emphasis: { scaleSize: 4 },
-    })),
+    ],
   };
 }
 
@@ -519,6 +540,7 @@ const SERIES_TYPE_BY_CHART: Record<string, string> = {
   line: 'line',
   area: 'line',
   bar: 'bar',
+  stacked_bar: 'bar',
   scatter: 'scatter',
   histogram: 'bar',
   heatmap: 'heatmap',
@@ -538,11 +560,7 @@ function cartesianChartOption(
   let categories: Array<string | number> = payload.categories || [];
   let axisLayout = categoryAxisLayout(categories);
   const seriesInput = payload.series || [];
-  if (
-    !categories.length &&
-    seriesInput.length &&
-    ['line', 'area', 'bar', 'histogram', 'boxplot'].includes(chartType)
-  ) {
+  if (!categories.length && seriesInput.length) {
     const categoryCount = Math.max.apply(
       null,
       seriesInput.map((series) => (series.data || []).length),
@@ -550,7 +568,7 @@ function cartesianChartOption(
     categories = Array.from({ length: categoryCount }, (_, index) => String(index + 1));
     axisLayout = categoryAxisLayout(categories);
   }
-  const seriesType = SERIES_TYPE_BY_CHART[chartType] || 'line';
+  const isStacked = chartType === 'stacked_bar';
   return {
     backgroundColor: 'transparent',
     textStyle,
@@ -596,20 +614,22 @@ function cartesianChartOption(
       axisLine: { lineStyle: { color: colors.line } },
       splitLine: { lineStyle: { color: colors.grid } },
     },
-    dataZoom: ['line', 'area', 'bar', 'histogram'].includes(chartType)
-      ? [{ type: 'inside' }]
-      : undefined,
-    series: seriesInput.map((series, index) => ({
-      name: series.name || 'Series ' + (index + 1),
-      type: seriesType,
-      data: series.data,
-      showSymbol: false,
-      barMaxWidth: chartType === 'bar' || chartType === 'histogram' ? 54 : undefined,
-      barCategoryGap: chartType === 'histogram' ? '8%' : undefined,
-      areaStyle: spec.template === 'area' ? { opacity: 0.16 } : undefined,
-      smooth: chartType === 'area',
-      emphasis: { focus: 'series' },
-    })),
+    dataZoom: chartType !== 'boxplot' ? [{ type: 'inside' }] : undefined,
+    series: seriesInput.map((series, index) => {
+      const kind = chartType === 'combo' ? series.kind : spec.template;
+      const type = (kind && SERIES_TYPE_BY_CHART[kind]) || 'line';
+      return {
+        name: series.name || 'Series ' + (index + 1),
+        type,
+        data: series.data,
+        stack: isStacked ? 'total' : undefined,
+        showSymbol: false,
+        barMaxWidth: type === 'bar' ? 54 : undefined,
+        barCategoryGap: chartType === 'histogram' ? '8%' : undefined,
+        areaStyle: kind === 'area' ? { opacity: 0.16 } : undefined,
+        emphasis: { focus: 'series' },
+      };
+    }),
   };
 }
 
@@ -640,8 +660,8 @@ export function optionForChart(spec: VizSpec, colors: VizColors): ChartOption {
   let baseOption: ChartOption;
   if (spec.template === 'function')
     baseOption = functionChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
-  else if (chartType === 'pie')
-    baseOption = pieChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
+  else if (['pie', 'donut', 'funnel'].includes(chartType))
+    baseOption = shareChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
   else if (chartType === 'heatmap')
     baseOption = heatmapChartOption(spec, colors, fontFamily, textStyle, tooltipBase);
   else if (chartType === 'radar')
